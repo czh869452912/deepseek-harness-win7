@@ -7,7 +7,10 @@ from dsh.llm.llm_service import LLMService
 from dsh.settings.settings_file import SettingsFilePlugin, SettingsService
 
 
-def test_credentials_service():
+def test_credentials_service(monkeypatch):
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
     with tempfile.TemporaryDirectory() as tmpdir:
         creds_file = os.path.join(tmpdir, "credentials.json")
         ctx = Context()
@@ -17,7 +20,7 @@ def test_credentials_service():
         creds.set_credential("DEEPSEEK_API_KEY", "sk-test-creds-key")
         assert creds.resolve("DEEPSEEK_API_KEY") == "sk-test-creds-key"
 
-        os.environ["CUSTOM_TEST_KEY"] = "sk-env-key"
+        monkeypatch.setenv("CUSTOM_TEST_KEY", "sk-env-key")
         assert creds.resolve("CUSTOM_TEST_KEY") == "sk-env-key"
 
 
@@ -36,7 +39,14 @@ def test_settings_service():
         assert settings2.get_setting("llm", "base_url") == "https://custom.api.endpoint"
 
 
-def test_llm_per_request_dynamic_resolution():
+def test_llm_per_request_dynamic_resolution(monkeypatch):
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("DEEPSEEK_BASE_URL", raising=False)
+    monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+    monkeypatch.delenv("DEEPSEEK_MODEL", raising=False)
+    monkeypatch.delenv("OPENAI_MODEL", raising=False)
+
     with tempfile.TemporaryDirectory() as tmpdir:
         ctx = Context()
         creds = CredentialsService(ctx=ctx, credentials_file=os.path.join(tmpdir, "credentials.json"))

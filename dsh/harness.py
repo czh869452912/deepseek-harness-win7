@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional
 import yaml
 
 from dsh.cordis.context import Context
+from dsh.cordis.environment import load_layered_env
 from dsh.cordis.loader import PresetLoader
 from dsh.context.agent_instructions import AgentInstructionsPlugin
 from dsh.core.agent import AgentPlugin
@@ -39,6 +40,8 @@ def build_harness(
     Build and initialize a DeepSeek Harness Context with requested preset mode.
     """
     ctx = Context()
+    launch_env = load_layered_env(cwd=os.getcwd())
+    ctx.set_service("launch_environment", launch_env)
 
     # Mount base infrastructure plugins
     ctx.plugin(CredentialsLocalPlugin)

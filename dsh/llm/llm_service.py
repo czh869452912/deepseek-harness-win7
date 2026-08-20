@@ -4,12 +4,14 @@ import urllib.request
 import urllib.error
 from typing import Any, Dict, List, Optional
 
+from dsh.cordis.environment import LaunchEnvironmentSnapshot
+
 
 class LLMService:
     """
     LLM Service registered at `ctx.llm`.
     Supports OpenAI-compatible API endpoints (DeepSeek, OpenAI, etc.)
-    with per-request dynamic resolution of api_key, base_url, and model.
+    with layered configuration resolution for api_key, base_url, search_base_url, and model.
     """
 
     def __init__(
@@ -17,31 +19,23 @@ class LLMService:
         ctx: Optional[Any] = None,
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
+        search_base_url: Optional[str] = None,
         model: Optional[str] = None,
         api_key_env: str = "DEEPSEEK_API_KEY"
     ):
         self.ctx = ctx
         self.static_api_key = api_key if (api_key and api_key.strip()) else None
         self.static_base_url = base_url if (base_url and base_url.strip()) else None
+        self.static_search_base_url = search_base_url if (search_base_url and search_base_url.strip()) else None
         self.static_model = model if (model and model.strip()) else None
         self.api_key_env = api_key_env
 
     def resolve_api_key(self) -> str:
+        # 1. Explicit / static call argument
         if self.static_api_key:
             return self.static_api_key
 
-        if self.ctx and self.ctx.has("credentials"):
-            creds = self.ctx.get("credentials")
-            val = creds.resolve(self.api_key_env) or creds.resolve("OPENAI_API_KEY")
-            if val:
-                return val
-
-        if self.ctx and self.ctx.has("settings"):
-            settings = self.ctx.get("settings")
-            val = settings.get_setting("llm", "api_key")
-            if val:
-                return val
-
+        # 2. Inherited launch environment (highest precedence for secrets)
         env_key = (
             os.environ.get(self.api_key_env)
             or os.environ.get("DEEPSEEK_API_KEY")
@@ -50,21 +44,49 @@ class LLMService:
         if env_key:
             return env_key
 
+        # 3. Managed credentials service ($DSH_HOME/.credentials.yaml)
+        if self.ctx and self.ctx.has("credentials"):
+            creds = self.ctx.get("credentials")
+            val = creds.resolve(self.api_key_env) or creds.resolve("OPENAI_API_KEY")
+            if val:
+                return val
+
+        # 4. User settings file ($DSH_HOME/settings.yaml)
+        if self.ctx and self.ctx.has("settings"):
+            settings = self.ctx.get("settings")
+            val = settings.get_setting("llm", "api_key")
+            if val:
+                return val
+
+        # 5. Discovered .env fallback layers
+        if self.ctx and self.ctx.has("launch_environment"):
+            launch_env: LaunchEnvironmentSnapshot = self.ctx.get("launch_environment")
+            entry = (
+                launch_env.get_from(self.api_key_env, ["project-env", "user-env"])
+                or launch_env.get_from("DEEPSEEK_API_KEY", ["project-env", "user-env"])
+                or launch_env.get_from("OPENAI_API_KEY", ["project-env", "user-env"])
+            )
+            if entry and entry.value:
+                return entry.value
+
         raise RuntimeError(
             f"LLM API Key missing for '{self.api_key_env}'. "
-            "Please provide --api-key, set DEEPSEEK_API_KEY environment variable, or configure ~/.dsh/credentials.json."
+            "Please provide --api-key, export DEEPSEEK_API_KEY environment variable, or configure ~/.dsh/.credentials.yaml."
         )
 
     def resolve_base_url(self) -> str:
+        # 1. Explicit / static CLI parameter
         if self.static_base_url:
             return self.static_base_url.rstrip("/")
 
+        # 2. User settings file ($DSH_HOME/settings.yaml)
         if self.ctx and self.ctx.has("settings"):
             settings = self.ctx.get("settings")
             val = settings.get_setting("llm", "base_url")
             if val:
-                return val.rstrip("/")
+                return str(val).rstrip("/")
 
+        # 3. Inherited process environment
         env_url = (
             os.environ.get("DEEPSEEK_BASE_URL")
             or os.environ.get("OPENAI_BASE_URL")
@@ -72,21 +94,57 @@ class LLMService:
         if env_url:
             return env_url.rstrip("/")
 
+        # 4. Discovered .env fallback layers
+        if self.ctx and self.ctx.has("launch_environment"):
+            launch_env: LaunchEnvironmentSnapshot = self.ctx.get("launch_environment")
+            entry = (
+                launch_env.get_from("DEEPSEEK_BASE_URL", ["project-env", "user-env"])
+                or launch_env.get_from("OPENAI_BASE_URL", ["project-env", "user-env"])
+            )
+            if entry and entry.value:
+                return entry.value.rstrip("/")
+
+        # 5. Public default
         return "https://api.deepseek.com"
 
+    def resolve_search_base_url(self) -> str:
+        """Dedicated search endpoint resolution (DEEPSEEK_SEARCH_BASE_URL)."""
+        if self.static_search_base_url:
+            return self.static_search_base_url.rstrip("/")
+
+        if self.ctx and self.ctx.has("settings"):
+            settings = self.ctx.get("settings")
+            val = settings.get_setting("llm", "search_base_url")
+            if val:
+                return str(val).rstrip("/")
+
+        env_url = os.environ.get("DEEPSEEK_SEARCH_BASE_URL")
+        if env_url:
+            return env_url.rstrip("/")
+
+        if self.ctx and self.ctx.has("launch_environment"):
+            launch_env: LaunchEnvironmentSnapshot = self.ctx.get("launch_environment")
+            entry = launch_env.get_from("DEEPSEEK_SEARCH_BASE_URL", ["project-env", "user-env"])
+            if entry and entry.value:
+                return entry.value.rstrip("/")
+
+        return self.resolve_base_url()
+
     def resolve_model(self, req_model: Optional[str] = None) -> str:
+        # 1. Per-request or static model override
         if req_model:
             return req_model
-
         if self.static_model:
             return self.static_model
 
+        # 2. User settings file ($DSH_HOME/settings.yaml)
         if self.ctx and self.ctx.has("settings"):
             settings = self.ctx.get("settings")
             val = settings.get_setting("llm", "model")
             if val:
-                return val
+                return str(val)
 
+        # 3. Inherited process environment
         env_model = (
             os.environ.get("DEEPSEEK_MODEL")
             or os.environ.get("OPENAI_MODEL")
@@ -94,6 +152,17 @@ class LLMService:
         if env_model:
             return env_model
 
+        # 4. Discovered .env fallback layers
+        if self.ctx and self.ctx.has("launch_environment"):
+            launch_env: LaunchEnvironmentSnapshot = self.ctx.get("launch_environment")
+            entry = (
+                launch_env.get_from("DEEPSEEK_MODEL", ["project-env", "user-env"])
+                or launch_env.get_from("OPENAI_MODEL", ["project-env", "user-env"])
+            )
+            if entry and entry.value:
+                return entry.value
+
+        # 5. Public default
         return "deepseek-chat"
 
     def chat_completion(

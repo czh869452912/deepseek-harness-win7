@@ -73,9 +73,13 @@ async def main_async():
         print(yaml.dump(plugins, allow_unicode=True))
         return
 
+    llm_svc = ctx.get("llm")
+    effective_base_url = llm_svc.resolve_base_url() if llm_svc else args.base_url
+    effective_model = llm_svc.resolve_model(args.model) if llm_svc else args.model
+
     print(f"=== DeepSeek Harness Win7 (Mode: {args.mode}) ===")
-    print(f"Base URL: {args.base_url}")
-    print(f"Model: {args.model}")
+    print(f"Base URL: {effective_base_url}")
+    print(f"Model: {effective_model}")
     print(f"Loaded plugins: {[p['id'] for p in ctx.list_plugins()]}")
     print(f"Registered tools: {[t.name for t in ctx.tools.list_tools()]}")
     print("---------------------------------------------------------")

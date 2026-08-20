@@ -1,0 +1,218 @@
+"""
+Layered environment snapshot and secure .env discovery (`@deepseek-ai/dsh-launch-environment` & `@deepseek-ai/dsh-home-paths`).
+Resolves inherited process environment, project-level `<cwd>/.env`, and user-level `$DSH_HOME/.env`
+with security tripwires against bootstrap variable injection.
+"""
+
+import os
+import sys
+from typing import Any, Dict, List, Optional, Set, Tuple
+
+
+def resolve_dsh_home(custom_home: Optional[str] = None) -> str:
+    """
+    Resolve the Harness home directory ($DSH_HOME or ~/.dsh).
+    """
+    if custom_home and custom_home.strip():
+        return os.path.abspath(custom_home)
+    env_home = os.environ.get("DSH_HOME")
+    if env_home and env_home.strip():
+        return os.path.abspath(env_home)
+    return os.path.abspath(os.path.join(os.path.expanduser("~"), ".dsh"))
+
+
+# Exact variable names that cannot be set by discovered .env files
+BOOTSTRAP_NAMES: Set[str] = {
+    # Process launch and runtime resolution
+    "PATH", "HOME", "USERPROFILE", "SHELL",
+    "NODE_OPTIONS", "NODE_PATH", "NODE_EXTRA_CA_CERTS",
+    "LD_PRELOAD", "LD_LIBRARY_PATH", "LD_AUDIT",
+    # Interpreter startup hooks
+    "BASH_ENV", "ENV", "SHELLOPTS", "BASHOPTS",
+    "PERL5OPT", "PERL5LIB", "PYTHONSTARTUP", "PYTHONPATH", "PYTHONHOME",
+    "RUBYOPT", "RUBYLIB", "JAVA_TOOL_OPTIONS", "_JAVA_OPTIONS", "JDK_JAVA_OPTIONS",
+    # Version control hooks, editors, pagers
+    "GIT_SSH", "GIT_SSH_COMMAND", "GIT_EXTERNAL_DIFF", "GIT_PAGER", "GIT_EDITOR",
+    "GIT_ASKPASS", "SSH_ASKPASS",
+    "GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM", "GIT_CONFIG_COUNT",
+    "EDITOR", "VISUAL", "PAGER", "BROWSER",
+    # Network reach and trust
+    "DEEPSEEK_BASE_URL", "DEEPSEEK_SEARCH_BASE_URL",
+    "SSL_CERT_FILE", "SSL_CERT_DIR",
+    "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY",
+    "REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE",
+    "NODE_TLS_REJECT_UNAUTHORIZED",
+}
+
+# Prefix patterns forbidden in .env files
+BOOTSTRAP_PREFIXES: Tuple[str, ...] = ("DSH_", "XDG_", "DYLD_", "BASH_FUNC_")
+
+
+def is_bootstrap_only(name: str) -> bool:
+    """
+    Whether a variable may come ONLY from the inherited launch environment.
+    """
+    upper = name.upper()
+    if upper in BOOTSTRAP_NAMES:
+        return True
+    for prefix in BOOTSTRAP_PREFIXES:
+        if upper.startswith(prefix):
+            return True
+    return False
+
+
+def parse_dotenv(content: str) -> Dict[str, str]:
+    """
+    Parse dotenv formatted text safely into key-value pairs.
+    """
+    entries: Dict[str, str] = {}
+    for raw_line in content.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export ") and len(line) > 7:
+            line = line[7:].strip()
+
+        if "=" not in line:
+            continue
+
+        key, val = line.split("=", 1)
+        key = key.strip()
+        val = val.strip()
+
+        if not key:
+            continue
+
+        # Strip matching quotes if wrapped
+        if len(val) >= 2 and ((val[0] == '"' and val[-1] == '"') or (val[0] == "'" and val[-1] == "'")):
+            quote_char = val[0]
+            val = val[1:-1]
+            if quote_char == '"':
+                val = val.replace('\\"', '"').replace('\\n', '\n').replace('\\t', '\t').replace('\\\\', '\\')
+
+        entries[key] = val
+    return entries
+
+
+class LaunchEnvironmentEntry:
+    """A resolved environment variable entry with its origin source layer."""
+
+    def __init__(self, value: str, source: str, path: Optional[str] = None):
+        self.value = value
+        self.source = source  # 'process', 'project-env', 'user-env'
+        self.path = path
+
+    def to_dict(self) -> Dict[str, Any]:
+        res: Dict[str, Any] = {"value": self.value, "source": self.source}
+        if self.path is not None:
+            res["path"] = self.path
+        return res
+
+
+SOURCE_ORDER: List[str] = ["process", "project-env", "user-env"]
+
+
+class LaunchEnvironmentSnapshot:
+    """
+    Immutable snapshot of layered environment sources.
+    """
+
+    def __init__(self, layers: List[Dict[str, Any]]):
+        self._layers: Dict[str, Dict[str, str]] = {}
+        self._paths: Dict[str, str] = {}
+
+        for layer in layers:
+            src = layer["source"]
+            vals = layer["values"]
+            folded: Dict[str, str] = {}
+            for k, v in vals.items():
+                lookup_key = k.upper() if sys.platform == "win32" else k
+                folded[lookup_key] = v
+            self._layers[src] = folded
+            if "path" in layer and layer["path"]:
+                self._paths[src] = layer["path"]
+
+    def get_from(self, name: str, sources: Optional[List[str]] = None) -> Optional[LaunchEnvironmentEntry]:
+        lookup = name.upper() if sys.platform == "win32" else name
+        allowed = sources or SOURCE_ORDER
+        for src in SOURCE_ORDER:
+            if src not in allowed:
+                continue
+            if src in self._layers and lookup in self._layers[src]:
+                val = self._layers[src][lookup]
+                p = self._paths.get(src)
+                return LaunchEnvironmentEntry(value=val, source=src, path=p)
+        return None
+
+    def get(self, name: str) -> Optional[LaunchEnvironmentEntry]:
+        return self.get_from(name, SOURCE_ORDER)
+
+    def get_value(self, name: str, default: Optional[str] = None) -> Optional[str]:
+        entry = self.get(name)
+        return entry.value if entry else default
+
+
+def read_env_layer(bin_name: str, dir_path: str) -> Optional[Dict[str, Any]]:
+    """
+    Read and validate a single directory's .env file.
+    Rejects any file declaring bootstrap-only variable names.
+    """
+    env_file = os.path.join(dir_path, ".env")
+    if not os.path.isfile(env_file):
+        return None
+
+    try:
+        with open(env_file, "r", encoding="utf-8", errors="replace") as f:
+            content = f.read()
+    except Exception as e:
+        print(f"[{bin_name} Warning] Failed to read {env_file}: {e}", file=sys.stderr)
+        return None
+
+    values = parse_dotenv(content)
+    for name in values.keys():
+        if is_bootstrap_only(name):
+            raise ValueError(
+                f"{bin_name}: {env_file} sets \"{name}\", which only the launching environment may set "
+                f"(it decides how this process starts, where its code and instructions load from, or how it "
+                f"reaches the network); export {name} instead of putting it in a .env file"
+            )
+
+    return {"path": env_file, "values": values}
+
+
+def load_layered_env(
+    bin_name: str = "dsh",
+    cwd: Optional[str] = None,
+    custom_home: Optional[str] = None,
+) -> LaunchEnvironmentSnapshot:
+    """
+    Discover and load layered environment snapshot:
+    1. Process environment (os.environ)
+    2. Project directory (.env)
+    3. User home ($DSH_HOME/.env)
+    """
+    work_dir = os.path.abspath(cwd or os.getcwd())
+    home_dir = resolve_dsh_home(custom_home)
+
+    inherited = dict(os.environ)
+
+    # 1. Parse both project and user .env files first
+    project_layer = read_env_layer(bin_name, work_dir)
+    user_layer = None
+    if os.path.normcase(home_dir) != os.path.normcase(work_dir):
+        user_layer = read_env_layer(bin_name, home_dir)
+
+    # 2. Materialize non-bootstrap entries into os.environ if unset
+    for layer in (project_layer, user_layer):
+        if layer and "values" in layer:
+            for k, v in layer["values"].items():
+                if k not in os.environ:
+                    os.environ[k] = v
+
+    layers: List[Dict[str, Any]] = [{"source": "process", "values": inherited}]
+    if project_layer:
+        layers.append({"source": "project-env", "path": project_layer["path"], "values": project_layer["values"]})
+    if user_layer:
+        layers.append({"source": "user-env", "path": user_layer["path"], "values": user_layer["values"]})
+
+    return LaunchEnvironmentSnapshot(layers)

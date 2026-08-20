@@ -1,6 +1,6 @@
 from typing import Any, Dict, Optional
 from dsh.cordis.plugin import Plugin
-from dsh.services.llm import LLMService
+from dsh.llm.llm_service import LLMService
 
 
 class LLMOpenAIPlugin(Plugin):

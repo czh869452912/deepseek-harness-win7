@@ -40,9 +40,6 @@ class SkillDefinition:
         self.rank = rank
 
     def render_content(self) -> str:
-        """
-        Render canonical model-facing <skill_content> block.
-        """
         lines = [f'<skill_content name="{self.name}">', '<skill_resources>']
         if self.resource_base:
             lines.append(f'Base directory for this skill: {self.resource_base}')
@@ -63,9 +60,6 @@ class SkillDefinition:
 
 
 def parse_skill_file(filepath: str, default_name: str, provider: str = "filesystem", rank: int = 100) -> Optional[SkillDefinition]:
-    """
-    Parse a SKILL.md file with YAML frontmatter metadata.
-    """
     if not os.path.exists(filepath):
         return None
 
@@ -76,7 +70,6 @@ def parse_skill_file(filepath: str, default_name: str, provider: str = "filesyst
         frontmatter = {}
         content = raw_text
 
-        # Parse YAML frontmatter --- ... ---
         if raw_text.startswith("---"):
             parts = raw_text.split("---", 2)
             if len(parts) >= 3:
@@ -123,25 +116,18 @@ class SkillService:
         self._providers: List[Any] = []
 
     def register_skill(self, skill: SkillDefinition) -> None:
-        """
-        Manually register a SkillDefinition.
-        """
         self._registered_skills[skill.name] = skill
 
     def add_provider(self, provider: Any) -> None:
         self._providers.append(provider)
 
     def list_skills(self, cwd: Optional[str] = None) -> List[SkillDefinition]:
-        """
-        Gather all available skill definitions from providers and manual registrations, deduplicated by rank.
-        """
         skill_map: Dict[str, SkillDefinition] = dict(self._registered_skills)
 
         for provider in self._providers:
             if hasattr(provider, "discover_skills"):
                 discovered = provider.discover_skills(cwd=cwd)
                 for s in discovered:
-                    # Higher precedence (lower rank number) wins
                     if s.name not in skill_map or s.rank < skill_map[s.name].rank:
                         skill_map[s.name] = s
 

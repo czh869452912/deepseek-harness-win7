@@ -2,10 +2,10 @@ import os
 import tempfile
 import pytest
 from dsh.cordis.context import Context
-from dsh.plugins.skill_filesystem import SkillFilesystemPlugin
-from dsh.plugins.tool_skill import ToolSkillPlugin
-from dsh.services.skills import parse_skill_file, SkillDefinition, SkillService
-from dsh.services.tools import ToolsService
+from dsh.core.tools import ToolsService
+from dsh.skill.skill_filesystem import SkillFilesystemPlugin
+from dsh.skill.skill_service import parse_skill_file, SkillDefinition, SkillService
+from dsh.skill.tool_skill import ToolSkillPlugin
 
 
 def test_parse_skill_file():
@@ -44,7 +44,6 @@ async def test_skill_filesystem_and_tool_plugin():
         with open(skill_md, "w", encoding="utf-8") as f:
             f.write("---\nname: sample-skill\ndescription: Sample skill for pytest\n---\nSample Instructions")
 
-        # Plugin setup
         ctx.plugin(SkillFilesystemPlugin, config={"customSkillDirs": [os.path.join(tmpdir, "skills")]})
         tool_skill = ctx.plugin(ToolSkillPlugin)
 
@@ -53,17 +52,14 @@ async def test_skill_filesystem_and_tool_plugin():
         found_names = [s.name for s in skills]
         assert "sample-skill" in found_names
 
-        # Test prompt assembly hook
         assembled = tool_skill.on_prompt_assemble("Base Prompt")
         assert "<available_skills>" in assembled
         assert "- sample-skill: Sample skill for pytest" in assembled
 
-        # Test loading skill via tool
         tool_res = tool_skill.handle_load_skill("sample-skill", ctx=ctx)
         assert '<skill_content name="sample-skill">' in tool_res
         assert "Sample Instructions" in tool_res
 
-        # Test slash command injection hook
         payload = {
             "messages": [
                 {"role": "user", "content": "/sample-skill Please follow this skill"}

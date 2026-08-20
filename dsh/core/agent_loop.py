@@ -1,6 +1,9 @@
 import asyncio
 import uuid
 from typing import Any, Dict, List, Optional
+from dsh.cordis.plugin import Plugin
+from dsh.core.session import SessionService
+from dsh.core.tools import ToolsService
 
 
 class AgentLoopService:
@@ -112,4 +115,27 @@ class AgentLoopService:
         # Event: agent/turn-stopping & turn/end
         await self.ctx.serial("agent/turn-stopping")
         self.ctx.emit("turn/end", final_response)
+        
+        if session_service:
+            await session_service.flush()
+
         return final_response
+
+
+class AgentLoopPlugin(Plugin):
+    """
+    Plugin `@deepseek-ai/dsh-agent-loop`: Core agent loop & session services.
+    """
+
+    id = "agent-loop"
+    name = "@deepseek-ai/dsh-agent-loop"
+
+    def apply(self, ctx: Any) -> None:
+        if not ctx.has("tools"):
+            ctx.set_service("tools", ToolsService(ctx))
+
+        if not ctx.has("sessions"):
+            ctx.set_service("sessions", SessionService(ctx=ctx))
+
+        agent_loop = AgentLoopService(ctx)
+        ctx.set_service("agent_loop", agent_loop)

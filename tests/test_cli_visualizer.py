@@ -2,8 +2,8 @@ import io
 import sys
 import pytest
 from dsh.cordis.context import Context
-from dsh.plugins.cli_visualizer import CliVisualizerPlugin
-from dsh.services.tools import ToolsService
+from dsh.core.tools import ToolsService
+from dsh.extensions.cli_visualizer import CliVisualizerPlugin
 
 
 @pytest.mark.asyncio
@@ -12,7 +12,6 @@ async def test_cli_visualizer_plugin_events():
     ctx.set_service("tools", ToolsService(ctx))
     ctx.plugin(CliVisualizerPlugin, config={"verbose": True})
 
-    # Capture stdout
     captured_output = io.StringIO()
     old_stdout = sys.stdout
     sys.stdout = captured_output

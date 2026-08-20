@@ -3,21 +3,29 @@ from typing import Any, Dict, List, Optional
 
 class SessionService:
     """
-    Session event log service registered at `ctx.sessions`.
-    Maintains append-only session events and projects model history.
+    Event-Sourced Session Service mounted at `ctx.sessions`.
+    Maintains append-only session log and projects LLM message history.
+    Emits `session/event` and `session/flush` Cordis lifecycle events.
     """
 
-    def __init__(self, session_id: str = "default-session"):
+    def __init__(self, session_id: str = "default-session", ctx: Optional[Any] = None):
         self.session_id = session_id
+        self.ctx = ctx
         self.events: List[Dict[str, Any]] = []
 
     def append_event(self, event_type: str, data: Dict[str, Any]) -> Dict[str, Any]:
+        seq = len(self.events) + 1
         event = {
+            "seq": seq,
             "type": event_type,
             "session_id": self.session_id,
             "data": data
         }
         self.events.append(event)
+
+        if self.ctx:
+            self.ctx.emit("session/event", self, event)
+
         return event
 
     def append_user_message(self, text: str) -> None:
@@ -33,9 +41,13 @@ class SessionService:
             "result": result
         })
 
+    async def flush(self) -> None:
+        if self.ctx:
+            await self.ctx.parallel("session/flush", self)
+
     def derive_messages(self, system_prompt: Optional[str] = None) -> List[Dict[str, Any]]:
         """
-        Derive messages list for LLM API call from session event history.
+        Derive messages array for LLM API call from append-only session log.
         """
         messages: List[Dict[str, Any]] = []
 

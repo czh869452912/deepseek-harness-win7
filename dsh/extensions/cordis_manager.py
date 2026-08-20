@@ -1,7 +1,6 @@
 import json
 from typing import Any, Dict, List, Optional
 import yaml
-
 from dsh.cordis.plugin import Plugin
 
 
@@ -20,7 +19,6 @@ class CordisManagerPlugin(Plugin):
         if not tools_service:
             return
 
-        # Register Cordis inspection & management tools
         tools_service.register(
             name="cordis_list_plugins",
             description="List all active plugins loaded in the current Cordis context.",
@@ -55,7 +53,6 @@ class CordisManagerPlugin(Plugin):
             handler=self.handle_dump_config
         )
 
-        # Hook into prompt assembly to add Cordis guidance prompt
         ctx.on("agent/prompt-assemble", self.on_prompt_assemble)
 
     def on_prompt_assemble(self, prompt: str, next_fn: Any = None) -> str:

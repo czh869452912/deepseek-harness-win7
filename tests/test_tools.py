@@ -2,10 +2,10 @@ import os
 import tempfile
 import pytest
 from dsh.cordis.context import Context
-from dsh.plugins.fs_local import FsLocalPlugin
-from dsh.plugins.tool_pwsh_persistent import ToolPwshPersistentPlugin
-from dsh.plugins.tool_str_replace_editor import StrReplaceEditorPlugin
-from dsh.services.tools import ToolsService
+from dsh.core.tools import ToolsService
+from dsh.fs.fs_local import FsLocalPlugin
+from dsh.fs.tool_str_replace_editor import StrReplaceEditorPlugin
+from dsh.shell.tool_pwsh_persistent import ToolPwshPersistentPlugin
 
 
 @pytest.fixture

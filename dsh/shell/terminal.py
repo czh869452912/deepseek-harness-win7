@@ -24,7 +24,6 @@ class PersistentTerminal:
         Execute command synchronously with timeout and cwd preservation.
         """
         if self.shell_type == "powershell":
-            # Wrap powershell command to capture outputs and updated CWD
             cmd = ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", command]
         elif self.shell_type == "cmd":
             cmd = ["cmd.exe", "/c", command]

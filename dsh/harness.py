@@ -4,18 +4,18 @@ import yaml
 
 from dsh.cordis.context import Context
 from dsh.cordis.loader import PresetLoader
-from dsh.plugins.agent_loop_plugin import AgentLoopPlugin
-from dsh.plugins.cli_visualizer import CliVisualizerPlugin
-from dsh.plugins.cordis_manager import CordisManagerPlugin
-from dsh.plugins.credentials_local import CredentialsLocalPlugin
-from dsh.plugins.fs_local import FsLocalPlugin
-from dsh.plugins.llm_openai import LLMOpenAIPlugin
-from dsh.plugins.persona import PersonaPlugin
-from dsh.plugins.settings_file import SettingsFilePlugin
-from dsh.plugins.skill_filesystem import SkillFilesystemPlugin
-from dsh.plugins.tool_pwsh_persistent import ToolPwshPersistentPlugin
-from dsh.plugins.tool_skill import ToolSkillPlugin
-from dsh.plugins.tool_str_replace_editor import StrReplaceEditorPlugin
+from dsh.core.agent_loop import AgentLoopPlugin
+from dsh.core.persona import PersonaPlugin
+from dsh.credentials.credentials_local import CredentialsLocalPlugin
+from dsh.extensions.cli_visualizer import CliVisualizerPlugin
+from dsh.extensions.cordis_manager import CordisManagerPlugin
+from dsh.fs.fs_local import FsLocalPlugin
+from dsh.fs.tool_str_replace_editor import StrReplaceEditorPlugin
+from dsh.llm.llm_openai import LLMOpenAIPlugin
+from dsh.settings.settings_file import SettingsFilePlugin
+from dsh.shell.tool_pwsh_persistent import ToolPwshPersistentPlugin
+from dsh.skill.skill_filesystem import SkillFilesystemPlugin
+from dsh.skill.tool_skill import ToolSkillPlugin
 
 
 def build_harness(

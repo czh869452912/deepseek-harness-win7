@@ -1,6 +1,7 @@
 import os
 import pathlib
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
+from dsh.cordis.plugin import Plugin
 
 
 class FsService:
@@ -13,9 +14,6 @@ class FsService:
         self.cwd = os.path.abspath(cwd or os.getcwd())
 
     def resolve_path(self, path_str: str) -> str:
-        """
-        Resolve path string into absolute path.
-        """
         p = pathlib.Path(path_str)
         if not p.is_absolute():
             p = pathlib.Path(self.cwd) / p
@@ -62,3 +60,17 @@ class FsService:
         except PermissionError:
             pass
         return results
+
+
+class FsLocalPlugin(Plugin):
+    """
+    Plugin `@deepseek-ai/dsh-fs-local`: Mounts local filesystem service (`ctx.fs`).
+    """
+
+    id = "fs-local"
+    name = "@deepseek-ai/dsh-fs-local"
+
+    def apply(self, ctx: Any) -> None:
+        cwd = self.config.get("cwd")
+        fs_service = FsService(cwd=cwd)
+        ctx.set_service("fs", fs_service)

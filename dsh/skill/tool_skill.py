@@ -40,10 +40,7 @@ class ToolSkillPlugin(Plugin):
             handler=self.handle_load_skill
         )
 
-        # Hook into prompt assembly to add <available_skills> catalog
         ctx.on("agent/prompt-assemble", self.on_prompt_assemble)
-
-        # Hook into pre-step to handle slash command /<skill-name> invocations
         ctx.on("agent/pre-step", self.on_pre_step)
 
     def handle_load_skill(self, name: str, ctx: Optional[Any] = None) -> str:
@@ -83,14 +80,10 @@ class ToolSkillPlugin(Plugin):
         return prompt + "\n".join(catalog_lines)
 
     async def on_pre_step(self, payload: Dict[str, Any], next_fn: Any = None) -> Dict[str, Any]:
-        """
-        Check if user message starts with /<skill-name>. If so, load and append skill content into context.
-        """
         messages = payload.get("messages", [])
         if not messages:
             return payload
 
-        # Check last user message
         last_user_msg = None
         for msg in reversed(messages):
             if msg.get("role") == "user":
@@ -105,9 +98,7 @@ class ToolSkillPlugin(Plugin):
                 if skills_service:
                     skill = skills_service.get_skill(first_token)
                     if skill and skill.user_invocable:
-                        # Append rendered skill instructions as system/user context
                         skill_content = skill.render_content()
-                        # Append context to user message or inject instructions
                         last_user_msg["content"] += f"\n\n[Injected Skill Instructions]\n{skill_content}"
 
         return payload

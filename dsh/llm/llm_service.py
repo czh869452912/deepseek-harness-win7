@@ -27,13 +27,6 @@ class LLMService:
         self.api_key_env = api_key_env
 
     def resolve_api_key(self) -> str:
-        """
-        Dynamic Per-Request resolution for API Key:
-        1. Static configured key (if passed explicitly)
-        2. Credentials service (ctx.credentials)
-        3. Settings service (ctx.settings)
-        4. Environment variables (DEEPSEEK_API_KEY, OPENAI_API_KEY)
-        """
         if self.static_api_key:
             return self.static_api_key
 
@@ -49,7 +42,6 @@ class LLMService:
             if val:
                 return val
 
-        # Environment variable fallback
         env_key = (
             os.environ.get(self.api_key_env)
             or os.environ.get("DEEPSEEK_API_KEY")
@@ -64,13 +56,6 @@ class LLMService:
         )
 
     def resolve_base_url(self) -> str:
-        """
-        Dynamic Per-Request resolution for Base URL:
-        1. Static configured base_url (if passed explicitly)
-        2. Settings service (ctx.settings)
-        3. Environment variables (DEEPSEEK_BASE_URL, OPENAI_BASE_URL)
-        4. Public default URL (https://api.deepseek.com)
-        """
         if self.static_base_url:
             return self.static_base_url.rstrip("/")
 
@@ -90,14 +75,6 @@ class LLMService:
         return "https://api.deepseek.com"
 
     def resolve_model(self, req_model: Optional[str] = None) -> str:
-        """
-        Dynamic Per-Request resolution for Model Name:
-        1. Request-specific model parameter
-        2. Static configured model
-        3. Settings service (ctx.settings)
-        4. Environment variables (DEEPSEEK_MODEL, OPENAI_MODEL)
-        5. Default model ('deepseek-chat')
-        """
         if req_model:
             return req_model
 
@@ -126,9 +103,6 @@ class LLMService:
         model: Optional[str] = None,
         temperature: float = 0.0
     ) -> Dict[str, Any]:
-        """
-        Send a chat completion request to the LLM API using dynamic connection facts.
-        """
         api_key = self.resolve_api_key()
         base_url = self.resolve_base_url()
         selected_model = self.resolve_model(model)

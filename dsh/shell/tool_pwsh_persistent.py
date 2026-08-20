@@ -1,6 +1,6 @@
 from typing import Any, Dict, Optional
 from dsh.cordis.plugin import Plugin
-from dsh.services.terminal import TerminalService
+from dsh.shell.terminal import TerminalService
 
 
 class ToolPwshPersistentPlugin(Plugin):
@@ -18,7 +18,6 @@ class ToolPwshPersistentPlugin(Plugin):
             print("[ToolPwshPersistentPlugin Warning] tools service unavailable")
             return
 
-        # Ensure terminal service is mounted
         if not ctx.has("terminal"):
             ctx.set_service("terminal", TerminalService())
 

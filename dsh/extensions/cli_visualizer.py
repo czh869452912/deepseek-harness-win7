@@ -36,7 +36,7 @@ class CliVisualizerPlugin(Plugin):
         sys.stdout.write(f"\n🔹 [Step {step_num}]\n")
         sys.stdout.flush()
 
-    def on_tool_pre_execute(self, payload: Dict[str, Any], next_fn: Any = None) -> Dict[str, Any]:
+    def on_tool_pre_execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         if self.show_tools:
             name = payload.get("name", "unknown")
             args = payload.get("arguments", {})
@@ -47,7 +47,7 @@ class CliVisualizerPlugin(Plugin):
             sys.stdout.flush()
         return payload
 
-    def on_tool_post_execute(self, payload: Dict[str, Any], next_fn: Any = None) -> Dict[str, Any]:
+    def on_tool_post_execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         if self.show_tools:
             name = payload.get("name", "unknown")
             err = payload.get("error")

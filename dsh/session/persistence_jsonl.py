@@ -281,9 +281,16 @@ class JsonlSessionPersistencePlugin(Plugin):
     id = "session-persistence-jsonl"
     name = "@deepseek-ai/dsh-session-persistence-jsonl"
 
-    def __init__(self, root: str = ".dsh/sessions", pack_chunks: bool = True):
-        self.root = root
-        self.pack_chunks = pack_chunks
+    def __init__(
+        self,
+        config: Optional[Dict[str, Any]] = None,
+        root: str = ".dsh/sessions",
+        pack_chunks: bool = True,
+    ):
+        super().__init__(config)
+        cfg = self.config or {}
+        self.root = str(cfg.get("root", root))
+        self.pack_chunks = bool(cfg.get("packChunks", cfg.get("pack_chunks", pack_chunks)))
 
     def apply(self, ctx: Any) -> None:
         persistence = JsonlSessionPersistence(root=self.root, pack_chunks=self.pack_chunks, ctx=ctx)

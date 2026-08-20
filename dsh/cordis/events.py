@@ -121,9 +121,13 @@ class EventBus:
                 return await run_pipeline(index + 1, payload)
 
             sig = inspect.signature(listener)
-            params = list(sig.parameters.keys())
+            param_names = [
+                p.name for p in sig.parameters.values()
+                if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+            ]
+            has_next = "next_fn" in param_names or "next" in param_names
 
-            if len(params) >= len(args) + 2:
+            if has_next:
                 res = listener(current_data, *args, next_fn, **kwargs)
             else:
                 res = listener(current_data, *args, **kwargs)

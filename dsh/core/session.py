@@ -365,7 +365,7 @@ class SessionStore:
             self._sessions.pop(sid, None)
 
         if self.ctx:
-            self.ctx.effect(lambda: disposer)
+            self.ctx.effect(disposer)
             self.ctx.emit("session/created", session)
 
         return disposer

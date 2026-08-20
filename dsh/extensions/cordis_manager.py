@@ -55,7 +55,7 @@ class CordisManagerPlugin(Plugin):
 
         ctx.on("agent/prompt-assemble", self.on_prompt_assemble)
 
-    def on_prompt_assemble(self, prompt: str, next_fn: Any = None) -> str:
+    def on_prompt_assemble(self, prompt: str) -> str:
         cordis_prompt = (
             "\n\n[Creative Mode / Cordis Architecture Active]\n"
             "You are running in Creative Mode (创造模式) powered by Cordis 'Everything is a Plugin' architecture.\n"

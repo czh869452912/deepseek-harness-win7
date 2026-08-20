@@ -64,14 +64,21 @@ class ToolTodoPlugin(Plugin):
                 return f"Error: invalid todos: at most one task may be in_progress (got {in_progress_count})"
 
             # Append todo/write event to session
-            sessions_svc = ctx.get("sessions")
             target_session = None
-            if isinstance(sessions_svc, SessionStore):
-                target_session = sessions_svc.get("default-session")
-                if not target_session and sessions_svc._sessions:
-                    target_session = next(iter(sessions_svc._sessions.values()))
-            elif isinstance(sessions_svc, Session):
-                target_session = sessions_svc
+            agents_svc = ctx.get("agents")
+            if agents_svc and hasattr(agents_svc, "current_initiator"):
+                initiator = agents_svc.current_initiator()
+                if initiator and hasattr(initiator, "session"):
+                    target_session = initiator.session
+
+            if not target_session:
+                sessions_svc = ctx.get("sessions")
+                if isinstance(sessions_svc, SessionStore):
+                    target_session = sessions_svc.get("default-session")
+                    if not target_session and sessions_svc._sessions:
+                        target_session = next(iter(sessions_svc._sessions.values()))
+                elif isinstance(sessions_svc, Session):
+                    target_session = sessions_svc
 
             if target_session:
                 target_session.append("todo/write", {"todos": todos}, ignorable=True)

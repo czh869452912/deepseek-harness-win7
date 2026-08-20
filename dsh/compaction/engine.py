@@ -118,12 +118,15 @@ class BasicCompactionEngine(CompactionEngine):
 
     async def _on_pre_step(self, request_payload: Dict[str, Any]) -> Dict[str, Any]:
         """Hook into agent pre-step to perform pressure compaction if needed."""
-        session = self.ctx.get("sessions")
+        agent = request_payload.get("agent")
+        session = self._resolve_session(agent)
         if session:
             try:
-                await self.compact_if_needed(agent=None, trigger="pressure")
+                res = await self.compact_if_needed(agent=agent, trigger="pressure")
+                if res and hasattr(session, "derive_messages"):
+                    request_payload["messages"] = session.derive_messages()
             except Exception as e:
-                if self.ctx.logger:
+                if self.ctx and hasattr(self.ctx, "logger") and self.ctx.logger:
                     self.ctx.logger.warn("automatic compaction failed: %s", str(e))
         return request_payload
 

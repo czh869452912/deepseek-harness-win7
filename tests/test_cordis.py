@@ -46,6 +46,18 @@ async def test_event_bus_modes():
     res = await ctx.waterfall("test/waterfall", "init")
     assert res == "init_m1_m2_m1_end"
 
+    # 2b. Waterfall with simple transformer (no next_fn parameter)
+    def transformer1(data):
+        return data + "-t1"
+
+    async def transformer2(data):
+        return data + "-t2"
+
+    ctx.on("test/transform", transformer1)
+    ctx.on("test/transform", transformer2)
+    t_res = await ctx.waterfall("test/transform", "start")
+    assert t_res == "start-t1-t2"
+
     # 3. Parallel
     async def p1():
         await asyncio.sleep(0.01)

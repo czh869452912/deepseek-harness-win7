@@ -70,6 +70,7 @@ class ToolsService:
 
         if hasattr(self.ctx, 'effect'):
             self.ctx.effect(disposer)
+        return disposer
 
     def register_tool(self, tool_def: Dict[str, Any]) -> Callable[[], None]:
         """

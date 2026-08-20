@@ -46,3 +46,21 @@ def test_pwsh_persistent_plugin(ctx_with_tools):
 
     res = plugin.handle_pwsh("echo 'Hello Win7 Harness'", ctx=ctx)
     assert "Hello Win7 Harness" in res
+
+
+def test_tool_registration_disposer(ctx_with_tools):
+    ctx = ctx_with_tools
+    tools = ctx.get("tools")
+    
+    disposer = tools.register(
+        name="custom_tool",
+        description="Custom tool description",
+        parameters={"type": "object", "properties": {}},
+        handler=lambda: "ok"
+    )
+    assert callable(disposer)
+    assert tools.get_tool("custom_tool") is not None
+
+    # Call disposer
+    disposer()
+    assert tools.get_tool("custom_tool") is None

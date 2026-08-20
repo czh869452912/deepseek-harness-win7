@@ -58,7 +58,7 @@ class ToolSkillPlugin(Plugin):
 
         return skill.render_content()
 
-    def on_prompt_assemble(self, prompt: str, next_fn: Any = None) -> str:
+    def on_prompt_assemble(self, prompt: str) -> str:
         skills_service = self.ctx.get("skills")
         if not skills_service:
             return prompt
@@ -79,7 +79,7 @@ class ToolSkillPlugin(Plugin):
 
         return prompt + "\n".join(catalog_lines)
 
-    async def on_pre_step(self, payload: Dict[str, Any], next_fn: Any = None) -> Dict[str, Any]:
+    async def on_pre_step(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         messages = payload.get("messages", [])
         if not messages:
             return payload

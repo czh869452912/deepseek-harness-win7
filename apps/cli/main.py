@@ -20,9 +20,9 @@ def parse_args():
     )
     parser.add_argument(
         "-m", "--mode",
-        choices=["minimal", "creative", "极简模式", "创造模式"],
-        default="minimal",
-        help="Agent preset mode: minimal (极简模式) or creative (创造模式)"
+        choices=["minimal", "standard", "creative", "极简模式", "标准模式", "创造模式"],
+        default="standard",
+        help="Agent preset mode: standard (标准模式), minimal (极简模式), or creative (创造模式)"
     )
     parser.add_argument(
         "--api-key",

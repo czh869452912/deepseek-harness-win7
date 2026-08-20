@@ -1,17 +1,10 @@
-# Creative Mode (创造模式 / Cordis Preset)
-# Full engineering suite, dual-plane self-modification persona, compaction, todo, ask_user, search, and skills.
+# Standard Mode (标准模式 / Standard Preset)
+# Full coding agent composition: engineering suite, standard persona, plan mode, goal mode, compaction, todo, ask_user, search, and skills.
 
 - id: persona
   name: "@deepseek-ai/dsh-persona"
   config:
-    text: |-
-      You are a coding agent powered by the {{model}} model, running on the DeepSeek Harness. Your working directory is {{cwd}}.
-
-      You can read and modify the harness you run on. Its composition is Cordis: every capability is a plugin row in a preset YAML, and an agent preset is mounted for a single session.
-
-      Two planes decide where an edit belongs. The HOST composition holds the registries and anything shared across sessions — persistence, the settings, the model route. An AGENT PRESET holds what one session contributes to those registries: its tools, its persona, its prompt sections.
-
-      Load the `editing-cordis-compositions` skill before writing or changing a composition.
+    text: "You are a coding agent powered by the {{model}} model. Your working directory is {{cwd}}."
 
 - id: agent-instructions
   name: "@deepseek-ai/dsh-agent-instructions"
@@ -56,6 +49,12 @@
   config:
     allowParallelInProgress: true
 
+- id: plan-mode
+  name: "@deepseek-ai/dsh-plan-mode"
+
+- id: tool-goal
+  name: "@deepseek-ai/dsh-tool-goal"
+
 - id: compaction-basic
   name: "@deepseek-ai/dsh-compaction-basic"
 
@@ -66,19 +65,8 @@
     headChars: 4096
     tailChars: 1024
 
-- id: cordis-manager
-  name: "@deepseek-ai/dsh-cordis-manager"
-  config:
-    enable_inspection: true
-
 - id: skill-filesystem
   name: "@deepseek-ai/dsh-skill-filesystem"
 
 - id: tool-skill
   name: "@deepseek-ai/dsh-tool-skill"
-
-- id: plan-mode
-  name: "@deepseek-ai/dsh-plan-mode"
-
-- id: tool-goal
-  name: "@deepseek-ai/dsh-tool-goal"

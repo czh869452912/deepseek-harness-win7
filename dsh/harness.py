@@ -27,10 +27,11 @@ from dsh.skill.skill_filesystem import SkillFilesystemPlugin
 from dsh.skill.tool_skill import ToolSkillPlugin
 from dsh.todo.tool_todo import ToolTodoPlugin
 from dsh.plan.plan_mode import PlanModePlugin
+from dsh.goal.tool_goal import ToolGoalPlugin
 
 
 def build_harness(
-    mode: str = "minimal",
+    mode: str = "standard",
     api_key: Optional[str] = None,
     base_url: Optional[str] = None,
     model: Optional[str] = None,
@@ -81,19 +82,22 @@ def build_harness(
     loader.register_plugin_class("@deepseek-ai/dsh-compaction-tool-result-pruner", ToolResultPrunerPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-compaction-basic", BasicCompactionPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-plan-mode", PlanModePlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-tool-goal", ToolGoalPlugin)
 
     # Determine preset file
     presets_dir = os.path.join(os.path.dirname(__file__), "presets")
     if mode in ("minimal", "极简模式"):
         preset_path = os.path.join(presets_dir, "minimal.yaml")
+    elif mode in ("standard", "标准模式"):
+        preset_path = os.path.join(presets_dir, "standard.yaml")
     elif mode in ("creative", "cordis", "创造模式"):
         preset_path = os.path.join(presets_dir, "creative.yaml")
     else:
-        # Assume custom filepath or default to minimal
+        # Assume custom filepath or default to standard
         if os.path.exists(mode):
             preset_path = mode
         else:
-            preset_path = os.path.join(presets_dir, "minimal.yaml")
+            preset_path = os.path.join(presets_dir, "standard.yaml")
 
     loader.load_preset_file(preset_path, ctx)
 

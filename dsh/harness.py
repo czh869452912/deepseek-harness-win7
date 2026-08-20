@@ -12,6 +12,10 @@ from dsh.extensions.cordis_manager import CordisManagerPlugin
 from dsh.fs.fs_local import FsLocalPlugin
 from dsh.fs.tool_str_replace_editor import StrReplaceEditorPlugin
 from dsh.llm.llm_openai import LLMOpenAIPlugin
+from dsh.llm.token_meter import TokenMeterPlugin
+from dsh.session.persistence_jsonl import JsonlSessionPersistencePlugin
+from dsh.compaction.pruner import ToolResultPrunerPlugin
+from dsh.compaction.engine import BasicCompactionPlugin
 from dsh.settings.settings_file import SettingsFilePlugin
 from dsh.shell.tool_pwsh_persistent import ToolPwshPersistentPlugin
 from dsh.skill.skill_filesystem import SkillFilesystemPlugin
@@ -24,7 +28,7 @@ def build_harness(
     base_url: Optional[str] = None,
     model: Optional[str] = None,
     patch_file: Optional[str] = None,
-    verbose: bool = True
+    verbose: bool = True,
 ) -> Context:
     """
     Build and initialize a DeepSeek Harness Context with requested preset mode.
@@ -34,6 +38,7 @@ def build_harness(
     # Mount base infrastructure plugins
     ctx.plugin(CredentialsLocalPlugin)
     ctx.plugin(SettingsFilePlugin)
+    ctx.plugin(TokenMeterPlugin)
     ctx.plugin(AgentLoopPlugin)
 
     if verbose:
@@ -42,7 +47,7 @@ def build_harness(
     ctx.plugin(LLMOpenAIPlugin, config={
         "api_key": api_key,
         "base_url": base_url,
-        "model": model
+        "model": model,
     })
 
     # Setup preset loader & register available plugins
@@ -57,6 +62,10 @@ def build_harness(
     loader.register_plugin_class("@deepseek-ai/dsh-credentials-local", CredentialsLocalPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-settings-file", SettingsFilePlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-cli-visualizer", CliVisualizerPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-token-meter", TokenMeterPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-session-persistence-jsonl", JsonlSessionPersistencePlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-compaction-tool-result-pruner", ToolResultPrunerPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-compaction-basic", BasicCompactionPlugin)
 
     # Determine preset file
     presets_dir = os.path.join(os.path.dirname(__file__), "presets")

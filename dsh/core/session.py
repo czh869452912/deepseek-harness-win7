@@ -225,6 +225,7 @@ class Session:
         result: str,
         turn: Optional[int] = None,
         step: Optional[int] = None,
+        timing: Optional[Dict[str, Any]] = None,
         surface_op: Optional[Union[str, Dict[str, Any]]] = None,
         source_event_seqs: Optional[List[int]] = None,
     ) -> Dict[str, Any]:
@@ -243,6 +244,8 @@ class Session:
             data["turn"] = turn
         if step is not None:
             data["step"] = step
+        if timing is not None:
+            data["timing"] = timing
         return self.append(
             "tool/result",
             data,

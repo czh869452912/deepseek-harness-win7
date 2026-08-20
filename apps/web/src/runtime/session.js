@@ -1,22 +1,25 @@
 /**
  * DeepSeek Harness Client Session (`@deepseek-ai/dsh-client-runtime/sessions/session`)
- * Owns a session's event log window, streaming partial state, and observable snapshot.
+ * Owns a session's event log window, streaming partial state, trajectory view models, and observable snapshot.
  */
 
 import { Notifier } from "./notifier.js";
 import { PartialAccumulator, isVisibleAssistantChunk } from "./partial.js";
+import { TrajectorySnapshotBuilder } from "./trajectory_builder.js";
+import { deriveTrajectoryLayout } from "./trajectory_layout.js";
 
 export class Session {
   constructor(sessionId, options = {}) {
     this.id = sessionId;
     this.options = options;
     this.events = [];
-    this.views = [];
+    this.views = new Map();
     this.openState = "cold"; // 'cold' | 'loading' | 'open' | 'error'
     this.running = false;
 
     this.notifier = new Notifier();
     this.partialAccumulator = new PartialAccumulator(1, 1);
+    this.trajectoryBuilder = new TrajectorySnapshotBuilder();
   }
 
   subscribe(listener) {
@@ -24,13 +27,25 @@ export class Session {
   }
 
   getSnapshot() {
+    const partial = this.partialAccumulator.toPartial();
+    const trajSnapshot = this.trajectoryBuilder.snapshot(partial, []);
+    const trajectoryLayout = deriveTrajectoryLayout({
+      nodes: this.events,
+      requests: trajSnapshot.requests,
+      callSchemas: trajSnapshot.callSchemas,
+      runningCalls: trajSnapshot.runningCalls,
+      partial,
+    });
+
     return {
       id: this.id,
       events: this.events,
       views: this.views,
+      trajectorySnapshot: trajSnapshot,
+      trajectoryLayout,
       openState: this.openState,
       running: this.running,
-      partial: this.partialAccumulator.toPartial(),
+      partial,
       hasEvents: this.events.length > 0,
     };
   }
@@ -39,6 +54,7 @@ export class Session {
     this.events = [...events];
     this.openState = "open";
     this.partialAccumulator.clear();
+    this.trajectoryBuilder.replace(events);
     this.notifier.markDirty();
   }
 
@@ -58,7 +74,10 @@ export class Session {
   acceptLiveEvent(event, view = null) {
     if (!event) return;
     this.events.push(event);
-    if (view) this.views.push(view);
+    if (view) {
+      this.views.set(event.seq || this.events.length, view);
+    }
+    this.trajectoryBuilder.apply([event]);
 
     const type = event.type;
     if (type === "turn/end" || type === "assistant/message") {

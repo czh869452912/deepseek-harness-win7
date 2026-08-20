@@ -89,6 +89,21 @@ class WebApplication {
     const rootEl = document.getElementById("app") || document.body;
     this.ctx.slots.renderSlot("root", {}, rootEl);
 
+    // Global tab switcher bridge for slot updates
+    window._dshSwitchTab = (tab) => {
+      if (tab === "trajectory") {
+        const trajOutlet = document.querySelector("#slot-outlet-trajectory");
+        if (trajOutlet) {
+          slotRenderer.renderSlot("trajectory", {}, trajOutlet);
+        }
+      } else if (tab === "chat") {
+        const convOutlet = document.querySelector("#slot-outlet-conversation");
+        if (convOutlet) {
+          slotRenderer.renderSlot("conversation", {}, convOutlet);
+        }
+      }
+    };
+
     // 6. Subscribe to session changes for reactive UI updates
     sessionManager.subscribe(() => {
       // Trigger update on conversation & trajectory slot outlets

@@ -98,6 +98,9 @@ class NavComponent {
       tabTraj.classList.remove("active");
       if (convOutlet) convOutlet.classList.remove("hidden");
       if (trajOutlet) trajOutlet.classList.add("hidden");
+      if (typeof window._dshSwitchTab === "function") {
+        window._dshSwitchTab("chat");
+      }
     });
 
     tabTraj.addEventListener("click", () => {
@@ -105,6 +108,9 @@ class NavComponent {
       tabChat.classList.remove("active");
       if (convOutlet) convOutlet.classList.add("hidden");
       if (trajOutlet) trajOutlet.classList.remove("hidden");
+      if (typeof window._dshSwitchTab === "function") {
+        window._dshSwitchTab("trajectory");
+      }
     });
 
     // Plan Mode Toggle

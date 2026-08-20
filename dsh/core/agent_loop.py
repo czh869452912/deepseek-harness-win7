@@ -6,6 +6,7 @@ and request error recovery.
 
 import asyncio
 import json
+import time
 import uuid
 from typing import Any, Callable, Dict, List, Optional, Union
 from dsh.cordis.context import Context
@@ -302,10 +303,12 @@ class AgentLoopService:
                 except Exception:
                     args = {}
 
+                tool_start = time.time()
                 if tools_service:
                     result = await tools_service.execute_tool(name, args)
                 else:
                     result = "Error: Tools service unavailable"
+                tool_duration_ms = (time.time() - tool_start) * 1000
 
                 session.append_tool_result(
                     tool_call_id=call_id,
@@ -313,6 +316,10 @@ class AgentLoopService:
                     result=result,
                     turn=turn_num,
                     step=step_count,
+                    timing={
+                        "startedAt": tool_start * 1000,
+                        "durationMs": round(tool_duration_ms, 2),
+                    },
                 )
 
             session.append("step/end", {"turn": turn_num, "step": step_count}, ignorable=True)

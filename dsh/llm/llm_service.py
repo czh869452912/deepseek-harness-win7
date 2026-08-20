@@ -21,9 +21,9 @@ class LLMService:
         api_key_env: str = "DEEPSEEK_API_KEY"
     ):
         self.ctx = ctx
-        self.static_api_key = api_key
-        self.static_base_url = base_url
-        self.static_model = model
+        self.static_api_key = api_key if (api_key and api_key.strip()) else None
+        self.static_base_url = base_url if (base_url and base_url.strip()) else None
+        self.static_model = model if (model and model.strip()) else None
         self.api_key_env = api_key_env
 
     def resolve_api_key(self) -> str:
@@ -52,7 +52,7 @@ class LLMService:
 
         raise RuntimeError(
             f"LLM API Key missing for '{self.api_key_env}'. "
-            "Please provide --api-key, set DEEPSEEK_API_KEY environment variable, or configure ctx.credentials."
+            "Please provide --api-key, set DEEPSEEK_API_KEY environment variable, or configure ~/.dsh/credentials.json."
         )
 
     def resolve_base_url(self) -> str:

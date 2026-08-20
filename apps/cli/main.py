@@ -26,18 +26,18 @@ def parse_args():
     )
     parser.add_argument(
         "--api-key",
-        default=os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("OPENAI_API_KEY") or "",
-        help="LLM API Key (or DEEPSEEK_API_KEY / OPENAI_API_KEY env)"
+        default=None,
+        help="LLM API Key (or DEEPSEEK_API_KEY / OPENAI_API_KEY env / ~/.dsh/credentials.json)"
     )
     parser.add_argument(
         "--base-url",
-        default=os.environ.get("DEEPSEEK_BASE_URL") or os.environ.get("OPENAI_BASE_URL") or "https://api.deepseek.com",
-        help="LLM Base URL (e.g., https://api.deepseek.com)"
+        default=None,
+        help="LLM Base URL (or DEEPSEEK_BASE_URL env / ~/.dsh/settings.json)"
     )
     parser.add_argument(
         "--model",
-        default=os.environ.get("DEEPSEEK_MODEL") or os.environ.get("OPENAI_MODEL") or "deepseek-chat",
-        help="LLM Model name (default: deepseek-chat)"
+        default=None,
+        help="LLM Model name (or DEEPSEEK_MODEL env / ~/.dsh/settings.json)"
     )
     parser.add_argument(
         "--dump-config",

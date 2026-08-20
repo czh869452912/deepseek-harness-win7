@@ -8,15 +8,17 @@ from dsh.settings.settings_file import SettingsFilePlugin, SettingsService
 
 
 def test_credentials_service():
-    ctx = Context()
-    creds = CredentialsService(ctx=ctx)
-    ctx.set_service("credentials", creds)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        creds_file = os.path.join(tmpdir, "credentials.json")
+        ctx = Context()
+        creds = CredentialsService(ctx=ctx, credentials_file=creds_file)
+        ctx.set_service("credentials", creds)
 
-    creds.set_credential("DEEPSEEK_API_KEY", "sk-test-creds-key")
-    assert creds.resolve("DEEPSEEK_API_KEY") == "sk-test-creds-key"
+        creds.set_credential("DEEPSEEK_API_KEY", "sk-test-creds-key")
+        assert creds.resolve("DEEPSEEK_API_KEY") == "sk-test-creds-key"
 
-    os.environ["CUSTOM_TEST_KEY"] = "sk-env-key"
-    assert creds.resolve("CUSTOM_TEST_KEY") == "sk-env-key"
+        os.environ["CUSTOM_TEST_KEY"] = "sk-env-key"
+        assert creds.resolve("CUSTOM_TEST_KEY") == "sk-env-key"
 
 
 def test_settings_service():
@@ -35,11 +37,11 @@ def test_settings_service():
 
 
 def test_llm_per_request_dynamic_resolution():
-    ctx = Context()
-    creds = CredentialsService(ctx=ctx)
-    ctx.set_service("credentials", creds)
-
     with tempfile.TemporaryDirectory() as tmpdir:
+        ctx = Context()
+        creds = CredentialsService(ctx=ctx, credentials_file=os.path.join(tmpdir, "credentials.json"))
+        ctx.set_service("credentials", creds)
+
         settings = SettingsService(settings_file=os.path.join(tmpdir, "settings.json"))
         ctx.set_service("settings", settings)
 

@@ -5,6 +5,7 @@ import yaml
 from dsh.cordis.context import Context
 from dsh.cordis.loader import PresetLoader
 from dsh.plugins.agent_loop_plugin import AgentLoopPlugin
+from dsh.plugins.cli_visualizer import CliVisualizerPlugin
 from dsh.plugins.cordis_manager import CordisManagerPlugin
 from dsh.plugins.credentials_local import CredentialsLocalPlugin
 from dsh.plugins.fs_local import FsLocalPlugin
@@ -22,7 +23,8 @@ def build_harness(
     api_key: Optional[str] = None,
     base_url: Optional[str] = None,
     model: Optional[str] = None,
-    patch_file: Optional[str] = None
+    patch_file: Optional[str] = None,
+    verbose: bool = True
 ) -> Context:
     """
     Build and initialize a DeepSeek Harness Context with requested preset mode.
@@ -33,6 +35,9 @@ def build_harness(
     ctx.plugin(CredentialsLocalPlugin)
     ctx.plugin(SettingsFilePlugin)
     ctx.plugin(AgentLoopPlugin)
+
+    if verbose:
+        ctx.plugin(CliVisualizerPlugin, config={"verbose": True})
 
     ctx.plugin(LLMOpenAIPlugin, config={
         "api_key": api_key,
@@ -51,6 +56,7 @@ def build_harness(
     loader.register_plugin_class("@deepseek-ai/dsh-tool-skill", ToolSkillPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-credentials-local", CredentialsLocalPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-settings-file", SettingsFilePlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-cli-visualizer", CliVisualizerPlugin)
 
     # Determine preset file
     presets_dir = os.path.join(os.path.dirname(__file__), "presets")

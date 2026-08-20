@@ -5,7 +5,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 class EventBus:
     """
-    Cordis Event Bus supporting emit, waterfall, parallel, and serial dispatch modes.
+    Cordis Event Bus supporting emit, waterfall, parallel, serial, and bail dispatch modes.
     """
 
     def __init__(self):
@@ -38,7 +38,6 @@ class EventBus:
             try:
                 res = listener(*args, **kwargs)
                 if inspect.isawaitable(res):
-                    # Create task for async listeners in sync emit context
                     try:
                         loop = asyncio.get_running_loop()
                         loop.create_task(res)
@@ -74,7 +73,7 @@ class EventBus:
 
         if not tasks:
             return []
-        return await asyncio.gather(*tasks, return_exceptions=True)
+        return list(await asyncio.gather(*tasks, return_exceptions=True))
 
     async def serial(self, event_name: str, *args: Any, **kwargs: Any) -> List[Any]:
         """
@@ -88,6 +87,19 @@ class EventBus:
                 res = await res
             results.append(res)
         return results
+
+    async def bail(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
+        """
+        Bail dispatch: run listeners sequentially, returning the first non-None result.
+        """
+        listeners = list(self._listeners.get(event_name, []))
+        for listener in listeners:
+            res = listener(*args, **kwargs)
+            if inspect.isawaitable(res):
+                res = await res
+            if res is not None:
+                return res
+        return None
 
     async def waterfall(self, event_name: str, data: Any, *args: Any, **kwargs: Any) -> Any:
         """
@@ -108,15 +120,12 @@ class EventBus:
                 payload = current_data if next_data is None else next_data
                 return await run_pipeline(index + 1, payload)
 
-            # Check if listener signature expects next_fn
             sig = inspect.signature(listener)
             params = list(sig.parameters.keys())
-            
-            # If listener expects next_fn parameter
+
             if len(params) >= len(args) + 2:
                 res = listener(current_data, *args, next_fn, **kwargs)
             else:
-                # Listener modifies data directly or returns modified data
                 res = listener(current_data, *args, **kwargs)
                 if inspect.isawaitable(res):
                     res = await res

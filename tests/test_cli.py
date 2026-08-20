@@ -40,3 +40,4 @@ async def test_mock_llm_turn_execution():
 
     assert response == "I have inspected the directory contents."
     assert mock_llm.chat_completion.call_count == 2
+    ctx.teardown()

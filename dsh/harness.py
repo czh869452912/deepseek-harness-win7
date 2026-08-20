@@ -4,6 +4,7 @@ import yaml
 
 from dsh.cordis.context import Context
 from dsh.cordis.loader import PresetLoader
+from dsh.core.agent import AgentPlugin
 from dsh.core.agent_loop import AgentLoopPlugin
 from dsh.core.persona import PersonaPlugin
 from dsh.credentials.credentials_local import CredentialsLocalPlugin
@@ -52,6 +53,7 @@ def build_harness(
 
     # Setup preset loader & register available plugins
     loader = PresetLoader()
+    loader.register_plugin_class("@deepseek-ai/dsh-agent", AgentPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-persona", PersonaPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-fs-local", FsLocalPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-tool-str-replace-editor", StrReplaceEditorPlugin)

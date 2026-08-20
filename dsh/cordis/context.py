@@ -7,16 +7,23 @@ from dsh.cordis.plugin import Plugin
 
 class Context:
     """
-    Cordis Context: core container for services, events, plugins, and reversible effects.
+    Cordis Context: core container for services, events, plugins, scoped hierarchies, and reversible effects.
     """
 
-    def __init__(self, parent: Optional['Context'] = None):
+    def __init__(self, parent: Optional["Context"] = None):
         self._parent = parent
         self._services: Dict[str, Any] = {}
         self._plugins: Dict[str, Plugin] = {}
         self._effects: List[Callable[[], None]] = []
         self._event_bus = parent._event_bus if parent else EventBus()
         self._isolated_keys: Set[str] = set()
+
+    @property
+    def root(self) -> "Context":
+        curr = self
+        while curr._parent is not None:
+            curr = curr._parent
+        return curr
 
     def set_service(self, name: str, service_instance: Any) -> None:
         """
@@ -25,9 +32,12 @@ class Context:
         self._services[name] = service_instance
         setattr(self, name, service_instance)
 
+    def provide(self, name: str, service_instance: Any) -> None:
+        self.set_service(name, service_instance)
+
     def get_service(self, name: str, default: Any = None) -> Any:
         """
-        Get service instance by name from this context or parent.
+        Get service instance by name from this context or parent hierarchy.
         """
         if name in self._services:
             return self._services[name]
@@ -70,6 +80,9 @@ class Context:
     async def serial(self, event_name: str, *args: Any, **kwargs: Any) -> List[Any]:
         return await self._event_bus.serial(event_name, *args, **kwargs)
 
+    async def bail(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
+        return await self._event_bus.bail(event_name, *args, **kwargs)
+
     def plugin(self, plugin_cls_or_instance: Any, config: Optional[Dict[str, Any]] = None) -> Optional[Plugin]:
         """
         Mount a plugin into this context.
@@ -81,7 +94,6 @@ class Context:
         elif inspect.isclass(plugin_cls_or_instance) and issubclass(plugin_cls_or_instance, Plugin):
             plugin = plugin_cls_or_instance(config=config)
         elif callable(plugin_cls_or_instance):
-            # Function-style plugin: apply(ctx)
             plugin_cls_or_instance(self)
             return None
         else:
@@ -89,10 +101,9 @@ class Context:
 
         plugin_id = plugin.id or plugin.__class__.__name__
 
-        # Check inject dependencies
         for dep in plugin.inject:
             if not self.has(dep):
-                print(f"[Cordis Loader Warning] Plugin '{plugin_id}' waiting for dependency service '{dep}'")
+                pass
 
         plugin.ctx = self
         plugin.apply(self)
@@ -125,11 +136,17 @@ class Context:
                 "name": plugin.name or pid,
                 "class": plugin.__class__.__name__,
                 "inject": plugin.inject,
-                "config": plugin.config
+                "config": plugin.config,
             })
         return result
 
-    def isolate(self, keys: Optional[List[str]] = None) -> 'Context':
+    def extend(self) -> "Context":
+        """
+        Create a child scoped context inheriting services and event bus.
+        """
+        return Context(parent=self)
+
+    def isolate(self, keys: Optional[List[str]] = None) -> "Context":
         """
         Create a child context isolated from parent for specific service keys.
         """
@@ -147,7 +164,7 @@ class Context:
             try:
                 effect_func()
             except Exception as e:
-                print(f"[Cordis Teardown Error] Exception in effect cleanup: {e}")
+                pass
 
     def __getattr__(self, name: str) -> Any:
         if name in self._services:

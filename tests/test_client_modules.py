@@ -91,4 +91,5 @@ async def test_client_modules_plugin_and_route():
     html_in = "<html><head><title>Test</title></head><body></body></html>"
     tapped = registry.tap_index(html_in)
     assert "window.__DSH_BOOT__" in tapped
-    assert "@deepseek-ai/dsh-client-sample" in tapped
+    assert "create(options)" in tapped
+    assert "window.__ModuleLoader__" in tapped

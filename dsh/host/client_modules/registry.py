@@ -294,28 +294,54 @@ class ClientModuleRegistry:
         await response.finish()
 
     def tap_index(self, html: str) -> str:
-        """Inject window.__DSH_BOOT__ manifest into HTML index response."""
+        """Inject window.__DSH_BOOT__ manifest and bootstrap facade into HTML index response."""
         g = self.graph()
-        boot_json = json.dumps(g, ensure_ascii=False)
-        # Escape '<' to prevent breaking out of script tag
-        safe_boot_json = boot_json.replace("<", "\\u003c")
-        manifest_script = (
-            f'<script>\n'
-            f'window.__DSH_BOOT__ = {safe_boot_json};\n'
-            f'window.__ModuleLoader__ = window.__ModuleLoader__ || {{\n'
-            f'  mode: "queue",\n'
-            f'  pendingQueue: [],\n'
-            f'  load: function(r) {{ (this.pendingQueue = this.pendingQueue || []).push(r); }}\n'
-            f'}};\n'
-            f'</script>'
+        boot_json = json.dumps(g, ensure_ascii=False).replace("<", "\\u003c")
+        
+        # Preload scripts for modules and runtime
+        preload_ids = ["@deepseek-ai/dsh-client-modules", "@deepseek-ai/dsh-client-runtime"]
+        preload_scripts = []
+        for pid in preload_ids:
+            for entry in g.get("entries", []):
+                if entry.get("id") == pid:
+                    url = entry.get("url")
+                    preload_scripts.append(f'<script src="{url}"></script>')
+                    break
+        preload_html = "".join(preload_scripts)
+
+        bootstrap_script = (
+            f'<script>(()=>{{'
+            f'const pendingQueue=[];'
+            f'window.__ModuleLoader__={{'
+            f'  mode:"queue",'
+            f'  pendingQueue,'
+            f'  load(registration){{pendingQueue.push(registration)}},'
+            f'  create(options){{'
+            f'    if(this.mode!=="queue")throw new Error("client-modules: window.__ModuleLoader__.create called after module-system boot");'
+            f'    const index=pendingQueue.findIndex(r=>r.id==="@deepseek-ai/dsh-client-modules");'
+            f'    const registration=pendingQueue[index];'
+            f'    if(registration===undefined)throw new Error("client-modules: HTML did not preload @deepseek-ai/dsh-client-modules/client.js");'
+            f'    pendingQueue.splice(index,1);'
+            f'    const exports=registration.factory(specifier=>{{'
+            f'      throw new Error("client-modules: @deepseek-ai/dsh-client-modules/client.js requested external \\""+specifier+"\\" before the module system existed");'
+            f'    }});'
+            f'    if(typeof exports!=="object"||exports===null||typeof exports.createClientModuleSystem!=="function"){{'
+            f'      throw new Error("client-modules: @deepseek-ai/dsh-client-modules/client.js did not export createClientModuleSystem");'
+            f'    }}'
+            f'    return exports.createClientModuleSystem(this,{{id:registration.id,exports}},options);'
+            f'  }}'
+            f'}};'
+            f'}})()</script>'
+            f'{preload_html}'
+            f'<script>window.__DSH_BOOT__ = {boot_json};</script>'
         )
 
         if "<head>" in html:
-            return html.replace("<head>", f"<head>\n  {manifest_script}", 1)
+            return html.replace("<head>", f"<head>\n  {bootstrap_script}", 1)
         elif "<title>" in html:
-            return html.replace("<title>", f"{manifest_script}\n  <title>", 1)
+            return html.replace("<title>", f"{bootstrap_script}\n  <title>", 1)
         else:
-            return f"{manifest_script}\n{html}"
+            return f"{bootstrap_script}\n{html}"
 
 
 class ClientModulesPlugin(Plugin):

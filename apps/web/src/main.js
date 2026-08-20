@@ -11,6 +11,8 @@ import { GoalBarView } from "./ui/goal.js";
 import { PlanModeView } from "./ui/plan.js";
 import { CommandsView } from "./ui/commands.js";
 import { SettingsView } from "./ui/settings.js";
+import { QuestionFlowView } from "./ui/questions.js";
+import { StatsLineView } from "./ui/stats.js";
 
 class App {
   constructor() {
@@ -45,6 +47,13 @@ class App {
     this.planMode = new PlanModeView({
       onTogglePlanMode: (target) => this.handlePlanToggle(target),
     });
+
+    this.questions = new QuestionFlowView({
+      onAnswer: (answers) => this.sendPrompt(answers),
+      onCancel: () => {},
+    });
+
+    this.statsLine = new StatsLineView({});
 
     this.commands = new CommandsView({
       textarea: this.promptTextarea,
@@ -133,7 +142,9 @@ class App {
   async loadCurrentSession() {
     try {
       const res = await ApiClient.getHistory(this.currentSessionId);
-      this.conversation.renderEvents(res.events || []);
+      const events = res.events || [];
+      this.conversation.renderEvents(events);
+      this.statsLine.updateFromEvents(events);
     } catch (e) {
       console.warn("History load failed:", e);
     }
@@ -150,6 +161,8 @@ class App {
     const newSid = "session-" + Date.now().toString(36);
     this.currentSessionId = newSid;
     this.conversation.clear();
+    this.questions.hide();
+    this.statsLine.updateFromEvents([]);
     await ApiClient.createSession(newSid);
     await this.refreshSessions();
   }
@@ -184,12 +197,14 @@ class App {
 
     if (text === "/clear") {
       this.conversation.clear();
+      this.questions.hide();
       this.promptTextarea.value = "";
       return;
     }
 
     this.promptTextarea.value = "";
     this.commands.hide();
+    this.questions.hide();
     this.setGenerating(true);
 
     try {
@@ -216,10 +231,29 @@ class App {
 
   handleSessionEvent(event) {
     this.conversation.appendEvent(event);
+
+    // Check ask_user_question tool calls
+    if (event.type === "assistant/message") {
+      const msg = event.data && event.data.message;
+      if (msg && msg.tool_calls) {
+        msg.tool_calls.forEach((tc) => {
+          const fn = tc.function || {};
+          if (fn.name === "ask_user_question" || fn.name === "ask_user") {
+            try {
+              const args = typeof fn.arguments === "string" ? JSON.parse(fn.arguments) : fn.arguments;
+              const questions = args.questions || [{ question: args.question, options: args.options }];
+              this.questions.showQuestions(questions);
+            } catch (e) {}
+          }
+        });
+      }
+    }
+
     if (event.type === "plan/mode") {
       this.planMode.update(event.data && event.data.active);
     } else if (event.type === "turn/end") {
       this.setGenerating(false);
+      this.loadCurrentSession();
     }
   }
 

@@ -1,8 +1,6 @@
 import os
 import shutil
 import sys
-import zipfile
-import urllib.request
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIST_DIR = os.path.join(ROOT_DIR, "dist", "dsh-win7-portable")
@@ -15,14 +13,16 @@ def build_portable():
 
     os.makedirs(DIST_DIR, exist_ok=True)
 
-    # 1. Copy source code packages
+    # 1. Copy dsh framework and apps/cli application
     shutil.copytree(os.path.join(ROOT_DIR, "dsh"), os.path.join(DIST_DIR, "dsh"))
-    shutil.copy(os.path.join(ROOT_DIR, "dsh_cli.py"), os.path.join(DIST_DIR, "dsh_cli.py"))
+    os.makedirs(os.path.join(DIST_DIR, "apps", "cli"), exist_ok=True)
+    shutil.copy(os.path.join(ROOT_DIR, "apps", "cli", "main.py"), os.path.join(DIST_DIR, "apps", "cli", "main.py"))
+    shutil.copy(os.path.join(ROOT_DIR, "dsh.py"), os.path.join(DIST_DIR, "dsh.py"))
     shutil.copy(os.path.join(ROOT_DIR, "README.md"), os.path.join(DIST_DIR, "README.md"))
     if os.path.exists(os.path.join(ROOT_DIR, "AGENTS.md")):
         shutil.copy(os.path.join(ROOT_DIR, "AGENTS.md"), os.path.join(DIST_DIR, "AGENTS.md"))
 
-    # 2. Bundle python site-packages / virtualenv libs if available
+    # 2. Bundle python site-packages from virtualenv
     venv_site_packages = os.path.join(ROOT_DIR, ".venv", "Lib", "site-packages")
     dist_lib_dir = os.path.join(DIST_DIR, "lib")
     if os.path.exists(venv_site_packages):
@@ -44,10 +44,9 @@ setlocal
 set "SCRIPT_DIR=%~dp0"
 set "PYTHONPATH=%SCRIPT_DIR%;%SCRIPT_DIR%lib"
 
-rem Check if python executable exists in PATH or system
 python --version >nul 2>&1
 if %errorlevel% equ 0 (
-    python "%SCRIPT_DIR%dsh_cli.py" %*
+    python "%SCRIPT_DIR%dsh.py" %*
 ) else (
     echo [Error] Python executable not found in system PATH.
     echo Please install Python 3.8+ or place python.exe in this folder.
@@ -58,13 +57,6 @@ if %errorlevel% equ 0 (
         f.write(bat_content)
 
     print(f"[Build Portable] Successfully built Portable Release at: {DIST_DIR}")
-    print("Contents of Portable Release:")
-    for root, dirs, files in os.walk(DIST_DIR):
-        rel = os.path.relpath(root, DIST_DIR)
-        if rel == ".":
-            print(" -", ", ".join(files))
-        else:
-            print(f" - {rel}/: {len(files)} files")
 
 
 if __name__ == "__main__":

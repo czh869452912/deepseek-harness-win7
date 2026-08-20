@@ -1,9 +1,18 @@
 /**
  * Conversation & Message Flow View (`@deepseek-ai/dsh-client-ui-conversation`)
+ * Includes MessageIconActions (Copy, Clock, Branch) and TurnTail ProducedFiles.
  */
 
 import { formatMarkdown, escapeHtml } from "./markdown.js";
 import { renderToolCall, renderToolResult } from "./tools.js";
+import { renderProducedFiles } from "./deliverables.js";
+
+function getClockString() {
+  const d = new Date();
+  const h = String(d.getHours()).padStart(2, "0");
+  const m = String(d.getMinutes()).padStart(2, "0");
+  return `${h}:${m}`;
+}
 
 export class ConversationView {
   constructor({ containerId = "messages-container", flowId = "chat-flow", heroId = "hero-screen", onPlanAction }) {
@@ -46,7 +55,16 @@ export class ConversationView {
   appendUserMessage(content) {
     const row = document.createElement("div");
     row.className = "message-row user";
-    row.innerHTML = `<div class="user-bubble">${escapeHtml(content)}</div>`;
+    const clock = getClockString();
+    row.innerHTML = `
+      <div class="user-bubble">${escapeHtml(content)}</div>
+      <div class="message-actions-row user-actions">
+        <span class="message-clock">${clock}</span>
+        <button type="button" class="btn-message-action" title="复制文本" onclick="navigator.clipboard.writeText(${JSON.stringify(content)})">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 4v12a2 2 0 002 2h8a2 2 0 002-2V7.242a2 2 0 00-.602-1.43L16.083 2.57A2 2 0 0014.685 2H10a2 2 0 00-2 2z"/><path d="M16 18v2a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h2"/></svg>
+        </button>
+      </div>
+    `;
     this.flow.appendChild(row);
     this.scrollToBottom();
   }
@@ -77,11 +95,36 @@ export class ConversationView {
     }
 
     // 3. Tool Calls
+    const producedPaths = [];
     if (msg.tool_calls && Array.isArray(msg.tool_calls)) {
       msg.tool_calls.forEach((tc) => {
+        const fn = tc.function || {};
+        if (fn.name === "str_replace_editor") {
+          try {
+            const args = typeof fn.arguments === "string" ? JSON.parse(fn.arguments) : fn.arguments;
+            if (args && args.path) producedPaths.push(args.path);
+          } catch (e) {}
+        }
         turn.innerHTML += renderToolCall(tc, this.onPlanAction);
       });
     }
+
+    // 4. Produced deliverables chips
+    if (producedPaths.length > 0) {
+      turn.innerHTML += renderProducedFiles(producedPaths);
+    }
+
+    // 5. Message Actions Row
+    const clock = getClockString();
+    const copyText = msg.content || "";
+    turn.innerHTML += `
+      <div class="message-actions-row assistant-actions">
+        <span class="message-clock">${clock}</span>
+        <button type="button" class="btn-message-action" title="复制回复" onclick="navigator.clipboard.writeText(${JSON.stringify(copyText)})">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 4v12a2 2 0 002 2h8a2 2 0 002-2V7.242a2 2 0 00-.602-1.43L16.083 2.57A2 2 0 0014.685 2H10a2 2 0 00-2 2z"/><path d="M16 18v2a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h2"/></svg>
+        </button>
+      </div>
+    `;
 
     row.appendChild(turn);
     this.flow.appendChild(row);

@@ -13,6 +13,7 @@ import { CommandsView } from "./ui/commands.js";
 import { SettingsView } from "./ui/settings.js";
 import { QuestionFlowView } from "./ui/questions.js";
 import { StatsLineView } from "./ui/stats.js";
+import { ModelSelectView } from "./ui/model_select.js";
 
 class App {
   constructor() {
@@ -22,12 +23,28 @@ class App {
     // DOM Elements
     this.bodyRoot = document.getElementById("body-root");
     this.modelChipDisplay = document.getElementById("model-name-text");
+    this.modelChipTrigger = document.getElementById("model-chip-display");
     this.promptTextarea = document.getElementById("prompt-textarea");
     this.btnSend = document.getElementById("btn-send");
     this.btnStop = document.getElementById("btn-stop");
     this.slashPopup = document.getElementById("slash-popup");
 
     // Initialize UI Components
+    this.modelSelect = new ModelSelectView({
+      trigger: this.modelChipTrigger,
+      onSelectModel: (m) => {
+        const toast = document.createElement("div");
+        toast.className = "plan-banner-chip";
+        toast.style.position = "fixed";
+        toast.style.top = "60px";
+        toast.style.right = "20px";
+        toast.style.zIndex = "1000";
+        toast.textContent = `已切换当前模型为: ${m}`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2500);
+      },
+    });
+
     this.sidebar = new SidebarView({
       onSelectSession: (sid) => this.switchSession(sid),
       onNewSession: () => this.createNewSession(),

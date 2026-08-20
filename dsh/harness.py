@@ -9,7 +9,9 @@ from dsh.plugins.cordis_manager import CordisManagerPlugin
 from dsh.plugins.fs_local import FsLocalPlugin
 from dsh.plugins.llm_openai import LLMOpenAIPlugin
 from dsh.plugins.persona import PersonaPlugin
+from dsh.plugins.skill_filesystem import SkillFilesystemPlugin
 from dsh.plugins.tool_pwsh_persistent import ToolPwshPersistentPlugin
+from dsh.plugins.tool_skill import ToolSkillPlugin
 from dsh.plugins.tool_str_replace_editor import StrReplaceEditorPlugin
 
 
@@ -40,6 +42,8 @@ def build_harness(
     loader.register_plugin_class("@deepseek-ai/dsh-tool-str-replace-editor", StrReplaceEditorPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-tool-pwsh-persistent", ToolPwshPersistentPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-cordis-manager", CordisManagerPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-skill-filesystem", SkillFilesystemPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-tool-skill", ToolSkillPlugin)
 
     # Determine preset file
     presets_dir = os.path.join(os.path.dirname(__file__), "presets")

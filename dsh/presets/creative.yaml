@@ -1,5 +1,5 @@
 # Creative Mode (创造模式) Preset
-# Full standard capabilities plus Cordis plugin inspection and preset management tools.
+# Full standard capabilities plus Skill system and Cordis plugin inspection tools.
 
 - id: persona
   name: "@deepseek-ai/dsh-persona"
@@ -22,6 +22,12 @@
   config:
     tool_name: pwsh
     timeoutMs: 300000
+
+- id: skill-filesystem
+  name: "@deepseek-ai/dsh-skill-filesystem"
+
+- id: tool-skill
+  name: "@deepseek-ai/dsh-tool-skill"
 
 - id: cordis-manager
   name: "@deepseek-ai/dsh-cordis-manager"

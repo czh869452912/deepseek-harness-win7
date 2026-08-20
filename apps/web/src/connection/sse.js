@@ -44,6 +44,28 @@ export class DownlinkStream {
       }
     });
 
+    this.eventSource.addEventListener("session/chunk", (e) => {
+      try {
+        const chunk = JSON.parse(e.data);
+        if (this.listeners.onSessionChunk) {
+          this.listeners.onSessionChunk(chunk);
+        }
+      } catch (err) {
+        console.error("[SSE] Failed to parse session chunk:", err);
+      }
+    });
+
+    this.eventSource.addEventListener("assistant/chunk", (e) => {
+      try {
+        const chunk = JSON.parse(e.data);
+        if (this.listeners.onAssistantChunk) {
+          this.listeners.onAssistantChunk(chunk);
+        }
+      } catch (err) {
+        console.error("[SSE] Failed to parse assistant chunk:", err);
+      }
+    });
+
     this.eventSource.addEventListener("agent/status", (e) => {
       try {
         const data = JSON.parse(e.data);

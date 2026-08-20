@@ -222,12 +222,46 @@ class AgentLoopService:
             if not llm_service:
                 raise RuntimeError("LLM service ('ctx.llm') is missing")
 
-            # 6. Call LLM API
+            # 6. Call LLM API (streaming with live chunk events)
+            assistant_msg: Dict[str, Any] = {}
+            timing_data: Dict[str, Any] = {}
+            usage_data: Dict[str, Any] = {}
+
             try:
-                assistant_msg = llm_service.chat_completion(
-                    messages=request_payload["messages"],
-                    tools=request_payload.get("tools"),
-                )
+                stream_fn = getattr(llm_service, "chat_completion_stream", None)
+                used_stream = False
+                if stream_fn and callable(stream_fn):
+                    try:
+                        stream_iter = stream_fn(
+                            messages=request_payload["messages"],
+                            tools=request_payload.get("tools"),
+                        )
+                        for ev_type, ev_payload in stream_iter:
+                            if ev_type == "chunk":
+                                chunk_event = {
+                                    "type": "assistant/chunk",
+                                    "sessionId": session.id,
+                                    "data": {
+                                        "turn": turn_num,
+                                        "step": step_count,
+                                        **ev_payload,
+                                    }
+                                }
+                                self.ctx.emit("session/chunk", session, chunk_event)
+                                self.ctx.emit("assistant/chunk", chunk_event)
+                            elif ev_type == "finish":
+                                assistant_msg = ev_payload.get("message", {})
+                                timing_data = ev_payload.get("timing", {})
+                                usage_data = ev_payload.get("usage", {})
+                                used_stream = True
+                    except Exception:
+                        used_stream = False
+
+                if not used_stream or not assistant_msg:
+                    assistant_msg = llm_service.chat_completion(
+                        messages=request_payload["messages"],
+                        tools=request_payload.get("tools"),
+                    )
             except Exception as e:
                 # Dispatch agent/request-error
                 recovery = await self.ctx.waterfall(
@@ -244,6 +278,8 @@ class AgentLoopService:
                 assistant_msg,
                 turn=turn_num,
                 step=step_count,
+                usage=usage_data if usage_data else None,
+                timing=timing_data if timing_data else None,
             )
 
             tool_calls = assistant_msg.get("tool_calls")

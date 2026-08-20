@@ -8,6 +8,7 @@ import json
 import os
 from typing import Any, Dict, List, Optional
 import urllib.parse
+import urllib.request
 
 from dsh.cordis.plugin import Plugin
 from dsh.core.session import Session, SessionStore
@@ -41,6 +42,8 @@ class ApiProxyPlugin(Plugin):
         # Hook session events to broadcast via SSE
         ctx.on("session/event", self._on_session_event)
         ctx.on("session/append", self._on_session_event)
+        ctx.on("session/chunk", self._on_session_chunk)
+        ctx.on("assistant/chunk", self._on_assistant_chunk)
         ctx.on("agent/status", self._on_agent_status)
         ctx.on("goal/changed", self._on_goal_changed)
         ctx.on("goal/change", self._on_goal_changed)
@@ -53,6 +56,26 @@ class ApiProxyPlugin(Plugin):
                     await q.put(payload)
                 except Exception:
                     pass
+        except Exception:
+            pass
+
+    def _on_session_chunk(self, *args: Any, **kwargs: Any) -> None:
+        try:
+            chunk = None
+            if len(args) >= 2:
+                chunk = args[1]
+            elif len(args) == 1:
+                chunk = args[0]
+            if isinstance(chunk, dict):
+                asyncio.create_task(self._broadcast_sse("session/chunk", chunk))
+        except Exception:
+            pass
+
+    def _on_assistant_chunk(self, *args: Any, **kwargs: Any) -> None:
+        try:
+            chunk = args[0] if args else {}
+            if isinstance(chunk, dict):
+                asyncio.create_task(self._broadcast_sse("assistant/chunk", chunk))
         except Exception:
             pass
 
@@ -314,8 +337,118 @@ class ApiProxyPlugin(Plugin):
                     settings_svc.set_setting("llm", "base_url", body_json["baseUrl"])
                 if body_json.get("model"):
                     settings_svc.set_setting("llm", "model", body_json["model"])
+                if body_json.get("general"):
+                    for k, v in body_json["general"].items():
+                        settings_svc.set_setting("general", k, v)
 
             await send_json({"success": True, "saved": True})
+            return
+
+        # 13. /api/settings/describe
+        if path == "/api/settings/describe":
+            llm = self.ctx.get("llm")
+            settings_svc = self.ctx.get("settings")
+            loader = self.ctx.get("loader")
+
+            plugins_list = []
+            if loader and hasattr(loader, "list_plugins"):
+                for p in loader.list_plugins():
+                    plugins_list.append({"id": p.id, "name": getattr(p, "name", p.id), "active": True})
+            else:
+                plugins_list = [
+                    {"id": "shell", "name": "Persistent Terminal Shell (pwsh/bash)", "active": True},
+                    {"id": "agent-loop", "name": "Cordis Agent Loop & Step Driver", "active": True},
+                    {"id": "compaction", "name": "Context Compaction & Summary Engine", "active": True},
+                    {"id": "fs-search", "name": "Filesystem Search (glob/grep)", "active": True},
+                    {"id": "web-search", "name": "DeepSeek / Tavily Web Search Engine", "active": True},
+                ]
+
+            general_settings = {
+                "busyEnter": "queue",
+                "theme": "dark",
+                "fontSize": "13px",
+            }
+            if settings_svc:
+                g_cfg = settings_svc.get_section("general") or {}
+                general_settings.update(g_cfg)
+
+            await send_json({
+                "llm": {
+                    "baseUrl": llm.resolve_base_url() if llm and hasattr(llm, "resolve_base_url") else "https://api.deepseek.com",
+                    "model": llm.resolve_model() if llm and hasattr(llm, "resolve_model") else "deepseek-v4-flash",
+                    "hasKey": bool((llm and getattr(llm, "static_api_key", None)) or os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("OPENAI_API_KEY")),
+                },
+                "general": general_settings,
+                "plugins": plugins_list,
+            })
+            return
+
+        # 14. /api/workspace/files (for @file mention suggestions)
+        if path == "/api/workspace/files":
+            cwd = os.getcwd()
+            ignore_dirs = {".git", "__pycache__", ".venv", "venv", "node_modules", "dist", ".gemini", ".idea", ".vscode"}
+            files = []
+            for root, dirs, filenames in os.walk(cwd):
+                dirs[:] = [d for d in dirs if d not in ignore_dirs and not d.startswith(".")]
+                rel_dir = os.path.relpath(root, cwd)
+                for f in filenames:
+                    if f.startswith(".") or f.endswith(".pyc"):
+                        continue
+                    rel_path = os.path.normpath(f if rel_dir == "." else os.path.join(rel_dir, f)).replace("\\", "/")
+                    files.append({
+                        "path": rel_path,
+                        "name": f,
+                        "ext": os.path.splitext(f)[1].lstrip("."),
+                    })
+                    if len(files) >= 300:
+                        break
+                if len(files) >= 300:
+                    break
+            await send_json({"files": files, "cwd": cwd})
+            return
+
+        # 15. /api/models/discover
+        if path == "/api/models/discover" and method == "POST":
+            llm = self.ctx.get("llm")
+            base_url = body_json.get("baseUrl") or (llm.resolve_base_url() if llm else "https://api.deepseek.com")
+            api_key = body_json.get("apiKey") or (llm.resolve_api_key() if llm else "")
+
+            url = f"{base_url.rstrip('/')}/models"
+            headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+            req = urllib.request.Request(url, headers=headers, method="GET")
+            try:
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    resp_data = json.loads(resp.read().decode("utf-8"))
+                    models_raw = resp_data.get("data", [])
+                    models = [m.get("id") for m in models_raw if isinstance(m, dict) and "id" in m]
+                    await send_json({"success": True, "models": models or ["deepseek-chat", "deepseek-reasoner"]})
+                    return
+            except Exception as ex:
+                await send_json({"success": False, "error": str(ex), "models": ["deepseek-v4-flash", "deepseek-chat", "deepseek-reasoner"]})
+                return
+
+        # 16. /api/permission/set
+        if path == "/api/permission/set" and method == "POST":
+            preset = body_json.get("preset", "workspace-write")
+            # Store in session or ctx
+            await send_json({"success": True, "preset": preset})
+            return
+
+        # 17. /api/jobs/list
+        if path == "/api/jobs/list":
+            # List current active jobs
+            agent_loop = self.ctx.get("agent_loop")
+            active_count = len(getattr(agent_loop, "_active_tasks", [])) if agent_loop else 0
+            jobs = []
+            if active_count > 0:
+                jobs.append({
+                    "id": "agent-driver",
+                    "kind": "agent-turn",
+                    "label": "Agent Execution Loop",
+                    "status": "running",
+                    "startedAt": int(os.path.getctime(os.getcwd()) if os.path.exists(os.getcwd()) else 0) * 1000,
+                })
+            await send_json({"jobs": jobs})
             return
 
         # Not found

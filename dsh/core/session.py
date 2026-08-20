@@ -204,6 +204,7 @@ class Session:
         turn: Optional[int] = None,
         step: Optional[int] = None,
         usage: Optional[Dict[str, Any]] = None,
+        timing: Optional[Dict[str, Any]] = None,
         surface_op: Optional[Union[str, Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
         data: Dict[str, Any] = {"message": message}
@@ -213,6 +214,8 @@ class Session:
             data["step"] = step
         if usage is not None:
             data["usage"] = usage
+        if timing is not None:
+            data["timing"] = timing
         return self.append("assistant/message", data, surface_op=surface_op or "append")
 
     def append_tool_result(

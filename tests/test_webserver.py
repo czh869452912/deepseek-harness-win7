@@ -219,4 +219,64 @@ async def test_sse_agent_status_and_session_events(web_ctx):
     session.append_user_message("Hello from user")
     session.append_assistant_message({"content": "Hello! I am ready."})
 
+    # Emit session/chunk
+    web_ctx.emit("session/chunk", session, {"type": "assistant/chunk", "data": {"delta_type": "text", "delta": "Hello"}})
+
     await asyncio.sleep(0.05)
+
+
+@pytest.mark.asyncio
+async def test_api_advanced_endpoints(web_ctx):
+    server: WebServerService = web_ctx.get("web_server")
+    route = server.match("/api/workspace/files")
+
+    class MockWriter:
+        def __init__(self):
+            self.data = bytearray()
+        def write(self, b):
+            self.data.extend(b)
+        async def drain(self): pass
+        def get_json(self):
+            parts = self.data.split(b"\r\n\r\n", 1)
+            return json.loads(parts[1].decode("utf-8")) if len(parts) > 1 else {}
+        def write_header(self, k, v): pass
+        def write_body(self, b): self.data.extend(b)
+        async def finish(self): pass
+        async def send_headers(self): pass
+
+    # 1. /api/workspace/files
+    req_files = {"method": "GET", "path": "/api/workspace/files", "query": "", "headers": {}, "body": b""}
+    writer_files = MockWriter()
+    await route.handler(req_files, HttpResponseWriter(writer_files))
+    res_files = writer_files.get_json()
+    assert "files" in res_files
+    assert isinstance(res_files["files"], list)
+
+    # 2. /api/settings/describe
+    req_desc = {"method": "GET", "path": "/api/settings/describe", "query": "", "headers": {}, "body": b""}
+    writer_desc = MockWriter()
+    await route.handler(req_desc, HttpResponseWriter(writer_desc))
+    res_desc = writer_desc.get_json()
+    assert "llm" in res_desc
+    assert "plugins" in res_desc
+
+    # 3. /api/permission/set
+    req_perm = {
+        "method": "POST",
+        "path": "/api/permission/set",
+        "query": "",
+        "headers": {},
+        "body": json.dumps({"preset": "read-only"}).encode("utf-8"),
+    }
+    writer_perm = MockWriter()
+    await route.handler(req_perm, HttpResponseWriter(writer_perm))
+    res_perm = writer_perm.get_json()
+    assert res_perm["success"] is True
+    assert res_perm["preset"] == "read-only"
+
+    # 4. /api/jobs/list
+    req_jobs = {"method": "GET", "path": "/api/jobs/list", "query": "", "headers": {}, "body": b""}
+    writer_jobs = MockWriter()
+    await route.handler(req_jobs, HttpResponseWriter(writer_jobs))
+    res_jobs = writer_jobs.get_json()
+    assert "jobs" in res_jobs

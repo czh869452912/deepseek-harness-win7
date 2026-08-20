@@ -78,12 +78,45 @@ export const ApiClient = {
     return await res.json();
   },
 
+  async describeSettings() {
+    const res = await fetch("/api/settings/describe");
+    return await res.json();
+  },
+
   async saveSettings(config) {
     const res = await fetch("/api/settings/save", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(config),
     });
+    return await res.json();
+  },
+
+  async discoverModels(baseUrl, apiKey) {
+    const res = await fetch("/api/models/discover", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ baseUrl, apiKey }),
+    });
+    return await res.json();
+  },
+
+  async getWorkspaceFiles() {
+    const res = await fetch("/api/workspace/files");
+    return await res.json();
+  },
+
+  async setPermission(preset) {
+    const res = await fetch("/api/permission/set", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ preset }),
+    });
+    return await res.json();
+  },
+
+  async getJobs() {
+    const res = await fetch("/api/jobs/list");
     return await res.json();
   },
 

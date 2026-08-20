@@ -1,12 +1,13 @@
 /**
  * DeepSeek Harness Web GUI SPA Entrypoint (`apps/web/src/main.js`)
- * Modular, reactive frontend architecture 1:1 aligned with DeepSeek Harness.
+ * 1:1 Complete Component Assembly & Real-time Reactive Downlink Router.
  */
 
 import { ApiClient } from "./connection/api.js";
 import { DownlinkStream } from "./connection/sse.js";
 import { SidebarView } from "./ui/sidebar.js";
 import { ConversationView } from "./ui/conversation.js";
+import { TrajectoryView } from "./ui/trajectory.js";
 import { GoalBarView } from "./ui/goal.js";
 import { PlanModeView } from "./ui/plan.js";
 import { CommandsView } from "./ui/commands.js";
@@ -14,11 +15,17 @@ import { SettingsView } from "./ui/settings.js";
 import { QuestionFlowView } from "./ui/questions.js";
 import { StatsLineView } from "./ui/stats.js";
 import { ModelSelectView } from "./ui/model_select.js";
+import { PermissionSelectView } from "./ui/permissions.js";
+import { ContextMeterView } from "./ui/context_meter.js";
+import { JobsView } from "./ui/jobs.js";
+import { SubagentNavView } from "./ui/subagent.js";
 
 class App {
   constructor() {
     this.currentSessionId = "default-session";
     this.isGenerating = false;
+    this.currentEvents = [];
+    this.activeView = "chat"; // 'chat' | 'trajectory'
 
     // DOM Elements
     this.bodyRoot = document.getElementById("body-root");
@@ -28,21 +35,17 @@ class App {
     this.btnSend = document.getElementById("btn-send");
     this.btnStop = document.getElementById("btn-stop");
     this.slashPopup = document.getElementById("slash-popup");
+    this.messagesContainer = document.getElementById("messages-container");
+    this.trajectoryContainer = document.getElementById("trajectory-container");
+    this.tabBtnChat = document.getElementById("tab-btn-chat");
+    this.tabBtnTrajectory = document.getElementById("tab-btn-trajectory");
 
     // Initialize UI Components
     this.modelSelect = new ModelSelectView({
       trigger: this.modelChipTrigger,
       onSelectModel: async (m) => {
         await ApiClient.setModel(m);
-        const toast = document.createElement("div");
-        toast.className = "plan-banner-chip";
-        toast.style.position = "fixed";
-        toast.style.top = "60px";
-        toast.style.right = "20px";
-        toast.style.zIndex = "1000";
-        toast.textContent = `已切换当前模型为: ${m}`;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 2500);
+        this._showToast(`已切换当前模型为: ${m}`);
       },
     });
 
@@ -56,6 +59,32 @@ class App {
 
     this.conversation = new ConversationView({
       onPlanAction: (choice) => this.sendPrompt(choice),
+      onForkSession: () => this.forkCurrentSession(),
+    });
+
+    this.trajectory = new TrajectoryView({
+      containerId: "trajectory-container",
+    });
+
+    this.permissions = new PermissionSelectView({
+      containerId: "permission-select-container",
+      onSelectPermission: async (p) => {
+        await ApiClient.setPermission(p);
+        this._showToast(`已切换会话权限为: ${p}`);
+      },
+    });
+
+    this.contextMeter = new ContextMeterView({
+      containerId: "context-meter-container",
+    });
+
+    this.jobs = new JobsView({
+      containerId: "jobs-container",
+    });
+
+    this.subagent = new SubagentNavView({
+      containerId: "subagent-container",
+      onOpenSubagent: (id) => this.switchSession(id),
     });
 
     this.goalBar = new GoalBarView({
@@ -84,26 +113,27 @@ class App {
 
     this.settings = new SettingsView({
       modal: document.getElementById("settings-modal"),
-      baseUrlInput: document.getElementById("setting-base-url"),
-      apiKeyInput: document.getElementById("setting-api-key"),
-      modelInput: document.getElementById("setting-model"),
       onSave: async (cfg) => {
         await ApiClient.saveSettings(cfg);
         if (cfg.model) {
           this.modelChipDisplay.textContent = cfg.model;
           this.modelSelect.setModel(cfg.model);
         }
+        this._showToast("系统设置已保存");
       },
     });
 
-    // Initialize Downlink SSE Stream
+    // Downlink SSE Stream with live token streaming and chunk routing
     this.downlink = new DownlinkStream({
       onSessionEvent: (e) => this.handleSessionEvent(e),
+      onSessionChunk: (chunk) => this.handleSessionChunk(chunk),
+      onAssistantChunk: (chunk) => this.handleAssistantChunk(chunk),
       onGoalChanged: (goal) => this.goalBar.update(goal),
-      onAgentStatus: (status) => {},
+      onAgentStatus: (status) => this.handleAgentStatus(status),
     });
 
     this._bindComposer();
+    this._bindViewTabs();
   }
 
   async start() {
@@ -111,6 +141,7 @@ class App {
     await this.refreshStatus();
     await this.refreshSessions();
     await this.loadCurrentSession();
+    await this.refreshJobs();
     this.downlink.connect();
   }
 
@@ -124,6 +155,41 @@ class App {
         this.handleSend();
       }
     });
+  }
+
+  _bindViewTabs() {
+    if (this.tabBtnChat && this.tabBtnTrajectory) {
+      this.tabBtnChat.addEventListener("click", () => this.switchView("chat"));
+      this.tabBtnTrajectory.addEventListener("click", () => this.switchView("trajectory"));
+    }
+  }
+
+  switchView(viewName) {
+    this.activeView = viewName;
+    if (viewName === "chat") {
+      this.tabBtnChat.classList.add("active");
+      this.tabBtnTrajectory.classList.remove("active");
+      this.messagesContainer.classList.remove("hidden");
+      this.trajectoryContainer.classList.add("hidden");
+    } else {
+      this.tabBtnTrajectory.classList.add("active");
+      this.tabBtnChat.classList.remove("active");
+      this.messagesContainer.classList.add("hidden");
+      this.trajectoryContainer.classList.remove("hidden");
+      this.trajectory.setEvents(this.currentEvents);
+    }
+  }
+
+  _showToast(msg) {
+    const toast = document.createElement("div");
+    toast.className = "plan-banner-chip";
+    toast.style.position = "fixed";
+    toast.style.top = "60px";
+    toast.style.right = "20px";
+    toast.style.zIndex = "2000";
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2500);
   }
 
   _restoreTheme() {
@@ -163,12 +229,21 @@ class App {
     }
   }
 
+  async refreshJobs() {
+    try {
+      const res = await ApiClient.getJobs();
+      this.jobs.setJobs(res.jobs || []);
+    } catch (e) {}
+  }
+
   async loadCurrentSession() {
     try {
       const res = await ApiClient.getHistory(this.currentSessionId);
-      const events = res.events || [];
-      this.conversation.renderEvents(events);
-      this.statsLine.updateFromEvents(events);
+      this.currentEvents = res.events || [];
+      this.conversation.renderEvents(this.currentEvents);
+      this.trajectory.setEvents(this.currentEvents);
+      this.statsLine.updateFromEvents(this.currentEvents);
+      this.contextMeter.updateFromEvents(this.currentEvents);
     } catch (e) {
       console.warn("History load failed:", e);
     }
@@ -184,23 +259,26 @@ class App {
   async createNewSession() {
     const newSid = "session-" + Date.now().toString(36);
     this.currentSessionId = newSid;
+    this.currentEvents = [];
     this.conversation.clear();
+    this.trajectory.setEvents([]);
     this.questions.hide();
     this.statsLine.updateFromEvents([]);
+    this.contextMeter.updateFromEvents([]);
     await ApiClient.createSession(newSid);
     await this.refreshSessions();
   }
 
+  async forkCurrentSession() {
+    const newSid = "fork-" + Date.now().toString(36);
+    await ApiClient.forkSession(this.currentSessionId);
+    this._showToast(`已成功创建分支会话`);
+    await this.refreshSessions();
+    await this.switchSession(newSid);
+  }
+
   switchPreset(preset) {
-    const toast = document.createElement("div");
-    toast.className = "plan-banner-chip";
-    toast.style.position = "fixed";
-    toast.style.top = "60px";
-    toast.style.right = "20px";
-    toast.style.zIndex = "1000";
-    toast.textContent = `已切换预设为: ${preset}`;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 2500);
+    this._showToast(`已切换预设为: ${preset}`);
   }
 
   async handlePlanToggle(target) {
@@ -253,8 +331,26 @@ class App {
     this.setGenerating(false);
   }
 
+  handleSessionChunk(chunk) {
+    if (chunk && chunk.data) {
+      this.conversation.handleStreamChunk(chunk.data);
+      this.trajectory.appendLiveChunk(chunk.data);
+    }
+  }
+
+  handleAssistantChunk(chunk) {
+    if (chunk && chunk.data) {
+      this.conversation.handleStreamChunk(chunk.data);
+      this.trajectory.appendLiveChunk(chunk.data);
+    }
+  }
+
   handleSessionEvent(event) {
+    this.currentEvents.push(event);
     this.conversation.appendEvent(event);
+    this.trajectory.setEvents(this.currentEvents);
+    this.statsLine.updateFromEvents(this.currentEvents);
+    this.contextMeter.updateFromEvents(this.currentEvents);
 
     // Check ask_user_question tool calls
     if (event.type === "assistant/message") {
@@ -278,6 +374,15 @@ class App {
     } else if (event.type === "turn/end") {
       this.setGenerating(false);
       this.loadCurrentSession();
+      this.refreshJobs();
+    }
+  }
+
+  handleAgentStatus(status) {
+    if (status && status.status === "running") {
+      this.setGenerating(true);
+    } else if (status && status.status === "idle") {
+      this.setGenerating(false);
     }
   }
 

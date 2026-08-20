@@ -16,14 +16,18 @@ def build_portable():
 
     os.makedirs(DIST_DIR, exist_ok=True)
 
-    # 1. Copy dsh framework and apps/cli application
+    # 1. Copy dsh framework and apps application
     shutil.copytree(os.path.join(ROOT_DIR, "dsh"), os.path.join(DIST_DIR, "dsh"))
     os.makedirs(os.path.join(DIST_DIR, "apps", "cli"), exist_ok=True)
     shutil.copy(os.path.join(ROOT_DIR, "apps", "cli", "main.py"), os.path.join(DIST_DIR, "apps", "cli", "main.py"))
+    if os.path.exists(os.path.join(ROOT_DIR, "apps", "web")):
+        shutil.copytree(os.path.join(ROOT_DIR, "apps", "web"), os.path.join(DIST_DIR, "apps", "web"))
     shutil.copy(os.path.join(ROOT_DIR, "dsh.py"), os.path.join(DIST_DIR, "dsh.py"))
     shutil.copy(os.path.join(ROOT_DIR, "README.md"), os.path.join(DIST_DIR, "README.md"))
     if os.path.exists(os.path.join(ROOT_DIR, "AGENTS.md")):
         shutil.copy(os.path.join(ROOT_DIR, "AGENTS.md"), os.path.join(DIST_DIR, "AGENTS.md"))
+    if os.path.exists(os.path.join(ROOT_DIR, "dsh-web.bat")):
+        shutil.copy(os.path.join(ROOT_DIR, "dsh-web.bat"), os.path.join(DIST_DIR, "dsh-web.bat"))
 
     # 2. Bundle python site-packages from virtualenv
     venv_site_packages = os.path.join(ROOT_DIR, ".venv", "Lib", "site-packages")

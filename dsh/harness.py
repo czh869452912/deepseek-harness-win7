@@ -28,6 +28,9 @@ from dsh.skill.tool_skill import ToolSkillPlugin
 from dsh.todo.tool_todo import ToolTodoPlugin
 from dsh.plan.plan_mode import PlanModePlugin
 from dsh.goal.tool_goal import ToolGoalPlugin
+from dsh.host.webserver.webserver import WebServerPlugin
+from dsh.host.frontend_static.frontend_static import FrontendStaticPlugin
+from dsh.host.apiproxy.api_proxy import ApiProxyPlugin
 
 
 def build_harness(
@@ -37,6 +40,9 @@ def build_harness(
     model: Optional[str] = None,
     patch_file: Optional[str] = None,
     verbose: bool = True,
+    enable_web: bool = False,
+    web_host: str = "127.0.0.1",
+    web_port: int = 8080,
 ) -> Context:
     """
     Build and initialize a DeepSeek Harness Context with requested preset mode.
@@ -83,6 +89,14 @@ def build_harness(
     loader.register_plugin_class("@deepseek-ai/dsh-compaction-basic", BasicCompactionPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-plan-mode", PlanModePlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-tool-goal", ToolGoalPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-host-webserver", WebServerPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-host-frontend-static", FrontendStaticPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-apiproxy", ApiProxyPlugin)
+
+    if enable_web:
+        ctx.plugin(WebServerPlugin, config={"host": web_host, "port": web_port})
+        ctx.plugin(ApiProxyPlugin)
+        ctx.plugin(FrontendStaticPlugin)
 
     # Determine preset file
     presets_dir = os.path.join(os.path.dirname(__file__), "presets")

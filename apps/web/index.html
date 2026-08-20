@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeepSeek Harness</title>
+  <link rel="stylesheet" href="/src/style.css">
+  <!-- Markdown & Code highlighting support -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body class="theme-dark">
+  <div id="app" class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <svg class="logo-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+          <span class="brand-name">DeepSeek Harness</span>
+        </div>
+        <button id="btn-new-session" class="btn-icon" title="新建会话">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-title">智能体预设</div>
+        <select id="select-preset" class="select-preset">
+          <option value="standard" selected>标准模式 (Standard)</option>
+          <option value="minimal">极简模式 (Minimal)</option>
+          <option value="creative">创造模式 (Creative)</option>
+        </select>
+      </div>
+
+      <div class="sidebar-section session-list-section">
+        <div class="section-title">会话历史</div>
+        <div id="session-list" class="session-list">
+          <div class="session-item active" data-id="default-session">
+            <span class="session-title">默认会话</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="status-indicator">
+          <span class="status-dot ready"></span>
+          <span id="model-badge" class="model-badge">deepseek-v4-flash</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Container -->
+    <main class="main-container">
+      <!-- Top Goal & Plan Bar -->
+      <header class="top-bar">
+        <div class="bar-left">
+          <div id="goal-bar" class="goal-bar hidden">
+            <span class="goal-label">GOAL</span>
+            <span id="goal-objective" class="goal-text">自主长任务目标...</span>
+            <span id="goal-phase" class="badge badge-active">ACTIVE</span>
+            <button id="btn-goal-toggle" class="btn-small">暂停</button>
+          </div>
+        </div>
+        <div class="bar-right">
+          <button id="btn-plan-toggle" class="btn-toggle-plan">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+            </svg>
+            <span id="plan-mode-label">规划模式: 关</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Message Chat Stream -->
+      <section id="chat-stream" class="chat-stream">
+        <div class="welcome-screen" id="welcome-screen">
+          <div class="welcome-card">
+            <h2>欢迎使用 DeepSeek Harness</h2>
+            <p>基于 Cordis 插件架构的纯净 Windows 7 智能体平台。</p>
+            <div class="quick-hints">
+              <div class="hint-card" data-cmd="/plan 请帮我规划代码重构方案">
+                <strong>/plan 规划模式</strong>
+                <span>只读探索代码并生成决策完备的设计方案</span>
+              </div>
+              <div class="hint-card" data-cmd="/goal 优化全套测试用例并确保全部通过">
+                <strong>/goal 目标模式</strong>
+                <span>开启多轮自主循环直至完成复杂任务</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Composer Input -->
+      <footer class="composer-container">
+        <div class="composer-box">
+          <textarea
+            id="prompt-input"
+            class="composer-textarea"
+            placeholder="输入指令，使用 Shift+Enter 换行，支持 /plan 或 /goal..."
+            rows="2"
+          ></textarea>
+          <div class="composer-actions">
+            <div class="shortcuts-hint">
+              <span>快捷指令: <code>/plan</code> <code>/goal</code></span>
+            </div>
+            <div class="btn-group">
+              <button id="btn-cancel" class="btn-cancel hidden">停止</button>
+              <button id="btn-send" class="btn-send">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <script src="/src/app.js"></script>
+</body>
+</html>

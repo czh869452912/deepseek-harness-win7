@@ -40,6 +40,27 @@ def parse_args():
         help="LLM Model name (or DEEPSEEK_MODEL env / ~/.dsh/settings.json)"
     )
     parser.add_argument(
+        "--web",
+        action="store_true",
+        help="Launch DeepSeek Harness Web GUI in browser"
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8080,
+        help="Web GUI server port (default: 8080)"
+    )
+    parser.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="Web GUI server bind host (default: 127.0.0.1)"
+    )
+    parser.add_argument(
+        "--no-open",
+        action="store_true",
+        help="Do not automatically open browser on Web GUI launch"
+    )
+    parser.add_argument(
         "--dump-config",
         action="store_true",
         help="Dump mounted Cordis configuration tree and exit"
@@ -64,7 +85,10 @@ async def main_async():
         api_key=args.api_key,
         base_url=args.base_url,
         model=args.model,
-        patch_file=args.patch
+        patch_file=args.patch,
+        enable_web=args.web,
+        web_host=args.host,
+        web_port=args.port,
     )
 
     if args.dump_config:
@@ -85,6 +109,28 @@ async def main_async():
     print("---------------------------------------------------------")
 
     agent_loop = ctx.get("agent_loop")
+
+    if args.web:
+        web_server = ctx.get("web_server")
+        if web_server:
+            await web_server.start()
+            url = f"http://{args.host}:{web_server.port}"
+            print(f"\n[DeepSeek Harness Web] GUI is running at: {url}")
+            print("Press Ctrl+C to stop the Web server.\n")
+            if not args.no_open:
+                import webbrowser
+                try:
+                    webbrowser.open(url)
+                except Exception:
+                    pass
+            stop_event = asyncio.Event()
+            try:
+                await stop_event.wait()
+            except (asyncio.CancelledError, KeyboardInterrupt):
+                print("\n[DeepSeek Harness Web] Stopping Web GUI server...")
+            finally:
+                await web_server.stop()
+        return
 
     if args.prompt:
         # Run single turn

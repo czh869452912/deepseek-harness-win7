@@ -7,6 +7,7 @@ from dsh.core.agent_loop import AgentLoopService
 from dsh.goal.tool_goal import GoalService
 from dsh.plan.plan_mode import PlanModeController
 from dsh.host.webserver.webserver import WebServerService, WebServerPlugin, HttpResponseWriter
+from dsh.host.directory_picker.directory_picker import DirectoryPickerAutoPlugin, NativeDirectoryPickerPlugin
 from dsh.host.frontend_static.frontend_static import FrontendStaticPlugin
 from dsh.host.apiproxy.api_proxy import ApiProxyPlugin
 
@@ -26,6 +27,7 @@ def web_ctx():
 
     server_svc = WebServerService(ctx, host="127.0.0.1", port=0)
     ctx.set_service("web_server", server_svc)
+    ctx.plugin(DirectoryPickerAutoPlugin)
     ctx.plugin(ApiProxyPlugin)
     ctx.plugin(FrontendStaticPlugin)
     return ctx
@@ -280,3 +282,67 @@ async def test_api_advanced_endpoints(web_ctx):
     await route.handler(req_jobs, HttpResponseWriter(writer_jobs))
     res_jobs = writer_jobs.get_json()
     assert "jobs" in res_jobs
+
+
+@pytest.mark.asyncio
+async def test_api_official_rpc_contract(web_ctx):
+    server: WebServerService = web_ctx.get("web_server")
+    route = server.match("/api/host.pickDirectory")
+    assert route is not None
+
+    dp = web_ctx.get("directory_picker")
+    dp.pick_native = lambda: "C:/Projects/deepseek"
+
+    class MockWriter:
+        def __init__(self):
+            self.data = bytearray()
+        def write(self, b): self.data.extend(b)
+        async def drain(self): pass
+        def get_json(self):
+            parts = self.data.split(b"\r\n\r\n", 1)
+            return json.loads(parts[1].decode("utf-8")) if len(parts) > 1 else {}
+        def write_header(self, k, v): pass
+        def write_body(self, b): self.data.extend(b)
+        async def finish(self): pass
+        async def send_headers(self): pass
+
+    # 1. Test POST /api/host.pickDirectory
+    req_pick = {
+        "method": "POST",
+        "path": "/api/host.pickDirectory",
+        "query": "",
+        "headers": {},
+        "body": json.dumps({
+            "type": "client-request",
+            "rpcId": "rpc-pick-1",
+            "method": "host.pickDirectory",
+            "payload": {},
+        }).encode("utf-8"),
+    }
+    writer_pick = MockWriter()
+    await route.handler(req_pick, HttpResponseWriter(writer_pick))
+    res_pick = writer_pick.get_json()
+    assert res_pick["type"] == "server-response"
+    assert res_pick["rpcId"] == "rpc-pick-1"
+    assert res_pick["result"]["ok"] is True
+    assert res_pick["result"]["value"]["path"] == "C:/Projects/deepseek"
+
+    # 2. Test POST /api/workspace.list
+    req_ws = {
+        "method": "POST",
+        "path": "/api/workspace.list",
+        "query": "",
+        "headers": {},
+        "body": json.dumps({
+            "type": "client-request",
+            "rpcId": "rpc-ws-1",
+            "method": "workspace.list",
+            "payload": {},
+        }).encode("utf-8"),
+    }
+    writer_ws = MockWriter()
+    await route.handler(req_ws, HttpResponseWriter(writer_ws))
+    res_ws = writer_ws.get_json()
+    assert res_ws["type"] == "server-response"
+    assert res_ws["result"]["ok"] is True
+    assert "items" in res_ws["result"]["value"]

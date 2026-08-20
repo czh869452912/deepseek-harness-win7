@@ -200,3 +200,23 @@ async def test_api_model_settings_and_fork(web_ctx):
     fork_res = writer_fork.get_json()
     assert fork_res["success"] is True
     assert fork_res["sessionId"] == "forked-session-1"
+
+
+@pytest.mark.asyncio
+async def test_sse_agent_status_and_session_events(web_ctx):
+    from dsh.core.agent import Agent
+    from dsh.core.session import Session
+
+    # Create dummy agent with session
+    session = Session.create("default-session", ctx=web_ctx)
+    agent = Agent(session=session, ctx=web_ctx)
+
+    # Emit agent/status with Agent object in payload (must not crash)
+    web_ctx.emit("agent/status", {"agent": agent, "status": "running"})
+    web_ctx.emit("agent/status", {"agent": agent, "status": "idle"})
+
+    # Emit session/event
+    session.append_user_message("Hello from user")
+    session.append_assistant_message({"content": "Hello! I am ready."})
+
+    await asyncio.sleep(0.05)

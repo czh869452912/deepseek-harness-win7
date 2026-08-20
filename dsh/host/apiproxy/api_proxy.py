@@ -39,26 +39,60 @@ class ApiProxyPlugin(Plugin):
             ctx.effect(disposer)
 
         # Hook session events to broadcast via SSE
+        ctx.on("session/event", self._on_session_event)
         ctx.on("session/append", self._on_session_event)
         ctx.on("agent/status", self._on_agent_status)
         ctx.on("goal/changed", self._on_goal_changed)
+        ctx.on("goal/change", self._on_goal_changed)
 
     async def _broadcast_sse(self, event_type: str, data: Any) -> None:
-        payload = f"event: {event_type}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
-        for q in list(self._sse_clients):
-            try:
-                await q.put(payload)
-            except Exception:
-                pass
+        try:
+            payload = f"event: {event_type}\ndata: {json.dumps(data, ensure_ascii=False, default=str)}\n\n"
+            for q in list(self._sse_clients):
+                try:
+                    await q.put(payload)
+                except Exception:
+                    pass
+        except Exception:
+            pass
 
-    def _on_session_event(self, event: Dict[str, Any]) -> None:
-        asyncio.create_task(self._broadcast_sse("session/event", event))
+    def _on_session_event(self, *args: Any, **kwargs: Any) -> None:
+        try:
+            event = None
+            if len(args) >= 2:
+                event = args[1]
+            elif len(args) == 1:
+                event = args[0]
+            if isinstance(event, dict):
+                asyncio.create_task(self._broadcast_sse("session/event", event))
+        except Exception:
+            pass
 
-    def _on_agent_status(self, status: Dict[str, Any]) -> None:
-        asyncio.create_task(self._broadcast_sse("agent/status", status))
+    def _on_agent_status(self, *args: Any, **kwargs: Any) -> None:
+        try:
+            payload = args[0] if args else {}
+            if isinstance(payload, dict):
+                status = payload.get("status")
+                agent = payload.get("agent")
+                sid = getattr(agent, "session_id", None) if agent else None
+                if not sid and agent and hasattr(agent, "session"):
+                    sid = getattr(agent.session, "id", None)
+                asyncio.create_task(self._broadcast_sse("agent/status", {
+                    "status": str(status) if status is not None else "idle",
+                    "sessionId": sid,
+                }))
+            else:
+                asyncio.create_task(self._broadcast_sse("agent/status", {"status": str(payload)}))
+        except Exception:
+            pass
 
-    def _on_goal_changed(self, goal: Dict[str, Any]) -> None:
-        asyncio.create_task(self._broadcast_sse("goal/changed", goal))
+    def _on_goal_changed(self, *args: Any, **kwargs: Any) -> None:
+        try:
+            goal = args[0] if args else None
+            goal_data = goal.to_dict() if (goal and hasattr(goal, "to_dict")) else goal
+            asyncio.create_task(self._broadcast_sse("goal/changed", {"goal": goal_data}))
+        except Exception:
+            pass
 
     async def _handle_api_request(self, request: Dict[str, Any], response: HttpResponseWriter) -> None:
         path = request.get("path", "")

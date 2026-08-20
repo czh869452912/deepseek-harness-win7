@@ -32,7 +32,8 @@ class App {
     // Initialize UI Components
     this.modelSelect = new ModelSelectView({
       trigger: this.modelChipTrigger,
-      onSelectModel: (m) => {
+      onSelectModel: async (m) => {
+        await ApiClient.setModel(m);
         const toast = document.createElement("div");
         toast.className = "plan-banner-chip";
         toast.style.position = "fixed";
@@ -86,8 +87,12 @@ class App {
       baseUrlInput: document.getElementById("setting-base-url"),
       apiKeyInput: document.getElementById("setting-api-key"),
       modelInput: document.getElementById("setting-model"),
-      onSave: (cfg) => {
-        if (cfg.model) this.modelChipDisplay.textContent = cfg.model;
+      onSave: async (cfg) => {
+        await ApiClient.saveSettings(cfg);
+        if (cfg.model) {
+          this.modelChipDisplay.textContent = cfg.model;
+          this.modelSelect.setModel(cfg.model);
+        }
       },
     });
 
@@ -141,7 +146,9 @@ class App {
       }
       this.planMode.update(status.planMode);
       this.goalBar.update(status.goal);
-      this.sidebar.setWorkspace("Win7 Workspace");
+      if (status.cwd) {
+        this.sidebar.setWorkspace(status.cwd);
+      }
     } catch (e) {
       console.warn("Status refresh failed:", e);
     }

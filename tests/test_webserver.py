@@ -132,3 +132,71 @@ async def test_api_plan_and_goal_actions(web_ctx):
     res_goal = writer_goal.get_json()
     assert res_goal["success"] is True
     assert res_goal["goal"]["objective"] == "Test Web GUI"
+
+
+@pytest.mark.asyncio
+async def test_api_model_settings_and_fork(web_ctx):
+    server: WebServerService = web_ctx.get("web_server")
+    route = server.match("/api/model/set")
+
+    class MockWriter:
+        def __init__(self):
+            self.data = bytearray()
+        def write(self, b):
+            self.data.extend(b)
+        async def drain(self):
+            pass
+        def get_json(self):
+            parts = self.data.split(b"\r\n\r\n", 1)
+            return json.loads(parts[1].decode("utf-8")) if len(parts) > 1 else {}
+        def write_header(self, k, v): pass
+        def write_body(self, b): self.data.extend(b)
+        async def finish(self): pass
+        async def send_headers(self): pass
+
+    # 1. Model Set
+    req_model = {
+        "method": "POST",
+        "path": "/api/model/set",
+        "query": "",
+        "headers": {},
+        "body": json.dumps({"model": "deepseek-reasoner"}).encode("utf-8"),
+    }
+    writer = MockWriter()
+    await route.handler(req_model, HttpResponseWriter(writer))
+    res = writer.get_json()
+    assert res["success"] is True
+    assert res["model"] == "deepseek-reasoner"
+
+    # 2. Settings Save
+    req_settings = {
+        "method": "POST",
+        "path": "/api/settings/save",
+        "query": "",
+        "headers": {},
+        "body": json.dumps({
+            "baseUrl": "https://api.deepseek.com/v1",
+            "apiKey": "sk-test",
+            "model": "deepseek-v4-flash",
+        }).encode("utf-8"),
+    }
+    writer_settings = MockWriter()
+    await route.handler(req_settings, HttpResponseWriter(writer_settings))
+    assert writer_settings.get_json()["success"] is True
+
+    # 3. Session Fork
+    req_fork = {
+        "method": "POST",
+        "path": "/api/session/fork",
+        "query": "",
+        "headers": {},
+        "body": json.dumps({
+            "sourceSessionId": "default-session",
+            "newSessionId": "forked-session-1",
+        }).encode("utf-8"),
+    }
+    writer_fork = MockWriter()
+    await route.handler(req_fork, HttpResponseWriter(writer_fork))
+    fork_res = writer_fork.get_json()
+    assert fork_res["success"] is True
+    assert fork_res["sessionId"] == "forked-session-1"

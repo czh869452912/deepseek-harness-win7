@@ -68,4 +68,31 @@ export const ApiClient = {
     });
     return await res.json();
   },
+
+  async setModel(model) {
+    const res = await fetch("/api/model/set", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model }),
+    });
+    return await res.json();
+  },
+
+  async saveSettings(config) {
+    const res = await fetch("/api/settings/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(config),
+    });
+    return await res.json();
+  },
+
+  async forkSession(sourceSessionId, cutoffIndex = null) {
+    const res = await fetch("/api/session/fork", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sourceSessionId, cutoffIndex }),
+    });
+    return await res.json();
+  },
 };

@@ -103,9 +103,14 @@ class ApiProxyPlugin(Plugin):
             curr_goal = goals.get_goal() if goals else None
             plan_active = plan_mode.is_active() if plan_mode else False
 
+            effective_model = llm.resolve_model() if llm else "unknown"
+            effective_base_url = llm.resolve_base_url() if llm else "https://api.deepseek.com/v1"
+
             await send_json({
                 "status": "ready",
-                "model": getattr(llm, "model", "deepseek-chat") if llm else "unknown",
+                "cwd": os.getcwd(),
+                "model": effective_model,
+                "baseUrl": effective_base_url,
                 "planMode": plan_active,
                 "goal": curr_goal.to_dict() if curr_goal else None,
                 "sessionsCount": len(sessions_svc._sessions) if sessions_svc else 0,
@@ -154,7 +159,32 @@ class ApiProxyPlugin(Plugin):
             await send_json({"success": True, "sessionId": sid, "preset": preset})
             return
 
-        # 5. /api/session/history
+        # 5. /api/session/fork
+        if path == "/api/session/fork" and method == "POST":
+            src_sid = body_json.get("sourceSessionId", "default-session")
+            new_sid = body_json.get("newSessionId") or f"session-fork-{os.urandom(3).hex()}"
+            cutoff = body_json.get("cutoffIndex")
+            sessions_svc: SessionStore = self.ctx.get("sessions")
+            agent_loop = self.ctx.get("agent_loop")
+
+            if sessions_svc and src_sid in sessions_svc._sessions:
+                src_session = sessions_svc._sessions[src_sid]
+                new_session = sessions_svc.create(new_sid)
+                new_session.header.agent_preset = src_session.header.agent_preset
+                events_to_copy = src_session.events[:cutoff] if cutoff is not None else list(src_session.events)
+                for ev in events_to_copy:
+                    new_session.append(ev)
+
+                if agent_loop:
+                    handle = await agent_loop.create_agent(session_id=new_sid)
+                    self._active_sessions[new_sid] = handle
+
+                await send_json({"success": True, "sessionId": new_sid, "eventCount": len(events_to_copy)})
+                return
+            await send_json({"error": "Source session not found"}, 404)
+            return
+
+        # 6. /api/session/history
         if path == "/api/session/history":
             sid = parsed_query.get("sessionId", ["default-session"])[0]
             sessions_svc: SessionStore = self.ctx.get("sessions")
@@ -164,7 +194,7 @@ class ApiProxyPlugin(Plugin):
             await send_json({"sessionId": sid, "events": events})
             return
 
-        # 6. /api/agent/prompt
+        # 7. /api/agent/prompt
         if path == "/api/agent/prompt" and method == "POST":
             sid = body_json.get("sessionId", "default-session")
             content = body_json.get("content", "").strip()
@@ -188,7 +218,7 @@ class ApiProxyPlugin(Plugin):
             await send_json({"success": True, "status": "queued", "sessionId": sid})
             return
 
-        # 7. /api/agent/cancel
+        # 8. /api/agent/cancel
         if path == "/api/agent/cancel" and method == "POST":
             sid = body_json.get("sessionId", "default-session")
             handle = self._active_sessions.get(sid)
@@ -197,7 +227,7 @@ class ApiProxyPlugin(Plugin):
             await send_json({"success": True, "sessionId": sid})
             return
 
-        # 8. /api/plan/set
+        # 9. /api/plan/set
         if path == "/api/plan/set" and method == "POST":
             active = bool(body_json.get("active", False))
             plan_mode = self.ctx.get("plan_mode")
@@ -206,7 +236,7 @@ class ApiProxyPlugin(Plugin):
             await send_json({"success": True, "planMode": active})
             return
 
-        # 9. /api/goal/action
+        # 10. /api/goal/action
         if path == "/api/goal/action" and method == "POST":
             action = body_json.get("action")
             goals = self.ctx.get("goals")
@@ -222,6 +252,36 @@ class ApiProxyPlugin(Plugin):
                 g = goals.update_goal(g.id, g.revision, action)
 
             await send_json({"success": True, "goal": g.to_dict() if g else None})
+            return
+
+        # 11. /api/model/set
+        if path == "/api/model/set" and method == "POST":
+            model_name = body_json.get("model")
+            llm = self.ctx.get("llm")
+            if llm and model_name:
+                llm.static_model = model_name
+            await send_json({"success": True, "model": model_name})
+            return
+
+        # 12. /api/settings/save
+        if path == "/api/settings/save" and method == "POST":
+            llm = self.ctx.get("llm")
+            if llm:
+                if body_json.get("baseUrl"):
+                    llm.static_base_url = body_json["baseUrl"]
+                if body_json.get("apiKey"):
+                    llm.static_api_key = body_json["apiKey"]
+                if body_json.get("model"):
+                    llm.static_model = body_json["model"]
+
+            settings_svc = self.ctx.get("settings")
+            if settings_svc:
+                if body_json.get("baseUrl"):
+                    settings_svc.set_setting("llm", "base_url", body_json["baseUrl"])
+                if body_json.get("model"):
+                    settings_svc.set_setting("llm", "model", body_json["model"])
+
+            await send_json({"success": True, "saved": True})
             return
 
         # Not found

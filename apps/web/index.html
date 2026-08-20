@@ -5,111 +5,238 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DeepSeek Harness</title>
   <link rel="stylesheet" href="/src/style.css">
-  <!-- Markdown & Code highlighting support -->
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
-<body class="theme-dark">
+<body class="theme-dark" id="body-root">
   <div id="app" class="app-layout">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="sidebar-header">
+    
+    <!-- Left Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-top">
         <div class="brand">
-          <svg class="logo-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          <svg class="fish-logo" viewBox="0 0 34 25" width="28" height="21" fill="none">
+            <path d="M17 1C10 1 3 6 1 12.5C3 19 10 24 17 24C24 24 31 19 33 12.5C31 6 24 1 17 1Z" fill="#3B82F6" fill-opacity="0.2"/>
+            <path d="M17 3C11 3 5 7.5 3 12.5C5 17.5 11 22 17 22C23 22 29 17.5 31 12.5C29 7.5 23 3 17 3Z" stroke="#60A5FA" stroke-width="2"/>
+            <circle cx="10" cy="12.5" r="2.5" fill="#93C5FD"/>
+            <path d="M19 8C22 10.5 22 14.5 19 17" stroke="#93C5FD" stroke-width="2" stroke-linecap="round"/>
           </svg>
-          <span class="brand-name">DeepSeek Harness</span>
+          <span class="brand-title">DeepSeek Harness</span>
+          <span class="preview-tag">Win7</span>
         </div>
-        <button id="btn-new-session" class="btn-icon" title="新建会话">
+        <button id="btn-new-session" class="btn-new-chat" title="新建会话 (Ctrl+N)">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 5v14M5 12h14"/>
           </svg>
+          <span>新会话</span>
         </button>
       </div>
 
-      <div class="sidebar-section">
-        <div class="section-title">智能体预设</div>
-        <select id="select-preset" class="select-preset">
-          <option value="standard" selected>标准模式 (Standard)</option>
-          <option value="minimal">极简模式 (Minimal)</option>
-          <option value="creative">创造模式 (Creative)</option>
-        </select>
+      <!-- Workspace Bar in Sidebar -->
+      <div class="workspace-chip-container">
+        <div class="workspace-chip" id="workspace-chip" title="当前工作区目录">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+          </svg>
+          <span id="workspace-label" class="workspace-name">Loading...</span>
+        </div>
       </div>
 
-      <div class="sidebar-section session-list-section">
-        <div class="section-title">会话历史</div>
-        <div id="session-list" class="session-list">
+      <!-- Mode / Preset Selector -->
+      <div class="sidebar-preset-box">
+        <div class="sidebar-label">运行预设 (Agent Preset)</div>
+        <div class="preset-dropdown-wrap">
+          <select id="select-preset" class="preset-select">
+            <option value="standard" selected>标准模式 (Standard)</option>
+            <option value="minimal">极简模式 (Minimal)</option>
+            <option value="creative">创造模式 (Creative)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Session Search & History List -->
+      <div class="sidebar-history">
+        <div class="history-search-box">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+          </svg>
+          <input type="text" id="input-search-sessions" placeholder="搜索历史会话..." />
+        </div>
+
+        <div class="history-list-scroll" id="session-list">
+          <div class="session-group-title">最近会话</div>
           <div class="session-item active" data-id="default-session">
-            <span class="session-title">默认会话</span>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+            </svg>
+            <span class="session-title-text">默认会话 (Default)</span>
           </div>
         </div>
       </div>
 
-      <div class="sidebar-footer">
-        <div class="status-indicator">
-          <span class="status-dot ready"></span>
-          <span id="model-badge" class="model-badge">deepseek-v4-flash</span>
-        </div>
+      <!-- Sidebar Bottom Footer -->
+      <div class="sidebar-bottom">
+        <button id="btn-open-settings" class="btn-sidebar-footer" title="设置">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+          </svg>
+          <span>设置</span>
+        </button>
+        <button id="btn-toggle-theme" class="btn-sidebar-footer" title="切换深色/浅色主题">
+          <svg id="icon-theme" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+          </svg>
+        </button>
       </div>
     </aside>
 
-    <!-- Main Container -->
-    <main class="main-container">
-      <!-- Top Goal & Plan Bar -->
-      <header class="top-bar">
-        <div class="bar-left">
-          <div id="goal-bar" class="goal-bar hidden">
-            <span class="goal-label">GOAL</span>
-            <span id="goal-objective" class="goal-text">自主长任务目标...</span>
-            <span id="goal-phase" class="badge badge-active">ACTIVE</span>
-            <button id="btn-goal-toggle" class="btn-small">暂停</button>
+    <!-- Main Chat View Area -->
+    <main class="main-viewport">
+      
+      <!-- Top Navigation & Status Bar -->
+      <header class="top-nav-bar">
+        <div class="nav-left">
+          <button id="btn-toggle-sidebar" class="btn-icon-plain" title="折叠/展开侧边栏">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 12h18M3 6h18M3 18h18"/>
+            </svg>
+          </button>
+          
+          <!-- Goal Bar (when active) -->
+          <div id="goal-bar" class="goal-bar-pill hidden">
+            <div class="goal-tag">🎯 GOAL</div>
+            <span id="goal-objective" class="goal-title-text">长程任务目标...</span>
+            <span id="goal-phase" class="goal-status-badge badge-active">ACTIVE</span>
+            <span id="goal-rounds" class="goal-rounds-count">Round 1</span>
+            <button id="btn-goal-toggle" class="btn-pill-small">暂停</button>
           </div>
         </div>
-        <div class="bar-right">
-          <button id="btn-plan-toggle" class="btn-toggle-plan">
+
+        <div class="nav-right">
+          <!-- Plan Mode Switch Button -->
+          <button id="btn-plan-toggle" class="btn-plan-pill" title="切换规划模式 (/plan)">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
             </svg>
             <span id="plan-mode-label">规划模式: 关</span>
           </button>
+
+          <!-- Current Model Chip -->
+          <div class="model-chip" id="model-chip-display">
+            <span class="live-dot"></span>
+            <span id="model-name-text">deepseek-v4-flash</span>
+          </div>
         </div>
       </header>
 
-      <!-- Message Chat Stream -->
-      <section id="chat-stream" class="chat-stream">
-        <div class="welcome-screen" id="welcome-screen">
-          <div class="welcome-card">
-            <h2>欢迎使用 DeepSeek Harness</h2>
-            <p>基于 Cordis 插件架构的纯净 Windows 7 智能体平台。</p>
-            <div class="quick-hints">
-              <div class="hint-card" data-cmd="/plan 请帮我规划代码重构方案">
-                <strong>/plan 规划模式</strong>
-                <span>只读探索代码并生成决策完备的设计方案</span>
+      <!-- Message History Container -->
+      <section class="messages-container" id="messages-container">
+        
+        <!-- Empty Hero Screen (when no messages) -->
+        <div class="hero-screen" id="hero-screen">
+          <div class="hero-glow-bg"></div>
+          <div class="hero-content">
+            <div class="hero-brand">
+              <svg class="hero-fish" viewBox="0 0 34 25" width="46" height="34" fill="none">
+                <path d="M17 1C10 1 3 6 1 12.5C3 19 10 24 17 24C24 24 31 19 33 12.5C31 6 24 1 17 1Z" fill="#3B82F6" fill-opacity="0.3"/>
+                <path d="M17 3C11 3 5 7.5 3 12.5C5 17.5 11 22 17 22C23 22 29 17.5 31 12.5C29 7.5 23 3 17 3Z" stroke="#3B82F6" stroke-width="2"/>
+                <circle cx="10" cy="12.5" r="3" fill="#60A5FA"/>
+                <path d="M19 8C22 10.5 22 14.5 19 17" stroke="#60A5FA" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <h1 class="hero-title">DeepSeek Harness</h1>
+              <span class="hero-badge">Portable Win7</span>
+            </div>
+            <p class="hero-subtitle">全功能 Windows 7 原生智能体环境，内置代码编辑、终端、规划与长任务体系。</p>
+
+            <div class="hero-cards-grid">
+              <div class="hero-card" data-cmd="/plan 帮我检查代码并设计重构方案">
+                <div class="hero-card-icon">📋</div>
+                <div class="hero-card-text">
+                  <strong>/plan 规划模式</strong>
+                  <span>进入只读探索，输出决策完备的 Markdown 设计方案</span>
+                </div>
               </div>
-              <div class="hint-card" data-cmd="/goal 优化全套测试用例并确保全部通过">
-                <strong>/goal 目标模式</strong>
-                <span>开启多轮自主循环直至完成复杂任务</span>
+              <div class="hero-card" data-cmd="/goal 运行完整测试套件并修复所有异常">
+                <div class="hero-card-icon">🎯</div>
+                <div class="hero-card-text">
+                  <strong>/goal 自主长任务</strong>
+                  <span>开启多轮自治循环，直至完成目标</span>
+                </div>
+              </div>
+              <div class="hero-card" data-cmd="阅读并分析当前项目的核心架构">
+                <div class="hero-card-icon">🔍</div>
+                <div class="hero-card-text">
+                  <strong>代码库调研</strong>
+                  <span>使用 glob、grep 与 str_replace_editor 检视代码</span>
+                </div>
+              </div>
+              <div class="hero-card" data-cmd="/compact">
+                <div class="hero-card-icon">⚡</div>
+                <div class="hero-card-text">
+                  <strong>/compact 上下文压缩</strong>
+                  <span>智能总结早期会话，释放上下文窗口</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
+
+        <!-- Dynamic Message Stream -->
+        <div class="chat-flow" id="chat-flow"></div>
       </section>
 
-      <!-- Composer Input -->
-      <footer class="composer-container">
-        <div class="composer-box">
+      <!-- Bottom Composer Bar -->
+      <footer class="composer-shell">
+        
+        <!-- Slash Command Autocomplete Popover -->
+        <div class="slash-popup hidden" id="slash-popup">
+          <div class="slash-item" data-cmd="/plan ">
+            <span class="slash-cmd">/plan</span>
+            <span class="slash-desc">切换或进入规划模式 (只读探索与方案评审)</span>
+          </div>
+          <div class="slash-item" data-cmd="/goal ">
+            <span class="slash-cmd">/goal</span>
+            <span class="slash-desc">设定并启动自主长任务目标</span>
+          </div>
+          <div class="slash-item" data-cmd="/compact">
+            <span class="slash-cmd">/compact</span>
+            <span class="slash-desc">压缩并总结早期会话步骤</span>
+          </div>
+          <div class="slash-item" data-cmd="/clear">
+            <span class="slash-cmd">/clear</span>
+            <span class="slash-desc">清空当前视图显示</span>
+          </div>
+        </div>
+
+        <!-- Input Box Card -->
+        <div class="composer-card">
+          <div class="composer-header" id="composer-header">
+            <div id="plan-active-indicator" class="plan-banner-chip hidden">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              <span>规划模式已激活 (只读探索，不修改文件)</span>
+            </div>
+          </div>
+          
           <textarea
-            id="prompt-input"
-            class="composer-textarea"
-            placeholder="输入指令，使用 Shift+Enter 换行，支持 /plan 或 /goal..."
+            id="prompt-textarea"
+            class="composer-input"
+            placeholder="输入需求或指令，支持 /plan、/goal，按 Enter 发送，Shift+Enter 换行..."
             rows="2"
           ></textarea>
-          <div class="composer-actions">
-            <div class="shortcuts-hint">
-              <span>快捷指令: <code>/plan</code> <code>/goal</code></span>
+
+          <div class="composer-footer">
+            <div class="composer-left-actions">
+              <span class="shortcut-tip">提示: 输入 <code>/</code> 唤出快捷指令</span>
             </div>
-            <div class="btn-group">
-              <button id="btn-cancel" class="btn-cancel hidden">停止</button>
-              <button id="btn-send" class="btn-send">
+            <div class="composer-right-actions">
+              <button id="btn-stop" class="btn-action-stop hidden" title="停止生成">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                  <rect x="6" y="6" width="12" height="12" rx="2"/>
+                </svg>
+                <span>停止</span>
+              </button>
+              <button id="btn-send" class="btn-action-send" title="发送 (Enter)">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                   <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
                 </svg>
@@ -119,6 +246,59 @@
         </div>
       </footer>
     </main>
+
+  </div>
+
+  <!-- Settings Modal (1:1 with Official Settings) -->
+  <div class="modal-backdrop hidden" id="settings-modal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+          </svg>
+          <span>系统设置 (Settings)</span>
+        </div>
+        <button id="btn-close-settings" class="btn-icon-plain">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="settings-group">
+          <label class="setting-label">API Base URL</label>
+          <input type="text" id="setting-base-url" class="setting-input" placeholder="https://api.deepseek.com/v1" />
+          <span class="setting-hint">支持 OpenAI 兼容 API 格式</span>
+        </div>
+
+        <div class="settings-group">
+          <label class="setting-label">API Key</label>
+          <input type="password" id="setting-api-key" class="setting-input" placeholder="sk-..." />
+          <span class="setting-hint">保存在 ~/.dsh/.credentials.yaml 中</span>
+        </div>
+
+        <div class="settings-group">
+          <label class="setting-label">模型名称 (Model)</label>
+          <input type="text" id="setting-model" class="setting-input" placeholder="deepseek-v4-flash" />
+        </div>
+
+        <div class="settings-group">
+          <label class="setting-label">运行环境 (Environment Info)</label>
+          <div class="env-info-box" id="env-info-box">
+            <div>平台: Windows 7 SP1+ (Win32)</div>
+            <div>架构: Cordis Plugin Architecture</div>
+            <div>运行时: Python 3.8.10</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="btn-save-settings" class="btn-primary">保存配置</button>
+      </div>
+    </div>
   </div>
 
   <script src="/src/app.js"></script>

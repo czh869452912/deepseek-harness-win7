@@ -1,9 +1,12 @@
 import os
 import shutil
 import sys
+import zipfile
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIST_DIR = os.path.join(ROOT_DIR, "dist", "dsh-win7-portable")
+VERSION = "0.1.0"
+ZIP_OUTPUT = os.path.join(ROOT_DIR, "dist", f"dsh-win7-portable-v{VERSION}.zip")
 
 
 def build_portable():
@@ -56,7 +59,22 @@ if %errorlevel% equ 0 (
     with open(os.path.join(DIST_DIR, "dsh.bat"), "w", encoding="utf-8") as f:
         f.write(bat_content)
 
-    print(f"[Build Portable] Successfully built Portable Release at: {DIST_DIR}")
+    print(f"[Build Portable] Successfully built Portable Release directory at: {DIST_DIR}")
+
+    # 4. Create ZIP distribution package
+    print(f"[Build Portable] Creating ZIP release package at: {ZIP_OUTPUT}")
+    if os.path.exists(ZIP_OUTPUT):
+        os.remove(ZIP_OUTPUT)
+
+    with zipfile.ZipFile(ZIP_OUTPUT, "w", zipfile.ZIP_DEFLATED) as zipf:
+        for root, dirs, files in os.walk(DIST_DIR):
+            for file in files:
+                file_path = os.path.join(root, file)
+                arcname = os.path.relpath(file_path, os.path.dirname(DIST_DIR))
+                zipf.write(file_path, arcname)
+
+    size_mb = os.path.getsize(ZIP_OUTPUT) / (1024 * 1024)
+    print(f"[Build Portable] Created Portable Release ZIP v{VERSION}: {ZIP_OUTPUT} ({size_mb:.2f} MB)")
 
 
 if __name__ == "__main__":

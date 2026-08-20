@@ -1,0 +1,35 @@
+# Reference code
+reference/
+
+# Build and Packaging output
+dist/
+build/
+*.egg-info/
+
+# Virtual Environments
+.venv/
+env/
+venv/
+ENV/
+
+# Python Cache & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Pytest & Testing Cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary & Log files
+*.log
+scratch/
+hello_test.txt

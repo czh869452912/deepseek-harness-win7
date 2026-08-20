@@ -1,0 +1,31 @@
+# Minimal Mode (极简模式) Preset
+# Fixed persona, two tools: persistent shell and str_replace_editor.
+
+- id: persona
+  name: "@deepseek-ai/dsh-persona"
+  config:
+    text: You are a helpful software engineer assistant.
+
+- id: fs-local
+  name: "@deepseek-ai/dsh-fs-local"
+  config:
+    cwd: "."
+
+- id: str-replace-editor
+  name: "@deepseek-ai/dsh-tool-str-replace-editor"
+  config:
+    maxOutputChars: 16000
+
+- id: persistent-pwsh
+  name: "@deepseek-ai/dsh-tool-pwsh-persistent"
+  disabled: sys.platform != 'win32'
+  config:
+    tool_name: pwsh
+    timeoutMs: 300000
+
+- id: persistent-bash
+  name: "@deepseek-ai/dsh-tool-pwsh-persistent"
+  disabled: sys.platform == 'win32'
+  config:
+    tool_name: bash
+    timeoutMs: 300000

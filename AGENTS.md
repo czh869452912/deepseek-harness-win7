@@ -10,9 +10,10 @@ The goal of this repository is to maintain a lightweight, highly extensible **Wi
 
 ### Core Targets
 1. **Windows 7 SP1 Compatibility**: Must run natively on Windows 7+ without requiring Python 3.9+ runtime dependencies or modern OS API patches.
-2. **Cordis Architecture ("Everything is a Plugin")**: All system capabilities (LLM, tools, filesystem, terminal, sessions, agent loop) must be modular plugins mounted on a unified `Context`.
-3. **Preset Support**: Must support Minimal Mode (极简模式) and Creative Mode (创造模式).
-4. **Portable Packaging**: Must support single-folder zero-dependency portable deployment.
+2. **Cordis Architecture ("Everything is a Plugin")**: All system capabilities (LLM, tools, filesystem, terminal, sessions, agent loop, Web GUI) must be modular plugins mounted on a unified `Context`.
+3. **1:1 Official Web GUI (Cordis in Browser)**: Provides full React 18 + TSX + CSS Modules Web GUI with 40 official client plugins, dual SSE streams (`/api/events/mux` and `/api/events/host`), and `POST /api/respond` RPC.
+4. **Preset Support**: Must support Minimal Mode (极简模式), Standard Mode (标准模式), and Creative Mode (创造模式).
+5. **Portable Packaging**: Must support single-folder zero-dependency portable deployment (`dsh.bat` and `dsh-web.bat`).
 
 ---
 
@@ -22,7 +23,7 @@ When adding features or fixing bugs, follow Cordis conventions:
 
 ### A. Context & Service Ownership
 - Services are registered on `ctx` via `ctx.set_service("name", instance)`.
-- Plugins access services dynamically (`ctx.get("tools")`, `ctx.get("fs")`, `ctx.get("llm")`).
+- Plugins access services dynamically (`ctx.get("tools")`, `ctx.get("fs")`, `ctx.get("llm")`, `ctx.get("web_server")`, `ctx.get("client_modules")`).
 - Avoid direct hardcoded package imports between plugins; communicate through service interfaces and event hooks.
 
 ### B. Dependency Injection (`inject`)
@@ -35,12 +36,12 @@ When adding features or fixing bugs, follow Cordis conventions:
   ```
 
 ### C. Reversible Effects (`effect`)
-- Every registration (event handler, tool definition, temporary file) must be reversible.
+- Every registration (event handler, tool definition, temporary file, HTTP route) must be reversible.
 - Use `ctx.effect(disposer_fn)` or return cleanup functions so that unloading a plugin leaves no residual state.
 
 ### D. Typed Event Dispatching
 Choose the correct event dispatch mode when introducing extension points:
-- **`emit`**: Sync/async fire-and-forget notification (e.g., `turn/start`, `step/start`).
+- **`emit`**: Sync/async fire-and-forget notification (e.g., `turn/start`, `session/event`, `question/requested`).
 - **`waterfall`**: Pipeline middleware pattern (`data, next_fn`) for prompt assembly, tool execution policy (`tools/pre-execute`), and request rewriting (`agent/pre-step`).
 - **`parallel`**: Async concurrent fan-out (`asyncio.gather`).
 - **`serial`**: Async sequential execution (e.g., `agent/turn-stopping`).
@@ -69,16 +70,23 @@ To ensure strict Windows 7 and Python 3.8.10 compatibility:
 
 ---
 
-## 4. Preset Conventions
+## 4. Preset & Web GUI Conventions
 
 - **Minimal Mode (`dsh/presets/minimal.yaml`)**:
   - Persona: `You are a helpful software engineer assistant.`
   - Tools: `str_replace_editor` + persistent shell (`pwsh` on Windows, `bash` on POSIX).
   - No complex skill or compaction overhead.
 
+- **Standard Mode (`dsh/presets/standard.yaml`)**:
+  - Full engineering toolset: `str_replace_editor`, `pwsh`, `fs_search`, `ask_user`, `todo`, `skill`, `compaction`, `plan_mode`, `goal`.
+
 - **Creative Mode (`dsh/presets/creative.yaml`)**:
   - Includes full tool suite plus `@deepseek-ai/dsh-cordis-manager`.
   - Exposes runtime Cordis tools: `cordis_list_plugins`, `cordis_inspect_context`, `cordis_unload_plugin`, `cordis_dump_config`.
+
+- **Web GUI Mode (`dsh.py --web` / `dsh-web.bat`)**:
+  - Automatically loads `WebServerPlugin`, `ClientModulesPlugin`, `ApiProxyPlugin`, and `FrontendStaticPlugin`.
+  - Serves official React 18 frontend from `apps/web/dist` and 40 client plugins from `packages/client/`.
 
 ---
 
@@ -96,4 +104,8 @@ Ensure all tests pass cleanly. When modifying tools or CLI flags, add correspond
 
 ## 6. Portable Release Requirements
 
-The portable release script (`scripts/build_portable.py`) creates a standalone distribution in `dist/dsh-win7-portable/` with an embedded Python 3.8 runtime and launcher scripts (`dsh.bat`). Ensure any new dependencies are added to `requirements.txt`.
+The portable release script (`scripts/build_portable.py`) creates a standalone distribution in `dist/dsh-win7-portable/` and `dist/dsh-win7-portable-v0.1.0.zip` containing:
+1. Embedded Python 3.8 dependencies (`lib/`).
+2. Full `dsh/` framework and `dsh.py` entrypoint.
+3. Compiled React 18 Web GUI (`apps/web/dist/`) and official client packages (`packages/client/`).
+4. Dual launcher batch scripts: `dsh.bat` (CLI) and `dsh-web.bat` (Web GUI).

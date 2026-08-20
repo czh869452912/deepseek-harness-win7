@@ -31,6 +31,7 @@ from dsh.goal.tool_goal import ToolGoalPlugin
 from dsh.host.webserver.webserver import WebServerPlugin
 from dsh.host.frontend_static.frontend_static import FrontendStaticPlugin
 from dsh.host.apiproxy.api_proxy import ApiProxyPlugin
+from dsh.host.client_modules.registry import ClientModulesPlugin
 
 
 def build_harness(
@@ -92,9 +93,11 @@ def build_harness(
     loader.register_plugin_class("@deepseek-ai/dsh-host-webserver", WebServerPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-host-frontend-static", FrontendStaticPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-apiproxy", ApiProxyPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-client-modules", ClientModulesPlugin)
 
     if enable_web:
         ctx.plugin(WebServerPlugin, config={"host": web_host, "port": web_port})
+        ctx.plugin(ClientModulesPlugin)
         ctx.plugin(ApiProxyPlugin)
         ctx.plugin(FrontendStaticPlugin)
 

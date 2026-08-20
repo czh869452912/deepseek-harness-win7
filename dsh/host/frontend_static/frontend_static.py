@@ -36,10 +36,19 @@ class FrontendStaticPlugin(Plugin):
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
         cfg = config or {}
-        self.dist_index = cfg.get(
-            "distIndex",
-            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "apps", "web", "index.html"),
-        )
+        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        candidates = [
+            os.path.join(repo_root, "reference", "deepseek-harness", "apps", "web", "dist", "index.html"),
+            os.path.join(repo_root, "apps", "web", "dist", "index.html"),
+            os.path.join(repo_root, "apps", "web", "index.html"),
+        ]
+        chosen = cfg.get("distIndex")
+        if not chosen:
+            for c in candidates:
+                if os.path.isfile(c):
+                    chosen = c
+                    break
+        self.dist_index = chosen or candidates[-1]
         self.dist_root = os.path.dirname(self.dist_index)
 
     def apply(self, ctx: Any) -> None:

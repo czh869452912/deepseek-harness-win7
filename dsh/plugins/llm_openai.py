@@ -15,6 +15,13 @@ class LLMOpenAIPlugin(Plugin):
         api_key = self.config.get("api_key")
         base_url = self.config.get("base_url")
         model = self.config.get("model")
+        api_key_env = self.config.get("apiKeyEnv", "DEEPSEEK_API_KEY")
 
-        llm_service = LLMService(api_key=api_key, base_url=base_url, model=model)
+        llm_service = LLMService(
+            ctx=ctx,
+            api_key=api_key,
+            base_url=base_url,
+            model=model,
+            api_key_env=api_key_env
+        )
         ctx.set_service("llm", llm_service)

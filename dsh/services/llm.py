@@ -2,60 +2,146 @@ import json
 import os
 import urllib.request
 import urllib.error
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 
 class LLMService:
     """
     LLM Service registered at `ctx.llm`.
-    Supports OpenAI-compatible API endpoints (DeepSeek, OpenAI, etc.).
+    Supports OpenAI-compatible API endpoints (DeepSeek, OpenAI, etc.)
+    with per-request dynamic resolution of api_key, base_url, and model.
     """
 
     def __init__(
         self,
+        ctx: Optional[Any] = None,
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
-        model: Optional[str] = None
+        model: Optional[str] = None,
+        api_key_env: str = "DEEPSEEK_API_KEY"
     ):
-        self.api_key = (
-            api_key
+        self.ctx = ctx
+        self.static_api_key = api_key
+        self.static_base_url = base_url
+        self.static_model = model
+        self.api_key_env = api_key_env
+
+    def resolve_api_key(self) -> str:
+        """
+        Dynamic Per-Request resolution for API Key:
+        1. Static configured key (if passed explicitly)
+        2. Credentials service (ctx.credentials)
+        3. Settings service (ctx.settings)
+        4. Environment variables (DEEPSEEK_API_KEY, OPENAI_API_KEY)
+        """
+        if self.static_api_key:
+            return self.static_api_key
+
+        if self.ctx and self.ctx.has("credentials"):
+            creds = self.ctx.get("credentials")
+            val = creds.resolve(self.api_key_env) or creds.resolve("OPENAI_API_KEY")
+            if val:
+                return val
+
+        if self.ctx and self.ctx.has("settings"):
+            settings = self.ctx.get("settings")
+            val = settings.get_setting("llm", "api_key")
+            if val:
+                return val
+
+        # Environment variable fallback
+        env_key = (
+            os.environ.get(self.api_key_env)
             or os.environ.get("DEEPSEEK_API_KEY")
             or os.environ.get("OPENAI_API_KEY")
-            or ""
         )
-        self.base_url = (
-            base_url
-            or os.environ.get("DEEPSEEK_BASE_URL")
-            or os.environ.get("OPENAI_BASE_URL")
-            or "https://api.deepseek.com"
-        ).rstrip("/")
+        if env_key:
+            return env_key
 
-        self.model = (
-            model
-            or os.environ.get("DEEPSEEK_MODEL")
-            or os.environ.get("OPENAI_MODEL")
-            or "deepseek-chat"
+        raise RuntimeError(
+            f"LLM API Key missing for '{self.api_key_env}'. "
+            "Please provide --api-key, set DEEPSEEK_API_KEY environment variable, or configure ctx.credentials."
         )
+
+    def resolve_base_url(self) -> str:
+        """
+        Dynamic Per-Request resolution for Base URL:
+        1. Static configured base_url (if passed explicitly)
+        2. Settings service (ctx.settings)
+        3. Environment variables (DEEPSEEK_BASE_URL, OPENAI_BASE_URL)
+        4. Public default URL (https://api.deepseek.com)
+        """
+        if self.static_base_url:
+            return self.static_base_url.rstrip("/")
+
+        if self.ctx and self.ctx.has("settings"):
+            settings = self.ctx.get("settings")
+            val = settings.get_setting("llm", "base_url")
+            if val:
+                return val.rstrip("/")
+
+        env_url = (
+            os.environ.get("DEEPSEEK_BASE_URL")
+            or os.environ.get("OPENAI_BASE_URL")
+        )
+        if env_url:
+            return env_url.rstrip("/")
+
+        return "https://api.deepseek.com"
+
+    def resolve_model(self, req_model: Optional[str] = None) -> str:
+        """
+        Dynamic Per-Request resolution for Model Name:
+        1. Request-specific model parameter
+        2. Static configured model
+        3. Settings service (ctx.settings)
+        4. Environment variables (DEEPSEEK_MODEL, OPENAI_MODEL)
+        5. Default model ('deepseek-chat')
+        """
+        if req_model:
+            return req_model
+
+        if self.static_model:
+            return self.static_model
+
+        if self.ctx and self.ctx.has("settings"):
+            settings = self.ctx.get("settings")
+            val = settings.get_setting("llm", "model")
+            if val:
+                return val
+
+        env_model = (
+            os.environ.get("DEEPSEEK_MODEL")
+            or os.environ.get("OPENAI_MODEL")
+        )
+        if env_model:
+            return env_model
+
+        return "deepseek-chat"
 
     def chat_completion(
         self,
         messages: List[Dict[str, Any]],
         tools: Optional[List[Dict[str, Any]]] = None,
+        model: Optional[str] = None,
         temperature: float = 0.0
     ) -> Dict[str, Any]:
         """
-        Send a chat completion request to the LLM API.
-        Returns OpenAI-style response message object.
+        Send a chat completion request to the LLM API using dynamic connection facts.
         """
-        url = f"{self.base_url}/chat/completions"
+        api_key = self.resolve_api_key()
+        base_url = self.resolve_base_url()
+        selected_model = self.resolve_model(model)
+
+        url = f"{base_url}/chat/completions"
 
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}"
+            "Authorization": f"Bearer {api_key}"
         }
 
         payload: Dict[str, Any] = {
-            "model": self.model,
+            "model": selected_model,
             "messages": messages,
             "temperature": temperature
         }

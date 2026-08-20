@@ -6,9 +6,11 @@ from dsh.cordis.context import Context
 from dsh.cordis.loader import PresetLoader
 from dsh.plugins.agent_loop_plugin import AgentLoopPlugin
 from dsh.plugins.cordis_manager import CordisManagerPlugin
+from dsh.plugins.credentials_local import CredentialsLocalPlugin
 from dsh.plugins.fs_local import FsLocalPlugin
 from dsh.plugins.llm_openai import LLMOpenAIPlugin
 from dsh.plugins.persona import PersonaPlugin
+from dsh.plugins.settings_file import SettingsFilePlugin
 from dsh.plugins.skill_filesystem import SkillFilesystemPlugin
 from dsh.plugins.tool_pwsh_persistent import ToolPwshPersistentPlugin
 from dsh.plugins.tool_skill import ToolSkillPlugin
@@ -27,8 +29,11 @@ def build_harness(
     """
     ctx = Context()
 
-    # Mount base agent loop & LLM plugins
+    # Mount base infrastructure plugins
+    ctx.plugin(CredentialsLocalPlugin)
+    ctx.plugin(SettingsFilePlugin)
     ctx.plugin(AgentLoopPlugin)
+
     ctx.plugin(LLMOpenAIPlugin, config={
         "api_key": api_key,
         "base_url": base_url,
@@ -44,6 +49,8 @@ def build_harness(
     loader.register_plugin_class("@deepseek-ai/dsh-cordis-manager", CordisManagerPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-skill-filesystem", SkillFilesystemPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-tool-skill", ToolSkillPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-credentials-local", CredentialsLocalPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-settings-file", SettingsFilePlugin)
 
     # Determine preset file
     presets_dir = os.path.join(os.path.dirname(__file__), "presets")

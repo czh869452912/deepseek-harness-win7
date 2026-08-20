@@ -340,13 +340,16 @@ class BasicCompactionPlugin(Plugin):
 
     def __init__(
         self,
+        config: Optional[Dict[str, Any]] = None,
         threshold_tokens: int = 80000,
         retain_tokens: int = 20000,
         auto: bool = True,
     ):
-        self.threshold_tokens = threshold_tokens
-        self.retain_tokens = retain_tokens
-        self.auto = auto
+        super().__init__(config)
+        cfg = config or {}
+        self.threshold_tokens = int(cfg.get("thresholdTokens", cfg.get("threshold_tokens", threshold_tokens)))
+        self.retain_tokens = int(cfg.get("retainTokens", cfg.get("retain_tokens", retain_tokens)))
+        self.auto = bool(cfg.get("auto", auto))
 
     def apply(self, ctx: Any) -> None:
         if not ctx.has("compaction"):

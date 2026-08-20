@@ -71,7 +71,15 @@ class ToolsService:
         if hasattr(self.ctx, 'effect'):
             self.ctx.effect(disposer)
 
-        return disposer
+    def register_tool(self, tool_def: Dict[str, Any]) -> Callable[[], None]:
+        """
+        Register a tool using dictionary definition.
+        """
+        name = tool_def["name"]
+        description = tool_def.get("description", "")
+        parameters = tool_def.get("parameters", {})
+        handler = tool_def.get("execute") or tool_def.get("handler")
+        return self.register(name, description, parameters, handler)
 
     def get_tool(self, name: str) -> Optional[Tool]:
         return self._tools.get(name)

@@ -125,13 +125,16 @@ class ToolResultPrunerPlugin(Plugin):
 
     def __init__(
         self,
+        config: Optional[Dict[str, Any]] = None,
         threshold_chars: int = 2000,
         head_chars: int = 500,
         tail_chars: int = 500,
     ):
-        self.threshold_chars = threshold_chars
-        self.head_chars = head_chars
-        self.tail_chars = tail_chars
+        super().__init__(config)
+        cfg = config or {}
+        self.threshold_chars = int(cfg.get("thresholdChars", cfg.get("threshold_chars", threshold_chars)))
+        self.head_chars = int(cfg.get("headChars", cfg.get("head_chars", head_chars)))
+        self.tail_chars = int(cfg.get("tailChars", cfg.get("tail_chars", tail_chars)))
 
     def apply(self, ctx: Any) -> None:
         if not ctx.has("tool_result_pruner"):

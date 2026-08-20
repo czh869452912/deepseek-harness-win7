@@ -29,6 +29,12 @@ htmlcov/
 *.swo
 *~
 
+# Environment & Credentials
+.env
+.env.*
+.dsh/
+*.jsonl
+
 # Temporary & Log files
 *.log
 scratch/

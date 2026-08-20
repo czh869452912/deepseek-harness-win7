@@ -13,6 +13,7 @@ from dsh.core.surface import (
 )
 
 SESSION_FORMAT_VERSION = 1
+SessionEvent = Dict[str, Any]
 
 
 class SessionHeader:

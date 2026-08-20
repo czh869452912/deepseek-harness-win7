@@ -39,6 +39,7 @@ def test_creative_preset_alignment():
     assert "ask_user_question" in tool_names
     assert "todo_write" in tool_names
     assert "skill" in tool_names
+    assert "exit_plan_mode" in tool_names
 
     # Cordis manager tools
     assert "cordis_list_plugins" in tool_names
@@ -51,6 +52,7 @@ def test_creative_preset_alignment():
     assert ctx.has("tool_result_pruner")
     assert ctx.has("agent_instructions")
     assert ctx.has("skills")
+    assert ctx.has("plan_mode")
 
     # Persona
     persona = ctx.get("persona")

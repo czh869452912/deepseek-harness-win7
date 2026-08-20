@@ -26,6 +26,7 @@ from dsh.shell.tool_pwsh_persistent import ToolPwshPersistentPlugin
 from dsh.skill.skill_filesystem import SkillFilesystemPlugin
 from dsh.skill.tool_skill import ToolSkillPlugin
 from dsh.todo.tool_todo import ToolTodoPlugin
+from dsh.plan.plan_mode import PlanModePlugin
 
 
 def build_harness(
@@ -79,6 +80,7 @@ def build_harness(
     loader.register_plugin_class("@deepseek-ai/dsh-session-persistence-jsonl", JsonlSessionPersistencePlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-compaction-tool-result-pruner", ToolResultPrunerPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-compaction-basic", BasicCompactionPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-plan-mode", PlanModePlugin)
 
     # Determine preset file
     presets_dir = os.path.join(os.path.dirname(__file__), "presets")

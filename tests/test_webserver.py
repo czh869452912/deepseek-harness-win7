@@ -346,3 +346,52 @@ async def test_api_official_rpc_contract(web_ctx):
     assert res_ws["type"] == "server-response"
     assert res_ws["result"]["ok"] is True
     assert "items" in res_ws["result"]["value"]
+
+    # 3. Test POST /api/workspace.create
+    req_ws_create = {
+        "method": "POST",
+        "path": "/api/workspace.create",
+        "query": "",
+        "headers": {},
+        "body": json.dumps({
+            "type": "client-request",
+            "rpcId": "rpc-ws-create-1",
+            "method": "workspace.create",
+            "payload": {"path": "C:/Projects/test-ws"},
+        }).encode("utf-8"),
+    }
+    writer_ws_create = MockWriter()
+    await route.handler(req_ws_create, HttpResponseWriter(writer_ws_create))
+    res_ws_create = writer_ws_create.get_json()
+    assert res_ws_create["type"] == "server-response"
+    assert res_ws_create["result"]["ok"] is True
+    ws_view = res_ws_create["result"]["value"]["workspace"]
+    assert ws_view["path"] == "C:/Projects/test-ws"
+    assert len(ws_view["sessionIds"]) >= 1
+
+    # 4. Test POST /api/session.create with workspaceId
+    req_session_create = {
+        "method": "POST",
+        "path": "/api/session.create",
+        "query": "",
+        "headers": {},
+        "body": json.dumps({
+            "type": "client-request",
+            "rpcId": "rpc-sess-create-1",
+            "method": "session.create",
+            "payload": {"workspaceId": ws_view["workspaceId"]},
+        }).encode("utf-8"),
+    }
+    writer_sess_create = MockWriter()
+    await route.handler(req_session_create, HttpResponseWriter(writer_sess_create))
+    res_sess_create = writer_sess_create.get_json()
+    assert res_sess_create["type"] == "server-response"
+    assert res_sess_create["result"]["ok"] is True
+    new_sid = res_sess_create["result"]["value"]["sessionId"]
+
+    # 5. Verify workspace list has the new session attached
+    writer_ws_2 = MockWriter()
+    await route.handler(req_ws, HttpResponseWriter(writer_ws_2))
+    res_ws_2 = writer_ws_2.get_json()
+    matched_ws = [w for w in res_ws_2["result"]["value"]["items"] if w["workspaceId"] == ws_view["workspaceId"]][0]
+    assert new_sid in matched_ws["sessionIds"]

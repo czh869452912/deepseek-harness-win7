@@ -11,6 +11,7 @@ import os
 import subprocess
 import sys
 import time
+import uuid
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 import urllib.parse
 
@@ -21,6 +22,19 @@ from dsh.host.webserver.webserver import HttpResponseWriter, WebServerService
 
 def hashlib_short(data: bytes) -> str:
     return hashlib.sha1(data).hexdigest()[:8]
+
+
+def format_sse_frame(payload: Dict[str, Any], rpc_id: Optional[str] = None) -> bytes:
+    """Format SSE data line according to official ServerRequest schema."""
+    frame_rpc_id = rpc_id or str(uuid.uuid4())
+    frame_type = payload.get("type", "unknown")
+    envelope = {
+        "type": "server-request",
+        "rpcId": frame_rpc_id,
+        "method": frame_type,
+        "payload": payload,
+    }
+    return f"data: {json.dumps(envelope, ensure_ascii=False, default=str)}\n\n".encode("utf-8")
 
 
 class ApiProxyPlugin(Plugin):
@@ -48,9 +62,19 @@ class ApiProxyPlugin(Plugin):
         if not web_server:
             return
 
-        # Initialize default workspace from cwd
+        sessions_svc: SessionStore = ctx.get("sessions")
         cwd = os.path.normpath(os.getcwd()).replace("\\", "/")
         ws_id = f"ws-{hashlib_short(cwd.encode('utf-8'))}"
+
+        # Ensure default session is created and bound to default workspace
+        if sessions_svc:
+            if "default-session" not in sessions_svc._sessions:
+                s = sessions_svc.create("default-session")
+                s.header.cwd = cwd
+                s.header.agent_preset = "standard"
+            else:
+                sessions_svc._sessions["default-session"].header.cwd = cwd
+
         self._workspaces[ws_id] = {
             "workspaceId": ws_id,
             "path": cwd,
@@ -77,9 +101,9 @@ class ApiProxyPlugin(Plugin):
         ctx.on("question/requested", self._on_question_requested)
         ctx.on("approval/requested", self._on_approval_requested)
 
-    async def _broadcast_mux(self, frame: Dict[str, Any]) -> None:
+    async def _broadcast_mux(self, frame: Dict[str, Any], rpc_id: Optional[str] = None) -> None:
         try:
-            payload = f"event: mux\ndata: {json.dumps(frame, ensure_ascii=False, default=str)}\n\n"
+            payload = format_sse_frame(frame, rpc_id=rpc_id)
             for q in list(self._mux_clients):
                 try:
                     await q.put(payload)
@@ -88,9 +112,9 @@ class ApiProxyPlugin(Plugin):
         except Exception:
             pass
 
-    async def _broadcast_host(self, frame: Dict[str, Any]) -> None:
+    async def _broadcast_host(self, frame: Dict[str, Any], rpc_id: Optional[str] = None) -> None:
         try:
-            payload = f"event: host\ndata: {json.dumps(frame, ensure_ascii=False, default=str)}\n\n"
+            payload = format_sse_frame(frame, rpc_id=rpc_id)
             for q in list(self._host_clients):
                 try:
                     await q.put(payload)
@@ -168,6 +192,7 @@ class ApiProxyPlugin(Plugin):
                 "sessionId": sid,
                 "key": "goal",
                 "value": goal_data,
+                "seq": int(time.time()),
             }))
         except Exception:
             pass
@@ -181,12 +206,12 @@ class ApiProxyPlugin(Plugin):
             fut = loop.create_future()
             self._pending_server_requests[rpc_id] = fut
 
+            questions_list = q.get("questions") if isinstance(q.get("questions"), list) else [q]
             asyncio.create_task(self._broadcast_mux({
                 "type": "question/requested",
                 "sessionId": sid,
-                "question": q,
-                "rpcId": rpc_id,
-            }))
+                "questions": questions_list,
+            }, rpc_id=rpc_id))
         except Exception:
             pass
 
@@ -202,9 +227,10 @@ class ApiProxyPlugin(Plugin):
             asyncio.create_task(self._broadcast_mux({
                 "type": "approval/requested",
                 "sessionId": sid,
-                "approval": appr,
                 "approvalId": rpc_id,
-            }))
+                "toolName": appr.get("toolName", "tool"),
+                "reason": appr.get("reason", ""),
+            }, rpc_id=rpc_id))
         except Exception:
             pass
 
@@ -261,7 +287,6 @@ class ApiProxyPlugin(Plugin):
                     }
                 })
             else:
-                # Flat legacy format with nested result
                 await send_json({
                     **(value if isinstance(value, dict) else {"value": value}),
                     "result": {"ok": True, "value": value},
@@ -389,7 +414,7 @@ class ApiProxyPlugin(Plugin):
                     selected_path = None
 
             if selected_path:
-                selected_path = selected_path.replace("\\", "/")
+                selected_path = os.path.normpath(selected_path).replace("\\", "/")
             await send_rpc_success({"path": selected_path})
             return
 
@@ -480,21 +505,51 @@ class ApiProxyPlugin(Plugin):
             return
 
         if rpc_method in ("workspace.create", "workspace/create"):
-            ws_path = os.path.normpath(req_payload.get("path", os.getcwd())).replace("\\", "/")
+            raw_path = req_payload.get("path", os.getcwd())
+            ws_path = os.path.normpath(raw_path).replace("\\", "/")
             ws_id = f"ws-{hashlib_short(ws_path.encode('utf-8'))}"
             created = (ws_id not in self._workspaces)
+
             if created:
+                sessions_svc: SessionStore = self.ctx.get("sessions")
+                agent_loop = self.ctx.get("agent_loop")
+                sid = f"session-{os.urandom(4).hex()}"
+
+                if sessions_svc:
+                    s = sessions_svc.create(sid)
+                    s.header.cwd = ws_path
+                    s.header.agent_preset = "standard"
+                if agent_loop:
+                    handle = await agent_loop.create_agent(session_id=sid)
+                    self._active_sessions[sid] = handle
+
                 ws_view = {
                     "workspaceId": ws_id,
                     "path": ws_path,
                     "title": os.path.basename(ws_path) or "root",
-                    "sessionIds": [],
+                    "sessionIds": [sid],
                     "createdAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                     "updatedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 }
                 self._workspaces[ws_id] = ws_view
                 self._workspace_order.append(ws_id)
-                await self._broadcast_host({"type": "host/workspace-changed", "workspace": ws_view})
+
+                # Broadcast session-added and workspace changes
+                await self._broadcast_host({
+                    "type": "host/session-added",
+                    "sessionId": sid,
+                    "blank": True,
+                    "cwd": ws_path,
+                    "agentPreset": "standard",
+                })
+                await self._broadcast_host({
+                    "type": "host/workspace-changed",
+                    "workspace": ws_view,
+                })
+                await self._broadcast_host({
+                    "type": "host/workspace-order-changed",
+                    "workspaceIds": list(self._workspace_order),
+                })
             else:
                 ws_view = self._workspaces[ws_id]
 
@@ -519,8 +574,43 @@ class ApiProxyPlugin(Plugin):
                 del self._workspaces[ws_id]
                 if ws_id in self._workspace_order:
                     self._workspace_order.remove(ws_id)
-                await self._broadcast_host({"type": "host/workspace-deleted", "workspaceId": ws_id})
+                await self._broadcast_host({"type": "host/workspace-removed", "workspaceId": ws_id})
+                await self._broadcast_host({"type": "host/workspace-order-changed", "workspaceIds": list(self._workspace_order)})
                 await send_rpc_success({"deleted": True})
+            else:
+                await send_rpc_error("workspace-not-found", f"Workspace {ws_id} not found")
+            return
+
+        if rpc_method in ("workspace.insertBefore", "workspace/insertBefore"):
+            ws_id = req_payload.get("workspaceId")
+            before_id = req_payload.get("beforeWorkspaceId")
+            if ws_id in self._workspace_order:
+                self._workspace_order.remove(ws_id)
+                if before_id and before_id in self._workspace_order:
+                    idx = self._workspace_order.index(before_id)
+                    self._workspace_order.insert(idx, ws_id)
+                else:
+                    self._workspace_order.append(ws_id)
+                await self._broadcast_host({"type": "host/workspace-order-changed", "workspaceIds": list(self._workspace_order)})
+            await send_rpc_success({"workspaceIds": list(self._workspace_order)})
+            return
+
+        if rpc_method in ("workspace.insertSessionBefore", "workspace/insertSessionBefore"):
+            ws_id = req_payload.get("workspaceId")
+            sid = req_payload.get("sessionId")
+            before_sid = req_payload.get("beforeSessionId")
+            if ws_id in self._workspaces:
+                s_list = self._workspaces[ws_id]["sessionIds"]
+                if sid in s_list:
+                    s_list.remove(sid)
+                if before_sid and before_sid in s_list:
+                    idx = s_list.index(before_sid)
+                    s_list.insert(idx, sid)
+                else:
+                    s_list.append(sid)
+                self._workspaces[ws_id]["updatedAt"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+                await self._broadcast_host({"type": "host/workspace-changed", "workspace": self._workspaces[ws_id]})
+                await send_rpc_success({"workspace": self._workspaces[ws_id]})
             else:
                 await send_rpc_error("workspace-not-found", f"Workspace {ws_id} not found")
             return
@@ -562,17 +652,24 @@ class ApiProxyPlugin(Plugin):
             if sessions_svc:
                 for sid, s in sessions_svc._sessions.items():
                     is_blank = (len(s.events) == 0)
+                    session_cwd = (s.header.cwd or os.getcwd()).replace("\\", "/")
+                    title = None
+                    for ev in s.events:
+                        if ev.get("type") == "session/title" and isinstance(ev.get("data"), dict):
+                            title = ev["data"].get("title")
+
                     result.append({
                         "sessionId": sid,
-                        "updatedAt": s.header.created_at,
+                        "title": title,
+                        "updatedAt": int(time.time() * 1000),
                         "running": False,
                         "blank": is_blank,
                         "parentSessionId": s.header.parent_session,
-                        "cwd": (s.header.cwd or os.getcwd()).replace("\\", "/"),
+                        "cwd": session_cwd,
                         "agentPreset": s.header.agent_preset or "standard",
                         "projections": {
                             "asOfSeq": len(s.events) - 1,
-                            "values": {},
+                            "values": {"title": title} if title else {},
                         }
                     })
             await send_rpc_success({"items": result, "sessions": result})
@@ -585,29 +682,49 @@ class ApiProxyPlugin(Plugin):
             return
 
         if rpc_method in ("session.create", "session/create"):
-            sid = req_payload.get("sessionId") or f"session-{len(self._active_sessions)+1}"
+            sid = req_payload.get("sessionId") or f"session-{os.urandom(4).hex()}"
             preset = req_payload.get("agentPreset") or req_payload.get("preset", "standard")
             ws_id = req_payload.get("workspaceId")
             sessions_svc: SessionStore = self.ctx.get("sessions")
             agent_loop = self.ctx.get("agent_loop")
 
+            # Resolve target workspace and cwd
+            target_ws = None
+            if ws_id and ws_id in self._workspaces:
+                target_ws = self._workspaces[ws_id]
+            elif self._workspace_order:
+                target_ws = self._workspaces.get(self._workspace_order[0])
+
+            target_cwd = target_ws["path"] if target_ws else req_payload.get("cwd", os.getcwd()).replace("\\", "/")
+
             if sessions_svc and sid not in sessions_svc._sessions:
                 s = sessions_svc.create(sid)
+                s.header.cwd = target_cwd
                 s.header.agent_preset = preset
+            elif sessions_svc and sid in sessions_svc._sessions:
+                s = sessions_svc._sessions[sid]
+                s.header.cwd = target_cwd
+                s.header.agent_preset = preset
+
             if agent_loop and sid not in self._active_sessions:
                 handle = await agent_loop.create_agent(session_id=sid)
                 self._active_sessions[sid] = handle
 
-            if ws_id and ws_id in self._workspaces:
-                if sid not in self._workspaces[ws_id]["sessionIds"]:
-                    self._workspaces[ws_id]["sessionIds"].append(sid)
+            if target_ws:
+                if sid not in target_ws["sessionIds"]:
+                    target_ws["sessionIds"].append(sid)
+                    target_ws["updatedAt"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+                    await self._broadcast_host({
+                        "type": "host/workspace-changed",
+                        "workspace": target_ws,
+                    })
 
             await self._broadcast_host({
                 "type": "host/session-added",
                 "sessionId": sid,
                 "blank": True,
                 "agentPreset": preset,
-                "cwd": os.getcwd().replace("\\", "/"),
+                "cwd": target_cwd,
             })
 
             await send_rpc_success({"success": True, "sessionId": sid, "agentPreset": preset})
@@ -670,6 +787,7 @@ class ApiProxyPlugin(Plugin):
                 new_session = sessions_svc.create(new_sid)
                 new_session.header.parent_session = src_sid
                 new_session.header.agent_preset = src_session.header.agent_preset
+                new_session.header.cwd = src_session.header.cwd
                 events_to_copy = src_session.events[:at_seq] if at_seq is not None else list(src_session.events)
                 for ev in events_to_copy:
                     new_session.append(ev)
@@ -677,6 +795,14 @@ class ApiProxyPlugin(Plugin):
                 if agent_loop:
                     handle = await agent_loop.create_agent(session_id=new_sid)
                     self._active_sessions[new_sid] = handle
+
+                # Attach to same workspace
+                for ws in self._workspaces.values():
+                    if src_sid in ws["sessionIds"]:
+                        if new_sid not in ws["sessionIds"]:
+                            ws["sessionIds"].append(new_sid)
+                            await self._broadcast_host({"type": "host/workspace-changed", "workspace": ws})
+                        break
 
                 await self._broadcast_host({
                     "type": "host/session-added",
@@ -917,21 +1043,20 @@ class ApiProxyPlugin(Plugin):
         queue = asyncio.Queue()
         self._mux_clients.append(queue)
         try:
-            # Emit initial session subscribed control frame
+            # Emit initial session subscribed control frame for each session
             sessions_svc: SessionStore = self.ctx.get("sessions")
             if sessions_svc:
                 for sid, s in sessions_svc._sessions.items():
-                    init_frame = {
+                    sub_frame = {
                         "type": "session/subscribed",
                         "sessionId": sid,
                         "lastSeq": len(s.events) - 1,
                     }
-                    payload = f"event: mux\ndata: {json.dumps(init_frame, ensure_ascii=False, default=str)}\n\n"
-                    await response.write_chunk(payload.encode("utf-8"))
+                    await response.write_chunk(format_sse_frame(sub_frame))
 
             while True:
                 data = await queue.get()
-                await response.write_chunk(data.encode("utf-8"))
+                await response.write_chunk(data if isinstance(data, bytes) else data.encode("utf-8"))
         except (asyncio.CancelledError, ConnectionResetError):
             pass
         finally:
@@ -952,17 +1077,39 @@ class ApiProxyPlugin(Plugin):
         queue = asyncio.Queue()
         self._host_clients.append(queue)
         try:
-            # Emit initial host snapshot frame
-            init_frame = {
+            # 1. Emit initial workspace order changed frame
+            order_frame = {
                 "type": "host/workspace-order-changed",
                 "workspaceIds": list(self._workspace_order),
             }
-            payload = f"event: host\ndata: {json.dumps(init_frame, ensure_ascii=False, default=str)}\n\n"
-            await response.write_chunk(payload.encode("utf-8"))
+            await response.write_chunk(format_sse_frame(order_frame))
+
+            # 2. Emit initial workspace changed frame for each workspace
+            for ws_view in self._workspaces.values():
+                ws_frame = {
+                    "type": "host/workspace-changed",
+                    "workspace": ws_view,
+                }
+                await response.write_chunk(format_sse_frame(ws_frame))
+
+            # 3. Emit initial session added frame for each existing session
+            sessions_svc: SessionStore = self.ctx.get("sessions")
+            if sessions_svc:
+                for sid, s in sessions_svc._sessions.items():
+                    is_blank = (len(s.events) == 0)
+                    session_cwd = (s.header.cwd or os.getcwd()).replace("\\", "/")
+                    added_frame = {
+                        "type": "host/session-added",
+                        "sessionId": sid,
+                        "blank": is_blank,
+                        "cwd": session_cwd,
+                        "agentPreset": s.header.agent_preset or "standard",
+                    }
+                    await response.write_chunk(format_sse_frame(added_frame))
 
             while True:
                 data = await queue.get()
-                await response.write_chunk(data.encode("utf-8"))
+                await response.write_chunk(data if isinstance(data, bytes) else data.encode("utf-8"))
         except (asyncio.CancelledError, ConnectionResetError):
             pass
         finally:

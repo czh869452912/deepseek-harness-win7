@@ -28,14 +28,17 @@ def build_portable():
         os.makedirs(os.path.join(DIST_DIR, "apps", "web", "dist"), exist_ok=True)
         shutil.copytree(ref_web_dist, os.path.join(DIST_DIR, "apps", "web", "dist"), dirs_exist_ok=True)
 
-    ref_client_pkgs = os.path.join(ROOT_DIR, "reference", "deepseek-harness", "packages", "client")
-    if os.path.exists(ref_client_pkgs):
-        os.makedirs(os.path.join(DIST_DIR, "packages", "client"), exist_ok=True)
-        for pkg in os.listdir(ref_client_pkgs):
-            pkg_src = os.path.join(ref_client_pkgs, pkg)
-            pkg_dst = os.path.join(DIST_DIR, "packages", "client", pkg)
-            if os.path.isdir(pkg_src):
-                shutil.copytree(pkg_src, pkg_dst, ignore=shutil.ignore_patterns("node_modules", ".git"), dirs_exist_ok=True)
+    ref_pkgs = os.path.join(ROOT_DIR, "packages")
+    if not os.path.exists(ref_pkgs):
+        ref_pkgs = os.path.join(ROOT_DIR, "reference", "deepseek-harness", "packages")
+    if os.path.exists(ref_pkgs):
+        os.makedirs(os.path.join(DIST_DIR, "packages"), exist_ok=True)
+        shutil.copytree(
+            ref_pkgs,
+            os.path.join(DIST_DIR, "packages"),
+            ignore=shutil.ignore_patterns("node_modules", ".git", "*.tsbuildinfo"),
+            dirs_exist_ok=True,
+        )
 
     shutil.copy(os.path.join(ROOT_DIR, "dsh.py"), os.path.join(DIST_DIR, "dsh.py"))
     shutil.copy(os.path.join(ROOT_DIR, "README.md"), os.path.join(DIST_DIR, "README.md"))

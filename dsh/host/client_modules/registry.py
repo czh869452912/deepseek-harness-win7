@@ -41,9 +41,12 @@ def order_by_module_graph(entries: List[Dict[str, Any]]) -> List[Dict[str, Any]]
                 "— requested package row must precede consumers"
             )
         open_stack.append(entry_id)
-        for ext in entry.get("external", []):
-            dep_id = ext.split("/")[0] if ext.startswith("@") and "/" in ext else ext
-            # Handle scoped packages like @deepseek-ai/dsh-client-ui-theme/client
+        deps = list(entry.get("external", [])) + list(entry.get("inject", []))
+        for ext in deps:
+            if not isinstance(ext, str):
+                continue
+            dep_id = ext
+            # Handle scoped packages like @deepseek-ai/dsh-client-ui-theme/client or bare @deepseek-ai/dsh-api-gateway
             if ext.startswith("@"):
                 parts = ext.split("/")
                 if len(parts) >= 2:
@@ -89,6 +92,7 @@ class ClientModuleRegistry:
             if not os.path.isdir(base_dir):
                 continue
             for root, dirs, files in os.walk(base_dir):
+                dirs[:] = [d for d in dirs if d not in ("node_modules", ".git", ".venv")]
                 if "package.json" in files:
                     pkg_json_path = os.path.join(root, "package.json")
                     try:
@@ -365,8 +369,8 @@ class ClientModulesPlugin(Plugin):
 
         # Default package search directories
         default_dirs = [
-            os.path.join(os.getcwd(), "reference", "deepseek-harness", "packages", "client"),
-            os.path.join(os.getcwd(), "packages", "client"),
+            os.path.join(os.getcwd(), "packages"),
+            os.path.join(os.getcwd(), "reference", "deepseek-harness", "packages"),
             os.path.join(os.getcwd(), "dsh", "client"),
             os.path.join(os.getcwd(), "apps", "web"),
         ]

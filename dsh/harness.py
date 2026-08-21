@@ -28,6 +28,16 @@ from dsh.skill.tool_skill import ToolSkillPlugin
 from dsh.todo.tool_todo import ToolTodoPlugin
 from dsh.plan.plan_mode import PlanModePlugin
 from dsh.goal.tool_goal import ToolGoalPlugin
+from dsh.guard.repeat_tool_reminder import RepeatToolReminderPlugin
+from dsh.guard.timeout_policy import ToolCallTimeoutPolicyPlugin
+from dsh.jobs.tool_jobs import ToolJobsPlugin
+from dsh.spill.spill_store import SpillStorePlugin
+from dsh.web.web_search_deepseek import WebSearchDeepSeekPlugin
+from dsh.web.web_fetch_http import WebFetchHttpPlugin
+from dsh.web.tool_web import ToolWebPlugin
+from dsh.subagent.tool_subagent import ToolSubagentPlugin
+from dsh.workflow.tool_ralph import ToolRalphPlugin
+from dsh.workflow.tool_workflow import ToolWorkflowPlugin
 from dsh.host.webserver.webserver import WebServerPlugin
 from dsh.host.frontend_static.frontend_static import FrontendStaticPlugin
 from dsh.host.apiproxy.api_proxy import ApiProxyPlugin
@@ -91,6 +101,16 @@ def build_harness(
     loader.register_plugin_class("@deepseek-ai/dsh-compaction-basic", BasicCompactionPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-plan-mode", PlanModePlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-tool-goal", ToolGoalPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-repeat-tool-reminder", RepeatToolReminderPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-tool-call-timeout-policy", ToolCallTimeoutPolicyPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-tool-jobs", ToolJobsPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-spill-local", SpillStorePlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-web-search-deepseek", WebSearchDeepSeekPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-web-fetch-http", WebFetchHttpPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-tool-web", ToolWebPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-tool-subagent", ToolSubagentPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-tool-ralph", ToolRalphPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-tool-workflow", ToolWorkflowPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-host-webserver", WebServerPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-host-frontend-static", FrontendStaticPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-apiproxy", ApiProxyPlugin)
@@ -111,7 +131,9 @@ def build_harness(
     elif mode in ("standard", "标准模式"):
         preset_path = os.path.join(presets_dir, "standard.yaml")
     elif mode in ("creative", "cordis", "创造模式"):
-        preset_path = os.path.join(presets_dir, "creative.yaml")
+        preset_path = os.path.join(presets_dir, "cordis.yaml")
+    elif mode in ("code", "代码模式"):
+        preset_path = os.path.join(presets_dir, "code.yaml")
     else:
         # Assume custom filepath or default to standard
         if os.path.exists(mode):

@@ -1,5 +1,5 @@
-# Standard Mode (标准模式 / Standard Preset)
-# Full coding agent composition: standard persona, plan mode, goal mode, compaction, todo, ask_user, search, jobs, web, subagents, and skills.
+# Code Mode (代码模式 / Code Preset)
+# Standard engineering suite presented with programmatic SDK / code execution.
 
 - id: persona
   name: "@deepseek-ai/dsh-persona"
@@ -18,28 +18,17 @@
 
 - id: str-replace-editor
   name: "@deepseek-ai/dsh-tool-str-replace-editor"
-  config:
-    maxOutputChars: 16000
 
 - id: persistent-pwsh
   name: "@deepseek-ai/dsh-tool-pwsh-persistent"
   disabled: sys.platform != 'win32'
-  config:
-    tool_name: pwsh
-    timeoutMs: 300000
 
 - id: persistent-bash
   name: "@deepseek-ai/dsh-tool-pwsh-persistent"
   disabled: sys.platform == 'win32'
-  config:
-    tool_name: bash
-    timeoutMs: 300000
 
 - id: tool-fs-search
   name: "@deepseek-ai/dsh-tool-fs-search"
-  config:
-    globMaxResults: 100
-    grepMaxMatches: 250
 
 - id: tool-jobs
   name: "@deepseek-ai/dsh-tool-jobs"
@@ -49,8 +38,6 @@
 
 - id: tool-todo
   name: "@deepseek-ai/dsh-tool-todo"
-  config:
-    allowParallelInProgress: true
 
 - id: plan-mode
   name: "@deepseek-ai/dsh-plan-mode"
@@ -63,22 +50,12 @@
 
 - id: tool-result-pruner
   name: "@deepseek-ai/dsh-compaction-tool-result-pruner"
-  config:
-    thresholdChars: 8192
-    headChars: 4096
-    tailChars: 1024
-
-- id: repeat-tool-reminder
-  name: "@deepseek-ai/dsh-repeat-tool-reminder"
 
 - id: tool-web
   name: "@deepseek-ai/dsh-tool-web"
 
 - id: tool-subagent
   name: "@deepseek-ai/dsh-tool-subagent"
-
-- id: tool-ralph
-  name: "@deepseek-ai/dsh-tool-ralph"
 
 - id: skill-filesystem
   name: "@deepseek-ai/dsh-skill-filesystem"

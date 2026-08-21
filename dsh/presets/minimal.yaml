@@ -1,10 +1,10 @@
-# Minimal Mode (极简模式) Preset
-# Fixed persona, exactly two tools: persistent shell and str_replace_editor.
+# Minimal Mode (极简模式 / Minimal Preset)
+# Fixed-prompt, two-tool coding-agent composition: persistent shell and str_replace_editor.
 
 - id: persona
   name: "@deepseek-ai/dsh-persona"
   config:
-    text: You are a helpful software engineer assistant.
+    text: "You are a helpful software engineer assistant."
     complete: true
     includeRuntimeContext: false
 

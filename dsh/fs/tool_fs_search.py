@@ -91,6 +91,22 @@ def sample_across_top_level(paths: List[str], max_items: int, root: str = ".") -
     }
 
 
+def validate_include(include: str) -> None:
+    trimmed = include.strip()
+    if not trimmed:
+        raise ValueError("include must be a non-empty glob when given")
+    if trimmed.startswith("!"):
+        raise ValueError('include must be a positive glob filter; negated patterns ("!…") are not supported')
+    brace_depth = 0
+    for char in trimmed:
+        if char == "{":
+            brace_depth += 1
+        elif char == "}":
+            brace_depth = max(0, brace_depth - 1)
+        elif char == "," and brace_depth == 0:
+            raise ValueError("include must be one glob, not a comma-separated list (use {a,b} alternation instead)")
+
+
 class FsSearchService:
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         cfg = config or {}
@@ -99,7 +115,12 @@ class FsSearchService:
         self.grep_max_matches: int = int(cfg.get("grepMaxMatches", 250))
         self.grep_max_line_bytes: int = int(cfg.get("grepMaxLineBytes", 2000))
 
-    def glob(self, pattern: str, path: Optional[str] = None, cwd: Optional[str] = None) -> str:
+    def glob(self, pattern: str, path: Optional[str] = None, cwd: Optional[str] = None, ctx: Optional[Any] = None) -> str:
+        if not pattern or not pattern.strip():
+            return "Error: pattern must be a non-empty string"
+        if path is not None and not path.strip():
+            return "Error: path must be a non-empty string when given"
+
         search_root = path or cwd or os.getcwd()
         root_dir = os.path.abspath(search_root)
         if not os.path.exists(root_dir):
@@ -114,7 +135,6 @@ class FsSearchService:
                 full_path = os.path.join(dirpath, fname)
                 rel_path = os.path.relpath(full_path, root_dir).replace("\\", "/")
 
-                # Pattern matching: match either basename or rel_path
                 if fnmatch.fnmatch(fname, pattern) or fnmatch.fnmatch(rel_path, pattern):
                     try:
                         mtime = os.path.getmtime(full_path)
@@ -122,7 +142,6 @@ class FsSearchService:
                         mtime = 0
                     matched_files.append((mtime, rel_path))
 
-        # Sort by mtime descending (most recently modified first)
         matched_files.sort(key=lambda x: x[0], reverse=True)
 
         if not matched_files:
@@ -131,13 +150,27 @@ class FsSearchService:
         all_paths = [item[1] for item in matched_files]
         total_found = len(all_paths)
 
+        spill_ref = None
+        spill_store = ctx.get("spillStore") if ctx and hasattr(ctx, "get") else None
+        if total_found > self.glob_max_results and spill_store:
+            try:
+                spill_ref = spill_store.save_text("\n".join(all_paths), prefix="glob-result")
+            except Exception:
+                pass
+
         if total_found <= self.glob_max_results:
             return "\n".join(all_paths)
+
+        recovery = (
+            f"Full sorted result stored at: {spill_ref.locator}. {spill_ref.retrieval_hint}"
+            if spill_ref
+            else "The complete result could not be saved; narrow pattern or path to see more."
+        )
 
         if not self.sample_over_cap_glob:
             displayed = all_paths[: self.glob_max_results]
             body = "\n".join(displayed)
-            footer = f"\n\n(Showing {len(displayed)} of {total_found} paths. Narrow pattern or path to see more.)"
+            footer = f"\n\n(Showing {len(displayed)} of {total_found} paths. {recovery})"
             return body + footer
 
         sample = sample_across_top_level(all_paths, self.glob_max_results, root=".")
@@ -148,7 +181,7 @@ class FsSearchService:
             else f", sampled across {sample['shown']} of the {sample['total']} top-level entries this pattern matched instead of taken in modification-time order."
         )
         narrow_hint = " Narrow path to inspect a specific subtree." if sample["shown"] < sample["total"] else ""
-        footer = f"\n\n(Showing {len(sample['items'])} of {total_found} paths{basis}{narrow_hint})"
+        footer = f"\n\n(Showing {len(sample['items'])} of {total_found} paths{basis}{narrow_hint} {recovery})"
         return body + footer
 
     def grep(
@@ -156,29 +189,27 @@ class FsSearchService:
         pattern: str,
         path: Optional[str] = None,
         include: Optional[str] = None,
-        case_sensitive: bool = False,
-        fixed_strings: bool = False,
-        multiline: bool = False,
-        context_lines: int = 0,
         cwd: Optional[str] = None,
+        ctx: Optional[Any] = None,
     ) -> str:
+        if pattern is None or len(pattern) == 0:
+            return "Error: pattern must be a non-empty string"
+        if path is not None and not path.strip():
+            return "Error: path must be a non-empty string when given"
+        if include is not None:
+            try:
+                validate_include(include)
+            except ValueError as ve:
+                return f"Error: {ve}"
+
         target_path = os.path.abspath(path or cwd or os.getcwd())
         if not os.path.exists(target_path):
             return f"Error: target '{target_path}' does not exist"
 
-        regex = None
-        if not fixed_strings:
-            flags = 0
-            if not case_sensitive:
-                flags |= re.IGNORECASE
-            if multiline:
-                flags |= re.MULTILINE
-            try:
-                regex = re.compile(pattern, flags)
-            except re.error as e:
-                return f"Error: invalid regex pattern '{pattern}': {e}"
-        else:
-            match_pattern = pattern if case_sensitive else pattern.lower()
+        try:
+            regex = re.compile(pattern)
+        except re.error as e:
+            return f"Error: invalid regex pattern '{pattern}': {e}"
 
         files_to_search: List[str] = []
         if os.path.isfile(target_path):
@@ -190,7 +221,6 @@ class FsSearchService:
                 dirnames[:] = [d for d in dirnames if d not in EXCLUDED_DIRS]
                 for fname in filenames:
                     if include:
-                        # Support comma-free glob filter or braces
                         if not fnmatch.fnmatch(fname, include):
                             continue
                     files_to_search.append(os.path.join(dirpath, fname))
@@ -207,16 +237,10 @@ class FsSearchService:
 
                 file_matches: List[Tuple[int, str]] = []
                 for idx, line in enumerate(lines, start=1):
-                    matched = False
-                    if fixed_strings:
-                        target_text = line if case_sensitive else line.lower()
-                        matched = match_pattern in target_text
-                    elif regex is not None:
-                        matched = bool(regex.search(line))
-
-                    if matched:
+                    if regex.search(line):
                         clean_line = line.rstrip("\r\n")
-                        if len(clean_line.encode("utf-8")) > self.grep_max_line_bytes:
+                        line_bytes = clean_line.encode("utf-8")
+                        if len(line_bytes) > self.grep_max_line_bytes:
                             clean_line = clean_line[:500] + " (line truncated)"
 
                         file_matches.append((idx, clean_line))
@@ -235,19 +259,32 @@ class FsSearchService:
             return "No matches found"
 
         noun = "match" if total_matches == 1 else "matches"
-        header = f"Found {total_matches} {noun}" if total_matches < self.grep_max_matches else f"Found {total_matches} of {total_matches}+ matches"
+        header = f"Found {total_matches} {noun}"
 
-        sections: List[str] = [header, ""]
+        sections: List[str] = [header]
         for rel_path, items in matches_by_file.items():
-            file_section = [rel_path]
+            file_lines = [f"{rel_path}:"]
             for line_no, content in items:
-                file_section.append(f"Line {line_no}: {content}")
-            sections.append("\n".join(file_section))
+                file_lines.append(f"  Line {line_no}: {content}")
+            sections.append("\n".join(file_lines))
 
+        spill_ref = None
+        spill_store = ctx.get("spillStore") if ctx and hasattr(ctx, "get") else None
         if total_matches >= self.grep_max_matches:
-            sections.append(f"\n(Limit reached: showing first {self.grep_max_matches} matches. Narrow pattern, path, or include to see more.)")
+            if spill_store:
+                try:
+                    spill_ref = spill_store.save_text("\n\n".join(sections), prefix="grep-result")
+                except Exception:
+                    pass
 
-        return "\n".join(sections).strip()
+            recovery = (
+                f"Full result stored at: {spill_ref.locator}. {spill_ref.retrieval_hint}"
+                if spill_ref
+                else "Narrow pattern, path, or include to see more."
+            )
+            sections.append(f"\n(Showing {total_matches} matches. {recovery})")
+
+        return "\n\n".join(sections).strip()
 
 
 class ToolFsSearchPlugin(Plugin):
@@ -269,25 +306,18 @@ class ToolFsSearchPlugin(Plugin):
             return
 
         async def exec_glob(pattern: str, path: Optional[str] = None) -> str:
-            return self.service.glob(pattern=pattern, path=path)
+            return self.service.glob(pattern=pattern, path=path, ctx=ctx)
 
         async def exec_grep(
             pattern: str,
             path: Optional[str] = None,
             include: Optional[str] = None,
-            case_sensitive: bool = False,
-            fixed_strings: bool = False,
-            multiline: bool = False,
-            context_lines: int = 0,
         ) -> str:
             return self.service.grep(
                 pattern=pattern,
                 path=path,
                 include=include,
-                case_sensitive=case_sensitive,
-                fixed_strings=fixed_strings,
-                multiline=multiline,
-                context_lines=context_lines,
+                ctx=ctx,
             )
 
         disposer1 = tools.register_tool({
@@ -296,8 +326,8 @@ class ToolFsSearchPlugin(Plugin):
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "pattern": {"type": "string", "description": "Glob pattern (e.g. '**/*.ts', 'src/**/*.py')"},
-                    "path": {"type": "string", "description": "Optional search root directory path"},
+                    "pattern": {"type": "string", "description": "The glob pattern to match against paths."},
+                    "path": {"type": "string", "description": "The directory to search in. Defaults to the current working directory."},
                 },
                 "required": ["pattern"],
             },
@@ -306,17 +336,13 @@ class ToolFsSearchPlugin(Plugin):
 
         disposer2 = tools.register_tool({
             "name": "grep",
-            "description": "Search file contents with a regular expression or fixed string. Returns matching lines with line numbers, grouped by file.",
+            "description": "Search file contents with a regular expression. Returns matching lines with line numbers, grouped by file.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "pattern": {"type": "string", "description": "Regular expression or string to search for"},
-                    "path": {"type": "string", "description": "Optional file or directory path"},
-                    "include": {"type": "string", "description": "Optional glob filter for files to search (e.g. '*.py')"},
-                    "case_sensitive": {"type": "boolean", "description": "Whether to perform case-sensitive search. Defaults to false."},
-                    "fixed_strings": {"type": "boolean", "description": "Whether to treat pattern as literal string instead of regex. Defaults to false."},
-                    "multiline": {"type": "boolean", "description": "Whether to match across multiple lines. Defaults to false."},
-                    "context_lines": {"type": "integer", "description": "Number of surrounding context lines to return. Defaults to 0."},
+                    "pattern": {"type": "string", "description": "The regular expression pattern to match in file contents."},
+                    "path": {"type": "string", "description": "The directory or file to search in. Defaults to the current working directory."},
+                    "include": {"type": "string", "description": "A glob pattern to filter files that are searched (e.g. '*.ts')."},
                 },
                 "required": ["pattern"],
             },
@@ -328,4 +354,5 @@ class ToolFsSearchPlugin(Plugin):
             disposer2()
 
         ctx.effect(cleanup)
+
 

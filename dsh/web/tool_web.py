@@ -84,7 +84,6 @@ class ToolWebPlugin(Plugin):
                 queries: Optional[List[str]] = None,
                 query: Optional[str] = None,
             ) -> str:
-                # 1. Normalize query input (accept list of queries or single query)
                 query_list: List[str] = []
                 if queries:
                     if isinstance(queries, list):
@@ -98,21 +97,19 @@ class ToolWebPlugin(Plugin):
                     return "Error: queries must contain at least one non-empty query string."
 
                 if len(query_list) > self.max_queries:
-                    query_list = query_list[: self.max_queries]
+                    noun = "query" if self.max_queries == 1 else "queries"
+                    return f"Error: queries must contain at most {self.max_queries} {noun}"
 
-                # Deduplicate queries while preserving order
                 unique_queries = list(dict.fromkeys(query_list))
 
-                # 2. Run searches concurrently
                 async def fetch_one_query(q: str) -> List[Dict[str, Any]]:
                     try:
                         return await web.search(q, max_results=self.max_results, timeout_ms=self.search_timeout_ms)
-                    except Exception as err:
+                    except Exception:
                         return []
 
                 raw_results = await asyncio.gather(*[fetch_one_query(q) for q in unique_queries])
 
-                # 3. Merge results with round-robin deduplication
                 seen_urls = set()
                 merged_sources: List[Dict[str, Any]] = []
                 max_rank = max((len(r) for r in raw_results), default=0)
@@ -145,11 +142,8 @@ class ToolWebPlugin(Plugin):
                             "items": {"type": "string"},
                             "description": f"Required search queries; accepts 1–{self.max_queries} items and merges their results.",
                         },
-                        "query": {
-                            "type": "string",
-                            "description": "Single search query string (legacy/alternative parameter).",
-                        },
                     },
+                    "required": ["queries"],
                 },
                 "execute": exec_web_search,
             })
@@ -157,12 +151,17 @@ class ToolWebPlugin(Plugin):
 
         if self.enable_fetch:
             async def exec_web_fetch(url: str) -> str:
+                if not url or not url.strip():
+                    return "Error: url must be a non-empty string"
                 try:
                     res = await web.fetch(url, timeout_ms=30000)
                     content = res.get("content", "")
+                    truncated = False
                     if len(content) > self.max_output_chars:
-                        content = content[: self.max_output_chars] + "\n\n(Content clipped to max output limit)"
-                    return f"Content from {url}:\n\n{content}"
+                        content = content[: self.max_output_chars]
+                        truncated = True
+                    footer = "\n\n(Content truncated. Fetch a more specific URL or section for the full text.)" if truncated else ""
+                    return f"Fetched {url} (HTTP 200):\n\n{content}{footer}"
                 except Exception as e:
                     return f"Error fetching {url}: {e}"
 
@@ -172,7 +171,7 @@ class ToolWebPlugin(Plugin):
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "url": {"type": "string", "description": "Target HTTP/HTTPS URL"},
+                        "url": {"type": "string", "description": "The URL to fetch. Must be a valid HTTP/HTTPS URL."},
                     },
                     "required": ["url"],
                 },
@@ -186,4 +185,5 @@ class ToolWebPlugin(Plugin):
                     d()
 
         ctx.effect(cleanup)
+
 

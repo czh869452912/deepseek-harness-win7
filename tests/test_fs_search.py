@@ -60,14 +60,15 @@ def test_grep_tool(search_workspace):
 
 def test_grep_options(search_workspace):
     svc = FsSearchService()
-    # Case sensitive
-    res_sensitive = svc.grep(pattern="HELLO", case_sensitive=True, cwd=search_workspace)
+    # Case matching with regex
+    res_sensitive = svc.grep(pattern="HELLO", cwd=search_workspace)
     assert res_sensitive == "No matches found"
 
-    # Fixed strings
-    res_fixed = svc.grep(pattern="print('hello", fixed_strings=True, cwd=search_workspace)
-    assert "Found 1 match" in res_fixed
-    assert "src/main.py" in res_fixed
+    # Regex search with include
+    res_include = svc.grep(pattern="print\\('hello", include="*.py", cwd=search_workspace)
+    assert "Found 1 match" in res_include
+    assert "src/main.py" in res_include
+
 
 
 @pytest.mark.asyncio

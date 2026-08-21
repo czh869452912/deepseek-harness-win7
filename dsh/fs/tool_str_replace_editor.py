@@ -1,12 +1,27 @@
+import inspect
 import os
 from typing import Any, Dict, List, Optional, Tuple
 from dsh.cordis.plugin import Plugin
 
 TRUNCATED_MESSAGE = (
-    "\n<response clipped><NOTE>To save on context only part of this file has been shown to you. "
+    "<response clipped><NOTE>To save on context only part of this file has been shown to you. "
     "You should retry this tool after you have searched inside the file with `grep -n` in order to "
     "find the line numbers of what you are looking for.</NOTE>"
 )
+
+
+def _fire_waterfall(ctx: Optional[Any], event_name: str, *args: Any) -> None:
+    if not ctx or not hasattr(ctx, "waterfall"):
+        return
+    res = ctx.waterfall(event_name, *args)
+    if inspect.isawaitable(res):
+        try:
+            import asyncio
+            loop = asyncio.get_running_loop()
+            loop.create_task(res)
+        except RuntimeError:
+            pass
+
 
 DEFAULT_DESCRIPTION = (
     "Custom editing tool for viewing, creating and editing files\n"
@@ -53,32 +68,81 @@ def maybe_truncate(content: str, max_chars: int) -> str:
     return content[:max_chars] + TRUNCATED_MESSAGE
 
 
-def list_dir_2_levels(root_dir: str) -> List[str]:
-    entries: List[str] = []
-    try:
-        top_items = sorted(os.listdir(root_dir))
-        for item in top_items:
-            if item.startswith("."):
-                continue
-            item_path = os.path.join(root_dir, item)
-            is_directory = os.path.isdir(item_path)
-            prefix = "[D] " if is_directory else "[F] "
-            entries.append(f"  {prefix}{item}")
+def format_file_view(
+    path: str,
+    content: str,
+    max_output_chars: int,
+    view_range: Optional[List[int]] = None,
+) -> str:
+    all_lines = content.split("\n")
+    initial_line = 1
+    final_line: Optional[int] = None
+    prompt = f"Here's the content of {path} with line numbers (which has a total of {len(all_lines)} lines)"
 
-            if is_directory:
-                try:
-                    sub_items = sorted(os.listdir(item_path))
-                    for sub in sub_items:
-                        if sub.startswith("."):
-                            continue
-                        sub_path = os.path.join(item_path, sub)
-                        sub_prefix = "[D] " if os.path.isdir(sub_path) else "[F] "
-                        entries.append(f"    {sub_prefix}{sub}")
-                except OSError:
-                    pass
-    except OSError as e:
-        entries.append(f"  (Error listing directory: {e})")
-    return entries
+    if view_range is not None:
+        if len(view_range) != 2 or not all(isinstance(x, int) for x in view_range):
+            raise ValueError("Invalid `view_range`. It should be a list of two integers.")
+        initial_line, requested_final_line = view_range
+        final_line = requested_final_line
+        if initial_line < 1 or initial_line > len(all_lines):
+            raise ValueError(
+                f"Invalid `view_range`: [{view_range[0]}, {view_range[1]}]. Its first element `{initial_line}` should be within the range of lines of the file: [1, {len(all_lines)}]"
+            )
+        if final_line != -1 and final_line > len(all_lines):
+            raise ValueError(
+                f"Invalid `view_range`: [{view_range[0]}, {view_range[1]}]. Its second element `{final_line}` should be smaller than the number of lines in the file: `{len(all_lines)}`"
+            )
+        if final_line != -1 and final_line < initial_line:
+            raise ValueError(
+                f"Invalid `view_range`: [{view_range[0]}, {view_range[1]}]. Its second element `{final_line}` should be larger or equal than its first `{initial_line}`"
+            )
+
+        if final_line == -1:
+            lines = all_lines[initial_line - 1 :]
+        else:
+            lines = all_lines[initial_line - 1 : final_line]
+        prompt += f" with view_range=[{initial_line}, {final_line}]"
+    else:
+        lines = all_lines
+
+    numbered = [
+        f"{str(initial_line + index).rjust(6, ' ')}  {line}"
+        for index, line in enumerate(lines)
+    ]
+    return maybe_truncate(f"{prompt}:\n" + "\n".join(numbered) + "\n", max_output_chars)
+
+
+def list_directory(
+    root_dir: str,
+    max_output_chars: int,
+) -> str:
+    rows: List[str] = [f"d\t{root_dir}"]
+
+    def visit(current_dir: str, depth: int) -> List[str]:
+        sub_rows: List[str] = []
+        try:
+            entries = sorted(os.listdir(current_dir))
+        except OSError:
+            return sub_rows
+
+        for entry in entries:
+            if entry.startswith(".") or entry == "node_modules" or entry == "__pycache__":
+                continue
+            entry_path = os.path.join(current_dir, entry)
+            is_dir = os.path.isdir(entry_path)
+            t = "d" if is_dir else ("f" if os.path.isfile(entry_path) else "?")
+            sub_rows.append(f"{t}\t{entry_path}")
+            if is_dir and depth < 2:
+                sub_rows.extend(visit(entry_path, depth + 1))
+        return sub_rows
+
+    rows.extend(visit(root_dir, 1))
+    rows.sort(key=lambda x: x[x.find("\t") + 1 :])
+    listing = maybe_truncate("\n".join(rows) + "\n", max_output_chars)
+    return (
+        f"Here're the files and directories up to 2 levels deep in {root_dir}, "
+        f"excluding hidden items, node_modules, and Python cache directories:\n{listing}\n"
+    )
 
 
 class StrReplaceEditorPlugin(Plugin):
@@ -93,12 +157,11 @@ class StrReplaceEditorPlugin(Plugin):
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
         self.max_output_chars: int = int(self.config.get("maxOutputChars", 16000))
-        self._undo_history: Dict[str, str] = {}
+        self.description: str = str(self.config.get("description", DEFAULT_DESCRIPTION))
 
     def apply(self, ctx: Any) -> None:
         tools_service = ctx.get("tools")
         if not tools_service:
-            print("[StrReplaceEditorPlugin Warning] tools service unavailable")
             return
 
         parameters = {
@@ -106,41 +169,61 @@ class StrReplaceEditorPlugin(Plugin):
             "properties": {
                 "command": {
                     "type": "string",
-                    "enum": ["view", "create", "str_replace", "insert", "undo_edit"],
-                    "description": "The command to run: view, create, str_replace, insert, or undo_edit",
+                    "enum": ["view", "create", "str_replace", "insert"],
+                    "description": "The commands to run. Allowed options are: `view`, `create`, `str_replace`, `insert`.",
                 },
                 "path": {
                     "type": "string",
-                    "description": "Target absolute path to file or directory",
+                    "description": "Absolute path to file or directory, e.g. `/repo/file.py` or `/repo`.",
                 },
                 "file_text": {
                     "type": "string",
-                    "description": "Content for create command",
+                    "description": "Required parameter of `create` command, with the content of the file to be created.",
                 },
                 "old_str": {
                     "type": "string",
-                    "description": "Exact target string to be replaced (for str_replace)",
+                    "description": "Required parameter of `str_replace` command containing the string in `path` to replace.",
                 },
                 "new_str": {
                     "type": "string",
-                    "description": "Replacement string (for str_replace) or content to insert (for insert)",
+                    "description": "Optional parameter of `str_replace` command containing the new string (if not given, no string will be added). Required parameter of `insert` command containing the string to insert.",
                 },
                 "insert_line": {
                     "type": "integer",
-                    "description": "Line number after which to insert text (0 to insert at beginning)",
+                    "description": "Required parameter of `insert` command. The `new_str` will be inserted AFTER the line `insert_line` of `path`.",
                 },
                 "view_range": {
                     "type": "array",
                     "items": {"type": "integer"},
-                    "description": "List of two line numbers [start_line, end_line] for view command",
+                    "description": "Optional parameter of `view` command when `path` points to a file. If none is given, the full file is shown. If provided, the file will be shown in the indicated line number range, e.g. [11, 12] will show lines 11 and 12. Indexing at 1 to start. Setting `[start_line, -1]` shows all lines from `start_line` to the end of the file.",
                 },
             },
             "required": ["command", "path"],
         }
 
+        async def exec_editor(
+            command: str,
+            path: str,
+            file_text: Optional[str] = None,
+            old_str: Optional[str] = None,
+            new_str: Optional[str] = None,
+            insert_line: Optional[int] = None,
+            view_range: Optional[List[int]] = None,
+        ) -> str:
+            return self.handle_editor(
+                command=command,
+                path=path,
+                file_text=file_text,
+                old_str=old_str,
+                new_str=new_str,
+                insert_line=insert_line,
+                view_range=view_range,
+                ctx=ctx,
+            )
+
         tools_service.register(
             name="str_replace_editor",
-            description=DEFAULT_DESCRIPTION,
+            description=self.description,
             parameters=parameters,
             handler=self.handle_editor,
         )
@@ -164,95 +247,104 @@ class StrReplaceEditorPlugin(Plugin):
             return "Error: path must be a non-empty string"
 
         resolved_path = fs.resolve_path(path)
+        display_path = resolved_path
 
         if command == "view":
             if fs.is_dir(resolved_path):
-                entries = list_dir_2_levels(resolved_path)
-                header = f"Directory listing for {resolved_path} (up to 2 levels deep):"
-                content = header + "\n" + "\n".join(entries)
-                return maybe_truncate(content, self.max_output_chars)
+                if view_range is not None:
+                    return "Error: The `view_range` parameter is not allowed when `path` points to a directory."
+                return list_directory(resolved_path, self.max_output_chars)
+
+            if not fs.exists(resolved_path):
+                if ctx and hasattr(ctx, "emit"):
+                    ctx.emit("fs/observed", resolved_path, {"kind": "absent"})
+                return f"Error: The path {display_path} does not exist. Please provide a valid path."
 
             if not fs.is_file(resolved_path):
-                return f"Error: Path {resolved_path} does not exist."
+                return f"Error: cannot view \"{display_path}\": not a regular file or directory"
 
             content = fs.read_text(resolved_path)
-            lines = content.split("\n")
-            total = len(lines)
-
-            start = 1
-            end = total
-            if view_range and len(view_range) == 2:
-                start = max(1, view_range[0])
-                if view_range[1] != -1:
-                    end = min(total, view_range[1])
-
-            view_lines = lines[start - 1 : end]
-            numbered = [f"{start + i:6d}\t{line}" for i, line in enumerate(view_lines)]
-            rendered = f"Here is content of {resolved_path} (lines {start}-{end} of {total}):\n" + "\n".join(numbered)
-            return maybe_truncate(rendered, self.max_output_chars)
+            if ctx and hasattr(ctx, "emit"):
+                ctx.emit("fs/observed", resolved_path, {"kind": "present", "version": 1})
+            try:
+                return format_file_view(display_path, content, self.max_output_chars, view_range)
+            except ValueError as ve:
+                return f"Error: {ve}"
 
         elif command == "create":
+            if file_text is None:
+                return "Error: Parameter `file_text` is required for command: create"
             if fs.exists(resolved_path):
-                return f"Error: File {resolved_path} already exists."
-            text_to_write = file_text if file_text is not None else ""
-            fs.write_text(resolved_path, text_to_write)
-            self._undo_history[resolved_path] = ""
-            return f"File created successfully at {resolved_path}"
+                return f"Error: File already exists at: {display_path}. Cannot overwrite files using command `create`."
+
+            _fire_waterfall(ctx, "fs/write-intent", resolved_path, lambda: {"kind": "createIfAbsent"})
+
+            fs.write_text(resolved_path, file_text)
+            if ctx and hasattr(ctx, "emit"):
+                ctx.emit("fs/observed", resolved_path, {"kind": "present", "version": 1})
+            return f"New file created successfully at: {display_path}"
 
         elif command == "str_replace":
+            if not fs.exists(resolved_path):
+                return f"Error: The path {display_path} does not exist. Please provide a valid path."
+            if fs.is_dir(resolved_path):
+                return f"Error: The path {display_path} is a directory and only the `view` command can be used on directories"
             if not fs.is_file(resolved_path):
-                return f"Error: File {resolved_path} does not exist."
-            if old_str is None or new_str is None:
-                return "Error: Both `old_str` and `new_str` are required for `str_replace`."
+                return f"Error: cannot edit \"{display_path}\": not a regular file"
 
+            if old_str is None:
+                return "Error: Parameter `old_str` is required for command: str_replace"
+            if len(old_str) == 0:
+                return "Error: Parameter `old_str` is empty for command: str_replace"
+
+            replacement = new_str if new_str is not None else ""
             content = fs.read_text(resolved_path)
             offsets = match_offsets(content, old_str)
             count = len(offsets)
 
             if count == 0:
-                return f"Error: `old_str` was not found in {resolved_path}."
+                return f"Error: No replacement was performed, old_str `{old_str}` did not appear verbatim in {display_path}."
             if count > 1:
                 lines = line_numbers_at(content, offsets)
                 lines_str = ", ".join(str(l) for l in lines)
-                return f"Error: `old_str` matches {count} occurrences in {resolved_path} at lines {lines_str}. Include more context to make it unique."
+                return f"Error: No replacement was performed. Multiple occurrences of old_str `{old_str}` in lines [{lines_str}]. Please ensure it is unique"
 
-            self._undo_history[resolved_path] = content
+            _fire_waterfall(ctx, "fs/edit-intent", resolved_path, lambda: None)
 
-            new_content = content[: offsets[0]] + new_str + content[offsets[0] + len(old_str) :]
+            new_content = content[: offsets[0]] + replacement + content[offsets[0] + len(old_str) :]
             fs.write_text(resolved_path, new_content)
-            return f"Successfully replaced content in {resolved_path}."
+            if ctx and hasattr(ctx, "emit"):
+                ctx.emit("fs/observed", resolved_path, {"kind": "present", "version": 1})
+            return f"The file {display_path} has been edited successfully."
 
         elif command == "insert":
+            if not fs.exists(resolved_path):
+                return f"Error: The path {display_path} does not exist. Please provide a valid path."
+            if fs.is_dir(resolved_path):
+                return f"Error: The path {display_path} is a directory and only the `view` command can be used on directories"
             if not fs.is_file(resolved_path):
-                return f"Error: File {resolved_path} does not exist."
+                return f"Error: cannot insert into \"{display_path}\": not a regular file"
+
+            if insert_line is None:
+                return "Error: Parameter `insert_line` is required for command: insert"
             if new_str is None:
-                return "Error: `new_str` is required for `insert`."
-            target_line = insert_line if insert_line is not None else 0
+                return "Error: Parameter `new_str` is required for command: insert"
 
             content = fs.read_text(resolved_path)
             lines = content.split("\n")
-            if target_line < 0 or target_line > len(lines):
-                return f"Error: `insert_line` {target_line} is out of bounds (file has {len(lines)} lines)."
+            if not isinstance(insert_line, int) or insert_line < 0 or insert_line > len(lines):
+                return f"Error: Invalid `insert_line` parameter: {insert_line}. It should be within the range of lines of the file: [0, {len(lines)}]"
 
-            self._undo_history[resolved_path] = content
+            _fire_waterfall(ctx, "fs/edit-intent", resolved_path, lambda: None)
 
-            lines.insert(target_line, new_str)
-            fs.write_text(resolved_path, "\n".join(lines))
-            return f"Successfully inserted text at line {target_line} in {resolved_path}."
-
-        elif command == "undo_edit":
-            if resolved_path not in self._undo_history:
-                return f"Error: No edit history found for {resolved_path} to undo."
-
-            prev_content = self._undo_history.pop(resolved_path)
-            if prev_content == "":
-                if fs.exists(resolved_path):
-                    fs.write_text(resolved_path, "")
-                return f"Successfully reverted creation of {resolved_path}."
-            else:
-                fs.write_text(resolved_path, prev_content)
-                return f"Successfully reverted changes to {resolved_path}."
+            inserted_lines = new_str.split("\n")
+            after_lines = lines[:insert_line] + inserted_lines + lines[insert_line:]
+            fs.write_text(resolved_path, "\n".join(after_lines))
+            if ctx and hasattr(ctx, "emit"):
+                ctx.emit("fs/observed", resolved_path, {"kind": "present", "version": 1})
+            return f"The file {display_path} has been edited successfully."
 
         else:
             return f"Error: Unknown command '{command}'"
+
 

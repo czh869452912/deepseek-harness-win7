@@ -1,3 +1,4 @@
+from dsh.compaction.command_compact import CommandCompactPlugin
 from dsh.compaction.engine import (
     BasicCompactionEngine,
     BasicCompactionPlugin,
@@ -12,5 +13,7 @@ __all__ = [
     "CompactionEngine",
     "BasicCompactionEngine",
     "BasicCompactionPlugin",
+    "CommandCompactPlugin",
     "select_compactable_range",
 ]
+

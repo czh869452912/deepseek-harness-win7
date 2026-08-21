@@ -34,24 +34,39 @@ class CommandRegistry:
             self.ctx.effect(disposer)
         return disposer
 
+    def has(self, name: str) -> bool:
+        return name.lstrip("/") in self._commands
+
+    def get(self, name: str) -> Optional[Command]:
+        return self._commands.get(name.lstrip("/"))
+
     def list_commands(self) -> List[Command]:
         return list(self._commands.values())
 
-    async def execute(self, text: str) -> Optional[Any]:
-        if not text.startswith("/"):
-            return None
-        parts = text.lstrip("/").split(maxsplit=1)
-        name = parts[0].strip()
-        args = parts[1].strip() if len(parts) > 1 else ""
+    async def execute(self, text_or_name: str, *extra_args: Any, **kwargs: Any) -> Optional[Any]:
+        if text_or_name.startswith("/"):
+            parts = text_or_name.lstrip("/").split(maxsplit=1)
+            name = parts[0].strip()
+            args = parts[1].strip() if len(parts) > 1 else ""
+            call_args = [args] if not extra_args else list(extra_args)
+        else:
+            name = text_or_name.lstrip("/")
+            call_args = list(extra_args)
 
         cmd = self._commands.get(name)
         if not cmd:
             return None
 
-        res = cmd.handler(args)
+        try:
+            res = cmd.handler(*call_args, **kwargs)
+        except TypeError:
+            # Fallback for single arg handler
+            res = cmd.handler(call_args[0] if call_args else "")
+
         if hasattr(res, "__await__"):
             res = await res
         return res
+
 
 
 class CommandsPlugin(Plugin):

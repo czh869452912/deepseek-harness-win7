@@ -100,6 +100,8 @@ class ApiProxyPlugin(Plugin):
         ctx.on("goal/change", self._on_goal_changed)
         ctx.on("question/requested", self._on_question_requested)
         ctx.on("approval/requested", self._on_approval_requested)
+        ctx.on("projection/change", self._on_projection_change)
+
 
     async def _broadcast_mux(self, frame: Dict[str, Any], rpc_id: Optional[str] = None) -> None:
         try:
@@ -196,6 +198,22 @@ class ApiProxyPlugin(Plugin):
             }))
         except Exception:
             pass
+
+    def _on_projection_change(self, *args: Any, **kwargs: Any) -> None:
+        try:
+            payload = args[0] if args else {}
+            if isinstance(payload, dict):
+                sid = payload.get("sessionId") or "default-session"
+                asyncio.create_task(self._broadcast_mux({
+                    "type": "session/projection",
+                    "sessionId": sid,
+                    "key": payload.get("key"),
+                    "value": payload.get("value"),
+                    "seq": payload.get("seq", int(time.time())),
+                }))
+        except Exception:
+            pass
+
 
     def _on_question_requested(self, *args: Any, **kwargs: Any) -> None:
         try:

@@ -5,6 +5,11 @@ from dsh.session.persistence import (
     SessionPersistenceSnapshot,
 )
 from dsh.session.persistence_jsonl import JsonlSessionPersistence, JsonlSessionPersistencePlugin
+from dsh.session.projections import (
+    ProjectionDefinition,
+    SessionProjectionRegistry,
+    SessionProjectionsPlugin,
+)
 
 __all__ = [
     "SessionLocation",
@@ -13,4 +18,8 @@ __all__ = [
     "SessionPersistence",
     "JsonlSessionPersistence",
     "JsonlSessionPersistencePlugin",
+    "ProjectionDefinition",
+    "SessionProjectionRegistry",
+    "SessionProjectionsPlugin",
 ]
+

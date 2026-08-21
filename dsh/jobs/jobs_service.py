@@ -97,6 +97,19 @@ class JobsService:
             except Exception as e:
                 job.append_output(f"Error: {e}")
                 job.mark_finished(status="failed", detail=str(e))
+            finally:
+                if self.ctx:
+                    self.ctx.emit("jobs/finished", {"job": job.to_dict(), "ownerSessionId": owner_session_id})
+
+                    # If owner session has an agent, notify or wake up
+                    if self.ctx.has("agents"):
+                        agents_svc = self.ctx.get("agents")
+                        agent = agents_svc.get(owner_session_id) if hasattr(agents_svc, "get") else None
+                        if agent and hasattr(agent, "inbox") and hasattr(agent.inbox, "push"):
+                            agent.inbox.push({
+                                "role": "system",
+                                "content": f"[Background job {job.id} ({job.label}) {job.status}]",
+                            })
 
         asyncio.create_task(_wrapper())
         return job
@@ -117,7 +130,6 @@ class JobsService:
         )
 
     def get_job(self, job_id: str) -> Optional[JobSnapshot]:
-
         return self._jobs.get(job_id)
 
     def list_jobs(self, owner_session_id: Optional[str] = None) -> List[JobSnapshot]:
@@ -130,4 +142,7 @@ class JobsService:
         if not job or job.status not in ("running", "stopping"):
             return False
         job.mark_finished(status="killed", detail="Killed by user/agent request")
+        if self.ctx:
+            self.ctx.emit("jobs/killed", {"jobId": job_id})
         return True
+

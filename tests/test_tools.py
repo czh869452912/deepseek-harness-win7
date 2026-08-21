@@ -25,7 +25,7 @@ def test_str_replace_editor_plugin(ctx_with_tools):
 
         # 1. Create file
         res = plugin.handle_editor("create", path=test_file, file_text="Hello World\nLine 2\nLine 3", ctx=ctx)
-        assert "File created successfully" in res
+        assert "New file created successfully at:" in res
 
         # 2. View file
         view_res = plugin.handle_editor("view", path=test_file, ctx=ctx)
@@ -34,10 +34,11 @@ def test_str_replace_editor_plugin(ctx_with_tools):
 
         # 3. String replace
         rep_res = plugin.handle_editor("str_replace", path=test_file, old_str="Line 2", new_str="Line Two", ctx=ctx)
-        assert "Successfully replaced content" in rep_res
+        assert "The file" in rep_res and "has been edited successfully" in rep_res
 
         view_res2 = plugin.handle_editor("view", path=test_file, ctx=ctx)
         assert "Line Two" in view_res2
+
 
 
 def test_pwsh_persistent_plugin(ctx_with_tools):

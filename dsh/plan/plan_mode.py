@@ -207,7 +207,55 @@ class PlanModePlugin(Plugin):
         controller = PlanModeController(ctx, section=section)
         ctx.set_service("plan_mode", controller)
 
-        # Register exit_plan_mode tool
+        # 1. Register session projection if sessionProjections is mounted
+        if ctx.has("sessionProjections"):
+            projections = ctx.get("sessionProjections")
+            if hasattr(projections, "register"):
+                def apply_plan_projection(state: Any, event: Any) -> Any:
+                    evt_type = event.get("type") if isinstance(event, dict) else getattr(event, "type", "")
+                    evt_data = event.get("data", {}) if isinstance(event, dict) else getattr(event, "data", {})
+                    current_active = state.get("active", False) if isinstance(state, dict) else False
+                    current_plan = state.get("plan", None) if isinstance(state, dict) else None
+
+                    if evt_type == "plan/mode":
+                        new_active = bool(evt_data.get("active", False))
+                        return {"active": new_active, "plan": current_plan}
+                    if evt_type == "tool/result" and evt_data.get("name") == "exit_plan_mode":
+                        # exit plan mode submitted
+                        return {"active": False, "plan": None}
+                    return state
+
+                projections.register(
+                    key="plan",
+                    schema={"type": "object"},
+                    init=lambda: {"active": False, "plan": None},
+                    apply=apply_plan_projection,
+                    view=lambda s: s,
+                )
+
+        # 2. Register /plan command if commands service is mounted
+        if ctx.has("commands"):
+            cmd_svc = ctx.get("commands")
+            if hasattr(cmd_svc, "register"):
+                def execute_plan_command(session: Any, args: List[str]) -> str:
+                    sub = args[0].lower() if args else "on"
+                    if sub in ("on", "start", "1"):
+                        controller.set_active(True, session=session)
+                        return "Plan mode enabled."
+                    elif sub in ("off", "stop", "exit", "0"):
+                        controller.set_active(False, session=session)
+                        return "Plan mode disabled."
+                    else:
+                        controller.set_active(True, session=session)
+                        return f"Plan mode enabled with instruction: {' '.join(args)}"
+
+                cmd_svc.register(
+                    name="plan",
+                    description="Switch between plan mode (planning without edits) and execute mode.",
+                    handler=execute_plan_command,
+                )
+
+        # 3. Register exit_plan_mode tool
         tools = ctx.get("tools")
         disposer = tools.register(
             name="exit_plan_mode",
@@ -232,7 +280,7 @@ class PlanModePlugin(Plugin):
         ctx.on("agent/prompt-assemble", controller.on_prompt_assemble)
         ctx.on("agent/pre-step", controller.on_pre_step)
 
-        # Hook /plan command in agent pre-step if user types /plan
+        # Hook /plan command in agent pre-step if user types /plan in natural input
         ctx.on("agent/pre-step", self._hook_plan_slash_command)
 
         if hasattr(ctx, "effect"):
@@ -267,3 +315,4 @@ class PlanModePlugin(Plugin):
                         last_user_msg["content"] = tokens[1] + "\n\n[System Notice: Session switched to Plan Mode.]"
 
         return payload
+

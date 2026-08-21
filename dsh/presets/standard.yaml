@@ -11,6 +11,12 @@
   config:
     maxBytes: 65536
 
+- id: file-reference-local
+  name: "@deepseek-ai/dsh-file-reference-local"
+
+- id: time-context
+  name: "@deepseek-ai/dsh-time-context"
+
 - id: fs-local
   name: "@deepseek-ai/dsh-fs-local"
   config:

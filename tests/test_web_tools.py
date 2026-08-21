@@ -45,9 +45,18 @@ async def test_tool_web_search_and_fetch():
     ctx.plugin(ToolWebPlugin)
     tools = ctx.get("tools")
 
+    # 1. Single query legacy parameter
     search_res = await tools.execute_tool("web_search", {"query": "python cordis"})
     assert "Doc for python cordis" in search_res
     assert "https://example.org/doc" in search_res
+    assert "Cite the relevant URLs above" in search_res
 
+    # 2. Multi-query official array parameter
+    multi_res = await tools.execute_tool("web_search", {"queries": ["python cordis", "asyncio loop"]})
+    assert "https://example.org/doc" in multi_res
+    assert "Cite the relevant URLs above" in multi_res
+
+    # 3. Web fetch
     fetch_res = await tools.execute_tool("web_fetch", {"url": "https://example.org/article"})
     assert "Extracted Heading" in fetch_res
+

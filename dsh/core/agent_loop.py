@@ -185,6 +185,8 @@ class AgentLoopService:
             if persona and hasattr(persona, "get_prompt"):
                 system_prompt = persona.get_prompt()
 
+            # Support both official system-prompt/assemble and legacy agent/prompt-assemble waterfalls
+            system_prompt = await self.ctx.waterfall("system-prompt/assemble", system_prompt)
             system_prompt = await self.ctx.waterfall("agent/prompt-assemble", system_prompt)
 
             # 2. Derive messages from surface
@@ -326,7 +328,9 @@ class AgentLoopService:
 
         await self.ctx.serial("agent/turn-stopping")
         session.append("turn/end", {"turn": turn_num, "reason": {"kind": "completed"}}, ignorable=True)
+        self.ctx.emit("agent/turn-stopped", {"agent": agent, "turn": turn_num, "session": session})
         await session.flush()
+
 
     async def run_turn(self, user_input: str, max_steps: int = 10) -> str:
         """

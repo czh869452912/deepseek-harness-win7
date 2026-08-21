@@ -6,6 +6,8 @@ from dsh.cordis.context import Context
 from dsh.cordis.environment import load_layered_env
 from dsh.cordis.loader import PresetLoader
 from dsh.context.agent_instructions import AgentInstructionsPlugin
+from dsh.context.file_reference_local import FileReferenceLocalPlugin
+from dsh.context.time_context import TimeContextPlugin
 from dsh.core.agent import AgentPlugin
 from dsh.core.agent_loop import AgentLoopPlugin
 from dsh.core.persona import PersonaPlugin
@@ -22,6 +24,7 @@ from dsh.session.persistence_jsonl import JsonlSessionPersistencePlugin
 from dsh.compaction.pruner import ToolResultPrunerPlugin
 from dsh.compaction.engine import BasicCompactionPlugin
 from dsh.settings.settings_file import SettingsFilePlugin
+from dsh.shell.tool_pwsh import ToolPwshPlugin
 from dsh.shell.tool_pwsh_persistent import ToolPwshPersistentPlugin
 from dsh.skill.skill_filesystem import SkillFilesystemPlugin
 from dsh.skill.tool_skill import ToolSkillPlugin
@@ -43,6 +46,7 @@ from dsh.host.frontend_static.frontend_static import FrontendStaticPlugin
 from dsh.host.apiproxy.api_proxy import ApiProxyPlugin
 from dsh.host.client_modules.registry import ClientModulesPlugin
 from dsh.host.directory_picker.directory_picker import DirectoryPickerAutoPlugin
+
 
 
 def build_harness(
@@ -83,10 +87,14 @@ def build_harness(
     loader.register_plugin_class("@deepseek-ai/dsh-agent", AgentPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-persona", PersonaPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-agent-instructions", AgentInstructionsPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-file-reference-local", FileReferenceLocalPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-time-context", TimeContextPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-fs-local", FsLocalPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-tool-str-replace-editor", StrReplaceEditorPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-tool-pwsh", ToolPwshPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-tool-pwsh-persistent", ToolPwshPersistentPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-tool-fs-search", ToolFsSearchPlugin)
+
     loader.register_plugin_class("@deepseek-ai/dsh-tool-ask-user", ToolAskUserPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-tool-todo", ToolTodoPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-cordis-manager", CordisManagerPlugin)

@@ -78,7 +78,46 @@ class JobsService:
         self._jobs[job_id] = job
         return job
 
+    def start_job(
+        self,
+        kind: str,
+        label: str,
+        task_coro: Any,
+        owner_session_id: str = "default",
+        detail: Optional[str] = None,
+    ) -> JobSnapshot:
+        job = self.create_job(kind=kind, label=label, owner_session_id=owner_session_id, detail=detail)
+
+        async def _wrapper():
+            try:
+                res = await task_coro
+                if isinstance(res, str):
+                    job.append_output(res)
+                job.mark_finished(status="completed")
+            except Exception as e:
+                job.append_output(f"Error: {e}")
+                job.mark_finished(status="failed", detail=str(e))
+
+        asyncio.create_task(_wrapper())
+        return job
+
+    def submit_job(
+        self,
+        name: str,
+        task_coro: Any,
+        owner_session_id: str = "default",
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> JobSnapshot:
+        return self.start_job(
+            kind="pwsh",
+            label=name,
+            task_coro=task_coro,
+            owner_session_id=owner_session_id,
+            detail=metadata.get("command") if metadata else None,
+        )
+
     def get_job(self, job_id: str) -> Optional[JobSnapshot]:
+
         return self._jobs.get(job_id)
 
     def list_jobs(self, owner_session_id: Optional[str] = None) -> List[JobSnapshot]:

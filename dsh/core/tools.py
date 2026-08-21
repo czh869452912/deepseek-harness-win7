@@ -85,7 +85,14 @@ class ToolsService:
     def get_tool(self, name: str) -> Optional[Tool]:
         return self._tools.get(name)
 
+    def has(self, name: str) -> bool:
+        return name in self._tools
+
+    def has_tool(self, name: str) -> bool:
+        return name in self._tools
+
     def list_tools(self) -> List[Tool]:
+
         return list(self._tools.values())
 
     def get_schemas(self) -> List[Dict[str, Any]]:

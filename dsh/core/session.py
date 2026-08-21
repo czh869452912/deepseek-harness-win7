@@ -137,7 +137,11 @@ class Session:
         header: SessionHeader,
         ctx: Optional[Any] = None,
     ) -> "Session":
-        session = cls(session_id=session_id, seed=seed, header=header, ctx=ctx)
+        from dsh.session.repair import interrupted_turn_closers
+        repaired_seed = list(seed)
+        closers = interrupted_turn_closers(repaired_seed)
+        repaired_seed.extend(closers)
+        session = cls(session_id=session_id, seed=repaired_seed, header=header, ctx=ctx)
         return session
 
     def append(
@@ -226,6 +230,8 @@ class Session:
         turn: Optional[int] = None,
         step: Optional[int] = None,
         timing: Optional[Dict[str, Any]] = None,
+        error: Optional[Dict[str, Any]] = None,
+        meta: Optional[Dict[str, Any]] = None,
         surface_op: Optional[Union[str, Dict[str, Any]]] = None,
         source_event_seqs: Optional[List[int]] = None,
     ) -> Dict[str, Any]:
@@ -246,6 +252,10 @@ class Session:
             data["step"] = step
         if timing is not None:
             data["timing"] = timing
+        if error is not None:
+            data["error"] = error
+        if meta is not None:
+            data["meta"] = meta
         return self.append(
             "tool/result",
             data,

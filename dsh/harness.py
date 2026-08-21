@@ -41,11 +41,18 @@ from dsh.web.tool_web import ToolWebPlugin
 from dsh.subagent.tool_subagent import ToolSubagentPlugin
 from dsh.workflow.tool_ralph import ToolRalphPlugin
 from dsh.workflow.tool_workflow import ToolWorkflowPlugin
-from dsh.host.webserver.webserver import WebServerPlugin
-from dsh.host.frontend_static.frontend_static import FrontendStaticPlugin
 from dsh.host.apiproxy.api_proxy import ApiProxyPlugin
 from dsh.host.client_modules.registry import ClientModulesPlugin
 from dsh.host.directory_picker.directory_picker import DirectoryPickerAutoPlugin
+from dsh.host.frontend_static.frontend_static import FrontendStaticPlugin
+from dsh.host.webserver.webserver import WebServerPlugin
+from dsh.interaction.commands import CommandsPlugin
+from dsh.interaction.permission_presets import PermissionPresetsPlugin
+from dsh.interaction.user_approval import UserApprovalPlugin
+from dsh.llm.llm_retry import LLMRetryPlugin
+from dsh.session.session_query import SessionQueryPlugin
+from dsh.storage.storage import StoragePlugin
+from dsh.workspace.workspace import WorkspacePlugin
 
 
 
@@ -70,7 +77,14 @@ def build_harness(
     # Mount base infrastructure plugins
     ctx.plugin(CredentialsLocalPlugin)
     ctx.plugin(SettingsFilePlugin)
+    ctx.plugin(StoragePlugin)
+    ctx.plugin(WorkspacePlugin)
+    ctx.plugin(UserApprovalPlugin)
+    ctx.plugin(PermissionPresetsPlugin)
+    ctx.plugin(CommandsPlugin)
     ctx.plugin(TokenMeterPlugin)
+    ctx.plugin(LLMRetryPlugin)
+    ctx.plugin(SessionQueryPlugin)
     ctx.plugin(AgentLoopPlugin)
 
     if verbose:
@@ -102,6 +116,13 @@ def build_harness(
     loader.register_plugin_class("@deepseek-ai/dsh-tool-skill", ToolSkillPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-credentials-local", CredentialsLocalPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-settings-file", SettingsFilePlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-storage", StoragePlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-workspace", WorkspacePlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-user-approval", UserApprovalPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-permission-presets", PermissionPresetsPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-commands", CommandsPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-llm-retry", LLMRetryPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-session-query-sqlite", SessionQueryPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-cli-visualizer", CliVisualizerPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-token-meter", TokenMeterPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-session-persistence-jsonl", JsonlSessionPersistencePlugin)

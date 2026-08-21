@@ -12,7 +12,9 @@ from typing import Any, Callable, Dict, List, Optional, Union
 from dsh.cordis.context import Context
 from dsh.cordis.plugin import Plugin
 from dsh.core.agent import Agent, AgentHandle, AgentOptions, AgentRegistry
+from dsh.core.runtime_context import RuntimeContextProjection
 from dsh.core.session import Session, SessionHeader, SessionStore
+from dsh.core.tool_calls import execute_tool_calls
 from dsh.core.tools import ToolsService
 
 
@@ -155,8 +157,9 @@ class AgentLoopService:
         except asyncio.CancelledError:
             pass
         except Exception as e:
-            if self.ctx.logger:
-                self.ctx.logger.error("agent driver crashed: %s", str(e))
+            logger = getattr(self.ctx, "logger", None)
+            if logger and hasattr(logger, "error"):
+                logger.error("agent driver crashed: %s", str(e))
         finally:
             agent.set_status("idle")
 
@@ -290,41 +293,20 @@ class AgentLoopService:
                 session.append("step/end", {"turn": turn_num, "step": step_count}, ignorable=True)
                 break
 
-            # Execute tool calls
-            for tcall in tool_calls:
-                call_id = tcall.get("id") or str(uuid.uuid4())
-                func = tcall.get("function", {})
-                name = func.get("name", "")
-                args_raw = func.get("arguments", "{}")
-
-                try:
-                    if isinstance(args_raw, str):
-                        args = json.loads(args_raw)
-                    else:
-                        args = args_raw
-                except Exception:
-                    args = {}
-
-                tool_start = time.time()
-                if tools_service:
-                    result = await tools_service.execute_tool(name, args)
-                else:
-                    result = "Error: Tools service unavailable"
-                tool_duration_ms = (time.time() - tool_start) * 1000
-
-                session.append_tool_result(
-                    tool_call_id=call_id,
-                    name=name,
-                    result=result,
-                    turn=turn_num,
-                    step=step_count,
-                    timing={
-                        "startedAt": tool_start * 1000,
-                        "durationMs": round(tool_duration_ms, 2),
-                    },
-                )
+            # Execute tool calls via 1:1 dual-mode scheduler (parallel pool + exclusive barriers)
+            outcome = await execute_tool_calls(
+                ctx=self.ctx,
+                agent=agent,
+                turn=turn_num,
+                step=step_count,
+                tool_calls=tool_calls,
+                signal=agent._cancel_event if hasattr(agent, "_cancel_event") else None,
+                accept_context=lambda ctx_item: session.append_user_message(str(ctx_item)),
+            )
 
             session.append("step/end", {"turn": turn_num, "step": step_count}, ignorable=True)
+            if outcome.get("concluded"):
+                break
 
         await self.ctx.serial("agent/turn-stopping")
         session.append("turn/end", {"turn": turn_num, "reason": {"kind": "completed"}}, ignorable=True)

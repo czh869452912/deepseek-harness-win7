@@ -115,3 +115,36 @@ async def test_goal_slash_command(goal_ctx):
     }
     await goal_ctx.waterfall("agent/pre-step", payload_pause)
     assert goal_svc.get_goal().phase == "paused"
+
+
+def test_goal_blocked_threshold(goal_ctx):
+    goal_svc: GoalService = goal_ctx.get("goals")
+    g = goal_svc.create_goal(objective="Difficult task")
+    assert g.activation == "armed"
+
+    # Blocked without reason raises error
+    with pytest.raises(ValueError, match="blocked_reason is required"):
+        goal_svc.update_goal(goal_id=g.id, revision=1, action="blocked", blocked_reason="")
+
+    # Blocked during goal round before 3 rounds raises threshold error
+    with pytest.raises(ValueError, match="blocked requires at least 3 consecutive goal rounds"):
+        goal_svc.update_goal(
+            goal_id=g.id,
+            revision=1,
+            action="blocked",
+            blocked_reason="Missing API key",
+            is_goal_round=True,
+        )
+
+    # Blocked outside goal round succeeds
+    g_blocked = goal_svc.update_goal(
+        goal_id=g.id,
+        revision=1,
+        action="blocked",
+        blocked_reason="Missing API key",
+        is_goal_round=False,
+    )
+    assert g_blocked.phase == "blocked"
+    assert g_blocked.activation == "disarmed"
+    assert g_blocked.blocked_reason["message"] == "Missing API key"
+

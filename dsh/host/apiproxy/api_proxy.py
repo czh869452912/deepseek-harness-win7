@@ -141,6 +141,10 @@ class ApiProxyPlugin(Plugin):
         ctx.on("question/requested", self._on_question_requested)
         ctx.on("approval/requested", self._on_approval_requested)
         ctx.on("projection/change", self._on_projection_change)
+        ctx.on("agent/inbox/spliced", self._on_inbox_spliced)
+        ctx.on("agent/inbox/claimed", self._on_inbox_spliced)
+        ctx.on("agent/inbox/inserted", self._on_inbox_spliced)
+        ctx.on("agent/inbox/discarded", self._on_inbox_spliced)
 
     async def _broadcast_mux(self, frame: Dict[str, Any], rpc_id: Optional[str] = None) -> None:
         try:
@@ -268,6 +272,47 @@ class ApiProxyPlugin(Plugin):
         except Exception:
             pass
 
+    def _on_inbox_spliced(self, *args: Any, **kwargs: Any) -> None:
+        try:
+            # Build session/queue snapshot from agent inbox
+            payload = args[0] if args else {}
+            agent = payload.get("agent") if isinstance(payload, dict) else None
+            # Fallback: try to find agent from current initiator
+            if not agent and len(args) >= 1 and hasattr(args[0], "inbox"):
+                agent = args[0]
+            sid = getattr(getattr(agent, "session", None), "id", None) if agent else None
+            if not sid and isinstance(payload, dict):
+                sid = payload.get("sessionId") or "default-session"
+            sid = sid or "default-session"
+            inbox = getattr(agent, "inbox", None) if agent else None
+            items = []
+            if inbox:
+                for msg in inbox.next_turn:
+                    items.append({"id": msg.get("id", ""), "placement": "queued", "message": {"role": "user", "content": msg.get("content", "")}})
+                for msg in inbox.next_step:
+                    items.append({"id": msg.get("id", ""), "placement": "steering", "message": {"role": "user", "content": msg.get("content", "")}})
+            else:
+                # No agent inbox, try to find handle
+                handle = self._active_sessions.get(sid)
+                if handle and hasattr(handle, "agent") and hasattr(handle.agent, "inbox"):
+                    ib = handle.agent.inbox
+                    for msg in ib.next_turn:
+                        items.append({"id": msg.get("id", ""), "placement": "queued", "message": {"role": "user", "content": msg.get("content", "")}})
+                    for msg in ib.next_step:
+                        items.append({"id": msg.get("id", ""), "placement": "steering", "message": {"role": "user", "content": msg.get("content", "")}})
+            try:
+                loop = asyncio.get_running_loop()
+                loop.create_task(self._broadcast_mux({"type": "session/queue", "sessionId": sid, "items": items}))
+            except RuntimeError:
+                # No running loop, schedule via get_event_loop if available
+                try:
+                    import asyncio as _aio
+                    _aio.get_event_loop().create_task(self._broadcast_mux({"type": "session/queue", "sessionId": sid, "items": items}))
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
     def _on_question_requested(self, *args: Any, **kwargs: Any) -> None:
         try:
             q = args[0] if args else {}
@@ -283,7 +328,12 @@ class ApiProxyPlugin(Plugin):
             sid = appr.get("sessionId", "default-session")
             loop = asyncio.get_event_loop()
             fut = loop.create_future()
-            self._pending_server_requests[rpc_id] = fut
+            self._pending_server_requests[rpc_id] = {
+                "future": fut,
+                "sessionId": sid,
+                "type": "approval",
+                "toolName": appr.get("toolName", "tool"),
+            }
 
             asyncio.create_task(self._broadcast_mux({
                 "type": "approval/requested",
@@ -515,8 +565,13 @@ class ApiProxyPlugin(Plugin):
                 await send_rpc_success(res)
                 return
 
-            if rpc_method in ("session.models", "session/models", "models/discover", "llm.models"):
+            if rpc_method in ("session.models", "session/models"):
                 res = await self.sessions_handler.get_models(req_payload)
+                await send_rpc_success(res)
+                return
+
+            if rpc_method in ("llm.models", "llm/models", "models/discover"):
+                res = await self.llm_handler.list_models(req_payload)
                 await send_rpc_success(res)
                 return
 
@@ -722,6 +777,29 @@ class ApiProxyPlugin(Plugin):
                     }
                     await response.write_chunk(format_sse_frame(sub_frame))
 
+            if self.questions_handler and hasattr(self.questions_handler, "_pending"):
+                for q_id, q_item in self.questions_handler._pending.items():
+                    q_data = q_item.get("questions") if isinstance(q_item, dict) else []
+                    sid = q_item.get("sessionId", "default-session") if isinstance(q_item, dict) else "default-session"
+                    q_frame = {
+                        "type": "question/requested",
+                        "sessionId": sid,
+                        "questions": q_data,
+                    }
+                    await response.write_chunk(format_sse_frame(q_frame, rpc_id=q_id))
+
+            for rpc_id, pending_item in self._pending_server_requests.items():
+                if isinstance(pending_item, dict) and pending_item.get("type") == "approval":
+                    sid = pending_item.get("sessionId", "default-session")
+                    tool_name = pending_item.get("toolName", "tool")
+                    appr_frame = {
+                        "type": "approval/requested",
+                        "sessionId": sid,
+                        "approvalId": rpc_id,
+                        "toolName": tool_name,
+                    }
+                    await response.write_chunk(format_sse_frame(appr_frame, rpc_id=rpc_id))
+
             while True:
                 data = await queue.get()
                 await response.write_chunk(data if isinstance(data, bytes) else data.encode("utf-8"))
@@ -756,6 +834,12 @@ class ApiProxyPlugin(Plugin):
                     "workspace": ws_view,
                 }
                 await response.write_chunk(format_sse_frame(ws_frame))
+
+            archived_frame = {
+                "type": "host/archived-sessions-changed",
+                "archivedSessionIds": list(self._archived_sessions),
+            }
+            await response.write_chunk(format_sse_frame(archived_frame))
 
             sessions_svc: SessionStore = self.ctx.get("sessions")
             if sessions_svc:

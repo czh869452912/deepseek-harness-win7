@@ -18,6 +18,8 @@ class SettingsService:
         self.ctx = ctx
         self._data: Dict[str, Any] = {}
         self._format: str = "yaml"
+        self._revision: int = 1
+        self.writable: bool = True
 
         if settings_file:
             self.filepath = os.path.abspath(settings_file)

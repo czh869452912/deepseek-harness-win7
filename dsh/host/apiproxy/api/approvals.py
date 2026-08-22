@@ -14,28 +14,36 @@ class ApprovalsDomainHandler:
 
     async def handle_respond(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         resp_rpc_id = payload.get("rpcId")
-        sid = payload.get("sessionId", "default-session")
-        answer = payload.get("answer")
-        outcome = payload.get("outcome")
+        result = payload.get("result", {})
+        ok = result.get("ok", True) if isinstance(result, dict) else True
+        value = result.get("value") if isinstance(result, dict) else payload.get("answer") or payload.get("outcome")
 
-        if resp_rpc_id and resp_rpc_id in self._pending:
-            fut = self._pending.pop(resp_rpc_id)
-            if not fut.done():
-                fut.set_result(answer or outcome or True)
+        if not resp_rpc_id or resp_rpc_id not in self._pending:
+            return {"accepted": False, "reason": "not-pending"}
 
-        if answer is not None:
+        pending_item = self._pending.pop(resp_rpc_id)
+        fut = pending_item.get("future") if isinstance(pending_item, dict) else pending_item
+        sid = pending_item.get("sessionId", "default-session") if isinstance(pending_item, dict) else "default-session"
+        item_type = pending_item.get("type", "approval") if isinstance(pending_item, dict) else "approval"
+
+        if fut and hasattr(fut, "set_result") and not fut.done():
+            fut.set_result(value if ok else None)
+
+        if item_type == "question":
+            outcome = "answered" if ok else "cancelled"
             await self._broadcast_mux({
                 "type": "question/resolved",
                 "sessionId": sid,
                 "questionRpcId": resp_rpc_id,
-                "outcome": "answered",
+                "outcome": outcome,
             })
-        elif outcome is not None:
+        else:
+            outcome = value if (isinstance(value, str) and value in ("approved", "rejected")) else ("approved" if ok else "rejected")
             await self._broadcast_mux({
                 "type": "approval/resolved",
                 "sessionId": sid,
-                "approvalId": payload.get("approvalId", resp_rpc_id),
+                "approvalId": resp_rpc_id,
                 "outcome": outcome,
             })
 
-        return {"ok": True, "accepted": True, "success": True}
+        return {"accepted": True}

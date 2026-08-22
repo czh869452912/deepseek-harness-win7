@@ -67,6 +67,68 @@ class BlockAssembler:
         if not isinstance(chunk, dict):
             return
 
+        ctype = chunk.get("type")
+        if ctype == "block-start":
+            idx = chunk.get("index", 0)
+            btype = chunk.get("blockType", "text")
+            self._ensure(idx, btype)
+            return
+
+        if ctype == "text-delta":
+            idx = chunk.get("index", 0)
+            text = chunk.get("text", "")
+            partial = self._ensure(idx, "text")
+            partial.text += text
+            return
+
+        if ctype == "reasoning-delta":
+            idx = chunk.get("index", 1)
+            text = chunk.get("text", "")
+            partial = self._ensure(idx, "reasoning")
+            partial.text += text
+            return
+
+        if ctype == "tool-call-delta":
+            idx = chunk.get("index", 10)
+            partial = self._ensure(idx, "tool-call")
+            if chunk.get("id"):
+                partial.tool_call_id = chunk["id"]
+            if chunk.get("name"):
+                partial.tool_call_name = chunk["name"]
+            if chunk.get("argumentsDelta"):
+                partial.tool_call_arguments += chunk["argumentsDelta"]
+            return
+
+        if ctype == "block-end":
+            idx = chunk.get("index", 0)
+            block = chunk.get("block", {})
+            if isinstance(block, dict):
+                btype = block.get("type", "text")
+                partial = self._ensure(idx, btype)
+                if btype in ("text", "reasoning") and "text" in block:
+                    partial.text = block["text"]
+                elif btype == "tool-call":
+                    if block.get("id"):
+                        partial.tool_call_id = block["id"]
+                    if block.get("name"):
+                        partial.tool_call_name = block["name"]
+                    if block.get("arguments") is not None:
+                        args = block["arguments"]
+                        partial.tool_call_arguments = args if isinstance(args, str) else json.dumps(args, ensure_ascii=False)
+            return
+
+        if ctype == "usage":
+            if "usage" in chunk and isinstance(chunk["usage"], dict):
+                self.usage = chunk["usage"]
+            return
+
+        if ctype == "finish":
+            reason = chunk.get("reason", {})
+            kind = reason.get("kind") if isinstance(reason, dict) else str(reason)
+            if kind == "max-tokens":
+                self.finish_kind = "max-tokens"
+            return
+
         if "message" in chunk and isinstance(chunk["message"], dict):
             msg = chunk["message"]
             content = msg.get("content")
@@ -466,27 +528,44 @@ class AgentLoopService:
             if stream_fn and callable(stream_fn):
                 try:
                     stream_iter = stream_fn(messages=messages, tools=tool_schemas if tool_schemas else None)
-                    for ev_type, ev_payload in stream_iter:
-                        if ev_type == "chunk":
-                            chunk_payload = {
-                                "turn": turn,
-                                "step": step,
-                                "chunk": ev_payload,
-                                **(ev_payload if isinstance(ev_payload, dict) else {}),
-                            }
-                            chunk_ev = session.append(
-                                "assistant/chunk",
-                                chunk_payload,
-                                ignorable=True,
-                            )
-                            seq = chunk_ev.get("seq", 0) if isinstance(chunk_ev, dict) else getattr(chunk_ev, "seq", 0)
-                            chunk_seqs.append(seq)
-                            assembler.push(ev_payload)
-                            self.ctx.emit("session/chunk", session, chunk_ev)
-                            self.ctx.emit("assistant/chunk", chunk_ev)
-                        elif ev_type == "finish":
-                            assembler.push(ev_payload)
+                    for chunk in stream_iter:
+                        # TS port yields StreamChunk dict; legacy tuple (ev_type, ev_payload) also supported
+                        if isinstance(chunk, (list, tuple)) and len(chunk) == 2:
+                            ev_type, ev_payload = chunk
+                            if ev_type == "chunk":
+                                ev_payload = ev_payload
+                            elif ev_type == "finish":
+                                assembler.push(ev_payload)
+                                used_stream = True
+                                continue
+                            else:
+                                ev_payload = chunk
+                        else:
+                            ev_payload = chunk
+                        # Treat every StreamChunk dict as a chunk
+                        if not isinstance(ev_payload, dict):
+                            continue
+                        chunk_payload = {
+                            "turn": turn,
+                            "step": step,
+                            "chunk": ev_payload,
+                            **ev_payload,
+                        }
+                        chunk_ev = session.append(
+                            "assistant/chunk",
+                            chunk_payload,
+                            ignorable=True,
+                        )
+                        seq = chunk_ev.get("seq", 0) if isinstance(chunk_ev, dict) else getattr(chunk_ev, "seq", 0)
+                        chunk_seqs.append(seq)
+                        assembler.push(ev_payload)
+                        self.ctx.emit("session/chunk", session, chunk_ev)
+                        self.ctx.emit("assistant/chunk", chunk_ev)
+                        if ev_payload.get("type") == "finish":
                             used_stream = True
+                    # If we completed iteration without exception, mark streamed
+                    if chunk_seqs or assembler._order:
+                        used_stream = True
                 except asyncio.CancelledError:
                     content = assembler.interrupted_blocks()
                     if content:
@@ -499,7 +578,14 @@ class AgentLoopService:
                         )
                     raise
                 except Exception as e:
-                    used_stream = False
+                    # Streaming failed -> fallback to non-stream; keep assembler if partial streamed
+                    if not assembler._order and not chunk_seqs:
+                        used_stream = False
+                    else:
+                        # Partial stream succeeded, treat as streamed
+                        used_stream = True
+                        # Suppress exception if we already have content
+                        pass
 
             if not used_stream:
                 sync_res = llm_service.chat_completion(

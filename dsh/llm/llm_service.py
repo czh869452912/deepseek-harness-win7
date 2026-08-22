@@ -210,6 +210,37 @@ class LLMService:
         except Exception as e:
             raise RuntimeError(f"LLM API Request Error: {e}")
 
+    def list_providers(self) -> List[Dict[str, Any]]:
+        return [
+            {"id": "deepseek", "name": "DeepSeek Official"},
+            {"id": "openai", "name": "OpenAI Compatible"}
+        ]
+
+    def list_configurable_providers(self) -> List[Dict[str, Any]]:
+        return [
+            {"provider": "deepseek", "displayName": "DeepSeek Official", "settingsNs": "llm", "settingsPath": []},
+            {"provider": "openai", "displayName": "OpenAI Compatible", "settingsNs": "llm", "settingsPath": []}
+        ]
+
+    def list_models(self, provider_id: str = "deepseek") -> List[Dict[str, Any]]:
+        return [
+            {"id": "deepseek-chat", "name": "DeepSeek V3 (Chat)", "description": "High efficiency general reasoning"},
+            {"id": "deepseek-reasoner", "name": "DeepSeek R1 (Reasoner)", "description": "Deep reasoning with explicit chain-of-thought"}
+        ]
+
+    def resolve_model_info(self, provider_id: str, model_id: str) -> Dict[str, Any]:
+        return {
+            "provider": provider_id,
+            "id": model_id,
+            "name": model_id,
+        }
+
+    async def discover_models(self, settings_ns: str, options: Dict[str, Any]) -> List[Dict[str, Any]]:
+        return [
+            {"id": "deepseek-chat", "name": "DeepSeek V3 (Chat)"},
+            {"id": "deepseek-reasoner", "name": "DeepSeek R1 (Reasoner)"}
+        ]
+
     def chat_completion_stream(
         self,
         messages: List[Dict[str, Any]],
@@ -218,10 +249,14 @@ class LLMService:
         temperature: float = 0.0
     ):
         """
-        Streaming chat completion yielding live chunks with TTFT and timing measurements.
-        Yields chunk events:
-        - ('chunk', { 'delta_type': 'reasoning'|'text'|'tool_call', 'text': ..., 'reasoning': ..., 'tool_call': ... })
-        - ('finish', { 'message': full_message, 'timing': timing_dict, 'usage': usage_dict })
+        Streaming chat completion yielding canonical 1:1 StreamChunk objects.
+        Yields StreamChunks:
+        - { 'type': 'block-start', 'index': 0, 'blockType': 'text'|'reasoning'|'tool-call' }
+        - { 'type': 'text-delta'|'reasoning-delta', 'index': ..., 'text': ... }
+        - { 'type': 'tool-call-delta', 'index': ..., 'id': ..., 'name': ..., 'argumentsDelta': ... }
+        - { 'type': 'block-end', 'index': ..., 'block': ... }
+        - { 'type': 'usage', 'usage': ... }
+        - { 'type': 'finish', 'reason': { 'kind': 'stop'|'tool-calls'|'max-tokens' } }
         """
         import time
 
@@ -252,13 +287,13 @@ class LLMService:
         data_bytes = json.dumps(payload).encode("utf-8")
         req = urllib.request.Request(url, data=data_bytes, headers=headers, method="POST")
 
-        start_time = time.time()
-        first_token_time: Optional[float] = None
-
         accumulated_content = []
         accumulated_reasoning = []
         accumulated_tool_calls: Dict[int, Dict[str, Any]] = {}
         usage_data: Dict[str, Any] = {}
+
+        text_block_started = False
+        reasoning_block_started = False
 
         try:
             with urllib.request.urlopen(req, timeout=120) as resp:
@@ -285,112 +320,103 @@ class LLMService:
                     choice = choices[0]
                     delta = choice.get("delta", {})
 
-                    if first_token_time is None:
-                        first_token_time = time.time()
-
                     # 1. Reasoning content chunk
                     reasoning_chunk = delta.get("reasoning_content") or delta.get("reasoning")
                     if reasoning_chunk:
+                        if not reasoning_block_started:
+                            reasoning_block_started = True
+                            yield {"type": "block-start", "index": 1, "blockType": "reasoning"}
                         accumulated_reasoning.append(reasoning_chunk)
-                        yield ("chunk", {
-                            "delta_type": "reasoning",
-                            "delta": reasoning_chunk,
-                            "reasoning": "".join(accumulated_reasoning),
-                            "content": "".join(accumulated_content),
-                            "first_token": first_token_time == time.time(),
-                        })
+                        yield {"type": "reasoning-delta", "index": 1, "text": reasoning_chunk}
 
                     # 2. Text content chunk
                     content_chunk = delta.get("content")
                     if content_chunk:
+                        if not text_block_started:
+                            text_block_started = True
+                            yield {"type": "block-start", "index": 0, "blockType": "text"}
                         accumulated_content.append(content_chunk)
-                        yield ("chunk", {
-                            "delta_type": "text",
-                            "delta": content_chunk,
-                            "reasoning": "".join(accumulated_reasoning),
-                            "content": "".join(accumulated_content),
-                        })
+                        yield {"type": "text-delta", "index": 0, "text": content_chunk}
 
                     # 3. Tool calls chunk
                     tool_calls_chunk = delta.get("tool_calls")
                     if tool_calls_chunk:
                         for tc_delta in tool_calls_chunk:
                             idx = tc_delta.get("index", 0)
+                            block_idx = 10 + idx
                             if idx not in accumulated_tool_calls:
                                 accumulated_tool_calls[idx] = {
                                     "id": tc_delta.get("id", f"call_{idx}_{int(time.time()*1000)}"),
-                                    "type": "function",
-                                    "function": {"name": "", "arguments": ""}
+                                    "name": "",
+                                    "arguments": "",
+                                    "started": False,
                                 }
                             if "id" in tc_delta and tc_delta["id"]:
                                 accumulated_tool_calls[idx]["id"] = tc_delta["id"]
-                            fn = tc_delta.get("function", {})
-                            if "name" in fn and fn["name"]:
-                                accumulated_tool_calls[idx]["function"]["name"] += fn["name"]
-                            if "arguments" in fn and fn["arguments"]:
-                                accumulated_tool_calls[idx]["function"]["arguments"] += fn["arguments"]
+                            fn = tc_delta.get("function", {}) if "function" in tc_delta else tc_delta
+                            name_part = fn.get("name", "")
+                            args_part = fn.get("arguments", "")
+                            if name_part:
+                                accumulated_tool_calls[idx]["name"] += name_part
+                            if args_part:
+                                accumulated_tool_calls[idx]["arguments"] += args_part
 
-                        tool_calls_list = [accumulated_tool_calls[i] for i in sorted(accumulated_tool_calls.keys())]
-                        yield ("chunk", {
-                            "delta_type": "tool_call",
-                            "tool_calls": tool_calls_list,
-                            "reasoning": "".join(accumulated_reasoning),
-                            "content": "".join(accumulated_content),
-                        })
+                            if not accumulated_tool_calls[idx]["started"]:
+                                accumulated_tool_calls[idx]["started"] = True
+                                yield {"type": "block-start", "index": block_idx, "blockType": "tool-call"}
+
+                            yield {
+                                "type": "tool-call-delta",
+                                "index": block_idx,
+                                "id": accumulated_tool_calls[idx]["id"],
+                                "name": accumulated_tool_calls[idx]["name"],
+                                "argumentsDelta": args_part,
+                            }
 
         except Exception as stream_err:
-            # Fallback to non-streaming if stream is rejected by endpoint
             if not accumulated_content and not accumulated_reasoning and not accumulated_tool_calls:
                 msg = self.chat_completion(messages, tools, model, temperature)
-                completed_time = time.time()
-                yield ("finish", {
-                    "message": msg,
-                    "timing": {
-                        "stepStartTime": start_time * 1000,
-                        "firstTokenTime": (start_time + 0.15) * 1000,
-                        "completedTime": completed_time * 1000,
-                        "ttftMs": 150.0,
-                        "decodingMs": max(0.0, (completed_time - start_time - 0.15) * 1000),
-                        "durationMs": (completed_time - start_time) * 1000,
-                    },
-                    "usage": {"inputTokens": 0, "outputTokens": 0}
-                })
+                content = msg.get("content", "")
+                if content:
+                    yield {"type": "block-start", "index": 0, "blockType": "text"}
+                    yield {"type": "text-delta", "index": 0, "text": content}
+                    yield {"type": "block-end", "index": 0, "block": {"type": "text", "text": content}}
+                tcalls = msg.get("tool_calls", [])
+                if tcalls:
+                    for idx, tc in enumerate(tcalls):
+                        func = tc.get("function", {}) if "function" in tc else tc
+                        cid = tc.get("id", f"call_{idx}")
+                        cname = func.get("name", "")
+                        cargs = func.get("arguments", "")
+                        yield {"type": "block-start", "index": 10 + idx, "blockType": "tool-call"}
+                        yield {"type": "tool-call-delta", "index": 10 + idx, "id": cid, "name": cname, "argumentsDelta": cargs}
+                        yield {"type": "block-end", "index": 10 + idx, "block": {"type": "tool-call", "id": cid, "name": cname, "arguments": cargs}}
+                yield {"type": "usage", "usage": {"inputTokens": 0, "outputTokens": 0}}
+                yield {"type": "finish", "reason": {"kind": "tool-calls" if tcalls else "stop"}}
                 return
             else:
                 raise stream_err
 
-        completed_time = time.time()
-        if first_token_time is None:
-            first_token_time = completed_time
+        if reasoning_block_started:
+            yield {"type": "block-end", "index": 1, "block": {"type": "reasoning", "text": "".join(accumulated_reasoning)}}
 
-        ttft_ms = (first_token_time - start_time) * 1000
-        decoding_ms = (completed_time - first_token_time) * 1000
-        duration_ms = (completed_time - start_time) * 1000
+        if text_block_started:
+            yield {"type": "block-end", "index": 0, "block": {"type": "text", "text": "".join(accumulated_content)}}
 
-        full_tool_calls = [accumulated_tool_calls[i] for i in sorted(accumulated_tool_calls.keys())] if accumulated_tool_calls else None
-        final_message: Dict[str, Any] = {
-            "role": "assistant",
-            "content": "".join(accumulated_content) if accumulated_content else None,
+        for idx, tc in sorted(accumulated_tool_calls.items()):
+            block_idx = 10 + idx
+            yield {"type": "block-end", "index": block_idx, "block": {
+                "type": "tool-call",
+                "id": tc["id"],
+                "name": tc["name"],
+                "arguments": tc["arguments"],
+            }}
+
+        final_usage = usage_data or {
+            "inputTokens": len(json.dumps(messages)) // 4,
+            "outputTokens": (len("".join(accumulated_content)) + len("".join(accumulated_reasoning))) // 4
         }
-        if accumulated_reasoning:
-            final_message["reasoning_content"] = "".join(accumulated_reasoning)
-        if full_tool_calls:
-            final_message["tool_calls"] = full_tool_calls
+        yield {"type": "usage", "usage": final_usage}
 
-        timing_data = {
-            "stepStartTime": start_time * 1000,
-            "firstTokenTime": first_token_time * 1000,
-            "completedTime": completed_time * 1000,
-            "ttftMs": round(ttft_ms, 2),
-            "decodingMs": round(decoding_ms, 2),
-            "durationMs": round(duration_ms, 2),
-        }
-
-        yield ("finish", {
-            "message": final_message,
-            "timing": timing_data,
-            "usage": usage_data or {
-                "inputTokens": len(json.dumps(messages)) // 4,
-                "outputTokens": (len(final_message.get("content") or "") + len(final_message.get("reasoning_content") or "")) // 4
-            }
-        })
+        has_tools = bool(accumulated_tool_calls)
+        yield {"type": "finish", "reason": {"kind": "tool-calls" if has_tools else "stop"}}

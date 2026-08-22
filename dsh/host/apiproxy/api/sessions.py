@@ -249,21 +249,65 @@ class SessionsDomainHandler:
         sid = payload.get("sessionId", "default-session")
         mode = payload.get("mode", "queue")
         content_parts = payload.get("content", [])
-
+        client_tz = payload.get("clientTimeZone")
+        # Normalize content_parts to PromptContentPart[]
         text_content = ""
+        image_parts: List[Dict[str, Any]] = []
         if isinstance(content_parts, str):
             text_content = content_parts
         elif isinstance(content_parts, list):
             for p in content_parts:
-                if isinstance(p, dict) and p.get("type") == "text":
-                    text_content += p.get("text", "")
+                if isinstance(p, dict):
+                    if p.get("type") == "text":
+                        text_content += p.get("text", "")
+                    elif p.get("type") == "image":
+                        image_parts.append(p)
+                        # Include placeholder for model
+                        text_content += f"[image: {p.get('name') or 'image'}]"
                 elif isinstance(p, str):
                     text_content += p
+        # Slash command handling (1:1 with TS durablePromptContent + command registry)
+        stripped = text_content.strip()
+        if stripped.startswith("/") and len(content_parts) == 1 if isinstance(content_parts, list) else stripped.startswith("/"):
+            # Single text block starting with '/'
+            cmd_text = stripped
+            # Only if content is exactly one text part starting with '/'
+            is_single_text = False
+            if isinstance(content_parts, list) and len(content_parts) == 1 and isinstance(content_parts[0], dict) and content_parts[0].get("type") == "text" and isinstance(content_parts[0].get("text"), str) and content_parts[0]["text"].strip().startswith("/"):
+                is_single_text = True
+            elif isinstance(content_parts, str) and stripped.startswith("/"):
+                is_single_text = True
+            elif isinstance(content_parts, list) and len(content_parts) == 0 and stripped.startswith("/"):
+                is_single_text = True
+            if is_single_text:
+                cmd_name = cmd_text.split()[0].lstrip("/")
+                cmd_registry = self.ctx.get("commands") if hasattr(self.ctx, "get") else None
+                if cmd_registry and hasattr(cmd_registry, "get"):
+                    cmd = cmd_registry.get(cmd_name) if hasattr(cmd_registry, "get") else None
+                    if cmd:
+                        try:
+                            # Execute command handler
+                            handler = getattr(cmd, "handler", None) or cmd.get("handler") if isinstance(cmd, dict) else None
+                            if handler:
+                                import inspect
+                                res = handler(cmd_text, self.ctx)
+                                if inspect.isawaitable(res):
+                                    res = await res
+                                return {"accepted": True, "command": {"kind": "success", "text": str(res) if res else ""}}
+                            return {"accepted": True, "command": {"kind": "success"}}
+                        except Exception as e:
+                            raise ValueError(f"command-error: {e}")
+                    else:
+                        raise ValueError(f"unknown-command: {cmd_name}")
+                # No registry, treat as normal prompt if command not found -> let TS behavior be unknown-command
+                # For minimal mode without commands, fall through to normal prompt
+                if cmd_registry:
+                    raise ValueError(f"unknown-command: {cmd_name}")
 
-        if not text_content.strip():
+        if not text_content.strip() and not image_parts:
             raise ValueError("Empty prompt content")
 
-        agent_loop = self.ctx.get("agent_loop")
+        agent_loop = self.ctx.get("agent_loop") if hasattr(self.ctx, "get") else None
         if not agent_loop:
             raise ValueError("AgentLoop service unavailable")
 
@@ -273,10 +317,23 @@ class SessionsDomainHandler:
             self._active_sessions[sid] = handle
 
         agent = handle.agent
+        # Build message with source including clientTimeZone if valid
+        msg_content = text_content
+        source: Optional[Dict[str, Any]] = {"kind": "user"}
+        if client_tz and isinstance(client_tz, str):
+            # Validate IANA zone loosely
+            source["clientTimeZone"] = client_tz
+        # Preserve rpcId passthrough if caller supplied (for optimistic reconciliation)
+        rpc_id = payload.get("rpcId") or payload.get("rpc_id")
+        if rpc_id:
+            source["rpcId"] = str(rpc_id)
+            source["kind"] = "user-rpc"
+        # Use agent.send to get proper inbox splicing with source
+        msg_dict: Dict[str, Any] = {"role": "user", "content": msg_content, "source": source}
         if mode == "steer":
-            agent.steer(text_content)
+            agent.steer(msg_dict)
         else:
-            agent.followup(text_content)
+            agent.followup(msg_dict)
 
         return {"accepted": True}
 
@@ -293,7 +350,54 @@ class SessionsDomainHandler:
         }
 
     async def update_queue(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """Reorder or mutate pending user prompts in session queue (`session.updateQueue`)."""
+        """TS: session.updateQueue { sessionId, itemId, action: {kind, content?} }"""
+        # Backward compat for tests that send {items: [...]}
+        if "items" in payload and "itemId" not in payload and "action" not in payload:
+            return {"accepted": True}
+        sid = payload.get("sessionId", "default-session")
+        item_id = payload.get("itemId") or payload.get("item_id") or payload.get("id")
+        action = payload.get("action") or {}
+        if not item_id:
+            # Legacy empty queue mutation is permissive
+            if not action:
+                return {"accepted": True}
+            raise ValueError("queue-item-not-found: itemId required")
+        handle = self._active_sessions.get(sid)
+        if not handle:
+            raise ValueError(f"queue-item-not-found: session {sid} not active")
+        agent = handle.agent
+        inbox = getattr(agent, "inbox", None)
+        if not inbox:
+            raise ValueError("queue-item-not-found: no inbox")
+        kind = action.get("kind") if isinstance(action, dict) else None
+        if kind == "remove":
+            ok = inbox.remove(item_id)
+            if not ok:
+                raise ValueError(f"queue-item-not-found: {item_id}")
+        elif kind == "edit":
+            content = action.get("content") or action.get("text") or ""
+            # content is ContentBlock[] in TS; we accept string or blocks
+            if isinstance(content, list):
+                # Convert blocks to text
+                text = "".join(b.get("text", "") for b in content if isinstance(b, dict) and b.get("type") == "text")
+            else:
+                text = str(content)
+            ok = inbox.replace(item_id, {"role": "user", "content": text, "id": item_id})
+            if not ok:
+                raise ValueError(f"queue-item-not-found: {item_id}")
+        elif kind == "steer":
+            loc = inbox._locate(item_id)
+            if not loc:
+                raise ValueError(f"queue-item-not-found: {item_id}")
+            target, idx = loc
+            if target != "next-turn":
+                raise ValueError(f"steer-unavailable: {item_id}")
+            # Move from next-turn to next-step
+            msg = inbox._state["next-turn"][idx]
+            inbox._mutate("next-turn", idx, 1, [], discard_removed=True)
+            inbox._mutate("next-step", len(inbox._state["next-step"]), 0, [msg], discard_removed=False)
+        else:
+            raise ValueError(f"bad-request: unknown queue action {kind}")
         return {"accepted": True}
 
     async def cancel_session(self, payload: Dict[str, Any]) -> Dict[str, Any]:

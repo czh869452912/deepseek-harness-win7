@@ -17,6 +17,9 @@ import urllib.parse
 
 from dsh.cordis.plugin import Plugin
 from dsh.core.session import Session, SessionStore
+from dsh.host.apiproxy.fetch_handler import OFFICIAL_RPC_METHODS, normalize_rpc_method
+from dsh.host.apiproxy.native_path_opener import open_native_path
+from dsh.host.apiproxy.session_export import export_session_ndjson, export_session_zip
 from dsh.host.webserver.webserver import HttpResponseWriter, WebServerService
 
 
@@ -371,21 +374,30 @@ class ApiProxyPlugin(Plugin):
         # Session export download (/api/session.export)
         if path in ("/api/session.export", "/api/session/export"):
             sid = parsed_query.get("sessionId", [None])[0] or req_payload.get("sessionId", "default-session")
+            fmt = parsed_query.get("format", ["zip"])[0]
             sessions_svc: SessionStore = self.ctx.get("sessions")
             events = []
             if sessions_svc and sid in sessions_svc._sessions:
                 events = sessions_svc._sessions[sid].events
-            lines = [json.dumps(ev, ensure_ascii=False, default=str) for ev in events]
-            export_content = "\n".join(lines).encode("utf-8")
-            response.write_status(200)
-            response.write_header("Content-Type", "application/x-ndjson; charset=utf-8")
-            response.write_header("Content-Disposition", f'attachment; filename="session-{sid}.jsonl"')
-            response.write_body(export_content)
+
+            if fmt == "ndjson" or fmt == "jsonl":
+                export_content = export_session_ndjson(sid, events)
+                response.write_status(200)
+                response.write_header("Content-Type", "application/x-ndjson; charset=utf-8")
+                response.write_header("Content-Disposition", f'attachment; filename="session-{sid}.jsonl"')
+                response.write_body(export_content)
+            else:
+                zip_bytes = export_session_zip(sid, events)
+                response.write_status(200)
+                response.write_header("Content-Type", "application/zip")
+                response.write_header("Content-Disposition", f'attachment; filename="session-{sid}.zip"')
+                response.write_body(zip_bytes)
+
             await response.finish()
             return
 
         # Extract method name from path
-        rpc_method = path[5:] if path.startswith("/api/") else path
+        rpc_method = normalize_rpc_method(path)
 
         # ── 1. Host Domain & Status ──
         if rpc_method in ("host.describe", "host/describe", "status"):
@@ -1044,7 +1056,97 @@ class ApiProxyPlugin(Plugin):
             await send_rpc_success({"presets": presets, "items": presets})
             return
 
-        # ── 7. Fallback / 404 ──
+        # ── 7. Subagent Domain ──
+        if rpc_method in ("subagent.list", "subagent/list"):
+            subagents_svc = self.ctx.get("subagents")
+            items = subagents_svc.list_subagents() if subagents_svc and hasattr(subagents_svc, "list_subagents") else []
+            await send_rpc_success({"subagents": items, "items": items})
+            return
+
+        if rpc_method in ("subagent.history", "subagent/history"):
+            sub_id = req_payload.get("subagentId") or parsed_query.get("subagentId", [None])[0]
+            subagents_svc = self.ctx.get("subagents")
+            history = subagents_svc.get_history(sub_id) if subagents_svc and hasattr(subagents_svc, "get_history") else []
+            await send_rpc_success({"subagentId": sub_id, "history": history})
+            return
+
+        if rpc_method in ("subagent.prompt", "subagent/prompt"):
+            sub_id = req_payload.get("subagentId")
+            prompt_text = req_payload.get("prompt", "")
+            subagents_svc = self.ctx.get("subagents")
+            res = await subagents_svc.prompt(sub_id, prompt_text) if subagents_svc and hasattr(subagents_svc, "prompt") else {"accepted": True}
+            await send_rpc_success(res)
+            return
+
+        if rpc_method in ("subagent.interrupt", "subagent/interrupt"):
+            sub_id = req_payload.get("subagentId")
+            subagents_svc = self.ctx.get("subagents")
+            if subagents_svc and hasattr(subagents_svc, "interrupt"):
+                subagents_svc.interrupt(sub_id)
+            await send_rpc_success({"interrupted": True, "subagentId": sub_id})
+            return
+
+        # ── 8. Credentials Domain ──
+        if rpc_method in ("credentials.describe", "credentials/describe"):
+            llm = self.ctx.get("llm")
+            has_key = bool(os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("OPENAI_API_KEY") or (llm and getattr(llm, "static_api_key", None)))
+            await send_rpc_success({
+                "providers": [
+                    {"id": "deepseek", "name": "DeepSeek API", "configured": has_key},
+                    {"id": "openai", "name": "OpenAI API", "configured": bool(os.environ.get("OPENAI_API_KEY"))},
+                ]
+            })
+            return
+
+        if rpc_method in ("credentials.set", "credentials/set"):
+            provider = req_payload.get("provider", "deepseek")
+            api_key = req_payload.get("apiKey", "")
+            llm = self.ctx.get("llm")
+            if llm and api_key:
+                llm.static_api_key = api_key
+            await send_rpc_success({"success": True, "provider": provider})
+            return
+
+        if rpc_method in ("credentials.unset", "credentials/unset"):
+            provider = req_payload.get("provider", "deepseek")
+            llm = self.ctx.get("llm")
+            if llm:
+                llm.static_api_key = None
+            await send_rpc_success({"unset": True, "provider": provider})
+            return
+
+        # ── 9. Skills Domain ──
+        if rpc_method in ("skill.list", "skill/list"):
+            skills_svc = self.ctx.get("skills")
+            items = skills_svc.list_skills() if skills_svc and hasattr(skills_svc, "list_skills") else []
+            await send_rpc_success({"skills": items, "items": items})
+            return
+
+        # ── 10. LLM Providers & Discover Domain ──
+        if rpc_method in ("llm.providers", "llm/providers"):
+            await send_rpc_success({
+                "providers": [
+                    {"id": "deepseek", "name": "DeepSeek Official", "baseUrl": "https://api.deepseek.com/v1"},
+                    {"id": "openai", "name": "OpenAI Compatible", "baseUrl": "https://api.openai.com/v1"},
+                ]
+            })
+            return
+
+        if rpc_method in ("session.search", "session/search"):
+            query_str = req_payload.get("query", "")
+            sid = req_payload.get("sessionId")
+            sessions_svc: SessionStore = self.ctx.get("sessions")
+            matches = []
+            if sessions_svc:
+                target_sessions = [sessions_svc._sessions[sid]] if sid and sid in sessions_svc._sessions else sessions_svc._sessions.values()
+                for s in target_sessions:
+                    for ev in s.events:
+                        if query_str and query_str.lower() in json.dumps(ev, ensure_ascii=False).lower():
+                            matches.append({"sessionId": s.session_id, "event": ev})
+            await send_rpc_success({"matches": matches, "query": query_str})
+            return
+
+        # ── 11. Fallback / 404 ──
         await send_rpc_error("not-found", f"Unknown method or endpoint: {path}")
 
     async def _handle_mux_stream(self, request: Dict[str, Any], response: HttpResponseWriter) -> None:

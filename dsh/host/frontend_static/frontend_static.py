@@ -80,7 +80,7 @@ class FrontendStaticPlugin(Plugin):
                 if os.path.exists(self.dist_index):
                     with open(self.dist_index, "r", encoding="utf-8") as f:
                         content = f.read()
-                    transformed = web_server.apply_index_taps(content)
+                    transformed = web_server.render_index(content) if hasattr(web_server, "render_index") else web_server.apply_index_taps(content)
                     body = transformed.encode("utf-8")
                     response.write_status(200)
                     response.write_header("Content-Type", MIME_TYPES[".html"])
@@ -108,10 +108,22 @@ class FrontendStaticPlugin(Plugin):
                     await response.finish()
                     return
                 except Exception:
-                    await _send_index()
+                    response.write_status(404)
+                    response.write_header("Content-Type", "text/plain; charset=utf-8")
+                    response.write_body(b"404 File Read Failure")
+                    await response.finish()
                     return
 
-            # Miss: fallback to index.html with HTTP 200 (SPA routing)
+            # Check if missing path looks like a static asset (.js, .css, .json, .png, etc.)
+            _, ext = os.path.splitext(target)
+            if ext and ext.lower() not in (".html", ".htm"):
+                response.write_status(404)
+                response.write_header("Content-Type", "text/plain; charset=utf-8")
+                response.write_body(b"404 Static Asset Not Found")
+                await response.finish()
+                return
+
+            # Miss: fallback to index.html with HTTP 200 (SPA routing for navigation paths)
             await _send_index()
 
         disposer = web_server.register_fallback(serve_static)

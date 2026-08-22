@@ -1,17 +1,5 @@
-from .directory_picker import (
-    DirectoryPickerService,
-    NativeDirectoryPickerService,
-    BrowseDirectoryPickerService,
-    NativeDirectoryPickerPlugin,
-    BrowseDirectoryPickerPlugin,
-    DirectoryPickerAutoPlugin,
-)
+"""
+`@deepseek-ai/dsh-host-directory-picker` package family exports.
+"""
 
-__all__ = [
-    "DirectoryPickerService",
-    "NativeDirectoryPickerService",
-    "BrowseDirectoryPickerService",
-    "NativeDirectoryPickerPlugin",
-    "BrowseDirectoryPickerPlugin",
-    "DirectoryPickerAutoPlugin",
-]
+from dsh.host.directory_picker.directory_picker import *

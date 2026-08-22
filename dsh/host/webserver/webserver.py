@@ -12,6 +12,7 @@ from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 from dsh.cordis.plugin import Plugin
+from dsh.host.webserver.injections import render_index_injections
 
 
 class WebRoute:
@@ -40,6 +41,7 @@ class WebServerService:
         self.listened_port = port
         self._exact_routes: Dict[str, WebRoute] = {}
         self._prefix_routes: Dict[str, WebRoute] = {}
+        self._upgrade_routes: Dict[str, Any] = {}
         self._fallback: Optional[Callable[[Any, Any], Coroutine[Any, Any, None]]] = None
         self._index_taps: List[Callable[[str], str]] = []
         self._server: Optional[asyncio.AbstractServer] = None
@@ -54,6 +56,16 @@ class WebServerService:
 
         def disposer():
             table.pop(norm_path, None)
+
+        return disposer
+
+    def register_upgrade(self, path: str, handler: Any) -> Callable[[], None]:
+        """Register an exact-path HTTP upgrade route (e.g. WebSocket)."""
+        norm_path = path.rstrip("/") if path != "/" else "/"
+        self._upgrade_routes[norm_path] = handler
+
+        def disposer():
+            self._upgrade_routes.pop(norm_path, None)
 
         return disposer
 
@@ -82,6 +94,18 @@ class WebServerService:
         for t in self._index_taps:
             out = t(out)
         return out
+
+    def collect_index_injections(self) -> List[Dict[str, Any]]:
+        """Gather structured injection table via `webserver/index-inject` event."""
+        table: List[Dict[str, Any]] = []
+        if hasattr(self.ctx, "emit"):
+            self.ctx.emit("webserver/index-inject", table)
+        return table
+
+    def render_index(self, html: str) -> str:
+        """Render index.html: structured injections first, then tap_index transforms."""
+        injected = render_index_injections(html, self.collect_index_injections())
+        return self.apply_index_taps(injected)
 
     def match(self, pathname: str) -> Optional[WebRoute]:
         norm = pathname.rstrip("/") if pathname != "/" else "/"

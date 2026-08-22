@@ -2,7 +2,7 @@
 reference/
 
 # Build and Packaging output
-dist/
+/dist/
 build/
 *.egg-info/
 
@@ -32,6 +32,7 @@ htmlcov/
 # Environment & Credentials
 .env
 .env.*
+settings.yaml
 .dsh/
 *.jsonl
 

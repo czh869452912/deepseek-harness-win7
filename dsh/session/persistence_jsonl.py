@@ -108,8 +108,43 @@ class JsonlSessionPersistence(SessionPersistence):
 
     def _encode_events(self, events: List[Dict[str, Any]]) -> List[str]:
         lines: List[str] = []
+        if not self.pack_chunks:
+            for event in events:
+                lines.append(json.dumps(event, ensure_ascii=False))
+            return lines
+
+        pending_chunks: List[Dict[str, Any]] = []
+        base_seq: Optional[int] = None
+        base_time: Optional[int] = None
+        session_id: str = ""
+
+        def flush_chunks():
+            nonlocal pending_chunks, base_seq, base_time, session_id
+            if pending_chunks:
+                batch_data = [c.get("data", {}).get("chunk") for c in pending_chunks]
+                batch_event = {
+                    "type": "assistant/chunk-batch",
+                    "seq": base_seq,
+                    "time": base_time,
+                    "session_id": session_id,
+                    "chunks": batch_data,
+                }
+                lines.append(json.dumps(batch_event, ensure_ascii=False))
+                pending_chunks.clear()
+                base_seq = None
+                base_time = None
+
         for event in events:
-            lines.append(json.dumps(event, ensure_ascii=False))
+            if event.get("type") == "assistant/chunk":
+                if not pending_chunks:
+                    base_seq = event.get("seq")
+                    base_time = event.get("time")
+                    session_id = event.get("session_id", "")
+                pending_chunks.append(event)
+            else:
+                flush_chunks()
+                lines.append(json.dumps(event, ensure_ascii=False))
+        flush_chunks()
         return lines
 
     def _decode_events(self, raw_lines: List[str]) -> List[Dict[str, Any]]:

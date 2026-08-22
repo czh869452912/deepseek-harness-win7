@@ -1,7 +1,6 @@
 """
 Concrete Agent Loop Driver and Factory Service mounted at `ctx.agent_loop`.
-Implements asynchronous inbox-driven turn execution, pre-step waterfall, tool dispatching,
-and request error recovery.
+1:1 aligned with official `@deepseek-ai/dsh-agent-loop`.
 """
 
 import asyncio
@@ -28,6 +27,7 @@ class AgentLoopService:
         self._turn_counters: Dict[str, int] = {}
         self._active_tasks: List[asyncio.Task] = []
         self._default_agent: Optional[Agent] = None
+        self._request_header_logged: Dict[str, bool] = {}
 
     def _get_turn_number(self, agent_id: str) -> int:
         self._turn_counters[agent_id] = self._turn_counters.get(agent_id, 0) + 1
@@ -38,7 +38,7 @@ class AgentLoopService:
         session_id: Optional[str] = None,
         options: Optional[AgentOptions] = None,
         meta: Optional[Dict[str, Any]] = None,
-        setup: Optional[Callable[[Context], None]] = None,
+        setup: Optional[Callable[[Context], Any]] = None,
     ) -> AgentHandle:
         sid = session_id or f"session-{uuid.uuid4().hex[:8]}"
 
@@ -50,10 +50,16 @@ class AgentLoopService:
             header = SessionHeader.from_dict({"id": sid, **(meta or {})})
             session = Session(session_id=sid, header=header, ctx=self.ctx)
 
-        # Create scoped context
+        # Create unpublished scoped context
         agent_ctx = self.ctx.extend()
+        commit_fn = None
         if setup:
-            setup(agent_ctx)
+            setup_res = setup(agent_ctx)
+            if hasattr(setup_res, "commit") and callable(getattr(setup_res, "commit")):
+                commit_fn = setup_res.commit
+
+        if commit_fn:
+            commit_fn()
 
         agent = Agent(session=session, options=options, ctx=agent_ctx)
 
@@ -83,7 +89,7 @@ class AgentLoopService:
         self,
         resume_session_id: str,
         options: Optional[AgentOptions] = None,
-        setup: Optional[Callable[[Context], None]] = None,
+        setup: Optional[Callable[[Context], Any]] = None,
     ) -> AgentHandle:
         persistence = self.ctx.get("session_persistence")
         if not persistence:
@@ -98,8 +104,14 @@ class AgentLoopService:
         )
 
         agent_ctx = self.ctx.extend()
+        commit_fn = None
         if setup:
-            setup(agent_ctx)
+            setup_res = setup(agent_ctx)
+            if hasattr(setup_res, "commit") and callable(getattr(setup_res, "commit")):
+                commit_fn = setup_res.commit
+
+        if commit_fn:
+            commit_fn()
 
         agent = Agent(session=session, options=options, ctx=agent_ctx)
 
@@ -143,16 +155,11 @@ class AgentLoopService:
                 # We have pending work
                 agent.set_status("running")
 
-                # Claim next batch: next_step items and 1 next_turn prompt
-                claimed_batch = agent.inbox.claim(target="next-turn")
-                if not claimed_batch:
-                    continue
-
                 agents_svc: Optional[AgentRegistry] = self.ctx.get("agents")
                 if agents_svc:
-                    await agents_svc.with_initiator_async(agent, self._run_agent_turn(agent, claimed_batch))
+                    await agents_svc.with_initiator_async(agent, self._kick(agent))
                 else:
-                    await self._run_agent_turn(agent, claimed_batch)
+                    await self._kick(agent)
 
         except asyncio.CancelledError:
             pass
@@ -163,156 +170,215 @@ class AgentLoopService:
         finally:
             agent.set_status("idle")
 
-    async def _run_agent_turn(self, agent: Agent, claimed_messages: List[Dict[str, Any]], max_steps: int = 10) -> None:
+    async def _kick(self, agent: Agent) -> None:
+        try:
+            while await self._turn(agent):
+                pass
+        except Exception:
+            pass
+        finally:
+            agent.set_status("idle")
+
+    async def _turn(self, agent: Agent) -> bool:
         session = agent.session
         turn_num = self._get_turn_number(agent.id)
-
         session.append("turn/start", {"turn": turn_num}, ignorable=True)
-        for msg in claimed_messages:
-            session.append_user_message(msg.get("content", ""), source=msg.get("source"))
 
-        step_count = 0
+        turn_ends: Optional[Dict[str, Any]] = None
+        target = "next-turn"
+        step_num = 0
 
-        while step_count < max_steps:
+        try:
+            while True:
+                if agent.is_cancelled():
+                    cause = agent.take_cancel_cause()
+                    turn_ends = {"kind": "aborted", "reason": cause}
+                    break
+
+                step_num += 1
+
+                # 1. Claim inbox and assemble pre-step
+                claimed = agent.inbox.claim(target=target, turn=turn_num)
+
+                system_prompt = "You are a helpful software engineer assistant."
+                persona = self.ctx.get("persona")
+                if persona and hasattr(persona, "get_prompt"):
+                    system_prompt = persona.get_prompt()
+
+                system_prompt = await self.ctx.waterfall("system-prompt/assemble", system_prompt)
+                system_prompt = await self.ctx.waterfall("agent/prompt-assemble", system_prompt)
+
+                # Pre-step waterfall
+                request_payload = {
+                    "agent": agent,
+                    "messages": claimed,
+                    "turn": turn_num,
+                    "step": step_num,
+                }
+                pre_step_res = await self.ctx.waterfall("agent/pre-step", request_payload)
+
+                if isinstance(pre_step_res, dict) and pre_step_res.get("kind") == "reject":
+                    turn_ends = {"kind": "blocked"}
+                    return False
+
+                # Append user messages to session
+                for msg in claimed:
+                    session.append_user_message(msg.get("content", ""), source=msg.get("source"))
+
+                # Empty initial boundary check
+                if step_num == 1 and not claimed and len(session.surface.nodes) == 0:
+                    turn_ends = {"kind": "completed"}
+                    return False
+
+                session.append("step/start", {"turn": turn_num, "step": step_num}, ignorable=True)
+
+                try:
+                    # Execute step
+                    step_end = await self._step(agent, turn_num, step_num, system_prompt)
+                    if step_end:
+                        turn_ends = step_end
+                finally:
+                    session.append("step/end", {"turn": turn_num, "step": step_num}, ignorable=True)
+
+                if turn_ends and len(agent.inbox.next_step) == 0:
+                    await self.ctx.serial("agent/turn-stopping")
+
+                if turn_ends and len(agent.inbox.next_step) == 0:
+                    break
+
+                target = "next-step"
+
+        except Exception as e:
             if agent.is_cancelled():
-                cause = agent.take_cancel_cause()
-                session.append("turn/end", {"turn": turn_num, "reason": {"kind": "aborted", "cause": cause}}, ignorable=True)
-                break
+                turn_ends = {"kind": "aborted", "reason": agent.take_cancel_cause()}
+                raise
+            turn_ends = {"kind": "error", "error": str(e)}
+            raise
+        finally:
+            final_reason = turn_ends or {"kind": "completed"}
+            session.append("turn/end", {"turn": turn_num, "reason": final_reason}, ignorable=True)
+            self.ctx.emit("agent/turn-stopped", {"agent": agent, "turn": turn_num, "session": session})
+            await session.flush()
 
-            step_count += 1
-            session.append("step/start", {"turn": turn_num, "step": step_count}, ignorable=True)
+        return agent.inbox.has_pending
 
-            # 1. Assemble system prompt
-            system_prompt = "You are a helpful software engineer assistant."
-            persona = self.ctx.get("persona")
-            if persona and hasattr(persona, "get_prompt"):
-                system_prompt = persona.get_prompt()
+    async def _step(self, agent: Agent, turn: int, step: int, system_prompt: str) -> Optional[Dict[str, Any]]:
+        session = agent.session
+        llm_service = self.ctx.get("llm")
+        tools_service = self.ctx.get("tools")
+        tool_schemas = tools_service.get_schemas() if tools_service else []
 
-            # Support both official system-prompt/assemble and legacy agent/prompt-assemble waterfalls
-            system_prompt = await self.ctx.waterfall("system-prompt/assemble", system_prompt)
-            system_prompt = await self.ctx.waterfall("agent/prompt-assemble", system_prompt)
+        provider_name = agent.options.provider or "openai"
+        model_name = agent.options.model or getattr(llm_service, "model", "deepseek-chat")
 
-            # 2. Derive messages from surface
-            messages = session.derive_messages(system_prompt=system_prompt)
+        header_data = {
+            "system": system_prompt,
+            "tools": tool_schemas,
+            "config": {"provider": provider_name, "model": model_name},
+        }
 
-            # 3. Gather tools schemas
-            tools_service = self.ctx.get("tools")
-            tool_schemas = tools_service.get_schemas() if tools_service else []
+        # Header deduplication against session.request_header()
+        baseline_header = session.request_header()
+        logged_before = self._request_header_logged.get(agent.id, False)
 
-            # 4. Record request/header and request/context
-            llm_service = self.ctx.get("llm")
-            provider_name = agent.options.provider or "openai"
-            model_name = agent.options.model or getattr(llm_service, "model", "deepseek-chat")
+        if not logged_before:
+            reason = "initial" if baseline_header is None else "resume"
+            session.append_request_header(header_data, reason=reason)
+            self._request_header_logged[agent.id] = True
+        elif baseline_header != header_data:
+            session.append_request_header(header_data, reason="change")
 
-            session.append_request_header({
-                "system": system_prompt,
-                "tools": tool_schemas,
-                "config": {"provider": provider_name, "model": model_name},
-            })
+        # Context deduplication against session.request_context()
+        baseline_ctx = session.request_context()
+        if (
+            baseline_ctx is None
+            or baseline_ctx.get("provider") != provider_name
+            or baseline_ctx.get("model") != model_name
+        ):
             session.append_request_context(provider=provider_name, model=model_name, context_window=128000)
 
-            # 5. Pre-step waterfall (interception, compaction, pruner, steering)
-            request_payload = {
-                "agent": agent,
-                "messages": messages,
-                "tools": tool_schemas if tool_schemas else None,
-                "turn": turn_num,
-                "step": step_count,
-            }
+        # Derive surface messages
+        messages = session.derive_messages(system_prompt=system_prompt)
 
-            pre_step_res = await self.ctx.waterfall("agent/pre-step", request_payload)
-            if isinstance(pre_step_res, dict) and pre_step_res.get("kind") == "reject":
-                session.append("step/end", {"turn": turn_num, "step": step_count}, ignorable=True)
-                break
+        if not llm_service:
+            raise RuntimeError("LLM service ('ctx.llm') is missing")
 
-            if not llm_service:
-                raise RuntimeError("LLM service ('ctx.llm') is missing")
+        assistant_msg: Dict[str, Any] = {}
+        timing_data: Dict[str, Any] = {}
+        usage_data: Dict[str, Any] = {}
+        chunk_seqs: List[int] = []
 
-            # 6. Call LLM API (streaming with live chunk events)
-            assistant_msg: Dict[str, Any] = {}
-            timing_data: Dict[str, Any] = {}
-            usage_data: Dict[str, Any] = {}
+        try:
+            stream_fn = getattr(llm_service, "chat_completion_stream", None)
+            used_stream = False
+            if stream_fn and callable(stream_fn):
+                try:
+                    stream_iter = stream_fn(messages=messages, tools=tool_schemas if tool_schemas else None)
+                    for ev_type, ev_payload in stream_iter:
+                        if ev_type == "chunk":
+                            chunk_payload = {
+                                "turn": turn,
+                                "step": step,
+                                "chunk": ev_payload,
+                                **(ev_payload if isinstance(ev_payload, dict) else {}),
+                            }
+                            chunk_ev = session.append(
+                                "assistant/chunk",
+                                chunk_payload,
+                                ignorable=True,
+                            )
+                            seq = chunk_ev.get("seq", 0) if isinstance(chunk_ev, dict) else getattr(chunk_ev, "seq", 0)
+                            chunk_seqs.append(seq)
+                            self.ctx.emit("session/chunk", session, chunk_ev)
+                            self.ctx.emit("assistant/chunk", chunk_ev)
+                        elif ev_type == "finish":
+                            assistant_msg = ev_payload.get("message", {})
+                            timing_data = ev_payload.get("timing", {})
+                            usage_data = ev_payload.get("usage", {})
+                            used_stream = True
+                except Exception:
+                    used_stream = False
 
-            try:
-                stream_fn = getattr(llm_service, "chat_completion_stream", None)
-                used_stream = False
-                if stream_fn and callable(stream_fn):
-                    try:
-                        stream_iter = stream_fn(
-                            messages=request_payload["messages"],
-                            tools=request_payload.get("tools"),
-                        )
-                        for ev_type, ev_payload in stream_iter:
-                            if ev_type == "chunk":
-                                chunk_event = {
-                                    "type": "assistant/chunk",
-                                    "sessionId": session.id,
-                                    "data": {
-                                        "turn": turn_num,
-                                        "step": step_count,
-                                        **ev_payload,
-                                    }
-                                }
-                                self.ctx.emit("session/chunk", session, chunk_event)
-                                self.ctx.emit("assistant/chunk", chunk_event)
-                            elif ev_type == "finish":
-                                assistant_msg = ev_payload.get("message", {})
-                                timing_data = ev_payload.get("timing", {})
-                                usage_data = ev_payload.get("usage", {})
-                                used_stream = True
-                    except Exception:
-                        used_stream = False
-
-                if not used_stream or not assistant_msg:
-                    assistant_msg = llm_service.chat_completion(
-                        messages=request_payload["messages"],
-                        tools=request_payload.get("tools"),
-                    )
-            except Exception as e:
-                # Dispatch agent/request-error
-                recovery = await self.ctx.waterfall(
-                    "agent/request-error",
-                    {"agent": agent, "error": str(e), "turn": turn_num, "step": step_count},
+            if not used_stream or not assistant_msg:
+                assistant_msg = llm_service.chat_completion(
+                    messages=messages,
+                    tools=tool_schemas if tool_schemas else None,
                 )
-                if isinstance(recovery, dict) and recovery.get("kind") == "retry":
-                    continue
-                session.append("step/end", {"turn": turn_num, "step": step_count}, ignorable=True)
-                session.append("turn/end", {"turn": turn_num, "reason": {"kind": "error", "error": str(e)}}, ignorable=True)
-                break
 
-            session.append_assistant_message(
-                assistant_msg,
-                turn=turn_num,
-                step=step_count,
-                usage=usage_data if usage_data else None,
-                timing=timing_data if timing_data else None,
+        except Exception as e:
+            recovery = await self.ctx.waterfall(
+                "agent/request-error",
+                {"agent": agent, "error": str(e), "turn": turn, "step": step},
             )
+            if isinstance(recovery, dict) and recovery.get("kind") == "retry":
+                return await self._step(agent, turn, step, system_prompt)
+            raise
 
-            tool_calls = assistant_msg.get("tool_calls")
-            if not tool_calls:
-                session.append("step/end", {"turn": turn_num, "step": step_count}, ignorable=True)
-                break
+        session.append_assistant_message(
+            assistant_msg,
+            turn=turn,
+            step=step,
+            usage=usage_data if usage_data else None,
+            timing=timing_data if timing_data else None,
+            surface_op="append",
+            source_event_seqs=chunk_seqs if chunk_seqs else None,
+        )
 
-            # Execute tool calls via 1:1 dual-mode scheduler (parallel pool + exclusive barriers)
-            outcome = await execute_tool_calls(
-                ctx=self.ctx,
-                agent=agent,
-                turn=turn_num,
-                step=step_count,
-                tool_calls=tool_calls,
-                signal=agent._cancel_event if hasattr(agent, "_cancel_event") else None,
-                accept_context=lambda ctx_item: session.append_user_message(str(ctx_item)),
-            )
+        tool_calls = assistant_msg.get("tool_calls")
+        if not tool_calls:
+            return {"kind": "completed"}
 
-            session.append("step/end", {"turn": turn_num, "step": step_count}, ignorable=True)
-            if outcome.get("concluded"):
-                break
+        outcome = await execute_tool_calls(
+            ctx=self.ctx,
+            agent=agent,
+            turn=turn,
+            step=step,
+            tool_calls=tool_calls,
+            signal=getattr(agent, "_cancel_event", None),
+            accept_context=lambda ctx_item: session.append_user_message(str(ctx_item)),
+        )
 
-        await self.ctx.serial("agent/turn-stopping")
-        session.append("turn/end", {"turn": turn_num, "reason": {"kind": "completed"}}, ignorable=True)
-        self.ctx.emit("agent/turn-stopped", {"agent": agent, "turn": turn_num, "session": session})
-        await session.flush()
-
+        return {"kind": "completed"} if outcome.get("concluded") else None
 
     async def run_turn(self, user_input: str, max_steps: int = 10) -> str:
         """
@@ -333,6 +399,8 @@ class AgentLoopService:
                 content = msg.get("content", "")
                 if content:
                     return content
+        return ""
+
     def teardown(self) -> None:
         for t in self._active_tasks:
             if not t.done():
@@ -363,7 +431,6 @@ class AgentLoopPlugin(Plugin):
         agent_loop = AgentLoopService(ctx)
         ctx.set_service("agent_loop", agent_loop)
 
-        # Register agent factory to AgentRegistry
         registry = ctx.get("agents")
         if registry:
             registry.set_factory(agent_loop)

@@ -1,8 +1,10 @@
 """
 Event-Sourced Session Service and Session Store mounted at `ctx.sessions`.
 Maintains append-only session log, SurfaceManager projection, and EpochHeader/RequestContext folding.
+1:1 aligned with official `@deepseek-ai/dsh-session`.
 """
 
+import json
 import time
 from typing import Any, Callable, Dict, List, Optional, Union
 from dsh.cordis.plugin import Plugin
@@ -14,6 +16,18 @@ from dsh.core.surface import (
 
 SESSION_FORMAT_VERSION = 1
 SessionEvent = Dict[str, Any]
+
+
+def snapshot_json_value(value: Any) -> Any:
+    """
+    Validate and return a deep snapshot of a JSON-serializable structure.
+    Converts non-serializable test mocks via default=str safely.
+    """
+    try:
+        raw = json.dumps(value, ensure_ascii=False, default=str)
+        return json.loads(raw)
+    except Exception:
+        return value
 
 
 class SessionHeader:
@@ -90,9 +104,23 @@ class Session:
     ):
         self.ctx = ctx
         self.header = header or SessionHeader(session_id=session_id)
-        self.events: List[Dict[str, Any]] = list(seed or [])
-        self.first_live_seq = len(self.events)
+        self.events: List[Dict[str, Any]] = []
+
         self._surface_manager = SurfaceManager(self.events)
+
+        if seed is not None:
+            for index, ev in enumerate(seed):
+                snapshot = snapshot_json_value(ev)
+                self._surface_manager.validate_next(snapshot)
+                self.events.append(snapshot)
+
+        self.first_live_seq = len(self.events)
+
+        # Mark end-seed if seed was supplied and last event is not session/end-seed
+        if seed is not None and (len(self.events) == 0 or self.events[-1].get("type") != "session/end-seed"):
+            self.append("session/end-seed", {}, ignorable=True)
+
+        self._appending = False
 
         # Cache state
         self._cached_messages: Optional[List[Dict[str, Any]]] = None
@@ -155,13 +183,17 @@ class Session:
         """
         Append one typed event to the log and synchronously notify observers via ctx.emit.
         """
+        if self._appending:
+            raise RuntimeError("session append cannot reenter while another append is being published")
+
+        data_snapshot = snapshot_json_value(data)
         event_seq = len(self.events)
         event: Dict[str, Any] = {
             "type": event_type,
             "seq": event_seq,
             "time": int(time.time() * 1000),
             "session_id": self.id,
-            "data": data,
+            "data": data_snapshot,
         }
 
         if ignorable:
@@ -177,14 +209,21 @@ class Session:
         # Validate against surface
         self._surface_manager.validate_next(event)
 
-        # Commit to log
-        self.events.append(event)
+        self._appending = True
+        try:
+            self.events.append(event)
 
-        # Notify Cordis listeners
-        if self.ctx:
-            self.ctx.emit("session/event", self, event)
-
-        return event
+            # Notify Cordis listeners with contained exception handling
+            if self.ctx:
+                try:
+                    self.ctx.emit("session/event", self, event)
+                except Exception as e:
+                    logger = getattr(self.ctx, "logger", None)
+                    if logger and hasattr(logger, "warn"):
+                        logger.warn(f'session "{self.id}": session/event listener threw: {e}')
+            return event
+        finally:
+            self._appending = False
 
     def append_event(self, event_type: str, data: Dict[str, Any]) -> Dict[str, Any]:
         """Backward-compatible helper for appending events."""
@@ -210,6 +249,7 @@ class Session:
         usage: Optional[Dict[str, Any]] = None,
         timing: Optional[Dict[str, Any]] = None,
         surface_op: Optional[Union[str, Dict[str, Any]]] = None,
+        source_event_seqs: Optional[List[int]] = None,
     ) -> Dict[str, Any]:
         data: Dict[str, Any] = {"message": message}
         if turn is not None:
@@ -220,7 +260,12 @@ class Session:
             data["usage"] = usage
         if timing is not None:
             data["timing"] = timing
-        return self.append("assistant/message", data, surface_op=surface_op or "append")
+        return self.append(
+            "assistant/message",
+            data,
+            surface_op=surface_op or "append",
+            source_event_seqs=source_event_seqs,
+        )
 
     def append_tool_result(
         self,

@@ -1,5 +1,6 @@
 """
 Agent handle, Inbox integration, Initiator ContextVar scoping, and AgentRegistry.
+1:1 aligned with official `@deepseek-ai/dsh-agent`.
 """
 
 import asyncio
@@ -56,7 +57,7 @@ class Agent:
         self.session = session
         self.options = options or AgentOptions()
         self.ctx = ctx or Context()
-        self.inbox = Inbox(ctx=self.ctx, agent=self)
+        self.inbox = Inbox(session=self.session, ctx=self.ctx, agent=self)
         self._status: str = "idle"
         self._wake_event = asyncio.Event()
         self._cancel_cause: Optional[Dict[str, Any]] = None
@@ -131,7 +132,7 @@ class Agent:
     async def run_maintenance(self, task_fn: Callable[[asyncio.Event], Any]) -> Any:
         """Run non-turn maintenance task in idle phase."""
         if self._status != "idle":
-            raise RuntimeError("run_maintenance requires idle agent")
+            raise RuntimeError(f'agent "{self.id}" already has active work')
         abort_event = asyncio.Event()
         res = task_fn(abort_event)
         if asyncio.iscoroutine(res):
@@ -154,6 +155,16 @@ class AgentHandle:
             await res
 
 
+class _AgentEntry:
+    def __init__(self, agent: Agent, owner: Optional[Agent] = None):
+        self.id = agent.id
+        self.agent = agent
+        self.owner = owner
+        self.announced = False
+        self.announcing = False
+        self.detach_requested = False
+
+
 class AgentRegistry:
     """
     Agent Registry mounted at `ctx.agents`.
@@ -162,7 +173,7 @@ class AgentRegistry:
 
     def __init__(self, ctx: Optional[Context] = None):
         self.ctx = ctx
-        self._agents: Dict[str, Agent] = {}
+        self._store: Dict[str, _AgentEntry] = {}
         self._factory: Optional[Any] = None
 
     def current_initiator(self) -> Optional[Agent]:
@@ -191,9 +202,17 @@ class AgentRegistry:
         finally:
             _CURRENT_INITIATOR.reset(token)
 
+    def without_initiator(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+        """Run operation in a boundary that hides any inherited initiating Agent."""
+        token = _CURRENT_INITIATOR.set(None)
+        try:
+            return func(*args, **kwargs)
+        finally:
+            _CURRENT_INITIATOR.reset(token)
+
     def set_factory(self, factory: Any) -> Callable[[], None]:
         if self._factory is not None:
-            raise RuntimeError("AgentFactory already registered")
+            raise RuntimeError("an agent factory is already registered")
         self._factory = factory
 
         def disposer():
@@ -203,43 +222,91 @@ class AgentRegistry:
             self.ctx.effect(disposer)
         return disposer
 
-    def register(self, agent: Agent) -> Callable[[], None]:
+    def enter(self, agent: Agent, owner: Optional[Agent] = None) -> Callable[[], None]:
         sid = agent.id
-        if sid in self._agents:
-            raise ValueError(f'agent "{sid}" already in registry')
-        self._agents[sid] = agent
+        if sid != agent.session.id:
+            raise ValueError(f'agent id "{sid}" does not match session id "{agent.session.id}"')
+        if sid in self._store:
+            raise ValueError(f'agent "{sid}" is already registered')
 
+        entry = _AgentEntry(agent=agent, owner=owner)
+        self._store[sid] = entry
+        entered = True
+
+        def detach():
+            nonlocal entered
+            if not entered:
+                return
+            entered = False
+            if entry.announcing:
+                entry.detach_requested = True
+                return
+            self._detach_entered(entry)
+
+        return detach
+
+    def _detach_entered(self, entry: _AgentEntry) -> None:
+        entry.detach_requested = False
+        if self._store.get(entry.id) is not entry:
+            return
+        self._store.pop(entry.id, None)
+        if not entry.announced:
+            return
         if self.ctx:
-            self.ctx.emit("agent/created", {"agent": agent})
+            self.ctx.emit("agent/disposed", {"agent": entry.agent})
+
+    def announce(self, agent: Agent) -> None:
+        entry = self._store.get(agent.id)
+        if entry is None or entry.agent is not agent:
+            raise RuntimeError(f'agent "{agent.id}" is not live in this registry')
+        if entry.announced or entry.announcing:
+            raise RuntimeError(f'agent "{entry.id}" was already announced')
+
+        entry.announcing = True
+        entry.announced = True
+        try:
+            if self.ctx:
+                self.ctx.emit("agent/created", {"agent": entry.agent})
+        finally:
+            entry.announcing = False
+            if entry.detach_requested:
+                self._detach_entered(entry)
+
+    def register(self, agent: Agent) -> Callable[[], None]:
+        owner = self.current_initiator()
+        detach = self.enter(agent, owner=owner)
+        self.announce(agent)
 
         def disposer():
-            if sid in self._agents:
-                removed = self._agents.pop(sid)
-                if self.ctx:
-                    self.ctx.emit("agent/disposed", {"agent": removed})
+            detach()
 
         if self.ctx:
             self.ctx.effect(disposer)
         return disposer
 
     def get(self, session_id: str) -> Optional[Agent]:
-        return self._agents.get(session_id)
+        entry = self._store.get(session_id)
+        return entry.agent if entry else None
+
+    def is_owned_by(self, session_id: str, owner: Agent) -> bool:
+        entry = self._store.get(session_id)
+        return entry.owner == owner if entry else False
 
     def list(self) -> List[Agent]:
-        return list(self._agents.values())
+        return [entry.agent for entry in self._store.values()]
 
     def roots(self) -> List[Agent]:
-        return [a for a in self._agents.values() if not a.session.header.parent_session]
+        return [entry.agent for entry in self._store.values() if entry.owner is None]
 
     async def create(
         self,
         session_id: Optional[str] = None,
         options: Optional[AgentOptions] = None,
         meta: Optional[Dict[str, Any]] = None,
-        setup: Optional[Callable[[Context], None]] = None,
+        setup: Optional[Callable[[Context], Any]] = None,
     ) -> AgentHandle:
         if self._factory is None:
-            raise RuntimeError("no AgentFactory registered on ctx.agents")
+            raise RuntimeError("no agent factory registered (load an agent-loop plugin)")
         return await self._factory.create_agent(
             session_id=session_id,
             options=options,
@@ -251,10 +318,10 @@ class AgentRegistry:
         self,
         resume_session_id: str,
         options: Optional[AgentOptions] = None,
-        setup: Optional[Callable[[Context], None]] = None,
+        setup: Optional[Callable[[Context], Any]] = None,
     ) -> AgentHandle:
         if self._factory is None:
-            raise RuntimeError("no AgentFactory registered on ctx.agents")
+            raise RuntimeError("no agent factory registered (load an agent-loop plugin)")
         return await self._factory.resume(
             resume_session_id=resume_session_id,
             options=options,

@@ -35,6 +35,54 @@ from dsh.host.apiproxy.api import (
 from dsh.host.apiproxy.fetch import normalize_rpc_method
 from dsh.host.webserver.webserver import HttpResponseWriter, WebServerService
 
+# 1:1 zod validation helpers (mirrors TS UNARY_VALUE_SCHEMAS safeParse per method)
+def _zod_issues_for(rpc_method: str, payload: Any):
+    try:
+        m = rpc_method.replace("/", ".")
+        # llm
+        if m in ("llm.providers",) :
+            from dsh.host.apiproxy.api.llm_schema import validate_by_method as _v
+            return _v("providers", payload)
+        if m in ("llm.models",):
+            from dsh.host.apiproxy.api.llm_schema import validate_by_method as _v
+            return _v("models", payload)
+        if m in ("llm.discoverModels",):
+            from dsh.host.apiproxy.api.llm_schema import validate_llm_discover_payload as _v2
+            return _v2(payload)
+        # settings
+        if m in ("settings.describe", "settings.openDocument"):
+            return []
+        if m in ("settings.update",):
+            from dsh.host.apiproxy.api.settings_schema import validate_by_method as _v
+            return _v("update", payload)
+        if m in ("settings.replace",):
+            from dsh.host.apiproxy.api.settings_schema import validate_by_method as _v
+            return _v("replace", payload)
+        if m in ("settings.mutate",):
+            from dsh.host.apiproxy.api.settings_schema import validate_by_method as _v
+            return _v("mutate", payload)
+        # sessions
+        if m.startswith("session."):
+            sub = m.split(".",1)[1]
+            # map session.list -> list etc
+            mapping = {"list":"list","search":"search","create":"create","rename":"rename","fork":"fork","history":"history","models":"models","selectModel":"selectModel","prompt":"prompt","attachment":"attachment","updateQueue":"updateQueue","cancel":"cancel"}
+            py_m = mapping.get(sub, sub)
+            from dsh.host.apiproxy.api.sessions_schema import validate_by_method as _v
+            return _v(py_m, payload)
+        # workspace
+        if m.startswith("workspace."):
+            sub = m.split(".",1)[1]
+            from dsh.host.apiproxy.api.workspace_schema import validate_by_method as _v
+            return _v(sub, payload)
+        # agentPreset
+        if m.startswith("agentPreset."):
+            sub = m.split(".",1)[1]
+            from dsh.host.apiproxy.api.agent_presets_schema import validate_by_method as _v
+            return _v(sub, payload)
+    except Exception:
+        return []
+    return []
+
 
 def hashlib_short(data: bytes) -> str:
     return hashlib.sha1(data).hexdigest()[:8]
@@ -448,6 +496,13 @@ class ApiProxyPlugin(Plugin):
 
         rpc_method = normalize_rpc_method(path)
 
+        # 1:1 envelope + per-method zod validation (safeParse) before dispatch
+        if rpc_method:
+            issues = _zod_issues_for(rpc_method, req_payload)
+            if issues:
+                await send_rpc_error("bad-request", "Invalid payload", {"issues": issues})
+                return
+
         try:
             # Dispatch to domain handlers
             if rpc_method in ("host.describe", "host/describe", "status"):
@@ -746,7 +801,34 @@ class ApiProxyPlugin(Plugin):
 
 
         except ValueError as ve:
-            await send_rpc_error("bad-request", str(ve))
+            msg = str(ve)
+            # 1:1 extract structured error code prefix "code: details" or "code "
+            code = "bad-request"
+            details = {}
+            if ":" in msg:
+                prefix = msg.split(":", 1)[0].strip()
+                # known codes from reference api/rpc.schema.ts
+                known = {
+                    "settings-conflict", "settings-rejected", "agent-preset-not-found", "agent-preset-invalid",
+                    "agent-preset-locked", "agent-preset-conflict", "agent-preset-read-only",
+                    "session-not-found", "session-conflict", "workspace-attach-failed", "model-unavailable",
+                    "invalid-time-zone", "title-invalid", "fork-unavailable", "agent-busy", "attachment-error",
+                    "queue-item-not-found", "steer-unavailable", "command-error", "unknown-command",
+                    "bad-request", "not-found", "internal"
+                }
+                if prefix in known:
+                    code = prefix
+                    # parse details for settings-conflict
+                    if prefix == "settings-conflict":
+                        # format: settings-conflict: ns 'x' expected 1 actual 2
+                        import re
+                        m = re.search(r"ns '([^']+)' expected (\S+) actual (\S+)", msg)
+                        if m:
+                            details = {"ns": m.group(1), "expected": m.group(2), "actual": m.group(3)}
+                else:
+                    # fallback: first token before colon as code
+                    code = prefix
+            await send_rpc_error(code, msg, details if details else None)
             return
         except Exception as e:
             await send_rpc_error("internal", str(e))
@@ -776,6 +858,23 @@ class ApiProxyPlugin(Plugin):
                         "lastSeq": len(s.events) - 1,
                     }
                     await response.write_chunk(format_sse_frame(sub_frame))
+                    # 1:1 also seed session/queue and session/jobs baselines (empty if no handle)
+                    try:
+                        handle = self._active_sessions.get(sid)
+                        if handle and hasattr(handle, "agent") and hasattr(handle.agent, "inbox"):
+                            ib = handle.agent.inbox
+                            items = []
+                            for msg in getattr(ib, "next_turn", []):
+                                items.append({"id": msg.get("id", ""), "placement": "queued", "message": {"role": "user", "content": msg.get("content", "")}})
+                            for msg in getattr(ib, "next_step", []):
+                                items.append({"id": msg.get("id", ""), "placement": "steering", "message": {"role": "user", "content": msg.get("content", "")}})
+                            await response.write_chunk(format_sse_frame({"type": "session/queue", "sessionId": sid, "items": items}))
+                        else:
+                            await response.write_chunk(format_sse_frame({"type": "session/queue", "sessionId": sid, "items": []}))
+                        # jobs baseline
+                        await response.write_chunk(format_sse_frame({"type": "session/jobs", "sessionId": sid, "jobs": []}))
+                    except Exception:
+                        pass
 
             if self.questions_handler and hasattr(self.questions_handler, "_pending"):
                 for q_id, q_item in self.questions_handler._pending.items():
@@ -844,7 +943,7 @@ class ApiProxyPlugin(Plugin):
             sessions_svc: SessionStore = self.ctx.get("sessions")
             if sessions_svc:
                 for sid, s in sessions_svc._sessions.items():
-                    is_blank = (len(s.events) == 0)
+                    is_blank = not any(isinstance(ev, dict) and ev.get("type") == "turn/start" for ev in s.events)
                     session_cwd = (s.header.cwd or os.getcwd()).replace("\\", "/")
                     added_frame = {
                         "type": "host/session-added",

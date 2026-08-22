@@ -53,6 +53,7 @@ class LLMDomainHandler:
         return {"providers": views}
 
     async def list_models(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        import inspect
         llm = self.ctx.get("llm") if hasattr(self.ctx, "get") else None
         providers = llm.list_providers() if (llm and hasattr(llm, "list_providers")) else [
             {"id": "deepseek", "name": "DeepSeek Official"}
@@ -64,10 +65,11 @@ class LLMDomainHandler:
             p_id = provider["id"]
             p_name = provider.get("name", p_id)
             try:
-                models = llm.list_models(p_id) if (llm and hasattr(llm, "list_models")) else [
+                raw = llm.list_models(p_id) if (llm and hasattr(llm, "list_models")) else [
                     {"id": "deepseek-chat", "name": "DeepSeek V3 (Chat)", "description": "High efficiency general reasoning"},
                     {"id": "deepseek-reasoner", "name": "DeepSeek R1 (Reasoner)", "description": "Deep reasoning with explicit chain-of-thought"}
                 ]
+                models = await raw if inspect.isawaitable(raw) else raw
                 entries = []
                 for m in models:
                     entry = {
@@ -78,6 +80,8 @@ class LLMDomainHandler:
                         entry["description"] = m["description"]
                     if "reasoning" in m and m["reasoning"]:
                         entry["reasoning"] = m["reasoning"]
+                    if "contextWindow" in m and m["contextWindow"]:
+                        entry["contextWindow"] = m["contextWindow"]
                     entries.append(entry)
 
                 if entries:

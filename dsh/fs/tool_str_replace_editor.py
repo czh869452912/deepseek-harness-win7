@@ -152,7 +152,7 @@ class StrReplaceEditorPlugin(Plugin):
 
     id = "str-replace-editor"
     name = "@deepseek-ai/dsh-tool-str-replace-editor"
-    inject = ["tools"]
+    inject = ["tools", "fs"]
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
@@ -228,6 +228,17 @@ class StrReplaceEditorPlugin(Plugin):
             handler=self.handle_editor,
         )
 
+    def _resolve_target(self, fs: Any, path: str) -> Tuple[Optional[str], Optional[str]]:
+        """Mirror TS resolveTarget: non-empty + absolute-path enforcement."""
+        if not path or not path.strip():
+            return None, "Error: path must be a non-empty string"
+        if not os.path.isabs(path):
+            return None, (
+                f"Error: The path {path} is not an absolute path, it should start with `/`. "
+                f"Maybe you meant /{path}?"
+            )
+        return fs.resolve_path(path), None
+
     def handle_editor(
         self,
         command: str,
@@ -243,22 +254,21 @@ class StrReplaceEditorPlugin(Plugin):
         if not fs:
             return "Error: Filesystem service unavailable"
 
-        if not path or not path.strip():
-            return "Error: path must be a non-empty string"
-
-        resolved_path = fs.resolve_path(path)
-        display_path = resolved_path
-
         if command == "view":
-            if fs.is_dir(resolved_path):
-                if view_range is not None:
-                    return "Error: The `view_range` parameter is not allowed when `path` points to a directory."
-                return list_directory(resolved_path, self.max_output_chars)
+            resolved_path, err = self._resolve_target(fs, path)
+            if err:
+                return err
+            display_path = resolved_path
 
             if not fs.exists(resolved_path):
                 if ctx and hasattr(ctx, "emit"):
                     ctx.emit("fs/observed", resolved_path, {"kind": "absent"})
                 return f"Error: The path {display_path} does not exist. Please provide a valid path."
+
+            if fs.is_dir(resolved_path):
+                if view_range is not None:
+                    return "Error: The `view_range` parameter is not allowed when `path` points to a directory."
+                return list_directory(resolved_path, self.max_output_chars)
 
             if not fs.is_file(resolved_path):
                 return f"Error: cannot view \"{display_path}\": not a regular file or directory"
@@ -274,6 +284,11 @@ class StrReplaceEditorPlugin(Plugin):
         elif command == "create":
             if file_text is None:
                 return "Error: Parameter `file_text` is required for command: create"
+            resolved_path, err = self._resolve_target(fs, path)
+            if err:
+                return err
+            display_path = resolved_path
+
             if fs.exists(resolved_path):
                 return f"Error: File already exists at: {display_path}. Cannot overwrite files using command `create`."
 
@@ -285,19 +300,28 @@ class StrReplaceEditorPlugin(Plugin):
             return f"New file created successfully at: {display_path}"
 
         elif command == "str_replace":
+            resolved_path, err = self._resolve_target(fs, path)
+            if err:
+                return err
+            display_path = resolved_path
+
+            _fire_waterfall(ctx, "fs/edit-intent", resolved_path, lambda: None)
+
+            if old_str is None:
+                return "Error: Parameter `old_str` is required for command: str_replace"
+            if len(old_str) == 0:
+                return "Error: Parameter `old_str` is empty for command: str_replace"
+            replacement = new_str if new_str is not None else ""
+
             if not fs.exists(resolved_path):
+                if ctx and hasattr(ctx, "emit"):
+                    ctx.emit("fs/observed", resolved_path, {"kind": "absent"})
                 return f"Error: The path {display_path} does not exist. Please provide a valid path."
             if fs.is_dir(resolved_path):
                 return f"Error: The path {display_path} is a directory and only the `view` command can be used on directories"
             if not fs.is_file(resolved_path):
                 return f"Error: cannot edit \"{display_path}\": not a regular file"
 
-            if old_str is None:
-                return "Error: Parameter `old_str` is required for command: str_replace"
-            if len(old_str) == 0:
-                return "Error: Parameter `old_str` is empty for command: str_replace"
-
-            replacement = new_str if new_str is not None else ""
             content = fs.read_text(resolved_path)
             offsets = match_offsets(content, old_str)
             count = len(offsets)
@@ -309,8 +333,6 @@ class StrReplaceEditorPlugin(Plugin):
                 lines_str = ", ".join(str(l) for l in lines)
                 return f"Error: No replacement was performed. Multiple occurrences of old_str `{old_str}` in lines [{lines_str}]. Please ensure it is unique"
 
-            _fire_waterfall(ctx, "fs/edit-intent", resolved_path, lambda: None)
-
             new_content = content[: offsets[0]] + replacement + content[offsets[0] + len(old_str) :]
             fs.write_text(resolved_path, new_content)
             if ctx and hasattr(ctx, "emit"):
@@ -318,24 +340,31 @@ class StrReplaceEditorPlugin(Plugin):
             return f"The file {display_path} has been edited successfully."
 
         elif command == "insert":
+            if insert_line is None:
+                return "Error: Parameter `insert_line` is required for command: insert"
+            if new_str is None:
+                return "Error: Parameter `new_str` is required for command: insert"
+
+            resolved_path, err = self._resolve_target(fs, path)
+            if err:
+                return err
+            display_path = resolved_path
+
+            _fire_waterfall(ctx, "fs/edit-intent", resolved_path, lambda: None)
+
             if not fs.exists(resolved_path):
+                if ctx and hasattr(ctx, "emit"):
+                    ctx.emit("fs/observed", resolved_path, {"kind": "absent"})
                 return f"Error: The path {display_path} does not exist. Please provide a valid path."
             if fs.is_dir(resolved_path):
                 return f"Error: The path {display_path} is a directory and only the `view` command can be used on directories"
             if not fs.is_file(resolved_path):
                 return f"Error: cannot insert into \"{display_path}\": not a regular file"
 
-            if insert_line is None:
-                return "Error: Parameter `insert_line` is required for command: insert"
-            if new_str is None:
-                return "Error: Parameter `new_str` is required for command: insert"
-
             content = fs.read_text(resolved_path)
             lines = content.split("\n")
             if not isinstance(insert_line, int) or insert_line < 0 or insert_line > len(lines):
                 return f"Error: Invalid `insert_line` parameter: {insert_line}. It should be within the range of lines of the file: [0, {len(lines)}]"
-
-            _fire_waterfall(ctx, "fs/edit-intent", resolved_path, lambda: None)
 
             inserted_lines = new_str.split("\n")
             after_lines = lines[:insert_line] + inserted_lines + lines[insert_line:]

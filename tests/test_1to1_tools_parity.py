@@ -16,8 +16,7 @@ async def test_1to1_tools_schema_and_descriptions():
     tools = ToolsService(ctx)
     ctx.set_service("tools", tools)
     ctx.set_service("web", WebService())
-    ctx.plugin(SessionProjectionsPlugin)
-
+    ctx.plugin(FsLocalPlugin)
     ctx.plugin(StrReplaceEditorPlugin)
     ctx.plugin(ToolFsSearchPlugin)
     ctx.plugin(ToolTodoPlugin)

@@ -28,6 +28,42 @@ def request_proposal(header: Dict[str, Any]) -> Dict[str, Any]:
     return config
 
 
+async def _async_iter_chunks(stream_iter: Any):
+    """Run synchronous stream iterator in worker thread to prevent event loop blocking."""
+    if hasattr(stream_iter, "__aiter__"):
+        async for item in stream_iter:
+            yield item
+    else:
+        import queue
+        import threading
+        q: queue.Queue = queue.Queue()
+        sentinel = object()
+
+        def worker():
+            try:
+                for item in stream_iter:
+                    q.put(item)
+            except Exception as ex:
+                q.put(ex)
+            finally:
+                q.put(sentinel)
+
+        t = threading.Thread(target=worker, daemon=True)
+        t.start()
+
+        while True:
+            try:
+                item = q.get_nowait()
+            except queue.Empty:
+                await asyncio.sleep(0.01)
+                continue
+            if item is sentinel:
+                break
+            if isinstance(item, Exception):
+                raise item
+            yield item
+
+
 class PartialBlock:
     def __init__(self, block_type: str):
         self.block_type = block_type
@@ -613,7 +649,7 @@ class AgentLoopService:
             if stream_fn and callable(stream_fn):
                 try:
                     stream_iter = stream_fn(messages=messages, tools=tool_schemas if tool_schemas else None)
-                    for chunk in stream_iter:
+                    async for chunk in _async_iter_chunks(stream_iter):
                         # TS port yields StreamChunk dict; legacy tuple (ev_type, ev_payload) also supported
                         if isinstance(chunk, (list, tuple)) and len(chunk) == 2:
                             ev_type, ev_payload = chunk

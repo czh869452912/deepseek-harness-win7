@@ -658,8 +658,8 @@ class LLMService:
         if self._adapters:
             return [dict(v["provider"]) for v in self._adapters.values()]
         return [
-            {"id": "deepseek", "name": "DeepSeek Official"},
             {"id": "deepseek-official", "name": "DeepSeek"},
+            {"id": "deepseek", "name": "DeepSeek Official"},
             {"id": "openai", "name": "OpenAI Compatible"}
         ]
 

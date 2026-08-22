@@ -2,20 +2,21 @@ from typing import Any, Dict, Optional
 from dsh.cordis.plugin import Plugin
 from dsh.shell.terminal import TerminalService
 
+# TS tool-pwsh-persistent constants.
 TRUNCATED_MESSAGE = (
-    "\n<response clipped><NOTE>To save on context only part of this file has been shown to you. "
+    "<response clipped><NOTE>To save on context only part of this file has been shown to you. "
     "You should retry this tool after you have searched inside the file with Select-String in order "
     "to find the line numbers of what you are looking for.</NOTE>"
 )
 
 DEFAULT_PWSH_DESCRIPTION = (
-    "Run commands in a PowerShell shell\n"
-    "* When invoking this tool, the contents of the \"command\" parameter does NOT need to be XML-escaped.\n"
-    "* You don't have access to the internet via this tool.\n"
-    "* State is persistent across command calls and discussions with the user.\n"
-    "* Use native Windows paths (C:\\...) and $env:NAME variables; this is PowerShell, not bash.\n"
-    "* Please avoid commands that may produce a very large amount of output.\n"
-    "* Please run long lived commands in the background, e.g. 'Start-Job' or start a server with Start-Process."
+    "Run commands in a persistent PowerShell shell. State, including the current directory "
+    "and exported environment variables, persists across calls for this agent."
+)
+
+DEFAULT_BASH_DESCRIPTION = (
+    "Run commands in a persistent bash shell. State, including the current directory "
+    "and exported environment variables, persists across calls for this agent."
 )
 
 
@@ -23,6 +24,12 @@ def maybe_truncate(content: str, max_chars: int) -> str:
     if len(content) <= max_chars:
         return content
     return content[:max_chars] + TRUNCATED_MESSAGE
+
+
+def append_status_marker(content: str, marker: Optional[str]) -> str:
+    if marker is None:
+        return content
+    return marker if len(content) == 0 else f"{content}\n{marker}"
 
 
 class ToolPwshPersistentPlugin(Plugin):
@@ -36,7 +43,18 @@ class ToolPwshPersistentPlugin(Plugin):
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
-        self.max_output_chars: int = int(self.config.get("maxOutputChars", 30000))
+        self.backend_type: str = str(self.config.get("backendType", "shell"))
+        self.timeout_ms: int = int(self.config.get("timeoutMs", 300000))
+        self.max_output_chars: int = int(self.config.get("maxOutputChars", 16000))
+        tool_name = str(self.config.get("tool_name", "pwsh"))
+        default_description = DEFAULT_BASH_DESCRIPTION if tool_name == "bash" else DEFAULT_PWSH_DESCRIPTION
+        self.description: str = str(self.config.get("description", default_description))
+        if self.timeout_ms <= 0:
+            raise ValueError("tool-pwsh-persistent: timeoutMs must be a positive safe integer")
+        if self.max_output_chars <= 0:
+            raise ValueError("tool-pwsh-persistent: maxOutputChars must be a positive safe integer")
+        if len(self.description.strip()) == 0:
+            raise ValueError("tool-pwsh-persistent: description must be non-empty")
 
     def apply(self, ctx: Any) -> None:
         tools_service = ctx.get("tools")
@@ -44,34 +62,19 @@ class ToolPwshPersistentPlugin(Plugin):
             print("[ToolPwshPersistentPlugin Warning] tools service unavailable")
             return
 
-        if not ctx.has("terminal"):
-            ctx.set_service("terminal", TerminalService())
+        if not ctx.has("terminals"):
+            ctx.set_service("terminals", TerminalService())
 
         tool_name = self.config.get("tool_name", "pwsh")
-        description = self.config.get("description", DEFAULT_PWSH_DESCRIPTION)
 
         parameters = {
             "type": "object",
             "properties": {
                 "command": {
                     "type": "string",
-                    "description": "The command string to execute in the shell",
-                },
-                "description": {
-                    "type": "string",
-                    "description": "Clear, concise description of what this command does.",
-                },
-                "timeoutMs": {
-                    "type": "integer",
-                    "description": "Optional timeout in milliseconds (default: 300000)",
-                },
-                "workdir": {
-                    "type": "string",
-                    "description": "Working directory for this command.",
-                },
-                "run_in_background": {
-                    "type": "boolean",
-                    "description": "Run in the background.",
+                    "description": "The PowerShell command to run. Relative path is preferred in the command."
+                    if tool_name != "bash"
+                    else "The bash command to run. Relative path is preferred in the command.",
                 },
             },
             "required": ["command"],
@@ -79,7 +82,7 @@ class ToolPwshPersistentPlugin(Plugin):
 
         tools_service.register(
             name=tool_name,
-            description=description,
+            description=self.description,
             parameters=parameters,
             handler=self.handle_pwsh,
         )
@@ -87,21 +90,25 @@ class ToolPwshPersistentPlugin(Plugin):
     def handle_pwsh(
         self,
         command: str,
-        timeoutMs: Optional[int] = None,
         ctx: Optional[Any] = None,
     ) -> str:
-        terminal_service = ctx.get("terminal") if ctx else None
+        if not command or not command.strip():
+            return "Error: command must be a non-empty string"
+
+        terminal_service = ctx.get("terminals") if ctx else None
         if not terminal_service:
             return "Error: Terminal service unavailable"
 
-        timeout_sec = int((timeoutMs or 300000) / 1000)
+        timeout_sec = int(self.timeout_ms / 1000)
         res = terminal_service.run_command(command, timeout_seconds=timeout_sec)
         output = res.get("output", "")
         exit_code = res.get("exit_code", 0)
+        completed = res.get("completed", True)
 
-        output_clipped = maybe_truncate(output, self.max_output_chars)
+        if not completed:
+            # Timeout / shell-exit paths already render their own markers and reset notice.
+            return maybe_truncate(output, self.max_output_chars)
 
-        if exit_code != 0:
-            return f"[Exit Code: {exit_code}]\n{output_clipped}"
-        return output_clipped if output_clipped else "(Command executed with no output)"
-
+        rendered = maybe_truncate(output, self.max_output_chars)
+        marker = f"[exit code: {exit_code}]" if exit_code != 0 else None
+        return append_status_marker(rendered, marker)

@@ -13,16 +13,22 @@ class LLMDomainHandler:
 
     async def list_providers(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         llm = self.ctx.get("llm") if hasattr(self.ctx, "get") else None
-        registered = llm.list_providers() if (llm and hasattr(llm, "list_providers")) else [
-            {"id": "deepseek", "name": "DeepSeek Official"},
-            {"id": "openai", "name": "OpenAI Compatible"}
-        ]
+        registered = llm.list_providers() if (llm and hasattr(llm, "list_providers")) else []
+        if not registered:
+            registered = [
+                {"id": "deepseek-official", "name": "DeepSeek"},
+                {"id": "deepseek", "name": "DeepSeek Official"},
+                {"id": "openai", "name": "OpenAI Compatible"}
+            ]
         active = {p["id"] for p in registered}
 
-        directory = llm.list_configurable_providers() if (llm and hasattr(llm, "list_configurable_providers")) else [
-            {"provider": "deepseek", "displayName": "DeepSeek Official", "settingsNs": "llm", "settingsPath": []},
-            {"provider": "openai", "displayName": "OpenAI Compatible", "settingsNs": "llm", "settingsPath": []}
-        ]
+        directory = llm.list_configurable_providers() if (llm and hasattr(llm, "list_configurable_providers")) else []
+        if not directory:
+            directory = [
+                {"provider": "deepseek-official", "displayName": "DeepSeek", "settingsNs": "llm-deepseek", "settingsPath": []},
+                {"provider": "openai", "displayName": "OpenAI Compatible", "settingsNs": "llm-openai", "settingsPath": []},
+                {"provider": "deepseek", "displayName": "DeepSeek Official", "settingsNs": "llm", "settingsPath": []}
+            ]
         declared = {d["provider"] for d in directory}
 
         views = []
@@ -55,9 +61,13 @@ class LLMDomainHandler:
     async def list_models(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         import inspect
         llm = self.ctx.get("llm") if hasattr(self.ctx, "get") else None
-        providers = llm.list_providers() if (llm and hasattr(llm, "list_providers")) else [
-            {"id": "deepseek", "name": "DeepSeek Official"}
-        ]
+        providers = llm.list_providers() if (llm and hasattr(llm, "list_providers")) else []
+        if not providers:
+            providers = [
+                {"id": "deepseek-official", "name": "DeepSeek"},
+                {"id": "deepseek", "name": "DeepSeek Official"},
+                {"id": "openai", "name": "OpenAI Compatible"}
+            ]
         groups = []
         failures = []
 
@@ -65,13 +75,21 @@ class LLMDomainHandler:
             p_id = provider["id"]
             p_name = provider.get("name", p_id)
             try:
-                raw = llm.list_models(p_id) if (llm and hasattr(llm, "list_models")) else [
-                    {"id": "deepseek-chat", "name": "DeepSeek V3 (Chat)", "description": "High efficiency general reasoning"},
-                    {"id": "deepseek-reasoner", "name": "DeepSeek R1 (Reasoner)", "description": "Deep reasoning with explicit chain-of-thought"}
-                ]
+                raw = llm.list_models(p_id) if (llm and hasattr(llm, "list_models")) else []
                 models = await raw if inspect.isawaitable(raw) else raw
+                if not models:
+                    if p_id in ("deepseek-official", "deepseek"):
+                        models = [
+                            {"id": "deepseek-chat", "name": "DeepSeek V3 (Chat)", "description": "High efficiency general reasoning"},
+                            {"id": "deepseek-reasoner", "name": "DeepSeek R1 (Reasoner)", "description": "Deep reasoning with explicit chain-of-thought"}
+                        ]
+                    elif p_id == "openai":
+                        models = [
+                            {"id": "gpt-4o", "name": "GPT-4o"},
+                            {"id": "gpt-4o-mini", "name": "GPT-4o Mini"}
+                        ]
                 entries = []
-                for m in models:
+                for m in (models or []):
                     entry = {
                         "id": m["id"],
                         "name": m.get("name", m["id"]),

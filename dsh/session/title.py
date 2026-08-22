@@ -77,6 +77,7 @@ class SessionTitlePlugin(Plugin):
 
     id = "session-title"
     name = "@deepseek-ai/dsh-session-title"
+    inject = []
 
     def apply(self, ctx: Any) -> None:
         service = SessionTitleService(ctx)

@@ -381,6 +381,8 @@ class AgentLoopService:
 
                 if turn_ends and len(agent.inbox.next_step) == 0:
                     break
+                elif turn_ends and len(agent.inbox.next_step) > 0:
+                    turn_ends = None
 
                 target = "next-step"
 

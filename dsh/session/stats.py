@@ -123,6 +123,7 @@ class SessionStatsPlugin(Plugin):
 
     id = "session-stats"
     name = "@deepseek-ai/dsh-session-stats"
+    inject = ["sessionProjections"]
 
     def apply(self, ctx: Any) -> None:
         projections: Optional[SessionProjectionRegistry] = ctx.get("sessionProjections")

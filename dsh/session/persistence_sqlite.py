@@ -237,6 +237,7 @@ class SqliteSessionPersistencePlugin(Plugin):
 
     id = "session-persistence-sqlite"
     name = "@deepseek-ai/dsh-session-persistence-sqlite"
+    inject = []
 
     def __init__(
         self,

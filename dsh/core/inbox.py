@@ -37,7 +37,11 @@ class Inbox:
             for event in events:
                 if isinstance(event, dict) and event.get("type") == "agent/inbox/spliced":
                     data = event.get("data", {})
-                    self._apply(data)
+                    try:
+                        self._apply(data)
+                    except Exception as err:
+                        seq = event.get("seq", "unknown")
+                        raise ValueError(f"invalid persisted inbox splice at session seq {seq}") from err
 
     @property
     def next_turn(self) -> List[Dict[str, Any]]:

@@ -128,8 +128,6 @@ class WorkspaceFileSearch:
                 continue
 
             for name in entries:
-                if name.startswith("."):
-                    continue
                 full_path = os.path.join(abs_dir, name)
                 path = name if rel_dir == "" else f"{rel_dir}/{name}"
 

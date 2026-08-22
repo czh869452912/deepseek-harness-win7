@@ -233,20 +233,22 @@ class StrReplaceEditorPlugin(Plugin):
                     "locations": [{"path": p}],
                 }
             elif cmd == "create":
+                file_text = args.get("file_text")
                 return {
                     "card": "diff",
                     "title": f"create {p}",
-                    "diffs": [{"path": p, "oldText": None, "newText": args.get("file_text") or ""}],
+                    "diffs": [{"path": p, "oldText": None, "newText": file_text if file_text is not None else ""}],
                     "locations": [{"path": p}],
                 }
             elif cmd == "str_replace":
+                new_str = args.get("new_str")
                 return {
                     "card": "diff",
                     "title": f"str_replace {p}",
                     "diffs": [{
                         "path": p,
                         "oldText": args.get("old_str"),
-                        "newText": args.get("new_str") or "",
+                        "newText": new_str if new_str is not None else "",
                     }],
                     "locations": [{"path": p}],
                 }
@@ -273,7 +275,7 @@ class StrReplaceEditorPlugin(Plugin):
 
     def _resolve_target(self, fs: Any, path: str) -> Tuple[Optional[str], Optional[str]]:
         """Mirror TS resolveTarget: non-empty + absolute-path enforcement."""
-        if not path or not path.strip():
+        if not path or not isinstance(path, str) or not path.strip():
             return None, "Error: path must be a non-empty string"
         if not os.path.isabs(path):
             return None, (
@@ -406,7 +408,7 @@ class StrReplaceEditorPlugin(Plugin):
 
             content = fs.read_text(resolved_path)
             lines = content.split("\n")
-            if not isinstance(insert_line, int) or insert_line < 0 or insert_line > len(lines):
+            if not isinstance(insert_line, int) or isinstance(insert_line, bool) or insert_line < 0 or insert_line > len(lines):
                 return f"Error: Invalid `insert_line` parameter: {insert_line}. It should be within the range of lines of the file: [0, {len(lines)}]"
 
             inserted_lines = new_str.split("\n")

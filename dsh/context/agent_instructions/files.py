@@ -78,7 +78,7 @@ def dedup_instruction_files_by_directory(files: List[Dict[str, Any]]) -> List[Di
     kept_digests_by_dir: Dict[str, Set[str]] = {}
     kept: List[Dict[str, Any]] = []
     for file_item in files:
-        directory = os.path.dirname(file_item["displayPath"])
+        directory = os.path.dirname(file_item["displayPath"]) or "."
         digests = kept_digests_by_dir.setdefault(directory, set())
         digest = trimmed_instruction_digest(file_item["content"])
         if digest in digests:
@@ -170,6 +170,11 @@ def load_baseline_instruction_set(options: Dict[str, Any], file_system: Any = No
         "replacePreviousBaseline": options.get("replacePreviousBaseline"),
     })
     return {"rendered": res["rendered"], "observed": loaded, "included": res["included"]}
+
+
+def load_baseline_instructions(options: Dict[str, Any], file_system: Any = None) -> Optional[Dict[str, Any]]:
+    res = load_baseline_instruction_set(options, file_system)
+    return res["rendered"] if res is not None else None
 
 
 def discover_and_read_files(work_dir: str, candidates: List[str], max_bytes: int) -> List[Dict[str, str]]:

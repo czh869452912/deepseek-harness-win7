@@ -73,7 +73,7 @@ def workspace_baseline_identity(config: ResolvedConfig, cwd: str, project_root: 
         "maxSourceBytes": config.max_source_bytes,
         "instructionFileCandidates": config.instruction_file_candidates,
         "localInstructionFileCandidates": config.local_instruction_file_candidates,
-    }, sort_keys=True)
+    })
 
 
 def resolve_config(config: Optional[Dict[str, Any]] = None) -> ResolvedConfig:

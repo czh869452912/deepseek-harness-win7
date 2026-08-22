@@ -104,14 +104,19 @@ class ToolResultPruner:
 
                 pruned_entries.append({
                     "original_seq": seq,
+                    "originalSeq": seq,
                     "replacement_seq": replacement.get("seq"),
+                    "replacementSeq": replacement.get("seq"),
                     "chars_before": chars_before,
+                    "charsBefore": chars_before,
                     "chars_after": chars_after,
+                    "charsAfter": chars_after,
                 })
 
         return {
             "pruned": pruned_entries,
             "chars_removed": chars_removed_total,
+            "charsRemoved": chars_removed_total,
         }
 
 

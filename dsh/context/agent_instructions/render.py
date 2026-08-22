@@ -1,5 +1,6 @@
+import json
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 SYSTEM_REMINDER_OPEN = "<system-reminder>"
 SYSTEM_REMINDER_CLOSE = "</system-reminder>"
@@ -122,6 +123,94 @@ def build_instruction_text(
     return "\n".join([SYSTEM_REMINDER_OPEN, escape_instruction_frame_body(body), SYSTEM_REMINDER_CLOSE])
 
 
+def with_truncated_content(file_item: Dict[str, Any], included_bytes: int) -> Dict[str, Any]:
+    return dict(file_item, content=truncate_utf8(file_item["content"], included_bytes))
+
+
+def truncate_to_fit(
+    file_item: Dict[str, Any],
+    included_files: List[Dict[str, Any]],
+    max_bytes: int,
+    omitted: List[Dict[str, Any]],
+    style: Dict[str, Any],
+) -> Dict[str, Any]:
+    original_bytes = byte_length(file_item["content"])
+    low = 0
+    high = original_bytes
+    best = with_truncated_content(file_item, 0)
+    while low <= high:
+        mid = (low + high) // 2
+        candidate = with_truncated_content(file_item, mid)
+        truncated = [{
+            "displayPath": file_item["displayPath"],
+            "originalBytes": original_bytes,
+            "includedBytes": byte_length(candidate["content"]),
+        }]
+        text = build_instruction_text(included_files + [candidate], max_bytes, omitted, truncated, style)
+        if byte_length(text) <= max_bytes:
+            best = candidate
+            low = mid + 1
+        else:
+            high = mid - 1
+    return best
+
+
+def render_instruction_context(
+    files: List[Dict[str, Any]],
+    max_bytes: int,
+    style: Dict[str, Any],
+) -> Dict[str, Any]:
+    if max_bytes <= 0 or not math_is_finite(max_bytes):
+        return {"text": "", "omitted": files, "truncated": [], "represented": []}
+
+    full_text = build_instruction_text(files, max_bytes, [], [], style)
+    if byte_length(full_text) <= max_bytes:
+        return {"text": full_text, "omitted": [], "truncated": [], "represented": files}
+
+    for start in range(1, len(files)):
+        included = files[start:]
+        omitted = [{"absolutePath": f["absolutePath"], "displayPath": f["displayPath"]} for f in files[:start]]
+        suffix_text = build_instruction_text(included, max_bytes, omitted, [], style)
+        if byte_length(suffix_text) <= max_bytes:
+            return {"text": suffix_text, "omitted": omitted, "truncated": [], "represented": included}
+
+    if not files:
+        return {"text": "", "omitted": [], "truncated": [], "represented": []}
+
+    most_specific = files[-1]
+    omitted = [{"absolutePath": f["absolutePath"], "displayPath": f["displayPath"]} for f in files[:-1]]
+    original_bytes = byte_length(most_specific["content"])
+
+    for candidate_style in [style, dict(style, intro=COMPACT_WORKSPACE_CONTEXT_INTRO)]:
+        truncated_file = truncate_to_fit(most_specific, [], max_bytes, omitted, candidate_style)
+        included_bytes = byte_length(truncated_file["content"])
+        truncated = [{
+            "displayPath": most_specific["displayPath"],
+            "originalBytes": original_bytes,
+            "includedBytes": included_bytes,
+        }]
+        text = build_instruction_text([truncated_file], max_bytes, omitted, truncated, candidate_style)
+        if byte_length(text) <= max_bytes:
+            represented = [most_specific] if (included_bytes > 0 or original_bytes == 0) else []
+            return {"text": text, "omitted": omitted, "truncated": truncated, "represented": represented}
+
+    truncated = [{
+        "displayPath": most_specific["displayPath"],
+        "originalBytes": original_bytes,
+        "includedBytes": 0,
+    }]
+    compact_notice = escape_instruction_frame_body(marker_text(max_bytes, omitted, truncated))
+    compact_with_heading = escape_instruction_frame_body(
+        "\n\n".join([compact_notice, style["section"](with_truncated_content(most_specific, 0))])
+    )
+    if byte_length(compact_with_heading) <= max_bytes:
+        represented = [most_specific] if original_bytes == 0 else []
+        return {"text": compact_with_heading, "omitted": omitted, "truncated": truncated, "represented": represented}
+
+    text = compact_notice if byte_length(compact_notice) <= max_bytes else truncate_utf8(compact_notice, max_bytes)
+    return {"text": text, "omitted": omitted, "truncated": truncated, "represented": []}
+
+
 def render_workspace_instruction_set(
     files: List[Dict[str, Any]],
     options: Dict[str, Any],
@@ -135,47 +224,9 @@ def render_workspace_instruction_set(
         intro = WORKSPACE_CONTEXT_INTRO
 
     style = {"intro": intro, "section": section_text}
-
-    if max_bytes <= 0 or not math_is_finite(max_bytes):
-        return {
-            "rendered": {"text": "", "omitted": files, "truncated": []},
-            "included": [],
-        }
-
-    full_text = build_instruction_text(files, max_bytes, [], [], style)
-    if byte_length(full_text) <= max_bytes:
-        return {
-            "rendered": {"text": full_text, "omitted": [], "truncated": []},
-            "included": files,
-        }
-
-    for start in range(1, len(files)):
-        included = files[start:]
-        omitted = [{"absolutePath": f["absolutePath"], "displayPath": f["displayPath"]} for f in files[:start]]
-        suffix_text = build_instruction_text(included, max_bytes, omitted, [], style)
-        if byte_length(suffix_text) <= max_bytes:
-            return {
-                "rendered": {"text": suffix_text, "omitted": omitted, "truncated": []},
-                "included": included,
-            }
-
-    if not files:
-        return {
-            "rendered": {"text": "", "omitted": [], "truncated": []},
-            "included": [],
-        }
-
-    most_specific = files[-1]
-    omitted = [{"absolutePath": f["absolutePath"], "displayPath": f["displayPath"]} for f in files[:-1]]
-    orig_bytes = byte_length(most_specific["content"])
-
-    trunc_file = dict(most_specific, content=truncate_utf8(most_specific["content"], max_bytes))
-    trunc_item = [{"displayPath": most_specific["displayPath"], "originalBytes": orig_bytes, "includedBytes": byte_length(trunc_file["content"])}]
-    text = build_instruction_text([trunc_file], max_bytes, omitted, trunc_item, style)
-    return {
-        "rendered": {"text": text, "omitted": omitted, "truncated": trunc_item},
-        "included": [trunc_file] if byte_length(trunc_file["content"]) > 0 else [],
-    }
+    res = render_instruction_context(files, max_bytes, style)
+    represented = res.pop("represented", [])
+    return {"rendered": res, "included": represented}
 
 
 def render_workspace_context(
@@ -183,6 +234,25 @@ def render_workspace_context(
     options: Dict[str, Any],
 ) -> Dict[str, Any]:
     return render_workspace_instruction_set(files, options)["rendered"]
+
+
+def render_instruction_changes(
+    items: List[Dict[str, Any]],
+    max_bytes: int,
+) -> Dict[str, Any]:
+    by_abs_path = {item["file"]["absolutePath"]: item for item in items}
+
+    def custom_section(file_item: Dict[str, Any]) -> str:
+        item = by_abs_path.get(file_item["absolutePath"])
+        if item is None:
+            return ""
+        return changed_section_text(dict(item, file=file_item))
+
+    style = {"intro": "", "section": custom_section}
+    rendered = render_instruction_context([item["file"] for item in items], max_bytes, style)
+    represented = {f["absolutePath"] for f in rendered.get("represented", [])}
+    changes = [item["change"] for item in items if item["file"]["absolutePath"] in represented]
+    return {"text": rendered["text"], "changes": changes}
 
 
 def math_is_finite(val: Any) -> bool:

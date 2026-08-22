@@ -46,6 +46,5 @@ async def test_time_context_injection():
     await ctx.waterfall("agent/pre-step", payload)
     user_msg = payload["messages"][0]["content"]
 
-    assert "[Context Time:" in user_msg
-    assert "UTC:" in user_msg
-
+    assert "Time sampled while preparing turn" in user_msg
+    assert "Elapsed since the preceding" in user_msg

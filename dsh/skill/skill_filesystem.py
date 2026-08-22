@@ -28,6 +28,10 @@ class FileSystemSkillProvider:
         roots.append((os.path.join(home, ".dsh", "skills"), "user-dsh", 400))
         roots.append((os.path.join(home, ".agents", "skills"), "user-agents", 500))
 
+        bundled_dir = self.config.get("bundledSkillDir") or os.environ.get("DSH_BUNDLED_SKILL_DIR")
+        if bundled_dir and os.path.isdir(bundled_dir):
+            roots.append((os.path.abspath(bundled_dir), "bundled", 600))
+
         return roots
 
     def discover_skills(self, cwd: Optional[str] = None) -> List[SkillDefinition]:

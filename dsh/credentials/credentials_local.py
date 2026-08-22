@@ -332,12 +332,14 @@ class CredentialsService:
     # ---- Key Space Record Management (<scope>/<id>) 1:1 with TS ----
 
     def read_record(self, key: str) -> Optional[Dict[str, Any]]:
+        parse_credential_key(key)
         return copy.deepcopy(self._records.get(key))
 
     def readRecord(self, key: str) -> Optional[Dict[str, Any]]:
         return self.read_record(key)
 
     def describe_record(self, key: str) -> Dict[str, Any]:
+        parse_credential_key(key)
         rec = self._records.get(key)
         if rec is None:
             return {"configured": False, "writable": True}
@@ -350,6 +352,7 @@ class CredentialsService:
     def list_records(self) -> List[Dict[str, Any]]:
         res = []
         for k, rec in self._records.items():
+            parse_credential_key(k)
             kind = rec.get("kind") if isinstance(rec, dict) else None
             res.append({"key": k, "kind": kind})
         return res
@@ -359,6 +362,7 @@ class CredentialsService:
 
     def modify_record(self, key: str, mutate_fn: Callable[[Optional[Dict[str, Any]]], Optional[Dict[str, Any]]]) -> Optional[Dict[str, Any]]:
         """Serialized read-modify-write over key record under file lock."""
+        parse_credential_key(key)
         with self._lock:
             lock = FileLock(self.lock_path, timeout=5)
             with lock:
@@ -369,6 +373,20 @@ class CredentialsService:
                     return current
                 if not isinstance(nxt, dict) or "kind" not in nxt:
                     raise TypeError(f'credentials-local: record "{key}" must be a dictionary with a "kind"')
+                kind = nxt.get("kind")
+                if kind == "api-key":
+                    rec_key = nxt.get("key")
+                    if rec_key is not None and (not isinstance(rec_key, str) or len(rec_key) == 0):
+                        raise TypeError(f'credentials-local: record "{key}" has an empty or non-string key')
+                    env = nxt.get("env")
+                    if env is not None:
+                        if not isinstance(env, dict):
+                            raise TypeError(f'credentials-local: record "{key}" env must be a dictionary')
+                        for env_name, env_val in env.items():
+                            if not is_credential_ref_name(env_name):
+                                raise TypeError(f'credentials-local: record "{key}" env name "{env_name}" is invalid')
+                            if not isinstance(env_val, str) or len(env_val) == 0:
+                                raise TypeError(f'credentials-local: record "{key}" env "{env_name}" must be non-empty string')
                 self._records[key] = copy.deepcopy(nxt)
                 self._save_unlocked()
                 if self.ctx and hasattr(self.ctx, "emit"):
@@ -383,6 +401,7 @@ class CredentialsService:
 
     def delete_record(self, key: str) -> None:
         """Remove record key and notify subscribers."""
+        parse_credential_key(key)
         with self._lock:
             lock = FileLock(self.lock_path, timeout=5)
             with lock:

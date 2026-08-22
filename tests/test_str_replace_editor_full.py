@@ -80,3 +80,20 @@ async def test_str_replace_view_directory_2_levels(editor_env):
     assert "subdir" in res
     assert "file1.txt" in res
 
+
+@pytest.mark.asyncio
+async def test_str_replace_bool_insert_line_validation(editor_env):
+    ctx, tmpdir = editor_env
+    tools = ctx.get("tools")
+    file_path = os.path.join(tmpdir, "bool_test.txt")
+    await tools.execute_tool("str_replace_editor", {"command": "create", "path": file_path, "file_text": "a\nb\n"})
+
+    res = await tools.execute_tool("str_replace_editor", {
+        "command": "insert",
+        "path": file_path,
+        "insert_line": True,
+        "new_str": "invalid",
+    })
+    assert "Error: Invalid `insert_line` parameter" in res
+
+

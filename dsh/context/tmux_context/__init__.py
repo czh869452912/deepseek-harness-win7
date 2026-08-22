@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 import time
@@ -29,6 +30,30 @@ class TmuxContextPlugin(Plugin):
         if not tmux_pane:
             return None
 
+        if os.name == "posix":
+            try:
+                ps_res = subprocess.run(
+                    ["ps", "-o", "tty=", "-p", str(os.getpid())],
+                    capture_output=True,
+                    text=True,
+                    timeout=2,
+                )
+                self_tty = ps_res.stdout.strip()
+                if not self_tty:
+                    return None
+
+                pane_res = subprocess.run(
+                    ["tmux", "display-message", "-t", tmux_pane, "-p", "#{pane_tty}"],
+                    capture_output=True,
+                    text=True,
+                    timeout=2,
+                )
+                pane_tty = pane_res.stdout.strip()
+                if pane_tty != f"/dev/{self_tty}":
+                    return None
+            except Exception:
+                return None
+
         format_str = "\\t".join([
             "#{session_name}",
             "#{window_index}",
@@ -44,7 +69,8 @@ class TmuxContextPlugin(Plugin):
             res = subprocess.run(cmd, capture_output=True, text=True, timeout=2)
             if res.returncode != 0 or not res.stdout:
                 return None
-            parts = res.stdout.strip().split("\t")
+            out = res.stdout.strip()
+            parts = out.split("\\t") if "\\t" in out else out.split("\t")
             if len(parts) != 8:
                 return None
             return {
@@ -62,7 +88,7 @@ class TmuxContextPlugin(Plugin):
 
     def render_state(self, loc: Dict[str, str]) -> str:
         return (
-            f"session {loc['sessionName']}, window {loc['windowIndex']} \"{loc['windowName']}\", "
+            f"session {loc['sessionName']}, window {loc['windowIndex']} {json.dumps(loc['windowName'])}, "
             f"pane {loc['paneIndex']} {loc['paneId']}\n"
             f"window active={loc['windowActive']}, pane active={loc['paneActive']}, "
             f"layout {loc['windowLayout']}"
@@ -104,7 +130,7 @@ class TmuxContextPlugin(Plugin):
             reading_text = self.render_reading(loc, turn)
             for msg in reversed(messages):
                 if msg.get("role") == "user" and isinstance(msg.get("content"), str):
-                    msg["content"] = f"[{reading_text}]\n{msg['content']}"
+                    msg["content"] = f"{reading_text}\n{msg['content']}"
                     break
 
             return payload

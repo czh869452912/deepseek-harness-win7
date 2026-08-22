@@ -1,4 +1,5 @@
 import json
+import math
 import os
 import urllib.request
 import urllib.error
@@ -13,6 +14,15 @@ class LlmError(RuntimeError):
             raise ValueError("LlmError message must be a non-empty string")
         if not isinstance(code, str) or not code:
             raise ValueError("LlmError code must be a non-empty string")
+        if status is not None:
+            if isinstance(status, bool) or not isinstance(status, int) or status < 100 or status > 599:
+                raise ValueError("LlmError status must be an integer from 100 through 599")
+        if providerRetryAfterMs is not None:
+            if not isinstance(providerRetryAfterMs, (int, float)) or isinstance(providerRetryAfterMs, bool) or providerRetryAfterMs <= 0 or math.isnan(providerRetryAfterMs) or math.isinf(providerRetryAfterMs):
+                raise ValueError("LlmError providerRetryAfterMs must be a positive finite number")
+        if requestId is not None:
+            if not isinstance(requestId, str) or not requestId:
+                raise ValueError("LlmError requestId must be a non-empty string")
         super(LlmError, self).__init__(f"[{code}] {message}")
         self.code = code
         self.status = status
@@ -212,7 +222,8 @@ class LLMService:
                 raise LlmError('an adapter for provider "{}" is already registered'.format(p), "DUPLICATE_ADAPTER")
             info = None
             try:
-                info = adapter.provider_info(p) if hasattr(adapter, "provider_info") else {"id": p, "name": p}
+                info_fn = getattr(adapter, "provider_info", getattr(adapter, "providerInfo", None))
+                info = info_fn(p) if info_fn else {"id": p, "name": p}
             except Exception:
                 info = {"id": p, "name": p}
             if not isinstance(info, dict) or info.get("id") != p or not info.get("name"):
@@ -220,7 +231,8 @@ class LLMService:
             unique.add(p)
             retry = None
             try:
-                retry = adapter.provider_retry_policy(p) if hasattr(adapter, "provider_retry_policy") else None
+                retry_fn = getattr(adapter, "provider_retry_policy", getattr(adapter, "providerRetryPolicy", None))
+                retry = retry_fn(p) if retry_fn else None
             except Exception:
                 retry = None
             regs.append({"adapter": adapter, "provider": {"id": info["id"], "name": info["name"]}, "retryPolicy": retry})
@@ -252,11 +264,13 @@ class LLMService:
                     raise LlmError("adapter provider names must be non-empty", "INVALID_ADAPTER")
                 if p in uniq2 or (p in self._adapters and p not in owned):
                     raise LlmError('an adapter for provider "{}" is already registered'.format(p), "DUPLICATE_ADAPTER")
-                info = adapter.provider_info(p) if hasattr(adapter, "provider_info") else {"id": p, "name": p}
+                info_fn = getattr(adapter, "provider_info", getattr(adapter, "providerInfo", None))
+                info = info_fn(p) if info_fn else {"id": p, "name": p}
                 if not isinstance(info, dict) or info.get("id") != p or not info.get("name"):
                     raise LlmError('adapter metadata for provider "{}" must preserve its id and have a non-empty name'.format(p), "INVALID_ADAPTER")
                 uniq2.add(p)
-                retry = adapter.provider_retry_policy(p) if hasattr(adapter, "provider_retry_policy") else None
+                retry_fn = getattr(adapter, "provider_retry_policy", getattr(adapter, "providerRetryPolicy", None))
+                retry = retry_fn(p) if retry_fn else None
                 regs2.append({"adapter": adapter, "provider": {"id": info["id"], "name": info["name"]}, "retryPolicy": retry})
             for pp in list(owned):
                 self._adapters.pop(pp, None)
@@ -413,25 +427,28 @@ class LLMService:
     async def list_models(self, provider_id="deepseek"):
         # try adapter
         entry = self._adapters.get(provider_id)
-        if entry and hasattr(entry["adapter"], "list_models"):
-            try:
-                import inspect as _ins
-                res = entry["adapter"].list_models(provider_id)
-                if _ins.isawaitable(res):
-                    res = await res
-                # validate per spec
-                seen = set()
-                out = []
-                for m in (res or []):
-                    if not isinstance(m, dict) or m.get("provider") != provider_id or not m.get("id") or not m.get("name") or m["id"] in seen:
-                        raise LlmError('adapter returned invalid or duplicate model metadata for provider "{}"'.format(provider_id), "INVALID_CATALOG")
-                    seen.add(m["id"])
-                    out.append({"id": m["id"], "name": m["name"], **({"description": m["description"]} if m.get("description") else {}), **({"reasoning": m["reasoning"]} if m.get("reasoning") else {})})
-                return out
-            except LlmError:
-                raise
-            except Exception as e:
-                raise LlmError(str(e), "INVALID_CATALOG")
+        if entry:
+            adapter = entry["adapter"]
+            fn = getattr(adapter, "list_models", getattr(adapter, "listModels", None))
+            if fn:
+                try:
+                    import inspect as _ins
+                    res = fn(provider_id)
+                    if _ins.isawaitable(res):
+                        res = await res
+                    # validate per spec
+                    seen = set()
+                    out = []
+                    for m in (res or []):
+                        if not isinstance(m, dict) or m.get("provider") != provider_id or not m.get("id") or not m.get("name") or m["id"] in seen:
+                            raise LlmError('adapter returned invalid or duplicate model metadata for provider "{}"'.format(provider_id), "INVALID_CATALOG")
+                        seen.add(m["id"])
+                        out.append({"id": m["id"], "name": m["name"], **({"description": m["description"]} if m.get("description") else {}), **({"reasoning": m["reasoning"]} if m.get("reasoning") else {})})
+                    return out
+                except LlmError:
+                    raise
+                except Exception as e:
+                    raise LlmError(str(e), "INVALID_CATALOG")
         # fallback hardcoded catalog mirroring original
         if provider_id in ("deepseek", "deepseek-official"):
             return [
@@ -445,26 +462,36 @@ class LLMService:
             ]
         return []
 
-    def resolve_model_info(self, provider_id, model_id):
+    async def resolve_model_info(self, provider_id, model_id, signal=None):
         # try adapter
         entry = self._adapters.get(provider_id)
-        if entry and hasattr(entry["adapter"], "resolve_model"):
-            import asyncio as _aio
-            try:
-                res = entry["adapter"].resolve_model(provider_id, model_id)
-                if hasattr(res, "__await__"):
-                    # run if loop exists else create
-                    try:
-                        loop = _aio.get_running_loop()
-                        if hasattr(res, "close"):
-                            res.close()
-                        return {"provider": provider_id, "id": model_id, "name": model_id}
-                    except RuntimeError:
-                        res = _aio.run(res)
-                return res
-            except Exception:
-                pass
+        if entry:
+            adapter = entry["adapter"]
+            fn = getattr(adapter, "resolve_model", getattr(adapter, "resolveModel", None))
+            if fn:
+                try:
+                    import inspect as _ins
+                    import inspect
+                    sig = inspect.signature(fn)
+                    if len(sig.parameters) >= 3 or "signal" in sig.parameters:
+                        res = fn(provider_id, model_id, signal)
+                    else:
+                        res = fn(provider_id, model_id)
+                    if _ins.isawaitable(res):
+                        res = await res
+                    if isinstance(res, dict):
+                        p = res.get("provider")
+                        m_id = res.get("id")
+                        name = res.get("name")
+                        if p != provider_id or m_id != model_id or not isinstance(name, str) or not name:
+                            raise LlmError(f'adapter returned invalid exact model metadata for provider "{provider_id}" model "{model_id}"', "INVALID_MODEL_INFO")
+                        return res
+                except LlmError:
+                    raise
+                except Exception as e:
+                    raise LlmError(str(e), "INVALID_MODEL_INFO")
         return {"provider": provider_id, "id": model_id, "name": model_id}
+
 
     # backward compat alias
     def list_configurable_providers_sync(self):
@@ -503,11 +530,27 @@ class LLMService:
                 return choice["message"]
         except urllib.error.HTTPError as e:
             err_msg = e.read().decode("utf-8", errors="ignore")
-            raise RuntimeError("LLM API HTTP Error ({}): {}".format(e.code, err_msg))
+            status = e.code
+            if status in (401, 403):
+                code = "AUTH"
+            elif status == 429:
+                code = "RATE_LIMIT"
+            elif status in (400, 413):
+                if "context" in err_msg.lower() or "maximum context" in err_msg.lower():
+                    code = "CONTEXT_WINDOW_EXCEEDED"
+                else:
+                    code = "INVALID_REQUEST"
+            elif status >= 500:
+                code = "SERVER"
+            else:
+                code = f"HTTP_{status}"
+            raise LlmError(f"LLM API HTTP Error ({status}): {err_msg}", code, status=status)
         except urllib.error.URLError as e:
-            raise RuntimeError("LLM API Network Error: {}".format(e.reason))
+            raise LlmError(f"LLM API Network Error: {e.reason}", "TRANSPORT")
+        except LlmError:
+            raise
         except Exception as e:
-            raise RuntimeError("LLM API Request Error: {}".format(e))
+            raise LlmError(f"LLM API Request Error: {e}", "UNKNOWN")
 
     def chat_completion_stream(
         self,

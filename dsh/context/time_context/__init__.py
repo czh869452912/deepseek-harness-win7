@@ -47,9 +47,6 @@ class TimeContextPlugin(Plugin):
             self._last_injection_time[session_id] = now
 
             formatted_time = format_timestamp(now * 1000.0, self.time_zone)
-            dt_utc = datetime.fromtimestamp(now, tz=timezone.utc)
-            utc_str = dt_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
-
             zone_ctx = derive_browser_time_zone_context(messages)
             zone_text = render_browser_time_zone_context(zone_ctx)
 
@@ -57,12 +54,14 @@ class TimeContextPlugin(Plugin):
             baseline = "model-visible message" if step == 1 else "step context"
 
             time_text = (
-                f"[Context Time: {formatted_time} (UTC: {utc_str}) | {zone_text} | Elapsed since preceding {baseline}: {elapsed_str}]"
+                f"Time sampled while preparing turn {turn}, step {step}: {formatted_time}\n"
+                f"{zone_text}\n"
+                f"Elapsed since the preceding {baseline}: {elapsed_str}."
             )
 
             for msg in reversed(messages):
                 if msg.get("role") == "user" and isinstance(msg.get("content"), str):
-                    if "[Context Time:" not in msg["content"]:
+                    if "Time sampled while preparing turn" not in msg["content"]:
                         msg["content"] = f"{time_text}\n{msg['content']}"
                     break
 

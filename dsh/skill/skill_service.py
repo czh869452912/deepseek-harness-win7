@@ -10,6 +10,14 @@ def is_valid_skill_name(name: str) -> bool:
     return bool(SKILL_NAME_REGEX.match(name))
 
 
+def escape_attr(value: str) -> str:
+    return str(value).replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;")
+
+
+def escape_text(value: str) -> str:
+    return str(value).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
 class SkillDefinition:
     """
     Parsed Skill Definition containing metadata and markdown instruction body.
@@ -40,14 +48,15 @@ class SkillDefinition:
         self.rank = rank
 
     def render_content(self) -> str:
-        lines = [f'<skill_content name="{self.name}">', '<skill_resources>']
+        lines = [f'<skill_content name="{escape_attr(self.name)}">', '<skill_resources>']
         if self.resource_base:
-            lines.append(f'Base directory for this skill: {self.resource_base}')
+            lines.append(f'Base directory for this skill: {escape_text(self.resource_base)}')
             lines.append(
                 'Resolve relative paths mentioned by this skill against the base directory before using them. Load referenced resources only as needed.'
             )
         else:
-            lines.append(f'Resources for this skill are managed by provider "{self.provider}".')
+            lines.append(f'Resources for this skill are managed by provider "{escape_text(self.provider)}".')
+            lines.append('Load referenced resources only as needed.')
         lines.extend([
             '</skill_resources>',
             '',

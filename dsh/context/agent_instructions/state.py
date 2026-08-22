@@ -2,6 +2,8 @@ from typing import Any, Dict, List, Optional, Set
 from dsh.context.agent_instructions.digest import instruction_content_sha1, trimmed_instruction_digest
 from dsh.context.agent_instructions.render import instruction_scope_key
 
+name = "agent-instructions"
+
 
 class InstructionState:
     def __init__(self):
@@ -30,6 +32,14 @@ def baseline_instruction_state(files: List[Dict[str, Any]]) -> Dict[str, Any]:
             "path": file_item["displayPath"],
             "version": file_item.get("version", 1),
             "digest": digest,
-            "trimmedDigest": trimmedInstructionDigest(file_item["content"]) if "trimmedInstructionDigest" in globals() else trimmed_instruction_digest(file_item["content"]),
+            "trimmedDigest": trimmed_instruction_digest(file_item["content"]),
         }
     return {"changes": changes, "versions": versions}
+
+
+def workspace_context_message(text: str) -> Dict[str, Any]:
+    return {
+        "role": "user",
+        "content": text,
+        "source": {"kind": "plugin", "plugin": name},
+    }

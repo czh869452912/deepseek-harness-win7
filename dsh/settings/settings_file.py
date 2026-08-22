@@ -62,14 +62,17 @@ def patch_node(doc: dict, path: List[str], current: Any, next_val: Any) -> None:
     if is_map_like(current) and is_map_like(next_val):
         target = doc
         for p in path:
-            if isinstance(target, dict):
-                target = target.get(p)
+            if not isinstance(target, dict):
+                break
+            if p not in target or not isinstance(target[p], dict):
+                target[p] = {}
+            target = target[p]
         if isinstance(target, dict):
             for key in list(current.keys()):
                 if key not in next_val:
                     target.pop(key, None)
-        for key, value in next_val.items():
-            patch_node(doc, path + [key], current.get(key), value)
+            for key, value in next_val.items():
+                patch_node(doc, path + [key], current.get(key), value)
         return
     if not deep_equal_json(current, next_val):
         target = doc
@@ -341,25 +344,45 @@ class SettingsService:
 
     def publish(self, doc: Dict[str, Any], source: str = "provider") -> None:
         """Publish updated raw document into registered namespaces and notify subscribers."""
+        before_sections: Dict[str, Any] = {}
+        for ns in self._registrations.keys():
+            before_sections[ns] = copy.deepcopy(self._data.get(ns))
+
         self._data = copy.deepcopy(doc)
-        for ns, reg in self._registrations.items():
-            section = self._data.get(ns, {})
-            if not isinstance(section, dict):
-                section = {}
+
+        for ns, reg in list(self._registrations.items()):
+            after_section = self._data.get(ns)
+            if not isinstance(after_section, dict):
+                after_section = None
+
+            before_sec = before_sections.get(ns)
+            if not isinstance(before_sec, dict):
+                before_sec = None
+
+            if not deep_equal_json(before_sec, after_section):
+                reg.revision += 1
+                self._revisions[ns] = reg.revision
+                if self.ctx and hasattr(self.ctx, "emit"):
+                    try:
+                        self.ctx.emit("settings/document-updated", ns, reg.revision)
+                    except Exception:
+                        pass
+
+            section = after_section or {}
             merged = copy.deepcopy(reg.base) if isinstance(reg.base, dict) else {}
             merged.update(section)
+
             if reg.validate:
                 try:
                     reg.validate(merged)
                 except Exception as e:
                     self._log("warn", f'settings: keeping last good "{ns}" after invalid stored section: {e}')
                     continue
+
             prev_val = reg.resolved
             next_val = merged
             if not deep_equal_json(prev_val, next_val):
-                reg.revision += 1
                 reg.resolved = copy.deepcopy(next_val)
-                self._revisions[ns] = reg.revision
                 for watcher in list(reg.watchers):
                     if watcher.active:
                         try:
@@ -368,7 +391,6 @@ class SettingsService:
                             self._log("warn", f"settings watcher for {ns} failed: {e}")
                 if self.ctx and hasattr(self.ctx, "emit"):
                     try:
-                        self.ctx.emit("settings/document-updated", ns, reg.revision)
                         self.ctx.emit("settings/updated", ns, next_val, prev_val, source)
                     except Exception:
                         pass
@@ -522,7 +544,6 @@ class SettingsService:
                 self._reconcile_from_disk_unlocked()
                 doc = copy.deepcopy(self._data)
                 patch_node(doc, [ns], doc.get(ns), section)
-                self._data[ns] = copy.deepcopy(section)
 
                 os.makedirs(os.path.dirname(self.filepath) or ".", exist_ok=True)
                 dir_name = os.path.dirname(self.filepath) or "."
@@ -543,27 +564,7 @@ class SettingsService:
                         except Exception:
                             pass
 
-                reg = self._registrations.get(ns)
-                prev_val = reg.resolved if reg else None
-                nxt_rev = self.bump_revision(ns)
-
-                next_resolved = copy.deepcopy(reg.base) if reg and isinstance(reg.base, dict) else {}
-                next_resolved.update(section)
-                if reg:
-                    reg.resolved = copy.deepcopy(next_resolved)
-                    for watcher in list(reg.watchers):
-                        if watcher.active:
-                            try:
-                                watcher.callback(reg.resolved, prev_val)
-                            except Exception as e:
-                                self._log("warn", f"settings watcher for {ns} failed: {e}")
-
-                if self.ctx and hasattr(self.ctx, "emit"):
-                    try:
-                        self.ctx.emit("settings/document-updated", ns, nxt_rev)
-                        self.ctx.emit("settings/updated", ns, next_resolved, prev_val, "update")
-                    except Exception:
-                        pass
+                self.publish(doc, source="update")
 
     def save(self) -> None:
         """Save current _data state to disk."""

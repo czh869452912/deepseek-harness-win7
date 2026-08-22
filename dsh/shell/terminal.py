@@ -211,5 +211,6 @@ class TerminalService:
             "exit_code": exit_code,
             "output": output,
             "was_reset": was_reset,
+            "completed": not was_reset,
         }
 

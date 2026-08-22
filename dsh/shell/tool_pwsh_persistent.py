@@ -103,7 +103,7 @@ class ToolPwshPersistentPlugin(Plugin):
         res = terminal_service.run_command(command, timeout_seconds=timeout_sec)
         output = res.get("output", "")
         exit_code = res.get("exit_code", 0)
-        completed = res.get("completed", True)
+        completed = res.get("completed", not res.get("was_reset", False))
 
         if not completed:
             # Timeout / shell-exit paths already render their own markers and reset notice.

@@ -1,3 +1,8 @@
+"""
+Cordis Event Bus matching reference/vendor/cordis/src/events.ts
+Supports emit, parallel, serial, bail, and waterfall dispatch modes.
+"""
+
 import asyncio
 import inspect
 import sys
@@ -10,6 +15,14 @@ def is_bailed(value: Any) -> bool:
     Returns True unless value is None or False.
     """
     return value is not None and value is not False
+
+
+class AggregateError(Exception):
+    """Aggregated exception raised by parallel dispatch when listeners fail."""
+    def __init__(self, errors: List[Exception]):
+        self.errors = errors
+        msg = f"AggregateError ({len(errors)} errors):\n" + "\n".join(f"  - {e}" for e in errors)
+        super().__init__(msg)
 
 
 class Hook:
@@ -84,7 +97,6 @@ class EventBus:
             if hook.global_listener or caller_ctx is None or hook.ctx is None:
                 result_callbacks.append(hook.callback)
             else:
-                # Check context scope filtering if defined
                 ctx_filter = getattr(caller_ctx, "filter", None)
                 if ctx_filter is None or ctx_filter(hook.ctx):
                     result_callbacks.append(hook.callback)
@@ -119,22 +131,24 @@ class EventBus:
 
     async def parallel(self, event_name: str, *args: Any, **kwargs: Any) -> List[Any]:
         """
-        Parallel dispatch: run all listeners concurrently using asyncio.gather.
+        Parallel dispatch: run all listeners concurrently.
+        Raises AggregateError if any listeners fail.
         """
         listeners = self._dispatch_hooks("parallel", event_name, kwargs.pop("caller_ctx", None))
-        tasks = []
-        for listener in listeners:
-            res = listener(*args, **kwargs)
-            if inspect.isawaitable(res):
-                tasks.append(res)
-            else:
-                async def _wrap(val=res):
-                    return val
-                tasks.append(_wrap())
-
-        if not tasks:
+        if not listeners:
             return []
-        return list(await asyncio.gather(*tasks, return_exceptions=True))
+
+        async def _run(cb: Callable[..., Any]) -> Any:
+            res = cb(*args, **kwargs)
+            if inspect.isawaitable(res):
+                return await res
+            return res
+
+        results = await asyncio.gather(*[_run(cb) for cb in listeners], return_exceptions=True)
+        errors = [r for r in results if isinstance(r, Exception)]
+        if errors:
+            raise AggregateError(errors)
+        return list(results)
 
     async def serial(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
         """
@@ -175,30 +189,28 @@ class EventBus:
 
     def waterfall_sync(self, event_name: str, data: Any, *args: Any, **kwargs: Any) -> Any:
         """
-        Synchronous waterfall middleware pipeline for non-async event chains.
+        Synchronous waterfall middleware pipeline matching TS waterfall semantics.
         """
         listeners = self._dispatch_hooks("waterfall", event_name, kwargs.pop("caller_ctx", None))
 
         def run_pipeline(index: int, current_data: Any) -> Any:
             if index >= len(listeners):
                 return current_data
-            listener = listeners[index]
+            cb = listeners[index]
 
             def next_fn(next_data: Any = None) -> Any:
                 payload = current_data if next_data is None else next_data
                 return run_pipeline(index + 1, payload)
 
-            sig = inspect.signature(listener)
-            param_names = [
+            sig = inspect.signature(cb)
+            params = [
                 p.name for p in sig.parameters.values()
                 if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
             ]
-            has_next = "next_fn" in param_names or "next" in param_names
-
-            if has_next:
-                return listener(current_data, *args, next_fn, **kwargs)
+            if len(params) >= 2 or "next" in params or "next_fn" in params:
+                return cb(current_data, *args, next_fn, **kwargs)
             else:
-                res = listener(current_data, *args, **kwargs)
+                res = cb(current_data, *args, **kwargs)
                 if res is not None:
                     return next_fn(res)
                 return next_fn(current_data)
@@ -207,34 +219,28 @@ class EventBus:
 
     async def waterfall(self, event_name: str, data: Any, *args: Any, **kwargs: Any) -> Any:
         """
-        Waterfall middleware pipeline.
-        Listeners are called with (data, *args, next_fn).
-        Calling next_fn(modified_data) invokes downstream listeners.
-        Short-circuiting occurs if next_fn is not called.
+        Waterfall middleware pipeline matching TS waterfall semantics.
         """
         listeners = self._dispatch_hooks("waterfall", event_name, kwargs.pop("caller_ctx", None))
 
         async def run_pipeline(index: int, current_data: Any) -> Any:
             if index >= len(listeners):
                 return current_data
-
-            listener = listeners[index]
+            cb = listeners[index]
 
             async def next_fn(next_data: Any = None) -> Any:
                 payload = current_data if next_data is None else next_data
                 return await run_pipeline(index + 1, payload)
 
-            sig = inspect.signature(listener)
-            param_names = [
+            sig = inspect.signature(cb)
+            params = [
                 p.name for p in sig.parameters.values()
                 if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
             ]
-            has_next = "next_fn" in param_names or "next" in param_names
-
-            if has_next:
-                res = listener(current_data, *args, next_fn, **kwargs)
+            if len(params) >= 2 or "next" in params or "next_fn" in params:
+                res = cb(current_data, *args, next_fn, **kwargs)
             else:
-                res = listener(current_data, *args, **kwargs)
+                res = cb(current_data, *args, **kwargs)
                 if inspect.isawaitable(res):
                     res = await res
                 if res is not None:

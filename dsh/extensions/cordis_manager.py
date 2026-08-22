@@ -1,3 +1,8 @@
+"""
+Creative Mode Cordis Inspection & Runtime Management Tools
+matching reference/packages/extensions/tool-cordis
+"""
+
 import json
 import uuid
 from typing import Any, Dict, List, Optional
@@ -416,6 +421,9 @@ class CordisManagerPlugin(Plugin):
         inp = input or {}
         if provider == "Service":
             services = list(ctx._services.keys()) if hasattr(ctx, "_services") else []
+            if hasattr(ctx, "reflect") and hasattr(ctx.reflect, "store"):
+                services.extend(list(ctx.reflect.store.keys()))
+            services = sorted(list(set(services)))
             srv_name = inp.get("service")
             if not srv_name:
                 return json.dumps({"services": services}, indent=2, ensure_ascii=False)
@@ -424,11 +432,11 @@ class CordisManagerPlugin(Plugin):
             return json.dumps({"service": srv_name, "methods": methods}, indent=2, ensure_ascii=False)
 
         elif provider == "Event":
-            events = ["turn/start", "turn/end", "step/start", "step/end", "agent/status", "goal/change", "tools/pre-execute", "tools/post-execute"]
+            events = ["turn/start", "turn/end", "step/start", "step/end", "agent/status", "goal/change", "tools/pre-execute", "tools/post-execute", "internal/plugin", "internal/status", "internal/service", "internal/config", "internal/update", "internal/get", "internal/set"]
             evt_name = inp.get("event")
             if not evt_name:
                 return json.dumps({"events": events}, indent=2, ensure_ascii=False)
-            return json.dumps({"event": evt_name, "mode": "waterfall" if "pre-" in evt_name else "emit"}, indent=2, ensure_ascii=False)
+            return json.dumps({"event": evt_name, "mode": "waterfall" if ("pre-" in evt_name or "internal/" in evt_name) else "emit"}, indent=2, ensure_ascii=False)
 
         elif provider == "Builtin":
             return json.dumps({"builtins": ["json", "time", "os", "math", "re", "uuid"]}, indent=2, ensure_ascii=False)
@@ -525,4 +533,3 @@ class CordisManagerPlugin(Plugin):
         plugins = c.list_plugins() if hasattr(c, "list_plugins") else []
         dump_data = [{"id": p.get("id"), "name": p.get("name"), "config": p.get("config")} for p in plugins]
         return yaml.dump(dump_data, allow_unicode=True)
-

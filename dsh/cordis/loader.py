@@ -1,10 +1,16 @@
+"""
+Cordis Preset Loader service matching reference/vendor/loader/src/index.ts
+Loads composition configs, supports cordis:group and isolated sub-realms.
+"""
+
 import os
 import sys
 import platform
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 import yaml
 
 from dsh.cordis.context import Context
+from dsh.cordis.service import Service
 from dsh.cordis.plugin import Plugin
 
 
@@ -49,25 +55,61 @@ def eval_condition(condition: Any) -> bool:
         return False
 
 
-class PresetLoader:
+class EntryNode:
+    """Represents a registered plugin entry in a Cordis composition tree."""
+    def __init__(self, name: str, config: Optional[Dict[str, Any]] = None, disabled: bool = False):
+        self.name = name
+        self.config = config or {}
+        self.disabled = disabled
+
+    def to_dict(self) -> Dict[str, Any]:
+        res: Dict[str, Any] = {"name": self.name, "config": self.config}
+        if self.disabled:
+            res["disabled"] = self.disabled
+        return res
+
+
+class Loader(Service):
     """
-    Loads Cordis preset configuration YAML files and mounts plugins onto Context.
-    Supports cordis:group and isolated sub-realms matching 1:1 official specifications.
+    Service that owns a loader entry tree and imports configured plugins.
+    Registered on ctx.loader.
     """
 
-    def __init__(self, plugin_registry: Optional[Dict[str, Any]] = None):
-        self.registry: Dict[str, Any] = plugin_registry or {}
+    name = "loader"
+
+    def __init__(self, ctx: Optional[Context] = None, config: Optional[Dict[str, Any]] = None):
+        if ctx is not None:
+            super().__init__(ctx, name="loader")
+            self.ctx = ctx
+        else:
+            self.ctx = None
+        self.config = config or {}
+        self.registry_map: Dict[str, Any] = {}
+        self.entries: List[EntryNode] = []
+
+        if self.ctx:
+            self.ctx.on("internal/config", self._on_internal_config)
+            self.ctx.on("internal/update", self._on_internal_update)
+
+    def _on_internal_config(self, fiber: Any, config: Any, next_fn: Any) -> Any:
+        return next_fn(config)
+
+    def _on_internal_update(self, fiber: Any, config: Any, no_save: bool, next_fn: Any) -> Any:
+        return next_fn(config)
 
     def register_plugin_class(self, name_or_id: str, plugin_cls: Any) -> None:
         """
         Register a plugin class mapping (e.g., '@deepseek-ai/dsh-persona' -> PersonaPlugin).
         """
-        self.registry[name_or_id] = plugin_cls
+        self.registry_map[name_or_id] = plugin_cls
 
-    def load_from_dict(self, config_items: List[Dict[str, Any]], ctx: Context) -> None:
+    def load_from_dict(self, config_items: List[Dict[str, Any]], target_ctx: Optional[Context] = None) -> None:
         """
         Load list of plugin configuration dicts onto context.
         """
+        ctx = target_ctx or self.ctx
+        if not ctx:
+            raise RuntimeError("Cannot load plugins without a target Context")
         for item in config_items:
             plugin_name = item.get("name") or item.get("id")
             plugin_id = item.get("id", plugin_name)
@@ -75,6 +117,7 @@ class PresetLoader:
             disabled_cond = item.get("disabled", False)
 
             if eval_condition(disabled_cond):
+                self.entries.append(EntryNode(name=plugin_name, config=item.get("config"), disabled=True))
                 continue
 
             if is_group:
@@ -89,21 +132,22 @@ class PresetLoader:
                 continue
 
             config = item.get("config", {})
+            self.entries.append(EntryNode(name=plugin_name, config=config, disabled=False))
 
-            if plugin_name in self.registry:
-                plugin_cls = self.registry[plugin_name]
+            if plugin_name in self.registry_map:
+                plugin_cls = self.registry_map[plugin_name]
                 if isinstance(plugin_cls, type) and issubclass(plugin_cls, Plugin):
                     plugin_instance = plugin_cls(config=config)
                     plugin_instance.id = plugin_id
                     ctx.plugin(plugin_instance)
                 elif callable(plugin_cls):
-                    plugin_cls(ctx, config)
+                    ctx.plugin(plugin_cls, config)
                 else:
                     print(f"[Cordis Loader Warning] Registered item '{plugin_name}' is not a valid plugin", file=sys.stderr)
             else:
                 print(f"[Cordis Loader Warning] Unknown plugin name/id: '{plugin_name}'", file=sys.stderr)
 
-    def load_preset_file(self, filepath: str, ctx: Context) -> None:
+    def load_preset_file(self, filepath: str, target_ctx: Optional[Context] = None) -> None:
         """
         Load preset YAML file and mount onto context.
         """
@@ -114,8 +158,12 @@ class PresetLoader:
             data = yaml.safe_load(f)
 
         if isinstance(data, list):
-            self.load_from_dict(data, ctx)
+            self.load_from_dict(data, target_ctx)
         elif isinstance(data, dict) and "plugins" in data:
-            self.load_from_dict(data["plugins"], ctx)
+            self.load_from_dict(data["plugins"], target_ctx)
         else:
             raise ValueError(f"Invalid preset format in {filepath}")
+
+
+# Backward compatibility alias
+PresetLoader = Loader

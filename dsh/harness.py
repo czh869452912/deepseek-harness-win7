@@ -11,6 +11,7 @@ from dsh.context.time_context import TimeContextPlugin
 from dsh.core.agent import AgentPlugin
 from dsh.core.agent_loop import AgentLoopPlugin
 from dsh.core.persona import PersonaPlugin
+from dsh.core.tools import ToolsPlugin, ToolsService
 from dsh.credentials.credentials_local import CredentialsLocalPlugin
 from dsh.extensions.cli_visualizer import CliVisualizerPlugin
 from dsh.extensions.cordis_manager import CordisManagerPlugin
@@ -55,7 +56,6 @@ from dsh.storage.storage import StoragePlugin
 from dsh.workspace.workspace import WorkspacePlugin
 
 
-
 def build_harness(
     mode: str = "standard",
     api_key: Optional[str] = None,
@@ -75,6 +75,7 @@ def build_harness(
     ctx.set_service("launch_environment", launch_env)
 
     # Mount base infrastructure plugins
+    ctx.plugin(ToolsPlugin)
     ctx.plugin(CredentialsLocalPlugin)
     ctx.plugin(SettingsFilePlugin)
     ctx.plugin(StoragePlugin)
@@ -84,7 +85,8 @@ def build_harness(
     ctx.plugin(CommandsPlugin)
     ctx.plugin(TokenMeterPlugin)
     ctx.plugin(LLMRetryPlugin)
-    ctx.plugin(SessionQueryPlugin)
+    if mode != "minimal":
+        ctx.plugin(SessionQueryPlugin)
     ctx.plugin(AgentLoopPlugin)
 
     if verbose:
@@ -97,7 +99,8 @@ def build_harness(
     })
 
     # Setup preset loader & register available plugins
-    loader = PresetLoader()
+    loader = PresetLoader(ctx)
+    loader.register_plugin_class("@deepseek-ai/dsh-tools", ToolsPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-agent", AgentPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-persona", PersonaPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-agent-instructions", AgentInstructionsPlugin)
@@ -149,35 +152,11 @@ def build_harness(
     if enable_web:
         ctx.plugin(WebServerPlugin, config={"host": web_host, "port": web_port})
         ctx.plugin(ClientModulesPlugin)
-        ctx.plugin(DirectoryPickerAutoPlugin)
         ctx.plugin(ApiProxyPlugin)
         ctx.plugin(FrontendStaticPlugin)
 
-    # Determine preset file
-    presets_dir = os.path.join(os.path.dirname(__file__), "presets")
-    if mode in ("minimal", "极简模式"):
-        preset_path = os.path.join(presets_dir, "minimal.yaml")
-    elif mode in ("standard", "标准模式"):
-        preset_path = os.path.join(presets_dir, "standard.yaml")
-    elif mode in ("creative", "cordis", "创造模式"):
-        preset_path = os.path.join(presets_dir, "cordis.yaml")
-    elif mode in ("code", "代码模式"):
-        preset_path = os.path.join(presets_dir, "code.yaml")
-    else:
-        # Assume custom filepath or default to standard
-        if os.path.exists(mode):
-            preset_path = mode
-        else:
-            preset_path = os.path.join(presets_dir, "standard.yaml")
-
-    loader.load_preset_file(preset_path, ctx)
-
-    # Apply patch overlay if specified
-    if patch_file and os.path.exists(patch_file):
-        print(f"[Cordis Harness] Applying patch overlay: {patch_file}")
-        with open(patch_file, "r", encoding="utf-8") as f:
-            patch_data = yaml.safe_load(f)
-        if isinstance(patch_data, list):
-            loader.load_from_dict(patch_data, ctx)
+    preset_file = os.path.join("dsh", "presets", f"{mode}.yaml")
+    if os.path.exists(preset_file):
+        loader.load_preset_file(preset_file, ctx)
 
     return ctx

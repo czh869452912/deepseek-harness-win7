@@ -116,4 +116,4 @@ class FrontendStaticPlugin(Plugin):
 
         disposer = web_server.register_fallback(serve_static)
         if hasattr(ctx, "effect"):
-            ctx.effect(disposer)
+            ctx.effect(lambda: disposer)

@@ -442,5 +442,5 @@ class ClientModulesPlugin(Plugin):
         disposer_tap = web_server.tap_index(self.registry.tap_index)
 
         if hasattr(ctx, "effect"):
-            ctx.effect(disposer_route)
-            ctx.effect(disposer_tap)
+            ctx.effect(lambda: disposer_route)
+            ctx.effect(lambda: disposer_tap)

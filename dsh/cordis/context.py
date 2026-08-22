@@ -1,6 +1,13 @@
+"""
+Cordis Context matching reference/vendor/cordis/src/context.ts
+Root and child dependency containers for Cordis plugins.
+"""
+
 import asyncio
 import inspect
+import sys
 from typing import Any, Callable, Dict, List, Optional, Set, Union
+
 from dsh.cordis.events import EventBus
 from dsh.cordis.fiber import Fiber, FiberState
 from dsh.cordis.reflect import ReflectService
@@ -10,29 +17,28 @@ from dsh.cordis.plugin import Plugin
 
 class Context:
     """
-    Cordis Context: core container for services, events, plugins, scoped hierarchies,
-    lifecycle Fibers, isolated realms, and reversible effects.
+    Cordis Context: core dependency container for services, events, plugins,
+    scoped hierarchies, lifecycle Fibers, isolated realms, and reversible effects.
     """
 
-    def __init__(self, parent: Optional["Context"] = None):
+    def __init__(self, parent: Optional["Context"] = None, is_extension: bool = False):
         self._parent: Optional["Context"] = parent
         self._services: Dict[str, Any] = {}
         self._isolated_keys: Dict[str, Any] = {}
         self._intercept_map: Dict[str, Any] = {}
         self._effects: List[Callable[[], Any]] = []
 
-        if parent:
+        if parent is not None:
             self._event_bus: EventBus = parent._event_bus
             self.registry: RegistryService = parent.registry
             self.reflect: ReflectService = parent.reflect
-            self.fiber: Fiber = Fiber(self, self, config={})
-            self.fiber.state = FiberState.ACTIVE
+            self.fiber: Fiber = parent.fiber
         else:
             self._event_bus = EventBus()
             self.reflect = ReflectService(self)
             self.registry = RegistryService(self)
-            self.fiber = Fiber(self, self, config={})
-            self.fiber.state = FiberState.ACTIVE
+            self.fiber = Fiber(self, None, config={}, runtime=None)
+            self.reflect.setup_mixins()
 
     @property
     def root(self) -> "Context":
@@ -47,15 +53,18 @@ class Context:
 
     def set_service(self, name: str, service_instance: Any) -> None:
         """
-        Bind a service instance to context and trigger dependency resolution & events.
+        Bind a service instance to context (or root if not isolated) and trigger dependency resolution & events.
         """
-        self._services[name] = service_instance
-        setattr(self, name, service_instance)
-        self.reflect.on_set(self, name, service_instance)
-        self.registry.update_dependencies()
+        target = self if name in self._isolated_keys else self.root
+        target._services[name] = service_instance
+        setattr(target, name, service_instance)
+        target.provide(name, service_instance)
 
-    def provide(self, name: str, service_instance: Any) -> None:
-        self.set_service(name, service_instance)
+    def provide(self, name: str, service_instance: Any = None, check: Optional[Callable[[], bool]] = None) -> Callable[[], None]:
+        """
+        Register a service implementation owned by the current fiber.
+        """
+        return self.reflect.provide(self, name, service_instance, check=check)
 
     def get_service(self, name: str, default: Any = None) -> Any:
         """
@@ -63,15 +72,30 @@ class Context:
         """
         if name in self._services:
             return self._services[name]
-        if self._parent is not None and name not in self._isolated_keys:
+
+        isolated_label = self._isolated_keys.get(name)
+        if self._parent is not None and isolated_label is None:
             return self._parent.get_service(name, default)
         return default
 
-    def get(self, name: str, default: Any = None) -> Any:
-        return self.reflect.get(self, name, default)
+    def get(self, name: str, default: Any = None, strict: bool = True) -> Any:
+        """
+        Read a service or property from context via reflect layer.
+        """
+        return self.reflect.get(self, name, default=default, strict=strict)
 
     def has(self, name: str) -> bool:
-        return name in self._services or (self._parent is not None and name not in self._isolated_keys and self._parent.has(name))
+        """
+        Check whether a service is available in this context scope.
+        """
+        if name in self._services:
+            return True
+        if self.reflect.store.get(name) is not None:
+            impl = self.reflect.store[name]
+            if impl.fiber is None or impl.fiber.state == FiberState.ACTIVE:
+                return True
+        isolated_label = self._isolated_keys.get(name)
+        return self._parent is not None and isolated_label is None and self._parent.has(name)
 
     def effect(self, setup_or_disposer: Any, label: str = "") -> Callable[[], None]:
         """
@@ -102,20 +126,23 @@ class Context:
                         loop.create_task(res)
                     except RuntimeError:
                         pass
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"[Cordis Context Error] Exception in cancel_effect '{label}': {e}", file=sys.stderr)
 
         return cancel_effect
 
     def on(self, event_name: str, handler: Callable[..., Any], prepend: bool = False, global_listener: bool = False) -> Callable[[], None]:
         """
-        Register an event handler and track its disposer as a context effect.
+        Register an event handler and track its disposer as a fiber effect.
         """
         disposer = self._event_bus.on(event_name, handler, prepend=prepend, global_listener=global_listener, ctx=self)
         self.effect(disposer, label=f"ctx.on({event_name})")
         return disposer
 
     def once(self, event_name: str, handler: Callable[..., Any], prepend: bool = False, global_listener: bool = False) -> Callable[[], None]:
+        """
+        Register a single-shot event handler and track its disposer as a fiber effect.
+        """
         disposer = self._event_bus.once(event_name, handler, prepend=prepend, global_listener=global_listener, ctx=self)
         self.effect(disposer, label=f"ctx.once({event_name})")
         return disposer
@@ -154,10 +181,17 @@ class Context:
 
     def plugin(self, plugin_cls_or_instance: Any, config: Optional[Dict[str, Any]] = None) -> Optional[Plugin]:
         """
-        Mount a plugin onto context. Delegates to RegistryService for Fiber wrapping and inject resolution.
+        Load a plugin onto context wrapped in a Fiber.
         """
         fiber = self.registry.plugin(plugin_cls_or_instance, config=config)
         return fiber.plugin if fiber else None
+
+    def inject(self, deps: Any, callback: Callable[..., Any]) -> Any:
+        """
+        Run a callback once requested services are available.
+        Shorthand for ctx.plugin({ inject, apply: callback }).
+        """
+        return self.registry.inject(deps, callback)
 
     def unload_plugin(self, plugin_id: str) -> bool:
         """
@@ -180,18 +214,20 @@ class Context:
             result.append({
                 "id": getattr(plugin, "id", fiber.name),
                 "name": getattr(plugin, "name", fiber.name),
-                "class": plugin.__class__.__name__,
+                "class": plugin.__class__.__name__ if plugin else "FunctionPlugin",
                 "inject": getattr(plugin, "inject", []),
-                "config": getattr(plugin, "config", {}),
+                "config": getattr(plugin, "config", getattr(fiber, "config", {})),
                 "state": fiber.state,
             })
         return result
 
     def extend(self, meta: Optional[Dict[str, Any]] = None) -> "Context":
         """
-        Create a child scoped context inheriting services and event bus.
+        Create a child context inheriting services and event bus.
         """
-        child = Context(parent=self)
+        child = Context(parent=self, is_extension=True)
+        child._isolated_keys = dict(self._isolated_keys)
+        child._intercept_map = dict(self._intercept_map)
         if meta:
             for k, v in meta.items():
                 setattr(child, k, v)
@@ -199,7 +235,7 @@ class Context:
 
     def isolate(self, name_or_keys: Union[str, List[str], Dict[str, Any]] = None, label: Any = None, keys: Optional[List[str]] = None) -> "Context":
         """
-        Create a child context isolated from parent for specific service keys/labels.
+        Create a child context isolated from parent for specific service keys.
         """
         child = self.extend()
         target_keys = keys if keys is not None else name_or_keys
@@ -223,9 +259,9 @@ class Context:
 
     def teardown(self) -> None:
         """
-        Teardown context by executing all cleanup effects in reverse order.
+        Teardown context effects in reverse order.
         """
-        if self.fiber:
+        if self._parent is None and self.fiber:
             try:
                 loop = asyncio.get_running_loop()
                 loop.create_task(self.fiber.dispose())
@@ -246,8 +282,14 @@ class Context:
                 pass
 
     def __getattr__(self, name: str) -> Any:
+        if name.startswith("_") or name in ("registry", "reflect", "fiber", "root", "events", "props", "store"):
+            raise AttributeError(f"Context object has no attribute '{name}'")
         if name in self._services:
             return self._services[name]
+        if hasattr(self, "reflect"):
+            val = self.reflect.get(self, name, default=None, strict=False)
+            if val is not None:
+                return val
         if self._parent and name not in self._isolated_keys and hasattr(self._parent, name):
             return getattr(self._parent, name)
         raise AttributeError(f"Context object has no attribute or service '{name}'")

@@ -88,7 +88,7 @@ class ApiProxyPlugin(Plugin):
         # Register /api prefix routes
         disposer = web_server.register("prefix", "/api", self._handle_api_request)
         if hasattr(ctx, "effect"):
-            ctx.effect(disposer)
+            ctx.effect(lambda: disposer)
 
         # Hook session & agent events to broadcast via dual streams
         ctx.on("session/event", self._on_session_event)

@@ -1,7 +1,12 @@
+"""
+Core Tools catalog, Tool execution inputs/results, and ToolsService registry.
+"""
+
 import asyncio
 import inspect
 import json
 from typing import Any, Callable, Dict, List, Optional, Union
+from dsh.cordis.plugin import Plugin
 
 
 TOOL_ABORTED_BEFORE_DISPATCH = "TOOL_ABORTED_BEFORE_DISPATCH"
@@ -98,13 +103,11 @@ class ToolExecutionResult:
             return raw
         if isinstance(raw, str):
             text = raw
-        elif raw is None:
-            text = ""
+        elif isinstance(raw, (dict, list)):
+            text = json.dumps(raw, ensure_ascii=False, indent=2)
         else:
-            try:
-                text = json.dumps(raw, ensure_ascii=False, indent=2)
-            except Exception:
-                text = str(raw)
+            text = str(raw)
+
         return cls(
             content=[{"type": "text", "text": text}],
             is_error=is_error,
@@ -114,75 +117,88 @@ class ToolExecutionResult:
 
 class ToolsService:
     """
-    Tool Registry & Execution Pipeline Service mounted at `ctx.tools`.
+    Core tool catalog and execution orchestration service (`ctx.tools`).
     """
 
     def __init__(self, ctx: Any):
         self.ctx = ctx
         self._tools: Dict[str, Tool] = {}
-        self.presentation_mode: str = "native"  # "native" | "code" | "both"
 
     def register(
         self,
-        name: str,
-        description: str,
-        parameters: Dict[str, Any],
-        handler: Callable[..., Any],
+        tool_or_spec: Union[Tool, Dict[str, Any], str, None] = None,
+        description: Optional[str] = None,
+        parameters: Optional[Dict[str, Any]] = None,
+        handler: Optional[Callable[..., Any]] = None,
         execution_mode: str = "parallel",
         present_call: Optional[Callable[[Dict[str, Any]], Any]] = None,
         present_result: Optional[Callable[[Any], Any]] = None,
+        name: Optional[str] = None,
     ) -> Callable[[], None]:
         """
-        Register a tool. Returns disposer function.
+        Register a tool. Accepts a Tool object, a dictionary specification, or positional/keyword parameters.
+        Returns a disposer to unregister the tool.
         """
-        tool = Tool(
-            name=name,
-            description=description,
-            parameters=parameters,
-            handler=handler,
-            execution_mode=execution_mode,
-            present_call=present_call,
-            present_result=present_result,
-        )
-        self._tools[name] = tool
+        spec_name = name or (tool_or_spec if isinstance(tool_or_spec, str) else None)
+        if isinstance(tool_or_spec, Tool):
+            tool = tool_or_spec
+        elif isinstance(tool_or_spec, dict):
+            t_name = tool_or_spec.get("name") or spec_name or ""
+            t_desc = tool_or_spec.get("description", description or "")
+            t_params = tool_or_spec.get("parameters", parameters or {})
+            t_handler = tool_or_spec.get("execute") or tool_or_spec.get("handler") or handler
+            t_mode = tool_or_spec.get("execution_mode", execution_mode)
+            t_pres_call = tool_or_spec.get("presentCall") or tool_or_spec.get("present_call") or present_call
+            t_pres_res = tool_or_spec.get("presentResult") or tool_or_spec.get("present_result") or present_result
+            tool = Tool(
+                name=t_name,
+                description=t_desc,
+                parameters=t_params,
+                handler=t_handler,
+                execution_mode=t_mode,
+                present_call=t_pres_call,
+                present_result=t_pres_res,
+            )
+        elif spec_name and (handler is not None or callable(tool_or_spec)):
+            actual_handler = handler or (tool_or_spec if callable(tool_or_spec) else None)
+            tool = Tool(
+                name=spec_name,
+                description=description or "",
+                parameters=parameters or {},
+                handler=actual_handler,
+                execution_mode=execution_mode,
+                present_call=present_call,
+                present_result=present_result,
+            )
+        else:
+            raise ValueError(f"Invalid tool registration spec: {tool_or_spec}, name={name}")
+
+        name_key = tool.name
+        self._tools[name_key] = tool
 
         def disposer():
-            if name in self._tools and self._tools[name] == tool:
-                del self._tools[name]
+            if name_key in self._tools and self._tools[name_key] is tool:
+                del self._tools[name_key]
 
-        if hasattr(self.ctx, "effect"):
-            self.ctx.effect(disposer)
         return disposer
 
-    def register_tool(self, tool_def: Dict[str, Any]) -> Callable[[], None]:
-        name = tool_def["name"]
-        description = tool_def.get("description", "")
-        parameters = tool_def.get("parameters", {})
-        handler = tool_def.get("execute") or tool_def.get("handler")
-        execution_mode = tool_def.get("execution_mode", tool_def.get("executionMode", "parallel"))
-        present_call = tool_def.get("present_call")
-        present_result = tool_def.get("present_result")
-        return self.register(
-            name,
-            description,
-            parameters,
-            handler,
-            execution_mode=execution_mode,
-            present_call=present_call,
-            present_result=present_result,
-        )
+    def register_tool(self, tool_or_spec: Union[Tool, Dict[str, Any]]) -> Callable[[], None]:
+        return self.register(tool_or_spec)
 
     def get_tool(self, name: str) -> Optional[Tool]:
         return self._tools.get(name)
 
-    def has(self, name: str) -> bool:
-        return name in self._tools
-
     def has_tool(self, name: str) -> bool:
         return name in self._tools
 
+    def has(self, name: str) -> bool:
+        return self.has_tool(name)
+
     def list_tools(self) -> List[Tool]:
         return list(self._tools.values())
+
+    def get_tool_definitions(self) -> List[Dict[str, Any]]:
+        return [tool.to_schema() for tool in self._tools.values()]
 
     def get_schemas(self) -> List[Dict[str, Any]]:
         return [tool.to_schema() for tool in self._tools.values()]
@@ -193,7 +209,6 @@ class ToolsService:
         mode = tool.execution_mode if tool else "parallel"
         return {"kind": mode}
 
-    # Scheduler lifecycle hooks (1:1 with TOOL_RUNTIME_SCHEDULER)
     async def prepare(self, exec_input: ToolExecutionInput) -> Dict[str, Any]:
         """Runs pre-execute waterfall."""
         call_payload = {
@@ -261,6 +276,19 @@ class ToolsService:
             return text or "Tool execution failed"
         text = "".join(b.get("text", "") for b in final.content if b.get("type") == "text")
         return text
+
+
+class ToolsPlugin(Plugin):
+    """
+    Plugin `@deepseek-ai/dsh-tools`: Registers core ToolsService on ctx.tools.
+    """
+    id = "tools"
+    name = "@deepseek-ai/dsh-tools"
+
+    def apply(self, ctx: Any) -> None:
+        if not ctx.has("tools"):
+            svc = ToolsService(ctx)
+            ctx.set_service("tools", svc)
 
 
 ToolRegistry = ToolsService

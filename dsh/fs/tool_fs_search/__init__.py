@@ -227,6 +227,28 @@ class ToolFsSearchPlugin(Plugin):
         if not tools:
             return
 
+        sp = ctx.get("systemPrompt") if ctx.has("systemPrompt") else (ctx.get("system_prompt") if ctx.has("system_prompt") else None)
+        if sp and hasattr(sp, "section"):
+            sp.section(
+                name="tool:glob",
+                text=(
+                    'Use the glob tool — not shell find — to discover files by path pattern. '
+                    'A pattern with no "/" matches basenames at any depth, so "*" matches every file in the tree rather than its top level. '
+                    'Results are files only, never directories, and include hidden and ignored files: '
+                    'a result that fits comes back in modification-time order, while a larger one is sampled across top-level entries, '
+                    'so it spans the tree instead of one subtree.'
+                ),
+                order=103,
+            )
+            sp.section(
+                name="tool:grep",
+                text=(
+                    'Use the grep tool — not shell grep or rg — to search file contents. '
+                    'Use read on a matched file when you need surrounding context.'
+                ),
+                order=104,
+            )
+
         async def exec_glob(pattern: str, path: Optional[str] = None) -> str:
             return self.service.glob(pattern=pattern, path=path, ctx=ctx)
 
@@ -248,8 +270,14 @@ class ToolFsSearchPlugin(Plugin):
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "pattern": {"type": "string", "description": "The glob pattern to match against paths."},
-                    "path": {"type": "string", "description": "The directory to search in. Defaults to the current working directory."},
+                    "pattern": {
+                        "type": "string",
+                        "description": 'Glob pattern to match file paths against (e.g. "**/*.ts", "src/**/*.test.js"). A pattern with no "/" matches the basename at any depth, so "*" and "*.ts" both search the whole tree; include a separator to anchor the depth.',
+                    },
+                    "path": {
+                        "type": "string",
+                        "description": "Directory to search in. Defaults to the session workspace; a relative path resolves against it.",
+                    },
                 },
                 "required": ["pattern"],
             },
@@ -264,9 +292,18 @@ class ToolFsSearchPlugin(Plugin):
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "pattern": {"type": "string", "description": "The regular expression pattern to match in file contents."},
-                    "path": {"type": "string", "description": "The directory or file to search in. Defaults to the current working directory."},
-                    "include": {"type": "string", "description": "A glob pattern to filter files that are searched (e.g. '*.ts')."},
+                    "pattern": {
+                        "type": "string",
+                        "description": "Regular expression to search for (ripgrep syntax).",
+                    },
+                    "path": {
+                        "type": "string",
+                        "description": "File or directory to search. Defaults to the session workspace; a relative path resolves against it.",
+                    },
+                    "include": {
+                        "type": "string",
+                        "description": 'One glob filter for which files to search (e.g. "*.ts", "*.{js,jsx}"). Not a list; negation is not supported.',
+                    },
                 },
                 "required": ["pattern"],
             },

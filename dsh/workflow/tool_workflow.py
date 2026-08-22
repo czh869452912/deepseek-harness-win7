@@ -1,3 +1,7 @@
+"""
+Plugin `@deepseek-ai/dsh-tool-workflow`: Run orchestration workflows.
+"""
+
 import asyncio
 from typing import Any, Dict, List, Optional
 from dsh.cordis.plugin import Plugin
@@ -14,7 +18,7 @@ class ToolWorkflowPlugin(Plugin):
     inject = ["tools"]
 
     def apply(self, ctx: Any) -> None:
-        tools = ctx.get("tools")
+        tools = ctx.get("tools") if ctx.has("tools") else None
         if not tools:
             return
 
@@ -23,8 +27,8 @@ class ToolWorkflowPlugin(Plugin):
 
         wf_engine: WorkflowEngine = ctx.get("workflowEngine")
 
-        async def exec_workflow(script: str) -> str:
-            res = await wf_engine.run(script)
+        async def exec_workflow(script: str, meta: Optional[Dict[str, Any]] = None) -> str:
+            res = await wf_engine.run(script, meta=meta)
             return f"Workflow result: {res.get('status', 'done')}\n{res.get('output', '')}"
 
         disposer = tools.register_tool({
@@ -34,6 +38,7 @@ class ToolWorkflowPlugin(Plugin):
                 "type": "object",
                 "properties": {
                     "script": {"type": "string", "description": "Workflow script to execute"},
+                    "meta": {"type": "object", "description": "Optional workflow metadata"},
                 },
                 "required": ["script"],
             },

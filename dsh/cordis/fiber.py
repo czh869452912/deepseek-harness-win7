@@ -136,7 +136,7 @@ class Fiber:
 
         if callable(execute_or_disposer):
             fn_name = getattr(execute_or_disposer, "__name__", "")
-            if fn_name in ("disposer", "teardown", "cancel_effect", "cleanup") or "disposer" in label or "on(" in label:
+            if fn_name in ("disposer", "teardown", "cancel_effect", "cleanup", "unregister", "remove") or "disposer" in label or "unregister" in label or "on(" in label:
                 # Direct disposer function returned by registration API
                 collect_disposer(execute_or_disposer)
             else:

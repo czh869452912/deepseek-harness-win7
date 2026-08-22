@@ -80,7 +80,7 @@ def interrupted_turn_closers(events: List[Dict[str, Any]]) -> List[Dict[str, Any
         text = (
             "The tool call was interrupted after it was recorded, but no result was durably recorded. "
             "Its outcome is unknown. Decide whether to retry from the tool semantics: retry only if the operation is "
-            "read-only or idempotent; if it may have side effects, first verify external state or ask the user."
+            "read-only or idempotent; if it may have side effects, first verify external state or ask the user. Do not retry blindly."
             if started
             else "The tool call was interrupted before the Harness recorded it as started. Retry it if it is still needed."
         )
@@ -99,8 +99,17 @@ def interrupted_turn_closers(events: List[Dict[str, Any]]) -> List[Dict[str, Any
                 "turn": open_turn,
                 "step": step,
                 "tool_call_id": call_id,
-                "name": "unknown",
-                "result": text,
+                "message": {
+                    "id": f"interrupted-tool-result-{call_id}-{seq}",
+                    "role": "user",
+                    "source": {"kind": "tool", "callId": call_id},
+                    "content": [{
+                        "type": "tool-result",
+                        "toolCallId": call_id,
+                        "isError": True,
+                        "content": [{"type": "text", "text": text}],
+                    }],
+                },
                 "error": error_info,
             },
             "surfaceOp": "append",

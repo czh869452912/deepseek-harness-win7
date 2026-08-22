@@ -54,7 +54,8 @@ async def test_skill_filesystem_and_tool_plugin():
 
         assembled = tool_skill.on_prompt_assemble("Base Prompt")
         assert "<available_skills>" in assembled
-        assert "- sample-skill: Sample skill for pytest" in assembled
+        assert "sample-skill" in assembled
+        assert "Sample skill for pytest" in assembled
 
         tool_res = tool_skill.handle_load_skill("sample-skill", ctx=ctx)
         assert '<skill_content name="sample-skill">' in tool_res

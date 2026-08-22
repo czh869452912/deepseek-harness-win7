@@ -5,11 +5,22 @@ is included in each model request, and `exit_plan_mode` presents the completed p
 """
 
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from dsh.cordis.plugin import Plugin
 from dsh.core.session import Session, SessionEvent
 
+EXIT_PLAN_MODE = "exit_plan_mode"
+REVIEW_ID = "plan-review"
+APPROVE_LABEL = "Approve"
+KEEP_PLANNING_LABEL = "Keep planning"
+
+EXIT_DESCRIPTION = (
+    "Use only in plan mode. Present your plan for the user's review and, on approval, leave plan mode. "
+    "Send the COMPLETE plan as markdown, starting with a # heading that names it. "
+    "The user may approve (carry out the plan from your next step) or keep "
+    "planning — their feedback comes back in the tool result; revise and present again."
+)
 
 DEFAULT_PLAN_GUIDANCE = """
 You are in plan mode. Stay in plan mode until exit_plan_mode succeeds or the user switches the session mode. Imperative language to implement changes means plan the implementation, not execute it. A user's conversational agreement — including an answer confirming something you asked — approves nothing and does not end plan mode; fold the confirmed decision into the plan and submit it through exit_plan_mode.
@@ -24,6 +35,18 @@ Make the plan decision-complete: state the goal and success criteria; group impl
 
 When ready, call exit_plan_mode with the complete plan markdown, starting with a # title. Make exit_plan_mode the only and final tool call in that assistant response: it presents the plan for approval, and implementation begins only in a later step after approval. Do not paste the final plan as a plain reply or ask "should I proceed?" through prose or ask_user_question. If review rejects it, incorporate the feedback and present again. If the review channel is unavailable or aborted, stay in plan mode and ask the user to switch modes manually; do not proceed with implementation.
 """.strip()
+
+
+def resolve_config(config: Union[str, Dict[str, Any]]) -> Dict[str, str]:
+    if isinstance(config, str):
+        section = config
+    elif isinstance(config, dict):
+        section = config.get("section", DEFAULT_PLAN_GUIDANCE)
+    else:
+        section = DEFAULT_PLAN_GUIDANCE
+    if not isinstance(section, str) or not section.strip():
+        section = DEFAULT_PLAN_GUIDANCE
+    return {"section": section}
 
 
 def fold_plan_mode(events: List[Any], end: Optional[int] = None) -> bool:
@@ -67,6 +90,14 @@ class PlanModeController:
         self.section = section or DEFAULT_PLAN_GUIDANCE
         self._pending_intents: Dict[str, Dict[str, Any]] = {}  # session_id -> {active, narrate}
 
+        # System prompt section plan:policy
+        if hasattr(ctx, "systemPrompt") and hasattr(ctx.systemPrompt, "section"):
+            ctx.systemPrompt.section(
+                name="plan:policy",
+                order=50,
+                text=lambda context: self.section if self.is_active() else "",
+            )
+
     def _resolve_session(self, agent: Optional[Any] = None) -> Optional[Session]:
         if agent and hasattr(agent, "session") and agent.session:
             return agent.session
@@ -107,6 +138,9 @@ class PlanModeController:
             return {"active": active, "pending": pending.get("active", False)}
         return {"active": active}
 
+    def set(self, agent: Optional[Any], active: bool) -> str:
+        return self.set_active(active, agent=agent)
+
     def set_active(self, active: bool, agent: Optional[Any] = None) -> str:
         sess = self._resolve_session(agent)
         if not sess:
@@ -119,7 +153,6 @@ class PlanModeController:
         if active == target:
             return "noop"
 
-        # If turn is ongoing, queue as pending intent
         self._pending_intents[sess.id] = {"active": active, "narrate": True}
         sess.append("plan/mode", {"active": active}, ignorable=True)
         self._pending_intents.pop(sess.id, None)
@@ -146,50 +179,48 @@ class PlanModeController:
 
         return payload
 
-    async def handle_exit_plan_mode(self, plan: str, ctx: Optional[Any] = None) -> str:
+    async def handle_exit_plan_mode(self, plan: str = "", ctx: Optional[Any] = None, **kwargs) -> Any:
         """Execute exit_plan_mode tool call."""
         context = ctx or self.ctx
+        plan_text = plan or kwargs.get("plan", "")
         sess = self._resolve_session()
-        if not sess:
-            return "Error: exit_plan_mode requires an active session."
 
         if not self.is_active(sess):
-            return "Error: exit_plan_mode is only available when plan mode is active."
+            return "Error: exit_plan_mode is only available when plan mode is active"
 
-        plan_clean = plan.strip()
-        if not re.match(r"^#{1,6}\s+\S", plan_clean):
-            return "Error: exit_plan_mode requires a non-empty markdown plan starting with a # heading."
+        plan_clean = plan_text.strip()
+        # TS regex: /^#\s+\S/
+        if not re.match(r"^#\s+\S", plan_clean):
+            return "Error: exit_plan_mode requires a non-empty markdown plan starting with a # heading"
 
         # Present plan for user review
         heading = first_heading(plan_clean) or "Plan Review"
         ask_user_tool = context.get("tools").get_tool("ask_user_question") if context and context.has("tools") else None
 
         if ask_user_tool:
-            # Use interactive user question tool
             res = await context.get("tools").execute_tool(
                 "ask_user_question",
                 {
                     "questions": [{
-                        "id": "plan-review",
-                        "question": f"Approve this plan and exit plan mode?\n\n{plan_clean}",
+                        "id": REVIEW_ID,
+                        "question": f"Approve this plan and leave plan mode?\n\n{plan_clean}",
                         "header": "Plan Review",
                         "options": [
-                            {"label": "Approve", "description": "Exit plan mode and begin implementation"},
-                            {"label": "Keep planning", "description": "Provide feedback to revise plan"}
+                            {"label": APPROVE_LABEL, "description": "Leave plan mode; the plan is carried out from the next step."},
+                            {"label": KEEP_PLANNING_LABEL, "description": "Stay in plan mode; feedback goes back to the model."}
                         ]
                     }]
                 }
             )
 
-            if "Approve" in str(res):
+            if APPROVE_LABEL in str(res):
                 self.set_active(False)
-                return f"Plan '{heading}' approved! Exited plan mode; begin implementation starting with your next step."
+                return f"Plan approved — plan mode exited; carry out the plan starting with your next step."
             else:
-                return f"The user chose to keep planning: {res}\nPlease revise the plan and call exit_plan_mode again."
+                return f"The user chose to keep planning; their feedback: {res}"
         else:
-            # Direct approve fallback if interactive tool not mounted
             self.set_active(False)
-            return f"Plan '{heading}' approved! Exited plan mode; begin implementation."
+            return "Plan approved — plan mode exited; carry out the plan starting with your next step."
 
 
 class PlanModePlugin(Plugin):
@@ -215,20 +246,16 @@ class PlanModePlugin(Plugin):
                     evt_type = event.get("type") if isinstance(event, dict) else getattr(event, "type", "")
                     evt_data = event.get("data", {}) if isinstance(event, dict) else getattr(event, "data", {})
                     current_active = state.get("active", False) if isinstance(state, dict) else False
-                    current_plan = state.get("plan", None) if isinstance(state, dict) else None
 
                     if evt_type == "plan/mode":
                         new_active = bool(evt_data.get("active", False))
-                        return {"active": new_active, "plan": current_plan}
-                    if evt_type == "tool/result" and evt_data.get("name") == "exit_plan_mode":
-                        # exit plan mode submitted
-                        return {"active": False, "plan": None}
+                        return {"active": new_active, "pending": False}
                     return state
 
                 projections.register(
                     key="plan",
                     schema={"type": "object"},
-                    init=lambda: {"active": False, "plan": None},
+                    init=lambda: {"active": False, "pending": False},
                     apply=apply_plan_projection,
                     view=lambda s: s,
                 )
@@ -239,43 +266,51 @@ class PlanModePlugin(Plugin):
             if hasattr(cmd_svc, "register"):
                 def execute_plan_command(session: Any, args: List[str]) -> str:
                     sub = args[0].lower() if args else "on"
-                    if sub in ("on", "start", "1"):
-                        controller.set_active(True, session=session)
-                        return "Plan mode enabled."
-                    elif sub in ("off", "stop", "exit", "0"):
-                        controller.set_active(False, session=session)
-                        return "Plan mode disabled."
+                    if sub in ("off", "stop", "exit", "0"):
+                        res = controller.set_active(False, agent=None)
+                        if res == "committed":
+                            return "Plan mode off."
+                        elif res == "queued":
+                            return "Leaving plan mode (applies from the next step)."
+                        else:
+                            return "Plan mode is already inactive."
                     else:
-                        controller.set_active(True, session=session)
-                        return f"Plan mode enabled with instruction: {' '.join(args)}"
+                        res = controller.set_active(True, agent=None)
+                        return "Plan mode on. Use /plan off to leave."
 
                 cmd_svc.register(
                     name="plan",
-                    description="Switch between plan mode (planning without edits) and execute mode.",
+                    description="Enter or leave plan mode",
                     handler=execute_plan_command,
                 )
 
         # 3. Register exit_plan_mode tool
         tools = ctx.get("tools")
-        disposer = tools.register(
-            name="exit_plan_mode",
-            description=(
-                "Use only in plan mode. Present your plan for the user's review and, on approval, leave plan mode. "
-                "Send the COMPLETE plan as markdown, starting with a # heading that names it. "
-                "The user may approve (carry out the plan from your next step) or keep planning."
-            ),
-            parameters={
-                "type": "object",
-                "properties": {
-                    "plan": {
-                        "type": "string",
-                        "description": "The complete plan, as markdown, starting with a # heading that names it."
-                    }
-                },
-                "required": ["plan"]
+        parameters = {
+            "type": "object",
+            "properties": {
+                "plan": {
+                    "type": "string",
+                    "description": "The complete plan, as markdown, starting with a # heading that names it.",
+                }
             },
-            handler=controller.handle_exit_plan_mode
-        )
+            "required": ["plan"],
+        }
+
+        if hasattr(tools, "register_tool"):
+            disposer = tools.register_tool({
+                "name": EXIT_PLAN_MODE,
+                "description": EXIT_DESCRIPTION,
+                "parameters": parameters,
+                "execute": controller.handle_exit_plan_mode,
+            })
+        else:
+            disposer = tools.register(
+                name=EXIT_PLAN_MODE,
+                description=EXIT_DESCRIPTION,
+                parameters=parameters,
+                handler=controller.handle_exit_plan_mode,
+            )
 
         ctx.on("agent/prompt-assemble", controller.on_prompt_assemble)
         ctx.on("agent/pre-step", controller.on_pre_step)
@@ -310,9 +345,7 @@ class PlanModePlugin(Plugin):
                         controller.set_active(False)
                         last_user_msg["content"] += "\n\n[System Notice: Session switched back to Default Mode.]"
                     else:
-                        # /plan <custom message>
                         controller.set_active(True)
                         last_user_msg["content"] = tokens[1] + "\n\n[System Notice: Session switched to Plan Mode.]"
 
         return payload
-

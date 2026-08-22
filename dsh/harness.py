@@ -16,6 +16,7 @@ from dsh.credentials.credentials_local import CredentialsLocalPlugin
 from dsh.extensions.cli_visualizer import CliVisualizerPlugin
 from dsh.extensions.cordis_manager import CordisManagerPlugin
 from dsh.fs.fs_local import FsLocalPlugin
+from dsh.fs.tool_fs import ToolFsPlugin
 from dsh.fs.tool_fs_search import ToolFsSearchPlugin
 from dsh.fs.tool_str_replace_editor import StrReplaceEditorPlugin
 from dsh.interaction.tool_ask_user import ToolAskUserPlugin
@@ -108,6 +109,7 @@ def build_harness(
     loader.register_plugin_class("@deepseek-ai/dsh-file-reference-local", FileReferenceLocalPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-time-context", TimeContextPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-fs-local", FsLocalPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-tool-fs", ToolFsPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-tool-str-replace-editor", StrReplaceEditorPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-tool-pwsh", ToolPwshPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-tool-pwsh-persistent", ToolPwshPersistentPlugin)

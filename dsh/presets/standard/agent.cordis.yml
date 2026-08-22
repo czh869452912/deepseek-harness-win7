@@ -1,0 +1,105 @@
+# Standard Preset Composition
+- id: persona
+  name: "@deepseek-ai/dsh-persona"
+  config:
+    text: "You are a coding agent powered by the {{model}} model. Your working directory is {{cwd}}."
+
+- id: agent-instructions
+  name: "@deepseek-ai/dsh-agent-instructions"
+  config:
+    maxBytes: 65536
+
+- id: tool-bash
+  name: "@deepseek-ai/dsh-tool-pwsh-persistent"
+  disabled: !!js process.platform === 'win32'
+  config:
+    tool_name: bash
+    timeoutMs: 300000
+
+- id: tool-pwsh
+  name: "@deepseek-ai/dsh-tool-pwsh-persistent"
+  disabled: !!js process.platform !== 'win32'
+  config:
+    tool_name: pwsh
+    timeoutMs: 300000
+
+- id: file-reference-local
+  name: "@deepseek-ai/dsh-file-reference-local"
+
+- id: time-context
+  name: "@deepseek-ai/dsh-time-context"
+
+- id: fs-local
+  name: "@deepseek-ai/dsh-fs-local"
+  config:
+    cwd: "."
+
+- id: str-replace-editor
+  name: "@deepseek-ai/dsh-tool-str-replace-editor"
+  config:
+    maxOutputChars: 16000
+
+- id: tool-fs-search
+  name: "@deepseek-ai/dsh-tool-fs-search"
+  config:
+    globMaxResults: 100
+    grepMaxMatches: 250
+
+- id: tool-jobs
+  name: "@deepseek-ai/dsh-tool-jobs"
+
+- id: skill-filesystem
+  name: "@deepseek-ai/dsh-skill-filesystem"
+
+- id: tool-skill
+  name: "@deepseek-ai/dsh-tool-skill"
+
+- id: tool-goal
+  name: "@deepseek-ai/dsh-tool-goal"
+
+- id: planning
+  name: cordis:group
+  group: true
+  isolate:
+    planMode: true
+  config:
+    - id: plan-mode
+      name: "@deepseek-ai/dsh-plan-mode"
+
+- id: compaction
+  name: cordis:group
+  group: true
+  isolate:
+    compaction: true
+    toolResultPruner: true
+  config:
+    - id: compaction-basic
+      name: "@deepseek-ai/dsh-compaction-basic"
+    - id: tool-result-pruner
+      name: "@deepseek-ai/dsh-compaction-tool-result-pruner"
+      config:
+        thresholdChars: 8192
+        headChars: 4096
+        tailChars: 1024
+
+- id: delegation
+  name: cordis:group
+  group: true
+  isolate:
+    workflowEngine: true
+  config:
+    - id: tool-subagent
+      name: "@deepseek-ai/dsh-tool-subagent"
+    - id: tool-ralph
+      name: "@deepseek-ai/dsh-tool-ralph"
+
+- id: tool-ask-user
+  name: "@deepseek-ai/dsh-tool-ask-user"
+
+- id: tool-todo
+  name: "@deepseek-ai/dsh-tool-todo"
+  config:
+    allowParallelInProgress: true
+
+- id: tool-web
+  name: "@deepseek-ai/dsh-tool-web"

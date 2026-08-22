@@ -112,13 +112,19 @@ class SessionsDomainHandler:
         else:
             target_cwd = os.getcwd().replace("\\", "/")
         # validate preset exists (1:1)
-        if self.ctx and hasattr(self.ctx, "get"):
-            # check via agentPresets scan
+        if self.ctx and hasattr(self.ctx, "get") and preset:
             from dsh.host.apiproxy.api.agent_presets import AgentPresetsDomainHandler
             tmp = AgentPresetsDomainHandler(self.ctx)
-            presets = tmp._scan_presets()
-            if preset not in [p["id"] for p in presets]:
-                raise ValueError("agent-preset-not-found: unknown preset '{}'".format(preset))
+            try:
+                svc = tmp._get_service()
+                preset_list = await svc.list()
+                preset_ids = [p.id for p in preset_list]
+                if preset_ids and preset not in preset_ids:
+                    raise ValueError("agent-preset-not-found: unknown preset '{}'".format(preset))
+            except ValueError:
+                raise
+            except Exception:
+                pass
         if sessions_svc:
             try:
                 s = sessions_svc.create(sid)

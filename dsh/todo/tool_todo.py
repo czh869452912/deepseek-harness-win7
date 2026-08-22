@@ -3,12 +3,13 @@ Task list tracking tool (`@deepseek-ai/dsh-tool-todo`).
 Replaces wholesale on each call and appends `todo/write` event to session.
 """
 
-from typing import Any, Dict, List, Optional
+import json
+from typing import Any, Dict, List, Optional, Set
 from dsh.cordis.plugin import Plugin
 from dsh.core.session import Session, SessionStore
 
 
-VALID_STATUSES = {"pending", "in_progress", "completed"}
+VALID_STATUSES = ("pending", "in_progress", "completed")
 
 DESCRIPTION_HEAD = (
     "Record and update a structured task list for the current work. Send the ENTIRE "
@@ -53,7 +54,8 @@ class ToolTodoPlugin(Plugin):
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
-        self.allow_parallel_in_progress = bool(self.config.get("allowParallelInProgress", True))
+        cfg = config or {}
+        self.allow_parallel_in_progress = bool(cfg.get("allowParallelInProgress", True))
 
     def apply(self, ctx: Any) -> None:
         tools = ctx.get("tools")
@@ -81,56 +83,84 @@ class ToolTodoPlugin(Plugin):
                     view=lambda s: s,
                 )
 
-        async def exec_todo_write(todos: List[Dict[str, str]]) -> str:
-            if not isinstance(todos, list):
-                return "Error: invalid todos: payload must be a list"
+        parameters = {
+            "type": "object",
+            "properties": {
+                "todos": {
+                    "type": "array",
+                    "description": "The COMPLETE task list, replacing any previous list.",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "properties": {
+                            "content": {
+                                "type": "string",
+                                "description": "What the task is — a short imperative line.",
+                            },
+                            "status": {
+                                "type": "string",
+                                "enum": ["pending", "in_progress", "completed"],
+                                "description": "pending (not started) | in_progress (now) | completed (done).",
+                            },
+                        },
+                        "required": ["content", "status"],
+                    },
+                }
+            },
+            "required": ["todos"],
+        }
 
-            seen_contents = set()
-            in_progress_count = 0
+        async def exec_todo_write(todos: List[Dict[str, str]] = None, **kwargs) -> Any:
+            raw_todos = todos if todos is not None else kwargs.get("todos", [])
+            if not isinstance(raw_todos, list):
+                raise ValueError("invalid todos: payload must be a list")
+
+            seen_contents: Set[str] = set()
+            active_count = 0
             pending_count = 0
             completed_count = 0
             canonical_todos: List[Dict[str, str]] = []
 
-            for item in todos:
+            for item in raw_todos:
                 if not isinstance(item, dict):
-                    return "Error: invalid todo: each item must be an object"
-                content = item.get("content", "").strip()
-                status = item.get("status", "pending").lower()
+                    raise ValueError("invalid todo: each item must be an object")
+                content = str(item.get("content", "")).strip()
+                status = str(item.get("status", "pending")).lower()
 
                 if not content:
-                    return "Error: invalid todo: `content` must be a non-empty string"
+                    raise ValueError("invalid todo: `content` must be a non-empty string")
                 if content in seen_contents:
-                    return f'Error: invalid todos: duplicate content "{content}"'
+                    raise ValueError(f"invalid todos: duplicate content {json.dumps(content)}")
                 seen_contents.add(content)
 
                 if status not in VALID_STATUSES:
-                    return f'Error: invalid todo status "{status}": must be pending, in_progress, or completed'
+                    raise ValueError(f'invalid todo status "{status}": must be pending, in_progress, or completed')
 
                 if status == "pending":
                     pending_count += 1
                 elif status == "in_progress":
-                    in_progress_count += 1
+                    active_count += 1
                 elif status == "completed":
                     completed_count += 1
 
                 canonical_todos.append({"content": content, "status": status})
 
-            if not self.allow_parallel_in_progress and in_progress_count > 1:
-                return f"Error: invalid todos: at most one task may be in_progress (got {in_progress_count})"
+            if not self.allow_parallel_in_progress and active_count > 1:
+                raise ValueError(f"invalid todos: at most one task may be in_progress (got {active_count})")
 
             # Append todo/write event to session
             target_session = None
-            agents_svc = ctx.get("agents")
+            agents_svc = ctx.get("agents") if ctx.has("agents") else None
             if agents_svc and hasattr(agents_svc, "current_initiator"):
                 initiator = agents_svc.current_initiator()
                 if initiator and hasattr(initiator, "session"):
                     target_session = initiator.session
 
-            if not target_session:
+            if not target_session and ctx.has("sessions"):
                 sessions_svc = ctx.get("sessions")
                 if isinstance(sessions_svc, SessionStore):
                     target_session = sessions_svc.get("default-session")
-                    if not target_session and sessions_svc._sessions:
+                    if not target_session and getattr(sessions_svc, "_sessions", None):
                         target_session = next(iter(sessions_svc._sessions.values()))
                 elif isinstance(sessions_svc, Session):
                     target_session = sessions_svc
@@ -138,35 +168,22 @@ class ToolTodoPlugin(Plugin):
             if target_session:
                 target_session.append("todo/write", {"todos": canonical_todos}, ignorable=True)
 
-            return f"Updated todo list: {pending_count} pending, {in_progress_count} in progress, {completed_count} completed."
+            return f"Updated todo list: {pending_count} pending, {active_count} in progress, {completed_count} completed."
 
-        disposer = tools.register_tool({
-            "name": "todo_write",
-            "description": compose_todo_description(self.allow_parallel_in_progress),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "todos": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "content": {"type": "string", "description": "The task to be done."},
-                                "status": {
-                                    "type": "string",
-                                    "enum": ["pending", "in_progress", "completed"],
-                                    "description": "The current status of the task.",
-                                },
-                            },
-                            "required": ["content", "status"],
-                        },
-                        "description": "The whole task list to set.",
-                    }
-                },
-                "required": ["todos"],
-            },
-            "execute": exec_todo_write,
-        })
+        if hasattr(tools, "register_tool"):
+            disposer = tools.register_tool({
+                "name": "todo_write",
+                "description": compose_todo_description(self.allow_parallel_in_progress),
+                "parameters": parameters,
+                "execute": exec_todo_write,
+            })
+        else:
+            disposer = tools.register(
+                name="todo_write",
+                description=compose_todo_description(self.allow_parallel_in_progress),
+                parameters=parameters,
+                handler=exec_todo_write,
+            )
 
-        ctx.effect(disposer)
-
+        if hasattr(ctx, "effect"):
+            ctx.effect(disposer)

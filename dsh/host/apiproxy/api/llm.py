@@ -78,6 +78,9 @@ async def build_model_catalog(ctx: Any) -> Dict[str, Any]:
                 desc = (resolved.get("description") if isinstance(resolved, dict) else None) or m.get("description")
                 if desc and isinstance(desc, str):
                     entry["description"] = desc
+                mods = (resolved.get("inputModalities") if isinstance(resolved, dict) else None) or m.get("inputModalities")
+                if mods and isinstance(mods, (list, tuple)):
+                    entry["inputModalities"] = list(mods)
                 if reasoning:
                     entry["reasoning"] = reasoning
 
@@ -135,6 +138,26 @@ class LLMDomainHandler:
                     "settingsPath": [],
                     "active": True,
                 })
+
+        # Scan custom providers defined in settings
+        settings_svc = self.ctx.get("settings") if hasattr(self.ctx, "get") else None
+        if settings_svc:
+            for ns in ("llm", "llm-deepseek", "llm-openai"):
+                p_dict = settings_svc.get_setting(ns, "providers") if hasattr(settings_svc, "get_setting") else None
+                if isinstance(p_dict, dict):
+                    for p_key, p_cfg in p_dict.items():
+                        if p_key not in declared and not any(v["provider"] == p_key for v in views):
+                            display_name = p_key
+                            if isinstance(p_cfg, dict):
+                                display_name = p_cfg.get("displayName") or p_cfg.get("name") or p_key
+                            views.append({
+                                "provider": p_key,
+                                "displayName": display_name,
+                                "settingsNs": ns,
+                                "settingsPath": ["providers", p_key],
+                                "active": p_key in active,
+                                "declared": True,
+                            })
 
         return {"providers": views}
 

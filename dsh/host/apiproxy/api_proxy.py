@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import time
+import uuid
 from typing import Any, Dict, List, Optional, Set
 import urllib.parse
 
@@ -32,24 +33,23 @@ from dsh.host.apiproxy.api import (
     WorkspaceDomainHandler,
     format_sse_frame,
 )
-from dsh.host.apiproxy.fetch import normalize_rpc_method
+from dsh.host.apiproxy.fetch.handler import normalize_rpc_method, method_for
 from dsh.host.webserver.webserver import HttpResponseWriter, WebServerService
 
-# 1:1 zod validation helpers (mirrors TS UNARY_VALUE_SCHEMAS safeParse per method)
-def _zod_issues_for(rpc_method: str, payload: Any):
+
+def _zod_issues_for(rpc_method: str, payload: Any) -> List[Dict[str, Any]]:
+    """1:1 Zod schema validation issue generator per method."""
     try:
         m = rpc_method.replace("/", ".")
-        # llm
-        if m in ("llm.providers",) :
+        if m in ("llm.providers",):
             from dsh.host.apiproxy.api.llm_schema import validate_by_method as _v
             return _v("providers", payload)
-        if m in ("llm.models",):
+        if m in ("models", "llm.models"):
             from dsh.host.apiproxy.api.llm_schema import validate_by_method as _v
             return _v("models", payload)
         if m in ("llm.discoverModels",):
             from dsh.host.apiproxy.api.llm_schema import validate_llm_discover_payload as _v2
             return _v2(payload)
-        # settings
         if m in ("settings.describe", "settings.openDocument"):
             return []
         if m in ("settings.update",):
@@ -61,22 +61,22 @@ def _zod_issues_for(rpc_method: str, payload: Any):
         if m in ("settings.mutate",):
             from dsh.host.apiproxy.api.settings_schema import validate_by_method as _v
             return _v("mutate", payload)
-        # sessions
         if m.startswith("session."):
-            sub = m.split(".",1)[1]
-            # map session.list -> list etc
-            mapping = {"list":"list","search":"search","create":"create","rename":"rename","fork":"fork","history":"history","models":"models","selectModel":"selectModel","prompt":"prompt","attachment":"attachment","updateQueue":"updateQueue","cancel":"cancel"}
+            sub = m.split(".", 1)[1]
+            mapping = {
+                "list": "list", "search": "search", "create": "create", "rename": "rename",
+                "fork": "fork", "history": "history", "models": "models", "selectModel": "selectModel",
+                "prompt": "prompt", "attachment": "attachment", "updateQueue": "updateQueue", "cancel": "cancel"
+            }
             py_m = mapping.get(sub, sub)
             from dsh.host.apiproxy.api.sessions_schema import validate_by_method as _v
             return _v(py_m, payload)
-        # workspace
         if m.startswith("workspace."):
-            sub = m.split(".",1)[1]
+            sub = m.split(".", 1)[1]
             from dsh.host.apiproxy.api.workspace_schema import validate_by_method as _v
             return _v(sub, payload)
-        # agentPreset
         if m.startswith("agentPreset."):
-            sub = m.split(".",1)[1]
+            sub = m.split(".", 1)[1]
             from dsh.host.apiproxy.api.agent_presets_schema import validate_by_method as _v
             return _v(sub, payload)
     except Exception:
@@ -102,7 +102,7 @@ class ApiProxyPlugin(Plugin):
         self._mux_clients: List[asyncio.Queue] = []
         self._host_clients: List[asyncio.Queue] = []
         self._active_sessions: Dict[str, Any] = {}
-        self._pending_server_requests: Dict[str, asyncio.Future] = {}
+        self._pending_server_requests: Dict[str, Any] = {}
         self._workspaces: Dict[str, Dict[str, Any]] = {}
         self._archived_sessions: Set[str] = set()
         self._workspace_order: List[str] = []
@@ -142,6 +142,50 @@ class ApiProxyPlugin(Plugin):
         self.subagents_handler = SubagentsDomainHandler(self.ctx)
         self.workspace_handler = WorkspaceDomainHandler(self.ctx, self._workspaces, self._workspace_order, self._archived_sessions, self._active_sessions, self._broadcast_host)
 
+    def _create_user_question_provider(self) -> Any:
+        plugin_self = self
+
+        class ApiProxyUserQuestionProvider:
+            async def ask(self, request: Dict[str, Any]) -> Dict[str, Any]:
+                questions = request.get("questions", [])
+                agent = request.get("agent")
+                signal = request.get("signal")
+
+                sid = "default-session"
+                if agent:
+                    sid = getattr(agent, "id", getattr(getattr(agent, "session", None), "id", "default-session"))
+
+                rpc_id = f"q-{uuid.uuid4().hex}"
+                try:
+                    loop = asyncio.get_running_loop()
+                except RuntimeError:
+                    loop = asyncio.get_event_loop()
+                fut = loop.create_future()
+
+                pending = {
+                    "rpcId": rpc_id,
+                    "sessionId": sid,
+                    "questions": questions,
+                    "future": fut,
+                    "signal": signal,
+                    "type": "question",
+                }
+                plugin_self._pending_server_requests[rpc_id] = pending
+
+                await plugin_self._broadcast_mux({
+                    "type": "question/requested",
+                    "sessionId": sid,
+                    "questions": questions,
+                }, rpc_id=rpc_id)
+
+                try:
+                    res = await fut
+                    return res
+                finally:
+                    plugin_self._pending_server_requests.pop(rpc_id, None)
+
+        return ApiProxyUserQuestionProvider()
+
     def apply(self, ctx: Any) -> None:
         ctx.set_service("api_proxy", self)
         ctx.set_service("apiProxy", self)
@@ -152,6 +196,16 @@ class ApiProxyPlugin(Plugin):
             return
 
         self._init_domain_handlers()
+
+        user_questions = ctx.get("userQuestions") or ctx.get("user_questions")
+        if not user_questions:
+            from dsh.interaction.user_questions import UserQuestionService
+            user_questions = UserQuestionService(ctx)
+            ctx.set_service("userQuestions", user_questions)
+            ctx.set_service("user_questions", user_questions)
+
+        if hasattr(user_questions, "register_provider"):
+            user_questions.register_provider(self._create_user_question_provider())
 
         sessions_svc: SessionStore = ctx.get("sessions")
         cwd = os.path.normpath(os.getcwd()).replace("\\", "/")
@@ -183,6 +237,7 @@ class ApiProxyPlugin(Plugin):
         ctx.on("session/append", self._on_session_event)
         ctx.on("session/chunk", self._on_session_chunk)
         ctx.on("assistant/chunk", self._on_assistant_chunk)
+        ctx.on("turn/stream-delta", self._on_stream_delta)
         ctx.on("agent/status", self._on_agent_status)
         ctx.on("goal/changed", self._on_goal_changed)
         ctx.on("goal/change", self._on_goal_changed)
@@ -222,7 +277,12 @@ class ApiProxyPlugin(Plugin):
             chunk = args[1] if len(args) >= 2 else (args[0] if args else {})
             sid = getattr(session_obj, "id", getattr(session_obj, "session_id", "default-session")) if session_obj else "default-session"
             if isinstance(chunk, dict):
-                ev = chunk if ("type" in chunk and "data" in chunk) else {"type": "assistant/chunk", "data": chunk}
+                ev = chunk if ("type" in chunk and "data" in chunk) else {
+                    "type": "assistant/chunk",
+                    "seq": chunk.get("seq", int(time.time() * 1000)),
+                    "time": chunk.get("time", int(time.time() * 1000)),
+                    "data": chunk,
+                }
                 asyncio.create_task(self._broadcast_mux({
                     "type": "session/event",
                     "sessionId": str(sid),
@@ -236,11 +296,35 @@ class ApiProxyPlugin(Plugin):
             chunk = args[0] if args else {}
             if isinstance(chunk, dict):
                 sid = chunk.get("sessionId") or chunk.get("session_id") or "default-session"
-                ev = chunk if ("type" in chunk and "data" in chunk) else {"type": "assistant/chunk", "data": chunk}
+                ev = chunk if ("type" in chunk and "data" in chunk) else {
+                    "type": "assistant/chunk",
+                    "seq": chunk.get("seq", int(time.time() * 1000)),
+                    "time": chunk.get("time", int(time.time() * 1000)),
+                    "data": chunk,
+                }
                 asyncio.create_task(self._broadcast_mux({
                     "type": "session/event",
                     "sessionId": str(sid),
                     "event": ev,
+                }))
+        except Exception:
+            pass
+
+    def _on_stream_delta(self, *args: Any, **kwargs: Any) -> None:
+        try:
+            payload = args[0] if args else {}
+            if isinstance(payload, dict):
+                sid = payload.get("sessionId") or payload.get("session_id") or "default-session"
+                delta_ev = {
+                    "type": "turn/stream-delta",
+                    "seq": payload.get("seq", int(time.time() * 1000)),
+                    "time": payload.get("time", int(time.time() * 1000)),
+                    "data": payload,
+                }
+                asyncio.create_task(self._broadcast_mux({
+                    "type": "session/event",
+                    "sessionId": str(sid),
+                    "event": delta_ev,
                 }))
         except Exception:
             pass
@@ -324,10 +408,8 @@ class ApiProxyPlugin(Plugin):
 
     def _on_inbox_spliced(self, *args: Any, **kwargs: Any) -> None:
         try:
-            # Build session/queue snapshot from agent inbox
             payload = args[0] if args else {}
             agent = payload.get("agent") if isinstance(payload, dict) else None
-            # Fallback: try to find agent from current initiator
             if not agent and len(args) >= 1 and hasattr(args[0], "inbox"):
                 agent = args[0]
             sid = getattr(getattr(agent, "session", None), "id", None) if agent else None
@@ -393,7 +475,10 @@ class ApiProxyPlugin(Plugin):
             appr = args[0] if args else {}
             rpc_id = appr.get("approvalId") or appr.get("rpcId") or f"appr-{time.time()}"
             sid = appr.get("sessionId", "default-session")
-            loop = asyncio.get_event_loop()
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = asyncio.get_event_loop()
             fut = loop.create_future()
             self._pending_server_requests[rpc_id] = {
                 "future": fut,
@@ -495,6 +580,21 @@ class ApiProxyPlugin(Plugin):
                     }
                 }, 400)
 
+        # GET shortcuts for /api/settings, /api/models, /api/sessions
+        if method == "GET":
+            if path in ("/api/settings", "/api/settings/describe", "/api/settings.describe"):
+                res = await self.settings_handler.describe_settings(req_payload)
+                await send_json(res)
+                return
+            if path in ("/api/models", "/api/llm/models", "/api/llm.models"):
+                res = await self.llm_handler.list_models(req_payload)
+                await send_json(res)
+                return
+            if path in ("/api/sessions", "/api/session/list", "/api/session.list"):
+                res = await self.sessions_handler.list_sessions(req_payload)
+                await send_json(res)
+                return
+
         # /api/respond
         if path == "/api/respond" and method == "POST":
             res = await self.approvals_handler.handle_respond(body_json)
@@ -513,9 +613,26 @@ class ApiProxyPlugin(Plugin):
             await response.finish()
             return
 
-        rpc_method = normalize_rpc_method(path)
+        # Path mapping for /api/agent/... aliases
+        if path.startswith("/api/agent/") or path.startswith("/api/agent."):
+            sub = path[len("/api/agent"):].lstrip("./")
+            if sub in ("list", "presets", "agentPreset.list"):
+                rpc_method = "agentPreset.list"
+            elif sub in ("select", "agentPreset.select"):
+                rpc_method = "agentPreset.select"
+            elif sub in ("read", "agentPreset.read"):
+                rpc_method = "agentPreset.read"
+            elif sub in ("copy", "agentPreset.copy"):
+                rpc_method = "agentPreset.copy"
+            elif sub in ("openDocument", "agentPreset.openDocument"):
+                rpc_method = "agentPreset.openDocument"
+            elif sub in ("remove", "agentPreset.remove"):
+                rpc_method = "agentPreset.remove"
+            else:
+                rpc_method = normalize_rpc_method(path)
+        else:
+            rpc_method = normalize_rpc_method(path)
 
-        # 1:1 envelope + per-method zod validation (safeParse) before dispatch
         if rpc_method:
             issues = _zod_issues_for(rpc_method, req_payload)
             if issues:
@@ -644,7 +761,7 @@ class ApiProxyPlugin(Plugin):
                 await send_rpc_success(res)
                 return
 
-            if rpc_method in ("llm.models", "llm/models", "models/discover"):
+            if rpc_method in ("models", "llm.models", "llm/models", "models/discover"):
                 res = await self.llm_handler.list_models(req_payload)
                 await send_rpc_success(res)
                 return
@@ -818,15 +935,12 @@ class ApiProxyPlugin(Plugin):
                 await send_rpc_success(res)
                 return
 
-
         except ValueError as ve:
             msg = str(ve)
-            # 1:1 extract structured error code prefix "code: details" or "code "
             code = "bad-request"
             details = {}
             if ":" in msg:
                 prefix = msg.split(":", 1)[0].strip()
-                # known codes from reference api/rpc.schema.ts
                 known = {
                     "settings-conflict", "settings-rejected", "agent-preset-not-found", "agent-preset-invalid",
                     "agent-preset-locked", "agent-preset-conflict", "agent-preset-read-only",
@@ -837,15 +951,12 @@ class ApiProxyPlugin(Plugin):
                 }
                 if prefix in known:
                     code = prefix
-                    # parse details for settings-conflict
                     if prefix == "settings-conflict":
-                        # format: settings-conflict: ns 'x' expected 1 actual 2
                         import re
                         m = re.search(r"ns '([^']+)' expected (\S+) actual (\S+)", msg)
                         if m:
                             details = {"ns": m.group(1), "expected": m.group(2), "actual": m.group(3)}
                 else:
-                    # fallback: first token before colon as code
                     code = prefix
             await send_rpc_error(code, msg, details if details else None)
             return
@@ -877,7 +988,6 @@ class ApiProxyPlugin(Plugin):
                         "lastSeq": len(s.events) - 1,
                     }
                     await response.write_chunk(format_sse_frame(sub_frame))
-                    # 1:1 also seed session/queue and session/jobs baselines (empty if no handle)
                     try:
                         handle = self._active_sessions.get(sid)
                         if handle and hasattr(handle, "agent") and hasattr(handle.agent, "inbox"):
@@ -890,33 +1000,30 @@ class ApiProxyPlugin(Plugin):
                             await response.write_chunk(format_sse_frame({"type": "session/queue", "sessionId": sid, "items": items}))
                         else:
                             await response.write_chunk(format_sse_frame({"type": "session/queue", "sessionId": sid, "items": []}))
-                        # jobs baseline
                         await response.write_chunk(format_sse_frame({"type": "session/jobs", "sessionId": sid, "jobs": []}))
                     except Exception:
                         pass
 
-            if self.questions_handler and hasattr(self.questions_handler, "_pending"):
-                for q_id, q_item in self.questions_handler._pending.items():
-                    q_data = q_item.get("questions") if isinstance(q_item, dict) else []
-                    sid = q_item.get("sessionId", "default-session") if isinstance(q_item, dict) else "default-session"
-                    q_frame = {
-                        "type": "question/requested",
-                        "sessionId": sid,
-                        "questions": q_data,
-                    }
-                    await response.write_chunk(format_sse_frame(q_frame, rpc_id=q_id))
-
-            for rpc_id, pending_item in self._pending_server_requests.items():
-                if isinstance(pending_item, dict) and pending_item.get("type") == "approval":
+            for req_id, pending_item in list(self._pending_server_requests.items()):
+                if isinstance(pending_item, dict):
                     sid = pending_item.get("sessionId", "default-session")
-                    tool_name = pending_item.get("toolName", "tool")
-                    appr_frame = {
-                        "type": "approval/requested",
-                        "sessionId": sid,
-                        "approvalId": rpc_id,
-                        "toolName": tool_name,
-                    }
-                    await response.write_chunk(format_sse_frame(appr_frame, rpc_id=rpc_id))
+                    p_type = pending_item.get("type")
+                    if p_type == "question":
+                        q_frame = {
+                            "type": "question/requested",
+                            "sessionId": sid,
+                            "questions": pending_item.get("questions", []),
+                        }
+                        await response.write_chunk(format_sse_frame(q_frame, rpc_id=req_id))
+                    elif p_type == "approval":
+                        tool_name = pending_item.get("toolName", "tool")
+                        appr_frame = {
+                            "type": "approval/requested",
+                            "sessionId": sid,
+                            "approvalId": req_id,
+                            "toolName": tool_name,
+                        }
+                        await response.write_chunk(format_sse_frame(appr_frame, rpc_id=req_id))
 
             while True:
                 data = await queue.get()

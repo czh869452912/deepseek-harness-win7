@@ -9,14 +9,15 @@ import sys
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-def resolve_dsh_home(custom_home: Optional[str] = None) -> str:
+def resolve_dsh_home(custom_home: Optional[str] = None, env: Optional[Dict[str, str]] = None) -> str:
     """
     Resolve the Harness home directory ($DSH_HOME or ~/.dsh).
     """
-    if custom_home and custom_home.strip():
+    if custom_home and isinstance(custom_home, str) and custom_home.strip():
         return os.path.abspath(custom_home)
-    env_home = os.environ.get("DSH_HOME")
-    if env_home and env_home.strip():
+    env_dict = env if isinstance(env, dict) else os.environ
+    env_home = env_dict.get("DSH_HOME")
+    if env_home and isinstance(env_home, str) and env_home.strip():
         return os.path.abspath(env_home)
     return os.path.abspath(os.path.join(os.path.expanduser("~"), ".dsh"))
 

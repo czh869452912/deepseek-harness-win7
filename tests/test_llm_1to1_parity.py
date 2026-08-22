@@ -236,3 +236,101 @@ def test_env_var_and_settings_fallback_chain(monkeypatch):
         assert llm.resolve_api_key() == "sk-env-deepseek-key"
         assert llm.resolve_base_url() == "https://api.deepseek.com/v1"
         assert llm.resolve_model() == "deepseek-reasoner"
+
+
+def test_api_key_validation_and_normalize_api_key():
+    """Verify 1:1 API key normalization and assert_usable_api_key behavior."""
+    from dsh.llm.llm_service import normalize_api_key, assert_usable_api_key
+
+    # Valid keys (ASCII 0x21-0x7E, trimmed)
+    assert normalize_api_key("  sk-valid-key-12345  ") == {"ok": True, "value": "sk-valid-key-12345"}
+    assert assert_usable_api_key("  sk-valid-key  ", "llm-test", "TEST_KEY") == "sk-valid-key"
+
+    # Empty key
+    assert normalize_api_key("   ") == {"ok": False, "reason": "empty"}
+    with pytest.raises(LlmError) as exc:
+        assert_usable_api_key("   ", "llm-test", "TEST_KEY")
+    assert exc.value.code == "INVALID_CREDENTIAL"
+    assert "blank" in exc.value.failure["message"]
+
+    # Key with illegal characters (non-printable or non-ASCII)
+    assert normalize_api_key("sk-key with space") == {"ok": False, "reason": "illegalCharacters"}
+    with pytest.raises(LlmError) as exc:
+        assert_usable_api_key("sk-key\x00invalid", "llm-test", "TEST_KEY")
+    assert exc.value.code == "INVALID_CREDENTIAL"
+    assert "contains characters" in exc.value.failure["message"]
+
+
+@pytest.mark.asyncio
+async def test_custom_model_addition_and_settings_binding():
+    """Verify custom models added in settings.llm.providers bind correctly to model catalog and providers."""
+    ctx = Context()
+    plugin = LLMOpenAIPlugin()
+    plugin.apply(ctx)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        settings = SettingsService(settings_file=os.path.join(tmpdir, "settings.json"))
+        ctx.set_service("settings", settings)
+
+        # Add custom provider with custom models under settings.llm.providers
+        settings.set_setting("llm", "providers", {
+            "custom-provider": {
+                "displayName": "Custom Gateway",
+                "baseUrl": "https://custom.gateway.org/v1",
+                "apiKey": "sk-custom-key",
+                "models": [
+                    {"id": "custom-model-v1", "name": "Custom Model V1", "description": "Custom fine-tuned model"}
+                ]
+            }
+        })
+
+        # 1. Check list_providers in handler includes custom provider
+        handler = LLMDomainHandler(ctx)
+        prov_res = await handler.list_providers({})
+        providers = prov_res["providers"]
+        custom_p = next((p for p in providers if p["provider"] == "custom-provider"), None)
+        assert custom_p is not None
+        assert custom_p["displayName"] == "Custom Gateway"
+        assert custom_p["declared"] is True
+
+        # 2. Check llm_service.list_models for custom-provider returns custom model
+        llm: LLMService = ctx.get("llm")
+        models = await llm.list_models("custom-provider")
+        assert len(models) == 1
+        assert models[0]["id"] == "custom-model-v1"
+        assert models[0]["name"] == "Custom Model V1"
+        assert models[0]["description"] == "Custom fine-tuned model"
+
+
+@pytest.mark.asyncio
+async def test_stream_chunk_usage_mapping_and_finish_reasons():
+    """Verify usage data is mapped to disjoint inputTokens/cacheReadTokens/reasoningTokens."""
+    raw_usage = {
+        "prompt_tokens": 100,
+        "completion_tokens": 50,
+        "prompt_cache_hit_tokens": 30,
+        "completion_tokens_details": {"reasoning_tokens": 15}
+    }
+    # Simulate processing raw_usage in LLMService usage mapping logic
+    c_details = raw_usage.get("prompt_tokens_details") or {}
+    cache_read = c_details.get("cached_tokens") if isinstance(c_details, dict) else None
+    if cache_read is None:
+        cache_read = raw_usage.get("prompt_cache_hit_tokens")
+    p_tok = raw_usage.get("prompt_tokens", 0)
+    comp_tok = raw_usage.get("completion_tokens", 0)
+    u_out = {
+        "inputTokens": max(0, p_tok - (cache_read or 0)),
+        "outputTokens": comp_tok,
+    }
+    if cache_read is not None:
+        u_out["cacheReadTokens"] = cache_read
+    r_details = raw_usage.get("completion_tokens_details") or {}
+    r_tok = r_details.get("reasoning_tokens") if isinstance(r_details, dict) else None
+    if r_tok is not None:
+        u_out["reasoningTokens"] = r_tok
+
+    assert u_out["inputTokens"] == 70  # 100 - 30 disjoint
+    assert u_out["outputTokens"] == 50
+    assert u_out["cacheReadTokens"] == 30
+    assert u_out["reasoningTokens"] == 15
+

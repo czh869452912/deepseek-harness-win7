@@ -30,12 +30,13 @@ class CredentialsDomainHandler:
             source = None
             writable = True
             # Try credentials service first
-            if credentials_svc and hasattr(credentials_svc, "resolve"):
+            if credentials_svc and hasattr(credentials_svc, "describe"):
                 try:
-                    val = credentials_svc.resolve(ref)
-                    if val:
+                    desc = credentials_svc.describe(ref)
+                    if desc and desc.get("configured"):
                         configured = True
-                        source = "file"
+                        source = desc.get("source")
+                        writable = desc.get("writable", True)
                 except Exception:
                     pass
             # Fallback to env / llm static

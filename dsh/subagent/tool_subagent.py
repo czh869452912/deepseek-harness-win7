@@ -1,13 +1,17 @@
+"""
+Plugin `@deepseek-ai/dsh-tool-subagent` & `@deepseek-ai/dsh-tool-subagent-control`:
+Subagent delegation tools (`subagent`, `subagent_fork`, `send_message`, `interrupt_agent`, `list_agents`).
+"""
+
 import asyncio
 from typing import Any, Dict, List, Optional
 from dsh.cordis.plugin import Plugin
-from dsh.subagent.subagent_service import SubagentRegistry
+from dsh.subagent.subagent_service import SubagentRegistry, SubagentResult
 
 
 class ToolSubagentPlugin(Plugin):
     """
-    Plugin `@deepseek-ai/dsh-tool-subagent` & `@deepseek-ai/dsh-tool-subagent-control`:
-    Subagent delegation tools (`subagent`, `subagent_fork`, `send_message`, `interrupt_agent`, `list_agents`).
+    Plugin `@deepseek-ai/dsh-tool-subagent`: Subagent delegation tools.
     """
 
     id = "tool-subagent"
@@ -21,7 +25,7 @@ class ToolSubagentPlugin(Plugin):
         self.enable_run_in_background: bool = cfg.get("enableRunInBackground", True)
 
     def apply(self, ctx: Any) -> None:
-        tools = ctx.get("tools")
+        tools = ctx.get("tools") if ctx.has("tools") else None
         if not tools:
             return
 
@@ -37,7 +41,6 @@ class ToolSubagentPlugin(Plugin):
             run_in_background: Optional[bool] = None,
         ) -> str:
             actual_task = prompt or task or description or "General task"
-            actual_desc = description or actual_task[:30]
 
             is_bg = run_in_background if run_in_background is not None else (self.background_mode == "continuable")
 
@@ -60,7 +63,6 @@ class ToolSubagentPlugin(Plugin):
             run_in_background: Optional[bool] = None,
         ) -> str:
             actual_task = prompt or task or description or "Forked task"
-            actual_desc = description or actual_task[:30]
 
             is_bg = run_in_background if run_in_background is not None else (self.background_mode == "continuable")
 
@@ -114,14 +116,14 @@ class ToolSubagentPlugin(Plugin):
 
         disposer1 = tools.register_tool({
             "name": "subagent",
-            "description": "Delegate a self-contained task to a subagent (a separate agent that works in its own context).",
+            "description": "Delegate a self-contained task to a subagent.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "description": {"type": "string", "description": "A short (3-5 word) description of the delegated task, for display."},
-                    "prompt": {"type": "string", "description": "The complete, self-contained task for the subagent."},
+                    "description": {"type": "string", "description": "Short description."},
+                    "prompt": {"type": "string", "description": "Self-contained task prompt."},
                     "task": {"type": "string", "description": "Legacy alias for prompt."},
-                    "run_in_background": {"type": "boolean", "description": "Whether to run as a background task."},
+                    "run_in_background": {"type": "boolean", "description": "Run in background."},
                 },
             },
             "execute": exec_subagent,
@@ -129,14 +131,14 @@ class ToolSubagentPlugin(Plugin):
 
         disposer2 = tools.register_tool({
             "name": "subagent_fork",
-            "description": "Delegate a task to a subagent that inherits this conversation (seeded with all completed turns so far).",
+            "description": "Delegate a task to a subagent that inherits this conversation.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "description": {"type": "string", "description": "A short (3-5 word) description of the delegated task, for display."},
-                    "prompt": {"type": "string", "description": "The task for the subagent with inherited completed turns."},
+                    "description": {"type": "string", "description": "Short description."},
+                    "prompt": {"type": "string", "description": "Task prompt with inherited context."},
                     "task": {"type": "string", "description": "Legacy alias for prompt."},
-                    "run_in_background": {"type": "boolean", "description": "Whether to run in background."},
+                    "run_in_background": {"type": "boolean", "description": "Run in background."},
                 },
             },
             "execute": exec_subagent_fork,
@@ -144,13 +146,13 @@ class ToolSubagentPlugin(Plugin):
 
         disposer3 = tools.register_tool({
             "name": "send_message",
-            "description": "Send a message to a background subagent by its subagent id, continuing the same conversation.",
+            "description": "Send a message to a background subagent.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "subagent_id": {"type": "string", "description": "The subagent id returned when the background subagent was started."},
+                    "subagent_id": {"type": "string", "description": "Subagent id."},
                     "id": {"type": "string", "description": "Legacy alias for subagent_id."},
-                    "message": {"type": "string", "description": "The message to deliver to the subagent."},
+                    "message": {"type": "string", "description": "Message content."},
                 },
                 "required": ["message"],
             },
@@ -159,11 +161,11 @@ class ToolSubagentPlugin(Plugin):
 
         disposer4 = tools.register_tool({
             "name": "interrupt_agent",
-            "description": "Request cancellation of a background agent's current turn by its agent id.",
+            "description": "Request cancellation of a background agent's turn.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "agent_id": {"type": "string", "description": "The agent id of the running agent to interrupt."},
+                    "agent_id": {"type": "string", "description": "Running agent id."},
                 },
                 "required": ["agent_id"],
             },
@@ -172,17 +174,16 @@ class ToolSubagentPlugin(Plugin):
 
         disposer5 = tools.register_tool({
             "name": "list_agents",
-            "description": "List all child subagents and their current execution status.",
+            "description": "List all child subagents and their status.",
             "parameters": {"type": "object", "properties": {}},
             "execute": exec_list_agents,
         })
 
         def cleanup():
-            disposer1()
-            disposer2()
-            disposer3()
-            disposer4()
-            disposer5()
+            if callable(disposer1): disposer1()
+            if callable(disposer2): disposer2()
+            if callable(disposer3): disposer3()
+            if callable(disposer4): disposer4()
+            if callable(disposer5): disposer5()
 
         ctx.effect(cleanup)
-

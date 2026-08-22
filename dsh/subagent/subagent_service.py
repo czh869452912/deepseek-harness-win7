@@ -1,9 +1,38 @@
+"""
+Subagent delegation service (`ctx.subagents`).
+"""
+
 import asyncio
 import copy
 import time
 import uuid
-from typing import Any, Dict, List, Optional
-from dsh.cordis.context import Context
+from typing import Any, Dict, List, Optional, Union
+from dsh.cordis.service import Service
+
+
+class SubagentResult:
+    def __init__(
+        self,
+        output: Optional[List[Dict[str, Any]]] = None,
+        structured: Optional[Any] = None,
+        diagnostic: Optional[str] = None,
+        stop_reason: str = "completed",
+    ):
+        self.output = output or []
+        self.structured = structured
+        self.diagnostic = diagnostic
+        self.stop_reason = stop_reason
+
+    def to_dict(self) -> Dict[str, Any]:
+        res = {
+            "output": self.output,
+            "stopReason": self.stop_reason,
+        }
+        if self.structured is not None:
+            res["structured"] = self.structured
+        if self.diagnostic is not None:
+            res["diagnostic"] = self.diagnostic
+        return res
 
 
 class SubagentRecord:
@@ -24,6 +53,7 @@ class SubagentRecord:
         self.continuable = continuable
         self.status = "running"
         self.result: Optional[str] = None
+        self.result_obj: Optional[SubagentResult] = None
         self.started_at = int(time.time() * 1000)
         self.finished_at: Optional[int] = None
         self.inbox: List[Dict[str, Any]] = []
@@ -43,14 +73,19 @@ class SubagentRecord:
             "result": self.result,
         }
 
-    def complete(self, result: str) -> None:
+    def complete(self, result: str, result_obj: Optional[SubagentResult] = None) -> None:
         self.status = "completed"
         self.result = result
+        self.result_obj = result_obj or SubagentResult(
+            output=[{"type": "text", "text": result}],
+            stop_reason="completed",
+        )
         self.finished_at = int(time.time() * 1000)
         self._completion_event.set()
 
     def interrupt(self) -> None:
         self.status = "interrupted"
+        self.result_obj = SubagentResult(stop_reason="aborted", diagnostic="Interrupted by parent request")
         self.finished_at = int(time.time() * 1000)
         self._completion_event.set()
 
@@ -65,16 +100,27 @@ class SubagentRecord:
         return msg_id
 
 
-class SubagentRegistry:
+class SubagentRegistry(Service):
     """
     Subagents registry mounted at ctx.subagents.
-    Provides spawn, fork with session cloning, continuable background delegation, and followups.
     """
 
     def __init__(self, ctx: Optional[Any] = None, max_depth: int = 3):
-        self.ctx = ctx
+        if ctx is not None:
+            super().__init__(ctx, "subagents")
+            ctx.set_service("subagent", self)
+            ctx.set_service("subagents", self)
+        else:
+            self.ctx = None
+
         self.max_depth = max_depth
         self._subagents: Dict[str, SubagentRecord] = {}
+        self.capabilities = {
+            "outputSchema": True,
+            "depthLimit": True,
+            "toolFilter": True,
+            "persona": True,
+        }
 
     def spawn(
         self,
@@ -97,6 +143,15 @@ class SubagentRegistry:
             continuable=continuable,
         )
         self._subagents[subagent_id] = record
+
+        if self.ctx and hasattr(self.ctx, "emit"):
+            self.ctx.emit("subagent/start", {
+                "runId": subagent_id,
+                "provider": provider,
+                "id": subagent_id,
+                "local": True,
+            })
+
         return record
 
     def fork(
@@ -108,8 +163,7 @@ class SubagentRegistry:
         if depth > self.max_depth:
             raise RuntimeError(f"Subagent max depth exceeded ({depth} > {self.max_depth})")
 
-        # Session history cloning
-        if self.ctx and self.ctx.has("sessions"):
+        if self.ctx and hasattr(self.ctx, "has") and self.ctx.has("sessions"):
             sessions_svc = self.ctx.get("sessions")
             parent_sess = sessions_svc.get(parent_session_id) if hasattr(sessions_svc, "get") else None
             if parent_sess:
@@ -140,7 +194,7 @@ class SubagentRegistry:
         if not rec:
             raise ValueError(f"No subagent found with ID '{subagent_id}'")
         msg_id = rec.queue_message(message, sender_id=sender_session_id)
-        if self.ctx:
+        if self.ctx and hasattr(self.ctx, "emit"):
             self.ctx.emit("subagent/message-queued", {
                 "subagentId": subagent_id,
                 "messageId": msg_id,
@@ -152,8 +206,15 @@ class SubagentRegistry:
         rec = self._subagents.get(subagent_id)
         if rec and rec.status == "running":
             rec.interrupt()
-            if self.ctx:
+            if self.ctx and hasattr(self.ctx, "emit"):
                 self.ctx.emit("subagent/interrupted", {"subagentId": subagent_id})
+                self.ctx.emit("subagent/end", {
+                    "runId": subagent_id,
+                    "provider": rec.provider,
+                    "id": subagent_id,
+                    "local": True,
+                    "stopReason": "aborted",
+                })
             return True
         return False
 
@@ -164,4 +225,3 @@ class SubagentRegistry:
         if parent_session_id is None:
             return list(self._subagents.values())
         return [s for s in self._subagents.values() if s.parent_session_id == parent_session_id]
-

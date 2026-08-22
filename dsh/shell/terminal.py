@@ -1,16 +1,22 @@
 import os
 import queue
+import re
 import subprocess
 import sys
 import threading
 import time
 import uuid
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
-SHELL_RESET_MESSAGE = (
+SHELL_RESET_MESSAGE_PWSH = (
     "The persistent pwsh shell was reset; the next pwsh call starts from the workspace "
     "with a fresh current directory and environment."
 )
+SHELL_RESET_MESSAGE_BASH = (
+    "The persistent bash shell was reset; the next bash call starts from the workspace "
+    "with a fresh current directory and environment."
+)
+SHELL_RESET_MESSAGE = SHELL_RESET_MESSAGE_PWSH
 
 
 def quote_for_pwsh(value: str) -> str:
@@ -26,6 +32,14 @@ def quote_for_pwsh(value: str) -> str:
         .replace("\n", "`n")
         .replace("\x1b", "`e")
     )
+
+
+def quote_for_bash(value: str) -> str:
+    """
+    Escape a command body for embedding in bash eval string using $'...' format.
+    Backslash escapes: \\ -> \\\\, ' -> \\', \\r -> \\r, \\n -> \\n.
+    """
+    return "$'" + value.replace("\\", "\\\\").replace("'", "\\'").replace("\r", "\\r").replace("\n", "\\n") + "'"
 
 
 class PersistentTerminal:
@@ -106,8 +120,9 @@ class PersistentTerminal:
                     return -1, "Error: Shell process could not be started.", True
 
             nonce = uuid.uuid4().hex
-            start_marker = f"__DSH_PERSISTENT_PWSH_START_{nonce}__"
-            end_marker = f"__DSH_PERSISTENT_PWSH_END_{nonce}:"
+            prefix = "PWSH" if self.shell_type == "powershell" else "BASH"
+            start_marker = f"__DSH_PERSISTENT_{prefix}_START_{nonce}__"
+            end_marker = f"__DSH_PERSISTENT_{prefix}_END_{nonce}:"
 
             if self.shell_type == "powershell":
                 body = quote_for_pwsh(command)
@@ -118,11 +133,11 @@ class PersistentTerminal:
                     f"Write-Output ('{end_marker}' + $__s)\n"
                 )
             else:
-                # POSIX Bash wrapper
-                escaped = command.replace("'", "'\\''")
+                # POSIX Bash wrapper without subshell parentheses so cd & export persist
+                body = quote_for_bash(command)
                 wrapper = (
-                    f"echo '{start_marker}'; (eval '{escaped}'); __s=$?; "
-                    f"echo '{end_marker}'$__s\n"
+                    f"printf '%s\\n' '{start_marker}'; eval -- {body}; __s=$?; "
+                    f"printf '%s%s\\n' '{end_marker}' \"$__s\"\n"
                 )
 
             try:
@@ -139,8 +154,6 @@ class PersistentTerminal:
             completed = False
 
             q: queue.Queue = queue.Queue()
-
-            import re
 
             def reader_thread():
                 while True:
@@ -188,9 +201,14 @@ class PersistentTerminal:
                 # Timed out
                 self.reset()
                 partial = "\n".join(output_lines)
+                reset_msg = (
+                    SHELL_RESET_MESSAGE_BASH
+                    if self.shell_type == "bash"
+                    else SHELL_RESET_MESSAGE_PWSH
+                )
                 msg = (
                     f"Your command timed out after {timeout_seconds} seconds or experienced an OOM error. "
-                    f"Below is partial output:\n{partial}\n{SHELL_RESET_MESSAGE}"
+                    f"Below is partial output:\n{partial}\n{reset_msg}"
                 )
                 return -1, msg, True
 
@@ -199,11 +217,11 @@ class PersistentTerminal:
 
 class TerminalService:
     """
-    Terminal service mounted at `ctx.terminal`.
+    Terminal service mounted at `ctx.terminal` or `ctx.terminals`.
     """
 
-    def __init__(self, cwd: Optional[str] = None):
-        self.terminal = PersistentTerminal(cwd=cwd)
+    def __init__(self, cwd: Optional[str] = None, shell_type: str = "auto"):
+        self.terminal = PersistentTerminal(shell_type=shell_type, cwd=cwd)
 
     def run_command(self, command: str, timeout_seconds: int = 300) -> Dict[str, Any]:
         exit_code, output, was_reset = self.terminal.execute(command, timeout_seconds=timeout_seconds)
@@ -214,3 +232,5 @@ class TerminalService:
             "completed": not was_reset,
         }
 
+    def reset(self) -> None:
+        self.terminal.reset()

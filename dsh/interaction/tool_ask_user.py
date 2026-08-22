@@ -1,5 +1,7 @@
 """
 Interactive user questions tool (`@deepseek-ai/dsh-tool-ask-user`).
+Model-facing consumer of `ctx.userQuestions`.
+Aligned 1:1 with official `@deepseek-ai/dsh-tool-ask-user`.
 """
 
 import json
@@ -25,9 +27,50 @@ class ToolAskUserPlugin(Plugin):
         if not tools:
             return
 
-        async def exec_ask(questions: List[Dict[str, Any]]) -> str:
+        async def exec_ask(args: Any = None, exec_input: Optional[Any] = None, **kwargs: Any) -> Any:
+            if isinstance(args, dict):
+                questions_arg = args.get("questions", [])
+            elif "questions" in kwargs:
+                questions_arg = kwargs["questions"]
+            elif isinstance(args, list):
+                questions_arg = args
+            else:
+                questions_arg = []
+
+            user_questions_svc = ctx.get("userQuestions")
+            if user_questions_svc and hasattr(user_questions_svc, "ask"):
+                agent = getattr(exec_input, "agent", None) if exec_input else None
+                signal = getattr(exec_input, "signal", None) if exec_input else None
+
+                qs = []
+                for q in questions_arg:
+                    item = {"id": q["id"], "question": q["question"]}
+                    if "header" in q:
+                        item["header"] = q["header"]
+                    if "options" in q:
+                        item["options"] = q["options"]
+                    if "multi_select" in q:
+                        item["multiSelect"] = q["multi_select"]
+                    qs.append(item)
+
+                req: Dict[str, Any] = {"questions": qs}
+                if agent:
+                    req["agent"] = agent
+                if signal:
+                    req["signal"] = signal
+
+                res = await user_questions_svc.ask(req)
+                answers = res.get("answers", [])
+                formatted = []
+                for ans in answers:
+                    item = {"id": ans["id"], "selected": list(ans.get("selected", []))}
+                    if "custom" in ans and ans["custom"] is not None:
+                        item["custom"] = ans["custom"]
+                    formatted.append(item)
+                return json.dumps({"answers": formatted}, ensure_ascii=False)
+
             if self.handler:
-                res = self.handler(questions)
+                res = self.handler(questions_arg)
                 if hasattr(res, "__await__"):
                     res = await res
                 if isinstance(res, str):
@@ -35,7 +78,7 @@ class ToolAskUserPlugin(Plugin):
                 return json.dumps(res, ensure_ascii=False)
 
             answers = []
-            for q in questions:
+            for q in questions_arg:
                 qid = q.get("id", "q1")
                 opts = q.get("options", [])
                 selected = [opts[0]["label"]] if opts else []
@@ -49,7 +92,10 @@ class ToolAskUserPlugin(Plugin):
 
         disposer = tools.register_tool({
             "name": "ask_user_question",
-            "description": "Ask the user one or more clarifying or design questions when ambiguous intent or critical decisions arise.",
+            "description": (
+                "Ask the user a concise question when you need confirmation, a choice, or missing information before proceeding. "
+                "Send one or more questions, each with a stable id that will be echoed in the answer."
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -58,9 +104,9 @@ class ToolAskUserPlugin(Plugin):
                         "items": {
                             "type": "object",
                             "properties": {
-                                "id": {"type": "string", "description": "Stable unique ID for the question"},
-                                "question": {"type": "string", "description": "Question text"},
-                                "header": {"type": "string", "description": "Optional short header title"},
+                                "id": {"type": "string", "description": "Stable id for this question; echoed in the answer."},
+                                "question": {"type": "string", "description": "The specific question to ask the user."},
+                                "header": {"type": "string", "description": "Optional short heading for the question."},
                                 "options": {
                                     "type": "array",
                                     "items": {
@@ -83,4 +129,5 @@ class ToolAskUserPlugin(Plugin):
             "execute": exec_ask,
         })
 
-        ctx.effect(disposer)
+        if hasattr(ctx, "effect"):
+            ctx.effect(disposer)

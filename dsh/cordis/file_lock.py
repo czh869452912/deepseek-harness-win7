@@ -35,7 +35,12 @@ except ImportError:
                 self._fd = os.open(self.lock_file, os.O_CREAT | os.O_RDWR)
                 if sys.platform == "win32":
                     import msvcrt
-                    msvcrt.locking(self._fd, msvcrt.LK_LOCK, 1)
+                    try:
+                        os.write(self._fd, b"\0")
+                        os.lseek(self._fd, 0, os.SEEK_SET)
+                        msvcrt.locking(self._fd, msvcrt.LK_LOCK, 1)
+                    except Exception:
+                        pass
                 else:
                     import fcntl
                     fcntl.flock(self._fd, fcntl.LOCK_EX)
@@ -46,7 +51,10 @@ except ImportError:
                     except Exception:
                         pass
                     self._fd = None
-                self._rlock.release()
+                try:
+                    self._rlock.release()
+                except RuntimeError:
+                    pass
                 raise
             return self
 
@@ -55,10 +63,16 @@ except ImportError:
                 try:
                     if sys.platform == "win32":
                         import msvcrt
-                        msvcrt.locking(self._fd, msvcrt.LK_UNLCK, 1)
+                        try:
+                            msvcrt.locking(self._fd, msvcrt.LK_UNLCK, 1)
+                        except Exception:
+                            pass
                     else:
                         import fcntl
-                        fcntl.flock(self._fd, fcntl.LOCK_UN)
+                        try:
+                            fcntl.flock(self._fd, fcntl.LOCK_UN)
+                        except Exception:
+                            pass
                     os.close(self._fd)
                 except Exception:
                     pass

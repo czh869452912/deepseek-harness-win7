@@ -181,17 +181,17 @@ class StrReplaceEditorPlugin(Plugin):
                     "type": "string",
                     "description": "Required parameter of `create` command, with the content of the file to be created.",
                 },
-                "old_str": {
-                    "type": "string",
-                    "description": "Required parameter of `str_replace` command containing the string in `path` to replace.",
+                "insert_line": {
+                    "type": "integer",
+                    "description": "Required parameter of `insert` command. The `new_str` will be inserted AFTER the line `insert_line` of `path`.",
                 },
                 "new_str": {
                     "type": "string",
                     "description": "Optional parameter of `str_replace` command containing the new string (if not given, no string will be added). Required parameter of `insert` command containing the string to insert.",
                 },
-                "insert_line": {
-                    "type": "integer",
-                    "description": "Required parameter of `insert` command. The `new_str` will be inserted AFTER the line `insert_line` of `path`.",
+                "old_str": {
+                    "type": "string",
+                    "description": "Required parameter of `str_replace` command containing the string in `path` to replace.",
                 },
                 "view_range": {
                     "type": "array",

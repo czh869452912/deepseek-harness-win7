@@ -1,0 +1,86 @@
+# Code Preset Composition
+- id: persona
+  name: "@deepseek-ai/dsh-persona"
+  config:
+    text: "You are a coding agent powered by the {{model}} model. Your working directory is {{cwd}}."
+
+- id: agent-instructions
+  name: "@deepseek-ai/dsh-agent-instructions"
+  config:
+    maxBytes: 65536
+
+- id: tool-bash
+  name: "@deepseek-ai/dsh-tool-pwsh-persistent"
+  disabled: !!js process.platform === 'win32'
+  config:
+    tool_name: bash
+    timeoutMs: 300000
+
+- id: tool-pwsh
+  name: "@deepseek-ai/dsh-tool-pwsh-persistent"
+  disabled: !!js process.platform !== 'win32'
+  config:
+    tool_name: pwsh
+    timeoutMs: 300000
+
+- id: fs-local
+  name: "@deepseek-ai/dsh-fs-local"
+  config:
+    cwd: "."
+
+- id: str-replace-editor
+  name: "@deepseek-ai/dsh-tool-str-replace-editor"
+
+- id: tool-fs-search
+  name: "@deepseek-ai/dsh-tool-fs-search"
+
+- id: tool-jobs
+  name: "@deepseek-ai/dsh-tool-jobs"
+
+- id: skill-filesystem
+  name: "@deepseek-ai/dsh-skill-filesystem"
+
+- id: tool-skill
+  name: "@deepseek-ai/dsh-tool-skill"
+
+- id: tool-goal
+  name: "@deepseek-ai/dsh-tool-goal"
+
+- id: planning
+  name: cordis:group
+  group: true
+  isolate:
+    planMode: true
+  config:
+    - id: plan-mode
+      name: "@deepseek-ai/dsh-plan-mode"
+
+- id: compaction
+  name: cordis:group
+  group: true
+  isolate:
+    compaction: true
+    toolResultPruner: true
+  config:
+    - id: compaction-basic
+      name: "@deepseek-ai/dsh-compaction-basic"
+    - id: tool-result-pruner
+      name: "@deepseek-ai/dsh-compaction-tool-result-pruner"
+
+- id: delegation
+  name: cordis:group
+  group: true
+  isolate:
+    workflowEngine: true
+  config:
+    - id: tool-subagent
+      name: "@deepseek-ai/dsh-tool-subagent"
+
+- id: tool-ask-user
+  name: "@deepseek-ai/dsh-tool-ask-user"
+
+- id: tool-todo
+  name: "@deepseek-ai/dsh-tool-todo"
+
+- id: tool-web
+  name: "@deepseek-ai/dsh-tool-web"

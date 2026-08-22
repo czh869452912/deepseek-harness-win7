@@ -58,7 +58,7 @@ class Context:
         target = self if name in self._isolated_keys else self.root
         target._services[name] = service_instance
         setattr(target, name, service_instance)
-        target.provide(name, service_instance)
+        target.reflect.provide(target, name, service_instance)
 
     def provide(self, name: str, service_instance: Any = None, check: Optional[Callable[[], bool]] = None) -> Callable[[], None]:
         """

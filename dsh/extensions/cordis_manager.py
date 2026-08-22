@@ -517,14 +517,21 @@ class CordisManagerPlugin(Plugin):
         plugins = [p["id"] for p in c.list_plugins()] if hasattr(c, "list_plugins") else []
         return json.dumps({"services": services, "plugins": plugins}, indent=2, ensure_ascii=False)
 
-    def handle_unload_plugin_compat(self, plugin_id: str, ctx: Optional[Any] = None) -> str:
+    def handle_unload_plugin_compat(self, plugin_id: str = "", pluginId: str = "", ctx: Optional[Any] = None) -> str:
+        pid = plugin_id or pluginId
+        if not pid:
+            return "Error: plugin_id parameter is required"
+        if self.runner and pid in self.runner.plugins:
+            res = self.runner.stop(plugin_id=pid)
+            if res.get("ok"):
+                return f"Plugin '{pid}' successfully unloaded."
         c = ctx or self.ctx
         if not c:
             return "Error: Context unavailable"
-        success = c.unload_plugin(plugin_id) if hasattr(c, "unload_plugin") else False
+        success = c.unload_plugin(pid) if hasattr(c, "unload_plugin") else False
         if success:
-            return f"Plugin '{plugin_id}' successfully unloaded."
-        return f"Plugin '{plugin_id}' not found or could not be unloaded."
+            return f"Plugin '{pid}' successfully unloaded."
+        return f"Plugin '{pid}' not found or could not be unloaded."
 
     def handle_dump_config_compat(self, ctx: Optional[Any] = None) -> str:
         c = ctx or self.ctx

@@ -40,6 +40,32 @@ class LlmError(RuntimeError):
             self.failure["requestId"] = requestId
 
 
+LEGAL_API_KEY_PATTERN = r"^[\x21-\x7E]+$"
+
+
+def normalize_api_key(raw: str) -> Dict[str, Any]:
+    if not isinstance(raw, str):
+        return {"ok": False, "reason": "empty"}
+    value = raw.strip()
+    if len(value) == 0:
+        return {"ok": False, "reason": "empty"}
+    import re
+    if not re.match(LEGAL_API_KEY_PATTERN, value):
+        return {"ok": False, "reason": "illegalCharacters"}
+    return {"ok": True, "value": value}
+
+
+def assert_usable_api_key(raw: str, pkg: str, ref: str) -> str:
+    checked = normalize_api_key(raw)
+    if checked["ok"]:
+        return checked["value"]
+    if checked["reason"] == "empty":
+        msg = f"{pkg}: the API key resolved from {ref} is blank; set {ref} to the raw key (the web Models page writes it) or export it in the launching environment"
+    else:
+        msg = f"{pkg}: the API key resolved from {ref} contains characters no HTTP header can carry; set {ref} to the raw key alone (the web Models page writes it)"
+    raise LlmError(msg, "INVALID_CREDENTIAL")
+
+
 class LLMService:
     """
     LLM Service registered at `ctx.llm`.
@@ -73,43 +99,67 @@ class LLMService:
             {"provider": "deepseek-official", "id": "deepseek-reasoner", "name": "DeepSeek Reasoner"},
         ]
 
-    # ---- config resolution (unchanged) ----
     # ---- config resolution (1:1 fallback chain) ----
-    def resolve_api_key(self):
+    def resolve_api_key(self, provider=None):
         if self.static_api_key:
-            return self.static_api_key
+            return assert_usable_api_key(self.static_api_key, "llm", self.api_key_env)
+
+        if provider:
+            prov_env_name = "{}_API_KEY".format(provider.upper().replace("-", "_"))
+            env_key = os.environ.get(prov_env_name)
+            if env_key:
+                return assert_usable_api_key(env_key, "llm", prov_env_name)
+
         env_key = (
             os.environ.get(self.api_key_env)
             or os.environ.get("DEEPSEEK_API_KEY")
             or os.environ.get("OPENAI_API_KEY")
         )
         if env_key:
-            return env_key
-        if self.ctx and self.ctx.has("credentials"):
+            return assert_usable_api_key(env_key, "llm", self.api_key_env)
+
+        if self.ctx and hasattr(self.ctx, "has") and self.ctx.has("credentials"):
             creds = self.ctx.get("credentials")
             try:
-                val = (
-                    creds.resolve(self.api_key_env)
-                    or creds.resolve("DEEPSEEK_API_KEY")
-                    or creds.resolve("OPENAI_API_KEY")
-                )
+                refs_to_try = []
+                if provider:
+                    refs_to_try.append("{}_API_KEY".format(provider.upper().replace("-", "_")))
+                refs_to_try.extend([self.api_key_env, "DEEPSEEK_API_KEY", "OPENAI_API_KEY"])
+                for ref in refs_to_try:
+                    val = creds.resolve(ref) if hasattr(creds, "resolve") else None
+                    if val:
+                        if isinstance(val, dict):
+                            v = val.get("value")
+                            if v:
+                                return assert_usable_api_key(v, "llm", ref)
+                        elif isinstance(val, str) and val.strip():
+                            return assert_usable_api_key(val, "llm", ref)
             except Exception:
-                val = None
-            if val:
-                if isinstance(val, dict):
-                    v = val.get("value")
-                    if v:
-                        return v
-                elif isinstance(val, str) and val.strip():
-                    return val
-        if self.ctx and self.ctx.has("settings"):
+                pass
+
+        if self.ctx and hasattr(self.ctx, "has") and self.ctx.has("settings"):
             settings = self.ctx.get("settings")
             for ns in ("llm", "llm-deepseek", "llm-openai"):
-                for key in ("api_key", "apiKey"):
-                    v = settings.get_setting(ns, key)
-                    if v and isinstance(v, str) and v.strip():
-                        return v.strip()
-        if self.ctx and self.ctx.has("launch_environment"):
+                if provider and hasattr(settings, "get_setting"):
+                    providers_dict = settings.get_setting(ns, "providers")
+                    if isinstance(providers_dict, dict) and provider in providers_dict:
+                        p_cfg = providers_dict[provider]
+                        if isinstance(p_cfg, dict):
+                            v = p_cfg.get("apiKey") or p_cfg.get("api_key")
+                            if v and isinstance(v, str) and v.strip():
+                                return assert_usable_api_key(v, "llm", "{}.providers.{}.apiKey".format(ns, provider))
+                            ref = p_cfg.get("apiKeyEnv")
+                            if ref and isinstance(ref, str) and ref.strip():
+                                env_v = os.environ.get(ref.strip())
+                                if env_v:
+                                    return assert_usable_api_key(env_v, "llm", ref)
+                if hasattr(settings, "get_setting"):
+                    for key in ("api_key", "apiKey"):
+                        v = settings.get_setting(ns, key)
+                        if v and isinstance(v, str) and v.strip():
+                            return assert_usable_api_key(v, "llm", "{}.{}".format(ns, key))
+
+        if self.ctx and hasattr(self.ctx, "has") and self.ctx.has("launch_environment"):
             launch_env = self.ctx.get("launch_environment")
             entry = (
                 launch_env.get_from(self.api_key_env, ["project-env", "user-env"])
@@ -117,29 +167,49 @@ class LLMService:
                 or launch_env.get_from("OPENAI_API_KEY", ["project-env", "user-env"])
             )
             if entry and entry.value:
-                return entry.value
+                return assert_usable_api_key(entry.value, "llm", self.api_key_env)
+
+        ref_name = "{}_API_KEY".format(provider.upper().replace("-", "_")) if provider else self.api_key_env
         raise LlmError(
-            "LLM API Key missing for '{}'. Please provide --api-key, export DEEPSEEK_API_KEY environment variable, or configure ~/.dsh/.credentials.yaml.".format(self.api_key_env),
+            "LLM API Key missing for '{}'. Please provide --api-key, export DEEPSEEK_API_KEY environment variable, or configure ~/.dsh/.credentials.yaml.".format(ref_name),
             "MISSING_CREDENTIAL"
         )
 
-    def resolve_base_url(self):
+    def resolve_base_url(self, provider=None):
         if self.static_base_url:
             return self.static_base_url.rstrip("/")
+
+        if provider:
+            prov_env = "{}_BASE_URL".format(provider.upper().replace("-", "_"))
+            env_url = os.environ.get(prov_env)
+            if env_url:
+                return env_url.rstrip("/")
+
         env_url = (
             os.environ.get("DEEPSEEK_BASE_URL")
             or os.environ.get("OPENAI_BASE_URL")
         )
         if env_url:
             return env_url.rstrip("/")
-        if self.ctx and self.ctx.has("settings"):
+
+        if self.ctx and hasattr(self.ctx, "has") and self.ctx.has("settings"):
             settings = self.ctx.get("settings")
             for ns in ("llm", "llm-deepseek", "llm-openai"):
-                for key in ("base_url", "baseURL"):
-                    v = settings.get_setting(ns, key)
-                    if v and isinstance(v, str) and v.strip():
-                        return str(v).rstrip("/")
-        if self.ctx and self.ctx.has("launch_environment"):
+                if provider and hasattr(settings, "get_setting"):
+                    providers_dict = settings.get_setting(ns, "providers")
+                    if isinstance(providers_dict, dict) and provider in providers_dict:
+                        p_cfg = providers_dict[provider]
+                        if isinstance(p_cfg, dict):
+                            v = p_cfg.get("baseUrl") or p_cfg.get("base_url") or p_cfg.get("baseURL")
+                            if v and isinstance(v, str) and v.strip():
+                                return str(v).rstrip("/")
+                if hasattr(settings, "get_setting"):
+                    for key in ("base_url", "baseURL", "baseUrl"):
+                        v = settings.get_setting(ns, key)
+                        if v and isinstance(v, str) and v.strip():
+                            return str(v).rstrip("/")
+
+        if self.ctx and hasattr(self.ctx, "has") and self.ctx.has("launch_environment"):
             launch_env = self.ctx.get("launch_environment")
             entry = (
                 launch_env.get_from("DEEPSEEK_BASE_URL", ["project-env", "user-env"])
@@ -147,47 +217,67 @@ class LLMService:
             )
             if entry and entry.value:
                 return entry.value.rstrip("/")
+
         return "https://api.deepseek.com"
 
-    def resolve_search_base_url(self):
+    def resolve_search_base_url(self, provider=None):
         if self.static_search_base_url:
             return self.static_search_base_url.rstrip("/")
         env_url = os.environ.get("DEEPSEEK_SEARCH_BASE_URL")
         if env_url:
             return env_url.rstrip("/")
-        if self.ctx and self.ctx.has("settings"):
+        if self.ctx and hasattr(self.ctx, "has") and self.ctx.has("settings"):
             settings = self.ctx.get("settings")
             for ns in ("llm", "llm-deepseek", "llm-openai"):
-                for key in ("search_base_url", "searchBaseURL"):
-                    v = settings.get_setting(ns, key)
-                    if v and isinstance(v, str) and v.strip():
-                        return str(v).rstrip("/")
-        if self.ctx and self.ctx.has("launch_environment"):
+                if hasattr(settings, "get_setting"):
+                    for key in ("search_base_url", "searchBaseURL"):
+                        v = settings.get_setting(ns, key)
+                        if v and isinstance(v, str) and v.strip():
+                            return str(v).rstrip("/")
+        if self.ctx and hasattr(self.ctx, "has") and self.ctx.has("launch_environment"):
             launch_env = self.ctx.get("launch_environment")
             entry = launch_env.get_from("DEEPSEEK_SEARCH_BASE_URL", ["project-env", "user-env"])
             if entry and entry.value:
                 return entry.value.rstrip("/")
-        return self.resolve_base_url()
+        return self.resolve_base_url(provider)
 
-    def resolve_model(self, req_model=None):
+    def resolve_model(self, req_model=None, provider=None):
         if req_model:
             return req_model
         if self.static_model:
             return self.static_model
+
+        if provider:
+            prov_env = "{}_MODEL".format(provider.upper().replace("-", "_"))
+            env_model = os.environ.get(prov_env)
+            if env_model:
+                return env_model
+
         env_model = (
             os.environ.get("DEEPSEEK_MODEL")
             or os.environ.get("OPENAI_MODEL")
         )
         if env_model:
             return env_model
-        if self.ctx and self.ctx.has("settings"):
+
+        if self.ctx and hasattr(self.ctx, "has") and self.ctx.has("settings"):
             settings = self.ctx.get("settings")
             for ns in ("llm", "llm-deepseek", "llm-openai"):
-                for key in ("model", "model_name", "modelName"):
-                    v = settings.get_setting(ns, key)
-                    if v and isinstance(v, str) and v.strip():
-                        return str(v).strip()
-        if self.ctx and self.ctx.has("launch_environment"):
+                if provider and hasattr(settings, "get_setting"):
+                    providers_dict = settings.get_setting(ns, "providers")
+                    if isinstance(providers_dict, dict) and provider in providers_dict:
+                        p_cfg = providers_dict[provider]
+                        if isinstance(p_cfg, dict):
+                            v = p_cfg.get("model") or p_cfg.get("model_name") or p_cfg.get("modelName")
+                            if v and isinstance(v, str) and v.strip():
+                                return str(v).strip()
+                if hasattr(settings, "get_setting"):
+                    for key in ("model", "model_name", "modelName"):
+                        v = settings.get_setting(ns, key)
+                        if v and isinstance(v, str) and v.strip():
+                            return str(v).strip()
+
+        if self.ctx and hasattr(self.ctx, "has") and self.ctx.has("launch_environment"):
             launch_env = self.ctx.get("launch_environment")
             entry = (
                 launch_env.get_from("DEEPSEEK_MODEL", ["project-env", "user-env"])
@@ -195,6 +285,7 @@ class LLMService:
             )
             if entry and entry.value:
                 return entry.value
+
         return "deepseek-chat"
 
     # ---- adapter/directory/discovery registry (1:1) ----
@@ -443,12 +534,53 @@ class LLMService:
                         if not isinstance(m, dict) or m.get("provider") != provider_id or not m.get("id") or not m.get("name") or m["id"] in seen:
                             raise LlmError('adapter returned invalid or duplicate model metadata for provider "{}"'.format(provider_id), "INVALID_CATALOG")
                         seen.add(m["id"])
-                        out.append({"id": m["id"], "name": m["name"], **({"description": m["description"]} if m.get("description") else {}), **({"reasoning": m["reasoning"]} if m.get("reasoning") else {})})
+                        item = {"id": m["id"], "name": m["name"]}
+                        if m.get("description"):
+                            item["description"] = m["description"]
+                        if m.get("inputModalities"):
+                            item["inputModalities"] = list(m["inputModalities"])
+                        if m.get("reasoning"):
+                            item["reasoning"] = m["reasoning"]
+                        out.append(item)
                     return out
                 except LlmError:
                     raise
                 except Exception as e:
                     raise LlmError(str(e), "INVALID_CATALOG")
+
+        # Check settings for custom models configured under provider
+        if self.ctx and hasattr(self.ctx, "has") and self.ctx.has("settings"):
+            settings = self.ctx.get("settings")
+            for ns in ("llm", "llm-deepseek", "llm-openai"):
+                if hasattr(settings, "get_setting"):
+                    providers_dict = settings.get_setting(ns, "providers")
+                    if isinstance(providers_dict, dict) and provider_id in providers_dict:
+                        p_cfg = providers_dict[provider_id]
+                        if isinstance(p_cfg, dict) and "models" in p_cfg and isinstance(p_cfg["models"], list):
+                            out = []
+                            for m in p_cfg["models"]:
+                                if isinstance(m, dict) and m.get("id"):
+                                    out.append({
+                                        "id": m["id"],
+                                        "name": m.get("name") or m["id"],
+                                        **({"description": m["description"]} if m.get("description") else {})
+                                    })
+                            if out:
+                                return out
+                    # Also check namespace-level models
+                    models_list = settings.get_setting(ns, "models")
+                    if isinstance(models_list, list) and models_list:
+                        out = []
+                        for m in models_list:
+                            if isinstance(m, dict) and m.get("id"):
+                                out.append({
+                                    "id": m["id"],
+                                    "name": m.get("name") or m["id"],
+                                    **({"description": m["description"]} if m.get("description") else {})
+                                })
+                        if out:
+                            return out
+
         # fallback hardcoded catalog mirroring original
         if provider_id in ("deepseek", "deepseek-official"):
             return [
@@ -492,7 +624,6 @@ class LLMService:
                     raise LlmError(str(e), "INVALID_MODEL_INFO")
         return {"provider": provider_id, "id": model_id, "name": model_id}
 
-
     # backward compat alias
     def list_configurable_providers_sync(self):
         return self.list_configurable_providers()
@@ -502,11 +633,12 @@ class LLMService:
         messages,
         tools=None,
         model=None,
-        temperature=0.0
+        temperature=0.0,
+        provider=None
     ):
-        api_key = self.resolve_api_key()
-        base_url = self.resolve_base_url()
-        selected_model = self.resolve_model(model)
+        api_key = self.resolve_api_key(provider)
+        base_url = self.resolve_base_url(provider)
+        selected_model = self.resolve_model(model, provider)
         url = "{}/chat/completions".format(base_url)
         headers = {
             "Content-Type": "application/json",
@@ -557,12 +689,13 @@ class LLMService:
         messages,
         tools=None,
         model=None,
-        temperature=0.0
+        temperature=0.0,
+        provider=None
     ):
         import time
-        api_key = self.resolve_api_key()
-        base_url = self.resolve_base_url()
-        selected_model = self.resolve_model(model)
+        api_key = self.resolve_api_key(provider)
+        base_url = self.resolve_base_url(provider)
+        selected_model = self.resolve_model(model, provider)
         url = "{}/chat/completions".format(base_url)
         headers = {
             "Content-Type": "application/json",
@@ -585,6 +718,7 @@ class LLMService:
         accumulated_reasoning = []
         accumulated_tool_calls = {}
         usage_data = {}
+        finish_reason_raw = None
         text_block_started = False
         reasoning_block_started = False
         try:
@@ -601,11 +735,32 @@ class LLMService:
                     except Exception:
                         continue
                     if "usage" in chunk_json and chunk_json["usage"]:
-                        usage_data = chunk_json["usage"]
+                        raw_u = chunk_json["usage"]
+                        if isinstance(raw_u, dict):
+                            c_details = raw_u.get("prompt_tokens_details") or {}
+                            cache_read = c_details.get("cached_tokens") if isinstance(c_details, dict) else None
+                            if cache_read is None:
+                                cache_read = raw_u.get("prompt_cache_hit_tokens")
+                            p_tok = raw_u.get("prompt_tokens", 0)
+                            comp_tok = raw_u.get("completion_tokens", 0)
+                            u_out = {
+                                "inputTokens": max(0, p_tok - (cache_read or 0)),
+                                "outputTokens": comp_tok,
+                            }
+                            if cache_read is not None:
+                                u_out["cacheReadTokens"] = cache_read
+                            r_details = raw_u.get("completion_tokens_details") or {}
+                            r_tok = r_details.get("reasoning_tokens") if isinstance(r_details, dict) else None
+                            if r_tok is not None:
+                                u_out["reasoningTokens"] = r_tok
+                            usage_data = u_out
                     choices = chunk_json.get("choices")
                     if not choices or len(choices) == 0:
                         continue
                     choice = choices[0]
+                    fr = choice.get("finish_reason")
+                    if fr:
+                        finish_reason_raw = fr
                     delta = choice.get("delta", {})
                     reasoning_chunk = delta.get("reasoning_content") or delta.get("reasoning")
                     if reasoning_chunk:
@@ -654,7 +809,7 @@ class LLMService:
                             }
         except Exception as stream_err:
             if not accumulated_content and not accumulated_reasoning and not accumulated_tool_calls:
-                msg = self.chat_completion(messages, tools, model, temperature)
+                msg = self.chat_completion(messages, tools, model, temperature, provider)
                 content = msg.get("content", "")
                 if content:
                     yield {"type": "block-start", "index": 0, "blockType": "text"}
@@ -692,8 +847,13 @@ class LLMService:
             "outputTokens": (len("".join(accumulated_content)) + len("".join(accumulated_reasoning))) // 4
         }
         yield {"type": "usage", "usage": final_usage}
-        has_tools = bool(accumulated_tool_calls)
-        yield {"type": "finish", "reason": {"kind": "tool-calls" if has_tools else "stop"}}
+        if finish_reason_raw == "length":
+            kind = "max-tokens"
+        elif finish_reason_raw == "tool_calls" or bool(accumulated_tool_calls):
+            kind = "tool-calls"
+        else:
+            kind = "stop"
+        yield {"type": "finish", "reason": {"kind": kind}}
 
     # alias for 1:1 naming used by apiproxy handler
     def list_providers(self):

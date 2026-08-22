@@ -2,11 +2,15 @@ from typing import Any, Dict, Optional
 from dsh.cordis.plugin import Plugin
 from dsh.shell.terminal import TerminalService
 
-# TS tool-pwsh-persistent constants.
+# TS tool-pwsh-persistent & tool-bash-persistent constants.
 TRUNCATED_MESSAGE = (
     "<response clipped><NOTE>To save on context only part of this file has been shown to you. "
     "You should retry this tool after you have searched inside the file with Select-String in order "
     "to find the line numbers of what you are looking for.</NOTE>"
+)
+LOST_PREFIX_MESSAGE = (
+    "<response clipped><NOTE>The beginning of this command output was dropped by the terminal scrollback limit. "
+    "The following text is the earliest retained output.</NOTE>\n"
 )
 
 DEFAULT_PWSH_DESCRIPTION = (
@@ -34,7 +38,8 @@ def append_status_marker(content: str, marker: Optional[str]) -> str:
 
 class ToolPwshPersistentPlugin(Plugin):
     """
-    Plugin `@deepseek-ai/dsh-tool-pwsh-persistent`: Persistent PowerShell / Bash shell tool.
+    Plugin `@deepseek-ai/dsh-tool-pwsh-persistent` / `@deepseek-ai/dsh-tool-bash-persistent`:
+    Persistent PowerShell / Bash shell tool over owner-isolated persistent terminal service.
     """
 
     id = "persistent-pwsh"
@@ -49,6 +54,9 @@ class ToolPwshPersistentPlugin(Plugin):
         tool_name = str(self.config.get("tool_name", "pwsh"))
         default_description = DEFAULT_BASH_DESCRIPTION if tool_name == "bash" else DEFAULT_PWSH_DESCRIPTION
         self.description: str = str(self.config.get("description", default_description))
+
+        if len(self.backend_type.strip()) == 0:
+            raise ValueError("tool-pwsh-persistent: backendType must be non-empty")
         if self.timeout_ms <= 0:
             raise ValueError("tool-pwsh-persistent: timeoutMs must be a positive safe integer")
         if self.max_output_chars <= 0:
@@ -62,10 +70,13 @@ class ToolPwshPersistentPlugin(Plugin):
             print("[ToolPwshPersistentPlugin Warning] tools service unavailable")
             return
 
-        if not ctx.has("terminals"):
-            ctx.set_service("terminals", TerminalService())
-
         tool_name = self.config.get("tool_name", "pwsh")
+        shell_type = "bash" if tool_name == "bash" else "pwsh"
+
+        if not ctx.has("terminals"):
+            ctx.set_service("terminals", TerminalService(shell_type=shell_type))
+        if not ctx.has("terminal"):
+            ctx.set_service("terminal", ctx.get("terminals"))
 
         parameters = {
             "type": "object",
@@ -95,11 +106,11 @@ class ToolPwshPersistentPlugin(Plugin):
         if not command or not command.strip():
             return "Error: command must be a non-empty string"
 
-        terminal_service = ctx.get("terminals") if ctx else None
+        terminal_service = (ctx.get("terminals") or ctx.get("terminal")) if ctx else None
         if not terminal_service:
             return "Error: Terminal service unavailable"
 
-        timeout_sec = int(self.timeout_ms / 1000)
+        timeout_sec = max(1, int(self.timeout_ms / 1000))
         res = terminal_service.run_command(command, timeout_seconds=timeout_sec)
         output = res.get("output", "")
         exit_code = res.get("exit_code", 0)

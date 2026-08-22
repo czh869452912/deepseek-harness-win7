@@ -16,6 +16,16 @@ class SettingsDomainHandler:
 
     def _build_schemastery_schema(self, ns: str, has_key: bool) -> Dict[str, Any]:
         if ns in ("llm", "llm-deepseek", "llm-openai"):
+            model_item_schema = {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"},
+                    "name": {"type": "string"},
+                    "description": {"type": "string"},
+                    "contextWindow": {"type": "number"},
+                    "maxTokens": {"type": "number"},
+                },
+            }
             return {
                 "type": "object",
                 "properties": {
@@ -25,6 +35,10 @@ class SettingsDomainHandler:
                     "apiKey": {"type": "string", "role": "secret"},
                     "api_key": {"type": "string", "role": "secret"},
                     "apiKeyEnv": {"type": "string"},
+                    "models": {
+                        "type": "array",
+                        "value": model_item_schema,
+                    },
                     "providers": {
                         "type": "dict",
                         "value": {
@@ -36,6 +50,10 @@ class SettingsDomainHandler:
                                 "apiKeyEnv": {"type": "string"},
                                 "apiKey": {"type": "string", "role": "secret"},
                                 "model": {"type": "string"},
+                                "models": {
+                                    "type": "array",
+                                    "value": model_item_schema,
+                                },
                             },
                         },
                     },

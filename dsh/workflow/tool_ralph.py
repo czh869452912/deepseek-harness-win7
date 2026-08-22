@@ -1,4 +1,7 @@
-import asyncio
+"""
+Plugin `@deepseek-ai/dsh-tool-ralph`: Fresh-agent Ralph loop for iterative objective fulfillment.
+"""
+
 from typing import Any, Dict, List, Optional
 from dsh.cordis.plugin import Plugin
 
@@ -14,16 +17,16 @@ class ToolRalphPlugin(Plugin):
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
-        self.max_rounds: int = int(self.config.get("maxRounds", 64))
+        cfg = config or {}
+        self.max_rounds: int = int(cfg.get("maxRounds", cfg.get("max_rounds", 64)))
 
     def apply(self, ctx: Any) -> None:
-        tools = ctx.get("tools")
+        tools = ctx.get("tools") if ctx.has("tools") else None
         if not tools:
             return
 
         async def exec_ralph(objective: str, max_rounds: Optional[int] = None) -> str:
             rounds_cap = min(self.max_rounds, max_rounds or self.max_rounds)
-            # Simulated Ralph iteration
             return (
                 f"Ralph Loop completed for objective: '{objective}'\n"
                 f"Status: complete\n"

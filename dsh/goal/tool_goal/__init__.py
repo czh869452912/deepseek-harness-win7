@@ -4,13 +4,53 @@ Provides long-running objective tracking, autonomous goal rounds, and `get_goal`
 """
 
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 import uuid
 
 from dsh.cordis.plugin import Plugin
-from dsh.core.session import Session
-from dsh.goal.tool_goal.authority import require_direct_human
+from dsh.core.session import Session, SessionStore
+from dsh.goal.tool_goal.authority import (
+    completion_authority,
+    goal_tool_execution,
+    require_direct_human,
+)
 from dsh.goal.tool_goal.wrapup import render_wrapup_context
+
+UPDATE_ACTIONS = ["edit", "pause", "resume", "complete", "blocked"]
+
+GET_DESCRIPTION = (
+    "Read the current same-session goal, including its exact id/revision, objective, phase, completed "
+    "continuation rounds, round limit, blocker reason when present, and whether another continuation is armed. "
+    "Call this before updating a goal."
+)
+
+CREATE_DESCRIPTION = (
+    "Create one persisted same-session completion goal when the current direct human request "
+    "is a long-running objective that should continue across autonomous goal rounds. You may "
+    "infer that intent without requiring the user to say \"create a goal\". Do not use this for "
+    "trivial single-turn work. Execution rejects non-human and subagent authority."
+)
+
+UPDATE_DESCRIPTION = (
+    "Update the exact current goal revision. edit, pause, and resume require a direct "
+    "top-level human request. During an automatic continuation of the current goal, complete "
+    "and blocked are also allowed. blocked is rejected before the configured minimum round count; the model remains "
+    "responsible for judging that the same condition persisted across those rounds and must explain it in blocked_reason."
+)
+
+
+def guidance(blocked_after: int) -> str:
+    return (
+        "Use goal tools for one long-running completion objective in the current session. "
+        "create_goal may infer goal intent from a direct human request in any language; do not "
+        "create a goal for routine single-turn work. Call get_goal before update_goal and copy its "
+        "exact goal_id and revision. After session resume or fork, an active goal is disarmed: when "
+        "a human asks to continue or resume in any wording or language, use update_goal action "
+        "resume to rearm it. Mark complete only when the objective is actually achieved. Mark "
+        f"blocked only after the same blocking condition persists for at least {blocked_after} "
+        "consecutive goal rounds, and report that concrete condition in blocked_reason; difficulty, uncertainty, "
+        "or useful remaining work is not blocked."
+    )
 
 
 class GoalSnapshot:
@@ -23,7 +63,7 @@ class GoalSnapshot:
         objective: str,
         phase: str = "active",  # active, paused, blocked, complete
         rounds_started: int = 1,
-        max_goal_rounds: int = 20,
+        max_goal_rounds: int = 256,
         blocked_reason: Optional[Dict[str, str]] = None,
         created_at: Optional[int] = None,
         updated_at: Optional[int] = None,
@@ -69,12 +109,12 @@ def fold_goal_state(events: List[Any]) -> Optional[GoalSnapshot]:
             else:
                 g_dict = evt_data.get("goal", {})
                 current_goal = GoalSnapshot(
-                    goal_id=g_dict.get("id", str(uuid.uuid4())[:8]),
+                    goal_id=g_dict.get("id", f"goal-{str(uuid.uuid4())[:8]}"),
                     revision=g_dict.get("revision", 1),
                     objective=g_dict.get("objective", ""),
                     phase=g_dict.get("phase", "active"),
                     rounds_started=g_dict.get("roundsStarted", 1),
-                    max_goal_rounds=g_dict.get("maxGoalRounds", 20),
+                    max_goal_rounds=g_dict.get("maxGoalRounds", 256),
                     blocked_reason=g_dict.get("blockedReason"),
                     created_at=g_dict.get("createdAt"),
                     updated_at=g_dict.get("updatedAt"),
@@ -89,9 +129,10 @@ class GoalService:
     Manages same-session long-running goal tracking with CAS concurrency.
     """
 
-    def __init__(self, ctx: Any, blocked_after_consecutive_rounds: int = 3):
+    def __init__(self, ctx: Any, blocked_after_consecutive_rounds: int = 3, default_max_goal_rounds: int = 256):
         self.ctx = ctx
         self.blocked_after_consecutive_rounds = blocked_after_consecutive_rounds
+        self.default_max_goal_rounds = default_max_goal_rounds
 
     def _resolve_session(self, agent: Optional[Any] = None) -> Optional[Session]:
         if agent and hasattr(agent, "session") and agent.session:
@@ -114,16 +155,25 @@ class GoalService:
                     return next(iter(sessions_svc._sessions.values()))
         return None
 
+    def get(self, agent: Optional[Any] = None) -> Optional[GoalSnapshot]:
+        return self.get_goal(agent=agent)
+
     def get_goal(self, agent: Optional[Any] = None) -> Optional[GoalSnapshot]:
         sess = self._resolve_session(agent)
         if not sess:
             return None
         return fold_goal_state(sess.events)
 
+    def create(self, agent: Optional[Any] = None, request: Optional[Dict[str, Any]] = None, **kwargs) -> GoalSnapshot:
+        req = request or kwargs
+        obj = req.get("objective", "") if isinstance(req, dict) else kwargs.get("objective", "")
+        max_rounds = req.get("maxGoalRounds", req.get("max_goal_rounds", self.default_max_goal_rounds)) if isinstance(req, dict) else kwargs.get("max_goal_rounds", self.default_max_goal_rounds)
+        return self.create_goal(objective=obj, max_goal_rounds=max_rounds, agent=agent)
+
     def create_goal(
         self,
         objective: str,
-        max_goal_rounds: int = 20,
+        max_goal_rounds: int = 256,
         agent: Optional[Any] = None,
     ) -> GoalSnapshot:
         sess = self._resolve_session(agent)
@@ -161,7 +211,7 @@ class GoalService:
         action: str,  # edit, pause, resume, complete, blocked
         objective: Optional[str] = None,
         max_goal_rounds: Optional[int] = None,
-        blocked_reason: Optional[str] = None,
+        blocked_reason: Optional[Union[str, Dict[str, str]]] = None,
         is_goal_round: bool = False,
         agent: Optional[Any] = None,
     ) -> GoalSnapshot:
@@ -177,7 +227,10 @@ class GoalService:
             raise ValueError(f"Revision mismatch for goal '{goal_id}': expected {current.revision}, got {revision}")
 
         if action == "blocked":
-            if not blocked_reason or not blocked_reason.strip():
+            if not blocked_reason:
+                raise ValueError("blocked_reason is required with action blocked")
+            msg = blocked_reason["message"] if isinstance(blocked_reason, dict) else str(blocked_reason)
+            if not msg.strip():
                 raise ValueError("blocked_reason is required with action blocked")
             if is_goal_round and current.rounds_started < self.blocked_after_consecutive_rounds:
                 raise ValueError(
@@ -206,7 +259,10 @@ class GoalService:
         elif action == "blocked":
             new_phase = "blocked"
             new_activation = "disarmed"
-            new_blocked = {"code": "model-reported", "message": blocked_reason or "Blocked"}
+            if isinstance(blocked_reason, dict):
+                new_blocked = blocked_reason
+            else:
+                new_blocked = {"code": "model-reported", "message": str(blocked_reason)}
 
         updated = GoalSnapshot(
             goal_id=current.id,
@@ -230,10 +286,40 @@ class GoalService:
             self.ctx.emit("goal/changed", {"agent": agent, "goal": updated.to_dict()})
 
             if action in ("complete", "blocked") and is_goal_round:
-                wrapup_text = render_wrapup_context(new_obj, blocked_reason if action == "blocked" else None)
+                b_msg = new_blocked["message"] if new_blocked else None
+                wrapup_text = render_wrapup_context(new_obj, b_msg if action == "blocked" else None)
                 self.ctx.emit("agent/wrapup-notice", {"agent": agent, "text": wrapup_text})
 
         return updated
+
+    def pause(self, agent: Optional[Any], ref: Any) -> GoalSnapshot:
+        gid = ref.id if hasattr(ref, "id") else ref["id"]
+        rev = ref.revision if hasattr(ref, "revision") else ref["revision"]
+        return self.update_goal(goal_id=gid, revision=rev, action="pause", agent=agent)
+
+    def resume(self, agent: Optional[Any], ref: Any) -> GoalSnapshot:
+        gid = ref.id if hasattr(ref, "id") else ref["id"]
+        rev = ref.revision if hasattr(ref, "revision") else ref["revision"]
+        return self.update_goal(goal_id=gid, revision=rev, action="resume", agent=agent)
+
+    def complete(self, agent: Optional[Any], ref: Any) -> GoalSnapshot:
+        gid = ref.id if hasattr(ref, "id") else ref["id"]
+        rev = ref.revision if hasattr(ref, "revision") else ref["revision"]
+        return self.update_goal(goal_id=gid, revision=rev, action="complete", agent=agent)
+
+    def block(self, agent: Optional[Any], ref: Any, reason: Any) -> GoalSnapshot:
+        gid = ref.id if hasattr(ref, "id") else ref["id"]
+        rev = ref.revision if hasattr(ref, "revision") else ref["revision"]
+        return self.update_goal(goal_id=gid, revision=rev, action="blocked", blocked_reason=reason, agent=agent)
+
+    def clear(self, agent: Optional[Any], ref: Any) -> Dict[str, Any]:
+        sess = self._resolve_session(agent)
+        gid = ref.id if hasattr(ref, "id") else ref["id"]
+        rev = ref.revision if hasattr(ref, "revision") else ref["revision"]
+        tombstone = {"id": gid, "revision": rev + 1}
+        if sess:
+            sess.append("goal/change", {"operation": "clear", "cleared": tombstone}, ignorable=True)
+        return tombstone
 
 
 class ToolGoalPlugin(Plugin):
@@ -251,69 +337,161 @@ class ToolGoalPlugin(Plugin):
         self.blocked_after_consecutive_rounds = int(cfg.get("blockedAfterConsecutiveRounds", 3))
 
     def apply(self, ctx: Any) -> None:
-        goal_svc = GoalService(ctx, blocked_after_consecutive_rounds=self.blocked_after_consecutive_rounds)
-        ctx.set_service("goals", goal_svc)
+        if not ctx.has("goals"):
+            goal_svc = GoalService(ctx, blocked_after_consecutive_rounds=self.blocked_after_consecutive_rounds)
+            ctx.set_service("goals", goal_svc)
+
+        if hasattr(ctx, "systemPrompt") and hasattr(ctx.systemPrompt, "section"):
+            ctx.systemPrompt.section(
+                name="tool:goal",
+                order=114,
+                text=guidance(self.blocked_after_consecutive_rounds),
+            )
 
         tools = ctx.get("tools")
         if not tools:
             return
 
         # 1. get_goal
-        tools.register(
-            name="get_goal",
-            description="Read the current same-session goal, including its exact id/revision, objective, phase, completed continuation rounds, round limit, and activation status.",
-            parameters={"type": "object", "properties": {}},
-            handler=self.handle_get_goal,
-        )
+        if hasattr(tools, "register_tool"):
+            tools.register_tool({
+                "name": "get_goal",
+                "description": GET_DESCRIPTION,
+                "parameters": {"type": "object", "properties": {}},
+                "execute": self.handle_get_goal,
+            })
+        elif hasattr(tools, "register"):
+            tools.register(
+                name="get_goal",
+                description=GET_DESCRIPTION,
+                parameters={"type": "object", "properties": {}},
+                handler=self.handle_get_goal,
+            )
 
         # 2. create_goal
-        tools.register(
-            name="create_goal",
-            description="Create one persisted same-session completion goal when the request is a long-running multi-turn objective.",
-            parameters={
-                "type": "object",
-                "properties": {
-                    "objective": {
-                        "type": "string",
-                        "description": "The concrete completion objective inferred from the direct human request.",
-                    },
-                    "max_goal_rounds": {
-                        "type": "integer",
-                        "description": "Optional positive integer limit on autonomous continuation rounds (default 20).",
-                    },
+        create_params = {
+            "type": "object",
+            "properties": {
+                "objective": {
+                    "type": "string",
+                    "description": "The concrete completion objective inferred from the direct human request.",
                 },
-                "required": ["objective"],
+                "max_goal_rounds": {
+                    "type": "integer",
+                    "description": "Optional positive safe-integer limit on automatic continuation rounds.",
+                },
             },
-            handler=self.handle_create_goal,
-        )
+            "required": ["objective"],
+        }
+
+        if hasattr(tools, "register_tool"):
+            tools.register_tool({
+                "name": "create_goal",
+                "description": CREATE_DESCRIPTION,
+                "parameters": create_params,
+                "execute": self.handle_create_goal,
+            })
+        elif hasattr(tools, "register"):
+            tools.register(
+                name="create_goal",
+                description=CREATE_DESCRIPTION,
+                parameters=create_params,
+                handler=self.handle_create_goal,
+            )
 
         # 3. update_goal
-        tools.register(
-            name="update_goal",
-            description="Update the exact current goal revision. edit, pause, resume, complete, or blocked. blocked is rejected before 3 consecutive rounds.",
-            parameters={
-                "type": "object",
-                "properties": {
-                    "goal_id": {"type": "string", "description": "Exact id returned by get_goal."},
-                    "revision": {"type": "integer", "description": "Exact positive revision returned by get_goal."},
-                    "action": {
-                        "type": "string",
-                        "enum": ["edit", "pause", "resume", "complete", "blocked"],
-                        "description": "edit | pause | resume | complete | blocked",
-                    },
-                    "objective": {"type": "string", "description": "Replacement objective (action: edit)."},
-                    "max_goal_rounds": {"type": "integer", "description": "Replacement round cap (action: edit)."},
-                    "blocked_reason": {"type": "string", "description": "Concrete blocking condition (required with action: blocked)."},
+        update_params = {
+            "type": "object",
+            "properties": {
+                "goal_id": {"type": "string", "description": "Exact id returned by get_goal."},
+                "revision": {"type": "integer", "description": "Exact positive revision returned by get_goal."},
+                "action": {
+                    "type": "string",
+                    "enum": UPDATE_ACTIONS,
+                    "description": "edit | pause | resume | complete | blocked",
                 },
-                "required": ["goal_id", "revision", "action"],
+                "objective": {"type": "string", "description": "Replacement objective; valid only with action edit."},
+                "max_goal_rounds": {"type": "integer", "description": "Replacement cap; valid only with action edit."},
+                "blocked_reason": {
+                    "type": "string",
+                    "description": "Concrete blocking condition; required only with action blocked.",
+                },
             },
-            handler=self.handle_update_goal,
-        )
+            "required": ["goal_id", "revision", "action"],
+        }
 
-        # Hook /goal command
+        if hasattr(tools, "register_tool"):
+            tools.register_tool({
+                "name": "update_goal",
+                "description": UPDATE_DESCRIPTION,
+                "parameters": update_params,
+                "execute": self.handle_update_goal,
+            })
+        elif hasattr(tools, "register"):
+            tools.register(
+                name="update_goal",
+                description=UPDATE_DESCRIPTION,
+                parameters=update_params,
+                handler=self.handle_update_goal,
+            )
+
+        # Register /goal command if commands service is mounted
+        if ctx.has("commands"):
+            cmd_svc = ctx.get("commands")
+            if hasattr(cmd_svc, "register"):
+                def execute_goal_command(invocation: Any) -> str:
+                    raw = getattr(invocation, "raw_input", str(invocation))
+                    tokens = raw.strip().split(None, 1)
+                    sub = tokens[0].lower() if tokens else "show"
+                    goal_svc = ctx.get("goals")
+                    if sub == "clear":
+                        g = goal_svc.get_goal()
+                        if g:
+                            goal_svc.clear(None, g)
+                            return "Goal cleared."
+                        return "No goal to clear."
+                    elif sub == "pause":
+                        g = goal_svc.get_goal()
+                        if g:
+                            goal_svc.update_goal(g.id, g.revision, "pause")
+                            return "Goal paused."
+                        return "No goal is currently set."
+                    elif sub == "resume":
+                        g = goal_svc.get_goal()
+                        if g:
+                            goal_svc.update_goal(g.id, g.revision, "resume")
+                            return "Goal resumed."
+                        return "No goal is currently set."
+                    elif sub == "edit":
+                        if len(tokens) > 1 and tokens[1].strip():
+                            g = goal_svc.get_goal()
+                            if g:
+                                goal_svc.update_goal(g.id, g.revision, "edit", objective=tokens[1].strip())
+                                return "Goal updated."
+                        return "Goal editing requires a replacement objective."
+                    else:
+                        if raw.strip():
+                            g = goal_svc.get_goal()
+                            if g and g.phase != "complete":
+                                return f"A goal is already {g.phase}. Use /goal edit <objective> to change it."
+                            new_g = goal_svc.create_goal(objective=raw.strip())
+                            return f"Goal created: {new_g.objective}"
+                        else:
+                            g = goal_svc.get_goal()
+                            if not g:
+                                return "No goal is currently set."
+                            return f"Status: {g.phase}\nObjective: {g.objective}"
+
+                cmd_svc.register(
+                    name="goal",
+                    description="set or view the goal for a long-running task",
+                    handler=execute_goal_command,
+                )
+
+        # Hook /goal command in pre-step for natural input
         ctx.on("agent/pre-step", self._hook_goal_slash_command)
 
-    def handle_get_goal(self, ctx: Optional[Any] = None) -> Dict[str, Any]:
+    def handle_get_goal(self, ctx: Optional[Any] = None, **kwargs) -> Dict[str, Any]:
         context = ctx or self.ctx
         goal_svc: GoalService = context.get("goals")
         if not goal_svc:
@@ -323,38 +501,56 @@ class ToolGoalPlugin(Plugin):
             return {"goal": None}
         return {"goal": goal.to_dict(), "activation": goal.activation}
 
-    def handle_create_goal(self, objective: str, max_goal_rounds: int = 20, ctx: Optional[Any] = None) -> Dict[str, Any]:
+    def handle_create_goal(
+        self, objective: str = "", max_goal_rounds: int = 256, ctx: Optional[Any] = None, **kwargs
+    ) -> Dict[str, Any]:
         context = ctx or self.ctx
-        require_direct_human(context)
+        exec_ctx = kwargs.get("exec") or context
+        require_direct_human(context, exec_ctx)
+        obj = objective or kwargs.get("objective", "")
+        max_rounds = max_goal_rounds if "max_goal_rounds" in kwargs or max_goal_rounds != 256 else kwargs.get("max_goal_rounds", 256)
         goal_svc: GoalService = context.get("goals")
         if not goal_svc:
             return {"error": "Goal service not available"}
-        goal = goal_svc.create_goal(objective=objective, max_goal_rounds=max_goal_rounds)
+        goal = goal_svc.create_goal(objective=obj, max_goal_rounds=max_rounds)
         return {"goal": goal.to_dict(), "activation": goal.activation}
 
     def handle_update_goal(
         self,
-        goal_id: str,
-        revision: int,
-        action: str,
+        goal_id: str = "",
+        revision: int = 1,
+        action: str = "",
         objective: Optional[str] = None,
         max_goal_rounds: Optional[int] = None,
         blocked_reason: Optional[str] = None,
         ctx: Optional[Any] = None,
+        **kwargs,
     ) -> Dict[str, Any]:
         context = ctx or self.ctx
-        if action in ("edit", "pause", "resume"):
-            require_direct_human(context)
+        gid = goal_id or kwargs.get("goal_id", "")
+        rev = revision if "revision" in kwargs or revision != 1 else kwargs.get("revision", 1)
+        act = action or kwargs.get("action", "")
+        obj = objective or kwargs.get("objective")
+        max_rounds = max_goal_rounds or kwargs.get("max_goal_rounds")
+        b_reason = blocked_reason or kwargs.get("blocked_reason")
+
+        exec_ctx = kwargs.get("exec") or context
+        if act in ("edit", "pause", "resume"):
+            require_direct_human(context, exec_ctx)
+        elif act in ("complete", "blocked"):
+            completion_authority(context, exec_ctx)
+
         goal_svc: GoalService = context.get("goals")
         if not goal_svc:
             return {"error": "Goal service not available"}
         goal = goal_svc.update_goal(
-            goal_id=goal_id,
-            revision=revision,
-            action=action,
-            objective=objective,
-            max_goal_rounds=max_goal_rounds,
-            blocked_reason=blocked_reason,
+            goal_id=gid,
+            revision=rev,
+            action=act,
+            objective=obj,
+            max_goal_rounds=max_rounds,
+            blocked_reason=b_reason,
+            is_goal_round=kwargs.get("is_goal_round", False),
         )
         return {"goal": goal.to_dict(), "activation": goal.activation}
 

@@ -14,7 +14,7 @@ from dsh.core.surface import (
     is_surface_eligible_type,
 )
 
-SESSION_FORMAT_VERSION = 1
+SESSION_FORMAT_VERSION = 0
 SessionEvent = Dict[str, Any]
 
 
@@ -28,6 +28,34 @@ def snapshot_json_value(value: Any) -> Any:
         return json.loads(raw)
     except (TypeError, ValueError, OverflowError):
         return None
+
+
+def canonical_header(header: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Return a canonical, sorted dictionary snapshot of an EpochHeader.
+    """
+    snapshot = snapshot_json_value(header) or {}
+    if not isinstance(snapshot, dict):
+        return {}
+    res: Dict[str, Any] = {}
+    if "config" in snapshot:
+        res["config"] = snapshot["config"]
+    if "adapterDefaults" in snapshot:
+        res["adapterDefaults"] = snapshot["adapterDefaults"]
+    if "system" in snapshot and snapshot["system"]:
+        res["system"] = snapshot["system"]
+    if "tools" in snapshot and snapshot["tools"]:
+        res["tools"] = snapshot["tools"]
+    return res
+
+
+def header_equals(a: Dict[str, Any], b: Dict[str, Any]) -> bool:
+    """
+    Compare two EpochHeader dicts for canonical equality.
+    """
+    ca = canonical_header(a)
+    cb = canonical_header(b)
+    return json.dumps(ca, sort_keys=True, ensure_ascii=False) == json.dumps(cb, sort_keys=True, ensure_ascii=False)
 
 
 class SessionHeader:
@@ -90,6 +118,18 @@ class SessionHeader:
         )
 
 
+class SessionPreparation:
+    """Staged session preparation helper."""
+
+    def __init__(self, session: "Session", disposer: Optional[Callable[[], None]] = None):
+        self.session = session
+        self._disposer = disposer
+
+    def dispose(self) -> None:
+        if self._disposer:
+            self._disposer()
+
+
 class Session:
     """
     An event-sourced session: append-only log of SessionEvents and live SessionSurface projection.
@@ -116,13 +156,11 @@ class Session:
 
         self.first_live_seq = len(self.events)
 
-        # Mark end-seed if seed was supplied and last event is not session/end-seed
         if seed is not None and (len(self.events) == 0 or self.events[-1].get("type") != "session/end-seed"):
             self.append("session/end-seed", {}, ignorable=True)
 
         self._appending = False
 
-        # Cache state
         self._cached_messages: Optional[List[Dict[str, Any]]] = None
         self._cached_generation: int = -1
         self._cached_nodes_len: int = -1
@@ -208,14 +246,12 @@ class Session:
             if source_event_seqs is not None:
                 event["sourceEventSeqs"] = list(source_event_seqs)
 
-        # Validate against surface
         self._surface_manager.validate_next(event)
 
         self._appending = True
         try:
             self.events.append(event)
 
-            # Notify Cordis listeners with contained exception handling
             if self.ctx:
                 try:
                     self.ctx.emit("session/event", self, event)
@@ -228,7 +264,6 @@ class Session:
             self._appending = False
 
     def append_event(self, event_type: str, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Backward-compatible helper for appending events."""
         surface_op = "append" if is_surface_eligible_type(event_type) else None
         return self.append(event_type, data, surface_op=surface_op)
 
@@ -363,7 +398,6 @@ class Session:
             self._cached_generation = gen
             self._cached_nodes_len = len(nodes)
 
-        # Assemble with system prompt if provided
         messages: List[Dict[str, Any]] = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
@@ -413,10 +447,11 @@ class SessionStore:
         session_id: Optional[str] = None,
         seed: Optional[List[Dict[str, Any]]] = None,
         meta: Optional[Dict[str, Any]] = None,
-    ) -> Session:
+    ) -> SessionPreparation:
         sid = session_id or f"session-{len(self._sessions) + 1}"
         header = SessionHeader.from_dict({"id": sid, **(meta or {})})
-        return Session(session_id=sid, seed=seed, header=header, ctx=self.ctx)
+        session = Session(session_id=sid, seed=seed, header=header, ctx=self.ctx)
+        return SessionPreparation(session=session)
 
     def enter(self, session: Session) -> Callable[[], None]:
         sid = session.id

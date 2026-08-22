@@ -8,9 +8,9 @@ import contextvars
 from typing import Any, Callable, Dict, List, Optional, Union
 from dsh.cordis.context import Context
 from dsh.cordis.plugin import Plugin
+from dsh.core.consumed_work import ConsumedWork, fold_consumed_work
 from dsh.core.inbox import Inbox
 from dsh.core.session import Session, SessionHeader
-
 
 _CURRENT_INITIATOR: contextvars.ContextVar[Optional["Agent"]] = contextvars.ContextVar(
     "dsh_initiator_agent", default=None
@@ -41,6 +41,13 @@ class AgentOptions:
         return res
 
 
+class CancelOptions:
+    """Options for canceling an Agent."""
+
+    def __init__(self, keep_inbox: bool = False):
+        self.keep_inbox = keep_inbox
+
+
 class Agent:
     """
     Public live-agent handle.
@@ -59,22 +66,45 @@ class Agent:
         self.ctx = ctx or Context()
         self.inbox = Inbox(session=self.session, ctx=self.ctx, agent=self)
         self._status: str = "idle"
+        self._phase_kind: str = "idle"  # "idle", "maintenance", "running"
         self._wake_event = asyncio.Event()
         self._cancel_cause: Optional[Dict[str, Any]] = None
         self._idle_futures: List[asyncio.Future] = []
         self._driver_task: Optional[asyncio.Task] = None
+        self._wake_requested: bool = False
 
     @property
     def status(self) -> str:
-        return self._status
+        return "idle" if self._phase_kind in ("idle", "maintenance") else "running"
 
     def set_status(self, new_status: str) -> None:
-        if self._status != new_status:
-            self._status = new_status
+        previous_status = self.status
+        self._status = new_status
+        if self._phase_kind == "running" and new_status == "idle":
+            self._phase_kind = "idle"
+        elif self._phase_kind == "idle" and new_status == "running":
+            self._phase_kind = "running"
+
+        current_status = self.status
+        if previous_status != current_status:
             if self.ctx:
-                self.ctx.emit("agent/status", {"agent": self, "status": new_status})
-            if new_status == "idle":
-                # Notify when_idle waiters
+                self.ctx.emit("agent/status", {"agent": self, "status": current_status})
+            if current_status == "idle":
+                futures = list(self._idle_futures)
+                self._idle_futures.clear()
+                for fut in futures:
+                    if not fut.done():
+                        fut.set_result(None)
+
+    def set_phase(self, phase_kind: str) -> None:
+        previous_status = self.status
+        self._phase_kind = phase_kind
+        self._status = "running" if phase_kind == "running" else "idle"
+        current_status = self.status
+        if previous_status != current_status:
+            if self.ctx:
+                self.ctx.emit("agent/status", {"agent": self, "status": current_status})
+            if current_status == "idle":
                 futures = list(self._idle_futures)
                 self._idle_futures.clear()
                 for fut in futures:
@@ -86,9 +116,16 @@ class Agent:
         Route input to inbox boundary and optionally wake driver.
         """
         msg_dict = {"role": "user", "content": message} if isinstance(message, str) else dict(message)
-        msg_id = self.inbox.append(target, msg_dict)
+        waking_after_abort = wakeup and self._phase_kind != "idle" and self.is_cancelled()
+        resolved_target = "next-turn" if waking_after_abort else target
+
+        msg_id = self.inbox.append(resolved_target, msg_dict)
         if wakeup:
-            self._wake_event.set()
+            if self._phase_kind != "idle":
+                if self._phase_kind == "maintenance" or waking_after_abort:
+                    self._wake_requested = True
+            else:
+                self._wake_event.set()
         return msg_id
 
     def followup(self, message: Union[str, Dict[str, Any]]) -> str:
@@ -103,13 +140,21 @@ class Agent:
         """Queue context without waking driver."""
         return self.send(message, target="next-step", wakeup=False)
 
-    def cancel(self, cause: Optional[Dict[str, Any]] = None, keep_inbox: bool = False) -> None:
+    def cancel(
+        self,
+        cause: Optional[Dict[str, Any]] = None,
+        keep_inbox: bool = False,
+        options: Optional[CancelOptions] = None,
+    ) -> None:
         """
         Abort active driver and optionally clear inbox.
         """
+        should_keep = keep_inbox or (options.keep_inbox if options else False)
         self._cancel_cause = cause or {"kind": "user"}
-        if not keep_inbox:
+        if not should_keep:
             self.inbox.clear()
+            if self._phase_kind != "idle":
+                self._wake_requested = False
         self._wake_event.set()
 
     def is_cancelled(self) -> bool:
@@ -122,7 +167,7 @@ class Agent:
 
     async def when_idle(self) -> None:
         """Resolve when whole-agent activity reaches idle quiescence."""
-        if self._status == "idle" and self.inbox.is_empty():
+        if self.status == "idle" and self.inbox.is_empty():
             return
         loop = asyncio.get_running_loop()
         fut = loop.create_future()
@@ -131,13 +176,20 @@ class Agent:
 
     async def run_maintenance(self, task_fn: Callable[[asyncio.Event], Any]) -> Any:
         """Run non-turn maintenance task in idle phase."""
-        if self._status != "idle":
+        if self._phase_kind != "idle":
             raise RuntimeError(f'agent "{self.id}" already has active work')
+        self.set_phase("maintenance")
         abort_event = asyncio.Event()
-        res = task_fn(abort_event)
-        if asyncio.iscoroutine(res):
-            res = await res
-        return res
+        try:
+            res = task_fn(abort_event)
+            if asyncio.iscoroutine(res):
+                res = await res
+            return res
+        finally:
+            self.set_phase("idle")
+            if self._wake_requested and self.inbox.has_pending:
+                self._wake_requested = False
+                self._wake_event.set()
 
 
 class AgentHandle:

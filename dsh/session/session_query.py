@@ -1,13 +1,93 @@
 """
-Session query service with SQLite FTS5 index and model-facing search tools.
+Session query service with SQLite FTS5 index, semantic document extraction, and model-facing search tools.
 Aligned 1:1 with official `@deepseek-ai/dsh-session-query-sqlite` and `@deepseek-ai/dsh-tool-session-query`.
 """
 
 import json
 import sqlite3
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 from dsh.cordis.plugin import Plugin
+
+
+def extract_session_event_text(event: Dict[str, Any]) -> str:
+    """
+    Extract searchable semantic text from one session event.
+    """
+    etype = event.get("type", "")
+    data = event.get("data", {}) if isinstance(event.get("data"), dict) else {}
+
+    if etype == "user/message":
+        content = data.get("content")
+        if content is None and "message" in data and isinstance(data["message"], dict):
+            content = data["message"].get("content")
+        if isinstance(content, str):
+            return content
+        if isinstance(content, list):
+            return " ".join(b.get("text", "") for b in content if isinstance(b, dict) and b.get("type") == "text")
+        return json.dumps(content, ensure_ascii=False) if content else ""
+    elif etype == "assistant/message":
+        msg = data.get("message", {})
+        if isinstance(msg, dict):
+            content = msg.get("content", "")
+            if isinstance(content, str):
+                return content
+            if isinstance(content, list):
+                return " ".join(b.get("text", "") for b in content if isinstance(b, dict) and b.get("type") in ("text", "reasoning"))
+        return ""
+    elif etype == "tool/call":
+        name = data.get("name", "")
+        args = data.get("arguments", "")
+        return f"{name} {args}" if isinstance(args, str) else f"{name} {json.dumps(args, ensure_ascii=False)}"
+    elif etype == "tool/result":
+        res = data.get("result", "")
+        msg = data.get("message", {})
+        if not res and isinstance(msg, dict):
+            content = msg.get("content", [])
+            if isinstance(content, list):
+                res = " ".join(b.get("text", "") for b in content if isinstance(b, dict) and b.get("type") == "text")
+        err = data.get("error", {})
+        err_str = f"{err.get('name', '')} {err.get('code', '')}" if isinstance(err, dict) else ""
+        return f"{res} {err_str}".strip()
+    elif etype == "todo/write":
+        todos = data.get("todos", [])
+        if isinstance(todos, list):
+            return " ".join(f"{t.get('status', '')} {t.get('content', '')}" for t in todos if isinstance(t, dict))
+    elif etype == "session/title":
+        return data.get("title", "")
+
+    return ""
+
+
+def filter_session_results(
+    records: List[Dict[str, Any]],
+    filters: Optional[List[Callable[[Dict[str, Any]], bool]]] = None,
+) -> List[Dict[str, Any]]:
+    """
+    Apply ANDed logical-session filters while preserving input order.
+    """
+    if not filters:
+        return list(records)
+    res = []
+    for rec in records:
+        if all(f(rec) for f in filters):
+            res.append(rec)
+    return res
+
+
+def event_records(events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Classify a raw event log with lightweight records.
+    """
+    records = []
+    for ev in events:
+        records.append({
+            "seq": ev.get("seq", 0),
+            "type": ev.get("type", ""),
+            "time": ev.get("time", 0),
+            "surface": "current" if ev.get("surfaceOp") == "append" else "log-only",
+        })
+    return records
 
 
 class SessionQueryService:
@@ -45,23 +125,13 @@ class SessionQueryService:
                 )
             """)
         except Exception:
-            # Fallback if fts5 is not compiled in sqlite
             pass
         self._conn.commit()
 
     def index_event(self, session_id: str, event: Dict[str, Any]) -> None:
         ev_type = event.get("type", "")
-        data = event.get("data", {})
-        text = ""
-
-        if ev_type == "user/message":
-            msg = data.get("message", {})
-            text = msg.get("content", "") if isinstance(msg.get("content"), str) else json.dumps(msg.get("content", ""))
-        elif ev_type == "assistant/message":
-            msg = data.get("message", {})
-            text = msg.get("content", "") or ""
-        elif ev_type == "tool/result":
-            text = data.get("result", "")
+        data = event.get("data", {}) if isinstance(event.get("data"), dict) else {}
+        text = extract_session_event_text(event)
 
         if not text:
             return
@@ -96,7 +166,6 @@ class SessionQueryService:
         cur = self._conn.cursor()
         results = []
         try:
-            # Try FTS search
             cur.execute(
                 """
                 SELECT d.session_id, d.seq, d.turn, d.step, d.event_type, d.content, d.time
@@ -109,7 +178,6 @@ class SessionQueryService:
             )
             rows = cur.fetchall()
         except Exception:
-            # Fallback LIKE search
             cur.execute(
                 """
                 SELECT session_id, seq, turn, step, event_type, content, time
@@ -186,14 +254,12 @@ class SessionQueryPlugin(Plugin):
         service = SessionQueryService(ctx, db_path=db_path)
         ctx.set_service("sessionQuery", service)
 
-        # Hook session append events to index dynamically
-        def on_session_append(subject: Any, event: Dict[str, Any]) -> None:
+        def on_session_event(subject: Any, event: Dict[str, Any]) -> None:
             sid = getattr(subject, "id", "default-session") if hasattr(subject, "id") else "default-session"
             service.index_event(sid, event)
 
-        ctx.on("session/append", on_session_append)
+        ctx.on("session/event", on_session_event)
 
-        # Register tools
         tools_svc = ctx.get("tools")
         if tools_svc:
             tools_svc.register(

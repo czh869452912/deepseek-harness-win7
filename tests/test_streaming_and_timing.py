@@ -107,4 +107,7 @@ async def test_agent_loop_with_stream_mock():
     asst_events = [e for e in session.events if e["type"] == "assistant/message"]
     assert len(asst_events) == 1
     assert asst_events[0]["data"]["timing"]["ttftMs"] == 200.0
-    assert asst_events[0]["data"]["message"]["content"] == "Hello from stream"
+
+    content = asst_events[0]["data"]["message"]["content"]
+    text = content if isinstance(content, str) else content[0]["text"]
+    assert text == "Hello from stream"

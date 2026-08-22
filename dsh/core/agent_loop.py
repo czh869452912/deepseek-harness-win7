@@ -12,9 +12,149 @@ from dsh.cordis.context import Context
 from dsh.cordis.plugin import Plugin
 from dsh.core.agent import Agent, AgentHandle, AgentOptions, AgentRegistry
 from dsh.core.runtime_context import RuntimeContextProjection
-from dsh.core.session import Session, SessionHeader, SessionStore
+from dsh.core.session import Session, SessionHeader, SessionStore, canonical_header, header_equals
 from dsh.core.tool_calls import execute_tool_calls
 from dsh.core.tools import ToolsService
+
+
+def request_proposal(header: Dict[str, Any]) -> Dict[str, Any]:
+    """Remove adapter-derived values before plugins propose the next request config."""
+    config = dict(header.get("config", {}))
+    adapter_defaults = header.get("adapterDefaults", {})
+    if adapter_defaults.get("reasoningEffort") is True:
+        config.pop("reasoningEffort", None)
+    if adapter_defaults.get("maxTokens") is True:
+        config.pop("maxTokens", None)
+    return config
+
+
+class PartialBlock:
+    def __init__(self, block_type: str):
+        self.block_type = block_type
+        self.text: str = ""
+        self.tool_call_id: Optional[str] = None
+        self.tool_call_name: Optional[str] = None
+        self.tool_call_arguments: str = ""
+
+
+class BlockAssembler:
+    """
+    Incremental chunk-to-message assembler.
+    1:1 aligned with official `@deepseek-ai/dsh-llm/assembler`.
+    """
+
+    def __init__(self):
+        self._partials: Dict[int, PartialBlock] = {}
+        self._order: List[int] = []
+        self.usage: Optional[Dict[str, Any]] = None
+        self.timing: Optional[Dict[str, Any]] = None
+        self.finish_kind: str = "completed"
+        self.failure: Optional[Dict[str, Any]] = None
+
+    def _ensure(self, index: int, block_type: str) -> PartialBlock:
+        if index not in self._partials:
+            self._partials[index] = PartialBlock(block_type=block_type)
+            self._order.append(index)
+        return self._partials[index]
+
+    def push(self, chunk: Any) -> None:
+        if isinstance(chunk, str):
+            if chunk:
+                partial = self._ensure(0, "text")
+                partial.text += chunk
+            return
+
+        if not isinstance(chunk, dict):
+            return
+
+        if "message" in chunk and isinstance(chunk["message"], dict):
+            msg = chunk["message"]
+            content = msg.get("content")
+            if content and isinstance(content, str):
+                partial = self._ensure(0, "text")
+                if not partial.text:
+                    partial.text = content
+            tcalls = msg.get("tool_calls")
+            if tcalls and isinstance(tcalls, list):
+                for idx, tc in enumerate(tcalls):
+                    partial = self._ensure(100 + idx, "tool-call")
+                    cid = tc.get("id") or str(tc.get("index", idx))
+                    func = tc.get("function", {}) if "function" in tc else tc
+                    name = func.get("name", "")
+                    args = func.get("arguments", "")
+                    partial.tool_call_id = cid
+                    partial.tool_call_name = name
+                    partial.tool_call_arguments = args if isinstance(args, str) else json.dumps(args, ensure_ascii=False)
+
+        if "usage" in chunk and isinstance(chunk["usage"], dict):
+            self.usage = chunk["usage"]
+        if "timing" in chunk and isinstance(chunk["timing"], dict):
+            self.timing = chunk["timing"]
+
+        finish_reason = chunk.get("finish_reason") or chunk.get("reason")
+        if finish_reason == "length" or finish_reason == "max_tokens":
+            self.finish_kind = "max-tokens"
+
+        delta = chunk.get("delta") or chunk.get("choices", [{}])[0].get("delta", {})
+        if not isinstance(delta, dict):
+            return
+
+        text_delta = delta.get("content") or delta.get("text")
+        if text_delta and isinstance(text_delta, str):
+            partial = self._ensure(0, "text")
+            partial.text += text_delta
+
+        reasoning_delta = delta.get("reasoning_content") or delta.get("reasoning")
+        if reasoning_delta and isinstance(reasoning_delta, str):
+            partial = self._ensure(1, "reasoning")
+            partial.text += reasoning_delta
+
+        tool_calls = delta.get("tool_calls")
+        if tool_calls and isinstance(tool_calls, list):
+            for tc in tool_calls:
+                if not isinstance(tc, dict):
+                    continue
+                tc_idx = tc.get("index", 0) + 10
+                partial = self._ensure(tc_idx, "tool-call")
+                cid = tc.get("id")
+                if cid:
+                    partial.tool_call_id = cid
+                func = tc.get("function", {}) if "function" in tc else tc
+                name = func.get("name")
+                if name:
+                    partial.tool_call_name = name
+                args_delta = func.get("arguments") or tc.get("arguments", "")
+                if args_delta and isinstance(args_delta, str):
+                    partial.tool_call_arguments += args_delta
+
+    def _assemble_partial(self, index: int, partial: PartialBlock) -> Dict[str, Any]:
+        if partial.block_type == "text":
+            return {"type": "text", "text": partial.text}
+        elif partial.block_type == "reasoning":
+            return {"type": "reasoning", "text": partial.text}
+        elif partial.block_type == "tool-call":
+            return {
+                "type": "tool-call",
+                "id": partial.tool_call_id or f"call-{index}",
+                "name": partial.tool_call_name or "",
+                "arguments": partial.tool_call_arguments,
+            }
+        return {"type": "text", "text": partial.text}
+
+    def blocks(self) -> List[Dict[str, Any]]:
+        all_blocks = [self._assemble_partial(idx, self._partials[idx]) for idx in self._order]
+        if self.finish_kind == "max-tokens":
+            # Truncation drops tool calls that cannot be executed safely
+            return [b for b in all_blocks if b.get("type") != "tool-call"]
+        return all_blocks
+
+    def interrupted_blocks(self) -> List[Dict[str, Any]]:
+        result = []
+        for idx in self._order:
+            partial = self._partials[idx]
+            if partial.block_type in ("text", "reasoning") and partial.text.strip():
+                result.append(self._assemble_partial(idx, partial))
+        return result
 
 
 class AgentLoopService:
@@ -42,7 +182,6 @@ class AgentLoopService:
     ) -> AgentHandle:
         sid = session_id or f"session-{uuid.uuid4().hex[:8]}"
 
-        # Resolve or create session
         sessions_svc = self.ctx.get("sessions")
         if isinstance(sessions_svc, SessionStore):
             session = sessions_svc.get(sid) or sessions_svc.create(sid, meta=meta)
@@ -50,7 +189,6 @@ class AgentLoopService:
             header = SessionHeader.from_dict({"id": sid, **(meta or {})})
             session = Session(session_id=sid, header=header, ctx=self.ctx)
 
-        # Create unpublished scoped context
         agent_ctx = self.ctx.extend()
         commit_fn = None
         if setup:
@@ -63,13 +201,11 @@ class AgentLoopService:
 
         agent = Agent(session=session, options=options, ctx=agent_ctx)
 
-        # Register to AgentRegistry
         agents_svc: Optional[AgentRegistry] = self.ctx.get("agents")
         disposer = None
         if agents_svc:
             disposer = agents_svc.register(agent)
 
-        # Start driver task
         driver_task = asyncio.create_task(self._drive_agent(agent))
         self._active_tasks.append(driver_task)
         agent._driver_task = driver_task
@@ -136,14 +272,12 @@ class AgentLoopService:
         return AgentHandle(agent=agent, disposer=teardown)
 
     async def _drive_agent(self, agent: Agent) -> None:
-        """
-        Background driver loop pumping the agent's inbox.
-        """
+        """Background driver loop pumping the agent's inbox."""
         try:
             while True:
                 if agent.is_cancelled():
                     cause = agent.take_cancel_cause()
-                    agent.session.append("turn/end", {"reason": {"kind": "aborted", "cause": cause}}, ignorable=True)
+                    agent.session.append("turn/end", {"turn": getattr(agent, "_last_turn", 0), "reason": {"kind": "aborted", "cause": cause}}, ignorable=True)
                     agent.set_status("idle")
 
                 if agent.inbox.is_empty():
@@ -152,8 +286,7 @@ class AgentLoopService:
                     agent._wake_event.clear()
                     continue
 
-                # We have pending work
-                agent.set_status("running")
+                agent.set_phase("running")
 
                 agents_svc: Optional[AgentRegistry] = self.ctx.get("agents")
                 if agents_svc:
@@ -182,11 +315,14 @@ class AgentLoopService:
     async def _turn(self, agent: Agent) -> bool:
         session = agent.session
         turn_num = self._get_turn_number(agent.id)
+        setattr(agent, "_last_turn", turn_num)
         session.append("turn/start", {"turn": turn_num}, ignorable=True)
 
         turn_ends: Optional[Dict[str, Any]] = None
         target = "next-turn"
         step_num = 0
+
+        runtime_context_proj = RuntimeContextProjection(agent.ctx, session)
 
         try:
             while True:
@@ -197,7 +333,6 @@ class AgentLoopService:
 
                 step_num += 1
 
-                # 1. Claim inbox and assemble pre-step
                 claimed = agent.inbox.claim(target=target, turn=turn_num)
 
                 system_prompt = "You are a helpful software engineer assistant."
@@ -208,7 +343,6 @@ class AgentLoopService:
                 system_prompt = await self.ctx.waterfall("system-prompt/assemble", system_prompt)
                 system_prompt = await self.ctx.waterfall("agent/prompt-assemble", system_prompt)
 
-                # Pre-step waterfall
                 request_payload = {
                     "agent": agent,
                     "messages": claimed,
@@ -221,11 +355,13 @@ class AgentLoopService:
                     turn_ends = {"kind": "blocked"}
                     return False
 
-                # Append user messages to session
                 for msg in claimed:
                     session.append_user_message(msg.get("content", ""), source=msg.get("source"))
 
-                # Empty initial boundary check
+                candidate_ctx = runtime_context_proj.project(system_prompt, [])
+                if candidate_ctx:
+                    session.append("user/message", candidate_ctx, surface_op="append")
+
                 if step_num == 1 and not claimed and len(session.surface.nodes) == 0:
                     turn_ends = {"kind": "completed"}
                     return False
@@ -233,9 +369,7 @@ class AgentLoopService:
                 session.append("step/start", {"turn": turn_num, "step": step_num}, ignorable=True)
 
                 try:
-                    # Execute step
                     step_end = await self._step(agent, turn_num, step_num, system_prompt)
-                    # Sticky max-tokens: once any step hits max-tokens, later completed steps preserve max-tokens
                     if step_end:
                         if turn_ends is None or turn_ends.get("kind") != "max-tokens":
                             turn_ends = step_end
@@ -254,7 +388,7 @@ class AgentLoopService:
             if agent.is_cancelled():
                 turn_ends = {"kind": "aborted", "reason": agent.take_cancel_cause()}
                 raise
-            turn_ends = {"kind": "error", "error": str(e)}
+            turn_ends = {"kind": "error", "error": {"message": str(e), "code": "UNKNOWN"}}
             raise
         finally:
             final_reason = turn_ends or {"kind": "completed"}
@@ -275,40 +409,39 @@ class AgentLoopService:
         provider_name = str(raw_provider) if raw_provider is not None else "openai"
         model_name = str(raw_model) if raw_model is not None else "deepseek-chat"
 
-        config_proposal: Dict[str, Any] = {
-            "provider": provider_name,
-            "model": model_name,
-        }
-        if agent.options.max_tokens is not None:
-            config_proposal["maxTokens"] = agent.options.max_tokens
+        persisted_header = session.request_header()
+        persisted_config = persisted_header.get("config", {}) if persisted_header else {}
+        logged_before = self._request_header_logged.get(agent.id, False)
 
-        # Run agent/request waterfall
-        proposed_config = await self.ctx.waterfall(
-            "agent/request",
-            config_proposal,
+        seed_config = (
+            request_proposal(persisted_header)
+            if logged_before and persisted_header
+            else {
+                "provider": provider_name,
+                "model": model_name,
+                **({"maxTokens": agent.options.max_tokens} if agent.options.max_tokens is not None else {}),
+            }
         )
+
+        proposed_config = await self.ctx.waterfall("agent/request", seed_config)
         if isinstance(proposed_config, dict):
             provider_name = str(proposed_config.get("provider", provider_name))
             model_name = str(proposed_config.get("model", model_name))
 
-        header_data = {
+        header_data = canonical_header({
             "system": system_prompt,
             "tools": tool_schemas,
             "config": {"provider": provider_name, "model": model_name},
-        }
+        })
 
-        # Header deduplication against session.request_header()
         baseline_header = session.request_header()
-        logged_before = self._request_header_logged.get(agent.id, False)
-
         if not logged_before:
             reason = "initial" if baseline_header is None else "resume"
             session.append_request_header(header_data, reason=reason)
             self._request_header_logged[agent.id] = True
-        elif baseline_header != header_data:
+        elif baseline_header is None or not header_equals(baseline_header, header_data):
             session.append_request_header(header_data, reason="change")
 
-        # Context deduplication against session.request_context()
         baseline_ctx = session.request_context()
         if (
             baseline_ctx is None
@@ -317,15 +450,12 @@ class AgentLoopService:
         ):
             session.append_request_context(provider=provider_name, model=model_name, context_window=128000)
 
-        # Derive surface messages
         messages = session.derive_messages(system_prompt=system_prompt)
 
         if not llm_service:
             raise RuntimeError("LLM service ('ctx.llm') is missing")
 
-        assistant_msg: Dict[str, Any] = {}
-        timing_data: Dict[str, Any] = {}
-        usage_data: Dict[str, Any] = {}
+        assembler = BlockAssembler()
         chunk_seqs: List[int] = []
 
         try:
@@ -349,31 +479,58 @@ class AgentLoopService:
                             )
                             seq = chunk_ev.get("seq", 0) if isinstance(chunk_ev, dict) else getattr(chunk_ev, "seq", 0)
                             chunk_seqs.append(seq)
+                            assembler.push(ev_payload)
                             self.ctx.emit("session/chunk", session, chunk_ev)
                             self.ctx.emit("assistant/chunk", chunk_ev)
                         elif ev_type == "finish":
-                            assistant_msg = ev_payload.get("message", {})
-                            timing_data = ev_payload.get("timing", {})
-                            usage_data = ev_payload.get("usage", {})
+                            assembler.push(ev_payload)
                             used_stream = True
                 except asyncio.CancelledError:
-                    if assistant_msg:
+                    content = assembler.interrupted_blocks()
+                    if content:
                         session.append_assistant_message(
-                            assistant_msg,
+                            {"content": content, "role": "assistant"},
                             turn=turn,
                             step=step,
                             surface_op="append",
                             source_event_seqs=chunk_seqs if chunk_seqs else None,
                         )
                     raise
-                except Exception:
+                except Exception as e:
                     used_stream = False
 
-            if not used_stream or not assistant_msg:
-                assistant_msg = llm_service.chat_completion(
+            if not used_stream:
+                sync_res = llm_service.chat_completion(
                     messages=messages,
                     tools=tool_schemas if tool_schemas else None,
                 )
+                if isinstance(sync_res, dict):
+                    content = sync_res.get("content", "")
+                    tcalls = sync_res.get("tool_calls", [])
+                    msg_blocks = []
+                    if content:
+                        msg_blocks.append({"type": "text", "text": content})
+                    if tcalls:
+                        for tc in tcalls:
+                            func = tc.get("function", {}) if "function" in tc else tc
+                            msg_blocks.append({
+                                "type": "tool-call",
+                                "id": tc.get("id", ""),
+                                "name": func.get("name", ""),
+                                "arguments": func.get("arguments", "{}"),
+                            })
+                    assembler._partials[0] = PartialBlock("text")
+                    assembler._partials[0].text = content if isinstance(content, str) else ""
+                    assembler._order = [0]
+                    if tcalls:
+                        for idx, tc in enumerate(tcalls):
+                            p = PartialBlock("tool-call")
+                            p.tool_call_id = tc.get("id", "")
+                            func = tc.get("function", {}) if "function" in tc else tc
+                            p.tool_call_name = func.get("name", "")
+                            p.tool_call_arguments = func.get("arguments", "{}")
+                            assembler._partials[10 + idx] = p
+                            assembler._order.append(10 + idx)
 
         except asyncio.CancelledError:
             raise
@@ -397,17 +554,28 @@ class AgentLoopService:
                 return await self._step(agent, turn, step, system_prompt)
             raise
 
+        blocks = assembler.blocks()
+        assistant_msg = {
+            "role": "assistant",
+            "content": blocks if blocks else [{"type": "text", "text": ""}],
+        }
+        tool_calls = [b for b in blocks if b.get("type") == "tool-call"]
+        if tool_calls:
+            assistant_msg["tool_calls"] = tool_calls
+
         session.append_assistant_message(
             assistant_msg,
             turn=turn,
             step=step,
-            usage=usage_data if usage_data else None,
-            timing=timing_data if timing_data else None,
+            usage=assembler.usage,
+            timing=assembler.timing,
             surface_op="append",
             source_event_seqs=chunk_seqs if chunk_seqs else None,
         )
 
-        tool_calls = assistant_msg.get("tool_calls")
+        if assembler.finish_kind == "max-tokens":
+            return {"kind": "max-tokens"}
+
         if not tool_calls:
             return {"kind": "completed"}
 
@@ -418,15 +586,13 @@ class AgentLoopService:
             step=step,
             tool_calls=tool_calls,
             signal=getattr(agent, "_cancel_event", None),
-            accept_context=lambda ctx_item: session.append_user_message(str(ctx_item)),
+            accept_context=lambda ctx_item: agent.inbox.splice("next-step", len(agent.inbox.next_step), 0, [ctx_item]),
         )
 
         return {"kind": "completed"} if outcome.get("concluded") else None
 
     async def run_turn(self, user_input: str, max_steps: int = 10) -> str:
-        """
-        Backward-compatible run_turn helper.
-        """
+        """Backward-compatible run_turn helper."""
         if self._default_agent is None:
             handle = await self.create_agent("default-session")
             self._default_agent = handle.agent
@@ -435,13 +601,16 @@ class AgentLoopService:
         agent.followup(user_input)
         await agent.when_idle()
 
-        # Extract last assistant response text
         for event in reversed(agent.session.events):
             if event.get("type") == "assistant/message":
                 msg = event.get("data", {}).get("message", {})
                 content = msg.get("content", "")
-                if content:
+                if isinstance(content, str):
                     return content
+                if isinstance(content, list):
+                    texts = [b.get("text", "") for b in content if isinstance(b, dict) and b.get("type") == "text"]
+                    if texts:
+                        return "".join(texts)
         return ""
 
     def teardown(self) -> None:

@@ -1,9 +1,10 @@
 """
 JSONL durable session-persistence backend for DeepSeek Harness Win7.
 Stores SessionHeader on line 1, followed by contiguous SessionEvent lines.
-Includes crash recovery (closing interrupted turns) and packed chunk rows.
+Includes crash recovery (closing interrupted turns), packed chunk rows, and Win32 atomic write protections.
 """
 
+import asyncio
 import hashlib
 import json
 import os
@@ -18,6 +19,34 @@ from dsh.session.persistence import (
     SessionPersistenceSnapshot,
 )
 from dsh.session.repair import migrate_legacy_event
+
+
+def win32_atomic_write(target_path: str, lines: List[str]) -> None:
+    """
+    Windows-safe atomic write using temporary file and retried os.replace.
+    """
+    tmp_path = f"{target_path}.{int(time.time() * 1000)}.{os.getpid()}.tmp"
+    os.makedirs(os.path.dirname(target_path), exist_ok=True)
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        for line in lines:
+            f.write(line + "\n")
+        f.flush()
+        os.fsync(f.fileno())
+
+    retries = 5
+    for attempt in range(retries):
+        try:
+            os.replace(tmp_path, target_path)
+            return
+        except OSError:
+            if attempt == retries - 1:
+                if os.path.exists(tmp_path):
+                    try:
+                        os.remove(tmp_path)
+                    except OSError:
+                        pass
+                raise
+            time.sleep(0.05 * (2 ** attempt))
 
 
 def _project_dir_name(cwd: Optional[str]) -> str:
@@ -71,16 +100,8 @@ class JsonlSessionPersistence(SessionPersistence):
         path = self.locate(meta).path
         os.makedirs(os.path.dirname(path), exist_ok=True)
         if not os.path.exists(path):
-            tmp_path = f"{path}.{int(time.time() * 1000)}.tmp"
-            with open(tmp_path, "w", encoding="utf-8") as f:
-                header_line = json.dumps(meta.to_dict(), ensure_ascii=False)
-                f.write(header_line + "\n")
-                f.flush()
-                os.fsync(f.fileno())
-            if os.path.exists(path):
-                os.remove(tmp_path)
-            else:
-                os.replace(tmp_path, path)
+            header_line = json.dumps(meta.to_dict(), ensure_ascii=False)
+            win32_atomic_write(path, [header_line])
 
     async def append(self, session_id: str, events: List[Dict[str, Any]]) -> None:
         if not events:
@@ -93,7 +114,6 @@ class JsonlSessionPersistence(SessionPersistence):
             if found:
                 path = found
             else:
-                # Materialize header
                 if not meta:
                     meta = SessionHeader(session_id=session_id)
                 await self.create(meta)
@@ -160,7 +180,6 @@ class JsonlSessionPersistence(SessionPersistence):
                 continue
 
             if data.get("type") == "assistant/chunk-batch":
-                # Unpack packed chunk row
                 base_seq = data.get("seq", len(events))
                 chunks = data.get("chunks", [])
                 for i, chk in enumerate(chunks):
@@ -188,10 +207,10 @@ class JsonlSessionPersistence(SessionPersistence):
             raise ValueError(f'corrupt session file (empty): "{path}"')
 
         header_dict = json.loads(lines[0].strip())
-        if header_dict.get("version", 0) > SESSION_FORMAT_VERSION:
+        file_ver = header_dict.get("version", 0)
+        if file_ver > 1:
             raise ValueError(
-                f'unsupported session version {header_dict.get("version")}; '
-                f'current build supports up to {SESSION_FORMAT_VERSION}'
+                f'unsupported session version {file_ver}; current build supports version 0 or 1'
             )
 
         meta = SessionHeader.from_dict(header_dict)
@@ -208,7 +227,6 @@ class JsonlSessionPersistence(SessionPersistence):
                 open_turn = None
 
         if open_turn is not None:
-            # Crash recovery: orphaned turn detected
             closer_event: Dict[str, Any] = {
                 "type": "turn/end",
                 "seq": len(events),
@@ -230,7 +248,6 @@ class JsonlSessionPersistence(SessionPersistence):
         inspection = self._read_raw_file(path)
         closers = self._check_interrupted_turn(session_id, inspection.events)
         if closers:
-            # Durably commit crash repair
             await self.append(session_id, closers)
             inspection.events.extend(closers)
 
@@ -245,7 +262,6 @@ class JsonlSessionPersistence(SessionPersistence):
         inspection = self._read_raw_file(path)
         closers = self._check_interrupted_turn(session_id, inspection.events)
         if closers:
-            # Synthetic in-memory view without committing to disk
             events_copy = list(inspection.events) + closers
             return SessionInspection(meta=inspection.meta, events=events_copy)
 
@@ -333,6 +349,5 @@ class JsonlSessionPersistencePlugin(Plugin):
         persistence = JsonlSessionPersistence(root=self.root, pack_chunks=self.pack_chunks, ctx=ctx)
         ctx.set_service("session_persistence", persistence)
 
-        # Hook session lifecycle events
         ctx.on("session/event", persistence.on_session_event)
         ctx.on("session/flush", persistence.on_session_flush)

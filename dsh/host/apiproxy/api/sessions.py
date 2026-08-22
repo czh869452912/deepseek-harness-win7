@@ -110,8 +110,21 @@ class SessionsDomainHandler:
                 event_obj["seq"] = 0
             if "type" not in event_obj:
                 event_obj["type"] = "unknown"
-            if "data" not in event_obj:
-                event_obj["data"] = {}
+
+            data = event_obj.get("data")
+            if not isinstance(data, dict):
+                data = {}
+                event_obj["data"] = data
+            else:
+                data = dict(data)
+                event_obj["data"] = data
+
+            if event_obj.get("type") == "user/message":
+                if "source" not in data or not isinstance(data["source"], dict) or "kind" not in data["source"]:
+                    data["source"] = {"kind": "user"}
+                if "id" not in data:
+                    data["id"] = f"msg-{event_obj['seq']}"
+
             history_entries.append({"event": event_obj})
 
         return {

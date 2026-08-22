@@ -5,6 +5,7 @@ Maintains append-only session log, SurfaceManager projection, and EpochHeader/Re
 """
 
 import json
+import os
 import time
 from typing import Any, Callable, Dict, List, Optional, Union
 from dsh.cordis.plugin import Plugin
@@ -273,9 +274,13 @@ class Session:
         surface_op: Optional[Union[str, Dict[str, Any]]] = None,
         source: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        data: Dict[str, Any] = {"content": text}
-        if source:
-            data["source"] = source
+        msg_id = f"user-{os.urandom(4).hex()}"
+        src = source if (isinstance(source, dict) and "kind" in source) else {"kind": "user"}
+        data: Dict[str, Any] = {
+            "id": msg_id,
+            "content": text,
+            "source": src,
+        }
         return self.append("user/message", data, surface_op=surface_op or "append")
 
     def append_assistant_message(

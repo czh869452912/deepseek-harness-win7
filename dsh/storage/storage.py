@@ -6,12 +6,12 @@ Aligned 1:1 with official `@deepseek-ai/dsh-storage` and `@deepseek-ai/dsh-stora
 import json
 import os
 import tempfile
+import threading
 from typing import Any, Callable, Dict, List, Optional
+from dsh.cordis.file_lock import FileLock
+
+from dsh.cordis.environment import resolve_dsh_home
 from dsh.cordis.plugin import Plugin
-
-
-def get_dsh_home() -> str:
-    return os.environ.get("DSH_HOME") or os.path.join(os.path.expanduser("~"), ".dsh")
 
 
 class DomainUnit:
@@ -22,34 +22,42 @@ class DomainUnit:
         self.root_dir = root_dir
         os.makedirs(self.root_dir, exist_ok=True)
         self.file_path = os.path.join(self.root_dir, f"{name}.json")
+        self.lock_path = self.file_path + ".lock"
+        self._lock = threading.Lock()
         self._data: Dict[str, Any] = {}
         self._load()
 
     def _load(self) -> None:
-        if os.path.exists(self.file_path):
-            try:
-                with open(self.file_path, "r", encoding="utf-8") as f:
-                    self._data = json.load(f)
-            except Exception:
+        with self._lock:
+            if os.path.exists(self.file_path):
+                lock = FileLock(self.lock_path, timeout=10)
+                try:
+                    with lock:
+                        with open(self.file_path, "r", encoding="utf-8") as f:
+                            text = f.read()
+                            self._data = json.loads(text) if text.strip() else {}
+                except Exception:
+                    self._data = {}
+            else:
                 self._data = {}
-        else:
-            self._data = {}
 
     def _save(self) -> None:
-        # Atomic write
-        temp_fd, temp_path = tempfile.mkstemp(dir=self.root_dir, prefix=f"{self.name}_", suffix=".tmp")
-        try:
-            with open(temp_fd, "w", encoding="utf-8") as f:
-                json.dump(self._data, f, ensure_ascii=False, indent=2)
-            # Atomic replace on Windows (Python 3.8 os.replace handles overwrite atomically)
-            os.replace(temp_path, self.file_path)
-        except Exception:
-            if os.path.exists(temp_path):
+        with self._lock:
+            lock = FileLock(self.lock_path, timeout=10)
+            with lock:
+                os.makedirs(self.root_dir, exist_ok=True)
+                temp_fd, temp_path = tempfile.mkstemp(dir=self.root_dir, prefix=f"{self.name}_", suffix=".tmp")
                 try:
-                    os.unlink(temp_path)
-                except Exception:
-                    pass
-            raise
+                    with os.fdopen(temp_fd, "w", encoding="utf-8") as f:
+                        json.dump(self._data, f, ensure_ascii=False, indent=2)
+                        f.write("\n")
+                    os.replace(temp_path, self.file_path)
+                finally:
+                    if os.path.exists(temp_path):
+                        try:
+                            os.remove(temp_path)
+                        except Exception:
+                            pass
 
     def get(self, key: str, default: Any = None) -> Any:
         return self._data.get(key, default)
@@ -71,19 +79,32 @@ class DomainUnit:
     def entries(self) -> Dict[str, Any]:
         return dict(self._data)
 
+    def clear(self) -> None:
+        self._data.clear()
+        self._save()
+
 
 class StorageService:
     """Storage hub service mounted at `ctx.storage`."""
 
     def __init__(self, ctx: Any, root_dir: Optional[str] = None):
         self.ctx = ctx
-        self.root_dir = root_dir or os.path.join(get_dsh_home(), "storages")
+        self.root_dir = root_dir or os.path.join(resolve_dsh_home(), "storages")
         self._domains: Dict[str, DomainUnit] = {}
 
     def domain(self, name: str) -> DomainUnit:
         if name not in self._domains:
             self._domains[name] = DomainUnit(name, self.root_dir)
         return self._domains[name]
+
+    def list_domains(self) -> List[str]:
+        if not os.path.exists(self.root_dir):
+            return list(self._domains.keys())
+        found = set(self._domains.keys())
+        for fn in os.listdir(self.root_dir):
+            if fn.endswith(".json"):
+                found.add(fn[:-5])
+        return sorted(found)
 
 
 class StoragePlugin(Plugin):
@@ -95,6 +116,6 @@ class StoragePlugin(Plugin):
     name = "@deepseek-ai/dsh-storage"
 
     def apply(self, ctx: Any) -> None:
-        root_dir = self.config.get("root")
+        root_dir = self.config.get("root") if self.config else None
         svc = StorageService(ctx, root_dir=root_dir)
         ctx.set_service("storage", svc)

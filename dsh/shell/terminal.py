@@ -72,6 +72,13 @@ class PersistentTerminal:
                 errors="replace",
                 bufsize=1,
             )
+            if self.shell_type == "powershell":
+                preamble = (
+                    "[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); "
+                    "$OutputEncoding = [System.Text.UTF8Encoding]::new($false);\n"
+                )
+                self._proc.stdin.write(preamble)
+                self._proc.stdin.flush()
         except Exception as e:
             print(f"[PersistentTerminal Error] Failed to start shell process: {e}")
             self._proc = None
@@ -133,6 +140,8 @@ class PersistentTerminal:
 
             q: queue.Queue = queue.Queue()
 
+            import re
+
             def reader_thread():
                 while True:
                     line = self._proc.stdout.readline()
@@ -140,7 +149,7 @@ class PersistentTerminal:
                         q.put(None)
                         break
                     q.put(line)
-                    if end_marker in line:
+                    if re.search(re.escape(end_marker) + r"\d+", line):
                         break
 
             t = threading.Thread(target=reader_thread, daemon=True)
@@ -162,17 +171,13 @@ class PersistentTerminal:
 
                 line_clean = line.rstrip("\r\n")
 
-                if start_marker in line_clean:
+                if start_marker in line_clean and not started:
                     started = True
                     continue
 
-                if end_marker in line_clean:
-                    idx = line_clean.find(end_marker)
-                    code_str = line_clean[idx + len(end_marker) :].strip()
-                    try:
-                        exit_code = int(code_str)
-                    except ValueError:
-                        exit_code = 0
+                match = re.search(re.escape(end_marker) + r"(\d+)", line_clean)
+                if match:
+                    exit_code = int(match.group(1))
                     completed = True
                     break
 
@@ -182,7 +187,12 @@ class PersistentTerminal:
             if not completed:
                 # Timed out
                 self.reset()
-                return -1, f"Command execution timed out after {timeout_seconds}s.\n{SHELL_RESET_MESSAGE}", True
+                partial = "\n".join(output_lines)
+                msg = (
+                    f"Your command timed out after {timeout_seconds} seconds or experienced an OOM error. "
+                    f"Below is partial output:\n{partial}\n{SHELL_RESET_MESSAGE}"
+                )
+                return -1, msg, True
 
             return exit_code, "\n".join(output_lines), False
 

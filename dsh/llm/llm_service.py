@@ -13,7 +13,7 @@ class LlmError(RuntimeError):
             raise ValueError("LlmError message must be a non-empty string")
         if not isinstance(code, str) or not code:
             raise ValueError("LlmError code must be a non-empty string")
-        super(LlmError, self).__init__(message)
+        super(LlmError, self).__init__(f"[{code}] {message}")
         self.code = code
         self.status = status
         self.providerRetryAfterMs = providerRetryAfterMs
@@ -64,6 +64,7 @@ class LLMService:
         ]
 
     # ---- config resolution (unchanged) ----
+    # ---- config resolution (1:1 fallback chain) ----
     def resolve_api_key(self):
         if self.static_api_key:
             return self.static_api_key
@@ -77,11 +78,14 @@ class LLMService:
         if self.ctx and self.ctx.has("credentials"):
             creds = self.ctx.get("credentials")
             try:
-                val = creds.resolve(self.api_key_env) or creds.resolve("OPENAI_API_KEY")
+                val = (
+                    creds.resolve(self.api_key_env)
+                    or creds.resolve("DEEPSEEK_API_KEY")
+                    or creds.resolve("OPENAI_API_KEY")
+                )
             except Exception:
                 val = None
             if val:
-                # credentials.resolve may return dict {value:...} or str
                 if isinstance(val, dict):
                     v = val.get("value")
                     if v:
@@ -90,13 +94,11 @@ class LLMService:
                     return val
         if self.ctx and self.ctx.has("settings"):
             settings = self.ctx.get("settings")
-            val = settings.get_setting("llm", "api_key")
-            if val:
-                return val
-            # also check llm-deepseek ns
-            val2 = settings.get_setting("llm-deepseek", "apiKey")
-            if val2:
-                return val2
+            for ns in ("llm", "llm-deepseek", "llm-openai"):
+                for key in ("api_key", "apiKey"):
+                    v = settings.get_setting(ns, key)
+                    if v and isinstance(v, str) and v.strip():
+                        return v.strip()
         if self.ctx and self.ctx.has("launch_environment"):
             launch_env = self.ctx.get("launch_environment")
             entry = (
@@ -114,23 +116,19 @@ class LLMService:
     def resolve_base_url(self):
         if self.static_base_url:
             return self.static_base_url.rstrip("/")
-        if self.ctx and self.ctx.has("settings"):
-            settings = self.ctx.get("settings")
-            val = settings.get_setting("llm", "base_url")
-            if val:
-                return str(val).rstrip("/")
-            val2 = settings.get_setting("llm-deepseek", "baseURL")
-            if val2:
-                return str(val2).rstrip("/")
-            val2 = settings.get_setting("llm-deepseek", "base_url")
-            if val2:
-                return str(val2).rstrip("/")
         env_url = (
             os.environ.get("DEEPSEEK_BASE_URL")
             or os.environ.get("OPENAI_BASE_URL")
         )
         if env_url:
             return env_url.rstrip("/")
+        if self.ctx and self.ctx.has("settings"):
+            settings = self.ctx.get("settings")
+            for ns in ("llm", "llm-deepseek", "llm-openai"):
+                for key in ("base_url", "baseURL"):
+                    v = settings.get_setting(ns, key)
+                    if v and isinstance(v, str) and v.strip():
+                        return str(v).rstrip("/")
         if self.ctx and self.ctx.has("launch_environment"):
             launch_env = self.ctx.get("launch_environment")
             entry = (
@@ -144,14 +142,16 @@ class LLMService:
     def resolve_search_base_url(self):
         if self.static_search_base_url:
             return self.static_search_base_url.rstrip("/")
-        if self.ctx and self.ctx.has("settings"):
-            settings = self.ctx.get("settings")
-            val = settings.get_setting("llm", "search_base_url")
-            if val:
-                return str(val).rstrip("/")
         env_url = os.environ.get("DEEPSEEK_SEARCH_BASE_URL")
         if env_url:
             return env_url.rstrip("/")
+        if self.ctx and self.ctx.has("settings"):
+            settings = self.ctx.get("settings")
+            for ns in ("llm", "llm-deepseek", "llm-openai"):
+                for key in ("search_base_url", "searchBaseURL"):
+                    v = settings.get_setting(ns, key)
+                    if v and isinstance(v, str) and v.strip():
+                        return str(v).rstrip("/")
         if self.ctx and self.ctx.has("launch_environment"):
             launch_env = self.ctx.get("launch_environment")
             entry = launch_env.get_from("DEEPSEEK_SEARCH_BASE_URL", ["project-env", "user-env"])
@@ -164,20 +164,19 @@ class LLMService:
             return req_model
         if self.static_model:
             return self.static_model
-        if self.ctx and self.ctx.has("settings"):
-            settings = self.ctx.get("settings")
-            val = settings.get_setting("llm", "model")
-            if val:
-                return str(val)
-            val2 = settings.get_setting("llm-deepseek", "model")
-            if val2:
-                return str(val2)
         env_model = (
             os.environ.get("DEEPSEEK_MODEL")
             or os.environ.get("OPENAI_MODEL")
         )
         if env_model:
             return env_model
+        if self.ctx and self.ctx.has("settings"):
+            settings = self.ctx.get("settings")
+            for ns in ("llm", "llm-deepseek", "llm-openai"):
+                for key in ("model", "model_name", "modelName"):
+                    v = settings.get_setting(ns, key)
+                    if v and isinstance(v, str) and v.strip():
+                        return str(v).strip()
         if self.ctx and self.ctx.has("launch_environment"):
             launch_env = self.ctx.get("launch_environment")
             entry = (
@@ -457,7 +456,8 @@ class LLMService:
                     # run if loop exists else create
                     try:
                         loop = _aio.get_running_loop()
-                        # can't block; fallback to sync version
+                        if hasattr(res, "close"):
+                            res.close()
                         return {"provider": provider_id, "id": model_id, "name": model_id}
                     except RuntimeError:
                         res = _aio.run(res)

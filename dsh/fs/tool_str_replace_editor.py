@@ -80,21 +80,22 @@ def format_file_view(
     prompt = f"Here's the content of {path} with line numbers (which has a total of {len(all_lines)} lines)"
 
     if view_range is not None:
-        if len(view_range) != 2 or not all(isinstance(x, int) for x in view_range):
+        if not isinstance(view_range, (list, tuple)) or len(view_range) != 2 or not all(isinstance(x, int) and not isinstance(x, bool) for x in view_range):
             raise ValueError("Invalid `view_range`. It should be a list of two integers.")
+        range_str = ", ".join(str(x) for x in view_range)
         initial_line, requested_final_line = view_range
         final_line = requested_final_line
         if initial_line < 1 or initial_line > len(all_lines):
             raise ValueError(
-                f"Invalid `view_range`: [{view_range[0]}, {view_range[1]}]. Its first element `{initial_line}` should be within the range of lines of the file: [1, {len(all_lines)}]"
+                f"Invalid `view_range`: [{range_str}]. Its first element `{initial_line}` should be within the range of lines of the file: [1, {len(all_lines)}]"
             )
         if final_line != -1 and final_line > len(all_lines):
             raise ValueError(
-                f"Invalid `view_range`: [{view_range[0]}, {view_range[1]}]. Its second element `{final_line}` should be smaller than the number of lines in the file: `{len(all_lines)}`"
+                f"Invalid `view_range`: [{range_str}]. Its second element `{final_line}` should be smaller than the number of lines in the file: `{len(all_lines)}`"
             )
         if final_line != -1 and final_line < initial_line:
             raise ValueError(
-                f"Invalid `view_range`: [{view_range[0]}, {view_range[1]}]. Its second element `{final_line}` should be larger or equal than its first `{initial_line}`"
+                f"Invalid `view_range`: [{range_str}]. Its second element `{final_line}` should be larger or equal than its first `{initial_line}`"
             )
 
         if final_line == -1:
@@ -221,11 +222,53 @@ class StrReplaceEditorPlugin(Plugin):
                 ctx=ctx,
             )
 
+        def present_editor_call(args: Dict[str, Any]) -> Dict[str, Any]:
+            cmd = args.get("command")
+            p = args.get("path", "")
+            if cmd == "view":
+                return {
+                    "card": "generic",
+                    "title": f"view {p}",
+                    "kind": "read",
+                    "locations": [{"path": p}],
+                }
+            elif cmd == "create":
+                return {
+                    "card": "diff",
+                    "title": f"create {p}",
+                    "diffs": [{"path": p, "oldText": None, "newText": args.get("file_text") or ""}],
+                    "locations": [{"path": p}],
+                }
+            elif cmd == "str_replace":
+                return {
+                    "card": "diff",
+                    "title": f"str_replace {p}",
+                    "diffs": [{
+                        "path": p,
+                        "oldText": args.get("old_str"),
+                        "newText": args.get("new_str") or "",
+                    }],
+                    "locations": [{"path": p}],
+                }
+            elif cmd == "insert":
+                loc: Dict[str, Any] = {"path": p}
+                il = args.get("insert_line")
+                if il is not None:
+                    loc["line"] = max(1, il + 1)
+                return {
+                    "card": "generic",
+                    "title": f"insert {p}",
+                    "kind": "edit",
+                    "locations": [loc],
+                }
+            return {"card": "generic", "title": f"{cmd} {p}"}
+
         tools_service.register(
             name="str_replace_editor",
             description=self.description,
             parameters=parameters,
             handler=self.handle_editor,
+            present_call=present_editor_call,
         )
 
     def _resolve_target(self, fs: Any, path: str) -> Tuple[Optional[str], Optional[str]]:

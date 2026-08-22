@@ -1,14 +1,18 @@
 import os
 import re
-from pathlib import Path
 from typing import Any, Dict, List, Optional
-
 from dsh.cordis.plugin import Plugin
-from dsh.context.file_reference_local.search import WorkspaceFileSearch
+from dsh.context.file_reference_local.grammar import active_at_token, format_file_mention
+from dsh.context.file_reference_local.search import (
+    DEFAULT_FILE_SEARCH_EXCLUDED_DIRECTORIES,
+    DEFAULT_FILE_SEARCH_MAX_ENTRIES,
+    DEFAULT_FILE_SEARCH_MAX_RESULTS,
+    WorkspaceFileSearch,
+)
 
 FILE_REFERENCE_PROMPT = (
     "Paths prefixed with @ are files explicitly referenced by the user. "
-    "Use the str_replace_editor view command or file tools when their contents are needed; "
+    "Use the read tool when their contents are needed; "
     "do not claim to have inspected a file before reading it."
 )
 
@@ -26,24 +30,29 @@ class FileReferenceLocalPlugin(Plugin):
         super().__init__(config)
         cfg = config or {}
         self.max_inline_bytes = int(cfg.get("maxInlineBytes", 16384))
-        self.max_results = int(cfg.get("maxResults", 8))
+        self.max_results = int(cfg.get("maxResults", DEFAULT_FILE_SEARCH_MAX_RESULTS))
+        self.max_entries = int(cfg.get("maxEntries", DEFAULT_FILE_SEARCH_MAX_ENTRIES))
+        self.excluded_directories = list(cfg.get("excludedDirectories", DEFAULT_FILE_SEARCH_EXCLUDED_DIRECTORIES))
         self.searcher: Optional[WorkspaceFileSearch] = None
 
     def apply(self, ctx: Any) -> None:
         cwd = ctx.get("fs").cwd if ctx.has("fs") and hasattr(ctx.get("fs"), "cwd") else os.getcwd()
-        self.searcher = WorkspaceFileSearch(cwd, {"maxResults": self.max_results})
+        self.searcher = WorkspaceFileSearch(cwd, {
+            "maxResults": self.max_results,
+            "maxEntries": self.max_entries,
+            "excludedDirectories": self.excluded_directories,
+        })
         ctx.set_service("fileReferences", self.searcher)
 
-        # 1. Register system prompt section if systemPrompt is available
-        if ctx.has("system_prompt"):
-            sp = ctx.get("system_prompt")
-            if hasattr(sp, "section"):
-                sp.section("context:file-reference", FILE_REFERENCE_PROMPT, order=99)
+        # Register system prompt section if system_prompt or systemPrompt is available
+        sp = ctx.get("system_prompt") if ctx.has("system_prompt") else (ctx.get("systemPrompt") if ctx.has("systemPrompt") else None)
+        if sp and hasattr(sp, "section"):
+            sp.section("context:file-reference", FILE_REFERENCE_PROMPT, order=99)
 
-        # 2. Invalidate search index on tool result
+        # Invalidate search index on tool result
         ctx.on("tools/result", lambda *a, **kw: self.searcher.invalidate() if self.searcher else None)
 
-        # 3. Hook agent/pre-step to expand file mentions if user explicitly typed @file
+        # Hook agent/pre-step to expand file mentions if user explicitly typed @file
         async def hook_file_references(payload: Dict[str, Any]) -> Dict[str, Any]:
             messages = payload.get("messages", [])
             if not messages:
@@ -52,7 +61,6 @@ class FileReferenceLocalPlugin(Plugin):
             for msg in messages:
                 if msg.get("role") == "user" and isinstance(msg.get("content"), str):
                     text = msg["content"]
-                    # Match @filename or @"path with spaces"
                     matches = re.findall(r'@(?:\"([^\"]+)\"|([a-zA-Z0-9_\-\.\/\\]+))', text)
                     if matches:
                         inlined_snippets = []
@@ -83,3 +91,15 @@ class FileReferenceLocalPlugin(Plugin):
             return payload
 
         ctx.on("agent/pre-step", hook_file_references)
+
+
+__all__ = [
+    "FileReferenceLocalPlugin",
+    "WorkspaceFileSearch",
+    "FILE_REFERENCE_PROMPT",
+    "active_at_token",
+    "format_file_mention",
+    "DEFAULT_FILE_SEARCH_MAX_RESULTS",
+    "DEFAULT_FILE_SEARCH_MAX_ENTRIES",
+    "DEFAULT_FILE_SEARCH_EXCLUDED_DIRECTORIES",
+]

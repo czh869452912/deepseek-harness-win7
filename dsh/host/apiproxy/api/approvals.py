@@ -38,7 +38,15 @@ class ApprovalsDomainHandler:
                 "outcome": outcome,
             })
         else:
-            outcome = value if (isinstance(value, str) and value in ("approved", "rejected")) else ("approved" if ok else "rejected")
+            if isinstance(value, str) and value in ("allowed-once", "rejected", "cancelled", "unavailable"):
+                outcome = value
+            elif isinstance(value, dict) and value.get("outcome") in ("allowed-once", "rejected", "cancelled", "unavailable"):
+                outcome = value["outcome"]
+            elif value == "approved" or ok:
+                outcome = "allowed-once"
+            else:
+                outcome = "rejected"
+
             await self._broadcast_mux({
                 "type": "approval/resolved",
                 "sessionId": sid,
@@ -47,3 +55,4 @@ class ApprovalsDomainHandler:
             })
 
         return {"accepted": True}
+

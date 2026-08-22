@@ -222,10 +222,11 @@ class ApiProxyPlugin(Plugin):
             chunk = args[1] if len(args) >= 2 else (args[0] if args else {})
             sid = getattr(session_obj, "id", getattr(session_obj, "session_id", "default-session")) if session_obj else "default-session"
             if isinstance(chunk, dict):
+                ev = chunk if ("type" in chunk and "data" in chunk) else {"type": "assistant/chunk", "data": chunk}
                 asyncio.create_task(self._broadcast_mux({
                     "type": "session/event",
                     "sessionId": str(sid),
-                    "event": {"type": "session/chunk", "data": chunk},
+                    "event": ev,
                 }))
         except Exception:
             pass
@@ -235,10 +236,11 @@ class ApiProxyPlugin(Plugin):
             chunk = args[0] if args else {}
             if isinstance(chunk, dict):
                 sid = chunk.get("sessionId") or chunk.get("session_id") or "default-session"
+                ev = chunk if ("type" in chunk and "data" in chunk) else {"type": "assistant/chunk", "data": chunk}
                 asyncio.create_task(self._broadcast_mux({
                     "type": "session/event",
                     "sessionId": str(sid),
-                    "event": {"type": "assistant/chunk", "data": chunk},
+                    "event": ev,
                 }))
         except Exception:
             pass
@@ -334,25 +336,42 @@ class ApiProxyPlugin(Plugin):
             sid = sid or "default-session"
             inbox = getattr(agent, "inbox", None) if agent else None
             items = []
+            def _format_msg(msg, default_id):
+                m_id = msg.get("id") or default_id
+                raw_c = msg.get("content", "")
+                blocks = raw_c if isinstance(raw_c, list) else [{"type": "text", "text": str(raw_c)}]
+                src = msg.get("source") if (isinstance(msg.get("source"), dict) and "kind" in msg["source"]) else {"kind": "user"}
+                return {"id": m_id, "role": msg.get("role", "user"), "content": blocks, "source": src}
+
             if inbox:
-                for msg in inbox.next_turn:
-                    items.append({"id": msg.get("id", ""), "placement": "queued", "message": {"role": "user", "content": msg.get("content", "")}})
-                for msg in inbox.next_step:
-                    items.append({"id": msg.get("id", ""), "placement": "steering", "message": {"role": "user", "content": msg.get("content", "")}})
+                next_turn_msgs = getattr(inbox, "next_turn", getattr(inbox, "nextTurn", []))
+                for i, msg in enumerate(next_turn_msgs):
+                    m_id = msg.get("id") or f"msg-turn-{i}"
+                    items.append({"id": m_id, "placement": "queued", "message": _format_msg(msg, m_id)})
+                next_step_msgs = getattr(inbox, "next_step", getattr(inbox, "nextStep", []))
+                for i, msg in enumerate(next_step_msgs):
+                    m_id = msg.get("id") or f"msg-step-{i}"
+                    src = msg.get("source") if isinstance(msg.get("source"), dict) else {}
+                    placement = "steering" if src.get("kind") == "user" else "context"
+                    items.append({"id": m_id, "placement": placement, "message": _format_msg(msg, m_id)})
             else:
-                # No agent inbox, try to find handle
                 handle = self._active_sessions.get(sid)
                 if handle and hasattr(handle, "agent") and hasattr(handle.agent, "inbox"):
                     ib = handle.agent.inbox
-                    for msg in ib.next_turn:
-                        items.append({"id": msg.get("id", ""), "placement": "queued", "message": {"role": "user", "content": msg.get("content", "")}})
-                    for msg in ib.next_step:
-                        items.append({"id": msg.get("id", ""), "placement": "steering", "message": {"role": "user", "content": msg.get("content", "")}})
+                    next_turn_msgs = getattr(ib, "next_turn", getattr(ib, "nextTurn", []))
+                    for i, msg in enumerate(next_turn_msgs):
+                        m_id = msg.get("id") or f"msg-turn-{i}"
+                        items.append({"id": m_id, "placement": "queued", "message": _format_msg(msg, m_id)})
+                    next_step_msgs = getattr(ib, "next_step", getattr(ib, "nextStep", []))
+                    for i, msg in enumerate(next_step_msgs):
+                        m_id = msg.get("id") or f"msg-step-{i}"
+                        src = msg.get("source") if isinstance(msg.get("source"), dict) else {}
+                        placement = "steering" if src.get("kind") == "user" else "context"
+                        items.append({"id": m_id, "placement": placement, "message": _format_msg(msg, m_id)})
             try:
                 loop = asyncio.get_running_loop()
                 loop.create_task(self._broadcast_mux({"type": "session/queue", "sessionId": sid, "items": items}))
             except RuntimeError:
-                # No running loop, schedule via get_event_loop if available
                 try:
                     import asyncio as _aio
                     _aio.get_event_loop().create_task(self._broadcast_mux({"type": "session/queue", "sessionId": sid, "items": items}))
@@ -812,7 +831,7 @@ class ApiProxyPlugin(Plugin):
                     "settings-conflict", "settings-rejected", "agent-preset-not-found", "agent-preset-invalid",
                     "agent-preset-locked", "agent-preset-conflict", "agent-preset-read-only",
                     "session-not-found", "session-conflict", "workspace-attach-failed", "model-unavailable",
-                    "invalid-time-zone", "title-invalid", "fork-unavailable", "agent-busy", "attachment-error",
+                    "model-discovery-failed", "invalid-time-zone", "title-invalid", "fork-unavailable", "agent-busy", "attachment-error",
                     "queue-item-not-found", "steer-unavailable", "command-error", "unknown-command",
                     "bad-request", "not-found", "internal"
                 }

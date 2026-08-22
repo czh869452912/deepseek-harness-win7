@@ -216,3 +216,46 @@ def load_layered_env(
         layers.append({"source": "user-env", "path": user_layer["path"], "values": user_layer["values"]})
 
     return LaunchEnvironmentSnapshot(layers)
+
+
+def resolve_layered_config(
+    ctx: Any,
+    namespace: str,
+    key: str,
+    system_default: Any = None,
+    preset_override: Any = None,
+    cli_env_value: Any = None,
+    workspace_value: Any = None,
+) -> Any:
+    """
+    Configuration chain loading order (lowest to highest precedence):
+    1. System Defaults
+    2. Home Settings (~/.dsh/settings.yaml)
+    3. Workspace Config
+    4. Preset Overrides
+    5. CLI / Env (Wins)
+    """
+    val = system_default
+
+    # 2. Home Settings (~/.dsh/settings.yaml)
+    if ctx and hasattr(ctx, "has") and ctx.has("settings"):
+        settings_svc = ctx.get("settings")
+        if hasattr(settings_svc, "get_setting"):
+            home_val = settings_svc.get_setting(namespace, key)
+            if home_val is not None:
+                val = home_val
+
+    # 3. Workspace Config
+    if workspace_value is not None:
+        val = workspace_value
+
+    # 4. Preset Overrides
+    if preset_override is not None:
+        val = preset_override
+
+    # 5. CLI / Env (Highest precedence)
+    if cli_env_value is not None:
+        val = cli_env_value
+
+    return val
+

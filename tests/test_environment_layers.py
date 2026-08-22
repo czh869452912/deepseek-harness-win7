@@ -9,6 +9,7 @@ from dsh.cordis.environment import (
     is_bootstrap_only,
     load_layered_env,
     LaunchEnvironmentSnapshot,
+    resolve_layered_config,
 )
 from dsh.credentials.credentials_local import CredentialsService
 from dsh.settings.settings_file import SettingsService
@@ -177,3 +178,51 @@ def test_full_llm_config_precedence(monkeypatch):
         llm_static = LLMService(ctx=ctx, base_url="https://cli.override.com", model="cli-model")
         assert llm_static.resolve_base_url() == "https://cli.override.com"
         assert llm_static.resolve_model() == "cli-model"
+
+
+def test_configuration_chain_loading_order():
+    """
+    Verify 5-level configuration chain loading order:
+    System Defaults -> Home Settings (~/.dsh/settings.yaml) -> Workspace Config -> Preset Overrides -> CLI/Env
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        ctx = Context()
+        settings_file = os.path.join(tmpdir, "settings.yaml")
+        settings = SettingsService(ctx=ctx, settings_file=settings_file)
+        ctx.set_service("settings", settings)
+
+        # Level 1: System Defaults
+        val1 = resolve_layered_config(ctx, "llm", "model", system_default="deepseek-chat")
+        assert val1 == "deepseek-chat"
+
+        # Level 2: Home Settings (~/.dsh/settings.yaml) overrides System Defaults
+        settings.set_setting("llm", "model", "home-setting-model")
+        val2 = resolve_layered_config(ctx, "llm", "model", system_default="deepseek-chat")
+        assert val2 == "home-setting-model"
+
+        # Level 3: Workspace Config overrides Home Settings
+        val3 = resolve_layered_config(ctx, "llm", "model", system_default="deepseek-chat", workspace_value="workspace-model")
+        assert val3 == "workspace-model"
+
+        # Level 4: Preset Overrides overrides Workspace Config
+        val4 = resolve_layered_config(
+            ctx,
+            "llm",
+            "model",
+            system_default="deepseek-chat",
+            workspace_value="workspace-model",
+            preset_override="preset-model",
+        )
+        assert val4 == "preset-model"
+
+        # Level 5: CLI / Env overrides Preset Overrides (Wins)
+        val5 = resolve_layered_config(
+            ctx,
+            "llm",
+            "model",
+            system_default="deepseek-chat",
+            workspace_value="workspace-model",
+            preset_override="preset-model",
+            cli_env_value="cli-model",
+        )
+        assert val5 == "cli-model"

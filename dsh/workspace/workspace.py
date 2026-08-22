@@ -83,8 +83,11 @@ class WorkspaceService:
         if ws_id not in self._order:
             self._order.append(ws_id)
 
-        if hasattr(self.ctx, "emit"):
-            self.ctx.emit("workspace:created", ws.to_dict())
+        if self.ctx and hasattr(self.ctx, "emit"):
+            try:
+                self.ctx.emit("workspace:created", ws.to_dict())
+            except Exception:
+                pass
         return ws
 
     def bind_session(self, ws_id: str, session_id: str) -> None:
@@ -92,11 +95,38 @@ class WorkspaceService:
         if ws and session_id not in ws.session_ids:
             ws.session_ids.append(session_id)
             ws.updated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            if self.ctx and hasattr(self.ctx, "emit"):
+                try:
+                    self.ctx.emit("workspace:session-bound", {"workspaceId": ws_id, "sessionId": session_id})
+                except Exception:
+                    pass
+
+    def unbind_session(self, ws_id: str, session_id: str) -> None:
+        ws = self.get(ws_id)
+        if ws and session_id in ws.session_ids:
+            ws.session_ids.remove(session_id)
+            ws.updated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            if self.ctx and hasattr(self.ctx, "emit"):
+                try:
+                    self.ctx.emit("workspace:session-unbound", {"workspaceId": ws_id, "sessionId": session_id})
+                except Exception:
+                    pass
 
     def touch(self, ws_id: str) -> None:
         ws = self.get(ws_id)
         if ws:
             ws.updated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+    def delete(self, ws_id: str) -> None:
+        if ws_id in self._workspaces:
+            ws = self._workspaces.pop(ws_id)
+            if ws_id in self._order:
+                self._order.remove(ws_id)
+            if self.ctx and hasattr(self.ctx, "emit"):
+                try:
+                    self.ctx.emit("workspace:deleted", {"workspaceId": ws_id})
+                except Exception:
+                    pass
 
 
 class WorkspacePlugin(Plugin):

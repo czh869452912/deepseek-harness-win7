@@ -233,122 +233,87 @@ class SessionsDomainHandler:
         }
 
     async def get_models(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        llm = self.ctx.get("llm")
+        from dsh.host.apiproxy.api.llm import build_model_catalog
+        llm = self.ctx.get("llm") if hasattr(self.ctx, "get") else None
         sid = payload.get("sessionId", "default-session")
-        # routable check via adapter registration
+
         current_provider = "deepseek"
         current_model = "deepseek-chat"
         reasoning = None
-        if llm:
+
+        if llm and hasattr(llm, "resolve_model"):
             try:
                 current_model = llm.resolve_model()
             except Exception:
                 pass
-            # try get per-session selection if exists
-            sessions_svc = self.ctx.get("sessions")
-            agent_handle = self._active_sessions.get(sid)
-            if agent_handle and hasattr(agent_handle, "agent"):
-                sel = getattr(agent_handle.agent, "_model_selection", None)
-                if isinstance(sel, dict) and sel.get("provider"):
-                    current_provider = sel["provider"]
-                    current_model = sel.get("model", current_model)
-                    reasoning = sel.get("reasoningEffort")
-        # build catalog from llm service
-        groups = []
-        failures = []
-        if llm and hasattr(llm, "list_providers"):
-            try:
-                providers = llm.list_providers()
-            except Exception:
-                providers = [{"id": "deepseek", "name": "DeepSeek Official"}]
-            for p in providers:
-                pid = p["id"]
-                pname = p.get("name", pid)
-                try:
-                    import inspect as _ins
-                    res = llm.list_models(pid)
-                    if _ins.isawaitable(res):
-                        import asyncio as _aio
-                        try:
-                            res = await res
-                        except Exception:
-                            res = []
-                    entries = []
-                    for m in (res or []):
-                        entry = {"id": m["id"], "name": m.get("name", m["id"])}
-                        if m.get("description"):
-                            entry["description"] = m["description"]
-                        if m.get("reasoning"):
-                            entry["reasoning"] = m["reasoning"]
-                        if m.get("contextWindow"):
-                            entry["contextWindow"] = m["contextWindow"]
-                        entries.append(entry)
-                    if entries:
-                        groups.append({"id": pid, "name": pname, "models": entries})
-                except Exception as e:
-                    failures.append({"id": pid, "name": pname, "message": str(e)})
-        else:
-            groups = [{
-                "id": "deepseek",
-                "name": "DeepSeek Official",
-                "models": [
-                    {"id": "deepseek-chat", "name": "DeepSeek V3 (Chat)", "description": "High efficiency general reasoning"},
-                    {"id": "deepseek-reasoner", "name": "DeepSeek R1 (Reasoner)", "description": "Deep reasoning with explicit chain-of-thought"},
-                ],
-            }]
+
+        handle = self._active_sessions.get(sid)
+        if handle and hasattr(handle, "agent"):
+            sel = getattr(handle.agent, "_model_selection", None)
+            if isinstance(sel, dict) and sel.get("provider"):
+                current_provider = sel["provider"]
+                current_model = sel.get("model", current_model)
+                reasoning = sel.get("reasoningEffort")
+
+        catalog = await build_model_catalog(self.ctx)
+        groups = catalog.get("groups", [])
+        failures = catalog.get("failures", [])
+
         # routable: whether adapter serves current provider
         routable = True
         if llm and hasattr(llm, "_adapters"):
             routable = current_provider in llm._adapters
-        elif llm:
+        elif llm and hasattr(llm, "list_providers"):
             try:
-                provs = [p["id"] for p in llm.list_providers()]
+                provs = [p["id"] for p in llm.list_providers() if isinstance(p, dict)]
                 routable = current_provider in provs
             except Exception:
                 routable = True
-        result = {
-            "current": {"provider": current_provider, "model": current_model},
+
+        current = {"provider": current_provider, "model": current_model}
+        if reasoning is not None:
+            current["reasoningEffort"] = reasoning
+
+        return {
+            "current": current,
             "routable": routable,
             "groups": groups,
             "failures": failures,
         }
-        if reasoning:
-            result["current"]["reasoningEffort"] = reasoning
-        return result
 
     async def select_model(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         provider_name = payload.get("provider", "deepseek")
         model_name = payload.get("model", "deepseek-chat")
         reasoning_effort = payload.get("reasoningEffort")
         sid = payload.get("sessionId", "default-session")
-        llm = self.ctx.get("llm")
-        # validate via resolve if possible
+        llm = self.ctx.get("llm") if hasattr(self.ctx, "get") else None
+
         if llm and hasattr(llm, "resolve_model_info"):
             try:
                 info = llm.resolve_model_info(provider_name, model_name)
-                # if model has reasoning validation
-                if reasoning_effort is not None and isinstance(info, dict):
-                    # simple validation: if reasoning present
-                    pass
+                import inspect
+                if inspect.isawaitable(info):
+                    info = await info
             except Exception as e:
-                # map to model-unavailable if needed? For now raise bad-request
                 raise ValueError("model-unavailable: {}".format(e))
+
+        sel_dict = {
+            "provider": provider_name,
+            "model": model_name,
+            **({"reasoningEffort": reasoning_effort} if reasoning_effort is not None else {})
+        }
+
         handle = self._active_sessions.get(sid)
         if handle and hasattr(handle, "agent"):
-            handle.agent._model_selection = {"provider": provider_name, "model": model_name, **({"reasoningEffort": reasoning_effort} if reasoning_effort else {})}
-            # also update llm static for global fallback
-            if llm and model_name:
+            handle.agent._model_selection = sel_dict
+            if hasattr(handle.agent, "options") and handle.agent.options:
+                handle.agent.options.provider = provider_name
+                handle.agent.options.model = model_name
+        if llm:
+            if hasattr(llm, "static_model"):
                 llm.static_model = model_name
-        else:
-            if llm and model_name:
-                llm.static_model = model_name
-        return {
-            "selected": {
-                "provider": provider_name,
-                "model": model_name,
-                **({"reasoningEffort": reasoning_effort} if reasoning_effort is not None else {}),
-            }
-        }
+
+        return {"selected": sel_dict}
 
     async def rename_session(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         sid = payload.get("sessionId", "default-session")

@@ -169,9 +169,9 @@ class FsSearchService:
 
         sections: List[str] = [header]
         for rel_path, items in matches_by_file.items():
-            file_lines = [f"{rel_path}:"]
+            file_lines = [f"{rel_path}"]
             for line_no, content in items:
-                file_lines.append(f"  Line {line_no}: {content}")
+                file_lines.append(f"Line {line_no}: {content}")
             sections.append("\n".join(file_lines))
 
         spill_ref = None
@@ -191,6 +191,22 @@ class FsSearchService:
             sections.append(f"\n(Showing {total_matches} matches. {recovery})")
 
         return "\n\n".join(sections).strip()
+
+
+def present_glob_call(args: Dict[str, Any]) -> Dict[str, Any]:
+    pat = args.get("pattern", "")
+    p = args.get("path")
+    where = f" in {p}" if p else ""
+    return {"card": "generic", "title": f"Glob {pat}{where}", "kind": "search", "rawInput": pat}
+
+
+def present_grep_call(args: Dict[str, Any]) -> Dict[str, Any]:
+    pat = args.get("pattern", "")
+    p = args.get("path")
+    inc = args.get("include")
+    where = f" in {p}" if p else ""
+    filt = f" ({inc})" if inc else ""
+    return {"card": "generic", "title": f"Grep {pat}{where}{filt}", "kind": "search", "rawInput": pat}
 
 
 class ToolFsSearchPlugin(Plugin):
@@ -238,6 +254,8 @@ class ToolFsSearchPlugin(Plugin):
                 "required": ["pattern"],
             },
             "execute": exec_glob,
+            "presentCall": present_glob_call,
+            "present_call": present_glob_call,
         })
 
         disposer2 = tools.register_tool({
@@ -253,6 +271,8 @@ class ToolFsSearchPlugin(Plugin):
                 "required": ["pattern"],
             },
             "execute": exec_grep,
+            "presentCall": present_grep_call,
+            "present_call": present_grep_call,
         })
 
         def cleanup() -> None:

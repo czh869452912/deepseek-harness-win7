@@ -97,18 +97,30 @@ class SessionsDomainHandler:
     async def get_history(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         sid = payload.get("sessionId", "default-session")
         sessions_svc: SessionStore = self.ctx.get("sessions")
-        events = []
+        raw_events = []
         if sessions_svc and sid in sessions_svc._sessions:
-            events = sessions_svc._sessions[sid].events
+            raw_events = sessions_svc._sessions[sid].events
 
-        history_entries = [{"event": ev} for ev in events]
+        history_entries = []
+        for ev in raw_events:
+            event_obj = dict(ev) if isinstance(ev, dict) else {}
+            if "time" not in event_obj:
+                event_obj["time"] = int(time.time() * 1000)
+            if "seq" not in event_obj:
+                event_obj["seq"] = 0
+            if "type" not in event_obj:
+                event_obj["type"] = "unknown"
+            if "data" not in event_obj:
+                event_obj["data"] = {}
+            history_entries.append({"event": event_obj})
+
         return {
             "sessionId": sid,
-            "events": events,
+            "events": history_entries,
             "entries": history_entries,
             "hasMore": False,
             "projections": {
-                "asOfSeq": len(events) - 1,
+                "asOfSeq": len(raw_events) - 1,
                 "values": {},
             },
         }

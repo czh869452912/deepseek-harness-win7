@@ -59,3 +59,12 @@ async def test_apiproxy_all_domain_handlers():
     # 5. workspace.list
     ws_res = await api_proxy.workspace_handler.list_workspaces({})
     assert "items" in ws_res
+
+    # 6. session.history format test
+    hist_res = await api_proxy.sessions_handler.get_history({"sessionId": "s-1"})
+    assert "events" in hist_res
+    assert isinstance(hist_res["events"], list)
+    if hist_res["events"]:
+        assert "event" in hist_res["events"][0]
+        assert "type" in hist_res["events"][0]["event"]
+

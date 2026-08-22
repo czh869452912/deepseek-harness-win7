@@ -189,13 +189,13 @@ class Inbox:
         self._mutate(target, index, 1, [new_message], discard_removed=True)
         return True
 
-    def remove(self, message_id: str) -> Optional[Dict[str, Any]]:
+    def remove(self, message_id: str) -> bool:
         loc = self._locate(message_id)
         if not loc:
-            return None
+            return False
         target, index = loc
-        removed = self._mutate(target, index, 1, [], discard_removed=True)
-        return removed[0] if removed else None
+        self._mutate(target, index, 1, [], discard_removed=True)
+        return True
 
     def claim(self, target: str = "next-turn", turn: int = 1) -> List[Dict[str, Any]]:
         claimed = self._mutate("next-step", 0, len(self._state["next-step"]), [], discard_removed=False, turn=turn)

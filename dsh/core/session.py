@@ -21,13 +21,13 @@ SessionEvent = Dict[str, Any]
 def snapshot_json_value(value: Any) -> Any:
     """
     Validate and return a deep snapshot of a JSON-serializable structure.
-    Converts non-serializable test mocks via default=str safely.
+    Returns None if the value is not losslessly JSON serializable.
     """
     try:
-        raw = json.dumps(value, ensure_ascii=False, default=str)
+        raw = json.dumps(value, ensure_ascii=False)
         return json.loads(raw)
-    except Exception:
-        return value
+    except (TypeError, ValueError, OverflowError):
+        return None
 
 
 class SessionHeader:
@@ -187,6 +187,8 @@ class Session:
             raise RuntimeError("session append cannot reenter while another append is being published")
 
         data_snapshot = snapshot_json_value(data)
+        if data_snapshot is None and data is not None:
+            raise TypeError("session event data is not losslessly JSON-serializable")
         event_seq = len(self.events)
         event: Dict[str, Any] = {
             "type": event_type,

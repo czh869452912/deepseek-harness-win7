@@ -286,14 +286,50 @@ def append_tool_result(
     call_id = block.get("id") or block.get("call_id") or ""
     func = block.get("function", {}) if "function" in block else block
     name = func.get("name") or block.get("name", "")
-    text_content = "".join(b.get("text", "") for b in result.content if b.get("type") == "text")
 
-    session.append_tool_result(
-        tool_call_id=call_id,
-        name=name,
-        result=text_content,
-        turn=turn,
-        step=step,
-        error=result.error if result.is_error else None,
-        timing={"durationMs": 0},
-    )
+    tool_msg = {
+        "role": "user",
+        "content": [
+            {
+                "type": "tool-result",
+                "toolCallId": call_id,
+                "content": result.content,
+                "isError": result.is_error,
+            }
+        ],
+        "source": {
+            "kind": "tool",
+            "callId": call_id,
+        },
+    }
+
+    payload: Dict[str, Any] = {
+        "turn": turn,
+        "step": step,
+        "message": tool_msg,
+    }
+    if result.is_error and result.error:
+        payload["error"] = result.error.get("info", result.error) if isinstance(result.error, dict) else result.error
+    if getattr(result, "meta", None) is not None:
+        payload["meta"] = result.meta
+
+    if hasattr(session, "append"):
+        session.append(
+            "tool/result",
+            payload,
+            surface_op="append",
+            source_event_seqs=[call_seq],
+        )
+    elif hasattr(session, "append_tool_result"):
+        text_content = "".join(b.get("text", "") for b in result.content if isinstance(b, dict) and b.get("type") == "text")
+        session.append_tool_result(
+            tool_call_id=call_id,
+            name=name,
+            result=text_content,
+            turn=turn,
+            step=step,
+            error=result.error if result.is_error else None,
+            meta=getattr(result, "meta", None),
+            surface_op="append",
+            source_event_seqs=[call_seq],
+        )

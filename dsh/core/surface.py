@@ -178,6 +178,63 @@ def _assert_provenance(event: Dict[str, Any], shadowed_seqs: List[int]) -> None:
         raise ValueError(f"surface replace: sourceEventSeqs must include every shadowed surface node; missing {missing}")
 
 
+def _is_deep_equal_json(a: Any, b: Any) -> bool:
+    if a == b:
+        return True
+    if isinstance(a, list) or isinstance(b, list):
+        if not isinstance(a, list) or not isinstance(b, list) or len(a) != len(b):
+            return False
+        return all(_is_deep_equal_json(x, y) for x, y in zip(a, b))
+    if not isinstance(a, dict) or not isinstance(b, dict):
+        return False
+    if set(a.keys()) != set(b.keys()):
+        return False
+    return all(_is_deep_equal_json(a[k], b[k]) for k in a)
+
+
+def _assert_tool_result_rewrite(
+    event: Dict[str, Any],
+    shadowed_seqs: List[int],
+    log: List[Dict[str, Any]],
+    base_seq: int = 0,
+) -> None:
+    if event.get("type") != "tool/result":
+        return
+    if len(shadowed_seqs) != 1:
+        raise ValueError("tool/result surface replacement must rewrite exactly one current node")
+    for original_seq in shadowed_seqs:
+        idx = original_seq - base_seq
+        original = log[idx] if 0 <= idx < len(log) else None
+        if not original or original.get("type") != "tool/result":
+            raise ValueError("tool/result surface replacement must target a current tool/result")
+        orig_data = dict(original.get("data", {}))
+        repl_data = dict(event.get("data", {}))
+        orig_data.pop("result", None)
+        repl_data.pop("result", None)
+        orig_data.pop("content", None)
+        repl_data.pop("content", None)
+        orig_msg = dict(orig_data.get("message", {})) if isinstance(orig_data.get("message"), dict) else {}
+        repl_msg = dict(repl_data.get("message", {})) if isinstance(repl_data.get("message"), dict) else {}
+        orig_content = orig_msg.get("content", [])
+        repl_content = repl_msg.get("content", [])
+        if isinstance(orig_content, list) and orig_content and isinstance(orig_content[0], dict):
+            orig_first = dict(orig_content[0])
+            orig_first["content"] = None
+            orig_msg["content"] = [orig_first]
+        else:
+            orig_msg["content"] = None
+        if isinstance(repl_content, list) and repl_content and isinstance(repl_content[0], dict):
+            repl_first = dict(repl_content[0])
+            repl_first["content"] = None
+            repl_msg["content"] = [repl_first]
+        else:
+            repl_msg["content"] = None
+        orig_data["message"] = orig_msg
+        repl_data["message"] = repl_msg
+        if not _is_deep_equal_json(orig_data, repl_data):
+            raise ValueError("tool/result surface replacement may change only content")
+
+
 class SurfaceManager:
     """
     Incremental ordered surface view and append-boundary validator.
@@ -245,11 +302,7 @@ class SurfaceManager:
 
         shadowed_seqs = self._nodes[start_idx : end_idx + 1]
         _assert_provenance(event, shadowed_seqs)
-
-        # Tool result replacement check
-        if event.get("type") == "tool/result":
-            if len(shadowed_seqs) != 1:
-                raise ValueError("tool/result surface replacement must rewrite exactly one current node")
+        _assert_tool_result_rewrite(event, shadowed_seqs, self.log, self.base_seq)
 
         return SurfacePlan(
             kind="replace",

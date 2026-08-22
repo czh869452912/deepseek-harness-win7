@@ -17,6 +17,7 @@ from dsh.session.persistence import (
     SessionPersistence,
     SessionPersistenceSnapshot,
 )
+from dsh.session.repair import migrate_legacy_event
 
 
 def _project_dir_name(cwd: Optional[str]) -> str:
@@ -171,7 +172,8 @@ class JsonlSessionPersistence(SessionPersistence):
                         "data": {"chunk": chk},
                     })
             else:
-                events.append(data)
+                session_id = data.get("session_id", "default")
+                events.append(migrate_legacy_event(data, session_id))
 
         return events
 

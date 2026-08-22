@@ -235,13 +235,15 @@ class AgentLoopService:
                 try:
                     # Execute step
                     step_end = await self._step(agent, turn_num, step_num, system_prompt)
+                    # Sticky max-tokens: once any step hits max-tokens, later completed steps preserve max-tokens
                     if step_end:
-                        turn_ends = step_end
+                        if turn_ends is None or turn_ends.get("kind") != "max-tokens":
+                            turn_ends = step_end
                 finally:
                     session.append("step/end", {"turn": turn_num, "step": step_num}, ignorable=True)
 
                 if turn_ends and len(agent.inbox.next_step) == 0:
-                    await self.ctx.serial("agent/turn-stopping")
+                    await self.ctx.serial("agent/turn-stopping", {"turn": turn_num, "agent": agent})
 
                 if turn_ends and len(agent.inbox.next_step) == 0:
                     break
@@ -268,8 +270,26 @@ class AgentLoopService:
         tools_service = self.ctx.get("tools")
         tool_schemas = tools_service.get_schemas() if tools_service else []
 
-        provider_name = agent.options.provider or "openai"
-        model_name = agent.options.model or getattr(llm_service, "model", "deepseek-chat")
+        raw_provider = agent.options.provider or getattr(llm_service, "provider", "openai")
+        raw_model = agent.options.model or getattr(llm_service, "model", "deepseek-chat")
+        provider_name = str(raw_provider) if raw_provider is not None else "openai"
+        model_name = str(raw_model) if raw_model is not None else "deepseek-chat"
+
+        config_proposal: Dict[str, Any] = {
+            "provider": provider_name,
+            "model": model_name,
+        }
+        if agent.options.max_tokens is not None:
+            config_proposal["maxTokens"] = agent.options.max_tokens
+
+        # Run agent/request waterfall
+        proposed_config = await self.ctx.waterfall(
+            "agent/request",
+            config_proposal,
+        )
+        if isinstance(proposed_config, dict):
+            provider_name = str(proposed_config.get("provider", provider_name))
+            model_name = str(proposed_config.get("model", model_name))
 
         header_data = {
             "system": system_prompt,
@@ -336,6 +356,16 @@ class AgentLoopService:
                             timing_data = ev_payload.get("timing", {})
                             usage_data = ev_payload.get("usage", {})
                             used_stream = True
+                except asyncio.CancelledError:
+                    if assistant_msg:
+                        session.append_assistant_message(
+                            assistant_msg,
+                            turn=turn,
+                            step=step,
+                            surface_op="append",
+                            source_event_seqs=chunk_seqs if chunk_seqs else None,
+                        )
+                    raise
                 except Exception:
                     used_stream = False
 
@@ -345,10 +375,23 @@ class AgentLoopService:
                     tools=tool_schemas if tool_schemas else None,
                 )
 
+        except asyncio.CancelledError:
+            raise
         except Exception as e:
+            failure_payload = {
+                "message": str(e),
+                "code": getattr(e, "code", "UNKNOWN"),
+            }
             recovery = await self.ctx.waterfall(
                 "agent/request-error",
-                {"agent": agent, "error": str(e), "turn": turn, "step": step},
+                {
+                    "agent": agent,
+                    "error": str(e),
+                    "failure": failure_payload,
+                    "provider": provider_name,
+                    "turn": turn,
+                    "step": step,
+                },
             )
             if isinstance(recovery, dict) and recovery.get("kind") == "retry":
                 return await self._step(agent, turn, step, system_prompt)

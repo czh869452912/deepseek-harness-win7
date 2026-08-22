@@ -128,3 +128,63 @@ def interrupted_turn_closers(events: List[Dict[str, Any]]) -> List[Dict[str, Any
     })
 
     return closers
+
+
+def migrate_legacy_steering_event(event: Dict[str, Any], session_id: str) -> Dict[str, Any]:
+    if event.get("type") != "steering/message":
+        return event
+    data = event.get("data", {})
+    if not isinstance(data, dict):
+        return event
+    if "message" in data and isinstance(data["message"], dict):
+        return {**event, "type": "user/message", "data": data["message"]}
+    content = data.get("content", "")
+    source = data.get("source")
+    seq = event.get("seq", 0)
+    return {
+        **event,
+        "type": "user/message",
+        "data": {
+            "id": f"legacy-message:{session_id}:{seq}",
+            "role": "user",
+            "content": content,
+            "source": source,
+        },
+    }
+
+
+def migrate_legacy_turn_start_event(event: Dict[str, Any], session_id: str) -> Dict[str, Any]:
+    if event.get("type") != "turn/start":
+        return event
+    data = event.get("data")
+    if not isinstance(data, dict) or "trigger" not in data:
+        return event
+    clean_data = dict(data)
+    clean_data.pop("trigger", None)
+    return {**event, "data": clean_data}
+
+
+def migrate_legacy_turn_end_event(event: Dict[str, Any], session_id: str) -> Dict[str, Any]:
+    if event.get("type") != "turn/end":
+        return event
+    data = event.get("data")
+    if not isinstance(data, dict):
+        return event
+    reason = data.get("reason")
+    if not isinstance(reason, dict):
+        return event
+    kind = reason.get("kind")
+    if kind == "disposed":
+        return {**event, "data": {**data, "reason": {"kind": "aborted", "reason": {"kind": "disposed"}}}}
+    elif kind == "error" and "error" not in reason:
+        err_msg = reason.get("message", "UNKNOWN")
+        err_code = reason.get("code", "UNKNOWN")
+        return {**event, "data": {**data, "reason": {"kind": "error", "error": {"message": err_msg, "code": err_code}}}}
+    return event
+
+
+def migrate_legacy_event(event: Dict[str, Any], session_id: str) -> Dict[str, Any]:
+    ev = migrate_legacy_turn_start_event(event, session_id)
+    ev = migrate_legacy_turn_end_event(ev, session_id)
+    ev = migrate_legacy_steering_event(ev, session_id)
+    return ev

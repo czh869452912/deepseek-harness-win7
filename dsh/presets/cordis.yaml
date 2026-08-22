@@ -32,14 +32,14 @@
 
 - id: persistent-pwsh
   name: "@deepseek-ai/dsh-tool-pwsh-persistent"
-  disabled: sys.platform != 'win32'
+  disabled: !!js process.platform !== 'win32'
   config:
     tool_name: pwsh
     timeoutMs: 300000
 
 - id: persistent-bash
   name: "@deepseek-ai/dsh-tool-pwsh-persistent"
-  disabled: sys.platform == 'win32'
+  disabled: !!js process.platform === 'win32'
   config:
     tool_name: bash
     timeoutMs: 300000
@@ -56,23 +56,41 @@
 - id: tool-todo
   name: "@deepseek-ai/dsh-tool-todo"
 
-- id: plan-mode
-  name: "@deepseek-ai/dsh-plan-mode"
+- id: planning
+  name: cordis:group
+  group: true
+  isolate:
+    planMode: true
+  config:
+    - id: plan-mode
+      name: "@deepseek-ai/dsh-plan-mode"
 
 - id: tool-goal
   name: "@deepseek-ai/dsh-tool-goal"
 
-- id: compaction-basic
-  name: "@deepseek-ai/dsh-compaction-basic"
-
-- id: tool-result-pruner
-  name: "@deepseek-ai/dsh-compaction-tool-result-pruner"
+- id: compaction
+  name: cordis:group
+  group: true
+  isolate:
+    compaction: true
+    toolResultPruner: true
+  config:
+    - id: compaction-basic
+      name: "@deepseek-ai/dsh-compaction-basic"
+    - id: tool-result-pruner
+      name: "@deepseek-ai/dsh-compaction-tool-result-pruner"
 
 - id: tool-web
   name: "@deepseek-ai/dsh-tool-web"
 
-- id: tool-subagent
-  name: "@deepseek-ai/dsh-tool-subagent"
+- id: delegation
+  name: cordis:group
+  group: true
+  isolate:
+    workflowEngine: true
+  config:
+    - id: tool-subagent
+      name: "@deepseek-ai/dsh-tool-subagent"
 
 - id: cordis-manager
   name: "@deepseek-ai/dsh-cordis-manager"

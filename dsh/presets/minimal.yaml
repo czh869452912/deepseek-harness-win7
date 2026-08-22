@@ -20,14 +20,14 @@
 
 - id: persistent-pwsh
   name: "@deepseek-ai/dsh-tool-pwsh-persistent"
-  disabled: sys.platform != 'win32'
+  disabled: !!js process.platform !== 'win32'
   config:
     tool_name: pwsh
     timeoutMs: 300000
 
 - id: persistent-bash
   name: "@deepseek-ai/dsh-tool-pwsh-persistent"
-  disabled: sys.platform == 'win32'
+  disabled: !!js process.platform === 'win32'
   config:
     tool_name: bash
     timeoutMs: 300000

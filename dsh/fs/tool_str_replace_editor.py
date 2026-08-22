@@ -152,7 +152,7 @@ class StrReplaceEditorPlugin(Plugin):
 
     id = "str-replace-editor"
     name = "@deepseek-ai/dsh-tool-str-replace-editor"
-    inject = ["tools", "fs"]
+    inject = ["tools"]
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)

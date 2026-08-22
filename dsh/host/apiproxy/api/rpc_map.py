@@ -32,4 +32,6 @@ OFFICIAL_RPC_METHODS: Set[str] = {
     "llm.providers", "llm.models", "llm.discoverModels",
     # Jobs domain
     "jobs.list",
+    # Plugin Inventory domain
+    "pluginInventory.list",
 }

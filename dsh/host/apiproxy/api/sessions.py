@@ -24,28 +24,34 @@ class SessionsDomainHandler:
         result = []
         if sessions_svc:
             for sid, s in sessions_svc._sessions.items():
-                is_blank = (len(s.events) == 0)
+                is_blank = not any(ev.get("type") == "turn/start" for ev in s.events if isinstance(ev, dict))
                 session_cwd = (s.header.cwd or os.getcwd()).replace("\\", "/")
                 title = None
                 for ev in s.events:
-                    if ev.get("type") == "session/title" and isinstance(ev.get("data"), dict):
+                    if isinstance(ev, dict) and ev.get("type") == "session/title" and isinstance(ev.get("data"), dict):
                         title = ev["data"].get("title")
 
-                result.append({
+                handle = self._active_sessions.get(sid)
+                running = False
+                if handle and hasattr(handle, "agent") and hasattr(handle.agent, "status"):
+                    running = (handle.agent.status == "running")
+
+                summary = {
                     "sessionId": sid,
-                    "title": title,
                     "updatedAt": int(time.time() * 1000),
-                    "running": False,
+                    "running": running,
                     "blank": is_blank,
-                    "parentSessionId": s.header.parent_session,
                     "cwd": session_cwd,
                     "agentPreset": s.header.agent_preset or "standard",
                     "projections": {
                         "asOfSeq": len(s.events) - 1,
-                        "values": {"title": title} if title else {},
+                        "values": {"sessionListMetadata": {"blank": is_blank, "lastPromptAt": None}},
                     }
-                })
-        return {"items": result, "sessions": result}
+                }
+                if s.header.parent_session:
+                    summary["parentSessionId"] = s.header.parent_session
+                result.append(summary)
+        return {"items": result}
 
     async def create_session(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         sid = payload.get("sessionId") or f"session-{os.urandom(4).hex()}"
@@ -92,7 +98,7 @@ class SessionsDomainHandler:
             "cwd": target_cwd,
         })
 
-        return {"success": True, "sessionId": sid, "agentPreset": preset}
+        return {"sessionId": sid, "agentPreset": preset}
 
     async def get_history(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         sid = payload.get("sessionId", "default-session")
@@ -128,9 +134,7 @@ class SessionsDomainHandler:
             history_entries.append({"event": event_obj})
 
         return {
-            "sessionId": sid,
             "events": history_entries,
-            "entries": history_entries,
             "hasMore": False,
             "projections": {
                 "asOfSeq": len(raw_events) - 1,
@@ -165,11 +169,19 @@ class SessionsDomainHandler:
         }
 
     async def select_model(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        model_name = payload.get("model")
+        provider_name = payload.get("provider", "deepseek")
+        model_name = payload.get("model", "deepseek-chat")
+        reasoning_effort = payload.get("reasoningEffort")
         llm = self.ctx.get("llm")
         if llm and model_name:
             llm.static_model = model_name
-        return {"success": True, "model": model_name, "accepted": True}
+        return {
+            "selected": {
+                "provider": provider_name,
+                "model": model_name,
+                **({"reasoningEffort": reasoning_effort} if reasoning_effort is not None else {}),
+            }
+        }
 
     async def rename_session(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         sid = payload.get("sessionId", "default-session")
@@ -230,7 +242,7 @@ class SessionsDomainHandler:
                 "cwd": src_session.header.cwd,
                 "agentPreset": src_session.header.agent_preset,
             })
-            return {"success": True, "sessionId": new_sid, "eventCount": len(events_to_copy)}
+            return {"sessionId": new_sid}
         raise ValueError(f"Source session {src_sid} not found")
 
     async def prompt_session(self, payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -266,7 +278,7 @@ class SessionsDomainHandler:
         else:
             agent.followup(text_content)
 
-        return {"accepted": True, "sessionId": sid}
+        return {"accepted": True}
 
     async def add_attachment(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """Attach file/image/clipboard asset to session (`session.attachment`)."""
@@ -282,17 +294,11 @@ class SessionsDomainHandler:
 
     async def update_queue(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """Reorder or mutate pending user prompts in session queue (`session.updateQueue`)."""
-        sid = payload.get("sessionId", "default-session")
-        items = payload.get("items", [])
-        return {
-            "sessionId": sid,
-            "updated": True,
-            "itemCount": len(items),
-        }
+        return {"accepted": True}
 
     async def cancel_session(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         sid = payload.get("sessionId", "default-session")
         handle = self._active_sessions.get(sid)
         if handle:
             handle.agent.cancel({"kind": "user_requested"})
-        return {"accepted": True, "sessionId": sid}
+        return {"accepted": True}

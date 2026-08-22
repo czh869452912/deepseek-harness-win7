@@ -40,33 +40,37 @@ class PluginInventoryGateway:
         if loader and hasattr(loader, "entries"):
             raw_entries = loader.entries() if callable(loader.entries) else loader.entries
             for entry in raw_entries:
-                if getattr(entry, "is_group", False):
+                options = getattr(entry, "options", {})
+                if options.get("group"):
                     continue
                 fiber = getattr(entry, "fiber", None)
                 state_code = getattr(fiber, "state", None) if fiber else None
-                phase = FIBER_PHASE_MAP.get(state_code) if state_code is not None else None
+                phase = FIBER_PHASE_MAP.get(state_code) if (fiber is not None and state_code is not None) else None
 
-                entry_id = getattr(entry, "id", getattr(entry, "name", "unknown"))
-                entry_name = getattr(entry, "name", getattr(entry, "id", "unknown"))
+                entry_id = getattr(entry, "id", options.get("id", getattr(entry, "name", "unknown")))
+                module_name = options.get("name") or getattr(entry, "name", entry_id)
 
                 entries.append({
                     "entryId": entry_id,
-                    "moduleName": entry_name,
+                    "moduleName": module_name,
                     "enabled": not getattr(entry, "disabled", False),
-                    "fiberPhase": phase if phase is not None else "active",
+                    "fiberPhase": phase,
                 })
         else:
             # Fallback if loader service is not attached
-            registry = getattr(self.ctx, "registry", {})
-            if hasattr(registry, "values"):
-                for plugin_inst in registry.values():
-                    pid = getattr(plugin_inst, "id", str(plugin_inst))
+            registry = getattr(self.ctx, "registry", None)
+            if registry and hasattr(registry, "list_fibers"):
+                for fiber in registry.list_fibers():
+                    plugin_inst = getattr(fiber, "plugin", None)
+                    pid = getattr(plugin_inst, "id", getattr(fiber, "name", str(fiber)))
                     pname = getattr(plugin_inst, "name", pid)
+                    state_code = getattr(fiber, "state", 2)
+                    phase = FIBER_PHASE_MAP.get(state_code, "active")
                     entries.append({
                         "entryId": pid,
                         "moduleName": pname,
                         "enabled": True,
-                        "fiberPhase": "active",
+                        "fiberPhase": phase,
                     })
 
         return {"entries": entries}

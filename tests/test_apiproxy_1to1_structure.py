@@ -13,12 +13,13 @@ from dsh.host.apiproxy.api.rpc_map import OFFICIAL_RPC_METHODS as OFFICIAL_METHO
 
 def test_official_rpc_methods_catalog_size():
     """Verify that official RPC methods catalog is registered."""
-    assert len(OFFICIAL_RPC_METHODS) == 54
-    assert len(OFFICIAL_METHODS_CATALOG) == 54
+    assert len(OFFICIAL_RPC_METHODS) == 55
+    assert len(OFFICIAL_METHODS_CATALOG) == 55
     assert "session.attachment" in OFFICIAL_RPC_METHODS
     assert "session.updateQueue" in OFFICIAL_RPC_METHODS
     assert "agentPreset.select" in OFFICIAL_RPC_METHODS
     assert "settings.openDocument" in OFFICIAL_RPC_METHODS
+    assert "pluginInventory.list" in OFFICIAL_RPC_METHODS
 
 
 @pytest.mark.asyncio
@@ -44,13 +45,11 @@ async def test_apiproxy_all_domain_handlers():
 
     # 2. session.updateQueue
     queue_res = await api_proxy.sessions_handler.update_queue({"sessionId": "s-1", "items": ["p1", "p2"]})
-    assert queue_res["updated"] is True
-    assert queue_res["itemCount"] == 2
+    assert queue_res["accepted"] is True
 
     # 3. agentPreset.select
-    preset_res = await api_proxy.agent_presets_handler.select_preset({"presetId": "minimal"})
-    assert preset_res["success"] is True
-    assert preset_res["presetId"] == "minimal"
+    preset_res = await api_proxy.agent_presets_handler.select_preset({"agentPreset": "minimal"})
+    assert preset_res["agentPreset"] == "minimal"
 
     # 4. settings.openDocument
     doc_res = await api_proxy.settings_handler.open_document({})

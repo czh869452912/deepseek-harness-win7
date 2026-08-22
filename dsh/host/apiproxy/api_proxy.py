@@ -166,12 +166,13 @@ class ApiProxyPlugin(Plugin):
 
     def _on_session_chunk(self, *args: Any, **kwargs: Any) -> None:
         try:
+            session_obj = args[0] if args else None
             chunk = args[1] if len(args) >= 2 else (args[0] if args else {})
-            sid = args[0] if len(args) >= 2 and isinstance(args[0], str) else "default-session"
+            sid = getattr(session_obj, "id", getattr(session_obj, "session_id", "default-session")) if session_obj else "default-session"
             if isinstance(chunk, dict):
                 asyncio.create_task(self._broadcast_mux({
                     "type": "session/event",
-                    "sessionId": sid,
+                    "sessionId": str(sid),
                     "event": {"type": "session/chunk", "data": chunk},
                 }))
         except Exception:
@@ -181,9 +182,10 @@ class ApiProxyPlugin(Plugin):
         try:
             chunk = args[0] if args else {}
             if isinstance(chunk, dict):
+                sid = chunk.get("sessionId") or chunk.get("session_id") or "default-session"
                 asyncio.create_task(self._broadcast_mux({
                     "type": "session/event",
-                    "sessionId": "default-session",
+                    "sessionId": str(sid),
                     "event": {"type": "assistant/chunk", "data": chunk},
                 }))
         except Exception:
@@ -191,12 +193,22 @@ class ApiProxyPlugin(Plugin):
 
     def _on_session_event(self, *args: Any, **kwargs: Any) -> None:
         try:
+            session_obj = args[0] if len(args) >= 2 else None
             event = args[1] if len(args) >= 2 else (args[0] if args else None)
-            sid = args[0] if len(args) >= 2 and isinstance(args[0], str) else "default-session"
+            if not isinstance(event, dict) and isinstance(args[0], dict):
+                event = args[0]
+                session_obj = None
+
+            sid = "default-session"
+            if session_obj:
+                sid = getattr(session_obj, "id", getattr(session_obj, "session_id", "default-session"))
+            elif isinstance(event, dict):
+                sid = event.get("sessionId") or event.get("session_id") or "default-session"
+
             if isinstance(event, dict):
                 asyncio.create_task(self._broadcast_mux({
                     "type": "session/event",
-                    "sessionId": sid,
+                    "sessionId": str(sid),
                     "event": event,
                 }))
         except Exception:
@@ -210,14 +222,14 @@ class ApiProxyPlugin(Plugin):
             if isinstance(payload, dict):
                 status_str = str(payload.get("status", "idle"))
                 agent = payload.get("agent")
-                if agent and hasattr(agent, "session_id"):
-                    sid = getattr(agent, "session_id", sid)
+                if agent:
+                    sid = getattr(agent, "id", getattr(getattr(agent, "session", None), "id", sid))
             else:
                 status_str = str(payload)
 
             asyncio.create_task(self._broadcast_host({
                 "type": "host/session-status",
-                "sessionId": sid,
+                "sessionId": str(sid),
                 "running": (status_str == "running"),
             }))
         except Exception:
@@ -227,10 +239,13 @@ class ApiProxyPlugin(Plugin):
         try:
             goal = args[0] if args else None
             goal_data = goal.to_dict() if (goal and hasattr(goal, "to_dict")) else goal
-            sid = args[1] if len(args) >= 2 and isinstance(args[1], str) else "default-session"
+            session_obj = args[1] if len(args) >= 2 else None
+            sid = getattr(session_obj, "id", getattr(session_obj, "session_id", "default-session")) if session_obj else "default-session"
+            if isinstance(args[1], str):
+                sid = args[1]
             asyncio.create_task(self._broadcast_mux({
                 "type": "session/projection",
-                "sessionId": sid,
+                "sessionId": str(sid),
                 "key": "goal",
                 "value": goal_data,
                 "seq": int(time.time()),

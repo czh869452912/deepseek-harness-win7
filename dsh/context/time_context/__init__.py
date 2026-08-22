@@ -3,6 +3,8 @@ import time
 from typing import Any, Dict, Optional
 
 from dsh.cordis.plugin import Plugin
+from dsh.context.time_context.request_zone import derive_browser_time_zone_context, render_browser_time_zone_context
+from dsh.context.time_context.timestamp import format_timestamp
 
 
 class TimeContextPlugin(Plugin):
@@ -35,13 +37,13 @@ class TimeContextPlugin(Plugin):
 
             self._last_injection_time[session_id] = now
 
-            local_dt = datetime.now()
-            utc_dt = datetime.now(timezone.utc)
-            tz_str = time.tzname[time.daylight] if time.daylight else time.tzname[0]
-            iso_local = local_dt.strftime("%Y-%m-%dT%H:%M:%S")
+            formatted_time = format_timestamp(now * 1000, self.time_zone)
+            zone_ctx = derive_browser_time_zone_context(messages)
+            zone_text = render_browser_time_zone_context(zone_ctx)
 
+            elapsed_str = f"{int(now - last_time)}s" if last_time > 0 else "unavailable"
             time_text = (
-                f"[Context Time: {iso_local} (Local: {tz_str}, UTC: {utc_dt.strftime('%Y-%m-%dT%H:%M:%SZ')})]"
+                f"[Context Time: {formatted_time} | {zone_text} | Elapsed since preceding step: {elapsed_str}]"
             )
 
             # Inject into the last user message or system message

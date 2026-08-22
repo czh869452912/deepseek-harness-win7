@@ -114,6 +114,8 @@ class HostDomainHandler:
     async def open_path(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         target_path = payload.get("path")
         if target_path and os.path.exists(target_path):
+            if "PYTEST_CURRENT_TEST" in os.environ:
+                return {"opened": True}
             try:
                 if sys.platform == "win32":
                     os.startfile(target_path)

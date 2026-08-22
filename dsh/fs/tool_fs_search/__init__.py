@@ -6,105 +6,11 @@ import fnmatch
 import os
 import re
 from typing import Any, Dict, List, Optional, Tuple
+
 from dsh.cordis.plugin import Plugin
-
-
-EXCLUDED_DIRS = {".git", ".svn", ".hg", ".bzr", ".jj", ".sl", "__pycache__", ".venv", "node_modules"}
-
-
-def strip_leading_separators(path: str) -> str:
-    start = 0
-    while start < len(path) and path[start] in ("/", "\\"):
-        start += 1
-    return path[start:]
-
-
-def top_level_segment(path: str) -> str:
-    trimmed = strip_leading_separators(path)
-    cut_fwd = trimmed.find("/")
-    cut_back = trimmed.find("\\")
-    cut = min([c for c in [cut_fwd, cut_back] if c != -1], default=-1)
-    return trimmed[:cut] if cut != -1 else trimmed
-
-
-def relative_to_search_root(path: str, root: str) -> str:
-    if root in (".", "./", ".\\"):
-        return path[2:] if path.startswith(("./", ".\\")) else path
-    trimmed_root = root.rstrip("/\\")
-    if not trimmed_root:
-        return strip_leading_separators(path)
-    if path == trimmed_root:
-        return ""
-    if path.startswith(trimmed_root + "/") or path.startswith(trimmed_root + "\\"):
-        return path[len(trimmed_root) + 1 :]
-    return path
-
-
-def sample_across_top_level(paths: List[str], max_items: int, root: str = ".") -> Dict[str, Any]:
-    groups: Dict[str, List[str]] = {}
-    active: List[Dict[str, Any]] = []
-
-    for p in paths:
-        rel = relative_to_search_root(p, root)
-        key = top_level_segment(rel)
-        if key not in groups:
-            groups[key] = [p]
-            active.append({"key": key, "items": groups[key], "index": 0, "current": p})
-        else:
-            groups[key].append(p)
-
-    taken: Dict[str, List[str]] = {}
-    count = 0
-
-    while active and count < max_items:
-        next_active = []
-        for entry in active:
-            if count >= max_items:
-                break
-            key = entry["key"]
-            current = entry["current"]
-            count += 1
-            if key not in taken:
-                taken[key] = [current]
-            else:
-                taken[key].append(current)
-
-            next_index = entry["index"] + 1
-            items = entry["items"]
-            if next_index < len(items):
-                next_active.append({
-                    "key": key,
-                    "items": items,
-                    "index": next_index,
-                    "current": items[next_index],
-                })
-        active = next_active
-
-    flat_items: List[str] = []
-    for bucket in taken.values():
-        flat_items.extend(bucket)
-
-    return {
-        "items": flat_items,
-        "shown": len(taken),
-        "total": len(groups),
-    }
-
-
-def validate_include(include: str) -> None:
-    trimmed = include.strip()
-    if not trimmed:
-        raise ValueError("include must be a non-empty glob when given")
-    if trimmed.startswith("!"):
-        raise ValueError('include must be a positive glob filter; negated patterns ("!…") are not supported')
-    brace_depth = 0
-    for char in trimmed:
-        if char == "{":
-            brace_depth += 1
-        elif char == "}":
-            brace_depth = max(0, brace_depth - 1)
-        elif char == "," and brace_depth == 0:
-            raise ValueError("include must be one glob, not a comma-separated list (use {a,b} alternation instead)")
+from dsh.fs.tool_fs_search.glob import sample_across_top_level
+from dsh.fs.tool_fs_search.grep import validate_include
+from dsh.fs.tool_fs_search.search_core import EXCLUDED_DIRS, relative_to_search_root, strip_leading_separators, top_level_segment
 
 
 class FsSearchService:
@@ -354,5 +260,3 @@ class ToolFsSearchPlugin(Plugin):
             disposer2()
 
         ctx.effect(cleanup)
-
-

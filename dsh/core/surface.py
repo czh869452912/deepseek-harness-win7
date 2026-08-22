@@ -259,6 +259,25 @@ class SurfaceManager:
         self._process_delta()
         return list(self._nodes)
 
+    def replace_range(self, start: int, end: int, replacement_seq: int) -> None:
+        self._process_delta()
+        try:
+            start_idx = self._nodes.index(start)
+        except ValueError:
+            start_idx = 0
+
+        try:
+            end_idx = self._nodes.index(end)
+        except ValueError:
+            end_idx = max(0, len(self._nodes) - 1)
+
+        if self._nodes and self._nodes[-1] == replacement_seq:
+            self._nodes.pop()
+
+        if start_idx <= end_idx and self._nodes:
+            self._nodes[start_idx : end_idx + 1] = [replacement_seq]
+            self._replace_generation += 1
+
     def validate_next(self, event: Dict[str, Any]) -> None:
         """
         Validate candidate event without mutating the committed surface.

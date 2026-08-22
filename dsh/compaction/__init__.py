@@ -1,19 +1,14 @@
+from dsh.compaction.engine import CompactionBasicPlugin, CompactionEngine
 from dsh.compaction.command_compact import CommandCompactPlugin
-from dsh.compaction.engine import (
-    BasicCompactionEngine,
-    BasicCompactionPlugin,
-    CompactionEngine,
-    select_compactable_range,
-)
-from dsh.compaction.pruner import ToolResultPruner, ToolResultPrunerPlugin
+from dsh.compaction.pruner import ToolResultPrunerPlugin, ToolResultPruner
+
+BasicCompactionEngine = CompactionEngine
 
 __all__ = [
-    "ToolResultPruner",
-    "ToolResultPrunerPlugin",
+    "CompactionBasicPlugin",
     "CompactionEngine",
     "BasicCompactionEngine",
-    "BasicCompactionPlugin",
     "CommandCompactPlugin",
-    "select_compactable_range",
+    "ToolResultPrunerPlugin",
+    "ToolResultPruner",
 ]
-

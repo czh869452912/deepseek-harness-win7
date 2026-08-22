@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from dsh.cordis.plugin import Plugin
+from dsh.context.file_reference_local.search import WorkspaceFileSearch
 
 FILE_REFERENCE_PROMPT = (
     "Paths prefixed with @ are files explicitly referenced by the user. "
@@ -26,21 +27,27 @@ class FileReferenceLocalPlugin(Plugin):
         cfg = config or {}
         self.max_inline_bytes = int(cfg.get("maxInlineBytes", 16384))
         self.max_results = int(cfg.get("maxResults", 8))
+        self.searcher: Optional[WorkspaceFileSearch] = None
 
     def apply(self, ctx: Any) -> None:
+        cwd = ctx.get("fs").cwd if ctx.has("fs") and hasattr(ctx.get("fs"), "cwd") else os.getcwd()
+        self.searcher = WorkspaceFileSearch(cwd, {"maxResults": self.max_results})
+        ctx.set_service("fileReferences", self.searcher)
+
         # 1. Register system prompt section if systemPrompt is available
         if ctx.has("system_prompt"):
             sp = ctx.get("system_prompt")
             if hasattr(sp, "section"):
                 sp.section("context:file-reference", FILE_REFERENCE_PROMPT, order=99)
 
-        # 2. Hook agent/pre-step to expand file mentions if user explicitly typed @file
+        # 2. Invalidate search index on tool result
+        ctx.on("tools/result", lambda *a, **kw: self.searcher.invalidate() if self.searcher else None)
+
+        # 3. Hook agent/pre-step to expand file mentions if user explicitly typed @file
         async def hook_file_references(payload: Dict[str, Any]) -> Dict[str, Any]:
             messages = payload.get("messages", [])
             if not messages:
                 return payload
-
-            cwd = ctx.get("fs").cwd if ctx.has("fs") and hasattr(ctx.get("fs"), "cwd") else os.getcwd()
 
             for msg in messages:
                 if msg.get("role") == "user" and isinstance(msg.get("content"), str):

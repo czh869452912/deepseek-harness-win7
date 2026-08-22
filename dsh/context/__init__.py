@@ -1,10 +1,10 @@
-from dsh.context.agent_instructions import AgentInstructionsPlugin
-from dsh.context.file_reference_local import FileReferenceLocalPlugin
+from dsh.context.agent_instructions import AgentInstructionsPlugin, AgentInstructionsService
 from dsh.context.time_context import TimeContextPlugin
+from dsh.context.file_reference_local import FileReferenceLocalPlugin
 
 __all__ = [
     "AgentInstructionsPlugin",
-    "FileReferenceLocalPlugin",
+    "AgentInstructionsService",
     "TimeContextPlugin",
+    "FileReferenceLocalPlugin",
 ]
-

@@ -1,5 +1,13 @@
+import hashlib
+import re
 from typing import Any, Dict, List, Optional
+
 from dsh.cordis.plugin import Plugin
+
+
+def digest_catalog_entries(entries: List[str]) -> str:
+    combined = "\n".join(sorted(entries))
+    return hashlib.sha256(combined.encode("utf-8")).hexdigest()[:16]
 
 
 class ToolSkillPlugin(Plugin):
@@ -10,6 +18,10 @@ class ToolSkillPlugin(Plugin):
     id = "tool-skill"
     name = "@deepseek-ai/dsh-tool-skill"
     inject = ["tools", "skills"]
+
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
+        super().__init__(config)
+        self._last_catalog_hash: Optional[str] = None
 
     def apply(self, ctx: Any) -> None:
         tools_service = ctx.get("tools")
@@ -27,27 +39,28 @@ class ToolSkillPlugin(Plugin):
             "properties": {
                 "name": {
                     "type": "string",
-                    "description": "The exact skill name from the available skills list."
+                    "description": "The exact skill name from the available skills list.",
                 }
             },
-            "required": ["name"]
+            "required": ["name"],
         }
 
         tools_service.register(
             name="skill",
             description=description,
             parameters=parameters,
-            handler=self.handle_load_skill
+            handler=self.handle_load_skill,
         )
 
         ctx.on("agent/prompt-assemble", self.on_prompt_assemble)
         ctx.on("agent/pre-step", self.on_pre_step)
 
     def handle_load_skill(self, name: str, ctx: Optional[Any] = None) -> str:
-        if not ctx or not ctx.has("skills"):
+        context = ctx or self.ctx
+        if not context or not context.has("skills"):
             return "Error: Skills service unavailable"
 
-        skills_service = ctx.get("skills")
+        skills_service = context.get("skills")
         skill = skills_service.get_skill(name)
 
         if not skill:
@@ -69,13 +82,22 @@ class ToolSkillPlugin(Plugin):
         if not model_skills:
             return prompt
 
-        catalog_lines = ["\n\n<available_skills>"]
+        entries = []
         for s in model_skills:
             desc = s.description
             if s.when_to_use:
                 desc += f" (When to use: {s.when_to_use})"
-            catalog_lines.append(f"- {s.name}: {desc}")
-        catalog_lines.append("</available_skills>")
+            entries.append(f"- {s.name}: {desc}")
+
+        catalog_hash = digest_catalog_entries(entries)
+        if catalog_hash == self._last_catalog_hash:
+            return prompt
+
+        self._last_catalog_hash = catalog_hash
+
+        catalog_lines = ["\n\n<system-reminder>\n<available_skills>"]
+        catalog_lines.extend(entries)
+        catalog_lines.append("</available_skills>\n</system-reminder>")
 
         return prompt + "\n".join(catalog_lines)
 
@@ -92,13 +114,17 @@ class ToolSkillPlugin(Plugin):
 
         if last_user_msg and isinstance(last_user_msg.get("content"), str):
             text = last_user_msg["content"].strip()
-            if text.startswith("/"):
-                first_token = text.split()[0][1:].lower()
+            # Match /skill-name anywhere in user prompt
+            matches = list(re.finditer(r"(?:^|\s)/([a-z0-9]+(?:-[a-z0-9]+)*)(?=\s|$)", text, re.IGNORECASE))
+            if matches:
                 skills_service = self.ctx.get("skills")
                 if skills_service:
-                    skill = skills_service.get_skill(first_token)
-                    if skill and skill.user_invocable:
-                        skill_content = skill.render_content()
-                        last_user_msg["content"] += f"\n\n[Injected Skill Instructions]\n{skill_content}"
+                    for match in matches:
+                        skill_name = match.group(1).lower()
+                        skill = skills_service.get_skill(skill_name)
+                        if skill and skill.user_invocable:
+                            skill_content = skill.render_content()
+                            if "[Injected Skill Instructions]" not in last_user_msg["content"]:
+                                last_user_msg["content"] += f"\n\n[Injected Skill Instructions]\n{skill_content}"
 
         return payload

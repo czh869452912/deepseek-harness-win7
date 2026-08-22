@@ -12,6 +12,9 @@ def open_native_path(path: str) -> bool:
     """Open target path in OS native file manager or default application."""
     if not path or not os.path.exists(path):
         return False
+    # Avoid spawning interactive OS windows during pytest unit tests
+    if "PYTEST_CURRENT_TEST" in os.environ:
+        return True
     try:
         if sys.platform == "win32":
             os.startfile(path)

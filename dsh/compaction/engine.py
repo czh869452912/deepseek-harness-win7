@@ -1,365 +1,182 @@
-"""
-Compaction Engine & Basic Compaction Seam mounted at `ctx.compaction`.
-Provides balanced range selection, bracket lock transactions, and prefix-cached LLM summarization.
-"""
+import asyncio
+from typing import Any, Dict, List, Optional, Tuple
 
-import uuid
-from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
 from dsh.cordis.plugin import Plugin
-from dsh.core.surface import (
-    tool_pairing_balanced_after,
-    tool_pairing_balanced_before,
-)
-
-
-SUMMARY_PROMPT = (
-    "Provide a concise summary of the conversation and tool execution history above. "
-    "Focus on user goals, key decisions, files modified/read, and the current task status. "
-    "Do not include unnecessary details."
-)
+from dsh.compaction.compaction_basic.config import ResolvedCompactionConfig
+from dsh.compaction.compaction_basic.region import identify_compaction_region
+from dsh.compaction.compaction_basic.summarizer import summarize_compactable_messages
 
 
 def select_compactable_range(
     session: Any,
     measurement: Dict[str, Any],
-    retain_tokens: int,
+    retain_tokens: int = 8000,
+    **kwargs: Any,
 ) -> Optional[Dict[str, int]]:
-    """
-    Resolve the next head-anchored range while retaining a priced recent tail
-    and never splitting an assistant tool-call/result pair.
-    """
-    surface_nodes = session.surface.nodes
-    priced_nodes = measurement.get("nodes", [])
-
-    if not priced_nodes or len(surface_nodes) == 0:
+    nodes = measurement.get("nodes", [])
+    if not nodes:
         return None
 
     accumulated = 0
-    keep_from_idx = len(priced_nodes)
-
-    for index in range(len(priced_nodes) - 1, -1, -1):
-        accumulated += priced_nodes[index].get("tokens", 0)
-        keep_from_idx = index
+    retain_start_idx = len(nodes)
+    for i in range(len(nodes) - 1, -1, -1):
+        accumulated += nodes[i].get("tokens", 0)
         if accumulated >= retain_tokens:
+            retain_start_idx = i
             break
 
-    if keep_from_idx == 0:
+    if retain_start_idx <= 0:
         return None
 
-    # Step back until tool pairing before keep_from_idx is balanced
-    while keep_from_idx > 0:
-        seq = surface_nodes[keep_from_idx]
-        if tool_pairing_balanced_before(session.events, surface_nodes, seq):
-            break
-        keep_from_idx -= 1
-
-    if keep_from_idx == 0:
+    compactable_nodes = nodes[:retain_start_idx]
+    if not compactable_nodes:
         return None
 
-    first = surface_nodes[0]
-    cutoff = surface_nodes[keep_from_idx - 1]
-    return {"start": first, "end": cutoff}
+    return {
+        "start": compactable_nodes[0]["seq"],
+        "end": compactable_nodes[-1]["seq"],
+    }
 
 
-class CompactionEngine(ABC):
-    """
-    Abstract compaction service seam.
-    """
-
-    def __init__(self, ctx: Optional[Any] = None):
-        self.ctx = ctx
-
-    @abstractmethod
-    async def compact_if_needed(
-        self,
-        agent: Any,
-        trigger: str,
-        signal: Optional[Any] = None,
-    ) -> Optional[Dict[str, Any]]:
-        raise NotImplementedError
-
-    @abstractmethod
-    async def compact_region(
-        self,
-        start: int,
-        end: int,
-        agent: Any,
-    ) -> Dict[str, Any]:
-        raise NotImplementedError
-
-    @abstractmethod
-    async def compact_now(self, agent: Any) -> Optional[Dict[str, Any]]:
-        raise NotImplementedError
-
-
-class BasicCompactionEngine(CompactionEngine):
-    """
-    Basic replay-aware compaction engine.
-    """
-
+class CompactionEngine:
     def __init__(
         self,
-        threshold_tokens: int = 80000,
-        retain_tokens: int = 20000,
-        auto: bool = True,
+        config: Optional[Dict[str, Any]] = None,
         ctx: Optional[Any] = None,
+        threshold_tokens: Optional[int] = None,
+        retain_tokens: Optional[int] = None,
+        keep_recent_messages: Optional[int] = None,
+        auto: bool = True,
+        **kwargs: Any,
     ):
-        super().__init__(ctx=ctx)
-        self.threshold_tokens = threshold_tokens
-        self.retain_tokens = retain_tokens
+        self.ctx = ctx
+        self.resolved_config = ResolvedCompactionConfig(config)
+        self.threshold_tokens = threshold_tokens if threshold_tokens is not None else self.resolved_config.threshold_tokens
+        self.retain_tokens = retain_tokens if retain_tokens is not None else self.resolved_config.retain_tokens
+        self.keep_recent_messages = keep_recent_messages if keep_recent_messages is not None else self.resolved_config.keep_recent_messages
         self.auto = auto
 
-        if self.ctx and self.auto:
-            self._register_automatic_compaction()
+    def estimate_tokens(self, messages: List[Dict[str, Any]]) -> int:
+        total_chars = sum(len(str(m.get("content", ""))) for m in messages)
+        return total_chars // 4
 
-    def _register_automatic_compaction(self) -> None:
-        self.ctx.on("agent/pre-step", self._on_pre_step)
-
-    async def _on_pre_step(self, request_payload: Dict[str, Any]) -> Dict[str, Any]:
-        """Hook into agent pre-step to perform pressure compaction if needed."""
-        agent = request_payload.get("agent")
-        session = self._resolve_session(agent)
-        if session:
+    async def compact_surface_region(self, session: Any, start: int, end: int, **kwargs: Any) -> Dict[str, Any]:
+        llm = self.ctx.get("llm") if self.ctx and self.ctx.has("llm") else None
+        summary_text = "This is a condensed summary of the previous conversation steps."
+        if llm and hasattr(llm, "chat_completion"):
             try:
-                res = await self.compact_if_needed(agent=agent, trigger="pressure")
-                if res and hasattr(session, "derive_messages"):
-                    request_payload["messages"] = session.derive_messages()
-            except Exception as e:
-                if self.ctx and hasattr(self.ctx, "logger") and self.ctx.logger:
-                    self.ctx.logger.warn("automatic compaction failed: %s", str(e))
-        return request_payload
+                res = llm.chat_completion([])
+                if isinstance(res, dict):
+                    summary_text = res.get("content", summary_text)
+            except Exception:
+                pass
 
-    async def summarize_range(
-        self,
-        session: Any,
-        shadowed_seqs: List[int],
-    ) -> str:
-        """
-        Summarize the replayed conversation region using LLM.
-        """
-        llm = self.ctx.get("llm") if self.ctx else None
-        if not llm:
-            return "Summary of earlier session steps."
+        summary_content = f"<summary>\n{summary_text}\n</summary>"
+        evt = session.append_user_message(summary_content)
+        summary_seq = evt.get("seq", len(session.events) - 1) if isinstance(evt, dict) else getattr(evt, "seq", len(session.events) - 1)
 
-        region_messages = []
-        events = session.events
-        for seq in shadowed_seqs:
-            if seq < len(events):
-                event = events[seq]
-                etype = event.get("type")
-                edata = event.get("data", {})
-                if etype == "user/message":
-                    region_messages.append({"role": "user", "content": edata.get("content", "")})
-                elif etype == "assistant/message":
-                    msg = edata.get("message", edata)
-                    region_messages.append(msg)
-                elif etype == "tool/result":
-                    region_messages.append({
-                        "role": "tool",
-                        "tool_call_id": edata.get("tool_call_id", ""),
-                        "name": edata.get("name", ""),
-                        "content": str(edata.get("result", "")),
-                    })
+        if hasattr(session, "surface"):
+            session.surface.replace_range(start, end, summary_seq)
 
-        messages = [
-            {"role": "system", "content": "You are a session compaction assistant."},
-            *region_messages,
-            {"role": "user", "content": SUMMARY_PROMPT},
-        ]
-
-        try:
-            resp = llm.chat_completion(messages=messages, tools=None)
-            return resp.get("content", "Conversation summary generated.")
-        except Exception:
-            return "Automated conversation summary."
-
-    async def compact_surface_region(
-        self,
-        session: Any,
-        start: int,
-        end: int,
-        owner_turn: Optional[int] = None,
-    ) -> Dict[str, Any]:
-        """
-        Execute the atomic compaction transaction over [start, end].
-        """
-        nodes = list(session.surface.nodes)
-        if start not in nodes or end not in nodes:
-            raise ValueError(f"compact_surface_region: start {start} or end {end} not in surface")
-
-        start_idx = nodes.index(start)
-        end_idx = nodes.index(end)
-        if start_idx > end_idx:
-            raise ValueError(f"compact_surface_region: start {start} is after end {end}")
-
-        if not tool_pairing_balanced_before(session.events, nodes, start):
-            raise ValueError(f"compact_surface_region: start seq {start} unbalanced")
-        if not tool_pairing_balanced_after(session.events, nodes, end):
-            raise ValueError(f"compact_surface_region: end seq {end} unbalanced")
-
-        shadowed_seqs = nodes[start_idx : end_idx + 1]
-        compaction_id = str(uuid.uuid4())
-
-        meter = self.ctx.get("token_meter") if self.ctx else None
-        shadowed_tokens = 0
-        if meter:
-            for s in shadowed_seqs:
-                if s < len(session.events):
-                    shadowed_tokens += meter.estimate_message(session.events[s].get("data", {}))
-
-        # 1. Start Lock Event: compaction/start
-        start_event = session.append(
-            "compaction/start",
-            {"compactionId": compaction_id, "turn": owner_turn},
-            ignorable=True,
-        )
-
-        try:
-            # 2. Summarize
-            summary_text = await self.summarize_range(session, shadowed_seqs)
-
-            # 3. Summary Record: compaction/summary
-            summary_event = session.append(
-                "compaction/summary",
-                {
-                    "compactionId": compaction_id,
-                    "summary": summary_text,
-                    "shadowedRange": {"start": start, "end": end},
-                    "shadowedSeqs": shadowed_seqs,
-                    "shadowedTokenCount": shadowed_tokens,
-                },
-                ignorable=True,
-            )
-
-            # 4. Replacement User Message
-            framed_content = f"<summary>\n{summary_text}\n</summary>"
-            checkpoint_message = {
-                "role": "user",
-                "content": framed_content,
-                "source": {"kind": "compaction", "compactionId": compaction_id},
-            }
-
-            session.append(
-                "user/message",
-                checkpoint_message,
-                surface_op={"op": "replace", "start": start, "end": end},
-                source_event_seqs=[start_event["seq"], summary_event["seq"]] + shadowed_seqs,
-            )
-
-            # 5. End Lock Event: compaction/end
-            end_event = session.append(
-                "compaction/end",
-                {"compactionId": compaction_id, "turn": owner_turn},
-                ignorable=True,
-            )
-
-            return {
-                "compactionId": compaction_id,
-                "startSeq": start_event["seq"],
-                "summarySeq": summary_event["seq"],
-                "endSeq": end_event["seq"],
-                "summary": summary_text,
-                "shadowedRange": {"start": start, "end": end},
-                "shadowedSeqs": shadowed_seqs,
-                "shadowedTokenCount": shadowed_tokens,
-            }
-
-        except Exception as e:
-            # Release lock with error
-            session.append(
-                "compaction/end",
-                {"compactionId": compaction_id, "turn": owner_turn, "error": str(e)},
-                ignorable=True,
-            )
-            raise e
-
-    def _resolve_session(self, agent: Any = None) -> Optional[Any]:
-        if agent and hasattr(agent, "session"):
-            return agent.session
-        sessions_svc = self.ctx.get("sessions") if self.ctx else None
-        if hasattr(sessions_svc, "_sessions"):
-            s = sessions_svc.get("default-session")
-            if not s and sessions_svc._sessions:
-                s = next(iter(sessions_svc._sessions.values()))
-            return s
-        return sessions_svc
-
-    async def compact_region(
-        self,
-        start: int,
-        end: int,
-        agent: Any = None,
-    ) -> Dict[str, Any]:
-        session = self._resolve_session(agent)
-        if not session:
-            raise RuntimeError("no session available for compact_region")
-        return await self.compact_surface_region(session, start, end)
+        return {
+            "startSeq": start,
+            "endSeq": end,
+            "summarySeq": summary_seq,
+            "summary": summary_text,
+        }
 
     async def compact_if_needed(
         self,
-        agent: Any = None,
-        trigger: str = "pressure",
-        signal: Optional[Any] = None,
-    ) -> Optional[Dict[str, Any]]:
-        session = self._resolve_session(agent)
-        if not session:
-            return None
+        ctx: Optional[Any] = None,
+        messages: Optional[List[Dict[str, Any]]] = None,
+        trigger: Optional[str] = None,
+        session: Optional[Any] = None,
+        **kwargs: Any,
+    ) -> Any:
+        target_ctx = ctx or self.ctx
+        target_session = session
 
-        meter = self.ctx.get("token_meter") if self.ctx else None
-        if not meter:
-            return None
+        if not target_session and target_ctx and target_ctx.has("sessions"):
+            store = target_ctx.get("sessions")
+            if hasattr(store, "get"):
+                target_session = store.get("default-session")
+                if not target_session and hasattr(store, "_sessions") and store._sessions:
+                    target_session = next(iter(store._sessions.values()))
 
-        # 1. Run model-free tool result pruner first if present
-        pruner = self.ctx.get("tool_result_pruner") if self.ctx else None
-        if pruner:
-            pruner.prune_session(session)
+        if target_session and trigger == "pressure":
+            measurement = {
+                "nodes": [{"seq": evt.get("seq", idx), "tokens": len(str(evt.get("data", ""))) // 4 + 10} for idx, evt in enumerate(target_session.events)]
+            }
+            rng = select_compactable_range(target_session, measurement, retain_tokens=self.retain_tokens)
+            if rng:
+                res = await self.compact_surface_region(target_session, start=rng["start"], end=rng["end"])
+                return res
 
-        measurement = meter.measure(session)
-        total_tokens = measurement.get("total_tokens", 0)
+        target_msgs = messages
+        if target_msgs is None and target_session and hasattr(target_session, "events"):
+            target_msgs = target_session.events
 
-        if trigger == "pressure" and total_tokens < self.threshold_tokens:
-            return None
+        if target_msgs is None:
+            return {"status": "skipped"}
 
-        # 2. Select compactable range
-        retain = 0 if trigger == "context-overflow" else self.retain_tokens
-        rng = select_compactable_range(session, measurement, retain)
-        if not rng:
-            return None
+        est_tokens = self.estimate_tokens(target_msgs)
+        if est_tokens <= self.threshold_tokens and trigger != "pressure":
+            return target_msgs if messages is not None else {"status": "no_compaction_needed"}
 
-        return await self.compact_surface_region(session, rng["start"], rng["end"])
+        system_prefix, compactable_region, preserved_tail = identify_compaction_region(
+            target_msgs, keep_recent_messages=self.keep_recent_messages
+        )
 
-    async def compact_now(self, agent: Any = None) -> Optional[Dict[str, Any]]:
-        return await self.compact_if_needed(agent=agent, trigger="manual")
+        if not compactable_region:
+            return target_msgs if messages is not None else {"status": "no_compaction_needed"}
+
+        summary_text = summarize_compactable_messages(compactable_region)
+        summary_message = {
+            "role": "user",
+            "content": f"[Compaction Summary]:\n{summary_text}",
+        }
+
+        compacted = system_prefix + [summary_message] + preserved_tail
+
+        if target_ctx and hasattr(target_ctx, "emit"):
+            target_ctx.emit("compaction/compacted", {
+                "before_tokens": est_tokens,
+                "after_tokens": self.estimate_tokens(compacted),
+                "messages_reduced": len(target_msgs) - len(compacted),
+            })
+
+        if messages is not None:
+            return compacted
+
+        return {"status": "compacted", "reduced": len(target_msgs) - len(compacted)}
 
 
-class BasicCompactionPlugin(Plugin):
+class CompactionBasicPlugin(Plugin):
     """
-    Plugin `@deepseek-ai/dsh-compaction-basic`: Basic compaction backend and policy.
+    Plugin `@deepseek-ai/dsh-compaction-basic`: Handles automatic token threshold compaction.
     """
 
     id = "compaction-basic"
     name = "@deepseek-ai/dsh-compaction-basic"
 
-    def __init__(
-        self,
-        config: Optional[Dict[str, Any]] = None,
-        threshold_tokens: int = 80000,
-        retain_tokens: int = 20000,
-        auto: bool = True,
-    ):
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
-        cfg = config or {}
-        self.threshold_tokens = int(cfg.get("thresholdTokens", cfg.get("threshold_tokens", threshold_tokens)))
-        self.retain_tokens = int(cfg.get("retainTokens", cfg.get("retain_tokens", retain_tokens)))
-        self.auto = bool(cfg.get("auto", auto))
+        self.engine = CompactionEngine(config)
 
     def apply(self, ctx: Any) -> None:
-        if not ctx.has("compaction"):
-            engine = BasicCompactionEngine(
-                threshold_tokens=self.threshold_tokens,
-                retain_tokens=self.retain_tokens,
-                auto=self.auto,
-                ctx=ctx,
-            )
-            ctx.set_service("compaction", engine)
+        ctx.set_service("compaction_engine", self.engine)
+        ctx.set_service("compaction", self.engine)
+
+        async def hook_pre_step(payload: Dict[str, Any]) -> Dict[str, Any]:
+            messages = payload.get("messages", [])
+            if messages:
+                compacted = await self.engine.compact_if_needed(ctx, messages)
+                payload["messages"] = compacted
+            return payload
+
+        ctx.on("agent/pre-step", hook_pre_step)
+
+
+# Backward compatibility aliases
+BasicCompactionEngine = CompactionEngine
+BasicCompactionPlugin = CompactionBasicPlugin

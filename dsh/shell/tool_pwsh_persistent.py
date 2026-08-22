@@ -57,9 +57,21 @@ class ToolPwshPersistentPlugin(Plugin):
                     "type": "string",
                     "description": "The command string to execute in the shell",
                 },
+                "description": {
+                    "type": "string",
+                    "description": "Clear, concise description of what this command does.",
+                },
                 "timeoutMs": {
                     "type": "integer",
                     "description": "Optional timeout in milliseconds (default: 300000)",
+                },
+                "workdir": {
+                    "type": "string",
+                    "description": "Working directory for this command.",
+                },
+                "run_in_background": {
+                    "type": "boolean",
+                    "description": "Run in the background.",
                 },
             },
             "required": ["command"],

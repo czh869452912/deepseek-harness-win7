@@ -29,6 +29,16 @@ class ToolPwshPlugin(Plugin):
         if not tools:
             return
 
+        if ctx.has("system_prompt"):
+            sp = ctx.get("system_prompt")
+            if hasattr(sp, "section"):
+                sp.section(
+                    "tool:pwsh",
+                    "Non-zero exits are reported as `[exit code: N]` markers; investigate failures before moving on. "
+                    "On Windows a killed process settles as `[exit code: 1]` without a signal marker; treat a bare exit 1 after an interruption as a termination, not a command failure.",
+                    order=105,
+                )
+
         async def execute_pwsh(
             command: str,
             description: Optional[str] = None,

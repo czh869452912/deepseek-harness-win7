@@ -9,19 +9,8 @@ import uuid
 
 from dsh.cordis.plugin import Plugin
 from dsh.core.session import Session
-
-
-def render_wrapup_context(objective: str, blocked_reason: Optional[str] = None) -> str:
-    """Render wrapup user notice after goal completion or block."""
-    if blocked_reason:
-        return (
-            f"The goal '{objective}' was marked blocked: {blocked_reason}. "
-            "Summarize the work done, the blocking condition, and any recommendations for the user."
-        )
-    return (
-        f"The goal '{objective}' is complete. "
-        "Summarize what was accomplished and any next steps for the user."
-    )
+from dsh.goal.tool_goal.authority import require_direct_human
+from dsh.goal.tool_goal.wrapup import render_wrapup_context
 
 
 class GoalSnapshot:
@@ -336,6 +325,7 @@ class ToolGoalPlugin(Plugin):
 
     def handle_create_goal(self, objective: str, max_goal_rounds: int = 20, ctx: Optional[Any] = None) -> Dict[str, Any]:
         context = ctx or self.ctx
+        require_direct_human(context)
         goal_svc: GoalService = context.get("goals")
         if not goal_svc:
             return {"error": "Goal service not available"}
@@ -353,6 +343,8 @@ class ToolGoalPlugin(Plugin):
         ctx: Optional[Any] = None,
     ) -> Dict[str, Any]:
         context = ctx or self.ctx
+        if action in ("edit", "pause", "resume"):
+            require_direct_human(context)
         goal_svc: GoalService = context.get("goals")
         if not goal_svc:
             return {"error": "Goal service not available"}
@@ -405,4 +397,3 @@ class ToolGoalPlugin(Plugin):
                         last_user_msg["content"] += f"\n\n[Goal Status: {status_str}]"
 
         return payload
-

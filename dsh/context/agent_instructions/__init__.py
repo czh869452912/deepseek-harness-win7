@@ -1,60 +1,27 @@
 """
 Workspace Agent Instructions Subsystem (`@deepseek-ai/dsh-agent-instructions`).
 Discovers project instructions (AGENTS.md, CLAUDE.md, .cursorrules) in workspace
-and injects them into system prompt assembly.
+and injects them into system prompt assembly, refreshing dynamically on file touch.
 """
 
 import os
 from typing import Any, Dict, List, Optional
 from dsh.cordis.plugin import Plugin
-
-
-DEFAULT_INSTRUCTION_CANDIDATES = [
-    "AGENTS.md",
-    "CLAUDE.md",
-    ".cursorrules",
-    ".agent-instructions.md",
-    "agents.md",
-]
+from dsh.context.agent_instructions.config import DEFAULT_INSTRUCTION_CANDIDATES, ResolvedConfig
+from dsh.context.agent_instructions.files import discover_and_read_files, find_project_root
+from dsh.context.agent_instructions.state import InstructionState
 
 
 class AgentInstructionsService:
     def __init__(self, config: Optional[Dict[str, Any]] = None):
-        cfg = config or {}
-        self.max_bytes: int = int(cfg.get("maxBytes", 65536))
-        self.candidates: List[str] = list(cfg.get("candidates", DEFAULT_INSTRUCTION_CANDIDATES))
+        self.config = ResolvedConfig(config)
+        self.max_bytes = self.config.max_bytes
+        self.candidates = self.config.candidates
+        self.state = InstructionState()
 
     def discover_and_read(self, cwd: Optional[str] = None) -> List[Dict[str, str]]:
         work_dir = cwd or os.getcwd()
-        results: List[Dict[str, str]] = []
-        total_bytes = 0
-        seen_paths = set()
-
-        for name in self.candidates:
-            file_path = os.path.join(work_dir, name)
-            if os.path.isfile(file_path):
-                real_key = os.path.normcase(os.path.abspath(file_path))
-                if real_key in seen_paths:
-                    continue
-                seen_paths.add(real_key)
-
-                try:
-                    with open(file_path, "r", encoding="utf-8", errors="replace") as f:
-                        content = f.read()
-                    
-                    encoded = content.encode("utf-8")
-                    if total_bytes + len(encoded) > self.max_bytes:
-                        remaining = max(0, self.max_bytes - total_bytes)
-                        content = encoded[:remaining].decode("utf-8", errors="ignore") + "\n\n[... truncated by maxBytes limit]"
-                        results.append({"path": name, "content": content})
-                        break
-                    
-                    total_bytes += len(encoded)
-                    results.append({"path": name, "content": content})
-                except Exception:
-                    pass
-
-        return results
+        return discover_and_read_files(work_dir, self.candidates, self.max_bytes)
 
     def render_section(self, cwd: Optional[str] = None) -> str:
         files = self.discover_and_read(cwd)
@@ -95,3 +62,14 @@ class AgentInstructionsPlugin(Plugin):
             return prompt
 
         ctx.on("agent/prompt-assemble", prompt_assembler)
+
+        # Listen to tool execution results to refresh instructions when instruction files are edited
+        def on_tool_result(exec_data: Any, result_data: Any = None) -> None:
+            tool_name = exec_data.get("name") if isinstance(exec_data, dict) else getattr(exec_data, "name", "")
+            if tool_name in ("write", "edit", "str_replace_editor"):
+                args = exec_data.get("arguments", {}) if isinstance(exec_data, dict) else getattr(exec_data, "arguments", {})
+                file_path = args.get("file_path") or args.get("path")
+                if file_path and any(candidate in file_path for candidate in DEFAULT_INSTRUCTION_CANDIDATES):
+                    self.service.state.update_touch(file_path)
+
+        ctx.on("tools/result", on_tool_result)

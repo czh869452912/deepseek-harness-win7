@@ -89,6 +89,7 @@ class Agent:
         if previous_status != current_status:
             if self.ctx:
                 self.ctx.emit("agent/status", {"agent": self, "status": current_status})
+                self.ctx.emit("internal/status", {"agent": self, "status": current_status})
             if current_status == "idle":
                 futures = list(self._idle_futures)
                 self._idle_futures.clear()
@@ -104,6 +105,7 @@ class Agent:
         if previous_status != current_status:
             if self.ctx:
                 self.ctx.emit("agent/status", {"agent": self, "status": current_status})
+                self.ctx.emit("internal/status", {"agent": self, "status": current_status})
             if current_status == "idle":
                 futures = list(self._idle_futures)
                 self._idle_futures.clear()

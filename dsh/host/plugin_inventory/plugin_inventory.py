@@ -16,6 +16,9 @@ FIBER_PHASE_MAP = {
 }
 
 
+from dsh.cordis.plugin import Plugin
+
+
 class PluginInventoryGateway:
     """
     Exposes Cordis Loader's current plugin entries and lifecycle states.
@@ -35,18 +38,22 @@ class PluginInventoryGateway:
         entries: List[Dict[str, Any]] = []
         loader = getattr(self.ctx, "loader", None)
         if loader and hasattr(loader, "entries"):
-            for entry in loader.entries():
+            raw_entries = loader.entries() if callable(loader.entries) else loader.entries
+            for entry in raw_entries:
                 if getattr(entry, "is_group", False):
                     continue
                 fiber = getattr(entry, "fiber", None)
                 state_code = getattr(fiber, "state", None) if fiber else None
                 phase = FIBER_PHASE_MAP.get(state_code) if state_code is not None else None
 
+                entry_id = getattr(entry, "id", getattr(entry, "name", "unknown"))
+                entry_name = getattr(entry, "name", getattr(entry, "id", "unknown"))
+
                 entries.append({
-                    "entryId": getattr(entry, "id", "unknown"),
-                    "moduleName": getattr(entry, "name", "unknown"),
+                    "entryId": entry_id,
+                    "moduleName": entry_name,
                     "enabled": not getattr(entry, "disabled", False),
-                    "fiberPhase": phase,
+                    "fiberPhase": phase if phase is not None else "active",
                 })
         else:
             # Fallback if loader service is not attached
@@ -63,3 +70,19 @@ class PluginInventoryGateway:
                     })
 
         return {"entries": entries}
+
+
+class PluginInventoryPlugin(Plugin):
+    """
+    Plugin `@deepseek-ai/dsh-host-plugin-inventory`: Exposes Cordis plugin inventory gateway.
+    """
+
+    id = "plugin-inventory"
+    name = "@deepseek-ai/dsh-host-plugin-inventory"
+    inject = []
+
+    def apply(self, ctx: Any) -> None:
+        gateway = PluginInventoryGateway(ctx)
+        ctx.set_service("plugin_inventory", gateway)
+        ctx.set_service("pluginInventory", gateway)
+

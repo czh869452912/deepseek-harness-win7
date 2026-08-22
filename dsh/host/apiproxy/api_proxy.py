@@ -95,6 +95,10 @@ class ApiProxyPlugin(Plugin):
         self.workspace_handler = WorkspaceDomainHandler(self.ctx, self._workspaces, self._workspace_order, self._archived_sessions, self._active_sessions, self._broadcast_host)
 
     def apply(self, ctx: Any) -> None:
+        ctx.set_service("api_proxy", self)
+        ctx.set_service("apiProxy", self)
+        ctx.set_service("apiproxy", self)
+
         web_server: WebServerService = ctx.get("web_server") or ctx.get("webServer")
         if not web_server:
             return
@@ -660,6 +664,16 @@ class ApiProxyPlugin(Plugin):
                 res = await self.session_search_handler.search_sessions(req_payload)
                 await send_rpc_success(res)
                 return
+
+            if rpc_method in ("pluginInventory.list", "pluginInventory/list", "plugin_inventory.list", "plugin_inventory/list"):
+                inventory_svc = self.ctx.get("plugin_inventory") or self.ctx.get("pluginInventory")
+                if not inventory_svc:
+                    from dsh.host.plugin_inventory.plugin_inventory import PluginInventoryGateway
+                    inventory_svc = PluginInventoryGateway(self.ctx)
+                res = inventory_svc.list()
+                await send_rpc_success(res)
+                return
+
 
         except ValueError as ve:
             await send_rpc_error("bad-request", str(ve))

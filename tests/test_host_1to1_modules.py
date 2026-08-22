@@ -75,3 +75,55 @@ def test_directory_picker_submodules():
 def test_native_path_opener():
     # Test open_native_path with non-existent file
     assert open_native_path("C:\\non_existent_path_xyz123") is False
+
+
+@pytest.mark.asyncio
+async def test_plugin_inventory_rpc_and_harness_web():
+    from dsh.harness import build_harness
+    from dsh.host.apiproxy.api_proxy import ApiProxyPlugin
+    from dsh.host.plugin_inventory import PluginInventoryPlugin
+
+    # 1. Test build_harness in web mode
+    ctx = build_harness(enable_web=True)
+    inv_svc = ctx.get("plugin_inventory") or ctx.get("pluginInventory")
+    assert inv_svc is not None
+    snapshot = inv_svc.list()
+    assert "entries" in snapshot
+    assert isinstance(snapshot["entries"], list)
+
+    # 2. Test ApiProxyPlugin handling pluginInventory.list RPC route
+    api_proxy = ctx.get("apiproxy") or ctx.get("apiProxy")
+    assert api_proxy is not None
+
+    class DummyResponse:
+        def __init__(self):
+            self.status = 200
+            self.headers = {}
+            self.body = b""
+
+        def write_status(self, status):
+            self.status = status
+
+        def write_header(self, k, v):
+            self.headers[k] = v
+
+        def write_body(self, data):
+            self.body += data
+
+        async def finish(self):
+            pass
+
+    req = {
+        "method": "POST",
+        "path": "/api/pluginInventory.list",
+        "body": b'{"type": "client-request", "rpcId": "r1", "method": "pluginInventory.list", "payload": {}}',
+    }
+    resp = DummyResponse()
+    await api_proxy._handle_api_request(req, resp)
+    import json
+    parsed = json.loads(resp.body.decode("utf-8"))
+    assert parsed.get("type") == "server-response"
+    assert parsed.get("rpcId") == "r1"
+    assert parsed["result"]["ok"] is True
+    assert "entries" in parsed["result"]["value"]
+

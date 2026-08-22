@@ -15,12 +15,12 @@ def _fire_waterfall(ctx: Optional[Any], event_name: str, *args: Any) -> None:
         return
     res = ctx.waterfall(event_name, *args)
     if inspect.isawaitable(res):
+        import asyncio
         try:
-            import asyncio
             loop = asyncio.get_running_loop()
             loop.create_task(res)
         except RuntimeError:
-            pass
+            asyncio.run(res)
 
 
 DEFAULT_DESCRIPTION = (

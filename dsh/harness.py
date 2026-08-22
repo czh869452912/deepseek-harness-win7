@@ -46,6 +46,7 @@ from dsh.host.apiproxy.api_proxy import ApiProxyPlugin
 from dsh.host.client_modules.registry import ClientModulesPlugin
 from dsh.host.directory_picker.directory_picker import DirectoryPickerAutoPlugin
 from dsh.host.frontend_static.frontend_static import FrontendStaticPlugin
+from dsh.host.plugin_inventory.plugin_inventory import PluginInventoryPlugin
 from dsh.host.webserver.webserver import WebServerPlugin
 from dsh.interaction.commands import CommandsPlugin
 from dsh.interaction.permission_presets import PermissionPresetsPlugin
@@ -148,10 +149,13 @@ def build_harness(
     loader.register_plugin_class("@deepseek-ai/dsh-apiproxy", ApiProxyPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-client-modules", ClientModulesPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-host-directory-picker-auto", DirectoryPickerAutoPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-host-plugin-inventory", PluginInventoryPlugin)
 
     if enable_web:
         ctx.plugin(WebServerPlugin, config={"host": web_host, "port": web_port})
         ctx.plugin(ClientModulesPlugin)
+        ctx.plugin(PluginInventoryPlugin)
+        ctx.plugin(DirectoryPickerAutoPlugin)
         ctx.plugin(ApiProxyPlugin)
         ctx.plugin(FrontendStaticPlugin)
 

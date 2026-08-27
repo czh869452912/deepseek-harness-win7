@@ -235,5 +235,3 @@ class ToolResultPrunerPlugin(Plugin):
                 tail_chars=self.tail_chars,
                 ctx=ctx,
             )
-            ctx.set_service("tool_result_pruner", pruner)
-            ctx.set_service("toolResultPruner", pruner)

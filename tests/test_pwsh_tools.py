@@ -15,9 +15,9 @@ async def test_tool_pwsh_one_shot_execution():
     ctx = Context()
     ctx.set_service("tools", ToolsService(ctx))
     ctx.set_service("jobs", JobsService())
-    ctx.plugin(ToolPwshPlugin)
+    fiber = await ctx.registry.plugin(ToolPwshPlugin, parent_ctx=ctx)
 
-    tools: ToolsService = ctx.get("tools")
+    tools: ToolsService = fiber.ctx.get("tools")
     assert tools.has("pwsh")
 
     # 1. Foreground command execution

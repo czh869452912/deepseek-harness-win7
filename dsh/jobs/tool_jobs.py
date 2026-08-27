@@ -27,9 +27,13 @@ class ToolJobsPlugin(Plugin):
             return
 
         if not ctx.has("jobs"):
-            ctx.set_service("jobs", JobsService(ctx))
-
-        jobs_svc: JobsService = ctx.get("jobs")
+            # Keep the exact instance used by the tool closures.  Service
+            # publication is reactive and `ctx.get()` may not observe the
+            # just-published value until the next refresh tick.
+            jobs_svc = JobsService(ctx)
+            ctx.set_service("jobs", jobs_svc)
+        else:
+            jobs_svc = ctx.get("jobs")
 
         if ctx.has("system_prompt"):
             sp = ctx.get("system_prompt")
@@ -131,10 +135,11 @@ class ToolJobsPlugin(Plugin):
             "execute": exec_job_kill,
         })
 
-        def cleanup():
-            disposer1()
-            disposer2()
-            disposer3()
-
-        ctx.effect(cleanup)
+        # `effect` executes its callback immediately and stores the callback's
+        # return value as the disposer.  Returning each registration disposer
+        # therefore keeps the tools alive until the plugin Fiber unloads;
+        # passing a cleanup function directly would invoke it during mount.
+        ctx.effect(lambda: disposer1)
+        ctx.effect(lambda: disposer2)
+        ctx.effect(lambda: disposer3)
 

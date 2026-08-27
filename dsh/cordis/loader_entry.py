@@ -72,6 +72,7 @@ class _EntryRuntimePlugin(Plugin):
         self.plugin = plugin
         self.raw_config = config
         self.inject = inject
+        self.id = entry.id
         self.name = getattr(plugin, "name", None) or getattr(plugin, "__name__", "loaded-plugin")
 
     def apply(self, ctx: Any) -> Any:

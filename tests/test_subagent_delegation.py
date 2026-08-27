@@ -9,10 +9,9 @@ from dsh.subagent.tool_subagent import ToolSubagentPlugin
 async def test_subagent_tools():
     ctx = Context()
     ctx.set_service("tools", ToolsService(ctx))
-    ctx.plugin(ToolSubagentPlugin)
-
-    tools = ctx.get("tools")
-    subagents_svc: SubagentRegistry = ctx.get("subagents")
+    fiber = await ctx.registry.plugin(ToolSubagentPlugin, parent_ctx=ctx)
+    tools = fiber.ctx.get("tools")
+    subagents_svc: SubagentRegistry = fiber.ctx.get("subagents")
 
     # 1. Spawn foreground subagent (with description + prompt)
     spawn_res = await tools.execute_tool("subagent", {

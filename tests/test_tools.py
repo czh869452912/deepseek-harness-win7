@@ -53,12 +53,12 @@ def test_tool_registration_disposer(ctx_with_tools):
     ctx = ctx_with_tools
     tools = ctx.get("tools")
     
-    disposer = tools.register(
-        name="custom_tool",
-        description="Custom tool description",
-        parameters={"type": "object", "properties": {}},
-        handler=lambda: "ok"
-    )
+    disposer = tools.register_legacy({
+        "name": "custom_tool",
+        "description": "Custom tool description",
+        "parameters": {"type": "object", "properties": {}},
+        "handler": lambda: "ok",
+    })
     assert callable(disposer)
     assert tools.get_tool("custom_tool") is not None
 

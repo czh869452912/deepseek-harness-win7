@@ -173,7 +173,8 @@ async def test_web_ui_question_submission_and_respond():
 
     await ctx.registry.plugin(web_server, parent_ctx=ctx)
     await ctx.registry.plugin(api_proxy, parent_ctx=ctx)
-    await ctx.registry.plugin(ToolAskUserPlugin, parent_ctx=ctx)
+    ask_fiber = await ctx.registry.plugin(ToolAskUserPlugin, parent_ctx=ctx)
+    tools = ask_fiber.ctx.get("tools")
 
     user_questions: UserQuestionService = ctx.get("userQuestions")
     assert user_questions is not None
@@ -192,7 +193,13 @@ async def test_web_ui_question_submission_and_respond():
     ]
 
     # Run ask_user_question in task
-    task = asyncio.create_task(tools.execute_tool("ask_user_question", {"questions": questions_arg}))
+    from dsh.core.tools import ToolExecutionInput
+    from types import SimpleNamespace
+    tool = tools.get_tool("ask_user_question", ask_fiber.ctx)
+    task = asyncio.create_task(tool.handler(
+        {"questions": questions_arg},
+        ToolExecutionInput("ask-call", "ask_user_question", {"questions": questions_arg}, signal=asyncio.Event()),
+    ))
 
     await asyncio.sleep(0.05)
 

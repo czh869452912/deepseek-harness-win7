@@ -78,6 +78,7 @@
   isolate:
     compaction: true
     toolResultPruner: true
+    tool_result_pruner: true
   config:
     - id: compaction-basic
       name: "@deepseek-ai/dsh-compaction-basic"
@@ -92,6 +93,7 @@
   group: true
   isolate:
     workflowEngine: true
+    subagents: true
   config:
     - id: tool-subagent
       name: "@deepseek-ai/dsh-tool-subagent"

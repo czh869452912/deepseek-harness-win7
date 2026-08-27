@@ -12,6 +12,7 @@ from dsh.context.time_context import TimeContextPlugin
 from dsh.core.agent import AgentPlugin
 from dsh.core.agent_loop import AgentLoopPlugin
 from dsh.core.persona import PersonaPlugin
+from dsh.core.system_prompt import SystemPromptPlugin
 from dsh.core.tools import ToolsPlugin, ToolsService
 from dsh.credentials.credentials_local import CredentialsLocalPlugin
 from dsh.extensions.cli_visualizer import CliVisualizerPlugin
@@ -44,6 +45,7 @@ from dsh.web.tool_web import ToolWebPlugin
 from dsh.subagent.tool_subagent import ToolSubagentPlugin
 from dsh.workflow.tool_ralph import ToolRalphPlugin
 from dsh.workflow.tool_workflow import ToolWorkflowPlugin
+from dsh.subprocess.local import LocalSubprocessRuntime
 from dsh.host.apiproxy.api_proxy import ApiProxyPlugin
 from dsh.host.client_modules.registry import ClientModulesPlugin
 from dsh.host.directory_picker.directory_picker import DirectoryPickerAutoPlugin
@@ -53,6 +55,7 @@ from dsh.host.webserver.webserver import WebServerPlugin
 from dsh.interaction.commands import CommandsPlugin
 from dsh.interaction.permission_presets import PermissionPresetsPlugin
 from dsh.interaction.user_approval import UserApprovalPlugin
+from dsh.interaction.user_questions import UserQuestionsPlugin
 from dsh.llm.llm_retry import LLMRetryPlugin
 from dsh.session.session_query import SessionQueryPlugin
 from dsh.storage.storage import StoragePlugin
@@ -85,10 +88,13 @@ def build_harness(
     ctx.plugin(StoragePlugin)
     ctx.plugin(WorkspacePlugin)
     ctx.plugin(UserApprovalPlugin)
+    ctx.plugin(UserQuestionsPlugin)
     ctx.plugin(PermissionPresetsPlugin)
     ctx.plugin(CommandsPlugin)
     ctx.plugin(TokenMeterPlugin)
     ctx.plugin(LLMRetryPlugin)
+    LocalSubprocessRuntime(ctx)
+    ctx.plugin(SystemPromptPlugin)
     if mode != "minimal":
         ctx.plugin(SessionQueryPlugin)
     ctx.plugin(AgentLoopPlugin)
@@ -120,6 +126,7 @@ def build_harness(
     loader.register_plugin_class("@deepseek-ai/dsh-tools", ToolsPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-agent", AgentPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-persona", PersonaPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-system-prompt", SystemPromptPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-agent-instructions", AgentInstructionsPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-file-reference-local", FileReferenceLocalPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-time-context", TimeContextPlugin)
@@ -140,6 +147,7 @@ def build_harness(
     loader.register_plugin_class("@deepseek-ai/dsh-storage", StoragePlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-workspace", WorkspacePlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-user-approval", UserApprovalPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-user-questions", UserQuestionsPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-permission-presets", PermissionPresetsPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-commands", CommandsPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-llm-retry", LLMRetryPlugin)
@@ -179,6 +187,13 @@ def build_harness(
     preset_file = os.path.join("dsh", "presets", f"{mode}.yaml")
     if os.path.exists(preset_file):
         loader.load_preset_file(preset_file, ctx)
+
+    # Preserve the synchronous construction contract: outside an active event
+    # loop, drain injected fibers before returning the ready context.
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        asyncio.run(initialize_harness(ctx))
 
     return ctx
 

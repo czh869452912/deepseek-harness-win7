@@ -1,4 +1,5 @@
 import pytest
+import asyncio
 
 from dsh.cordis.context import Context
 from dsh.interaction.user_questions import (
@@ -137,6 +138,7 @@ async def test_provider_disposer_is_identity_based_and_idempotent():
     dispose_first = service.registerProvider(first)
 
     dispose_first()
+    await asyncio.sleep(0)
     service.registerProvider(second)
     dispose_first()
 
@@ -326,9 +328,8 @@ async def test_valid_intent_is_passed_through_unchanged():
 @pytest.mark.asyncio
 async def test_plugin_service_is_fiber_owned_and_removed_on_unload():
     ctx = Context()
-    ctx.plugin(UserQuestionsPlugin)
-    fiber = ctx.registry.get_fiber("user-questions")
-    service = ctx.get("userQuestions")
+    fiber = await ctx.registry.plugin(UserQuestionsPlugin, parent_ctx=ctx)
+    service = fiber.ctx.get("userQuestions")
 
     assert isinstance(service, UserQuestionService)
     assert "userQuestions" not in ctx._services

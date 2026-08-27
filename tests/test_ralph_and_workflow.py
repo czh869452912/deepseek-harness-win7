@@ -9,15 +9,15 @@ from dsh.workflow.tool_workflow import ToolWorkflowPlugin
 async def test_ralph_and_workflow_tools():
     ctx = Context()
     ctx.set_service("tools", ToolsService(ctx))
-    ctx.plugin(ToolRalphPlugin)
-    ctx.plugin(ToolWorkflowPlugin)
+    ralph_fiber = await ctx.registry.plugin(ToolRalphPlugin, parent_ctx=ctx)
+    workflow_fiber = await ctx.registry.plugin(ToolWorkflowPlugin, parent_ctx=ctx)
 
-    tools = ctx.get("tools")
-
-    ralph_res = await tools.execute_tool("ralph", {"objective": "Refactor auth pipeline", "max_rounds": 10})
+    ralph_tools = ralph_fiber.ctx.get("tools")
+    ralph_res = await ralph_tools.execute_tool("ralph", {"objective": "Refactor auth pipeline", "max_rounds": 10})
     assert "Ralph Loop completed" in ralph_res
     assert "Refactor auth pipeline" in ralph_res
 
-    wf_res = await tools.execute_tool("run_workflow", {"script": "steps: [build, test]"})
+    workflow_tools = workflow_fiber.ctx.get("tools")
+    wf_res = await workflow_tools.execute_tool("run_workflow", {"script": "steps: [build, test]"})
     assert "Workflow result:" in wf_res
     assert "Executed workflow script" in wf_res

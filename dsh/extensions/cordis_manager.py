@@ -300,12 +300,12 @@ class CordisManagerPlugin(Plugin):
                     "plugin": {
                         "oneOf": [
                             {"type": "object", "additionalProperties": False,
-                             "properties": {"kind": {"type": "string", "const": "new", "required": True},
-                                             "idPrefix": {"type": "string", "required": True}},
+                             "properties": {"kind": {"type": "string", "const": "new"},
+                                             "idPrefix": {"type": "string"}},
                              "required": ["kind", "idPrefix"]},
                             {"type": "object", "additionalProperties": False,
-                             "properties": {"kind": {"type": "string", "const": "existing", "required": True},
-                                             "pluginId": {"type": "string", "required": True}},
+                             "properties": {"kind": {"type": "string", "const": "existing"},
+                                             "pluginId": {"type": "string"}},
                              "required": ["kind", "pluginId"]},
                         ],
                         "description": "{ kind: 'new', idPrefix: 'foo' } or { kind: 'existing', pluginId: 'foo-101' }",

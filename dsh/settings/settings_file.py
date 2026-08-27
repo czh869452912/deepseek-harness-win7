@@ -5,6 +5,7 @@ import errno
 import json
 import os
 import tempfile
+import time
 import threading
 import time
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -159,7 +160,18 @@ def _atomic_write(filename: str, text: str) -> None:
             stream.write(text)
             stream.flush()
             os.fsync(stream.fileno())
-        os.replace(temporary, filename)
+        replaced = False
+        for attempt in range(8):
+            try:
+                os.replace(temporary, filename)
+                replaced = True
+                break
+            except PermissionError:
+                if attempt == 7:
+                    raise
+                time.sleep(0.01 * (attempt + 1))
+        if not replaced:
+            raise PermissionError(filename)
         try:
             os.chmod(filename, 0o600)
         except OSError:

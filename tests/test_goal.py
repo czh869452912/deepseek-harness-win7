@@ -103,7 +103,7 @@ async def test_goal_slash_command(goal_ctx):
     payload = {
         "messages": [{"role": "user", "content": "/goal Refactor codebase"}]
     }
-    await goal_ctx.waterfall("agent/pre-step", payload)
+    await goal_ctx.waterfall("agent/pre-step", payload, lambda value: value)
     goal = goal_svc.get_goal()
     assert goal is not None
     assert goal.objective == "Refactor codebase"
@@ -113,7 +113,7 @@ async def test_goal_slash_command(goal_ctx):
     payload_pause = {
         "messages": [{"role": "user", "content": "/goal pause"}]
     }
-    await goal_ctx.waterfall("agent/pre-step", payload_pause)
+    await goal_ctx.waterfall("agent/pre-step", payload_pause, lambda value: value)
     assert goal_svc.get_goal().phase == "paused"
 
 
@@ -147,4 +147,3 @@ def test_goal_blocked_threshold(goal_ctx):
     assert g_blocked.phase == "blocked"
     assert g_blocked.activation == "disarmed"
     assert g_blocked.blocked_reason["message"] == "Missing API key"
-

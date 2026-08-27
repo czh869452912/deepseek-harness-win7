@@ -79,12 +79,13 @@ def test_native_path_opener():
 
 @pytest.mark.asyncio
 async def test_plugin_inventory_rpc_and_harness_web():
-    from dsh.harness import build_harness
+    from dsh.harness import build_harness, initialize_harness
     from dsh.host.apiproxy.api_proxy import ApiProxyPlugin
     from dsh.host.plugin_inventory import PluginInventoryPlugin
 
     # 1. Test build_harness in web mode
     ctx = build_harness(enable_web=True)
+    await initialize_harness(ctx)
     inv_svc = ctx.get("plugin_inventory") or ctx.get("pluginInventory")
     assert inv_svc is not None
     snapshot = inv_svc.list()

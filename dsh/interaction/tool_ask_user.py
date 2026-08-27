@@ -23,8 +23,10 @@ class ToolAskUserPlugin(Plugin):
         self.handler: Optional[Callable[[List[Dict[str, Any]]], Any]] = None
 
     def apply(self, ctx: Any) -> None:
-        tools = ctx.get("tools")
-        if not tools:
+        # `tools` is an injected service; use the caller-bound proxy so this
+        # plugin registers into its preset fiber scope.
+        tools = ctx.tools
+        if tools is None:
             return
 
         async def exec_ask(args: Any = None, exec_input: Optional[Any] = None, **kwargs: Any) -> Any:
@@ -127,7 +129,13 @@ class ToolAskUserPlugin(Plugin):
                 "required": ["questions"],
             },
             "execute": exec_ask,
+            "output": {
+                "schema": {"type": "string"},
+                "render": lambda _args, value: [{"type": "text", "text": str(value)}],
+            },
         })
 
         if hasattr(ctx, "effect"):
-            ctx.effect(disposer)
+            # Register the disposer as the effect cleanup; passing it directly
+            # would execute it immediately under Cordis effect semantics.
+            ctx.effect(lambda: disposer)

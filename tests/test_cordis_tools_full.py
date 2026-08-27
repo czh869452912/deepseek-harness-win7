@@ -125,3 +125,12 @@ async def test_cordis_backward_compatibility_aliases(cordis_ctx):
     inspect_res = await tools.execute_tool("cordis_inspect_context", {})
     inspect_data = json.loads(inspect_res)
     assert "services" in inspect_data
+
+
+def test_cordis_define_schema_keeps_required_at_object_level(cordis_ctx):
+    """The TS oneOf branches use an object-level required list."""
+    tool = cordis_ctx.get("tools").get_tool("cordis_define")
+    branches = tool.parameters["properties"]["plugin"]["oneOf"]
+    assert [branch["required"] for branch in branches] == [["kind", "idPrefix"], ["kind", "pluginId"]]
+    for branch in branches:
+        assert "required" not in branch["properties"]["kind"]

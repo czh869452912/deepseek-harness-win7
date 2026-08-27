@@ -95,3 +95,44 @@ async def test_mcp_plugin_apply():
     plugin.apply(ctx)
     assert plugin.connection is not None
     await plugin.connection.dispose()
+
+
+@pytest.mark.asyncio
+async def test_mcp_sync_tools_drains_cursor_pages_and_preserves_structured_content():
+    ctx = Context()
+    tools = ToolsService(ctx)
+    ctx.set_service("tools", tools)
+
+    class Client:
+        async def request(self, request):
+            cursor = request.get("params", {}).get("cursor")
+            if request["method"] == "tools/list":
+                if cursor is None:
+                    return {"tools": [{"name": "one", "inputSchema": {"type": "object"}}], "nextCursor": "p2"}
+                return {"tools": [{"name": "two", "inputSchema": {"type": "object"}, "outputSchema": {"type": "string"}}]}
+            return {"content": [{"type": "text", "text": "ok"}], "structuredContent": "value"}
+
+    live = await sync_tools(Client(), ctx, {"serverName": "pager"}, {})
+    assert set(live) == {"mcp__pager__one", "mcp__pager__two"}
+    second = tools.get_tool("mcp__pager__two")
+    assert second is not None and second.output["schema"]["required"] == ["content", "structuredContent"]
+    result = await second.execute({}, None)
+    assert result["structuredContent"] == "value"
+
+
+@pytest.mark.asyncio
+async def test_mcp_registration_failure_contain_and_throw_roll_back_generation():
+    ctx = Context()
+    tools = ToolsService(ctx)
+    ctx.set_service("tools", tools)
+    tools.register_legacy({"name": "mcp__conflict__one", "parameters": {}, "handler": lambda **_: "foreign"})
+
+    class Client:
+        async def list_tools(self):
+            return [{"name": "one", "inputSchema": {"type": "object"}}, {"name": "two", "inputSchema": {"type": "object"}}]
+
+    contained = await sync_tools(Client(), ctx, {"serverName": "conflict", "registrationFailure": "contain"}, {})
+    assert contained == {}
+    assert not tools.has_tool("mcp__conflict__two")
+    with pytest.raises(ValueError):
+        await sync_tools(Client(), ctx, {"serverName": "conflict", "registrationFailure": "throw"}, {})

@@ -25,11 +25,12 @@ async def test_plugin_inventory_1to1_fiber_phases():
     """Verify pluginInventory.list returns 1:1 PluginInventorySnapshot with active fiber phases."""
     ctx = Context()
     loader = Loader(ctx)
-    ctx.set_service("loader", loader)
     loader.register_plugin_class("@deepseek-ai/dsh-sample-plugin", SamplePlugin)
     loader.load_from_dict([
         {"id": "sample-plugin", "name": "@deepseek-ai/dsh-sample-plugin", "disabled": False}
     ])
+    await asyncio.gather(*(fiber.wait() for runtime in ctx.registry._runtimes.values()
+                           for fiber in runtime.fibers))
 
     gateway = PluginInventoryGateway(ctx)
     snapshot = gateway.list()

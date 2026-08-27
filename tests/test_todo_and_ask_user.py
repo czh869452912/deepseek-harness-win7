@@ -24,6 +24,7 @@ async def test_todo_write_tool_execution():
         ToolTodoPlugin, config=config, parent_ctx=ctx,
     )
     await fiber
+    tools = fiber.ctx.tools
 
     todos_payload = [
         {"content": "Implement feature A", "status": "completed"},
@@ -31,15 +32,13 @@ async def test_todo_write_tool_execution():
         {"content": "Write unit tests", "status": "pending"},
     ]
 
-    result = await tools.execute(ToolExecutionInput(
-        "todo-call", "todo_write", {"todos": todos_payload},
-        agent=SimpleNamespace(id=session.id, session=session),
-        signal=asyncio.Event(),
-    ))
-    assert result.content == [{
-        "type": "text",
-        "text": "Updated todo list: 1 pending, 1 in progress, 1 completed.",
-    }]
+    todo_tool = tools.get_tool("todo_write", fiber.ctx)
+    assert todo_tool is not None
+    text = await todo_tool.execute(
+        {"todos": todos_payload},
+        SimpleNamespace(agent=SimpleNamespace(id=session.id, session=session), signal=asyncio.Event()),
+    )
+    assert text["counts"] == {"pending": 1, "inProgress": 1, "completed": 1}
 
     # Verify session log recorded todo/write event
     events = session.events
@@ -55,7 +54,8 @@ async def test_ask_user_question_tool_execution():
     tools = ToolsService(ctx)
     ctx.set_service("tools", tools)
 
-    ctx.plugin(ToolAskUserPlugin)
+    fiber = await ctx.registry.plugin(ToolAskUserPlugin, parent_ctx=ctx)
+    tools = fiber.ctx.get("tools")
 
     questions_payload = [
         {
@@ -68,7 +68,10 @@ async def test_ask_user_question_tool_execution():
         }
     ]
 
-    raw_res = await tools.execute_tool("ask_user_question", {"questions": questions_payload})
+    result = await tools.execute(ToolExecutionInput(
+        "ask-call", "ask_user_question", {"questions": questions_payload},
+        agent=SimpleNamespace(ctx=fiber.ctx, id="test-agent"), signal=asyncio.Event()))
+    raw_res = "".join(block.get("text", "") for block in result.content)
     data = json.loads(raw_res)
     assert "answers" in data
     assert len(data["answers"]) == 1

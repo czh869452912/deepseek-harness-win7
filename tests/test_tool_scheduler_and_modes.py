@@ -28,8 +28,8 @@ async def test_tool_scheduler_parallel_and_exclusive_barrier():
         execution_order.append(f"exclusive:{cmd}")
         return f"done:{cmd}"
 
-    tools.register("fast_read", "Read fast", {}, fast_read, execution_mode="parallel")
-    tools.register("exclusive_write", "Write exclusively", {}, exclusive_write, execution_mode="exclusive")
+    tools.register_legacy({"name": "fast_read", "description": "Read fast", "parameters": {}, "execute": fast_read, "execution_mode": "parallel"})
+    tools.register_legacy({"name": "exclusive_write", "description": "Write exclusively", "parameters": {}, "execute": exclusive_write, "execution_mode": "exclusive"})
 
     calls = [
         {"id": "call-1", "name": "fast_read", "arguments": {"path": "a.txt"}},

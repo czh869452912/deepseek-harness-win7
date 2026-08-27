@@ -24,7 +24,7 @@ async def test_command_compact_execution():
     compaction_svc = DummyCompactionService()
     ctx.set_service("compaction", compaction_svc)
 
-    ctx.plugin(CommandCompactPlugin)
+    await ctx.registry.plugin(CommandCompactPlugin, parent_ctx=ctx)
     assert cmd_svc.has("compact")
 
     sess = Session("test-session")

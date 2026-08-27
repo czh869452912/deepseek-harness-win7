@@ -485,7 +485,7 @@ async def test_symlink_aliases_share_identity_and_writes_keep_link(tmp_path, fs)
 @pytest.mark.asyncio
 async def test_plugin_owns_and_withdraws_fs_service(tmp_path):
     ctx = Context()
-    ctx.plugin(FsLocalPlugin, config={"cwd": str(tmp_path)})
+    await ctx.registry.plugin(FsLocalPlugin, config={"cwd": str(tmp_path)}, parent_ctx=ctx)
     assert isinstance(ctx.get("fs"), FsService)
     assert await ctx.registry.unload_plugin("fs-local")
     assert ctx.get("fs", None, strict=False) is None

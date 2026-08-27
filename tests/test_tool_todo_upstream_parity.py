@@ -42,10 +42,10 @@ async def _mount(allow_parallel=True):
     return ctx, tools, fiber
 
 
-async def _execute(tools, todos, agent=... , session=None):
+async def _execute(tools, todos, agent=..., session=None, scope=None):
     if agent is ...:
         owned = Session.create("todo-owner")
-        agent = SimpleNamespace(id="todo-owner", session=owned)
+        agent = SimpleNamespace(id="todo-owner", session=owned, ctx=scope)
     execution = ToolExecutionInput(
         "todo-call", "todo_write", {"todos": todos}, agent=agent,
         session=session, signal=asyncio.Event(),
@@ -112,8 +112,8 @@ async def test_loader_composition_rejects_a_non_boolean_policy():
 
 @pytest.mark.asyncio
 async def test_registers_the_canonical_schema_output_and_presentation():
-    _ctx, tools, _fiber = await _mount(True)
-    tool = tools.get("todo_write")
+    _ctx, tools, fiber = await _mount(True)
+    tool = tools.get("todo_write", fiber.ctx)
 
     assert tool is not None
     assert tool.canonical is True
@@ -135,9 +135,9 @@ async def test_registers_the_canonical_schema_output_and_presentation():
 
 @pytest.mark.asyncio
 async def test_execute_uses_tool_run_context_agent_session_and_returns_value():
-    _ctx, tools, _fiber = await _mount(True)
+    _ctx, tools, fiber = await _mount(True)
     seen = []
-    tool = tools.get("todo_write")
+    tool = tools.get("todo_write", fiber.ctx)
     original = tool.handler
 
     async def inspect_exec(args, execution):
@@ -149,7 +149,7 @@ async def test_execute_uses_tool_run_context_agent_session_and_returns_value():
         {"content": "  plan  ", "status": "in_progress"},
         {"content": "build", "status": "pending"},
         {"content": "verify", "status": "completed"},
-    ])
+    ], scope=fiber.ctx)
 
     assert isinstance(seen[0], ToolRunContext)
     assert result.is_error is False
@@ -173,11 +173,14 @@ async def test_execute_uses_tool_run_context_agent_session_and_returns_value():
 
 @pytest.mark.asyncio
 async def test_non_agent_caller_is_rejected_even_with_a_session_carrier():
-    _ctx, tools, _fiber = await _mount(True)
+    _ctx, tools, fiber = await _mount(True)
     fallback = Session.create("not-an-agent")
+    # The execution session carrier alone does not establish agent ownership;
+    # the tool must resolve through the plugin scope and reject the caller.
+    non_agent = SimpleNamespace(ctx=fiber.ctx)
     result, _agent = await _execute(
         tools, [{"content": "a", "status": "pending"}],
-        agent=None, session=fallback,
+        agent=non_agent, session=fallback,
     )
 
     assert result.is_error is True
@@ -200,8 +203,8 @@ async def test_non_agent_caller_is_rejected_even_with_a_session_carrier():
     ],
 )
 async def test_invalid_inputs_fail_without_appending(todos, fragment):
-    _ctx, tools, _fiber = await _mount(True)
-    agent = SimpleNamespace(id="invalid", session=Session.create("invalid"))
+    _ctx, tools, fiber = await _mount(True)
+    agent = SimpleNamespace(id="invalid", session=Session.create("invalid"), ctx=fiber.ctx)
     result, _ = await _execute(tools, todos, agent=agent)
 
     assert result.is_error is True
@@ -216,11 +219,11 @@ async def test_parallel_policy_changes_description_and_validation():
         {"content": "first", "status": "in_progress"},
         {"content": "second", "status": "in_progress"},
     ]
-    _ctx, tools, _fiber = await _mount(False)
-    result, agent = await _execute(tools, parallel)
+    _ctx, tools, fiber = await _mount(False)
+    result, agent = await _execute(tools, parallel, scope=fiber.ctx)
 
-    assert "AT MOST ONE" in tools.get("todo_write").description
-    assert "several at once" not in tools.get("todo_write").description
+    assert "AT MOST ONE" in tools.get("todo_write", fiber.ctx).description
+    assert "several at once" not in tools.get("todo_write", fiber.ctx).description
     assert result.is_error is True
     assert "at most one task may be in_progress (got 2)" in result.content[0]["text"]
     assert agent.session.events == []
@@ -230,7 +233,7 @@ async def test_parallel_policy_changes_description_and_validation():
 @pytest.mark.asyncio
 async def test_projection_activates_late_folds_events_and_unloads_with_plugin():
     ctx, tools, fiber = await _mount(True)
-    assert tools.get("todo_write") is not None
+    assert tools.get("todo_write", fiber.ctx) is not None
 
     projections = SessionProjectionRegistry(ctx)
     ctx.provide("sessionProjections", projections)
@@ -247,5 +250,5 @@ async def test_projection_activates_late_folds_events_and_unloads_with_plugin():
     assert unit.apply(state, {"type": "turn/start", "data": {}}) is None
 
     await fiber.dispose()
-    assert tools.get("todo_write") is None
+    assert tools.get("todo_write", fiber.ctx) is None
     assert projections.has("todos") is False

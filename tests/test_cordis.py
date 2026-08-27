@@ -44,6 +44,7 @@ async def test_fiber_reactive_dependency_resolution():
 
     # Provide required dependency
     ctx.set_service("required_db", "connected_db")
+    await fiber.wait()
     assert fiber.state == FiberState.ACTIVE
     assert ctx.get("dependent_ready") is True
 

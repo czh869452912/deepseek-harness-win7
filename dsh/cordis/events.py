@@ -288,12 +288,13 @@ class EventBus:
         inner = raw_args.pop()
         callbacks = list(listeners)
 
-        async def next_fn() -> Any:
+        async def next_fn(*next_args: Any) -> Any:
+            call_args = list(next_args) if next_args else list(raw_args)
             if callbacks:
                 callback = callbacks.pop(0)
-                result = callback(*raw_args, next_fn, **kwargs)
+                result = callback(*call_args, next_fn, **kwargs)
             else:
-                result = inner(*raw_args, **kwargs)
+                result = inner(*call_args, **kwargs)
             if inspect.isawaitable(result):
                 return await result
             return result

@@ -57,6 +57,7 @@ from dsh.llm.llm_retry import LLMRetryPlugin
 from dsh.session.session_query import SessionQueryPlugin
 from dsh.storage.storage import StoragePlugin
 from dsh.workspace.workspace import WorkspacePlugin
+from dsh.presets.agent_presets import AgentPresets
 
 
 def build_harness(
@@ -103,6 +104,19 @@ def build_harness(
 
     # Setup preset loader & register available plugins
     loader = PresetLoader(ctx)
+    # The preset roster is a host-level service in the official composition.
+    # Mount it before loading the selected agent composition so API/session
+    # consumers resolve the same standing roster (system roots first, then the
+    # writable DSH_HOME user root) instead of constructing a detached fallback.
+    shipped_root = os.path.join(os.path.dirname(__file__), "presets")
+    ctx.plugin(AgentPresets, config={
+        # The host roster's default is always standard; the selected CLI
+        # profile composes its own preset separately (TS bundle patch parity).
+        "default": "standard",
+        "roots": [{"path": shipped_root, "trust": "system"}],
+        "includeUserRoot": True,
+    })
+    loader.register_plugin_class("@deepseek-ai/dsh-agent-presets", AgentPresets)
     loader.register_plugin_class("@deepseek-ai/dsh-tools", ToolsPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-agent", AgentPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-persona", PersonaPlugin)
@@ -179,12 +193,22 @@ async def initialize_harness(ctx: Context) -> Context:
     """
     # Plugin activation can mount dependent/child fibers while a parent is
     # being awaited. Drain until no new pending fibers appear.
-    seen = set()
-    while True:
-        pending = [fiber for fiber in list(getattr(ctx.registry, "_pending_fibers", set()))
-                   if fiber not in seen]
+    for _round in range(32):
+        fibers = list(ctx.registry.list_fibers())
+        pending = [fiber for fiber in fibers if getattr(fiber, "state", 0) in (0, 1)]
         if not pending:
             break
-        seen.update(pending)
         await asyncio.gather(*(fiber.wait() for fiber in pending))
+        await asyncio.sleep(0)
     return ctx
+
+
+async def build_harness_async(*args: Any, **kwargs: Any) -> Context:
+    """Build a harness and await Cordis activation before returning it.
+
+    This is the async-host counterpart to :func:`build_harness`.  Keeping the
+    synchronous constructor preserves the upstream CLI/test composition API,
+    while this helper makes the activation contract explicit for callers that
+    run inside an event loop (Web servers, async CLIs, and integrations).
+    """
+    return await initialize_harness(build_harness(*args, **kwargs))

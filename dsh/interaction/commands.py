@@ -62,6 +62,19 @@ class CommandRegistry:
         return list(self._commands.values())
 
     async def execute(self, text_or_name: str, *extra_args: Any, **kwargs: Any) -> Optional[Any]:
+        # Upstream remote shape is execute(agent, line, images, signal).
+        # Accept it while retaining the original local execute(line, ...)
+        # form used by older Python plugins.
+        remote_agent = None
+        if not isinstance(text_or_name, str) and extra_args and isinstance(extra_args[0], str):
+            remote_agent = text_or_name
+            text_or_name = extra_args[0]
+            extra_args = extra_args[1:]
+            if extra_args:
+                kwargs.setdefault("images", extra_args[0])
+            if len(extra_args) > 1:
+                kwargs.setdefault("signal", extra_args[1])
+            kwargs.setdefault("agent", remote_agent)
         if text_or_name.startswith("/"):
             parts = text_or_name.lstrip("/").split(maxsplit=1)
             name = parts[0].strip()

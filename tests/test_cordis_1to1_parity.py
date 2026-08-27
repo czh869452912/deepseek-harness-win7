@@ -122,6 +122,14 @@ def test_loader_service_and_entry_tree():
     ctx = Context()
     loader = Loader(ctx)
 
+    class TestPackage(Plugin):
+        name = "test_pkg"
+
+        def apply(self, child_ctx):
+            child_ctx.set_service("test_pkg_config", dict(self.config))
+
+    loader.register_plugin_class("test_pkg", TestPackage)
+
     assert ctx.get("loader") is loader
     assert loader.name == "loader"
 

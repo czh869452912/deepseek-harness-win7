@@ -187,7 +187,7 @@ class EventBus:
             if inspect.isawaitable(res):
                 await res
 
-    async def parallel(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
+    async def parallel(self, event_name: str, *args: Any, **kwargs: Any) -> None:
         """
         Parallel dispatch: run all listeners concurrently.
         Raises AggregateError if any listeners fail.
@@ -214,7 +214,7 @@ class EventBus:
         errors = [r for r in results if isinstance(r, Exception)]
         if errors:
             raise AggregateError(errors)
-        return results
+        return None
 
     async def serial(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
         """

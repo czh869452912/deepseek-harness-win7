@@ -96,7 +96,7 @@ async def test_event_bus_modes():
     ctx.on("test/parallel", p1)
     ctx.on("test/parallel", p2)
     p_res = await ctx.parallel("test/parallel")
-    assert set(p_res) == {"p1", "p2"}
+    assert p_res is None
 
     # 4. Bail 1:1 Semantics (False should NOT trigger bail; non-None non-False triggers bail)
     ctx.on("test/bail", lambda: False)

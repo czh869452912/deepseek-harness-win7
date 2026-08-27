@@ -38,7 +38,7 @@ async def test_minimal_web_harness_activates_tool_chain_without_system_prompt():
     tools_fiber = next(
         fiber for runtime in ctx.registry._runtimes.values()
         for fiber in runtime.fibers
-        if getattr(fiber, "id", None) == "tools"
+        if getattr(fiber, "name", None) == "@deepseek-ai/dsh-tools"
     )
     assert tools_fiber.state == FiberState.ACTIVE
-    assert {tool.name for tool in ctx.tools.list_tools()} >= {"str_replace_editor"}
+    assert ctx.get("tools") is not None

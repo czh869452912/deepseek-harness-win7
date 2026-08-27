@@ -662,33 +662,46 @@ class SessionQueryPlugin(Plugin):
 
         tools_svc = ctx.get("tools")
         if tools_svc:
-            tools_svc.register(
-                name="session_search",
-                description="Search prior sessions in the workspace and return the strongest matching event from each session.",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "query": {"type": "string", "description": "Search query keywords or phrase."},
-                        "limit": {"type": "integer", "description": "Max results to return (default 10)."},
-                    },
-                    "required": ["query"],
+            text_output = {
+                "schema": {"type": "string"},
+                "render": lambda _args, value: [{"type": "text", "text": value}],
+            }
+            session_parameters = {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Literal full-text query over prior session history."},
+                    "limit": {"type": "integer", "description": "Max results to return (default 10)."},
                 },
-                handler=lambda query, limit=10: json.dumps(service.search_sessions(query, limit=limit), ensure_ascii=False, indent=2),
-                execution_mode="parallel",
-            )
-
-            tools_svc.register(
-                name="session_event_search",
-                description="Search prior events in one authorized session.",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "session_id": {"type": "string", "description": "Session ID to search within."},
-                        "query": {"type": "string", "description": "Search query keywords."},
-                        "limit": {"type": "integer", "description": "Max results to return (default 10)."},
-                    },
-                    "required": ["session_id", "query"],
+                "required": ["query"],
+            }
+            event_parameters = {
+                "type": "object",
+                "properties": {
+                    "session_id": {"type": "string", "description": "Target session id."},
+                    "query": {"type": "string", "description": "Literal full-text query over the target session."},
+                    "limit": {"type": "integer", "description": "Max results to return (default 10)."},
                 },
-                handler=lambda session_id, query, limit=10: json.dumps(service.search_events(session_id, query, limit=limit), ensure_ascii=False, indent=2),
-                execution_mode="parallel",
-            )
+                "required": ["session_id", "query"],
+            }
+            tools_svc.register({
+                "name": "session_search",
+                "description": "Search prior sessions in the caller workspace and return the strongest matching event from each session.",
+                "parameters": session_parameters,
+                "output": text_output,
+                "timeoutMs": self.config.get("searchTimeoutMs", 30000),
+                "execute": lambda args, _exec: json.dumps(
+                    service.search_sessions(args.get("query", ""), limit=args.get("limit", 10)),
+                    ensure_ascii=False, indent=2),
+                "presentCall": lambda args: {"card": "generic", "kind": "search", "title": "Search prior sessions", "rawInput": args.get("query", "")},
+            })
+            tools_svc.register({
+                "name": "session_event_search",
+                "description": "Search prior events in one authorized session.",
+                "parameters": event_parameters,
+                "output": text_output,
+                "timeoutMs": self.config.get("searchTimeoutMs", 30000),
+                "execute": lambda args, _exec: json.dumps(
+                    service.search_events(args.get("session_id", ""), args.get("query", ""), limit=args.get("limit", 10)),
+                    ensure_ascii=False, indent=2),
+                "presentCall": lambda args: {"card": "generic", "kind": "search", "title": "Search session events", "rawInput": args.get("query", "")},
+            })

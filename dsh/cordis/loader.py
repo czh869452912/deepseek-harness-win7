@@ -32,8 +32,13 @@ def _js_constructor(loader: Any, node: Any) -> JsExpr:
     return JsExpr(loader.construct_scalar(node))
 
 
+class CordisYamlLoader(yaml.SafeLoader):
+    """Loader-private schema so external YAML helpers cannot replace !!js."""
+
+
+CordisYamlLoader.yaml_constructors = dict(yaml.SafeLoader.yaml_constructors)
 for _tag in ("tag:yaml.org,2002:js", "!js"):
-    yaml.SafeLoader.add_constructor(_tag, _js_constructor)
+    CordisYamlLoader.add_constructor(_tag, _js_constructor)
 
 
 def is_js_expr(value: Any) -> bool:
@@ -494,7 +499,7 @@ class Loader(EntryTree):
         if not os.path.isfile(filepath):
             raise FileNotFoundError("Preset file not found: %s" % filepath)
         with open(filepath, "r", encoding="utf-8") as handle:
-            data = yaml.load(handle, Loader=yaml.SafeLoader)
+            data = yaml.load(handle, Loader=CordisYamlLoader)
         if isinstance(data, dict) and "plugins" in data:
             data = data["plugins"]
         if not isinstance(data, list):

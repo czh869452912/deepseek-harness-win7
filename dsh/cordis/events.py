@@ -265,7 +265,7 @@ class EventBus:
         listeners = self._dispatch_hooks(
             "waterfall", event_name, caller_ctx, raw_args
         )
-        inner = raw_args.pop()
+        inner = raw_args.pop() if raw_args and callable(raw_args[-1]) else (lambda *values, **_kw: values[0] if values else None)
         callbacks = list(listeners)
 
         def next_fn() -> Any:

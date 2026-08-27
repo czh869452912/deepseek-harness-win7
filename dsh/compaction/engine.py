@@ -71,7 +71,6 @@ class CompactionEngine(Service):
         if ctx is not None:
             super().__init__(ctx, "compaction")
             ctx.set_service("compaction_engine", self)
-            ctx.set_service("compaction", self)
         else:
             self.ctx = None
 

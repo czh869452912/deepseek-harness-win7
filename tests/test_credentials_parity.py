@@ -229,7 +229,6 @@ def test_authorization_service_parity():
     creds_service = CredentialsService(ctx=ctx)
 
     auth = AuthorizationService(ctx=ctx)
-    ctx.set_service("authorization", auth)
 
     key = "llm-pi-ai/openai-codex"
 
@@ -291,7 +290,6 @@ def test_authorization_uncommitted_flow_error():
     creds_service = CredentialsService(ctx=ctx)
 
     auth = AuthorizationService(ctx=ctx)
-    ctx.set_service("authorization", auth)
 
     key = "llm-pi-ai/no-commit-route"
 
@@ -323,7 +321,6 @@ def test_authorization_declined_error():
     creds_service = CredentialsService(ctx=ctx)
 
     auth = AuthorizationService(ctx=ctx)
-    ctx.set_service("authorization", auth)
 
     key = "llm-pi-ai/declined-route"
 

@@ -292,7 +292,17 @@ class EventBus:
             call_args = list(next_args) if next_args else list(raw_args)
             if callbacks:
                 callback = callbacks.pop(0)
-                result = callback(*call_args, next_fn, **kwargs)
+                try:
+                    result = callback(*call_args, next_fn, **kwargs)
+                except TypeError as exc:
+                    # Legacy one-argument transformers are still accepted;
+                    # feed their result into the remaining waterfall chain.
+                    if len(call_args) != 1:
+                        raise
+                    result = callback(call_args[0], **kwargs)
+                    if inspect.isawaitable(result):
+                        result = await result
+                    return await next_fn(result)
             else:
                 result = inner(*call_args, **kwargs)
             if inspect.isawaitable(result):

@@ -29,7 +29,6 @@ class ToolResultPruner(Service):
         if ctx is not None:
             super().__init__(ctx, "tool_result_pruner")
             ctx.set_service("toolResultPruner", self)
-            ctx.set_service("tool_result_pruner", self)
         else:
             self.ctx = None
 

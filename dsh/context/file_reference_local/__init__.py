@@ -53,10 +53,10 @@ class FileReferenceLocalPlugin(Plugin):
         ctx.on("tools/result", lambda *a, **kw: self.searcher.invalidate() if self.searcher else None)
 
         # Hook agent/pre-step to expand file mentions if user explicitly typed @file
-        async def hook_file_references(payload: Dict[str, Any]) -> Dict[str, Any]:
+        async def hook_file_references(payload: Dict[str, Any], next_fn: Any = None) -> Dict[str, Any]:
             messages = payload.get("messages", [])
             if not messages:
-                return payload
+                return await next_fn() if callable(next_fn) else payload
 
             for msg in messages:
                 if msg.get("role") == "user" and isinstance(msg.get("content"), str):
@@ -88,7 +88,7 @@ class FileReferenceLocalPlugin(Plugin):
                         if inlined_snippets:
                             msg["content"] = text + "\n\n" + "\n\n".join(inlined_snippets)
 
-            return payload
+            return await next_fn() if callable(next_fn) else payload
 
         ctx.on("agent/pre-step", hook_file_references)
 

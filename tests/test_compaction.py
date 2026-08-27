@@ -95,7 +95,6 @@ async def test_automatic_pressure_compaction():
     ctx.set_service("token_meter", meter)
 
     pruner = ToolResultPruner(ctx=ctx)
-    ctx.set_service("tool_result_pruner", pruner)
 
     llm = MockLlmService()
     ctx.set_service("llm", llm)

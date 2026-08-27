@@ -71,7 +71,7 @@ async def test_waterfall_veto_semantics():
     ctx.on("pipeline", middleware_veto)
     ctx.on("pipeline", middleware3)
 
-    res = await ctx.waterfall("pipeline", "start")
+    res = await ctx.waterfall("pipeline", "start", lambda value: value)
     assert res == "start -> m1 -> veto"
 
 

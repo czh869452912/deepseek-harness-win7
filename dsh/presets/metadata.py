@@ -5,6 +5,7 @@ Python 3.8.10 compatible.
 """
 
 import os
+import math
 from typing import Any, Dict, Optional
 import yaml
 
@@ -24,10 +25,7 @@ def read_preset_metadata(directory: str) -> Dict[str, Any]:
     Read one preset directory's display metadata.
     Reads preset.yml (or preset.yaml fallback). Returns empty dict on missing or malformed file.
     """
-    candidates = [
-        os.path.join(directory, METADATA_FILE),
-        os.path.join(directory, "preset.yaml"),
-    ]
+    candidates = [os.path.join(directory, METADATA_FILE)]
     raw_content: Optional[str] = None
     for cand in candidates:
         if os.path.isfile(cand):
@@ -59,8 +57,9 @@ def read_preset_metadata(directory: str) -> Dict[str, Any]:
         res["description"] = desc
 
     order_val = parsed.get("order")
-    if isinstance(order_val, (int, float)) and not isinstance(order_val, bool):
-        res["order"] = float(order_val)
+    if (isinstance(order_val, (int, float)) and not isinstance(order_val, bool)
+            and math.isfinite(order_val)):
+        res["order"] = order_val
 
     return res
 
@@ -73,7 +72,8 @@ def render_preset_metadata(metadata: Dict[str, Any]) -> Optional[str]:
     name = _clean_text(metadata.get("name"))
     desc = _clean_text(metadata.get("description"))
     order_val = metadata.get("order")
-    order = float(order_val) if isinstance(order_val, (int, float)) and not isinstance(order_val, bool) else None
+    order = (order_val if isinstance(order_val, (int, float))
+             and not isinstance(order_val, bool) and math.isfinite(order_val) else None)
 
     if name is None and desc is None and order is None:
         return None

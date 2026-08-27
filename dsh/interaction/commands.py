@@ -8,10 +8,11 @@ from dsh.cordis.plugin import Plugin
 
 
 class Command:
-    def __init__(self, name: str, description: str, handler: Callable[..., Any]):
+    def __init__(self, name: str, description: str, handler: Callable[..., Any], canonical: bool = False):
         self.name = name.lstrip("/")
         self.description = description
         self.handler = handler
+        self.canonical = canonical
 
 
 class CommandRegistry:
@@ -21,9 +22,24 @@ class CommandRegistry:
         self.ctx = ctx
         self._commands: Dict[str, Command] = {}
 
-    def register(self, name: str, description: str, handler: Callable[..., Any]) -> Callable[[], None]:
-        cmd_name = name.lstrip("/")
-        cmd = Command(cmd_name, description, handler)
+    def register(self, name: Any, description: Optional[str] = None,
+                 handler: Optional[Callable[..., Any]] = None, **kwargs: Any) -> Callable[[], None]:
+        """Register a command.
+
+        The upstream API accepts a definition mapping.  The positional form is
+        retained for older plugins shipped by the Python port.
+        """
+        canonical = isinstance(name, dict)
+        if canonical:
+            definition = name
+            cmd_name = str(definition.get("name", "")).lstrip("/")
+            description = definition.get("description", "")
+            handler = definition.get("handler")
+        else:
+            cmd_name = str(name).lstrip("/")
+        if not cmd_name or not callable(handler):
+            raise TypeError("invalid command definition")
+        cmd = Command(cmd_name, str(description or ""), handler, canonical=canonical)
         self._commands[cmd_name] = cmd
 
         def disposer():
@@ -31,7 +47,9 @@ class CommandRegistry:
                 del self._commands[cmd_name]
 
         if hasattr(self.ctx, "effect"):
-            self.ctx.effect(disposer)
+            # `effect` receives setup and expects that setup to return its
+            # disposer. Passing the disposer itself unregisters immediately.
+            self.ctx.effect(lambda: disposer)
         return disposer
 
     def has(self, name: str) -> bool:
@@ -44,6 +62,19 @@ class CommandRegistry:
         return list(self._commands.values())
 
     async def execute(self, text_or_name: str, *extra_args: Any, **kwargs: Any) -> Optional[Any]:
+        # Upstream remote shape is execute(agent, line, images, signal).
+        # Accept it while retaining the original local execute(line, ...)
+        # form used by older Python plugins.
+        remote_agent = None
+        if not isinstance(text_or_name, str) and extra_args and isinstance(extra_args[0], str):
+            remote_agent = text_or_name
+            text_or_name = extra_args[0]
+            extra_args = extra_args[1:]
+            if extra_args:
+                kwargs.setdefault("images", extra_args[0])
+            if len(extra_args) > 1:
+                kwargs.setdefault("signal", extra_args[1])
+            kwargs.setdefault("agent", remote_agent)
         if text_or_name.startswith("/"):
             parts = text_or_name.lstrip("/").split(maxsplit=1)
             name = parts[0].strip()
@@ -58,7 +89,20 @@ class CommandRegistry:
             return None
 
         try:
-            res = cmd.handler(*call_args, **kwargs)
+            if cmd.canonical:
+                raw_input = text_or_name.lstrip("/")
+                if text_or_name.startswith("/"):
+                    raw_input = text_or_name[len(name) + 1:]
+                invocation = {
+                    "commandId": "python-command",
+                    "agent": kwargs.get("agent"),
+                    "rawInput": raw_input,
+                    "attachments": kwargs.get("attachments", ()),
+                    "signal": kwargs.get("signal"),
+                }
+                res = cmd.handler(invocation)
+            else:
+                res = cmd.handler(*call_args, **kwargs)
         except TypeError:
             # Fallback for single arg handler
             res = cmd.handler(call_args[0] if call_args else "")

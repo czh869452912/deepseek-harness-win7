@@ -26,7 +26,6 @@ def test_prune_session():
     ctx.set_service("token_meter", meter)
 
     pruner = ToolResultPruner(threshold_chars=50, head_chars=10, tail_chars=10, ctx=ctx)
-    ctx.set_service("tool_result_pruner", pruner)
 
     session = Session(session_id="prune-test-session", ctx=ctx)
     session.append_user_message("Run tool")

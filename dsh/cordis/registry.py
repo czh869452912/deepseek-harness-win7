@@ -6,8 +6,27 @@ matching reference/vendor/cordis/src/registry.ts
 import asyncio
 import inspect
 import sys
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
-from dsh.cordis.fiber import Fiber, FiberState, resolve_config
+from typing import Any, Callable, Dict, Iterator, List, Optional, Set, Tuple, Union
+from dsh.cordis.fiber import Fiber, FiberState
+
+
+class Inject:
+    """Normalize Cordis array/map dependency declarations to a plain map."""
+
+    @staticmethod
+    def resolve(deps: Any, result: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        resolved = result if result is not None else {}
+        if not deps:
+            return resolved
+        if isinstance(deps, (list, tuple)):
+            for name in deps:
+                resolved[name] = None
+        elif isinstance(deps, dict):
+            for name, config in deps.items():
+                resolved[name] = config if config is not None else None
+        else:
+            resolved[deps] = None
+        return resolved
 
 
 class PluginRuntime:
@@ -45,6 +64,7 @@ class RegistryService:
         self._runtimes: Dict[Any, PluginRuntime] = {}
         self._pending_fibers: Set[Fiber] = set()
         self._updating = False
+        self._dependency_updates: List[Tuple[Optional[List[str]], Any]] = []
 
     @property
     def counter(self) -> int:
@@ -98,6 +118,19 @@ class RegistryService:
                     asyncio.run(fiber.dispose())
         return runtime
 
+    def keys(self) -> Iterator[Any]:
+        return iter(self._runtimes.keys())
+
+    def values(self) -> Iterator[PluginRuntime]:
+        return iter(self._runtimes.values())
+
+    def entries(self) -> Iterator[Tuple[Any, PluginRuntime]]:
+        return iter(self._runtimes.items())
+
+    def for_each(self, callback: Callable[[PluginRuntime, Any], Any]) -> None:
+        for key, value in self._runtimes.items():
+            callback(value, key)
+
     def list_fibers(self) -> List[Fiber]:
         fibers: List[Fiber] = []
         for runtime in self._runtimes.values():
@@ -107,7 +140,7 @@ class RegistryService:
                 fibers.append(f)
         return fibers
 
-    def plugin(self, plugin_cls_or_instance: Any, config: Optional[Dict[str, Any]] = None) -> Fiber:
+    def plugin(self, plugin_cls_or_instance: Any, config: Optional[Dict[str, Any]] = None, parent_ctx: Any = None) -> Fiber:
         """
         Start a plugin in the current context and return its fiber.
         Supports Functions, Classes, and Object plugins with apply().
@@ -124,7 +157,8 @@ class RegistryService:
         if not callback:
             raise ValueError(f"Invalid plugin, expected function, class, or object with 'apply' method: {plugin_cls_or_instance}")
 
-        self.ctx.fiber.assert_active()
+        owner_ctx = parent_ctx or self.ctx
+        owner_ctx.fiber.assert_active()
 
         runtime = self._runtimes.get(callback)
         if not runtime:
@@ -142,34 +176,66 @@ class RegistryService:
         else:
             plugin_inst = plugin_cls_or_instance
 
-        fiber = Fiber(self.ctx, plugin_inst, config=config, runtime=runtime)
-        runtime.add_fiber(fiber)
+        inject_map = Inject.resolve(getattr(plugin_inst, "inject", None))
+        fiber = Fiber(owner_ctx, plugin_inst, config=config, runtime=runtime)
+        fiber.inject = inject_map
+        if inject_map:
+            fiber.ctx._intercept_map = dict(owner_ctx._intercept_map)
+            for dep_name, intercept_config in inject_map.items():
+                if intercept_config is not None:
+                    fiber.ctx._intercept_map[dep_name] = intercept_config
+                    fiber.ctx._own_intercepts[dep_name] = intercept_config
 
-        if self._check_dependencies(plugin_inst):
-            self._activate_fiber(fiber)
-        else:
-            fiber.set_state(FiberState.PENDING)
+        def own_child() -> Callable[[], Any]:
+            runtime.add_fiber(fiber)
+
+            async def dispose_child() -> None:
+                await fiber.dispose()
+                if not runtime.fibers and self._runtimes.get(callback) is runtime:
+                    self._runtimes.pop(callback, None)
+
+            return dispose_child
+
+        owner_ctx.fiber.effect(own_child, label="ctx.plugin()")
+
+        teardown = getattr(plugin_inst, "teardown", None)
+        if callable(teardown):
+            fiber.effect(lambda: teardown, label="teardown(%s)" % fiber.name)
+
+        try:
+            fiber.ctx.emit("internal/plugin", fiber)
+        except Exception:
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                asyncio.run(fiber.dispose())
+            else:
+                loop.create_task(fiber.dispose())
+            raise
+
+        if fiber.uid is not None and owner_ctx.fiber.state != FiberState.UNLOADING:
             self._pending_fibers.add(fiber)
+            self.refresh_fiber(fiber)
 
         return fiber
 
-    def inject(self, deps: Any, callback: Callable[..., Any]) -> Fiber:
+    def inject(self, deps: Any, callback: Callable[..., Any], parent_ctx: Any = None) -> Fiber:
         """
         Start a callback once the requested dependencies are available.
         """
-        inject_list = deps if isinstance(deps, (list, tuple)) else list(deps.keys()) if isinstance(deps, dict) else [deps]
+        inject_map = Inject.resolve(deps)
 
         class InjectPlugin:
             name = getattr(callback, "__name__", "inject_callback")
-            inject = inject_list
+            inject = inject_map
 
             def apply(self, c: Any) -> Any:
                 return callback(c)
 
-        return self.plugin(InjectPlugin())
+        return self.plugin(InjectPlugin(), parent_ctx=parent_ctx)
 
     def _check_dependencies(self, plugin: Any) -> bool:
-        inject_deps = getattr(plugin, "inject", [])
+        inject_deps = Inject.resolve(getattr(plugin, "inject", None))
         if not inject_deps:
             return True
         if isinstance(inject_deps, (list, tuple)):
@@ -182,38 +248,109 @@ class RegistryService:
                     return False
         return True
 
-    def _activate_fiber(self, fiber: Fiber) -> None:
-        fiber.set_state(FiberState.ACTIVE)
+    def refresh_fiber(self, fiber: Fiber) -> bool:
+        from dsh.cordis.fiber import INACTIVE_EPOCH
+        from dsh.cordis.utils import get_traceable
+
+        epoch = ""
+        fiber._store = {}
+        for name in getattr(fiber, "inject", {}):
+            impl = self.ctx.reflect._get_impl(fiber.ctx, name, strict=True)
+            if impl is None:
+                epoch = INACTIVE_EPOCH
+                break
+            if impl.check:
+                try:
+                    service = get_traceable(fiber.ctx, impl.value)
+                    try:
+                        parameters = inspect.signature(impl.check).parameters.values()
+                        accepts_receiver = any(
+                            parameter.kind in (
+                                inspect.Parameter.POSITIONAL_ONLY,
+                                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                                inspect.Parameter.VAR_POSITIONAL,
+                            )
+                            for parameter in parameters
+                        )
+                    except (TypeError, ValueError):
+                        accepts_receiver = False
+                    available = impl.check(service) if accepts_receiver else impl.check()
+                    if not available:
+                        epoch = INACTIVE_EPOCH
+                        break
+                except Exception as error:
+                    impl.fiber._log_error(error)
+                    epoch = INACTIVE_EPOCH
+                    break
+            fiber._store[name] = impl
+            epoch += ":%s" % impl.fiber.uid
+
+        old_epoch = fiber.epoch
+        if epoch == INACTIVE_EPOCH:
+            self._pending_fibers.add(fiber)
+            fiber.set_epoch(epoch)
+            return old_epoch != fiber.epoch
+
+        self._pending_fibers.discard(fiber)
+        if hasattr(fiber.plugin, "ctx"):
+            fiber.plugin.ctx = fiber.ctx
+        self._start_fiber(fiber, epoch)
+        return old_epoch != fiber.epoch
+
+    def _start_fiber(self, fiber: Fiber, epoch: str) -> None:
         try:
-            fiber.config = resolve_config(fiber.plugin, fiber._config)
-            if hasattr(fiber.plugin, "ctx"):
-                fiber.plugin.ctx = fiber.ctx
+            asyncio.get_running_loop()
+        except RuntimeError:
+            async def activate() -> None:
+                fiber.set_epoch(epoch)
+                await fiber
 
-            if hasattr(fiber.plugin, "teardown") and callable(fiber.plugin.teardown):
-                fiber.effect(fiber.plugin.teardown, label=f"teardown({fiber.name})")
+            asyncio.run(activate())
+        else:
+            fiber.set_epoch(epoch)
 
-            if fiber in self._pending_fibers:
-                self._pending_fibers.remove(fiber)
-
-            fiber.set_epoch("active_epoch")
-        except Exception as e:
-            fiber.set_state(FiberState.FAILED)
-            raise e
-
-    def update_dependencies(self) -> None:
+    def update_dependencies(
+        self,
+        names: Optional[List[str]] = None,
+        source_ctx: Any = None,
+    ) -> List[Fiber]:
         """
         Re-evaluate all PENDING fibers whenever services are added or modified.
         """
+        queued_names = list(names) if names is not None else None
+        self._dependency_updates.append((queued_names, source_ctx))
         if self._updating:
-            return
+            return []
         self._updating = True
+        affected: List[Fiber] = []
         try:
-            pending_list = list(self._pending_fibers)
-            for fiber in pending_list:
-                if self._check_dependencies(fiber.plugin):
-                    self._activate_fiber(fiber)
+            while self._dependency_updates:
+                current_names, current_source_ctx = self._dependency_updates.pop(0)
+                for fiber in list(self.list_fibers()):
+                    if getattr(fiber, "uid", None) is None:
+                        continue
+                    if current_names is not None:
+                        dependencies = getattr(fiber, "inject", {})
+                        matching = False
+                        for name in current_names:
+                            if name not in dependencies:
+                                continue
+                            source_key = getattr(
+                                current_source_ctx, "_isolated_keys", {}
+                            ).get(name, name)
+                            fiber_key = getattr(
+                                fiber.ctx, "_isolated_keys", {}
+                            ).get(name, name)
+                            if source_key == fiber_key:
+                                matching = True
+                                break
+                        if not matching:
+                            continue
+                    if self.refresh_fiber(fiber) and fiber not in affected:
+                        affected.append(fiber)
         finally:
             self._updating = False
+        return affected
 
     async def unload_plugin(self, plugin_id: str) -> bool:
         """
@@ -222,7 +359,6 @@ class RegistryService:
         for runtime in list(self._runtimes.values()):
             for fiber in list(runtime.fibers):
                 if fiber.name == plugin_id or getattr(fiber.plugin, "id", None) == plugin_id:
-                    runtime.remove_fiber(fiber)
                     if fiber in self._pending_fibers:
                         self._pending_fibers.remove(fiber)
                     await fiber.dispose()

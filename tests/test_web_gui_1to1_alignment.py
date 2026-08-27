@@ -13,19 +13,33 @@ from dsh.core.agent_loop import AgentLoopPlugin, _async_iter_chunks
 @pytest.mark.asyncio
 async def test_llm_domain_models_and_providers():
     ctx = Context()
-    ctx.plugin(LLMOpenAIPlugin)
+    await ctx.registry.plugin(LLMOpenAIPlugin, parent_ctx=ctx)
     handler = LLMDomainHandler(ctx)
 
     provs = await handler.list_providers({})
     assert "providers" in provs
     p_ids = [p["provider"] for p in provs["providers"]]
     assert "deepseek-official" in p_ids or "deepseek" in p_ids
-
     models = await handler.list_models({})
     assert "groups" in models
     assert len(models["groups"]) > 0
     group_ids = [g["id"] for g in models["groups"]]
     assert "deepseek-official" in group_ids or "deepseek" in group_ids
+
+
+@pytest.mark.asyncio
+async def test_session_models_uses_agent_default_selection():
+    from dsh.host.apiproxy.api.sessions import SessionsDomainHandler
+
+    class DefaultModel:
+        def current_selection(self):
+            return {"provider": "openai", "model": "gpt-test", "reasoningEffort": "high"}
+
+    ctx = Context()
+    ctx.set_service("agentDefaultModel", DefaultModel())
+    handler = SessionsDomainHandler(ctx, {}, lambda *_a, **_k: None, lambda *_a, **_k: None, {})
+    result = await handler.get_models({})
+    assert result["current"] == {"provider": "openai", "model": "gpt-test", "reasoningEffort": "high"}
 
 
 @pytest.mark.asyncio
@@ -52,8 +66,8 @@ async def test_agent_presets_domain():
 async def test_settings_domain_describe_and_update(tmp_path):
     ctx = Context()
     settings_file = str(tmp_path / "settings.yaml")
-    ctx.plugin(SettingsFilePlugin, config={"path": settings_file})
-    ctx.plugin(LLMOpenAIPlugin)
+    await ctx.registry.plugin(SettingsFilePlugin, config={"path": settings_file}, parent_ctx=ctx)
+    await ctx.registry.plugin(LLMOpenAIPlugin, parent_ctx=ctx)
 
     handler = SettingsDomainHandler(ctx)
     desc = await handler.describe_settings({})

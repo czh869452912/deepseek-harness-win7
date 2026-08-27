@@ -5,7 +5,6 @@ Root and child dependency containers for Cordis plugins.
 
 import asyncio
 import inspect
-import sys
 from typing import Any, Callable, Dict, List, Optional, Set, Union
 
 from dsh.cordis.events import EventBus
@@ -24,10 +23,10 @@ class Context:
     def __init__(self, parent: Optional["Context"] = None, is_extension: bool = False):
         self._parent: Optional["Context"] = parent
         self._services: Dict[str, Any] = {}
+        self._service_attributes: Dict[str, Any] = {}
         self._isolated_keys: Dict[str, Any] = {}
         self._intercept_map: Dict[str, Any] = {}
-        self._effects: List[Callable[[], Any]] = []
-
+        self._own_intercepts: Dict[str, Any] = {}
         if parent is not None:
             self._event_bus: EventBus = parent._event_bus
             self.registry: RegistryService = parent.registry
@@ -55,16 +54,17 @@ class Context:
         """
         Bind a service instance to context (or root if not isolated) and trigger dependency resolution & events.
         """
-        target = self if name in self._isolated_keys else self.root
-        target._services[name] = service_instance
-        setattr(target, name, service_instance)
-        target.reflect.provide(target, name, service_instance)
+        self.reflect.provide(self, name, service_instance)
 
     def provide(self, name: str, service_instance: Any = None, check: Optional[Callable[[], bool]] = None) -> Callable[[], None]:
         """
         Register a service implementation owned by the current fiber.
         """
         return self.reflect.provide(self, name, service_instance, check=check)
+
+    def accessor(self, name: str, options: Dict[str, Any]) -> Callable[[], None]:
+        """Define an accessor owned by the fiber on this context."""
+        return self.reflect.accessor(name, options, ctx=self)
 
     def get_service(self, name: str, default: Any = None) -> Any:
         """
@@ -88,64 +88,58 @@ class Context:
         """
         Check whether a service is available in this context scope.
         """
-        if name in self._services:
-            return True
-        if self.reflect.store.get(name) is not None:
-            impl = self.reflect.store[name]
-            if impl.fiber is None or impl.fiber.state == FiberState.ACTIVE:
-                return True
-        isolated_label = self._isolated_keys.get(name)
-        return self._parent is not None and isolated_label is None and self._parent.has(name)
+        return self.reflect._get_impl(self, name, strict=True) is not None
 
     def effect(self, setup_or_disposer: Any, label: str = "") -> Callable[[], None]:
         """
-        Register a reversible effect setup/cleanup function.
-        Delegates to current fiber effect if active, or tracks as context effect.
+        Register a reversible effect setup/cleanup function on this context's fiber.
         """
-        if self.fiber and self.fiber.state in (FiberState.ACTIVE, FiberState.LOADING):
-            return self.fiber.effect(setup_or_disposer, label=label)
-
-        if not callable(setup_or_disposer):
-            return lambda: None
-
-        self._effects.append(setup_or_disposer)
-        disposed = False
-
-        def cancel_effect() -> None:
-            nonlocal disposed
-            if disposed:
-                return
-            disposed = True
-            if setup_or_disposer in self._effects:
-                self._effects.remove(setup_or_disposer)
-            try:
-                res = setup_or_disposer()
-                if inspect.isawaitable(res):
-                    try:
-                        loop = asyncio.get_running_loop()
-                        loop.create_task(res)
-                    except RuntimeError:
-                        pass
-            except Exception as e:
-                print(f"[Cordis Context Error] Exception in cancel_effect '{label}': {e}", file=sys.stderr)
-
-        return cancel_effect
+        return self.fiber.effect(setup_or_disposer, label=label)
 
     def on(self, event_name: str, handler: Callable[..., Any], prepend: bool = False, global_listener: bool = False) -> Callable[[], None]:
         """
         Register an event handler and track its disposer as a fiber effect.
         """
-        disposer = self._event_bus.on(event_name, handler, prepend=prepend, global_listener=global_listener, ctx=self)
-        self.effect(disposer, label=f"ctx.on({event_name})")
-        return disposer
+        return self.effect(
+            lambda: self._event_bus.on(
+                event_name,
+                handler,
+                prepend=prepend,
+                global_listener=global_listener,
+                ctx=self,
+            ),
+            label=f"ctx.on({event_name})",
+        )
 
     def once(self, event_name: str, handler: Callable[..., Any], prepend: bool = False, global_listener: bool = False) -> Callable[[], None]:
         """
         Register a single-shot event handler and track its disposer as a fiber effect.
         """
-        disposer = self._event_bus.once(event_name, handler, prepend=prepend, global_listener=global_listener, ctx=self)
-        self.effect(disposer, label=f"ctx.once({event_name})")
-        return disposer
+        raw_disposer: Optional[Callable[[], Any]] = None
+        effect_disposer: Optional[Callable[[], Any]] = None
+
+        def wrapped(*args: Any, **kwargs: Any) -> Any:
+            if raw_disposer is not None:
+                raw_disposer()
+            if effect_disposer is not None:
+                pending = effect_disposer()
+                if inspect.iscoroutine(pending):
+                    pending.close()
+            return handler(*args, **kwargs)
+
+        def setup() -> Callable[[], Any]:
+            nonlocal raw_disposer
+            raw_disposer = self._event_bus.on(
+                event_name,
+                wrapped,
+                prepend=prepend,
+                global_listener=global_listener,
+                ctx=self,
+            )
+            return raw_disposer
+
+        effect_disposer = self.effect(setup, label=f"ctx.once({event_name})")
+        return effect_disposer
 
     def emit(self, event_name: str, *args: Any, **kwargs: Any) -> None:
         kwargs["caller_ctx"] = self
@@ -183,7 +177,7 @@ class Context:
         """
         Load a plugin onto context wrapped in a Fiber.
         """
-        fiber = self.registry.plugin(plugin_cls_or_instance, config=config)
+        fiber = self.registry.plugin(plugin_cls_or_instance, config=config, parent_ctx=self)
         return fiber.plugin if fiber else None
 
     def inject(self, deps: Any, callback: Callable[..., Any]) -> Any:
@@ -191,7 +185,7 @@ class Context:
         Run a callback once requested services are available.
         Shorthand for ctx.plugin({ inject, apply: callback }).
         """
-        return self.registry.inject(deps, callback)
+        return self.registry.inject(deps, callback, parent_ctx=self)
 
     def unload_plugin(self, plugin_id: str) -> bool:
         """
@@ -255,6 +249,7 @@ class Context:
         """
         child = self.extend()
         child._intercept_map[name] = config
+        child._own_intercepts[name] = config
         return child
 
     def teardown(self) -> None:
@@ -268,28 +263,9 @@ class Context:
             except RuntimeError:
                 asyncio.run(self.fiber.dispose())
 
-        while self._effects:
-            effect_func = self._effects.pop()
-            try:
-                res = effect_func()
-                if inspect.isawaitable(res):
-                    try:
-                        loop = asyncio.get_running_loop()
-                        loop.create_task(res)
-                    except RuntimeError:
-                        pass
-            except Exception:
-                pass
-
     def __getattr__(self, name: str) -> Any:
         if name.startswith("_") or name in ("registry", "reflect", "fiber", "root", "events", "props", "store"):
             raise AttributeError(f"Context object has no attribute '{name}'")
-        if name in self._services:
-            return self._services[name]
         if hasattr(self, "reflect"):
-            val = self.reflect.get(self, name, default=None, strict=False)
-            if val is not None:
-                return val
-        if self._parent and name not in self._isolated_keys and hasattr(self._parent, name):
-            return getattr(self._parent, name)
-        raise AttributeError(f"Context object has no attribute or service '{name}'")
+            return self.reflect.get_property(self, name)
+        raise AttributeError("Context object has no attribute or service '%s'" % name)

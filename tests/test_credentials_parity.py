@@ -127,7 +127,6 @@ def test_local_credential_provider_resolved_credential(monkeypatch):
         creds_file = os.path.join(tmpdir, ".credentials.yaml")
         ctx = Context()
         creds = LocalCredentialProvider(ctx=ctx, config={"path": creds_file})
-        ctx.set_service("credentials", creds)
 
         # Unset reference resolve returns None
         assert creds.resolve("DEEPSEEK_API_KEY") is None
@@ -228,10 +227,8 @@ def test_record_management_parity():
 def test_authorization_service_parity():
     ctx = Context()
     creds_service = CredentialsService(ctx=ctx)
-    ctx.set_service("credentials", creds_service)
 
     auth = AuthorizationService(ctx=ctx)
-    ctx.set_service("authorization", auth)
 
     key = "llm-pi-ai/openai-codex"
 
@@ -291,10 +288,8 @@ def test_authorization_service_parity():
 def test_authorization_uncommitted_flow_error():
     ctx = Context()
     creds_service = CredentialsService(ctx=ctx)
-    ctx.set_service("credentials", creds_service)
 
     auth = AuthorizationService(ctx=ctx)
-    ctx.set_service("authorization", auth)
 
     key = "llm-pi-ai/no-commit-route"
 
@@ -324,10 +319,8 @@ def test_authorization_uncommitted_flow_error():
 def test_authorization_declined_error():
     ctx = Context()
     creds_service = CredentialsService(ctx=ctx)
-    ctx.set_service("credentials", creds_service)
 
     auth = AuthorizationService(ctx=ctx)
-    ctx.set_service("authorization", auth)
 
     key = "llm-pi-ai/declined-route"
 

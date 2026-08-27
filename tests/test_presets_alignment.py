@@ -3,11 +3,28 @@ import pytest
 from dsh.harness import build_harness
 
 
+def _preset_tools(ctx):
+    tools = ctx.get("tools")
+    rows = {}
+    for fiber in ctx.registry.list_fibers():
+        try:
+            for row in tools.schemas(scope=fiber.ctx):
+                rows[row["name"]] = row
+        except Exception:
+            continue
+    return list(rows.values())
+
+
+def _has_service(ctx, name):
+    if ctx.has(name):
+        return True
+    return any(f.ctx.has(name) for f in ctx.registry.list_fibers())
+
+
 def test_minimal_preset_alignment():
     ctx = build_harness(mode="minimal", verbose=False)
-    tools = ctx.get("tools")
-    schemas = tools.get_schemas()
-    tool_names = [s["function"]["name"] for s in schemas]
+    schemas = _preset_tools(ctx)
+    tool_names = [s["name"] for s in schemas]
 
     # Minimal mode must have exactly 2 tools: str_replace_editor and shell
     assert "str_replace_editor" in tool_names
@@ -27,9 +44,8 @@ def test_minimal_preset_alignment():
 
 def test_standard_preset_alignment():
     ctx = build_harness(mode="standard", verbose=False)
-    tools = ctx.get("tools")
-    schemas = tools.get_schemas()
-    tool_names = set(s["function"]["name"] for s in schemas)
+    schemas = _preset_tools(ctx)
+    tool_names = set(s["name"] for s in schemas)
 
     # Engineering tools
     assert "str_replace_editor" in tool_names
@@ -49,12 +65,12 @@ def test_standard_preset_alignment():
     assert "cordis_inspect_context" not in tool_names
 
     # Services
-    assert ctx.has("compaction")
-    assert ctx.has("tool_result_pruner")
-    assert ctx.has("agent_instructions")
-    assert ctx.has("skills")
-    assert ctx.has("plan_mode")
-    assert ctx.has("goals")
+    assert _has_service(ctx, "compaction")
+    assert _has_service(ctx, "tool_result_pruner")
+    assert _has_service(ctx, "agent_instructions")
+    assert _has_service(ctx, "skills")
+    assert _has_service(ctx, "plan_mode")
+    assert _has_service(ctx, "goals")
 
     # Persona
     persona = ctx.get("persona")
@@ -66,9 +82,8 @@ def test_standard_preset_alignment():
 
 def test_creative_preset_alignment():
     ctx = build_harness(mode="creative", verbose=False)
-    tools = ctx.get("tools")
-    schemas = tools.get_schemas()
-    tool_names = set(s["function"]["name"] for s in schemas)
+    schemas = _preset_tools(ctx)
+    tool_names = set(s["name"] for s in schemas)
 
     # Engineering tools
     assert "str_replace_editor" in tool_names
@@ -87,11 +102,11 @@ def test_creative_preset_alignment():
     assert "cordis_dump_config" in tool_names
 
     # Services
-    assert ctx.has("compaction")
-    assert ctx.has("tool_result_pruner")
-    assert ctx.has("agent_instructions")
-    assert ctx.has("skills")
-    assert ctx.has("plan_mode")
+    assert _has_service(ctx, "compaction")
+    assert _has_service(ctx, "tool_result_pruner")
+    assert _has_service(ctx, "agent_instructions")
+    assert _has_service(ctx, "skills")
+    assert _has_service(ctx, "plan_mode")
 
     # Persona
     persona = ctx.get("persona")

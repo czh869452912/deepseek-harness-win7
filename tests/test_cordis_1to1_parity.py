@@ -48,10 +48,9 @@ def test_multi_fiber_same_plugin_class():
     assert fiber1 is not None
     assert fiber1.state == FiberState.ACTIVE
 
-    fiber2 = ctx.registry.plugin(CountPlugin, config={"val": 20})
-    assert fiber2 is not None
-    assert fiber2 is not fiber1
-    assert len(ctx.registry.get(CountPlugin).fibers) == 2
+    with pytest.raises(RuntimeError, match="service 'val' has been registered"):
+        ctx.registry.plugin(CountPlugin, config={"val": 20})
+    assert ctx.get("val") == 10
 
 
 @pytest.mark.asyncio
@@ -72,7 +71,7 @@ async def test_waterfall_veto_semantics():
     ctx.on("pipeline", middleware_veto)
     ctx.on("pipeline", middleware3)
 
-    res = await ctx.waterfall("pipeline", "start")
+    res = await ctx.waterfall("pipeline", "start", lambda value: value)
     assert res == "start -> m1 -> veto"
 
 
@@ -122,6 +121,14 @@ def test_isolate_and_intercept_inheritance():
 def test_loader_service_and_entry_tree():
     ctx = Context()
     loader = Loader(ctx)
+
+    class TestPackage(Plugin):
+        name = "test_pkg"
+
+        def apply(self, child_ctx):
+            child_ctx.set_service("test_pkg_config", dict(self.config))
+
+    loader.register_plugin_class("test_pkg", TestPackage)
 
     assert ctx.get("loader") is loader
     assert loader.name == "loader"

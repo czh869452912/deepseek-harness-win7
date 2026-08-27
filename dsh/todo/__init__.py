@@ -1,3 +1,3 @@
-from dsh.todo.tool_todo import ToolTodoPlugin
+from dsh.todo.tool_todo import Config, ToolTodoPlugin, apply, inject, name
 
-__all__ = ["ToolTodoPlugin"]
+__all__ = ["Config", "ToolTodoPlugin", "apply", "inject", "name"]

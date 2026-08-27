@@ -36,8 +36,15 @@ class AgentPresetsDomainHandler:
                 self._service = svc
                 return svc
 
-        # Fallback to instantiating AgentPresets with self.ctx
-        self._service = AgentPresets(self.ctx)
+        # Standalone API consumers (for example tests or an embedded host)
+        # still need the deployment roster.  Mirror profile-boot's system
+        # root and default instead of creating an empty, detached service.
+        shipped_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "presets"))
+        self._service = AgentPresets(self.ctx, config={
+            "default": "standard",
+            "roots": [{"path": shipped_root, "trust": "system"}],
+            "includeUserRoot": True,
+        })
         return self._service
 
     async def list_presets(self, payload: Dict[str, Any]) -> Dict[str, Any]:

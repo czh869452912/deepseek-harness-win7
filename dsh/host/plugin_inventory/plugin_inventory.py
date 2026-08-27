@@ -86,7 +86,13 @@ class PluginInventoryPlugin(Plugin):
     inject = []
 
     def apply(self, ctx: Any) -> None:
+        if ctx.get("plugin_inventory") is not None:
+            return
         gateway = PluginInventoryGateway(ctx)
-        ctx.set_service("plugin_inventory", gateway)
-        ctx.set_service("pluginInventory", gateway)
+        for key in ("plugin_inventory", "pluginInventory"):
+            try:
+                ctx.set_service(key, gateway)
+            except RuntimeError as exc:
+                if "has been registered" not in str(exc):
+                    raise
 

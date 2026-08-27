@@ -93,5 +93,3 @@ class StoragePlugin(Plugin):
     def apply(self, ctx: Any) -> None:
         root_dir = self.config.get("root") if self.config else None
         svc = Storage(ctx, root_dir=root_dir)
-        ctx.set_service("storage", svc)
-        ctx.provide("storageDomain", svc.domain)

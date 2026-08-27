@@ -341,8 +341,11 @@ class ToolGoalPlugin(Plugin):
             goal_svc = GoalService(ctx, blocked_after_consecutive_rounds=self.blocked_after_consecutive_rounds)
             ctx.set_service("goals", goal_svc)
 
-        if hasattr(ctx, "systemPrompt") and hasattr(ctx.systemPrompt, "section"):
-            ctx.systemPrompt.section(
+        # systemPrompt is optional; Reflect raises for an uninjected property,
+        # so resolve it through the non-strict service lookup.
+        system_prompt = ctx.get("systemPrompt", None, strict=False)
+        if system_prompt is not None and hasattr(system_prompt, "section"):
+            system_prompt.section(
                 name="tool:goal",
                 order=114,
                 text=guidance(self.blocked_after_consecutive_rounds),
@@ -554,10 +557,12 @@ class ToolGoalPlugin(Plugin):
         )
         return {"goal": goal.to_dict(), "activation": goal.activation}
 
-    async def _hook_goal_slash_command(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _hook_goal_slash_command(
+        self, payload: Dict[str, Any], next_fn: Any,
+    ) -> Dict[str, Any]:
         messages = payload.get("messages", [])
         if not messages:
-            return payload
+            return await next_fn(payload)
 
         last_user_msg = None
         for msg in reversed(messages):
@@ -570,26 +575,27 @@ class ToolGoalPlugin(Plugin):
             if text.startswith("/goal"):
                 tokens = text.split(None, 1)
                 goal_svc: GoalService = self.ctx.get("goals")
+                agent = payload.get("agent")
                 if goal_svc:
                     if len(tokens) > 1 and tokens[1].strip():
                         arg = tokens[1].strip()
                         if arg.lower() == "pause":
-                            g = goal_svc.get_goal()
+                            g = goal_svc.get_goal(agent=agent)
                             if g:
-                                goal_svc.update_goal(g.id, g.revision, "pause")
+                                goal_svc.update_goal(g.id, g.revision, "pause", agent=agent)
                                 last_user_msg["content"] += "\n\n[Goal Notice: Current goal paused.]"
                         elif arg.lower() == "resume":
-                            g = goal_svc.get_goal()
+                            g = goal_svc.get_goal(agent=agent)
                             if g:
-                                goal_svc.update_goal(g.id, g.revision, "resume")
+                                goal_svc.update_goal(g.id, g.revision, "resume", agent=agent)
                                 last_user_msg["content"] += "\n\n[Goal Notice: Goal resumed.]"
                         else:
                             # Start new goal with objective
-                            g = goal_svc.create_goal(objective=arg)
+                            g = goal_svc.create_goal(objective=arg, agent=agent)
                             last_user_msg["content"] = f"{arg}\n\n[Goal Active: '{arg}']"
                     else:
-                        g = goal_svc.get_goal()
+                        g = goal_svc.get_goal(agent=agent)
                         status_str = f"Goal: {g.objective} (Phase: {g.phase})" if g else "No active goal"
                         last_user_msg["content"] += f"\n\n[Goal Status: {status_str}]"
 
-        return payload
+        return await next_fn(payload)

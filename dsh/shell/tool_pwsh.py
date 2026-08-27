@@ -315,4 +315,6 @@ class ToolPwshPlugin(Plugin):
             "execute": execute_pwsh,
         })
 
-        ctx.effect(d)
+        # `register_tool` returns the teardown callback; defer its invocation
+        # until this plugin Fiber unloads.
+        ctx.effect(lambda: d)

@@ -91,12 +91,17 @@ class ToolPwshPersistentPlugin(Plugin):
             "required": ["command"],
         }
 
-        tools_service.register(
-            name=tool_name,
-            description=self.description,
-            parameters=parameters,
-            handler=self.handle_pwsh,
-        )
+        disposer = tools_service.register_canonical({
+            "name": tool_name,
+            "description": self.description,
+            "parameters": parameters,
+            "execute": lambda args, _exec: self.handle_pwsh(**args),
+            "output": {
+                "schema": {"type": "string"},
+                "render": lambda _args, value: [{"type": "text", "text": str(value)}],
+            },
+        })
+        ctx.effect(lambda: disposer)
 
     def handle_pwsh(
         self,

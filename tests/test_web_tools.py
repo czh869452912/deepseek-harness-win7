@@ -6,6 +6,11 @@ from dsh.web.web_fetch_http import HTMLToMarkdownParser
 from dsh.web.tool_web import ToolWebPlugin
 
 
+class PromptService:
+    def section(self, *args, **kwargs):
+        return lambda: None
+
+
 class MockSearchProvider(WebSearchProvider):
     async def search(self, query: str, max_results: int = 10, timeout_ms: int = 60000):
         return [
@@ -41,22 +46,26 @@ async def test_tool_web_search_and_fetch():
     web_svc.register_search_provider("mock", MockSearchProvider())
     web_svc.register_fetch_provider("mock", MockFetchProvider())
     ctx.set_service("web", web_svc)
+    ctx.set_service("systemPrompt", PromptService())
 
-    ctx.plugin(ToolWebPlugin)
+    fiber = ctx.registry.plugin(ToolWebPlugin, parent_ctx=ctx)
+    await fiber
     tools = ctx.get("tools")
+    try:
+        # 1. Single query uses the required upstream array parameter.
+        search_res = await tools.execute_tool("web_search", {"queries": ["python cordis"]})
+        assert "Doc for python cordis" in search_res
+        assert "https://example.org/doc" in search_res
+        assert "Cite the relevant URLs above" in search_res
 
-    # 1. Single query legacy parameter
-    search_res = await tools.execute_tool("web_search", {"query": "python cordis"})
-    assert "Doc for python cordis" in search_res
-    assert "https://example.org/doc" in search_res
-    assert "Cite the relevant URLs above" in search_res
+        # 2. Multi-query official array parameter
+        multi_res = await tools.execute_tool("web_search", {"queries": ["python cordis", "asyncio loop"]})
+        assert "https://example.org/doc" in multi_res
+        assert "Cite the relevant URLs above" in multi_res
 
-    # 2. Multi-query official array parameter
-    multi_res = await tools.execute_tool("web_search", {"queries": ["python cordis", "asyncio loop"]})
-    assert "https://example.org/doc" in multi_res
-    assert "Cite the relevant URLs above" in multi_res
-
-    # 3. Web fetch
-    fetch_res = await tools.execute_tool("web_fetch", {"url": "https://example.org/article"})
-    assert "Extracted Heading" in fetch_res
+        # 3. Web fetch
+        fetch_res = await tools.execute_tool("web_fetch", {"url": "https://example.org/article"})
+        assert "Extracted Heading" in fetch_res
+    finally:
+        await fiber.dispose()
 

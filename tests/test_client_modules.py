@@ -42,8 +42,8 @@ def test_order_by_module_graph():
 @pytest.mark.asyncio
 async def test_client_modules_plugin_and_route():
     ctx = Context()
-    ctx.plugin(WebServerPlugin, config={"host": "127.0.0.1", "port": 9999})
-    ctx.plugin(ClientModulesPlugin)
+    await ctx.registry.plugin(WebServerPlugin, config={"host": "127.0.0.1", "port": 9999}, parent_ctx=ctx)
+    await ctx.registry.plugin(ClientModulesPlugin, parent_ctx=ctx)
 
     registry: ClientModuleRegistry = ctx.get("client_modules")
     assert registry is not None

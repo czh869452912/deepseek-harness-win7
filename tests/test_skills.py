@@ -44,8 +44,13 @@ async def test_skill_filesystem_and_tool_plugin():
         with open(skill_md, "w", encoding="utf-8") as f:
             f.write("---\nname: sample-skill\ndescription: Sample skill for pytest\n---\nSample Instructions")
 
-        ctx.plugin(SkillFilesystemPlugin, config={"customSkillDirs": [os.path.join(tmpdir, "skills")]})
-        tool_skill = ctx.plugin(ToolSkillPlugin)
+        await ctx.registry.plugin(
+            SkillFilesystemPlugin,
+            config={"customSkillDirs": [os.path.join(tmpdir, "skills")]},
+            parent_ctx=ctx,
+        )
+        tool_fiber = await ctx.registry.plugin(ToolSkillPlugin, parent_ctx=ctx)
+        tool_skill = tool_fiber.plugin
 
         skills = ctx.skills.list_skills()
         assert len(skills) >= 1

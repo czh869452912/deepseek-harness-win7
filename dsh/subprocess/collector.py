@@ -13,13 +13,14 @@ from typing import Dict, List, Optional
 from dsh.subprocess.types import CollectedOutput, SubprocessOutputRead, SubprocessOutputReader
 
 _spill_counter = 0
+_default_spill_dir: Optional[str] = None
 
 
 def _private_spill_dir() -> str:
-    base = tempfile.gettempdir()
-    d = os.path.join(base, "dsh-subprocess-spill")
-    os.makedirs(d, mode=0o700, exist_ok=True)
-    return d
+    global _default_spill_dir
+    if _default_spill_dir is None:
+        _default_spill_dir = tempfile.mkdtemp(prefix="dsh-subprocess-")
+    return _default_spill_dir
 
 
 class OutputCollector(SubprocessOutputReader):

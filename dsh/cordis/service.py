@@ -2,8 +2,10 @@
 Cordis Service base class matching reference/vendor/cordis/src/service.ts
 """
 
-import sys
-from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar
+import inspect
+from typing import Any, Dict, List, Optional, TypeVar
+
+from dsh.cordis.utils import Tracker
 
 T = TypeVar("T")
 
@@ -47,11 +49,11 @@ class Service:
         check_fn = getattr(self, self.check, None)
         if not callable(check_fn) and hasattr(self, "_check_availability"):
             check_fn = getattr(self, "_check_availability")
+        if inspect.ismethod(check_fn) and check_fn.__self__ is self:
+            check_fn = check_fn.__func__
 
-        if hasattr(self.ctx, "set_service"):
-            self.ctx.set_service(self.name, self)
-        elif hasattr(self.ctx, "provide"):
-            self.ctx.provide(self.name, self)
+        self._cordis_tracker = Tracker(associate=self.name, property_name="ctx")
+        self.ctx.reflect.provide(self.ctx, self.name, self, check=check_fn)
 
     def resolve_intercept_config(self, base: Optional[Any] = None, head: Optional[Any] = None) -> Any:
         """
@@ -61,15 +63,20 @@ class Service:
         configs: List[Dict[str, Any]] = []
         curr = self.ctx
         while curr is not None:
-            intercept_map = getattr(curr, "_intercept_map", {})
+            intercept_map = getattr(curr, "_own_intercepts", {})
             if self.name in intercept_map:
                 configs.insert(0, intercept_map[self.name])
             curr = getattr(curr, "_parent", None)
 
-        if base:
+        if base is not None:
             configs.insert(0, base if isinstance(base, dict) else {"base": base})
-        if head:
+        if head is not None:
             configs.append(head if isinstance(head, dict) else {"head": head})
+
+        config_schema = getattr(self, "Config", None)
+        merge = getattr(config_schema, "merge", None)
+        if callable(merge):
+            return merge(*configs)
 
         res: Dict[str, Any] = {}
         for cfg in configs:

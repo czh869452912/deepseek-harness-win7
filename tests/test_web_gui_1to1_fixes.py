@@ -25,11 +25,12 @@ async def test_plugin_inventory_1to1_fiber_phases():
     """Verify pluginInventory.list returns 1:1 PluginInventorySnapshot with active fiber phases."""
     ctx = Context()
     loader = Loader(ctx)
-    ctx.set_service("loader", loader)
     loader.register_plugin_class("@deepseek-ai/dsh-sample-plugin", SamplePlugin)
     loader.load_from_dict([
         {"id": "sample-plugin", "name": "@deepseek-ai/dsh-sample-plugin", "disabled": False}
     ])
+    await asyncio.gather(*(fiber.wait() for runtime in ctx.registry._runtimes.values()
+                           for fiber in runtime.fibers))
 
     gateway = PluginInventoryGateway(ctx)
     snapshot = gateway.list()
@@ -49,8 +50,8 @@ async def test_agent_presets_1to1_schemas():
     ctx = Context()
     web_server = WebServerPlugin({"port": 0})
     api_proxy = ApiProxyPlugin()
-    ctx.plugin(web_server)
-    ctx.plugin(api_proxy)
+    await ctx.registry.plugin(web_server, parent_ctx=ctx)
+    await ctx.registry.plugin(api_proxy, parent_ctx=ctx)
 
     handler = api_proxy.agent_presets_handler
 
@@ -92,8 +93,8 @@ async def test_sessions_1to1_schemas_and_projections():
 
     web_server = WebServerPlugin({"port": 0})
     api_proxy = ApiProxyPlugin()
-    ctx.plugin(web_server)
-    ctx.plugin(api_proxy)
+    await ctx.registry.plugin(web_server, parent_ctx=ctx)
+    await ctx.registry.plugin(api_proxy, parent_ctx=ctx)
 
     handler = api_proxy.sessions_handler
 
@@ -126,8 +127,8 @@ async def test_sse_event_target_resolution_non_default_session():
     ctx = Context()
     web_server = WebServerPlugin({"port": 0})
     api_proxy = ApiProxyPlugin()
-    ctx.plugin(web_server)
-    ctx.plugin(api_proxy)
+    await ctx.registry.plugin(web_server, parent_ctx=ctx)
+    await ctx.registry.plugin(api_proxy, parent_ctx=ctx)
 
     sessions_svc = SessionStore(ctx)
     ctx.set_service("sessions", sessions_svc)

@@ -230,12 +230,31 @@ class CordisManagerPlugin(Plugin):
         self.runner = DynamicCordisRunnerService(ctx)
         ctx.set_service("dynamicCordisRunner", self.runner)
 
+        def json_output(schema: Dict[str, Any], render: Any, meta: Any = None) -> Dict[str, Any]:
+            result = {"schema": schema, "render": render}
+            if meta is not None:
+                result["presentationMeta"] = meta
+            return result
+
+        def text_json(_args: Any, value: Any) -> List[Dict[str, str]]:
+            return [{"type": "text", "text": json.dumps(value, indent=2, ensure_ascii=False)}]
+
+        async def canonical_call(fn: Any, args: Dict[str, Any]) -> Any:
+            value = await fn(**args)
+            if isinstance(value, str):
+                try:
+                    return json.loads(value)
+                except Exception:
+                    return {"text": value}
+            return value
+
         # 1. cordis_inspect_list
         tools_service.register_tool({
             "name": "cordis_inspect_list",
             "description": "List every Cordis Inspect Provider currently known to the Host (Service, Event, Builtin, Tool).",
             "parameters": {"type": "object", "properties": {}},
-            "execute": self.handle_inspect_list,
+            "execute": lambda args, _exec: canonical_call(self.handle_inspect_list, args),
+            "output": json_output({"type": "object"}, text_json),
         })
 
         # 2. cordis_inspect_query
@@ -248,11 +267,12 @@ class CordisManagerPlugin(Plugin):
                     "platform": {"type": "string", "enum": ["host", "client"], "description": "Runtime platform that owns the Provider"},
                     "provider": {"type": "string", "description": "Exact Provider ID (Service, Event, Builtin, Tool)"},
                     "method": {"type": "string", "description": "Exact method name (e.g. listService, listEvents, listBuiltins, listTools)"},
-                    "input": {"type": "object", "description": "Optional query input object"},
+                    "input": {"description": "Optional query input object"},
                 },
                 "required": ["platform", "provider", "method"],
             },
-            "execute": self.handle_inspect_query,
+            "execute": lambda args, _exec: canonical_call(self.handle_inspect_query, args),
+            "output": json_output({"type": "object"}, text_json),
         })
 
         # 3. cordis_inspect_self
@@ -266,7 +286,8 @@ class CordisManagerPlugin(Plugin):
                     "packageId": {"type": "string", "description": "Exact immutable Package ID owned by pluginId"},
                 },
             },
-            "execute": self.handle_inspect_self,
+            "execute": lambda args, _exec: canonical_call(self.handle_inspect_self, args),
+            "output": json_output({"type": "object"}, text_json),
         })
 
         # 4. cordis_define
@@ -277,13 +298,22 @@ class CordisManagerPlugin(Plugin):
                 "type": "object",
                 "properties": {
                     "plugin": {
-                        "type": "object",
+                        "oneOf": [
+                            {"type": "object", "additionalProperties": False,
+                             "properties": {"kind": {"type": "string", "const": "new"},
+                                             "idPrefix": {"type": "string"}},
+                             "required": ["kind", "idPrefix"]},
+                            {"type": "object", "additionalProperties": False,
+                             "properties": {"kind": {"type": "string", "const": "existing"},
+                                             "pluginId": {"type": "string"}},
+                             "required": ["kind", "pluginId"]},
+                        ],
                         "description": "{ kind: 'new', idPrefix: 'foo' } or { kind: 'existing', pluginId: 'foo-101' }",
                     },
                     "name": {"type": "string", "description": "Short, readable Package name"},
                     "purpose": {"type": "string", "description": "User-facing description of the Package purpose"},
                     "code": {
-                        "type": "object",
+                        "type": "object", "additionalProperties": False,
                         "properties": {
                             "host": {"type": "string", "description": "Host-half plugin code function body"},
                             "client": {"type": "string", "description": "Client-half plugin code function body"},
@@ -292,7 +322,9 @@ class CordisManagerPlugin(Plugin):
                 },
                 "required": ["plugin", "name", "purpose", "code"],
             },
-            "execute": self.handle_define,
+            "execute": lambda args, _exec: canonical_call(self.handle_define, args),
+            "output": json_output({"type": "object"}, text_json,
+                                   lambda _args, value: {"pluginId": value.get("pluginId"), "packageId": value.get("packageId")}),
         })
 
         # 5. cordis_run
@@ -308,7 +340,9 @@ class CordisManagerPlugin(Plugin):
                 },
                 "required": ["pluginId", "packageId", "mode"],
             },
-            "execute": self.handle_run,
+            "execute": lambda args, _exec: canonical_call(self.handle_run, args),
+            "output": json_output({"type": "object"}, text_json,
+                                   lambda _args, value: {k: value[k] for k in ("pluginId", "packageId", "pluginRunId") if k in value}),
         })
 
         # 6. cordis_stop
@@ -322,7 +356,8 @@ class CordisManagerPlugin(Plugin):
                 },
                 "required": ["pluginId"],
             },
-            "execute": self.handle_stop,
+            "execute": lambda args, _exec: canonical_call(self.handle_stop, args),
+            "output": json_output({"type": "object"}, text_json),
         })
 
         # 7. cordis_undefine
@@ -336,25 +371,26 @@ class CordisManagerPlugin(Plugin):
                 },
                 "required": ["pluginId"],
             },
-            "execute": self.handle_undefine,
+            "execute": lambda args, _exec: canonical_call(self.handle_undefine, args),
+            "output": json_output({"type": "object"}, text_json),
         })
 
         # Backward compatibility aliases
-        tools_service.register(
+        tools_service.register_legacy(
             name="cordis_list_plugins",
             description="[Alias for cordis_inspect_self] List all dynamic and static plugins.",
             parameters={"type": "object", "properties": {}},
             handler=self.handle_list_plugins_compat,
         )
 
-        tools_service.register(
+        tools_service.register_legacy(
             name="cordis_inspect_context",
             description="[Alias for cordis_inspect_query] Inspect mounted Cordis services and system status.",
             parameters={"type": "object", "properties": {}},
             handler=self.handle_inspect_context_compat,
         )
 
-        tools_service.register(
+        tools_service.register_legacy(
             name="cordis_unload_plugin",
             description="[Alias for cordis_stop] Unload or stop an active plugin.",
             parameters={
@@ -367,7 +403,7 @@ class CordisManagerPlugin(Plugin):
             handler=self.handle_unload_plugin_compat,
         )
 
-        tools_service.register(
+        tools_service.register_legacy(
             name="cordis_dump_config",
             description="Dump active Cordis plugin composition configuration tree in YAML format.",
             parameters={"type": "object", "properties": {}},

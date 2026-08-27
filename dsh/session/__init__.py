@@ -15,6 +15,8 @@ from dsh.session.repair import interrupted_turn_closers, migrate_legacy_event
 from dsh.session.session_query import SessionQueryPlugin, SessionQueryService, extract_session_event_text
 from dsh.session.stats import SessionStatsPlugin, SessionStatsProjection
 from dsh.session.title import SessionTitlePlugin, SessionTitleService, fallback_session_title, normalize_session_title
+from dsh.session.checkpoint_policy import SessionCheckpointPolicyPlugin, aborted_before_dispatch_result
+from dsh.session import checkpoint_policy_invariant
 
 __all__ = [
     "SessionLocation",
@@ -39,4 +41,7 @@ __all__ = [
     "SessionTitlePlugin",
     "fallback_session_title",
     "normalize_session_title",
+    "SessionCheckpointPolicyPlugin",
+    "aborted_before_dispatch_result",
+    "checkpoint_policy_invariant",
 ]

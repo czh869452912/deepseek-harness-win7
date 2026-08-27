@@ -9,6 +9,7 @@ from dsh.core.surface import is_replacement_surface_event
 
 SOURCE = "@deepseek-ai/dsh-system-prompt"
 CLEARED = "Current runtime context: none. Earlier runtime-context snapshots no longer apply."
+_UNSET = object()
 
 
 def is_owned(message: Dict[str, Any]) -> bool:
@@ -34,7 +35,11 @@ class RuntimeContextProjection:
 
     def __init__(self, ctx: Any, session: Any):
         self.session = session
-        self.retained: Optional[Dict[str, Any]] = None  # None: not initialized, {"seq": int, "text": str}
+        # Match TypeScript's `undefined` (never observed) versus `null` (known
+        # to have no retained snapshot).  Callers inspect ``retained`` for the
+        # durable state, so keep the sentinel private and expose None only for
+        # the initialized-empty state.
+        self._retained_state: Any = _UNSET
 
         # Initialize from existing session events
         surface_nodes = set(getattr(session.surface, "nodes", []))
@@ -42,8 +47,13 @@ class RuntimeContextProjection:
             if event.get("type") == "user/message" and is_owned(event.get("data", {})):
                 seq = event.get("seq", 0)
                 if seq in surface_nodes:
-                    self.retained = {"seq": seq, "text": text_of(event.get("data", {}))}
+                    self._retained_state = {"seq": seq, "text": text_of(event.get("data", {}))}
                     break
+                # An owned snapshot exists in history but is no longer on the
+                # authoritative surface.  Initialization is therefore known
+                # empty, not uninitialized.
+                if self._retained_state is _UNSET:
+                    self._retained_state = None
 
         if hasattr(ctx, "on"):
             ctx.on("session/event", self._on_session_event)
@@ -53,22 +63,27 @@ class RuntimeContextProjection:
             return
         ev_type = event.get("type")
         if ev_type == "user/message" and is_owned(event.get("data", {})):
-            self.retained = {"seq": event.get("seq", 0), "text": text_of(event.get("data", {}))}
+            self._retained_state = {"seq": event.get("seq", 0), "text": text_of(event.get("data", {}))}
         elif (
-            self.retained is not None
+            isinstance(self._retained_state, dict)
             and is_replacement_surface_event(event)
-            and self.retained.get("seq") in (event.get("sourceEventSeqs") or [])
+            and self._retained_state.get("seq") in (event.get("sourceEventSeqs") or [])
         ):
-            self.retained = None
+            self._retained_state = None
+
+    @property
+    def retained(self) -> Optional[Dict[str, Any]]:
+        """Current retained snapshot, or None when the surface has none."""
+        return self._retained_state if isinstance(self._retained_state, dict) else None
 
     def project(self, current: str, sections: Optional[List[Dict[str, Any]]] = None) -> Optional[Dict[str, Any]]:
         """
         Create an uncommitted snapshot only when the retained value differs.
         """
-        if self.retained is None and len(current) == 0:
+        if self._retained_state is _UNSET and len(current) == 0:
             return None
         snapshot = CLEARED if len(current) == 0 else current
-        if self.retained and self.retained.get("text") == snapshot:
+        if isinstance(self._retained_state, dict) and self._retained_state.get("text") == snapshot:
             return None
 
         src: Dict[str, Any] = {"kind": "plugin", "plugin": SOURCE}

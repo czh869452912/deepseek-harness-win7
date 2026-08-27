@@ -201,8 +201,6 @@ class ApiProxyPlugin(Plugin):
         if not user_questions:
             from dsh.interaction.user_questions import UserQuestionService
             user_questions = UserQuestionService(ctx)
-            ctx.set_service("userQuestions", user_questions)
-            ctx.set_service("user_questions", user_questions)
 
         if hasattr(user_questions, "register_provider"):
             user_questions.register_provider(self._create_user_question_provider())
@@ -344,13 +342,45 @@ class ApiProxyPlugin(Plugin):
                 sid = event.get("sessionId") or event.get("session_id") or "default-session"
 
             if isinstance(event, dict):
-                asyncio.create_task(self._broadcast_mux({
+                frame = {
                     "type": "session/event",
                     "sessionId": str(sid),
                     "event": event,
-                }))
+                }
+                # The browser contract carries a transient presenter view for
+                # tool calls/results.  It is deliberately attached only to
+                # the SSE frame; the durable session event remains untouched.
+                view = self._tool_event_view(event)
+                if view is not None:
+                    frame["view"] = view
+                asyncio.create_task(self._broadcast_mux(frame))
         except Exception:
             pass
+
+    def _tool_event_view(self, event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Project a tool event through its registered presenter when available."""
+        event_type = event.get("type")
+        if event_type not in ("tool/call", "tool/result"):
+            return None
+        data = event.get("data") if isinstance(event.get("data"), dict) else event
+        name = data.get("name") or data.get("toolName")
+        if not isinstance(name, str):
+            return None
+        tools = self.ctx.get("tools") if self.ctx is not None and hasattr(self.ctx, "get") else None
+        tool = tools.get_tool(name) if tools is not None and hasattr(tools, "get_tool") else None
+        if tool is None:
+            return None
+        try:
+            if event_type == "tool/call":
+                args = data.get("args", data.get("arguments", {}))
+                rendered = tool.present_call(args)
+                return {"for": "call", "view": rendered} if rendered is not None else None
+            args = data.get("args", data.get("arguments", {}))
+            result = data.get("result", data.get("output"))
+            rendered = tool.present_result(args, result)
+            return {"for": "result", "view": rendered} if rendered is not None else None
+        except Exception:
+            return None
 
     def _on_agent_status(self, *args: Any, **kwargs: Any) -> None:
         try:

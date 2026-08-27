@@ -117,7 +117,6 @@ def test_credentials_precedence_and_shadowing(monkeypatch):
         creds_file = os.path.join(tmpdir, ".credentials.yaml")
         ctx = Context()
         creds = CredentialsService(ctx=ctx, credentials_file=creds_file)
-        ctx.set_service("credentials", creds)
 
         # 1. Unshadowed write succeeds
         creds.set_credential("DEEPSEEK_API_KEY", "sk-file-key")
@@ -160,7 +159,6 @@ def test_full_llm_config_precedence(monkeypatch):
         # Mount settings
         settings_file = os.path.join(tmpdir, "settings.yaml")
         settings = SettingsService(ctx=ctx, settings_file=settings_file)
-        ctx.set_service("settings", settings)
 
         llm = LLMService(ctx=ctx)
 
@@ -189,7 +187,6 @@ def test_configuration_chain_loading_order():
         ctx = Context()
         settings_file = os.path.join(tmpdir, "settings.yaml")
         settings = SettingsService(ctx=ctx, settings_file=settings_file)
-        ctx.set_service("settings", settings)
 
         # Level 1: System Defaults
         val1 = resolve_layered_config(ctx, "llm", "model", system_default="deepseek-chat")

@@ -39,13 +39,13 @@ def test_instructions_discovery_and_render(temp_workspace):
 @pytest.mark.asyncio
 async def test_instructions_prompt_assembly_injection(temp_workspace):
     ctx = Context()
-    ctx.plugin(PersonaPlugin, config={"text": "You are a helpful assistant."})
-    ctx.plugin(AgentInstructionsPlugin)
+    await ctx.registry.plugin(PersonaPlugin, config={"text": "You are a helpful assistant."})
+    await ctx.registry.plugin(AgentInstructionsPlugin)
 
     orig_cwd = os.getcwd()
     os.chdir(temp_workspace)
     try:
-        assembled = await ctx.waterfall("agent/prompt-assemble", "Base prompt")
+        assembled = await ctx.waterfall("agent/prompt-assemble", "Base prompt", lambda value: value)
         assert "Base prompt" in assembled
         assert "# Project Workspace Instructions" in assembled
         assert "Rule 1: Strict Python 3.8" in assembled
@@ -56,13 +56,13 @@ async def test_instructions_prompt_assembly_injection(temp_workspace):
 @pytest.mark.asyncio
 async def test_instructions_suppressed_in_minimal_mode(temp_workspace):
     ctx = Context()
-    ctx.plugin(PersonaPlugin, config={"text": "Exclusive prompt.", "complete": True})
-    ctx.plugin(AgentInstructionsPlugin)
+    await ctx.registry.plugin(PersonaPlugin, config={"text": "Exclusive prompt.", "complete": True})
+    await ctx.registry.plugin(AgentInstructionsPlugin)
 
     orig_cwd = os.getcwd()
     os.chdir(temp_workspace)
     try:
-        assembled = await ctx.waterfall("agent/prompt-assemble", "Base prompt")
+        assembled = await ctx.waterfall("agent/prompt-assemble", "Base prompt", lambda value: value)
         assert assembled == "Exclusive prompt."
         assert "Project Workspace Instructions" not in assembled
     finally:

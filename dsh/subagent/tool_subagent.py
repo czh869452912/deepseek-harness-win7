@@ -25,14 +25,13 @@ class ToolSubagentPlugin(Plugin):
         self.enable_run_in_background: bool = cfg.get("enableRunInBackground", True)
 
     def apply(self, ctx: Any) -> None:
-        tools = ctx.get("tools") if ctx.has("tools") else None
-        if not tools:
+        tools = ctx.get("tools", None, strict=False)
+        if tools is None:
             return
 
-        if not ctx.has("subagents"):
-            ctx.set_service("subagents", SubagentRegistry(ctx))
-
-        subagents_svc: SubagentRegistry = ctx.get("subagents")
+        subagents_svc = ctx.get("subagents", None, strict=False)
+        if subagents_svc is None:
+            subagents_svc = SubagentRegistry(ctx)
 
         async def exec_subagent(
             description: Optional[str] = None,
@@ -186,4 +185,4 @@ class ToolSubagentPlugin(Plugin):
             if callable(disposer4): disposer4()
             if callable(disposer5): disposer5()
 
-        ctx.effect(cleanup)
+        ctx.effect(lambda: cleanup)

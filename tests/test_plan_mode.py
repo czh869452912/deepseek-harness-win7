@@ -1,4 +1,5 @@
 import pytest
+import pytest_asyncio
 from dsh.cordis.context import Context
 from dsh.core.session import SessionStore
 from dsh.core.tools import ToolsService
@@ -11,8 +12,8 @@ from dsh.plan.plan_mode import (
 )
 
 
-@pytest.fixture
-def plan_ctx():
+@pytest_asyncio.fixture
+async def plan_ctx():
     ctx = Context()
     tools = ToolsService(ctx)
     ctx.set_service("tools", tools)
@@ -20,12 +21,18 @@ def plan_ctx():
     ctx.set_service("sessions", sessions)
     session = sessions.create("test-plan-session")
 
-    ctx.plugin(ToolAskUserPlugin)
-    ctx.plugin(PlanModePlugin)
-    return ctx
+    # Cordis plugins are asynchronous fibers.  Mount plan mode below the
+    # ask-user fiber so its caller-bound tool catalog inherits ask_user_question.
+    ask_fiber = await ctx.registry.plugin(ToolAskUserPlugin, parent_ctx=ctx)
+    plan_fiber = await ctx.registry.plugin(PlanModePlugin, parent_ctx=ask_fiber.ctx)
+    try:
+        yield plan_fiber.ctx
+    finally:
+        await ctx.fiber.dispose()
 
 
-def test_fold_plan_mode(plan_ctx):
+@pytest.mark.asyncio
+async def test_fold_plan_mode(plan_ctx):
     session = plan_ctx.get("sessions").get("test-plan-session")
     assert fold_plan_mode(session.events) is False
 
@@ -36,7 +43,8 @@ def test_fold_plan_mode(plan_ctx):
     assert fold_plan_mode(session.events) is False
 
 
-def test_plan_mode_prompt_assembly(plan_ctx):
+@pytest.mark.asyncio
+async def test_plan_mode_prompt_assembly(plan_ctx):
     controller: PlanModeController = plan_ctx.get("plan_mode")
     base_prompt = "You are an assistant."
 
@@ -56,7 +64,7 @@ def test_plan_mode_prompt_assembly(plan_ctx):
 @pytest.mark.asyncio
 async def test_exit_plan_mode_validation(plan_ctx):
     tools = plan_ctx.get("tools")
-    exit_tool = tools.get_tool("exit_plan_mode")
+    exit_tool = tools.get_tool("exit_plan_mode", plan_ctx)
     assert exit_tool is not None
 
     controller: PlanModeController = plan_ctx.get("plan_mode")
@@ -87,12 +95,12 @@ async def test_plan_slash_command_hook(plan_ctx):
     payload = {
         "messages": [{"role": "user", "content": "/plan"}]
     }
-    await plan_ctx.waterfall("agent/pre-step", payload)
+    await plan_ctx.waterfall("agent/pre-step", payload, lambda value: value)
     assert controller.is_active() is True
 
     # Hook /plan off
     payload_off = {
         "messages": [{"role": "user", "content": "/plan off"}]
     }
-    await plan_ctx.waterfall("agent/pre-step", payload_off)
+    await plan_ctx.waterfall("agent/pre-step", payload_off, lambda value: value)
     assert controller.is_active() is False

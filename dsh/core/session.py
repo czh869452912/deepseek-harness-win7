@@ -19,6 +19,14 @@ SESSION_FORMAT_VERSION = 0
 SessionEvent = Dict[str, Any]
 
 
+class SessionForkError(ValueError):
+    """Typed rejection raised by SessionStore.fork (upstream parity)."""
+    def __init__(self, message: str, code: str):
+        super().__init__(message)
+        self.code = code
+        self.name = "SessionForkError"
+
+
 def snapshot_json_value(value: Any) -> Any:
     """
     Validate and return a deep snapshot of a JSON-serializable structure.
@@ -74,6 +82,8 @@ class SessionHeader:
         delegation_depth: Optional[int] = None,
         agent_preset: Optional[str] = None,
     ):
+        if version != SESSION_FORMAT_VERSION:
+            raise ValueError("session header version must be %s, got %s" % (SESSION_FORMAT_VERSION, version))
         self.version = version
         self.id = session_id
         self.created_at = created_at if created_at is not None else int(time.time() * 1000)
@@ -83,6 +93,22 @@ class SessionHeader:
         self.origin = origin
         self.delegation_depth = delegation_depth
         self.agent_preset = agent_preset
+        if not isinstance(self.id, str) or not self.id:
+            raise ValueError("session id must be a non-empty string")
+        if isinstance(self.created_at, bool) or not isinstance(self.created_at, int) or self.created_at < 0:
+            raise ValueError("session header createdAt must be a non-negative safe integer")
+        if self.cwd is not None and not os.path.isabs(self.cwd):
+            raise ValueError("session cwd must be an absolute path")
+        if self.parent_session is not None and not isinstance(self.parent_session, str):
+            raise ValueError("session header parentSession must be a string")
+        if self.seed_length is not None and (isinstance(self.seed_length, bool) or not isinstance(self.seed_length, int) or self.seed_length < 0):
+            raise ValueError("session header seedLength must be a non-negative safe integer")
+        if self.origin is not None and self.origin != "subagent":
+            raise ValueError('session header origin must be "subagent"')
+        if self.delegation_depth is not None and (isinstance(self.delegation_depth, bool) or not isinstance(self.delegation_depth, int) or self.delegation_depth < 0):
+            raise ValueError("session header delegationDepth must be a non-negative safe integer")
+        if self.agent_preset is not None and not isinstance(self.agent_preset, str):
+            raise ValueError("session header agentPreset must be a string")
 
     def to_dict(self) -> Dict[str, Any]:
         result: Dict[str, Any] = {
@@ -125,9 +151,15 @@ class SessionPreparation:
     def __init__(self, session: "Session", disposer: Optional[Callable[[], None]] = None):
         self.session = session
         self._disposer = disposer
+        self._released = False
+
+    @classmethod
+    def create(cls, session: "Session", release: Optional[Callable[[], None]] = None) -> "SessionPreparation":
+        return cls(session, release)
 
     def dispose(self) -> None:
-        if self._disposer:
+        if not self._released and self._disposer:
+            self._released = True
             self._disposer()
 
 
@@ -144,6 +176,8 @@ class Session:
         ctx: Optional[Any] = None,
     ):
         self.ctx = ctx
+        self._attached = False
+        self._appending = False
         self.header = header or SessionHeader(session_id=session_id)
         self.events: List[Dict[str, Any]] = []
 
@@ -152,6 +186,7 @@ class Session:
         if seed is not None:
             for index, ev in enumerate(seed):
                 snapshot = snapshot_json_value(ev)
+                self._validate_seed_event(snapshot, index)
                 self._surface_manager.validate_next(snapshot)
                 self.events.append(snapshot)
 
@@ -160,8 +195,6 @@ class Session:
         if seed is not None and (len(self.events) == 0 or self.events[-1].get("type") != "session/end-seed"):
             self.append("session/end-seed", {}, ignorable=True)
 
-        self._appending = False
-
         self._cached_messages: Optional[List[Dict[str, Any]]] = None
         self._cached_generation: int = -1
         self._cached_nodes_len: int = -1
@@ -169,6 +202,35 @@ class Session:
         self._cached_request_header: Optional[Dict[str, Any]] = None
         self._context_folded_seq: int = -1
         self._cached_request_context: Optional[Dict[str, Any]] = None
+
+    @staticmethod
+    def _validate_seed_event(event: Any, index: int) -> None:
+        if not isinstance(event, dict):
+            raise ValueError("seed event at index %s is not a plain JSON record" % index)
+        allowed = {"type", "seq", "time", "data", "surfaceOp", "sourceEventSeqs", "ignorable"}
+        extra = set(event.keys()) - allowed
+        if extra:
+            raise ValueError("seed event at index %s has an invalid event envelope" % index)
+        if event.get("type") == "request/header-delta":
+            raise ValueError("seed event at index %s uses unsupported legacy request/header-delta format" % index)
+        if not isinstance(event.get("type"), str) or not event.get("type"):
+            raise ValueError("seed event at index %s has an invalid type" % index)
+        seq = event.get("seq")
+        if isinstance(seq, bool) or not isinstance(seq, int) or seq < 0:
+            raise ValueError("seed event at index %s has an invalid seq" % index)
+        stamp = event.get("time")
+        if isinstance(stamp, bool) or not isinstance(stamp, int) or stamp < 0:
+            raise ValueError("seed event at index %s has an invalid time" % index)
+        if "data" not in event:
+            raise ValueError("seed event at index %s is missing data" % index)
+        if event.get("ignorable") not in (None, True):
+            raise ValueError("seed event at index %s has invalid ignorable marker" % index)
+        if event.get("type") == "request/header":
+            data = event.get("data")
+            header = data.get("header") if isinstance(data, dict) else None
+            config = header.get("config") if isinstance(header, dict) else None
+            if not isinstance(config, dict) or not isinstance(config.get("provider"), str) or not config.get("provider") or not isinstance(config.get("model"), str) or not config.get("model"):
+                raise ValueError("seed request/header at index %s lacks provider/model" % index)
 
     @property
     def id(self) -> str:
@@ -233,7 +295,6 @@ class Session:
             "type": event_type,
             "seq": event_seq,
             "time": int(time.time() * 1000),
-            "session_id": self.id,
             "data": data_snapshot,
         }
 
@@ -253,7 +314,7 @@ class Session:
         try:
             self.events.append(event)
 
-            if self.ctx:
+            if self.ctx and self._attached:
                 try:
                     self.ctx.emit("session/event", self, event)
                 except Exception as e:
@@ -424,6 +485,8 @@ class SessionStore:
     def __init__(self, ctx: Optional[Any] = None):
         self.ctx = ctx
         self._sessions: Dict[str, Session] = {}
+        self._counter = 0
+        self._attachments: Dict[str, Dict[str, Any]] = {}
 
     def create(
         self,
@@ -431,52 +494,142 @@ class SessionStore:
         seed: Optional[List[Dict[str, Any]]] = None,
         meta: Optional[Dict[str, Any]] = None,
     ) -> Session:
-        sid = session_id or f"session-{len(self._sessions) + 1}"
+        if session_id is None:
+            self._counter += 1
+            sid = f"session-{self._counter}"
+            while sid in self._sessions:
+                self._counter += 1
+                sid = f"session-{self._counter}"
+        else:
+            sid = session_id
         if sid in self._sessions:
-            raise ValueError(f'session "{sid}" already exists in store')
-
-        header = SessionHeader.from_dict({"id": sid, **(meta or {})})
-        session = Session(session_id=sid, seed=seed, header=header, ctx=self.ctx)
-        self._sessions[sid] = session
-
-        if self.ctx:
-            self.ctx.emit("session/created", session)
-
+            raise ValueError(f'session "{sid}" already exists')
+        session = self.prepare(sid, {"seed": seed, "meta": meta} if seed is not None or meta is not None else None)
+        disposer = self.enter(session)
+        try:
+            self.announce(session)
+        except Exception:
+            disposer()
+            raise
         return session
 
     def get(self, session_id: str) -> Optional[Session]:
         return self._sessions.get(session_id)
 
-    def prepare(
-        self,
-        session_id: Optional[str] = None,
-        seed: Optional[List[Dict[str, Any]]] = None,
-        meta: Optional[Dict[str, Any]] = None,
-    ) -> SessionPreparation:
-        sid = session_id or f"session-{len(self._sessions) + 1}"
-        header = SessionHeader.from_dict({"id": sid, **(meta or {})})
-        session = Session(session_id=sid, seed=seed, header=header, ctx=self.ctx)
-        return SessionPreparation(session=session)
+    def prepare(self, session_id: Optional[str] = None, options: Optional[Dict[str, Any]] = None,
+                seed: Optional[List[Dict[str, Any]]] = None,
+                meta: Optional[Dict[str, Any]] = None) -> Session:
+        options = dict(options or {})
+        if seed is not None:
+            options["seed"] = seed
+        if meta is not None:
+            options["meta"] = meta
+        seed = options.get("seed")
+        meta = options.get("meta") or {}
+        if session_id is None:
+            self._counter += 1
+            session_id = f"session-{self._counter}"
+            while session_id in self._sessions:
+                self._counter += 1
+                session_id = f"session-{self._counter}"
+        if session_id in self._sessions:
+            raise ValueError(f'session "{session_id}" already exists')
+        header = SessionHeader.from_dict({"id": session_id, **meta})
+        if options.get("seedSource") == "persistence":
+            return Session.from_restore(session_id, list(seed or []), header, ctx=self.ctx)
+        return Session.create(session_id, seed=seed, header=header, ctx=self.ctx)
 
     def enter(self, session: Session) -> Callable[[], None]:
         sid = session.id
         if sid in self._sessions:
             raise ValueError(f'session "{sid}" already in store')
+        if sid in self._sessions:
+            raise ValueError(f'session "{sid}" already exists')
         self._sessions[sid] = session
         session.ctx = self.ctx
+        session._attached = True
+        state = {"session": session, "announced": False, "detached": False}
+        self._attachments[sid] = state
 
         def disposer() -> None:
-            self._sessions.pop(sid, None)
-
-        if self.ctx:
-            self.ctx.effect(disposer)
-            self.ctx.emit("session/created", session)
+            if state["detached"]:
+                return
+            state["detached"] = True
+            if self._sessions.get(sid) is session:
+                self._sessions.pop(sid, None)
+                self._attachments.pop(sid, None)
+                if state["announced"] and self.ctx:
+                    try:
+                        self.ctx.emit("session/disposed", session)
+                    except Exception:
+                        pass
 
         return disposer
 
-    async def flush(self, session: Optional[Session] = None) -> None:
+    def announce(self, session: Session) -> None:
+        state = self._attachments.get(session.id)
+        if state is None or self._sessions.get(session.id) is not session:
+            raise ValueError(f'session "{session.id}" is not live in this store')
+        if state["announced"]:
+            raise ValueError(f'session "{session.id}" was already announced')
+        state["announced"] = True
         if self.ctx:
+            self.ctx.emit("session/created", session)
+
+    def _live(self, session: Session) -> Dict[str, Any]:
+        state = self._attachments.get(session.id)
+        if state is None or self._sessions.get(session.id) is not session:
+            raise ValueError(f'session "{session.id}" is not live in this store')
+        return state
+
+    async def flush(self, session: Optional[Session] = None) -> bool:
+        if session is not None:
+            self._live(session)
+        if self.ctx:
+            listeners = self.ctx.events._dispatch_hooks("emit", "session/flush", self.ctx, [session])
             await self.ctx.parallel("session/flush", session)
+            return bool(listeners)
+        return False
+
+    def list(self) -> List[Session]:
+        return list(self._sessions.values())
+
+    def fork(self, source: Union[Session, str], boundary: Optional[int] = None, child_session_id: Optional[str] = None) -> Session:
+        if child_session_id is not None and child_session_id in self._sessions:
+            raise SessionForkError(f'session "{child_session_id}" already exists', "SESSION_ALREADY_EXISTS")
+        if isinstance(source, str):
+            live = self.get(source)
+            if live is None:
+                raise SessionForkError(f'session "{source}" not found', "SESSION_NOT_FOUND")
+        else:
+            live = self.get(source.id)
+            if live is None:
+                raise SessionForkError(f'session "{source.id}" not found', "SESSION_NOT_FOUND")
+            if live is not source:
+                raise SessionForkError(f'session "{source.id}" is not the live store instance', "SESSION_NOT_LIVE")
+        events = live.events
+        if boundary is None:
+            if not events:
+                seed = []
+                meta = {"parentSession": live.id, "seedLength": 0}
+                if live.header.cwd is not None:
+                    meta["cwd"] = live.header.cwd
+                return self.create(child_session_id, seed=seed, meta=meta)
+            boundary = events[-1]["seq"]
+        if not isinstance(boundary, int) or boundary < 0 or boundary >= len(events) or events[boundary].get("seq") != boundary:
+            raise SessionForkError(f'fork boundary {boundary} does not exist in session "{live.id}"', "INVALID_BOUNDARY")
+        last_turn = None
+        for ev in events[:boundary + 1]:
+            if ev.get("type") in ("turn/start", "turn/end"):
+                last_turn = ev
+        if last_turn and last_turn.get("type") == "turn/start":
+            turn = last_turn.get("data", {}).get("turn")
+            raise SessionForkError(f'fork boundary {boundary} in session "{live.id}" ends inside open turn {turn}', "OPEN_TURN")
+        seed = [snapshot_json_value(ev) for ev in events[:boundary + 1]]
+        meta = {"parentSession": live.id, "seedLength": len(seed)}
+        if live.header.cwd is not None:
+            meta["cwd"] = live.header.cwd
+        return self.create(child_session_id, seed=seed, meta=meta)
 
 
 class SessionService(Session):

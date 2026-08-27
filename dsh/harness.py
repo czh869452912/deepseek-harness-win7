@@ -1,4 +1,5 @@
 import os
+import asyncio
 from typing import Any, Dict, Optional
 import yaml
 
@@ -11,6 +12,7 @@ from dsh.context.time_context import TimeContextPlugin
 from dsh.core.agent import AgentPlugin
 from dsh.core.agent_loop import AgentLoopPlugin
 from dsh.core.persona import PersonaPlugin
+from dsh.core.system_prompt import SystemPromptPlugin
 from dsh.core.tools import ToolsPlugin, ToolsService
 from dsh.credentials.credentials_local import CredentialsLocalPlugin
 from dsh.extensions.cli_visualizer import CliVisualizerPlugin
@@ -43,6 +45,7 @@ from dsh.web.tool_web import ToolWebPlugin
 from dsh.subagent.tool_subagent import ToolSubagentPlugin
 from dsh.workflow.tool_ralph import ToolRalphPlugin
 from dsh.workflow.tool_workflow import ToolWorkflowPlugin
+from dsh.subprocess.local import LocalSubprocessRuntime
 from dsh.host.apiproxy.api_proxy import ApiProxyPlugin
 from dsh.host.client_modules.registry import ClientModulesPlugin
 from dsh.host.directory_picker.directory_picker import DirectoryPickerAutoPlugin
@@ -52,10 +55,12 @@ from dsh.host.webserver.webserver import WebServerPlugin
 from dsh.interaction.commands import CommandsPlugin
 from dsh.interaction.permission_presets import PermissionPresetsPlugin
 from dsh.interaction.user_approval import UserApprovalPlugin
+from dsh.interaction.user_questions import UserQuestionsPlugin
 from dsh.llm.llm_retry import LLMRetryPlugin
 from dsh.session.session_query import SessionQueryPlugin
 from dsh.storage.storage import StoragePlugin
 from dsh.workspace.workspace import WorkspacePlugin
+from dsh.presets.agent_presets import AgentPresets
 
 
 def build_harness(
@@ -83,10 +88,13 @@ def build_harness(
     ctx.plugin(StoragePlugin)
     ctx.plugin(WorkspacePlugin)
     ctx.plugin(UserApprovalPlugin)
+    ctx.plugin(UserQuestionsPlugin)
     ctx.plugin(PermissionPresetsPlugin)
     ctx.plugin(CommandsPlugin)
     ctx.plugin(TokenMeterPlugin)
     ctx.plugin(LLMRetryPlugin)
+    LocalSubprocessRuntime(ctx)
+    ctx.plugin(SystemPromptPlugin)
     if mode != "minimal":
         ctx.plugin(SessionQueryPlugin)
     ctx.plugin(AgentLoopPlugin)
@@ -102,9 +110,23 @@ def build_harness(
 
     # Setup preset loader & register available plugins
     loader = PresetLoader(ctx)
+    # The preset roster is a host-level service in the official composition.
+    # Mount it before loading the selected agent composition so API/session
+    # consumers resolve the same standing roster (system roots first, then the
+    # writable DSH_HOME user root) instead of constructing a detached fallback.
+    shipped_root = os.path.join(os.path.dirname(__file__), "presets")
+    ctx.plugin(AgentPresets, config={
+        # The host roster's default is always standard; the selected CLI
+        # profile composes its own preset separately (TS bundle patch parity).
+        "default": "standard",
+        "roots": [{"path": shipped_root, "trust": "system"}],
+        "includeUserRoot": True,
+    })
+    loader.register_plugin_class("@deepseek-ai/dsh-agent-presets", AgentPresets)
     loader.register_plugin_class("@deepseek-ai/dsh-tools", ToolsPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-agent", AgentPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-persona", PersonaPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-system-prompt", SystemPromptPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-agent-instructions", AgentInstructionsPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-file-reference-local", FileReferenceLocalPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-time-context", TimeContextPlugin)
@@ -125,6 +147,7 @@ def build_harness(
     loader.register_plugin_class("@deepseek-ai/dsh-storage", StoragePlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-workspace", WorkspacePlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-user-approval", UserApprovalPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-user-questions", UserQuestionsPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-permission-presets", PermissionPresetsPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-commands", CommandsPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-llm-retry", LLMRetryPlugin)
@@ -165,4 +188,42 @@ def build_harness(
     if os.path.exists(preset_file):
         loader.load_preset_file(preset_file, ctx)
 
+    # Preserve the synchronous construction contract: outside an active event
+    # loop, drain injected fibers before returning the ready context.
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        asyncio.run(initialize_harness(ctx))
+
     return ctx
+
+
+async def initialize_harness(ctx: Context) -> Context:
+    """Await activation of all fibers mounted by :func:`build_harness`.
+
+    ``build_harness`` remains synchronous for CLI/tests that construct a
+    context outside an event loop.  Async hosts (Web/CLI) must explicitly
+    drain the registry so injected services are available before handling
+    requests.
+    """
+    # Plugin activation can mount dependent/child fibers while a parent is
+    # being awaited. Drain until no new pending fibers appear.
+    for _round in range(32):
+        fibers = list(ctx.registry.list_fibers())
+        pending = [fiber for fiber in fibers if getattr(fiber, "state", 0) in (0, 1)]
+        if not pending:
+            break
+        await asyncio.gather(*(fiber.wait() for fiber in pending))
+        await asyncio.sleep(0)
+    return ctx
+
+
+async def build_harness_async(*args: Any, **kwargs: Any) -> Context:
+    """Build a harness and await Cordis activation before returning it.
+
+    This is the async-host counterpart to :func:`build_harness`.  Keeping the
+    synchronous constructor preserves the upstream CLI/test composition API,
+    while this helper makes the activation contract explicit for callers that
+    run inside an event loop (Web servers, async CLIs, and integrations).
+    """
+    return await initialize_harness(build_harness(*args, **kwargs))

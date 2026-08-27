@@ -29,7 +29,8 @@ def test_storage_domain_json_persistence():
         assert dom.entries() == {"theme": "dark", "fontSize": 14}
 
         # Reopen from disk to test persistence
-        storage2 = StorageService(ctx, root_dir=tmpdir)
+        ctx2 = Context()
+        storage2 = StorageService(ctx2, root_dir=tmpdir)
         dom2 = storage2.domain("test_settings")
         assert dom2.get("theme") == "dark"
         assert dom2.get("fontSize") == 14

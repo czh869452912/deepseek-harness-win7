@@ -21,8 +21,8 @@ class ToolRalphPlugin(Plugin):
         self.max_rounds: int = int(cfg.get("maxRounds", cfg.get("max_rounds", 64)))
 
     def apply(self, ctx: Any) -> None:
-        tools = ctx.get("tools") if ctx.has("tools") else None
-        if not tools:
+        tools = ctx.get("tools", None, strict=False)
+        if tools is None:
             return
 
         async def exec_ralph(objective: str, max_rounds: Optional[int] = None) -> str:
@@ -48,4 +48,4 @@ class ToolRalphPlugin(Plugin):
             "execute": exec_ralph,
         })
 
-        ctx.effect(disposer)
+        ctx.effect(lambda: disposer)

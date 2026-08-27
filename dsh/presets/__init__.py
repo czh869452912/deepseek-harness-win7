@@ -34,6 +34,14 @@ from dsh.presets.preset import (
     UnknownPresetError,
 )
 from dsh.presets.session import resolve_session_preset
+from dsh.presets.mount import (
+    inactive_rows,
+    leaked_services,
+    live_preset_mounts,
+    mount_preset,
+    service_for_agent,
+    standing_mount_for,
+)
 
 __all__ = [
     "AgentPresets",
@@ -59,4 +67,10 @@ __all__ = [
     "read_composition",
     "writable_root",
     "resolve_session_preset",
+    "inactive_rows",
+    "leaked_services",
+    "live_preset_mounts",
+    "mount_preset",
+    "service_for_agent",
+    "standing_mount_for",
 ]

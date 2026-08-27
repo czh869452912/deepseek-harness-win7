@@ -3,8 +3,112 @@ Agent-scoped model selection shared by runtime entry points.
 Aligned 1:1 with official `@deepseek-ai/dsh-agent/model-selection`.
 """
 
-from typing import Any, Callable, Dict, Optional
+import inspect
+
+from typing import Any, Callable, Dict, List, Optional
 from dsh.cordis.context import Context
+from dsh.cordis.service import Service
+from dsh.settings.provider import install_settings_section
+from dsh.settings.types import settings_namespace
+
+
+AGENT_DEFAULT_MODEL_SETTINGS_NAMESPACE = settings_namespace("agent-default-model")
+
+
+class _StringObjectSchema:
+    """Small Schemastery-compatible adapter for this package's object schemas."""
+
+    def __init__(self, required: List[str], optional: Optional[List[str]] = None):
+        self.required = list(required)
+        self.optional = list(optional or [])
+
+    def _issues(self, value: Any) -> List[Dict[str, Any]]:
+        issues: List[Dict[str, Any]] = []
+        if not isinstance(value, dict):
+            return [{"message": "expected an object"}]
+        for key in self.required:
+            if key not in value:
+                issues.append({"message": "is required", "path": [key]})
+            elif not isinstance(value[key], str):
+                issues.append({"message": "expected a string", "path": [key]})
+        for key in self.optional:
+            if key in value and value[key] is not None and not isinstance(value[key], str):
+                issues.append({"message": "expected a string", "path": [key]})
+        return issues
+
+    def validate(self, value: Any) -> Dict[str, Any]:
+        return {"value": value, "issues": self._issues(value)}
+
+    def __call__(self, value: Any) -> Any:
+        issues = self._issues(value)
+        if issues:
+            issue = issues[0]
+            path = ".".join(issue.get("path", []))
+            suffix = " at %s" % path if path else ""
+            raise TypeError("invalid agent default model settings: %s%s" % (issue["message"], suffix))
+        return value
+
+    def to_json(self) -> Dict[str, Any]:
+        properties = {
+            key: {"type": "string"}
+            for key in self.required + self.optional
+        }
+        return {"type": "object", "properties": properties, "required": list(self.required)}
+
+
+AGENT_DEFAULT_MODEL_SETTINGS_SCHEMA = _StringObjectSchema(
+    ["provider", "model"], ["reasoningEffort"]
+)
+
+
+class AgentDefaultModelConfig(Service):
+    """Default Agent model selection layered over the optional settings service."""
+
+    Config = _StringObjectSchema(["provider", "model"])
+
+    def __init__(self, ctx: Context, config: Dict[str, Any]):
+        super().__init__(ctx, "agentDefaultModel")
+        entry = {"provider": config["provider"], "model": config["model"]}
+        self._source = lambda: entry
+
+        def set_source(source: Callable[[], Dict[str, Any]]) -> None:
+            self._source = source
+
+        install_settings_section(
+            ctx,
+            AGENT_DEFAULT_MODEL_SETTINGS_NAMESPACE,
+            AGENT_DEFAULT_MODEL_SETTINGS_SCHEMA,
+            entry,
+            {"setSource": set_source, "onChange": lambda: None},
+        )
+
+    def current_selection(self) -> Dict[str, Any]:
+        settings = self._source()
+        result = {"provider": settings["provider"], "model": settings["model"]}
+        if "reasoningEffort" in settings:
+            result["reasoningEffort"] = settings["reasoningEffort"]
+        return result
+
+    def currentSelection(self) -> Dict[str, Any]:
+        return self.current_selection()
+
+    async def save_selection(self, next_selection: Any) -> None:
+        settings = self.ctx.get("settings", None)
+        if settings is None:
+            return
+        if isinstance(next_selection, ModelSelection):
+            value = next_selection.to_dict()
+        else:
+            value = next_selection
+        section = {"provider": value["provider"], "model": value["model"]}
+        if value.get("reasoningEffort") is not None:
+            section["reasoningEffort"] = str(value["reasoningEffort"])
+        result = settings.replace(AGENT_DEFAULT_MODEL_SETTINGS_NAMESPACE, section)
+        if inspect.isawaitable(result):
+            await result
+
+    async def saveSelection(self, next_selection: Any) -> None:
+        await self.save_selection(next_selection)
 
 
 class ModelSelection:

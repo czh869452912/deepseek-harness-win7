@@ -5,8 +5,7 @@ Supports emit, parallel, serial, bail, and waterfall dispatch modes.
 
 import asyncio
 import inspect
-import sys
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List
 
 
 def is_bailed(value: Any) -> bool:
@@ -41,7 +40,20 @@ class EventBus:
     """
 
     def __init__(self):
-        self._hooks: Dict[str, List[Hook]] = {}
+        local_events = (
+            "internal/config",
+            "internal/get",
+            "internal/set",
+            "internal/update",
+        )
+        self._fiber_bridges = {
+            event_name: Hook(lambda: None, global_listener=True)
+            for event_name in local_events
+        }
+        self._hooks: Dict[str, List[Hook]] = {
+            event_name: [bridge]
+            for event_name, bridge in self._fiber_bridges.items()
+        }
 
     def on(
         self,
@@ -54,10 +66,31 @@ class EventBus:
         """
         Register an event handler. Returns a disposer function to unregister.
         """
+        hook = Hook(handler, prepend=prepend, global_listener=global_listener, ctx=ctx)
+        if event_name in self._fiber_bridges and not global_listener and ctx is not None:
+            fiber = getattr(ctx, "fiber", None)
+            if fiber is not None:
+                fiber_hooks = getattr(fiber, "_hooks", None)
+                if fiber_hooks is None:
+                    fiber_hooks = {}
+                    setattr(fiber, "_hooks", fiber_hooks)
+                hooks = fiber_hooks.setdefault(event_name, [])
+                if prepend:
+                    hooks.insert(0, hook)
+                else:
+                    hooks.append(hook)
+
+                def dispose_fiber_hook() -> bool:
+                    if hook not in hooks:
+                        return False
+                    hooks.remove(hook)
+                    return True
+
+                return dispose_fiber_hook
+
         if event_name not in self._hooks:
             self._hooks[event_name] = []
 
-        hook = Hook(handler, prepend=prepend, global_listener=global_listener, ctx=ctx)
         if prepend:
             self._hooks[event_name].insert(0, hook)
         else:
@@ -86,18 +119,43 @@ class EventBus:
         disposer = self.on(event_name, wrapper, prepend=prepend, global_listener=global_listener, ctx=ctx)
         return disposer
 
-    def _dispatch_hooks(self, dispatch_type: str, event_name: str, caller_ctx: Any = None) -> List[Callable[..., Any]]:
+    def _dispatch_hooks(
+        self,
+        dispatch_type: str,
+        event_name: str,
+        caller_ctx: Any = None,
+        event_args: Any = None,
+    ) -> List[Callable[..., Any]]:
         if not event_name.startswith("internal/"):
             # Fired for non-internal events to diagnose dispatches
-            self.emit("internal/dispatch", dispatch_type, event_name, caller_ctx)
+            self.emit(
+                "internal/dispatch",
+                dispatch_type,
+                event_name,
+                list(event_args or []),
+                caller_ctx,
+            )
 
-        hooks = list(self._hooks.get(event_name, []))
         result_callbacks = []
-        for hook in hooks:
+        for hook in self._hooks.get(event_name, []):
+            if hook is self._fiber_bridges.get(event_name):
+                if caller_ctx is not None:
+                    fiber = getattr(caller_ctx, "fiber", None)
+                    fiber_hooks = (
+                        getattr(fiber, "_hooks", {})
+                        if fiber is not None
+                        else {}
+                    )
+                    result_callbacks.extend(
+                        item.callback
+                        for item in fiber_hooks.get(event_name, [])
+                    )
+                continue
             if hook.global_listener or caller_ctx is None or hook.ctx is None:
                 result_callbacks.append(hook.callback)
             else:
-                ctx_filter = getattr(caller_ctx, "filter", None)
+                namespace = getattr(caller_ctx, "__dict__", {})
+                ctx_filter = namespace.get("_event_filter", namespace.get("filter"))
                 if ctx_filter is None or ctx_filter(hook.ctx):
                     result_callbacks.append(hook.callback)
         return result_callbacks
@@ -106,37 +164,38 @@ class EventBus:
         """
         Dispatch an event synchronously, ignoring return values.
         """
-        listeners = self._dispatch_hooks("emit", event_name, kwargs.pop("caller_ctx", None))
+        caller_ctx = kwargs.pop("caller_ctx", None)
+        listeners = self._dispatch_hooks("emit", event_name, caller_ctx, args)
         for listener in listeners:
-            try:
-                res = listener(*args, **kwargs)
-                if inspect.isawaitable(res):
-                    try:
-                        loop = asyncio.get_running_loop()
-                        loop.create_task(res)
-                    except RuntimeError:
-                        pass
-            except Exception as e:
-                print(f"[Cordis Event Error] Exception in emit '{event_name}': {e}", file=sys.stderr)
+            result = listener(*args, **kwargs)
+            if inspect.isawaitable(result):
+                try:
+                    loop = asyncio.get_running_loop()
+                except RuntimeError:
+                    result.close()
+                else:
+                    loop.create_task(result)
 
     async def emit_async(self, event_name: str, *args: Any, **kwargs: Any) -> None:
         """
         Emit event asynchronously to listeners in sequence.
         """
-        listeners = self._dispatch_hooks("emit", event_name, kwargs.pop("caller_ctx", None))
+        caller_ctx = kwargs.pop("caller_ctx", None)
+        listeners = self._dispatch_hooks("emit", event_name, caller_ctx, args)
         for listener in listeners:
             res = listener(*args, **kwargs)
             if inspect.isawaitable(res):
                 await res
 
-    async def parallel(self, event_name: str, *args: Any, **kwargs: Any) -> List[Any]:
+    async def parallel(self, event_name: str, *args: Any, **kwargs: Any) -> None:
         """
         Parallel dispatch: run all listeners concurrently.
         Raises AggregateError if any listeners fail.
         """
-        listeners = self._dispatch_hooks("parallel", event_name, kwargs.pop("caller_ctx", None))
+        caller_ctx = kwargs.pop("caller_ctx", None)
+        listeners = self._dispatch_hooks("emit", event_name, caller_ctx, args)
         if not listeners:
-            return []
+            return None
 
         async def _run(cb: Callable[..., Any]) -> Any:
             res = cb(*args, **kwargs)
@@ -145,16 +204,24 @@ class EventBus:
             return res
 
         results = await asyncio.gather(*[_run(cb) for cb in listeners], return_exceptions=True)
+        cancellations = [
+            result
+            for result in results
+            if isinstance(result, asyncio.CancelledError)
+        ]
+        if cancellations:
+            raise cancellations[0]
         errors = [r for r in results if isinstance(r, Exception)]
         if errors:
             raise AggregateError(errors)
-        return list(results)
+        return None
 
     async def serial(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
         """
         Dispatch an event, awaiting listeners in order until one bails.
         """
-        listeners = self._dispatch_hooks("serial", event_name, kwargs.pop("caller_ctx", None))
+        caller_ctx = kwargs.pop("caller_ctx", None)
+        listeners = self._dispatch_hooks("serial", event_name, caller_ctx, args)
         for listener in listeners:
             res = listener(*args, **kwargs)
             if inspect.isawaitable(res):
@@ -167,7 +234,8 @@ class EventBus:
         """
         Dispatch an event synchronously, stopping on the first bail value.
         """
-        listeners = self._dispatch_hooks("bail", event_name, kwargs.pop("caller_ctx", None))
+        caller_ctx = kwargs.pop("caller_ctx", None)
+        listeners = self._dispatch_hooks("bail", event_name, caller_ctx, args)
         for listener in listeners:
             res = listener(*args, **kwargs)
             if is_bailed(res):
@@ -178,7 +246,8 @@ class EventBus:
         """
         Dispatch an event, calling listeners in order until one bails.
         """
-        listeners = self._dispatch_hooks("bail", event_name, kwargs.pop("caller_ctx", None))
+        caller_ctx = kwargs.pop("caller_ctx", None)
+        listeners = self._dispatch_hooks("bail", event_name, caller_ctx, args)
         for listener in listeners:
             res = listener(*args, **kwargs)
             if inspect.isawaitable(res):
@@ -191,64 +260,53 @@ class EventBus:
         """
         Synchronous waterfall middleware pipeline matching TS waterfall semantics.
         """
-        listeners = self._dispatch_hooks("waterfall", event_name, kwargs.pop("caller_ctx", None))
+        caller_ctx = kwargs.pop("caller_ctx", None)
+        raw_args = [data] + list(args)
+        listeners = self._dispatch_hooks(
+            "waterfall", event_name, caller_ctx, raw_args
+        )
+        inner = raw_args.pop()
+        callbacks = list(listeners)
 
-        def run_pipeline(index: int, current_data: Any) -> Any:
-            if index >= len(listeners):
-                return current_data
-            cb = listeners[index]
+        def next_fn() -> Any:
+            if not callbacks:
+                return inner(*raw_args, **kwargs)
+            callback = callbacks.pop(0)
+            return callback(*raw_args, next_fn, **kwargs)
 
-            def next_fn(next_data: Any = None) -> Any:
-                payload = current_data if next_data is None else next_data
-                return run_pipeline(index + 1, payload)
-
-            sig = inspect.signature(cb)
-            params = [
-                p.name for p in sig.parameters.values()
-                if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
-            ]
-            if len(params) >= 2 or "next" in params or "next_fn" in params:
-                return cb(current_data, *args, next_fn, **kwargs)
-            else:
-                res = cb(current_data, *args, **kwargs)
-                if res is not None:
-                    return next_fn(res)
-                return next_fn(current_data)
-
-        return run_pipeline(0, data)
+        return next_fn()
 
     async def waterfall(self, event_name: str, data: Any, *args: Any, **kwargs: Any) -> Any:
         """
         Waterfall middleware pipeline matching TS waterfall semantics.
         """
-        listeners = self._dispatch_hooks("waterfall", event_name, kwargs.pop("caller_ctx", None))
+        caller_ctx = kwargs.pop("caller_ctx", None)
+        raw_args = [data] + list(args)
+        listeners = self._dispatch_hooks(
+            "waterfall", event_name, caller_ctx, raw_args
+        )
+        inner = raw_args.pop()
+        callbacks = list(listeners)
 
-        async def run_pipeline(index: int, current_data: Any) -> Any:
-            if index >= len(listeners):
-                return current_data
-            cb = listeners[index]
-
-            async def next_fn(next_data: Any = None) -> Any:
-                payload = current_data if next_data is None else next_data
-                return await run_pipeline(index + 1, payload)
-
-            sig = inspect.signature(cb)
-            params = [
-                p.name for p in sig.parameters.values()
-                if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
-            ]
-            if len(params) >= 2 or "next" in params or "next_fn" in params:
-                res = cb(current_data, *args, next_fn, **kwargs)
+        async def next_fn(*next_args: Any) -> Any:
+            call_args = list(next_args) if next_args else list(raw_args)
+            if callbacks:
+                callback = callbacks.pop(0)
+                try:
+                    result = callback(*call_args, next_fn, **kwargs)
+                except TypeError as exc:
+                    # Legacy one-argument transformers are still accepted;
+                    # feed their result into the remaining waterfall chain.
+                    if len(call_args) != 1:
+                        raise
+                    result = callback(call_args[0], **kwargs)
+                    if inspect.isawaitable(result):
+                        result = await result
+                    return await next_fn(result)
             else:
-                res = cb(current_data, *args, **kwargs)
-                if inspect.isawaitable(res):
-                    res = await res
-                if res is not None:
-                    return await next_fn(res)
-                return await next_fn(current_data)
+                result = inner(*call_args, **kwargs)
+            if inspect.isawaitable(result):
+                return await result
+            return result
 
-            if inspect.isawaitable(res):
-                res = await res
-            return res
-
-        return await run_pipeline(0, data)
+        return await next_fn()

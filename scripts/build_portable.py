@@ -7,9 +7,42 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIST_DIR = os.path.join(ROOT_DIR, "dist", "dsh-win7-portable")
 VERSION = "0.1.0"
 ZIP_OUTPUT = os.path.join(ROOT_DIR, "dist", f"dsh-win7-portable-v{VERSION}.zip")
+RIPGREP_VERSION = "1.18.0"
+
+
+def resolve_pinned_ripgrep_source(root_dir=ROOT_DIR):
+    source = os.path.join(
+        root_dir,
+        "reference",
+        "deepseek-harness",
+        "node_modules",
+        ".pnpm",
+        "@vscode+ripgrep-win32-x64@%s" % RIPGREP_VERSION,
+        "node_modules",
+        "@vscode",
+        "ripgrep-win32-x64",
+        "bin",
+        "rg.exe",
+    )
+    if not os.path.isfile(source):
+        raise FileNotFoundError(
+            "pinned @vscode/ripgrep-win32-x64@%s binary is missing: %s"
+            % (RIPGREP_VERSION, source)
+        )
+    return source
+
+
+def bundle_pinned_ripgrep(dist_dir=DIST_DIR, root_dir=ROOT_DIR, source=None):
+    source_path = source or resolve_pinned_ripgrep_source(root_dir)
+    target = os.path.join(dist_dir, "dsh", "fs", "tool_fs_search", "bin", "rg.exe")
+    os.makedirs(os.path.dirname(target), exist_ok=True)
+    shutil.copy2(source_path, target)
+    return target
 
 
 def build_portable():
+    # Resolve before replacing an existing release so a missing pinned build input fails safely.
+    ripgrep_source = resolve_pinned_ripgrep_source(ROOT_DIR)
     print(f"[Build Portable] Creating portable release directory at: {DIST_DIR}")
     if os.path.exists(DIST_DIR):
         shutil.rmtree(DIST_DIR)
@@ -18,6 +51,7 @@ def build_portable():
 
     # 1. Copy dsh framework and apps application
     shutil.copytree(os.path.join(ROOT_DIR, "dsh"), os.path.join(DIST_DIR, "dsh"))
+    bundle_pinned_ripgrep(DIST_DIR, ROOT_DIR, source=ripgrep_source)
     os.makedirs(os.path.join(DIST_DIR, "apps", "cli"), exist_ok=True)
     shutil.copy(os.path.join(ROOT_DIR, "apps", "cli", "main.py"), os.path.join(DIST_DIR, "apps", "cli", "main.py"))
     if os.path.exists(os.path.join(ROOT_DIR, "apps", "web")):

@@ -44,12 +44,9 @@ async def test_agent_loop_tool_execution_timing():
     def dummy_calc(val: int = 0):
         return f"result: {val * 2}"
 
-    tools.register(
-        name="dummy_calc",
-        description="Calculate stuff",
-        parameters={"type": "object", "properties": {"val": {"type": "number"}}},
-        handler=dummy_calc,
-    )
+    tools.register_legacy({"name": "dummy_calc", "description": "Calculate stuff",
+                           "parameters": {"type": "object", "properties": {"val": {"type": "number"}}},
+                           "handler": dummy_calc})
 
     class MockToolLLM:
         def __init__(self):

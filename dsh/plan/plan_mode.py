@@ -91,8 +91,9 @@ class PlanModeController:
         self._pending_intents: Dict[str, Dict[str, Any]] = {}  # session_id -> {active, narrate}
 
         # System prompt section plan:policy
-        if hasattr(ctx, "systemPrompt") and hasattr(ctx.systemPrompt, "section"):
-            ctx.systemPrompt.section(
+        system_prompt = ctx.get("systemPrompt", None, strict=False)
+        if system_prompt is not None and hasattr(system_prompt, "section"):
+            system_prompt.section(
                 name="plan:policy",
                 order=50,
                 text=lambda context: self.section if self.is_active() else "",
@@ -285,7 +286,7 @@ class PlanModePlugin(Plugin):
                 )
 
         # 3. Register exit_plan_mode tool
-        tools = ctx.get("tools")
+        tools = ctx.tools
         parameters = {
             "type": "object",
             "properties": {
@@ -319,7 +320,7 @@ class PlanModePlugin(Plugin):
         ctx.on("agent/pre-step", self._hook_plan_slash_command)
 
         if hasattr(ctx, "effect"):
-            ctx.effect(disposer)
+            ctx.effect(lambda: disposer)
 
     async def _hook_plan_slash_command(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         messages = payload.get("messages", [])

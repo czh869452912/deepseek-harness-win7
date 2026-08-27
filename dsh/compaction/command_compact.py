@@ -50,11 +50,8 @@ class CommandCompactPlugin(Plugin):
             except Exception as e:
                 return f"Compaction failed: {e}"
 
-        disposer = cmd_svc.register(
+        cmd_svc.register(
             name="compact",
             description="Force manual compaction/summarization of the current conversation history.",
             handler=exec_compact,
         )
-
-        if hasattr(ctx, "effect"):
-            ctx.effect(disposer)

@@ -98,14 +98,14 @@ class TmuxContextPlugin(Plugin):
         return f"tmux location (turn {turn}):\n{self.render_state(loc)}"
 
     def apply(self, ctx: Any) -> None:
-        async def hook_tmux_context(payload: Dict[str, Any]) -> Dict[str, Any]:
+        async def hook_tmux_context(payload: Dict[str, Any], next_fn: Any = None) -> Dict[str, Any]:
             messages = payload.get("messages", [])
             if not messages:
-                return payload
+                return await next_fn() if callable(next_fn) else payload
 
             step = payload.get("step", 1)
             if step != 1:
-                return payload
+                return await next_fn() if callable(next_fn) else payload
 
             session_id = payload.get("session_id", "default")
             turn = payload.get("turn", 1)
@@ -114,15 +114,15 @@ class TmuxContextPlugin(Plugin):
             last_t = self._last_time.get(session_id, 0)
             if self.refresh_interval_ms > 0 and last_t > 0:
                 if (now - last_t) * 1000.0 < self.refresh_interval_ms:
-                    return payload
+                    return await next_fn() if callable(next_fn) else payload
 
             loc = self.query_tmux_location()
             if not loc:
-                return payload
+                    return await next_fn() if callable(next_fn) else payload
 
             state_str = self.render_state(loc)
             if self._last_state.get(session_id) == state_str:
-                return payload
+                    return await next_fn() if callable(next_fn) else payload
 
             self._last_state[session_id] = state_str
             self._last_time[session_id] = now
@@ -133,7 +133,7 @@ class TmuxContextPlugin(Plugin):
                     msg["content"] = f"{reading_text}\n{msg['content']}"
                     break
 
-            return payload
+            return await next_fn() if callable(next_fn) else payload
 
         ctx.on("agent/pre-step", hook_tmux_context)
 

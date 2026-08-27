@@ -34,7 +34,7 @@ async def test_file_reference_local_injection(tmp_path):
 @pytest.mark.asyncio
 async def test_time_context_injection():
     ctx = Context()
-    ctx.plugin(TimeContextPlugin)
+    await ctx.registry.plugin(TimeContextPlugin, parent_ctx=ctx)
 
     payload = {
         "session_id": "test-session",
@@ -43,7 +43,7 @@ async def test_time_context_injection():
         ]
     }
 
-    await ctx.waterfall("agent/pre-step", payload)
+    await ctx.waterfall("agent/pre-step", payload, lambda value: value)
     user_msg = payload["messages"][0]["content"]
 
     assert "Time sampled while preparing turn" in user_msg

@@ -117,7 +117,6 @@ def test_credentials_precedence_and_shadowing(monkeypatch):
         creds_file = os.path.join(tmpdir, ".credentials.yaml")
         ctx = Context()
         creds = CredentialsService(ctx=ctx, credentials_file=creds_file)
-        ctx.set_service("credentials", creds)
 
         # 1. Unshadowed write succeeds
         creds.set_credential("DEEPSEEK_API_KEY", "sk-file-key")

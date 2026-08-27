@@ -11,7 +11,7 @@ if hasattr(sys.stdout, 'reconfigure'):
     except Exception:
         pass
 
-from dsh.harness import build_harness
+from dsh.harness import build_harness, initialize_harness
 
 
 def parse_args():
@@ -90,6 +90,7 @@ async def main_async():
         web_host=args.host,
         web_port=args.port,
     )
+    await initialize_harness(ctx)
 
     if args.dump_config:
         plugins = ctx.list_plugins()
@@ -114,7 +115,10 @@ async def main_async():
         web_server = ctx.get("web_server")
         if web_server:
             await web_server.start()
-            url = f"http://{args.host}:{web_server.port}"
+            # WebServerService records the OS-selected port when configured
+            # with port=0; expose that effective address to the user/browser.
+            effective_port = getattr(web_server, "listened_port", web_server.port)
+            url = f"http://{args.host}:{effective_port}"
             print(f"\n[DeepSeek Harness Web] GUI is running at: {url}")
             print("Press Ctrl+C to stop the Web server.\n")
             if not args.no_open:

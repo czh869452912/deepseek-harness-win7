@@ -289,6 +289,8 @@ class WebServerPlugin(Plugin):
         self.server_svc: Optional[WebServerService] = None
 
     def apply(self, ctx: Any) -> None:
+        if ctx.get("web_server") is not None:
+            return
         self.server_svc = WebServerService(ctx, host=self.host, port=self.port)
         ctx.set_service("web_server", self.server_svc)
         ctx.set_service("webServer", self.server_svc)

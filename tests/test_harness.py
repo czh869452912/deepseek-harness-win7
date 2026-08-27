@@ -1,4 +1,7 @@
-from dsh.harness import build_harness
+import pytest
+
+from dsh.harness import build_harness, initialize_harness
+from dsh.cordis.fiber import FiberState
 
 
 def test_build_harness_minimal_mode():
@@ -25,3 +28,17 @@ def test_build_harness_creative_mode():
     assert "cordis_inspect_context" in tools
     assert "cordis_unload_plugin" in tools
     assert "cordis_dump_config" in tools
+
+
+@pytest.mark.asyncio
+async def test_minimal_web_harness_activates_tool_chain_without_system_prompt():
+    ctx = build_harness(mode="minimal", enable_web=True, verbose=False)
+    await initialize_harness(ctx)
+
+    tools_fiber = next(
+        fiber for runtime in ctx.registry._runtimes.values()
+        for fiber in runtime.fibers
+        if getattr(fiber, "id", None) == "tools"
+    )
+    assert tools_fiber.state == FiberState.ACTIVE
+    assert {tool.name for tool in ctx.tools.list_tools()} >= {"str_replace_editor"}

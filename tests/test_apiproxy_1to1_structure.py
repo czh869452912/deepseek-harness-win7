@@ -29,8 +29,8 @@ async def test_apiproxy_all_domain_handlers():
     web_server = WebServerPlugin({"port": 0})
     api_proxy = ApiProxyPlugin()
 
-    ctx.plugin(web_server)
-    ctx.plugin(api_proxy)
+    await ctx.registry.plugin(web_server, parent_ctx=ctx)
+    await ctx.registry.plugin(api_proxy, parent_ctx=ctx)
 
     assert api_proxy.agent_presets_handler is not None
     assert api_proxy.sessions_handler is not None

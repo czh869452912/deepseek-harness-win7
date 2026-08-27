@@ -1,10 +1,19 @@
+import asyncio
 import os
 import shutil
 import tempfile
+from types import SimpleNamespace
+
 import pytest
 from dsh.cordis.context import Context
-from dsh.core.tools import ToolsService
-from dsh.fs.tool_fs_search import FsSearchService, ToolFsSearchPlugin, sample_across_top_level
+from dsh.core.tools import ToolExecutionInput, ToolsService
+from dsh.fs.tool_fs_search import ToolFsSearchPlugin, sample_across_top_level
+from dsh.subprocess import LocalSubprocessRuntime
+
+
+class PromptService:
+    def section(self, *args, **kwargs):
+        return lambda: None
 
 
 @pytest.fixture
@@ -22,12 +31,38 @@ def search_workspace():
     shutil.rmtree(tmp, ignore_errors=True)
 
 
-def test_glob_tool(search_workspace):
-    svc = FsSearchService()
-    res = svc.glob(pattern="*.py", cwd=search_workspace)
-    assert "src/main.py" in res
-    assert "src/sub/helper.py" in res
-    assert "README.md" not in res
+def _agent_at(path, ctx=None):
+    return SimpleNamespace(ctx=ctx, session=SimpleNamespace(header=SimpleNamespace(id="direct", cwd=path)))
+
+
+async def _mount_search():
+    ctx = Context()
+    tools = ToolsService(ctx)
+    ctx.set_service("tools", tools)
+    ctx.set_service("systemPrompt", PromptService())
+    LocalSubprocessRuntime(ctx)
+    fiber = ctx.registry.plugin(
+        ToolFsSearchPlugin,
+        {"sampleOverCapGlobResults": True},
+        parent_ctx=ctx,
+    )
+    await fiber
+    return ctx, tools, fiber
+
+
+@pytest.mark.asyncio
+async def test_glob_tool(search_workspace):
+    _ctx, tools, fiber = await _mount_search()
+    try:
+        result = await tools.execute(ToolExecutionInput(
+            "glob-direct", "glob", {"pattern": "*.py"},
+            agent=_agent_at(search_workspace, fiber.ctx), signal=asyncio.Event(),
+        ))
+        assert os.path.join("src", "main.py") in result.value["paths"]
+        assert os.path.join("src", "sub", "helper.py") in result.value["paths"]
+        assert "README.md" not in result.value["paths"]
+    finally:
+        await fiber.dispose()
 
 
 def test_sample_across_top_level():
@@ -48,46 +83,63 @@ def test_sample_across_top_level():
     assert top_dirs == {"src", "packages", "docs"}
 
 
-def test_grep_tool(search_workspace):
-    svc = FsSearchService()
-    res = svc.grep(pattern="hello", cwd=search_workspace)
-    assert "Found 2 matches" in res
-    assert "src/main.py" in res
-    assert "Line 2: print('hello from main')" in res
-    assert "src/sub/helper.py" in res
-    assert "Line 2:     return 'hello from helper'" in res
+@pytest.mark.asyncio
+async def test_grep_tool(search_workspace):
+    _ctx, tools, fiber = await _mount_search()
+    try:
+        result = await tools.execute(ToolExecutionInput(
+            "grep-direct", "grep", {"pattern": "hello"},
+            agent=_agent_at(search_workspace, fiber.ctx), signal=asyncio.Event(),
+        ))
+        rendered = "".join(block["text"] for block in result.content)
+        assert "Found 2 matches" in rendered
+        assert os.path.join("src", "main.py") in rendered
+        assert "Line 2: print('hello from main')" in rendered
+        assert os.path.join("src", "sub", "helper.py") in rendered
+        assert "Line 2:     return 'hello from helper'" in rendered
+    finally:
+        await fiber.dispose()
 
 
-def test_grep_options(search_workspace):
-    svc = FsSearchService()
-    # Case matching with regex
-    res_sensitive = svc.grep(pattern="HELLO", cwd=search_workspace)
-    assert res_sensitive == "No matches found"
+@pytest.mark.asyncio
+async def test_grep_options(search_workspace):
+    _ctx, tools, fiber = await _mount_search()
+    try:
+        sensitive = await tools.execute(ToolExecutionInput(
+            "case", "grep", {"pattern": "HELLO"},
+            agent=_agent_at(search_workspace, fiber.ctx), signal=asyncio.Event(),
+        ))
+        assert "No matches found" in "".join(block["text"] for block in sensitive.content)
 
-    # Regex search with include
-    res_include = svc.grep(pattern="print\\('hello", include="*.py", cwd=search_workspace)
-    assert "Found 1 match" in res_include
-    assert "src/main.py" in res_include
+        included = await tools.execute(ToolExecutionInput(
+            "include", "grep", {"pattern": "print\\('hello", "include": "*.py"},
+            agent=_agent_at(search_workspace, fiber.ctx), signal=asyncio.Event(),
+        ))
+        rendered = "".join(block["text"] for block in included.content)
+        assert "Found 1 match" in rendered
+        assert os.path.join("src", "main.py") in rendered
+    finally:
+        await fiber.dispose()
 
 
 
 @pytest.mark.asyncio
 async def test_fs_search_plugin_execution(search_workspace):
-    ctx = Context()
-    ctx.set_service("tools", ToolsService(ctx))
-    ctx.plugin(ToolFsSearchPlugin)
-
-    orig_cwd = os.getcwd()
-    os.chdir(search_workspace)
+    _ctx, tools, fiber = await _mount_search()
     try:
-        tools: ToolsService = ctx.get("tools")
-        glob_res = await tools.execute_tool("glob", {"pattern": "*.md"})
-        assert "README.md" in glob_res
+        glob_result = await tools.execute(ToolExecutionInput(
+            "plugin-glob", "glob", {"pattern": "*.md"},
+            agent=_agent_at(search_workspace, fiber.ctx), signal=asyncio.Event(),
+        ))
+        assert "README.md" in glob_result.value["paths"]
 
-        grep_res = await tools.execute_tool("grep", {"pattern": "Sample Project"})
-        assert "Found 1 match" in grep_res
-        assert "README.md" in grep_res
-        assert "Line 1: # Sample Project" in grep_res
+        grep_result = await tools.execute(ToolExecutionInput(
+            "plugin-grep", "grep", {"pattern": "Sample Project"},
+            agent=_agent_at(search_workspace, fiber.ctx), signal=asyncio.Event(),
+        ))
+        rendered = "".join(block["text"] for block in grep_result.content)
+        assert "Found 1 match" in rendered
+        assert "README.md" in rendered
+        assert "Line 1: # Sample Project" in rendered
     finally:
-        os.chdir(orig_cwd)
-
+        await fiber.dispose()

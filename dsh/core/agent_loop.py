@@ -523,8 +523,12 @@ class AgentLoopService:
                 if persona and hasattr(persona, "get_prompt"):
                     system_prompt = persona.get_prompt()
 
-                system_prompt = await self.ctx.waterfall("system-prompt/assemble", system_prompt)
-                system_prompt = await self.ctx.waterfall("agent/prompt-assemble", system_prompt)
+                system_prompt = await self.ctx.waterfall(
+                    "system-prompt/assemble", system_prompt, lambda value: value
+                )
+                system_prompt = await self.ctx.waterfall(
+                    "agent/prompt-assemble", system_prompt, lambda value: value
+                )
 
                 request_payload = {
                     "agent": agent,
@@ -532,7 +536,9 @@ class AgentLoopService:
                     "turn": turn_num,
                     "step": step_num,
                 }
-                pre_step_res = await self.ctx.waterfall("agent/pre-step", request_payload)
+                pre_step_res = await self.ctx.waterfall(
+                    "agent/pre-step", request_payload, lambda payload: payload
+                )
 
                 if isinstance(pre_step_res, dict) and pre_step_res.get("kind") == "reject":
                     turn_ends = {"kind": "blocked"}
@@ -608,15 +614,30 @@ class AgentLoopService:
             }
         )
 
-        proposed_config = await self.ctx.waterfall("agent/request", seed_config)
+        # The upstream contract passes turn metadata to the waterfall and
+        # resolves the proposal through its terminal callback.  Keep the
+        # proposed fields on the payload for legacy Python listeners which
+        # historically mutated the config object directly.
+        request_event = dict(seed_config)
+        request_event.update({"turn": turn, "step": step, "signal": getattr(agent, "_cancel_event", None)})
+        proposed_config = await self.ctx.waterfall(
+            "agent/request",
+            request_event,
+            lambda *_args: dict(seed_config),
+        )
+        if not isinstance(proposed_config, dict):
+            proposed_config = dict(seed_config)
         if isinstance(proposed_config, dict):
             provider_name = str(proposed_config.get("provider", provider_name))
             model_name = str(proposed_config.get("model", model_name))
 
+        # Preserve all explicitly proposed adapter fields in the durable
+        # request header.  Previously provider/model were reconstructed here,
+        # dropping reasoningEffort and maxTokens before stream dispatch.
         header_data = canonical_header({
             "system": system_prompt,
             "tools": tool_schemas,
-            "config": {"provider": provider_name, "model": model_name},
+            "config": dict(proposed_config),
         })
 
         baseline_header = session.request_header()
@@ -644,12 +665,46 @@ class AgentLoopService:
         chunk_seqs: List[int] = []
 
         try:
-            stream_fn = getattr(llm_service, "chat_completion_stream", None)
-            used_stream = False
-            if stream_fn and callable(stream_fn):
+            stream_options = dict(proposed_config)
+            stream_options.update({
+                "messages": messages,
+                "tools": tool_schemas if tool_schemas else None,
+                "sessionId": session.id,
+                "turn": turn,
+                "step": step,
+                "signal": getattr(agent, "_cancel_event", None),
+            })
+
+            async def _terminal_stream(*_args: Any) -> Any:
+                stream_fn = getattr(llm_service, "chat_completion_stream", None)
+                if stream_fn is None or not callable(stream_fn):
+                    raise RuntimeError("LLM service ('ctx.llm') does not provide stream")
+                # Providers in the Python port use snake_case names while
+                # plugin adapters generally expose the canonical camelCase
+                # request fields.  Send only accepted provider arguments.
+                kwargs = {
+                    "messages": messages,
+                    "tools": tool_schemas if tool_schemas else None,
+                    "model": model_name,
+                    "provider": provider_name,
+                }
                 try:
-                    stream_iter = stream_fn(messages=messages, tools=tool_schemas if tool_schemas else None)
-                    async for chunk in _async_iter_chunks(stream_iter):
+                    return stream_fn(**kwargs)
+                except TypeError:
+                    kwargs.pop("provider", None)
+                    return stream_fn(**kwargs)
+
+            # llm/stream is the canonical interception point.  A listener may
+            # return an async generator, a sync iterator, or await a wrapped
+            # result; all are normalized below by _async_iter_chunks.
+            stream_result = await self.ctx.waterfall(
+                "llm/stream", stream_options, _terminal_stream
+            )
+            stream_fn = None
+            used_stream = False
+            if stream_result is not None:
+                try:
+                    async for chunk in _async_iter_chunks(stream_result):
                         # TS port yields StreamChunk dict; legacy tuple (ev_type, ev_payload) also supported
                         if isinstance(chunk, (list, tuple)) and len(chunk) == 2:
                             ev_type, ev_payload = chunk
@@ -709,10 +764,18 @@ class AgentLoopService:
                         pass
 
             if not used_stream:
-                sync_res = llm_service.chat_completion(
-                    messages=messages,
-                    tools=tool_schemas if tool_schemas else None,
-                )
+                sync_fn = getattr(llm_service, "chat_completion", None)
+                if sync_fn is None:
+                    raise RuntimeError("LLM service ('ctx.llm') does not provide chat completion")
+                try:
+                    sync_res = sync_fn(
+                        messages=messages,
+                        tools=tool_schemas if tool_schemas else None,
+                        model=model_name,
+                        provider=provider_name,
+                    )
+                except TypeError:
+                    sync_res = sync_fn(messages=messages, tools=tool_schemas if tool_schemas else None)
                 if isinstance(sync_res, dict):
                     content = sync_res.get("content", "")
                     tcalls = sync_res.get("tool_calls", [])
@@ -758,6 +821,7 @@ class AgentLoopService:
                     "turn": turn,
                     "step": step,
                 },
+                lambda *_args: None,
             )
             if isinstance(recovery, dict) and recovery.get("kind") == "retry":
                 return await self._step(agent, turn, step, system_prompt)

@@ -19,6 +19,25 @@ class MockLlmDriver:
             "content": f"Response {self.call_count} for task.",
         }
 
+    def chat_completion_stream(self, messages, tools=None, model=None, provider=None):
+        self.call_count += 1
+        yield {
+            "type": "block-start",
+            "index": 0,
+            "blockType": "text",
+        }
+        yield {
+            "type": "text-delta",
+            "index": 0,
+            "text": f"Response {self.call_count} for task.",
+        }
+        yield {
+            "type": "block-end",
+            "index": 0,
+            "block": {"type": "text", "text": f"Response {self.call_count} for task."},
+        }
+        yield {"type": "finish", "reason": {"kind": "stop"}}
+
 
 def test_agent_initiator_scope():
     registry = AgentRegistry()
@@ -41,9 +60,9 @@ def test_agent_initiator_scope():
 async def test_agent_create_followup_and_when_idle():
     ctx = Context()
     ctx.set_service("llm", MockLlmDriver())
-    ctx.plugin(SessionPlugin)
-    ctx.plugin(AgentPlugin)
-    ctx.plugin(AgentLoopPlugin)
+    await ctx.registry.plugin(SessionPlugin, parent_ctx=ctx)
+    await ctx.registry.plugin(AgentPlugin, parent_ctx=ctx)
+    await ctx.registry.plugin(AgentLoopPlugin, parent_ctx=ctx)
 
     registry: AgentRegistry = ctx.get("agents")
     handle = await registry.create(session_id="scheduled-agent-1")
@@ -76,9 +95,9 @@ async def test_agent_create_followup_and_when_idle():
 async def test_agent_cancel():
     ctx = Context()
     ctx.set_service("llm", MockLlmDriver())
-    ctx.plugin(SessionPlugin)
-    ctx.plugin(AgentPlugin)
-    ctx.plugin(AgentLoopPlugin)
+    await ctx.registry.plugin(SessionPlugin, parent_ctx=ctx)
+    await ctx.registry.plugin(AgentPlugin, parent_ctx=ctx)
+    await ctx.registry.plugin(AgentLoopPlugin, parent_ctx=ctx)
 
     registry: AgentRegistry = ctx.get("agents")
     handle = await registry.create(session_id="cancel-agent-1")

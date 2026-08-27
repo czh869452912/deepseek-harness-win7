@@ -273,7 +273,9 @@ class AgentRegistry:
             self._factory = None
 
         if self.ctx:
-            self.ctx.effect(disposer)
+            # Cordis effects receive a setup callback; passing the disposer
+            # directly executes it immediately and clears the factory slot.
+            self.ctx.effect(lambda: disposer)
         return disposer
 
     def enter(self, agent: Agent, owner: Optional[Agent] = None) -> Callable[[], None]:

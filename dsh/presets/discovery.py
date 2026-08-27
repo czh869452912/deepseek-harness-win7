@@ -92,8 +92,8 @@ def scan_root(root: PresetRoot) -> List[AgentPreset]:
     if not os.path.exists(dir_path):
         return []
 
-    if not os.path.isdir(dir_path):
-        return []
+    if os.path.exists(dir_path) and not os.path.isdir(dir_path):
+        raise RuntimeError(f"agent-presets: cannot read preset root {dir_path}: not a directory")
 
     try:
         entries = os.listdir(dir_path)
@@ -101,26 +101,13 @@ def scan_root(root: PresetRoot) -> List[AgentPreset]:
         raise RuntimeError(f"agent-presets: cannot read preset root {dir_path}: {e}") from e
 
     found: List[AgentPreset] = []
-    processed_ids = set()
-
     for entry_name in sorted(entries):
         full_entry = os.path.join(dir_path, entry_name)
 
         # 1. Directory-based preset (official TS structure)
         if os.path.isdir(full_entry) and PRESET_ID.match(entry_name):
             pid = entry_name
-            processed_ids.add(pid)
-
-            # Check composition candidates: agent.cordis.yml, cordis.yml, preset.yaml, f"{pid}.yaml"
             comp_path = os.path.join(full_entry, COMPOSITION_FILE)
-            if not os.path.isfile(comp_path):
-                alt = os.path.join(full_entry, "cordis.yml")
-                if os.path.isfile(alt):
-                    comp_path = alt
-                else:
-                    alt_yaml = os.path.join(full_entry, f"{pid}.yaml")
-                    if os.path.isfile(alt_yaml):
-                        comp_path = alt_yaml
 
             if os.path.isfile(comp_path):
                 broken = composition_problem(comp_path)
@@ -139,24 +126,6 @@ def scan_root(root: PresetRoot) -> List[AgentPreset]:
                     broken=broken,
                 )
             )
-
-        # 2. Flat file preset (e.g. minimal.yaml in root dir) for backward compat
-        elif os.path.isfile(full_entry) and entry_name.endswith(".yaml"):
-            pid = entry_name[:-5]
-            if pid not in processed_ids and PRESET_ID.match(pid):
-                processed_ids.add(pid)
-                broken = composition_problem(full_entry)
-                found.append(
-                    AgentPreset(
-                        id=pid,
-                        trust=root.trust,
-                        path=full_entry,
-                        name=None,
-                        description=None,
-                        order=None,
-                        broken=broken,
-                    )
-                )
 
     def sort_key(preset: AgentPreset) -> tuple:
         ord_val = preset.order if preset.order is not None else float("inf")

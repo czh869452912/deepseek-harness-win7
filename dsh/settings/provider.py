@@ -568,7 +568,7 @@ def install_settings_section(
     - 'validate': Optional[Callable[[T], None]]
     """
     def _mount(sctx: Any):
-        settings_svc = sctx.get("settings") if hasattr(sctx, "get") else getattr(sctx, "settings", None)
+        settings_svc = sctx.settings
         if not settings_svc:
             return
         validate_fn = hooks.get("validate")

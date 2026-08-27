@@ -247,6 +247,19 @@ class SessionsDomainHandler:
         current_model = "deepseek-chat"
         reasoning = None
 
+        # Host-wide default selection is the same baseline used by the TS
+        # session.models endpoint when no live agent has overridden it.
+        default_selection = self.ctx.get("agentDefaultModel") if hasattr(self.ctx, "get") else None
+        if default_selection is not None:
+            try:
+                selected = default_selection.current_selection()
+                if isinstance(selected, dict):
+                    current_provider = selected.get("provider", current_provider)
+                    current_model = selected.get("model", current_model)
+                    reasoning = selected.get("reasoningEffort")
+            except Exception:
+                pass
+
         if llm and hasattr(llm, "resolve_model"):
             try:
                 current_model = llm.resolve_model()
@@ -318,6 +331,18 @@ class SessionsDomainHandler:
         if llm:
             if hasattr(llm, "static_model"):
                 llm.static_model = model_name
+
+        default_selection = self.ctx.get("agentDefaultModel") if hasattr(self.ctx, "get") else None
+        if default_selection is not None and hasattr(default_selection, "save_selection"):
+            try:
+                saved = default_selection.save_selection(sel_dict)
+                import inspect
+                if inspect.isawaitable(saved):
+                    await saved
+            except Exception:
+                # Selection remains valid for the active agent even when the
+                # optional settings backend is unavailable.
+                pass
 
         return {"selected": sel_dict}
 

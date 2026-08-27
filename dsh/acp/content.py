@@ -2,9 +2,13 @@
 ACP wire content admission and projection matching reference/packages/acp/acp/src/content.ts
 """
 import base64
+import binascii
+import json
+import re
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 IMAGE_MEDIA_TYPES: Tuple[str, ...] = ("image/png", "image/jpeg", "image/webp", "image/gif")
+_CANONICAL_BASE64 = re.compile(r"^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$")
 
 
 class AcpContentError(Exception):
@@ -57,7 +61,7 @@ def admit_acp_prompt(
         elif b_type == "resource_link":
             name = block.get("name", "")
             uri = block.get("uri", "")
-            text_accum.append(f"\n[resource_link name={name} uri={uri}]\n")
+            text_accum.append("\n[resource_link name=%s uri=%s]\n" % (json.dumps(name, ensure_ascii=False), json.dumps(uri, ensure_ascii=False)))
         elif b_type == "image":
             if not image_enabled:
                 raise AcpContentError("inline image prompts were not advertised by this connection", "invalid")
@@ -65,10 +69,14 @@ def admit_acp_prompt(
             if mime_type not in IMAGE_MEDIA_TYPES:
                 raise AcpContentError("image mimeType must be image/png, image/jpeg, image/webp, or image/gif", "invalid")
             data_b64 = block.get("data", "")
+            if not isinstance(data_b64, str) or not _CANONICAL_BASE64.match(data_b64):
+                raise AcpContentError("image data must be canonical base64", "invalid")
             try:
-                img_bytes = base64.b64decode(data_b64)
-            except Exception as e:
+                img_bytes = base64.b64decode(data_b64, validate=True)
+            except (TypeError, ValueError, binascii.Error) as e:
                 raise AcpContentError("image data must be canonical base64", "invalid") from e
+            if base64.b64encode(img_bytes).decode("ascii") != data_b64:
+                raise AcpContentError("image data must be canonical base64", "invalid")
 
             flush_text()
             attachments = ctx.get("attachments") if hasattr(ctx, "get") else None
@@ -85,7 +93,7 @@ def admit_acp_prompt(
             raise AcpContentError("unsupported ACP prompt content", "invalid")
 
     flush_text()
-    if not content:
+    if not any(item.get("type") == "image" or (item.get("type") == "text" and item.get("text", "").strip()) for item in content):
         raise AcpContentError("empty prompt", "invalid")
     return content
 

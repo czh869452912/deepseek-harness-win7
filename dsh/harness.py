@@ -1,4 +1,5 @@
 import os
+import asyncio
 from typing import Any, Dict, Optional
 import yaml
 
@@ -165,4 +166,25 @@ def build_harness(
     if os.path.exists(preset_file):
         loader.load_preset_file(preset_file, ctx)
 
+    return ctx
+
+
+async def initialize_harness(ctx: Context) -> Context:
+    """Await activation of all fibers mounted by :func:`build_harness`.
+
+    ``build_harness`` remains synchronous for CLI/tests that construct a
+    context outside an event loop.  Async hosts (Web/CLI) must explicitly
+    drain the registry so injected services are available before handling
+    requests.
+    """
+    # Plugin activation can mount dependent/child fibers while a parent is
+    # being awaited. Drain until no new pending fibers appear.
+    seen = set()
+    while True:
+        pending = [fiber for fiber in list(getattr(ctx.registry, "_pending_fibers", set()))
+                   if fiber not in seen]
+        if not pending:
+            break
+        seen.update(pending)
+        await asyncio.gather(*(fiber.wait() for fiber in pending))
     return ctx

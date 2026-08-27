@@ -96,6 +96,16 @@ def copy_composition(
             with open(meta_path, "w", encoding="utf-8") as mf:
                 mf.write(rendered)
 
+        if os.name != "nt":
+            for current, directories, files in os.walk(target_dir):
+                os.chmod(current, 0o700)
+                for directory in directories:
+                    os.chmod(os.path.join(current, directory), 0o700)
+                for filename in files:
+                    path = os.path.join(current, filename)
+                    executable = bool(os.stat(path).st_mode & 0o100)
+                    os.chmod(path, 0o700 if executable else 0o600)
+
     except Exception as e:
         if os.path.isdir(target_dir):
             shutil.rmtree(target_dir, ignore_errors=True)
@@ -117,7 +127,11 @@ def delete_composition(roots: List[PresetRoot], preset: AgentPreset) -> None:
     norm_preset_path = os.path.abspath(preset.path)
     norm_target_dir = os.path.abspath(target_dir)
 
-    if not norm_preset_path.startswith(norm_target_dir) and norm_preset_path != f"{norm_target_dir}.yaml":
+    try:
+        contained = os.path.commonpath([norm_preset_path, norm_target_dir]) == norm_target_dir
+    except ValueError:
+        contained = False
+    if not contained:
         raise PresetNotWritableError(preset.id, "it does not live under the writable preset root")
 
     if os.path.isdir(norm_target_dir):

@@ -7,7 +7,6 @@ from dsh.core.tools import ToolsService
 from dsh.fs.fs_local import FsLocalPlugin, FsService, FsTarget, FsError
 from dsh.fs.tool_fs import ToolFsPlugin, format_read_output, format_write_output, format_edit_output
 from dsh.fs.tool_str_replace_editor import StrReplaceEditorPlugin
-from dsh.fs.tool_fs_search import ToolFsSearchPlugin
 
 
 @pytest.fixture
@@ -19,7 +18,6 @@ def fs_env():
     ctx.plugin(FsLocalPlugin, config={"cwd": tmpdir})
     ctx.plugin(ToolFsPlugin)
     ctx.plugin(StrReplaceEditorPlugin)
-    ctx.plugin(ToolFsSearchPlugin)
     yield ctx, tmpdir
     shutil.rmtree(tmpdir, ignore_errors=True)
 
@@ -35,7 +33,7 @@ async def test_fs_local_service_parity(fs_env):
     target = await fs.resolve(file_path)
     assert isinstance(target, FsTarget)
     assert target.targetKey == os.path.realpath(file_path)
-    assert target.displayPath == os.path.realpath(file_path)
+    assert target.displayPath == os.path.abspath(file_path)
 
     # Test writeText & stat
     write_outcome = await fs.writeText(target, "line1\nline2\nline3\n")

@@ -1,8 +1,10 @@
 import json
+import asyncio
+from types import SimpleNamespace
 import pytest
 from dsh.cordis.context import Context
 from dsh.core.session import Session, SessionStore
-from dsh.core.tools import ToolsService
+from dsh.core.tools import ToolExecutionInput, ToolsService
 from dsh.interaction.tool_ask_user import ToolAskUserPlugin
 from dsh.todo.tool_todo import ToolTodoPlugin
 
@@ -17,7 +19,11 @@ async def test_todo_write_tool_execution():
     ctx.set_service("sessions", store)
     session = store.create("default-session")
 
-    ctx.plugin(ToolTodoPlugin)
+    config = {"allowParallelInProgress": True}
+    fiber = ctx.registry.plugin(
+        ToolTodoPlugin, config=config, parent_ctx=ctx,
+    )
+    await fiber
 
     todos_payload = [
         {"content": "Implement feature A", "status": "completed"},
@@ -25,14 +31,22 @@ async def test_todo_write_tool_execution():
         {"content": "Write unit tests", "status": "pending"},
     ]
 
-    res = await tools.execute_tool("todo_write", {"todos": todos_payload})
-    assert "Updated todo list: 1 pending, 1 in progress, 1 completed." in res
+    result = await tools.execute(ToolExecutionInput(
+        "todo-call", "todo_write", {"todos": todos_payload},
+        agent=SimpleNamespace(id=session.id, session=session),
+        signal=asyncio.Event(),
+    ))
+    assert result.content == [{
+        "type": "text",
+        "text": "Updated todo list: 1 pending, 1 in progress, 1 completed.",
+    }]
 
     # Verify session log recorded todo/write event
     events = session.events
     todo_events = [e for e in events if e.get("type") == "todo/write"]
     assert len(todo_events) == 1
     assert todo_events[0]["data"]["todos"] == todos_payload
+    await fiber.dispose()
 
 
 @pytest.mark.asyncio

@@ -1,9 +1,10 @@
+import asyncio
 import os
 import shutil
 import tempfile
 import pytest
 from dsh.cordis.context import Context
-from dsh.core.tools import ToolsService
+from dsh.core.tools import ToolExecutionInput, ToolsService
 from dsh.fs.fs_local import FsLocalPlugin
 from dsh.fs.tool_str_replace_editor import StrReplaceEditorPlugin, TRUNCATED_MESSAGE
 
@@ -88,12 +89,18 @@ async def test_str_replace_bool_insert_line_validation(editor_env):
     file_path = os.path.join(tmpdir, "bool_test.txt")
     await tools.execute_tool("str_replace_editor", {"command": "create", "path": file_path, "file_text": "a\nb\n"})
 
-    res = await tools.execute_tool("str_replace_editor", {
-        "command": "insert",
-        "path": file_path,
-        "insert_line": True,
-        "new_str": "invalid",
-    })
-    assert "Error: Invalid `insert_line` parameter" in res
+    result = await tools.execute(ToolExecutionInput(
+        "bool-insert",
+        "str_replace_editor",
+        {
+            "command": "insert",
+            "path": file_path,
+            "insert_line": True,
+            "new_str": "invalid",
+        },
+        signal=asyncio.Event(),
+    ))
+    assert result.is_error is True
+    assert result.error["code"] == "INVALID_ARGS"
 
 

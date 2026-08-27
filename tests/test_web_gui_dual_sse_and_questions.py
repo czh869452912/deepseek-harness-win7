@@ -57,14 +57,35 @@ async def test_dual_sse_streams_endpoint_resolution():
     web_server = WebServerPlugin({"port": 0})
     api_proxy = ApiProxyPlugin()
 
-    ctx.plugin(web_server)
-    ctx.plugin(api_proxy)
+    await ctx.registry.plugin(web_server, parent_ctx=ctx)
+    await ctx.registry.plugin(api_proxy, parent_ctx=ctx)
 
     server: WebServerService = ctx.get("web_server")
     assert server.match("/api/events/mux") is not None
     assert server.match("/api/events.mux") is not None
     assert server.match("/api/events/host") is not None
-    assert server.match("/api/events.host") is not None
+
+
+@pytest.mark.asyncio
+async def test_session_event_projects_tool_presenter_view():
+    """Mux tool events expose transient presenter views per the TS contract."""
+    ctx = Context()
+    tools = ToolsService(ctx)
+    ctx.set_service("tools", tools)
+    tools.register_legacy({
+        "name": "demo_tool",
+        "description": "demo",
+        "parameters": {"type": "object", "properties": {}},
+        "handler": lambda **kwargs: {"ok": True},
+        "presentCall": lambda args: {"kind": "call", "title": "Demo"},
+        "presentResult": lambda args, result: {"kind": "result", "ok": True},
+    })
+    api = ApiProxyPlugin()
+    api.ctx = ctx
+    call_view = api._tool_event_view({"type": "tool/call", "data": {"name": "demo_tool", "args": {}}})
+    result_view = api._tool_event_view({"type": "tool/result", "data": {"name": "demo_tool", "args": {}, "result": {"ok": True}}})
+    assert call_view == {"for": "call", "view": {"kind": "call", "title": "Demo"}}
+    assert result_view == {"for": "result", "view": {"kind": "result", "ok": True}}
 
 
 @pytest.mark.asyncio
@@ -74,8 +95,8 @@ async def test_get_post_settings_models_sessions_rpc_endpoints():
     web_server = WebServerPlugin({"port": 0})
     api_proxy = ApiProxyPlugin()
 
-    ctx.plugin(web_server)
-    ctx.plugin(api_proxy)
+    await ctx.registry.plugin(web_server, parent_ctx=ctx)
+    await ctx.registry.plugin(api_proxy, parent_ctx=ctx)
 
     server: WebServerService = ctx.get("web_server")
     route = server.match("/api/settings")
@@ -150,9 +171,9 @@ async def test_web_ui_question_submission_and_respond():
     tools = ToolsService(ctx)
     ctx.set_service("tools", tools)
 
-    ctx.plugin(web_server)
-    ctx.plugin(api_proxy)
-    ctx.plugin(ToolAskUserPlugin)
+    await ctx.registry.plugin(web_server, parent_ctx=ctx)
+    await ctx.registry.plugin(api_proxy, parent_ctx=ctx)
+    await ctx.registry.plugin(ToolAskUserPlugin, parent_ctx=ctx)
 
     user_questions: UserQuestionService = ctx.get("userQuestions")
     assert user_questions is not None

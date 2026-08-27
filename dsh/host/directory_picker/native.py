@@ -72,6 +72,11 @@ class NativeDirectoryPickerPlugin(Plugin):
     name = "@deepseek-ai/dsh-host-directory-picker-native"
 
     def apply(self, ctx: Any) -> None:
-        service = NativeDirectoryPickerService(ctx)
-        if hasattr(ctx, "effect"):
-            ctx.effect(lambda: ctx.set_service("directoryPicker", None))
+        if ctx.get("directoryPicker") is not None:
+            return
+        try:
+            service = NativeDirectoryPickerService(ctx)
+        except RuntimeError as exc:
+            if "has been registered" not in str(exc):
+                raise
+            return

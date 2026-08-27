@@ -2,10 +2,13 @@
 ACP Server & Plugin matching reference/packages/acp/acp/src/index.ts
 """
 import uuid
+import inspect
+import ntpath
 from typing import Any, Callable, Dict, List, Optional
 from dsh.acp.codec import turn_end_to_stop_reason
 from dsh.acp.content import AcpContentError, admit_acp_prompt, assistant_block_to_acp, supports_acp_image_prompts
 from dsh.cordis.plugin import Plugin
+from dsh.core.agent import AgentOptions
 
 
 class SessionRecord:
@@ -37,18 +40,24 @@ class AcpPlugin(Plugin):
             ctx.on("agent/error", self._on_agent_error)
             ctx.on("approval/request", self._on_approval_request)
 
-        def disposer():
+        async def disposer():
             self.closed = True
             for session in list(self.sessions.values()):
                 if session.dispose_fn:
                     try:
-                        session.dispose_fn()
+                        result = session.dispose_fn()
+                        if inspect.isawaitable(result):
+                            await result
                     except Exception:
                         pass
             self.sessions.clear()
 
         if hasattr(ctx, "effect"):
-            ctx.effect(disposer)
+            # Cordis effects execute a setup callback immediately and retain
+            # its returned disposer for teardown. Passing ``disposer`` itself
+            # would invoke cleanup during mount (the previous port did this),
+            # leaving the ACP bridge closed before the first request.
+            ctx.effect(lambda: disposer, "acp.connection")
 
     async def initialize(self, ctx: Any, params: Dict[str, Any]) -> Dict[str, Any]:
         p = self.config.get("provider")
@@ -74,8 +83,8 @@ class AcpPlugin(Plugin):
         if self.closed:
             raise RuntimeError("the ACP bridge has been disposed")
         cwd = params.get("cwd", "")
-        if not cwd:
-            raise ValueError("cwd must be an absolute path")
+        if not isinstance(cwd, str) or not (ntpath.isabs(cwd) or __import__("os").path.isabs(cwd)):
+            raise ValueError("cwd must be an absolute path: %s" % cwd)
         if params.get("additionalDirectories"):
             raise ValueError("additionalDirectories is not supported")
         if params.get("mcpServers"):
@@ -84,7 +93,11 @@ class AcpPlugin(Plugin):
         session_id = f"acp-session-{uuid.uuid4().hex[:8]}"
         agents_svc = ctx.get("agents") if hasattr(ctx, "get") else None
         if agents_svc and hasattr(agents_svc, "create"):
-            handle = await agents_svc.create(session_id=session_id, meta={"cwd": cwd})
+            handle = await agents_svc.create(
+                session_id=session_id,
+                meta={"cwd": cwd},
+                options=AgentOptions(provider=self.config.get("provider"), model=self.config.get("model")),
+            )
             agent = getattr(handle, "agent", handle)
             dispose_fn = getattr(handle, "dispose", None)
         else:

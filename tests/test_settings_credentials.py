@@ -144,7 +144,7 @@ def test_settings_update_replace_mutate_rpcs_and_events():
         assert any(e[0] == "doc_updated" for e in events_received)
 
         # Persistence check
-        settings2 = SettingsService(ctx=ctx, settings_file=settings_file)
+        settings2 = SettingsService(ctx=Context(), settings_file=settings_file)
         assert settings2.get_section("llm")["model"] == "mutated-model"
 
 

@@ -1,14 +1,13 @@
-"""
-Task list tracking tool (`@deepseek-ai/dsh-tool-todo`).
-Replaces wholesale on each call and appends `todo/write` event to session.
-"""
+"""Model-facing whole-list todo replacement tool."""
 
 import json
 from typing import Any, Dict, List, Optional, Set
+
 from dsh.cordis.plugin import Plugin
-from dsh.core.session import Session, SessionStore
 
 
+name = "tool-todo"
+inject = ["tools"]
 VALID_STATUSES = ("pending", "in_progress", "completed")
 
 DESCRIPTION_HEAD = (
@@ -17,19 +16,16 @@ DESCRIPTION_HEAD = (
     "no per-item edits). Use it to plan multi-step work and show progress: add one "
     "todo per concrete step before you start. "
 )
-
 DESCRIPTION_PARALLEL = (
     "Mark every todo being actively worked "
     "on `in_progress` — several at once when work genuinely runs in parallel (e.g. "
     "concurrent subagents or background commands), one for sequential work; while "
     "work remains, at least one task should be `in_progress`. "
 )
-
 DESCRIPTION_SINGLE = (
     "Keep AT MOST ONE todo `in_progress` at a "
     "time; while work remains, exactly one active task should be `in_progress`. "
 )
-
 DESCRIPTION_TAIL = (
     "Mark a todo "
     "`completed` the moment it is done (do not batch completions), and allow no "
@@ -40,150 +36,206 @@ DESCRIPTION_TAIL = (
 
 
 def compose_todo_description(allow_parallel: bool) -> str:
-    return DESCRIPTION_HEAD + (DESCRIPTION_PARALLEL if allow_parallel else DESCRIPTION_SINGLE) + DESCRIPTION_TAIL
+    return DESCRIPTION_HEAD + (
+        DESCRIPTION_PARALLEL if allow_parallel else DESCRIPTION_SINGLE
+    ) + DESCRIPTION_TAIL
+
+
+class Config:
+    """Cordis config schema for the required deployment policy."""
+
+    @staticmethod
+    def validate(value: Any) -> Dict[str, Any]:
+        if not isinstance(value, dict) or "allowParallelInProgress" not in value:
+            return {"issues": [{
+                "path": ["allowParallelInProgress"],
+                "message": "allowParallelInProgress missing required value",
+            }]}
+        policy = value["allowParallelInProgress"]
+        if not isinstance(policy, bool):
+            return {"issues": [{
+                "path": ["allowParallelInProgress"],
+                "message": "allowParallelInProgress expected boolean",
+            }]}
+        return {"value": {"allowParallelInProgress": policy}}
+
+
+def _validate_config(value: Any) -> Dict[str, Any]:
+    result = Config.validate(value)
+    issues = result.get("issues")
+    if issues:
+        raise TypeError(issues[0]["message"])
+    return result["value"]
+
+
+def _todo_item_schema(with_descriptions: bool = False) -> Dict[str, Any]:
+    content: Dict[str, Any] = {"type": "string"}
+    status: Dict[str, Any] = {"type": "string", "enum": list(VALID_STATUSES)}
+    if with_descriptions:
+        content["description"] = "What the task is — a short imperative line."
+        status["description"] = (
+            "pending (not started) | in_progress (now) | completed (done)."
+        )
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {"content": content, "status": status},
+        "required": ["content", "status"],
+    }
+
+
+def _to_todo_list(raw: List[Dict[str, str]],
+                  allow_parallel: bool) -> List[Dict[str, str]]:
+    todos: List[Dict[str, str]] = []
+    seen: Set[str] = set()
+    active = 0
+    for item in raw:
+        content = item["content"].strip()
+        if not content:
+            raise ValueError("invalid todo: `content` must be a non-empty string")
+        if content in seen:
+            encoded = json.dumps(content, ensure_ascii=False, separators=(",", ":"))
+            raise ValueError("invalid todos: duplicate content %s" % encoded)
+        seen.add(content)
+        if item["status"] == "in_progress":
+            active += 1
+        todos.append({"content": content, "status": item["status"]})
+    if not allow_parallel and active > 1:
+        raise ValueError(
+            "invalid todos: at most one task may be in_progress (got %d)" % active
+        )
+    return todos
+
+
+def _projection_apply(state: Any, event: Any) -> Any:
+    event_type = event.get("type") if isinstance(event, dict) else getattr(event, "type", None)
+    data = event.get("data", {}) if isinstance(event, dict) else getattr(event, "data", {})
+    if event_type == "todo/write":
+        return data["todos"]
+    if event_type == "turn/start":
+        return None
+    return state
+
+
+def _install_projection(ctx: Any) -> None:
+    projections = ctx.sessionProjections
+    schema = {
+        "anyOf": [
+            {"type": "array", "items": _todo_item_schema()},
+            {"type": "null"},
+        ],
+    }
+
+    def setup() -> Any:
+        return projections.register(
+            key="todos",
+            schema=schema,
+            init=lambda: None,
+            apply=_projection_apply,
+            view=lambda state: state,
+            state_version=2,
+        )
+
+    ctx.effect(setup, label="sessionProjections.register(todos)")
+
+
+def _definition(allow_parallel: bool) -> Dict[str, Any]:
+    parameters = {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "todos": {
+                "type": "array",
+                "description": "The COMPLETE task list, replacing any previous list.",
+                "items": _todo_item_schema(with_descriptions=True),
+            },
+        },
+        "required": ["todos"],
+    }
+    output_schema = {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "todos": {"type": "array", "items": _todo_item_schema()},
+            "counts": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "pending": {"type": "integer"},
+                    "inProgress": {"type": "integer"},
+                    "completed": {"type": "integer"},
+                },
+                "required": ["pending", "inProgress", "completed"],
+            },
+        },
+        "required": ["todos", "counts"],
+    }
+
+    async def execute(args: Dict[str, Any], execution: Any) -> Dict[str, Any]:
+        todos = _to_todo_list(args["todos"], allow_parallel)
+        agent = execution.agent
+        session = getattr(agent, "session", None) if agent is not None else None
+        if session is None or not hasattr(session, "append"):
+            raise ValueError("todo_write requires an owning agent session")
+        session.append("todo/write", {"todos": todos})
+
+        def count(status: str) -> int:
+            return sum(1 for todo in todos if todo["status"] == status)
+
+        return {
+            "todos": [dict(todo) for todo in todos],
+            "counts": {
+                "pending": count("pending"),
+                "inProgress": count("in_progress"),
+                "completed": count("completed"),
+            },
+        }
+
+    def render(_args: Dict[str, Any], value: Dict[str, Any]) -> List[Dict[str, str]]:
+        counts = value["counts"]
+        return [{
+            "type": "text",
+            "text": (
+                "Updated todo list: %d pending, %d in progress, %d completed."
+                % (counts["pending"], counts["inProgress"], counts["completed"])
+            ),
+        }]
+
+    return {
+        "name": "todo_write",
+        "description": compose_todo_description(allow_parallel),
+        "parameters": parameters,
+        "output": {"schema": output_schema, "render": render},
+        "execute": execute,
+        "presentCall": lambda args: {
+            "card": "generic", "title": "Update todo list", "kind": "other",
+            "rawInput": args["todos"],
+        },
+    }
+
+
+def apply(ctx: Any, config: Dict[str, Any]) -> None:
+    allow_parallel = _validate_config(config)["allowParallelInProgress"]
+    ctx.inject(["sessionProjections"], _install_projection)
+    ctx.tools.register(_definition(allow_parallel))
 
 
 class ToolTodoPlugin(Plugin):
-    """
-    Plugin `@deepseek-ai/dsh-tool-todo`: Defines model-facing todo_write tool.
-    """
+    """Compatibility class for the package's namespace-style plugin export."""
 
     id = "tool-todo"
     name = "@deepseek-ai/dsh-tool-todo"
-    inject = ["tools"]
+    inject = inject
+    Config = Config
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
-        cfg = config or {}
-        self.allow_parallel_in_progress = bool(cfg.get("allowParallelInProgress", True))
 
     def apply(self, ctx: Any) -> None:
-        tools = ctx.get("tools")
-        if not tools:
-            return
+        apply(ctx, self.config)
 
-        # Register session projection if sessionProjections seam exists
-        if ctx.has("sessionProjections"):
-            projections = ctx.get("sessionProjections")
-            if hasattr(projections, "register"):
-                def apply_todo_projection(state: Any, event: Any) -> Any:
-                    evt_type = event.get("type") if isinstance(event, dict) else getattr(event, "type", "")
-                    evt_data = event.get("data", {}) if isinstance(event, dict) else getattr(event, "data", {})
-                    if evt_type == "todo/write":
-                        return evt_data.get("todos", [])
-                    if evt_type == "turn/start":
-                        return None
-                    return state
 
-                projections.register(
-                    key="todos",
-                    schema={"type": "array"},
-                    init=lambda: None,
-                    apply=apply_todo_projection,
-                    view=lambda s: s,
-                )
-
-        parameters = {
-            "type": "object",
-            "properties": {
-                "todos": {
-                    "type": "array",
-                    "description": "The COMPLETE task list, replacing any previous list.",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": False,
-                        "properties": {
-                            "content": {
-                                "type": "string",
-                                "description": "What the task is — a short imperative line.",
-                            },
-                            "status": {
-                                "type": "string",
-                                "enum": ["pending", "in_progress", "completed"],
-                                "description": "pending (not started) | in_progress (now) | completed (done).",
-                            },
-                        },
-                        "required": ["content", "status"],
-                    },
-                }
-            },
-            "required": ["todos"],
-        }
-
-        async def exec_todo_write(todos: List[Dict[str, str]] = None, **kwargs) -> Any:
-            raw_todos = todos if todos is not None else kwargs.get("todos", [])
-            if not isinstance(raw_todos, list):
-                raise ValueError("invalid todos: payload must be a list")
-
-            seen_contents: Set[str] = set()
-            active_count = 0
-            pending_count = 0
-            completed_count = 0
-            canonical_todos: List[Dict[str, str]] = []
-
-            for item in raw_todos:
-                if not isinstance(item, dict):
-                    raise ValueError("invalid todo: each item must be an object")
-                content = str(item.get("content", "")).strip()
-                status = str(item.get("status", "pending")).lower()
-
-                if not content:
-                    raise ValueError("invalid todo: `content` must be a non-empty string")
-                if content in seen_contents:
-                    raise ValueError(f"invalid todos: duplicate content {json.dumps(content)}")
-                seen_contents.add(content)
-
-                if status not in VALID_STATUSES:
-                    raise ValueError(f'invalid todo status "{status}": must be pending, in_progress, or completed')
-
-                if status == "pending":
-                    pending_count += 1
-                elif status == "in_progress":
-                    active_count += 1
-                elif status == "completed":
-                    completed_count += 1
-
-                canonical_todos.append({"content": content, "status": status})
-
-            if not self.allow_parallel_in_progress and active_count > 1:
-                raise ValueError(f"invalid todos: at most one task may be in_progress (got {active_count})")
-
-            # Append todo/write event to session
-            target_session = None
-            agents_svc = ctx.get("agents") if ctx.has("agents") else None
-            if agents_svc and hasattr(agents_svc, "current_initiator"):
-                initiator = agents_svc.current_initiator()
-                if initiator and hasattr(initiator, "session"):
-                    target_session = initiator.session
-
-            if not target_session and ctx.has("sessions"):
-                sessions_svc = ctx.get("sessions")
-                if isinstance(sessions_svc, SessionStore):
-                    target_session = sessions_svc.get("default-session")
-                    if not target_session and getattr(sessions_svc, "_sessions", None):
-                        target_session = next(iter(sessions_svc._sessions.values()))
-                elif isinstance(sessions_svc, Session):
-                    target_session = sessions_svc
-
-            if target_session:
-                target_session.append("todo/write", {"todos": canonical_todos}, ignorable=True)
-
-            return f"Updated todo list: {pending_count} pending, {active_count} in progress, {completed_count} completed."
-
-        if hasattr(tools, "register_tool"):
-            disposer = tools.register_tool({
-                "name": "todo_write",
-                "description": compose_todo_description(self.allow_parallel_in_progress),
-                "parameters": parameters,
-                "execute": exec_todo_write,
-            })
-        else:
-            disposer = tools.register(
-                name="todo_write",
-                description=compose_todo_description(self.allow_parallel_in_progress),
-                parameters=parameters,
-                handler=exec_todo_write,
-            )
-
-        if hasattr(ctx, "effect"):
-            ctx.effect(disposer)
+__all__ = [
+    "Config", "ToolTodoPlugin", "apply", "compose_todo_description", "inject",
+    "name",
+]

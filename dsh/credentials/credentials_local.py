@@ -576,4 +576,6 @@ class CredentialsLocalPlugin(Plugin):
         for ref_name, val in initial_creds.items():
             creds_service._credentials[ref_name] = str(val)
 
-        ctx.set_service("credentials", creds_service)
+        # CredentialsService registers its canonical `credentials` service
+        # through the Cordis Service base constructor. Re-registering here
+        # would fail strict duplicate-service checks during harness boot.

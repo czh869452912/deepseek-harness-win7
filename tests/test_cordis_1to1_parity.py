@@ -48,10 +48,9 @@ def test_multi_fiber_same_plugin_class():
     assert fiber1 is not None
     assert fiber1.state == FiberState.ACTIVE
 
-    fiber2 = ctx.registry.plugin(CountPlugin, config={"val": 20})
-    assert fiber2 is not None
-    assert fiber2 is not fiber1
-    assert len(ctx.registry.get(CountPlugin).fibers) == 2
+    with pytest.raises(RuntimeError, match="service 'val' has been registered"):
+        ctx.registry.plugin(CountPlugin, config={"val": 20})
+    assert ctx.get("val") == 10
 
 
 @pytest.mark.asyncio

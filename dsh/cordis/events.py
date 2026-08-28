@@ -168,30 +168,24 @@ class EventBus:
                 result_callbacks.append(hook.callback)
             else:
                 ctx_filter = getattr(actual_ctx, "filter", None)
-                if ctx_filter is None or ctx_filter(hook.ctx):
+                if ctx_filter is None or (callable(ctx_filter) and ctx_filter(hook.ctx)):
                     result_callbacks.append(hook.callback)
         return result_callbacks
 
     def emit(self, event_name: str, *args: Any, **kwargs: Any) -> None:
         """
-        Dispatch an event synchronously, ignoring return values.
+        Dispatch an event synchronously, ignoring return values matching TS EventBus.emit.
         """
         caller_ctx = kwargs.pop("caller_ctx", None)
         listeners = self._dispatch_hooks("emit", event_name, args, caller_ctx)
         for listener in listeners:
-            try:
-                res = listener(*args, **kwargs)
-                if inspect.isawaitable(res):
-                    try:
-                        loop = asyncio.get_running_loop()
-                        loop.create_task(res)
-                    except RuntimeError:
-                        pass
-            except Exception as e:
-                if self.ctx and hasattr(self.ctx, "logger"):
-                    self.ctx.logger("events").warn("Exception in emit '%s': %s", event_name, e)
-                else:
-                    sys.stderr.write(f"[Cordis Event Error] Exception in emit '{event_name}': {e}\n")
+            res = listener(*args, **kwargs)
+            if inspect.isawaitable(res):
+                try:
+                    loop = asyncio.get_running_loop()
+                    loop.create_task(res)
+                except RuntimeError:
+                    pass
 
     async def emit_async(self, event_name: str, *args: Any, **kwargs: Any) -> None:
         """

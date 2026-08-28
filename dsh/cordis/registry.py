@@ -143,6 +143,12 @@ class RegistryService:
             plugin_inst = plugin_cls_or_instance
 
         fiber = Fiber(self.ctx, plugin_inst, config=config, runtime=runtime)
+        try:
+            self.ctx.emit("internal/plugin", fiber)
+        except Exception as e:
+            self._runtimes.pop(callback, None)
+            raise e
+
         runtime.add_fiber(fiber)
 
         # Evaluate dependencies via composite epoch refresh

@@ -43,7 +43,7 @@ class Impl:
 
 RESERVED_PROPERTIES = {
     "prototype", "then", "_services", "_parent", "_event_bus", "registry",
-    "reflect", "fiber", "root", "_isolated_keys", "_intercept_map", "_effects", "logger"
+    "reflect", "fiber", "root", "_isolated_keys", "_intercept_map", "_effects", "logger", "timer"
 }
 
 
@@ -65,6 +65,7 @@ class ReflectService:
         self.mixin("registry", ["inject", "plugin"])
         self.mixin("events", ["on", "once", "parallel", "emit", "serial", "bail", "waterfall"])
         self.mixin("logger", ["error", "info", "warn", "debug"])
+        self.mixin("timer", ["timeout", "interval", "throttle", "debounce", "setTimeout", "setInterval"])
 
     def get(self, ctx: Any, name: str, default: Any = None, strict: bool = True) -> Any:
         """

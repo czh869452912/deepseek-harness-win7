@@ -137,6 +137,67 @@ def apply_entry_patches(
     return result
 
 
+def sort_keys(data: Dict[str, Any], prepend: Tuple[str, ...] = ("id", "name"), append: Tuple[str, ...] = ("config",)) -> Dict[str, Any]:
+    """Sort dictionary keys matching TS sortKeys(object, prepend=['id', 'name'], append=['config'])."""
+    result: Dict[str, Any] = {}
+    for k in prepend:
+        if k in data:
+            result[k] = data[k]
+    middle_keys = sorted([k for k in data.keys() if k not in prepend and k not in append])
+    for k in middle_keys:
+        result[k] = data[k]
+    for k in append:
+        if k in data:
+            result[k] = data[k]
+    return result
+
+
+class Realm:
+    """Symbol realm used to isolate service implementations by entry or label matching reference/vendor/loader/src/config/isolate.ts."""
+    def __init__(self):
+        self.store: Dict[str, str] = {}
+
+    @property
+    def suffix(self) -> str:
+        raise NotImplementedError
+
+    def access(self, key: str, create: bool = False) -> str:
+        if create:
+            if key not in self.store:
+                self.store[key] = f"{key}{self.suffix}"
+            return self.store[key]
+        return self.store.get(key, f"{key}{self.suffix}")
+
+    def delete(self, key: str) -> None:
+        self.store.pop(key, None)
+
+    @property
+    def size(self) -> int:
+        return len(self.store)
+
+
+class LocalRealm(Realm):
+    """Entry-local isolation realm matching TS LocalRealm."""
+    def __init__(self, entry: "Entry"):
+        super().__init__()
+        self.entry = entry
+
+    @property
+    def suffix(self) -> str:
+        return f"#{getattr(self.entry, 'id', 'local')}"
+
+
+class GlobalRealm(Realm):
+    """Named isolation realm shared by entries that use the same label matching TS GlobalRealm."""
+    def __init__(self, label: str):
+        super().__init__()
+        self.label = label
+
+    @property
+    def suffix(self) -> str:
+        return f"@{self.label}"
+
+
 class EntryTree:
     """
     Mutable tree of loader entries matching reference/vendor/loader/src/config/tree.ts.
@@ -144,9 +205,10 @@ class EntryTree:
     """
     sep = ":"
 
-    def __init__(self, ctx: Context):
+    def __init__(self, ctx: Context, filepath: Optional[str] = None):
         self.ctx = ctx.extend()
         self.enable_logs = True
+        self.filepath = filepath
         self.store: Dict[str, "Entry"] = {}
         self.root = EntryGroup(self.ctx, self)
         fiber_entry = getattr(getattr(self.ctx, "fiber", None), "entry", None)
@@ -218,9 +280,9 @@ class EntryTree:
         eid = group.create(options)
         entry = self.resolve(eid)
         if position is not None and position < len(group.data):
+            if entry.options in group.data:
+                group.data.remove(entry.options)
             group.data.insert(position, entry.options)
-        else:
-            group.data.append(entry.options)
         self.write()
         return eid
 
@@ -265,13 +327,19 @@ class EntryTree:
                         sys.stderr.write(f"[Cordis Loader Error] Rollback failed for entry {entry_id}: {rollback_err}\n")
             raise e
 
-        source.tree.write()
-        if target != source:
-            target.tree.write()
-
     def write(self) -> None:
-        """Persist tree state. In-memory trees may implement this as a no-op."""
-        pass
+        """Persist tree state. If filepath is set, writes out YAML atomically matching TS EntryTree.write()."""
+        if not getattr(self, "filepath", None):
+            return
+        try:
+            sorted_data = [sort_keys(dict(opt)) for opt in self.root.data]
+            with open(self.filepath, "w", encoding="utf-8") as f:
+                yaml.safe_dump(sorted_data, f, sort_keys=False, allow_unicode=True)
+        except Exception as e:
+            if self.ctx and hasattr(self.ctx, "logger"):
+                self.ctx.logger("loader").error("Failed to write EntryTree to %s: %s", self.filepath, e)
+            else:
+                sys.stderr.write(f"[Cordis Loader Error] Failed to write EntryTree to {self.filepath}: {e}\n")
 
 
 class EntryGroup:
@@ -296,6 +364,8 @@ class EntryGroup:
 
         try:
             entry.update(options, create=True, force=True)
+            if entry.options not in self.data:
+                self.data.append(entry.options)
         except Exception as e:
             if existing:
                 entry.parent = prev_parent
@@ -390,6 +460,13 @@ class Entry:
         self._init_task: Optional[asyncio.Future] = None
         self._disposing = 0
 
+        loader_ctx = getattr(loader, "ctx", None) if loader else None
+        if loader_ctx:
+            self.ctx = loader_ctx.extend({"entry": self})
+            self.ctx.emit("loader/entry-init", self)
+        else:
+            self.ctx = Context()
+
     @property
     def disabled(self) -> bool:
         dis = self.options.get("disabled", False)
@@ -471,10 +548,67 @@ class Loader(EntryTree, Service):
         self.config = config or {}
         self.registry_map: Dict[str, Any] = {}
         self.entries_list: List[Entry] = []
+        self._realms: Dict[str, GlobalRealm] = {}
 
         if self.ctx:
             self.ctx.on("internal/config", self._on_internal_config)
             self.ctx.on("internal/update", self._on_internal_update)
+
+            def _on_entry_init(entry: Entry) -> None:
+                if entry.ctx:
+                    entry.ctx._intercept_map = dict(getattr(entry.ctx, "_intercept_map", {}))
+                    entry.ctx._isolated_keys = dict(getattr(entry.ctx, "_isolated_keys", {}))
+
+            self.ctx.on("loader/entry-init", _on_entry_init)
+
+            def _on_patch_context(entry: Entry, next_fn: Callable[[], Any] = None) -> Any:
+                new_map = dict(getattr(entry.parent.ctx, "_isolated_keys", {})) if entry.parent else {}
+                isolate_opt = entry.options.get("isolate", {})
+                if isinstance(isolate_opt, dict):
+                    for name, label in isolate_opt.items():
+                        if label is True:
+                            realm = getattr(entry, "realm", None)
+                            if realm is None:
+                                realm = LocalRealm(entry)
+                                entry.realm = realm
+                            new_map[name] = realm.access(name, create=True)
+                        elif isinstance(label, str):
+                            realm = self._realms.get(label)
+                            if realm is None:
+                                realm = GlobalRealm(label)
+                                self._realms[label] = realm
+                            new_map[name] = realm.access(name, create=True)
+                        elif label:
+                            new_map[name] = str(label)
+                entry.ctx._isolated_keys = new_map
+
+                intercept_opt = entry.options.get("intercept", {})
+                if isinstance(intercept_opt, dict):
+                    entry.ctx._intercept_map.update(intercept_opt)
+
+                if next_fn and callable(next_fn):
+                    return next_fn()
+
+            self.ctx.on("loader/patch-context", _on_patch_context)
+
+            def _on_partial_dispose(entry: Entry, legacy: Dict[str, Any], active: bool) -> None:
+                legacy_isolate = legacy.get("isolate") if isinstance(legacy, dict) else {}
+                if isinstance(legacy_isolate, dict):
+                    for name, label in legacy_isolate.items():
+                        if label is True or not isinstance(label, str):
+                            continue
+                        if active and entry.options.get("isolate", {}).get(name) == label:
+                            continue
+                        realm = self._realms.get(label)
+                        if not realm:
+                            continue
+                        in_use = any(e.options.get("isolate", {}).get(name) == label for e in self.entries if e is not entry)
+                        if not in_use:
+                            realm.delete(name)
+                            if realm.size == 0:
+                                self._realms.pop(label, None)
+
+            self.ctx.on("loader/partial-dispose", _on_partial_dispose)
 
     @property
     def entries(self) -> List[Entry]:

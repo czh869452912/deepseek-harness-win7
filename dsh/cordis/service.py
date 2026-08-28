@@ -77,6 +77,15 @@ class Service:
                 res.update(cfg)
         return res
 
+    def filter(self, ctx: Any) -> bool:
+        """
+        Service isolation filter matching TS Service[symbols.filter].
+        Checks whether target context has the same isolation label for this service.
+        """
+        target_isolate = getattr(ctx, "_isolated_keys", {}) if ctx else {}
+        self_isolate = getattr(self.ctx, "_isolated_keys", {}) if self.ctx else {}
+        return target_isolate.get(self.name) == self_isolate.get(self.name)
+
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """
         Support callable services matching Service.invoke.

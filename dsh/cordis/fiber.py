@@ -30,7 +30,19 @@ class CordisError(Exception):
 class ValidationError(TypeError):
     """Error raised when plugin configuration fails validation."""
     def __init__(self, issues: List[Any]):
-        msg = "invalid config:\n" + "\n".join(f"  - {issue}" for issue in issues)
+        lines = []
+        for issue in issues:
+            if isinstance(issue, dict):
+                msg = issue.get("message", str(issue))
+                path = issue.get("path")
+                if path:
+                    path_str = ".".join(str(p) for p in path) if isinstance(path, (list, tuple)) else str(path)
+                    lines.append(f"  - {msg} (at {path_str})")
+                else:
+                    lines.append(f"  - {msg}")
+            else:
+                lines.append(f"  - {issue}")
+        msg = "invalid config:\n" + "\n".join(lines)
         super().__init__(msg)
 
 
@@ -38,6 +50,10 @@ def resolve_config(plugin: Any, config: Any) -> Any:
     """
     Validate and normalize config for a plugin runtime before it starts.
     """
+    if config is None and isinstance(getattr(plugin, "config", None), dict):
+        config = dict(getattr(plugin, "config", {}))
+    elif config is None:
+        config = {}
     schema = getattr(plugin, "schema", None) or getattr(plugin, "Config", None)
     if not schema:
         return config
@@ -141,6 +157,7 @@ class Fiber:
         """
         Register a cleanup-aware effect on this fiber.
         Supports functions, generators, async generators, and coroutines.
+        Handles setup rollback on failure and barrier synchronization.
         """
         self.assert_active()
         if self.state == FiberState.UNLOADING:
@@ -148,72 +165,219 @@ class Fiber:
 
         disposables: List[Callable[[], Any]] = []
         meta = EffectMeta(label=label)
+        in_flight_cleanup: Optional[asyncio.Task] = None
+        setup_task: Optional[asyncio.Task] = None
+        setup_barrier_future: Optional[asyncio.Future] = None
+        executing = True
+        setup_failed = False
+        disposed = False
 
         def collect_disposer(disp: Any) -> None:
             if callable(disp):
                 disposables.append(disp)
-                self._disposables.push(disp)
 
-        if callable(execute_or_disposer):
-            fn_name = getattr(execute_or_disposer, "__name__", "")
-            if fn_name in ("disposer", "cancel_effect", "teardown", "cleanup", "unregister", "remove") or "on(" in label or "once(" in label:
-                # Direct disposer function returned by registration API
-                collect_disposer(execute_or_disposer)
-            else:
+        def rollback_sync() -> None:
+            if in_flight_cleanup is not None:
+                return
+            while disposables:
+                disp = disposables.pop()
+                self._disposables.delete(disp)
                 try:
-                    res = execute_or_disposer()
-                    if callable(res):
-                        collect_disposer(res)
-                    elif inspect.isawaitable(res):
-                        collect_disposer(lambda res=res: res)
-                    elif res is None or isinstance(res, (bool, int, float, str)):
-                        pass
-                    elif inspect.isgenerator(res):
-                        for item in res:
-                            if callable(item):
-                                collect_disposer(item)
-                    elif inspect.isasyncgen(res):
-                        async def _consume_async_gen():
-                            async for item in res:
-                                if callable(item):
-                                    collect_disposer(item)
+                    res = disp()
+                    if inspect.isawaitable(res):
                         try:
                             loop = asyncio.get_running_loop()
-                            loop.create_task(_consume_async_gen())
+                            loop.create_task(res)
                         except RuntimeError:
                             pass
                 except Exception as e:
                     if self.ctx and hasattr(self.ctx, "logger"):
-                        self.ctx.logger("fiber").error("Exception in effect execution '%s': %s", label, e)
-                    else:
-                        sys.stderr.write(f"[Cordis Fiber Error] Exception in effect execution '{label}': {e}\n")
-                    raise e
+                        self.ctx.logger("fiber").warn("Exception in effect rollback '%s': %s", label, e)
 
-        disposed = False
+        def wait_for_setup() -> Optional[asyncio.Future]:
+            nonlocal setup_barrier_future
+            if setup_barrier_future is None:
+                try:
+                    loop = asyncio.get_running_loop()
+                    setup_barrier_future = loop.create_future()
+                except RuntimeError:
+                    pass
+            return setup_barrier_future
 
-        def cancel_effect() -> None:
-            nonlocal disposed
+        def cancel_effect() -> Any:
+            nonlocal disposed, in_flight_cleanup
             if disposed:
-                return
+                return in_flight_cleanup
             disposed = True
+            self._effect_metas.pop(cancel_effect, None)
+
+            if executing:
+                barrier = wait_for_setup()
+                async def _dispose_after_barrier():
+                    cleanup_fn = None
+                    if barrier is not None:
+                        try:
+                            cleanup_fn = await barrier
+                        except Exception:
+                            pass
+                    if callable(cleanup_fn):
+                        try:
+                            r = cleanup_fn()
+                            if inspect.isawaitable(r):
+                                await r
+                        except Exception as err:
+                            if self.ctx and hasattr(self.ctx, "logger"):
+                                self.ctx.logger("fiber").warn("Exception in disposer '%s': %s", label, err)
+                    while disposables:
+                        disp = disposables.pop()
+                        self._disposables.delete(disp)
+                        try:
+                            r = disp()
+                            if inspect.isawaitable(r):
+                                await r
+                        except Exception as err:
+                            if self.ctx and hasattr(self.ctx, "logger"):
+                                self.ctx.logger("fiber").warn("Exception in disposer '%s': %s", label, err)
+
+                try:
+                    loop = asyncio.get_running_loop()
+                    in_flight_cleanup = loop.create_task(_dispose_after_barrier())
+                    return in_flight_cleanup
+                except RuntimeError:
+                    return None
+
+            async_disposers = []
             while disposables:
                 disp = disposables.pop()
                 self._disposables.delete(disp)
                 try:
                     r = disp()
                     if inspect.isawaitable(r):
-                        try:
-                            loop = asyncio.get_running_loop()
-                            loop.create_task(r)
-                        except RuntimeError:
-                            pass
+                        async_disposers.append(r)
                 except Exception as e:
                     if self.ctx and hasattr(self.ctx, "logger"):
                         self.ctx.logger("fiber").warn("Exception running disposer '%s': %s", label, e)
                     else:
                         sys.stderr.write(f"[Cordis Fiber Error] Exception running disposer '{label}': {e}\n")
 
+            if async_disposers or (setup_task and not setup_task.done()):
+                async def _run_cleanup():
+                    cleanup_fn = None
+                    if setup_task and not setup_task.done():
+                        try:
+                            cleanup_fn = await setup_task
+                        except Exception:
+                            pass
+                    if callable(cleanup_fn):
+                        try:
+                            r = cleanup_fn()
+                            if inspect.isawaitable(r):
+                                await r
+                        except Exception as err:
+                            if self.ctx and hasattr(self.ctx, "logger"):
+                                self.ctx.logger("fiber").warn("Exception in async disposer '%s': %s", label, err)
+                    for r in async_disposers:
+                        try:
+                            await r
+                        except Exception as err:
+                            if self.ctx and hasattr(self.ctx, "logger"):
+                                self.ctx.logger("fiber").warn("Exception in async disposer '%s': %s", label, err)
+
+                try:
+                    loop = asyncio.get_running_loop()
+                    in_flight_cleanup = loop.create_task(_run_cleanup())
+                    return in_flight_cleanup
+                except RuntimeError:
+                    for r in async_disposers:
+                        try:
+                            asyncio.run(r)
+                        except Exception:
+                            pass
+                    return None
+            return None
+
         self._effect_metas[cancel_effect] = meta
+        self._disposables.push(cancel_effect)
+
+        if callable(execute_or_disposer):
+            fn_name = getattr(execute_or_disposer, "__name__", "")
+            if fn_name in ("disposer", "cancel_effect", "teardown", "cleanup", "unregister", "remove") or "on(" in label or "once(" in label:
+                collect_disposer(execute_or_disposer)
+            else:
+                try:
+                    res = execute_or_disposer()
+                    if callable(res):
+                        collect_disposer(res)
+                        if setup_barrier_future and not setup_barrier_future.done():
+                            setup_barrier_future.set_result(res)
+                    elif inspect.isawaitable(res):
+                        async def _await_async_setup(res=res):
+                            try:
+                                cleanup = await res
+                                if callable(cleanup):
+                                    collect_disposer(cleanup)
+                                if setup_barrier_future and not setup_barrier_future.done():
+                                    setup_barrier_future.set_result(cleanup)
+                                return cleanup
+                            except Exception as async_err:
+                                rollback_sync()
+                                if setup_barrier_future and not setup_barrier_future.done():
+                                    setup_barrier_future.set_exception(async_err)
+                                if self.ctx and hasattr(self.ctx, "logger"):
+                                    self.ctx.logger("fiber").error("Exception in async effect '%s': %s", label, async_err)
+                                raise async_err
+                        try:
+                            loop = asyncio.get_running_loop()
+                            setup_task = loop.create_task(_await_async_setup())
+                        except RuntimeError:
+                            pass
+                    elif res is None or isinstance(res, (bool, int, float, str)):
+                        if setup_barrier_future and not setup_barrier_future.done():
+                            setup_barrier_future.set_result(None)
+                    elif inspect.isgenerator(res):
+                        try:
+                            for item in res:
+                                if callable(item):
+                                    collect_disposer(item)
+                            if setup_barrier_future and not setup_barrier_future.done():
+                                setup_barrier_future.set_result(None)
+                        except Exception as gen_err:
+                            rollback_sync()
+                            if setup_barrier_future and not setup_barrier_future.done():
+                                setup_barrier_future.set_exception(gen_err)
+                            raise gen_err
+                    elif inspect.isasyncgen(res):
+                        async def _consume_async_gen():
+                            try:
+                                async for item in res:
+                                    if callable(item):
+                                        collect_disposer(item)
+                                if setup_barrier_future and not setup_barrier_future.done():
+                                    setup_barrier_future.set_result(None)
+                            except Exception as asyncgen_err:
+                                rollback_sync()
+                                if setup_barrier_future and not setup_barrier_future.done():
+                                    setup_barrier_future.set_exception(asyncgen_err)
+                                if self.ctx and hasattr(self.ctx, "logger"):
+                                    self.ctx.logger("fiber").error("Exception consuming async generator '%s': %s", label, asyncgen_err)
+                        try:
+                            loop = asyncio.get_running_loop()
+                            setup_task = loop.create_task(_consume_async_gen())
+                        except RuntimeError:
+                            pass
+                except Exception as e:
+                    executing = False
+                    setup_failed = True
+                    self._effect_metas.pop(cancel_effect, None)
+                    self._disposables.delete(cancel_effect)
+                    if setup_barrier_future and not setup_barrier_future.done():
+                        setup_barrier_future.set_exception(e)
+                    rollback_sync()
+                    if self.ctx and hasattr(self.ctx, "logger"):
+                        self.ctx.logger("fiber").error("Exception in effect execution '%s': %s", label, e)
+                    raise e
+        executing = False
+
         return cancel_effect
 
     def get_effects(self) -> List[Dict[str, Any]]:
@@ -275,10 +439,14 @@ class Fiber:
         epoch = ""
         for name in self.inject.keys():
             impl = self._store.get(name)
-            if not impl or not getattr(impl, "fiber", None) or impl.fiber.state != FiberState.ACTIVE:
+            if not impl:
                 epoch = INACTIVE_EPOCH
                 break
-            epoch += f":{impl.fiber.uid}"
+            fib = getattr(impl, "fiber", None)
+            if fib is not None and fib.state != FiberState.ACTIVE and getattr(fib, "uid", None) not in (0, None):
+                epoch = INACTIVE_EPOCH
+                break
+            epoch += f":{getattr(fib, 'uid', 0)}"
         self.set_epoch(epoch)
 
     def set_epoch(self, epoch: str) -> None:
@@ -303,10 +471,12 @@ class Fiber:
 
     def _reload(self) -> None:
         """Execute plugin apply and transition to ACTIVE on success."""
-        old_epoch = self.epoch
+        epoch = self.epoch
         try:
             self.store = dict(self._store)
             self.config = resolve_config(self.plugin, self._config)
+            if hasattr(self.plugin, "config"):
+                self.plugin.config = self.config
             if hasattr(self.plugin, "ctx"):
                 self.plugin.ctx = self.ctx
 
@@ -343,7 +513,7 @@ class Fiber:
             self.epoch = INACTIVE_EPOCH
             self.set_state(FiberState.FAILED)
 
-        if self.epoch != old_epoch:
+        if self.epoch != epoch:
             self.set_state(FiberState.UNLOADING)
             self._unload()
 
@@ -399,25 +569,17 @@ class Fiber:
             self._reload()
 
     async def dispose(self) -> None:
-        """Dispose this fiber and execute disposers in strict reverse order."""
+        """Dispose this fiber and execute disposers in strict reverse order matching TS fiber.dispose."""
         if self.state in (FiberState.UNLOADING, FiberState.DISPOSED):
             return
-        self.set_state(FiberState.UNLOADING)
-        self.epoch = INACTIVE_EPOCH
-
-        disposers = self._disposables.clear()
-        for disposer in disposers:
-            try:
-                res = disposer()
-                if inspect.isawaitable(res):
-                    await res
-            except Exception as e:
-                if self.ctx and hasattr(self.ctx, "logger"):
-                    self.ctx.logger("fiber").warn("Exception in disposer teardown for '%s': %s", self.name, e)
-                else:
-                    sys.stderr.write(f"[Cordis Fiber Error] Exception in disposer teardown for '{self.name}': {e}\n")
-
         self.uid = None
+        self.set_epoch(INACTIVE_EPOCH)
+        if not self.inertia or self.inertia.done():
+            self.set_state(FiberState.UNLOADING)
+            self._unload()
+        while self.inertia is not None and not self.inertia.done():
+            await self.inertia
+
         self.set_state(FiberState.DISPOSED)
         if self.ctx and hasattr(self.ctx, "emit"):
             self.ctx.emit("internal/plugin", self)
@@ -432,8 +594,8 @@ class Fiber:
             return self.ctx.waterfall_sync("internal/update", config, no_save, lambda cfg=config: self.restart(cfg))
         return self.restart(config)
 
-    def restart(self, new_config: Optional[Any] = None) -> None:
-        """Dispose and immediately reload this plugin with current or new config."""
+    def restart(self, new_config: Optional[Any] = None) -> Any:
+        """Dispose and immediately reload this plugin with current or new config matching TS fiber.restart()."""
         self.assert_active()
         if new_config is not None:
             self._config = new_config
@@ -441,6 +603,19 @@ class Fiber:
         for name in list(self.inject.keys()):
             self._checkImpl(name)
         self._refresh()
+
+        async def _wait_settled():
+            while self.inertia is not None and not self.inertia.done():
+                await self.inertia
+            if self._error:
+                raise self._error
+            return None
+
+        try:
+            loop = asyncio.get_running_loop()
+            return loop.create_task(_wait_settled())
+        except RuntimeError:
+            return None
 
     async def await_settled(self) -> "Fiber":
         """Wait for current lifecycle transitions to settle."""

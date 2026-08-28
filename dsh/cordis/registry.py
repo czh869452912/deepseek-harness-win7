@@ -228,6 +228,44 @@ class RegistryService:
         raw_inject = getattr(plugin_cls_or_instance, "inject", None) or getattr(plugin_inst, "inject", None)
         inject_deps = Inject.resolve(raw_inject)
 
+        # Collect method-level @inject hooks matching TS @Inject method decorator
+        if plugin_inst is not None:
+            init_hooks = getattr(plugin_inst, "_init_hooks", None)
+            if init_hooks is None:
+                init_hooks = []
+                setattr(plugin_inst, "_init_hooks", init_hooks)
+
+            cls = type(plugin_inst)
+            for attr_name in dir(plugin_inst):
+                if attr_name.startswith("__"):
+                    continue
+                try:
+                    attr = getattr(plugin_inst, attr_name)
+                    func = getattr(attr, "__func__", attr)
+                    cls_attr = getattr(cls, attr_name, None)
+                    cls_func = getattr(cls_attr, "__func__", cls_attr)
+
+                    method_inject = getattr(attr, "_cordis_inject", None) or getattr(func, "_cordis_inject", None) or getattr(cls_attr, "_cordis_inject", None) or getattr(cls_func, "_cordis_inject", None)
+                    if callable(attr) and method_inject:
+                        hook_reg_key = f"_init_hook_reg_{attr_name}"
+                        if getattr(plugin_inst, hook_reg_key, False):
+                            continue
+                        setattr(plugin_inst, hook_reg_key, True)
+
+                        def _make_hook(m_name=attr_name, m_inj=method_inject):
+                            def _hook():
+                                target_ctx = getattr(plugin_inst, "ctx", None) or self.ctx
+                                if target_ctx and hasattr(target_ctx, "inject"):
+                                    def _on_injected(inj_ctx):
+                                        m = getattr(plugin_inst, m_name)
+                                        return m()
+                                    target_ctx.inject(m_inj, _on_injected)
+                            return _hook
+
+                        init_hooks.append(_make_hook())
+                except Exception:
+                    pass
+
         fiber = Fiber(self.ctx, plugin_inst, config=config, runtime=runtime, inject=inject_deps, get_outer_stack=get_outer_stack)
         try:
             self.ctx.emit("internal/plugin", fiber)

@@ -165,6 +165,58 @@ class TracedProxy:
             return self._target(*args, **kwargs)
         raise TypeError(f"Target '{self._target}' is not callable")
 
+    def __getitem__(self, key: Any) -> Any:
+        return self._target[key]
+
+    def __setitem__(self, key: Any, value: Any) -> None:
+        self._target[key] = value
+
+    def __delitem__(self, key: Any) -> None:
+        del self._target[key]
+
+    def __len__(self) -> int:
+        return len(self._target)
+
+    def __contains__(self, item: Any) -> bool:
+        return item in self._target
+
+    def __iter__(self) -> Iterator[Any]:
+        return iter(self._target)
+
+    def __next__(self) -> Any:
+        return next(self._target)
+
+    def __enter__(self) -> Any:
+        return self._target.__enter__()
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> Any:
+        return self._target.__exit__(exc_type, exc_val, exc_tb)
+
+    async def __aenter__(self) -> Any:
+        return await self._target.__aenter__()
+
+    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> Any:
+        return await self._target.__aexit__(exc_type, exc_val, exc_tb)
+
+    def __bool__(self) -> bool:
+        return bool(self._target)
+
+    def __str__(self) -> str:
+        return str(self._target)
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, TracedProxy):
+            return self._target == other._target
+        return self._target == other
+
+    def __ne__(self, other: Any) -> bool:
+        if isinstance(other, TracedProxy):
+            return self._target != other._target
+        return self._target != other
+
+    def __hash__(self) -> int:
+        return hash(self._target)
+
     def __repr__(self) -> str:
         return f"<TracedProxy target={self._target!r}>"
 

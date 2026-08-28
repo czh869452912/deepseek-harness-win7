@@ -212,12 +212,13 @@ class Context:
         kwargs["caller_ctx"] = self
         return self._event_bus.bail_sync(event_name, *args, **kwargs)
 
-    def plugin(self, plugin_cls_or_instance: Any, config: Optional[Dict[str, Any]] = None) -> Optional[Plugin]:
+    def plugin(self, plugin_cls_or_instance: Any, config: Optional[Dict[str, Any]] = None) -> Any:
         """
-        Load a plugin onto context wrapped in a Fiber.
+        Load a plugin onto context wrapped in a Fiber matching TS ctx.plugin().
+        Returns the Fiber instance (which is awaitable and transparently delegates attribute access to plugin).
         """
         fiber = self.registry.plugin(plugin_cls_or_instance, config=config)
-        return fiber.plugin if fiber else None
+        return fiber
 
     def inject(self, deps: Any, callback: Callable[..., Any]) -> Any:
         """
@@ -269,18 +270,21 @@ class Context:
 
     def isolate(self, name_or_keys: Union[str, List[str], Dict[str, Any]] = None, label: Any = None, keys: Optional[List[str]] = None) -> "Context":
         """
-        Create a child context isolated from parent for specific service keys.
+        Create a child context isolated from parent for specific service keys matching TS Context.isolate.
         """
-        child = self.extend()
+        shadow = dict(self._isolated_keys)
         target_keys = keys if keys is not None else name_or_keys
         if isinstance(target_keys, str):
-            child._isolated_keys[target_keys] = label or object()
+            shadow[target_keys] = label or object()
         elif isinstance(target_keys, list):
             for k in target_keys:
-                child._isolated_keys[k] = label or object()
+                shadow[k] = label or object()
         elif isinstance(target_keys, dict):
             for k, v in target_keys.items():
-                child._isolated_keys[k] = v
+                shadow[k] = v
+
+        child = self.extend()
+        child._isolated_keys = shadow
         return child
 
     def intercept(self, name: str, config: Any) -> "Context":
@@ -349,11 +353,18 @@ class Context:
         if name.startswith("_") or name in ("registry", "reflect", "fiber", "root", "events", "props", "store", "logger", "timer"):
             raise AttributeError(f"Context object has no attribute '{name}'")
 
-        # 1:1 Strict Dependency Injection Enforcement matching TS Cordis
-        if getattr(self, "strict_inject", False) and getattr(self, "fiber", None) and getattr(self.fiber, "uid", None) not in (0, None):
-            fiber = self.fiber
-            if self.has(name) and name not in getattr(fiber, "inject", {}):
-                raise RuntimeError(f"cannot get property '{name}' without inject in context {getattr(fiber, 'name', 'unnamed')}")
+        # 1:1 Strict Dependency Injection Enforcement matching TS Cordis ReflectService.handler
+        if getattr(self, "strict_inject", False) and getattr(self, "fiber", None) and getattr(self.fiber, "runtime", None) is not None:
+            curr_fiber = self.fiber
+            while curr_fiber is not None and getattr(curr_fiber, "runtime", None) is not None:
+                impl = getattr(curr_fiber, "store", {}).get(name) if getattr(curr_fiber, "store", None) else None
+                if impl is not None:
+                    return getattr(impl, "value", impl)
+                if name in getattr(curr_fiber, "inject", {}):
+                    raise RuntimeError(f"cannot get required service '{name}' in inactive context")
+                parent_ctx = getattr(curr_fiber, "parent", None)
+                curr_fiber = getattr(parent_ctx, "fiber", None) if parent_ctx else None
+            raise RuntimeError(f"cannot get property '{name}' without inject")
 
         if name in self._services:
             return self._services[name]

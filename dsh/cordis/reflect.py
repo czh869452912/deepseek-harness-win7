@@ -177,7 +177,7 @@ class ReflectService:
             impl = Impl(name=name, fiber=fiber, value=val, check=chk)
 
             self.store[key] = impl
-            target_store = target_ctx.root if hasattr(target_ctx, "root") else target_ctx
+            target_store = target_ctx if name in isolated_map else (target_ctx.root if hasattr(target_ctx, "root") else target_ctx)
             if hasattr(target_store, "_services"):
                 target_store._services[name] = val
                 setattr(target_store, name, val)

@@ -38,21 +38,32 @@ def is_js_expr(value: Any) -> bool:
 def evaluate_expr(ctx: Any, expr: str) -> Any:
     """
     Safely evaluate expression string in the given Context matching TS evaluate(ctx, expr).
-    Translates common JS patterns to Python syntax safely.
+    Translates common JS patterns to Python syntax safely including ternary and logical operators.
     """
     expr_str = expr.strip()
     if expr_str.startswith("!!js"):
         expr_str = expr_str[4:].strip()
 
-    # Normalize JS boolean and comparison operators to Python
+    # 1. Normalize JS boolean and comparison operators to Python
     expr_py = expr_str
     expr_py = re.sub(r'===', '==', expr_py)
     expr_py = re.sub(r'!==', '!=', expr_py)
+    expr_py = re.sub(r'&&', ' and ', expr_py)
+    expr_py = re.sub(r'\|\|', ' or ', expr_py)
+    expr_py = re.sub(r'!(?!=)', ' not ', expr_py)
     expr_py = re.sub(r'\btrue\b', 'True', expr_py)
     expr_py = re.sub(r'\bfalse\b', 'False', expr_py)
     expr_py = re.sub(r'\bnull\b', 'None', expr_py)
+    expr_py = re.sub(r'\bundefined\b', 'None', expr_py)
     expr_py = expr_py.replace("process.platform", "sys.platform")
+    expr_py = re.sub(r'process\.env\.([A-Za-z0-9_]+)', r'env.get("\1")', expr_py)
+    expr_py = re.sub(r'process\.env\[(["\'])([A-Za-z0-9_]+)\1\]', r'env.get("\2")', expr_py)
     expr_py = expr_py.replace("process.env", "env")
+
+    # 2. Handle JS ternary expressions `cond ? val1 : val2` -> `(val1 if cond else val2)`
+    ternary_re = re.compile(r'([^\?:]+)\?([^\?:]+):([^\?:]+)')
+    while ternary_re.search(expr_py):
+        expr_py = ternary_re.sub(r'(\2 if \1 else \3)', expr_py)
 
     scope = {
         "ctx": ctx,

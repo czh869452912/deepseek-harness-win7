@@ -147,6 +147,16 @@ class Fiber:
             return self.plugin.__class__.__name__
         return "root"
 
+    def __getattr__(self, name: str) -> Any:
+        if name.startswith("_") or name in ("uid", "ctx", "config", "_config", "state", "dispose", "store", "inertia", "epoch", "parent", "plugin", "runtime", "inject"):
+            raise AttributeError(f"'Fiber' object has no attribute '{name}'")
+        if self.plugin is not None and hasattr(self.plugin, name):
+            return getattr(self.plugin, name)
+        raise AttributeError(f"'Fiber' object has no attribute '{name}'")
+
+    def __await__(self):
+        return self.await_settled().__await__()
+
     def assert_active(self) -> None:
         if self.uid is None or self.state in (FiberState.DISPOSED, FiberState.UNLOADING, FiberState.FAILED):
             if self._error is not None:
@@ -485,6 +495,21 @@ class Fiber:
                 self.plugin.config = self.config
             if hasattr(self.plugin, "ctx"):
                 self.plugin.ctx = self.ctx
+
+            # 1:1 Execute init hooks and symbols.init matching TS Fiber execute
+            init_hooks = getattr(self.plugin, symbols.initHooks, None) or getattr(self.plugin, "_init_hooks", [])
+            for hook in list(init_hooks):
+                if callable(hook):
+                    hook()
+
+            if hasattr(self.plugin, symbols.init) and callable(getattr(self.plugin, symbols.init)):
+                init_res = getattr(self.plugin, symbols.init)()
+                if inspect.isawaitable(init_res):
+                    try:
+                        loop = asyncio.get_running_loop()
+                        loop.create_task(init_res)
+                    except RuntimeError:
+                        pass
 
             if hasattr(self.plugin, "teardown") and callable(self.plugin.teardown):
                 self.effect(self.plugin.teardown, label=f"teardown({self.name})")

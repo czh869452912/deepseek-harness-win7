@@ -1,8 +1,12 @@
 """
 Cordis Utilities matching reference/vendor/cordis/src/utils.ts
-Implements DisposableList, Symbol constants, and callable helpers.
+Implements DisposableList, Symbol constants, Traceable proxy, and Stack builders.
 """
 
+import functools
+import inspect
+import sys
+import traceback
 from typing import Any, Callable, Dict, Generic, Iterator, List, Optional, Tuple, TypeVar
 
 T = TypeVar("T")
@@ -128,3 +132,93 @@ symbols = Symbols()
 def is_object(value: Any) -> bool:
     """Return true for non-null objects and functions."""
     return value is not None and (hasattr(value, "__dict__") or isinstance(value, (dict, list, tuple, set)) or callable(value))
+
+
+class TracedProxy:
+    """
+    Traceable proxy wrapper binding a service or callable to a caller Context
+    matching TS getTraceable(ctx, value).
+    """
+    def __init__(self, ctx: Any, target: Any):
+        self._ctx = ctx
+        self._target = target
+
+    def __getattr__(self, name: str) -> Any:
+        attr = getattr(self._target, name)
+        if callable(attr):
+            @functools.wraps(attr)
+            def wrapper(*args: Any, **kwargs: Any) -> Any:
+                if "caller_ctx" not in kwargs:
+                    sig = inspect.signature(attr)
+                    if "caller_ctx" in sig.parameters or any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()):
+                        kwargs["caller_ctx"] = self._ctx
+                return attr(*args, **kwargs)
+            return wrapper
+        return get_traceable(self._ctx, attr)
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        if callable(self._target):
+            if "caller_ctx" not in kwargs:
+                sig = inspect.signature(self._target)
+                if "caller_ctx" in sig.parameters or any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()):
+                    kwargs["caller_ctx"] = self._ctx
+            return self._target(*args, **kwargs)
+        raise TypeError(f"Target '{self._target}' is not callable")
+
+    def __repr__(self) -> str:
+        return f"<TracedProxy target={self._target!r}>"
+
+
+def get_traceable(ctx: Any, value: Any) -> Any:
+    """
+    Attach context tracing wrapper to a value matching TS getTraceable.
+    """
+    if value is None or isinstance(value, (int, float, str, bool)):
+        return value
+    if isinstance(value, TracedProxy):
+        return value
+    if hasattr(value, "ctx") or callable(value):
+        return TracedProxy(ctx, value)
+    return value
+
+
+def with_props(receiver: Any, service: Any) -> Any:
+    """
+    Combine receiver and service context properties matching TS withProps.
+    """
+    if receiver is None:
+        return service
+    return TracedProxy(receiver, service)
+
+
+def build_outer_stack() -> Callable[[], List[str]]:
+    """
+    Capture the caller stack for effect diagnostics matching TS buildOuterStack().
+    """
+    stack_lines = traceback.format_stack()[:-1]
+    filtered = []
+    for line in stack_lines:
+        line_str = line.strip()
+        if line_str:
+            filtered.append(f"    {line_str}")
+
+    def get_stack() -> List[str]:
+        return list(filtered)
+
+    return get_stack
+
+
+def compose_error(action: Callable[..., Any], get_outer_stack: Optional[Callable[[], List[str]]] = None) -> Any:
+    """
+    Execute an action and enrich errors with outer diagnostic stack.
+    """
+    try:
+        return action()
+    except Exception as e:
+        if get_outer_stack and callable(get_outer_stack):
+            outer = get_outer_stack()
+            if outer:
+                stack_msg = "\n".join(outer)
+                if not hasattr(e, "_outer_stack"):
+                    e._outer_stack = outer
+        raise e

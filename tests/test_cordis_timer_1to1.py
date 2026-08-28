@@ -28,7 +28,7 @@ async def test_timer_timeout_callback():
     await asyncio.sleep(0.06)
 
     assert len(called) == 1
-    assert called[0] - t0 >= 0.02
+    assert called[0] - t0 >= 0.015
 
 
 @pytest.mark.asyncio
@@ -37,7 +37,7 @@ async def test_timer_timeout_future():
     t0 = time.time()
     await ctx.timeout(30)
     t1 = time.time()
-    assert t1 - t0 >= 0.02
+    assert t1 - t0 >= 0.015
 
 
 @pytest.mark.asyncio

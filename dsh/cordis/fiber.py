@@ -8,7 +8,8 @@ import inspect
 import sys
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
-from dsh.cordis.utils import DisposableList, symbols
+from dsh.cordis.schema import Schema, ValidationError
+from dsh.cordis.utils import DisposableList, build_outer_stack, compose_error, symbols
 
 
 class FiberState:
@@ -27,41 +28,30 @@ class CordisError(Exception):
         super().__init__(message or code)
 
 
-class ValidationError(TypeError):
-    """Error raised when plugin configuration fails validation."""
-    def __init__(self, issues: List[Any]):
-        lines = []
-        for issue in issues:
-            if isinstance(issue, dict):
-                msg = issue.get("message", str(issue))
-                path = issue.get("path")
-                if path:
-                    path_str = ".".join(str(p) for p in path) if isinstance(path, (list, tuple)) else str(path)
-                    lines.append(f"  - {msg} (at {path_str})")
-                else:
-                    lines.append(f"  - {msg}")
-            else:
-                lines.append(f"  - {issue}")
-        msg = "invalid config:\n" + "\n".join(lines)
-        super().__init__(msg)
-
-
 def resolve_config(plugin: Any, config: Any) -> Any:
     """
-    Validate and normalize config for a plugin runtime before it starts.
+    Validate and normalize config for a plugin runtime before it starts matching TS resolveConfig.
     """
     if config is None and isinstance(getattr(plugin, "config", None), dict):
         config = dict(getattr(plugin, "config", {}))
     elif config is None:
         config = {}
+
     schema = getattr(plugin, "schema", None) or getattr(plugin, "Config", None)
     if not schema:
         return config
-    if hasattr(schema, "validate") and callable(schema.validate):
+
+    if isinstance(schema, Schema):
+        res = schema.validate(config)
+        if "issues" in res and res["issues"]:
+            raise ValidationError(f"invalid config: {res['issues']}")
+        return res.get("value", config)
+    elif hasattr(schema, "validate") and callable(schema.validate):
         res = schema.validate(config)
         if isinstance(res, dict) and "issues" in res and res["issues"]:
-            raise ValidationError(res["issues"])
-        return res.get("value", config)
+            raise ValidationError(f"invalid config: {res['issues']}")
+        return res.get("value", config) if isinstance(res, dict) and "value" in res else res
+
     return config
 
 
@@ -89,17 +79,27 @@ class Fiber:
 
     _uid_counter = 0
 
-    def __init__(self, parent_ctx: Any, plugin: Any, config: Any = None, runtime: Any = None, inject: Optional[Dict[str, Any]] = None):
+    def __init__(
+        self,
+        parent_ctx: Any,
+        plugin: Any,
+        config: Any = None,
+        runtime: Any = None,
+        inject: Optional[Dict[str, Any]] = None,
+        get_outer_stack: Optional[Callable[[], List[str]]] = None,
+    ):
         self.parent = parent_ctx
         self.plugin = plugin
         self.runtime = runtime
         self._config = config
         self.config = config
+        self.entry: Optional[Any] = None
         self.store: Optional[Dict[str, Any]] = {}
         self._store: Dict[str, Any] = {}
         self.inertia: Optional[asyncio.Future] = None
         self.epoch: str = INACTIVE_EPOCH
         self._error: Optional[Exception] = None
+        self.get_outer_stack = get_outer_stack or build_outer_stack()
 
         # Dependency map (service_name -> intercept_config)
         if inject is not None:
@@ -152,6 +152,12 @@ class Fiber:
             if self._error is not None:
                 raise self._error
             raise CordisError("INACTIVE_EFFECT", "cannot create effect on inactive context")
+
+    def _resolve_config(self, config: Any) -> Any:
+        """Resolve raw plugin config through internal/config waterfall matching TS."""
+        if self.ctx and hasattr(self.ctx, "waterfall_sync"):
+            config = self.ctx.waterfall_sync("internal/config", config, caller_ctx=self.ctx)
+        return resolve_config(self.plugin, config)
 
     def effect(self, execute_or_disposer: Any, label: str = "anonymous") -> Callable[[], Any]:
         """
@@ -474,7 +480,7 @@ class Fiber:
         epoch = self.epoch
         try:
             self.store = dict(self._store)
-            self.config = resolve_config(self.plugin, self._config)
+            self.config = self._resolve_config(self._config)
             if hasattr(self.plugin, "config"):
                 self.plugin.config = self.config
             if hasattr(self.plugin, "ctx"):

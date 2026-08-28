@@ -1,12 +1,14 @@
 """
 Cordis Composition & Loader System matching reference/vendor/loader/src/*
-Implements EntryTree, EntryGroup, Entry, and Loader service.
+Implements EntryTree, EntryGroup, Entry, Loader service, and interpolate expressions engine.
 """
 
 import asyncio
+import copy
 import os
 import platform
 import random
+import re
 import sys
 from typing import Any, Callable, Dict, Iterator, List, Optional, Set, Tuple, Union
 import yaml
@@ -17,8 +19,8 @@ from dsh.cordis.plugin import Plugin
 from dsh.cordis.service import Service
 
 
-def js_constructor(loader: Any, node: Any) -> str:
-    return f"!!js {loader.construct_scalar(node)}"
+def js_constructor(loader: Any, node: Any) -> Dict[str, str]:
+    return {"__jsExpr": loader.construct_scalar(node)}
 
 
 try:
@@ -28,7 +30,62 @@ except Exception:
     pass
 
 
-def eval_condition(condition: Any) -> bool:
+def is_js_expr(value: Any) -> bool:
+    """Return whether a value is a JS expression node matching TS isJsExpr."""
+    return isinstance(value, dict) and "__jsExpr" in value and isinstance(value["__jsExpr"], str)
+
+
+def evaluate_expr(ctx: Any, expr: str) -> Any:
+    """
+    Safely evaluate expression string in the given Context matching TS evaluate(ctx, expr).
+    Translates common JS patterns to Python syntax safely.
+    """
+    expr_str = expr.strip()
+    if expr_str.startswith("!!js"):
+        expr_str = expr_str[4:].strip()
+
+    # Normalize JS boolean and comparison operators to Python
+    expr_py = expr_str
+    expr_py = re.sub(r'===', '==', expr_py)
+    expr_py = re.sub(r'!==', '!=', expr_py)
+    expr_py = re.sub(r'\btrue\b', 'True', expr_py)
+    expr_py = re.sub(r'\bfalse\b', 'False', expr_py)
+    expr_py = re.sub(r'\bnull\b', 'None', expr_py)
+    expr_py = expr_py.replace("process.platform", "sys.platform")
+    expr_py = expr_py.replace("process.env", "env")
+
+    scope = {
+        "ctx": ctx,
+        "env": os.environ,
+        "sys": sys,
+        "os": os,
+        "platform": platform,
+    }
+    try:
+        return eval(expr_py, {"__builtins__": {}}, scope)
+    except Exception as e:
+        if ctx and hasattr(ctx, "logger"):
+            ctx.logger("loader").warn("Failed to evaluate expression '%s': %s", expr, e)
+        return expr
+
+
+def interpolate(ctx: Any, config: Any) -> Any:
+    """
+    Recursively interpolate JS expression nodes against the target context
+    matching TS interpolate(ctx, config).
+    """
+    if is_js_expr(config):
+        return evaluate_expr(ctx, config["__jsExpr"])
+    elif isinstance(config, str) and config.startswith("!!js "):
+        return evaluate_expr(ctx, config[5:])
+    elif isinstance(config, list):
+        return [interpolate(ctx, item) for item in config]
+    elif isinstance(config, dict):
+        return {k: interpolate(ctx, v) for k, v in config.items()}
+    return config
+
+
+def eval_condition(condition: Any, ctx: Optional[Any] = None) -> bool:
     """
     Safely evaluate boolean expression for 'disabled' or 'enabled' fields in plugin configs.
     Example: sys.platform == 'win32' or platform.system() == 'Windows'
@@ -38,28 +95,15 @@ def eval_condition(condition: Any) -> bool:
     if isinstance(condition, bool):
         return condition
 
+    if is_js_expr(condition):
+        return bool(evaluate_expr(ctx, condition["__jsExpr"]))
+
     cond_str = str(condition).strip()
     if cond_str.startswith("!!js"):
-        cond_str = cond_str[4:].strip()
+        return bool(evaluate_expr(ctx, cond_str[4:].strip()))
 
-    cond_str = cond_str.replace("process.platform === 'win32'", "sys.platform == 'win32'")
-    cond_str = cond_str.replace("process.platform !== 'win32'", "sys.platform != 'win32'")
-    cond_str = cond_str.replace("process.platform === 'posix'", "sys.platform != 'win32'")
+    return bool(evaluate_expr(ctx, cond_str))
 
-    scope = {
-        "sys": sys,
-        "os": os,
-        "platform": platform,
-        "env": os.environ
-    }
-    try:
-        return bool(eval(cond_str, {"__builtins__": {}}, scope))
-    except Exception as e:
-        sys.stderr.write(f"[Cordis Loader Warning] Failed to evaluate condition '{condition}': {e}\n")
-        return False
-
-
-import copy
 
 def apply_entry_patches(
     data: List[Dict[str, Any]],
@@ -344,6 +388,7 @@ class EntryTree:
 
 class EntryGroup:
     """Runtime owner for a list of child loader entries matching TS EntryGroup."""
+    key = "cordis.entryGroup"
 
     def __init__(self, ctx: Context, tree: EntryTree):
         self.ctx = ctx
@@ -357,7 +402,10 @@ class EntryGroup:
         eid = self.tree.ensure_id(options)
         existing = self.tree.store.get(eid)
         loader_svc = self.ctx.get("loader") if hasattr(self.ctx, "get") else None
-        entry = existing or Entry(loader=loader_svc or self.tree, name=options.get("name", eid), entry_id=eid)
+        is_group = options.get("group", False) or options.get("name") == "cordis:group"
+        entry = existing or Entry(loader=loader_svc or self.tree, name=options.get("name", eid), entry_id=eid, group=is_group)
+        if is_group and not entry.subgroup:
+            entry.subgroup = EntryGroup(entry.ctx, self.tree)
         self.tree.store[eid] = entry
         prev_parent = entry.parent
         entry.parent = self
@@ -432,6 +480,7 @@ class EntryGroup:
 
 class Entry:
     """Represents a configured plugin entry inside an EntryTree matching TS Entry."""
+    key = "cordis.entry"
 
     def __init__(
         self,
@@ -467,10 +516,25 @@ class Entry:
         else:
             self.ctx = Context()
 
+        if group or self.options.get("group") or self.name == "cordis:group":
+            tree_obj = getattr(loader, "tree", loader) if loader else None
+            self.subgroup = EntryGroup(self.ctx, tree_obj)
+
     @property
     def disabled(self) -> bool:
         dis = self.options.get("disabled", False)
-        return eval_condition(dis)
+        return eval_condition(dis, self.ctx)
+
+    def get_outer_stack(self) -> List[str]:
+        """Build virtual diagnostic stack tracing entry configuration locations."""
+        entry: Optional[Entry] = self
+        res: List[str] = []
+        while entry is not None:
+            base_url = getattr(getattr(entry.parent, "tree", None), "filepath", None) or getattr(getattr(entry.ctx, "root", None), "base_url", "root")
+            res.append(f"    at {base_url}#{getattr(entry, 'id', 'anonymous')}")
+            parent_ctx = getattr(entry.parent, "ctx", None) if entry.parent else None
+            entry = getattr(getattr(parent_ctx, "fiber", None), "entry", None) if parent_ctx else None
+        return res
 
     def _dispose(self) -> None:
         if not self.fiber:
@@ -501,9 +565,13 @@ class Entry:
 
         if not self.fiber:
             self.init()
+            if self.fiber and self.fiber.error is not None:
+                raise self.fiber.error
         else:
             if "config" in options and self.fiber:
                 self.fiber.update(self.config, no_save=True)
+                if self.fiber.error is not None:
+                    raise self.fiber.error
 
     def init(self) -> None:
         """Start plugin fiber."""
@@ -518,11 +586,13 @@ class Entry:
             if isinstance(plugin_cls, type) and issubclass(plugin_cls, Plugin):
                 inst = plugin_cls(config=self.config)
                 inst.id = self.id
-                self.fiber = ctx.registry.plugin(inst, config=self.config)
+                self.fiber = ctx.registry.plugin(inst, config=self.config, get_outer_stack=self.get_outer_stack)
             elif callable(plugin_cls):
-                self.fiber = ctx.registry.plugin(plugin_cls, config=self.config)
+                self.fiber = ctx.registry.plugin(plugin_cls, config=self.config, get_outer_stack=self.get_outer_stack)
             else:
-                self.fiber = ctx.registry.plugin(plugin_cls, config=self.config)
+                self.fiber = ctx.registry.plugin(plugin_cls, config=self.config, get_outer_stack=self.get_outer_stack)
+            if self.fiber:
+                self.fiber.entry = self
 
 
 # Backward compatibility aliases
@@ -617,11 +687,29 @@ class Loader(EntryTree, Service):
             return list(self.store.values())
         return self.entries_list
 
-    def _on_internal_config(self, fiber: Any, config: Any, next_fn: Any) -> Any:
-        return next_fn(config)
+    def _on_internal_config(self, config: Any, *args: Any, **kwargs: Any) -> Any:
+        target_ctx = kwargs.get("caller_ctx") or (args[0] if args and hasattr(args[0], "fiber") else None)
+        fiber = getattr(target_ctx, "fiber", None) if target_ctx else None
 
-    def _on_internal_update(self, fiber: Any, config: Any, no_save: bool, next_fn: Any) -> Any:
-        return next_fn(config)
+        next_fn = args[-1] if args and callable(args[-1]) else (lambda c=config: c)
+        resolved = next_fn(config) if callable(next_fn) else config
+
+        if not fiber or not getattr(fiber, "entry", None):
+            return resolved
+
+        parent_fiber = getattr(getattr(fiber, "parent", None), "fiber", None)
+        if parent_fiber and getattr(parent_fiber, "entry", None) == fiber.entry:
+            return resolved
+
+        plugin = getattr(fiber, "plugin", None) or getattr(getattr(fiber, "runtime", None), "callback", None)
+        if getattr(plugin, "is_tree_carrier", False) or getattr(plugin, EntryGroup.key, False) or getattr(plugin, "group", False):
+            return resolved
+
+        return interpolate(fiber.ctx, resolved)
+
+    def _on_internal_update(self, config: Any, no_save: bool = False, *args: Any, **kwargs: Any) -> Any:
+        next_fn = args[-1] if args and callable(args[-1]) else (lambda c=config: c)
+        return next_fn(config) if callable(next_fn) else config
 
     def register_plugin_class(self, name_or_id: str, plugin_cls: Any) -> None:
         """
@@ -652,7 +740,7 @@ class Loader(EntryTree, Service):
             is_group = item.get("group", False) or plugin_name == "cordis:group"
             disabled_cond = item.get("disabled", False)
 
-            is_disabled = eval_condition(disabled_cond)
+            is_disabled = eval_condition(disabled_cond, ctx)
             entry = Entry(
                 loader=self,
                 name=plugin_name,
@@ -687,14 +775,16 @@ class Loader(EntryTree, Service):
                 if isinstance(plugin_cls, type) and issubclass(plugin_cls, Plugin):
                     plugin_instance = plugin_cls(config=config)
                     plugin_instance.id = plugin_id
-                    fiber = ctx.registry.plugin(plugin_instance, config=config)
+                    fiber = ctx.registry.plugin(plugin_instance, config=config, get_outer_stack=entry.get_outer_stack)
                 elif callable(plugin_cls):
-                    fiber = ctx.registry.plugin(plugin_cls, config=config)
+                    fiber = ctx.registry.plugin(plugin_cls, config=config, get_outer_stack=entry.get_outer_stack)
                 else:
                     if ctx and hasattr(ctx, "logger"):
                         ctx.logger("loader").warn("Registered item '%s' is not a valid plugin", plugin_name)
                     else:
                         sys.stderr.write(f"[Cordis Loader Warning] Registered item '{plugin_name}' is not a valid plugin\n")
+                if fiber:
+                    fiber.entry = entry
                 entry.fiber = fiber
             else:
                 if ctx and hasattr(ctx, "logger"):

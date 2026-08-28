@@ -60,6 +60,22 @@ Web 端基于官方 **React 18 + TSX + CSS Modules** 架构，使用浏览器端
 
 ## 快速开始
 
+### 获取 reference 参考仓库
+
+本项目通过 Git submodule 固定官方 DeepSeek Harness reference 版本。首次克隆时请初始化 submodule：
+
+```powershell
+git clone --recurse-submodules <项目地址>
+```
+
+已有工作树可执行：
+
+```powershell
+git submodule update --init --recursive
+```
+
+不要在 `reference` 目录内自行切换到其他提交；官方参考版本由外层仓库的 submodule 提交锁定。
+
 ### 1. 源码运行
 
 1. 克隆仓库并使用 Python 3.8.10 安装依赖：

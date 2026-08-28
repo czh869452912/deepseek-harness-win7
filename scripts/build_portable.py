@@ -23,14 +23,14 @@ def build_portable():
     if os.path.exists(os.path.join(ROOT_DIR, "apps", "web")):
         shutil.copytree(os.path.join(ROOT_DIR, "apps", "web"), os.path.join(DIST_DIR, "apps", "web"))
     # Copy official compiled web dist and client packages
-    ref_web_dist = os.path.join(ROOT_DIR, "reference", "deepseek-harness", "apps", "web", "dist")
+    ref_web_dist = os.path.join(ROOT_DIR, "reference", "apps", "web", "dist")
     if os.path.exists(ref_web_dist):
         os.makedirs(os.path.join(DIST_DIR, "apps", "web", "dist"), exist_ok=True)
         shutil.copytree(ref_web_dist, os.path.join(DIST_DIR, "apps", "web", "dist"), dirs_exist_ok=True)
 
     ref_pkgs = os.path.join(ROOT_DIR, "packages")
     if not os.path.exists(ref_pkgs):
-        ref_pkgs = os.path.join(ROOT_DIR, "reference", "deepseek-harness", "packages")
+        ref_pkgs = os.path.join(ROOT_DIR, "reference", "packages")
     if os.path.exists(ref_pkgs):
         os.makedirs(os.path.join(DIST_DIR, "packages"), exist_ok=True)
         shutil.copytree(

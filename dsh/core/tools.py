@@ -26,7 +26,8 @@ class Tool:
         description: str,
         parameters: Dict[str, Any],
         handler: Callable[..., Any],
-        execution_mode: str = "parallel",  # "parallel" | "exclusive"
+        execution_mode: str = "exclusive",  # "parallel" | "exclusive"
+        is_concurrency_safe: Optional[Callable[[Any], bool]] = None,
         present_call: Optional[Callable[[Dict[str, Any]], Any]] = None,
         present_result: Optional[Callable[[Any], Any]] = None,
     ):
@@ -34,7 +35,8 @@ class Tool:
         self.description = description
         self.parameters = parameters
         self.handler = handler
-        self.execution_mode = execution_mode if execution_mode in ("parallel", "exclusive") else "parallel"
+        self.is_concurrency_safe = is_concurrency_safe
+        self.execution_mode = execution_mode if execution_mode in ("parallel", "exclusive") else "exclusive"
         self.present_call = present_call
         self.present_result = present_result
 
@@ -130,7 +132,8 @@ class ToolsService:
         description: Optional[str] = None,
         parameters: Optional[Dict[str, Any]] = None,
         handler: Optional[Callable[..., Any]] = None,
-        execution_mode: str = "parallel",
+        execution_mode: Optional[str] = None,
+        is_concurrency_safe: Optional[Callable[[Any], bool]] = None,
         present_call: Optional[Callable[[Dict[str, Any]], Any]] = None,
         present_result: Optional[Callable[[Any], Any]] = None,
         name: Optional[str] = None,
@@ -147,7 +150,8 @@ class ToolsService:
             t_desc = tool_or_spec.get("description", description or "")
             t_params = tool_or_spec.get("parameters", parameters or {})
             t_handler = tool_or_spec.get("execute") or tool_or_spec.get("handler") or handler
-            t_mode = tool_or_spec.get("execution_mode", execution_mode)
+            t_safe = tool_or_spec.get("isConcurrencySafe") or tool_or_spec.get("is_concurrency_safe") or is_concurrency_safe
+            t_mode = tool_or_spec.get("execution_mode") or execution_mode or ("parallel" if t_safe else "exclusive")
             t_pres_call = tool_or_spec.get("presentCall") or tool_or_spec.get("present_call") or present_call
             t_pres_res = tool_or_spec.get("presentResult") or tool_or_spec.get("present_result") or present_result
             tool = Tool(
@@ -156,17 +160,20 @@ class ToolsService:
                 parameters=t_params,
                 handler=t_handler,
                 execution_mode=t_mode,
+                is_concurrency_safe=t_safe,
                 present_call=t_pres_call,
                 present_result=t_pres_res,
             )
         elif spec_name and (handler is not None or callable(tool_or_spec)):
             actual_handler = handler or (tool_or_spec if callable(tool_or_spec) else None)
+            t_mode = execution_mode or ("parallel" if is_concurrency_safe else "exclusive")
             tool = Tool(
                 name=spec_name,
                 description=description or "",
                 parameters=parameters or {},
                 handler=actual_handler,
-                execution_mode=execution_mode,
+                execution_mode=t_mode,
+                is_concurrency_safe=is_concurrency_safe,
                 present_call=present_call,
                 present_result=present_result,
             )
@@ -200,14 +207,48 @@ class ToolsService:
     def get_tool_definitions(self) -> List[Dict[str, Any]]:
         return [tool.to_schema() for tool in self._tools.values()]
 
+    def get_tools(self) -> List[Dict[str, Any]]:
+        return [
+            {
+                "name": tool.name,
+                "description": tool.description,
+                "parameters": tool.parameters,
+            }
+            for tool in self._tools.values()
+        ]
+
     def get_schemas(self) -> List[Dict[str, Any]]:
         return [tool.to_schema() for tool in self._tools.values()]
 
-    def execution_mode(self, exec_input: Union[ToolExecutionInput, Dict[str, Any]]) -> Dict[str, str]:
-        name = exec_input.name if isinstance(exec_input, ToolExecutionInput) else exec_input.get("name", "")
+    def execution_mode(self, exec_input: Union[ToolExecutionInput, Dict[str, Any], str], args: Optional[Dict[str, Any]] = None) -> Union[Dict[str, str], str]:
+        if isinstance(exec_input, str):
+            name = exec_input
+            call_args = args or {}
+        elif isinstance(exec_input, ToolExecutionInput):
+            name = exec_input.name
+            call_args = exec_input.arguments if isinstance(exec_input.arguments, dict) else {}
+        elif isinstance(exec_input, dict):
+            name = exec_input.get("name", "")
+            call_args = exec_input.get("arguments", args or {})
+        else:
+            name = ""
+            call_args = {}
+
         tool = self.get_tool(name)
-        mode = tool.execution_mode if tool else "parallel"
-        return {"kind": mode}
+        if not tool:
+            return "exclusive" if isinstance(exec_input, str) else {"kind": "exclusive"}
+
+        if tool.is_concurrency_safe is not None and callable(tool.is_concurrency_safe):
+            try:
+                res = tool.is_concurrency_safe(call_args)
+                if res is True:
+                    return "parallel" if isinstance(exec_input, str) else {"kind": "parallel"}
+                return "exclusive" if isinstance(exec_input, str) else {"kind": "exclusive"}
+            except Exception:
+                return "exclusive" if isinstance(exec_input, str) else {"kind": "exclusive"}
+
+        mode = tool.execution_mode if tool.execution_mode in ("parallel", "exclusive") else "exclusive"
+        return mode if isinstance(exec_input, str) else {"kind": mode}
 
     async def prepare(self, exec_input: ToolExecutionInput) -> Dict[str, Any]:
         """Runs pre-execute waterfall."""

@@ -82,7 +82,8 @@ class FileSystemSkillProvider:
                         if parsed:
                             discovered.append(parsed)
             except Exception as e:
-                print(f"[SkillFS Provider Warning] Exception scanning {root_path}: {e}")
+                if self.ctx and hasattr(self.ctx, "logger"):
+                    self.ctx.logger("skill-filesystem").warn("Exception scanning %s: %s", root_path, e)
 
         return discovered
 
@@ -108,10 +109,13 @@ class SkillFilesystemPlugin(Plugin):
 
     id = "skill-filesystem"
     name = "@deepseek-ai/dsh-skill-filesystem"
+    inject = []
 
     def apply(self, ctx: Any) -> None:
-        if not ctx.has("skills"):
-            ctx.set_service("skills", SkillService(ctx))
+        skills_service = ctx.get("skills", strict=False)
+        if not skills_service:
+            skills_service = SkillService(ctx)
+            ctx.set_service("skills", skills_service)
 
         provider = FileSystemSkillProvider(ctx=ctx, config=self.config)
-        ctx.skills.add_provider(provider)
+        skills_service.add_provider(provider)

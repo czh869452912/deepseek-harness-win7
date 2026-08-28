@@ -109,13 +109,13 @@ class SessionHeader:
         return cls(
             session_id=data.get("id", "default-session"),
             version=data.get("version", SESSION_FORMAT_VERSION),
-            created_at=data.get("createdAt"),
+            created_at=data.get("createdAt") or data.get("created_at"),
             cwd=data.get("cwd"),
-            parent_session=data.get("parentSession"),
-            seed_length=data.get("seedLength"),
+            parent_session=data.get("parentSession") or data.get("parent_session"),
+            seed_length=data.get("seedLength") or data.get("seed_length"),
             origin=data.get("origin"),
-            delegation_depth=data.get("delegationDepth"),
-            agent_preset=data.get("agentPreset"),
+            delegation_depth=data.get("delegationDepth") or data.get("delegation_depth"),
+            agent_preset=data.get("agentPreset") or data.get("agent_preset"),
         )
 
 
@@ -177,6 +177,10 @@ class Session:
     @property
     def session_id(self) -> str:
         return self.header.id
+
+    @property
+    def parent_session_id(self) -> Optional[str]:
+        return getattr(self.header, "parent_session", None)
 
     @property
     def surface(self) -> SurfaceManager:
@@ -430,12 +434,17 @@ class SessionStore:
         session_id: Optional[str] = None,
         seed: Optional[List[Dict[str, Any]]] = None,
         meta: Optional[Dict[str, Any]] = None,
+        parent_session_id: Optional[str] = None,
     ) -> Session:
         sid = session_id or f"session-{len(self._sessions) + 1}"
         if sid in self._sessions:
             raise ValueError(f'session "{sid}" already exists in store')
 
-        header = SessionHeader.from_dict({"id": sid, **(meta or {})})
+        meta_dict = dict(meta or {})
+        if parent_session_id is not None:
+            meta_dict["parent_session"] = parent_session_id
+
+        header = SessionHeader.from_dict({"id": sid, **meta_dict})
         session = Session(session_id=sid, seed=seed, header=header, ctx=self.ctx)
         self._sessions[sid] = session
 
@@ -452,9 +461,13 @@ class SessionStore:
         session_id: Optional[str] = None,
         seed: Optional[List[Dict[str, Any]]] = None,
         meta: Optional[Dict[str, Any]] = None,
+        parent_session_id: Optional[str] = None,
     ) -> SessionPreparation:
         sid = session_id or f"session-{len(self._sessions) + 1}"
-        header = SessionHeader.from_dict({"id": sid, **(meta or {})})
+        meta_dict = dict(meta or {})
+        if parent_session_id is not None:
+            meta_dict["parent_session"] = parent_session_id
+        header = SessionHeader.from_dict({"id": sid, **meta_dict})
         session = Session(session_id=sid, seed=seed, header=header, ctx=self.ctx)
         return SessionPreparation(session=session)
 

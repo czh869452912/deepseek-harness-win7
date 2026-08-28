@@ -49,9 +49,9 @@ class Service:
             check_fn = getattr(self, "_check_availability")
 
         if hasattr(self.ctx, "set_service"):
-            self.ctx.set_service(self.name, self)
+            self.ctx.set_service(self.name, self, check=check_fn)
         elif hasattr(self.ctx, "provide"):
-            self.ctx.provide(self.name, self)
+            self.ctx.provide(self.name, self, check=check_fn)
 
     def resolve_intercept_config(self, base: Optional[Any] = None, head: Optional[Any] = None) -> Any:
         """
@@ -76,6 +76,15 @@ class Service:
             if isinstance(cfg, dict):
                 res.update(cfg)
         return res
+
+    def filter(self, ctx: Any) -> bool:
+        """
+        Service isolation filter matching TS Service[symbols.filter].
+        Checks whether target context has the same isolation label for this service.
+        """
+        target_isolate = getattr(ctx, "_isolated_keys", {}) if ctx else {}
+        self_isolate = getattr(self.ctx, "_isolated_keys", {}) if self.ctx else {}
+        return target_isolate.get(self.name) == self_isolate.get(self.name)
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """

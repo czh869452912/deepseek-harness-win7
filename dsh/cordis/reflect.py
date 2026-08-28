@@ -5,6 +5,8 @@ Reflection and service-resolution layer matching reference/vendor/cordis/src/ref
 import sys
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
+from dsh.cordis.utils import symbols
+
 
 class PropertyType:
     SERVICE = "service"
@@ -39,12 +41,16 @@ class Impl:
         return f"<Impl {self.name} fiber={getattr(self.fiber, 'name', 'root')}>"
 
 
-RESERVED_PROPERTIES = {"prototype", "then", "_services", "_parent", "_event_bus", "registry", "reflect", "fiber", "root"}
+RESERVED_PROPERTIES = {
+    "prototype", "then", "_services", "_parent", "_event_bus", "registry",
+    "reflect", "fiber", "root", "_isolated_keys", "_intercept_map", "_effects", "logger", "timer"
+}
 
 
 class ReflectService:
     """
     Reflection layer backing Context service resolution, proxy lookups, accessors, and mixins.
+    Matching reference/vendor/cordis/src/reflect.ts.
     """
 
     def __init__(self, ctx: Any):
@@ -58,6 +64,8 @@ class ReflectService:
         self.mixin("fiber", ["runtime", "effect"])
         self.mixin("registry", ["inject", "plugin"])
         self.mixin("events", ["on", "once", "parallel", "emit", "serial", "bail", "waterfall"])
+        self.mixin("logger", ["error", "info", "warn", "debug"])
+        self.mixin("timer", ["timeout", "interval", "throttle", "debounce", "setTimeout", "setInterval"])
 
     def get(self, ctx: Any, name: str, default: Any = None, strict: bool = True) -> Any:
         """
@@ -72,17 +80,17 @@ class ReflectService:
             err = KeyError(f"cannot get property '{name}'")
             return def_prop.get(ctx, err)
 
-        # 2. Direct service dictionary check on Context
-        if hasattr(ctx, "_services") and name in ctx._services:
-            val = ctx._services[name]
-            return self._fire_get_waterfall(ctx, name, val)
-
-        # 3. Store implementation check
+        # 2. Store implementation check
         impl = self._get_impl(ctx, name, strict=strict)
         if impl is not None:
             return self._fire_get_waterfall(ctx, name, impl.value)
 
-        # Fallback parent hierarchy check
+        # 3. Direct service dictionary check on Context
+        if hasattr(ctx, "_services") and name in ctx._services:
+            val = ctx._services[name]
+            return self._fire_get_waterfall(ctx, name, val)
+
+        # 4. Fallback parent hierarchy check
         if hasattr(ctx, "get_service"):
             val = ctx.get_service(name, default)
             if val is not default:
@@ -126,20 +134,35 @@ class ReflectService:
         key = isolated_map.get(name, name)
         impl = self.store.get(key) or self.store.get(name)
         if impl:
-            if hasattr(ctx, "fiber") and impl.fiber and impl.fiber != ctx.fiber:
-                pass
             impl.value = value
 
-        if hasattr(ctx, "_services"):
-            ctx._services[name] = value
-            setattr(ctx, name, value)
+        target = ctx.root if hasattr(ctx, "root") else ctx
+        if hasattr(target, "_services"):
+            target._services[name] = value
+            setattr(target, name, value)
         return True
 
-    def provide(self, ctx: Any, name: str, value: Any = None, check: Optional[Callable[[], bool]] = None) -> Callable[[], None]:
+    def provide(
+        self,
+        ctx_or_name: Any,
+        name_or_value: Any = None,
+        value: Any = None,
+        check: Optional[Callable[[], bool]] = None
+    ) -> Callable[[], None]:
         """
         Register a service implementation owned by the current fiber.
+        Supports both (ctx, name, value, check) and (name, value, check) signatures.
         """
-        target_ctx = ctx or self.ctx
+        if isinstance(ctx_or_name, str):
+            target_ctx = self.ctx
+            name = ctx_or_name
+            val = name_or_value
+            chk = value if callable(value) else check
+        else:
+            target_ctx = ctx_or_name or self.ctx
+            name = name_or_value
+            val = value
+            chk = check
 
         def setup() -> Callable[[], Any]:
             if name not in self.props:
@@ -151,28 +174,29 @@ class ReflectService:
             key = isolated_map.get(name, name)
 
             fiber = getattr(target_ctx, "fiber", None)
-            impl = Impl(name=name, fiber=fiber, value=value, check=check)
+            impl = Impl(name=name, fiber=fiber, value=val, check=chk)
 
             self.store[key] = impl
-            if hasattr(target_ctx, "_services"):
-                target_ctx._services[name] = value
-                setattr(target_ctx, name, value)
+            target_store = target_ctx if name in isolated_map else (target_ctx.root if hasattr(target_ctx, "root") else target_ctx)
+            if hasattr(target_store, "_services"):
+                target_store._services[name] = val
+                setattr(target_store, name, val)
 
             if fiber and hasattr(fiber, "store") and fiber.store is not None:
                 fiber.store[name] = impl
 
             from dsh.cordis.fiber import FiberState
-            if fiber and fiber.state == FiberState.ACTIVE:
+            if fiber and fiber.state in (FiberState.ACTIVE, FiberState.LOADING):
                 self.notify([name])
 
             def teardown() -> None:
-                if key in self.store:
+                if key in self.store and self.store[key] == impl:
                     del self.store[key]
-                if hasattr(target_ctx, "_services") and name in target_ctx._services:
-                    del target_ctx._services[name]
-                    if hasattr(target_ctx, name):
+                if hasattr(target_store, "_services") and name in target_store._services:
+                    del target_store._services[name]
+                    if hasattr(target_store, name):
                         try:
-                            delattr(target_ctx, name)
+                            delattr(target_store, name)
                         except AttributeError:
                             pass
                 self.notify([name])
@@ -187,11 +211,22 @@ class ReflectService:
 
     def notify(self, names: List[str]) -> List[Any]:
         """
-        Re-evaluate every fiber that requires one of the given services.
+        1:1 Dependency notification matching TS Cordis ReflectService.notify.
+        Re-evaluates every registered fiber that requires one of the changed services.
         """
         affected_fibers: List[Any] = []
-        if hasattr(self.ctx, "registry") and hasattr(self.ctx.registry, "update_dependencies"):
-            self.ctx.registry.update_dependencies()
+        if hasattr(self.ctx, "registry"):
+            for fiber in self.ctx.registry.list_fibers():
+                has_update = False
+                for name in names:
+                    if name in getattr(fiber, "inject", {}):
+                        has_update = True
+                        if hasattr(fiber, "_checkImpl"):
+                            fiber._checkImpl(name)
+                if has_update:
+                    if hasattr(fiber, "_refresh"):
+                        fiber._refresh()
+                    affected_fibers.append(fiber)
 
         if hasattr(self.ctx, "emit"):
             for name in names:

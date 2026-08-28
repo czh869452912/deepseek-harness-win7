@@ -67,7 +67,8 @@ class ToolPwshPersistentPlugin(Plugin):
     def apply(self, ctx: Any) -> None:
         tools_service = ctx.get("tools")
         if not tools_service:
-            print("[ToolPwshPersistentPlugin Warning] tools service unavailable")
+            if hasattr(ctx, "logger"):
+                ctx.logger("persistent-pwsh").warn("tools service unavailable")
             return
 
         tool_name = self.config.get("tool_name", "pwsh")

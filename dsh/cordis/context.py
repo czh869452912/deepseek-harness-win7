@@ -10,6 +10,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Union
 
 from dsh.cordis.events import EventBus
 from dsh.cordis.fiber import Fiber, FiberState
+from dsh.cordis.logger import LoggerService
 from dsh.cordis.reflect import ReflectService
 from dsh.cordis.registry import RegistryService
 from dsh.cordis.plugin import Plugin
@@ -19,26 +20,47 @@ class Context:
     """
     Cordis Context: core dependency container for services, events, plugins,
     scoped hierarchies, lifecycle Fibers, isolated realms, and reversible effects.
+    Matching reference/vendor/cordis/src/context.ts.
     """
 
-    def __init__(self, parent: Optional["Context"] = None, is_extension: bool = False):
+    def __init__(
+        self,
+        parent: Optional["Context"] = None,
+        is_extension: bool = False,
+        strict_inject: Optional[bool] = None,
+    ):
         self._parent: Optional["Context"] = parent
         self._services: Dict[str, Any] = {}
         self._isolated_keys: Dict[str, Any] = {}
         self._intercept_map: Dict[str, Any] = {}
         self._effects: List[Callable[[], Any]] = []
 
+        if strict_inject is not None:
+            self.strict_inject: bool = strict_inject
+        elif parent is not None and hasattr(parent, "strict_inject"):
+            self.strict_inject = parent.strict_inject
+        else:
+            import os
+            self.strict_inject = os.environ.get("DSH_STRICT_INJECT", "0") in ("1", "true", "True")
+
         if parent is not None:
             self._event_bus: EventBus = parent._event_bus
             self.registry: RegistryService = parent.registry
             self.reflect: ReflectService = parent.reflect
             self.fiber: Fiber = parent.fiber
+            self.logger: LoggerService = parent.logger
+            self.timer: Any = getattr(parent, "timer", None)
         else:
-            self._event_bus = EventBus()
+            self._event_bus = EventBus(ctx=self)
             self.reflect = ReflectService(self)
             self.registry = RegistryService(self)
             self.fiber = Fiber(self, None, config={}, runtime=None)
+            self.logger = LoggerService(self)
+            from dsh.cordis.timer import TimerService
+            self.timer = TimerService(self)
             self.reflect.setup_mixins()
+            self.fiber._disposables.clear()
+            self.fiber._effect_metas.clear()
 
     @property
     def root(self) -> "Context":
@@ -51,14 +73,22 @@ class Context:
     def events(self) -> EventBus:
         return self._event_bus
 
-    def set_service(self, name: str, service_instance: Any) -> None:
+    def set_service(self, name: str, service_instance: Any, check: Optional[Callable[[], bool]] = None) -> None:
         """
         Bind a service instance to context (or root if not isolated) and trigger dependency resolution & events.
         """
         target = self if name in self._isolated_keys else self.root
         target._services[name] = service_instance
         setattr(target, name, service_instance)
-        target.reflect.provide(target, name, service_instance)
+
+        chk = check
+        if chk is None:
+            if hasattr(service_instance, "_check_availability") and callable(service_instance._check_availability):
+                chk = service_instance._check_availability
+            elif hasattr(service_instance, "check") and callable(service_instance.check):
+                chk = service_instance.check
+
+        self.reflect.provide(self, name, service_instance, check=chk)
 
     def provide(self, name: str, service_instance: Any = None, check: Optional[Callable[[], bool]] = None) -> Callable[[], None]:
         """
@@ -100,9 +130,9 @@ class Context:
     def effect(self, setup_or_disposer: Any, label: str = "") -> Callable[[], None]:
         """
         Register a reversible effect setup/cleanup function.
-        Delegates to current fiber effect if active, or tracks as context effect.
+        Delegates to current fiber effect matching TS context.effect().
         """
-        if self.fiber and self.fiber.state in (FiberState.ACTIVE, FiberState.LOADING):
+        if self.fiber:
             return self.fiber.effect(setup_or_disposer, label=label)
 
         if not callable(setup_or_disposer):
@@ -127,7 +157,10 @@ class Context:
                     except RuntimeError:
                         pass
             except Exception as e:
-                print(f"[Cordis Context Error] Exception in cancel_effect '{label}': {e}", file=sys.stderr)
+                if hasattr(self, "logger"):
+                    self.logger("context").warn("Exception in cancel_effect '%s': %s", label, e)
+                else:
+                    sys.stderr.write(f"[Cordis Context Error] Exception in cancel_effect '{label}': {e}\n")
 
         return cancel_effect
 
@@ -179,12 +212,13 @@ class Context:
         kwargs["caller_ctx"] = self
         return self._event_bus.bail_sync(event_name, *args, **kwargs)
 
-    def plugin(self, plugin_cls_or_instance: Any, config: Optional[Dict[str, Any]] = None) -> Optional[Plugin]:
+    def plugin(self, plugin_cls_or_instance: Any, config: Optional[Dict[str, Any]] = None) -> Any:
         """
-        Load a plugin onto context wrapped in a Fiber.
+        Load a plugin onto context wrapped in a Fiber matching TS ctx.plugin().
+        Returns the Fiber instance (which is awaitable and transparently delegates attribute access to plugin).
         """
         fiber = self.registry.plugin(plugin_cls_or_instance, config=config)
-        return fiber.plugin if fiber else None
+        return fiber
 
     def inject(self, deps: Any, callback: Callable[..., Any]) -> Any:
         """
@@ -218,6 +252,7 @@ class Context:
                 "inject": getattr(plugin, "inject", []),
                 "config": getattr(plugin, "config", getattr(fiber, "config", {})),
                 "state": fiber.state,
+                "epoch": getattr(fiber, "epoch", ""),
             })
         return result
 
@@ -225,7 +260,7 @@ class Context:
         """
         Create a child context inheriting services and event bus.
         """
-        child = Context(parent=self, is_extension=True)
+        child = Context(parent=self, is_extension=True, strict_inject=self.strict_inject)
         child._isolated_keys = dict(self._isolated_keys)
         child._intercept_map = dict(self._intercept_map)
         if meta:
@@ -235,18 +270,21 @@ class Context:
 
     def isolate(self, name_or_keys: Union[str, List[str], Dict[str, Any]] = None, label: Any = None, keys: Optional[List[str]] = None) -> "Context":
         """
-        Create a child context isolated from parent for specific service keys.
+        Create a child context isolated from parent for specific service keys matching TS Context.isolate.
         """
-        child = self.extend()
+        shadow = dict(self._isolated_keys)
         target_keys = keys if keys is not None else name_or_keys
         if isinstance(target_keys, str):
-            child._isolated_keys[target_keys] = label or object()
+            shadow[target_keys] = label or object()
         elif isinstance(target_keys, list):
             for k in target_keys:
-                child._isolated_keys[k] = label or object()
+                shadow[k] = label or object()
         elif isinstance(target_keys, dict):
             for k, v in target_keys.items():
-                child._isolated_keys[k] = v
+                shadow[k] = v
+
+        child = self.extend()
+        child._isolated_keys = shadow
         return child
 
     def intercept(self, name: str, config: Any) -> "Context":
@@ -281,9 +319,53 @@ class Context:
             except Exception:
                 pass
 
+    def timeout(self, callback_or_delay: Any, delay_ms: Optional[Union[float, int]] = None) -> Any:
+        """Run a callback once or return a Future after delay_ms matching TS ctx.timeout()."""
+        if hasattr(self, "timer") and self.timer is not None:
+            return self.timer.timeout(callback_or_delay, delay_ms, ctx=self)
+        raise RuntimeError("TimerService is not available on Context")
+
+    def interval(self, callback_or_delay: Any, delay_ms: Optional[Union[float, int]] = None) -> Any:
+        """Run a callback repeatedly or return an AsyncIterator matching TS ctx.interval()."""
+        if hasattr(self, "timer") and self.timer is not None:
+            return self.timer.interval(callback_or_delay, delay_ms, ctx=self)
+        raise RuntimeError("TimerService is not available on Context")
+
+    def throttle(self, callback: Callable[..., Any], delay_ms: float, no_trailing: bool = False) -> Callable[..., Any]:
+        """Return a throttled function matching TS ctx.throttle()."""
+        if hasattr(self, "timer") and self.timer is not None:
+            return self.timer.throttle(callback, delay_ms, no_trailing=no_trailing, ctx=self)
+        raise RuntimeError("TimerService is not available on Context")
+
+    def debounce(self, callback: Callable[..., Any], delay_ms: float) -> Callable[..., Any]:
+        """Return a debounced function matching TS ctx.debounce()."""
+        if hasattr(self, "timer") and self.timer is not None:
+            return self.timer.debounce(callback, delay_ms, ctx=self)
+        raise RuntimeError("TimerService is not available on Context")
+
+    def setTimeout(self, callback: Callable[[], Any], delay_ms: float) -> Callable[[], None]:
+        return self.timeout(callback, delay_ms)
+
+    def setInterval(self, callback: Callable[[], Any], delay_ms: float) -> Callable[[], None]:
+        return self.interval(callback, delay_ms)
+
     def __getattr__(self, name: str) -> Any:
-        if name.startswith("_") or name in ("registry", "reflect", "fiber", "root", "events", "props", "store"):
+        if name.startswith("_") or name in ("registry", "reflect", "fiber", "root", "events", "props", "store", "logger", "timer"):
             raise AttributeError(f"Context object has no attribute '{name}'")
+
+        # 1:1 Strict Dependency Injection Enforcement matching TS Cordis ReflectService.handler
+        if getattr(self, "strict_inject", False) and getattr(self, "fiber", None) and getattr(self.fiber, "runtime", None) is not None:
+            curr_fiber = self.fiber
+            while curr_fiber is not None and getattr(curr_fiber, "runtime", None) is not None:
+                impl = getattr(curr_fiber, "store", {}).get(name) if getattr(curr_fiber, "store", None) else None
+                if impl is not None:
+                    return getattr(impl, "value", impl)
+                if name in getattr(curr_fiber, "inject", {}):
+                    raise RuntimeError(f"cannot get required service '{name}' in inactive context")
+                parent_ctx = getattr(curr_fiber, "parent", None)
+                curr_fiber = getattr(parent_ctx, "fiber", None) if parent_ctx else None
+            raise RuntimeError(f"cannot get property '{name}' without inject")
+
         if name in self._services:
             return self._services[name]
         if hasattr(self, "reflect"):

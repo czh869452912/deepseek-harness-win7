@@ -4,10 +4,92 @@ matching reference/vendor/cordis/src/registry.ts
 """
 
 import asyncio
+import functools
 import inspect
 import sys
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 from dsh.cordis.fiber import Fiber, FiberState, resolve_config
+
+
+class Inject:
+    """
+    Utilities for normalizing plugin dependency declarations matching TS Inject namespace.
+    """
+
+    @staticmethod
+    def resolve(inject_meta: Any, result: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Convert array/object/class-inherited inject metadata into a plain dict (name -> config).
+        """
+        if result is None:
+            result = {}
+        if not inject_meta:
+            return result
+        if isinstance(inject_meta, (list, tuple, set)):
+            for name in inject_meta:
+                result[str(name)] = None
+        elif isinstance(inject_meta, dict):
+            for k, v in inject_meta.items():
+                result[str(k)] = v
+        elif isinstance(inject_meta, str):
+            result[inject_meta] = None
+        return result
+
+
+def inject(name_or_deps: Any = None, config: Optional[Any] = None) -> Callable[[Any], Any]:
+    """
+    Decorator for declaring service dependencies on classes or class methods matching TS @Inject().
+    Can be used as:
+      @inject("tools")
+      @inject(["tools", "fs"])
+      @inject({"tools": {"intercept": True}})
+      class MyPlugin(Plugin): ...
+
+      @inject("llm")
+      def my_method(self): ...
+    """
+    def decorator(target: Any) -> Any:
+        if inspect.isclass(target):
+            # Class decorator
+            if not hasattr(target, "inject") or not isinstance(getattr(target, "inject"), dict):
+                cur_inject = {}
+                if hasattr(target, "inject"):
+                    raw = getattr(target, "inject")
+                    cur_inject = Inject.resolve(raw)
+                target.inject = cur_inject
+
+            Inject.resolve(name_or_deps, target.inject)
+            if isinstance(name_or_deps, str) and config is not None:
+                target.inject[name_or_deps] = config
+            return target
+        elif callable(target):
+            # Method or function decorator
+            if not hasattr(target, "_cordis_inject"):
+                target._cordis_inject = {}
+            Inject.resolve(name_or_deps, target._cordis_inject)
+            if isinstance(name_or_deps, str) and config is not None:
+                target._cordis_inject[name_or_deps] = config
+
+            @functools.wraps(target)
+            def wrapper(self_or_ctx: Any, *args: Any, **kwargs: Any) -> Any:
+                ctx = getattr(self_or_ctx, "ctx", None) or (self_or_ctx if hasattr(self_or_ctx, "has") else None)
+                if ctx and hasattr(ctx, "has"):
+                    for dep in target._cordis_inject.keys():
+                        if not ctx.has(dep):
+                            raise RuntimeError(f"Cannot call method '{target.__name__}' without injected service '{dep}' in active context")
+                return target(self_or_ctx, *args, **kwargs)
+
+            wrapper._cordis_inject = target._cordis_inject
+            return wrapper
+        return target
+
+    if name_or_deps is not None and (inspect.isclass(name_or_deps) or callable(name_or_deps)):
+        # Bare @inject without args
+        target_obj = name_or_deps
+        name_or_deps = None
+        return decorator(target_obj)
+
+    return decorator
 
 
 class PluginRuntime:
@@ -36,7 +118,7 @@ class RegistryService:
     """
     Plugin registry service for Cordis.
     Normalizes plugin shapes, tracks plugin runtimes, starts fibers, and manages
-    dynamic dependency injection.
+    dynamic composite epoch dependency injection.
     """
 
     def __init__(self, ctx: Any):
@@ -107,7 +189,7 @@ class RegistryService:
                 fibers.append(f)
         return fibers
 
-    def plugin(self, plugin_cls_or_instance: Any, config: Optional[Dict[str, Any]] = None) -> Fiber:
+    def plugin(self, plugin_cls_or_instance: Any, config: Optional[Dict[str, Any]] = None, get_outer_stack: Optional[Callable[[], List[str]]] = None) -> Fiber:
         """
         Start a plugin in the current context and return its fiber.
         Supports Functions, Classes, and Object plugins with apply().
@@ -142,13 +224,63 @@ class RegistryService:
         else:
             plugin_inst = plugin_cls_or_instance
 
-        fiber = Fiber(self.ctx, plugin_inst, config=config, runtime=runtime)
+        # Extract declared dependencies via Inject.resolve
+        raw_inject = getattr(plugin_cls_or_instance, "inject", None) or getattr(plugin_inst, "inject", None)
+        inject_deps = Inject.resolve(raw_inject)
+
+        # Collect method-level @inject hooks matching TS @Inject method decorator
+        if plugin_inst is not None:
+            init_hooks = getattr(plugin_inst, "_init_hooks", None)
+            if init_hooks is None:
+                init_hooks = []
+                setattr(plugin_inst, "_init_hooks", init_hooks)
+
+            cls = type(plugin_inst)
+            for attr_name in dir(plugin_inst):
+                if attr_name.startswith("__"):
+                    continue
+                try:
+                    attr = getattr(plugin_inst, attr_name)
+                    func = getattr(attr, "__func__", attr)
+                    cls_attr = getattr(cls, attr_name, None)
+                    cls_func = getattr(cls_attr, "__func__", cls_attr)
+
+                    method_inject = getattr(attr, "_cordis_inject", None) or getattr(func, "_cordis_inject", None) or getattr(cls_attr, "_cordis_inject", None) or getattr(cls_func, "_cordis_inject", None)
+                    if callable(attr) and method_inject:
+                        hook_reg_key = f"_init_hook_reg_{attr_name}"
+                        if getattr(plugin_inst, hook_reg_key, False):
+                            continue
+                        setattr(plugin_inst, hook_reg_key, True)
+
+                        def _make_hook(m_name=attr_name, m_inj=method_inject):
+                            def _hook():
+                                target_ctx = getattr(plugin_inst, "ctx", None) or self.ctx
+                                if target_ctx and hasattr(target_ctx, "inject"):
+                                    def _on_injected(inj_ctx):
+                                        m = getattr(plugin_inst, m_name)
+                                        return m()
+                                    target_ctx.inject(m_inj, _on_injected)
+                            return _hook
+
+                        init_hooks.append(_make_hook())
+                except Exception:
+                    pass
+
+        fiber = Fiber(self.ctx, plugin_inst, config=config, runtime=runtime, inject=inject_deps, get_outer_stack=get_outer_stack)
+        try:
+            self.ctx.emit("internal/plugin", fiber)
+        except Exception as e:
+            self._runtimes.pop(callback, None)
+            raise e
+
         runtime.add_fiber(fiber)
 
-        if self._check_dependencies(plugin_inst):
-            self._activate_fiber(fiber)
-        else:
-            fiber.set_state(FiberState.PENDING)
+        # Evaluate dependencies via composite epoch refresh
+        for name in list(fiber.inject.keys()):
+            fiber._checkImpl(name)
+        fiber._refresh()
+
+        if fiber.state == FiberState.PENDING:
             self._pending_fibers.add(fiber)
 
         return fiber
@@ -157,48 +289,16 @@ class RegistryService:
         """
         Start a callback once the requested dependencies are available.
         """
-        inject_list = deps if isinstance(deps, (list, tuple)) else list(deps.keys()) if isinstance(deps, dict) else [deps]
+        inject_dict = Inject.resolve(deps)
 
         class InjectPlugin:
             name = getattr(callback, "__name__", "inject_callback")
-            inject = inject_list
+            inject = inject_dict
 
             def apply(self, c: Any) -> Any:
                 return callback(c)
 
         return self.plugin(InjectPlugin())
-
-    def _check_dependencies(self, plugin: Any) -> bool:
-        inject_deps = getattr(plugin, "inject", [])
-        if not inject_deps:
-            return True
-        if isinstance(inject_deps, (list, tuple)):
-            for dep in inject_deps:
-                if not self.ctx.has(dep):
-                    return False
-        elif isinstance(inject_deps, dict):
-            for dep in inject_deps.keys():
-                if not self.ctx.has(dep):
-                    return False
-        return True
-
-    def _activate_fiber(self, fiber: Fiber) -> None:
-        fiber.set_state(FiberState.ACTIVE)
-        try:
-            fiber.config = resolve_config(fiber.plugin, fiber._config)
-            if hasattr(fiber.plugin, "ctx"):
-                fiber.plugin.ctx = fiber.ctx
-
-            if hasattr(fiber.plugin, "teardown") and callable(fiber.plugin.teardown):
-                fiber.effect(fiber.plugin.teardown, label=f"teardown({fiber.name})")
-
-            if fiber in self._pending_fibers:
-                self._pending_fibers.remove(fiber)
-
-            fiber.set_epoch("active_epoch")
-        except Exception as e:
-            fiber.set_state(FiberState.FAILED)
-            raise e
 
     def update_dependencies(self) -> None:
         """
@@ -210,8 +310,11 @@ class RegistryService:
         try:
             pending_list = list(self._pending_fibers)
             for fiber in pending_list:
-                if self._check_dependencies(fiber.plugin):
-                    self._activate_fiber(fiber)
+                for name in list(fiber.inject.keys()):
+                    fiber._checkImpl(name)
+                fiber._refresh()
+                if fiber.state == FiberState.ACTIVE and fiber in self._pending_fibers:
+                    self._pending_fibers.remove(fiber)
         finally:
             self._updating = False
 

@@ -36,7 +36,7 @@ class PluginInventoryGateway:
         Returns entries in loader registration order.
         """
         entries: List[Dict[str, Any]] = []
-        loader = getattr(self.ctx, "loader", None)
+        loader = self.ctx.get("loader", strict=False) if self.ctx else None
         if loader and hasattr(loader, "entries"):
             raw_entries = loader.entries() if callable(loader.entries) else loader.entries
             for entry in raw_entries:

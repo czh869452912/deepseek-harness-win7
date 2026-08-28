@@ -59,6 +59,84 @@ def eval_condition(condition: Any) -> bool:
         return False
 
 
+import copy
+
+def apply_entry_patches(
+    data: List[Dict[str, Any]],
+    patches: Optional[List[Dict[str, Any]]],
+    warn: Optional[Callable[..., None]] = None,
+) -> List[Dict[str, Any]]:
+    """
+    Apply patch lists to an entry list matching reference/vendor/include/src/index.ts#applyEntryPatches.
+    Never mutates input, returns detached deep copy.
+    """
+    result = copy.deepcopy(data)
+    if not patches:
+        return result
+
+    def _warn(msg: str, *args: Any) -> None:
+        if warn:
+            warn(msg, *args)
+        else:
+            sys.stderr.write(f"[Cordis Loader Patch Warning] {msg % args if args else msg}\n")
+
+    entry_map: Dict[str, Dict[str, Any]] = {}
+
+    def build_map(entries: List[Dict[str, Any]]) -> None:
+        for entry in entries:
+            eid = entry.get("id")
+            if eid:
+                entry_map[eid] = entry
+            if entry.get("group") and isinstance(entry.get("config"), list):
+                build_map(entry["config"])
+
+    build_map(result)
+
+    for patch in patches:
+        patch_copy = dict(patch)
+        pid = patch_copy.get("id")
+        insert = patch_copy.pop("insert", None)
+        pname = patch_copy.pop("name", None)
+
+        if insert is not None:
+            cloned_insert = copy.deepcopy(insert)
+            if pid:
+                target = entry_map.get(pid)
+                if not target:
+                    _warn("patch insert: entry '%s' not found", pid)
+                    continue
+                if not target.get("group"):
+                    _warn("patch insert: entry '%s' is not a group", pid)
+                    continue
+                if not isinstance(target.get("config"), list):
+                    target["config"] = []
+                target["config"].extend(cloned_insert)
+            else:
+                result.extend(cloned_insert)
+            build_map(cloned_insert)
+            continue
+
+        if not pid:
+            _warn("patch: id is required for non-insert patches")
+            continue
+
+        target = entry_map.get(pid)
+        if not target:
+            _warn("patch: entry '%s' not found", pid)
+            continue
+
+        if pname and pname != target.get("name"):
+            _warn("patch: name mismatch for '%s' (expected '%s', got '%s'), skipping", pid, target.get("name"), pname)
+            continue
+
+        for key, value in patch_copy.items():
+            if key == "id":
+                continue
+            target[key] = value
+
+    return result
+
+
 class EntryTree:
     """
     Mutable tree of loader entries matching reference/vendor/loader/src/config/tree.ts.
@@ -417,15 +495,24 @@ class Loader(EntryTree, Service):
         """
         self.registry_map[name_or_id] = plugin_cls
 
-    def load_from_dict(self, config_items: List[Dict[str, Any]], target_ctx: Optional[Context] = None) -> None:
+    register_plugin = register_plugin_class
+
+    def load_from_dict(
+        self,
+        config_items: List[Dict[str, Any]],
+        target_ctx: Optional[Context] = None,
+        patches: Optional[List[Dict[str, Any]]] = None,
+    ) -> None:
         """
-        Load list of plugin configuration dicts onto context.
+        Load list of plugin configuration dicts onto context with optional patches.
         """
         ctx = target_ctx or self.ctx
         if not ctx:
             raise RuntimeError("Cannot load plugins without a target Context")
 
-        for item in config_items:
+        items = apply_entry_patches(config_items, patches) if patches else config_items
+
+        for item in items:
             plugin_name = item.get("name") or item.get("id")
             plugin_id = item.get("id", plugin_name)
             is_group = item.get("group", False) or plugin_name == "cordis:group"
@@ -481,9 +568,14 @@ class Loader(EntryTree, Service):
                 else:
                     sys.stderr.write(f"[Cordis Loader Warning] Unknown plugin name/id: '{plugin_name}'\n")
 
-    def load_preset_file(self, filepath: str, target_ctx: Optional[Context] = None) -> None:
+    def load_preset_file(
+        self,
+        filepath: str,
+        target_ctx: Optional[Context] = None,
+        patches: Optional[List[Dict[str, Any]]] = None,
+    ) -> None:
         """
-        Load preset YAML file and mount onto context.
+        Load preset YAML file and mount onto context with optional patches.
         """
         if not os.path.exists(filepath):
             raise FileNotFoundError(f"Preset file not found: {filepath}")
@@ -492,9 +584,9 @@ class Loader(EntryTree, Service):
             data = yaml.safe_load(f)
 
         if isinstance(data, list):
-            self.load_from_dict(data, target_ctx)
+            self.load_from_dict(data, target_ctx, patches=patches)
         elif isinstance(data, dict) and "plugins" in data:
-            self.load_from_dict(data["plugins"], target_ctx)
+            self.load_from_dict(data["plugins"], target_ctx, patches=patches)
         else:
             raise ValueError(f"Invalid preset format in {filepath}")
 

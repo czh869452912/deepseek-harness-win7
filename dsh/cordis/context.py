@@ -23,12 +23,25 @@ class Context:
     Matching reference/vendor/cordis/src/context.ts.
     """
 
-    def __init__(self, parent: Optional["Context"] = None, is_extension: bool = False):
+    def __init__(
+        self,
+        parent: Optional["Context"] = None,
+        is_extension: bool = False,
+        strict_inject: Optional[bool] = None,
+    ):
         self._parent: Optional["Context"] = parent
         self._services: Dict[str, Any] = {}
         self._isolated_keys: Dict[str, Any] = {}
         self._intercept_map: Dict[str, Any] = {}
         self._effects: List[Callable[[], Any]] = []
+
+        if strict_inject is not None:
+            self.strict_inject: bool = strict_inject
+        elif parent is not None and hasattr(parent, "strict_inject"):
+            self.strict_inject = parent.strict_inject
+        else:
+            import os
+            self.strict_inject = os.environ.get("DSH_STRICT_INJECT", "0") in ("1", "true", "True")
 
         if parent is not None:
             self._event_bus: EventBus = parent._event_bus
@@ -241,7 +254,7 @@ class Context:
         """
         Create a child context inheriting services and event bus.
         """
-        child = Context(parent=self, is_extension=True)
+        child = Context(parent=self, is_extension=True, strict_inject=self.strict_inject)
         child._isolated_keys = dict(self._isolated_keys)
         child._intercept_map = dict(self._intercept_map)
         if meta:
@@ -300,6 +313,13 @@ class Context:
     def __getattr__(self, name: str) -> Any:
         if name.startswith("_") or name in ("registry", "reflect", "fiber", "root", "events", "props", "store", "logger"):
             raise AttributeError(f"Context object has no attribute '{name}'")
+
+        # 1:1 Strict Dependency Injection Enforcement matching TS Cordis
+        if getattr(self, "strict_inject", False) and getattr(self, "fiber", None) and getattr(self.fiber, "uid", None) not in (0, None):
+            fiber = self.fiber
+            if self.has(name) and name not in getattr(fiber, "inject", {}):
+                raise RuntimeError(f"cannot get property '{name}' without inject in context {getattr(fiber, 'name', 'unnamed')}")
+
         if name in self._services:
             return self._services[name]
         if hasattr(self, "reflect"):

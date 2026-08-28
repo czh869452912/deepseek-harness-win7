@@ -161,8 +161,8 @@ def parse_skill_file(
                     import yaml
                     frontmatter = yaml.safe_load(parts[1]) or {}
                     content = parts[2].strip()
-                except Exception as e:
-                    print(f"[Skill Parse Error] Invalid frontmatter in {filepath}: {e}")
+                except Exception:
+                    pass
 
         name = str(frontmatter.get("name") or default_name).lower().strip()
         description = str(frontmatter.get("description") or f"Skill {name} instructions").strip()
@@ -186,8 +186,7 @@ def parse_skill_file(
             rank=rank,
             metadata=frontmatter if isinstance(frontmatter, dict) else {},
         )
-    except Exception as e:
-        print(f"[Skill Parse Error] Failed to read {filepath}: {e}")
+    except Exception:
         return None
 
 

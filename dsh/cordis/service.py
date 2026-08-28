@@ -49,9 +49,9 @@ class Service:
             check_fn = getattr(self, "_check_availability")
 
         if hasattr(self.ctx, "set_service"):
-            self.ctx.set_service(self.name, self)
+            self.ctx.set_service(self.name, self, check=check_fn)
         elif hasattr(self.ctx, "provide"):
-            self.ctx.provide(self.name, self)
+            self.ctx.provide(self.name, self, check=check_fn)
 
     def resolve_intercept_config(self, base: Optional[Any] = None, head: Optional[Any] = None) -> Any:
         """

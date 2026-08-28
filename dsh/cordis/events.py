@@ -1,12 +1,12 @@
 """
 Cordis Event Bus matching reference/vendor/cordis/src/events.ts
-Supports emit, parallel, serial, bail, and waterfall dispatch modes.
+Supports emit, parallel, serial, bail, and waterfall dispatch modes with internal/listener interception.
 """
 
 import asyncio
 import inspect
 import sys
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 
 def is_bailed(value: Any) -> bool:
@@ -37,10 +37,11 @@ class Hook:
 class EventBus:
     """
     Cordis Event Bus supporting emit, waterfall, parallel, serial, and bail dispatch modes
-    with context filtering and 1:1 bail semantics.
+    with context filtering, internal/listener interception, and 1:1 bail semantics.
     """
 
-    def __init__(self):
+    def __init__(self, ctx: Optional[Any] = None):
+        self.ctx = ctx
         self._hooks: Dict[str, List[Hook]] = {}
 
     def on(
@@ -54,10 +55,20 @@ class EventBus:
         """
         Register an event handler. Returns a disposer function to unregister.
         """
+        caller_ctx = ctx or self.ctx
+
+        # Handle internal/listener interception hook if caller_ctx is present
+        if caller_ctx is not None and not event_name.startswith("internal/listener"):
+            intercepted = self.bail_sync("internal/listener", event_name, handler, prepend, caller_ctx=caller_ctx)
+            if intercepted:
+                if callable(intercepted):
+                    return intercepted
+                return lambda: True
+
         if event_name not in self._hooks:
             self._hooks[event_name] = []
 
-        hook = Hook(handler, prepend=prepend, global_listener=global_listener, ctx=ctx)
+        hook = Hook(handler, prepend=prepend, global_listener=global_listener, ctx=caller_ctx)
         if prepend:
             self._hooks[event_name].insert(0, hook)
         else:
@@ -117,7 +128,10 @@ class EventBus:
                     except RuntimeError:
                         pass
             except Exception as e:
-                print(f"[Cordis Event Error] Exception in emit '{event_name}': {e}", file=sys.stderr)
+                if self.ctx and hasattr(self.ctx, "logger"):
+                    self.ctx.logger("events").warn("Exception in emit '%s': %s", event_name, e)
+                else:
+                    sys.stderr.write(f"[Cordis Event Error] Exception in emit '{event_name}': {e}\n")
 
     async def emit_async(self, event_name: str, *args: Any, **kwargs: Any) -> None:
         """

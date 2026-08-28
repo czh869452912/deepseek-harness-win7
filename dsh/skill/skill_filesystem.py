@@ -82,7 +82,8 @@ class FileSystemSkillProvider:
                         if parsed:
                             discovered.append(parsed)
             except Exception as e:
-                print(f"[SkillFS Provider Warning] Exception scanning {root_path}: {e}")
+                if self.ctx and hasattr(self.ctx, "logger"):
+                    self.ctx.logger("skill-filesystem").warn("Exception scanning %s: %s", root_path, e)
 
         return discovered
 

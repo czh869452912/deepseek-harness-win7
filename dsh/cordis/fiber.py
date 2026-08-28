@@ -1,12 +1,14 @@
 """
-Cordis Fiber lifecycle, effects, and config validation helpers
+Cordis Fiber lifecycle, effects, and composite epoch dependency engine
 matching reference/vendor/cordis/src/fiber.ts
 """
 
 import asyncio
 import inspect
 import sys
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+
+from dsh.cordis.utils import DisposableList, symbols
 
 
 class FiberState:
@@ -66,24 +68,40 @@ INACTIVE_EPOCH = "__INACTIVE__"
 class Fiber:
     """
     Runtime instance of one plugin application matching reference/vendor/cordis/src/fiber.ts.
-    Tracks dependency state, validated config, lifecycle effects, and cleanup.
+    Tracks dependency state, composite epoch calculations, validated config, lifecycle effects, and cleanup.
     """
 
     _uid_counter = 0
 
-    def __init__(self, parent_ctx: Any, plugin: Any, config: Any = None, runtime: Any = None):
+    def __init__(self, parent_ctx: Any, plugin: Any, config: Any = None, runtime: Any = None, inject: Optional[Dict[str, Any]] = None):
         self.parent = parent_ctx
         self.plugin = plugin
         self.runtime = runtime
         self._config = config
         self.config = config
         self.store: Optional[Dict[str, Any]] = {}
+        self._store: Dict[str, Any] = {}
         self.inertia: Optional[asyncio.Future] = None
         self.epoch: str = INACTIVE_EPOCH
         self._error: Optional[Exception] = None
 
-        self._disposables: List[Callable[[], Any]] = []
-        self._effect_metas: Dict[Callable[[], Any], EffectMeta] = {}
+        # Dependency map (service_name -> intercept_config)
+        if inject is not None:
+            self.inject = inject
+        elif hasattr(plugin, "inject"):
+            raw_inject = getattr(plugin, "inject", [])
+            if isinstance(raw_inject, (list, tuple)):
+                self.inject = {k: None for k in raw_inject}
+            elif isinstance(raw_inject, dict):
+                self.inject = dict(raw_inject)
+            else:
+                self.inject = {}
+        else:
+            self.inject = {}
+
+        self._disposables: DisposableList[Callable[[], Any]] = DisposableList()
+        self._effect_metas: Dict[Any, EffectMeta] = {}
+        self._hooks: Dict[str, DisposableList[Any]] = {}
 
         if runtime is not None:
             # Plugin Fiber
@@ -99,6 +117,7 @@ class Fiber:
             self.uid = 0
             self.ctx = parent_ctx
             self.state = FiberState.ACTIVE
+            self.epoch = ""
 
     @property
     def name(self) -> str:
@@ -119,7 +138,7 @@ class Fiber:
     def effect(self, execute_or_disposer: Any, label: str = "anonymous") -> Callable[[], Any]:
         """
         Register a cleanup-aware effect on this fiber.
-        Supports functions, generators, and async generators.
+        Supports functions, generators, async generators, and coroutines.
         """
         self.assert_active()
         if self.state == FiberState.UNLOADING:
@@ -131,12 +150,11 @@ class Fiber:
         def collect_disposer(disp: Any) -> None:
             if callable(disp):
                 disposables.append(disp)
-                if disp not in self._disposables:
-                    self._disposables.append(disp)
+                self._disposables.push(disp)
 
         if callable(execute_or_disposer):
             fn_name = getattr(execute_or_disposer, "__name__", "")
-            if fn_name in ("disposer", "teardown", "cancel_effect", "cleanup", "unregister", "remove") or "disposer" in label or "unregister" in label or "on(" in label:
+            if fn_name in ("disposer", "teardown", "cancel_effect", "cleanup", "unregister", "remove") or "disposer" in label or "unregister" in label or "on(" in label or "once(" in label:
                 # Direct disposer function returned by registration API
                 collect_disposer(execute_or_disposer)
             else:
@@ -171,7 +189,10 @@ class Fiber:
                         except RuntimeError:
                             pass
                 except Exception as e:
-                    print(f"[Cordis Fiber Error] Exception in effect execution '{label}': {e}", file=sys.stderr)
+                    if self.ctx and hasattr(self.ctx, "logger"):
+                        self.ctx.logger("fiber").error("Exception in effect execution '%s': %s", label, e)
+                    else:
+                        sys.stderr.write(f"[Cordis Fiber Error] Exception in effect execution '{label}': {e}\n")
                     raise e
 
         disposed = False
@@ -183,8 +204,7 @@ class Fiber:
             disposed = True
             while disposables:
                 disp = disposables.pop()
-                if disp in self._disposables:
-                    self._disposables.remove(disp)
+                self._disposables.delete(disp)
                 try:
                     r = disp()
                     if inspect.isawaitable(r):
@@ -194,7 +214,10 @@ class Fiber:
                         except RuntimeError:
                             pass
                 except Exception as e:
-                    print(f"[Cordis Fiber Error] Exception running disposer '{label}': {e}", file=sys.stderr)
+                    if self.ctx and hasattr(self.ctx, "logger"):
+                        self.ctx.logger("fiber").warn("Exception running disposer '%s': %s", label, e)
+                    else:
+                        sys.stderr.write(f"[Cordis Fiber Error] Exception running disposer '{label}': {e}\n")
 
         self._effect_metas[cancel_effect] = meta
         return cancel_effect
@@ -204,12 +227,65 @@ class Fiber:
         return [meta.to_dict() for meta in self._effect_metas.values()]
 
     def set_state(self, new_state: int) -> None:
+        """Update fiber state with notifications."""
         old_state = self.state
         if old_state == new_state:
             return
         self.state = new_state
         if self.ctx and hasattr(self.ctx, "emit"):
             self.ctx.emit("internal/status", self, old_state)
+
+        # Notify reflect store if transitioning between ACTIVE and non-ACTIVE states
+        if (old_state == FiberState.ACTIVE or self.state == FiberState.ACTIVE) and self.ctx and hasattr(self.ctx, "reflect"):
+            provided_names = []
+            for name, impl in list(self.ctx.reflect.store.items()):
+                if getattr(impl, "fiber", None) is self:
+                    provided_names.append(getattr(impl, "name", str(name)))
+            if provided_names:
+                self.ctx.reflect.notify(provided_names)
+
+    def _checkImpl(self, name: str) -> None:
+        """
+        Verify implementation availability for a required dependency service.
+        Matches 1:1 TS Fiber._checkImpl.
+        """
+        if not self.ctx or not hasattr(self.ctx, "reflect"):
+            return
+        impl = self.ctx.reflect._get_impl(self.ctx, name, strict=True)
+        if not impl:
+            self._store.pop(name, None)
+            return
+        try:
+            if impl.check and callable(impl.check) and not impl.check():
+                self._store.pop(name, None)
+                return
+        except Exception as e:
+            if self.ctx and hasattr(self.ctx, "logger"):
+                self.ctx.logger("fiber").warn("Exception checking impl availability for '%s': %s", name, e)
+            else:
+                sys.stderr.write(f"[Cordis Fiber Error] Exception checking impl availability for '{name}': {e}\n")
+            self._store.pop(name, None)
+            return
+        self._store[name] = impl
+
+    def _refresh(self) -> None:
+        """
+        1:1 Composite Epoch calculation matching TS Cordis Fiber._refresh.
+        Computes composite epoch hash of all active dependencies (:uid1:uid2)
+        and triggers state reload if changed.
+        """
+        if not self.inject:
+            self.set_epoch("active_epoch")
+            return
+
+        epoch = ""
+        for name in self.inject.keys():
+            impl = self._store.get(name)
+            if not impl or not getattr(impl, "fiber", None) or impl.fiber.state != FiberState.ACTIVE:
+                epoch = INACTIVE_EPOCH
+                break
+            epoch += f":{impl.fiber.uid}"
+        self.set_epoch(epoch)
 
     def set_epoch(self, epoch: str) -> None:
         """Update fiber epoch and trigger reload or unload transition if needed."""
@@ -223,14 +299,27 @@ class Fiber:
         elif epoch == INACTIVE_EPOCH and old_epoch != INACTIVE_EPOCH:
             self.set_state(FiberState.UNLOADING)
             self._unload()
+        elif epoch != INACTIVE_EPOCH and old_epoch != INACTIVE_EPOCH:
+            # Composite epoch changed due to upstream dependency restart/replacement -> reload!
+            self.set_state(FiberState.UNLOADING)
+            self._unload()
 
     def _reload(self) -> None:
+        """Execute plugin apply and transition to ACTIVE on success."""
         try:
+            self.store = dict(self._store)
             self.config = resolve_config(self.plugin, self._config)
+            if hasattr(self.plugin, "ctx"):
+                self.plugin.ctx = self.ctx
+
+            if hasattr(self.plugin, "teardown") and callable(self.plugin.teardown):
+                self.effect(self.plugin.teardown, label=f"teardown({self.name})")
+
             if hasattr(self.plugin, "apply") and callable(self.plugin.apply):
                 self.plugin.apply(self.ctx)
             elif callable(self.plugin):
                 self.plugin(self.ctx, self.config)
+
             self._error = None
             self.set_state(FiberState.ACTIVE)
         except Exception as e:
@@ -239,8 +328,9 @@ class Fiber:
             self.set_state(FiberState.FAILED)
 
     def _unload(self) -> None:
-        while self._disposables:
-            disposer = self._disposables.pop()
+        """Execute all disposers in reverse order and transition state."""
+        disposers = self._disposables.clear()
+        for disposer in disposers:
             try:
                 res = disposer()
                 if inspect.isawaitable(res):
@@ -250,11 +340,17 @@ class Fiber:
                     except RuntimeError:
                         pass
             except Exception as e:
-                print(f"[Cordis Fiber Error] Exception during unload for '{self.name}': {e}", file=sys.stderr)
+                if self.ctx and hasattr(self.ctx, "logger"):
+                    self.ctx.logger("fiber").warn("Exception during unload for '%s': %s", self.name, e)
+                else:
+                    sys.stderr.write(f"[Cordis Fiber Error] Exception during unload for '{self.name}': {e}\n")
 
-        self.store = {}
+        self.store = None
         if self.epoch == INACTIVE_EPOCH:
-            self.set_state(FiberState.PENDING if self.uid else FiberState.DISPOSED)
+            self.set_state(FiberState.PENDING if self.uid is not None else FiberState.DISPOSED)
+        else:
+            self.set_state(FiberState.LOADING)
+            self._reload()
 
     async def dispose(self) -> None:
         """Dispose this fiber and execute disposers in strict reverse order."""
@@ -263,14 +359,17 @@ class Fiber:
         self.set_state(FiberState.UNLOADING)
         self.epoch = INACTIVE_EPOCH
 
-        while self._disposables:
-            disposer = self._disposables.pop()
+        disposers = self._disposables.clear()
+        for disposer in disposers:
             try:
                 res = disposer()
                 if inspect.isawaitable(res):
                     await res
             except Exception as e:
-                print(f"[Cordis Fiber Error] Exception in disposer teardown for '{self.name}': {e}", file=sys.stderr)
+                if self.ctx and hasattr(self.ctx, "logger"):
+                    self.ctx.logger("fiber").warn("Exception in disposer teardown for '%s': %s", self.name, e)
+                else:
+                    sys.stderr.write(f"[Cordis Fiber Error] Exception in disposer teardown for '{self.name}': {e}\n")
 
         self.uid = None
         self.set_state(FiberState.DISPOSED)
@@ -293,7 +392,17 @@ class Fiber:
         if new_config is not None:
             self._config = new_config
         self.set_epoch(INACTIVE_EPOCH)
-        self.set_epoch("active_epoch")
+        for name in list(self.inject.keys()):
+            self._checkImpl(name)
+        self._refresh()
+
+    async def await_settled(self) -> "Fiber":
+        """Wait for current lifecycle transitions to settle."""
+        while self.inertia is not None and not self.inertia.done():
+            await self.inertia
+        if self._error:
+            raise self._error
+        return self
 
     def __repr__(self) -> str:
-        return f"<Fiber {self.name} state={self.state}>"
+        return f"<Fiber {self.name} uid={self.uid} state={self.state} epoch={self.epoch}>"

@@ -10,6 +10,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Union
 
 from dsh.cordis.events import EventBus
 from dsh.cordis.fiber import Fiber, FiberState
+from dsh.cordis.logger import LoggerService
 from dsh.cordis.reflect import ReflectService
 from dsh.cordis.registry import RegistryService
 from dsh.cordis.plugin import Plugin
@@ -19,6 +20,7 @@ class Context:
     """
     Cordis Context: core dependency container for services, events, plugins,
     scoped hierarchies, lifecycle Fibers, isolated realms, and reversible effects.
+    Matching reference/vendor/cordis/src/context.ts.
     """
 
     def __init__(self, parent: Optional["Context"] = None, is_extension: bool = False):
@@ -33,11 +35,13 @@ class Context:
             self.registry: RegistryService = parent.registry
             self.reflect: ReflectService = parent.reflect
             self.fiber: Fiber = parent.fiber
+            self.logger: LoggerService = parent.logger
         else:
-            self._event_bus = EventBus()
+            self._event_bus = EventBus(ctx=self)
             self.reflect = ReflectService(self)
             self.registry = RegistryService(self)
             self.fiber = Fiber(self, None, config={}, runtime=None)
+            self.logger = LoggerService(self)
             self.reflect.setup_mixins()
 
     @property
@@ -51,14 +55,22 @@ class Context:
     def events(self) -> EventBus:
         return self._event_bus
 
-    def set_service(self, name: str, service_instance: Any) -> None:
+    def set_service(self, name: str, service_instance: Any, check: Optional[Callable[[], bool]] = None) -> None:
         """
         Bind a service instance to context (or root if not isolated) and trigger dependency resolution & events.
         """
         target = self if name in self._isolated_keys else self.root
         target._services[name] = service_instance
         setattr(target, name, service_instance)
-        target.reflect.provide(target, name, service_instance)
+
+        chk = check
+        if chk is None:
+            if hasattr(service_instance, "_check_availability") and callable(service_instance._check_availability):
+                chk = service_instance._check_availability
+            elif hasattr(service_instance, "check") and callable(service_instance.check):
+                chk = service_instance.check
+
+        self.reflect.provide(self, name, service_instance, check=chk)
 
     def provide(self, name: str, service_instance: Any = None, check: Optional[Callable[[], bool]] = None) -> Callable[[], None]:
         """
@@ -127,7 +139,10 @@ class Context:
                     except RuntimeError:
                         pass
             except Exception as e:
-                print(f"[Cordis Context Error] Exception in cancel_effect '{label}': {e}", file=sys.stderr)
+                if hasattr(self, "logger"):
+                    self.logger("context").warn("Exception in cancel_effect '%s': %s", label, e)
+                else:
+                    sys.stderr.write(f"[Cordis Context Error] Exception in cancel_effect '{label}': {e}\n")
 
         return cancel_effect
 
@@ -218,6 +233,7 @@ class Context:
                 "inject": getattr(plugin, "inject", []),
                 "config": getattr(plugin, "config", getattr(fiber, "config", {})),
                 "state": fiber.state,
+                "epoch": getattr(fiber, "epoch", ""),
             })
         return result
 
@@ -282,7 +298,7 @@ class Context:
                 pass
 
     def __getattr__(self, name: str) -> Any:
-        if name.startswith("_") or name in ("registry", "reflect", "fiber", "root", "events", "props", "store"):
+        if name.startswith("_") or name in ("registry", "reflect", "fiber", "root", "events", "props", "store", "logger"):
             raise AttributeError(f"Context object has no attribute '{name}'")
         if name in self._services:
             return self._services[name]

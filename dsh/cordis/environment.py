@@ -166,7 +166,7 @@ def read_env_layer(bin_name: str, dir_path: str) -> Optional[Dict[str, Any]]:
         with open(env_file, "r", encoding="utf-8", errors="replace") as f:
             content = f.read()
     except Exception as e:
-        print(f"[{bin_name} Warning] Failed to read {env_file}: {e}", file=sys.stderr)
+        sys.stderr.write(f"[{bin_name} Warning] Failed to read {env_file}: {e}\n")
         return None
 
     values = parse_dotenv(content)

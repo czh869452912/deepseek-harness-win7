@@ -92,7 +92,8 @@ class ToolSkillPlugin(Plugin):
     def apply(self, ctx: Any) -> None:
         tools_service = ctx.get("tools")
         if not tools_service:
-            print("[ToolSkillPlugin Warning] tools service unavailable")
+            if hasattr(ctx, "logger"):
+                ctx.logger("tool-skill").warn("tools service unavailable")
             return
 
         description = (

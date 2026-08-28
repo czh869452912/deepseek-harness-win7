@@ -94,7 +94,9 @@ class PersistentTerminal:
                 self._proc.stdin.write(preamble)
                 self._proc.stdin.flush()
         except Exception as e:
-            print(f"[PersistentTerminal Error] Failed to start shell process: {e}")
+            if "logger" in sys.modules:
+                pass
+            sys.stderr.write(f"[PersistentTerminal Error] Failed to start shell process: {e}\n")
             self._proc = None
 
     def reset(self) -> None:

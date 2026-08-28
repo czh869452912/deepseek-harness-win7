@@ -36,7 +36,7 @@ class RegistryService:
     """
     Plugin registry service for Cordis.
     Normalizes plugin shapes, tracks plugin runtimes, starts fibers, and manages
-    dynamic dependency injection.
+    dynamic composite epoch dependency injection.
     """
 
     def __init__(self, ctx: Any):
@@ -145,10 +145,12 @@ class RegistryService:
         fiber = Fiber(self.ctx, plugin_inst, config=config, runtime=runtime)
         runtime.add_fiber(fiber)
 
-        if self._check_dependencies(plugin_inst):
-            self._activate_fiber(fiber)
-        else:
-            fiber.set_state(FiberState.PENDING)
+        # Evaluate dependencies via composite epoch refresh
+        for name in list(fiber.inject.keys()):
+            fiber._checkImpl(name)
+        fiber._refresh()
+
+        if fiber.state == FiberState.PENDING:
             self._pending_fibers.add(fiber)
 
         return fiber
@@ -168,38 +170,6 @@ class RegistryService:
 
         return self.plugin(InjectPlugin())
 
-    def _check_dependencies(self, plugin: Any) -> bool:
-        inject_deps = getattr(plugin, "inject", [])
-        if not inject_deps:
-            return True
-        if isinstance(inject_deps, (list, tuple)):
-            for dep in inject_deps:
-                if not self.ctx.has(dep):
-                    return False
-        elif isinstance(inject_deps, dict):
-            for dep in inject_deps.keys():
-                if not self.ctx.has(dep):
-                    return False
-        return True
-
-    def _activate_fiber(self, fiber: Fiber) -> None:
-        fiber.set_state(FiberState.ACTIVE)
-        try:
-            fiber.config = resolve_config(fiber.plugin, fiber._config)
-            if hasattr(fiber.plugin, "ctx"):
-                fiber.plugin.ctx = fiber.ctx
-
-            if hasattr(fiber.plugin, "teardown") and callable(fiber.plugin.teardown):
-                fiber.effect(fiber.plugin.teardown, label=f"teardown({fiber.name})")
-
-            if fiber in self._pending_fibers:
-                self._pending_fibers.remove(fiber)
-
-            fiber.set_epoch("active_epoch")
-        except Exception as e:
-            fiber.set_state(FiberState.FAILED)
-            raise e
-
     def update_dependencies(self) -> None:
         """
         Re-evaluate all PENDING fibers whenever services are added or modified.
@@ -210,8 +180,11 @@ class RegistryService:
         try:
             pending_list = list(self._pending_fibers)
             for fiber in pending_list:
-                if self._check_dependencies(fiber.plugin):
-                    self._activate_fiber(fiber)
+                for name in list(fiber.inject.keys()):
+                    fiber._checkImpl(name)
+                fiber._refresh()
+                if fiber.state == FiberState.ACTIVE and fiber in self._pending_fibers:
+                    self._pending_fibers.remove(fiber)
         finally:
             self._updating = False
 

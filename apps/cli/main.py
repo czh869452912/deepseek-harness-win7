@@ -12,6 +12,7 @@ if hasattr(sys.stdout, 'reconfigure'):
         pass
 
 from dsh.harness import build_harness
+from dsh.cordis.profile import dump_config
 
 
 def parse_args():
@@ -19,10 +20,15 @@ def parse_args():
         description="DeepSeek Harness Win7 - Cordis Architecture CLI (Python 3.8.10)"
     )
     parser.add_argument(
+        "--profile",
+        default=None,
+        help="Profile name to boot (web, headless, standard, minimal, creative, sdk, acp)"
+    )
+    parser.add_argument(
         "-m", "--mode",
-        choices=["minimal", "standard", "creative", "极简模式", "标准模式", "创造模式"],
+        choices=["minimal", "standard", "creative", "web", "headless", "sdk", "acp", "sdk-minimal", "极简模式", "标准模式", "创造模式"],
         default="standard",
-        help="Agent preset mode: standard (标准模式), minimal (极简模式), or creative (创造模式)"
+        help="Agent preset mode or profile alias"
     )
     parser.add_argument(
         "--api-key",
@@ -78,24 +84,32 @@ def parse_args():
 
 async def main_async():
     args = parse_args()
+    selected_profile = args.profile or ("web" if args.web else args.mode)
+    if selected_profile in ("极简模式",):
+        selected_profile = "minimal"
+    elif selected_profile in ("标准模式",):
+        selected_profile = "standard"
+    elif selected_profile in ("创造模式",):
+        selected_profile = "creative"
+
+    if args.dump_config:
+        patches = [args.patch] if args.patch else []
+        output = dump_config(selected_profile, patch_files=patches)
+        print(output)
+        return
 
     # Build Cordis context
     ctx = build_harness(
-        mode=args.mode,
+        mode=selected_profile,
         api_key=args.api_key,
         base_url=args.base_url,
         model=args.model,
         patch_file=args.patch,
-        enable_web=args.web,
+        enable_web=args.web or (selected_profile == "web"),
         web_host=args.host,
         web_port=args.port,
     )
 
-    if args.dump_config:
-        plugins = ctx.list_plugins()
-        print("=== DeepSeek Harness Win7 Cordis Configuration Dump ===")
-        print(yaml.dump(plugins, allow_unicode=True))
-        return
 
     llm_svc = ctx.get("llm")
     effective_base_url = llm_svc.resolve_base_url() if llm_svc else args.base_url

@@ -189,8 +189,9 @@ class ToolsService:
 
         return disposer
 
-    def register_tool(self, tool_or_spec: Union[Tool, Dict[str, Any]]) -> Callable[[], None]:
-        return self.register(tool_or_spec)
+    def register_tool(self, *args: Any, **kwargs: Any) -> Callable[[], None]:
+        return self.register(*args, **kwargs)
+
 
     def get_tool(self, name: str) -> Optional[Tool]:
         return self._tools.get(name)

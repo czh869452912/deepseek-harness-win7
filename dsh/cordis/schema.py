@@ -470,7 +470,8 @@ class Schema:
         })
 
     @classmethod
-    def tuple(cls, list_types: List[Any]) -> "Schema":
+    def tuple(cls, *args: Any) -> "Schema":
+        list_types = args[0] if len(args) == 1 and isinstance(args[0], (list, tuple)) else list(args)
         return cls({"type": "tuple", "list": [cls.from_(x) for x in list_types]})
 
     @classmethod
@@ -478,11 +479,13 @@ class Schema:
         return cls({"type": "object", "dict": {k: cls.from_(v) for k, v in dict_types.items()}})
 
     @classmethod
-    def union(cls, list_types: List[Any]) -> "Schema":
+    def union(cls, *args: Any) -> "Schema":
+        list_types = args[0] if len(args) == 1 and isinstance(args[0], (list, tuple)) else list(args)
         return cls({"type": "union", "list": [cls.from_(x) for x in list_types]})
 
     @classmethod
-    def intersect(cls, list_types: List[Any]) -> "Schema":
+    def intersect(cls, *args: Any) -> "Schema":
+        list_types = args[0] if len(args) == 1 and isinstance(args[0], (list, tuple)) else list(args)
         return cls({"type": "intersect", "list": [cls.from_(x) for x in list_types]})
 
     @classmethod
@@ -492,6 +495,12 @@ class Schema:
     @classmethod
     def lazy(cls, builder: Callable[[], "Schema"]) -> "Schema":
         return cls({"type": "lazy", "builder": builder})
+
+    @classmethod
+    def dynamic(cls, builder: Callable[..., "Schema"]) -> "Schema":
+        """Dynamic schema factory matching TS Schemastery.dynamic."""
+        return cls({"type": "lazy", "builder": builder})
+
 
     @classmethod
     def from_(cls, source: Any) -> "Schema":
@@ -551,10 +560,11 @@ def _check_range(data: Union[int, float], meta: Dict[str, Any], description: str
 
 
 def _resolve_lazy(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) -> Tuple[Any, Any]:
-    if schema.inner is None and schema.builder:
-        schema.inner = schema.builder()
-        schema.inner.meta = {**schema.meta, **schema.inner.meta}
-    return Schema.resolve(data, schema.inner, opt, strict)
+    inner = schema.builder() if schema.builder else schema.inner
+    if inner is not None:
+        inner.meta = {**schema.meta, **inner.meta}
+    return Schema.resolve(data, inner, opt, strict)
+
 
 
 def _resolve_any(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) -> Tuple[Any, Any]:

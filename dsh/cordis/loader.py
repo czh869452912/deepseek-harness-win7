@@ -5,6 +5,8 @@ Implements EntryTree, EntryGroup, Entry, Loader service, and interpolate express
 
 import asyncio
 import copy
+import importlib
+import importlib.util
 import os
 import platform
 import random
@@ -17,6 +19,64 @@ from dsh.cordis.context import Context
 from dsh.cordis.fiber import Fiber, FiberState
 from dsh.cordis.plugin import Plugin
 from dsh.cordis.service import Service
+
+
+def resolve_plugin_class(name: str, registry_map: Optional[Dict[str, Any]] = None) -> Optional[Any]:
+    """
+    Dynamically resolve a plugin class from registry_map, module specifier, or file path.
+    Supports:
+    1. Direct registry_map lookup ('@deepseek-ai/dsh-persona')
+    2. Dotted Python module path ('dsh.todo.tool_todo.ToolTodoPlugin')
+    3. Module:Class specifier ('my_package.module:CustomPlugin')
+    4. File path:Class specifier ('plugins/custom.py:MyPlugin')
+    """
+    if registry_map and name in registry_map:
+        return registry_map[name]
+
+    if not isinstance(name, str) or not name:
+        return None
+
+    # Check for file path or module:class format
+    if ":" in name:
+        target_path, class_name = name.rsplit(":", 1)
+        target_path = target_path.strip()
+        class_name = class_name.strip()
+
+        try:
+            if target_path.endswith(".py") or os.path.exists(target_path):
+                spec = importlib.util.spec_from_file_location("dynamic_cordis_plugin", os.path.abspath(target_path))
+                if spec and spec.loader:
+                    mod = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(mod)
+                    cls = getattr(mod, class_name, None)
+                    if cls and registry_map is not None:
+                        registry_map[name] = cls
+                    return cls
+            else:
+                mod = importlib.import_module(target_path)
+                cls = getattr(mod, class_name, None)
+                if cls and registry_map is not None:
+                    registry_map[name] = cls
+                return cls
+        except Exception:
+            return None
+
+    # Check for dotted Python path
+    if "." in name and not name.startswith("@") and not name.startswith("/"):
+        parts = name.rsplit(".", 1)
+        if len(parts) == 2:
+            try:
+                mod = importlib.import_module(parts[0])
+                cls = getattr(mod, parts[1], None)
+                if cls is not None:
+                    if registry_map is not None:
+                        registry_map[name] = cls
+                    return cls
+            except Exception:
+                pass
+
+    return None
+
 
 
 def js_constructor(loader: Any, node: Any) -> Dict[str, str]:
@@ -588,7 +648,8 @@ class Entry:
         """Start plugin fiber."""
         if not self.loader:
             return
-        plugin_cls = getattr(self.loader, "registry_map", {}).get(self.name)
+        reg_map = getattr(self.loader, "registry_map", {})
+        plugin_cls = resolve_plugin_class(self.name, reg_map)
         ctx = getattr(self.loader, "ctx", None)
         if not ctx:
             return
@@ -604,6 +665,7 @@ class Entry:
                 self.fiber = ctx.registry.plugin(plugin_cls, config=self.config, get_outer_stack=self.get_outer_stack)
             if self.fiber:
                 self.fiber.entry = self
+
 
 
 # Backward compatibility aliases
@@ -780,8 +842,8 @@ class Loader(EntryTree, Service):
 
             config = item.get("config", {})
 
-            if plugin_name in self.registry_map:
-                plugin_cls = self.registry_map[plugin_name]
+            plugin_cls = resolve_plugin_class(plugin_name, self.registry_map)
+            if plugin_cls:
                 fiber = None
                 if isinstance(plugin_cls, type) and issubclass(plugin_cls, Plugin):
                     plugin_instance = plugin_cls(config=config)
@@ -802,6 +864,7 @@ class Loader(EntryTree, Service):
                     ctx.logger("loader").warn("Unknown plugin name/id: '%s'", plugin_name)
                 else:
                     sys.stderr.write(f"[Cordis Loader Warning] Unknown plugin name/id: '{plugin_name}'\n")
+
 
     def load_preset_file(
         self,

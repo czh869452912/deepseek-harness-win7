@@ -43,7 +43,10 @@ from dsh.web.tool_web import ToolWebPlugin
 from dsh.subagent.tool_subagent import ToolSubagentPlugin
 from dsh.workflow.tool_ralph import ToolRalphPlugin
 from dsh.workflow.tool_workflow import ToolWorkflowPlugin
+from dsh.team.agent_team import AgentTeamPlugin
+from dsh.team.tool_agent_team import ToolAgentTeamPlugin
 from dsh.host.apiproxy.api_proxy import ApiProxyPlugin
+
 from dsh.host.client_modules.registry import ClientModulesPlugin
 from dsh.host.directory_picker.directory_picker import DirectoryPickerAutoPlugin
 from dsh.host.frontend_static.frontend_static import FrontendStaticPlugin
@@ -146,7 +149,10 @@ def build_harness(
     loader.register_plugin_class("@deepseek-ai/dsh-tool-subagent", ToolSubagentPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-tool-ralph", ToolRalphPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-tool-workflow", ToolWorkflowPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-agent-team", AgentTeamPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-tool-agent-team", ToolAgentTeamPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-host-webserver", WebServerPlugin)
+
     loader.register_plugin_class("@deepseek-ai/dsh-host-frontend-static", FrontendStaticPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-apiproxy", ApiProxyPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-client-modules", ClientModulesPlugin)

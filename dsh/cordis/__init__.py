@@ -16,6 +16,8 @@ from dsh.cordis.loader import Loader, EntryTree, EntryGroup, Entry, Realm, Local
 from dsh.cordis.utils import DisposableList, Symbols, symbols, is_object, get_traceable, with_props, build_outer_stack
 from dsh.cordis.hmr import ConfigWatcherService, Hmr
 
+from dsh.cordis.profile import Profile, compose_profile, dump_config, prepare_profile, resolve_dsh_home, BUILTIN_BUNDLES, BUILTIN_PROFILES
+
 __all__ = [
     "Context",
     "EventBus",
@@ -69,4 +71,12 @@ __all__ = [
     "build_outer_stack",
     "ConfigWatcherService",
     "Hmr",
+    "Profile",
+    "compose_profile",
+    "dump_config",
+    "prepare_profile",
+    "resolve_dsh_home",
+    "BUILTIN_BUNDLES",
+    "BUILTIN_PROFILES",
 ]
+

@@ -152,6 +152,11 @@ class Agent:
         Abort active driver and optionally clear inbox.
         """
         should_keep = keep_inbox or (options.keep_inbox if options else False)
+        if self._phase_kind == "idle" and self.inbox.is_empty():
+            if not should_keep:
+                self.inbox.clear()
+            return
+
         self._cancel_cause = cause or {"kind": "user"}
         if not should_keep:
             self.inbox.clear()
@@ -329,7 +334,11 @@ class AgentRegistry:
     def register(self, agent: Agent) -> Callable[[], None]:
         owner = self.current_initiator()
         detach = self.enter(agent, owner=owner)
-        self.announce(agent)
+        try:
+            self.announce(agent)
+        except Exception:
+            detach()
+            raise
 
         def disposer():
             detach()

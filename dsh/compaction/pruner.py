@@ -132,8 +132,59 @@ class ToolResultPruner(Service):
                 continue
 
             edata = evt_dict.get("data", {})
+            msg = edata.get("message")
+            if (
+                isinstance(msg, dict)
+                and isinstance(msg.get("content"), list)
+                and len(msg["content"]) > 0
+                and isinstance(msg["content"][0], dict)
+                and msg["content"][0].get("type") == "tool-result"
+            ):
+                first_result_block = msg["content"][0]
+                raw_blocks = first_result_block.get("content", [])
+                pruned_blocks = self.prune_content(raw_blocks)
+                if pruned_blocks is not None:
+                    chars_before = self.measure_content(raw_blocks)
+                    chars_after = self.measure_content(pruned_blocks)
+                    saved_chars = chars_before - chars_after
+                    chars_removed_total += saved_chars
+
+                    token_price = 0
+                    if meter:
+                        token_price = meter.estimate_message(msg)
+
+                    session.append(
+                        "compaction/prune",
+                        {
+                            "shadowedRange": {"start": seq, "end": seq},
+                            "shadowedSeqs": [seq],
+                            "shadowedTokenCount": token_price,
+                        },
+                    )
+
+                    replacement_message = dict(msg)
+                    replacement_message["content"] = [{**first_result_block, "content": pruned_blocks}]
+                    replacement_data = dict(edata)
+                    replacement_data["message"] = replacement_message
+
+                    replacement = session.append(
+                        "tool/result",
+                        replacement_data,
+                        surface_op={"op": "replace", "start": seq, "end": seq},
+                        source_event_seqs=[seq],
+                    )
+                    repl_seq = replacement.get("seq") if isinstance(replacement, dict) else getattr(replacement, "seq", None)
+                    pruned_entries.append({
+                        "original_seq": seq,
+                        "originalSeq": seq,
+                        "replacement_seq": repl_seq,
+                        "replacementSeq": repl_seq,
+                        "chars_before": chars_before,
+                        "charsAfter": chars_after,
+                    })
+                    continue
+
             raw_content = edata.get("result", edata.get("content", edata.get("message", {}).get("content", "")))
-            
             pruned_content = self.prune_content(raw_content)
 
             if pruned_content is not None:
@@ -155,7 +206,6 @@ class ToolResultPruner(Service):
                         "shadowedSeqs": [seq],
                         "shadowedTokenCount": token_price,
                     },
-                    ignorable=True,
                 )
 
                 # 2. Append replacement tool/result

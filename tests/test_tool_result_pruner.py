@@ -55,5 +55,5 @@ def test_prune_session():
     # Derived message should contain the pruned content
     messages = session.derive_messages()
     tool_msg = messages[-1]
-    assert tool_msg["role"] == "tool"
-    assert "pruned" in tool_msg["content"]
+    assert tool_msg["role"] in ("tool", "user")
+    assert "pruned" in str(tool_msg["content"])

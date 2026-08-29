@@ -40,38 +40,40 @@ def derive_event_message(event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     Project a single event into the LLM message it derives to, or None when it produces none.
     """
     etype = event.get("type")
-    edata = event.get("data", {})
+    edata = event.get("data")
+    if not isinstance(edata, dict):
+        return None
 
     if etype == "user/message":
-        # Supports both simple {"content": "..."} and direct message objects
         if "role" in edata:
             return edata
-        return {
+        res = {
             "role": "user",
             "content": edata.get("content", ""),
             "source": edata.get("source"),
         }
+        if "id" in edata:
+            res["id"] = edata["id"]
+        return res
 
     elif etype == "assistant/message":
-        # Check message object
-        msg = edata.get("message", edata)
-        content = msg.get("content", "")
-        tool_calls = msg.get("tool_calls")
-        # If content is empty and there are no tool calls, skip
-        if not content and not tool_calls:
+        msg = edata.get("message")
+        if not isinstance(msg, dict):
+            return None
+        content = msg.get("content", [])
+        if isinstance(content, list) and len(content) == 0:
+            return None
+        if isinstance(content, str) and len(content) == 0:
             return None
         return msg
 
     elif etype == "tool/result":
-        # Returns standard tool message
+        msg = edata.get("message")
+        if isinstance(msg, dict):
+            return msg
         if "role" in edata:
             return edata
-        return {
-            "role": "tool",
-            "tool_call_id": edata.get("tool_call_id", ""),
-            "name": edata.get("name", ""),
-            "content": str(edata.get("result", edata.get("content", ""))),
-        }
+        return None
 
     return None
 

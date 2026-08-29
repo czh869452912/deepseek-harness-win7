@@ -7,16 +7,71 @@ Maintains append-only session log, SurfaceManager projection, and EpochHeader/Re
 import json
 import os
 import time
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, FrozenSet, List, Optional, Set, Union
 from dsh.cordis.plugin import Plugin
 from dsh.core.surface import (
     SurfaceManager,
     derive_event_message,
     is_surface_eligible_type,
+    tool_pairing_balanced_after,
 )
 
 SESSION_FORMAT_VERSION = 0
 SessionEvent = Dict[str, Any]
+
+KNOWN_SESSION_EVENT_TYPES: FrozenSet[str] = frozenset([
+    "agent-preset/selected",
+    "agent/inbox/spliced",
+    "approval/asked",
+    "approval/decided",
+    "approval/policy",
+    "assistant/chunk",
+    "assistant/message",
+    "command/done",
+    "command/run",
+    "compaction/end",
+    "compaction/prune",
+    "compaction/start",
+    "compaction/summary",
+    "feedback/record",
+    "goal/change",
+    "hook/invoked",
+    "hook/result",
+    "llm/retry",
+    "llm/retry-started",
+    "model/selection",
+    "permission/preset",
+    "plan/mode",
+    "request/context",
+    "request/header",
+    "sandbox/mode",
+    "schedule/change",
+    "session-log-deepseek/delivery-accepted",
+    "session/end-seed",
+    "session/title",
+    "session/title-llm-request",
+    "step/end",
+    "step/start",
+    "subagent/descriptor",
+    "subagent/model-selection-policy",
+    "team/member",
+    "team/message/delivered",
+    "team/message/queued",
+    "team/task",
+    "todo/write",
+    "tool-workflow/agent-end",
+    "tool-workflow/agent-start",
+    "tool-workflow/run-end",
+    "tool-workflow/run-start",
+    "tool/call",
+    "tool/code-dispatch",
+    "tool/code-dispatch-start",
+    "tool/result",
+    "turn/end",
+    "turn/start",
+    "user/message",
+    "web/deepseek-search-llm-request",
+])
 
 
 def snapshot_json_value(value: Any) -> Any:
@@ -41,7 +96,7 @@ def canonical_header(header: Dict[str, Any]) -> Dict[str, Any]:
     res: Dict[str, Any] = {}
     if "config" in snapshot:
         res["config"] = snapshot["config"]
-    if "adapterDefaults" in snapshot:
+    if "adapterDefaults" in snapshot and snapshot["adapterDefaults"]:
         res["adapterDefaults"] = snapshot["adapterDefaults"]
     if "system" in snapshot and snapshot["system"]:
         res["system"] = snapshot["system"]
@@ -57,6 +112,25 @@ def header_equals(a: Dict[str, Any], b: Dict[str, Any]) -> bool:
     ca = canonical_header(a)
     cb = canonical_header(b)
     return json.dumps(ca, sort_keys=True, ensure_ascii=False) == json.dumps(cb, sort_keys=True, ensure_ascii=False)
+
+
+def fold_request_header(events: List[Dict[str, Any]], from_header: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+    """Fold header events into the latest canonical header."""
+    state = from_header
+    for ev in events:
+        if isinstance(ev, dict) and ev.get("type") == "request/header":
+            hdr = ev.get("data", {}).get("header")
+            if isinstance(hdr, dict):
+                state = canonical_header(hdr)
+    return state
+
+
+class SessionForkError(ValueError):
+    """Structured error thrown by SessionStore.fork."""
+
+    def __init__(self, message: str, code: str):
+        super().__init__(message)
+        self.code = code
 
 
 class SessionHeader:
@@ -106,17 +180,72 @@ class SessionHeader:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "SessionHeader":
-        return cls(
-            session_id=data.get("id", "default-session"),
-            version=data.get("version", SESSION_FORMAT_VERSION),
-            created_at=data.get("createdAt") or data.get("created_at"),
-            cwd=data.get("cwd"),
-            parent_session=data.get("parentSession") or data.get("parent_session"),
-            seed_length=data.get("seedLength") or data.get("seed_length"),
-            origin=data.get("origin"),
-            delegation_depth=data.get("delegationDepth") or data.get("delegation_depth"),
-            agent_preset=data.get("agentPreset") or data.get("agent_preset"),
-        )
+        sid = str(data.get("id", "default-session"))
+        return validate_session_header(sid, data)
+
+
+def validate_session_header(session_id: str, input_data: Any) -> SessionHeader:
+    """Validate plain dictionary session header against schema rules."""
+    if not isinstance(input_data, dict):
+        raise ValueError("session header is not a plain JSON record")
+    version = input_data.get("version", SESSION_FORMAT_VERSION)
+    if version != SESSION_FORMAT_VERSION:
+        raise ValueError(f"session header version must be {SESSION_FORMAT_VERSION}, got {version}")
+    hid = input_data.get("id", session_id)
+    if hid != session_id:
+        raise ValueError(f'session header id "{hid}" does not match session id "{session_id}"')
+
+    raw_created = input_data.get("createdAt")
+    if raw_created is None:
+        raw_created = input_data.get("created_at")
+    created_at = int(raw_created) if raw_created is not None else int(time.time() * 1000)
+    if created_at < 0:
+        raise ValueError("session header createdAt must be a non-negative safe integer")
+
+    cwd = input_data.get("cwd")
+    if cwd is not None:
+        if not isinstance(cwd, str):
+            raise ValueError("session header cwd must be a string")
+        if not os.path.isabs(cwd):
+            raise ValueError(f'session header cwd must be an absolute path, got "{cwd}"')
+
+    parent_session = input_data.get("parentSession") or input_data.get("parent_session")
+    if parent_session is not None and not isinstance(parent_session, str):
+        raise ValueError("session header parentSession must be a string")
+
+    raw_seed_len = input_data.get("seedLength")
+    if raw_seed_len is None:
+        raw_seed_len = input_data.get("seed_length")
+    seed_length = int(raw_seed_len) if raw_seed_len is not None else None
+    if seed_length is not None and seed_length < 0:
+        raise ValueError("session header seedLength must be a non-negative safe integer")
+
+    origin = input_data.get("origin")
+    if origin is not None and origin != "subagent":
+        raise ValueError('session header origin must be "subagent"')
+
+    raw_depth = input_data.get("delegationDepth")
+    if raw_depth is None:
+        raw_depth = input_data.get("delegation_depth")
+    delegation_depth = int(raw_depth) if raw_depth is not None else None
+    if delegation_depth is not None and delegation_depth < 0:
+        raise ValueError("session header delegationDepth must be a non-negative safe integer")
+
+    agent_preset = input_data.get("agentPreset") or input_data.get("agent_preset")
+    if agent_preset is not None and not isinstance(agent_preset, str):
+        raise ValueError("session header agentPreset must be a string")
+
+    return SessionHeader(
+        session_id=session_id,
+        version=version,
+        created_at=created_at,
+        cwd=cwd,
+        parent_session=parent_session,
+        seed_length=seed_length,
+        origin=origin,
+        delegation_depth=delegation_depth,
+        agent_preset=agent_preset,
+    )
 
 
 class SessionPreparation:
@@ -134,6 +263,7 @@ class SessionPreparation:
 class Session:
     """
     An event-sourced session: append-only log of SessionEvents and live SessionSurface projection.
+    1:1 aligned with official `@deepseek-ai/dsh-session`.
     """
 
     def __init__(
@@ -150,25 +280,27 @@ class Session:
         self._surface_manager = SurfaceManager(self.events)
 
         if seed is not None:
-            for index, ev in enumerate(seed):
+            for ev in seed:
+                if isinstance(ev, dict) and ev.get("type") == "request/header-delta":
+                    raise ValueError("unsupported legacy request/header-delta")
                 snapshot = snapshot_json_value(ev)
                 self._surface_manager.validate_next(snapshot)
                 self.events.append(snapshot)
 
-        self.first_live_seq = len(self.events)
-
-        if seed is not None and (len(self.events) == 0 or self.events[-1].get("type") != "session/end-seed"):
-            self.append("session/end-seed", {}, ignorable=True)
-
         self._appending = False
 
-        self._cached_messages: Optional[List[Dict[str, Any]]] = None
-        self._cached_generation: int = -1
-        self._cached_nodes_len: int = -1
+        # Incremental derived messages cache: O(ΔN) projection
+        self._derived: List[Dict[str, Any]] = []
+        self._derived_nodes: int = 0
+        self._derived_generation: int = 0
+
         self._header_folded_seq: int = -1
         self._cached_request_header: Optional[Dict[str, Any]] = None
         self._context_folded_seq: int = -1
         self._cached_request_context: Optional[Dict[str, Any]] = None
+
+        if seed is not None and (len(self.events) == 0 or self.events[-1].get("type") != "session/end-seed"):
+            self.append("session/end-seed", {})
 
     @property
     def id(self) -> str:
@@ -225,7 +357,11 @@ class Session:
     ) -> Dict[str, Any]:
         """
         Append one typed event to the log and synchronously notify observers via ctx.emit.
+        Strict 1:1 SessionEvent envelope: { type, seq, time, data, surfaceOp?, sourceEventSeqs? }.
         """
+        if event_type == "request/header-delta":
+            raise ValueError("unsupported legacy request/header-delta")
+
         if self._appending:
             raise RuntimeError("session append cannot reenter while another append is being published")
 
@@ -237,12 +373,8 @@ class Session:
             "type": event_type,
             "seq": event_seq,
             "time": int(time.time() * 1000),
-            "session_id": self.id,
-            "data": data_snapshot,
+            "data": data_snapshot if data_snapshot is not None else {},
         }
-
-        if ignorable:
-            event["ignorable"] = True
 
         if is_surface_eligible_type(event_type):
             if surface_op is None:
@@ -277,15 +409,23 @@ class Session:
         text: str,
         surface_op: Optional[Union[str, Dict[str, Any]]] = None,
         source: Optional[Dict[str, Any]] = None,
+        message_id: Optional[str] = None,
+        source_event_seqs: Optional[List[int]] = None,
     ) -> Dict[str, Any]:
-        msg_id = f"user-{os.urandom(4).hex()}"
+        msg_id = message_id or f"user-{os.urandom(4).hex()}"
         src = source if (isinstance(source, dict) and "kind" in source) else {"kind": "user"}
         data: Dict[str, Any] = {
+            "role": "user",
             "id": msg_id,
             "content": text,
             "source": src,
         }
-        return self.append("user/message", data, surface_op=surface_op or "append")
+        return self.append(
+            "user/message",
+            data,
+            surface_op=surface_op or "append",
+            source_event_seqs=source_event_seqs,
+        )
 
     def append_assistant_message(
         self,
@@ -294,18 +434,21 @@ class Session:
         step: Optional[int] = None,
         usage: Optional[Dict[str, Any]] = None,
         timing: Optional[Dict[str, Any]] = None,
+        interrupted: bool = False,
         surface_op: Optional[Union[str, Dict[str, Any]]] = None,
         source_event_seqs: Optional[List[int]] = None,
     ) -> Dict[str, Any]:
-        data: Dict[str, Any] = {"message": message}
-        if turn is not None:
-            data["turn"] = turn
-        if step is not None:
-            data["step"] = step
+        data: Dict[str, Any] = {
+            "turn": turn if turn is not None else 1,
+            "step": step if step is not None else 1,
+            "message": message,
+        }
         if usage is not None:
             data["usage"] = usage
         if timing is not None:
             data["timing"] = timing
+        if interrupted:
+            data["interrupted"] = True
         return self.append(
             "assistant/message",
             data,
@@ -326,21 +469,26 @@ class Session:
         surface_op: Optional[Union[str, Dict[str, Any]]] = None,
         source_event_seqs: Optional[List[int]] = None,
     ) -> Dict[str, Any]:
-        data: Dict[str, Any] = {
-            "tool_call_id": tool_call_id,
-            "name": name,
-            "result": result,
-            "message": {
-                "role": "tool",
-                "tool_call_id": tool_call_id,
-                "name": name,
-                "content": result,
+        tool_msg = {
+            "role": "user",
+            "content": [
+                {
+                    "type": "tool-result",
+                    "toolCallId": tool_call_id,
+                    "content": [{"type": "text", "text": result}],
+                    "isError": error is not None,
+                }
+            ],
+            "source": {
+                "kind": "tool",
+                "callId": tool_call_id,
             },
         }
-        if turn is not None:
-            data["turn"] = turn
-        if step is not None:
-            data["step"] = step
+        data: Dict[str, Any] = {
+            "turn": turn if turn is not None else 1,
+            "step": step if step is not None else 1,
+            "message": tool_msg,
+        }
         if timing is not None:
             data["timing"] = timing
         if error is not None:
@@ -354,8 +502,16 @@ class Session:
             source_event_seqs=source_event_seqs,
         )
 
-    def append_request_header(self, header: Dict[str, Any], reason: str = "initial") -> Dict[str, Any]:
-        return self.append("request/header", {"header": header, "reason": reason})
+    def append_request_header(
+        self,
+        header: Dict[str, Any],
+        reason: str = "initial",
+        starts_series: bool = False,
+    ) -> Dict[str, Any]:
+        payload: Dict[str, Any] = {"header": header, "reason": reason}
+        if starts_series:
+            payload["startsSeries"] = True
+        return self.append("request/header", payload)
 
     def append_request_context(self, provider: str, model: str, context_window: Optional[int] = None) -> Dict[str, Any]:
         payload: Dict[str, Any] = {"provider": provider, "model": model}
@@ -369,7 +525,9 @@ class Session:
             for idx in range(self._header_folded_seq + 1, len(self.events)):
                 event = self.events[idx]
                 if event.get("type") == "request/header":
-                    self._cached_request_header = event.get("data", {}).get("header")
+                    hdr = event.get("data", {}).get("header")
+                    if isinstance(hdr, dict):
+                        self._cached_request_header = canonical_header(hdr)
             self._header_folded_seq = len(self.events) - 1
         return self._cached_request_header
 
@@ -386,33 +544,63 @@ class Session:
     def derive_messages(self, system_prompt: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Derive messages array for LLM API call by projecting current surface nodes.
-        Cached until surface nodes or replace_generation changes.
+        Cached incrementally: O(ΔN) projection over unseen surface nodes.
+        Rebuilds only on surface rewrite (replace_generation change).
         """
         nodes = self._surface_manager.nodes
         gen = self._surface_manager.replace_generation
 
-        if (
-            self._cached_messages is None
-            or self._cached_generation != gen
-            or self._cached_nodes_len != len(nodes)
-        ):
-            surface_messages: List[Dict[str, Any]] = []
-            for seq in nodes:
-                if seq < len(self.events):
-                    msg = derive_event_message(self.events[seq])
-                    if msg is not None:
-                        surface_messages.append(msg)
+        if gen != self._derived_generation:
+            self._derived = []
+            self._derived_nodes = 0
+            self._derived_generation = gen
 
-            self._cached_messages = surface_messages
-            self._cached_generation = gen
-            self._cached_nodes_len = len(nodes)
+        for seq in nodes[self._derived_nodes:]:
+            if 0 <= seq < len(self.events):
+                msg = self.derive_event_message(self.events[seq])
+                if msg is not None:
+                    self._derived.append(msg)
 
-        messages: List[Dict[str, Any]] = []
+        self._derived_nodes = len(nodes)
+
+        surface_history = list(self._derived)
         if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
-        messages.extend(self._cached_messages or [])
+            return [{"role": "system", "content": system_prompt}] + surface_history
+        return surface_history
 
-        return messages
+    def derive_event_message(self, event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Instance face of pure per-node derive_event_message."""
+        return derive_event_message(event)
+
+    def fork(
+        self,
+        child_session_id: str,
+        boundary: Optional[int] = None,
+        meta: Optional[Dict[str, Any]] = None,
+    ) -> "Session":
+        """
+        Fork a child session from a balanced completed-turn prefix of this session.
+        1:1 aligned with reference forkSession.
+        """
+        cut = boundary if boundary is not None else len(self.events)
+        if cut < 0 or cut > len(self.events):
+            raise ValueError(f"fork boundary {cut} out of bounds (0..{len(self.events)})")
+
+        nodes = self.surface.nodes
+        surface_nodes_in_cut = [s for s in nodes if s < cut]
+        if surface_nodes_in_cut:
+            if not tool_pairing_balanced_after(self.events[:cut], surface_nodes_in_cut, surface_nodes_in_cut[-1]):
+                raise ValueError("fork boundary is not tool-pairing balanced")
+
+        seed_events = [snapshot_json_value(ev) for ev in self.events[:cut]]
+        meta_dict = dict(meta or {})
+        meta_dict["parentSession"] = self.id
+        meta_dict["seedLength"] = cut
+        meta_dict["delegationDepth"] = (getattr(self.header, "delegation_depth", 0) or 0) + 1
+
+        header = validate_session_header(child_session_id, {"id": child_session_id, **meta_dict})
+        child = Session(session_id=child_session_id, seed=seed_events, header=header, ctx=self.ctx)
+        return child
 
     async def flush(self) -> None:
         """Dispatch durability checkpoint."""
@@ -442,9 +630,9 @@ class SessionStore:
 
         meta_dict = dict(meta or {})
         if parent_session_id is not None:
-            meta_dict["parent_session"] = parent_session_id
+            meta_dict["parentSession"] = parent_session_id
 
-        header = SessionHeader.from_dict({"id": sid, **meta_dict})
+        header = validate_session_header(sid, {"id": sid, **meta_dict})
         session = Session(session_id=sid, seed=seed, header=header, ctx=self.ctx)
         self._sessions[sid] = session
 
@@ -466,8 +654,8 @@ class SessionStore:
         sid = session_id or f"session-{len(self._sessions) + 1}"
         meta_dict = dict(meta or {})
         if parent_session_id is not None:
-            meta_dict["parent_session"] = parent_session_id
-        header = SessionHeader.from_dict({"id": sid, **meta_dict})
+            meta_dict["parentSession"] = parent_session_id
+        header = validate_session_header(sid, {"id": sid, **meta_dict})
         session = Session(session_id=sid, seed=seed, header=header, ctx=self.ctx)
         return SessionPreparation(session=session)
 
@@ -480,12 +668,95 @@ class SessionStore:
 
         def disposer() -> None:
             self._sessions.pop(sid, None)
+            if self.ctx:
+                self.ctx.emit("session/disposed", session)
 
         if self.ctx:
             self.ctx.effect(disposer)
             self.ctx.emit("session/created", session)
 
         return disposer
+
+    def fork(
+        self,
+        source: Union[str, Session],
+        boundary: Optional[Union[int, float]] = None,
+        child_session_id: Optional[str] = None,
+    ) -> Session:
+        if child_session_id is not None and self.get(child_session_id) is not None:
+            raise SessionForkError(f'session "{child_session_id}" already exists', 'SESSION_ALREADY_EXISTS')
+
+        live_source = self._resolve_fork_source(source)
+        seed = self._fork_seed(live_source, boundary)
+        meta_dict: Dict[str, Any] = {
+            "parentSession": live_source.id,
+            "seedLength": len(seed),
+        }
+        if live_source.header.cwd is not None:
+            meta_dict["cwd"] = live_source.header.cwd
+
+        return self.create(child_session_id, seed=seed, meta=meta_dict)
+
+    def _resolve_fork_source(self, source: Union[str, Session]) -> Session:
+        if isinstance(source, str):
+            session = self.get(source)
+            if session is None:
+                raise SessionForkError(f'session "{source}" not found', 'SESSION_NOT_FOUND')
+            return session
+
+        live = self.get(source.id)
+        if live is None:
+            raise SessionForkError(f'session "{source.id}" not found', 'SESSION_NOT_FOUND')
+        if live is not source:
+            raise SessionForkError(f'session "{source.id}" is not the live store instance', 'SESSION_NOT_LIVE')
+        return source
+
+    def _fork_seed(self, session: Session, requested_boundary: Optional[Union[int, float]]) -> List[Dict[str, Any]]:
+        events = session.events
+        last_event = events[-1] if events else None
+
+        if requested_boundary is not None:
+            boundary = requested_boundary
+        else:
+            if last_event is None:
+                return []
+            boundary = last_event.get("seq", len(events) - 1)
+
+        if not isinstance(boundary, int) or isinstance(boundary, bool) or boundary < 0 or boundary > 9007199254740991:
+            raise SessionForkError(
+                f'fork boundary for session "{session.id}" must be a non-negative safe integer, got {boundary}',
+                'INVALID_BOUNDARY',
+            )
+
+        if boundary >= len(events):
+            last_seq = events[-1].get("seq") if events else None
+            raise SessionForkError(
+                f'fork boundary {boundary} does not exist in session "{session.id}" (last seq: {last_seq if last_seq is not None else "none"})',
+                'INVALID_BOUNDARY',
+            )
+
+        boundary_event = events[boundary]
+        if boundary_event is None or boundary_event.get("seq") != boundary:
+            raise SessionForkError(
+                f'fork boundary {boundary} does not match a contiguous event seq in session "{session.id}"',
+                'INVALID_BOUNDARY',
+            )
+
+        prefix = events[: boundary + 1]
+        last_turn_boundary = None
+        for ev in reversed(prefix):
+            if ev.get("type") in ("turn/start", "turn/end"):
+                last_turn_boundary = ev
+                break
+
+        if last_turn_boundary is not None and last_turn_boundary.get("type") == "turn/start":
+            open_turn = last_turn_boundary.get("data", {}).get("turn", 1)
+            raise SessionForkError(
+                f'fork boundary {boundary} in session "{session.id}" ends inside open turn {open_turn}',
+                'OPEN_TURN',
+            )
+
+        return [snapshot_json_value(ev) for ev in prefix]
 
     async def flush(self, session: Optional[Session] = None) -> None:
         if self.ctx:

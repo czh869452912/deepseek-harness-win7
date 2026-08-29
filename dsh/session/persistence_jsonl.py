@@ -128,47 +128,15 @@ class JsonlSessionPersistence(SessionPersistence):
             os.fsync(f.fileno())
 
     def _encode_events(self, events: List[Dict[str, Any]]) -> List[str]:
-        lines: List[str] = []
         if not self.pack_chunks:
-            for event in events:
-                lines.append(json.dumps(event, ensure_ascii=False))
-            return lines
-
-        pending_chunks: List[Dict[str, Any]] = []
-        base_seq: Optional[int] = None
-        base_time: Optional[int] = None
-        session_id: str = ""
-
-        def flush_chunks():
-            nonlocal pending_chunks, base_seq, base_time, session_id
-            if pending_chunks:
-                batch_data = [c.get("data", {}).get("chunk") for c in pending_chunks]
-                batch_event = {
-                    "type": "assistant/chunk-batch",
-                    "seq": base_seq,
-                    "time": base_time,
-                    "session_id": session_id,
-                    "chunks": batch_data,
-                }
-                lines.append(json.dumps(batch_event, ensure_ascii=False))
-                pending_chunks.clear()
-                base_seq = None
-                base_time = None
-
-        for event in events:
-            if event.get("type") == "assistant/chunk":
-                if not pending_chunks:
-                    base_seq = event.get("seq")
-                    base_time = event.get("time")
-                    session_id = event.get("session_id", "")
-                pending_chunks.append(event)
-            else:
-                flush_chunks()
-                lines.append(json.dumps(event, ensure_ascii=False))
-        flush_chunks()
-        return lines
+            return [json.dumps(ev, ensure_ascii=False) for ev in events]
+        from dsh.session.chunk_rows import pack_chunk_runs
+        records = pack_chunk_runs(events)
+        return [json.dumps(rec, ensure_ascii=False) for rec in records]
 
     def _decode_events(self, raw_lines: List[str]) -> List[Dict[str, Any]]:
+        from dsh.session.chunk_rows import decode_storage_record
+        from dsh.core.session import KNOWN_SESSION_EVENT_TYPES
         events: List[Dict[str, Any]] = []
         for line in raw_lines:
             line = line.strip()
@@ -179,7 +147,7 @@ class JsonlSessionPersistence(SessionPersistence):
             except Exception:
                 continue
 
-            if data.get("type") == "assistant/chunk-batch":
+            if isinstance(data, dict) and data.get("type") == "assistant/chunk-batch":
                 base_seq = data.get("seq", len(events))
                 chunks = data.get("chunks", [])
                 for i, chk in enumerate(chunks):
@@ -187,12 +155,15 @@ class JsonlSessionPersistence(SessionPersistence):
                         "type": "assistant/chunk",
                         "seq": base_seq + i,
                         "time": data.get("time", int(time.time() * 1000)),
-                        "session_id": data.get("session_id", ""),
-                        "data": {"chunk": chk},
+                        "data": {"turn": 1, "step": 1, "chunk": chk},
                     })
             else:
-                session_id = data.get("session_id", "default")
-                events.append(migrate_legacy_event(data, session_id))
+                decoded = decode_storage_record(data)
+                for ev in decoded:
+                    etype = ev.get("type")
+                    if etype not in KNOWN_SESSION_EVENT_TYPES and etype not in ("text-chunks", "reasoning-chunks", "tool-call-chunks"):
+                        raise ValueError(f'unrecognized session event type "{etype}"')
+                    events.append(ev)
 
         return events
 

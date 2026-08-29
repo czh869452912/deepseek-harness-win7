@@ -352,9 +352,14 @@ class AgentLoopService:
         self._default_agent: Optional[Agent] = None
         self._request_header_logged: Dict[str, bool] = {}
 
-    def _get_turn_number(self, agent_id: str) -> int:
-        self._turn_counters[agent_id] = self._turn_counters.get(agent_id, 0) + 1
-        return self._turn_counters[agent_id]
+    def _get_turn_number(self, agent: Agent) -> int:
+        session = agent.session
+        last_turn = 0
+        for ev in reversed(session.events):
+            if isinstance(ev, dict) and ev.get("type") == "turn/start":
+                last_turn = ev.get("data", {}).get("turn", 0)
+                break
+        return last_turn + 1
 
     async def create_agent(
         self,
@@ -514,9 +519,9 @@ class AgentLoopService:
 
     async def _turn(self, agent: Agent) -> bool:
         session = agent.session
-        turn_num = self._get_turn_number(agent.id)
+        turn_num = self._get_turn_number(agent)
         setattr(agent, "_last_turn", turn_num)
-        session.append("turn/start", {"turn": turn_num}, ignorable=True)
+        session.append("turn/start", {"turn": turn_num})
 
         turn_ends: Optional[Dict[str, Any]] = None
         target = "next-turn"
@@ -569,7 +574,7 @@ class AgentLoopService:
                     turn_ends = {"kind": "completed"}
                     return False
 
-                session.append("step/start", {"turn": turn_num, "step": step_num}, ignorable=True)
+                session.append("step/start", {"turn": turn_num, "step": step_num})
 
                 try:
                     step_end = await self._step(agent, turn_num, step_num, system_prompt)
@@ -577,7 +582,7 @@ class AgentLoopService:
                         if turn_ends is None or turn_ends.get("kind") != "max-tokens":
                             turn_ends = step_end
                 finally:
-                    session.append("step/end", {"turn": turn_num, "step": step_num}, ignorable=True)
+                    session.append("step/end", {"turn": turn_num, "step": step_num})
 
                 if turn_ends and len(agent.inbox.next_step) == 0:
                     await self.ctx.serial("agent/turn-stopping", {"turn": turn_num, "agent": agent})
@@ -597,7 +602,7 @@ class AgentLoopService:
             raise
         finally:
             final_reason = turn_ends or {"kind": "completed"}
-            session.append("turn/end", {"turn": turn_num, "reason": final_reason}, ignorable=True)
+            session.append("turn/end", {"turn": turn_num, "reason": final_reason})
             self.ctx.emit("agent/turn-stopped", {"agent": agent, "turn": turn_num, "session": session})
             await session.flush()
 
@@ -639,13 +644,20 @@ class AgentLoopService:
             "config": {"provider": provider_name, "model": model_name},
         })
 
+        surface_gen = session.surface.replace_generation
+        last_gen = getattr(agent, "_last_surface_gen", None)
+        starts_series = (last_gen is not None and last_gen != surface_gen)
+        setattr(agent, "_last_surface_gen", surface_gen)
+
         baseline_header = session.request_header()
         if not logged_before:
             reason = "initial" if baseline_header is None else "resume"
             session.append_request_header(header_data, reason=reason)
             self._request_header_logged[agent.id] = True
         elif baseline_header is None or not header_equals(baseline_header, header_data):
-            session.append_request_header(header_data, reason="change")
+            session.append_request_header(header_data, reason="change", starts_series=starts_series)
+        elif starts_series:
+            session.append_request_header(header_data, reason="series")
 
         baseline_ctx = session.request_context()
         if (
@@ -664,7 +676,7 @@ class AgentLoopService:
         chunk_seqs: List[int] = []
 
         try:
-            stream_fn = getattr(llm_service, "chat_completion_stream", None)
+            stream_fn = getattr(llm_service, "chat_completion_stream", None) or getattr(llm_service, "stream", None)
             used_stream = False
             if stream_fn and callable(stream_fn):
                 try:

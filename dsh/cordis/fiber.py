@@ -631,12 +631,26 @@ class Fiber:
     def update(self, config: Any, no_save: bool = False) -> Any:
         """
         Validate and apply new config, then restart the plugin via internal/update waterfall.
+        Matching TS Fiber.update(config, noSave).
         """
         self.assert_active()
         self._config = config
+        if self.state != FiberState.ACTIVE:
+            self._error = None
+            self.set_epoch(INACTIVE_EPOCH)
+            self._refresh()
+            return None
+
+        resolved_config = self._resolve_config(config)
+
+        def _do_update(cfg=resolved_config):
+            self.config = cfg
+            self._error = None
+            return self.restart()
+
         if hasattr(self.ctx, "waterfall_sync"):
-            return self.ctx.waterfall_sync("internal/update", config, no_save, lambda cfg=config: self.restart(cfg))
-        return self.restart(config)
+            return self.ctx.waterfall_sync("internal/update", resolved_config, no_save, _do_update)
+        return _do_update()
 
     def restart(self, new_config: Optional[Any] = None) -> Any:
         """Dispose and immediately reload this plugin with current or new config matching TS fiber.restart()."""

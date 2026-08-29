@@ -134,6 +134,113 @@ def is_object(value: Any) -> bool:
     return value is not None and (hasattr(value, "__dict__") or isinstance(value, (dict, list, tuple, set)) or callable(value))
 
 
+def is_nullable(value: Any) -> bool:
+    """Return true for None or undefined-like values."""
+    return value is None
+
+
+isNullable = is_nullable
+
+
+def capitalize(source: str) -> str:
+    """Uppercase the first character of a string."""
+    if not source:
+        return ""
+    return source[0].upper() + source[1:]
+
+
+def uncapitalize(source: str) -> str:
+    """Lowercase the first character of a string."""
+    if not source:
+        return ""
+    return source[0].lower() + source[1:]
+
+
+def camel_case(source: str) -> str:
+    """Convert dash or underscore delimited text to camelCase."""
+    import re
+    if not source:
+        return ""
+    return re.sub(r"[_-]([a-zA-Z0-9])", lambda m: m.group(1).upper(), source)
+
+
+camelCase = camel_case
+camelize = camel_case
+
+
+def hyphenate(source: str) -> str:
+    """Convert text to dash-delimited parameter case matching Cosmokit hyphenate/paramCase."""
+    import re
+    if not source:
+        return ""
+    # Convert camelCase to hyphen-case
+    s1 = re.sub(r"([a-z0-9])([A-Z])", r"\1-\2", source)
+    s2 = re.sub(r"[_\s]+", "-", s1)
+    return s2.lower().strip("-")
+
+
+paramCase = hyphenate
+param_case = hyphenate
+
+
+def snake_case(source: str) -> str:
+    """Convert text to underscore-delimited snake_case."""
+    import re
+    if not source:
+        return ""
+    s1 = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", source)
+    s2 = re.sub(r"[-\s]+", "_", s1)
+    return s2.lower().strip("_")
+
+
+snakeCase = snake_case
+
+
+class Time:
+    """Time constants and parsing helpers matching Cosmokit Time."""
+    millisecond = 1
+    second = 1000
+    minute = second * 60
+    hour = minute * 60
+    day = hour * 24
+    week = day * 7
+
+    @staticmethod
+    def parse_time(source: str) -> float:
+        """Parse time strings like '10s', '5m', '2h', '1d' into milliseconds."""
+        import re
+        if not source or not isinstance(source, str):
+            return 0.0
+        pattern = r"^(?:(\d+(?:\.\d+)?)\s*w)?\s*(?:(\d+(?:\.\d+)?)\s*d)?\s*(?:(\d+(?:\.\d+)?)\s*h)?\s*(?:(\d+(?:\.\d+)?)\s*m)?\s*(?:(\d+(?:\.\d+)?)\s*s)?$"
+        match = re.match(pattern, source.strip())
+        if not match:
+            return 0.0
+        w, d, h, m, s = match.groups()
+        total = 0.0
+        if w: total += float(w) * Time.week
+        if d: total += float(d) * Time.day
+        if h: total += float(h) * Time.hour
+        if m: total += float(m) * Time.minute
+        if s: total += float(s) * Time.second
+        return total
+
+    parseTime = parse_time
+
+    @staticmethod
+    def format(ms: float) -> str:
+        """Format milliseconds into human-readable shorthand (e.g. '10s', '5m', '2h')."""
+        abs_ms = abs(ms)
+        if abs_ms >= Time.day - Time.hour / 2:
+            return f"{round(ms / Time.day)}d"
+        elif abs_ms >= Time.hour - Time.minute / 2:
+            return f"{round(ms / Time.hour)}h"
+        elif abs_ms >= Time.minute - Time.second / 2:
+            return f"{round(ms / Time.minute)}m"
+        elif abs_ms >= Time.second:
+            return f"{round(ms / Time.second)}s"
+        return f"{int(ms)}ms"
+
+
 class TracedProxy:
     """
     Traceable proxy wrapper binding a service or callable to a caller Context

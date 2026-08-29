@@ -243,7 +243,7 @@ class ReflectService:
             teardown_fn = setup()
             return teardown_fn
 
-    def notify(self, names: List[str]) -> List[Any]:
+    def notify(self, names: List[str], filter_fn: Optional[Callable[[Any, str], bool]] = None) -> List[Any]:
         """
         1:1 Dependency notification matching TS Cordis ReflectService.notify.
         Re-evaluates every registered fiber that requires one of the changed services.
@@ -252,8 +252,18 @@ class ReflectService:
         if hasattr(self.ctx, "registry"):
             for fiber in self.ctx.registry.list_fibers():
                 has_update = False
+                fiber_ctx = getattr(fiber, "ctx", None)
                 for name in names:
                     if name in getattr(fiber, "inject", {}):
+                        if filter_fn is not None:
+                            if fiber_ctx is not None and not filter_fn(fiber_ctx, name):
+                                continue
+                        else:
+                            if fiber_ctx is not None:
+                                target_iso = getattr(fiber_ctx, "_isolated_keys", {}).get(name)
+                                self_iso = getattr(self.ctx, "_isolated_keys", {}).get(name)
+                                if target_iso != self_iso:
+                                    continue
                         has_update = True
                         if hasattr(fiber, "_checkImpl"):
                             fiber._checkImpl(name)

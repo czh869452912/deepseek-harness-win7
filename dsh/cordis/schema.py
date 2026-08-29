@@ -884,18 +884,24 @@ def _resolve_intersect(data: Any, schema: Schema, opt: Dict[str, Any], strict: b
         if is_nullable(res):
             res = val
         elif type(res) != type(val):
-            raise ValidationError(f"expected intersect matching types but got {data}", opt)
+            raise ValidationError(f"expected {schema} but got {json.dumps(data, default=str)}", opt)
         elif isinstance(val, dict):
-            res.update(val)
+            if res is None:
+                res = {}
+            for k, v in val.items():
+                if k in res and isinstance(res[k], dict) and isinstance(v, dict):
+                    res[k].update(v)
+                else:
+                    res[k] = v
         elif res != val:
-            raise ValidationError(f"expected intersect but got {data}", opt)
+            raise ValidationError(f"expected {schema} but got {json.dumps(data, default=str)}", opt)
     if not strict and isinstance(data, dict):
         if res is None:
             res = {}
         for k, v in data.items():
             if k not in res:
                 res[k] = v
-    return res if res is not None else data, None
+    return (res if res is not None else data), None
 
 
 def _resolve_transform(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) -> Tuple[Any, Any]:

@@ -907,6 +907,7 @@ class Loader(EntryTree, Service):
         self.registry_map: Dict[str, Any] = {}
         self.entries_list: List[Entry] = []
         self._realms: Dict[str, GlobalRealm] = {}
+        self._delims: Dict[str, str] = {}
 
         if self.ctx:
             self.ctx.on("internal/config", self._on_internal_config, global_listener=True)
@@ -916,12 +917,17 @@ class Loader(EntryTree, Service):
                 if entry.ctx:
                     entry.ctx._intercept_map = dict(getattr(entry.ctx, "_intercept_map", {}))
                     entry.ctx._isolated_keys = dict(getattr(entry.ctx, "_isolated_keys", {}))
+                    if not hasattr(entry.ctx, "_isolate_delims"):
+                        entry.ctx._isolate_delims = {}
 
             self.ctx.on("loader/entry-init", _on_entry_init)
 
             def _on_patch_context(entry: Entry, next_fn: Callable[[], Any] = None) -> Any:
                 parent_ctx = getattr(entry.parent, "ctx", None) if entry.parent else None
                 base_ctx = parent_ctx or getattr(entry, "ctx", None)
+                old_map = dict(getattr(entry.ctx, "_isolated_keys", {}))
+
+                # Step 1: Generate new isolate map
                 new_map = dict(getattr(base_ctx, "_isolated_keys", {})) if base_ctx else {}
                 isolate_opt = entry.options.get("isolate", {})
                 if isinstance(isolate_opt, dict):
@@ -940,14 +946,78 @@ class Loader(EntryTree, Service):
                             new_map[name] = realm.access(name, create=True)
                         elif label:
                             new_map[name] = str(label)
-                entry.ctx._isolated_keys = new_map
 
+                # Step 2: Generate service diff with Delimiters matching TS isolate.ts:103-120
+                diff: Dict[str, Tuple[str, str, str, str]] = {}
+                all_names = set(new_map.keys()) | set(self._delims.keys()) | set(old_map.keys())
+                if not hasattr(entry.ctx, "_isolate_delims"):
+                    entry.ctx._isolate_delims = {}
+
+                for name in all_names:
+                    old_sym = old_map.get(name, "")
+                    new_sym = new_map.get(name, "")
+                    if old_sym == new_sym:
+                        continue
+
+                    delim_k = self._delims.setdefault(name, f"delim:{name}")
+                    entry_flag = f"{name}#{entry.id}"
+                    entry.ctx._isolate_delims[delim_k] = entry_flag
+
+                    for sym in (old_sym, new_sym):
+                        if not sym:
+                            continue
+                        impl = entry.ctx.reflect.store.get(sym) if hasattr(entry.ctx, "reflect") and hasattr(entry.ctx.reflect, "store") else None
+                        if not impl:
+                            continue
+                        impl_fiber = getattr(impl, "fiber", None)
+                        if not impl_fiber:
+                            continue
+                        impl_ctx = getattr(impl_fiber, "ctx", None)
+                        impl_delims = getattr(impl_ctx, "_isolate_delims", {}) if impl_ctx else {}
+                        impl_flag = impl_delims.get(delim_k, "")
+                        diff[name] = (old_sym, new_sym, entry_flag, impl_flag)
+                        if entry_flag != impl_flag:
+                            break
+
+                # Step 3: Update isolate & intercept maps
+                entry.ctx._isolated_keys = new_map
                 intercept_opt = entry.options.get("intercept", {})
                 if isinstance(intercept_opt, dict):
                     entry.ctx._intercept_map.update(intercept_opt)
 
+                # Step 4: Reload fiber
+                res = None
                 if next_fn and callable(next_fn):
-                    return next_fn()
+                    res = next_fn()
+
+                # Step 5: Replace service impl in reflect store matching TS isolate.ts:132-137
+                if hasattr(entry.ctx, "reflect") and hasattr(entry.ctx.reflect, "store"):
+                    for name, (sym1, sym2, flag1, flag2) in diff.items():
+                        if flag1 == flag2 and sym1 in entry.ctx.reflect.store and sym2 not in entry.ctx.reflect.store:
+                            entry.ctx.reflect.store[sym2] = entry.ctx.reflect.store[sym1]
+                            del entry.ctx.reflect.store[sym1]
+
+                # Step 6: Reflect notify with Delimiter filter matching TS isolate.ts:140-146
+                if diff and hasattr(self.ctx, "reflect"):
+                    def _filter_notify(target_ctx: Any, s_name: str) -> bool:
+                        if s_name not in diff:
+                            return True
+                        sym1, sym2, flag1, flag2 = diff[s_name]
+                        sym3 = getattr(target_ctx, "_isolated_keys", {}).get(s_name, "")
+                        target_delims = getattr(target_ctx, "_isolate_delims", {})
+                        delim_key = self._delims.get(s_name, "")
+                        flag3 = target_delims.get(delim_key, "")
+                        return (sym1 == sym3 or sym2 == sym3) and (flag1 == flag3) != (flag1 == flag2)
+
+                    self.ctx.reflect.notify(list(diff.keys()), filter_fn=_filter_notify)
+
+                # Step 7: Clean up delimiters
+                for name, delim_key in list(self._delims.items()):
+                    if name not in new_map:
+                        if hasattr(entry.ctx, "_isolate_delims"):
+                            entry.ctx._isolate_delims.pop(delim_key, None)
+
+                return res
 
             self.ctx.on("loader/patch-context", _on_patch_context)
 

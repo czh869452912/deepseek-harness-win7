@@ -76,6 +76,20 @@ class _AsyncIntervalIterator:
             if callable(self._dispose):
                 self._dispose()
 
+    def __del__(self) -> None:
+        if not self._disposed:
+            self._disposed = True
+            try:
+                if self._task and not self._task.done():
+                    self._task.cancel()
+            except Exception:
+                pass
+            if callable(self._dispose):
+                try:
+                    self._dispose()
+                except Exception:
+                    pass
+
 
 class TimerService(Service):
     """

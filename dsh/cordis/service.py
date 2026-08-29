@@ -86,6 +86,18 @@ class Service:
         self_isolate = getattr(self.ctx, "_isolated_keys", {}) if self.ctx else {}
         return target_isolate.get(self.name) == self_isolate.get(self.name)
 
+    def _extend(self, props: Optional[Dict[str, Any]] = None) -> Any:
+        """
+        Derive extended service instance bound to child context matching TS Service[symbols.extend] (Object.create(this)).
+        """
+        target_ctx = props.get("ctx", self.ctx) if props else self.ctx
+        if target_ctx is self.ctx or target_ctx is None:
+            return self
+        import copy
+        extended = copy.copy(self)
+        extended.ctx = target_ctx
+        return extended
+
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """
         Support callable services matching Service.invoke.

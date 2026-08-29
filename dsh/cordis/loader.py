@@ -21,7 +21,7 @@ from dsh.cordis.plugin import Plugin
 from dsh.cordis.service import Service
 
 
-def resolve_plugin_class(name: str, registry_map: Optional[Dict[str, Any]] = None) -> Optional[Any]:
+def resolve_plugin_class(name: str, registry_map: Optional[Dict[str, Any]] = None, return_mod_name: bool = False) -> Any:
     """
     Dynamically resolve a plugin class from registry_map, module specifier, or file path.
     Supports:
@@ -30,11 +30,14 @@ def resolve_plugin_class(name: str, registry_map: Optional[Dict[str, Any]] = Non
     3. Module:Class specifier ('my_package.module:CustomPlugin')
     4. File path:Class specifier ('plugins/custom.py:MyPlugin')
     """
+    mod_name_res: Optional[str] = None
+
     if registry_map and name in registry_map:
-        return registry_map[name]
+        res = registry_map[name]
+        return (res, None) if return_mod_name else res
 
     if not isinstance(name, str) or not name:
-        return None
+        return (None, None) if return_mod_name else None
 
     # Check for file path or module:class format
     if ":" in name:
@@ -44,22 +47,24 @@ def resolve_plugin_class(name: str, registry_map: Optional[Dict[str, Any]] = Non
 
         try:
             if target_path.endswith(".py") or os.path.exists(target_path):
-                spec = importlib.util.spec_from_file_location("dynamic_cordis_plugin", os.path.abspath(target_path))
+                mod_name_res = f"dynamic_cordis_plugin_{abs(hash(os.path.abspath(target_path)))}"
+                spec = importlib.util.spec_from_file_location(mod_name_res, os.path.abspath(target_path))
                 if spec and spec.loader:
                     mod = importlib.util.module_from_spec(spec)
+                    sys.modules[mod_name_res] = mod
                     spec.loader.exec_module(mod)
                     cls = getattr(mod, class_name, None)
                     if cls and registry_map is not None:
                         registry_map[name] = cls
-                    return cls
+                    return (cls, mod_name_res) if return_mod_name else cls
             else:
                 mod = importlib.import_module(target_path)
                 cls = getattr(mod, class_name, None)
                 if cls and registry_map is not None:
                     registry_map[name] = cls
-                return cls
+                return (cls, target_path) if return_mod_name else cls
         except Exception:
-            return None
+            return (None, None) if return_mod_name else None
 
     # Check for dotted Python path
     if "." in name and not name.startswith("@") and not name.startswith("/"):
@@ -71,11 +76,11 @@ def resolve_plugin_class(name: str, registry_map: Optional[Dict[str, Any]] = Non
                 if cls is not None:
                     if registry_map is not None:
                         registry_map[name] = cls
-                    return cls
+                    return (cls, parts[0]) if return_mod_name else cls
             except Exception:
                 pass
 
-    return None
+    return (None, None) if return_mod_name else None
 
 
 
@@ -579,6 +584,7 @@ class Entry:
         self.subtree: Optional[EntryTree] = None
         self._init_task: Optional[asyncio.Future] = None
         self._disposing = 0
+        self._loaded_module_name: Optional[str] = None
 
         loader_ctx = getattr(loader, "ctx", None) if loader else None
         if loader_ctx:
@@ -621,6 +627,10 @@ class Entry:
                 asyncio.run(fiber.dispose())
         finally:
             self._disposing -= 1
+            if self._loaded_module_name and self._loaded_module_name in sys.modules:
+                del sys.modules[self._loaded_module_name]
+                self._loaded_module_name = None
+                importlib.invalidate_caches()
 
     def update(self, options: Dict[str, Any], create: bool = False, force: bool = False) -> None:
         """Merge new options, restart as needed, and update fiber."""
@@ -649,7 +659,9 @@ class Entry:
         if not self.loader:
             return
         reg_map = getattr(self.loader, "registry_map", {})
-        plugin_cls = resolve_plugin_class(self.name, reg_map)
+        plugin_cls, mod_name = resolve_plugin_class(self.name, reg_map, return_mod_name=True)
+        if mod_name:
+            self._loaded_module_name = mod_name
         ctx = getattr(self.loader, "ctx", None)
         if not ctx:
             return
@@ -684,6 +696,7 @@ class Loader(EntryTree, Service):
         if ctx is not None:
             Service.__init__(self, ctx, name="loader")
             EntryTree.__init__(self, ctx)
+            self.ctx = ctx
         else:
             self.ctx = None
             self.store = {}
@@ -694,8 +707,8 @@ class Loader(EntryTree, Service):
         self._realms: Dict[str, GlobalRealm] = {}
 
         if self.ctx:
-            self.ctx.on("internal/config", self._on_internal_config)
-            self.ctx.on("internal/update", self._on_internal_update)
+            self.ctx.on("internal/config", self._on_internal_config, global_listener=True)
+            self.ctx.on("internal/update", self._on_internal_update, global_listener=True, prepend=True)
 
             def _on_entry_init(entry: Entry) -> None:
                 if entry.ctx:
@@ -705,7 +718,9 @@ class Loader(EntryTree, Service):
             self.ctx.on("loader/entry-init", _on_entry_init)
 
             def _on_patch_context(entry: Entry, next_fn: Callable[[], Any] = None) -> Any:
-                new_map = dict(getattr(entry.parent.ctx, "_isolated_keys", {})) if entry.parent else {}
+                parent_ctx = getattr(entry.parent, "ctx", None) if entry.parent else None
+                base_ctx = parent_ctx or getattr(entry, "ctx", None)
+                new_map = dict(getattr(base_ctx, "_isolated_keys", {})) if base_ctx else {}
                 isolate_opt = entry.options.get("isolate", {})
                 if isinstance(isolate_opt, dict):
                     for name, label in isolate_opt.items():
@@ -781,8 +796,25 @@ class Loader(EntryTree, Service):
         return interpolate(fiber.ctx, resolved)
 
     def _on_internal_update(self, config: Any, no_save: bool = False, *args: Any, **kwargs: Any) -> Any:
+        target_ctx = kwargs.get("caller_ctx") or (args[0] if args and hasattr(args[0], "fiber") else None)
+        fiber = getattr(target_ctx, "fiber", None) if target_ctx else None
+
         next_fn = args[-1] if args and callable(args[-1]) else (lambda c=config: c)
-        return next_fn(config) if callable(next_fn) else config
+        res = next_fn(config) if callable(next_fn) else config
+
+        if fiber and getattr(fiber, "entry", None) and not no_save:
+            parent_fiber = getattr(getattr(fiber, "parent", None), "fiber", None)
+            if not parent_fiber or getattr(parent_fiber, "entry", None) != fiber.entry:
+                entry = fiber.entry
+                cfg_schema = getattr(getattr(fiber, "runtime", None), "Config", None) or getattr(getattr(fiber, "plugin", None), "Config", None)
+                if cfg_schema and hasattr(cfg_schema, "simplify") and callable(cfg_schema.simplify):
+                    simplified = cfg_schema.simplify(config)
+                    entry.options["config"] = simplified if simplified is not None else config
+                else:
+                    entry.options["config"] = config
+                if entry.parent and hasattr(entry.parent, "tree") and hasattr(entry.parent.tree, "write"):
+                    entry.parent.tree.write()
+        return res
 
     def register_plugin_class(self, name_or_id: str, plugin_cls: Any) -> None:
         """

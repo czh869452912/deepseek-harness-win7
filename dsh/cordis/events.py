@@ -34,6 +34,26 @@ class Hook:
         self.ctx = ctx
 
 
+def _bind_caller_ctx(cb: Callable[..., Any], caller_ctx: Any) -> Callable[..., Any]:
+    if not callable(cb):
+        return cb
+    try:
+        sig = inspect.signature(cb)
+        has_caller_ctx = "caller_ctx" in sig.parameters
+        has_varkw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
+        if has_caller_ctx or has_varkw:
+            import functools
+            @functools.wraps(cb)
+            def wrapped(*args: Any, **kwargs: Any) -> Any:
+                if "caller_ctx" not in kwargs:
+                    kwargs["caller_ctx"] = caller_ctx
+                return cb(*args, **kwargs)
+            return wrapped
+    except Exception:
+        pass
+    return cb
+
+
 class EventBus:
     """
     Cordis Event Bus supporting emit, waterfall, parallel, serial, and bail dispatch modes
@@ -45,7 +65,9 @@ class EventBus:
         self._hooks: Dict[str, List[Hook]] = {}
 
         # 1:1 Built-in internal/listener handler matching TS EventsService
-        def _on_internal_listener(name: str, listener: Any, prepend: bool = False, *args: Any, **kwargs: Any) -> Any:
+        def _on_internal_listener(name: str, listener: Any, prepend: bool = False, global_listener: bool = False, *args: Any, **kwargs: Any) -> Any:
+            if global_listener:
+                return None
             target_ctx = kwargs.get("caller_ctx") or (args[0] if args and hasattr(args[0], "fiber") else None) or self.ctx
             if name == "internal/update" and target_ctx and hasattr(target_ctx, "fiber") and target_ctx.fiber:
                 fiber = target_ctx.fiber
@@ -61,7 +83,7 @@ class EventBus:
         def _on_internal_update(config: Any, no_save: bool = False, *args: Any, **kwargs: Any) -> Any:
             target_ctx = kwargs.get("caller_ctx") or self.ctx
             fiber = getattr(target_ctx, "fiber", None) if target_ctx else None
-            cbs = list(fiber._hooks.get("internal/update", [])) if fiber else []
+            cbs = list(getattr(fiber, "_hooks", {}).get("internal/update", [])) if fiber else []
 
             next_callback = args[-1] if args and callable(args[-1]) else None
             user_next = args[-2] if len(args) >= 2 and callable(args[-2]) else (args[0] if args and callable(args[0]) else None)
@@ -93,9 +115,13 @@ class EventBus:
         """
         caller_ctx = ctx or self.ctx
 
+        # 1:1 Reflect Bind matching TS events.ts:295
+        if caller_ctx is not None and hasattr(caller_ctx, "reflect") and hasattr(caller_ctx.reflect, "bind"):
+            handler = caller_ctx.reflect.bind(handler)
+
         # Handle internal/listener interception hook if caller_ctx is present
         if caller_ctx is not None and not event_name.startswith("internal/listener"):
-            intercepted = self.bail_sync("internal/listener", event_name, handler, prepend, caller_ctx=caller_ctx)
+            intercepted = self.bail_sync("internal/listener", event_name, handler, prepend, global_listener, caller_ctx=caller_ctx)
             if intercepted:
                 if callable(intercepted):
                     return intercepted
@@ -144,7 +170,7 @@ class EventBus:
         actual_ctx = caller_ctx
 
         if actual_ctx is None:
-            if hasattr(args_or_ctx, "filter") or hasattr(args_or_ctx, "registry") or hasattr(args_or_ctx, "reflect"):
+            if hasattr(args_or_ctx, "registry") and hasattr(args_or_ctx, "reflect"):
                 actual_ctx = args_or_ctx
                 actual_args = []
             elif isinstance(args_or_ctx, (list, tuple)):
@@ -164,12 +190,25 @@ class EventBus:
         hooks = list(self._hooks.get(event_name, []))
         result_callbacks = []
         for hook in hooks:
+            cb = hook.callback
             if hook.global_listener or actual_ctx is None or hook.ctx is None:
-                result_callbacks.append(hook.callback)
+                if actual_ctx is not None:
+                    cb = _bind_caller_ctx(cb, actual_ctx)
+                result_callbacks.append(cb)
             else:
                 ctx_filter = getattr(actual_ctx, "filter", None)
-                if ctx_filter is None or (callable(ctx_filter) and ctx_filter(hook.ctx)):
-                    result_callbacks.append(hook.callback)
+                if ctx_filter is None:
+                    if actual_ctx is not None:
+                        cb = _bind_caller_ctx(cb, actual_ctx)
+                    result_callbacks.append(cb)
+                elif callable(ctx_filter):
+                    try:
+                        if ctx_filter(hook.ctx):
+                            if actual_ctx is not None:
+                                cb = _bind_caller_ctx(cb, actual_ctx)
+                            result_callbacks.append(cb)
+                    except Exception:
+                        pass
         return result_callbacks
 
     def emit(self, event_name: str, *args: Any, **kwargs: Any) -> None:
@@ -244,7 +283,16 @@ class EventBus:
             try:
                 res = listener(*args, **kwargs)
             except TypeError:
-                res = listener(*args)
+                try:
+                    res = listener(*args)
+                except TypeError:
+                    if len(args) > 1:
+                        try:
+                            res = listener(*args[:-1])
+                        except TypeError:
+                            res = None
+                    else:
+                        res = None
             if is_bailed(res):
                 return res
         return None
@@ -259,23 +307,55 @@ class EventBus:
             try:
                 res = listener(*args, **kwargs)
             except TypeError:
-                res = listener(*args)
+                try:
+                    res = listener(*args)
+                except TypeError:
+                    if len(args) > 1:
+                        try:
+                            res = listener(*args[:-1])
+                        except TypeError:
+                            res = None
+                    else:
+                        res = None
             if inspect.isawaitable(res):
                 res = await res
             if is_bailed(res):
                 return res
         return None
 
-    def waterfall_sync(self, event_name: str, data: Any, *args: Any, **kwargs: Any) -> Any:
+    def waterfall_sync(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
         """
         Synchronous waterfall middleware pipeline matching TS waterfall semantics.
+        Supports both Koa-style (cb(*args, next)) and reducer style (cb(current_data, *args)).
         """
-        caller_ctx = kwargs.get("caller_ctx")
-        listeners = self._dispatch_hooks("waterfall", event_name, [data] + list(args), caller_ctx)
+        caller_ctx = kwargs.get("caller_ctx") or self.ctx
+        kwargs["caller_ctx"] = caller_ctx
+        args_list = list(args)
+        inner = args_list.pop() if args_list and callable(args_list[-1]) else None
+        data = args_list.pop(0) if args_list else None
+
+        listeners = self._dispatch_hooks("waterfall", event_name, [data] + args_list, caller_ctx)
+
+        def _call_inner(fn: Any, val: Any) -> Any:
+            if not callable(fn):
+                return fn
+            try:
+                sig = inspect.signature(fn)
+                if len(sig.parameters) == 0:
+                    return fn()
+                return fn(val)
+            except (ValueError, TypeError):
+                try:
+                    return fn(val)
+                except TypeError:
+                    return fn()
 
         def run_pipeline(index: int, current_data: Any) -> Any:
             if index >= len(listeners):
+                if inner is not None:
+                    return _call_inner(inner, current_data)
                 return current_data
+
             cb = listeners[index]
 
             def next_fn(next_data: Any = None) -> Any:
@@ -283,33 +363,58 @@ class EventBus:
                 return run_pipeline(index + 1, payload)
 
             sig = inspect.signature(cb)
-            params = [
-                p.name for p in sig.parameters.values()
-                if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
-            ]
+            params = list(sig.parameters.keys())
+            has_var_pos = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in sig.parameters.values())
             has_var_kw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
             kw = kwargs if has_var_kw else {k: v for k, v in kwargs.items() if k in sig.parameters}
 
-            if len(params) >= 2 or "next" in params or "next_fn" in params:
-                return cb(current_data, *args, next_fn, **kw)
-            else:
-                res = cb(current_data, *args, **kw)
-                if res is not None:
-                    return next_fn(res)
-                return next_fn(current_data)
+            if "next" in params or "next_fn" in params or len(params) == len(args_list) + 2 or has_var_pos:
+                try:
+                    return cb(current_data, *args_list, next_fn, **kw)
+                except TypeError:
+                    pass
+
+            res = cb(current_data, *args_list, **kw)
+            if res is not None:
+                return next_fn(res)
+            return next_fn(current_data)
 
         return run_pipeline(0, data)
 
-    async def waterfall(self, event_name: str, data: Any, *args: Any, **kwargs: Any) -> Any:
+    async def waterfall(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
         """
         Waterfall middleware pipeline matching TS waterfall semantics.
+        Supports both Koa-style (cb(*args, next)) and reducer style (cb(current_data, *args)).
         """
-        caller_ctx = kwargs.get("caller_ctx")
-        listeners = self._dispatch_hooks("waterfall", event_name, [data] + list(args), caller_ctx)
+        caller_ctx = kwargs.get("caller_ctx") or self.ctx
+        kwargs["caller_ctx"] = caller_ctx
+        args_list = list(args)
+        inner = args_list.pop() if args_list and callable(args_list[-1]) else None
+        data = args_list.pop(0) if args_list else None
+
+        listeners = self._dispatch_hooks("waterfall", event_name, [data] + args_list, caller_ctx)
+
+        async def _call_inner_async(fn: Any, val: Any) -> Any:
+            if not callable(fn):
+                return fn
+            try:
+                sig = inspect.signature(fn)
+                res = fn() if len(sig.parameters) == 0 else fn(val)
+            except (ValueError, TypeError):
+                try:
+                    res = fn(val)
+                except TypeError:
+                    res = fn()
+            if inspect.isawaitable(res):
+                return await res
+            return res
 
         async def run_pipeline(index: int, current_data: Any) -> Any:
             if index >= len(listeners):
+                if inner is not None:
+                    return await _call_inner_async(inner, current_data)
                 return current_data
+
             cb = listeners[index]
 
             async def next_fn(next_data: Any = None) -> Any:
@@ -317,25 +422,27 @@ class EventBus:
                 return await run_pipeline(index + 1, payload)
 
             sig = inspect.signature(cb)
-            params = [
-                p.name for p in sig.parameters.values()
-                if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
-            ]
+            params = list(sig.parameters.keys())
+            has_var_pos = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in sig.parameters.values())
             has_var_kw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
             kw = kwargs if has_var_kw else {k: v for k, v in kwargs.items() if k in sig.parameters}
 
-            if len(params) >= 2 or "next" in params or "next_fn" in params:
-                res = cb(current_data, *args, next_fn, **kw)
+            if "next" in params or "next_fn" in params or len(params) == len(args_list) + 2 or has_var_pos:
+                try:
+                    res = cb(current_data, *args_list, next_fn, **kw)
+                except TypeError:
+                    res = cb(current_data, *args_list, **kw)
             else:
-                res = cb(current_data, *args, **kw)
-                if inspect.isawaitable(res):
-                    res = await res
-                if res is not None:
-                    return await next_fn(res)
-                return await next_fn(current_data)
+                res = cb(current_data, *args_list, **kw)
 
             if inspect.isawaitable(res):
                 res = await res
-            return res
+
+            if "next" in params or "next_fn" in params:
+                return res
+
+            if res is not None:
+                return await next_fn(res)
+            return await next_fn(current_data)
 
         return await run_pipeline(0, data)

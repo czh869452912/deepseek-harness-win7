@@ -60,7 +60,7 @@ class ReflectService:
 
     def setup_mixins(self) -> None:
         """Mixin core service APIs onto context."""
-        self.mixin("reflect", ["get", "set", "provide", "accessor", "mixin"])
+        self.mixin("reflect", ["get", "set", "provide", "accessor", "mixin", "trace", "bind"])
         self.mixin("fiber", ["runtime", "effect"])
         self.mixin("registry", ["inject", "plugin"])
         self.mixin("events", ["on", "once", "parallel", "emit", "serial", "bail", "waterfall"])
@@ -83,18 +83,30 @@ class ReflectService:
         # 2. Store implementation check
         impl = self._get_impl(ctx, name, strict=strict)
         if impl is not None:
-            return self._fire_get_waterfall(ctx, name, impl.value)
+            val = self._fire_get_waterfall(ctx, name, impl.value)
+            if getattr(val, "ctx", None) is ctx:
+                return val
+            from dsh.cordis.utils import get_traceable
+            return get_traceable(ctx, val)
 
         # 3. Direct service dictionary check on Context
         if hasattr(ctx, "_services") and name in ctx._services:
             val = ctx._services[name]
-            return self._fire_get_waterfall(ctx, name, val)
+            val = self._fire_get_waterfall(ctx, name, val)
+            if getattr(val, "ctx", None) is ctx:
+                return val
+            from dsh.cordis.utils import get_traceable
+            return get_traceable(ctx, val)
 
         # 4. Fallback parent hierarchy check
         if hasattr(ctx, "get_service"):
             val = ctx.get_service(name, default)
             if val is not default:
-                return self._fire_get_waterfall(ctx, name, val)
+                val = self._fire_get_waterfall(ctx, name, val)
+                if getattr(val, "ctx", None) is ctx:
+                    return val
+                from dsh.cordis.utils import get_traceable
+                return get_traceable(ctx, val)
 
         return default
 
@@ -113,7 +125,7 @@ class ReflectService:
             impl = self.store.get(name)
         if not impl:
             return None
-        if strict and hasattr(impl.fiber, "state"):
+        if strict and impl.fiber is not None and getattr(impl.fiber, "plugin", None) is not None:
             from dsh.cordis.fiber import FiberState
             if impl.fiber.state != FiberState.ACTIVE:
                 return None
@@ -186,7 +198,7 @@ class ReflectService:
                 fiber.store[name] = impl
 
             from dsh.cordis.fiber import FiberState
-            if fiber and fiber.state in (FiberState.ACTIVE, FiberState.LOADING):
+            if fiber is None or fiber.state in (FiberState.ACTIVE, FiberState.LOADING):
                 self.notify([name])
 
             def teardown() -> None:
@@ -296,3 +308,29 @@ class ReflectService:
                     pass
 
         return cleanup_all
+
+    def trace(self, value: Any) -> Any:
+        """
+        Attach this context's tracing wrapper to a value matching TS reflect.trace().
+        """
+        from dsh.cordis.utils import get_traceable
+        return get_traceable(self.ctx, value)
+
+    def bind(self, callback: Callable[..., Any]) -> Callable[..., Any]:
+        """
+        Wrap a callback so calls trace receiver and arguments to this context
+        matching TS reflect.bind().
+        """
+        if not callable(callback):
+            return callback
+        ctx = self.ctx
+        from dsh.cordis.utils import get_traceable
+        import functools
+
+        @functools.wraps(callback)
+        def traced_wrapper(*args: Any, **kwargs: Any) -> Any:
+            traced_args = [get_traceable(ctx, arg) for arg in args]
+            traced_kwargs = {k: get_traceable(ctx, v) for k, v in kwargs.items()}
+            return callback(*traced_args, **traced_kwargs)
+
+        return traced_wrapper

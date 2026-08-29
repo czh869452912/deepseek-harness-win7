@@ -140,96 +140,142 @@ class TracedProxy:
     matching TS getTraceable(ctx, value).
     """
     def __init__(self, ctx: Any, target: Any):
-        self._ctx = ctx
-        self._target = target
+        object.__setattr__(self, "_ctx", ctx)
+        object.__setattr__(self, "_target", target)
+
+    @property
+    def __class__(self) -> Any:
+        try:
+            return object.__getattribute__(self, "_target").__class__
+        except Exception:
+            return TracedProxy
 
     def __getattr__(self, name: str) -> Any:
-        attr = getattr(self._target, name)
+        if name == "ctx":
+            return object.__getattribute__(self, "_ctx")
+        if name in ("_target", "_ctx"):
+            return object.__getattribute__(self, name)
+        target = object.__getattribute__(self, "_target")
+        attr = getattr(target, name)
         if callable(attr):
             @functools.wraps(attr)
             def wrapper(*args: Any, **kwargs: Any) -> Any:
                 if "caller_ctx" not in kwargs:
-                    sig = inspect.signature(attr)
-                    if "caller_ctx" in sig.parameters or any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()):
-                        kwargs["caller_ctx"] = self._ctx
+                    try:
+                        sig = inspect.signature(attr)
+                        if "caller_ctx" in sig.parameters:
+                            kwargs["caller_ctx"] = object.__getattribute__(self, "_ctx")
+                    except (ValueError, TypeError):
+                        pass
                 return attr(*args, **kwargs)
             return wrapper
-        return get_traceable(self._ctx, attr)
+        return attr
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name in ("_ctx", "_target"):
+            object.__setattr__(self, name, value)
+        else:
+            target = object.__getattribute__(self, "_target")
+            setattr(target, name, value)
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        if callable(self._target):
+        target = object.__getattribute__(self, "_target")
+        if callable(target):
             if "caller_ctx" not in kwargs:
-                sig = inspect.signature(self._target)
-                if "caller_ctx" in sig.parameters or any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()):
-                    kwargs["caller_ctx"] = self._ctx
-            return self._target(*args, **kwargs)
-        raise TypeError(f"Target '{self._target}' is not callable")
+                try:
+                    sig = inspect.signature(target)
+                    if "caller_ctx" in sig.parameters:
+                        kwargs["caller_ctx"] = object.__getattribute__(self, "_ctx")
+                except (ValueError, TypeError):
+                    pass
+            return target(*args, **kwargs)
+        raise TypeError(f"Target '{target}' is not callable")
 
     def __getitem__(self, key: Any) -> Any:
-        return self._target[key]
+        return object.__getattribute__(self, "_target")[key]
 
     def __setitem__(self, key: Any, value: Any) -> None:
-        self._target[key] = value
+        object.__getattribute__(self, "_target")[key] = value
 
     def __delitem__(self, key: Any) -> None:
-        del self._target[key]
+        del object.__getattribute__(self, "_target")[key]
 
     def __len__(self) -> int:
-        return len(self._target)
+        return len(object.__getattribute__(self, "_target"))
 
     def __contains__(self, item: Any) -> bool:
-        return item in self._target
+        return item in object.__getattribute__(self, "_target")
 
     def __iter__(self) -> Iterator[Any]:
-        return iter(self._target)
+        return iter(object.__getattribute__(self, "_target"))
 
     def __next__(self) -> Any:
-        return next(self._target)
+        return next(object.__getattribute__(self, "_target"))
 
     def __enter__(self) -> Any:
-        return self._target.__enter__()
+        target = object.__getattribute__(self, "_target")
+        if hasattr(target, "__enter__"):
+            return target.__enter__()
+        return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> Any:
-        return self._target.__exit__(exc_type, exc_val, exc_tb)
+        target = object.__getattribute__(self, "_target")
+        if hasattr(target, "__exit__"):
+            return target.__exit__(exc_type, exc_val, exc_tb)
+        return False
 
     async def __aenter__(self) -> Any:
-        return await self._target.__aenter__()
+        target = object.__getattribute__(self, "_target")
+        if hasattr(target, "__aenter__"):
+            return await target.__aenter__()
+        return self
 
     async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> Any:
-        return await self._target.__aexit__(exc_type, exc_val, exc_tb)
+        target = object.__getattribute__(self, "_target")
+        if hasattr(target, "__aexit__"):
+            return await target.__aexit__(exc_type, exc_val, exc_tb)
+        return False
 
     def __bool__(self) -> bool:
-        return bool(self._target)
+        return bool(object.__getattribute__(self, "_target"))
 
     def __str__(self) -> str:
-        return str(self._target)
+        return str(object.__getattribute__(self, "_target"))
 
     def __eq__(self, other: Any) -> bool:
+        target = object.__getattribute__(self, "_target")
         if isinstance(other, TracedProxy):
-            return self._target == other._target
-        return self._target == other
-
-    def __ne__(self, other: Any) -> bool:
-        if isinstance(other, TracedProxy):
-            return self._target != other._target
-        return self._target != other
+            return target == object.__getattribute__(other, "_target")
+        return target == other
 
     def __hash__(self) -> int:
-        return hash(self._target)
+        return hash(object.__getattribute__(self, "_target"))
 
     def __repr__(self) -> str:
-        return f"<TracedProxy target={self._target!r}>"
+        return f"<TracedProxy target={object.__getattribute__(self, '_target')!r}>"
 
 
 def get_traceable(ctx: Any, value: Any) -> Any:
     """
-    Attach context tracing wrapper to a value matching TS getTraceable.
+    Attach context tracing wrapper to a Service matching TS getTraceable.
     """
-    if value is None or isinstance(value, (int, float, str, bool)):
+    if value is None or isinstance(value, (int, float, str, bool, dict, list, tuple, set, bytes, bytearray)):
         return value
     if isinstance(value, TracedProxy):
         return value
-    if hasattr(value, "ctx") or callable(value):
+    # Never wrap Context or Fiber instances matching TS: if (value instanceof Context) return value
+    if hasattr(value, "registry") and hasattr(value, "reflect") and hasattr(value, "extend"):
+        return value
+    if hasattr(value, "state") and hasattr(value, "assert_active") and hasattr(value, "_disposables"):
+        return value
+    from dsh.cordis.service import Service
+    if isinstance(value, Service):
+        return value._extend({"ctx": ctx})
+    if hasattr(value, "_extend") and not hasattr(value, "_mock_return_value") and callable(getattr(value, "_extend")):
+        return value._extend({"ctx": ctx})
+    if hasattr(value, "_cordis_tracker") and not hasattr(value, "_mock_return_value"):
+        return TracedProxy(ctx, value)
+    if callable(value) and not inspect.isclass(value) and not hasattr(value, "_mock_return_value"):
         return TracedProxy(ctx, value)
     return value
 

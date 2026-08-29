@@ -23,17 +23,40 @@ class Context:
     Matching reference/vendor/cordis/src/context.ts.
     """
 
+    effect_symbol: str = "symbols.effect"
+    filter_symbol: str = "symbols.filter"
+    isolate_symbol: str = "symbols.isolate"
+    intercept_symbol: str = "symbols.intercept"
+
+    @classmethod
+    def is_(cls, value: Any) -> bool:
+        """Check whether value is a Cordis Context matching TS Context.is(value)."""
+        return isinstance(value, Context) or (
+            value is not None
+            and hasattr(value, "registry")
+            and hasattr(value, "reflect")
+            and hasattr(value, "extend")
+        )
+
+    @classmethod
+    def is_context(cls, value: Any) -> bool:
+        """Alias for Context.is_ matching TS Context.is."""
+        return cls.is_(value)
+
     def __init__(
         self,
         parent: Optional["Context"] = None,
         is_extension: bool = False,
         strict_inject: Optional[bool] = None,
+        base_url: Optional[str] = None,
     ):
         self._parent: Optional["Context"] = parent
         self._services: Dict[str, Any] = {}
         self._isolated_keys: Dict[str, Any] = {}
         self._intercept_map: Dict[str, Any] = {}
         self._effects: List[Callable[[], Any]] = []
+        self.base_url: Optional[str] = base_url or (parent.base_url if parent else None)
+        self.baseUrl: Optional[str] = self.base_url
 
         if strict_inject is not None:
             self.strict_inject: bool = strict_inject
@@ -118,14 +141,7 @@ class Context:
         """
         Check whether a service is available in this context scope.
         """
-        if name in self._services:
-            return True
-        if self.reflect.store.get(name) is not None:
-            impl = self.reflect.store[name]
-            if impl.fiber is None or impl.fiber.state == FiberState.ACTIVE:
-                return True
-        isolated_label = self._isolated_keys.get(name)
-        return self._parent is not None and isolated_label is None and self._parent.has(name)
+        return self.get(name, strict=False) is not None
 
     def effect(self, setup_or_disposer: Any, label: str = "") -> Callable[[], None]:
         """
@@ -181,35 +197,35 @@ class Context:
         return disposer
 
     def emit(self, event_name: str, *args: Any, **kwargs: Any) -> None:
-        kwargs["caller_ctx"] = self
+        kwargs.setdefault("caller_ctx", self)
         self._event_bus.emit(event_name, *args, **kwargs)
 
     async def emit_async(self, event_name: str, *args: Any, **kwargs: Any) -> None:
-        kwargs["caller_ctx"] = self
+        kwargs.setdefault("caller_ctx", self)
         await self._event_bus.emit_async(event_name, *args, **kwargs)
 
-    async def waterfall(self, event_name: str, data: Any, *args: Any, **kwargs: Any) -> Any:
-        kwargs["caller_ctx"] = self
-        return await self._event_bus.waterfall(event_name, data, *args, **kwargs)
+    async def waterfall(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
+        kwargs.setdefault("caller_ctx", self)
+        return await self._event_bus.waterfall(event_name, *args, **kwargs)
 
-    def waterfall_sync(self, event_name: str, data: Any, *args: Any, **kwargs: Any) -> Any:
-        kwargs["caller_ctx"] = self
-        return self._event_bus.waterfall_sync(event_name, data, *args, **kwargs)
+    def waterfall_sync(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
+        kwargs.setdefault("caller_ctx", self)
+        return self._event_bus.waterfall_sync(event_name, *args, **kwargs)
 
     async def parallel(self, event_name: str, *args: Any, **kwargs: Any) -> List[Any]:
-        kwargs["caller_ctx"] = self
+        kwargs.setdefault("caller_ctx", self)
         return await self._event_bus.parallel(event_name, *args, **kwargs)
 
     async def serial(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
-        kwargs["caller_ctx"] = self
+        kwargs.setdefault("caller_ctx", self)
         return await self._event_bus.serial(event_name, *args, **kwargs)
 
     async def bail(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
-        kwargs["caller_ctx"] = self
+        kwargs.setdefault("caller_ctx", self)
         return await self._event_bus.bail(event_name, *args, **kwargs)
 
     def bail_sync(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
-        kwargs["caller_ctx"] = self
+        kwargs.setdefault("caller_ctx", self)
         return self._event_bus.bail_sync(event_name, *args, **kwargs)
 
     def plugin(self, plugin_cls_or_instance: Any, config: Optional[Dict[str, Any]] = None) -> Any:
@@ -260,7 +276,7 @@ class Context:
         """
         Create a child context inheriting services and event bus.
         """
-        child = Context(parent=self, is_extension=True, strict_inject=self.strict_inject)
+        child = Context(parent=self, is_extension=True, strict_inject=self.strict_inject, base_url=self.base_url)
         child._isolated_keys = dict(self._isolated_keys)
         child._intercept_map = dict(self._intercept_map)
         if meta:

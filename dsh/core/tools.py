@@ -52,7 +52,8 @@ class Tool:
 
     async def execute(self, args: Dict[str, Any], ctx: Optional[Any] = None) -> Any:
         sig = inspect.signature(self.handler)
-        if "ctx" in sig.parameters:
+        has_var_kw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
+        if "ctx" in sig.parameters or has_var_kw:
             res = self.handler(**args, ctx=ctx)
         else:
             res = self.handler(**args)

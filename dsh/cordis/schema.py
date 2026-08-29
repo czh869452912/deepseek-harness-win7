@@ -231,6 +231,11 @@ class Schema:
         s.meta["badges"] = badges
         return s
 
+    def badges(self, badge_list: List[Dict[str, str]]) -> "Schema":
+        s = self._clone()
+        s.meta["badges"] = list(badge_list)
+        return s
+
     def pattern(self, regex: Union[str, re.Pattern]) -> "Schema":
         s = self._clone()
         if isinstance(regex, str):
@@ -277,7 +282,7 @@ class Schema:
         desc_dict: Dict[str, str] = {"": desc} if isinstance(desc, str) else dict(desc or {})
         for locale, val in messages.items():
             if isinstance(val, dict):
-                d = val.get("$description") or val.get("$desc")
+                d = val.get("$description") or val.get("$desc") or val.get("")
                 if d:
                     desc_dict[locale] = d
             elif isinstance(val, str):
@@ -287,7 +292,14 @@ class Schema:
         if s.dict:
             new_dict = {}
             for k, inner in s.dict.items():
-                sub_msg = {loc: (m.get("$value") or m.get("$inner") or {}).get(k, m.get(k)) if isinstance(m, dict) else m for loc, m in messages.items()}
+                sub_msg = {}
+                for loc, m in messages.items():
+                    if isinstance(m, dict):
+                        sub_val = m.get(k) or (m.get("$value") or m.get("$inner") or {}).get(k)
+                        if sub_val is not None:
+                            sub_msg[loc] = sub_val
+                    elif isinstance(m, str):
+                        sub_msg[loc] = m
                 new_dict[k] = inner.i18n(sub_msg)
             s.dict = new_dict
         if s.list:
@@ -315,6 +327,8 @@ class Schema:
                     res[k] = item
             if default_val is not None and deep_equal(res, default_val, self.type == "dict"):
                 return None
+            if not res and not self.meta.get("default"):
+                return None
             return res
         elif self.type in ("array", "tuple"):
             if not isinstance(value, (list, tuple)):
@@ -324,6 +338,8 @@ class Schema:
                 schema = self.inner if self.type == "array" else (self.list[idx] if self.list and idx < len(self.list) else None)
                 item = schema.simplify(v) if schema else v
                 arr.append(item)
+            if default_val is not None and deep_equal(arr, default_val):
+                return None
             return arr
         elif self.type == "intersect" and self.list:
             res = {}
@@ -361,6 +377,83 @@ class Schema:
         if self.bits:
             res["bits"] = self.bits
         return res
+
+    def to_json_schema(self) -> Dict[str, Any]:
+        """Convert Schemastery Schema to standard JSON Schema Draft-07 matching TS Schemastery."""
+        json_schema: Dict[str, Any] = {}
+
+        if self.type == "string":
+            json_schema["type"] = "string"
+            if self.meta.get("pattern"):
+                pat = self.meta["pattern"]
+                json_schema["pattern"] = pat.get("source", pat) if isinstance(pat, dict) else str(pat)
+        elif self.type == "number":
+            json_schema["type"] = "number"
+            if "min" in self.meta:
+                json_schema["minimum"] = self.meta["min"]
+            if "max" in self.meta:
+                json_schema["maximum"] = self.meta["max"]
+            if "step" in self.meta:
+                json_schema["multipleOf"] = self.meta["step"]
+        elif self.type == "boolean":
+            json_schema["type"] = "boolean"
+        elif self.type == "const":
+            json_schema["const"] = self.value
+        elif self.type == "array":
+            json_schema["type"] = "array"
+            if self.inner:
+                json_schema["items"] = self.inner.to_json_schema()
+            if "min" in self.meta:
+                json_schema["minItems"] = self.meta["min"]
+            if "max" in self.meta:
+                json_schema["maxItems"] = self.meta["max"]
+        elif self.type == "dict":
+            json_schema["type"] = "object"
+            if self.inner:
+                json_schema["additionalProperties"] = self.inner.to_json_schema()
+        elif self.type == "object":
+            json_schema["type"] = "object"
+            props: Dict[str, Any] = {}
+            required: List[str] = []
+            if self.dict:
+                for k, s in self.dict.items():
+                    props[k] = s.to_json_schema()
+                    if s.meta.get("required"):
+                        required.append(k)
+            json_schema["properties"] = props
+            if required:
+                json_schema["required"] = required
+        elif self.type == "tuple":
+            json_schema["type"] = "array"
+            if self.list:
+                json_schema["items"] = [s.to_json_schema() for s in self.list]
+                json_schema["minItems"] = len(self.list)
+                json_schema["maxItems"] = len(self.list)
+        elif self.type == "union":
+            if self.list:
+                json_schema["anyOf"] = [s.to_json_schema() for s in self.list]
+        elif self.type == "intersect":
+            if self.list:
+                json_schema["allOf"] = [s.to_json_schema() for s in self.list]
+        elif self.type == "bitset":
+            json_schema["type"] = "integer"
+        elif self.type == "any":
+            pass
+        elif self.type == "never":
+            json_schema["not"] = {}
+        elif self.type == "lazy" and self.builder:
+            built = self.builder()
+            return built.to_json_schema()
+        elif self.type == "transform" and self.inner:
+            return self.inner.to_json_schema()
+
+        if "description" in self.meta:
+            desc = self.meta["description"]
+            json_schema["description"] = desc.get("zh", str(desc)) if isinstance(desc, dict) else str(desc)
+        if "default" in self.meta and self.meta["default"] is not None:
+            json_schema["default"] = self.meta["default"]
+
+        return json_schema
 
     def __repr__(self) -> str:
         return f"Schema<{self.type}>"
@@ -427,7 +520,11 @@ class Schema:
                 return val
             if isinstance(val, str):
                 try:
-                    return re.compile(val)
+                    re_flags = 0
+                    if "i" in flag: re_flags |= re.IGNORECASE
+                    if "m" in flag: re_flags |= re.MULTILINE
+                    if "s" in flag: re_flags |= re.DOTALL
+                    return re.compile(val, re_flags)
                 except Exception as e:
                     raise ValidationError(str(e), opt)
             raise ValidationError(f"expected RegExp or regex string but got {val}", opt)
@@ -439,11 +536,29 @@ class Schema:
 
     @classmethod
     def array_buffer(cls, encoding: Optional[str] = None) -> "Schema":
-        return cls.union([
+        def _parse_str(val: Any, opt: Any) -> bytes:
+            if isinstance(val, (bytes, bytearray, memoryview)):
+                return bytes(val)
+            if isinstance(val, str) and encoding:
+                try:
+                    if encoding == "base64":
+                        import base64
+                        return base64.b64decode(val)
+                    elif encoding == "hex":
+                        import binascii
+                        return binascii.unhexlify(val)
+                except Exception as e:
+                    raise ValidationError(f"invalid binary encoding: {e}", opt)
+            raise ValidationError(f"expected binary but got {val}", opt)
+
+        branches = [
             cls.is_(bytes),
             cls.is_(bytearray),
             cls.is_(memoryview),
-        ])
+        ]
+        if encoding:
+            branches.append(cls.transform(cls.string(), _parse_str, preserve=True))
+        return cls.union(branches)
 
     @classmethod
     def bitset(cls, bits: Dict[str, int]) -> "Schema":
@@ -521,6 +636,13 @@ class Schema:
         if isinstance(source, type):
             return cls.is_(source).required()
         raise TypeError(f"cannot infer schema from {source}")
+
+    # 1:1 camelCase and standard aliases matching Schemastery
+    const = const_
+    is_type = is_
+    from_type = from_
+    regExp = reg_exp
+    arrayBuffer = array_buffer
 
     @classmethod
     def resolve(cls, data: Any, schema: "Schema", options: Optional[Dict[str, Any]] = None, strict: bool = False) -> Tuple[Any, Any]:

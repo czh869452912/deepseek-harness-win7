@@ -800,6 +800,10 @@ class Entry:
         dis = self.options.get("disabled", False)
         return eval_condition(dis, self.ctx)
 
+    @disabled.setter
+    def disabled(self, value: bool) -> None:
+        self.options["disabled"] = value
+
     def get_outer_stack(self) -> List[str]:
         """Build virtual diagnostic stack tracing entry configuration locations."""
         entry: Optional[Entry] = self
@@ -965,6 +969,72 @@ class Loader(EntryTree, Service):
                                 self._realms.pop(label, None)
 
             self.ctx.on("loader/partial-dispose", _on_partial_dispose)
+
+            def _on_internal_plugin(fiber: Any) -> None:
+                # 1. set fiber.entry and resolve inject matching TS Loader index.ts:118-123
+                parent_entry = getattr(getattr(fiber, "parent", None), "_entry", None) or getattr(getattr(fiber, "parent", None), "entry", None)
+                if parent_entry and not getattr(fiber, "entry", None):
+                    fiber.entry = parent_entry
+                    from dsh.cordis.registry import Inject
+                    opt_inject = getattr(parent_entry, "options", {}).get("inject") if hasattr(parent_entry, "options") else None
+                    if opt_inject:
+                        Inject.resolve(opt_inject, fiber.inject)
+
+                # 2. handle self-dispose (7 cases matching reference index.ts:128-157)
+                # Case 1: fiber is created (uid is not None)
+                if getattr(fiber, "uid", None) is not None:
+                    return
+
+                # Case 2: fiber is not tracked by loader
+                entry = getattr(fiber, "entry", None)
+                if not entry:
+                    return
+
+                # Case 3: fiber is a child plugin under the entry (not entry's root fiber)
+                parent_fiber = getattr(getattr(fiber, "parent", None), "fiber", None)
+                if parent_fiber and getattr(parent_fiber, "entry", None) == entry:
+                    return
+
+                # Case 4: fiber is disposed on behalf of plugin deletion (such as plugin hmr)
+                runtime = getattr(fiber, "runtime", None)
+                if runtime and hasattr(self.ctx, "registry") and not self.ctx.registry.has(runtime.callback):
+                    return
+
+                # Case 5: the entry's tree is being disposed
+                parent_group = getattr(entry, "parent", None)
+                tree = getattr(parent_group, "tree", None) or getattr(entry, "tree", None)
+                if tree and hasattr(tree, "ctx") and hasattr(tree.ctx, "fiber"):
+                    tree_owner = tree.ctx.fiber
+                    from dsh.cordis.fiber import FiberState
+                    if getattr(tree_owner, "uid", None) is None or getattr(tree_owner, "state", None) == FiberState.UNLOADING:
+                        return
+
+                # Case 6: Loader is replacing or removing this exact fiber
+                if getattr(entry, "_disposing", False):
+                    return
+
+                self.show_log(entry, "unload")
+
+                # Case 7: fiber is disposed by loader behavior (already disabled)
+                if getattr(entry, "disabled", False):
+                    return
+
+                entry.disabled = True
+                if hasattr(entry, "options") and isinstance(entry.options, dict):
+                    entry.options["disabled"] = True
+
+                if tree and hasattr(tree, "write"):
+                    tree.write()
+
+            self.ctx.on("internal/plugin", _on_internal_plugin, global_listener=True)
+
+    def show_log(self, entry: Any, action_type: str) -> None:
+        """Log loader plugin lifecycle events matching TS Loader.showLog."""
+        if getattr(entry, "group", False):
+            return
+        entry_name = getattr(entry, "name", str(entry))
+        if hasattr(self.ctx, "logger"):
+            self.ctx.logger("loader").info("%s plugin %s", action_type, entry_name)
 
     @property
     def entries(self) -> List[Entry]:

@@ -137,6 +137,12 @@ class Context:
         """
         return self.reflect.get(self, name, default=default, strict=strict)
 
+    def set(self, name: str, value: Any) -> bool:
+        """
+        Overwrite a provided service or property value on context via reflect layer matching TS ctx[key] = val.
+        """
+        return self.reflect.set(self, name, value)
+
     def has(self, name: str) -> bool:
         """
         Check whether a service is available in this context scope.
@@ -385,24 +391,31 @@ class Context:
 
         # 2. 1:1 Strict Dependency Injection Enforcement matching TS Cordis ReflectService.handler
         if getattr(self, "strict_inject", True) and getattr(self, "fiber", None) and getattr(self.fiber, "runtime", None) is not None:
-            curr_fiber = getattr(self, "_shadow_fiber", None) or self.fiber
-            key = getattr(self, "_isolated_keys", {}).get(name, name)
-            while curr_fiber is not None and getattr(curr_fiber, "runtime", None) is not None:
-                impl = getattr(curr_fiber, "store", {}).get(name) if getattr(curr_fiber, "store", None) else None
-                if impl is not None:
-                    from dsh.cordis.utils import get_traceable
-                    val = getattr(impl, "value", impl)
-                    return get_traceable(self, val)
-                if name in getattr(curr_fiber, "inject", {}):
-                    raise RuntimeError(f"cannot get required service '{name}' in inactive context")
-                parent_ctx = getattr(curr_fiber, "parent", None)
-                if not parent_ctx:
-                    break
-                parent_key = getattr(parent_ctx, "_isolated_keys", {}).get(name, name)
-                if parent_key != key:
-                    break
-                curr_fiber = getattr(parent_ctx, "fiber", None)
-            raise RuntimeError(f"cannot get property '{name}' without inject")
+            err = RuntimeError(f"cannot get property '{name}' without inject")
+
+            def _resolve_strict():
+                curr_fiber = getattr(self, "_shadow_fiber", None) or self.fiber
+                key = getattr(self, "_isolated_keys", {}).get(name, name)
+                while curr_fiber is not None and getattr(curr_fiber, "runtime", None) is not None:
+                    impl = getattr(curr_fiber, "store", {}).get(name) if getattr(curr_fiber, "store", None) else None
+                    if impl is not None:
+                        from dsh.cordis.utils import get_traceable
+                        val = getattr(impl, "value", impl)
+                        return get_traceable(self, val)
+                    if name in getattr(curr_fiber, "inject", {}):
+                        raise RuntimeError(f"cannot get required service '{name}' in inactive context")
+                    parent_ctx = getattr(curr_fiber, "parent", None)
+                    if not parent_ctx:
+                        break
+                    parent_key = getattr(parent_ctx, "_isolated_keys", {}).get(name, name)
+                    if parent_key != key:
+                        break
+                    curr_fiber = getattr(parent_ctx, "fiber", None)
+                raise err
+
+            if hasattr(self, "waterfall_sync"):
+                return self.waterfall_sync("internal/get", self, name, err, _resolve_strict)
+            return _resolve_strict()
 
         if name in self._services:
             from dsh.cordis.utils import get_traceable

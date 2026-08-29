@@ -80,41 +80,39 @@ class ReflectService:
             err = KeyError(f"cannot get property '{name}'")
             return def_prop.get(ctx, err)
 
-        # 2. Store implementation check
-        impl = self._get_impl(ctx, name, strict=strict)
-        if impl is not None:
-            val = self._fire_get_waterfall(ctx, name, impl.value)
-            if getattr(val, "ctx", None) is ctx:
-                return val
-            from dsh.cordis.utils import get_traceable
-            return get_traceable(ctx, val)
-
-        # 3. Direct service dictionary check on Context
-        if hasattr(ctx, "_services") and name in ctx._services:
-            val = ctx._services[name]
-            val = self._fire_get_waterfall(ctx, name, val)
-            if getattr(val, "ctx", None) is ctx:
-                return val
-            from dsh.cordis.utils import get_traceable
-            return get_traceable(ctx, val)
-
-        # 4. Fallback parent hierarchy check
-        if hasattr(ctx, "get_service"):
-            val = ctx.get_service(name, default)
-            if val is not default:
-                val = self._fire_get_waterfall(ctx, name, val)
+        def _resolve_default():
+            # 2. Store implementation check
+            impl = self._get_impl(ctx, name, strict=strict)
+            if impl is not None:
+                val = impl.value
                 if getattr(val, "ctx", None) is ctx:
                     return val
                 from dsh.cordis.utils import get_traceable
                 return get_traceable(ctx, val)
 
-        return default
+            # 3. Direct service dictionary check on Context
+            if hasattr(ctx, "_services") and name in ctx._services:
+                val = ctx._services[name]
+                if getattr(val, "ctx", None) is ctx:
+                    return val
+                from dsh.cordis.utils import get_traceable
+                return get_traceable(ctx, val)
 
-    def _fire_get_waterfall(self, ctx: Any, name: str, value: Any) -> Any:
+            # 4. Fallback parent hierarchy check
+            if hasattr(ctx, "get_service"):
+                val = ctx.get_service(name, default)
+                if val is not default:
+                    if getattr(val, "ctx", None) is ctx:
+                        return val
+                    from dsh.cordis.utils import get_traceable
+                    return get_traceable(ctx, val)
+
+            return default
+
+        err = RuntimeError(f"cannot get property '{name}'")
         if hasattr(ctx, "waterfall_sync"):
-            err = RuntimeError(f"get {name}")
-            return ctx.waterfall_sync("internal/get", value, ctx, name, err)
-        return value
+            return ctx.waterfall_sync("internal/get", ctx, name, err, _resolve_default)
+        return _resolve_default()
 
     def _get_impl(self, ctx: Any, name: str, strict: bool = True) -> Optional[Impl]:
         isolated_map = getattr(ctx, "_isolated_keys", {})
@@ -142,23 +140,29 @@ class ReflectService:
             err = RuntimeError(f"cannot set property '{name}'")
             return def_prop.set(ctx, value, err)
 
-        isolated_map = getattr(ctx, "_isolated_keys", {})
-        key = isolated_map.get(name, name)
-        impl = self.store.get(key) or self.store.get(name)
-        if not impl:
-            raise RuntimeError(f"cannot set property '{name}' without provide")
+        def _do_set():
+            isolated_map = getattr(ctx, "_isolated_keys", {})
+            key = isolated_map.get(name, name)
+            impl = self.store.get(key) or self.store.get(name)
+            if not impl:
+                raise RuntimeError(f"cannot set property '{name}' without provide")
 
-        fiber = getattr(ctx, "fiber", None)
-        if fiber is not None and impl.fiber is not None and impl.fiber is not fiber and getattr(fiber, "uid", None) not in (0, None):
-            raise RuntimeError(f"cannot set property '{name}' in multiple fibers")
+            fiber = getattr(ctx, "fiber", None)
+            if fiber is not None and impl.fiber is not None and impl.fiber is not fiber and getattr(fiber, "uid", None) not in (0, None):
+                raise RuntimeError(f"cannot set property '{name}' in multiple fibers")
 
-        impl.value = value
+            impl.value = value
 
-        target = ctx.root if hasattr(ctx, "root") else ctx
-        if hasattr(target, "_services"):
-            target._services[name] = value
-            setattr(target, name, value)
-        return True
+            target = ctx.root if hasattr(ctx, "root") else ctx
+            if hasattr(target, "_services"):
+                target._services[name] = value
+                setattr(target, name, value)
+            return True
+
+        err = RuntimeError(f"cannot set property '{name}' without provide")
+        if hasattr(ctx, "waterfall_sync"):
+            return ctx.waterfall_sync("internal/set", ctx, name, value, err, _do_set)
+        return _do_set()
 
     def provide(
         self,

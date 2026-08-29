@@ -240,12 +240,33 @@ class RegistryService:
             self._runtimes[callback] = runtime
 
         # Plugin instantiation
-        if isinstance(plugin_cls_or_instance, Plugin):
+        if inspect.isclass(plugin_cls_or_instance):
+            from dsh.cordis.service import Service
+            if issubclass(plugin_cls_or_instance, Service):
+                try:
+                    plugin_inst = plugin_cls_or_instance(self.ctx, config=config)
+                except TypeError:
+                    try:
+                        plugin_inst = plugin_cls_or_instance(self.ctx)
+                    except TypeError:
+                        plugin_inst = plugin_cls_or_instance()
+            elif issubclass(plugin_cls_or_instance, Plugin):
+                plugin_inst = plugin_cls_or_instance(config=config)
+            else:
+                try:
+                    plugin_inst = plugin_cls_or_instance(self.ctx, config=config)
+                except TypeError:
+                    try:
+                        plugin_inst = plugin_cls_or_instance(config=config)
+                    except TypeError:
+                        try:
+                            plugin_inst = plugin_cls_or_instance(self.ctx)
+                        except TypeError:
+                            plugin_inst = plugin_cls_or_instance()
+        elif isinstance(plugin_cls_or_instance, Plugin):
             plugin_inst = plugin_cls_or_instance
             if config:
                 plugin_inst.config.update(config)
-        elif inspect.isclass(plugin_cls_or_instance) and issubclass(plugin_cls_or_instance, Plugin):
-            plugin_inst = plugin_cls_or_instance(config=config)
         else:
             plugin_inst = plugin_cls_or_instance
 

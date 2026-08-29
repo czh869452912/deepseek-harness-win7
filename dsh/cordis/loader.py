@@ -592,6 +592,10 @@ class EntryTree:
             raise ValueError(f"Entry {group_id} is not a group")
         return entry.subgroup
 
+    def get(self, entry_id: str) -> Optional["Entry"]:
+        """Look up an entry by ID."""
+        return self.store.get(entry_id)
+
     def create(self, options: Dict[str, Any], parent_id: Optional[str] = None, position: Optional[int] = None) -> str:
         """Create an entry in root group or nested group."""
         group = self.resolve_group(parent_id)
@@ -672,12 +676,15 @@ class EntryGroup:
         if entry:
             entry.subgroup = self
 
+    def get(self, entry_id: str) -> Optional["Entry"]:
+        """Look up an entry by ID in this tree."""
+        return self.tree.store.get(entry_id)
+
     def create(self, options: Dict[str, Any]) -> str:
         eid = self.tree.ensure_id(options)
         existing = self.tree.store.get(eid)
-        loader_svc = self.ctx.get("loader") if hasattr(self.ctx, "get") else None
         is_group = options.get("group", False) or options.get("name") == "cordis:group"
-        entry = existing or Entry(loader=loader_svc or self.tree, name=options.get("name", eid), entry_id=eid, group=is_group)
+        entry = existing or Entry(loader=self.tree, name=options.get("name", eid), entry_id=eid, group=is_group)
         if is_group and not entry.subgroup:
             entry.subgroup = EntryGroup(entry.ctx, self.tree)
         self.tree.store[eid] = entry
@@ -750,6 +757,27 @@ class EntryGroup:
             eid = opt.get("id")
             if eid:
                 self.remove(eid, is_dispose=True)
+
+
+class Group(EntryGroup, Service):
+    """Plugin that mounts a nested loader entry group matching TS Group."""
+    is_tree_carrier = True
+    entry_group_key = True
+
+    def __init__(self, ctx: Context, config: Optional[List[Dict[str, Any]]] = None):
+        entry = getattr(ctx, "entry", None) or getattr(getattr(ctx, "fiber", None), "entry", None)
+        parent_group = getattr(entry, "parent", None) if entry else None
+        target_tree = getattr(parent_group, "tree", getattr(ctx, "loader", None))
+        Service.__init__(self, ctx, name="group")
+        EntryGroup.__init__(self, ctx, target_tree)
+        if entry:
+            entry.subgroup = self
+        self.config = config or []
+        ctx.on("internal/update", lambda cfg, *args: self.update(cfg))
+
+    def init(self) -> Any:
+        yield lambda: self.stop()
+        self.update(self.config)
 
 
 class Entry:
@@ -868,10 +896,17 @@ class Entry:
         if not ctx:
             return
 
+        if not plugin_cls and (self.options.get("group") or self.name == "cordis:group" or self.name == "@deepseek-ai/cordis-plugin-group"):
+            plugin_cls = Group
+
         if plugin_cls:
+            from dsh.cordis.service import Service
             if isinstance(plugin_cls, type) and issubclass(plugin_cls, Plugin):
                 inst = plugin_cls(config=self.config)
                 inst.id = self.id
+                self.fiber = ctx.registry.plugin(inst, config=self.config, get_outer_stack=self.get_outer_stack)
+            elif isinstance(plugin_cls, type) and issubclass(plugin_cls, Service):
+                inst = plugin_cls(self.ctx, config=self.config)
                 self.fiber = ctx.registry.plugin(inst, config=self.config, get_outer_stack=self.get_outer_stack)
             elif callable(plugin_cls):
                 self.fiber = ctx.registry.plugin(plugin_cls, config=self.config, get_outer_stack=self.get_outer_stack)
@@ -905,6 +940,11 @@ class Loader(EntryTree, Service):
             self.root = None
         self.config = config or {}
         self.registry_map: Dict[str, Any] = {}
+        from dsh.cordis.include import Include
+        self.registry_map["cordis:include"] = Include
+        self.registry_map["@deepseek-ai/cordis-plugin-include"] = Include
+        self.registry_map["cordis:group"] = Group
+        self.registry_map["@deepseek-ai/cordis-plugin-group"] = Group
         self.entries_list: List[Entry] = []
         self._realms: Dict[str, GlobalRealm] = {}
         self._delims: Dict[str, str] = {}

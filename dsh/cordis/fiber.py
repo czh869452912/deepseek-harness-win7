@@ -515,9 +515,17 @@ class Fiber:
                 if callable(hook):
                     hook()
 
-            if hasattr(self.plugin, symbols.init) and callable(getattr(self.plugin, symbols.init)):
-                init_res = getattr(self.plugin, symbols.init)()
-                if inspect.isawaitable(init_res):
+            init_fn = getattr(self.plugin, symbols.init, None)
+            if not callable(init_fn) and hasattr(self.plugin, "init"):
+                raw_init = getattr(self.plugin, "init")
+                if callable(raw_init):
+                    init_fn = raw_init
+
+            if init_fn and callable(init_fn):
+                init_res = init_fn()
+                if inspect.isgenerator(init_res) or inspect.isasyncgen(init_res):
+                    self.effect(lambda r=init_res: r, label=f"init({self.name})")
+                elif inspect.isawaitable(init_res):
                     try:
                         loop = asyncio.get_running_loop()
                         loop.create_task(init_res)
@@ -528,9 +536,10 @@ class Fiber:
                 self.effect(self.plugin.teardown, label=f"teardown({self.name})")
 
             res = None
+            from dsh.cordis.service import Service
             if hasattr(self.plugin, "apply") and callable(self.plugin.apply):
                 res = self.plugin.apply(self.ctx)
-            elif callable(self.plugin):
+            elif not isinstance(self.plugin, Service) and callable(self.plugin):
                 res = self.plugin(self.ctx, self.config)
 
             if inspect.isawaitable(res):

@@ -23,6 +23,7 @@ class Context:
     Matching reference/vendor/cordis/src/context.ts.
     """
 
+    __cordis_context_brand__: str = "cordis.v1.context"
     effect_symbol: str = "symbols.effect"
     filter_symbol: str = "symbols.filter"
     isolate_symbol: str = "symbols.isolate"
@@ -30,10 +31,16 @@ class Context:
 
     @classmethod
     def is_(cls, value: Any) -> bool:
-        """Check whether value is a Cordis Context matching TS Context.is(value)."""
+        """
+        Check whether value is a Cordis Context matching TS Context.is(value).
+        Uses global immutable brand identifier to work across realms and module reloads.
+        """
+        if value is None:
+            return False
+        if getattr(value, "__cordis_context_brand__", None) == "cordis.v1.context":
+            return True
         return isinstance(value, Context) or (
-            value is not None
-            and hasattr(value, "registry")
+            hasattr(value, "registry")
             and hasattr(value, "reflect")
             and hasattr(value, "extend")
         )

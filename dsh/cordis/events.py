@@ -368,7 +368,10 @@ class EventBus:
             has_var_kw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
             kw = kwargs if has_var_kw else {k: v for k, v in kwargs.items() if k in sig.parameters}
 
-            if "next" in params or "next_fn" in params or len(params) == len(args_list) + 2 or has_var_pos:
+            if len(params) == 0:
+                return cb()
+
+            if "next" in params or "next_fn" in params or len(params) >= len(args_list) + 2 or has_var_pos:
                 try:
                     return cb(current_data, *args_list, next_fn, **kw)
                 except TypeError:
@@ -427,7 +430,13 @@ class EventBus:
             has_var_kw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
             kw = kwargs if has_var_kw else {k: v for k, v in kwargs.items() if k in sig.parameters}
 
-            if "next" in params or "next_fn" in params or len(params) == len(args_list) + 2 or has_var_pos:
+            if len(params) == 0:
+                res = cb()
+                if inspect.isawaitable(res):
+                    res = await res
+                return res
+
+            if "next" in params or "next_fn" in params or len(params) >= len(args_list) + 2 or has_var_pos:
                 try:
                     res = cb(current_data, *args_list, next_fn, **kw)
                 except TypeError:

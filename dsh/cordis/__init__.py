@@ -13,6 +13,7 @@ from dsh.cordis.registry import RegistryService, PluginRuntime, Inject, inject
 from dsh.cordis.service import Service, ServiceSymbols
 from dsh.cordis.timer import TimerService
 from dsh.cordis.loader import Loader, EntryTree, EntryGroup, Entry, Realm, LocalRealm, GlobalRealm, sort_keys, interpolate, is_js_expr, evaluate_expr
+from dsh.cordis.include import Include, ConfigFileError
 from dsh.cordis.utils import DisposableList, Symbols, symbols, is_object, get_traceable, with_props, build_outer_stack
 from dsh.cordis.hmr import ConfigWatcherService, Hmr
 
@@ -52,6 +53,8 @@ __all__ = [
     "ServiceSymbols",
     "TimerService",
     "Loader",
+    "Include",
+    "ConfigFileError",
     "EntryTree",
     "EntryGroup",
     "Entry",

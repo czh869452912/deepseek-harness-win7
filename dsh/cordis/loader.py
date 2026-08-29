@@ -100,10 +100,176 @@ def is_js_expr(value: Any) -> bool:
     return isinstance(value, dict) and "__jsExpr" in value and isinstance(value["__jsExpr"], str)
 
 
+import ast
+
+
+class SafeASTEvaluator(ast.NodeVisitor):
+    """
+    AST-based safe expression evaluator matching Cordis expression semantics
+    without allowing arbitrary code execution.
+    """
+
+    def __init__(self, scope: Dict[str, Any]):
+        self.scope = scope
+
+    def eval(self, node: ast.AST) -> Any:
+        return self.visit(node)
+
+    def generic_visit(self, node: ast.AST) -> Any:
+        raise ValueError(f"Unsupported expression node: {type(node).__name__}")
+
+    def visit_Expression(self, node: ast.Expression) -> Any:
+        return self.visit(node.body)
+
+    def visit_Constant(self, node: ast.Constant) -> Any:
+        return node.value
+
+    # Python 3.8 backward compatibility
+    def visit_Num(self, node: Any) -> Any:
+        return node.n
+
+    def visit_Str(self, node: Any) -> Any:
+        return node.s
+
+    def visit_NameConstant(self, node: Any) -> Any:
+        return node.value
+
+    def visit_Name(self, node: ast.Name) -> Any:
+        name = node.id
+        if name in self.scope:
+            return self.scope[name]
+        if name in ("True", "true"):
+            return True
+        if name in ("False", "false"):
+            return False
+        if name in ("None", "null", "undefined"):
+            return None
+        ctx = self.scope.get("ctx")
+        if ctx is not None:
+            val = getattr(ctx, name, None)
+            if val is not None:
+                return val
+        return None
+
+    def visit_UnaryOp(self, node: ast.UnaryOp) -> Any:
+        val = self.visit(node.operand)
+        if isinstance(node.op, ast.Not):
+            return not val
+        elif isinstance(node.op, ast.USub):
+            return -val
+        elif isinstance(node.op, ast.UAdd):
+            return +val
+        elif isinstance(node.op, ast.Invert):
+            return ~val
+        raise ValueError(f"Unsupported unary operator: {type(node.op).__name__}")
+
+    def visit_BinOp(self, node: ast.BinOp) -> Any:
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        op = node.op
+        if isinstance(op, ast.Add): return left + right
+        if isinstance(op, ast.Sub): return left - right
+        if isinstance(op, ast.Mult): return left * right
+        if isinstance(op, ast.Div): return left / right
+        if isinstance(op, ast.FloorDiv): return left // right
+        if isinstance(op, ast.Mod): return left % right
+        if isinstance(op, ast.Pow): return left ** right
+        if isinstance(op, ast.BitOr): return left | right
+        if isinstance(op, ast.BitXor): return left ^ right
+        if isinstance(op, ast.BitAnd): return left & right
+        if isinstance(op, ast.LShift): return left << right
+        if isinstance(op, ast.RShift): return left >> right
+        raise ValueError(f"Unsupported binary operator: {type(op).__name__}")
+
+    def visit_BoolOp(self, node: ast.BoolOp) -> Any:
+        if isinstance(node.op, ast.And):
+            res = True
+            for v in node.values:
+                res = self.visit(v)
+                if not res:
+                    return res
+            return res
+        elif isinstance(node.op, ast.Or):
+            res = False
+            for v in node.values:
+                res = self.visit(v)
+                if res:
+                    return res
+            return res
+        raise ValueError(f"Unsupported boolean operator: {type(node.op).__name__}")
+
+    def visit_Compare(self, node: ast.Compare) -> Any:
+        left = self.visit(node.left)
+        for op, comparator in zip(node.ops, node.comparators):
+            right = self.visit(comparator)
+            matched = False
+            if isinstance(op, ast.Eq): matched = (left == right)
+            elif isinstance(op, ast.NotEq): matched = (left != right)
+            elif isinstance(op, ast.Lt): matched = (left < right)
+            elif isinstance(op, ast.LtE): matched = (left <= right)
+            elif isinstance(op, ast.Gt): matched = (left > right)
+            elif isinstance(op, ast.GtE): matched = (left >= right)
+            elif isinstance(op, ast.Is): matched = (left is right)
+            elif isinstance(op, ast.IsNot): matched = (left is not right)
+            elif isinstance(op, ast.In): matched = (left in right)
+            elif isinstance(op, ast.NotIn): matched = (left not in right)
+            else:
+                raise ValueError(f"Unsupported comparison operator: {type(op).__name__}")
+            if not matched:
+                return False
+            left = right
+        return True
+
+    def visit_IfExp(self, node: ast.IfExp) -> Any:
+        test = self.visit(node.test)
+        if test:
+            return self.visit(node.body)
+        else:
+            return self.visit(node.orelse)
+
+    def visit_Subscript(self, node: ast.Subscript) -> Any:
+        val = self.visit(node.value)
+        if hasattr(ast, "Index") and isinstance(node.slice, getattr(ast, "Index")):
+            idx = self.visit(node.slice.value)
+        else:
+            idx = self.visit(node.slice)
+        if val is None:
+            return None
+        return val[idx]
+
+    def visit_Attribute(self, node: ast.Attribute) -> Any:
+        attr = node.attr
+        if attr.startswith("__"):
+            raise ValueError(f"Access to private attribute '{attr}' is forbidden")
+        val = self.visit(node.value)
+        if val is None:
+            return None
+        if isinstance(val, dict):
+            return val.get(attr)
+        return getattr(val, attr, None)
+
+    def visit_List(self, node: ast.List) -> Any:
+        return [self.visit(elt) for elt in node.elts]
+
+    def visit_Tuple(self, node: ast.Tuple) -> Any:
+        return tuple(self.visit(elt) for elt in node.elts)
+
+    def visit_Dict(self, node: ast.Dict) -> Any:
+        return {self.visit(k): self.visit(v) for k, v in zip(node.keys, node.values)}
+
+    def visit_Call(self, node: ast.Call) -> Any:
+        func = self.visit(node.func)
+        if not callable(func):
+            raise ValueError(f"Object {func} is not callable")
+        args = [self.visit(arg) for arg in node.args]
+        kwargs = {kw.arg: self.visit(kw.value) for kw in node.keywords}
+        return func(*args, **kwargs)
+
+
 def evaluate_expr(ctx: Any, expr: str) -> Any:
     """
     Safely evaluate expression string in the given Context matching TS evaluate(ctx, expr).
-    Translates common JS patterns to Python syntax safely including ternary and logical operators.
+    Translates common JS patterns to Python syntax safely using AST analysis.
     """
     expr_str = expr.strip()
     if expr_str.startswith("!!js"):
@@ -136,9 +302,22 @@ def evaluate_expr(ctx: Any, expr: str) -> Any:
         "sys": sys,
         "os": os,
         "platform": platform,
+        "str": str,
+        "int": int,
+        "float": float,
+        "bool": bool,
+        "len": len,
+        "max": max,
+        "min": min,
+        "getattr": getattr,
+        "hasattr": hasattr,
     }
+
     try:
-        return eval(expr_py, {"__builtins__": {}}, scope)
+        expr_py = expr_py.strip()
+        parsed_ast = ast.parse(expr_py, mode="eval")
+        evaluator = SafeASTEvaluator(scope)
+        return evaluator.eval(parsed_ast)
     except Exception as e:
         if ctx and hasattr(ctx, "logger"):
             ctx.logger("loader").warn("Failed to evaluate expression '%s': %s", expr, e)
@@ -147,13 +326,32 @@ def evaluate_expr(ctx: Any, expr: str) -> Any:
 
 def interpolate(ctx: Any, config: Any) -> Any:
     """
-    Recursively interpolate JS expression nodes against the target context
-    matching TS interpolate(ctx, config).
+    Recursively interpolate JS expression nodes and ${...} string templates
+    against the target context matching TS interpolate(ctx, config).
     """
     if is_js_expr(config):
         return evaluate_expr(ctx, config["__jsExpr"])
-    elif isinstance(config, str) and config.startswith("!!js "):
-        return evaluate_expr(ctx, config[5:])
+    elif isinstance(config, str):
+        if config.startswith("!!js "):
+            return evaluate_expr(ctx, config[5:])
+        # Support ${VAR} and ${VAR:-default} template expansion
+        if "${" in config:
+            def _sub(match):
+                inner = match.group(1).strip()
+                if ":-" in inner:
+                    var_name, default_val = inner.split(":-", 1)
+                    val = os.environ.get(var_name.strip())
+                    return val if val is not None else default_val
+                elif inner.startswith("process.env.") or inner.startswith("env."):
+                    var_name = inner.split(".", 1)[1]
+                    return os.environ.get(var_name, "")
+                elif inner in os.environ:
+                    return os.environ[inner]
+                res = evaluate_expr(ctx, inner)
+                return str(res) if res is not None else ""
+            expanded = re.sub(r'\$\{([^}]+)\}', _sub, config)
+            return expanded
+        return config
     elif isinstance(config, list):
         return [interpolate(ctx, item) for item in config]
     elif isinstance(config, dict):

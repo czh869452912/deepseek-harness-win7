@@ -20,6 +20,10 @@ class Inject:
     def resolve(inject_meta: Any, result: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Convert array/object/class-inherited inject metadata into a plain dict (name -> config).
+        Supports:
+          - ["tools", "fs?"]  # '?' suffix declares optional dependency
+          - {"tools": True, "fs": False}
+          - {"tools": {"required": False}}
         """
         if result is None:
             result = {}
@@ -27,12 +31,33 @@ class Inject:
             return result
         if isinstance(inject_meta, (list, tuple, set)):
             for name in inject_meta:
-                result[str(name)] = None
+                name_str = str(name)
+                if name_str.endswith("?"):
+                    result[name_str[:-1]] = {"required": False}
+                else:
+                    if name_str not in result:
+                        result[name_str] = None
         elif isinstance(inject_meta, dict):
             for k, v in inject_meta.items():
-                result[str(k)] = v
+                k_str = str(k)
+                if isinstance(v, bool):
+                    result[k_str] = {"required": v}
+                elif isinstance(v, dict):
+                    cfg = dict(v)
+                    cfg.setdefault("required", True)
+                    result[k_str] = cfg
+                elif v is None:
+                    if k_str.endswith("?"):
+                        result[k_str[:-1]] = {"required": False}
+                    else:
+                        result[k_str] = None
+                else:
+                    result[k_str] = v
         elif isinstance(inject_meta, str):
-            result[inject_meta] = None
+            if inject_meta.endswith("?"):
+                result[inject_meta[:-1]] = {"required": False}
+            else:
+                result[inject_meta] = None
         return result
 
 

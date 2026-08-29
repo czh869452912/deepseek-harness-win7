@@ -384,6 +384,12 @@ class AgentLoopService:
 
         agent = Agent(session=session, options=options, ctx=agent_ctx)
 
+        try:
+            self.ctx.emit("agent/session-start", {"agent": agent, "source": "startup"})
+        except Exception as e:
+            if hasattr(self.ctx, "logger"):
+                self.ctx.logger("agent_loop").warn("Exception in agent/session-start: %s", e)
+
         agents_svc: Optional[AgentRegistry] = self.ctx.get("agents")
         disposer = None
         if agents_svc:
@@ -403,6 +409,8 @@ class AgentLoopService:
                 disposer()
 
         return AgentHandle(agent=agent, disposer=teardown)
+
+    create = create_agent
 
     async def resume(
         self,
@@ -433,6 +441,12 @@ class AgentLoopService:
             commit_fn()
 
         agent = Agent(session=session, options=options, ctx=agent_ctx)
+
+        try:
+            self.ctx.emit("agent/session-start", {"agent": agent, "source": "resume"})
+        except Exception as e:
+            if hasattr(self.ctx, "logger"):
+                self.ctx.logger("agent_loop").warn("Exception in agent/session-start: %s", e)
 
         agents_svc: Optional[AgentRegistry] = self.ctx.get("agents")
         disposer = None
@@ -534,9 +548,12 @@ class AgentLoopService:
                 }
                 pre_step_res = await self.ctx.waterfall("agent/pre-step", request_payload)
 
-                if isinstance(pre_step_res, dict) and pre_step_res.get("kind") == "reject":
-                    turn_ends = {"kind": "blocked"}
-                    return False
+                if isinstance(pre_step_res, dict):
+                    if pre_step_res.get("kind") == "reject":
+                        turn_ends = {"kind": "blocked"}
+                        return False
+                    if "messages" in pre_step_res and isinstance(pre_step_res["messages"], list):
+                        claimed = pre_step_res["messages"]
 
                 for msg in claimed:
                     session.append_user_message(msg.get("content", ""), source=msg.get("source"))

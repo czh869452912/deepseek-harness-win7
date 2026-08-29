@@ -124,7 +124,20 @@ class Schema:
     def __call__(self, data: Any = None, options: Optional[Dict[str, Any]] = None) -> Any:
         return Schema.resolve(data, self, options or {})[0]
 
-    # --- Standard Schema V1 compatibility ---
+    # --- Standard Schema V1 compatibility (@standard-schema/spec) ---
+    @property
+    def standard(self) -> Dict[str, Any]:
+        return {
+            "version": 1,
+            "vendor": "cordis",
+            "validate": self.validate,
+        }
+
+    def __getitem__(self, item: str) -> Any:
+        if item in ("~standard", "standard"):
+            return self.standard
+        raise KeyError(item)
+
     def validate(self, value: Any) -> Dict[str, Any]:
         try:
             res = Schema.resolve(value, self, {})[0]
@@ -615,6 +628,14 @@ class Schema:
     def dynamic(cls, builder: Callable[..., "Schema"]) -> "Schema":
         """Dynamic schema factory matching TS Schemastery.dynamic."""
         return cls({"type": "lazy", "builder": builder})
+
+    @classmethod
+    def computed(cls, callback: Callable[..., Any]) -> "Schema":
+        """Computed schema property based on context or sibling values."""
+        def _resolve_computed(data: Any, opt: Any) -> Any:
+            res = callback(opt.get("root", data)) if len(inspect_params(callback)) >= 1 else callback()
+            return res
+        return cls.transform(cls.any(), _resolve_computed)
 
 
     @classmethod

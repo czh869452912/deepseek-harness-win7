@@ -178,6 +178,10 @@ class Inbox:
         self._mutate(t, len(self._state[t]), 0, [message], discard_removed=False)
         return msg_id
 
+    def inject(self, message: Dict[str, Any]) -> str:
+        """Inject message into next-step queue."""
+        return self.append("next-step", message)
+
     def prepend(self, target: str, message: Dict[str, Any]) -> str:
         msg_id = self._ensure_message_id(message)
         t = "next-step" if target == "next-step" else "next-turn"

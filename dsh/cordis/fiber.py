@@ -453,16 +453,29 @@ class Fiber:
         and triggers state reload if changed.
         """
         epoch = ""
-        for name in self.inject.keys():
+        for name, config in self.inject.items():
+            is_required = True
+            if isinstance(config, dict):
+                is_required = config.get("required", True)
+            elif isinstance(config, bool):
+                is_required = config
+
             impl = self._store.get(name)
             if not impl:
-                epoch = INACTIVE_EPOCH
-                break
+                if is_required:
+                    epoch = INACTIVE_EPOCH
+                    break
+                continue
+
             fib = getattr(impl, "fiber", None)
             if fib is not None and fib.state != FiberState.ACTIVE and getattr(fib, "uid", None) not in (0, None):
-                epoch = INACTIVE_EPOCH
-                break
+                if is_required:
+                    epoch = INACTIVE_EPOCH
+                    break
+                continue
+
             epoch += f":{getattr(fib, 'uid', 0)}"
+
         self.set_epoch(epoch)
 
     def set_epoch(self, epoch: str) -> None:

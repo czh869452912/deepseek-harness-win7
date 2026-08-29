@@ -275,6 +275,8 @@ def get_traceable(ctx: Any, value: Any) -> Any:
         return value._extend({"ctx": ctx})
     if hasattr(value, "_cordis_tracker") and not hasattr(value, "_mock_return_value"):
         return TracedProxy(ctx, value)
+    if hasattr(value, Symbols.tracker) and not hasattr(value, "_mock_return_value"):
+        return TracedProxy(ctx, value)
     if callable(value) and not inspect.isclass(value) and not hasattr(value, "_mock_return_value"):
         return TracedProxy(ctx, value)
     return value

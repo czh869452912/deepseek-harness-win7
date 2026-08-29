@@ -341,12 +341,14 @@ class ToolGoalPlugin(Plugin):
             goal_svc = GoalService(ctx, blocked_after_consecutive_rounds=self.blocked_after_consecutive_rounds)
             ctx.set_service("goals", goal_svc)
 
-        if hasattr(ctx, "systemPrompt") and hasattr(ctx.systemPrompt, "section"):
-            ctx.systemPrompt.section(
-                name="tool:goal",
-                order=114,
-                text=guidance(self.blocked_after_consecutive_rounds),
-            )
+        if hasattr(ctx, "has") and ctx.has("systemPrompt"):
+            sp = ctx.get("systemPrompt")
+            if hasattr(sp, "section"):
+                sp.section(
+                    name="tool:goal",
+                    order=114,
+                    text=guidance(self.blocked_after_consecutive_rounds),
+                )
 
         tools = ctx.get("tools")
         if not tools:

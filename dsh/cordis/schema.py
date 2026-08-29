@@ -58,6 +58,7 @@ class ValidationError(TypeError):
             prefix = prefix[1:]
 
         msg_str = str(message_or_issues)
+        self.raw_message = msg_str
         full_msg = msg_str if prefix == "$" else f"{prefix} {msg_str}"
         super().__init__(full_msg)
         self.message = full_msg
@@ -146,7 +147,7 @@ class Schema:
             return {
                 "issues": [
                     {
-                        "message": str(err),
+                        "message": getattr(err, "raw_message", str(err)),
                         "path": getattr(err, "path", []),
                     }
                 ]

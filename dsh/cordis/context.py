@@ -64,7 +64,7 @@ class Context:
             self.strict_inject = parent.strict_inject
         else:
             import os
-            self.strict_inject = os.environ.get("DSH_STRICT_INJECT", "0") in ("1", "true", "True")
+            self.strict_inject = os.environ.get("DSH_STRICT_INJECT", "1") not in ("0", "false", "False")
 
         if parent is not None:
             self._event_bus: EventBus = parent._event_bus
@@ -111,7 +111,7 @@ class Context:
             elif hasattr(service_instance, "check") and callable(service_instance.check):
                 chk = service_instance.check
 
-        self.reflect.provide(self, name, service_instance, check=chk)
+        self.reflect.provide(self, name, service_instance, check=chk, allow_replace=True)
 
     def provide(self, name: str, service_instance: Any = None, check: Optional[Callable[[], bool]] = None) -> Callable[[], None]:
         """
@@ -366,28 +366,52 @@ class Context:
         return self.interval(callback, delay_ms)
 
     def __getattr__(self, name: str) -> Any:
-        if name.startswith("_") or name in ("registry", "reflect", "fiber", "root", "events", "props", "store", "logger", "timer"):
+        RESERVED_ATTRS = (
+            "registry", "reflect", "fiber", "root", "events", "props", "store", "logger", "timer",
+            "filter", "validate", "status", "teardown", "symbols", "base_url", "baseUrl",
+            "strict_inject", "session", "agent",
+        )
+        if name.startswith("_") or name in RESERVED_ATTRS:
             raise AttributeError(f"Context object has no attribute '{name}'")
 
-        # 1:1 Strict Dependency Injection Enforcement matching TS Cordis ReflectService.handler
-        if getattr(self, "strict_inject", False) and getattr(self, "fiber", None) and getattr(self.fiber, "runtime", None) is not None:
-            curr_fiber = self.fiber
+        # 1. Accessor check matching TS def?.type === 'accessor'
+        if hasattr(self, "reflect") and self.reflect and hasattr(self.reflect, "props"):
+            def_prop = self.reflect.props.get(name)
+            if def_prop and getattr(def_prop, "type", None) == "accessor":
+                from dsh.cordis.utils import Symbols
+                receiver = getattr(self, Symbols.receiver, self)
+                err = RuntimeError(f"cannot get property '{name}' without inject")
+                return def_prop.get(receiver, err)
+
+        # 2. 1:1 Strict Dependency Injection Enforcement matching TS Cordis ReflectService.handler
+        if getattr(self, "strict_inject", True) and getattr(self, "fiber", None) and getattr(self.fiber, "runtime", None) is not None:
+            curr_fiber = getattr(self, "_shadow_fiber", None) or self.fiber
+            key = getattr(self, "_isolated_keys", {}).get(name, name)
             while curr_fiber is not None and getattr(curr_fiber, "runtime", None) is not None:
                 impl = getattr(curr_fiber, "store", {}).get(name) if getattr(curr_fiber, "store", None) else None
                 if impl is not None:
-                    return getattr(impl, "value", impl)
+                    from dsh.cordis.utils import get_traceable
+                    val = getattr(impl, "value", impl)
+                    return get_traceable(self, val)
                 if name in getattr(curr_fiber, "inject", {}):
                     raise RuntimeError(f"cannot get required service '{name}' in inactive context")
                 parent_ctx = getattr(curr_fiber, "parent", None)
-                curr_fiber = getattr(parent_ctx, "fiber", None) if parent_ctx else None
+                if not parent_ctx:
+                    break
+                parent_key = getattr(parent_ctx, "_isolated_keys", {}).get(name, name)
+                if parent_key != key:
+                    break
+                curr_fiber = getattr(parent_ctx, "fiber", None)
             raise RuntimeError(f"cannot get property '{name}' without inject")
 
         if name in self._services:
-            return self._services[name]
+            from dsh.cordis.utils import get_traceable
+            return get_traceable(self, self._services[name])
         if hasattr(self, "reflect"):
             val = self.reflect.get(self, name, default=None, strict=False)
             if val is not None:
-                return val
+                from dsh.cordis.utils import get_traceable
+                return get_traceable(self, val)
         if self._parent and name not in self._isolated_keys and hasattr(self._parent, name):
             return getattr(self._parent, name)
         raise AttributeError(f"Context object has no attribute or service '{name}'")

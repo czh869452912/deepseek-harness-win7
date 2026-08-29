@@ -44,12 +44,12 @@ def resolve_config(plugin: Any, config: Any) -> Any:
     if isinstance(schema, Schema):
         res = schema.validate(config)
         if "issues" in res and res["issues"]:
-            raise ValidationError(f"invalid config: {res['issues']}")
+            raise ValidationError(res["issues"])
         return res.get("value", config)
     elif hasattr(schema, "validate") and callable(schema.validate):
         res = schema.validate(config)
         if isinstance(res, dict) and "issues" in res and res["issues"]:
-            raise ValidationError(f"invalid config: {res['issues']}")
+            raise ValidationError(res["issues"])
         return res.get("value", config) if isinstance(res, dict) and "value" in res else res
 
     return config

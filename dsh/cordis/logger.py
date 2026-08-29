@@ -282,13 +282,13 @@ class LoggerService:
         return Logger(name=target_name, service=self, meta={"fiber": fiber})
 
     def error(self, format_str: Any, *args: Any) -> None:
-        self().__call__().error(format_str, *args)
+        self().error(format_str, *args)
 
     def info(self, format_str: Any, *args: Any) -> None:
-        self().__call__().info(format_str, *args)
+        self().info(format_str, *args)
 
     def warn(self, format_str: Any, *args: Any) -> None:
-        self().__call__().warn(format_str, *args)
+        self().warn(format_str, *args)
 
     def debug(self, format_str: Any, *args: Any) -> None:
-        self().__call__().debug(format_str, *args)
+        self().debug(format_str, *args)

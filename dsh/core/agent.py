@@ -90,12 +90,12 @@ class Agent:
             if self.ctx:
                 self.ctx.emit("agent/status", {"agent": self, "status": current_status})
                 self.ctx.emit("internal/status", {"agent": self, "status": current_status})
-            if current_status == "idle":
-                futures = list(self._idle_futures)
-                self._idle_futures.clear()
-                for fut in futures:
-                    if not fut.done():
-                        fut.set_result(None)
+        if current_status == "idle":
+            futures = list(self._idle_futures)
+            self._idle_futures.clear()
+            for fut in futures:
+                if not fut.done():
+                    fut.set_result(None)
 
     def set_phase(self, phase_kind: str) -> None:
         previous_status = self.status
@@ -106,12 +106,12 @@ class Agent:
             if self.ctx:
                 self.ctx.emit("agent/status", {"agent": self, "status": current_status})
                 self.ctx.emit("internal/status", {"agent": self, "status": current_status})
-            if current_status == "idle":
-                futures = list(self._idle_futures)
-                self._idle_futures.clear()
-                for fut in futures:
-                    if not fut.done():
-                        fut.set_result(None)
+        if current_status == "idle":
+            futures = list(self._idle_futures)
+            self._idle_futures.clear()
+            for fut in futures:
+                if not fut.done():
+                    fut.set_result(None)
 
     def send(self, message: Union[str, Dict[str, Any]], target: str = "next-turn", wakeup: bool = True) -> str:
         """

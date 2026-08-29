@@ -460,8 +460,11 @@ class AgentLoopService:
         async def teardown() -> None:
             agent.cancel({"kind": "disposed"})
             if not driver_task.done():
-                await agent.when_idle()
                 driver_task.cancel()
+                try:
+                    await driver_task
+                except (asyncio.CancelledError, Exception):
+                    pass
             agent_ctx.teardown()
             if disposer:
                 disposer()

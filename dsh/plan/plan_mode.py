@@ -91,12 +91,14 @@ class PlanModeController:
         self._pending_intents: Dict[str, Dict[str, Any]] = {}  # session_id -> {active, narrate}
 
         # System prompt section plan:policy
-        if hasattr(ctx, "systemPrompt") and hasattr(ctx.systemPrompt, "section"):
-            ctx.systemPrompt.section(
-                name="plan:policy",
-                order=50,
-                text=lambda context: self.section if self.is_active() else "",
-            )
+        if hasattr(ctx, "has") and ctx.has("systemPrompt"):
+            sp = ctx.get("systemPrompt")
+            if hasattr(sp, "section"):
+                sp.section(
+                    name="plan:policy",
+                    order=50,
+                    text=lambda context: self.section if self.is_active() else "",
+                )
 
     def _resolve_session(self, agent: Optional[Any] = None) -> Optional[Session]:
         if agent and hasattr(agent, "session") and agent.session:

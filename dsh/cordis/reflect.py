@@ -133,20 +133,26 @@ class ReflectService:
 
     def set(self, ctx: Any, name: str, value: Any) -> bool:
         """
-        Overwrite a provided service's value.
+        Overwrite a provided service's value matching TS ReflectService.set.
         """
         def_prop = self.props.get(name)
         if def_prop and getattr(def_prop, "type", None) == PropertyType.ACCESSOR:
             if not def_prop.set:
                 return False
-            err = KeyError(f"cannot set property '{name}'")
+            err = RuntimeError(f"cannot set property '{name}'")
             return def_prop.set(ctx, value, err)
 
         isolated_map = getattr(ctx, "_isolated_keys", {})
         key = isolated_map.get(name, name)
         impl = self.store.get(key) or self.store.get(name)
-        if impl:
-            impl.value = value
+        if not impl:
+            raise RuntimeError(f"cannot set property '{name}' without provide")
+
+        fiber = getattr(ctx, "fiber", None)
+        if fiber is not None and impl.fiber is not None and impl.fiber is not fiber and getattr(fiber, "uid", None) not in (0, None):
+            raise RuntimeError(f"cannot set property '{name}' in multiple fibers")
+
+        impl.value = value
 
         target = ctx.root if hasattr(ctx, "root") else ctx
         if hasattr(target, "_services"):
@@ -159,7 +165,8 @@ class ReflectService:
         ctx_or_name: Any,
         name_or_value: Any = None,
         value: Any = None,
-        check: Optional[Callable[[], bool]] = None
+        check: Optional[Callable[[], bool]] = None,
+        allow_replace: bool = False,
     ) -> Callable[[], None]:
         """
         Register a service implementation owned by the current fiber.
@@ -186,6 +193,17 @@ class ReflectService:
             key = isolated_map.get(name, name)
 
             fiber = getattr(target_ctx, "fiber", None)
+            if not allow_replace and key in self.store and self.store[key].fiber is not None and self.store[key].fiber is not fiber:
+                prev_fiber = self.store[key].fiber
+                from dsh.cordis.fiber import FiberState
+                if (
+                    getattr(prev_fiber, "state", None) not in (FiberState.DISPOSED, FiberState.FAILED)
+                    and getattr(fiber, "runtime", None) is not None
+                    and getattr(prev_fiber, "runtime", None) is not None
+                ):
+                    prev_name = getattr(prev_fiber, "name", "unknown")
+                    raise RuntimeError(f"service '{name}' has been registered at <{prev_name}>")
+
             impl = Impl(name=name, fiber=fiber, value=val, check=chk)
 
             self.store[key] = impl

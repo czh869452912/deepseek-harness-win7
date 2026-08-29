@@ -282,8 +282,14 @@ class RegistryService:
                                 target_ctx = getattr(plugin_inst, "ctx", None) or self.ctx
                                 if target_ctx and hasattr(target_ctx, "inject"):
                                     def _on_injected(inj_ctx):
-                                        m = getattr(plugin_inst, m_name)
-                                        return m()
+                                        old_ctx = getattr(plugin_inst, "ctx", None)
+                                        try:
+                                            plugin_inst.ctx = inj_ctx
+                                            m = getattr(plugin_inst, m_name)
+                                            return m()
+                                        finally:
+                                            if old_ctx is not None:
+                                                plugin_inst.ctx = old_ctx
                                     target_ctx.inject(m_inj, _on_injected)
                             return _hook
 

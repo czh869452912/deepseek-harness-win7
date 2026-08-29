@@ -184,6 +184,16 @@ class Schema:
         s.meta["required"] = value
         return s
 
+    def optional(self) -> "Schema":
+        s = self._clone()
+        s.meta["required"] = False
+        return s
+
+    def nullable(self) -> "Schema":
+        s = self._clone()
+        s.meta["loose"] = True
+        return s
+
     def hidden(self, value: bool = True) -> "Schema":
         s = self._clone()
         s.meta["hidden"] = value
@@ -291,6 +301,7 @@ class Schema:
         return self
 
     def i18n(self, messages: Dict[str, Any]) -> "Schema":
+        """Attach localized descriptions matching TS Schema.prototype.i18n()."""
         s = self._clone()
         desc = s.meta.get("description")
         desc_dict: Dict[str, str] = {"": desc} if isinstance(desc, str) else dict(desc or {})
@@ -303,23 +314,54 @@ class Schema:
                 desc_dict[locale] = val
         if desc_dict:
             s.meta["description"] = desc_dict
+
         if s.dict:
             new_dict = {}
             for k, inner in s.dict.items():
                 sub_msg = {}
                 for loc, m in messages.items():
                     if isinstance(m, dict):
-                        sub_val = m.get(k) or (m.get("$value") or m.get("$inner") or {}).get(k)
-                        if sub_val is not None:
-                            sub_msg[loc] = sub_val
+                        inner_dict = m.get("$value") or m.get("$inner") or m
+                        if isinstance(inner_dict, dict) and k in inner_dict:
+                            sub_msg[loc] = inner_dict[k]
                     elif isinstance(m, str):
                         sub_msg[loc] = m
                 new_dict[k] = inner.i18n(sub_msg)
             s.dict = new_dict
+
         if s.list:
-            s.list = [inner.i18n(messages) for inner in s.list]
+            new_list = []
+            for idx, inner in enumerate(s.list):
+                sub_msg = {}
+                for loc, m in messages.items():
+                    if isinstance(m, dict):
+                        inner_list = m.get("$value") or m.get("$inner") or m
+                        if isinstance(inner_list, (list, tuple)) and idx < len(inner_list):
+                            sub_msg[loc] = inner_list[idx]
+                        elif isinstance(inner_list, dict):
+                            sub_msg[loc] = {k: v for k, v in inner_list.items() if not k.startswith("$")}
+                    elif isinstance(m, str):
+                        sub_msg[loc] = m
+                new_list.append(inner.i18n(sub_msg))
+            s.list = new_list
+
         if s.inner:
-            s.inner = s.inner.i18n(messages)
+            sub_msg = {}
+            for loc, m in messages.items():
+                if isinstance(m, dict):
+                    inner_val = m.get("$value") or m.get("$inner") or {k: v for k, v in m.items() if not k.startswith("$")}
+                    sub_msg[loc] = inner_val
+                elif isinstance(m, str):
+                    sub_msg[loc] = m
+            s.inner = s.inner.i18n(sub_msg)
+
+        if s.s_key:
+            sub_msg = {}
+            for loc, m in messages.items():
+                if isinstance(m, dict) and "$key" in m:
+                    sub_msg[loc] = m["$key"]
+            s.s_key = s.s_key.i18n(sub_msg)
+
         return s
 
     def simplify(self, value: Any = None) -> Any:
@@ -370,6 +412,44 @@ class Schema:
                 except Exception:
                     pass
         return value
+
+    def toJSON(self, refs_collector: Optional[Dict[int, Dict[str, Any]]] = None) -> Union[int, Dict[str, Any]]:
+        """
+        Serialize schema definition with flat reference table matching TS Schema.prototype.toJSON().
+        Returns { "uid": self.uid, "refs": { ... } } at root level, or node uid when called recursively.
+        """
+        is_root = refs_collector is None
+        if is_root:
+            refs: Dict[int, Dict[str, Any]] = {}
+        else:
+            refs = refs_collector
+
+        if self.uid in refs:
+            return self.uid
+
+        node: Dict[str, Any] = {
+            "uid": self.uid,
+            "type": self.type,
+            "meta": dict(self.meta),
+        }
+        refs[self.uid] = node
+
+        if self.value is not None:
+            node["value"] = self.value
+        if self.inner:
+            node["inner"] = self.inner.toJSON(refs)
+        if self.s_key:
+            node["sKey"] = self.s_key.toJSON(refs)
+        if self.list:
+            node["list"] = [s.toJSON(refs) for s in self.list]
+        if self.dict:
+            node["dict"] = {k: v.toJSON(refs) for k, v in self.dict.items()}
+        if self.bits:
+            node["bits"] = dict(self.bits)
+
+        if is_root:
+            return {"uid": self.uid, "refs": refs}
+        return self.uid
 
     def to_json(self) -> Dict[str, Any]:
         """Serialize schema definition matching TS toJSON()."""
@@ -839,7 +919,9 @@ def _resolve_tuple(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool)
     if not isinstance(data, (list, tuple)):
         raise ValidationError(f"expected array but got {data}", opt)
     items = schema.list or []
-    res = [_property(data, i, items[i], opt) for i in range(min(len(data), len(items)))]
+    if len(data) < len(items):
+        raise ValidationError(f"expected tuple of length {len(items)} but got {len(data)}", opt)
+    res = [_property(data, i, items[i], opt) for i in range(len(items))]
     if not strict and len(data) > len(items):
         res.extend(data[len(items):])
     return res, None

@@ -154,6 +154,12 @@ class EventBus:
     ) -> Callable[[], None]:
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             disposer()
+            try:
+                sig = inspect.signature(handler)
+                if "caller_ctx" not in sig.parameters and not any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()):
+                    kwargs.pop("caller_ctx", None)
+            except Exception:
+                pass
             return handler(*args, **kwargs)
 
         disposer = self.on(event_name, wrapper, prepend=prepend, global_listener=global_listener, ctx=ctx)

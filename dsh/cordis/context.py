@@ -382,9 +382,9 @@ class Context:
         RESERVED_ATTRS = (
             "registry", "reflect", "fiber", "root", "events", "props", "store", "logger", "timer",
             "filter", "validate", "status", "teardown", "symbols", "base_url", "baseUrl",
-            "strict_inject", "session", "agent",
+            "strict_inject", "session", "agent", "is_shadow", "_shadow", "_shadow_fiber",
         )
-        if name.startswith("_") or name in RESERVED_ATTRS:
+        if name.startswith("_") or name.startswith("cordis.") or name.startswith("symbols.") or name in RESERVED_ATTRS:
             raise AttributeError(f"Context object has no attribute '{name}'")
 
         # 1. Accessor check matching TS def?.type === 'accessor'

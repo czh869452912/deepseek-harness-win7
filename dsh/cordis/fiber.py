@@ -118,6 +118,7 @@ class Fiber:
         self._disposables: DisposableList[Callable[[], Any]] = DisposableList()
         self._effect_metas: Dict[Any, EffectMeta] = {}
         self._hooks: Dict[str, DisposableList[Any]] = {}
+        self._in_flight_effects: Set[asyncio.Task] = set()
 
         if runtime is not None:
             # Plugin Fiber
@@ -345,14 +346,24 @@ class Fiber:
                         try:
                             loop = asyncio.get_running_loop()
                             setup_task = loop.create_task(_await_async_setup())
+                            if hasattr(self, "_in_flight_effects"):
+                                self._in_flight_effects.add(setup_task)
+                                setup_task.add_done_callback(lambda t: self._in_flight_effects.discard(t))
                         except RuntimeError:
                             pass
                     elif res is None or isinstance(res, (bool, int, float, str)):
                         if setup_barrier_future and not setup_barrier_future.done():
                             setup_barrier_future.set_result(None)
                     elif inspect.isgenerator(res):
+                        old_epoch = self.epoch
                         try:
                             for item in res:
+                                if self.epoch != old_epoch:
+                                    try:
+                                        res.close()
+                                    except Exception:
+                                        pass
+                                    break
                                 if callable(item):
                                     collect_disposer(item)
                             if setup_barrier_future and not setup_barrier_future.done():
@@ -363,9 +374,16 @@ class Fiber:
                                 setup_barrier_future.set_exception(gen_err)
                             raise gen_err
                     elif inspect.isasyncgen(res):
+                        old_epoch = self.epoch
                         async def _consume_async_gen():
                             try:
                                 async for item in res:
+                                    if self.epoch != old_epoch:
+                                        try:
+                                            await res.aclose()
+                                        except Exception:
+                                            pass
+                                        break
                                     if callable(item):
                                         collect_disposer(item)
                                 if setup_barrier_future and not setup_barrier_future.done():
@@ -379,6 +397,9 @@ class Fiber:
                         try:
                             loop = asyncio.get_running_loop()
                             setup_task = loop.create_task(_consume_async_gen())
+                            if hasattr(self, "_in_flight_effects"):
+                                self._in_flight_effects.add(setup_task)
+                                setup_task.add_done_callback(lambda t: self._in_flight_effects.discard(t))
                         except RuntimeError:
                             pass
                 except Exception as e:
@@ -627,6 +648,13 @@ class Fiber:
             return
         self.uid = None
         self.set_epoch(INACTIVE_EPOCH)
+        if hasattr(self, "_in_flight_effects"):
+            for t in list(self._in_flight_effects):
+                if not t.done():
+                    try:
+                        await t
+                    except Exception:
+                        pass
         if not self.inertia or self.inertia.done():
             self.set_state(FiberState.UNLOADING)
             self._unload()
@@ -674,6 +702,13 @@ class Fiber:
         async def _wait_settled():
             while self.inertia is not None and not self.inertia.done():
                 await self.inertia
+            if hasattr(self, "_in_flight_effects"):
+                for t in list(self._in_flight_effects):
+                    if not t.done():
+                        try:
+                            await t
+                        except Exception:
+                            pass
             if self._error:
                 raise self._error
             return None
@@ -688,6 +723,13 @@ class Fiber:
         """Wait for current lifecycle transitions to settle."""
         while self.inertia is not None and not self.inertia.done():
             await self.inertia
+        if hasattr(self, "_in_flight_effects"):
+            for t in list(self._in_flight_effects):
+                if not t.done():
+                    try:
+                        await t
+                    except Exception:
+                        pass
         if self._error:
             raise self._error
         return self

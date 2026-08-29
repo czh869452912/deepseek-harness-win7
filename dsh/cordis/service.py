@@ -17,6 +17,8 @@ class ServiceSymbols:
     extend = "symbols.extend"
     tracker = "symbols.tracker"
     resolve_config = "symbols.resolveConfig"
+    original = "cordis.original"
+    shadow = "cordis.shadow"
 
 
 class Service:
@@ -34,6 +36,8 @@ class Service:
     extend = ServiceSymbols.extend
     tracker = ServiceSymbols.tracker
     resolve_config = ServiceSymbols.resolve_config
+    original = ServiceSymbols.original
+    shadow = ServiceSymbols.shadow
 
     provide_name: Optional[str] = None
 
@@ -53,6 +57,13 @@ class Service:
         elif hasattr(self.ctx, "provide"):
             self.ctx.provide(self.name, self, check=check_fn)
 
+    def __getattr__(self, name: str) -> Any:
+        if name in (ServiceSymbols.original, "cordis.original", "original", "symbols.original"):
+            return getattr(self, "_original", self)
+        if name in (ServiceSymbols.shadow, "cordis.shadow", "shadow", "symbols.shadow"):
+            return getattr(self.ctx, "cordis.shadow", getattr(self.ctx, "_parent", None))
+        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
     def resolve_intercept_config(self, base: Optional[Any] = None, head: Optional[Any] = None) -> Any:
         """
         Merge intercept config from ancestors with optional base and head values.
@@ -70,6 +81,10 @@ class Service:
             configs.insert(0, base if isinstance(base, dict) else {"base": base})
         if head:
             configs.append(head if isinstance(head, dict) else {"head": head})
+
+        config_cls = getattr(self, "Config", None)
+        if config_cls and hasattr(config_cls, "merge") and callable(getattr(config_cls, "merge")):
+            return config_cls.merge(*configs)
 
         res: Dict[str, Any] = {}
         for cfg in configs:
@@ -96,6 +111,7 @@ class Service:
         import copy
         extended = copy.copy(self)
         extended.ctx = target_ctx
+        extended._original = getattr(self, "_original", self)
         return extended
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:

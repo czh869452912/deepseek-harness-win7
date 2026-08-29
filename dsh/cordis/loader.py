@@ -1072,7 +1072,8 @@ class Loader(EntryTree, Service):
                         realm = self._realms.get(label)
                         if not realm:
                             continue
-                        in_use = any(e.options.get("isolate", {}).get(name) == label for e in self.entries if e is not entry)
+                        entries_list = self.entries if isinstance(self.entries, (list, tuple)) else (self.entries() if callable(self.entries) else list(self.store.values()))
+                        in_use = any(e.options.get("isolate", {}).get(name) == label for e in entries_list if e is not entry)
                         if not in_use:
                             realm.delete(name)
                             if realm.size == 0:

@@ -3,13 +3,123 @@ Cordis Utilities matching reference/vendor/cordis/src/utils.ts
 Implements DisposableList, Symbol constants, Traceable proxy, and Stack builders.
 """
 
+import copy
 import functools
 import inspect
 import sys
 import traceback
-from typing import Any, Callable, Dict, Generic, Iterator, List, Optional, Tuple, TypeVar
+from typing import Any, Callable, Dict, Generic, Iterator, List, Optional, Set, Tuple, TypeVar
 
 T = TypeVar("T")
+
+
+def clone(value: Any) -> Any:
+    """Deep clone a value matching Cosmokit clone."""
+    return copy.deepcopy(value)
+
+
+def deep_equal(a: Any, b: Any, is_dict: bool = False) -> bool:
+    """Deep equality check matching Cosmokit deepEqual."""
+    if a == b:
+        return True
+    if type(a) != type(b):
+        return False
+    if isinstance(a, dict):
+        if len(a) != len(b):
+            return False
+        for k in a:
+            if k not in b or not deep_equal(a[k], b[k]):
+                return False
+        return True
+    if isinstance(a, (list, tuple)):
+        if len(a) != len(b):
+            return False
+        for x, y in zip(a, b):
+            if not deep_equal(x, y):
+                return False
+        return True
+    return False
+
+
+def pick(obj: Dict[str, Any], keys: List[str]) -> Dict[str, Any]:
+    """Pick specified keys from a dictionary matching Cosmokit pick."""
+    return {k: obj[k] for k in keys if k in obj}
+
+
+def omit(obj: Dict[str, Any], keys: List[str]) -> Dict[str, Any]:
+    """Omit specified keys from a dictionary matching Cosmokit omit."""
+    key_set = set(keys)
+    return {k: v for k, v in obj.items() if k not in key_set}
+
+
+def value_map(obj: Dict[str, Any], transform: Callable[..., Any]) -> Dict[str, Any]:
+    """Transform values of a dictionary matching Cosmokit valueMap."""
+    res = {}
+    for k, v in obj.items():
+        try:
+            res[k] = transform(v, k)
+        except TypeError:
+            res[k] = transform(v)
+    return res
+
+
+def filter_keys(obj: Dict[str, Any], predicate: Callable[[str], bool]) -> Dict[str, Any]:
+    """Filter dictionary keys matching Cosmokit filterKeys."""
+    return {k: v for k, v in obj.items() if predicate(k)}
+
+
+def capitalize(source: str) -> str:
+    """Uppercase the first character of a string."""
+    if not source:
+        return source
+    return source[0].upper() + source[1:]
+
+
+def uncapitalize(source: str) -> str:
+    """Lowercase the first character of a string."""
+    if not source:
+        return source
+    return source[0].lower() + source[1:]
+
+
+def camel_case(source: str) -> str:
+    """Convert dash or underscore delimited text to camelCase."""
+    import re
+    return re.sub(r"[_-]([a-zA-Z])", lambda m: m.group(1).upper(), source)
+
+
+camelCase = camel_case
+
+
+def param_case(source: str) -> str:
+    """Convert text to dash-delimited kebab-case."""
+    import re
+    s = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1-\2", source)
+    s = re.sub(r"([a-z\d])([A-Z])", r"\1-\2", s)
+    return re.sub(r"[_\s]+", "-", s).lower()
+
+
+paramCase = param_case
+
+
+def snake_case(source: str) -> str:
+    """Convert text to underscore-delimited snake_case."""
+    import re
+    s = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", source)
+    s = re.sub(r"([a-z\d])([A-Z])", r"\1_\2", s)
+    return re.sub(r"[-\s]+", "_", s).lower()
+
+
+snakeCase = snake_case
+
+
+def template(source: str, params: Dict[str, Any]) -> str:
+    """Interpolate {key} or {{key}} placeholders in a string matching Cosmokit template."""
+    import re
+    def _repl(match):
+        k = match.group(1) or match.group(2)
+        return str(params.get(k, match.group(0)))
+    return re.sub(r"\{\{([^{}]+)\}\}|\{([^{}]+)\}", _repl, source)
 
 
 class DisposableList(Generic[T]):
@@ -246,9 +356,10 @@ class TracedProxy:
     Traceable proxy wrapper binding a service or callable to a caller Context
     matching TS getTraceable(ctx, value).
     """
-    def __init__(self, ctx: Any, target: Any):
+    def __init__(self, ctx: Any, target: Any, tracker: Optional[Dict[str, Any]] = None):
         object.__setattr__(self, "_ctx", ctx)
         object.__setattr__(self, "_target", target)
+        object.__setattr__(self, "_tracker", tracker or getattr(target, Symbols.tracker, None) or getattr(target, "_cordis_tracker", {}))
 
     @property
     def __class__(self) -> Any:
@@ -258,9 +369,14 @@ class TracedProxy:
             return TracedProxy
 
     def __getattr__(self, name: str) -> Any:
+        if name in (Symbols.original, "cordis.original"):
+            return object.__getattribute__(self, "_target")
+        if name in (Symbols.shadow, "cordis.shadow"):
+            ctx = object.__getattribute__(self, "_ctx")
+            return getattr(ctx, Symbols.shadow, getattr(ctx, "_parent", None))
         if name == "ctx":
             return object.__getattribute__(self, "_ctx")
-        if name in ("_target", "_ctx"):
+        if name in ("_target", "_ctx", "_tracker"):
             return object.__getattribute__(self, name)
         target = object.__getattribute__(self, "_target")
         attr = getattr(target, name)
@@ -274,13 +390,16 @@ class TracedProxy:
                             kwargs["caller_ctx"] = object.__getattribute__(self, "_ctx")
                     except (ValueError, TypeError):
                         pass
-                return attr(*args, **kwargs)
+                res = attr(*args, **kwargs)
+                return get_traceable(object.__getattribute__(self, "_ctx"), res)
             return wrapper
-        return attr
+        return get_traceable(object.__getattribute__(self, "_ctx"), attr)
 
     def __setattr__(self, name: str, value: Any) -> None:
-        if name in ("_ctx", "_target"):
+        if name in ("_ctx", "_target", "_tracker"):
             object.__setattr__(self, name, value)
+        elif name in (Symbols.original, "cordis.original", "ctx"):
+            return
         else:
             target = object.__getattribute__(self, "_target")
             setattr(target, name, value)
@@ -295,7 +414,8 @@ class TracedProxy:
                         kwargs["caller_ctx"] = object.__getattribute__(self, "_ctx")
                 except (ValueError, TypeError):
                     pass
-            return target(*args, **kwargs)
+            res = target(*args, **kwargs)
+            return get_traceable(object.__getattribute__(self, "_ctx"), res)
         raise TypeError(f"Target '{target}' is not callable")
 
     def __getitem__(self, key: Any) -> Any:
@@ -375,17 +495,31 @@ def get_traceable(ctx: Any, value: Any) -> Any:
         return value
     if hasattr(value, "state") and hasattr(value, "assert_active") and hasattr(value, "_disposables"):
         return value
+    # If value has shadow origin, unwrap matching TS: if (Object.hasOwn(value, symbols.shadow)) return proto
+    shadow_val = getattr(value, "_shadow", None)
+    if shadow_val is not None:
+        return shadow_val
+
+    # Determine tracker and noShadow behavior matching TS createTraceable
+    tracker = getattr(value, Symbols.tracker, None) or getattr(value, "_cordis_tracker", None)
+    no_shadow = False
+    if isinstance(tracker, dict):
+        no_shadow = tracker.get("noShadow", False) or tracker.get("no_shadow", False)
+
+    effective_ctx = ctx
+    is_shadow = getattr(ctx, "is_shadow", False) or getattr(ctx, "_shadow", None) is not None or getattr(ctx, "_shadow_fiber", None) is not None
+    if is_shadow and not no_shadow:
+        effective_ctx = getattr(ctx, "_shadow", getattr(ctx, "_parent", ctx)) or ctx
+
     from dsh.cordis.service import Service
     if isinstance(value, Service):
-        return value._extend({"ctx": ctx})
+        return value._extend({"ctx": effective_ctx})
     if hasattr(value, "_extend") and not hasattr(value, "_mock_return_value") and callable(getattr(value, "_extend")):
-        return value._extend({"ctx": ctx})
-    if hasattr(value, "_cordis_tracker") and not hasattr(value, "_mock_return_value"):
-        return TracedProxy(ctx, value)
-    if hasattr(value, Symbols.tracker) and not hasattr(value, "_mock_return_value"):
-        return TracedProxy(ctx, value)
+        return value._extend({"ctx": effective_ctx})
+    if tracker and not hasattr(value, "_mock_return_value"):
+        return TracedProxy(effective_ctx, value, tracker=tracker if isinstance(tracker, dict) else {})
     if callable(value) and not inspect.isclass(value) and not hasattr(value, "_mock_return_value"):
-        return TracedProxy(ctx, value)
+        return TracedProxy(effective_ctx, value)
     return value
 
 

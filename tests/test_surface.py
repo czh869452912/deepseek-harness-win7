@@ -25,7 +25,7 @@ def test_surface_append_and_derivation():
             "seq": 1,
             "type": "user/message",
             "surfaceOp": "append",
-            "data": {"content": "Hello"},
+            "data": {"id": "u1", "role": "user", "content": "Hello", "source": None},
         },
         {"seq": 2, "type": "step/start", "data": {"turn": 1, "step": 1}},
         {
@@ -65,7 +65,7 @@ def test_surface_append_and_derivation():
 
     # Test derive messages
     m1 = derive_event_message(events[1])
-    assert m1 == {"role": "user", "content": "Hello", "source": None}
+    assert m1 == {"id": "u1", "role": "user", "content": "Hello", "source": None}
 
     m3 = derive_event_message(events[3])
     assert m3["role"] == "assistant"

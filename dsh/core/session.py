@@ -16,6 +16,18 @@ from dsh.core.surface import (
     is_surface_eligible_type,
     tool_pairing_balanced_after,
 )
+from dsh.llm.message import (
+    create_assistant_message,
+    create_message,
+    create_tool_result_message,
+    create_user_message,
+    createAssistantMessage,
+    createMessage,
+    createToolResultMessage,
+    createUserMessage,
+    freeze_message,
+    freezeMessage,
+)
 
 SESSION_FORMAT_VERSION = 0
 SessionEvent = Dict[str, Any]
@@ -439,6 +451,15 @@ class SessionPreparation:
         self.session = session
         self._disposer = disposer
 
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self.session, name)
+
+    @classmethod
+    def create(cls, session: Union["Session", "SessionPreparation"]) -> "SessionPreparation":
+        if isinstance(session, SessionPreparation):
+            return session
+        return cls(session=session)
+
     def dispose(self) -> None:
         if self._disposer:
             self._disposer()
@@ -544,8 +565,8 @@ class Session:
         header: SessionHeader,
         ctx: Optional[Any] = None,
     ) -> "Session":
-        from dsh.session.repair import interrupted_turn_closers
-        repaired_seed = list(seed)
+        from dsh.session.repair import interrupted_turn_closers, migrate_legacy_event
+        repaired_seed = [migrate_legacy_event(ev, session_id) for ev in seed]
         closers = interrupted_turn_closers(repaired_seed)
         repaired_seed.extend(closers)
         session = cls(session_id=session_id, seed=repaired_seed, header=header, ctx=ctx)
@@ -568,69 +589,7 @@ class Session:
         if self._appending:
             raise RuntimeError("session append cannot reenter while another append is being published")
 
-        normalized_data = data
-        if isinstance(data, dict):
-            normalized_data = dict(data)
-            if event_type == "user/message":
-                if "id" not in normalized_data and "message" not in normalized_data:
-                    normalized_data["id"] = f"user-{os.urandom(4).hex()}"
-                if "role" not in normalized_data and "message" not in normalized_data:
-                    normalized_data["role"] = "user"
-                if "source" not in normalized_data and "message" not in normalized_data:
-                    normalized_data["source"] = {"kind": "user"}
-                raw_c = normalized_data.get("content")
-                if isinstance(raw_c, str):
-                    normalized_data["content"] = [{"type": "text", "text": raw_c}]
-                elif isinstance(raw_c, list):
-                    normalized_data["content"] = [
-                        {"type": "text", "text": item} if isinstance(item, str) else item
-                        for item in raw_c
-                    ]
-            elif event_type == "assistant/message":
-                if "message" in normalized_data and isinstance(normalized_data["message"], dict):
-                    msg = dict(normalized_data["message"])
-                    if "id" not in msg:
-                        msg["id"] = f"assistant-{os.urandom(4).hex()}"
-                    if "role" not in msg:
-                        msg["role"] = "assistant"
-                    if "source" not in msg or not isinstance(msg["source"], dict):
-                        msg["source"] = {"kind": "model", "provider": "mock", "model": "mock"}
-                    raw_c = msg.get("content")
-                    if isinstance(raw_c, str):
-                        msg["content"] = [{"type": "text", "text": raw_c}]
-                    elif isinstance(raw_c, list):
-                        msg["content"] = [
-                            {"type": "text", "text": item} if isinstance(item, str) else item
-                            for item in raw_c
-                        ]
-                    normalized_data["message"] = msg
-                elif "message" not in normalized_data and ("role" in normalized_data or "content" in normalized_data):
-                    msg = dict(normalized_data)
-                    if "id" not in msg:
-                        msg["id"] = f"assistant-{os.urandom(4).hex()}"
-                    if "role" not in msg:
-                        msg["role"] = "assistant"
-                    if "source" not in msg or not isinstance(msg["source"], dict):
-                        msg["source"] = {"kind": "model", "provider": "mock", "model": "mock"}
-                    raw_c = msg.get("content")
-                    if isinstance(raw_c, str):
-                        msg["content"] = [{"type": "text", "text": raw_c}]
-                    elif isinstance(raw_c, list):
-                        msg["content"] = [
-                            {"type": "text", "text": item} if isinstance(item, str) else item
-                            for item in raw_c
-                        ]
-                    normalized_data = {"turn": 1, "step": 1, "message": msg}
-            elif event_type == "tool/result":
-                if "message" in normalized_data and isinstance(normalized_data["message"], dict):
-                    msg = dict(normalized_data["message"])
-                    if "id" not in msg:
-                        msg["id"] = f"tool-result-{os.urandom(4).hex()}"
-                    if "role" not in msg:
-                        msg["role"] = "user"
-                    normalized_data["message"] = msg
-
-        data_snapshot = snapshot_json_value(normalized_data)
+        data_snapshot = snapshot_json_value(data)
         if data_snapshot is None and data is not None:
             raise TypeError("session event data is not losslessly JSON-serializable")
 
@@ -667,12 +626,7 @@ class Session:
             self.events.append(event)
 
             if self.ctx:
-                try:
-                    self.ctx.emit("session/event", self, event)
-                except Exception as e:
-                    logger = getattr(self.ctx, "logger", None)
-                    if logger and hasattr(logger, "warn"):
-                        logger.warn(f'session "{self.id}": session/event listener threw: {e}')
+                self.ctx.emit("session/event", self, event)
             return event
         finally:
             self._appending = False
@@ -970,13 +924,14 @@ class SessionStore:
         session = Session(session_id=sid, seed=seed, header=header, ctx=self.ctx)
         return SessionPreparation(session=session)
 
-    def enter(self, session: Session) -> Callable[[], None]:
-        sid = session.id
+    def enter(self, session: Union[Session, SessionPreparation]) -> Callable[[], None]:
+        sess = session.session if isinstance(session, SessionPreparation) else session
+        sid = sess.id
         if sid in self._entries:
             raise ValueError(f'session "{sid}" already exists in store')
 
-        session.ctx = self.ctx
-        entry = _SessionStoreEntry(session_id=sid, session=session, ctx=self.ctx)
+        sess.ctx = self.ctx
+        entry = _SessionStoreEntry(session_id=sid, session=sess, ctx=self.ctx)
         self._entries[sid] = entry
 
         entered = True
@@ -993,10 +948,11 @@ class SessionStore:
 
         return detach
 
-    def announce(self, session: Session) -> None:
-        sid = session.id
+    def announce(self, session: Union[Session, SessionPreparation]) -> None:
+        sess = session.session if isinstance(session, SessionPreparation) else session
+        sid = sess.id
         entry = self._entries.get(sid)
-        if entry is None or entry.session is not session:
+        if entry is None or entry.session is not sess:
             raise ValueError(f'session "{sid}" is not in store')
         if entry.announced or entry.announcing:
             raise RuntimeError(f'session "{sid}" was already announced')
@@ -1005,7 +961,7 @@ class SessionStore:
         entry.announced = True
         try:
             if self.ctx:
-                self.ctx.emit("session/created", session)
+                self.ctx.emit("session/created", sess)
         finally:
             entry.announcing = False
             if entry.detach_requested and not entry.appending:
@@ -1126,18 +1082,21 @@ class SessionStore:
 
         return [snapshot_json_value(ev) for ev in prefix]
 
-    async def flush(self, session: Optional[Session] = None) -> bool:
+    async def flush(self, session: Optional[Union[Session, SessionPreparation]] = None) -> bool:
+        sess = session.session if isinstance(session, SessionPreparation) else session
+        if sess is not None and self.get(sess.id) is None:
+            raise RuntimeError(f'session "{sess.id}" is not live in this store')
         if not self.ctx:
             return False
         import inspect
         events_bus = getattr(self.ctx, "events", None)
         if events_bus and hasattr(events_bus, "_dispatch_hooks"):
-            listeners = events_bus._dispatch_hooks("parallel", "session/flush", [session], self.ctx)
+            listeners = events_bus._dispatch_hooks("parallel", "session/flush", [sess], self.ctx)
             if not listeners:
                 return False
 
             async def _run(cb: Callable[..., Any]) -> Any:
-                res = cb(session)
+                res = cb(sess)
                 if inspect.isawaitable(res):
                     return await res
                 return res
@@ -1149,7 +1108,7 @@ class SessionStore:
                     raise r
             return len(listeners) > 0
         else:
-            res = await self.ctx.parallel("session/flush", session)
+            res = await self.ctx.parallel("session/flush", sess)
             return len(res) > 0 if isinstance(res, list) else True
 
 

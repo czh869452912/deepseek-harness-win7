@@ -147,7 +147,7 @@ async def test_sse_event_target_resolution_non_default_session():
     api_proxy._broadcast_host = mock_host
 
     # Emit session event with custom Session object
-    ev = session_custom.append("user/message", {"content": "Hello"})
+    ev = session_custom.append_user_message("Hello")
     api_proxy._on_session_event(session_custom, ev)
 
     # Emit agent status

@@ -38,6 +38,7 @@ def is_replacement_surface_event(event: Dict[str, Any]) -> bool:
 def derive_event_message(event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """
     Project a single event into the LLM message it derives to, or None when it produces none.
+    1:1 aligned with reference `deriveEventMessage(event)`.
     """
     etype = event.get("type")
     edata = event.get("data")
@@ -45,16 +46,9 @@ def derive_event_message(event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         return None
 
     if etype == "user/message":
-        if "role" in edata:
-            return edata
-        res = {
-            "role": "user",
-            "content": edata.get("content", ""),
-            "source": edata.get("source"),
-        }
-        if "id" in edata:
-            res["id"] = edata["id"]
-        return res
+        if "message" in edata and isinstance(edata["message"], dict):
+            return edata["message"]
+        return edata
 
     elif etype == "assistant/message":
         msg = edata.get("message")
@@ -71,8 +65,6 @@ def derive_event_message(event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         msg = edata.get("message")
         if isinstance(msg, dict):
             return msg
-        if "role" in edata:
-            return edata
         return None
 
     return None

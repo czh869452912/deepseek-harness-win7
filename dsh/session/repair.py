@@ -192,8 +192,91 @@ def migrate_legacy_turn_end_event(event: Dict[str, Any], session_id: str) -> Dic
     return event
 
 
+def legacy_message_id(session_id: str, seq: int) -> str:
+    return f"legacy-message:{session_id}:{seq}"
+
+
+def migrate_legacy_message_event(event: Dict[str, Any], session_id: str) -> Dict[str, Any]:
+    etype = event.get("type")
+    data = event.get("data")
+    if not isinstance(data, dict):
+        return event
+
+    seq = event.get("seq", 0)
+
+    if etype == "user/message":
+        if "id" in data or "role" in data or "message" in data:
+            return event
+        if "content" not in data or "source" not in data:
+            return event
+        return {
+            **event,
+            "data": {
+                **data,
+                "id": legacy_message_id(session_id, seq),
+                "role": "user",
+            },
+        }
+
+    if etype == "assistant/message":
+        if "message" in data or "content" not in data:
+            return event
+        content = data.get("content")
+        provenance = data.get("provenance", {})
+        prov_dict = dict(provenance) if isinstance(provenance, dict) else {}
+        if "provider" not in prov_dict:
+            prov_dict["provider"] = "unknown"
+        if "model" not in prov_dict:
+            prov_dict["model"] = "unknown"
+        prov_dict["kind"] = "model"
+        ev_data = {k: v for k, v in data.items() if k not in ("content", "provenance")}
+        return {
+            **event,
+            "data": {
+                **ev_data,
+                "message": {
+                    "id": legacy_message_id(session_id, seq),
+                    "role": "assistant",
+                    "content": content,
+                    "source": prov_dict,
+                },
+            },
+        }
+
+    if etype == "tool/result":
+        if "message" in data or "callId" not in data or "content" not in data or "isError" not in data:
+            return event
+        call_id = data.get("callId")
+        content = data.get("content")
+        is_error = data.get("isError")
+        ev_data = {k: v for k, v in data.items() if k not in ("callId", "content", "isError")}
+        return {
+            **event,
+            "data": {
+                **ev_data,
+                "message": {
+                    "id": legacy_message_id(session_id, seq),
+                    "role": "user",
+                    "content": [{
+                        "type": "tool-result",
+                        "toolCallId": call_id,
+                        "content": content,
+                        "isError": is_error,
+                    }],
+                    "source": {
+                        "kind": "tool",
+                        "callId": call_id,
+                    },
+                },
+            },
+        }
+
+    return event
+
+
 def migrate_legacy_event(event: Dict[str, Any], session_id: str) -> Dict[str, Any]:
     ev = migrate_legacy_turn_start_event(event, session_id)
     ev = migrate_legacy_turn_end_event(ev, session_id)
     ev = migrate_legacy_steering_event(ev, session_id)
+    ev = migrate_legacy_message_event(ev, session_id)
     return ev

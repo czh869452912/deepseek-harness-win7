@@ -59,6 +59,7 @@ async def test_session_derive_messages_purity_and_caching():
         "turn": 1,
         "step": 1,
         "message": {
+            "id": "a1",
             "role": "assistant",
             "content": [],
             "source": {"kind": "model", "provider": "p", "model": "m"},
@@ -70,6 +71,7 @@ async def test_session_derive_messages_purity_and_caching():
         "turn": 1,
         "step": 2,
         "message": {
+            "id": "a2",
             "role": "assistant",
             "content": [{"type": "text", "text": "assistant response"}],
             "source": {"kind": "model", "provider": "p", "model": "m"},
@@ -81,6 +83,7 @@ async def test_session_derive_messages_purity_and_caching():
         "turn": 1,
         "step": 2,
         "message": {
+            "id": "t1",
             "role": "user",
             "content": [{"type": "tool-result", "toolCallId": "c1", "content": [{"type": "text", "text": "ok"}]}],
             "source": {"kind": "tool", "callId": "c1"},

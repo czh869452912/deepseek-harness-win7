@@ -117,8 +117,13 @@ class Inbox:
         turn: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         inbox = self._state[target]
-        actual_start = max(0, min(start, len(inbox))) if start >= 0 else max(len(inbox) + start, 0)
-        actual_delete_count = min(max(delete_count, 0), len(inbox) - actual_start)
+        import math
+        truncated_start = 0 if (start is None or (isinstance(start, float) and math.isnan(start))) else int(start)
+        offset = truncated_start
+        actual_start = max(len(inbox) + offset, 0) if offset < 0 else min(offset, len(inbox))
+
+        truncated_delete = 0 if (delete_count is None or (isinstance(delete_count, float) and math.isnan(delete_count))) else int(delete_count)
+        actual_delete_count = min(max(truncated_delete, 0), len(inbox) - actual_start)
 
         if actual_delete_count == 0 and len(inserted) == 0:
             return []
@@ -140,21 +145,21 @@ class Inbox:
         self._validate(splice_data)
 
         # Durably log event to session if session is present
+        event_inserted = inserted
         if self.session and hasattr(self.session, "append"):
-            try:
-                self.session.append("agent/inbox/spliced", splice_data)
-            except Exception:
-                pass
+            ev = self.session.append("agent/inbox/spliced", splice_data)
+            if isinstance(ev, dict) and "data" in ev and isinstance(ev["data"], dict):
+                event_inserted = ev["data"].get("inserted", inserted)
 
         removed = inbox[actual_start : actual_start + actual_delete_count]
-        self._state[target] = inbox[:actual_start] + inserted + inbox[actual_start + actual_delete_count :]
+        self._state[target] = inbox[:actual_start] + event_inserted + inbox[actual_start + actual_delete_count :]
 
         if discard_removed and removed and self.ctx:
             for msg in removed:
                 self.ctx.emit("agent/inbox/discarded", {"agent": self.agent, "message": msg})
 
-        if inserted and self.ctx:
-            for msg in inserted:
+        if event_inserted and self.ctx:
+            for msg in event_inserted:
                 self.ctx.emit("agent/inbox/inserted", {"agent": self.agent, "message": msg, "target": target})
 
         if turn is not None and removed and self.ctx:

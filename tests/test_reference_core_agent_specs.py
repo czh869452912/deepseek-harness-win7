@@ -144,3 +144,52 @@ def test_agent_registry_defers_detach_requested_by_creation_listener():
 
     assert order == ["first:True", "after-detach:True", "second:True", "disposed"]
     assert registry.get(agent.id) is None
+
+
+def test_inbox_rejects_invalid_durable_splice_during_reconstruction():
+    session = Session(session_id="invalid-inbox-replay")
+    session.append("agent/inbox/spliced", {
+        "target": "next-turn",
+        "start": 1,
+        "inserted": [],
+    })
+
+    with pytest.raises(ValueError, match="invalid persisted inbox splice at session seq 0"):
+        Inbox(session=session)
+
+
+def test_inbox_normalizes_splice_coordinates_and_rejects_duplicate_identities():
+    session = Session(session_id="splice-inbox")
+    inbox = Inbox(session=session)
+    first = {"id": "m1", "role": "user", "content": [{"type": "text", "text": "first"}], "source": {"kind": "user"}}
+    second = {"id": "m2", "role": "user", "content": [{"type": "text", "text": "second"}], "source": {"kind": "user"}}
+
+    inbox.splice("next-turn", float("nan"), float("nan"), [first, second])
+    assert inbox.next_turn == [first, second]
+    assert inbox.splice("next-turn", -1, 1, []) == [second]
+    assert inbox.remove("m2") is False
+    with pytest.raises(ValueError, match='already pending'):
+        inbox.append("next-step", first)
+
+
+def test_agent_registry_tracks_runtime_creator_ownership():
+    ctx = Context()
+    registry = AgentRegistry(ctx=ctx)
+    root = stub_agent("root")
+    child = stub_agent("child")
+
+    detach_root = registry.enter(root, creator=None)
+    registry.announce(root)
+    detach_child = registry.enter(child, creator=root)
+    registry.announce(child)
+
+    assert registry.list() == [root, child]
+    assert registry.roots() == [root]
+    assert registry.is_owned_by(child.id, root) is True
+    assert registry.is_owned_by(root.id, root) is False
+    assert registry.is_owned_by("missing", root) is False
+
+    detach_child()
+    assert registry.is_owned_by(child.id, root) is False
+    detach_root()
+

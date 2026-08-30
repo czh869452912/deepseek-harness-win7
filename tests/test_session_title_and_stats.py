@@ -29,7 +29,7 @@ def test_session_stats_projection():
     session = store.create("test-stats-session")
 
     session.append("step/start", {"turn": 1, "step": 1})
-    session.append("assistant/message", {"message": {"content": "ok"}, "usage": {"prompt_tokens": 10, "completion_tokens": 5}})
+    session.append_assistant_message("ok", turn=1, step=1, usage={"prompt_tokens": 10, "completion_tokens": 5})
     session.append("step/end", {"turn": 1, "step": 1})
 
     projections = ctx.get("sessionProjections")

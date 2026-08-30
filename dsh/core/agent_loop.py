@@ -368,6 +368,7 @@ def _invoke_llm_callable(
     messages: List[Dict[str, Any]],
     tools: Optional[List[Dict[str, Any]]] = None,
     system: Optional[str] = None,
+    request: Optional[Dict[str, Any]] = None,
 ) -> Any:
     import inspect
     sig = None
@@ -376,31 +377,38 @@ def _invoke_llm_callable(
     except Exception:
         pass
 
-    kwargs: Dict[str, Any] = {}
+    req_dict = dict(request) if request is not None else {}
+    req_dict["messages"] = messages
     if tools is not None:
-        kwargs["tools"] = tools
+        req_dict["tools"] = tools
+    if system is not None:
+        req_dict["system"] = system
 
     if sig is not None:
+        params = list(sig.parameters.values())
+        if len(params) == 1 and params[0].name in ("request", "req", "call_request"):
+            return fn(req_dict)
+        if "request" in sig.parameters:
+            return fn(req_dict)
         has_varkw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
-        if "system" in sig.parameters or has_varkw:
-            if system:
-                kwargs["system"] = system
-            call_kwargs = kwargs if has_varkw else {k: v for k, v in kwargs.items() if k in sig.parameters}
-            return fn(messages=messages, **call_kwargs)
-        else:
-            llm_messages = list(messages)
-            if system and not any(isinstance(m, dict) and m.get("role") == "system" for m in llm_messages):
-                llm_messages = [{"role": "system", "content": system}] + llm_messages
-            call_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
-            return fn(messages=llm_messages, **call_kwargs)
+        if "messages" in sig.parameters:
+            call_kwargs = req_dict if has_varkw else {k: v for k, v in req_dict.items() if k in sig.parameters}
+            return fn(**call_kwargs)
+        if len(params) == 1 and params[0].kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD):
+            return fn(req_dict)
+        call_kwargs = req_dict if has_varkw else {k: v for k, v in req_dict.items() if k in sig.parameters}
+        return fn(**call_kwargs)
     else:
         try:
-            return fn(messages=messages, tools=tools, system=system)
+            return fn(req_dict)
         except TypeError:
-            llm_messages = list(messages)
-            if system and not any(isinstance(m, dict) and m.get("role") == "system" for m in llm_messages):
-                llm_messages = [{"role": "system", "content": system}] + llm_messages
-            return fn(messages=llm_messages, tools=tools)
+            try:
+                return fn(messages=messages, tools=tools, system=system)
+            except TypeError:
+                llm_messages = list(messages)
+                if system and not any(isinstance(m, dict) and m.get("role") == "system" for m in llm_messages):
+                    llm_messages = [{"role": "system", "content": system}] + llm_messages
+                return fn(messages=llm_messages, tools=tools)
 
 
 class AgentLoopService:
@@ -424,14 +432,26 @@ class AgentLoopService:
                 break
         return last_turn + 1
 
-    async def create_agent(
+    def create_agent(
         self,
         session_id: Optional[str] = None,
         options: Optional[AgentOptions] = None,
         meta: Optional[Dict[str, Any]] = None,
         setup: Optional[Callable[[Context], Any]] = None,
     ) -> AgentHandle:
+        if options is not None:
+            max_t = getattr(options, "max_tokens", None)
+            if max_t is None and hasattr(options, "maxTokens"):
+                max_t = getattr(options, "maxTokens")
+            if max_t is not None:
+                if not isinstance(max_t, int) or isinstance(max_t, bool) or max_t <= 0 or max_t > 9007199254740991:
+                    raise ValueError("agent maxTokens must be a positive safe integer")
+
         sid = session_id or f"session-{uuid.uuid4().hex[:8]}"
+
+        agents_svc: Optional[AgentRegistry] = self.ctx.get("agents")
+        if agents_svc and agents_svc.get(sid) is not None:
+            raise ValueError(f'agent "{sid}" already exists')
 
         sessions_svc = self.ctx.get("sessions")
         if isinstance(sessions_svc, SessionStore):
@@ -486,6 +506,13 @@ class AgentLoopService:
         options: Optional[AgentOptions] = None,
         setup: Optional[Callable[[Context], Any]] = None,
     ) -> AgentHandle:
+        sessions_svc: Optional[SessionStore] = self.ctx.get("sessions")
+        if sessions_svc and sessions_svc.get(resume_session_id) is not None:
+            raise RuntimeError(f'cannot resume session "{resume_session_id}" while it is live')
+        agents_svc: Optional[AgentRegistry] = self.ctx.get("agents")
+        if agents_svc and agents_svc.get(resume_session_id) is not None:
+            raise RuntimeError(f'cannot resume session "{resume_session_id}" while it is live')
+
         persistence = self.ctx.get("session_persistence")
         if not persistence:
             raise RuntimeError("no session_persistence service configured for resume")
@@ -497,6 +524,11 @@ class AgentLoopService:
             header=inspection.meta,
             ctx=self.ctx,
         )
+
+        detach_session = None
+        if sessions_svc:
+            detach_session = sessions_svc.enter(session)
+            sessions_svc.announce(session)
 
         agent_ctx = self.ctx.extend()
         commit_fn = None
@@ -516,7 +548,6 @@ class AgentLoopService:
             if hasattr(self.ctx, "logger"):
                 self.ctx.logger("agent_loop").warn("Exception in agent/session-start: %s", e)
 
-        agents_svc: Optional[AgentRegistry] = self.ctx.get("agents")
         disposer = None
         if agents_svc:
             disposer = agents_svc.register(agent)
@@ -536,6 +567,8 @@ class AgentLoopService:
             agent_ctx.teardown()
             if disposer:
                 disposer()
+            if detach_session:
+                detach_session()
 
         return AgentHandle(agent=agent, disposer=teardown)
 
@@ -543,10 +576,11 @@ class AgentLoopService:
         """Background driver loop pumping the agent's inbox."""
         try:
             while True:
-                if agent.inbox.is_empty():
-                    agent.set_status("idle")
-                    await agent._wake_event.wait()
-                    agent._wake_event.clear()
+                await agent._wake_event.wait()
+                agent._wake_event.clear()
+
+                if agent.inbox.is_empty() and not agent.is_cancelled():
+                    agent.set_phase("idle")
                     continue
 
                 agent.set_phase("running")
@@ -557,6 +591,8 @@ class AgentLoopService:
                 else:
                     await self._kick(agent)
 
+                agent.set_phase("idle")
+
         except asyncio.CancelledError:
             pass
         except Exception as e:
@@ -564,7 +600,7 @@ class AgentLoopService:
             if logger and hasattr(logger, "error"):
                 logger.error("agent driver crashed: %s", str(e))
         finally:
-            agent.set_status("idle")
+            agent.set_phase("idle")
 
     async def _kick(self, agent: Agent) -> None:
         try:
@@ -606,36 +642,58 @@ class AgentLoopService:
                 system_prompt = await self.ctx.waterfall("system-prompt/assemble", system_prompt)
                 system_prompt = await self.ctx.waterfall("agent/prompt-assemble", system_prompt)
 
+                decision_messages = list(claimed)
+                runtime_ctx_text = await self.ctx.waterfall("agent/runtime-context", "")
+                if runtime_ctx_text:
+                    candidate_ctx = runtime_context_proj.project(runtime_ctx_text, [])
+                    if candidate_ctx:
+                        decision_messages.append(candidate_ctx)
+
                 request_payload = {
                     "agent": agent,
-                    "messages": claimed,
+                    "messages": decision_messages,
                     "turn": turn_num,
                     "step": step_num,
                 }
                 pre_step_res = await self.ctx.waterfall("agent/pre-step", request_payload)
 
+                starts_series = False
                 if isinstance(pre_step_res, dict):
                     if pre_step_res.get("kind") == "reject":
                         turn_ends = {"kind": "blocked"}
                         return False
                     if "messages" in pre_step_res and isinstance(pre_step_res["messages"], list):
-                        claimed = pre_step_res["messages"]
+                        decision_messages = pre_step_res["messages"]
+                    if pre_step_res.get("startsRequestSeries") or pre_step_res.get("starts_request_series") or pre_step_res.get("startsSeries"):
+                        starts_series = True
 
-                for msg in claimed:
-                    session.append_user_message(msg.get("content", ""), source=msg.get("source"))
+                if turn_ends and len(decision_messages) == 0:
+                    break
 
-                candidate_ctx = runtime_context_proj.project(system_prompt, [])
-                if candidate_ctx:
-                    session.append("user/message", candidate_ctx, surface_op="append")
-
-                if step_num == 1 and not claimed and len(session.surface.nodes) == 0:
+                if step_num == 1 and len(decision_messages) == 0 and len(session.surface.nodes) == 0:
                     turn_ends = {"kind": "completed"}
                     return False
 
                 session.append("step/start", {"turn": turn_num, "step": step_num})
 
                 try:
-                    step_end = await self._step(agent, turn_num, step_num, system_prompt)
+                    for msg in decision_messages:
+                        if isinstance(msg, dict) and "id" in msg and "role" in msg and "source" in msg:
+                            session.append("user/message", msg, surface_op="append")
+                        elif isinstance(msg, dict):
+                            session.append_user_message(
+                                msg.get("content", ""),
+                                source=msg.get("source"),
+                                message_id=msg.get("id"),
+                            )
+                        else:
+                            session.append_user_message(str(msg))
+
+                    step_end = await self._step(agent, turn_num, step_num, system_prompt, starts_series=starts_series)
+                    if agent.is_cancelled():
+                        cause = agent.take_cancel_cause()
+                        turn_ends = {"kind": "aborted", "reason": cause}
+                        break
                     if step_end:
                         if turn_ends is None or turn_ends.get("kind") != "max-tokens":
                             turn_ends = step_end
@@ -667,9 +725,18 @@ class AgentLoopService:
             self.ctx.emit("agent/turn-stopped", {"agent": agent, "turn": turn_num, "session": session})
             await session.flush()
 
+        if turn_ends and turn_ends.get("kind") == "aborted":
+            return False
         return agent.inbox.has_pending
 
-    async def _step(self, agent: Agent, turn: int, step: int, system_prompt: str) -> Optional[Dict[str, Any]]:
+    async def _step(
+        self,
+        agent: Agent,
+        turn: int,
+        step: int,
+        system_prompt: str,
+        starts_series: bool = False,
+    ) -> Optional[Dict[str, Any]]:
         session = agent.session
         llm_service = self.ctx.get("llm")
         tools_service = self.ctx.get("tools")
@@ -707,7 +774,8 @@ class AgentLoopService:
 
         surface_gen = session.surface.replace_generation
         last_gen = getattr(agent, "_last_surface_gen", None)
-        starts_series = (last_gen is not None and last_gen != surface_gen)
+        surface_changed = (last_gen is not None and last_gen != surface_gen)
+        effective_starts_series = starts_series or surface_changed
         setattr(agent, "_last_surface_gen", surface_gen)
 
         baseline_header = session.request_header()
@@ -716,8 +784,8 @@ class AgentLoopService:
             session.append_request_header(header_data, reason=reason)
             self._request_header_logged[agent.id] = True
         elif baseline_header is None or not header_equals(baseline_header, header_data):
-            session.append_request_header(header_data, reason="change", starts_series=starts_series)
-        elif starts_series:
+            session.append_request_header(header_data, reason="change", starts_series=effective_starts_series if effective_starts_series else None)
+        elif effective_starts_series:
             session.append_request_header(header_data, reason="series")
 
         baseline_ctx = session.request_context()
@@ -736,6 +804,16 @@ class AgentLoopService:
         assembler = BlockAssembler()
         chunk_seqs: List[int] = []
 
+        request_obj = {
+            "messages": messages,
+            "provider": provider_name,
+            "model": model_name,
+            **({"tools": tool_schemas} if tool_schemas else {}),
+            **({"system": system_prompt} if system_prompt else {}),
+            **({"maxTokens": agent.options.max_tokens, "max_tokens": agent.options.max_tokens} if getattr(agent.options, "max_tokens", None) is not None else {}),
+            **({"reasoningEffort": agent.options.reasoning_effort, "reasoning_effort": agent.options.reasoning_effort} if getattr(agent.options, "reasoning_effort", None) is not None else {}),
+        }
+
         try:
             stream_fn = getattr(llm_service, "chat_completion_stream", None) or getattr(llm_service, "stream", None)
             used_stream = False
@@ -746,6 +824,7 @@ class AgentLoopService:
                         messages=messages,
                         tools=tool_schemas if tool_schemas else None,
                         system=system_prompt if system_prompt else None,
+                        request=request_obj,
                     )
                     async for chunk in _async_iter_chunks(stream_iter, cancel_check=agent.is_cancelled):
                         # TS port yields StreamChunk dict; legacy tuple (ev_type, ev_payload) also supported
@@ -865,9 +944,16 @@ class AgentLoopService:
             raise
 
         blocks = assembler.blocks()
+        source = {
+            "kind": "model",
+            "provider": provider_name,
+            "model": model_name,
+            **({"replayState": assembler.replayState} if assembler.replayState is not None else {}),
+        }
         assistant_msg = {
             "role": "assistant",
             "content": blocks if blocks else [{"type": "text", "text": ""}],
+            "source": source,
         }
         tool_calls = [b for b in blocks if b.get("type") == "tool-call"]
         if tool_calls:

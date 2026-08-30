@@ -24,7 +24,9 @@ def test_runtime_context_eviction_on_replacement_surface_event():
     ev1 = session.append(
         "user/message",
         {
-            "content": "Snapshot 1",
+            "id": "u1",
+            "role": "user",
+            "content": [{"type": "text", "text": "Snapshot 1"}],
             "source": {"kind": "plugin", "plugin": "@deepseek-ai/dsh-system-prompt"},
         },
         surface_op="append",
@@ -38,7 +40,9 @@ def test_runtime_context_eviction_on_replacement_surface_event():
     session.append(
         "user/message",
         {
-            "content": "Snapshot 2",
+            "id": "u2",
+            "role": "user",
+            "content": [{"type": "text", "text": "Snapshot 2"}],
             "source": {"kind": "plugin", "plugin": "@deepseek-ai/dsh-system-prompt"},
         },
         surface_op={"op": "replace", "start": 0, "end": 0},

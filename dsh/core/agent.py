@@ -147,6 +147,7 @@ class Agent:
                 if self._phase_kind == "maintenance" or waking_after_abort:
                     self._wake_requested = True
             else:
+                self.set_phase("running")
                 self._wake_event.set()
         return msg_id
 
@@ -167,6 +168,7 @@ class Agent:
         cause: Optional[Dict[str, Any]] = None,
         keep_inbox: bool = False,
         options: Optional[CancelOptions] = None,
+        reason: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Abort active driver and optionally clear inbox.
@@ -177,12 +179,13 @@ class Agent:
                 self.inbox.clear()
             return
 
-        self._cancel_cause = cause or {"kind": "user"}
+        self._cancel_cause = cause or reason or {"kind": "user"}
+        if hasattr(self, "_maintenance_abort") and self._maintenance_abort is not None:
+            self._maintenance_abort.set()
         if not should_keep:
             self.inbox.clear()
             if self._phase_kind != "idle":
                 self._wake_requested = False
-        self._wake_event.set()
 
     def is_cancelled(self) -> bool:
         return self._cancel_cause is not None
@@ -200,12 +203,11 @@ class Agent:
 
     async def when_idle(self) -> None:
         """Resolve when whole-agent activity reaches idle quiescence."""
-        if self.status == "idle" and self.inbox.is_empty():
-            return
-        loop = asyncio.get_running_loop()
-        fut = loop.create_future()
-        self._idle_futures.append(fut)
-        await fut
+        while self.status != "idle":
+            loop = asyncio.get_running_loop()
+            fut = loop.create_future()
+            self._idle_futures.append(fut)
+            await fut
 
     async def whenIdle(self) -> None:
         return await self.when_idle()
@@ -215,17 +217,21 @@ class Agent:
         if self._phase_kind != "idle":
             raise RuntimeError(f'agent "{self.id}" already has active work')
         self.set_phase("maintenance")
-        abort_event = asyncio.Event()
+        self._maintenance_abort = asyncio.Event()
         try:
-            res = task_fn(abort_event)
+            res = task_fn(self._maintenance_abort)
             if asyncio.iscoroutine(res):
                 res = await res
             return res
         finally:
-            self.set_phase("idle")
+            self._maintenance_abort = None
+            self._cancel_cause = None
             if self._wake_requested and self.inbox.has_pending:
                 self._wake_requested = False
+                self.set_phase("running")
                 self._wake_event.set()
+            else:
+                self.set_phase("idle")
 
     async def runMaintenance(self, task_fn: Callable[[asyncio.Event], Any]) -> Any:
         return await self.run_maintenance(task_fn)
@@ -234,11 +240,20 @@ class Agent:
 class AgentHandle:
     """
     Owned agent capability handle returned by AgentRegistry.create / resume.
+    Proxies all Agent methods and is awaitable for backwards compatibility.
     """
 
     def __init__(self, agent: Agent, disposer: Callable[[], Any]):
         self.agent = agent
         self._disposer = disposer
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self.agent, name)
+
+    def __await__(self):
+        async def _resolve():
+            return self
+        return _resolve().__await__()
 
     async def dispose(self) -> None:
         res = self._disposer()
@@ -377,14 +392,20 @@ class AgentRegistry:
 
     setFactory = set_factory
 
-    def enter(self, agent: Agent, owner: Optional[Agent] = None) -> Callable[[], None]:
+    def enter(
+        self,
+        agent: Agent,
+        owner: Optional[Agent] = None,
+        creator: Optional[Agent] = None,
+    ) -> Callable[[], None]:
         sid = agent.id
         if sid != agent.session.id:
             raise ValueError(f'agent id "{sid}" does not match session id "{agent.session.id}"')
         if sid in self._store:
             raise ValueError(f'agent "{sid}" is already registered')
 
-        entry = _AgentEntry(agent=agent, owner=owner)
+        effective_owner = creator if creator is not None else owner
+        entry = _AgentEntry(agent=agent, owner=effective_owner)
         self._store[sid] = entry
         entered = True
 
@@ -461,32 +482,82 @@ class AgentRegistry:
 
     async def create(
         self,
-        session_id: Optional[str] = None,
-        options: Optional[AgentOptions] = None,
+        session_id: Optional[Union[str, Dict[str, Any]]] = None,
+        options: Optional[Union[AgentOptions, Dict[str, Any]]] = None,
         meta: Optional[Dict[str, Any]] = None,
         setup: Optional[Callable[[Context], Any]] = None,
+        **kwargs: Any,
     ) -> AgentHandle:
+        import inspect
+        if isinstance(session_id, dict):
+            req = session_id
+            sid = req.get("sessionId") or req.get("session_id")
+            opts = req.get("options") or req.get("agentOptions") or req.get("agent_options")
+            m = req.get("meta")
+            s = req.get("setup")
+            return await self.create(session_id=sid, options=opts, meta=m, setup=s)
+
+        sid = session_id or kwargs.get("sessionId")
+        opts_raw = options or kwargs.get("agentOptions") or kwargs.get("agent_options")
+        opts = (
+            AgentOptions(
+                provider=opts_raw.get("provider"),
+                model=opts_raw.get("model"),
+                max_tokens=opts_raw.get("maxTokens") or opts_raw.get("max_tokens"),
+                reasoning_effort=opts_raw.get("reasoningEffort") or opts_raw.get("reasoning_effort"),
+            )
+            if isinstance(opts_raw, dict)
+            else opts_raw
+        )
+        m = meta or kwargs.get("meta")
+        s = setup or kwargs.get("setup")
+
         if self._factory is None:
             raise RuntimeError("no agent factory registered (load an agent-loop plugin)")
-        return await self._factory.create_agent(
-            session_id=session_id,
-            options=options,
-            meta=meta,
-            setup=setup,
+        res = self._factory.create_agent(
+            session_id=sid,
+            options=opts,
+            meta=m,
+            setup=s,
         )
+        if inspect.isawaitable(res):
+            return await res
+        return res
 
     async def resume(
         self,
-        resume_session_id: str,
-        options: Optional[AgentOptions] = None,
+        resume_session_id: Union[str, Dict[str, Any]],
+        options: Optional[Union[AgentOptions, Dict[str, Any]]] = None,
         setup: Optional[Callable[[Context], Any]] = None,
+        **kwargs: Any,
     ) -> AgentHandle:
+        if isinstance(resume_session_id, dict):
+            req = resume_session_id
+            rsid = req.get("resumeSessionId") or req.get("resume_session_id")
+            opts = req.get("options") or req.get("agentOptions") or req.get("agent_options")
+            s = req.get("setup")
+            return await self.resume(resume_session_id=rsid, options=opts, setup=s)
+
+        rsid = resume_session_id or kwargs.get("resumeSessionId")
+        opts_raw = options or kwargs.get("agentOptions") or kwargs.get("agent_options")
+        opts = (
+            AgentOptions(
+                provider=opts_raw.get("provider"),
+                model=opts_raw.get("model"),
+                max_tokens=opts_raw.get("maxTokens") or opts_raw.get("max_tokens"),
+                reasoning_effort=opts_raw.get("reasoningEffort") or opts_raw.get("reasoning_effort"),
+            )
+            if isinstance(opts_raw, dict)
+            else opts_raw
+        )
+        s = setup or kwargs.get("setup")
+
         if self._factory is None:
             raise RuntimeError("no agent factory registered (load an agent-loop plugin)")
         return await self._factory.resume(
-            resume_session_id=resume_session_id,
-            options=options,
-            setup=setup,
+            resume_session_id=rsid,
+            options=opts,
+            setup=s,
         )
 
 

@@ -174,8 +174,8 @@ def test_session_fork_history_immutability():
     parent = sessions.create("parent-session")
 
     # Add initial events
-    parent.append("user/message", {"content": [{"type": "text", "text": "Message 1"}]})
-    parent.append("agent/message", {"content": [{"type": "text", "text": "Reply 1"}]})
+    parent.append_user_message("Message 1")
+    parent.append_assistant_message("Reply 1")
 
     assert len(parent.events) == 2
 
@@ -189,12 +189,12 @@ def test_session_fork_history_immutability():
     assert forked.parent_session_id == parent.session_id
 
     # Append new event to parent only
-    parent.append("user/message", {"content": [{"type": "text", "text": "Message 2 in parent"}]})
+    parent.append_user_message("Message 2 in parent")
     assert len(parent.events) == 3
     assert len(forked.events) == 2
 
     # Append new event to forked only
-    forked.append("user/message", {"content": [{"type": "text", "text": "Message 2 in fork"}]})
+    forked.append_user_message("Message 2 in fork")
     assert len(parent.events) == 3
     assert len(forked.events) == 3
     assert parent.events[-1]["data"]["content"][0]["text"] == "Message 2 in parent"

@@ -220,11 +220,11 @@ def test_session_fork_boundary_and_tool_balance():
 
     # User -> Tool Call -> Tool Result -> Assistant
     session.append_user_message("Do work")  # seq 0
-    session.append(
-        "assistant/message",
-        {"message": {"role": "assistant", "content": "Calling tool", "tool_calls": [{"id": "c1", "function": {"name": "f", "arguments": "{}"}}]}},
-        surface_op="append",
-    )  # seq 1
+    session.append_assistant_message({
+        "role": "assistant",
+        "content": "Calling tool",
+        "tool_calls": [{"id": "c1", "function": {"name": "f", "arguments": "{}"}}],
+    })  # seq 1
     session.append_tool_result("c1", "f", "result text")  # seq 2
     session.append_assistant_message({"role": "assistant", "content": "Finished work"})  # seq 3
 

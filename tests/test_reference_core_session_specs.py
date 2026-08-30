@@ -467,3 +467,170 @@ def test_session_store_lifecycle_and_rollback_on_listener_error():
     assert "created:s-veto" in lifecycle
     assert "disposed:s-veto" in lifecycle
 
+
+# ============================================================================
+# 8. 1:1 Parity Tests from session.spec.ts
+# ============================================================================
+
+def test_session_exposes_one_stable_readonly_surface_view():
+    session = Session.create("surface-view")
+    surface = session.surface
+    assert surface is session.surface
+
+
+def test_session_derives_message_history_from_event_log():
+    session = Session.create("s1")
+    session.append("turn/start", {"turn": 1})
+    session.append("user/message", {
+        "id": "u1", "role": "user",
+        "content": [{"type": "text", "text": "hello"}],
+        "source": {"kind": "user"},
+    }, surface_op="append")
+    session.append("assistant/chunk", {"turn": 1, "step": 1, "chunk": {"type": "text-delta", "index": 0, "text": "hi"}})
+    session.append("assistant/message", {
+        "turn": 1, "step": 1,
+        "message": {
+            "id": "a1", "role": "assistant",
+            "content": [
+                {"type": "text", "text": "let me check"},
+                {"type": "tool-call", "id": "c1", "name": "echo", "arguments": "{}"},
+            ],
+            "source": {"kind": "model", "provider": "mock", "model": "mock"},
+        },
+    }, surface_op="append")
+    session.append("tool/result", {
+        "turn": 1, "step": 1,
+        "message": {
+            "id": "t1", "role": "user",
+            "source": {"kind": "tool", "callId": "c1"},
+            "content": [{
+                "type": "tool-result",
+                "toolCallId": "c1",
+                "content": [{"type": "text", "text": "ok"}],
+                "isError": False,
+            }],
+        },
+    }, surface_op="append")
+    session.append("turn/end", {"turn": 1, "reason": {"kind": "completed"}})
+
+    messages = session.derive_messages()
+    assert [m["role"] for m in messages] == ["user", "assistant", "user"]
+    # raw chunks must NOT appear in derived history
+    assert len(messages[1]["content"]) == 2
+    assert messages[2]["content"][0]["type"] == "tool-result"
+    assert messages[2]["content"][0]["toolCallId"] == "c1"
+
+
+def test_session_accepts_and_roundtrips_max_tokens_turn_end_reason():
+    session = Session.create("s-max-tokens")
+    session.append("turn/start", {"turn": 1})
+    session.append("turn/end", {"turn": 1, "reason": {"kind": "max-tokens"}})
+
+    turn_end = [e for e in session.events if e["type"] == "turn/end"][-1]
+    assert turn_end["data"]["reason"] == {"kind": "max-tokens"}
+    # survives snapshot/deepcopy
+    assert json.loads(json.dumps(turn_end["data"]["reason"])) == {"kind": "max-tokens"}
+
+
+def test_session_roundtrips_aborted_turn_with_cancellation_cause():
+    session = Session.create("aborted")
+    session.append("turn/start", {"turn": 1})
+    session.append("turn/end", {"turn": 1, "reason": {"kind": "aborted", "reason": {"kind": "user"}}})
+
+    replayed = Session.create("aborted-replay", seed=json.loads(json.dumps(session.events)))
+    assert replayed.events[:-1] == session.events
+    turn_end = [e for e in replayed.events if e["type"] == "turn/end"][-1]
+    assert turn_end["data"]["reason"] == {"kind": "aborted", "reason": {"kind": "user"}}
+
+
+def test_session_renders_injected_context_and_user_messages_as_plain_user_content():
+    session = Session.create("s2")
+    session.append("user/message", {
+        "id": "u-ctx", "role": "user",
+        "content": [{"type": "text", "text": "file changed: a.ts"}],
+        "source": {"kind": "plugin", "plugin": "watcher"},
+    }, surface_op="append")
+    session.append("user/message", {
+        "id": "u-steer", "role": "user",
+        "content": [{"type": "text", "text": "focus on tests"}],
+        "source": {"kind": "user"},
+    }, surface_op="append")
+
+    messages = session.derive_messages()
+    assert len(messages) == 2
+    assert messages[0]["role"] == "user"
+    assert messages[0]["content"] == [{"type": "text", "text": "file changed: a.ts"}]
+    assert messages[1]["role"] == "user"
+    assert messages[1]["content"] == [{"type": "text", "text": "focus on tests"}]
+
+
+def test_session_replays_identically_from_seeded_event_log():
+    original = Session.create("s3")
+    original.append("turn/start", {"turn": 1})
+    original.append("user/message", {
+        "id": "u-q", "role": "user",
+        "content": [{"type": "text", "text": "q"}],
+        "source": {"kind": "user"},
+    }, surface_op="append")
+    original.append("assistant/message", {
+        "turn": 1, "step": 1,
+        "message": {
+            "id": "a-ans", "role": "assistant",
+            "content": [{"type": "text", "text": "a"}],
+            "source": {"kind": "model", "provider": "mock", "model": "mock"},
+        },
+    }, surface_op="append")
+    original.append("turn/end", {"turn": 1, "reason": {"kind": "completed"}})
+
+    replayed = Session.create("s3-replay", seed=list(original.events))
+    assert replayed.derive_messages() == original.derive_messages()
+    assert replayed.events[:original.seq] == original.events
+    assert replayed.seq == original.seq + 1
+    assert replayed.first_live_seq == original.seq
+
+
+def test_session_marks_explicitly_empty_seed_without_marking_fresh_session():
+    fresh = Session.create("fresh-empty")
+    assert fresh.events == []
+
+    resumed = Session.create("resumed-empty", seed=[])
+    assert resumed.first_live_seq == 0
+    assert resumed.events[0]["type"] == "session/end-seed"
+
+    reopened = Session.create("reopened-empty", seed=resumed.events)
+    assert reopened.first_live_seq == 1
+    assert reopened.events == resumed.events
+
+
+def test_session_rejects_pre_provider_request_headers_and_assistant_on_seed():
+    req_header = {
+        "type": "request/header", "seq": 0, "time": 1,
+        "data": {"header": {"config": {"model": "old-model"}}, "reason": "initial"},
+    }
+    with pytest.raises(ValueError, match="seed request/header at index 0 lacks provider/model"):
+        Session.create("old-header", seed=[req_header])
+
+    assistant_msg = {
+        "type": "assistant/message", "seq": 0, "time": 1,
+        "data": {"turn": 1, "step": 1, "content": [{"type": "text", "text": "old"}]},
+        "surfaceOp": "append",
+    }
+    with pytest.raises(ValueError, match="seed assistant/message at index 0 lacks an identified message"):
+        Session.create("old-assistant", seed=[assistant_msg])
+
+
+def test_session_prevents_reentrant_append():
+    session = Session.create("reentrant-sess")
+    ctx = Context()
+    session.ctx = ctx
+
+    def on_event(sess, ev):
+        if ev["type"] == "turn/start":
+            session.append("turn/end", {"turn": 1, "reason": {"kind": "completed"}})
+
+    ctx.on("session/event", on_event)
+
+    with pytest.raises(RuntimeError, match="cannot reenter"):
+        session.append("turn/start", {"turn": 1})
+
+

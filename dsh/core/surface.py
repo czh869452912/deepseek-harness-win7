@@ -99,9 +99,11 @@ class SurfaceFoldReplacement:
 class SurfaceFoldResult:
     """Complete result of replaying the surface operations in a session log."""
 
-    def __init__(self, nodes: List[int], replacements: List[SurfaceFoldReplacement]):
-        self.nodes = nodes
-        self.replacements = replacements
+    def __init__(self, nodes: List[int], replacements: List[SurfaceFoldReplacement], replace_generation: int = 0):
+        self.nodes = list(nodes)
+        self.replacements = list(replacements)
+        self.replace_generation = replace_generation
+        self.replaceGeneration = replace_generation
 
 
 class SurfacePlan:
@@ -162,13 +164,13 @@ def _assert_provenance(event: Dict[str, Any], shadowed_seqs: List[int]) -> None:
 
     if raw is not None:
         if not isinstance(raw, list):
-            raise ValueError(f"sourceEventSeqs on event at seq {current_seq} must be a list when present")
+            raise ValueError(f"sourceEventSeqs on event at seq {current_seq} must be an array when present")
         if len(raw) == 0 and event.get("type") != "assistant/message":
             raise ValueError("sourceEventSeqs must not be empty except on assistant/message")
 
         for s in raw:
             if not _is_event_seq(s):
-                raise ValueError(f'session event "{event.get("type")}" sourceEventSeqs must contain non-negative integers')
+                raise ValueError(f'session event "{event.get("type")}" sourceEventSeqs must densely contain non-negative safe integers')
             if s in sources:
                 raise ValueError("sourceEventSeqs must not contain duplicates")
             sources.add(s)
@@ -177,7 +179,8 @@ def _assert_provenance(event: Dict[str, Any], shadowed_seqs: List[int]) -> None:
 
     missing = [seq for seq in shadowed_seqs if seq not in sources]
     if missing:
-        raise ValueError(f"surface replace: sourceEventSeqs must include every shadowed surface node; missing {missing}")
+        missing_str = ", ".join(str(s) for s in missing)
+        raise ValueError(f"surface replace: sourceEventSeqs must include every shadowed surface node; missing {missing_str}")
 
 
 def _is_deep_equal_json(a: Any, b: Any) -> bool:
@@ -211,10 +214,6 @@ def _assert_tool_result_rewrite(
             raise ValueError("tool/result surface replacement must target a current tool/result")
         orig_data = dict(original.get("data", {}))
         repl_data = dict(event.get("data", {}))
-        orig_data.pop("result", None)
-        repl_data.pop("result", None)
-        orig_data.pop("content", None)
-        repl_data.pop("content", None)
         orig_msg = dict(orig_data.get("message", {})) if isinstance(orig_data.get("message"), dict) else {}
         repl_msg = dict(repl_data.get("message", {})) if isinstance(repl_data.get("message"), dict) else {}
         orig_content = orig_msg.get("content", [])
@@ -231,10 +230,95 @@ def _assert_tool_result_rewrite(
             repl_msg["content"] = [repl_first]
         else:
             repl_msg["content"] = None
-        orig_data["message"] = orig_msg
-        repl_data["message"] = repl_msg
-        if not _is_deep_equal_json(orig_data, repl_data):
+        orig_rest = dict(orig_data)
+        orig_rest["message"] = orig_msg
+        repl_rest = dict(repl_data)
+        repl_rest["message"] = repl_msg
+        if not _is_deep_equal_json(orig_rest, repl_rest):
             raise ValueError("tool/result surface replacement may change only content")
+
+
+class _SurfaceFoldState:
+    def __init__(self):
+        self.nodes: List[int] = []
+        self.replace_generation: int = 0
+
+
+def _plan_surface_event_state(
+    state: _SurfaceFoldState,
+    event: Dict[str, Any],
+    expected_seq: int,
+    events: List[Dict[str, Any]],
+    base_seq: int,
+) -> Optional[SurfacePlan]:
+    event_seq = event.get("seq", expected_seq)
+    if event_seq != expected_seq:
+        raise ValueError(f"session event seq {event_seq} is not contiguous; expected {expected_seq}")
+    surface_op = _surface_op_of(event)
+    if surface_op is None:
+        return None
+    if surface_op == "append":
+        _assert_provenance(event, [])
+        return SurfacePlan(kind="append", seq=event_seq)
+    start_seq = surface_op["start"]
+    end_seq = surface_op["end"]
+    try:
+        start_idx = state.nodes.index(start_seq)
+    except ValueError:
+        raise ValueError(f"surface replace: start seq {start_seq} not found in surface")
+    try:
+        end_idx = state.nodes.index(end_seq)
+    except ValueError:
+        raise ValueError(f"surface replace: end seq {end_seq} not found in surface")
+    if start_idx > end_idx:
+        raise ValueError(
+            f"surface replace: start seq {start_seq} (index {start_idx}) is after end seq {end_seq} (index {end_idx})"
+        )
+    shadowed_seqs = state.nodes[start_idx : end_idx + 1]
+    _assert_provenance(event, shadowed_seqs)
+    _assert_tool_result_rewrite(event, shadowed_seqs, events, base_seq)
+    return SurfacePlan(
+        kind="replace",
+        seq=event_seq,
+        start=start_seq,
+        end=end_seq,
+        start_idx=start_idx,
+        end_idx=end_idx,
+        shadowed_seqs=shadowed_seqs,
+    )
+
+
+def _apply_surface_plan_state(
+    state: _SurfaceFoldState,
+    plan: Optional[SurfacePlan],
+) -> Optional[SurfaceFoldReplacement]:
+    if plan is None:
+        return None
+    if plan.kind == "append":
+        state.nodes.append(plan.seq)
+        return None
+    elif plan.kind == "replace":
+        assert plan.start_idx is not None and plan.end_idx is not None
+        state.nodes[plan.start_idx : plan.end_idx + 1] = [plan.seq]
+        state.replace_generation += 1
+        return SurfaceFoldReplacement(
+            seq=plan.seq,
+            start=plan.start or 0,
+            end=plan.end or 0,
+            shadowed_seqs=plan.shadowed_seqs,
+        )
+    return None
+
+
+def _apply_surface_event_state(
+    state: _SurfaceFoldState,
+    event: Dict[str, Any],
+    expected_seq: int,
+    events: List[Dict[str, Any]],
+    base_seq: int,
+) -> Optional[SurfaceFoldReplacement]:
+    plan = _plan_surface_event_state(state, event, expected_seq, events, base_seq)
+    return _apply_surface_plan_state(state, plan)
 
 
 class SurfaceManager:
@@ -246,115 +330,35 @@ class SurfaceManager:
     def __init__(self, log: List[Dict[str, Any]], base_seq: int = 0):
         self.log = log
         self.base_seq = base_seq
-        self._nodes: List[int] = []
-        self._replace_generation: int = 0
-        self._last_processed_seq: int = base_seq - 1
+        self._state = _SurfaceFoldState()
+        self._last_processed_seq = base_seq - 1
         self._pending_plan: Optional[Tuple[Dict[str, Any], int, Optional[SurfacePlan]]] = None
 
     @property
     def replace_generation(self) -> int:
-        self._process_delta()
-        return self._replace_generation
+        if self._last_processed_seq < self.base_seq + len(self.log) - 1:
+            self._process_delta()
+        return self._state.replace_generation
+
+    @property
+    def replaceGeneration(self) -> int:
+        return self.replace_generation
 
     @property
     def nodes(self) -> List[int]:
-        self._process_delta()
-        return list(self._nodes)
-
-    def replace_range(self, start: int, end: int, replacement_seq: int) -> None:
-        self._process_delta()
-        try:
-            start_idx = self._nodes.index(start)
-        except ValueError:
-            start_idx = 0
-
-        try:
-            end_idx = self._nodes.index(end)
-        except ValueError:
-            end_idx = max(0, len(self._nodes) - 1)
-
-        if self._nodes and self._nodes[-1] == replacement_seq:
-            self._nodes.pop()
-
-        if start_idx <= end_idx and self._nodes:
-            self._nodes[start_idx : end_idx + 1] = [replacement_seq]
-            self._replace_generation += 1
+        if self._last_processed_seq < self.base_seq + len(self.log) - 1:
+            self._process_delta()
+        return list(self._state.nodes)
 
     def validate_next(self, event: Dict[str, Any]) -> None:
         """
         Validate candidate event without mutating the committed surface.
         """
-        self._process_delta()
+        if self._last_processed_seq < self.base_seq + len(self.log) - 1:
+            self._process_delta()
         expected_seq = self.base_seq + len(self.log)
-        plan = self._plan_surface_event(event, expected_seq)
+        plan = _plan_surface_event_state(self._state, event, expected_seq, self.log, self.base_seq)
         self._pending_plan = (event, expected_seq, plan)
-
-    def _plan_surface_event(self, event: Dict[str, Any], expected_seq: int) -> Optional[SurfacePlan]:
-        event_seq = event.get("seq", expected_seq)
-        if event_seq != expected_seq:
-            raise ValueError(f"session event seq {event_seq} is not contiguous; expected {expected_seq}")
-
-        surface_op = _surface_op_of(event)
-        if surface_op is None:
-            return None
-
-        if surface_op == "append":
-            _assert_provenance(event, [])
-            return SurfacePlan(kind="append", seq=event_seq)
-
-        # Replace op
-        start_seq = surface_op["start"]
-        end_seq = surface_op["end"]
-
-        try:
-            start_idx = self._nodes.index(start_seq)
-        except ValueError:
-            raise ValueError(f"surface replace: start seq {start_seq} not found in surface")
-
-        try:
-            end_idx = self._nodes.index(end_seq)
-        except ValueError:
-            raise ValueError(f"surface replace: end seq {end_seq} not found in surface")
-
-        if start_idx > end_idx:
-            raise ValueError(
-                f"surface replace: start seq {start_seq} (index {start_idx}) is after end seq {end_seq} (index {end_idx})"
-            )
-
-        shadowed_seqs = self._nodes[start_idx : end_idx + 1]
-        _assert_provenance(event, shadowed_seqs)
-        _assert_tool_result_rewrite(event, shadowed_seqs, self.log, self.base_seq)
-
-        return SurfacePlan(
-            kind="replace",
-            seq=event_seq,
-            start=start_seq,
-            end=end_seq,
-            start_idx=start_idx,
-            end_idx=end_idx,
-            shadowed_seqs=shadowed_seqs,
-        )
-
-    def _apply_surface_plan(self, plan: Optional[SurfacePlan]) -> Optional[SurfaceFoldReplacement]:
-        if plan is None:
-            return None
-
-        if plan.kind == "append":
-            self._nodes.append(plan.seq)
-            return None
-
-        elif plan.kind == "replace":
-            assert plan.start_idx is not None and plan.end_idx is not None
-            self._nodes[plan.start_idx : plan.end_idx + 1] = [plan.seq]
-            self._replace_generation += 1
-            return SurfaceFoldReplacement(
-                seq=plan.seq,
-                start=plan.start or 0,
-                end=plan.end or 0,
-                shadowed_seqs=plan.shadowed_seqs,
-            )
-
-        return None
 
     def _process_delta(self) -> None:
         tail_seq = self.base_seq + len(self.log) - 1
@@ -362,20 +366,13 @@ class SurfaceManager:
         while seq <= tail_seq:
             index = seq - self.base_seq
             event = self.log[index]
-
-            if (
-                self._pending_plan is not None
-                and self._pending_plan[0] is event
-                and self._pending_plan[1] == seq
-            ):
-                self._apply_surface_plan(self._pending_plan[2])
+            pending = self._pending_plan
+            if pending is not None and pending[0] is event and pending[1] == seq:
+                _apply_surface_plan_state(self._state, pending[2])
             else:
-                plan = self._plan_surface_event(event, seq)
-                self._apply_surface_plan(plan)
-
-            if self._pending_plan is not None and self._pending_plan[1] <= seq:
+                _apply_surface_event_state(self._state, event, seq, self.log, self.base_seq)
+            if pending is not None and pending[1] <= seq:
                 self._pending_plan = None
-
             self._last_processed_seq = seq
             seq += 1
 
@@ -384,16 +381,15 @@ def fold_surface(events: List[Dict[str, Any]]) -> SurfaceFoldResult:
     """
     Replay a complete session log through the canonical surface fold.
     """
-    manager = SurfaceManager([])
+    state = _SurfaceFoldState()
     replacements: List[SurfaceFoldReplacement] = []
 
-    for expected_seq, event in enumerate(events):
-        plan = manager._plan_surface_event(event, expected_seq)
-        rep = manager._apply_surface_plan(plan)
+    for index, event in enumerate(events):
+        rep = _apply_surface_event_state(state, event, index, events, 0)
         if rep is not None:
             replacements.append(rep)
 
-    return SurfaceFoldResult(nodes=manager.nodes, replacements=replacements)
+    return SurfaceFoldResult(nodes=state.nodes, replacements=replacements, replace_generation=state.replace_generation)
 
 
 # --- Tool Pairing Balance Helpers ---

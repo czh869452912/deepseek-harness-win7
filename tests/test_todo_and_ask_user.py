@@ -16,8 +16,12 @@ async def test_todo_write_tool_execution():
     store = SessionStore(ctx=ctx)
     ctx.set_service("sessions", store)
     session = store.create("default-session")
+    from dsh.core.agent import Agent, AgentPlugin
+    AgentPlugin().apply(ctx)
+    agent = Agent(session=session, ctx=ctx, agent_id="default-session")
+    ctx.get("agents").enter(agent)
 
-    ctx.plugin(ToolTodoPlugin)
+    ctx.plugin(ToolTodoPlugin, config={"allowParallelInProgress": True})
 
     todos_payload = [
         {"content": "Implement feature A", "status": "completed"},
@@ -25,8 +29,12 @@ async def test_todo_write_tool_execution():
         {"content": "Write unit tests", "status": "pending"},
     ]
 
-    res = await tools.execute_tool("todo_write", {"todos": todos_payload})
-    assert "Updated todo list: 1 pending, 1 in progress, 1 completed." in res
+    res = await tools.execute({
+        "name": "todo_write",
+        "arguments": {"todos": todos_payload},
+        "agent": agent,
+    })
+    assert "Updated todo list: 1 pending, 1 in progress, 1 completed." in res.content[0]["text"]
 
     # Verify session log recorded todo/write event
     events = session.events

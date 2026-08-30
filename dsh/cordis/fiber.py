@@ -318,7 +318,7 @@ class Fiber:
 
         if callable(execute_or_disposer):
             fn_name = getattr(execute_or_disposer, "__name__", "")
-            if fn_name in ("disposer", "cancel_effect", "teardown", "cleanup", "unregister", "remove") or "on(" in label or "once(" in label:
+            if fn_name in ("disposer", "cancel_effect", "teardown", "cleanup", "unregister", "remove", "detach") or "on(" in label or "once(" in label:
                 collect_disposer(execute_or_disposer)
             else:
                 try:

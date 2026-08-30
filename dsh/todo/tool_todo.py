@@ -43,6 +43,15 @@ def compose_todo_description(allow_parallel: bool) -> str:
     return DESCRIPTION_HEAD + (DESCRIPTION_PARALLEL if allow_parallel else DESCRIPTION_SINGLE) + DESCRIPTION_TAIL
 
 
+def present_todo_call(args: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "card": "generic",
+        "title": "Update todo list",
+        "kind": "other",
+        "rawInput": args.get("todos"),
+    }
+
+
 class ToolTodoPlugin(Plugin):
     """
     Plugin `@deepseek-ai/dsh-tool-todo`: Defines model-facing todo_write tool.
@@ -55,7 +64,9 @@ class ToolTodoPlugin(Plugin):
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
         cfg = config or {}
-        self.allow_parallel_in_progress = bool(cfg.get("allowParallelInProgress", True))
+        if "allowParallelInProgress" not in cfg:
+            raise ValueError("tool-todo: allowParallelInProgress is required")
+        self.allow_parallel_in_progress = bool(cfg.get("allowParallelInProgress"))
 
     def apply(self, ctx: Any) -> None:
         tools = ctx.get("tools")
@@ -110,8 +121,27 @@ class ToolTodoPlugin(Plugin):
             "required": ["todos"],
         }
 
-        async def exec_todo_write(todos: List[Dict[str, str]] = None, **kwargs) -> Any:
-            raw_todos = todos if todos is not None else kwargs.get("todos", [])
+        async def exec_todo_write(
+            args: Optional[Dict[str, Any]] = None,
+            todos: Optional[List[Dict[str, str]]] = None,
+            agent: Optional[Any] = None,
+            exec_input: Optional[Any] = None,
+            **kwargs: Any,
+        ) -> Any:
+            effective_agent = agent or getattr(exec_input, "agent", None) or kwargs.get("agent")
+            if effective_agent is None:
+                raise RuntimeError("todo_write requires an owning agent session")
+
+            raw_todos = None
+            if isinstance(args, dict):
+                raw_todos = args.get("todos")
+            elif todos is not None:
+                raw_todos = todos
+            elif "todos" in kwargs:
+                raw_todos = kwargs["todos"]
+            else:
+                raw_todos = []
+
             if not isinstance(raw_todos, list):
                 raise ValueError("invalid todos: payload must be a list")
 
@@ -148,42 +178,21 @@ class ToolTodoPlugin(Plugin):
             if not self.allow_parallel_in_progress and active_count > 1:
                 raise ValueError(f"invalid todos: at most one task may be in_progress (got {active_count})")
 
-            # Append todo/write event to session
-            target_session = None
-            agents_svc = ctx.get("agents") if ctx.has("agents") else None
-            if agents_svc and hasattr(agents_svc, "current_initiator"):
-                initiator = agents_svc.current_initiator()
-                if initiator and hasattr(initiator, "session"):
-                    target_session = initiator.session
-
-            if not target_session and ctx.has("sessions"):
-                sessions_svc = ctx.get("sessions")
-                if isinstance(sessions_svc, SessionStore):
-                    target_session = sessions_svc.get("default-session")
-                    if not target_session and getattr(sessions_svc, "_sessions", None):
-                        target_session = next(iter(sessions_svc._sessions.values()))
-                elif isinstance(sessions_svc, Session):
-                    target_session = sessions_svc
-
-            if target_session:
-                target_session.append("todo/write", {"todos": canonical_todos}, ignorable=True)
+            session = getattr(effective_agent, "session", None)
+            if session:
+                session.append("todo/write", {"todos": canonical_todos})
 
             return f"Updated todo list: {pending_count} pending, {active_count} in progress, {completed_count} completed."
 
-        if hasattr(tools, "register_tool"):
-            disposer = tools.register_tool({
-                "name": "todo_write",
-                "description": compose_todo_description(self.allow_parallel_in_progress),
-                "parameters": parameters,
-                "execute": exec_todo_write,
-            })
-        else:
-            disposer = tools.register(
-                name="todo_write",
-                description=compose_todo_description(self.allow_parallel_in_progress),
-                parameters=parameters,
-                handler=exec_todo_write,
-            )
+        disposer = tools.register_tool({
+            "name": "todo_write",
+            "description": compose_todo_description(self.allow_parallel_in_progress),
+            "parameters": parameters,
+            "execute": exec_todo_write,
+            "presentCall": present_todo_call,
+            "present_call": present_todo_call,
+        })
 
         if hasattr(ctx, "effect"):
             ctx.effect(disposer)
+

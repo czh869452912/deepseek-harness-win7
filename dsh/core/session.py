@@ -4,6 +4,7 @@ Maintains append-only session log, SurfaceManager projection, and EpochHeader/Re
 1:1 aligned with official `@deepseek-ai/dsh-session`.
 """
 
+import copy
 import json
 import os
 import time
@@ -73,17 +74,200 @@ KNOWN_SESSION_EVENT_TYPES: FrozenSet[str] = frozenset([
     "web/deepseek-search-llm-request",
 ])
 
+ALLOWED_ENVELOPE_KEYS: FrozenSet[str] = frozenset([
+    "type",
+    "seq",
+    "time",
+    "data",
+    "surfaceOp",
+    "sourceEventSeqs",
+])
+
+ALLOWED_ADAPTER_DEFAULTS: FrozenSet[str] = frozenset([
+    "maxTokens",
+    "reasoningEffort",
+])
+
 
 def snapshot_json_value(value: Any) -> Any:
     """
     Validate and return a deep snapshot of a JSON-serializable structure.
+    Rejects functions, symbols, sets, custom class instances, sparse arrays, cyclic references, etc.
     Returns None if the value is not losslessly JSON serializable.
     """
-    try:
-        raw = json.dumps(value, ensure_ascii=False)
-        return json.loads(raw)
-    except (TypeError, ValueError, OverflowError):
-        return None
+    if value is None or isinstance(value, (bool, int, float, str)):
+        if isinstance(value, float) and (value != value or value == float("inf") or value == float("-inf")):
+            return None
+        return value
+    if isinstance(value, (dict, list)):
+        try:
+            raw = json.dumps(value, ensure_ascii=False, allow_nan=False)
+            loaded = json.loads(raw)
+            if isinstance(value, dict):
+                for k in value.keys():
+                    if not isinstance(k, str):
+                        return None
+            return loaded
+        except (TypeError, ValueError, OverflowError):
+            return None
+    return None
+
+
+def _is_safe_non_negative_int(val: Any) -> bool:
+    return isinstance(val, int) and not isinstance(val, bool) and 0 <= val <= 9007199254740991
+
+
+def _has_provider_model(obj: Any) -> bool:
+    if not isinstance(obj, dict):
+        return False
+    p = obj.get("provider")
+    m = obj.get("model")
+    return isinstance(p, str) and len(p) > 0 and isinstance(m, str) and len(m) > 0
+
+
+def assert_session_event_envelope(event: Any, index: Optional[int] = None) -> None:
+    subject = f"seed event at index {index}" if index is not None else "session event"
+    if not isinstance(event, dict):
+        raise ValueError(f"{subject} has an invalid event envelope")
+
+    for k in event.keys():
+        if k not in ALLOWED_ENVELOPE_KEYS:
+            raise ValueError(f"{subject} has an invalid event envelope")
+
+    etype = event.get("type")
+    if not isinstance(etype, str) or len(etype) == 0:
+        raise ValueError(f"{subject} has an invalid event envelope")
+
+    if etype == "request/header-delta":
+        raise ValueError(f"{subject} uses unsupported legacy request/header-delta format")
+
+    seq = event.get("seq")
+    if not _is_safe_non_negative_int(seq):
+        raise ValueError(f"{subject} has an invalid event envelope")
+
+    ev_time = event.get("time")
+    if not _is_safe_non_negative_int(ev_time):
+        raise ValueError(f"{subject} has an invalid event envelope")
+
+    data = event.get("data")
+    if data is not None and not isinstance(data, dict):
+        if snapshot_json_value(data) is None:
+            raise ValueError(f"{subject} has an invalid event envelope")
+
+
+def assert_adapter_defaults(defaults: Any, config: Any, index: Optional[int] = None) -> None:
+    subject = f"seed request/header at index {index}" if index is not None else "request/header"
+    if defaults is None or not isinstance(defaults, dict) or isinstance(defaults, list):
+        raise ValueError(f"{subject} has invalid adapterDefaults")
+
+    for k, v in defaults.items():
+        if k not in ALLOWED_ADAPTER_DEFAULTS or v is not True:
+            raise ValueError(f"{subject} has invalid adapterDefaults")
+        if not isinstance(config, dict) or k not in config:
+            raise ValueError(f"{subject} has invalid adapterDefaults")
+
+
+def assert_message_event_shape(event: Dict[str, Any], subject: str) -> None:
+    etype = event.get("type")
+    data = event.get("data")
+    if not isinstance(data, dict):
+        raise ValueError(f"{subject} lacks an identified message")
+
+    if etype == "user/message":
+        msg = data.get("message") if isinstance(data.get("message"), dict) else data
+        msg_id = msg.get("id")
+        if not isinstance(msg_id, str) or len(msg_id) == 0:
+            raise ValueError(f"{subject} lacks an identified message")
+        role = msg.get("role")
+        if role != "user":
+            raise ValueError(f'{subject} message must have role "user"')
+        source = msg.get("source")
+        if not isinstance(source, dict) or not isinstance(source.get("kind"), str) or len(source.get("kind")) == 0:
+            raise ValueError(f"{subject} message has invalid source")
+        content = msg.get("content")
+        if not isinstance(content, list):
+            raise ValueError(f"{subject} message has invalid content")
+
+    elif etype == "assistant/message":
+        msg = data.get("message") if isinstance(data.get("message"), dict) else data
+        msg_id = msg.get("id")
+        if not isinstance(msg_id, str) or len(msg_id) == 0:
+            raise ValueError(f"{subject} lacks an identified message")
+        role = msg.get("role")
+        if role != "assistant":
+            raise ValueError(f'{subject} message must have role "assistant"')
+        source = msg.get("source")
+        if not isinstance(source, dict) or source.get("kind") != "model" or not _has_provider_model(source):
+            raise ValueError(f"{subject} message must have model source")
+        content = msg.get("content")
+        if not isinstance(content, list):
+            raise ValueError(f"{subject} message has invalid content")
+
+    elif etype == "tool/result":
+        msg = data.get("message") if isinstance(data.get("message"), dict) else data
+        msg_id = msg.get("id")
+        if not isinstance(msg_id, str) or len(msg_id) == 0:
+            raise ValueError(f"{subject} lacks an identified message")
+        role = msg.get("role")
+        if role != "user":
+            raise ValueError(f'{subject} message must have role "user"')
+        source = msg.get("source")
+        if not isinstance(source, dict) or source.get("kind") != "tool" or not isinstance(source.get("callId"), str) or len(source.get("callId")) == 0:
+            raise ValueError(f"{subject} message must have tool source")
+        content = msg.get("content")
+        if not isinstance(content, list):
+            raise ValueError(f"{subject} message has invalid content")
+        if len(content) != 1 or not isinstance(content[0], dict) or content[0].get("type") != "tool-result" or not isinstance(content[0].get("content"), list):
+            raise ValueError(f"{subject} message must contain one tool-result block")
+        if content[0].get("toolCallId") != source.get("callId"):
+            raise ValueError(f"{subject} message has mismatched tool call ids")
+
+
+def assert_current_llm_shape(event: Dict[str, Any], index: Optional[int] = None) -> None:
+    etype = event.get("type")
+    data = event.get("data", {})
+    if etype == "request/header":
+        subject = f"seed request/header at index {index}" if index is not None else "request/header"
+        if not isinstance(data, dict):
+            raise ValueError(f"{subject} lacks provider/model")
+        hdr = data.get("header")
+        if not isinstance(hdr, dict):
+            raise ValueError(f"{subject} lacks provider/model")
+        config = hdr.get("config")
+        if not _has_provider_model(config):
+            raise ValueError(f"{subject} lacks provider/model")
+        if isinstance(config, dict) and "reasoningEffort" in config:
+            re = config["reasoningEffort"]
+            if not isinstance(re, str) or len(re) == 0:
+                raise ValueError(f"{subject} has an invalid reasoningEffort")
+        if "adapterDefaults" in hdr:
+            assert_adapter_defaults(hdr["adapterDefaults"], config, index=index)
+    elif etype in ("user/message", "assistant/message", "tool/result"):
+        subject = f"seed {etype} at index {index}" if index is not None else f"session event at seq {event.get('seq')}"
+        assert_message_event_shape(event, subject)
+
+
+def assert_supported_request_header(etype: str, data: Any, location: str = "request/header") -> None:
+    if etype == "request/header-delta":
+        raise ValueError(f"{location} uses unsupported legacy request/header-delta format")
+    if etype == "request/header" and isinstance(data, dict) and data.get("reason") == "fallback":
+        raise ValueError(f'{location} uses unsupported legacy request/header reason "fallback"')
+
+
+def adopt_session_event(event: Dict[str, Any]) -> Dict[str, Any]:
+    """Adopt a live session event after envelope and shape validation."""
+    assert_session_event_envelope(event)
+    assert_current_llm_shape(event)
+    return event
+
+
+def snapshot_session_event(event: Dict[str, Any]) -> Dict[str, Any]:
+    """Return a deep snapshot of an event after validating its envelope."""
+    assert_session_event_envelope(event)
+    snap = snapshot_json_value(event)
+    if snap is None:
+        raise TypeError("event is not losslessly JSON-serializable")
+    return snap
 
 
 def canonical_header(header: Dict[str, Any]) -> Dict[str, Any]:
@@ -280,11 +464,21 @@ class Session:
         self._surface_manager = SurfaceManager(self.events)
 
         if seed is not None:
-            for ev in seed:
-                if isinstance(ev, dict) and ev.get("type") == "request/header-delta":
-                    raise ValueError("unsupported legacy request/header-delta")
+            for index, ev in enumerate(seed):
+                assert_session_event_envelope(ev, index=index)
+                assert_current_llm_shape(ev, index=index)
+                assert_supported_request_header(ev.get("type", ""), ev.get("data"), location=f"seed event at index {index}")
                 snapshot = snapshot_json_value(ev)
-                self._surface_manager.validate_next(snapshot)
+                if snapshot is None:
+                    raise TypeError(f"seed event at index {index} is not losslessly JSON-serializable")
+                if snapshot.get("seq") != index:
+                    raise ValueError(
+                        f"seed event at index {index} has seq {snapshot.get('seq')} (expected {index}); seed must be contiguous from 0"
+                    )
+                try:
+                    self._surface_manager.validate_next(snapshot)
+                except Exception as err:
+                    raise ValueError(f"invalid seed event at index {index}: {err}") from err
                 self.events.append(snapshot)
 
         self._appending = False
@@ -369,15 +563,77 @@ class Session:
         Append one typed event to the log and synchronously notify observers via ctx.emit.
         Strict 1:1 SessionEvent envelope: { type, seq, time, data, surfaceOp?, sourceEventSeqs? }.
         """
-        if event_type == "request/header-delta":
-            raise ValueError("unsupported legacy request/header-delta")
+        assert_supported_request_header(event_type, data, location=f'session event "{event_type}"')
 
         if self._appending:
             raise RuntimeError("session append cannot reenter while another append is being published")
 
-        data_snapshot = snapshot_json_value(data)
+        normalized_data = data
+        if isinstance(data, dict):
+            normalized_data = dict(data)
+            if event_type == "user/message":
+                if "id" not in normalized_data and "message" not in normalized_data:
+                    normalized_data["id"] = f"user-{os.urandom(4).hex()}"
+                if "role" not in normalized_data and "message" not in normalized_data:
+                    normalized_data["role"] = "user"
+                if "source" not in normalized_data and "message" not in normalized_data:
+                    normalized_data["source"] = {"kind": "user"}
+                raw_c = normalized_data.get("content")
+                if isinstance(raw_c, str):
+                    normalized_data["content"] = [{"type": "text", "text": raw_c}]
+                elif isinstance(raw_c, list):
+                    normalized_data["content"] = [
+                        {"type": "text", "text": item} if isinstance(item, str) else item
+                        for item in raw_c
+                    ]
+            elif event_type == "assistant/message":
+                if "message" in normalized_data and isinstance(normalized_data["message"], dict):
+                    msg = dict(normalized_data["message"])
+                    if "id" not in msg:
+                        msg["id"] = f"assistant-{os.urandom(4).hex()}"
+                    if "role" not in msg:
+                        msg["role"] = "assistant"
+                    if "source" not in msg or not isinstance(msg["source"], dict):
+                        msg["source"] = {"kind": "model", "provider": "mock", "model": "mock"}
+                    raw_c = msg.get("content")
+                    if isinstance(raw_c, str):
+                        msg["content"] = [{"type": "text", "text": raw_c}]
+                    elif isinstance(raw_c, list):
+                        msg["content"] = [
+                            {"type": "text", "text": item} if isinstance(item, str) else item
+                            for item in raw_c
+                        ]
+                    normalized_data["message"] = msg
+                elif "message" not in normalized_data and ("role" in normalized_data or "content" in normalized_data):
+                    msg = dict(normalized_data)
+                    if "id" not in msg:
+                        msg["id"] = f"assistant-{os.urandom(4).hex()}"
+                    if "role" not in msg:
+                        msg["role"] = "assistant"
+                    if "source" not in msg or not isinstance(msg["source"], dict):
+                        msg["source"] = {"kind": "model", "provider": "mock", "model": "mock"}
+                    raw_c = msg.get("content")
+                    if isinstance(raw_c, str):
+                        msg["content"] = [{"type": "text", "text": raw_c}]
+                    elif isinstance(raw_c, list):
+                        msg["content"] = [
+                            {"type": "text", "text": item} if isinstance(item, str) else item
+                            for item in raw_c
+                        ]
+                    normalized_data = {"turn": 1, "step": 1, "message": msg}
+            elif event_type == "tool/result":
+                if "message" in normalized_data and isinstance(normalized_data["message"], dict):
+                    msg = dict(normalized_data["message"])
+                    if "id" not in msg:
+                        msg["id"] = f"tool-result-{os.urandom(4).hex()}"
+                    if "role" not in msg:
+                        msg["role"] = "user"
+                    normalized_data["message"] = msg
+
+        data_snapshot = snapshot_json_value(normalized_data)
         if data_snapshot is None and data is not None:
             raise TypeError("session event data is not losslessly JSON-serializable")
+
         event_seq = len(self.events)
         event: Dict[str, Any] = {
             "type": event_type,
@@ -386,13 +642,24 @@ class Session:
             "data": data_snapshot if data_snapshot is not None else {},
         }
 
-        if is_surface_eligible_type(event_type):
-            if surface_op is None:
-                surface_op = "append"
-            event["surfaceOp"] = surface_op
-            if source_event_seqs is not None:
-                event["sourceEventSeqs"] = list(source_event_seqs)
+        effective_surface_op = surface_op
+        if effective_surface_op is None and is_surface_eligible_type(event_type):
+            effective_surface_op = "append"
 
+        if effective_surface_op is not None:
+            op_snap = snapshot_json_value(effective_surface_op)
+            if op_snap is None:
+                raise TypeError("surfaceOp is not losslessly JSON-serializable")
+            event["surfaceOp"] = op_snap
+
+        if source_event_seqs is not None:
+            src_snap = snapshot_json_value(source_event_seqs)
+            if src_snap is None:
+                raise TypeError("sourceEventSeqs is not losslessly JSON-serializable")
+            event["sourceEventSeqs"] = src_snap
+
+        assert_session_event_envelope(event)
+        assert_current_llm_shape(event)
         self._surface_manager.validate_next(event)
 
         self._appending = True
@@ -427,7 +694,7 @@ class Session:
         data: Dict[str, Any] = {
             "role": "user",
             "id": msg_id,
-            "content": text,
+            "content": [{"type": "text", "text": text}] if isinstance(text, str) else text,
             "source": src,
         }
         return self.append(
@@ -439,7 +706,7 @@ class Session:
 
     def append_assistant_message(
         self,
-        message: Dict[str, Any],
+        message: Union[Dict[str, Any], str],
         turn: Optional[int] = None,
         step: Optional[int] = None,
         usage: Optional[Dict[str, Any]] = None,
@@ -448,10 +715,30 @@ class Session:
         surface_op: Optional[Union[str, Dict[str, Any]]] = None,
         source_event_seqs: Optional[List[int]] = None,
     ) -> Dict[str, Any]:
+        msg_copy = dict(message) if isinstance(message, dict) else {"content": message}
+        if "id" not in msg_copy:
+            msg_copy["id"] = f"assistant-{os.urandom(4).hex()}"
+        if "source" not in msg_copy:
+            msg_copy["source"] = {"kind": "model", "provider": "mock", "model": "mock"}
+        if "role" not in msg_copy:
+            msg_copy["role"] = "assistant"
+        raw_content = msg_copy.get("content")
+        if raw_content is None:
+            msg_copy["content"] = []
+        elif isinstance(raw_content, str):
+            msg_copy["content"] = [{"type": "text", "text": raw_content}]
+        elif isinstance(raw_content, list):
+            msg_copy["content"] = [
+                {"type": "text", "text": item} if isinstance(item, str) else item
+                for item in raw_content
+            ]
+        elif isinstance(raw_content, dict):
+            msg_copy["content"] = [raw_content]
+
         data: Dict[str, Any] = {
             "turn": turn if turn is not None else 1,
             "step": step if step is not None else 1,
-            "message": message,
+            "message": msg_copy,
         }
         if usage is not None:
             data["usage"] = usage
@@ -480,6 +767,7 @@ class Session:
         source_event_seqs: Optional[List[int]] = None,
     ) -> Dict[str, Any]:
         tool_msg = {
+            "id": f"tool-result-{os.urandom(4).hex()}",
             "role": "user",
             "content": [
                 {
@@ -573,7 +861,7 @@ class Session:
 
         self._derived_nodes = len(nodes)
 
-        surface_history = list(self._derived)
+        surface_history = [copy.deepcopy(m) for m in self._derived]
         if system_prompt is not None:
             return [{"role": "system", "content": system_prompt}] + surface_history
         return surface_history
@@ -627,41 +915,37 @@ class Session:
         return False
 
 
+class _SessionStoreEntry:
+    def __init__(self, session_id: str, session: Session, ctx: Any):
+        self.id = session_id
+        self.session = session
+        self.ctx = ctx
+        self.announced = False
+        self.announcing = False
+        self.appending = False
+        self.detach_requested = False
+
+
 class SessionStore:
     """
     In-memory session store mounted at `ctx.sessions`.
+    1:1 aligned with official `@deepseek-ai/dsh-session/SessionStore`.
     """
 
     def __init__(self, ctx: Optional[Any] = None):
         self.ctx = ctx
-        self._sessions: Dict[str, Session] = {}
+        self._entries: Dict[str, _SessionStoreEntry] = {}
 
-    def create(
-        self,
-        session_id: Optional[str] = None,
-        seed: Optional[List[Dict[str, Any]]] = None,
-        meta: Optional[Dict[str, Any]] = None,
-        parent_session_id: Optional[str] = None,
-    ) -> Session:
-        sid = session_id or f"session-{len(self._sessions) + 1}"
-        if sid in self._sessions:
-            raise ValueError(f'session "{sid}" already exists in store')
+    @property
+    def _sessions(self) -> Dict[str, Session]:
+        return {entry.id: entry.session for entry in self._entries.values()}
 
-        meta_dict = dict(meta or {})
-        if parent_session_id is not None:
-            meta_dict["parentSession"] = parent_session_id
-
-        header = validate_session_header(sid, {"id": sid, **meta_dict})
-        session = Session(session_id=sid, seed=seed, header=header, ctx=self.ctx)
-        self._sessions[sid] = session
-
-        if self.ctx:
-            self.ctx.emit("session/created", session)
-
-        return session
+    def list(self) -> List[Session]:
+        return [entry.session for entry in self._entries.values()]
 
     def get(self, session_id: str) -> Optional[Session]:
-        return self._sessions.get(session_id)
+        entry = self._entries.get(session_id)
+        return entry.session if entry else None
 
     def prepare(
         self,
@@ -672,7 +956,7 @@ class SessionStore:
         seed_source: Optional[str] = None,
         seedSource: Optional[str] = None,
     ) -> SessionPreparation:
-        sid = session_id or f"session-{len(self._sessions) + 1}"
+        sid = session_id or f"session-{len(self._entries) + 1}"
         source_mode = seed_source or seedSource
         if source_mode == "persistence":
             hdr = meta if isinstance(meta, SessionHeader) else validate_session_header(sid, dict(meta or {}))
@@ -688,21 +972,78 @@ class SessionStore:
 
     def enter(self, session: Session) -> Callable[[], None]:
         sid = session.id
-        if sid in self._sessions:
-            raise ValueError(f'session "{sid}" already in store')
-        self._sessions[sid] = session
+        if sid in self._entries:
+            raise ValueError(f'session "{sid}" already exists in store')
+
         session.ctx = self.ctx
+        entry = _SessionStoreEntry(session_id=sid, session=session, ctx=self.ctx)
+        self._entries[sid] = entry
 
-        def disposer() -> None:
-            self._sessions.pop(sid, None)
+        entered = True
+
+        def detach() -> None:
+            nonlocal entered
+            if not entered:
+                return
+            entered = False
+            if entry.announcing or entry.appending:
+                entry.detach_requested = True
+                return
+            self._detach_entry(entry)
+
+        return detach
+
+    def announce(self, session: Session) -> None:
+        sid = session.id
+        entry = self._entries.get(sid)
+        if entry is None or entry.session is not session:
+            raise ValueError(f'session "{sid}" is not in store')
+        if entry.announced or entry.announcing:
+            raise RuntimeError(f'session "{sid}" was already announced')
+
+        entry.announcing = True
+        entry.announced = True
+        try:
             if self.ctx:
-                self.ctx.emit("session/disposed", session)
+                self.ctx.emit("session/created", session)
+        finally:
+            entry.announcing = False
+            if entry.detach_requested and not entry.appending:
+                self._detach_entry(entry)
 
+    def _detach_entry(self, entry: _SessionStoreEntry) -> None:
+        entry.detach_requested = False
+        if self._entries.get(entry.id) is not entry:
+            return
+        del self._entries[entry.id]
+        if entry.announced and self.ctx:
+            self.ctx.emit("session/disposed", entry.session)
+
+    def create(
+        self,
+        session_id: Optional[str] = None,
+        seed: Optional[List[Dict[str, Any]]] = None,
+        meta: Optional[Dict[str, Any]] = None,
+        parent_session_id: Optional[str] = None,
+    ) -> Session:
+        prep = self.prepare(
+            session_id=session_id,
+            seed=seed,
+            meta=meta,
+            parent_session_id=parent_session_id,
+        )
+        session = prep.session
+        detach = self.enter(session)
         if self.ctx:
-            self.ctx.effect(disposer)
-            self.ctx.emit("session/created", session)
+            self.ctx.effect(detach)
 
-        return disposer
+        try:
+            self.announce(session)
+        except Exception:
+            detach()
+            raise
+
+        return session
 
     def fork(
         self,
@@ -833,3 +1174,4 @@ class SessionPlugin(Plugin):
         if not ctx.has("sessions"):
             store = SessionStore(ctx)
             ctx.set_service("sessions", store)
+

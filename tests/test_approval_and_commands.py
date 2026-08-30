@@ -5,29 +5,40 @@ from dsh.interaction.user_approval import UserApprovalService
 from dsh.interaction.commands import CommandRegistry
 
 
+from dsh.core.agent import Agent
+from dsh.core.session import Session, SessionStore
+
+
 @pytest.mark.asyncio
 async def test_user_approval_service_policy_and_decision():
     ctx = Context()
-    appr = UserApprovalService(ctx, policy="always")
-    assert await appr.request_approval("run_command") is True
+    appr = UserApprovalService(ctx)
+    session = Session("s1")
+    agent = Agent(session=session, ctx=ctx, agent_id="a1")
 
-    appr.set_policy("never")
-    assert await appr.request_approval("run_command") is False
+    # 1. Default policy is 'ask'
+    assert appr.effective_policy(session) == "ask"
 
-    appr.set_policy("ask")
-    requested_event = []
+    # 2. Set policy 'never'
+    appr.set_policy(agent, "never")
+    assert appr.effective_policy(session) == "never"
 
-    def on_requested(data):
-        requested_event.append(data)
-        # Auto decide in background
-        appr.decide(data["requestId"], True)
+    # 3. Inside turn, request with 'never' resolves 'rejected' immediately
+    session.append("turn/start", {"turn": 1})
+    res_never = await appr.request({"agent": agent, "toolName": "pwsh", "reason": "test action"})
+    assert res_never == "rejected"
 
-    ctx.on("approval/requested", on_requested)
+    # 4. Set policy 'ask'
+    appr.set_policy(agent, "ask")
+    assert appr.effective_policy(session) == "ask"
 
-    res = await appr.request_approval("delete_file", {"path": "test.txt"}, timeout_s=5.0)
-    assert res is True
-    assert len(requested_event) == 1
-    assert requested_event[0]["action"] == "delete_file"
+    # 5. Interactive decide via waterfall
+    def on_request(req, next_fn=None):
+        return "allowed-once"
+
+    ctx.on("approval/request", on_request)
+    res_grant = await appr.request({"agent": agent, "toolName": "pwsh", "reason": "test action"})
+    assert res_grant == "allowed-once"
 
 
 @pytest.mark.asyncio

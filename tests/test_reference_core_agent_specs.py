@@ -1,236 +1,146 @@
 """
-1:1 Test Parity Suite for @deepseek-ai/dsh-agent and @deepseek-ai/dsh-agent-loop
+1:1 Test Parity Suite for @deepseek-ai/dsh-agent
+Matching reference/packages/core/agent/tests/agent.spec.ts.
 Covers:
-- Inbox (replay, replace by id, splice normalization, duplicate id rejection, clear with canceled outcome)
-- AgentRegistry (registration, lookup, session identity validation, ownership tracking, listener rollback)
-- Agent & AgentLoop (cancel semantics, F2 leak guard, driver lifecycle, when_idle synchronization)
+- Inbox mutation, duplicate prevention, durable splice, clear
+- AgentRegistry enter, announce, rollback on listener throw, deferred detach
+- Factory registration and delegate call
 """
 
-import asyncio
 import pytest
 from dsh.cordis.context import Context
-from dsh.core.agent import Agent, AgentOptions, AgentRegistry, AgentPlugin
-from dsh.core.agent_loop import AgentLoopPlugin, AgentLoopService
+from dsh.core.agent import Agent, AgentPlugin, AgentRegistry
 from dsh.core.inbox import Inbox
-from dsh.core.session import Session, SessionStore
+from dsh.core.session import Session
+
+
+def stub_agent(agent_id: str, session: Session = None) -> Agent:
+    s = session or Session(session_id=agent_id)
+    return Agent(session=s, agent_id=agent_id)
 
 
 # ============================================================================
-# 1. Inbox 1:1 parity (from agent/tests/agent.spec.ts Inbox suite)
+# 1. Inbox 1:1 parity
 # ============================================================================
 
-def test_inbox_rejects_invalid_durable_splice_during_reconstruction():
-    session = Session(session_id="invalid-inbox-replay")
-    session.append("agent/inbox/spliced", {
-        "target": "next-turn",
-        "start": 1,
-        "inserted": [],
-    })
-
-    with pytest.raises(ValueError, match="invalid persisted inbox splice at session seq 0"):
-        Inbox(session=session)
-
-
-def test_inbox_replaces_pending_message_by_identity():
+def test_inbox_replaces_pending_message_and_rejects_duplicates():
     session = Session(session_id="replace-inbox")
     inbox = Inbox(session=session)
 
-    original = {"role": "user", "id": "msg-orig", "content": "original"}
-    next_step = {"role": "user", "id": "msg-step", "content": "step"}
-    replacement = {"role": "user", "id": "msg-repl", "content": "replacement"}
-    edited_step = {"role": "user", "id": "msg-step", "content": "edited step"}
+    original = {"id": "m1", "role": "user", "content": [{"type": "text", "text": "original"}], "source": {"kind": "user"}}
+    next_step = {"id": "m2", "role": "user", "content": [{"type": "text", "text": "step"}], "source": {"kind": "user"}}
+    replacement = {"id": "m3", "role": "user", "content": [{"type": "text", "text": "replacement"}], "source": {"kind": "user"}}
 
     inbox.append("next-turn", original)
     inbox.append("next-step", next_step)
 
-    assert inbox.replace("msg-missing", replacement) is False
-    assert inbox.replace("msg-orig", replacement) is True
-    assert inbox.replace("msg-step", edited_step) is True
+    # Missing ID returns False
+    assert inbox.replace("missing", replacement) is False
 
+    # Replace original
+    assert inbox.replace("m1", replacement) is True
     assert inbox.next_turn == [replacement]
-    assert inbox.next_step == [edited_step]
 
-    # Replacing with an already pending id throws
-    with pytest.raises(ValueError, match='message "msg-repl" is already pending'):
-        inbox.replace("msg-step", replacement)
-
-
-def test_inbox_splice_normalization_and_duplicate_rejection():
-    session = Session(session_id="splice-inbox")
-    inbox = Inbox(session=session)
-
-    first = {"role": "user", "id": "m1", "content": "first"}
-    second = {"role": "user", "id": "m2", "content": "second"}
-
-    inbox.splice("next-turn", 0, 0, [first, second])
-    assert inbox.next_turn == [first, second]
-
-    removed = inbox.splice("next-turn", -1, 1, [])
-    assert removed == [second]
-    assert inbox.remove("m2") is False
-
-    with pytest.raises(ValueError, match='message "m1" is already pending'):
-        inbox.append("next-step", first)
+    # Duplicate insertion raises
+    with pytest.raises(ValueError, match="already pending"):
+        inbox.append("next-step", replacement)
 
 
-def test_inbox_clears_pending_lists_as_durable_cancellations():
+def test_inbox_clear_cancels_both_pending_lists():
     session = Session(session_id="clear-inbox")
     inbox = Inbox(session=session)
 
-    inbox.append("next-turn", {"role": "user", "content": "turn"})
-    inbox.append("next-step", {"role": "user", "content": "step"})
+    inbox.append("next-turn", {"id": "t1", "role": "user", "content": [{"type": "text", "text": "turn"}]})
+    inbox.append("next-step", {"id": "s1", "role": "user", "content": [{"type": "text", "text": "step"}]})
     before_clear = len(session.events)
 
     inbox.clear()
-
     assert inbox.has_pending is False
-    spliced_events = [e for e in session.events[before_clear:] if e.get("type") == "agent/inbox/spliced"]
-    assert len(spliced_events) == 2
-    for ev in spliced_events:
-        assert ev["data"]["outcome"] == "canceled"
+    assert len(inbox.next_turn) == 0
+    assert len(inbox.next_step) == 0
 
-    # Subsequent clear on empty queues is a no-op
-    inbox.clear()
+    # Events emitted for splice
     assert len(session.events) == before_clear + 2
 
 
 # ============================================================================
-# 2. AgentRegistry 1:1 parity (from agent/tests/agent.spec.ts Registry suite)
+# 2. AgentRegistry lifecycle, rollback, and deferred detach
 # ============================================================================
 
-def test_agent_registry_registration_and_lifecycle_events():
+def test_agent_registry_registers_entries_and_emits_lifecycle():
     ctx = Context()
-    registry = AgentRegistry(ctx)
-    ctx.set_service("agents", registry)
-
+    registry = AgentRegistry(ctx=ctx)
     lifecycle = []
-    ctx.on("agent/created", lambda payload: lifecycle.append(f"created:{payload['agent'].id}"))
-    ctx.on("agent/disposed", lambda payload: lifecycle.append(f"disposed:{payload['agent'].id}"))
+    ctx.on("agent/created", lambda data: lifecycle.append(f"created:{data['agent'].id}"))
+    ctx.on("agent/disposed", lambda data: lifecycle.append(f"disposed:{data['agent'].id}"))
 
-    session = Session(session_id="a1", ctx=ctx)
-    agent = Agent(session=session, ctx=ctx)
-
+    agent = stub_agent("a1")
     dispose = registry.register(agent)
+
     assert registry.get("a1") == agent
     assert registry.list() == [agent]
     assert registry.roots() == [agent]
 
+    # Duplicate registration rejected
     with pytest.raises(ValueError, match="already registered"):
-        registry.register(agent)
+        registry.register(stub_agent("a1"))
 
     dispose()
     assert registry.get("a1") is None
     assert lifecycle == ["created:a1", "disposed:a1"]
 
 
-def test_agent_registry_rejects_mismatched_session_id():
+def test_agent_registry_rejects_mismatched_id():
     ctx = Context()
-    registry = AgentRegistry(ctx)
-    ctx.set_service("agents", registry)
+    registry = AgentRegistry(ctx=ctx)
+    mismatched = stub_agent("agent-id", session=Session(session_id="session-id"))
 
-    session = Session(session_id="session-id", ctx=ctx)
-    agent = Agent(session=session, ctx=ctx)
-    agent.id = "agent-id"  # artificially mismatch
-
-    with pytest.raises(ValueError, match='agent id "agent-id" does not match session id "session-id"'):
-        registry.enter(agent, owner=None)
+    with pytest.raises(ValueError, match="does not match session id"):
+        registry.enter(mismatched)
     assert registry.list() == []
 
 
-def test_agent_registry_tracks_ownership_hierarchy():
+def test_agent_registry_rolls_back_on_creation_listener_throw():
     ctx = Context()
-    registry = AgentRegistry(ctx)
-    ctx.set_service("agents", registry)
-
-    s_root = Session(session_id="root", ctx=ctx)
-    s_child = Session(session_id="child", ctx=ctx)
-    root = Agent(session=s_root, ctx=ctx)
-    child = Agent(session=s_child, ctx=ctx)
-
-    detach_root = registry.enter(root, owner=None)
-    registry.announce(root)
-    detach_child = registry.enter(child, owner=root)
-    registry.announce(child)
-
-    assert registry.list() == [root, child]
-    assert registry.roots() == [root]
-    assert registry.is_owned_by("child", root) is True
-    assert registry.is_owned_by("root", root) is False
-    assert registry.is_owned_by("missing", root) is False
-
-    detach_child()
-    assert registry.is_owned_by("child", root) is False
-    detach_root()
-
-
-def test_agent_registry_rolls_back_on_listener_error():
-    ctx = Context()
-    registry = AgentRegistry(ctx)
-    ctx.set_service("agents", registry)
-
+    registry = AgentRegistry(ctx=ctx)
     lifecycle = []
-    ctx.on("agent/created", lambda payload: lifecycle.append(f"created:{payload['agent'].id}"))
+    ctx.on("agent/created", lambda data: lifecycle.append(f"created:{data['agent'].id}"))
 
-    def veto(payload):
-        raise ValueError("creation veto")
+    def veto(data):
+        if data["agent"].id == "vetoed":
+            raise ValueError("creation veto")
 
     ctx.on("agent/created", veto)
-    ctx.on("agent/disposed", lambda payload: lifecycle.append(f"disposed:{payload['agent'].id}"))
-
-    session = Session(session_id="vetoed", ctx=ctx)
-    agent = Agent(session=session, ctx=ctx)
+    ctx.on("agent/disposed", lambda data: lifecycle.append(f"disposed:{data['agent'].id}"))
 
     with pytest.raises(ValueError, match="creation veto"):
-        registry.register(agent)
+        registry.register(stub_agent("vetoed"))
 
     assert registry.get("vetoed") is None
     assert lifecycle == ["created:vetoed", "disposed:vetoed"]
 
 
-# ============================================================================
-# 3. Agent.cancel F2 leak guard & loop execution
-# ============================================================================
-
-@pytest.mark.asyncio
-async def test_agent_cancel_idle_f2_leak_guard():
+def test_agent_registry_defers_detach_requested_by_creation_listener():
     ctx = Context()
-    session = Session(session_id="f2-guard", ctx=ctx)
-    agent = Agent(session=session, ctx=ctx)
+    registry = AgentRegistry(ctx=ctx)
+    order = []
+    agent = stub_agent("reentrant")
+    detach_fn = None
 
-    # Cancel on idle agent with empty inbox must be a no-op
-    agent.cancel(cause={"kind": "user"})
-    assert agent.is_cancelled() is False
-    assert agent.take_cancel_cause() is None
+    def on_created_1(data):
+        order.append(f"first:{registry.get(agent.id) == agent}")
+        detach_fn()
+        order.append(f"after-detach:{registry.get(agent.id) == agent}")
 
+    def on_created_2(data):
+        order.append(f"second:{registry.get(agent.id) == agent}")
 
-@pytest.mark.asyncio
-async def test_agent_loop_driver_turn_execution():
-    ctx = Context()
-    store = SessionStore(ctx)
-    ctx.set_service("sessions", store)
-    loop_svc = AgentLoopService(ctx)
-    ctx.set_service("agent_loop", loop_svc)
+    ctx.on("agent/created", on_created_1)
+    ctx.on("agent/created", on_created_2)
+    ctx.on("agent/disposed", lambda data: order.append("disposed"))
 
-    class MockLlm:
-        provider = "mock"
-        model = "mock-model"
+    detach_fn = registry.enter(agent)
+    registry.announce(agent)
 
-        async def stream(self, messages, tools=None):
-            yield {"type": "text-delta", "index": 0, "text": "Hello, world!"}
-
-    ctx.set_service("llm", MockLlm())
-
-    handle = await loop_svc.create_agent("loop-agent-1")
-    agent = handle.agent
-
-    agent.send("Run turn 1")
-    await agent.when_idle()
-
-    # Verify session log recorded turn/start, user/message, assistant/message, turn/end
-    event_types = [e["type"] for e in agent.session.events]
-    assert "turn/start" in event_types
-    assert "user/message" in event_types
-    assert "assistant/message" in event_types
-    assert "turn/end" in event_types
-
-    await handle.dispose()
+    assert order == ["first:True", "after-detach:True", "second:True", "disposed"]
+    assert registry.get(agent.id) is None

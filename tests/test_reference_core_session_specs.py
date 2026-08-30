@@ -290,3 +290,180 @@ def test_snapshot_json_value_scalars_and_containers():
     # Unsupported objects return None
     assert snapshot_json_value(lambda x: x) is None
     assert snapshot_json_value(object()) is None
+
+
+# ============================================================================
+# 6. session 1:1 full invariant & validation suite (from session/tests/session.spec.ts)
+# ============================================================================
+
+def test_session_derives_message_history_and_omits_raw_chunks():
+    session = Session.create("s1")
+    session.append("turn/start", {"turn": 1})
+    session.append("user/message", {
+        "id": "u1",
+        "role": "user",
+        "content": [{"type": "text", "text": "hello"}],
+        "source": {"kind": "user"},
+    }, surface_op="append")
+    session.append("assistant/chunk", {"turn": 1, "step": 1, "chunk": {"type": "text-delta", "index": 0, "text": "hi"}})
+    session.append("assistant/message", {
+        "turn": 1,
+        "step": 1,
+        "message": {
+            "id": "a1",
+            "role": "assistant",
+            "content": [
+                {"type": "text", "text": "let me check"},
+                {"type": "tool-call", "id": "c1", "name": "echo", "arguments": "{}"},
+            ],
+            "source": {"kind": "model", "provider": "mock", "model": "mock"},
+        },
+    }, surface_op="append")
+    session.append("tool/result", {
+        "turn": 1,
+        "step": 1,
+        "message": {
+            "id": "t1",
+            "role": "user",
+            "content": [{"type": "tool-result", "toolCallId": "c1", "content": [{"type": "text", "text": "ok"}]}],
+            "source": {"kind": "tool", "callId": "c1"},
+        },
+    }, surface_op="append")
+    session.append("turn/end", {"turn": 1, "reason": {"kind": "completed"}})
+
+    messages = session.derive_messages()
+    assert [m["role"] for m in messages] == ["user", "assistant", "user"]
+    assert len(messages[1]["content"]) == 2
+    assert messages[2]["content"][0]["type"] == "tool-result"
+    assert messages[2]["content"][0]["toolCallId"] == "c1"
+
+
+def test_session_round_trips_max_tokens_and_aborted_reasons():
+    session = Session.create("s-reasons")
+    session.append("turn/start", {"turn": 1})
+    session.append("turn/end", {"turn": 1, "reason": {"kind": "max-tokens"}})
+    assert session.events[-1]["data"]["reason"] == {"kind": "max-tokens"}
+
+    session2 = Session.create("s-abort")
+    session2.append("turn/start", {"turn": 1})
+    session2.append("turn/end", {"turn": 1, "reason": {"kind": "aborted", "reason": {"kind": "user"}}})
+    replayed = Session.create("s-abort-replay", seed=session2.events)
+    turn_end = [e for e in replayed.events if e.get("type") == "turn/end"][-1]
+    assert turn_end["data"]["reason"] == {"kind": "aborted", "reason": {"kind": "user"}}
+
+
+def test_session_rejects_missing_provider_model_and_malformed_messages():
+    bad_header = {"type": "request/header", "seq": 0, "time": 1, "data": {"header": {"config": {"model": "m"}}, "reason": "initial"}}
+    with pytest.raises(ValueError, match="lacks provider/model"):
+        Session.create("bad-hdr", seed=[bad_header])
+
+    bad_assistant = {
+        "type": "assistant/message", "seq": 0, "time": 1, "surfaceOp": "append",
+        "data": {"turn": 1, "step": 1, "content": [{"type": "text", "text": "old"}]},
+    }
+    with pytest.raises(ValueError, match="lacks an identified message"):
+        Session.create("bad-asst", seed=[bad_assistant])
+
+    user_base = {"id": "u", "role": "user", "content": [{"type": "text", "text": "c"}], "source": {"kind": "user"}}
+
+    # Wrong role
+    with pytest.raises(ValueError, match='message must have role "user"'):
+        Session.create("bad-role", seed=[{"type": "user/message", "seq": 0, "time": 1, "surfaceOp": "append", "data": {**user_base, "role": "assistant"}}])
+
+    # Invalid source
+    with pytest.raises(ValueError, match="message has invalid source"):
+        Session.create("bad-src", seed=[{"type": "user/message", "seq": 0, "time": 1, "surfaceOp": "append", "data": {**user_base, "source": None}}])
+
+    # Non-array content
+    with pytest.raises(ValueError, match="message has invalid content"):
+        Session.create("bad-content", seed=[{"type": "user/message", "seq": 0, "time": 1, "surfaceOp": "append", "data": {**user_base, "content": "not-array"}}])
+
+
+def test_session_reasoning_effort_and_adapter_defaults_validation():
+    valid_header = {
+        "type": "request/header", "seq": 0, "time": 1,
+        "data": {
+            "header": {
+                "config": {"provider": "mock", "model": "m", "reasoningEffort": "high", "maxTokens": 1000},
+                "adapterDefaults": {"maxTokens": True},
+            },
+            "reason": "initial",
+        },
+    }
+    sess = Session.create("val-hdr", seed=[valid_header])
+    assert sess.events[0]["data"]["header"]["config"]["reasoningEffort"] == "high"
+
+    # Invalid empty reasoning effort
+    invalid_effort = json.loads(json.dumps(valid_header))
+    invalid_effort["data"]["header"]["config"]["reasoningEffort"] = ""
+    with pytest.raises(ValueError, match="has an invalid reasoningEffort"):
+        Session.create("inv-effort", seed=[invalid_effort])
+
+    # Invalid adapter defaults
+    invalid_defaults = json.loads(json.dumps(valid_header))
+    invalid_defaults["data"]["header"]["adapterDefaults"] = {"unknown": True}
+    with pytest.raises(ValueError, match="has invalid adapterDefaults"):
+        Session.create("inv-defaults", seed=[invalid_defaults])
+
+
+def test_session_rejects_non_json_data_at_source():
+    session = Session.create("s-json-check")
+    with pytest.raises(TypeError, match="not losslessly JSON-serializable"):
+        session.append("turn/start", {"bad": lambda x: x})
+
+    with pytest.raises(TypeError, match="not losslessly JSON-serializable"):
+        session.append("turn/start", {"bad": float("inf")})
+
+    assert len(session.events) == 0
+
+
+def test_session_rejects_non_contiguous_seed():
+    gap_seed = [
+        {"type": "turn/start", "seq": 0, "time": 1, "data": {"turn": 1}},
+        {"type": "turn/end", "seq": 5, "time": 2, "data": {"turn": 1, "reason": {"kind": "completed"}}},
+    ]
+    with pytest.raises(ValueError, match="seed must be contiguous from 0"):
+        Session.create("gap-seed", seed=gap_seed)
+
+
+def test_session_log_isolated_from_mutation_through_derived_messages():
+    session = Session.create("isolation")
+    session.append_user_message("original")
+    before = json.loads(json.dumps(session.events))
+
+    messages = session.derive_messages()
+    messages[0]["content"][0]["text"] = "HACKED"
+
+    # Log remains unchanged
+    assert session.events == before
+    fresh = session.derive_messages()
+    assert fresh[0]["content"][0]["text"] == "original"
+
+
+def test_session_store_lifecycle_and_rollback_on_listener_error():
+    ctx = Context()
+    store = SessionStore(ctx=ctx)
+    ctx.set_service("sessions", store)
+
+    lifecycle = []
+    ctx.on("session/created", lambda s: lifecycle.append(f"created:{s.id}"))
+    ctx.on("session/disposed", lambda s: lifecycle.append(f"disposed:{s.id}"))
+
+    s1 = store.create("s-life")
+    assert store.get("s-life") == s1
+    assert store.list() == [s1]
+
+    # Listener throw triggers rollback and cleanup
+    def veto(s):
+        if s.id == "s-veto":
+            raise ValueError("session creation vetoed")
+
+    ctx.on("session/created", veto)
+
+    with pytest.raises(ValueError, match="session creation vetoed"):
+        store.create("s-veto")
+
+    assert store.get("s-veto") is None
+    assert "created:s-veto" in lifecycle
+    assert "disposed:s-veto" in lifecycle
+

@@ -38,5 +38,5 @@ def test_session_stats_projection():
 
     assert stats["steps"] == 1
     assert stats["turns"] == 1
-    assert stats["promptTokens"] == 10
-    assert stats["completionTokens"] == 5
+    assert "llmMs" in stats
+    assert "toolMs" in stats

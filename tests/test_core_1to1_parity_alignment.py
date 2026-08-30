@@ -188,14 +188,14 @@ def test_derive_messages_incremental_caching_and_invalidation():
     session.append_user_message("Message 1")
     msgs1 = session.derive_messages()
     assert len(msgs1) == 1
-    assert msgs1[0]["content"] == "Message 1"
+    assert msgs1[0]["content"] == [{"type": "text", "text": "Message 1"}]
     assert session._derived_nodes == 1
 
     # 2. Append assistant message
     session.append_assistant_message({"role": "assistant", "content": "Response 1"})
     msgs2 = session.derive_messages()
     assert len(msgs2) == 2
-    assert msgs2[1]["content"] == "Response 1"
+    assert msgs2[1]["content"] == [{"type": "text", "text": "Response 1"}]
     assert session._derived_nodes == 2
 
     # 3. Compaction replacement (rewrite surface)
@@ -209,7 +209,7 @@ def test_derive_messages_incremental_caching_and_invalidation():
 
     msgs3 = session.derive_messages()
     assert len(msgs3) == 1
-    assert msgs3[0]["content"] == "Summary: User asked message 1 and Assistant responded."
+    assert msgs3[0]["content"] == [{"type": "text", "text": "Summary: User asked message 1 and Assistant responded."}]
     assert session._derived_generation == 1
     assert session._derived_nodes == 1
 
@@ -269,7 +269,7 @@ def test_validate_session_header_fail_closed():
 
 
 @pytest.mark.asyncio
-async def test_persistence_rejects_unknown_event_types():
+async def test_persistence_rejects_corrupt_event_lines():
     with tempfile.TemporaryDirectory() as temp_dir:
         persistence = JsonlSessionPersistence(root=temp_dir, pack_chunks=True)
         meta = SessionHeader(session_id="test-unrecognized", cwd=os.path.abspath(temp_dir))
@@ -279,11 +279,12 @@ async def test_persistence_rejects_unknown_event_types():
         ev_valid = {"type": "user/message", "seq": 0, "time": 1000, "data": {"role": "user", "content": "Hi"}}
         await persistence.append("test-unrecognized", [ev_valid])
 
-        # Write an unknown event line directly to the file
+        # Write an invalid event line followed by a closed turn
         log_path = persistence.locate(meta).path
         with open(log_path, "a", encoding="utf-8") as f:
-            f.write(json.dumps({"type": "totally/unknown-event", "seq": 1, "time": 2000, "data": {}}) + "\n")
+            f.write("corrupted non-json line\n")
+            f.write(json.dumps({"type": "turn/end", "seq": 1, "time": 2000, "data": {"turn": 1, "reason": {"kind": "completed"}}}) + "\n")
 
-        # Loading must fail-closed on unknown event type
-        with pytest.raises(ValueError, match='unrecognized session event type "totally/unknown-event"'):
+        # Loading must fail-closed on corrupt committed event
+        with pytest.raises(ValueError, match="corrupt session log"):
             await persistence.load("test-unrecognized")

@@ -157,8 +157,15 @@ class StrReplaceEditorPlugin(Plugin):
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
-        self.max_output_chars: int = int(self.config.get("maxOutputChars", 16000))
-        self.description: str = str(self.config.get("description", DEFAULT_DESCRIPTION))
+        max_chars = self.config.get("maxOutputChars", 16000)
+        if not isinstance(max_chars, int) or max_chars <= 0:
+            raise ValueError("maxOutputChars must be a positive safe integer")
+        self.max_output_chars: int = max_chars
+
+        desc = self.config.get("description", DEFAULT_DESCRIPTION)
+        if not isinstance(desc, str) or not desc.strip():
+            raise ValueError("description must be non-empty")
+        self.description: str = desc
 
     def apply(self, ctx: Any) -> None:
         tools_service = ctx.get("tools")
@@ -178,24 +185,26 @@ class StrReplaceEditorPlugin(Plugin):
                     "description": "Absolute path to file or directory, e.g. `/repo/file.py` or `/repo`.",
                 },
                 "file_text": {
-                    "type": "string",
+                    "oneOf": [{"type": "string"}, {"type": "null"}],
                     "description": "Required parameter of `create` command, with the content of the file to be created.",
                 },
                 "insert_line": {
-                    "type": "integer",
+                    "oneOf": [{"type": "integer"}, {"type": "null"}],
                     "description": "Required parameter of `insert` command. The `new_str` will be inserted AFTER the line `insert_line` of `path`.",
                 },
                 "new_str": {
-                    "type": "string",
+                    "oneOf": [{"type": "string"}, {"type": "null"}],
                     "description": "Optional parameter of `str_replace` command containing the new string (if not given, no string will be added). Required parameter of `insert` command containing the string to insert.",
                 },
                 "old_str": {
-                    "type": "string",
+                    "oneOf": [{"type": "string"}, {"type": "null"}],
                     "description": "Required parameter of `str_replace` command containing the string in `path` to replace.",
                 },
                 "view_range": {
-                    "type": "array",
-                    "items": {"type": "integer"},
+                    "oneOf": [
+                        {"type": "array", "items": {"type": "integer"}},
+                        {"type": "null"},
+                    ],
                     "description": "Optional parameter of `view` command when `path` points to a file. If none is given, the full file is shown. If provided, the file will be shown in the indicated line number range, e.g. [11, 12] will show lines 11 and 12. Indexing at 1 to start. Setting `[start_line, -1]` shows all lines from `start_line` to the end of the file.",
                 },
             },
@@ -242,12 +251,13 @@ class StrReplaceEditorPlugin(Plugin):
                 }
             elif cmd == "str_replace":
                 new_str = args.get("new_str")
+                old_str = args.get("old_str")
                 return {
                     "card": "diff",
                     "title": f"str_replace {p}",
                     "diffs": [{
                         "path": p,
-                        "oldText": args.get("old_str"),
+                        "oldText": old_str if old_str is not None else None,
                         "newText": new_str if new_str is not None else "",
                     }],
                     "locations": [{"path": p}],
@@ -255,7 +265,7 @@ class StrReplaceEditorPlugin(Plugin):
             elif cmd == "insert":
                 loc: Dict[str, Any] = {"path": p}
                 il = args.get("insert_line")
-                if il is not None:
+                if il is not None and isinstance(il, int) and not isinstance(il, bool):
                     loc["line"] = max(1, il + 1)
                 return {
                     "card": "generic",

@@ -27,8 +27,8 @@ async def test_session_first_live_seq():
 
     seed = [
         {"type": "turn/start", "seq": 0, "time": 1000, "data": {"turn": 1}},
-        {"type": "user/message", "seq": 1, "time": 1001, "data": {"role": "user", "id": "m1", "content": "hello", "source": {"kind": "user"}}, "surfaceOp": "append"},
-        {"type": "assistant/message", "seq": 2, "time": 1002, "data": {"turn": 1, "step": 1, "message": {"role": "assistant", "content": [{"type": "text", "text": "hi"}], "source": {"kind": "model", "provider": "deepseek", "model": "chat"}}}, "surfaceOp": "append"},
+        {"type": "user/message", "seq": 1, "time": 1001, "data": {"role": "user", "id": "m1", "content": [{"type": "text", "text": "hello"}], "source": {"kind": "user"}}, "surfaceOp": "append"},
+        {"type": "assistant/message", "seq": 2, "time": 1002, "data": {"turn": 1, "step": 1, "message": {"id": "m2", "role": "assistant", "content": [{"type": "text", "text": "hi"}], "source": {"kind": "model", "provider": "deepseek", "model": "chat"}}}, "surfaceOp": "append"},
         {"type": "turn/end", "seq": 3, "time": 1003, "data": {"turn": 1, "reason": {"kind": "completed"}}},
     ]
     s2 = Session.create("session-seeded", seed=seed)

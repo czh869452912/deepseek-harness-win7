@@ -151,6 +151,10 @@ class GoalService:
                 s = sessions_svc.get("default-session")
                 if s:
                     return s
+                if hasattr(sessions_svc, "list"):
+                    lst = sessions_svc.list()
+                    if lst:
+                        return lst[0]
                 if hasattr(sessions_svc, "_sessions") and sessions_svc._sessions:
                     return next(iter(sessions_svc._sessions.values()))
         return None

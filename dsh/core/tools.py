@@ -50,17 +50,94 @@ class Tool:
             },
         }
 
-    async def execute(self, args: Dict[str, Any], ctx: Optional[Any] = None) -> Any:
+    async def execute(
+        self,
+        args: Dict[str, Any],
+        ctx: Optional[Any] = None,
+        tool_call_id: Optional[str] = None,
+        session: Optional[Any] = None,
+        agent: Optional[Any] = None,
+        signal: Optional[Any] = None,
+        exec_input: Optional[Any] = None,
+    ) -> Any:
         sig = inspect.signature(self.handler)
-        has_var_kw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
-        if "ctx" in sig.parameters or has_var_kw:
-            res = self.handler(**args, ctx=ctx)
+        params = sig.parameters
+
+        param_names = list(params.keys())
+        if len(param_names) >= 2 and param_names[0] in ("tool_call_id", "call_id") and param_names[1] in ("params", "args", "arguments"):
+            kw = {}
+            if "tool_call_id" in params:
+                kw["tool_call_id"] = tool_call_id or ""
+            elif "call_id" in params:
+                kw["call_id"] = tool_call_id or ""
+            if "params" in params:
+                kw["params"] = args
+            elif "args" in params:
+                kw["args"] = args
+            elif "arguments" in params:
+                kw["arguments"] = args
+            if "session" in params:
+                kw["session"] = session
+            if "ctx" in params:
+                kw["ctx"] = ctx
+            if "agent" in params:
+                kw["agent"] = agent
+            if "signal" in params:
+                kw["signal"] = signal
+            if "exec_input" in params:
+                kw["exec_input"] = exec_input
+            res = self.handler(**kw)
+        elif len(param_names) == 1 and param_names[0] in ("params", "args", "arguments"):
+            res = self.handler(args)
         else:
-            res = self.handler(**args)
+            has_var_kw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values())
+            call_kw = dict(args)
+            if "ctx" in params or has_var_kw:
+                call_kw["ctx"] = ctx
+            if "session" in params or has_var_kw:
+                call_kw["session"] = session
+            if "agent" in params or has_var_kw:
+                call_kw["agent"] = agent
+            if "signal" in params or has_var_kw:
+                call_kw["signal"] = signal
+            if "exec_input" in params or has_var_kw:
+                call_kw["exec_input"] = exec_input
+            if "tool_call_id" in params or has_var_kw:
+                call_kw["tool_call_id"] = tool_call_id
+            if not has_var_kw:
+                call_kw = {k: v for k, v in call_kw.items() if k in params}
+            res = self.handler(**call_kw)
 
         if inspect.isawaitable(res):
             res = await res
         return res
+
+
+def define_tool(
+    name: str,
+    description: str,
+    parameters: Dict[str, Any],
+    execute: Optional[Callable[..., Any]] = None,
+    handler: Optional[Callable[..., Any]] = None,
+    execution_mode: str = "exclusive",
+    is_concurrency_safe: Optional[Callable[[Any], bool]] = None,
+    present_call: Optional[Callable[[Dict[str, Any]], Any]] = None,
+    present_result: Optional[Callable[[Any], Any]] = None,
+) -> Tool:
+    actual_handler = execute or handler
+    if actual_handler is None:
+        raise ValueError("define_tool requires an execute or handler callable")
+    return Tool(
+        name=name,
+        description=description,
+        parameters=parameters,
+        handler=actual_handler,
+        execution_mode=execution_mode,
+        is_concurrency_safe=is_concurrency_safe,
+        present_call=present_call,
+        present_result=present_result,
+    )
+
 
 
 class ToolExecutionInput:
@@ -290,15 +367,33 @@ class ToolsService:
             return {"kind": "post-result", "result": err_result}
 
         args = exec_input.arguments if isinstance(exec_input.arguments, dict) else {}
+        session = exec_input.agent.session if exec_input.agent else None
         try:
-            raw = await tool.execute(args, ctx=self.ctx)
+            raw = await tool.execute(
+                args,
+                ctx=self.ctx,
+                tool_call_id=exec_input.call_id,
+                session=session,
+                agent=exec_input.agent,
+                signal=exec_input.signal,
+                exec_input=exec_input,
+            )
             result = ToolExecutionResult.from_raw(raw)
             return {"kind": "post-result", "result": result}
         except Exception as e:
+            code = getattr(e, "code", "TOOL_EXECUTION_ERROR")
+            err_name = getattr(e, "name", type(e).__name__)
+            msg = getattr(e, "message", str(e))
+            prefix = "" if msg.startswith("Error:") else "Error: "
             err_result = ToolExecutionResult.from_raw(
-                f"Error executing tool '{exec_input.name}': {str(e)}",
+                f"{prefix}{msg}",
                 is_error=True,
-                error_info={"name": type(e).__name__, "message": str(e), "code": "TOOL_EXECUTION_ERROR"},
+                error_info={
+                    "info": {"name": err_name, "code": code},
+                    "name": err_name,
+                    "code": code,
+                    "message": msg,
+                },
             )
             return {"kind": "post-result", "result": err_result}
 
@@ -317,20 +412,57 @@ class ToolsService:
     def finish(self, exec_input: ToolExecutionInput, result: ToolExecutionResult) -> ToolExecutionResult:
         return result
 
-    async def execute_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Any:
-        """Sequential single-tool helper with pre/post waterfall."""
+    def get(self, name: str) -> Optional[Tool]:
+        return self.get_tool(name)
+
+    def schemas(self) -> List[Dict[str, Any]]:
+        return [
+            {
+                "name": tool.name,
+                "description": tool.description,
+                "parameters": tool.parameters,
+            }
+            for tool in self._tools.values()
+        ]
+
+    async def execute(
+        self,
+        options_or_name: Union[Dict[str, Any], str],
+        arguments: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
+    ) -> ToolExecutionResult:
+        """Execute a tool with full lifecycle and return ToolExecutionResult."""
+        if isinstance(options_or_name, dict):
+            name = options_or_name.get("name", "")
+            args = options_or_name.get("arguments", {})
+            call_id = options_or_name.get("callId") or options_or_name.get("call_id") or f"call-{name}"
+            agent = options_or_name.get("agent")
+            signal = options_or_name.get("signal")
+        else:
+            name = options_or_name
+            args = arguments or {}
+            call_id = kwargs.get("call_id") or kwargs.get("callId") or f"call-{name}"
+            agent = kwargs.get("agent")
+            signal = kwargs.get("signal")
+
         exec_input = ToolExecutionInput(
-            call_id=f"call-{tool_name}",
-            name=tool_name,
-            arguments=arguments,
+            call_id=call_id,
+            name=name,
+            arguments=args,
+            agent=agent,
+            signal=signal,
         )
         prep = await self.prepare(exec_input)
         disp = await self.dispatch(prep["exec"])
         final = await self.finalize(prep["exec"], disp["result"])
-        if final.is_error:
-            text = "".join(b.get("text", "") for b in final.content if b.get("type") == "text")
-            return text or "Tool execution failed"
+        return final
+
+    async def execute_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Any:
+        """Sequential single-tool helper with pre/post waterfall."""
+        final = await self.execute(tool_name, arguments)
         text = "".join(b.get("text", "") for b in final.content if b.get("type") == "text")
+        if final.is_error:
+            return text or "Tool execution failed"
         return text
 
 

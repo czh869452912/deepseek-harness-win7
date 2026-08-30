@@ -12,45 +12,45 @@ from dsh.cordis.context import Context
 from dsh.interaction.user_approval import UserApprovalService
 
 
+from dsh.core.agent import Agent
+from dsh.core.session import Session
+
+
 @pytest.mark.asyncio
 async def test_acp_approval_policies_and_decisions():
     ctx = Context()
-    approval_svc = UserApprovalService(ctx, policy="ask")
+    approval_svc = UserApprovalService(ctx)
+    session = Session("s-acp")
+    agent = Agent(session=session, ctx=ctx, agent_id="a-acp")
 
-    # 1. Test policy="always" (auto-approve)
-    approval_svc.set_policy("always")
-    assert await approval_svc.request_approval("pwsh", {"command": "dir"}) is True
+    # 1. Test policy="never" (auto-deny)
+    approval_svc.set_policy(agent, "never")
+    session.append("turn/start", {"turn": 1})
+    res_never = await approval_svc.request({"agent": agent, "toolName": "pwsh", "reason": "del file.txt"})
+    assert res_never == "rejected"
 
-    # 2. Test policy="never" (auto-reject)
-    approval_svc.set_policy("never")
-    assert await approval_svc.request_approval("pwsh", {"command": "del file.txt"}) is False
-
-    # 3. Test policy="ask" with interactive approval
-    approval_svc.set_policy("ask")
+    # 2. Test policy="ask" with interactive approval
+    approval_svc.set_policy(agent, "ask")
     requested_events = []
 
-    def on_requested(event_data):
-        requested_events.append(event_data)
-        # Simulate client approving the request
-        req_id = event_data["requestId"]
-        approval_svc.decide(req_id, True)
+    def on_request(req, next_fn=None):
+        requested_events.append(req)
+        return "allowed-once"
 
-    disp1 = ctx.on("approval/requested", on_requested)
-
-    result = await approval_svc.request_approval("pwsh", {"command": "git status"})
-    assert result is True
+    disp1 = ctx.on("approval/request", on_request)
+    result = await approval_svc.request({"agent": agent, "toolName": "pwsh", "reason": "git status"})
+    assert result == "allowed-once"
     assert len(requested_events) == 1
-    assert requested_events[0]["action"] == "pwsh"
+    assert requested_events[0]["reason"] == "git status"
     disp1()
 
-    # 4. Test interactive rejection
-    def on_requested_reject(event_data):
-        req_id = event_data["requestId"]
-        approval_svc.decide(req_id, False)
+    # 3. Test interactive rejection
+    def on_request_reject(req, next_fn=None):
+        return "rejected"
 
-    disp2 = ctx.on("approval/requested", on_requested_reject)
-    result_reject = await approval_svc.request_approval("pwsh", {"command": "rmdir /s"})
-    assert result_reject is False
+    disp2 = ctx.on("approval/request", on_request_reject)
+    result_reject = await approval_svc.request({"agent": agent, "toolName": "pwsh", "reason": "rmdir /s"})
+    assert result_reject == "rejected"
     disp2()
 
 

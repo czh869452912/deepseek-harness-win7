@@ -9,6 +9,7 @@ Aligned 1:1 with official `@deepseek-ai/dsh-agent-loop/tool-calls`.
 import asyncio
 import json
 import time
+import uuid
 from typing import Any, Callable, Dict, List, Optional
 from dsh.core.tools import (
     TOOL_ABORTED_BEFORE_DISPATCH,
@@ -288,6 +289,7 @@ def append_tool_result(
     name = func.get("name") or block.get("name", "")
 
     tool_msg = {
+        "id": f"msg-{uuid.uuid4().hex[:8]}",
         "role": "user",
         "content": [
             {

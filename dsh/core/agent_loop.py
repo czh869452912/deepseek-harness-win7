@@ -28,11 +28,32 @@ def request_proposal(header: Dict[str, Any]) -> Dict[str, Any]:
     return config
 
 
-async def _async_iter_chunks(stream_iter: Any):
-    """Run synchronous stream iterator in worker thread to prevent event loop blocking."""
+async def _async_iter_chunks(stream_iter: Any, cancel_check: Optional[Callable[[], bool]] = None):
+    """Run synchronous stream iterator in worker thread or handle async generator with cancellation checking."""
     if hasattr(stream_iter, "__aiter__"):
-        async for item in stream_iter:
-            yield item
+        ait = stream_iter.__aiter__()
+        while True:
+            if cancel_check and cancel_check():
+                try:
+                    await ait.aclose()
+                except Exception:
+                    pass
+                raise asyncio.CancelledError("cancelled")
+            anext_task = asyncio.create_task(ait.__anext__())
+            while not anext_task.done():
+                if cancel_check and cancel_check():
+                    anext_task.cancel()
+                    try:
+                        await ait.aclose()
+                    except Exception:
+                        pass
+                    raise asyncio.CancelledError("cancelled")
+                await asyncio.sleep(0.01)
+            try:
+                item = await anext_task
+                yield item
+            except StopAsyncIteration:
+                break
     else:
         import queue
         import threading
@@ -52,6 +73,8 @@ async def _async_iter_chunks(stream_iter: Any):
         t.start()
 
         while True:
+            if cancel_check and cancel_check():
+                raise asyncio.CancelledError("cancelled")
             try:
                 item = q.get_nowait()
             except queue.Empty:
@@ -520,11 +543,6 @@ class AgentLoopService:
         """Background driver loop pumping the agent's inbox."""
         try:
             while True:
-                if agent.is_cancelled():
-                    cause = agent.take_cancel_cause()
-                    agent.session.append("turn/end", {"turn": getattr(agent, "_last_turn", 0), "reason": {"kind": "aborted", "cause": cause}}, ignorable=True)
-                    agent.set_status("idle")
-
                 if agent.inbox.is_empty():
                     agent.set_status("idle")
                     await agent._wake_event.wait()
@@ -640,6 +658,9 @@ class AgentLoopService:
                 raise
             turn_ends = {"kind": "error", "error": {"message": str(e), "code": "UNKNOWN"}}
             raise
+        except asyncio.CancelledError:
+            cause = agent.take_cancel_cause() or {"kind": "user"}
+            turn_ends = {"kind": "aborted", "reason": cause}
         finally:
             final_reason = turn_ends or {"kind": "completed"}
             session.append("turn/end", {"turn": turn_num, "reason": final_reason})
@@ -726,7 +747,7 @@ class AgentLoopService:
                         tools=tool_schemas if tool_schemas else None,
                         system=system_prompt if system_prompt else None,
                     )
-                    async for chunk in _async_iter_chunks(stream_iter):
+                    async for chunk in _async_iter_chunks(stream_iter, cancel_check=agent.is_cancelled):
                         # TS port yields StreamChunk dict; legacy tuple (ev_type, ev_payload) also supported
                         if isinstance(chunk, (list, tuple)) and len(chunk) == 2:
                             ev_type, ev_payload = chunk

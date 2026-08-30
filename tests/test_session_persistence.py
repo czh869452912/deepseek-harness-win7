@@ -44,10 +44,10 @@ async def test_session_packed_chunks(temp_session_dir):
     header = SessionHeader(session_id="test-session-packed", cwd=temp_session_dir)
     await persistence.create(header)
 
-    # Write a packed chunk batch row directly into the file to test unpack
+    # Write a packed text-chunks row directly into the file to test unpack
     path = persistence.locate(header).path
     with open(path, "a", encoding="utf-8") as f:
-        f.write('{"type": "assistant/chunk-batch", "seq": 0, "chunks": [{"type": "text", "text": "H"}, {"type": "text", "text": "i"}]}\n')
+        f.write('{"type": "text-chunks", "seq0": 0, "time0": 1000, "data": {"turn": 1, "step": 1, "index": 0, "dt": [50], "texts": ["H", "i"]}}\n')
 
     inspection = await persistence.load("test-session-packed")
     assert len(inspection.events) == 2

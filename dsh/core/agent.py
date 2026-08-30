@@ -77,8 +77,10 @@ class Agent:
         session: Session,
         options: Optional[AgentOptions] = None,
         ctx: Optional[Context] = None,
+        agent_id: Optional[str] = None,
     ):
-        self.id = session.id
+        self._id = agent_id
+        self.id = agent_id if agent_id is not None else session.id
         self.session = session
         self.options = options or AgentOptions()
         self.ctx = ctx or Context()
@@ -258,20 +260,36 @@ class AgentRegistry:
     """
     Agent Registry mounted at `ctx.agents`.
     Tracks live agents, initiator scopes, and creation factories.
+    1:1 aligned with official `@deepseek-ai/dsh-agent/AgentRegistry`.
     """
 
     def __init__(self, ctx: Optional[Context] = None):
         self.ctx = ctx
         self._store: Dict[str, _AgentEntry] = {}
         self._factory: Optional[Any] = None
+        self._initiator_state: str = "active"  # "active" | "closing" | "disposed"
+        self._active_initiator_runs: int = 0
+        self._initiator_drain: Optional[asyncio.Event] = None
+
+    @property
+    def initiator_state(self) -> str:
+        return self._initiator_state
+
+    @property
+    def initiatorState(self) -> str:
+        return self._initiator_state
 
     def current_initiator(self) -> Optional[Agent]:
         """Read the Agent that initiated current asynchronous context."""
+        if self._initiator_state == "disposed":
+            return None
         return _CURRENT_INITIATOR.get()
 
     currentInitiator = current_initiator
 
     def require_initiator(self) -> Agent:
+        if self._initiator_state == "disposed":
+            raise RuntimeError("agent initiator scope is disposed")
         initiator = self.current_initiator()
         if initiator is None:
             raise RuntimeError("no initiating agent is active")
@@ -279,33 +297,71 @@ class AgentRegistry:
 
     requireInitiator = require_initiator
 
+    def _enter_initiator_run(self) -> None:
+        if self._initiator_state != "active":
+            raise RuntimeError(f"cannot enter agent initiator scope while {self._initiator_state}")
+        self._active_initiator_runs += 1
+
+    def _leave_initiator_run(self) -> None:
+        self._active_initiator_runs = max(0, self._active_initiator_runs - 1)
+        if self._active_initiator_runs == 0 and self._initiator_state == "closing":
+            self._initiator_state = "disposed"
+            if self._initiator_drain is not None:
+                self._initiator_drain.set()
+
     def with_initiator(self, agent: Agent, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         """Run callable within initiator scope."""
+        self._enter_initiator_run()
         token = _CURRENT_INITIATOR.set(agent)
         try:
             return func(*args, **kwargs)
         finally:
             _CURRENT_INITIATOR.reset(token)
+            self._leave_initiator_run()
 
     withInitiator = with_initiator
 
     async def with_initiator_async(self, agent: Agent, coro: Any) -> Any:
         """Run coroutine within initiator scope."""
+        self._enter_initiator_run()
         token = _CURRENT_INITIATOR.set(agent)
         try:
             return await coro
         finally:
             _CURRENT_INITIATOR.reset(token)
+            self._leave_initiator_run()
 
     def without_initiator(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         """Run operation in a boundary that hides any inherited initiating Agent."""
+        self._enter_initiator_run()
         token = _CURRENT_INITIATOR.set(None)
         try:
             return func(*args, **kwargs)
         finally:
             _CURRENT_INITIATOR.reset(token)
+            self._leave_initiator_run()
 
     withoutInitiator = without_initiator
+
+    def close_initiators(self) -> None:
+        if self._initiator_state != "active":
+            return
+        if self._active_initiator_runs == 0:
+            self._initiator_state = "disposed"
+        else:
+            self._initiator_state = "closing"
+
+    closeInitiators = close_initiators
+
+    async def dispose_initiators(self) -> None:
+        self.close_initiators()
+        if self._initiator_state != "disposed":
+            if self._initiator_drain is None:
+                self._initiator_drain = asyncio.Event()
+            await self._initiator_drain.wait()
+            self._initiator_state = "disposed"
+
+    disposeInitiators = dispose_initiators
 
     def set_factory(self, factory: Any) -> Callable[[], None]:
         if self._factory is not None:

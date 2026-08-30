@@ -7,6 +7,20 @@ from typing import Any, Dict, List, Optional
 from dsh.core.session import SessionHeader
 
 
+class SessionFormatUnsupportedError(ValueError):
+    """Refusal on loading a log written by a newer/unsupported version."""
+    pass
+
+
+class SessionPersistenceCorruptionError(ValueError):
+    """Error on reading a corrupt log."""
+    pass
+
+
+def session_format_version_refusal(session_id: str, version: int) -> str:
+    return f'session "{session_id}" uses log format v{version}, which was written by a newer harness build; upgrade the harness to read this session'
+
+
 class SessionLocation:
     """A backend-resolved local artifact location."""
 

@@ -37,15 +37,17 @@ When ready, call exit_plan_mode with the complete plan markdown, starting with a
 """.strip()
 
 
-def resolve_config(config: Union[str, Dict[str, Any]]) -> Dict[str, str]:
-    if isinstance(config, str):
-        section = config
-    elif isinstance(config, dict):
-        section = config.get("section", DEFAULT_PLAN_GUIDANCE)
-    else:
-        section = DEFAULT_PLAN_GUIDANCE
-    if not isinstance(section, str) or not section.strip():
-        section = DEFAULT_PLAN_GUIDANCE
+def resolve_config(config: Any) -> Dict[str, str]:
+    if not isinstance(config, dict):
+        raise TypeError("needs a string `section`")
+    for k in config:
+        if k != "section":
+            raise ValueError(f"unknown key(s) {k} — config is {{ section }}")
+    section = config.get("section")
+    if not isinstance(section, str):
+        raise TypeError("needs a string `section`")
+    if not section.strip():
+        raise ValueError("needs a non-empty `section`")
     return {"section": section}
 
 
@@ -69,6 +71,9 @@ def fold_plan_mode(events: List[Any], end: Optional[int] = None) -> bool:
     return active
 
 
+foldPlanMode = fold_plan_mode
+
+
 def first_heading(plan: str) -> Optional[str]:
     """Find the first markdown heading in plan text."""
     for line in plan.splitlines():
@@ -78,9 +83,19 @@ def first_heading(plan: str) -> Optional[str]:
     return None
 
 
+def has_open_turn(events: List[Any]) -> bool:
+    for ev in reversed(events):
+        etype = ev.get("type") if isinstance(ev, dict) else getattr(ev, "type", "")
+        if etype == "turn/start":
+            return True
+        if etype == "turn/end":
+            return False
+    return False
+
+
 class PlanModeController:
     """
-    Plan Mode Service registered at `ctx.plan_mode`.
+    Plan Mode Service registered at `ctx.planMode`.
     Owns logged plan state, applies guidance during prompt assembly,
     and handles `exit_plan_mode` review transitions.
     """
@@ -88,16 +103,15 @@ class PlanModeController:
     def __init__(self, ctx: Any, section: Optional[str] = None):
         self.ctx = ctx
         self.section = section or DEFAULT_PLAN_GUIDANCE
-        self._pending_intents: Dict[str, Dict[str, Any]] = {}  # session_id -> {active, narrate}
+        self._pending_intents: Dict[str, Dict[str, Any]] = {}
 
-        # System prompt section plan:policy
         if hasattr(ctx, "has") and ctx.has("systemPrompt"):
             sp = ctx.get("systemPrompt")
             if hasattr(sp, "section"):
                 sp.section(
                     name="plan:policy",
                     order=50,
-                    text=lambda context: self.section if self.is_active() else "",
+                    text=lambda context: self.section if self.is_active(context.get("agent") if isinstance(context, dict) else None) else "",
                 )
 
     def _resolve_session(self, agent: Optional[Any] = None) -> Optional[Session]:
@@ -121,8 +135,8 @@ class PlanModeController:
                     return next(iter(sessions_svc._sessions.values()))
         return None
 
-    def is_active(self, session: Optional[Session] = None) -> bool:
-        sess = session or self._resolve_session()
+    def is_active(self, agent: Optional[Any] = None) -> bool:
+        sess = self._resolve_session(agent)
         if not sess:
             return False
         pending = self._pending_intents.get(sess.id)
@@ -130,7 +144,7 @@ class PlanModeController:
             return bool(pending.get("active", False))
         return fold_plan_mode(sess.events)
 
-    def get_state(self, agent: Optional[Any] = None) -> Dict[str, Any]:
+    def get(self, agent: Optional[Any] = None) -> Dict[str, Any]:
         sess = self._resolve_session(agent)
         if not sess:
             return {"active": False}
@@ -140,25 +154,34 @@ class PlanModeController:
             return {"active": active, "pending": pending.get("active", False)}
         return {"active": active}
 
-    def set(self, agent: Optional[Any], active: bool) -> str:
-        return self.set_active(active, agent=agent)
+    get_state = get
 
-    def set_active(self, active: bool, agent: Optional[Any] = None) -> str:
+    def set(self, agent: Optional[Any], active: bool) -> str:
         sess = self._resolve_session(agent)
         if not sess:
             return "noop"
 
         current_active = fold_plan_mode(sess.events)
         pending = self._pending_intents.get(sess.id)
-        target = pending.get("active") if pending is not None else current_active
+        current_target = pending.get("active") if pending is not None else current_active
 
-        if active == target:
+        if active == current_target:
             return "noop"
 
-        self._pending_intents[sess.id] = {"active": active, "narrate": True}
-        sess.append("plan/mode", {"active": active}, ignorable=True)
-        self._pending_intents.pop(sess.id, None)
-        return "committed"
+        in_turn = has_open_turn(sess.events)
+        if in_turn:
+            self._pending_intents[sess.id] = {"active": active}
+            return "queued"
+        else:
+            if pending is not None and active == current_active:
+                self._pending_intents.pop(sess.id, None)
+                return "cancelled"
+            sess.append("plan/mode", {"active": active})
+            self._pending_intents.pop(sess.id, None)
+            return "committed"
+
+    def set_active(self, active: bool, agent: Optional[Any] = None) -> str:
+        return self.set(agent, active)
 
     def on_prompt_assemble(self, prompt: str) -> str:
         """Inject plan guidance section if plan mode is active."""
@@ -181,48 +204,56 @@ class PlanModeController:
 
         return payload
 
-    async def handle_exit_plan_mode(self, plan: str = "", ctx: Optional[Any] = None, **kwargs) -> Any:
+    async def handle_exit_plan_mode(
+        self,
+        args: Optional[Dict[str, Any]] = None,
+        plan: Optional[str] = None,
+        agent: Optional[Any] = None,
+        exec_input: Optional[Any] = None,
+        ctx: Optional[Any] = None,
+        **kwargs: Any,
+    ) -> Any:
         """Execute exit_plan_mode tool call."""
         context = ctx or self.ctx
-        plan_text = plan or kwargs.get("plan", "")
-        sess = self._resolve_session()
+        effective_agent = agent or getattr(exec_input, "agent", None) or kwargs.get("agent")
+        if effective_agent is None:
+            raise RuntimeError("exit_plan_mode requires a calling agent (no session to switch)")
 
-        if not self.is_active(sess):
-            return "Error: exit_plan_mode is only available when plan mode is active"
+        if not self.is_active(effective_agent):
+            raise RuntimeError("exit_plan_mode is only available in plan mode")
 
+        call_args = args if isinstance(args, dict) else kwargs
+        plan_text = plan or (call_args.get("plan") if isinstance(call_args, dict) else "") or ""
         plan_clean = plan_text.strip()
-        # TS regex: /^#\s+\S/
         if not re.match(r"^#\s+\S", plan_clean):
-            return "Error: exit_plan_mode requires a non-empty markdown plan starting with a # heading"
+            raise RuntimeError("exit_plan_mode requires a non-empty markdown plan starting with a # heading")
 
-        # Present plan for user review
-        heading = first_heading(plan_clean) or "Plan Review"
-        ask_user_tool = context.get("tools").get_tool("ask_user_question") if context and context.has("tools") else None
-
-        if ask_user_tool:
-            res = await context.get("tools").execute_tool(
-                "ask_user_question",
-                {
-                    "questions": [{
-                        "id": REVIEW_ID,
-                        "question": f"Approve this plan and leave plan mode?\n\n{plan_clean}",
-                        "header": "Plan Review",
-                        "options": [
-                            {"label": APPROVE_LABEL, "description": "Leave plan mode; the plan is carried out from the next step."},
-                            {"label": KEEP_PLANNING_LABEL, "description": "Stay in plan mode; feedback goes back to the model."}
-                        ]
-                    }]
-                }
-            )
-
-            if APPROVE_LABEL in str(res):
-                self.set_active(False)
-                return f"Plan approved — plan mode exited; carry out the plan starting with your next step."
+        # Present plan for user review via userQuestions if available
+        uq_svc = context.get("userQuestions") if context and context.has("userQuestions") else None
+        if uq_svc:
+            res = await uq_svc.ask({
+                "agent": effective_agent,
+                "questions": [{
+                    "id": REVIEW_ID,
+                    "question": f"Approve this plan and leave plan mode?\n\n{plan_clean}",
+                    "header": "Plan Review",
+                    "options": [
+                        {"label": APPROVE_LABEL, "description": "Leave plan mode; the plan is carried out from the next step."},
+                        {"label": KEEP_PLANNING_LABEL, "description": "Stay in plan mode; feedback goes back to the model."},
+                    ],
+                }],
+            })
+            answers = res.get("answers", [])
+            selected = answers[0].get("selected", []) if answers else []
+            if APPROVE_LABEL in selected:
+                self.set(effective_agent, False)
+                return "Plan approved — plan mode exited; carry out the plan starting with your next step."
             else:
-                return f"The user chose to keep planning; their feedback: {res}"
-        else:
-            self.set_active(False)
-            return "Plan approved — plan mode exited; carry out the plan starting with your next step."
+                feedback = answers[0].get("custom") or (selected[0] if selected else "")
+                return f"The user chose to keep planning; their feedback: {feedback}"
+
+        self.set(effective_agent, False)
+        return "Plan approved — plan mode exited; carry out the plan starting with your next step."
 
 
 class PlanModePlugin(Plugin):
@@ -238,6 +269,7 @@ class PlanModePlugin(Plugin):
         cfg = self.config or {}
         section = cfg.get("section")
         controller = PlanModeController(ctx, section=section)
+        ctx.set_service("planMode", controller)
         ctx.set_service("plan_mode", controller)
 
         # 1. Register session projection if sessionProjections is mounted

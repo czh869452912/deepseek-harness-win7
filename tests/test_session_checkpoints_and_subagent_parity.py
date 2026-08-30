@@ -27,7 +27,7 @@ def test_session_semantic_checkpoints_and_format_guard():
     assert len(messages) >= 3
     assert messages[0]["role"] == "system"
     assert messages[1]["role"] == "user"
-    assert messages[1]["content"] == "Hello"
+    assert messages[1]["content"] == [{"type": "text", "text": "Hello"}]
 
     # Test serialization invariant
     dumped = [snapshot_json_value(ev) for ev in session.events]

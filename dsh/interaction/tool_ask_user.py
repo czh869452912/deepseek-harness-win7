@@ -27,7 +27,7 @@ class ToolAskUserPlugin(Plugin):
         if not tools:
             return
 
-        async def exec_ask(args: Any = None, exec_input: Optional[Any] = None, **kwargs: Any) -> Any:
+        async def exec_ask(args: Any = None, agent: Optional[Any] = None, signal: Optional[Any] = None, exec_input: Optional[Any] = None, **kwargs: Any) -> Any:
             if isinstance(args, dict):
                 questions_arg = args.get("questions", [])
             elif "questions" in kwargs:
@@ -37,11 +37,11 @@ class ToolAskUserPlugin(Plugin):
             else:
                 questions_arg = []
 
+            effective_agent = agent or getattr(exec_input, "agent", None) or kwargs.get("agent")
+            effective_signal = signal or getattr(exec_input, "signal", None) or kwargs.get("signal")
+
             user_questions_svc = ctx.get("userQuestions")
             if user_questions_svc and hasattr(user_questions_svc, "ask"):
-                agent = getattr(exec_input, "agent", None) if exec_input else None
-                signal = getattr(exec_input, "signal", None) if exec_input else None
-
                 qs = []
                 for q in questions_arg:
                     item = {"id": q["id"], "question": q["question"]}
@@ -54,10 +54,10 @@ class ToolAskUserPlugin(Plugin):
                     qs.append(item)
 
                 req: Dict[str, Any] = {"questions": qs}
-                if agent:
-                    req["agent"] = agent
-                if signal:
-                    req["signal"] = signal
+                if effective_agent is not None:
+                    req["agent"] = effective_agent
+                if effective_signal is not None:
+                    req["signal"] = effective_signal
 
                 res = await user_questions_svc.ask(req)
                 answers = res.get("answers", [])

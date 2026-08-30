@@ -139,13 +139,14 @@ class CompactionEngine(Service):
                 pass
 
         summary_content = f"<summary>\n{summary_text}\n</summary>"
-        evt = target_session.append_user_message(summary_content)
+        shadowed_seqs = list(range(start, end + 1))
+        evt = target_session.append_user_message(
+            summary_content,
+            surface_op={"op": "replace", "start": start, "end": end},
+            source_event_seqs=shadowed_seqs,
+        )
         summary_seq = evt.get("seq", len(target_session.events) - 1) if isinstance(evt, dict) else getattr(evt, "seq", len(target_session.events) - 1)
 
-        if hasattr(target_session, "surface"):
-            target_session.surface.replace_range(start, end, summary_seq)
-
-        shadowed_seqs = list(range(start, end + 1))
         return {
             "compactionId": f"comp-{start}-{end}",
             "startSeq": start,

@@ -344,11 +344,14 @@ class FsLocalPlugin(Plugin):
     name = "@deepseek-ai/dsh-fs-local"
 
     def apply(self, ctx: Any) -> None:
-        cwd = self.config.get("cwd")
-        diff_basis_max_bytes = self.config.get("diffBasisMaxBytes", 10 * 1024 * 1024)
+        cwd = self.config.get("cwd") if self.config else None
+        diff_basis_max_bytes = self.config.get("diffBasisMaxBytes", 10 * 1024 * 1024) if self.config else (10 * 1024 * 1024)
         fs_service = FsService(cwd=cwd, diff_basis_max_bytes=diff_basis_max_bytes)
         ctx.set_service("fs", fs_service)
 
+
+LocalFilesystemPlugin = FsLocalPlugin
+LocalFileSystem = FsLocalPlugin
 
 __all__ = [
     "FsError",
@@ -360,4 +363,6 @@ __all__ = [
     "FsEditOutcome",
     "FsService",
     "FsLocalPlugin",
+    "LocalFilesystemPlugin",
+    "LocalFileSystem",
 ]

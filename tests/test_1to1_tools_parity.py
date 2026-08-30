@@ -19,7 +19,7 @@ async def test_1to1_tools_schema_and_descriptions():
     ctx.plugin(FsLocalPlugin)
     ctx.plugin(StrReplaceEditorPlugin)
     ctx.plugin(ToolFsSearchPlugin)
-    ctx.plugin(ToolTodoPlugin)
+    ctx.plugin(ToolTodoPlugin, config={"allowParallelInProgress": True})
     ctx.plugin(ToolWebPlugin)
 
     # 1. str_replace_editor tool schema

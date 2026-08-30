@@ -85,7 +85,7 @@ async def test_compact_surface_region():
     # Derived messages should start with the summary
     messages = session.derive_messages()
     assert len(messages) == 3
-    assert "<summary>" in messages[0]["content"]
+    assert "<summary>" in str(messages[0]["content"])
 
 
 @pytest.mark.asyncio

@@ -1,8 +1,4 @@
-"""
-Durable projection state for dynamic runtime context.
-Aligned 1:1 with official `@deepseek-ai/dsh-agent-loop/runtime-context`.
-"""
-
+import uuid
 from typing import Any, Dict, List, Optional
 from dsh.core.surface import is_replacement_surface_event
 
@@ -80,8 +76,10 @@ class RuntimeContextProjection:
             src["sections"] = []
 
         return {
+            "id": f"msg-{uuid.uuid4().hex[:8]}",
             "role": "user",
             "content": [{"type": "text", "text": snapshot}],
             "source": src,
         }
+
 

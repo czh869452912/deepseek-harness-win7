@@ -46,21 +46,33 @@ def install_model_selection(agent_ctx: Context, selection: ModelSelectionRef) ->
     """
     Couple one mutable selection to Agent-scoped prompt assembly and request routing.
     """
-    def _on_assembly(assembly: Any, context: Any, next_fn: Callable[[], Any]) -> Any:
+    import inspect
+
+    async def _on_assembly(*args: Any, **kwargs: Any) -> Any:
+        next_fn = args[-1] if args and callable(args[-1]) else None
+        current_assembly = args[0] if args else {}
         selected = selection.current
-        assembled = next_fn()
+        assembled = (await next_fn()) if (next_fn and inspect.iscoroutinefunction(next_fn)) else (next_fn() if next_fn else current_assembly)
+        if inspect.isawaitable(assembled):
+            assembled = await assembled
         selection.assembled = selected
         if selected is None:
             return assembled
         if isinstance(assembled, dict):
-            vars_dict = dict(assembled.get("variables", {}))
+            res = dict(assembled)
+            vars_dict = dict(res.get("variables", {}))
             vars_dict["provider"] = selected.provider
             vars_dict["model"] = selected.model
-            assembled["variables"] = vars_dict
+            res["variables"] = vars_dict
+            return res
         return assembled
 
-    def _on_request(payload: Any, next_fn: Callable[[], Any]) -> Any:
-        resolved = next_fn()
+    async def _on_request(*args: Any, **kwargs: Any) -> Any:
+        next_fn = args[-1] if args and callable(args[-1]) else None
+        current_req = args[0] if args else {}
+        resolved = (await next_fn()) if (next_fn and inspect.iscoroutinefunction(next_fn)) else (next_fn() if next_fn else current_req)
+        if inspect.isawaitable(resolved):
+            resolved = await resolved
         selected = selection.assembled
         if selected is None:
             return resolved
@@ -82,3 +94,6 @@ def install_model_selection(agent_ctx: Context, selection: ModelSelectionRef) ->
         dispose_request()
 
     return disposer
+
+
+installModelSelection = install_model_selection

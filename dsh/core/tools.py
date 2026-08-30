@@ -222,6 +222,19 @@ class ToolsService:
     def get_schemas(self) -> List[Dict[str, Any]]:
         return [tool.to_schema() for tool in self._tools.values()]
 
+    def present_as(self, mode: str = "native") -> Callable[[], None]:
+        """Declare tool presentation mode ('native' | 'ptc' | 'both')."""
+        self._presentation_mode = mode
+
+        def disposer():
+            self._presentation_mode = "native"
+
+        if hasattr(self.ctx, "effect"):
+            self.ctx.effect(disposer)
+        return disposer
+
+    presentAs = present_as
+
     def execution_mode(self, exec_input: Union[ToolExecutionInput, Dict[str, Any], str], args: Optional[Dict[str, Any]] = None) -> Union[Dict[str, str], str]:
         if isinstance(exec_input, str):
             name = exec_input

@@ -340,6 +340,46 @@ class BlockAssembler:
 
 
 
+def _invoke_llm_callable(
+    fn: Callable[..., Any],
+    messages: List[Dict[str, Any]],
+    tools: Optional[List[Dict[str, Any]]] = None,
+    system: Optional[str] = None,
+) -> Any:
+    import inspect
+    sig = None
+    try:
+        sig = inspect.signature(fn)
+    except Exception:
+        pass
+
+    kwargs: Dict[str, Any] = {}
+    if tools is not None:
+        kwargs["tools"] = tools
+
+    if sig is not None:
+        has_varkw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
+        if "system" in sig.parameters or has_varkw:
+            if system:
+                kwargs["system"] = system
+            call_kwargs = kwargs if has_varkw else {k: v for k, v in kwargs.items() if k in sig.parameters}
+            return fn(messages=messages, **call_kwargs)
+        else:
+            llm_messages = list(messages)
+            if system and not any(isinstance(m, dict) and m.get("role") == "system" for m in llm_messages):
+                llm_messages = [{"role": "system", "content": system}] + llm_messages
+            call_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
+            return fn(messages=llm_messages, **call_kwargs)
+    else:
+        try:
+            return fn(messages=messages, tools=tools, system=system)
+        except TypeError:
+            llm_messages = list(messages)
+            if system and not any(isinstance(m, dict) and m.get("role") == "system" for m in llm_messages):
+                llm_messages = [{"role": "system", "content": system}] + llm_messages
+            return fn(messages=llm_messages, tools=tools)
+
+
 class AgentLoopService:
     """
     Concrete Agent Factory and Asynchronous Driver Service mounted at `ctx.agent_loop`.
@@ -667,7 +707,7 @@ class AgentLoopService:
         ):
             session.append_request_context(provider=provider_name, model=model_name, context_window=128000)
 
-        messages = session.derive_messages(system_prompt=system_prompt)
+        messages = session.derive_messages()
 
         if not llm_service:
             raise RuntimeError("LLM service ('ctx.llm') is missing")
@@ -680,7 +720,12 @@ class AgentLoopService:
             used_stream = False
             if stream_fn and callable(stream_fn):
                 try:
-                    stream_iter = stream_fn(messages=messages, tools=tool_schemas if tool_schemas else None)
+                    stream_iter = _invoke_llm_callable(
+                        stream_fn,
+                        messages=messages,
+                        tools=tool_schemas if tool_schemas else None,
+                        system=system_prompt if system_prompt else None,
+                    )
                     async for chunk in _async_iter_chunks(stream_iter):
                         # TS port yields StreamChunk dict; legacy tuple (ev_type, ev_payload) also supported
                         if isinstance(chunk, (list, tuple)) and len(chunk) == 2:
@@ -741,10 +786,13 @@ class AgentLoopService:
                         pass
 
             if not used_stream:
-                sync_res = llm_service.chat_completion(
+                sync_fn = getattr(llm_service, "chat_completion", None)
+                sync_res = _invoke_llm_callable(
+                    sync_fn,
                     messages=messages,
                     tools=tool_schemas if tool_schemas else None,
-                )
+                    system=system_prompt if system_prompt else None,
+                ) if sync_fn and callable(sync_fn) else None
                 if isinstance(sync_res, dict):
                     content = sync_res.get("content", "")
                     tcalls = sync_res.get("tool_calls", [])

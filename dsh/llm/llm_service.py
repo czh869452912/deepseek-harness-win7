@@ -634,7 +634,8 @@ class LLMService:
         tools=None,
         model=None,
         temperature=0.0,
-        provider=None
+        provider=None,
+        system=None,
     ):
         api_key = self.resolve_api_key(provider)
         base_url = self.resolve_base_url(provider)
@@ -644,9 +645,12 @@ class LLMService:
             "Content-Type": "application/json",
             "Authorization": "Bearer {}".format(api_key)
         }
+        formatted_messages = list(messages)
+        if system and not any(isinstance(m, dict) and m.get("role") == "system" for m in formatted_messages):
+            formatted_messages = [{"role": "system", "content": system}] + formatted_messages
         payload = {
             "model": selected_model,
-            "messages": messages,
+            "messages": formatted_messages,
             "temperature": temperature
         }
         if tools:
@@ -690,7 +694,8 @@ class LLMService:
         tools=None,
         model=None,
         temperature=0.0,
-        provider=None
+        provider=None,
+        system=None,
     ):
         import time
         api_key = self.resolve_api_key(provider)
@@ -702,9 +707,12 @@ class LLMService:
             "Authorization": "Bearer {}".format(api_key),
             "Accept": "text/event-stream"
         }
+        formatted_messages = list(messages)
+        if system and not any(isinstance(m, dict) and m.get("role") == "system" for m in formatted_messages):
+            formatted_messages = [{"role": "system", "content": system}] + formatted_messages
         payload = {
             "model": selected_model,
-            "messages": messages,
+            "messages": formatted_messages,
             "temperature": temperature,
             "stream": True,
             "stream_options": {"include_usage": True}

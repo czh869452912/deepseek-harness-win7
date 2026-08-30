@@ -299,8 +299,18 @@ class Session:
         self._context_folded_seq: int = -1
         self._cached_request_context: Optional[Dict[str, Any]] = None
 
+        self._first_live_seq = len(self.events)
+
         if seed is not None and (len(self.events) == 0 or self.events[-1].get("type") != "session/end-seed"):
             self.append("session/end-seed", {})
+
+    @property
+    def first_live_seq(self) -> int:
+        return self._first_live_seq
+
+    @property
+    def firstLiveSeq(self) -> int:
+        return self._first_live_seq
 
     @property
     def id(self) -> str:
@@ -564,9 +574,13 @@ class Session:
         self._derived_nodes = len(nodes)
 
         surface_history = list(self._derived)
-        if system_prompt:
+        if system_prompt is not None:
             return [{"role": "system", "content": system_prompt}] + surface_history
         return surface_history
+
+    def deriveMessages(self, system_prompt: Optional[str] = None) -> List[Dict[str, Any]]:
+        """CamelCase alias 1:1 with reference."""
+        return self.derive_messages(system_prompt=system_prompt)
 
     def derive_event_message(self, event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Instance face of pure per-node derive_event_message."""
@@ -602,10 +616,15 @@ class Session:
         child = Session(session_id=child_session_id, seed=seed_events, header=header, ctx=self.ctx)
         return child
 
-    async def flush(self) -> None:
+    async def flush(self) -> bool:
         """Dispatch durability checkpoint."""
         if self.ctx:
-            await self.ctx.parallel("session/flush", self)
+            sessions_svc = self.ctx.get("sessions")
+            if sessions_svc and hasattr(sessions_svc, "flush"):
+                return await sessions_svc.flush(self)
+            res = await self.ctx.parallel("session/flush", self)
+            return len(res) > 0 if isinstance(res, list) else True
+        return False
 
 
 class SessionStore:
@@ -650,8 +669,16 @@ class SessionStore:
         seed: Optional[List[Dict[str, Any]]] = None,
         meta: Optional[Dict[str, Any]] = None,
         parent_session_id: Optional[str] = None,
+        seed_source: Optional[str] = None,
+        seedSource: Optional[str] = None,
     ) -> SessionPreparation:
         sid = session_id or f"session-{len(self._sessions) + 1}"
+        source_mode = seed_source or seedSource
+        if source_mode == "persistence":
+            hdr = meta if isinstance(meta, SessionHeader) else validate_session_header(sid, dict(meta or {}))
+            session = Session.from_restore(session_id=sid, seed=seed or [], header=hdr, ctx=self.ctx)
+            return SessionPreparation(session=session)
+
         meta_dict = dict(meta or {})
         if parent_session_id is not None:
             meta_dict["parentSession"] = parent_session_id
@@ -758,9 +785,31 @@ class SessionStore:
 
         return [snapshot_json_value(ev) for ev in prefix]
 
-    async def flush(self, session: Optional[Session] = None) -> None:
-        if self.ctx:
-            await self.ctx.parallel("session/flush", session)
+    async def flush(self, session: Optional[Session] = None) -> bool:
+        if not self.ctx:
+            return False
+        import inspect
+        events_bus = getattr(self.ctx, "events", None)
+        if events_bus and hasattr(events_bus, "_dispatch_hooks"):
+            listeners = events_bus._dispatch_hooks("parallel", "session/flush", [session], self.ctx)
+            if not listeners:
+                return False
+
+            async def _run(cb: Callable[..., Any]) -> Any:
+                res = cb(session)
+                if inspect.isawaitable(res):
+                    return await res
+                return res
+
+            import asyncio
+            results = await asyncio.gather(*[_run(cb) for cb in listeners], return_exceptions=True)
+            for r in results:
+                if isinstance(r, Exception):
+                    raise r
+            return len(listeners) > 0
+        else:
+            res = await self.ctx.parallel("session/flush", session)
+            return len(res) > 0 if isinstance(res, list) else True
 
 
 class SessionService(Session):

@@ -24,11 +24,23 @@ class AgentOptions:
         self,
         provider: Optional[str] = None,
         model: Optional[str] = None,
+        reasoning_effort: Optional[str] = None,
         max_tokens: Optional[int] = None,
+        reasoningEffort: Optional[str] = None,
+        maxTokens: Optional[int] = None,
     ):
         self.provider = provider
         self.model = model
-        self.max_tokens = max_tokens
+        self.reasoning_effort = reasoning_effort or reasoningEffort
+        self.max_tokens = max_tokens if max_tokens is not None else maxTokens
+
+    @property
+    def reasoningEffort(self) -> Optional[str]:
+        return self.reasoning_effort
+
+    @property
+    def maxTokens(self) -> Optional[int]:
+        return self.max_tokens
 
     def to_dict(self) -> Dict[str, Any]:
         res: Dict[str, Any] = {}
@@ -36,6 +48,8 @@ class AgentOptions:
             res["provider"] = self.provider
         if self.model is not None:
             res["model"] = self.model
+        if self.reasoning_effort is not None:
+            res["reasoningEffort"] = self.reasoning_effort
         if self.max_tokens is not None:
             res["maxTokens"] = self.max_tokens
         return res
@@ -44,8 +58,12 @@ class AgentOptions:
 class CancelOptions:
     """Options for canceling an Agent."""
 
-    def __init__(self, keep_inbox: bool = False):
-        self.keep_inbox = keep_inbox
+    def __init__(self, keep_inbox: bool = False, keepInbox: Optional[bool] = None):
+        self.keep_inbox = keepInbox if keepInbox is not None else keep_inbox
+
+    @property
+    def keepInbox(self) -> bool:
+        return self.keep_inbox
 
 
 class Agent:
@@ -151,7 +169,7 @@ class Agent:
         """
         Abort active driver and optionally clear inbox.
         """
-        should_keep = keep_inbox or (options.keep_inbox if options else False)
+        should_keep = keep_inbox or (getattr(options, "keep_inbox", False) or getattr(options, "keepInbox", False) if options else False)
         if self._phase_kind == "idle" and self.inbox.is_empty():
             if not should_keep:
                 self.inbox.clear()
@@ -167,10 +185,16 @@ class Agent:
     def is_cancelled(self) -> bool:
         return self._cancel_cause is not None
 
+    def isCancelled(self) -> bool:
+        return self.is_cancelled()
+
     def take_cancel_cause(self) -> Optional[Dict[str, Any]]:
         cause = self._cancel_cause
         self._cancel_cause = None
         return cause
+
+    def takeCancelCause(self) -> Optional[Dict[str, Any]]:
+        return self.take_cancel_cause()
 
     async def when_idle(self) -> None:
         """Resolve when whole-agent activity reaches idle quiescence."""
@@ -180,6 +204,9 @@ class Agent:
         fut = loop.create_future()
         self._idle_futures.append(fut)
         await fut
+
+    async def whenIdle(self) -> None:
+        return await self.when_idle()
 
     async def run_maintenance(self, task_fn: Callable[[asyncio.Event], Any]) -> Any:
         """Run non-turn maintenance task in idle phase."""
@@ -197,6 +224,9 @@ class Agent:
             if self._wake_requested and self.inbox.has_pending:
                 self._wake_requested = False
                 self._wake_event.set()
+
+    async def runMaintenance(self, task_fn: Callable[[asyncio.Event], Any]) -> Any:
+        return await self.run_maintenance(task_fn)
 
 
 class AgentHandle:
@@ -239,11 +269,15 @@ class AgentRegistry:
         """Read the Agent that initiated current asynchronous context."""
         return _CURRENT_INITIATOR.get()
 
+    currentInitiator = current_initiator
+
     def require_initiator(self) -> Agent:
         initiator = self.current_initiator()
         if initiator is None:
             raise RuntimeError("no initiating agent is active")
         return initiator
+
+    requireInitiator = require_initiator
 
     def with_initiator(self, agent: Agent, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         """Run callable within initiator scope."""
@@ -252,6 +286,8 @@ class AgentRegistry:
             return func(*args, **kwargs)
         finally:
             _CURRENT_INITIATOR.reset(token)
+
+    withInitiator = with_initiator
 
     async def with_initiator_async(self, agent: Agent, coro: Any) -> Any:
         """Run coroutine within initiator scope."""
@@ -269,6 +305,8 @@ class AgentRegistry:
         finally:
             _CURRENT_INITIATOR.reset(token)
 
+    withoutInitiator = without_initiator
+
     def set_factory(self, factory: Any) -> Callable[[], None]:
         if self._factory is not None:
             raise RuntimeError("an agent factory is already registered")
@@ -280,6 +318,8 @@ class AgentRegistry:
         if self.ctx:
             self.ctx.effect(disposer)
         return disposer
+
+    setFactory = set_factory
 
     def enter(self, agent: Agent, owner: Optional[Agent] = None) -> Callable[[], None]:
         sid = agent.id
@@ -354,6 +394,8 @@ class AgentRegistry:
     def is_owned_by(self, session_id: str, owner: Agent) -> bool:
         entry = self._store.get(session_id)
         return entry.owner == owner if entry else False
+
+    isOwnedBy = is_owned_by
 
     def list(self) -> List[Agent]:
         return [entry.agent for entry in self._store.values()]

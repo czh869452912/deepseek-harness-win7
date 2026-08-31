@@ -624,6 +624,50 @@ class LLMService:
                     raise LlmError(str(e), "INVALID_MODEL_INFO")
         return {"provider": provider_id, "id": model_id, "name": model_id}
 
+    async def prepare_call(self, config: Dict[str, Any], signal: Any = None) -> Dict[str, Any]:
+        provider_id = config.get("provider") or getattr(self, "provider", "openai")
+        model_id = config.get("model") or getattr(self, "model", "deepseek-chat")
+        model_info = await self.resolve_model_info(provider_id, model_id, signal=signal)
+
+        cfg_max_tokens = config.get("maxTokens") if "maxTokens" in config else config.get("max_tokens")
+        cfg_reasoning_effort = config.get("reasoningEffort") if "reasoningEffort" in config else config.get("reasoning_effort")
+
+        defaults = {
+            "maxTokens": cfg_max_tokens is None,
+            "reasoningEffort": cfg_reasoning_effort is None,
+        }
+
+        max_tokens = cfg_max_tokens if cfg_max_tokens is not None else model_info.get("defaultMaxTokens")
+
+        reasoning_effort = cfg_reasoning_effort
+        reasoning_meta = model_info.get("reasoning")
+        if isinstance(reasoning_meta, dict):
+            if reasoning_effort is None:
+                reasoning_effort = reasoning_meta.get("defaultEffort")
+            allowed_efforts = reasoning_meta.get("efforts")
+            if reasoning_effort is not None and isinstance(allowed_efforts, list):
+                if reasoning_effort not in allowed_efforts:
+                    raise LlmError(
+                        f'Model "{model_id}" does not support reasoning effort "{reasoning_effort}"; allowed: {allowed_efforts}',
+                        "UNSUPPORTED_REASONING_EFFORT",
+                    )
+        elif reasoning_effort is not None:
+            raise LlmError(
+                f'Model "{model_id}" does not declare reasoning capabilities but requested effort "{reasoning_effort}"',
+                "UNSUPPORTED_REASONING_EFFORT",
+            )
+
+        return {
+            "provider": provider_id,
+            "model": model_info,
+            "maxTokens": max_tokens,
+            "reasoningEffort": reasoning_effort,
+            "adapterDefaults": defaults,
+        }
+
+    async def prepareCall(self, config: Dict[str, Any], signal: Any = None) -> Dict[str, Any]:
+        return await self.prepare_call(config, signal=signal)
+
     # backward compat alias
     def list_configurable_providers_sync(self):
         return self.list_configurable_providers()
@@ -636,7 +680,14 @@ class LLMService:
         temperature=0.0,
         provider=None,
         system=None,
+        **kwargs,
     ):
+        if provider and provider in self._adapters:
+            adapter = self._adapters[provider]["adapter"]
+            fn = getattr(adapter, "chat_completion", getattr(adapter, "complete", None))
+            if fn and callable(fn):
+                return fn(messages=messages, tools=tools, model=model, temperature=temperature, provider=provider, system=system)
+
         api_key = self.resolve_api_key(provider)
         base_url = self.resolve_base_url(provider)
         selected_model = self.resolve_model(model, provider)
@@ -689,6 +740,58 @@ class LLMService:
             raise LlmError(f"LLM API Request Error: {e}", "UNKNOWN")
 
     def chat_completion_stream(
+        self,
+        messages,
+        tools=None,
+        model=None,
+        temperature=0.0,
+        provider=None,
+        system=None,
+        **kwargs,
+    ):
+        if provider and provider in self._adapters:
+            adapter = self._adapters[provider]["adapter"]
+            fn = getattr(adapter, "chat_completion_stream", getattr(adapter, "stream", None))
+            if fn and callable(fn):
+                import inspect
+                sig = inspect.signature(fn)
+                kw = {}
+                if "messages" in sig.parameters:
+                    kw["messages"] = messages
+                if "tools" in sig.parameters:
+                    kw["tools"] = tools
+                if "model" in sig.parameters:
+                    kw["model"] = model
+                if "temperature" in sig.parameters:
+                    kw["temperature"] = temperature
+                if "provider" in sig.parameters:
+                    kw["provider"] = provider
+                if "system" in sig.parameters:
+                    kw["system"] = system
+                if "request" in sig.parameters:
+                    kw["request"] = kwargs.get("request", {
+                        "messages": messages, "tools": tools, "model": model, "provider": provider, "system": system
+                    })
+                if "options" in sig.parameters:
+                    kw["options"] = kwargs.get("options", {
+                        "messages": messages, "tools": tools, "model": model, "provider": provider, "system": system
+                    })
+                if not kw and len(sig.parameters) == 1:
+                    return fn({
+                        "messages": messages, "tools": tools, "model": model, "provider": provider, "system": system
+                    })
+                return fn(**kw)
+
+        return self._default_chat_completion_stream(
+            messages=messages,
+            tools=tools,
+            model=model,
+            temperature=temperature,
+            provider=provider,
+            system=system,
+        )
+
+    def _default_chat_completion_stream(
         self,
         messages,
         tools=None,

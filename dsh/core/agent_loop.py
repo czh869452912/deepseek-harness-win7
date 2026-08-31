@@ -688,7 +688,8 @@ class AgentLoopService:
                         else:
                             session.append_user_message(str(msg))
 
-                    step_end = await self._step(agent, turn_num, step_num, system_prompt, starts_series=starts_series)
+                    tools_to_pass = assembly.get("tools") if ("assembly" in locals() and isinstance(assembly, dict) and bool(assembly.get("tools"))) else None
+                    step_end = await self._step(agent, turn_num, step_num, system_prompt, starts_series=starts_series, tool_schemas=tools_to_pass)
                     if agent.is_cancelled():
                         cause = agent.take_cancel_cause()
                         turn_ends = {"kind": "aborted", "reason": cause}
@@ -735,11 +736,13 @@ class AgentLoopService:
         step: int,
         system_prompt: str,
         starts_series: bool = False,
+        tool_schemas: Optional[List[Dict[str, Any]]] = None,
     ) -> Optional[Dict[str, Any]]:
         session = agent.session
         llm_service = self.ctx.get("llm")
-        tools_service = self.ctx.get("tools")
-        tool_schemas = tools_service.schemas() if (tools_service and hasattr(tools_service, "schemas")) else (tools_service.get_schemas() if tools_service else [])
+        if tool_schemas is None:
+            tools_service = self.ctx.get("tools")
+            tool_schemas = tools_service.schemas() if (tools_service and hasattr(tools_service, "schemas")) else (tools_service.get_schemas() if tools_service else [])
 
         raw_provider = agent.options.provider or getattr(llm_service, "provider", "openai")
         raw_model = agent.options.model or getattr(llm_service, "model", "deepseek-chat")
@@ -860,7 +863,6 @@ class AgentLoopService:
                         self.ctx.emit("assistant/chunk", chunk_ev)
                         if ev_payload.get("type") == "finish":
                             used_stream = True
-                    # If we completed iteration without exception, mark streamed
                     if chunk_seqs or assembler._order:
                         used_stream = True
                 except asyncio.CancelledError:
@@ -875,14 +877,18 @@ class AgentLoopService:
                         )
                     raise
                 except Exception as e:
-                    # Streaming failed -> fallback to non-stream; keep assembler if partial streamed
-                    if not assembler._order and not chunk_seqs:
-                        used_stream = False
-                    else:
-                        # Partial stream succeeded, treat as streamed
-                        used_stream = True
-                        # Suppress exception if we already have content
-                        pass
+                    # If partial chunks were already emitted before failure, preserve them
+                    if assembler._order:
+                        content = assembler.interrupted_blocks()
+                        if content:
+                            session.append_assistant_message(
+                                {"content": content, "role": "assistant"},
+                                turn=turn,
+                                step=step,
+                                surface_op="append",
+                                source_event_seqs=chunk_seqs if chunk_seqs else None,
+                            )
+                    raise
 
             if not used_stream:
                 sync_fn = getattr(llm_service, "chat_completion", None)

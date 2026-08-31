@@ -425,6 +425,9 @@ class ToolsService:
             for tool in self._tools.values()
         ]
 
+    def get_schemas(self) -> List[Dict[str, Any]]:
+        return [tool.to_schema() for tool in self._tools.values()]
+
     async def execute(
         self,
         options_or_name: Union[Dict[str, Any], str],
@@ -477,6 +480,14 @@ class ToolsPlugin(Plugin):
         if not ctx.has("tools"):
             svc = ToolsService(ctx)
             ctx.set_service("tools", svc)
+            sp = ctx.get("systemPrompt") or ctx.get("system_prompt")
+            if sp and hasattr(sp, "tools"):
+                sp.tools(lambda c: {"schemas": svc.schemas()})
+        else:
+            svc = ctx.get("tools")
+            sp = ctx.get("systemPrompt") or ctx.get("system_prompt")
+            if sp and hasattr(sp, "tools"):
+                sp.tools(lambda c: {"schemas": svc.schemas()})
 
 
 ToolRegistry = ToolsService

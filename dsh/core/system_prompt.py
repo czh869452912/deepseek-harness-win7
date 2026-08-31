@@ -256,7 +256,7 @@ class SystemPrompt(Service):
 
     def _get_layer(self, target_ctx: Optional[Context] = None) -> PromptLayer:
         c = target_ctx or self.ctx
-        scope = getattr(c, "scope", None) or getattr(c, "_scope", None)
+        scope = c.get("scope") if hasattr(c, "get") else None
         if scope is None:
             return self.global_layer
         if scope not in self.scoped_layers:

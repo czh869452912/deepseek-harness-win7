@@ -1,3 +1,4 @@
+import asyncio
 import os
 import sys
 import pytest
@@ -30,3 +31,4 @@ async def test_tool_pwsh_one_shot_execution():
         "run_in_background": True,
     })
     assert "Started background job" in bg_res
+    await asyncio.sleep(0.05)

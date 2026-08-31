@@ -31,29 +31,10 @@ def request_proposal(header: Dict[str, Any]) -> Dict[str, Any]:
 async def _async_iter_chunks(stream_iter: Any, cancel_check: Optional[Callable[[], bool]] = None):
     """Run synchronous stream iterator in worker thread or handle async generator with cancellation checking."""
     if hasattr(stream_iter, "__aiter__"):
-        ait = stream_iter.__aiter__()
-        while True:
+        async for item in stream_iter:
             if cancel_check and cancel_check():
-                try:
-                    await ait.aclose()
-                except Exception:
-                    pass
                 raise asyncio.CancelledError("cancelled")
-            anext_task = asyncio.create_task(ait.__anext__())
-            while not anext_task.done():
-                if cancel_check and cancel_check():
-                    anext_task.cancel()
-                    try:
-                        await ait.aclose()
-                    except Exception:
-                        pass
-                    raise asyncio.CancelledError("cancelled")
-                await asyncio.sleep(0.01)
-            try:
-                item = await anext_task
-                yield item
-            except StopAsyncIteration:
-                break
+            yield item
     else:
         import queue
         import threading
@@ -393,6 +374,10 @@ def _invoke_llm_callable(
         has_varkw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
         if "messages" in sig.parameters:
             call_kwargs = req_dict if has_varkw else {k: v for k, v in req_dict.items() if k in sig.parameters}
+            if "system" not in sig.parameters and system:
+                msg_list = list(call_kwargs.get("messages", []))
+                if not any(isinstance(m, dict) and m.get("role") == "system" for m in msg_list):
+                    call_kwargs["messages"] = [{"role": "system", "content": system}] + msg_list
             return fn(**call_kwargs)
         if len(params) == 1 and params[0].kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD):
             return fn(req_dict)
@@ -606,8 +591,6 @@ class AgentLoopService:
         try:
             while await self._turn(agent):
                 pass
-        except Exception:
-            pass
         finally:
             agent.set_status("idle")
 
@@ -633,21 +616,37 @@ class AgentLoopService:
                 step_num += 1
 
                 claimed = agent.inbox.claim(target=target, turn=turn_num)
-
-                system_prompt = "You are a helpful software engineer assistant."
-                persona = self.ctx.get("persona")
-                if persona and hasattr(persona, "get_prompt"):
-                    system_prompt = persona.get_prompt()
-
-                system_prompt = await self.ctx.waterfall("system-prompt/assemble", system_prompt)
-                system_prompt = await self.ctx.waterfall("agent/prompt-assemble", system_prompt)
-
                 decision_messages = list(claimed)
-                runtime_ctx_text = await self.ctx.waterfall("agent/runtime-context", "")
-                if runtime_ctx_text:
-                    candidate_ctx = runtime_context_proj.project(runtime_ctx_text, [])
-                    if candidate_ctx:
-                        decision_messages.append(candidate_ctx)
+
+                sp_svc = self.ctx.get("systemPrompt") or self.ctx.get("system_prompt")
+                if sp_svc and hasattr(sp_svc, "assemble"):
+                    from dsh.core.system_prompt import render_prompt, render_context_snapshot
+                    assembly = await sp_svc.assemble({
+                        "agent": agent,
+                        "session": session,
+                        "scope": agent.ctx.get("scope") if hasattr(agent.ctx, "get") else None,
+                    })
+                    system_prompt = render_prompt(assembly)
+                    if assembly.get("contexts") and step_num == 1:
+                        rt_snapshot = render_context_snapshot(assembly)
+                        if rt_snapshot:
+                            candidate_ctx = runtime_context_proj.project(rt_snapshot, [])
+                            if candidate_ctx:
+                                decision_messages.append(candidate_ctx)
+                else:
+                    system_prompt = "You are a helpful software engineer assistant."
+                    persona = self.ctx.get("persona")
+                    if persona and hasattr(persona, "get_prompt"):
+                        system_prompt = persona.get_prompt()
+
+                    system_prompt = await self.ctx.waterfall("system-prompt/assemble", system_prompt)
+                    system_prompt = await self.ctx.waterfall("agent/prompt-assemble", system_prompt)
+
+                    runtime_ctx_text = await self.ctx.waterfall("agent/runtime-context", "")
+                    if runtime_ctx_text:
+                        candidate_ctx = runtime_context_proj.project(runtime_ctx_text, [])
+                        if candidate_ctx:
+                            decision_messages.append(candidate_ctx)
 
                 request_payload = {
                     "agent": agent,
@@ -740,7 +739,7 @@ class AgentLoopService:
         session = agent.session
         llm_service = self.ctx.get("llm")
         tools_service = self.ctx.get("tools")
-        tool_schemas = tools_service.get_schemas() if tools_service else []
+        tool_schemas = tools_service.schemas() if (tools_service and hasattr(tools_service, "schemas")) else (tools_service.get_schemas() if tools_service else [])
 
         raw_provider = agent.options.provider or getattr(llm_service, "provider", "openai")
         raw_model = agent.options.model or getattr(llm_service, "model", "deepseek-chat")

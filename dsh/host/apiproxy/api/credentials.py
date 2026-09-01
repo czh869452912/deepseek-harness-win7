@@ -58,21 +58,17 @@ class CredentialsDomainHandler:
             result[ref] = {"configured": configured, "writable": writable}
             if source:
                 result[ref]["source"] = source
-        # Backward compat: if no refs, return legacy providers shape for old clients
         if not refs:
             has_key = bool(os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("OPENAI_API_KEY") or (llm and getattr(llm, "static_api_key", None)))
             result = {
-                "credentials": {
-                    "DEEPSEEK_API_KEY": {"configured": has_key, "source": "env" if os.environ.get("DEEPSEEK_API_KEY") else ("file" if has_key else None), "writable": not bool(os.environ.get("DEEPSEEK_API_KEY"))},
-                    "OPENAI_API_KEY": {"configured": bool(os.environ.get("OPENAI_API_KEY")), "source": "env" if os.environ.get("OPENAI_API_KEY") else None, "writable": not bool(os.environ.get("OPENAI_API_KEY"))},
-                }
+                "DEEPSEEK_API_KEY": {"configured": has_key, "source": "env" if os.environ.get("DEEPSEEK_API_KEY") else ("file" if has_key else None), "writable": not bool(os.environ.get("DEEPSEEK_API_KEY"))},
+                "OPENAI_API_KEY": {"configured": bool(os.environ.get("OPENAI_API_KEY")), "source": "env" if os.environ.get("OPENAI_API_KEY") else None, "writable": not bool(os.environ.get("OPENAI_API_KEY"))},
             }
-            # Filter None source
-            for k, v in list(result["credentials"].items()):
+            for k, v in list(result.items()):
                 if v.get("source") is None:
                     v.pop("source", None)
             return result
-        return {"credentials": result}
+        return result
 
     async def set_credentials(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         # TS: { ref: string, value: string }

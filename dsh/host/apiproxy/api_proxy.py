@@ -756,7 +756,7 @@ class ApiProxyPlugin(Plugin):
                 await send_rpc_success(res)
                 return
 
-            if rpc_method in ("session.models", "session/models"):
+            if rpc_method in ("session.models", "session/models", "session.modelCatalog", "session/modelCatalog"):
                 res = await self.sessions_handler.get_models(req_payload)
                 await send_rpc_success(res)
                 return
@@ -848,7 +848,10 @@ class ApiProxyPlugin(Plugin):
 
             if rpc_method in ("agentPreset.select", "agentPreset/select"):
                 res = await self.agent_presets_handler.select_preset(req_payload)
-                await send_rpc_success(res)
+                if is_rpc_envelope:
+                    await send_rpc_success(str(res))
+                else:
+                    await send_rpc_success(res)
                 return
 
             if rpc_method in ("agentPreset.read", "agentPreset/read"):
@@ -911,8 +914,13 @@ class ApiProxyPlugin(Plugin):
                 await send_rpc_success(res)
                 return
 
-            if rpc_method in ("llm.providers", "llm/providers"):
+            if rpc_method in ("llm.providers", "llm/providers", "llm.listProviders", "llm/listProviders"):
                 res = await self.llm_handler.list_providers(req_payload)
+                await send_rpc_success(res)
+                return
+
+            if rpc_method in ("llm.listConfigurableProviders", "llm/listConfigurableProviders"):
+                res = await self.llm_handler.list_configurable_providers(req_payload)
                 await send_rpc_success(res)
                 return
 
@@ -988,6 +996,38 @@ class ApiProxyPlugin(Plugin):
                         "lastSeq": len(s.events) - 1,
                     }
                     await response.write_chunk(format_sse_frame(sub_frame))
+                    # Emit durable projections baseline
+                    current_preset = s.header.agent_preset or "standard"
+                    current_model_selection = {
+                        "lastUsed": None,
+                        "next": {"provider": "deepseek-official", "model": "deepseek-chat"}
+                    }
+                    try:
+                        handle = self._active_sessions.get(sid)
+                        if handle and hasattr(handle, "agent"):
+                            sel = getattr(handle.agent, "_model_selection", None)
+                            if isinstance(sel, dict) and sel.get("provider"):
+                                current_model_selection["next"] = {
+                                    "provider": sel["provider"],
+                                    "model": sel.get("model", "deepseek-chat"),
+                                    **({"reasoningEffort": sel["reasoningEffort"]} if sel.get("reasoningEffort") else {})
+                                }
+                    except Exception:
+                        pass
+                    await response.write_chunk(format_sse_frame({
+                        "type": "session/projection",
+                        "sessionId": sid,
+                        "key": "agentPreset",
+                        "value": current_preset,
+                        "asOfSeq": len(s.events) - 1,
+                    }))
+                    await response.write_chunk(format_sse_frame({
+                        "type": "session/projection",
+                        "sessionId": sid,
+                        "key": "modelSelection",
+                        "value": current_model_selection,
+                        "asOfSeq": len(s.events) - 1,
+                    }))
                     try:
                         handle = self._active_sessions.get(sid)
                         if handle and hasattr(handle, "agent") and hasattr(handle.agent, "inbox"):

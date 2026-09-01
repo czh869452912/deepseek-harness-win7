@@ -37,7 +37,9 @@ def normalize_rpc_method(path: str) -> str:
         parts = raw.split("/", 1)
         if len(parts) == 2:
             candidate = f"{parts[0]}.{parts[1]}"
-            if candidate in OFFICIAL_RPC_METHODS:
+            if candidate in OFFICIAL_RPC_METHODS or candidate in (
+                "session.modelCatalog", "llm.listProviders", "llm.listConfigurableProviders", "agentPreset.deletePreset"
+            ):
                 return candidate
     return raw
 
@@ -52,5 +54,13 @@ def method_for(path: str) -> Optional[str]:
         "settings": "settings.describe",
         "models": "llm.models",
         "sessions": "session.list",
+        "session.modelCatalog": "session.models",
+        "session/modelCatalog": "session.models",
+        "llm.listProviders": "llm.providers",
+        "llm/listProviders": "llm.providers",
+        "llm.listConfigurableProviders": "llm.providers",
+        "llm/listConfigurableProviders": "llm.providers",
+        "agentPreset.deletePreset": "agentPreset.remove",
+        "agentPreset/deletePreset": "agentPreset.remove",
     }
     return aliases.get(norm)

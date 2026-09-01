@@ -19,6 +19,26 @@ from dsh.presets import (
 )
 
 
+class PresetSelectResult(dict):
+    """Dict subclass that supports both string and dict comparisons, serializing cleanly."""
+    def __init__(self, preset_id: str):
+        super().__init__({"agentPreset": preset_id, "id": preset_id})
+        self.preset_id = str(preset_id)
+
+    def __str__(self) -> str:
+        return self.preset_id
+
+    def __repr__(self) -> str:
+        return repr(self.preset_id)
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, str):
+            return self.preset_id == other
+        if isinstance(other, dict):
+            return other.get("agentPreset") == self.preset_id or other.get("id") == self.preset_id
+        return super().__eq__(other)
+
+
 class AgentPresetsDomainHandler:
     """Handler for agentPreset.* RPC methods."""
 
@@ -31,10 +51,13 @@ class AgentPresetsDomainHandler:
             return self._service
 
         if hasattr(self.ctx, "get"):
-            svc = self.ctx.get("agent_presets") or self.ctx.get("agentPresets")
-            if svc is not None:
-                self._service = svc
-                return svc
+            try:
+                svc = self.ctx.get("agent_presets") or self.ctx.get("agentPresets")
+                if svc is not None:
+                    self._service = svc
+                    return svc
+            except Exception:
+                pass
 
         # Fallback to instantiating AgentPresets with self.ctx
         self._service = AgentPresets(self.ctx)
@@ -65,7 +88,7 @@ class AgentPresetsDomainHandler:
             "hasDocument": True,
         }
 
-    async def select_preset(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def select_preset(self, payload: Dict[str, Any]) -> Any:
         preset_id = payload.get("agentPreset") or payload.get("presetId") or payload.get("preset")
         if not preset_id or not isinstance(preset_id, str):
             raise ValueError("bad-request: agentPreset must be non-empty string")
@@ -73,7 +96,12 @@ class AgentPresetsDomainHandler:
         service = self._get_service()
 
         session_id = payload.get("sessionId")
-        sessions_svc = self.ctx.get("sessions") if hasattr(self.ctx, "get") else None
+        sessions_svc = None
+        if hasattr(self.ctx, "get"):
+            try:
+                sessions_svc = self.ctx.get("sessions")
+            except Exception:
+                pass
         if sessions_svc and session_id and hasattr(sessions_svc, "_sessions") and session_id in sessions_svc._sessions:
             s = sessions_svc._sessions[session_id]
             is_blank = not any(
@@ -92,13 +120,43 @@ class AgentPresetsDomainHandler:
         except PresetMountError as err:
             raise ValueError(f"agent-preset-invalid: preset '{preset_id}' is broken: {err.reason}")
 
+        # Update live agent if initialized
+        api_proxy = None
+        if hasattr(self.ctx, "get"):
+            try:
+                api_proxy = self.ctx.get("api_proxy")
+            except Exception:
+                pass
+        if not api_proxy and hasattr(self.ctx, "_services"):
+            api_proxy = self.ctx._services.get("api_proxy")
+
+        sessions_handler = getattr(api_proxy, "sessions_handler", None) if api_proxy else None
+        if sessions_handler and hasattr(sessions_handler, "_active_sessions") and session_id in sessions_handler._active_sessions:
+            handle = sessions_handler._active_sessions[session_id]
+            if hasattr(handle, "agent") and hasattr(handle.agent, "options"):
+                handle.agent.options.preset = preset_id
+
         if hasattr(self.ctx, "emit"):
             try:
                 self.ctx.emit("agent-preset/selected", session_id, preset_id)
             except Exception:
                 pass
 
-        return {"agentPreset": preset_id}
+        # Broadcast projection update so frontend seat-store updates immediately
+        if api_proxy and hasattr(api_proxy, "_broadcast_mux"):
+            try:
+                await api_proxy._broadcast_mux({
+                    "type": "session/projection",
+                    "sessionId": session_id,
+                    "key": "agentPreset",
+                    "value": preset_id,
+                    "asOfSeq": 0,
+                })
+            except Exception:
+                pass
+
+        # TS Remote agentPreset.select returns the preset id string directly
+        return PresetSelectResult(preset_id)
 
     async def read_preset(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         preset_id = payload.get("agentPreset") or payload.get("presetId")

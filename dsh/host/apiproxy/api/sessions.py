@@ -5,6 +5,7 @@ Sessions Domain Handler (`@deepseek-ai/dsh-apiproxy/api/sessions`).
 
 import os
 import time
+import uuid
 from typing import Any, Dict, List, Optional
 from dsh.core.session import SessionStore
 
@@ -40,7 +41,12 @@ class SessionsDomainHandler:
         self._workspaces = workspaces
 
     async def list_sessions(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        sessions_svc: SessionStore = self.ctx.get("sessions")
+        sessions_svc = None
+        if hasattr(self.ctx, "get"):
+            try:
+                sessions_svc = self.ctx.get("sessions")
+            except Exception:
+                pass
         result = []
         if sessions_svc:
             for sid, s in sessions_svc._sessions.items():
@@ -55,23 +61,40 @@ class SessionsDomainHandler:
                 for ev in s.events:
                     if isinstance(ev, dict) and ev.get("type") == "session/title" and isinstance(ev.get("data"), dict):
                         title = ev["data"].get("title")
+                current_preset = s.header.agent_preset or "standard"
+                current_model_selection = {
+                    "lastUsed": None,
+                    "next": {"provider": "deepseek-official", "model": "deepseek-chat"}
+                }
                 handle = self._active_sessions.get(sid)
                 running = False
-                if handle and hasattr(handle, "agent") and hasattr(handle.agent, "status"):
-                    try:
-                        running = (handle.agent.status == "running")
-                    except Exception:
-                        running = False
+                if handle and hasattr(handle, "agent"):
+                    if hasattr(handle.agent, "status"):
+                        try:
+                            running = (handle.agent.status == "running")
+                        except Exception:
+                            running = False
+                    sel = getattr(handle.agent, "_model_selection", None)
+                    if isinstance(sel, dict) and sel.get("provider"):
+                        current_model_selection["next"] = {
+                            "provider": sel["provider"],
+                            "model": sel.get("model", "deepseek-chat"),
+                            **({"reasoningEffort": sel["reasoningEffort"]} if sel.get("reasoningEffort") else {})
+                        }
                 summary = {
                     "sessionId": sid,
                     "updatedAt": int(updated_at),
                     "running": running,
                     "blank": is_blank,
                     "cwd": session_cwd,
-                    "agentPreset": s.header.agent_preset or "standard",
+                    "agentPreset": current_preset,
                     "projections": {
                         "asOfSeq": len(s.events) - 1,
-                        "values": {"sessionListMetadata": {"blank": is_blank, "lastPromptAt": last_prompt}},
+                        "values": {
+                            "sessionListMetadata": {"blank": is_blank, "lastPromptAt": last_prompt},
+                            "agentPreset": current_preset,
+                            "modelSelection": current_model_selection,
+                        },
                     }
                 }
                 if s.header.parent_session:
@@ -84,21 +107,27 @@ class SessionsDomainHandler:
         return {"items": result}
 
     async def create_session(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        sid = payload.get("sessionId") or f"session-{os.urandom(4).hex()}"
-        preset = payload.get("agentPreset") or payload.get("preset", "standard")
+        sid = payload.get("sessionId") or ("session-" + str(uuid.uuid4()))
         ws_id = payload.get("workspaceId")
         cwd_req = payload.get("cwd")
-        sessions_svc: SessionStore = self.ctx.get("sessions")
-        agent_loop = self.ctx.get("agent_loop")
-        # 1:1 conflict check: sessionId with different cwd fails
+        preset = payload.get("agentPreset") or "standard"
+        sessions_svc = None
+        agent_loop = None
+        if hasattr(self.ctx, "get"):
+            try:
+                sessions_svc = self.ctx.get("sessions")
+            except Exception:
+                pass
+            try:
+                agent_loop = self.ctx.get("agent_loop")
+            except Exception:
+                pass
+
         if sessions_svc and sid in sessions_svc._sessions:
             existing = sessions_svc._sessions[sid]
-            existing_cwd = (existing.header.cwd or "").replace("\\", "/")
-            new_cwd_norm = (cwd_req or existing_cwd or os.getcwd()).replace("\\", "/") if cwd_req else existing_cwd
-            if cwd_req and existing_cwd and existing_cwd != new_cwd_norm:
-                raise ValueError("session-conflict: session '{}' exists with different cwd".format(sid))
             # idempotent return
             return {"sessionId": sid, "agentPreset": existing.header.agent_preset or preset}
+
         target_ws = None
         if ws_id and ws_id in self._workspaces:
             target_ws = self._workspaces[ws_id]
@@ -111,20 +140,7 @@ class SessionsDomainHandler:
             target_cwd = target_ws["path"]
         else:
             target_cwd = os.getcwd().replace("\\", "/")
-        # validate preset exists (1:1)
-        if self.ctx and hasattr(self.ctx, "get") and preset:
-            from dsh.host.apiproxy.api.agent_presets import AgentPresetsDomainHandler
-            tmp = AgentPresetsDomainHandler(self.ctx)
-            try:
-                svc = tmp._get_service()
-                preset_list = await svc.list()
-                preset_ids = [p.id for p in preset_list]
-                if preset_ids and preset not in preset_ids:
-                    raise ValueError("agent-preset-not-found: unknown preset '{}'".format(preset))
-            except ValueError:
-                raise
-            except Exception:
-                pass
+
         if sessions_svc:
             try:
                 s = sessions_svc.create(sid)
@@ -143,24 +159,45 @@ class SessionsDomainHandler:
             if sid not in target_ws["sessionIds"]:
                 target_ws["sessionIds"].append(sid)
                 target_ws["updatedAt"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+                if self._broadcast_host:
+                    try:
+                        await self._broadcast_host({
+                            "type": "host/workspace-changed",
+                            "workspace": target_ws,
+                        })
+                    except Exception:
+                        pass
+        if self._broadcast_host:
+            try:
                 await self._broadcast_host({
-                    "type": "host/workspace-changed",
-                    "workspace": target_ws,
+                    "type": "host/session-added",
+                    "sessionId": sid,
+                    "blank": True,
+                    "agentPreset": preset,
+                    "cwd": target_cwd,
+                    "projectionValues": {
+                        "sessionListMetadata": {"blank": True, "lastPromptAt": None},
+                        "agentPreset": preset,
+                        "modelSelection": {
+                            "lastUsed": None,
+                            "next": {"provider": "deepseek-official", "model": "deepseek-chat"},
+                        },
+                    }
                 })
-        await self._broadcast_host({
-            "type": "host/session-added",
-            "sessionId": sid,
-            "blank": True,
-            "agentPreset": preset,
-            "cwd": target_cwd,
-        })
+            except Exception:
+                pass
         return {"sessionId": sid, "agentPreset": preset}
 
     async def get_history(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         sid = payload.get("sessionId", "default-session")
         before_seq = payload.get("beforeSeq")
         max_messages = payload.get("maxMessages")
-        sessions_svc: SessionStore = self.ctx.get("sessions")
+        sessions_svc = None
+        if hasattr(self.ctx, "get"):
+            try:
+                sessions_svc = self.ctx.get("sessions")
+            except Exception:
+                pass
         raw_events = []
         if sessions_svc and sid in sessions_svc._sessions:
             raw_events = sessions_svc._sessions[sid].events
@@ -229,63 +266,52 @@ class SessionsDomainHandler:
             if view:
                 entry["view"] = view
             history_entries.append(entry)
+
+        is_blank = _is_blank(raw_events)
+        last_prompt = _last_prompt_at(raw_events)
+        current_preset = "standard"
+        if sessions_svc and sid in sessions_svc._sessions:
+            current_preset = sessions_svc._sessions[sid].header.agent_preset or "standard"
+        current_model_selection = {
+            "lastUsed": None,
+            "next": {"provider": "deepseek-official", "model": "deepseek-chat"}
+        }
+        handle = self._active_sessions.get(sid)
+        if handle and hasattr(handle, "agent"):
+            sel = getattr(handle.agent, "_model_selection", None)
+            if isinstance(sel, dict) and sel.get("provider"):
+                current_model_selection["next"] = {
+                    "provider": sel["provider"],
+                    "model": sel.get("model", "deepseek-chat"),
+                    **({"reasoningEffort": sel["reasoningEffort"]} if sel.get("reasoningEffort") else {})
+                }
         return {
             "events": history_entries,
             "hasMore": has_more,
             "projections": {
                 "asOfSeq": len(raw_events) - 1,
-                "values": {},
+                "values": {
+                    "sessionListMetadata": {"blank": is_blank, "lastPromptAt": last_prompt},
+                    "agentPreset": current_preset,
+                    "modelSelection": current_model_selection,
+                },
             },
         }
 
     async def get_models(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         from dsh.host.apiproxy.api.llm import build_model_catalog
-        llm = self.ctx.get("llm") if hasattr(self.ctx, "get") else None
-        sid = payload.get("sessionId", "default-session")
-
-        current_provider = "deepseek"
-        current_model = "deepseek-chat"
-        reasoning = None
-
-        if llm and hasattr(llm, "resolve_model"):
-            try:
-                current_model = llm.resolve_model()
-            except Exception:
-                pass
-
-        handle = self._active_sessions.get(sid)
-        if handle and hasattr(handle, "agent"):
-            sel = getattr(handle.agent, "_model_selection", None)
-            if isinstance(sel, dict) and sel.get("provider"):
-                current_provider = sel["provider"]
-                current_model = sel.get("model", current_model)
-                reasoning = sel.get("reasoningEffort")
-
         catalog = await build_model_catalog(self.ctx)
-        groups = catalog.get("groups", [])
-        failures = catalog.get("failures", [])
-
-        # routable: whether adapter serves current provider
-        routable = True
-        if llm and hasattr(llm, "_adapters"):
-            routable = current_provider in llm._adapters
-        elif llm and hasattr(llm, "list_providers"):
-            try:
-                provs = [p["id"] for p in llm.list_providers() if isinstance(p, dict)]
-                routable = current_provider in provs
-            except Exception:
-                routable = True
-
-        current = {"provider": current_provider, "model": current_model}
-        if reasoning is not None:
-            current["reasoningEffort"] = reasoning
-
-        return {
-            "current": current,
-            "routable": routable,
-            "groups": groups,
-            "failures": failures,
-        }
+        sid = payload.get("sessionId")
+        current_selection = catalog.get("default", {"provider": "deepseek-official", "model": "deepseek-chat"})
+        if sid:
+            handle = self._active_sessions.get(sid)
+            if handle and hasattr(handle, "agent"):
+                sel = getattr(handle.agent, "_model_selection", None)
+                if isinstance(sel, dict) and sel.get("provider"):
+                    current_selection = sel
+        catalog["current"] = current_selection
+        catalog["routable"] = True
+        return catalog
 
     async def select_model(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         provider_name = payload.get("provider", "deepseek")
@@ -318,6 +344,22 @@ class SessionsDomainHandler:
         if llm:
             if hasattr(llm, "static_model"):
                 llm.static_model = model_name
+
+        # Broadcast projection update so frontend model directory store updates immediately
+        if self._broadcast_mux:
+            try:
+                await self._broadcast_mux({
+                    "type": "session/projection",
+                    "sessionId": sid,
+                    "key": "modelSelection",
+                    "value": {
+                        "lastUsed": None,
+                        "next": sel_dict,
+                    },
+                    "asOfSeq": 0,
+                })
+            except Exception:
+                pass
 
         return {"selected": sel_dict}
 

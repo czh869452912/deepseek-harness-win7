@@ -88,6 +88,7 @@ class Agent:
         self._status: str = "idle"
         self._phase_kind: str = "idle"  # "idle", "maintenance", "running"
         self._wake_event = asyncio.Event()
+        self._cancel_event = asyncio.Event()
         self._cancel_cause: Optional[Dict[str, Any]] = None
         self._idle_futures: List[asyncio.Future] = []
         self._driver_task: Optional[asyncio.Task] = None
@@ -180,6 +181,7 @@ class Agent:
             return
 
         self._cancel_cause = cause or reason or {"kind": "user"}
+        self._cancel_event.set()
         if hasattr(self, "_maintenance_abort") and self._maintenance_abort is not None:
             self._maintenance_abort.set()
         if not should_keep:
@@ -196,6 +198,7 @@ class Agent:
     def take_cancel_cause(self) -> Optional[Dict[str, Any]]:
         cause = self._cancel_cause
         self._cancel_cause = None
+        self._cancel_event.clear()
         return cause
 
     def takeCancelCause(self) -> Optional[Dict[str, Any]]:

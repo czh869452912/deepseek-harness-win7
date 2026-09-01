@@ -173,6 +173,14 @@ async def run_group(
             scheduler_failure = e
             return
 
+        if prep.get("kind") == "skip":
+            slots[index] = Slot(exec_input=call.exec, result=prep.get("result"), needs_post=False)
+            return
+        elif prep.get("kind") == "abort":
+            slots[index] = Slot(exec_input=call.exec, result=prep.get("result"), needs_post=False)
+            aborted = True
+            return
+
         async def _dispatch_task(idx: int, exec_inp: ToolExecutionInput) -> int:
             nonlocal scheduler_failure
             try:

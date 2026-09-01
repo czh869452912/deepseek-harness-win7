@@ -12,31 +12,38 @@ Matches upstream specifications from:
 - reference/packages/llm/llm/tests/service.spec.ts
 - reference/packages/llm/llm/tests/assembler.spec.ts
 - reference/packages/llm/llm/tests/call-config.spec.ts
+- reference/packages/llm/llm-deepseek/tests/translate.spec.ts
 """
 
 import asyncio
 import copy
 import json
-from typing import Any, Callable, Dict, List, Optional
+import time
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 import pytest
 
 from dsh.cordis.context import Context
 from dsh.core.agent import Agent, AgentOptions, AgentPlugin, AgentRegistry
-from dsh.core.agent_loop import AgentLoopPlugin, AgentLoopService, BlockAssembler
-from dsh.core.session import Session, SessionPlugin, SessionStore, canonical_header
+from dsh.core.agent_loop import AgentLoopPlugin, AgentLoopService, BlockAssembler, request_proposal
+from dsh.core.session import Session, SessionPlugin, SessionStore, canonical_header, header_equals, createUserMessage
 from dsh.core.system_prompt import (
     FIRST_PARTY_SECTION_ORDER,
     PERSONA_ORDER,
     PERSONA_SECTION,
     TOOL_ORDER_REST,
     SystemPrompt,
+    compare_names,
+    compare_prompt_sections,
+    compare_tool_names,
     join_context_sections,
+    order_tools,
     render_context_sections,
     render_context_snapshot,
     render_prompt,
+    validate_tool_order,
 )
 from dsh.core.tools import ToolsPlugin, ToolsService
-from dsh.llm.llm_service import LLMService, LlmError
+from dsh.llm.llm_service import LLMService, LlmError, normalize_api_key, assert_usable_api_key
 
 
 class ScriptedMockAdapter:
@@ -59,7 +66,7 @@ class ScriptedMockAdapter:
         }
 
     def provider_info(self, provider: str) -> Dict[str, Any]:
-        return {"id": provider, "name": f"Mock Provider ({provider})"}
+        return {"id": provider, "name": "Mock Provider ({})".format(provider)}
 
     def provider_retry_policy(self, provider: str) -> Optional[Dict[str, Any]]:
         return None
@@ -104,6 +111,9 @@ class ScriptedMockAdapter:
             else:
                 resp_spec = resp_spec(req_record)
 
+        if isinstance(resp_spec, Exception):
+            raise resp_spec
+
         chunks: List[Dict[str, Any]] = []
         block_idx = 0
 
@@ -131,7 +141,7 @@ class ScriptedMockAdapter:
         if isinstance(resp_spec, dict) and "tool_calls" in resp_spec and resp_spec["tool_calls"]:
             for i, tc in enumerate(resp_spec["tool_calls"]):
                 idx = block_idx + i
-                call_id = tc.get("id", f"call_{i}")
+                call_id = tc.get("id", "call_{}".format(i))
                 call_name = tc.get("name", "echo")
                 call_args = tc.get("arguments", "{}")
                 if not isinstance(call_args, str):
@@ -418,8 +428,256 @@ async def test_system_prompt_tool_ordering_and_unlisted_tools():
         await create_test_context(adapter, tool_order=["tool_a", "tool_a", TOOL_ORDER_REST])
 
 
+@pytest.mark.asyncio
+async def test_system_prompt_scoped_layer_disposal_reversible_effects():
+    """
+    1:1 test: Scoped layers registered by plugins/fibers are completely reversible.
+    Disposing the layer removes all associated variables, sections, and contexts.
+    """
+    adapter = ScriptedMockAdapter()
+    ctx = await create_test_context(adapter, persona="Base persona")
+    sp: SystemPrompt = ctx.get("systemPrompt")
+
+    # Base prompt check
+    base_assembly = await sp.assemble()
+    assert "Base persona" in render_prompt(base_assembly)
+    assert len(base_assembly["sections"]) == 2  # identity + persona
+
+    # Add dynamic plugin registrations
+    dispose_var = sp.variable("feature_flag", "active")
+    dispose_sec = sp.section({"name": "feature_plugin", "order": 300, "text": "Feature is {{feature_flag}}"})
+    dispose_ctx = sp.context({"name": "feature_state", "order": 10, "text": "Feature buffer: empty"})
+
+    feature_assembly = await sp.assemble()
+    rendered_with_feature = render_prompt(feature_assembly)
+    assert "Feature is active" in rendered_with_feature
+    assert len(feature_assembly["sections"]) == 3
+    assert len(feature_assembly["contexts"]) == 1
+
+    # Dispose registrations (e.g. plugin unload / fiber cancellation)
+    dispose_sec()
+    dispose_var()
+    dispose_ctx()
+
+    disposed_assembly = await sp.assemble()
+    rendered_after_dispose = render_prompt(disposed_assembly)
+    assert "Feature is active" not in rendered_after_dispose
+    assert len(disposed_assembly["sections"]) == 2
+    assert len(disposed_assembly["contexts"]) == 0
+
+
+@pytest.mark.asyncio
+async def test_system_prompt_assemble_waterfall_and_dynamic_providers():
+    """
+    1:1 test: system-prompt/assemble waterfall allows plugins to modify prompt assemblies in-flight.
+    """
+    adapter = ScriptedMockAdapter()
+    ctx = await create_test_context(adapter, persona="Standard agent.")
+    sp: SystemPrompt = ctx.get("systemPrompt")
+
+    def assemble_modifier(assembly, context=None, next_fn=None):
+        assembly["sections"].append({
+            "name": "waterfall_injected",
+            "order": 9999,
+            "text": "INJECTED BY WATERFALL",
+        })
+        if next_fn:
+            return next_fn()
+        return assembly
+
+    ctx.on("system-prompt/assemble", assemble_modifier)
+
+    assembly = await sp.assemble()
+    assert any(s["name"] == "waterfall_injected" for s in assembly["sections"])
+    assert "INJECTED BY WATERFALL" in render_prompt(assembly)
+
+
+@pytest.mark.asyncio
+async def test_system_prompt_empty_persona_and_no_identity_options():
+    """
+    1:1 test: Custom combinations of includeHarnessIdentity=False and empty persona.
+    """
+    adapter = ScriptedMockAdapter()
+    ctx = await create_test_context(adapter, persona="", include_identity=False)
+    sp: SystemPrompt = ctx.get("systemPrompt")
+
+    assembly = await sp.assemble()
+    assert len(assembly["sections"]) == 1
+    assert assembly["sections"][0]["name"] == "deployment:persona"
+    assert render_prompt(assembly) == ""
+
+
 # ==============================================================================
-# SECTION 2: End-to-End Agent Loop & Event Stream Parity Tests
+# SECTION 2: LLM Translation, Stream Assembly & Call Preparation Tests
+# ==============================================================================
+
+@pytest.mark.asyncio
+async def test_block_assembler_interleaved_reasoning_text_tools_usage():
+    """
+    1:1 BlockAssembler unit & integration test verifying DeepSeek R1 reasoning-delta,
+    text-delta, tool-call-delta, usage accounting, and replayState preservation.
+    """
+    assembler = BlockAssembler()
+
+    # Feed stream chunks
+    assembler.push({"type": "block-start", "index": 0, "blockType": "reasoning"})
+    assembler.push({"type": "reasoning-delta", "index": 0, "text": "Analyzing the codebase..."})
+    assembler.push({"type": "block-end", "index": 0, "block": {"type": "reasoning", "text": "Analyzing the codebase..."}})
+
+    assembler.push({"type": "block-start", "index": 1, "blockType": "text"})
+    assembler.push({"type": "text-delta", "index": 1, "text": "Here is the summary."})
+    assembler.push({"type": "block-end", "index": 1, "block": {"type": "text", "text": "Here is the summary."}})
+
+    assembler.push({"type": "block-start", "index": 2, "blockType": "tool-call"})
+    assembler.push({"type": "tool-call-delta", "index": 2, "id": "call_01", "name": "str_replace", "argumentsDelta": '{"file": "main.py"}'})
+    assembler.push({"type": "block-end", "index": 2, "block": {"type": "tool-call", "id": "call_01", "name": "str_replace", "arguments": '{"file": "main.py"}'}})
+
+    assembler.push({"type": "usage", "usage": {"inputTokens": 100, "outputTokens": 50, "reasoningTokens": 30}})
+    assembler.push({"type": "finish", "reason": {"kind": "tool-calls"}, "replayState": {"model": "deepseek-reasoner"}})
+
+    blocks = assembler.blocks()
+    assert len(blocks) == 3
+    assert blocks[0] == {"type": "reasoning", "text": "Analyzing the codebase..."}
+    assert blocks[1] == {"type": "text", "text": "Here is the summary."}
+    assert blocks[2] == {"type": "tool-call", "id": "call_01", "name": "str_replace", "arguments": '{"file": "main.py"}'}
+
+    assert assembler.usage == {"inputTokens": 100, "outputTokens": 50, "reasoningTokens": 30}
+    assert assembler.finish == {"kind": "tool-calls"}
+    assert assembler.replayState == {"model": "deepseek-reasoner"}
+
+
+@pytest.mark.asyncio
+async def test_block_assembler_invariants_and_error_handling():
+    """
+    1:1 test: BlockAssembler tolerance for missing block-start, unhandled incomplete types,
+    and straggler deltas after block-end.
+    """
+    assembler = BlockAssembler()
+
+    # 1. Delta without explicit block-start/end defaults to text block
+    assembler.push({"type": "text-delta", "index": 0, "text": "implicit text"})
+    assert assembler.blocks() == [{"type": "text", "text": "implicit text"}]
+    assert assembler.finish == {"kind": "stop"}
+
+    # 2. Tool call delta straggler after block-end is safely ignored
+    assembler2 = BlockAssembler()
+    assembler2.push({"type": "block-start", "index": 0, "blockType": "tool-call"})
+    assembler2.push({"type": "tool-call-delta", "index": 0, "id": "c1", "name": "echo", "argumentsDelta": "{}"})
+    assembler2.push({"type": "block-end", "index": 0, "block": {"type": "tool-call", "id": "c1", "name": "echo", "arguments": "{}"}})
+    assembler2.push({"type": "tool-call-delta", "index": 0, "id": "c1", "name": "bad", "argumentsDelta": "ignored"})
+    assert assembler2.blocks() == [{"type": "tool-call", "id": "c1", "name": "echo", "arguments": "{}"}]
+
+
+@pytest.mark.asyncio
+async def test_llm_prepare_call_materializes_defaults_and_validates():
+    """
+    1:1 test: LLM prepare_call materializes adapterDefaults and validates reasoning efforts.
+    """
+    model_metadata = {
+        "provider": "mock-provider",
+        "id": "mock-r1",
+        "name": "Mock R1",
+        "defaultMaxTokens": 8192,
+        "reasoning": {
+            "efforts": ["low", "medium", "high"],
+            "defaultEffort": "high",
+        },
+    }
+    adapter = ScriptedMockAdapter(model_info=model_metadata)
+    ctx = await create_test_context(adapter)
+    llm_svc: LLMService = ctx.get("llm")
+
+    # 1. Prepare call with omitted maxTokens and reasoningEffort -> materializes defaults
+    prepared = await llm_svc.prepare_call({
+        "provider": "mock-provider",
+        "model": "mock-r1",
+    })
+
+    assert prepared["model"]["id"] == "mock-r1"
+    assert prepared["maxTokens"] == 8192
+    assert prepared["reasoningEffort"] == "high"
+    assert prepared["adapterDefaults"] == {"maxTokens": True, "reasoningEffort": True}
+
+    # 2. Prepare call with explicit values -> overrides defaults, adapterDefaults flags False
+    prepared_custom = await llm_svc.prepare_call({
+        "provider": "mock-provider",
+        "model": "mock-r1",
+        "maxTokens": 2048,
+        "reasoningEffort": "low",
+    })
+    assert prepared_custom["maxTokens"] == 2048
+    assert prepared_custom["reasoningEffort"] == "low"
+    assert prepared_custom["adapterDefaults"] == {"maxTokens": False, "reasoningEffort": False}
+
+    # 3. Unsupported reasoning effort throws UNSUPPORTED_REASONING_EFFORT
+    with pytest.raises(LlmError) as exc_info:
+        await llm_svc.prepare_call({
+            "provider": "mock-provider",
+            "model": "mock-r1",
+            "reasoningEffort": "ultra-deep",
+        })
+    assert exc_info.value.code == "UNSUPPORTED_REASONING_EFFORT"
+
+
+@pytest.mark.asyncio
+async def test_llm_adapter_registration_lifecycle_and_replace():
+    """
+    1:1 test: Dynamic LLM adapter registration, route replacement, and disposal.
+    """
+    ctx = Context()
+    llm_svc = LLMService(ctx=ctx)
+
+    class CustomAdapter:
+        def provider_info(self, p):
+            return {"id": p, "name": "Custom Provider"}
+
+    # 1. Register adapter
+    dispose = llm_svc.register_adapter(["prov-1", "prov-2"], CustomAdapter())
+    providers = [p["id"] for p in llm_svc.list_providers()]
+    assert "prov-1" in providers
+    assert "prov-2" in providers
+
+    # 2. Duplicate registration throws
+    with pytest.raises(LlmError, match="is already registered"):
+        llm_svc.register_adapter(["prov-1"], CustomAdapter())
+
+    # 3. Replace routes
+    dispose.replace(["prov-3"])
+    providers_after_replace = [p["id"] for p in llm_svc.list_providers()]
+    assert "prov-1" not in providers_after_replace
+    assert "prov-3" in providers_after_replace
+
+    # 4. Dispose
+    dispose()
+    providers_after_dispose = [p["id"] for p in llm_svc.list_providers()]
+    assert "prov-3" not in providers_after_dispose
+
+
+@pytest.mark.asyncio
+async def test_llm_configurable_providers_directory_validation():
+    """
+    1:1 test: Configurable provider directory validation and duplicate prevention.
+    """
+    ctx = Context()
+    llm_svc = LLMService(ctx=ctx)
+
+    # 1. Valid registration
+    dispose = llm_svc.register_configurable_providers([
+        {"provider": "p1", "displayName": "P1", "settingsNs": "ns1", "settingsPath": ["key"]},
+    ])
+    assert any(p["provider"] == "p1" for p in llm_svc.list_configurable_providers())
+
+    # 2. Duplicate provider throws
+    with pytest.raises(LlmError, match="is already declared"):
+        llm_svc.register_configurable_providers([
+            {"provider": "p1", "displayName": "P1 Dupe", "settingsNs": "ns1", "settingsPath": ["key"]},
+        ])
+
+    dispose()
+
+
+# ==============================================================================
+# SECTION 3: End-to-End Agent Loop & Event Stream Parity Tests
 # ==============================================================================
 
 @pytest.mark.asyncio
@@ -514,6 +772,47 @@ async def test_e2e_full_turn_event_stream_sequence_and_invariants():
     turn_end = next(e for e in session.events if e.get("type") == "turn/end")
     assert turn_end["data"]["turn"] == 1
     assert turn_end["data"]["reason"]["kind"] == "completed"
+
+    await handle.dispose()
+
+
+@pytest.mark.asyncio
+async def test_e2e_multi_step_turn_tool_execution_flow():
+    """
+    1:1 test: Multi-step turn executing two sequential tool calls across 2 steps
+    and concluding on Step 3 with a text response.
+    """
+    adapter = ScriptedMockAdapter(responses=[
+        {"tool_calls": [{"id": "c1", "name": "step1_tool", "arguments": {}}]},
+        {"tool_calls": [{"id": "c2", "name": "step2_tool", "arguments": {}}]},
+        {"text": "All steps finished"},
+    ])
+
+    ctx = await create_test_context(adapter)
+    tools_svc: ToolsService = ctx.get("tools")
+    tools_svc.register_tool(name="step1_tool", description="1", handler=lambda _: "res1")
+    tools_svc.register_tool(name="step2_tool", description="2", handler=lambda _: "res2")
+
+    agent_loop: AgentLoopService = ctx.get("agent_loop")
+    handle = await agent_loop.create_agent("e2e-session-multi-step-1")
+    agent = handle.agent
+    session = agent.session
+
+    agent.followup("Run multi-step tools")
+    await agent.when_idle()
+
+    # Assert 3 steps ran
+    step_starts = [e for e in session.events if e.get("type") == "step/start"]
+    assert len(step_starts) == 3
+    assert len(adapter.requests) == 3
+
+    # Step 2 request must contain tool result from Step 1
+    req2_msgs = adapter.requests[1]["messages"]
+    assert any(m.get("role") == "user" and any(b.get("type") == "tool-result" and b.get("toolCallId") == "c1" for b in m.get("content", [])) for m in req2_msgs)
+
+    # Step 3 request must contain tool results from Step 1 and Step 2
+    req3_msgs = adapter.requests[2]["messages"]
+    assert any(m.get("role") == "user" and any(b.get("type") == "tool-result" and b.get("toolCallId") == "c2" for b in m.get("content", [])) for m in req3_msgs)
 
     await handle.dispose()
 
@@ -621,8 +920,274 @@ async def test_e2e_stream_interruption_and_cancellation():
     await handle.dispose()
 
 
+@pytest.mark.asyncio
+async def test_e2e_tool_execution_cancellation_and_abort():
+    """
+    1:1 test: When an agent is cancelled during tool execution, tool execution halts
+    and turn ends with {kind: 'aborted', reason: {kind: 'user'}}.
+    """
+    tool_started = asyncio.Event()
+
+    async def blocking_tool(args, signal=None):
+        tool_started.set()
+        if signal:
+            await signal.wait()
+        else:
+            await asyncio.sleep(0.1)
+        return "finished"
+
+    adapter = ScriptedMockAdapter(responses=[
+        {"tool_calls": [{"id": "c_slow", "name": "slow_tool", "arguments": {}}]}
+    ])
+    ctx = await create_test_context(adapter)
+    tools_svc: ToolsService = ctx.get("tools")
+    tools_svc.register_tool(name="slow_tool", description="slow", handler=blocking_tool)
+
+    agent_loop: AgentLoopService = ctx.get("agent_loop")
+    handle = await agent_loop.create_agent("e2e-session-tool-abort-1")
+    agent = handle.agent
+    session = agent.session
+
+    agent.followup("Run slow tool")
+    await tool_started.wait()
+    agent.cancel({"kind": "user"})
+    await agent.when_idle()
+
+    turn_end = next(e for e in session.events if e.get("type") == "turn/end")
+    assert turn_end["data"]["reason"]["kind"] == "aborted"
+
+    await handle.dispose()
+
+
+@pytest.mark.asyncio
+async def test_e2e_agent_run_maintenance_task_and_wake_replay():
+    """
+    1:1 test: Maintenance tasks (e.g. index rebuilds, migrations) latch incoming wakes
+    behind maintenance and replay them upon completion.
+    """
+    adapter = ScriptedMockAdapter(responses=[{"text": "Wakeup replayed successfully"}])
+    ctx = await create_test_context(adapter)
+
+    agent_loop: AgentLoopService = ctx.get("agent_loop")
+    handle = await agent_loop.create_agent("e2e-session-maintenance-1")
+    agent = handle.agent
+    session = agent.session
+
+    maintenance_done = asyncio.Event()
+
+    async def maintenance_coro(signal=None):
+        await maintenance_done.wait()
+
+    # Start maintenance
+    m_task = asyncio.create_task(agent.run_maintenance(maintenance_coro))
+    await asyncio.sleep(0.02)
+
+    # Queue message while maintenance is running
+    agent.followup("Queued during maintenance")
+
+    # Release maintenance
+    maintenance_done.set()
+    await m_task
+    await agent.when_idle()
+
+    # Replayed wakeup executed
+    assistant_msgs = [e for e in session.events if e.get("type") == "assistant/message"]
+    assert len(assistant_msgs) == 1
+    assert any("Wakeup replayed" in b.get("text", "") for b in assistant_msgs[0]["data"]["message"]["content"])
+
+    await handle.dispose()
+
+
+@pytest.mark.asyncio
+async def test_e2e_turn_stopping_hook_continuation():
+    """
+    1:1 test: agent/turn-stopping hook allows plugins to continue the turn by injecting
+    an extra instruction before the agent goes idle.
+    """
+    adapter = ScriptedMockAdapter(responses=[
+        {"text": "Initial answer"},
+        {"text": "Extra continuation answer"},
+    ])
+    ctx = await create_test_context(adapter)
+
+    steps_seen = {"v": 0}
+
+    def turn_stopping_handler(payload):
+        steps_seen["v"] += 1
+        if steps_seen["v"] == 1:
+            payload["agent"].steer(createUserMessage({
+                "content": [{"type": "text", "text": "Please provide one more detail"}],
+                "source": {"kind": "plugin", "plugin": "test"},
+            }))
+
+    ctx.on("agent/turn-stopping", turn_stopping_handler)
+
+    agent_loop: AgentLoopService = ctx.get("agent_loop")
+    handle = await agent_loop.create_agent("e2e-session-turn-stopping-1")
+    agent = handle.agent
+    session = agent.session
+
+    agent.followup("Initial query")
+    await agent.when_idle()
+
+    assistant_msgs = [e for e in session.events if e.get("type") == "assistant/message"]
+    assert len(assistant_msgs) == 2
+    assert any("Extra continuation" in b.get("text", "") for b in assistant_msgs[1]["data"]["message"]["content"])
+
+    await handle.dispose()
+
+
 # ==============================================================================
-# SECTION 3: Request Header & Context Reconstructability Tests
+# SECTION 4: Interception Hooks & Context Injection Tests
+# ==============================================================================
+
+@pytest.mark.asyncio
+async def test_e2e_tools_pre_execute_argument_modification():
+    """
+    1:1 test: tools/pre-execute waterfall modifying tool arguments before handler execution.
+    """
+    adapter = ScriptedMockAdapter(responses=[
+        {"tool_calls": [{"id": "c1", "name": "calc", "arguments": {"x": 5}}]},
+        {"text": "Finished"},
+    ])
+    ctx = await create_test_context(adapter)
+    tools_svc: ToolsService = ctx.get("tools")
+
+    executed_args = {}
+
+    def calc_handler(args):
+        executed_args.update(args)
+        return "result: {}".format(args.get("x"))
+
+    tools_svc.register_tool(name="calc", description="calc", handler=calc_handler)
+
+    # Hook: double x
+    def modify_tool_args(exec_info, next_fn=None):
+        args = dict(exec_info.get("arguments", {}))
+        args["x"] = args.get("x", 0) * 2
+        return {"kind": "allow", "arguments": args}
+
+    ctx.on("tools/pre-execute", modify_tool_args)
+
+    agent_loop: AgentLoopService = ctx.get("agent_loop")
+    handle = await agent_loop.create_agent("e2e-session-pre-tool-1")
+    agent = handle.agent
+
+    agent.followup("Run calc")
+    await agent.when_idle()
+
+    assert executed_args.get("x") == 10
+
+    await handle.dispose()
+
+
+@pytest.mark.asyncio
+async def test_e2e_tools_pre_execute_skip_and_abort():
+    """
+    1:1 test: tools/pre-execute hook skipping tool execution and returning synthetic result.
+    """
+    adapter = ScriptedMockAdapter(responses=[
+        {"tool_calls": [{"id": "c_skip", "name": "skipped_tool", "arguments": {}}]},
+        {"text": "Acknowledged synthetic result"},
+    ])
+    ctx = await create_test_context(adapter)
+    tools_svc: ToolsService = ctx.get("tools")
+    tools_svc.register_tool(name="skipped_tool", description="skipped", handler=lambda args: "real result")
+
+    def skip_tool(exec_info, next_fn=None):
+        return {"kind": "skip", "result": [{"type": "text", "text": "synthetic skipped result"}]}
+
+    ctx.on("tools/pre-execute", skip_tool)
+
+    agent_loop: AgentLoopService = ctx.get("agent_loop")
+    handle = await agent_loop.create_agent("e2e-session-skip-tool-1")
+    agent = handle.agent
+    session = agent.session
+
+    agent.followup("Run skipped tool")
+    await agent.when_idle()
+
+    tool_results = [e for e in session.events if e.get("type") == "tool/result"]
+    assert len(tool_results) == 1
+    assert "synthetic skipped result" in str(tool_results[0]["data"])
+
+    await handle.dispose()
+
+
+@pytest.mark.asyncio
+async def test_e2e_tools_post_execute_additional_contexts_injection():
+    """
+    1:1 test: tools/post-execute hook injecting additionalContexts, latched into nextStep.
+    """
+    adapter = ScriptedMockAdapter(responses=[
+        {"tool_calls": [{"id": "c1", "name": "fetch", "arguments": {}}]},
+        {"text": "Done after injected context"},
+    ])
+    ctx = await create_test_context(adapter)
+    tools_svc: ToolsService = ctx.get("tools")
+    tools_svc.register_tool(name="fetch", description="fetch", handler=lambda args: "fetched raw data")
+
+    def post_tool_inject(exec_info, result, next_fn=None):
+        return {
+            "kind": "accept",
+            "additionalContexts": [
+                createUserMessage({
+                    "content": [{"type": "text", "text": "Side-channel context: security policy clean"}],
+                    "source": {"kind": "plugin", "plugin": "security"},
+                })
+            ],
+        }
+
+    ctx.on("tools/post-execute", post_tool_inject)
+
+    agent_loop: AgentLoopService = ctx.get("agent_loop")
+    handle = await agent_loop.create_agent("e2e-session-post-tool-inject-1")
+    agent = handle.agent
+
+    agent.followup("Fetch data")
+    await agent.when_idle()
+
+    # Verify that Step 2 request received the injected context message
+    req2_msgs = adapter.requests[1]["messages"]
+    assert any("Side-channel context" in str(m) for m in req2_msgs)
+
+    await handle.dispose()
+
+
+@pytest.mark.asyncio
+async def test_e2e_agent_pre_step_message_modification():
+    """
+    1:1 test: agent/pre-step waterfall modifying incoming user message text before step execution.
+    """
+    adapter = ScriptedMockAdapter(responses=[{"text": "Saw modified text"}])
+    ctx = await create_test_context(adapter)
+
+    async def modify_user_msg(data, next_fn=None):
+        messages = data.get("messages", [])
+        rewritten = [createUserMessage({
+            "content": [{"type": "text", "text": "MODIFIED: Original prompt"}],
+            "source": {"kind": "user"},
+        })]
+        return {"kind": "enter", "messages": rewritten}
+
+    ctx.on("agent/pre-step", modify_user_msg)
+
+    agent_loop: AgentLoopService = ctx.get("agent_loop")
+    handle = await agent_loop.create_agent("e2e-session-pre-step-modify-1")
+    agent = handle.agent
+
+    agent.followup("Original prompt")
+    await agent.when_idle()
+
+    assert len(adapter.requests) == 1
+    req_msgs = adapter.requests[0]["messages"]
+    assert any("MODIFIED: Original prompt" in str(m) for m in req_msgs)
+
+    await handle.dispose()
+
+
+# ==============================================================================
+# SECTION 5: Request Header Progression & Reconstructability Tests
 # ==============================================================================
 
 @pytest.mark.asyncio
@@ -699,8 +1264,88 @@ async def test_e2e_request_header_progression_across_multi_turn_and_changes():
     await handle.dispose()
 
 
+@pytest.mark.asyncio
+async def test_e2e_request_prefix_extension_stability():
+    """
+    1:1 test: Across steps and turns, requests strictly extend previous message histories
+    as immutable prefixes without mutation of existing items.
+    """
+    adapter = ScriptedMockAdapter(responses=[
+        {"tool_calls": [{"id": "c1", "name": "echo", "arguments": {"x": 1}}]},
+        {"text": "step 2 finish"},
+        {"text": "turn 2 finish"},
+    ])
+    ctx = await create_test_context(adapter)
+    tools_svc: ToolsService = ctx.get("tools")
+    tools_svc.register_tool(name="echo", description="echo", handler=lambda _: "ok")
+
+    agent_loop: AgentLoopService = ctx.get("agent_loop")
+    handle = await agent_loop.create_agent("e2e-session-prefix-1")
+    agent = handle.agent
+
+    # Turn 1
+    agent.followup("Turn 1 start")
+    await agent.when_idle()
+
+    # Turn 2
+    agent.followup("Turn 2 start")
+    await agent.when_idle()
+
+    assert len(adapter.requests) == 3
+    req1 = adapter.requests[0]["messages"]
+    req2 = adapter.requests[1]["messages"]
+    req3 = adapter.requests[2]["messages"]
+
+    # req2 extends req1
+    assert len(req2) > len(req1)
+    assert req2[:len(req1)] == req1
+
+    # req3 extends req2
+    assert len(req3) > len(req2)
+    assert req3[:len(req2)] == req2
+
+    await handle.dispose()
+
+
+@pytest.mark.asyncio
+async def test_e2e_request_proposal_stripping_adapter_defaults():
+    """
+    1:1 test: request_proposal strips reasoningEffort and maxTokens when adapterDefaults were True.
+    """
+    header_with_defaults = {
+        "config": {
+            "model": "deepseek-reasoner",
+            "maxTokens": 4096,
+            "reasoningEffort": "high",
+        },
+        "adapterDefaults": {
+            "maxTokens": True,
+            "reasoningEffort": True,
+        },
+    }
+    proposal = request_proposal(header_with_defaults)
+    assert "maxTokens" not in proposal
+    assert "reasoningEffort" not in proposal
+    assert proposal["model"] == "deepseek-reasoner"
+
+    header_explicit = {
+        "config": {
+            "model": "deepseek-reasoner",
+            "maxTokens": 2048,
+            "reasoningEffort": "low",
+        },
+        "adapterDefaults": {
+            "maxTokens": False,
+            "reasoningEffort": False,
+        },
+    }
+    proposal_explicit = request_proposal(header_explicit)
+    assert proposal_explicit["maxTokens"] == 2048
+    assert proposal_explicit["reasoningEffort"] == "low"
+
+
 # ==============================================================================
-# SECTION 4: LLM Waterfall, Error Recovery, and Retry Pipeline Tests
+# SECTION 6: LLM Waterfall, Error Recovery, and Retry Pipeline Tests
 # ==============================================================================
 
 @pytest.mark.asyncio
@@ -753,132 +1398,34 @@ async def test_e2e_agent_request_error_recovery_retry_waterfall():
 
 
 @pytest.mark.asyncio
-async def test_e2e_block_assembler_deepseek_r1_reasoning_and_usage_chunks():
+async def test_e2e_agent_request_error_bubble_and_turn_error_outcome():
     """
-    1:1 BlockAssembler unit & integration test verifying DeepSeek R1 reasoning-delta,
-    text-delta, tool-call-delta, usage accounting, and replayState preservation.
+    1:1 test: Unrecoverable LLM error propagates to turn/end with kind: 'error'.
     """
-    assembler = BlockAssembler()
+    def fatal_error(req):
+        raise LlmError("Quota exhausted", "QUOTA_EXCEEDED", status=403)
 
-    # Feed stream chunks
-    assembler.push({"type": "block-start", "index": 0, "blockType": "reasoning"})
-    assembler.push({"type": "reasoning-delta", "index": 0, "text": "Analyzing the codebase..."})
-    assembler.push({"type": "block-end", "index": 0, "block": {"type": "reasoning", "text": "Analyzing the codebase..."}})
-
-    assembler.push({"type": "block-start", "index": 1, "blockType": "text"})
-    assembler.push({"type": "text-delta", "index": 1, "text": "Here is the summary."})
-    assembler.push({"type": "block-end", "index": 1, "block": {"type": "text", "text": "Here is the summary."}})
-
-    assembler.push({"type": "block-start", "index": 2, "blockType": "tool-call"})
-    assembler.push({"type": "tool-call-delta", "index": 2, "id": "call_01", "name": "str_replace", "argumentsDelta": '{"file": "main.py"}'})
-    assembler.push({"type": "block-end", "index": 2, "block": {"type": "tool-call", "id": "call_01", "name": "str_replace", "arguments": '{"file": "main.py"}'}})
-
-    assembler.push({"type": "usage", "usage": {"inputTokens": 100, "outputTokens": 50, "reasoningTokens": 30}})
-    assembler.push({"type": "finish", "reason": {"kind": "tool-calls"}, "replayState": {"model": "deepseek-reasoner"}})
-
-    blocks = assembler.blocks()
-    assert len(blocks) == 3
-    assert blocks[0] == {"type": "reasoning", "text": "Analyzing the codebase..."}
-    assert blocks[1] == {"type": "text", "text": "Here is the summary."}
-    assert blocks[2] == {"type": "tool-call", "id": "call_01", "name": "str_replace", "arguments": '{"file": "main.py"}'}
-
-    assert assembler.usage == {"inputTokens": 100, "outputTokens": 50, "reasoningTokens": 30}
-    assert assembler.finish == {"kind": "tool-calls"}
-    assert assembler.replayState == {"model": "deepseek-reasoner"}
-
-
-# ==============================================================================
-# SECTION 5: Scoped Prompt Layers, Effects, and LLM Call Preparation
-# ==============================================================================
-
-@pytest.mark.asyncio
-async def test_e2e_system_prompt_scoped_layer_disposal_reversible_effects():
-    """
-    1:1 test: Scoped layers registered by plugins/fibers are completely reversible.
-    Disposing the layer removes all associated variables, sections, and contexts.
-    """
-    adapter = ScriptedMockAdapter()
-    ctx = await create_test_context(adapter, persona="Base persona")
-    sp: SystemPrompt = ctx.get("systemPrompt")
-
-    # Base prompt check
-    base_assembly = await sp.assemble()
-    assert "Base persona" in render_prompt(base_assembly)
-    assert len(base_assembly["sections"]) == 2  # identity + persona
-
-    # Add dynamic plugin registrations
-    dispose_var = sp.variable("feature_flag", "active")
-    dispose_sec = sp.section({"name": "feature_plugin", "order": 300, "text": "Feature is {{feature_flag}}"})
-    dispose_ctx = sp.context({"name": "feature_state", "order": 10, "text": "Feature buffer: empty"})
-
-    feature_assembly = await sp.assemble()
-    rendered_with_feature = render_prompt(feature_assembly)
-    assert "Feature is active" in rendered_with_feature
-    assert len(feature_assembly["sections"]) == 3
-    assert len(feature_assembly["contexts"]) == 1
-
-    # Dispose registrations (e.g. plugin unload / fiber cancellation)
-    dispose_sec()
-    dispose_var()
-    dispose_ctx()
-
-    disposed_assembly = await sp.assemble()
-    rendered_after_dispose = render_prompt(disposed_assembly)
-    assert "Feature is active" not in rendered_after_dispose
-    assert len(disposed_assembly["sections"]) == 2
-    assert len(disposed_assembly["contexts"]) == 0
-
-
-@pytest.mark.asyncio
-async def test_e2e_llm_prepare_call_materializes_defaults_and_validates():
-    """
-    1:1 test: LLM prepare_call materializes adapterDefaults and validates reasoning efforts.
-    """
-    model_metadata = {
-        "provider": "mock-provider",
-        "id": "mock-r1",
-        "name": "Mock R1",
-        "defaultMaxTokens": 8192,
-        "reasoning": {
-            "efforts": ["low", "medium", "high"],
-            "defaultEffort": "high",
-        },
-    }
-    adapter = ScriptedMockAdapter(model_info=model_metadata)
+    adapter = ScriptedMockAdapter(responses=[fatal_error])
     ctx = await create_test_context(adapter)
-    llm_svc: LLMService = ctx.get("llm")
 
-    # 1. Prepare call with omitted maxTokens and reasoningEffort -> materializes defaults
-    prepared = await llm_svc.prepare_call({
-        "provider": "mock-provider",
-        "model": "mock-r1",
-    })
+    agent_loop: AgentLoopService = ctx.get("agent_loop")
+    handle = await agent_loop.create_agent("e2e-session-fatal-error-1")
+    agent = handle.agent
+    session = agent.session
 
-    assert prepared["model"]["id"] == "mock-r1"
-    assert prepared["maxTokens"] == 8192
-    assert prepared["reasoningEffort"] == "high"
-    assert prepared["adapterDefaults"] == {"maxTokens": True, "reasoningEffort": True}
+    agent.followup("Trigger unrecoverable quota error")
+    await agent.when_idle()
 
-    # 2. Prepare call with explicit values -> overrides defaults, adapterDefaults flags False
-    prepared_custom = await llm_svc.prepare_call({
-        "provider": "mock-provider",
-        "model": "mock-r1",
-        "maxTokens": 2048,
-        "reasoningEffort": "low",
-    })
-    assert prepared_custom["maxTokens"] == 2048
-    assert prepared_custom["reasoningEffort"] == "low"
-    assert prepared_custom["adapterDefaults"] == {"maxTokens": False, "reasoningEffort": False}
+    turn_end = next(e for e in session.events if e.get("type") == "turn/end")
+    assert turn_end["data"]["reason"]["kind"] == "error"
+    assert "QUOTA_EXCEEDED" in str(turn_end["data"]["reason"])
 
-    # 3. Unsupported reasoning effort throws UNSUPPORTED_REASONING_EFFORT
-    with pytest.raises(LlmError) as exc_info:
-        await llm_svc.prepare_call({
-            "provider": "mock-provider",
-            "model": "mock-r1",
-            "reasoningEffort": "ultra-deep",
-        })
-    assert exc_info.value.code == "UNSUPPORTED_REASONING_EFFORT"
+    await handle.dispose()
 
+
+# ==============================================================================
+# SECTION 7: Multi-turn Session History & Message Derivation Tests
+# ==============================================================================
 
 @pytest.mark.asyncio
 async def test_e2e_session_derive_messages_exact_history_structure():
@@ -949,3 +1496,32 @@ async def test_e2e_session_derive_messages_exact_history_structure():
     assert messages[4]["role"] == "assistant"
     assert messages[4]["content"] == [{"type": "text", "text": "All commands executed successfully."}]
 
+
+@pytest.mark.asyncio
+async def test_e2e_assistant_replay_state_recording_and_derivation():
+    """
+    1:1 test: Assistant messages record replayState in event data.source,
+    which is faithfully preserved in derived messages.
+    """
+    session = Session(session_id="replay-state-test")
+    session.append_user_message("Query with replay state")
+
+    replay_meta = {"providerState": "encrypted-checkpoint-token", "engine": "deepseek-v3"}
+    session.append_assistant_message(
+        {
+            "role": "assistant",
+            "content": [{"type": "text", "text": "Response with state"}],
+            "source": {
+                "kind": "model",
+                "provider": "deepseek-official",
+                "model": "deepseek-chat",
+                "replayState": replay_meta,
+            },
+        },
+        turn=1,
+        step=1,
+    )
+
+    messages = session.derive_messages()
+    assert len(messages) == 2
+    assert messages[1]["source"]["replayState"] == replay_meta

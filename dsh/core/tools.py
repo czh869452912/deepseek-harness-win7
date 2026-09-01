@@ -62,8 +62,9 @@ class Tool:
     ) -> Any:
         sig = inspect.signature(self.handler)
         params = sig.parameters
-
         param_names = list(params.keys())
+        has_var_kw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values())
+
         if len(param_names) >= 2 and param_names[0] in ("tool_call_id", "call_id") and param_names[1] in ("params", "args", "arguments"):
             kw = {}
             if "tool_call_id" in params:
@@ -87,11 +88,16 @@ class Tool:
             if "exec_input" in params:
                 kw["exec_input"] = exec_input
             res = self.handler(**kw)
-        elif len(param_names) == 1 and param_names[0] in ("params", "args", "arguments"):
+        elif len(param_names) == 1 and not has_var_kw and (param_names[0] in ("params", "args", "arguments", "_") or not any(k in args for k in param_names)):
             res = self.handler(args)
         else:
-            has_var_kw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values())
             call_kw = dict(args)
+            if "params" in params and "params" not in call_kw:
+                call_kw["params"] = args
+            elif "args" in params and "args" not in call_kw:
+                call_kw["args"] = args
+            elif "arguments" in params and "arguments" not in call_kw:
+                call_kw["arguments"] = args
             if "ctx" in params or has_var_kw:
                 call_kw["ctx"] = ctx
             if "session" in params or has_var_kw:
@@ -351,8 +357,23 @@ class ToolsService:
             "agent": exec_input.agent,
         }
         modified = await self.ctx.waterfall("tools/pre-execute", call_payload)
-        exec_input.name = modified.get("name", exec_input.name)
-        exec_input.arguments = modified.get("arguments", exec_input.arguments)
+        if isinstance(modified, dict):
+            if modified.get("kind") == "skip":
+                res_raw = modified.get("result", [])
+                res = ToolExecutionResult.from_raw(res_raw)
+                return {"kind": "skip", "result": res}
+            elif modified.get("kind") == "abort":
+                err_res = ToolExecutionResult.from_raw(
+                    modified.get("reason", "tool execution aborted by policy"),
+                    is_error=True,
+                )
+                return {"kind": "abort", "result": err_res}
+            elif modified.get("kind") == "allow":
+                if "arguments" in modified:
+                    exec_input.arguments = modified["arguments"]
+            else:
+                exec_input.name = modified.get("name", exec_input.name)
+                exec_input.arguments = modified.get("arguments", exec_input.arguments)
         return {"kind": "dispatch", "exec": exec_input}
 
     async def dispatch(self, exec_input: ToolExecutionInput) -> Dict[str, Any]:
@@ -406,8 +427,20 @@ class ToolsService:
             "result": result,
         }
         res = await self.ctx.waterfall("tools/post-execute", payload)
-        fin = res.get("result", result)
-        return fin if isinstance(fin, ToolExecutionResult) else ToolExecutionResult.from_raw(fin)
+        if isinstance(res, dict):
+            if res.get("kind") == "block":
+                feedback = res.get("feedback", [])
+                result.is_error = True
+                result.content = feedback if isinstance(feedback, list) else [{"type": "text", "text": str(feedback)}]
+            elif res.get("content") is not None:
+                result.content = res["content"] if isinstance(res["content"], list) else [{"type": "text", "text": str(res["content"])}]
+            extra_ctxs = res.get("additionalContexts") or res.get("additional_contexts")
+            if extra_ctxs:
+                cur = list(result.additional_contexts or [])
+                result.additional_contexts = cur + list(extra_ctxs)
+            if "result" in res and isinstance(res["result"], ToolExecutionResult):
+                return res["result"]
+        return result
 
     def finish(self, exec_input: ToolExecutionInput, result: ToolExecutionResult) -> ToolExecutionResult:
         return result

@@ -1,10 +1,4 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-// TodoPanel: plan strip above the composer (the web counterpart of the TUI
-// plan panel). Renders the standing todo/write whole-list snapshot (cleared on
-// the next turn/start) — no data of its own, hidden while the list is empty.
-// Mounted through the 'conversation.input.dock' slot (QueueDock posture): the
-// dock adapter does the selecting, so the panel takes the plain list and stays
-// framework-free. Visual: figma 772:51905 / 772:52972 / 772:53419.
 import { useId, useState } from 'react';
 import { IconChecklistOutline14, IconChevronDownOutline14, IconChevronUpOutline14 } from '@deepseek-ai/dsh-client-ui-primitives';
 import { NS } from "../locales.js";
@@ -55,22 +49,15 @@ export function TodoPanel({ todos, t }) {
         return null;
     return (_jsx("section", { className: css.root, "data-testid": "todo-panel", "aria-label": t('todo.title'), children: _jsxs("div", { className: css.body, children: [_jsxs("button", { type: "button", className: css.header, "aria-expanded": !collapsed, onClick: () => { setCollapsed(v => !v); }, children: [_jsx("span", { className: css.lead, "aria-hidden": true, children: _jsx(IconChecklistOutline14, {}) }), _jsx("span", { className: css.title, children: t('todo.title') }), _jsx("span", { className: css.progress, children: progressLabel(todos, t) }), _jsx("span", { className: css.chevron, "aria-hidden": true, children: collapsed ? _jsx(IconChevronUpOutline14, {}) : _jsx(IconChevronDownOutline14, {}) })] }), !collapsed && (_jsx("ul", { className: css.list, children: todos.map(item => (_jsxs("li", { className: css.item, "data-status": item.status, children: [_jsx("span", { className: css.glyph, "aria-hidden": true, children: _jsx(StatusGlyph, { status: item.status }) }), _jsx("span", { className: css.content, children: item.content })] }, item.content))) }))] }) }));
 }
-/** Dock adapter: reads the host-computed 'todos' projection (whole list; absent or null renders nothing). */
+/** Renders the current todo projection, or nothing when it is absent. */
 export function TodoDock({ useProjection, t }) {
     const todos = useProjection('todos');
     return _jsx(TodoPanel, { todos: todos ?? [], t: t });
 }
-/**
- * The plan strip as a plain registrant plugin (QueueDock posture), following
- * the input-dock declaration across independent activation and reload.
- */
+/** Registers the projected todo dock. */
 export const todoDockEntry = {
     name: 'conversation-todo-dock',
     inject: ['slots'],
-    /**
-     * Register the plan strip before the goal and queue entries (order 0).
-     * @param ctx - registrant context (disposal rides ctx.effect inside slots.register).
-     */
     apply(ctx) {
         ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({ name: 'conversation.input.dock', id: 'todo', order: 0, locale: NS }, TodoDock));
     },

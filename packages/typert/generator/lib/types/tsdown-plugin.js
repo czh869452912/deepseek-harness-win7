@@ -10,6 +10,10 @@ import { dirname, join, resolve } from 'node:path';
 import ts from 'typescript';
 import { WorkspaceTypertGenerator } from "./workspace.js";
 const DECORATOR_SYNTAX = /^\s*@[A-Za-z_$][\w$]*/m;
+// This plugin consumes tsc-emitted `lib/types` output, so every project it
+// would re-diagnose has already passed the workspace tsc build in the same
+// orchestration; the generator skips its per-package diagnostic pass here.
+const TSC_VERIFIED_INPUT = { checkDiagnostics: false };
 /**
  * Create the decorator-lowering and typert-generation plugin for the root tsdown config.
  * @param pluginOptions - package/workspace emission mode and independent program faces.
@@ -60,7 +64,7 @@ export function typertPlugin(pluginOptions = {}) {
                 return;
             let artifacts = artifactsByRoot.get(root);
             if (artifacts === undefined) {
-                const generator = new WorkspaceTypertGenerator(root);
+                const generator = new WorkspaceTypertGenerator(root, TSC_VERIFIED_INPUT);
                 artifacts = pluginOptions.faces === undefined
                     ? generator.generate()
                     : generator.generate(undefined, pluginOptions.faces);
@@ -70,7 +74,7 @@ export function typertPlugin(pluginOptions = {}) {
         },
     };
     function emitWorkspace(root, faces) {
-        const generator = new WorkspaceTypertGenerator(root);
+        const generator = new WorkspaceTypertGenerator(root, TSC_VERIFIED_INPUT);
         const packages = generator.discover(faces)
             .filter(candidate => hasTypertExport(readManifest(join(root, candidate.root)).exports))
             .map(candidate => candidate.package);

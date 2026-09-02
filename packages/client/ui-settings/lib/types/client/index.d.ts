@@ -11,12 +11,13 @@
  * ui-sidebar would close a reference cycle through ui-layout and ui-theme.
  * Export discipline: packages/client/AGENTS.md.
  */
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client';
+import type { Context } from '@deepseek-ai/cordis';
 export type { SettingsGeneralItemOwnerProps, SettingsHeaderOwnerProps, SettingsOnboardingOwnerProps, SettingsPluginsTabOwnerProps, SettingsSectionOwnerProps, SettingsTriggerOwnerProps, } from './contract/slots.ts';
 export type { SettingsScopeController, SettingsScopeBinder } from './settings-scope.ts';
+export type { SettingsScope, SettingsScopeSnapshot, SettingsScopeSpec } from './settings-contract.ts';
 export type { SettingsSchemaService } from './schema.ts';
 export type { SchemaNode } from './schema.ts';
-export type { SettingsDescribeFace, SettingsDescribeView, SettingsMirrorSnapshot } from './settings-mirror.ts';
+export type { SettingsDescribeFace, SettingsDescribeView, SettingsMirrorSnapshot, SettingsRemote, SettingsWireFace, } from './settings-mirror.ts';
 /**
  * Required services: the wire handle for the mirror's reads and the forwarded
  * settings invalidation the mirror refreshes on.
@@ -31,5 +32,5 @@ export declare const inject: string[];
  * bound to each consuming plugin's context.
  * @param ctx - client root context.
  */
-export declare function apply(ctx: ClientContext): void;
+export declare function apply(ctx: Context): void;
 //# sourceMappingURL=index.d.ts.map

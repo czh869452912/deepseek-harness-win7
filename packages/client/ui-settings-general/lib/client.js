@@ -8,7 +8,7 @@ window.__ModuleLoader__.load({
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let react = require("react");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
-		let _deepseek_ai_dsh_client_runtime_client = require("@deepseek-ai/dsh-client-runtime/client");
+		let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
 		//#region ../../../node_modules/.pnpm/clsx@2.1.1/node_modules/clsx/dist/clsx.mjs
 		function r(e) {
 			var t, f, n = "";
@@ -24,8 +24,8 @@ window.__ModuleLoader__.load({
 			return n;
 		}
 		//#endregion
-		//#region \0dsh-css:D:\Claude-project\deepseek-harness-win7\reference\deepseek-harness\packages\client\ui-settings-general\src\client\SettingsRoot.module.css.mjs
-		const css$3 = ".MV8Wsq_trigger{box-sizing:border-box;cursor:pointer;width:calc(100% + 4px);height:42px;color:var(--dsw-alias-label-primary);background:0 0;border:none;border-radius:12px;flex:none;align-items:center;gap:8px;margin:4px -2px;padding:0 10px 0 8px;font-family:inherit;font-size:14px;line-height:22px;display:flex;overflow:hidden}.MV8Wsq_trigger:hover{background:var(--dsw-alias-interactive-bg-hover)}.MV8Wsq_trigger.MV8Wsq_rail{border-radius:50%;justify-content:center;gap:0;width:36px;height:36px;margin:8px 0 10px;padding:0}.MV8Wsq_triggerLabel{white-space:nowrap;overflow:hidden}.MV8Wsq_overlay{z-index:1000;justify-content:center;align-items:center;display:flex;position:fixed;inset:0}.MV8Wsq_mask{background:var(--dsw-alias-bg-mask-1);backdrop-filter:var(--dsw-mask-blur);position:absolute;inset:0}.MV8Wsq_panel{z-index:1;background:var(--dsw-alias-bg-layer-2);width:800px;max-width:calc(100vw - 48px);height:min(800px,100vh - 48px);box-shadow:var(--dsw-shadow-lv3);--dsh-scrollbar-thumb:var(--dsw-alias-scrollbar-bg-l2);--dsh-scrollbar-thumb-hover:var(--dsw-alias-scrollbar-hover-l2);border-radius:24px;display:flex;position:relative;overflow:hidden}.MV8Wsq_nav{box-sizing:border-box;flex-direction:column;flex:none;gap:18px;width:188px;padding:22px 12px 0;display:flex}.MV8Wsq_navTitle{color:var(--dsw-alias-label-primary);padding:0 12px;font-size:16px;font-weight:500;line-height:24px}.MV8Wsq_navList{flex-direction:column;gap:4px;display:flex}.MV8Wsq_navCell{box-sizing:border-box;cursor:pointer;height:40px;color:var(--dsw-alias-label-primary);text-align:left;background:0 0;border:none;border-radius:12px;align-items:center;gap:8px;padding:9px 16px 9px 12px;font-family:inherit;font-size:14px;font-weight:400;line-height:22px;display:flex}.MV8Wsq_navCell:hover{background:var(--dsw-specific-sidebar-nav-item-hover)}.MV8Wsq_navCell.MV8Wsq_active{background:var(--dsw-specific-sidebar-nav-item-active)}.MV8Wsq_navIcon{flex:none}.MV8Wsq_navLabel{white-space:nowrap;text-overflow:ellipsis;flex:1;min-width:0;overflow:hidden}.MV8Wsq_content{flex-direction:column;flex:1;min-width:0;display:flex}.MV8Wsq_header{box-sizing:border-box;flex:none;justify-content:space-between;align-items:flex-start;gap:8px;height:54px;padding:20px 14px 8px 10px;display:flex}.MV8Wsq_actions{justify-content:flex-end;align-items:center;gap:8px;min-width:0;margin-left:auto;display:flex}.MV8Wsq_close{cursor:pointer;width:28px;height:28px;color:var(--dsw-alias-label-primary);background:0 0;border:none;border-radius:28px;justify-content:center;align-items:center;padding:0;display:inline-flex}.MV8Wsq_close:hover{background:var(--dsw-alias-interactive-bg-hover)}.MV8Wsq_options{flex:1;min-height:0;padding:0 24px 24px;overflow-y:auto}.MV8Wsq_hiddenLabel{clip:rect(0 0 0 0);white-space:nowrap;width:1px;height:1px;position:absolute;overflow:hidden}";
+		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-settings-general\src\client\SettingsRoot.module.css.mjs
+		const css$3 = "._2yP1Aq_trigger{box-sizing:border-box;cursor:pointer;width:calc(100% + 4px);height:42px;color:var(--dsw-alias-label-primary);background:0 0;border:none;border-radius:12px;flex:none;align-items:center;gap:8px;margin:4px -2px;padding:0 10px 0 8px;font-family:inherit;font-size:14px;line-height:22px;display:flex;overflow:hidden}._2yP1Aq_trigger:hover{background:var(--dsw-alias-interactive-bg-hover)}._2yP1Aq_trigger._2yP1Aq_rail{border-radius:50%;justify-content:center;gap:0;width:36px;height:36px;margin:8px 0 10px;padding:0}._2yP1Aq_triggerLabel{white-space:nowrap;overflow:hidden}._2yP1Aq_overlay{z-index:1000;justify-content:center;align-items:center;display:flex;position:fixed;inset:0}._2yP1Aq_mask{background:var(--dsw-alias-bg-mask-1);backdrop-filter:var(--dsw-mask-blur);position:absolute;inset:0}._2yP1Aq_panel{z-index:1;background:var(--dsw-alias-bg-layer-2);width:800px;max-width:calc(100vw - 48px);height:min(800px,100vh - 48px);box-shadow:var(--dsw-shadow-lv3);--dsh-scrollbar-thumb:var(--dsw-alias-scrollbar-bg-l2);--dsh-scrollbar-thumb-hover:var(--dsw-alias-scrollbar-hover-l2);border-radius:24px;display:flex;position:relative;overflow:hidden}._2yP1Aq_nav{box-sizing:border-box;flex-direction:column;flex:none;gap:18px;width:188px;padding:22px 12px 0;display:flex}._2yP1Aq_navTitle{color:var(--dsw-alias-label-primary);padding:0 12px;font-size:16px;font-weight:500;line-height:24px}._2yP1Aq_navList{flex-direction:column;gap:4px;display:flex}._2yP1Aq_navCell{box-sizing:border-box;cursor:pointer;height:40px;color:var(--dsw-alias-label-primary);text-align:left;background:0 0;border:none;border-radius:12px;align-items:center;gap:8px;padding:9px 16px 9px 12px;font-family:inherit;font-size:14px;font-weight:400;line-height:22px;display:flex}._2yP1Aq_navCell:hover{background:var(--dsw-specific-sidebar-nav-item-hover)}._2yP1Aq_navCell._2yP1Aq_active{background:var(--dsw-specific-sidebar-nav-item-active)}._2yP1Aq_navIcon{flex:none}._2yP1Aq_navLabel{white-space:nowrap;text-overflow:ellipsis;flex:1;min-width:0;overflow:hidden}._2yP1Aq_content{flex-direction:column;flex:1;min-width:0;display:flex}._2yP1Aq_header{box-sizing:border-box;flex:none;justify-content:space-between;align-items:flex-start;gap:8px;height:54px;padding:20px 14px 8px 10px;display:flex}._2yP1Aq_actions{justify-content:flex-end;align-items:center;gap:8px;min-width:0;margin-left:auto;display:flex}._2yP1Aq_close{cursor:pointer;width:28px;height:28px;color:var(--dsw-alias-label-primary);background:0 0;border:none;border-radius:28px;justify-content:center;align-items:center;padding:0;display:inline-flex}._2yP1Aq_close:hover{background:var(--dsw-alias-interactive-bg-hover)}._2yP1Aq_options{flex:1;min-height:0;padding:0 24px 24px;overflow-y:auto}._2yP1Aq_hiddenLabel{clip:rect(0 0 0 0);white-space:nowrap;width:1px;height:1px;position:absolute;overflow:hidden}";
 		const tagId$3 = "@deepseek-ai/dsh-client-ui-settings-general/SettingsRoot.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
 			const tag = document.createElement("style");
@@ -35,25 +35,25 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var SettingsRoot_module_css_default = {
-			"actions": "MV8Wsq_actions",
-			"active": "MV8Wsq_active",
-			"close": "MV8Wsq_close",
-			"content": "MV8Wsq_content",
-			"header": "MV8Wsq_header",
-			"hiddenLabel": "MV8Wsq_hiddenLabel",
-			"mask": "MV8Wsq_mask",
-			"nav": "MV8Wsq_nav",
-			"navCell": "MV8Wsq_navCell",
-			"navIcon": "MV8Wsq_navIcon",
-			"navLabel": "MV8Wsq_navLabel",
-			"navList": "MV8Wsq_navList",
-			"navTitle": "MV8Wsq_navTitle",
-			"options": "MV8Wsq_options",
-			"overlay": "MV8Wsq_overlay",
-			"panel": "MV8Wsq_panel",
-			"rail": "MV8Wsq_rail",
-			"trigger": "MV8Wsq_trigger",
-			"triggerLabel": "MV8Wsq_triggerLabel"
+			"actions": "_2yP1Aq_actions",
+			"active": "_2yP1Aq_active",
+			"close": "_2yP1Aq_close",
+			"content": "_2yP1Aq_content",
+			"header": "_2yP1Aq_header",
+			"hiddenLabel": "_2yP1Aq_hiddenLabel",
+			"mask": "_2yP1Aq_mask",
+			"nav": "_2yP1Aq_nav",
+			"navCell": "_2yP1Aq_navCell",
+			"navIcon": "_2yP1Aq_navIcon",
+			"navLabel": "_2yP1Aq_navLabel",
+			"navList": "_2yP1Aq_navList",
+			"navTitle": "_2yP1Aq_navTitle",
+			"options": "_2yP1Aq_options",
+			"overlay": "_2yP1Aq_overlay",
+			"panel": "_2yP1Aq_panel",
+			"rail": "_2yP1Aq_rail",
+			"trigger": "_2yP1Aq_trigger",
+			"triggerLabel": "_2yP1Aq_triggerLabel"
 		};
 		//#endregion
 		//#region lib/types/client/SettingsRoot.js
@@ -227,8 +227,8 @@ window.__ModuleLoader__.load({
 			] });
 		}
 		//#endregion
-		//#region \0dsh-css:D:\Claude-project\deepseek-harness-win7\reference\deepseek-harness\packages\client\ui-settings-general\src\client\chrome.module.css.mjs
-		const css$2 = ".FNLydG_triggerLabel{white-space:nowrap;overflow:hidden}";
+		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-settings-general\src\client\chrome.module.css.mjs
+		const css$2 = ".lOzfOG_triggerLabel{white-space:nowrap;overflow:hidden}";
 		const tagId$2 = "@deepseek-ai/dsh-client-ui-settings-general/chrome.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
 			const tag = document.createElement("style");
@@ -237,7 +237,7 @@ window.__ModuleLoader__.load({
 			tag.textContent = css$2;
 			document.head.appendChild(tag);
 		}
-		var chrome_module_css_default = { "triggerLabel": "FNLydG_triggerLabel" };
+		var chrome_module_css_default = { "triggerLabel": "lOzfOG_triggerLabel" };
 		//#endregion
 		//#region lib/types/client/chrome.js
 		/**
@@ -274,8 +274,8 @@ window.__ModuleLoader__.load({
 			return (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: t("close") });
 		}
 		//#endregion
-		//#region \0dsh-css:D:\Claude-project\deepseek-harness-win7\reference\deepseek-harness\packages\client\ui-settings-general\src\client\GeneralSection.module.css.mjs
-		const css$1 = ".hIa1Ta_section{flex-direction:column;width:100%;display:flex}.hIa1Ta_section>[data-slot=\"settings.general.item\"]>:last-child{border-bottom:none}";
+		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-settings-general\src\client\GeneralSection.module.css.mjs
+		const css$1 = ".oEqBrq_section{flex-direction:column;width:100%;display:flex}.oEqBrq_section>[data-slot=\"settings.general.item\"]>:last-child{border-bottom:none}";
 		const tagId$1 = "@deepseek-ai/dsh-client-ui-settings-general/GeneralSection.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
@@ -284,7 +284,7 @@ window.__ModuleLoader__.load({
 			tag.textContent = css$1;
 			document.head.appendChild(tag);
 		}
-		var GeneralSection_module_css_default = { "section": "hIa1Ta_section" };
+		var GeneralSection_module_css_default = { "section": "oEqBrq_section" };
 		//#endregion
 		//#region lib/types/client/GeneralSection.js
 		/**
@@ -299,8 +299,8 @@ window.__ModuleLoader__.load({
 			});
 		}
 		//#endregion
-		//#region \0dsh-css:D:\Claude-project\deepseek-harness-win7\reference\deepseek-harness\packages\client\ui-settings-general\src\client\SettingsDocumentAction.module.css.mjs
-		const css = ".jUSu_a_action{align-items:center;gap:8px;min-width:0;display:flex}.jUSu_a_error{max-width:180px;color:var(--dsw-alias-state-error-primary);text-overflow:ellipsis;white-space:nowrap;font-size:12px;line-height:18px;overflow:hidden}";
+		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-settings-general\src\client\SettingsDocumentAction.module.css.mjs
+		const css = ".xQVo3q_action{align-items:center;gap:8px;min-width:0;display:flex}.xQVo3q_error{max-width:180px;color:var(--dsw-alias-state-error-primary);text-overflow:ellipsis;white-space:nowrap;font-size:12px;line-height:18px;overflow:hidden}";
 		const tagId = "@deepseek-ai/dsh-client-ui-settings-general/SettingsDocumentAction.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -310,8 +310,8 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var SettingsDocumentAction_module_css_default = {
-			"action": "jUSu_a_action",
-			"error": "jUSu_a_error"
+			"action": "xQVo3q_action",
+			"error": "xQVo3q_error"
 		};
 		//#endregion
 		//#region lib/types/client/SettingsDocumentAction.js
@@ -352,10 +352,10 @@ window.__ModuleLoader__.load({
 		}
 		/** Derives local-document availability from the shared mirror and invokes the pathless Host-owned open operation. */
 		var SettingsDocumentStore = class {
-			api;
+			remote;
 			describeFace;
 			/** uSES-safe state source shared by the registered header action. */
-			store = (0, _deepseek_ai_dsh_client_runtime_client.createSnapshotStore)({
+			store = (0, _deepseek_ai_dsh_client_store.createSnapshotStore)({
 				status: "idle",
 				opening: false,
 				error: null
@@ -365,8 +365,8 @@ window.__ModuleLoader__.load({
 			* @param api - loopback settings wire face that opens the provider document.
 			* @param describeFace - the shared mirror's describe face (`hasDocument` source).
 			*/
-			constructor(api, describeFace) {
-				this.api = api;
+			constructor(remote, describeFace) {
+				this.remote = remote;
 				this.describeFace = describeFace;
 			}
 			/**
@@ -397,8 +397,8 @@ window.__ModuleLoader__.load({
 					state.error = null;
 				});
 				try {
-					const response = await this.api.settings.openDocument({});
-					if (!response.result.ok) throw new Error(response.result.error.message);
+					const result = await this.remote.settings.openSettingsDocument();
+					if (!result.ok) throw new Error(result.error.message);
 				} catch (error) {
 					this.store.update((state) => {
 						state.error = messageOf(error);
@@ -464,6 +464,8 @@ window.__ModuleLoader__.load({
 			"slots",
 			"locale",
 			"connection",
+			"remote",
+			"remote.settings",
 			"settingsScope"
 		];
 		/**
@@ -477,8 +479,7 @@ window.__ModuleLoader__.load({
 				en
 			}), "ui-settings-general: dictionaries");
 			const t = ctx.locale.bind(NS);
-			const connection = ctx.get("connection");
-			const documentController = connection.isLoopback ? new SettingsDocumentStore(connection.api, ctx.settingsScope.describe()) : void 0;
+			const documentController = ctx.get("connection").isLoopback ? new SettingsDocumentStore(ctx.remote, ctx.settingsScope.describe()) : void 0;
 			const documentInjected = documentController === void 0 ? void 0 : () => ({
 				controller: documentController,
 				hooks: { snapshot: documentController.store }

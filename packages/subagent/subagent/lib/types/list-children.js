@@ -1,13 +1,13 @@
 /**
  * Read-only enumeration of durable subagent children and descendant trees
- * straight from the live session store and optional session persistence — no
- * query service. Candidates come from one live-preferred corpus; each child's
- * mode/label is the registered `subagent` projection unit's value, resolved
+ * through the Session query service. Candidates come from one live-preferred
+ * corpus; each child's mode/label is the registered `subagent` projection
+ * unit's value, resolved
  * down a three-rung ladder: the registry's watermark cache for a live child,
  * a durable projection-cache row when it serves an own-suffix identity (the
- * seq gate), and one persistence inspection folded through the registry
- * otherwise, validated against the enumerated lifecycle. The projection fold
- * is the single classification authority — this module parses no descriptor
+ * seq gate), and one shared Session observation otherwise, validated against
+ * the enumerated lifecycle. The projection fold is the single classification
+ * authority — this module parses no descriptor
  * itself. Absent persistence, enumeration is live-only: a cold child is
  * unreachable for resume anyway, so its absence is capability absence, not an
  * error. The module owns no catalog state and does not consult Activation,
@@ -15,11 +15,63 @@
  *
  * @module @deepseek-ai/dsh-subagent
  */
+var __addDisposableResource = (this && this.__addDisposableResource) || function (env, value, async) {
+    if (value !== null && value !== void 0) {
+        if (typeof value !== "object" && typeof value !== "function") throw new TypeError("Object expected.");
+        var dispose, inner;
+        if (async) {
+            if (!Symbol.asyncDispose) throw new TypeError("Symbol.asyncDispose is not defined.");
+            dispose = value[Symbol.asyncDispose];
+        }
+        if (dispose === void 0) {
+            if (!Symbol.dispose) throw new TypeError("Symbol.dispose is not defined.");
+            dispose = value[Symbol.dispose];
+            if (async) inner = dispose;
+        }
+        if (typeof dispose !== "function") throw new TypeError("Object not disposable.");
+        if (inner) dispose = function() { try { inner.call(this); } catch (e) { return Promise.reject(e); } };
+        env.stack.push({ value: value, dispose: dispose, async: async });
+    }
+    else if (async) {
+        env.stack.push({ async: true });
+    }
+    return value;
+};
+var __disposeResources = (this && this.__disposeResources) || (function (SuppressedError) {
+    return function (env) {
+        function fail(e) {
+            env.error = env.hasError ? new SuppressedError(e, env.error, "An error was suppressed during disposal.") : e;
+            env.hasError = true;
+        }
+        var r, s = 0;
+        function next() {
+            while (r = env.stack.pop()) {
+                try {
+                    if (!r.async && s === 1) return s = 0, env.stack.push(r), Promise.resolve().then(next);
+                    if (r.dispose) {
+                        var result = r.dispose.call(r.value);
+                        if (r.async) return s |= 2, Promise.resolve(result).then(next, function(e) { fail(e); return next(); });
+                    }
+                    else s |= 1;
+                }
+                catch (e) {
+                    fail(e);
+                }
+            }
+            if (s === 1) return env.hasError ? Promise.reject(env.error) : Promise.resolve();
+            if (env.hasError) throw env.error;
+        }
+        return next();
+    };
+})(typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
+    var e = new Error(message);
+    return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+});
 import { SubagentError } from "./error.js";
 /**
- * Concurrent cold inspections per listing; a constant because it bounds one
- * read-only scan of local media, not deployment behavior. Should a networked
- * persistence backend appear, promote it to a validated `Config` field.
+ * Concurrent cold observations per explicit catalog listing. Current Session
+ * persistence providers are local; a networked provider must promote this to
+ * a validated deployment setting.
  */
 const COLD_READ_CONCURRENCY = 4;
 /**
@@ -28,8 +80,7 @@ const COLD_READ_CONCURRENCY = 4;
  * serving each identity from the `subagent` projection unit: the registry's
  * watermark snapshot for a live child; for a cold one, a durable
  * projection-cache row when it serves an own-suffix identity (the seq gate),
- * else one bounded-concurrency persistence inspection folded through the
- * registry.
+ * else one bounded-concurrency shared Session observation.
  * @see SubagentRuntime.listChildren for the public cancellation and failure contract.
  * @param ctx - context carrying the session store, the projection registry,
  *   optional persistence, and the optional projection cache.
@@ -91,31 +142,32 @@ async function prepareListing(ctx, signal) {
         throw new SubagentError('listing subagents requires the session store (load @deepseek-ai/dsh-session)', 'SUBAGENT_CONTROL_SESSION_STORE_UNAVAILABLE');
     }
     assertListingNotCancelled(signal);
-    const persistence = ctx.get('sessionPersistence');
+    const query = ctx.get('sessionQuery');
+    if (query === undefined) {
+        throw new SubagentError('listing subagents requires the sessionQuery service (load @deepseek-ai/dsh-session-query)', 'SUBAGENT_CONTROL_QUERY_UNAVAILABLE');
+    }
     // Optional acceleration only: an absent cache service just means every
     // cold candidate takes the authoritative preparation rung, so it carries
     // no error code and no configuration check.
     const cache = ctx.get('sessionProjectionCache');
-    let persistedHeaders = [];
-    if (persistence !== undefined) {
-        try {
-            persistedHeaders = await persistence.list(signal);
-        }
-        catch (error) {
-            // The backend may reject with its own abort failure after observing the
-            // forwarded signal; cancellation stays a stable subagent failure.
-            assertListingNotCancelled(signal);
-            throw error;
-        }
-        assertListingNotCancelled(signal);
+    let records;
+    try {
+        records = await query.listSessions(signal);
     }
+    catch (error) {
+        assertListingNotCancelled(signal);
+        throw error;
+    }
+    assertListingNotCancelled(signal);
     // Live-preferred merge without header reconciliation: a live record wins
     // its id wholesale, exactly as a live-preferred corpus would serve it.
     const corpus = new Map();
-    for (const header of persistedHeaders)
-        corpus.set(header.id, { header, live: undefined });
-    for (const session of sessions.list()) {
-        corpus.set(session.header.id, { header: session.header, live: session });
+    for (const record of records) {
+        const live = sessions.get(record.header.id);
+        corpus.set(record.header.id, {
+            header: live?.header ?? record.header,
+            live,
+        });
     }
     const subagentParents = new Set();
     for (const record of corpus.values()) {
@@ -123,11 +175,11 @@ async function prepareListing(ctx, signal) {
             subagentParents.add(record.header.parentSession);
         }
     }
-    return { projections, persistence, cache, corpus, subagentParents };
+    return { projections, query, cache, corpus, subagentParents };
 }
 /** Resolve projection-backed rows for aligned candidates with bounded cold reads. */
 async function resolveCandidateRows(candidates, listing, signal) {
-    const { projections, persistence, cache, subagentParents } = listing;
+    const { projections, query, cache, subagentParents } = listing;
     const rows = Array.from({ length: candidates.length });
     const coldReads = [];
     candidates.forEach((candidate, index) => {
@@ -136,34 +188,31 @@ async function resolveCandidateRows(candidates, listing, signal) {
             coldReads.push({ index, header: candidate.header });
             return;
         }
-        // The registry's watermark cache serves the live value with zero log
-        // reads; a live child without an identity yet is the creation window
-        // before the establishing provider appends its descriptor.
+        // Read only the identity unit. A live child without an identity yet is the
+        // creation window before the establishing provider appends its descriptor.
         let identity;
         try {
-            identity = projections.snapshot(candidate.live).values.subagent;
+            identity = projections.snapshot(candidate.live, ['subagent']).values.subagent;
         }
         catch {
-            // The snapshot folds EVERY registered unit over this child's log, so
-            // any unit's fold or schema can reject damaged payloads. That is
-            // deterministic data damage in this one child; it degrades to one
-            // corrupt diagnostic instead of failing the whole listing.
+            // A rejecting identity fold is deterministic data damage in this child;
+            // contain it as one diagnostic instead of failing the whole listing.
             rows[index] = { kind: 'diagnostic', id: childId, reason: 'corrupt' };
             return;
         }
         // The unit's serializable no-value sentinel is `null`; `undefined` can
         // only mean the key was dropped at a JSON boundary. Both are no value.
-        if (identity === undefined || identity === null)
+        if (identity === undefined || identity === null
+            || identity.seq < (candidate.header.seedLength ?? 0))
             return;
         rows[index] = childRow(childId, identity, 'running', subagentParents.has(childId));
     });
-    // Cold candidates exist only when persistence listed them, so the narrow
-    // re-check is about types, not reachability.
-    if (persistence !== undefined && coldReads.length > 0) {
+    // Cold candidates came from the query corpus and are resolved concurrently.
+    if (coldReads.length > 0) {
         const queue = [...coldReads];
         await Promise.all(Array.from({ length: Math.min(COLD_READ_CONCURRENCY, queue.length) }, async () => {
             for (let job = queue.shift(); job !== undefined; job = queue.shift()) {
-                rows[job.index] = await resolveColdIdentity(persistence, projections, cache, job.header, subagentParents.has(job.header.id), signal);
+                rows[job.index] = await resolveColdIdentity(query, cache, job.header, subagentParents.has(job.header.id), signal);
             }
         }));
     }
@@ -214,70 +263,81 @@ function compareCorpusRecords(a, b) {
 /**
  * Resolve one cold candidate down the remaining ladder: a durable
  * projection-cache row when it serves an own-suffix identity (the seq gate),
- * otherwise one persistence inspection folded through the projection
- * registry (the same detached recipe the API proxy uses for detached session
- * projections). A failed inspection is one transient `unavailable` row
- * retried on the next listing; an inspection naming another lifecycle, and a
+ * otherwise one shared Session observation. An absent or transiently failed
+ * observation is one `unavailable` row retried on the next listing; an observation
+ * source naming another lifecycle, and a
  * settled log the fold cannot identify — or that makes any registered unit
  * throw — are final, so they report `corrupt`.
  */
-async function resolveColdIdentity(persistence, projections, cache, header, hasChildren, signal) {
-    const childId = header.id;
-    if (cache !== undefined) {
-        let cached;
-        try {
-            cached = cache.cachedSnapshot(header)?.values.subagent;
-        }
-        catch {
-            // Unlike the preparation fold below, a throwing cache read renders no
-            // verdict: the cache is derived data, so its damage (a poisoned stored
-            // row of ANY unit) silently falls through to the authoritative re-fold.
-            cached = undefined;
-        }
-        // A child's OWN descriptor is immutable once appended, so a cached
-        // identity is final only when the seq gate proves it was folded from the
-        // own suffix: a creation-window checkpoint may instead carry a fork
-        // seed's replayed ANCESTOR descriptor (seq below `seedLength`), which
-        // must not outrank the re-fold. Everything else also falls through to
-        // preparation: an absent key (a cut before any descriptor) and the
-        // `null` sentinel, whose verdict belongs to the authoritative re-fold,
-        // not to a derived row.
-        if (cached !== undefined && cached !== null && cached.seq >= (header.seedLength ?? 0)) {
-            return childRow(childId, cached, 'inactive', hasChildren);
-        }
-    }
-    assertListingNotCancelled(signal);
-    let inspected;
+async function resolveColdIdentity(query, cache, header, hasChildren, signal) {
+    const env_1 = { stack: [], error: void 0, hasError: false };
     try {
-        inspected = await persistence.inspect(childId, signal);
-    }
-    catch {
-        // Per-child isolation: the child vanished or its backend read failed —
-        // one diagnostic row, and the listing itself still succeeds.
+        const childId = header.id;
+        if (cache !== undefined) {
+            let cached;
+            try {
+                cached = cache.cachedSnapshot(header, ['subagent'])?.values.subagent;
+            }
+            catch {
+                // Unlike the preparation fold below, a throwing cache read renders no
+                // verdict: the cache is derived data, so its damage (a poisoned stored
+                // row of ANY unit) silently falls through to the authoritative re-fold.
+                cached = undefined;
+            }
+            // A child's OWN descriptor is immutable once appended, so a cached
+            // identity is final only when the seq gate proves it was folded from the
+            // own suffix: a creation-window checkpoint may instead carry a fork
+            // seed's replayed ANCESTOR descriptor (seq below `seedLength`), which
+            // must not outrank the re-fold. Everything else also falls through to
+            // preparation: an absent key (a cut before any descriptor) and the
+            // `null` sentinel, whose verdict belongs to the authoritative re-fold,
+            // not to a derived row.
+            if (cached !== undefined && cached !== null && cached.seq >= (header.seedLength ?? 0)) {
+                return childRow(childId, cached, 'inactive', hasChildren);
+            }
+        }
         assertListingNotCancelled(signal);
-        return { kind: 'diagnostic', id: childId, reason: 'unavailable' };
+        let observation;
+        try {
+            observation = await query.observeSession(childId, {
+                ...(signal === undefined ? {} : { signal }),
+            });
+        }
+        catch (error) {
+            // Per-child isolation: durable corruption is stable; absence and backend
+            // failures remain retryable. Either way, the listing itself still succeeds.
+            assertListingNotCancelled(signal);
+            return {
+                kind: 'diagnostic',
+                id: childId,
+                reason: sessionQueryCode(error) === 'SESSION_QUERY_CORRUPT_SESSION'
+                    || sessionQueryCode(error) === 'SESSION_QUERY_SOURCE_CONFLICT'
+                    ? 'corrupt'
+                    : 'unavailable',
+            };
+        }
+        const ownedObservation = __addDisposableResource(env_1, observation, false);
+        assertListingNotCancelled(signal);
+        // A session id names a slot, not a lifecycle: a child deleted and
+        // re-published under another owner between the enumeration and this read
+        // must not leak into the old parent's listing.
+        if (!sameLifecycle(ownedObservation.header, header)) {
+            return { kind: 'diagnostic', id: childId, reason: 'corrupt' };
+        }
+        const identity = ownedObservation.projections?.values.subagent;
+        if (identity === undefined || identity === null
+            || identity.seq < (header.seedLength ?? 0)) {
+            return { kind: 'diagnostic', id: childId, reason: 'corrupt' };
+        }
+        return childRow(childId, identity, 'inactive', hasChildren);
     }
-    assertListingNotCancelled(signal);
-    // A session id names a slot, not a lifecycle: a child deleted and
-    // re-published under another owner between the enumeration and this read
-    // must not leak into the old parent's listing.
-    if (!sameLifecycle(inspected.meta, header)) {
-        return { kind: 'diagnostic', id: childId, reason: 'corrupt' };
+    catch (e_1) {
+        env_1.error = e_1;
+        env_1.hasError = true;
     }
-    let identity;
-    try {
-        identity = projections.restore({}, inspected.events, 0).snapshot.values.subagent;
+    finally {
+        __disposeResources(env_1);
     }
-    catch {
-        // The restore folds EVERY registered unit over this child's log, so any
-        // unit's fold or schema can reject damaged payloads — deterministic data
-        // damage in this one child, contained as its own corrupt diagnostic.
-        return { kind: 'diagnostic', id: childId, reason: 'corrupt' };
-    }
-    if (identity === undefined || identity === null) {
-        return { kind: 'diagnostic', id: childId, reason: 'corrupt' };
-    }
-    return childRow(childId, identity, 'inactive', hasChildren);
 }
 /** Materialize one served identity as its child row. */
 function childRow(id, identity, activity, hasChildren) {
@@ -302,6 +362,7 @@ function childRow(id, identity, activity, hasChildren) {
 /** Immutable header fields that distinguish one session lifecycle from another under the same id. */
 const LIFECYCLE_WITNESS_KEYS = [
     'version', 'id', 'createdAt', 'cwd', 'parentSession', 'seedLength', 'delegationDepth',
+    'origin', 'agentPreset',
 ];
 /** Whether an inspected log still belongs to the enumerated lifecycle. */
 function sameLifecycle(meta, expected) {
@@ -312,5 +373,8 @@ function assertListingNotCancelled(signal) {
     if (signal?.aborted) {
         throw new SubagentError('subagent listing was cancelled', 'CANCELLED');
     }
+}
+function sessionQueryCode(error) {
+    return error instanceof Error && 'code' in error ? error.code : undefined;
 }
 //# sourceMappingURL=list-children.js.map

@@ -35,6 +35,15 @@ function effectivePermissionPreset(events) {
 		if (event.type === "permission/preset") return event.data.preset;
 	}
 }
+const knobStateSchema = z$1.object({
+	preset: z$1.string().nullable(),
+	sandbox: z$1.union([
+		z$1.literal("read-only"),
+		z$1.literal("workspace-write"),
+		z$1.literal("danger-full-access")
+	]).nullable(),
+	approval: z$1.union([z$1.literal("ask"), z$1.literal("never")]).nullable()
+}).strict();
 /** State for the empty log: every knob at its composition default. */
 const EMPTY_KNOBS = {
 	preset: null,
@@ -143,10 +152,13 @@ var PermissionPresetService = class extends Service {
 		ctx.inject(["sessionProjections"], (projectionCtx) => {
 			projectionCtx.sessionProjections.register({
 				key: "permissions",
-				schema: selectSchema,
+				stateSchema: knobStateSchema,
 				init: () => EMPTY_KNOBS,
 				apply: applyKnobEvent,
-				view: (state) => this.selectFor(state),
+				wire: {
+					viewSchema: selectSchema,
+					view: (state) => this.selectFor(state)
+				},
 				stateVersion: 1
 			});
 		});

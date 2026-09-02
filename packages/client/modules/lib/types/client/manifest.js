@@ -75,8 +75,12 @@ export function parseBootManifest(wire) {
     if (!Array.isArray(graph.entries)) {
         throw new Error('client-modules: boot manifest entries must be an array');
     }
-    const modules = [];
+    if (!Array.isArray(graph.batches)) {
+        throw new Error('client-modules: boot manifest batches must be an array');
+    }
+    const moduleFields = [];
     const plugins = [];
+    const seenEntryIds = new Set();
     for (const value of graph.entries) {
         if (typeof value !== 'object' || value === null) {
             throw new Error('client-modules: boot manifest entry is not an object');
@@ -86,16 +90,20 @@ export function parseBootManifest(wire) {
         if (typeof row.id !== 'string' || typeof row.url !== 'string' || typeof row.rev !== 'string') {
             throw new Error(`client-modules: boot manifest entry ${where} must carry string id/url/rev`);
         }
+        if (seenEntryIds.has(row.id))
+            throw new Error(`client-modules: duplicate graph entry "${row.id}"`);
+        seenEntryIds.add(row.id);
         const subject = `boot manifest entry ${where}`;
         const inject = optionalStringArray(subject, 'inject', row.inject);
         const external = optionalStringArray(subject, 'external', row.external);
         if (row.immediately !== undefined && typeof row.immediately !== 'boolean') {
             throw new Error(`client-modules: boot manifest entry ${where} immediately must be a boolean`);
         }
-        modules.push({
+        moduleFields.push({
             id: row.id,
             url: row.url,
             rev: row.rev,
+            inject: inject === undefined ? [] : [...inject],
             external: external === undefined ? [] : [...external],
         });
         plugins.push({
@@ -104,6 +112,46 @@ export function parseBootManifest(wire) {
             immediately: row.immediately === true,
         });
     }
+    const entryIds = new Set(moduleFields.map(row => row.id));
+    const initialUrls = new Map();
+    const batchUrls = new Set();
+    for (const value of graph.batches) {
+        if (typeof value !== 'object' || value === null) {
+            throw new Error('client-modules: boot manifest batch is not an object');
+        }
+        const batch = value;
+        const phase = batch.phase;
+        if (phase !== 'bootstrap' && phase !== 'application') {
+            throw new Error(`client-modules: boot manifest batch phase must be "bootstrap" or "application", received ${JSON.stringify(phase)}`);
+        }
+        if (typeof batch.url !== 'string' || typeof batch.rev !== 'string') {
+            throw new Error(`client-modules: boot manifest ${phase} batch must carry string url/rev`);
+        }
+        if (batchUrls.has(batch.url)) {
+            throw new Error(`client-modules: boot manifest carries duplicate batch URL ${JSON.stringify(batch.url)}`);
+        }
+        batchUrls.add(batch.url);
+        const entries = optionalStringArray(`boot manifest ${phase} batch`, 'entries', batch.entries);
+        if (entries === undefined || entries.length === 0) {
+            throw new Error(`client-modules: boot manifest ${phase} batch entries must be a non-empty string array`);
+        }
+        for (const id of entries) {
+            if (!entryIds.has(id)) {
+                throw new Error(`client-modules: boot manifest ${phase} batch names unknown entry "${id}"`);
+            }
+            if (initialUrls.has(id)) {
+                throw new Error(`client-modules: boot manifest entry "${id}" belongs to more than one batch`);
+            }
+            initialUrls.set(id, batch.url);
+        }
+    }
+    const modules = moduleFields.map((row) => {
+        const initialUrl = initialUrls.get(row.id);
+        if (initialUrl === undefined) {
+            throw new Error(`client-modules: boot manifest entry "${row.id}" belongs to no initial-load batch`);
+        }
+        return { ...row, initialUrl };
+    });
     return { rev: graph.rev, modules, plugins };
 }
 //# sourceMappingURL=manifest.js.map

@@ -8,7 +8,7 @@
  * actions in `sidebar.footer.action`.
  */
 import type { PropsLocale, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots';
-import type { WorkspaceId } from '@deepseek-ai/dsh-client-runtime/client';
+import type { WorkspaceId } from '@deepseek-ai/dsh-api-workspace-controller/client';
 declare module '@deepseek-ai/dsh-client-ui-slots' {
     interface SlotMap {
         /**

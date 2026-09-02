@@ -21,17 +21,17 @@ const API_KEY_FIELD = 'apiKey';
 /** Bridges the `web-search-deepseek` scope and the credentials domain onto the card. */
 export class WebSearchCardController {
     scope;
-    api;
+    credentials;
     form;
     store;
     credential = { ref: '', configured: false, writable: true };
     /**
      * @param scope - the bound settings scope for the `web-search-deepseek` namespace.
-     * @param api - wire face used for the credential the section references.
+     * @param credentials - Remote face used for the credential the section references.
      */
-    constructor(scope, api) {
+    constructor(scope, credentials) {
         this.scope = scope;
-        this.api = api;
+        this.credentials = credentials;
         this.form = new CardForm(scope, [textField('baseURL'), numberField('maxUses')], [{ field: API_KEY_FIELD, write: text => this.writeKey(text) }]);
         this.store = this.form.bind(() => this.projection());
         scope.subscribe(() => { void this.readCredential(); });
@@ -65,16 +65,16 @@ export class WebSearchCardController {
         }
         let response;
         try {
-            response = await this.api.credentials.describe({ refs: [ref] });
+            response = await this.credentials.describe([ref]);
         }
         catch (_credentialReadFailure) {
             // The card stays usable without this: the key control simply reports the
             // last state it knew, and a write still reaches the Host.
             return;
         }
-        if (!response.result.ok || ref !== refOf(this.scope.getSnapshot()))
+        if (!response.ok || ref !== refOf(this.scope.getSnapshot()))
             return;
-        const view = response.result.value.credentials[ref];
+        const view = response.value[ref];
         const next = {
             ref,
             configured: view?.configured ?? false,
@@ -114,7 +114,7 @@ export class WebSearchCardController {
      */
     async writeKey(value) {
         try {
-            await this.api.credentials.set({ ref: refOf(this.scope.getSnapshot()), value });
+            await this.credentials.set(refOf(this.scope.getSnapshot()), value);
         }
         catch (_credentialWriteFailure) {
             // Refusals surface through the re-read below: the Host is the only

@@ -63,18 +63,24 @@ export class WindowsProcessInspector {
     foregroundPgid(shellPid) {
         return shellPid;
     }
-    isStdinWaiting(_pgid) {
+    isStdinWaiting(_pgid, _shellPid) {
         return false;
-    }
-    processTree(rootPid) {
-        return windowsProcessTree(this.internals.snapshot(), rootPid, pid => this.internals.processState(pid)?.started);
-    }
-    processSession(_sessionId) {
-        return [];
     }
     isAlive(identity) {
         const state = this.internals.processState(identity.pid);
         return state?.active === true && state.started === identity.started;
+    }
+    snapshot() {
+        // Enumerated on the first question that reads the table. Liveness never
+        // does — wait state is a per-handle question here — so the Windows
+        // teardown poll, which asks only for liveness, pays no Toolhelp32 walk.
+        let entries;
+        return {
+            tree: rootPid => windowsProcessTree(entries ??= this.internals.snapshot(), rootPid, pid => this.internals.processState(pid)?.started),
+            // Windows has no POSIX sessions; the shell pid stands in as a pseudo group.
+            session: () => [],
+            alive: identity => this.isAlive(identity),
+        };
     }
     signalGroup(pgid, signal) {
         this.internals.taskkill(pgid, signal === 'SIGKILL');

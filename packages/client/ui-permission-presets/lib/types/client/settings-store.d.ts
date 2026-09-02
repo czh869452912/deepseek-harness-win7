@@ -5,9 +5,9 @@
  * only `defaultPreset`, carry the descriptor revision, and fold their answer
  * back into the mirror.
  */
-import type { IApiClient, SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client';
-import { type SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client';
-import type { SettingsDescribeFace, SettingsSchemaService } from '@deepseek-ai/dsh-client-ui-settings/client';
+import type { SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client';
+import { type SnapshotStore } from '@deepseek-ai/dsh-client-store';
+import type { SettingsDescribeFace, SettingsSchemaService, SettingsWireFace } from '@deepseek-ai/dsh-client-ui-settings/client';
 /** Permission's settings namespace on the host wire. */
 export declare const PERMISSION_SETTINGS_NS = "permission";
 /** One selectable new-session default. */
@@ -51,7 +51,7 @@ export declare class PermissionPresetSettingsController {
      * @param api - settings wire face for the `defaultPreset` write.
      * @param schema - settings-owned schema operations.
      */
-    constructor(describeFace: SettingsDescribeFace, api: Pick<IApiClient, 'settings'>, schema: SettingsSchemaService);
+    constructor(describeFace: SettingsDescribeFace, api: SettingsWireFace, schema: SettingsSchemaService);
     /**
      * Begin following the mirror (idempotent) and reflect its current answer.
      * @returns settlement once the snapshot reflects the mirror.

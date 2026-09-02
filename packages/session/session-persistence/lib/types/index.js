@@ -7,6 +7,7 @@
 import { Service } from '@deepseek-ai/cordis';
 import { SessionPreparation } from '@deepseek-ai/dsh-session';
 export { SessionPersistenceRevision } from "./revision.js";
+export { SessionPersistenceNotFoundError } from "./errors.js";
 // The backend-agnostic write-path orchestration first-party backends compose.
 export { DEFAULT_PREPARED_SESSION_CACHE_SIZE, DEFAULT_WRITE_BATCH_MAX_DELAY_MS, MAX_WRITE_BATCH_DELAY_MS, PersistenceCoordinator, SessionFormatUnsupportedError, SessionPersistenceCorruptionError, sessionFormatVersionRefusal, } from "./coordinator.js";
 /**
@@ -39,6 +40,15 @@ export class SessionPersistence extends Service {
             return Promise.reject(signal.reason instanceof Error ? signal.reason : new Error('aborted'));
         }
         return Promise.reject(new Error('this session persistence backend does not expose raw artifacts'));
+    }
+    /**
+     * Ensure a live session has a durable header even when it has no events.
+     * Ordinary sessions remain lazily materialized; lifecycle frontends call
+     * this only when an empty session itself is a durable resumable resource.
+     * @param _session - exact live session whose registered header is materialized.
+     */
+    ensureMaterialized(_session) {
+        return Promise.reject(new Error('this session persistence backend cannot materialize an empty session'));
     }
     /**
      * Prepare the exact unpublished Session used by resume. Implementations may

@@ -4,17 +4,22 @@
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { TypertAnalysisError, WorkspaceAnalyzer } from "./analyzer.js";
+import { TypertAnalysisError, WorkspaceAnalyzer, WorkspaceCaches } from "./analyzer.js";
 import { FaceModelEmitter } from "./emitter.js";
 /** Discover, analyze, and emit package reflection from independent faces. */
 export class WorkspaceTypertGenerator {
     root;
+    options;
+    /** Parsed-config and program-host state shared by every analyzer this generator creates. */
+    caches = new WorkspaceCaches();
     /**
      * Bind generation to one workspace root.
      * @param root - directory containing face aggregate tsconfigs.
+     * @param options - behavior switches applied to every pass of this generator.
      */
-    constructor(root) {
+    constructor(root, options = {}) {
         this.root = root;
+        this.options = options;
     }
     /**
      * Find public package faces that contribute Cordis services/events or
@@ -25,6 +30,7 @@ export class WorkspaceTypertGenerator {
     discover(faces) {
         return new WorkspaceAnalyzer({
             root: this.root,
+            caches: this.caches,
             ...(faces === undefined ? {} : { faces }),
         }).discoverPackages();
     }
@@ -39,7 +45,9 @@ export class WorkspaceTypertGenerator {
         const workspace = new WorkspaceAnalyzer({
             root: this.root,
             packages: selected,
+            caches: this.caches,
             ...(faces === undefined ? {} : { faces }),
+            ...(this.options.checkDiagnostics === undefined ? {} : { checkDiagnostics: this.options.checkDiagnostics }),
         }).analyze();
         const artifacts = [];
         for (const face of workspace.faces) {

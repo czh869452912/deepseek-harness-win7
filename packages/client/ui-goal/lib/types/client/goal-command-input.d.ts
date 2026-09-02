@@ -1,13 +1,13 @@
 import type { SessionEvent } from '@deepseek-ai/dsh-session/types';
 import type { CommandId } from '@deepseek-ai/dsh-commands/brand';
-import type { ConversationNodeDefinition } from '@deepseek-ai/dsh-client-runtime/client';
+import type { ConversationNodeDefinition } from '@deepseek-ai/dsh-client-ui-conversation/client';
 /** Goal-owned human command input projected independently of model messages. */
 export interface GoalCommandInputData {
     readonly commandId: CommandId;
     readonly text: string;
     readonly time: number;
 }
-declare module '@deepseek-ai/dsh-client-ui-conversation/client' {
+declare module '@deepseek-ai/dsh-client-ui-chat/client' {
     interface ChatNodeDataMap {
         /** Human-entered `/goal` command input. */
         'command-input': GoalCommandInputData;

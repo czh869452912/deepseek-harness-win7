@@ -1,4 +1,12 @@
 //#region lib/types/renderer.js
+/**
+* Convert one standard source name to its rendered Hook prop name.
+* @param name - registered fixed or keyed source name.
+* @returns the `use<Name>` prop exposed to Slot components.
+*/
+function standardHookPropName(name) {
+	return `use${name[0]?.toUpperCase() ?? ""}${name.slice(1)}`;
+}
 /** Thrown when a retained renderSlot binding is invoked after its declaring entry was disposed. */
 var StaleAuthorizationError = class extends Error {};
 /**
@@ -420,6 +428,6 @@ var SlotCore = class {
 	}
 };
 //#endregion
-export { SlotCore, SlotOwnershipError, StaleAuthorizationError, resolveSlotLabel };
+export { SlotCore, SlotOwnershipError, StaleAuthorizationError, resolveSlotLabel, standardHookPropName };
 
 //# sourceMappingURL=index.js.map

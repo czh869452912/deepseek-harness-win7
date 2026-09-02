@@ -1,12 +1,4 @@
 import { jsx as _jsx } from "react/jsx-runtime";
-// todo_write toolview: plan-flavored summary row replacing the generic
-// "Tool call" card, registered into the keyed 'tool.call.toolview'
-// hole like the bash sample (a product registration, not a sample). The row
-// composes ToolRow (chrome, running sweep, whole-row expand) and swaps in a
-// summary of the written list (counts + active items) from the call args, with
-// the parallel-active count riding ToolRow's non-shrinking summary suffix so a
-// narrow row never clips it; the durable list itself renders in the TodoPanel
-// above the composer, so the row stays one line until expanded.
 import { IconChecklistOutline14 } from '@deepseek-ai/dsh-client-ui-primitives';
 import { toolRowModel } from "../models/tool-call-model.js";
 import { ToolRow } from "../components/ToolRow.js";
@@ -38,27 +30,17 @@ function summarize(argsRaw, t) {
         extra: activeExtra,
     };
 }
-/** One-line plan update row (the whole row toggles the call's Input/Output
- *  sections, ToolRow's unified expand). Non-ok execution states keep the
- *  shared row's dot semantics — a cancelled call wrote no todo/write, so it
- *  must not read as a completed update. */
+/** Summarizes a plan update without presenting a cancelled call as completed. */
 export function TodoRow({ toolName, block, inspect, t }) {
     const model = toolRowModel(toolName, block);
     const argsRaw = ('kind' in block ? block.call?.argsRaw : block.argsRaw) ?? '';
     const summary = summarize(argsRaw, t) ?? { text: model.summary, extra: 0 };
     return (_jsx(ToolRow, { t: t, variant: model.variant, toolName: toolName, icon: _jsx(IconChecklistOutline14, {}), title: t('todo.rowTitle'), summary: summary.text, summarySuffix: summary.extra > 0 ? `+${summary.extra}` : null, body: model.body, output: model.output, errorSummary: model.errorSummary, state: model.state, inspect: inspect }));
 }
-/**
- * The todo row as a plain registrant plugin following the atomic Tool-view
- * declaration across independent activation and reload lifetimes.
- */
+/** Registers the todo conversation row. */
 export const todoToolview = {
     name: 'todo-toolview',
     inject: ['slots'],
-    /**
-     * Register the todo row into the Tool-owned keyed view slot.
-     * @param ctx - registrant context (disposal rides ctx.effect inside slots.register).
-     */
     apply(ctx) {
         ctx.slots.inject('tool.call.toolview', () => ctx.slots.register({ name: 'tool.call.toolview', key: 'todo_write', locale: NS }, TodoRow));
     },

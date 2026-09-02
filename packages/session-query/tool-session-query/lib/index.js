@@ -1,6 +1,7 @@
 import z from "@deepseek-ai/schemastery";
 import { MAX_TIMER_DELAY_MS } from "@deepseek-ai/dsh-timeout";
 import { defineTool } from "@deepseek-ai/dsh-tools";
+import { FIRST_PARTY_SECTION_ORDER } from "@deepseek-ai/dsh-system-prompt";
 import { SessionId } from "@deepseek-ai/dsh-session";
 import { SessionQueryError, extractSessionEventText } from "@deepseek-ai/dsh-session-query";
 import { HarnessError } from "@deepseek-ai/dsh-llm";
@@ -945,7 +946,7 @@ function apply(ctx, config) {
 	const resolved = resolveConfig(config);
 	ctx.systemPrompt.section({
 		name: "tool:session-query",
-		order: 113,
+		order: FIRST_PARTY_SECTION_ORDER.TOOL_SESSION_QUERY,
 		text: PROMPT_TEXT
 	});
 	ctx.tools.register(defineTool({

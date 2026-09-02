@@ -1,21 +1,53 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-// CodeBlock: one code surface for every consumer — markdown fences, the
-// run_code program body, and the details panel's raw args/output — with
-// shiki highlighting for the registered grammars and an identical-geometry
-// plain fallback for everything else. Chrome (language banner + copy) matches
-// deepsuite `@deepseek/md` code blocks; token colors stay on `--shiki-*`.
-import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { Fragment, useCallback, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import clsx from 'clsx';
 import { writeClipboard } from "../clipboard.js";
-import { grammarLoadCount, highlightToHtml, subscribeGrammarLoaded } from "./highlight.js";
+import { StreamingHighlightSession, grammarLoadCount, highlightToHtml, subscribeGrammarLoaded, } from "./highlight.js";
 import css from './CodeBlock.module.css';
-export function CodeBlock({ code, lang, className, copyLabel = '复制', copiedLabel = '复制成功' }) {
+/**
+ * The `pre` attributes shiki's HTML arm emits for the css-variables theme,
+ * mirrored so the streaming arm's tree is interchangeable with the settled
+ * swap (`tests/streaming-code-block.client.spec.tsx` pins the two arms'
+ * parity).
+ */
+const SHIKI_PRE_PROPS = {
+    className: 'shiki css-variables',
+    style: { backgroundColor: 'var(--shiki-background)', color: 'var(--shiki-foreground)' },
+    tabIndex: 0,
+};
+export function CodeBlock({ code, lang, streaming, className, copyLabel, copiedLabel }) {
     const trimmed = code.endsWith('\n') ? code.slice(0, -1) : code;
     // Re-render when a lazy grammar finishes loading, so a fence that showed plain
     // text while its language's grammar imported picks up highlighting. The
     // snapshot value is opaque; only its change across renders drives the memo.
     const loaded = useSyncExternalStore(subscribeGrammarLoaded, grammarLoadCount, grammarLoadCount);
-    const html = useMemo(() => highlightToHtml(trimmed, lang), [trimmed, lang, loaded]);
+    const html = useMemo(() => (streaming === true ? undefined : highlightToHtml(trimmed, lang)), [streaming, trimmed, lang, loaded]);
+    // Streaming state lives in refs mutated inside the memo (the MarkdownText
+    // streaming-cache pattern): the session's caches carry across chunks only
+    // because the owner keys this instance stably while the fence grows.
+    const sessionRef = useRef(null);
+    const lineCacheRef = useRef(null);
+    const streamedBody = useMemo(() => {
+        if (streaming !== true) {
+            sessionRef.current = null;
+            lineCacheRef.current = null;
+            return undefined;
+        }
+        sessionRef.current ??= new StreamingHighlightSession();
+        const lines = sessionRef.current.update(trimmed, lang);
+        if (lines === undefined) {
+            lineCacheRef.current = null;
+            return undefined;
+        }
+        // A retained line keeps its span-array identity across chunks, so its
+        // cached element is reused and React leaves that line's DOM untouched.
+        const previous = lineCacheRef.current;
+        const elements = lines.map((line, index) => previous !== null && previous.lines[index] === line
+            ? previous.elements[index]
+            : (_jsxs(Fragment, { children: [index > 0 && '\n', _jsx("span", { className: "line", children: line.map((span, spanIndex) => _jsx("span", { style: span.style, children: span.text }, spanIndex)) })] }, index)));
+        lineCacheRef.current = { lines, elements };
+        return _jsx("pre", { ...SHIKI_PRE_PROPS, children: _jsx("code", { children: elements }) });
+    }, [streaming, trimmed, lang, loaded]);
     const rootRef = useRef(null);
     const [copied, setCopied] = useState(false);
     const onCopy = useCallback(() => {
@@ -31,9 +63,14 @@ export function CodeBlock({ code, lang, className, copyLabel = '复制', copiedL
             window.setTimeout(() => { setCopied(false); }, 1000);
         });
     }, [copied, trimmed]);
-    const body = html === undefined
-        ? (_jsx("pre", { className: css.plain, children: _jsx("code", { children: trimmed }) }))
-        : (_jsx("div", { dangerouslySetInnerHTML: { __html: html } }));
+    // shiki's HTML output is a static span tree it generated from `code` (no
+    // user HTML passes through), the sanctioned innerHTML consumption path per
+    // shiki's own docs.
+    const body = streamedBody !== undefined
+        ? streamedBody
+        : html === undefined
+            ? (_jsx("pre", { className: css.plain, children: _jsx("code", { children: trimmed }) }))
+            : (_jsx("div", { dangerouslySetInnerHTML: { __html: html } }));
     return (_jsxs("div", { ref: rootRef, className: clsx(css.block, 'md-code-block', className), children: [_jsx("div", { className: css.bannerWrap, children: _jsxs("div", { className: css.banner, children: [_jsx("div", { className: css.infostring, children: lang ?? '' }), _jsx("div", { className: css.action, children: _jsx("button", { type: "button", className: css.copyButton, onClick: onCopy, children: copied ? copiedLabel : copyLabel }) })] }) }), body] }));
 }
 //# sourceMappingURL=CodeBlock.js.map

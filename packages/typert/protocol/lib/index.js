@@ -31,6 +31,20 @@ var TypertLookupFailure = class extends Error {
 		this.failure = failure;
 	}
 };
+/** A business Remote rejection preserved by unary and stream carriers. */
+var TypertRemoteFailure = class extends Error {
+	/** Stable caller-facing failure payload. */
+	failure;
+	/**
+	* Wrap one business rejection for transport without changing its code or details.
+	* @param failure - business failure returned unchanged to the caller.
+	*/
+	constructor(failure) {
+		super(failure.message);
+		this.name = "TypertRemoteFailure";
+		this.failure = failure;
+	}
+};
 const markers = /* @__PURE__ */ new WeakMap();
 /**
 * Bind one visible Service field to a Cordis key and Remote namespace.
@@ -64,15 +78,25 @@ var TypertRemoteService = class extends Service {
 		this.typertRemote = bindTypertRemote(this, this.name, options);
 	}
 };
-function Remote(methodOrExportName, context) {
-	if (typeof methodOrExportName === "string") {
-		validateName("Remote export name", methodOrExportName);
-		return function(_method, decoratorContext) {
-			addMarkerInitializer(decoratorContext, { kind: "direct" }, methodOrExportName);
-		};
+function Remote(methodExportOrOptions, context) {
+	if (typeof methodExportOrOptions === "string") {
+		validateName("Remote export name", methodExportOrOptions);
+		return remoteDecorator({ kind: "direct" }, void 0, methodExportOrOptions);
+	}
+	if (typeof methodExportOrOptions === "object") {
+		if (remoteOptionMode(methodExportOrOptions) !== "stream" || Reflect.ownKeys(methodExportOrOptions).length !== 1) throw new TypeError("typert-protocol: Remote options must contain exactly mode: \"stream\"");
+		return remoteDecorator({ kind: "direct" }, "stream");
 	}
 	if (context === void 0) throw new TypeError("typert-protocol: Remote decorator context is missing");
 	addMarkerInitializer(context, { kind: "direct" });
+}
+function remoteOptionMode(options) {
+	return Reflect.get(options, "mode");
+}
+function remoteDecorator(invocation, mode, exportName) {
+	return function(_method, context) {
+		addMarkerInitializer(context, invocation, mode, exportName);
+	};
 }
 /**
 * Create a decorator for a method resolved from one Remote Scope.
@@ -83,12 +107,10 @@ function Remote(methodOrExportName, context) {
 function RemoteScope(key, exportName) {
 	validateName("Scope key", key);
 	if (exportName !== void 0) validateName("Remote export name", exportName);
-	return function(_method, context) {
-		addMarkerInitializer(context, {
-			kind: "context",
-			context: key
-		}, exportName);
-	};
+	return remoteDecorator({
+		kind: "context",
+		context: key
+	}, void 0, exportName);
 }
 /**
 * Read Remote markers attached to a live Service by decorator initializers.
@@ -104,16 +126,16 @@ function remoteMethods(service) {
 		...marker
 	}));
 }
-function addMarkerInitializer(context, invocation, exportName) {
+function addMarkerInitializer(context, invocation, mode, exportName) {
 	if (context.private || context.static || typeof context.name !== "string") throw new TypeError("typert-protocol: Remote decorators require a public instance method with a string name");
 	const method = context.name;
 	context.addInitializer(function() {
 		const prototype = Object.getPrototypeOf(this);
 		if (prototype === null) throw new TypeError(`typert-protocol: cannot mark Remote method "${method}" on an object without a prototype`);
-		mark(prototype, method, invocation, exportName);
+		mark(prototype, method, invocation, mode, exportName);
 	});
 }
-function mark(prototype, method, invocation, exportName) {
+function mark(prototype, method, invocation, mode, exportName) {
 	let table = markers.get(prototype);
 	if (table === void 0) {
 		table = /* @__PURE__ */ new Map();
@@ -121,11 +143,12 @@ function mark(prototype, method, invocation, exportName) {
 	}
 	const marker = {
 		...exportName === void 0 || exportName === method ? {} : { exportName },
+		...mode === void 0 ? {} : { mode },
 		invocation: Object.freeze(invocation)
 	};
 	const current = table.get(method);
 	if (current !== void 0) {
-		if (current.exportName === marker.exportName && sameInvocation(current.invocation, invocation)) return;
+		if (current.exportName === marker.exportName && current.mode === marker.mode && sameInvocation(current.invocation, invocation)) return;
 		throw new Error(`typert-protocol: Remote method "${method}" has conflicting invocation markers`);
 	}
 	table.set(method, Object.freeze(marker));
@@ -137,4 +160,4 @@ function validateName(subject, value) {
 	if (!isTypertRemoteSegment(value)) throw new TypeError(`typert-protocol: ${subject} must contain only RPC endpoint segment characters`);
 }
 //#endregion
-export { Remote, RemoteScope, TypertLookupFailure, TypertRemoteService, bindTypertRemote, isTypertRemoteSegment, remoteMethods };
+export { Remote, RemoteScope, TypertLookupFailure, TypertRemoteFailure, TypertRemoteService, bindTypertRemote, isTypertRemoteSegment, remoteMethods };

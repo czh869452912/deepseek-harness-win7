@@ -1,5 +1,6 @@
 import z from "@deepseek-ai/schemastery";
 import { TerminalSessionId } from "@deepseek-ai/dsh-terminal";
+import { FIRST_PARTY_SECTION_ORDER } from "@deepseek-ai/dsh-system-prompt";
 import { defineTool } from "@deepseek-ai/dsh-tools";
 import { TextRetainer } from "@deepseek-ai/dsh-output-retention";
 //#region lib/types/render.js
@@ -222,7 +223,7 @@ function apply(ctx, config = {}) {
 	};
 	ctx.systemPrompt.section({
 		name: "tool:pty",
-		order: 106,
+		order: FIRST_PARTY_SECTION_ORDER.TOOL_PTY,
 		text: "Use a terminal session only when work needs persistent terminal state or interactive stdin; prefer shell/read/write/edit for bounded one-shot operations. Track every terminal session id and close sessions that no longer matter. An inferred_idle or timeout result does not prove the foreground command exited."
 	});
 	ctx.tools.register(defineTool({

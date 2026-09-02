@@ -13,6 +13,7 @@ import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-run
  */
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { computeColumns, SIDEBAR_AUTO_COLLAPSE, SIDEBAR_DEFAULT } from "./columns.js";
+import { DocumentTitle } from "./DocumentTitle.js";
 import css from './AppFrame.module.css';
 /** Center column grid item (session-body building block). */
 function CenterColumn(props) {
@@ -65,11 +66,15 @@ function DragHandle(props) {
     return (_jsx("div", { className: css.handle, style: { left: props.left }, "data-side": props.side, "data-dragging": dragging || undefined, onPointerDown: onPointerDown, onPointerMove: onPointerMove, onPointerUp: onPointerUp }));
 }
 /** The three-column frame (see module doc). */
-export function AppFrame({ useStore, useSessions, actions, renderSlot, }) {
+export function AppFrame({ useStore, useSessions, actions, renderSlot, SessionProvider, t, }) {
     const panels = useStore(s => s);
     const detailsSession = useSessions((s) => {
         const current = s.current;
         return current !== undefined && s.byId[current]?.blank === false ? current : undefined;
+    });
+    const documentTitle = useSessions((s) => {
+        const current = s.current;
+        return current === undefined ? undefined : s.byId[current]?.title;
     });
     const frameRef = useRef(null);
     const [viewport, setViewport] = useState(() => window.innerWidth);
@@ -136,9 +141,10 @@ export function AppFrame({ useStore, useSessions, actions, renderSlot, }) {
     const onDetailsDrag = useCallback((dx) => {
         actions.setDetails(detailsBase.current - dx);
     }, [actions]);
-    return (_jsxs("div", { ref: frameRef, className: css.frame, style: { gridTemplateColumns: `${cols.sidebar}px minmax(0, 1fr) ${cols.details}px` }, "data-sidebar-collapsed": sidebarCollapsed || undefined, "data-details-collapsed": cols.details === 0 || undefined, "data-dragging": dragging || undefined, children: [_jsx("div", { className: css.sidebarCol, children: renderSlot('sidebar', {
+    const productTitle = process.env.DSH_CLIENT_TITLE ?? t('brand.localBuild');
+    return (_jsxs("div", { ref: frameRef, className: css.frame, style: { gridTemplateColumns: `${cols.sidebar}px minmax(0, 1fr) ${cols.details}px` }, "data-sidebar-collapsed": sidebarCollapsed || undefined, "data-details-collapsed": cols.details === 0 || undefined, "data-dragging": dragging || undefined, children: [_jsx(DocumentTitle, { productTitle: productTitle, ...documentTitle === undefined ? {} : { title: documentTitle } }), _jsx("div", { className: css.sidebarCol, children: renderSlot('sidebar', {
                     collapsed: sidebarCollapsed,
                     width: cols.sidebar,
-                }) }), _jsxs(_Fragment, { children: [_jsx(CenterColumn, { children: renderSlot('conversation', {}) }), _jsx(DetailsColumn, { children: renderSlot('details', {}) })] }), _jsx("div", { className: css.overlayLayer, "data-shell-overlay": true, children: renderSlot('shell.overlay', {}) }), !sidebarCollapsed && _jsx(DragHandle, { side: "sidebar", left: cols.sidebar, onStart: onSidebarStart, onDrag: onSidebarDrag, onEnd: onDragEnd }), cols.details > 0 && _jsx(DragHandle, { side: "details", left: viewport - cols.details, onStart: onDetailsStart, onDrag: onDetailsDrag, onEnd: onDragEnd })] }));
+                }) }), _jsxs(_Fragment, { children: [_jsx(CenterColumn, { children: renderSlot('conversation', {}) }), _jsx(DetailsColumn, { children: _jsx(SessionProvider, { children: renderSlot('details', {}) }) })] }), _jsx("div", { className: css.overlayLayer, "data-shell-overlay": true, children: renderSlot('shell.overlay', {}) }), !sidebarCollapsed && _jsx(DragHandle, { side: "sidebar", left: cols.sidebar, onStart: onSidebarStart, onDrag: onSidebarDrag, onEnd: onDragEnd }), cols.details > 0 && _jsx(DragHandle, { side: "details", left: viewport - cols.details, onStart: onDetailsStart, onDrag: onDetailsDrag, onEnd: onDragEnd })] }));
 }
 //# sourceMappingURL=AppFrame.js.map

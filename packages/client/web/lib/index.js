@@ -6,6 +6,7 @@ import * as React from "react";
 import * as ReactJsxRuntime from "react/jsx-runtime";
 import * as ReactDom from "react-dom";
 import * as ReactDomClient from "react-dom/client";
+import * as ClientStore from "@deepseek-ai/dsh-client-store";
 import * as UiSlots from "@deepseek-ai/dsh-client-ui-slots";
 import * as UiPrimitives from "@deepseek-ai/dsh-client-ui-primitives";
 import "./base.css";
@@ -116,6 +117,7 @@ function getStaticModules() {
 		"react-dom": ReactDom,
 		"react-dom/client": ReactDomClient,
 		"@deepseek-ai/cordis": Cordis,
+		"@deepseek-ai/dsh-client-store": ClientStore,
 		"@deepseek-ai/dsh-client-ui-slots": UiSlots,
 		"@deepseek-ai/dsh-client-ui-primitives": UiPrimitives
 	};
@@ -178,12 +180,15 @@ var AppWebEntry = class {
 	*/
 	async run() {
 		try {
+			await globalThis.__DSH_BOOT_READY__?.promise;
 			const win = globalThis;
 			const moduleLoader = win.__ModuleLoader__;
 			if (moduleLoader === void 0) throw new Error("web boot: window.__ModuleLoader__ bootstrap facade is missing");
+			const transport = globalThis.__DSH_TRANSPORT__;
 			this.modules = moduleLoader.create({
 				boot: win.__DSH_BOOT__,
 				staticModules: getStaticModules(),
+				...transport?.loadBundle === void 0 ? {} : { loadBundle: transport.loadBundle },
 				...this.seams
 			});
 			this.manifest = this.modules.manifest;
@@ -210,7 +215,7 @@ var AppWebEntry = class {
 			scope.effect(() => scope.uiRenderer.mount(this.container), "web boot: application mount");
 		});
 	}
-	/** Prefetch stage-one bundles; their import path owns any eventual failure. */
+	/** Prefetch stage-one bundles and their dynamic requests before concurrent plugin imports. */
 	async prefetchImmediateTier() {
 		await Promise.all(this.manifest.plugins.filter((row) => row.immediately).map((row) => this.modules.prefetch(row.id).catch((_prefetchError) => {})));
 	}
@@ -268,11 +273,12 @@ const PLATFORM_MODULES = [
 	"react-dom",
 	"react-dom/client",
 	"@deepseek-ai/cordis",
+	"@deepseek-ai/dsh-client-store",
 	"@deepseek-ai/dsh-client-ui-slots",
 	"@deepseek-ai/dsh-client-ui-primitives"
 ];
 /** Client-bundle specifiers whose factories the parser preloads before the shell starts. */
-const PRELOADED_CLIENT_EXTERNALS = ["@deepseek-ai/dsh-client-runtime/client"];
+const PRELOADED_CLIENT_EXTERNALS = [];
 //#endregion
 export { AppWebEntry, PLATFORM_MODULES, PRELOADED_CLIENT_EXTERNALS, getStaticModules };
 

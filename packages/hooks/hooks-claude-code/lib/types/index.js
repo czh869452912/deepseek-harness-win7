@@ -167,7 +167,7 @@ export function apply(ctx, config) {
         if (!ours || downstream.kind !== 'enter')
             return downstream;
         return {
-            kind: 'enter',
+            ...downstream,
             messages: [...downstream.messages, ours],
         };
     });

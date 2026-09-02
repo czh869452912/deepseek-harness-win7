@@ -28,6 +28,24 @@ export class UnknownPresetError extends Error {
         this.available = available;
     }
 }
+/**
+ * The session's composition is fixed: its conversation has started, so its
+ * history was produced under the preset it runs and swapping the composition
+ * would leave logged tool calls the new one cannot make.
+ */
+export class PresetLockedError extends Error {
+    sessionId;
+    presetId;
+    constructor(
+    /** The session whose composition is already fixed. */
+    sessionId, 
+    /** The preset that was refused. */
+    presetId) {
+        super(`agent-presets: session "${sessionId}" has already started; its agent preset is fixed`);
+        this.sessionId = sessionId;
+        this.presetId = presetId;
+    }
+}
 /** A preset exists but its composition cannot be installed. */
 export class PresetMountError extends Error {
     presetId;

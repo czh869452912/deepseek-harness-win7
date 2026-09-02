@@ -5,7 +5,7 @@ window.__ModuleLoader__.load({
 		var exports = module.exports;
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 		let _deepseek_ai_cordis = require("@deepseek-ai/cordis");
-		let _deepseek_ai_dsh_client_runtime_client = require("@deepseek-ai/dsh-client-runtime/client");
+		let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let react = require("react");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
@@ -48,6 +48,17 @@ window.__ModuleLoader__.load({
 			/** Soft invalidation (commands-changed): background repull on every touched key; ready snapshots keep serving. */
 			invalidateAll() {
 				for (const key of this.entries.keys()) this.refresh(key);
+			}
+			/**
+			* Drop one Session's obsolete composition-specific snapshot and prewarm its replacement.
+			* @param sessionId - Session whose effective command composition changed.
+			*/
+			resetSession(sessionId) {
+				const entry = this.entry(sessionId);
+				entry.state = "cold";
+				entry.commands = [];
+				entry.lastError = void 0;
+				this.refresh(sessionId);
 			}
 			/**
 			* Hard reset on reconnect: every entry drops its snapshot (the agent world
@@ -197,7 +208,7 @@ window.__ModuleLoader__.load({
 		var PopupSelectController = class {
 			deps;
 			/** Shell state store (the overlay component subscribes here). */
-			state = (0, _deepseek_ai_dsh_client_runtime_client.createSnapshotStore)(CLOSED);
+			state = (0, _deepseek_ai_dsh_client_store.createSnapshotStore)(CLOSED);
 			binding = null;
 			/**
 			* @param deps - session-wiring callbacks (token consumption + composer focus).
@@ -534,7 +545,7 @@ window.__ModuleLoader__.load({
 					this.directory.invalidateAll();
 				});
 				ctx.remote.$on("agent-preset/selected", (sessionId) => {
-					this.directory.refresh(sessionId);
+					this.directory.resetSession(sessionId);
 				});
 				ctx.on("connection/reset", () => {
 					this.directory.resetConnected();
@@ -871,8 +882,8 @@ window.__ModuleLoader__.load({
 			return n;
 		}
 		//#endregion
-		//#region \0dsh-css:D:\Claude-project\deepseek-harness-win7\reference\deepseek-harness\packages\client\ui-commands\src\client\PopupSelectView.module.css.mjs
-		const css = ".zdUUoW_card{z-index:100;--dsh-scrollbar-thumb:var(--dsw-alias-scrollbar-bg-l2);--dsh-scrollbar-thumb-hover:var(--dsw-alias-scrollbar-hover-l2);border:1px solid var(--dsw-alias-border-inverted);background:var(--dsw-specific-menu);min-width:min(220px,100%);max-width:100%;max-height:320px;box-shadow:var(--dsw-shadow-lv3);border-radius:12px;outline:none;flex-direction:column;padding:4px;display:flex;position:absolute;bottom:calc(100% + 4px);left:0;overflow:hidden}.zdUUoW_viewport{flex-direction:column;min-height:0;display:flex;overflow-y:auto}.zdUUoW_row{cursor:pointer;color:var(--dsw-alias-label-primary);border-radius:8px;align-items:center;gap:8px;padding:6px 8px;font-size:13px;display:flex}.zdUUoW_rowActive{background:var(--dsw-alias-interactive-bg-hover)}.zdUUoW_label{white-space:nowrap;text-overflow:ellipsis;flex:auto;min-width:0;overflow:hidden}.zdUUoW_detail{color:var(--dsw-alias-label-tertiary);white-space:nowrap;text-overflow:ellipsis;font-size:12px;overflow:hidden}.zdUUoW_check{color:var(--dsw-alias-label-primary);flex:none;display:inline-flex}.zdUUoW_status{color:var(--dsw-alias-label-tertiary);padding:8px 10px;font-size:13px}.zdUUoW_search{border:1px solid var(--dsw-alias-border-inverted);color:var(--dsw-alias-label-primary);background:0 0;border-radius:8px;outline:none;margin:2px 2px 4px;padding:6px 8px;font-size:13px}.zdUUoW_error{color:var(--dsw-alias-state-error-primary);align-items:center;gap:8px;padding:6px 8px;font-size:12px;display:flex}.zdUUoW_errorText{text-overflow:ellipsis;flex:1;overflow:hidden}.zdUUoW_retry{border:1px solid var(--dsw-alias-border-inverted);color:var(--dsw-alias-label-primary);cursor:pointer;background:0 0;border-radius:6px;padding:2px 8px;font-size:12px}";
+		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-commands\src\client\PopupSelectView.module.css.mjs
+		const css = ".fxr7ba_card{z-index:100;--dsh-scrollbar-thumb:var(--dsw-alias-scrollbar-bg-l2);--dsh-scrollbar-thumb-hover:var(--dsw-alias-scrollbar-hover-l2);border:1px solid var(--dsw-alias-border-inverted);background:var(--dsw-specific-menu);min-width:min(220px,100%);max-width:100%;max-height:320px;box-shadow:var(--dsw-shadow-lv3);border-radius:12px;outline:none;flex-direction:column;padding:4px;display:flex;position:absolute;bottom:calc(100% + 4px);left:0;overflow:hidden}.fxr7ba_viewport{flex-direction:column;min-height:0;display:flex;overflow-y:auto}.fxr7ba_row{cursor:pointer;color:var(--dsw-alias-label-primary);border-radius:8px;align-items:center;gap:8px;padding:6px 8px;font-size:13px;display:flex}.fxr7ba_rowActive{background:var(--dsw-alias-interactive-bg-hover)}.fxr7ba_label{white-space:nowrap;text-overflow:ellipsis;flex:auto;min-width:0;overflow:hidden}.fxr7ba_detail{color:var(--dsw-alias-label-tertiary);white-space:nowrap;text-overflow:ellipsis;font-size:12px;overflow:hidden}.fxr7ba_check{color:var(--dsw-alias-label-primary);flex:none;display:inline-flex}.fxr7ba_status{color:var(--dsw-alias-label-tertiary);padding:8px 10px;font-size:13px}.fxr7ba_search{border:1px solid var(--dsw-alias-border-inverted);color:var(--dsw-alias-label-primary);background:0 0;border-radius:8px;outline:none;margin:2px 2px 4px;padding:6px 8px;font-size:13px}.fxr7ba_error{color:var(--dsw-alias-state-error-primary);align-items:center;gap:8px;padding:6px 8px;font-size:12px;display:flex}.fxr7ba_errorText{text-overflow:ellipsis;flex:1;overflow:hidden}.fxr7ba_retry{border:1px solid var(--dsw-alias-border-inverted);color:var(--dsw-alias-label-primary);cursor:pointer;background:0 0;border-radius:6px;padding:2px 8px;font-size:12px}";
 		const tagId = "@deepseek-ai/dsh-client-ui-commands/PopupSelectView.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -882,18 +893,18 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var PopupSelectView_module_css_default = {
-			"card": "zdUUoW_card",
-			"check": "zdUUoW_check",
-			"detail": "zdUUoW_detail",
-			"error": "zdUUoW_error",
-			"errorText": "zdUUoW_errorText",
-			"label": "zdUUoW_label",
-			"retry": "zdUUoW_retry",
-			"row": "zdUUoW_row",
-			"rowActive": "zdUUoW_rowActive",
-			"search": "zdUUoW_search",
-			"status": "zdUUoW_status",
-			"viewport": "zdUUoW_viewport"
+			"card": "fxr7ba_card",
+			"check": "fxr7ba_check",
+			"detail": "fxr7ba_detail",
+			"error": "fxr7ba_error",
+			"errorText": "fxr7ba_errorText",
+			"label": "fxr7ba_label",
+			"retry": "fxr7ba_retry",
+			"row": "fxr7ba_row",
+			"rowActive": "fxr7ba_rowActive",
+			"search": "fxr7ba_search",
+			"status": "fxr7ba_status",
+			"viewport": "fxr7ba_viewport"
 		};
 		//#endregion
 		//#region lib/types/client/PopupSelectView.js
@@ -1050,6 +1061,7 @@ window.__ModuleLoader__.load({
 				description: confirmation.description,
 				acknowledgeLabel: confirmation.acknowledgeLabel,
 				cancelLabel: confirmation.cancelLabel,
+				closeLabel: t("close"),
 				confirmLabel: confirmation.confirmLabel,
 				acknowledged: state.acknowledged,
 				onAcknowledgedChange: (value) => {
@@ -1117,7 +1129,7 @@ window.__ModuleLoader__.load({
 				"sessions"
 			], (scope) => {
 				const command = scope.commandUi;
-				const sessions = scope.sessions;
+				const sessions = scope.get("sessions");
 				scope.slots.inject("conversation.input.overlay", () => scope.slots.register({
 					name: "conversation.input.overlay",
 					id: "command-popup",

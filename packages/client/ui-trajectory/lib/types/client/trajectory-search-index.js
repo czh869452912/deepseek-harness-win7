@@ -51,7 +51,7 @@ function recordSources(turn, group, cell) {
             block.content,
             block.callId ?? '',
             block.toolName ?? '',
-            block.imageAlt ?? '',
+            block.attachment?.name ?? '',
         ]),
         searchableJson(cell.messageSource),
         searchableJson(cell.promptDetail),

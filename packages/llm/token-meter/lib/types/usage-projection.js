@@ -31,13 +31,27 @@ const projectionSchema = z.object({
     cacheReadTokens: z.number().int().nonnegative(),
     cacheWriteTokens: z.number().int().nonnegative(),
 }).strict();
-// Cast for the optional values: under exactOptionalPropertyTypes zod infers
-// `number | undefined` where the interface declares absent-or-number fields.
+/**
+ * The token-usage unit's state schema — the one definition of the state
+ * shape; the state type is inferred from it.
+ */
+const tokenUsageStateSchema = z.object({
+    totals: projectionSchema,
+    last: z.object({
+        turn: z.number().int().nonnegative(),
+        step: z.number().int().nonnegative(),
+        buckets: projectionSchema,
+    }).nullable(),
+}).strict();
 const pressureSchema = z.object({
     pressureTokens: z.number().int().nonnegative().optional(),
     projectedTokens: z.number().int().nonnegative().optional(),
     contextWindow: z.number().int().positive().optional(),
-}).strict();
+}).strict().transform(({ pressureTokens, projectedTokens, contextWindow }) => ({
+    ...pressureTokens === undefined ? {} : { pressureTokens },
+    ...projectedTokens === undefined ? {} : { projectedTokens },
+    ...contextWindow === undefined ? {} : { contextWindow },
+}));
 /** Prompt-side pressure of one request: input plus cache traffic, no output. */
 const pressureFrom = (usage) => usage.inputTokens + (usage.cacheReadTokens ?? 0) + (usage.cacheWriteTokens ?? 0);
 /** The usage a chunk or finalized message reports for its step, if any. */
@@ -46,21 +60,39 @@ const usageOf = (event) => event.type === 'assistant/chunk' && event.data.chunk.
     : event.type === 'assistant/message'
         ? event.data.usage
         : undefined;
+/** The context-pressure state schema and source of its inferred type. */
+const contextPressureStateSchema = z.object({
+    contextWindow: z.number().int().positive().optional(),
+    pressureTokens: z.number().int().nonnegative().optional(),
+    surfaceTokens: z.number().int().nonnegative(),
+    sampledSurfaceTokens: z.number().int().nonnegative().optional(),
+    claim: z.object({
+        start: z.number().int().nonnegative(),
+        end: z.number().int().nonnegative(),
+        tokens: z.number().int().nonnegative(),
+    }).optional(),
+}).strict();
 /**
  * Token-meter's session projection unit.
  *
  * Usage chunks provide an early sample that survives a later request failure;
- * an assistant message provides the final sample for the same turn/step. A
- * repeated sample replaces that step's earlier value instead of double
- * counting it. The single `last` slot relies on the session-log invariant
- * that usage reports for one turn/step are adjacent: once a later step begins,
- * a legal log never reports usage for an earlier step again.
+ * an assistant message provides the final sample for the same attempt. A
+ * repeated sample replaces that attempt's earlier value instead of double
+ * counting it, while `llm/retry-started` closes the replacement slot so the
+ * retried attempt adds to the total. The single `last` slot relies on the
+ * session-log invariant that usage reports for one attempt are adjacent.
  */
 export const tokenUsageProjectionDefinition = {
     key: 'tokenUsage',
-    schema: projectionSchema,
+    stateVersion: 2,
+    stateSchema: tokenUsageStateSchema,
     init: () => ({ totals: zeroBuckets(), last: null }),
     apply: (state, event) => {
+        if (event.type === 'llm/retry-started') {
+            return state.last?.turn === event.data.turn && state.last.step === event.data.step
+                ? { ...state, last: null }
+                : state;
+        }
         let turn;
         let step;
         let usage;
@@ -89,8 +121,7 @@ export const tokenUsageProjectionDefinition = {
             last: { turn, step, buckets },
         };
     },
-    view: state => state.totals,
-    stateVersion: 1,
+    wire: { viewSchema: projectionSchema, view: state => state.totals },
 };
 /**
  * Token-meter's context-occupancy projection unit.
@@ -115,7 +146,8 @@ export const tokenUsageProjectionDefinition = {
  */
 export const contextPressureProjectionDefinition = {
     key: 'contextPressure',
-    schema: pressureSchema,
+    stateVersion: 4,
+    stateSchema: contextPressureStateSchema,
     init: () => ({ surfaceTokens: 0 }),
     apply: (state, event) => {
         const fold = foldSurfaceProjection(state.claim, event);
@@ -149,13 +181,15 @@ export const contextPressureProjectionDefinition = {
         const { claim: _expired, ...withoutClaim } = next;
         return fold.claim === undefined ? withoutClaim : { ...withoutClaim, claim: fold.claim };
     },
-    view: ({ contextWindow, pressureTokens, surfaceTokens, sampledSurfaceTokens }) => ({
-        ...contextWindow === undefined ? {} : { contextWindow },
-        ...pressureTokens === undefined ? {} : { pressureTokens },
-        ...pressureTokens === undefined || sampledSurfaceTokens === undefined
-            ? {}
-            : { projectedTokens: Math.max(0, pressureTokens + surfaceTokens - sampledSurfaceTokens) },
-    }),
-    stateVersion: 4,
+    wire: {
+        viewSchema: pressureSchema,
+        view: ({ contextWindow, pressureTokens, surfaceTokens, sampledSurfaceTokens }) => ({
+            ...contextWindow === undefined ? {} : { contextWindow },
+            ...pressureTokens === undefined ? {} : { pressureTokens },
+            ...pressureTokens === undefined || sampledSurfaceTokens === undefined
+                ? {}
+                : { projectedTokens: Math.max(0, pressureTokens + surfaceTokens - sampledSurfaceTokens) },
+        }),
+    },
 };
 //# sourceMappingURL=usage-projection.js.map

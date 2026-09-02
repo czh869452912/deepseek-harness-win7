@@ -15,8 +15,18 @@ import z from '@deepseek-ai/schemastery';
 import type { RetryPolicyConfig } from '@deepseek-ai/dsh-llm';
 import { type LaunchEnvironmentSnapshot } from '@deepseek-ai/dsh-launch-environment';
 import type { DeepSeekCatalogModel, DeepSeekConnectionOptions } from './adapter.ts';
-export { DEFAULT_CONTEXT_WINDOW, DEFAULT_MAX_REQUEST_IMAGE_BYTES, DEFAULT_MAX_TOKENS, DEFAULT_STREAM_IDLE_TIMEOUT_MS, DeepSeekAdapter, } from './adapter.ts';
+export { DEFAULT_CONTEXT_WINDOW, DEFAULT_FILE_EXPIRY_SECONDS, DEFAULT_FILE_QUOTA_CLEANUP_BATCH, DEFAULT_FILE_REFRESH_MARGIN_SECONDS, DEFAULT_FILES_API_TIMEOUT_MS, DEFAULT_IMAGE_OFFLOAD_BYTE_QUANTUM, DEFAULT_IMAGE_OFFLOAD_COUNT_QUANTUM, DEFAULT_INLINE_IMAGE_OFFLOAD_BYTE_QUANTUM, DEFAULT_MAX_INLINE_REQUEST_IMAGE_BYTES, DEFAULT_MAX_TOKENS, DEFAULT_STREAM_IDLE_TIMEOUT_MS, DeepSeekAdapter, } from './adapter.ts';
 export type { DeepSeekAdapterOptions, DeepSeekCatalogModel, DeepSeekConnectionOptions } from './adapter.ts';
+export { DEFAULT_LOW_DETAIL_IMAGE_PIXEL_BUDGET, DEFAULT_MAX_IMAGES_PER_REQUEST, DEFAULT_MAX_REQUEST_FILES_BYTES, DEFAULT_REQUEST_IMAGE_MAX_BYTES, DEFAULT_REQUEST_IMAGE_PIXEL_BUDGET, deepSeekImageRequestPricing, resolveRequestImagePolicy, } from './request-pricing.ts';
+export { deepSeekImageTokens } from './image-tokens.ts';
+export { DeepSeekFileStore, MAX_CHAT_IMAGE_BYTES } from './file-store.ts';
+export type { DeepSeekFileConnection, DeepSeekFilePolicy, DeepSeekFileReference } from './file-store.ts';
+export { DeepSeekFilesClient, MAX_FILE_EXPIRY_SECONDS, MAX_FILE_UPLOAD_BYTES, MAX_STORED_FILE_BYTES, MAX_STORED_FILE_COUNT, MIN_FILE_EXPIRY_SECONDS } from './files-api.ts';
+export type { DeepSeekFileObject, DeepSeekFilePage } from './files-api.ts';
+export { DeepSeekFileId } from './file-id.ts';
+export type { DeepSeekFileId as DeepSeekFileIdType } from './file-id.ts';
+export { DeepSeekUploadIndex, deepSeekFileScope } from './upload-index.ts';
+export type { DeepSeekUploadRecord } from './upload-index.ts';
 export type { RequestDefaults } from './serialize.ts';
 export type * from './types.ts';
 export declare const name = "llm-deepseek";
@@ -42,12 +52,30 @@ export interface Config {
     maxTokens?: number;
     /** Positive context capacity used when the selected model has no exact value (default 1,000,000). */
     defaultContextWindow?: number;
-    /** Advisory models shown by discovery consumers; defaults to V4 Flash and V4 Pro. */
+    /** Advisory models shown by discovery consumers; defaults to V4 Flash, V4 Pro, and V4 Flash Vision Exp. */
     models?: DeepSeekCatalogModel[];
     /** Maximum provider idle time while one stream read is outstanding (default five minutes). */
     streamIdleTimeoutMs?: number;
-    /** Maximum accumulated base64 image payload per request (default 20 MiB). */
-    maxRequestImageBytes?: number;
+    /** Maximum accumulated file-referenced image bytes per chat request (default 128 MiB). */
+    maxRequestFilesBytes?: number;
+    /** Maximum accumulated base64 image payload after Files API fallback (default 20 MiB). */
+    maxInlineRequestImageBytes?: number;
+    /** Maximum number of represented images per chat request (default 600). */
+    maxImagesPerRequest?: number;
+    /** Raw-byte removal step after the request exceeds its file bound (default 64 MiB). */
+    imageOffloadByteQuantum?: number;
+    /** Base64-byte removal step after inline fallback exceeds its bound (default 10 MiB). */
+    inlineImageOffloadByteQuantum?: number;
+    /** Image-count removal step after the request exceeds its count bound (default 20). */
+    imageOffloadCountQuantum?: number;
+    /** Maximum duration of one request-image Files API resolution (default one minute). */
+    filesApiTimeoutMs?: number;
+    /** Explicit lifetime assigned to each uploaded image (default seven days). */
+    fileExpiresAfterSeconds?: number;
+    /** Remaining lifetime below which an indexed file is replaced (default one hour). */
+    fileRefreshMarginSeconds?: number;
+    /** Oldest harness-owned files deleted before one quota-recovery upload retry (default 100). */
+    fileQuotaCleanupBatch?: number;
     /** Provider-owned model-request retry policy; omission uses normal mode with five retries. */
     retryPolicy?: RetryPolicyConfig;
 }

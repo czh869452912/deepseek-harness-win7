@@ -1,13 +1,4 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-// SearchBlock: the search surface for a completed content or path search — a
-// banner (result summary that folds the pre-cap total in when the tool capped
-// the result, plus a copy control), then either grep matches grouped by file
-// (each file a bold
-// path header with its `lineNumber: line` rows, the group collapsible) or a
-// flat glob path list. Both shapes flatten to one list of rows the height cap
-// slices head/tail over, and neither soft-wraps: a long match line or path
-// scrolls horizontally instead of folding. Geometry mirrors CodeBlock and
-// TerminalBlock so a search card reads as one family with them.
 import { useCallback, useState } from 'react';
 import clsx from 'clsx';
 import { headTailCap } from "./head-tail-cap.js";
@@ -58,10 +49,9 @@ function shownCount(props) {
  * @returns the summary text.
  */
 function summaryText(props, shown, truncated, total) {
-    const count = truncated ? `显示 ${shown} / 共 ${total}` : `${shown}`;
     return props.kind === 'paths'
-        ? `${count} 个路径`
-        : `${count} 处匹配 · ${props.files.length} 个文件`;
+        ? props.labels.pathsSummary(shown, total, truncated)
+        : props.labels.matchesSummary(shown, total, props.files.length, truncated);
 }
 /**
  * Flatten a card's shape into its render rows, dropping a collapsed file
@@ -151,8 +141,8 @@ export function SearchBlock(props) {
         }
         return (_jsxs("button", { type: "button", className: css.fileHeader, "aria-expanded": !row.collapsed, onClick: () => { toggleFile(row.index); }, children: [_jsx("span", { className: css.filePath, children: row.path }), _jsx("span", { className: css.fileCount, children: row.count })] }));
     };
-    return (_jsxs("div", { className: clsx(css.block, className), "data-search": props.kind, children: [_jsxs("div", { className: css.header, children: [_jsx("span", { className: css.summary, children: summaryText(props, shown, truncated, total) }), !empty && (_jsx("button", { type: "button", className: css.copyButton, onClick: onCopy, children: copied ? '复制成功' : '复制' }))] }), empty
-                ? _jsx("div", { className: css.empty, children: "\u65E0\u7ED3\u679C" })
-                : (_jsxs("div", { className: css.body, children: [head.map(row => (_jsx("div", { children: renderRow(row) }, rowKey(row)))), hidden > 0 && (_jsx("button", { type: "button", className: css.expand, "aria-expanded": expanded, "aria-label": expanded ? '收起结果' : `展开其余 ${hidden} 行结果`, onClick: onToggle, children: expanded ? '收起' : `… 其余 ${hidden} 行` })), tailHeader !== undefined && (_jsx("div", { children: renderRow(tailHeader) }, `tailHeader:${rowKey(tailHeader)}`)), tail.map(row => (_jsx("div", { children: renderRow(row) }, rowKey(row))))] }))] }));
+    return (_jsxs("div", { className: clsx(css.block, className), "data-search": props.kind, children: [_jsxs("div", { className: css.header, children: [_jsx("span", { className: css.summary, children: summaryText(props, shown, truncated, total) }), !empty && (_jsx("button", { type: "button", className: css.copyButton, onClick: onCopy, children: copied ? props.labels.copied : props.labels.copy }))] }), empty
+                ? _jsx("div", { className: css.empty, children: props.labels.noResults })
+                : (_jsxs("div", { className: css.body, children: [head.map(row => (_jsx("div", { children: renderRow(row) }, rowKey(row)))), hidden > 0 && (_jsx("button", { type: "button", className: css.expand, "aria-expanded": expanded, "aria-label": expanded ? props.labels.collapseAria : props.labels.expandAria(hidden), onClick: onToggle, children: expanded ? props.labels.collapse : props.labels.expand(hidden) })), tailHeader !== undefined && (_jsx("div", { children: renderRow(tailHeader) }, `tailHeader:${rowKey(tailHeader)}`)), tail.map(row => (_jsx("div", { children: renderRow(row) }, rowKey(row))))] }))] }));
 }
 //# sourceMappingURL=SearchBlock.js.map

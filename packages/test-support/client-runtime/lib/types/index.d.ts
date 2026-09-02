@@ -1,6 +1,6 @@
 /**
  * jsdom slot test runtime: a real small runtime — Cordis `Context`, the
- * runtime `SlotRegistry`, and the UI renderer — assembled around
+ * renderer-owned `SlotRegistry`, the `ui-session` adapter, and the UI renderer — assembled around
  * test-owned session/workspace doubles, so feature specs exercise
  * declaration, registration, scope, store, inject, rendering, updates, and
  * disposal without hand-building the machinery per suite.
@@ -15,20 +15,22 @@ import type { Fiber, Plugin } from '@deepseek-ai/cordis';
 import type { RenderResult } from '@testing-library/react';
 import type { queries } from '@testing-library/dom';
 import type { BoundFunctions } from '@testing-library/dom';
-import { SlotRegistry } from '@deepseek-ai/dsh-client-runtime/client';
+import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client';
 import type { ChildrenDecl, ComposedProps, HostObservable, OwnerOf, SlotComponent, SlotMap, SlotRenderer, SnapshotSelectorHook, StoreInstanceLike } from '@deepseek-ai/dsh-client-ui-slots';
 import { TestSessions } from './sessions.ts';
 import { TestWorkspaces } from './workspaces.ts';
 import type { Stabilizer } from './fixtures.ts';
-export type { UseSession } from '@deepseek-ai/dsh-client-ui-renderer/client';
+export type { UseSession } from '@deepseek-ai/dsh-client-ui-session/client';
 export { domSnapshotSerializer, registerDomSnapshotSerializer } from './snapshot.ts';
 export { FixtureSession, TestSessions } from './sessions.ts';
 export { stubSettingsScope } from './settings-scope.ts';
 export type { StubSettingsScope } from './settings-scope.ts';
+export { scriptedSettingsRemote } from './settings-remote.ts';
+export type { ScriptedNamespace, ScriptedSettingsRemote } from './settings-remote.ts';
 export { TestWorkspaces } from './workspaces.ts';
 export { TestRemote } from './remote.ts';
-export { conversationSnapshot, workspaceListState } from './fixtures.ts';
-export type { SessionBehaviorOverrides, SessionFixture, Stabilizer } from './fixtures.ts';
+export { chatSnapshot, conversationSnapshot, sessionSnapshot, workspaceSnapshot, } from './fixtures.ts';
+export type { FixtureSnapshot, SessionBehaviorOverrides, SessionFixture, SessionFixtureSnapshot, Stabilizer, } from './fixtures.ts';
 export { makeTranslate } from './translate.ts';
 export { usePinnedBrowserLanguages } from './locale-env.ts';
 /**
@@ -108,7 +110,7 @@ export declare class TestRoot {
  * batching or React act themselves.
  */
 export declare class SlotTestRuntime {
-    /** The runtime's Cordis root (escape hatch: extra services via `ctx.provide`, raw `ctx.plugin` mounts). */
+    /** The runtime's Cordis root for owner APIs and explicit test-only services. */
     readonly ctx: Context;
     /** The production SlotRegistry mounted on {@link SlotTestRuntime.ctx}. */
     readonly slots: SlotRegistry;
@@ -127,6 +129,7 @@ export declare class SlotTestRuntime {
     private readonly ownerCell;
     private readonly autoDeclared;
     private autoRootView;
+    private readonly disposeWorkspaceSource;
     private constructor();
     /**
      * Assemble a runtime: real Context, mounted SlotRegistry, installed
@@ -135,17 +138,6 @@ export declare class SlotTestRuntime {
      */
     static create(): Promise<SlotTestRuntime>;
     /**
-     * Provide an extra service the feature under test injects (e.g. a layout
-     * fake). Sugar over `ctx.provide`, typed against the Context declaration
-     * merge: for a declared service name the fake must be a subset of that
-     * service's outward face (Partial — supply only what the feature calls),
-     * so a production face change breaks the fake at compile time. Undeclared
-     * names stay unchecked (ad-hoc test services).
-     * @param name - service name.
-     * @param value - service implementation (test double).
-     */
-    provide<K extends string>(name: K, value: K extends keyof Context ? Partial<Context[K]> : unknown): void;
-    /**
      * Mount a feature plugin on a real fiber. Required services are prechecked
      * so a missing provider fails loud instead of suspending the fiber forever
      * (deliberate load-order suspension tests use `ctx.plugin` directly).
@@ -153,6 +145,8 @@ export declare class SlotTestRuntime {
      * @returns handle owning the fiber's explicit disposal.
      */
     mount(plugin: Plugin): Promise<FeatureHandle>;
+    /** Release the default Workspace hook before mounting its production owner. */
+    releaseWorkspaceSource(): void;
     /**
      * Render the root slot tree through the ctx-level entry (the shell's own
      * entry point): `ctx.slots.renderSlot('root', {})` under Testing Library.

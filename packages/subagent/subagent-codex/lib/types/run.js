@@ -160,10 +160,9 @@ export async function startCodexRun(request, spec) {
             category: 'unknown',
         }, thrown(error));
     }
-    const wire = new CodexAppServerWire(child.stdout, child.stdin, spec.permissionMode);
+    const wire = new CodexAppServerWire(child.stdout, child.stdin, spec.permissionMode, spec.model);
     const onStderr = (chunk) => {
         const bytes = typeof chunk === 'string' ? Buffer.from(chunk) : chunk;
-        wire.observeStderr(bytes.toString());
         try {
             // Synchronous fd forwarding preserves byte order without owning a
             // backpressure queue. A slow host sink can block this event-loop turn.
@@ -182,8 +181,8 @@ export async function startCodexRun(request, spec) {
     const disposeProcess = async () => {
         try {
             await disposeCodexChild(wire, child);
-            // Let stderr already queued by the process close reach both bounded
-            // diagnostic consumers before their listeners are detached.
+            // Let stderr already queued by the process close reach the Host before
+            // its forwarding listeners are detached.
             await new Promise((resolve) => { setImmediate(resolve); });
         }
         finally {
@@ -195,7 +194,7 @@ export async function startCodexRun(request, spec) {
     const processFailure = child.done.then((outcome) => {
         processFailureFacts = {
             stage: 'process',
-            category: 'process-exit',
+            category: 'process',
             outcome,
         };
         throw new CodexRunFailure(processFailureFacts);
@@ -289,15 +288,15 @@ export async function startCodexRun(request, spec) {
                 ]);
                 if (terminal.stopReason === 'completed')
                     return terminal;
-                // Let stderr already queued with the terminal frame contribute its
-                // fixed permission fact before the non-completed result is snapshotted.
+                // Let stderr already queued with the terminal frame reach the Host
+                // before the non-completed result settles.
                 await new Promise((resolve) => { setImmediate(resolve); });
                 const facts = withProcessOutcome(wire.collectFailure());
                 return { ...terminal, diagnostic: recordFailureDiagnostic(facts) };
             }
             catch (error) {
-                // Give stderr data already queued in Node one turn to reach the wire
-                // before settlement snapshots the diagnostic.
+                // Give stderr data already queued in Node one turn to reach the Host
+                // before error settlement.
                 await new Promise((resolve) => { setImmediate(resolve); });
                 const endedBeforeTerminal = wire.endedBeforeTerminal();
                 if (endedBeforeTerminal

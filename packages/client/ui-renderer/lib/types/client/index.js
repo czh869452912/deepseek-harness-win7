@@ -8,8 +8,10 @@ import { flushSync } from 'react-dom';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import { createSlotRenderer } from "./scoped-slots.js";
 import { buildRenderApp } from "./app.js";
+import { SlotRegistry } from "./registry.js";
+export { SlotRegistry } from "./registry.js";
 /** Services required before application assembly. */
-export const inject = ['slots', 'sessions'];
+export const inject = [];
 /** Hydrate the kernel-owned loading DOM before replacing it with the application. */
 function BootHandoff(props) {
     const [ready, setReady] = useState(false);
@@ -40,7 +42,8 @@ function mountApp(container, app) {
  * @param ctx - Plugin context.
  */
 export function apply(ctx) {
-    ctx.slots.install(createSlotRenderer());
+    const slots = new SlotRegistry(ctx);
+    slots.install(createSlotRenderer());
     ctx.reflect.provide('uiRenderer', {
         mount: (container) => {
             const root = mountApp(container, buildRenderApp({ ctx }));

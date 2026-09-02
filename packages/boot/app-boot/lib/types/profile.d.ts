@@ -14,11 +14,12 @@
  *
  * Module resolution is two-anchor by construction: a bundle name resolves
  * first from the dsh installation (the launcher's own package), then from the
- * profile directory. The Loader's `baseUrl` is the profile directory, whose
- * `node_modules` pnpm manages for out-of-tree plugins, while the maintained
- * flat fallback directory `$DSH_HOME/profiles/node_modules` (one symlink per
- * package the installation's app and bundles depend on) makes every in-box
- * plugin Node-resolvable from any profile through the ordinary parent-walk.
+ * profile directory. Pnpm-managed entries in the profile's `node_modules`
+ * resolve first. Dsh-owned links add packages carried only by selected
+ * bundles, while `$DSH_HOME/profiles/node_modules` supplies the installation
+ * dependency closure through Node's ordinary parent-walk. Plain Node uses
+ * symlinks for that shared fallback; packaged executables use ESM proxies so
+ * external plugins retain the installation's module instances.
  * @module @deepseek-ai/dsh-app-boot/profile
  */
 import type { EntryOptions } from '@deepseek-ai/cordis-plugin-loader';
@@ -36,6 +37,17 @@ export interface DshBundleManifest {
 export interface DshProfileManifest {
     /** Ordered bundle layer list (package names). */
     bundles?: string[];
+    /** Whether user patch files reload while this profile remains active. */
+    patchReload?: ProfilePatchReload;
+}
+/** User patch-file lifecycle selected by a profile. */
+export type ProfilePatchReload = 'live' | 'startup';
+/** Installation-owned defaults used when a shipped profile is first opened. */
+export interface ProfileTemplate {
+    /** Ordered bundle layer list. */
+    bundles: readonly string[];
+    /** User patch-file lifecycle for the generated profile. */
+    patchReload: ProfilePatchReload;
 }
 /**
  * The profile-launcher slice of the `dsh`-owned package.json section. A
@@ -77,6 +89,8 @@ export interface Profile {
     patchPath: string;
     /** The profile's own patches; empty when the file is absent. */
     patches: PatchOptions[];
+    /** Whether the launcher watches user patch files after boot. */
+    patchReload: ProfilePatchReload;
 }
 /**
  * Resolve a profile's directory under the Harness home.
@@ -86,37 +100,42 @@ export interface Profile {
  */
 export declare function resolveProfileDir(name: string, home?: string): string;
 /** The shipped profile templates auto-initialized on first use, by name. */
-export declare const PROFILE_TEMPLATES: Record<string, readonly string[]>;
+export declare const PROFILE_TEMPLATES: Record<string, ProfileTemplate>;
 /** The bundle list a `dsh plugin` init uses for a name with no shipped template. */
 export declare const DEFAULT_PROFILE_BUNDLES: readonly string[];
+/** Custom profiles retain the historical live patch-file behavior. */
+export declare const DEFAULT_PROFILE_PATCH_RELOAD: ProfilePatchReload;
 /**
  * Initialize a profile directory: manifest, empty user patch layer, and the
  * pnpm settings out-of-tree plugins need. Existing files are never touched,
  * so re-running is a no-op on an initialized profile.
  * @param dir - the profile directory from {@link resolveProfileDir}.
  * @param bundles - the initial `dsh.profile.bundles` layer list.
+ * @param patchReload - user patch-file lifecycle; custom profiles default to live reload.
  */
-export declare function initProfile(dir: string, bundles: readonly string[]): void;
+export declare function initProfile(dir: string, bundles: readonly string[], patchReload?: ProfilePatchReload): void;
+/** Inputs for {@link healProfilesModuleFallback}. */
+export interface ProfileModuleFallbackOptions {
+    /** Absolute package.json path of the running dsh installation. */
+    installAnchor: string;
+    /** Loaded profile whose selected bundles may carry profile-local plugins. */
+    profile?: Profile;
+    /** Harness home; defaults to {@link resolveDshHome}. */
+    home?: string;
+}
 /**
- * Maintain the flat module fallback `$DSH_HOME/profiles/node_modules`: one
- * symlink per package in the dsh app's resolvable dependency CLOSURE (BFS
- * over `dependencies` from the app manifest), each resolved from its own
- * real location. Node's parent-directory walk from any profile finds this
- * directory after the profile's own `node_modules`, so every in-box plugin
- * resolves without pnpm ever managing it — the exact "bundles come from the
- * installation" contract. The closure (not just direct dependencies) is
- * required for out-of-tree plugins: their peer dependencies name Service
- * Definition packages (`dsh-compaction`, `dsh-invariants`, ...) that the app
- * reaches only through its Service Provider packages. Symlinked packages
- * resolve their own dependencies from their real directories (Node's default
- * symlink-following), so each package needs only its one flat link.
- * Idempotent: correct links are kept and moved installations are
- * re-pointed; a stale link to a vanished package stays until its name is
- * reused (dangling links are invisible to resolution).
- * @param installAnchor - absolute path of the dsh app's package.json.
- * @param home - the Harness home; defaults to {@link resolveDshHome}.
+ * Maintain module fallbacks for one profile launch. The shared
+ * `$DSH_HOME/profiles/node_modules` mirrors the dsh installation dependency
+ * closure. Plain Node writes symlinks; a packaged executable writes ESM
+ * proxies under a cross-process lock because operating-system links cannot
+ * enter pkg's virtual filesystem. Missing packages carried only by selected
+ * bundles are linked through a profile-owned directory into that profile's
+ * `node_modules`; pnpm-managed entries remain authoritative, and another
+ * profile's links cannot change its resolution.
+ * @param options - installation anchor, optional loaded profile, and Harness home.
+ * @returns settlement after the shared fallback and profile-local links are current.
  */
-export declare function healProfilesModuleFallback(installAnchor: string, home?: string): void;
+export declare function healProfilesModuleFallback(options: ProfileModuleFallbackOptions): Promise<void>;
 /**
  * Read a profile's manifest.
  * @param binName - the diagnostic prefix on the thrown error.

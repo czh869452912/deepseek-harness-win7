@@ -7,7 +7,7 @@
  * with the runtime sessions service. A second effect seats the theme
  * presenter, which projects ctx.theme snapshots onto document.body.
  */
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client';
+import type { Context as ClientContext } from '@deepseek-ai/cordis';
 export { LayoutController } from './service.ts';
 export type { ILayout } from './service.ts';
 declare module '@deepseek-ai/cordis' {

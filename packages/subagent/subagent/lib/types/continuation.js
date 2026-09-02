@@ -20,8 +20,60 @@
  *
  * @module @deepseek-ai/dsh-subagent
  */
+var __addDisposableResource = (this && this.__addDisposableResource) || function (env, value, async) {
+    if (value !== null && value !== void 0) {
+        if (typeof value !== "object" && typeof value !== "function") throw new TypeError("Object expected.");
+        var dispose, inner;
+        if (async) {
+            if (!Symbol.asyncDispose) throw new TypeError("Symbol.asyncDispose is not defined.");
+            dispose = value[Symbol.asyncDispose];
+        }
+        if (dispose === void 0) {
+            if (!Symbol.dispose) throw new TypeError("Symbol.dispose is not defined.");
+            dispose = value[Symbol.dispose];
+            if (async) inner = dispose;
+        }
+        if (typeof dispose !== "function") throw new TypeError("Object not disposable.");
+        if (inner) dispose = function() { try { inner.call(this); } catch (e) { return Promise.reject(e); } };
+        env.stack.push({ value: value, dispose: dispose, async: async });
+    }
+    else if (async) {
+        env.stack.push({ async: true });
+    }
+    return value;
+};
+var __disposeResources = (this && this.__disposeResources) || (function (SuppressedError) {
+    return function (env) {
+        function fail(e) {
+            env.error = env.hasError ? new SuppressedError(e, env.error, "An error was suppressed during disposal.") : e;
+            env.hasError = true;
+        }
+        var r, s = 0;
+        function next() {
+            while (r = env.stack.pop()) {
+                try {
+                    if (!r.async && s === 1) return s = 0, env.stack.push(r), Promise.resolve().then(next);
+                    if (r.dispose) {
+                        var result = r.dispose.call(r.value);
+                        if (r.async) return s |= 2, Promise.resolve(result).then(next, function(e) { fail(e); return next(); });
+                    }
+                    else s |= 1;
+                }
+                catch (e) {
+                    fail(e);
+                }
+            }
+            if (s === 1) return env.hasError ? Promise.reject(env.error) : Promise.resolve();
+            if (env.hasError) throw env.error;
+        }
+        return next();
+    };
+})(typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
+    var e = new Error(message);
+    return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+});
 import { randomUUID } from 'node:crypto';
-import { boundContextSummary, createUserMessage, errorChain } from '@deepseek-ai/dsh-llm';
+import { ReasoningEffortId, boundContextSummary, createUserMessage, errorChain } from '@deepseek-ai/dsh-llm';
 import { SessionId } from '@deepseek-ai/dsh-session';
 import { foldSubagentDescriptor, snapshotSubagentDescriptor } from "./descriptor.js";
 import { appendDelegatedPolicyOverrides, applyChildComposition, captureDelegatedPolicyOverrides, childSessionMeta, resolveChildAgentOptions, resolveChildDepth, } from "./child-agent.js";
@@ -161,14 +213,17 @@ export class SubagentContinuationManager {
         const childDepth = resolveChildDepth(parent, request.maxDepth);
         // Snapshot before any await: invalid descriptor JSON rejects the call
         // before a child exists, and the detached value is what reaches the log.
-        const agentProvider = request.agentOptions?.provider ?? parent.options.provider;
-        const agentModel = request.agentOptions?.model ?? parent.options.model;
+        const agentOptions = resolveChildAgentOptions(parent, request.agentOptions, childDepth);
+        const agentProvider = agentOptions.provider;
+        const agentModel = agentOptions.model;
+        const agentReasoningEffort = agentOptions.reasoningEffort;
         const descriptor = snapshotSubagentDescriptor({
             mode: 'continuable',
             provider: spec.provider,
             label: spec.label,
             ...agentProvider !== undefined ? { agentProvider } : {},
             ...agentModel !== undefined ? { agentModel } : {},
+            ...agentReasoningEffort !== undefined ? { agentReasoningEffort } : {},
             ...request.persona !== undefined ? { persona: request.persona } : {},
             ...request.toolFilter !== undefined ? { toolFilter: request.toolFilter } : {},
         });
@@ -202,7 +257,7 @@ export class SubagentContinuationManager {
                 provider: spec.provider,
                 parent,
                 create: { seed, meta: childSessionMeta(parent, childDepth, lineageSeedLength), delegatedPolicies },
-                agentOptions: resolveChildAgentOptions(parent, request.agentOptions, childDepth),
+                agentOptions,
                 composition: { persona: request.persona, toolFilter: request.toolFilter },
                 signal: spec.signal,
             });
@@ -610,56 +665,71 @@ export class SubagentContinuationManager {
         return 'settled';
     }
     /**
-     * Cold-resume a persisted child: inspect and authorize its Session, fold the
+     * Cold-resume a persisted child: retain and authorize its prepared Session, fold the
      * generic descriptor, create the Activation through `ctx.agents.resume()`,
      * and submit the waiting turn. This never dispatches through a subagent
      * provider — the persisted Session already holds the initial prefix and the
      * descriptor is the whole reconstruction input.
      */
     async coldResume(parent, childId, content, options) {
-        const persistence = this.requirePersistence();
-        let loaded;
+        const env_1 = { stack: [], error: void 0, hasError: false };
         try {
-            loaded = await persistence.inspect(childId, options.signal);
+            const query = this.requireSessionQuery();
+            let observation;
+            try {
+                observation = await query.observeSession(childId, {
+                    signal: options.signal,
+                });
+            }
+            catch (error) {
+                options.signal.throwIfAborted();
+                throw new SubagentError(`subagent "${childId}" is unavailable`, 'NOT_RESUMABLE', { cause: error });
+            }
+            const source = __addDisposableResource(env_1, observation, false);
+            this.assertAdmitting(parent);
+            // Authorize the persisted header before folding: only the durable child's
+            // exact live direct parent may continue it.
+            this.authorizeLineage(parent, childId, source.header.parentSession);
+            // Fold only the child's own suffix: a fork seed replays the parent's log,
+            // which may carry an ANCESTOR's descriptor when the parent is itself a
+            // continuable child.
+            const descriptor = foldSubagentDescriptor(source.events.slice(source.header.seedLength ?? 0));
+            if (descriptor === undefined || descriptor.mode !== 'continuable') {
+                throw new SubagentError(`subagent "${childId}" has no supported continuation state and cannot be resumed; `
+                    + 'do not retry send_message with this id', 'NOT_RESUMABLE');
+            }
+            let activation;
+            try {
+                activation = await this.materialize({
+                    childId,
+                    provider: descriptor.provider,
+                    parent,
+                    agentOptions: {
+                        ...descriptor.agentProvider !== undefined ? { provider: descriptor.agentProvider } : {},
+                        ...descriptor.agentModel !== undefined ? { model: descriptor.agentModel } : {},
+                        ...descriptor.agentReasoningEffort !== undefined
+                            ? { reasoningEffort: ReasoningEffortId(descriptor.agentReasoningEffort) }
+                            : {},
+                    },
+                    composition: { persona: descriptor.persona, toolFilter: descriptor.toolFilter },
+                    signal: options.signal,
+                });
+            }
+            catch (error) {
+                options.signal.throwIfAborted();
+                if (error instanceof SubagentError)
+                    throw error;
+                throw new SubagentError(`subagent "${childId}" is unavailable`, 'NOT_RESUMABLE', { cause: error });
+            }
+            return await this.submitMaterialized(activation, content, options.source, parent, options.signal);
         }
-        catch (error) {
-            options.signal.throwIfAborted();
-            throw new SubagentError(`subagent "${childId}" is unavailable`, 'NOT_RESUMABLE', { cause: error });
+        catch (e_1) {
+            env_1.error = e_1;
+            env_1.hasError = true;
         }
-        options.signal.throwIfAborted();
-        this.assertAdmitting(parent);
-        // Authorize the persisted header before folding: only the durable child's
-        // exact live direct parent may continue it.
-        this.authorizeLineage(parent, childId, loaded.meta.parentSession);
-        // Fold only the child's own suffix: a fork seed replays the parent's log,
-        // which may carry an ANCESTOR's descriptor when the parent is itself a
-        // continuable child.
-        const descriptor = foldSubagentDescriptor(loaded.events.slice(loaded.meta.seedLength ?? 0));
-        if (descriptor === undefined || descriptor.mode !== 'continuable') {
-            throw new SubagentError(`subagent "${childId}" has no supported continuation state and cannot be resumed; `
-                + 'do not retry send_message with this id', 'NOT_RESUMABLE');
+        finally {
+            __disposeResources(env_1);
         }
-        let activation;
-        try {
-            activation = await this.materialize({
-                childId,
-                provider: descriptor.provider,
-                parent,
-                agentOptions: {
-                    ...descriptor.agentProvider !== undefined ? { provider: descriptor.agentProvider } : {},
-                    ...descriptor.agentModel !== undefined ? { model: descriptor.agentModel } : {},
-                },
-                composition: { persona: descriptor.persona, toolFilter: descriptor.toolFilter },
-                signal: options.signal,
-            });
-        }
-        catch (error) {
-            options.signal.throwIfAborted();
-            if (error instanceof SubagentError)
-                throw error;
-            throw new SubagentError(`subagent "${childId}" is unavailable`, 'NOT_RESUMABLE', { cause: error });
-        }
-        return this.submitMaterialized(activation, content, options.source, parent, options.signal);
     }
     /**
      * Submit to a freshly materialized Activation or roll it back completely.
@@ -1145,6 +1215,14 @@ export class SubagentContinuationManager {
             throw new SubagentError('continuable subagents require session persistence (load a dsh-session-persistence backend)', 'PERSISTENCE_UNAVAILABLE');
         }
         return persistence;
+    }
+    /** Resolve the Session query service used for cold child observations. */
+    requireSessionQuery() {
+        const query = this.ctx.get('sessionQuery');
+        if (query === undefined) {
+            throw new SubagentError('continuable subagents require session query (load @deepseek-ai/dsh-session-query)', 'CONTINUATION_UNAVAILABLE');
+        }
+        return query;
     }
 }
 export default SubagentContinuationManager;

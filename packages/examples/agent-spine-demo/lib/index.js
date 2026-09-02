@@ -106,7 +106,7 @@ function pickSpineConfig(config) {
 /**
 * Load the spine. Each `ctx.plugin(...)` mounts one child of the bundle fiber;
 * `agent-loop` receives the forwarded `agents` list and `system-prompt` the
-* forwarded `persona` and `toolOrder`. Workspace-context receives its own
+* forwarded persona fields and `toolOrder`. Workspace-context receives its own
 * explicitly forwarded config. Load order is irrelevant (cordis
 * pends each fiber on its `inject` until the services it needs exist), but the
 * listing mirrors the dependency layering for readability: the LLM vocabulary

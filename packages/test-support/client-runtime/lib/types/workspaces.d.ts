@@ -1,5 +1,15 @@
-import type { DirectoryListing, IWorkspaces, SessionId, SnapshotStore, WorkspaceId, WorkspaceListState, WorkspaceView } from '@deepseek-ai/dsh-client-runtime/client';
-import type { Stabilizer } from './fixtures.ts';
+import type { IWorkspaces, WorkspaceId, WorkspaceSnapshot, WorkspaceView } from '@deepseek-ai/dsh-api-workspace-controller/client';
+import type { SessionId } from '@deepseek-ai/dsh-session/types';
+import type { SnapshotStore } from '@deepseek-ai/dsh-client-store';
+import type { FixtureSnapshot, Stabilizer } from './fixtures.ts';
+/** Writable test representation of the immutable Workspace Controller snapshot. */
+type WorkspaceFixtureSnapshot = FixtureSnapshot<WorkspaceSnapshot>;
+/** Callable command names on the production Workspace Controller face. */
+type WorkspaceAction = {
+    [Key in keyof IWorkspaces]: IWorkspaces[Key] extends (...args: never[]) => unknown ? Key : never;
+}[keyof IWorkspaces];
+/** Test replacement retaining one Controller command's parameters and result. */
+type WorkspaceStub<Key extends WorkspaceAction> = (...args: Parameters<IWorkspaces[Key]>) => ReturnType<IWorkspaces[Key]>;
 /**
  * Workspaces test double. Implements the same IWorkspaces face features
  * receive as `ctx.workspaces`, so a production face change breaks this
@@ -10,7 +20,7 @@ import type { Stabilizer } from './fixtures.ts';
 export declare class TestWorkspaces implements IWorkspaces {
     private readonly stabilize;
     /** The useWorkspaces standard feed. */
-    readonly list: SnapshotStore<WorkspaceListState>;
+    readonly list: SnapshotStore<WorkspaceFixtureSnapshot>;
     /** Calls observed on the action face, newest last. */
     readonly calls: {
         method: string;
@@ -26,26 +36,13 @@ export declare class TestWorkspaces implements IWorkspaces {
      * Update the workspace list state through an immer draft.
      * @param mutate - draft mutator.
      */
-    update(mutate: (draft: WorkspaceListState) => void): Promise<void>;
+    update(mutate: (draft: WorkspaceFixtureSnapshot) => void): Promise<void>;
     /**
      * Replace an action's behavior (the recorded call is still appended first).
-     * @param method - action name (e.g. 'connectWorkspace').
+     * @param method - Controller action name (e.g. 'create').
      * @param impl - replacement behavior.
      */
-    stub(method: string, impl: (...args: unknown[]) => unknown): void;
-    /**
-     * Connect a workspace to its reusable/new blank session (recorded). The
-     * default resolves the workspace id back as the session id; stub for
-     * cross-session flows.
-     * @param workspaceId - target workspace.
-     * @returns the connected session id.
-     */
-    connectWorkspace(workspaceId: WorkspaceId): Promise<SessionId>;
-    /**
-     * New-session flow (recorded; stubbed behavior runs when installed).
-     * @param workspaceId - optional explicit workspace target.
-     */
-    startSession(workspaceId?: WorkspaceId): void;
+    stub<Key extends WorkspaceAction>(method: Key, impl: WorkspaceStub<Key>): void;
     /**
      * Create a Workspace (recorded). The default echoes a view derived from
      * the input; stub for failure or list-coupled flows.
@@ -55,30 +52,6 @@ export declare class TestWorkspaces implements IWorkspaces {
     create(input: {
         path: string;
     }): Promise<WorkspaceView>;
-    /**
-     * Open a path with the host OS default application (recorded; default no-op).
-     * @param path - host-resolvable path.
-     */
-    openPath(path: string): Promise<void>;
-    /**
-     * Directory picker (recorded). The default cancels (null); stub to select.
-     * @returns the picked path, or null.
-     */
-    pickDirectory(): Promise<string | null>;
-    /**
-     * Browse listing (recorded). The default serves an empty home level; stub
-     * to shape a tree.
-     * @param path - absolute directory to list; absent lists the home level.
-     * @returns the level's listing.
-     */
-    listDirectory(path?: string, signal?: AbortSignal): Promise<DirectoryListing>;
-    /**
-     * Browse child creation (recorded). The default joins parent and name.
-     * @param path - absolute existing parent directory.
-     * @param name - single path segment.
-     * @returns the created directory's absolute path.
-     */
-    createDirectory(path: string, name: string): Promise<string>;
     /**
      * Rename a Workspace (recorded). The default echoes a minimal view.
      * @param workspaceId - target workspace.
@@ -112,4 +85,5 @@ export declare class TestWorkspaces implements IWorkspaces {
      */
     archiveSession(sessionId: SessionId): Promise<void>;
 }
+export {};
 //# sourceMappingURL=workspaces.d.ts.map

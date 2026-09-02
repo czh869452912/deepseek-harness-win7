@@ -1,4 +1,4 @@
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client';
+import type { Context as ClientContext } from '@deepseek-ai/cordis';
 /** Required services: the slot registry and the Host description used for POSIX `~`. */
 export declare const inject: string[];
 /**

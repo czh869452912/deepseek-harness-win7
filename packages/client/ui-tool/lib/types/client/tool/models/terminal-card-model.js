@@ -1,14 +1,5 @@
-/**
- * Pure derivation of the terminal-card props from a frozen call slice: the
- * `card:'terminal'` render intent the shell tools declare arrives on the
- * snapshot as `callView`/`resultView`, and this is the one place that turns
- * that pair into what {@link TerminalBlock} draws. Both conversation render
- * sites (the chat tool row's expanded body and the details panel's Output
- * section) call this, so the command, cwd, output and exit status they show
- * are derived once.
- * @module
- */
-import { resolveWorkspacePath } from '@deepseek-ai/dsh-client-runtime/client';
+import { resolveWorkspacePath } from '@deepseek-ai/dsh-util-workspace-path';
+import { parsedToolCall, singleResultText, validEscalationFields } from "./raw-tool-call.js";
 /**
  * Build the TerminalBlock display copy from the conversation locale seat —
  * the one place the primitive's label surface pairs with this package's
@@ -34,6 +25,28 @@ export function terminalBlockLabels(t) {
     };
 }
 /**
+ * Resolve locale-owned `terminal_send` copy while preserving Tool-authored
+ * shell commands and descriptions verbatim.
+ * @param model - locale-neutral terminal card data.
+ * @param t - the render site's conversation locale seat.
+ * @returns terminal props and description ready for rendering.
+ */
+export function localizeTerminalCardModel(model, t) {
+    if (model.copy.kind === 'shell') {
+        return {
+            card: { command: model.copy.command, ...model.card },
+            description: model.copy.description,
+        };
+    }
+    return {
+        card: {
+            command: model.copy.text === '' ? t('terminal.sendInput') : model.copy.text,
+            ...model.card,
+        },
+        description: t('terminal.session', { sessionId: model.copy.sessionId }),
+    };
+}
+/**
  * True when a settled terminal card reports a failing exit — a non-zero code
  * or a terminating signal. The bash tool settles a failing command as a
  * completed call (`isError` stays false: the exit status is result data), so
@@ -47,23 +60,20 @@ export function terminalFailed(model) {
     return running !== true && ((exitCode !== undefined && exitCode !== 0) || signal !== undefined);
 }
 /**
- * Resolve a terminal view's working directory the way the render-intent
- * contract assigns to the UI bridge: an absolute path is used as-is, a relative
- * one joins under the session workspace, and an omitted one IS the session
- * workspace. A pure presenter cannot see the session cwd, which is why this
- * resolution belongs here rather than in the tool. Without a session cwd there
- * is nothing to resolve against, so a relative path stays as authored and an
- * omitted one stays absent (the prompt row then draws a bare `$`).
- * @param viewCwd - the cwd the terminal call view carries, if any.
+ * Resolve a shell call's workdir for display: an absolute path is used as-is,
+ * a relative one joins under the session workspace, and an omitted one is the
+ * session workspace. Without a session cwd, a relative path stays as authored
+ * and an omitted one stays absent.
+ * @param workdir - the raw call's workdir, if any.
  * @param sessionCwd - the session workspace root, if the caller knows it.
  * @returns the working directory for the prompt label, or undefined.
  */
-function resolveTerminalCwd(viewCwd, sessionCwd) {
-    if (viewCwd === undefined || viewCwd === '')
+function resolveTerminalCwd(workdir, sessionCwd) {
+    if (workdir === undefined || workdir === '')
         return sessionCwd;
     if (sessionCwd === undefined || sessionCwd === '')
-        return normalizeSegments(viewCwd);
-    return normalizeSegments(resolveWorkspacePath(sessionCwd, viewCwd));
+        return normalizeSegments(workdir);
+    return normalizeSegments(resolveWorkspacePath(sessionCwd, workdir));
 }
 /**
  * Collapse `.` and `..` segments so the prompt label names the directory the
@@ -128,41 +138,112 @@ function collapse(body, rooted, separator = '/') {
     }
     return kept.join(separator);
 }
+function shellCall(name, args) {
+    if (name !== 'bash' && name !== 'pwsh')
+        return null;
+    const { command, description, timeoutMs, workdir, run_in_background: background } = args;
+    if (typeof command !== 'string' || command.trim() === '')
+        return null;
+    if (timeoutMs !== undefined && (typeof timeoutMs !== 'number' || !Number.isFinite(timeoutMs) || timeoutMs <= 0))
+        return null;
+    if (workdir !== undefined && typeof workdir !== 'string')
+        return null;
+    if (background !== undefined && typeof background !== 'boolean')
+        return null;
+    if (!validEscalationFields(args))
+        return null;
+    if (description === undefined) {
+        // Standard dsh-tool-bash and dsh-tool-pwsh schemas require `description`;
+        // persistent shell providers omit it. Their parameter roots stay open, so
+        // unrelated fields do not change their running-card behavior.
+        return { kind: 'shell', command, description: undefined, workdir: undefined, persistent: true, background: false };
+    }
+    if (typeof description !== 'string' || description.trim() === '')
+        return null;
+    return {
+        kind: 'shell',
+        command,
+        description,
+        workdir,
+        persistent: false,
+        background: background === true,
+    };
+}
 /**
- * Derive the terminal-card props for a tool call, or null when this call is
- * not a terminal card and belongs on the generic path.
- *
- * The call side supplies the command and its working directory; the result
- * side supplies the captured output and exit status. Three cases produce
- * null, all of them the documented generic-card default:
- *
- * - Neither side declares `card:'terminal'` — including a `card` value this
- *   UI version does not know, which arrives over the wire and therefore
- *   cannot be trusted to be one of the compiled variants.
- * - A settled call whose result view is not a terminal card: the result
- *   presentation decides how the settled call renders, and the bash tool
- *   returns a generic fenced card for an execution error or a background
- *   start, whose text and error styling the generic path preserves.
- *
- * Window truncation can drop the call head from a settled result (see
- * `ToolResultNode.call`/`callView` in dsh-client-runtime), leaving a terminal
- * result with no call side. That still renders: the command falls back to the
- * result view's replacement title, then to an empty command (the prompt line
- * draws bare), and the prompt shows no cwd.
- * @param block - RunningToolCall or ToolResultNode off the snapshot caches.
- * @param sessionCwd - the session workspace root, which resolves an omitted or
- *   relative view cwd (see {@link resolveTerminalCwd}); absent leaves both unresolved.
- * @returns the terminal-card props, or null for the generic path.
+ * Identify a settled root call from the persistent Bash or PowerShell tool.
+ * Its result stays on the generic input/output path because the persistent
+ * shell can report resets and partial output without one process exit status.
+ * @param block - running or settled Tool block.
+ * @returns whether the block is a settled persistent-shell call.
+ */
+export function isSettledPersistentShellCall(block) {
+    if (!('kind' in block) || block.parentCallId !== undefined)
+        return false;
+    const parsed = parsedToolCall(block);
+    if (parsed === null)
+        return false;
+    return shellCall(parsed.name, parsed.args)?.persistent === true;
+}
+function terminalSendCall(name, args) {
+    if (name !== 'terminal_send')
+        return null;
+    const { sessionId, text, submit, run_in_background: background } = args;
+    if (typeof sessionId !== 'string' || sessionId === '' || typeof text !== 'string')
+        return null;
+    if (submit !== undefined && typeof submit !== 'boolean')
+        return null;
+    if (background !== undefined && typeof background !== 'boolean')
+        return null;
+    return {
+        kind: 'terminal-send',
+        text,
+        sessionId,
+        background: background === true,
+    };
+}
+/**
+ * Parse the marker literals owned by `@deepseek-ai/dsh-shell/render` without
+ * importing that Host-only package into the Client dependency graph.
+ * @param text - rendered shell result text.
+ * @returns output with a trailing exit-code or signal marker extracted.
+ */
+function parseExitStatus(text) {
+    const signal = /\n\[killed by signal: ([^\]\n]+)\]$/.exec(text);
+    if (signal?.[1] !== undefined)
+        return { output: text.slice(0, signal.index), signal: signal[1] };
+    const exit = /\n\[exit code: (\d+)\]$/.exec(text);
+    if (exit?.[1] !== undefined)
+        return { output: text.slice(0, exit.index), exitCode: Number(exit[1]) };
+    return { output: text, exitCode: 0 };
+}
+/**
+ * Derive terminal props for supported root shell and terminal-send calls.
+ * Standard shell results parse their final status marker; persistent shell
+ * results, background calls, errors, malformed input, or child dispatches use
+ * the generic path. {@link isSettledPersistentShellCall} lets that generic
+ * persistent result remain expandable without inventing one process status.
+ * @param block - running or settled Tool block.
+ * @param sessionCwd - session workspace root used to resolve workdir.
+ * @returns locale-neutral terminal-card data, or null for the generic path.
  */
 export function terminalCardModel(block, sessionCwd) {
-    const call = block.callView?.card === 'terminal' ? block.callView : null;
+    if (block.parentCallId !== undefined)
+        return null;
+    const parsed = parsedToolCall(block);
+    if (parsed === null)
+        return null;
+    const call = shellCall(parsed.name, parsed.args) ?? terminalSendCall(parsed.name, parsed.args);
+    if (call === null || call.background)
+        return null;
+    const copy = call.kind === 'shell'
+        ? { kind: 'shell', command: call.command, description: call.description }
+        : { kind: 'terminal-send', text: call.text, sessionId: call.sessionId };
+    const cwd = resolveTerminalCwd(call.kind === 'shell' ? call.workdir : undefined, sessionCwd);
     if (!('kind' in block)) {
-        // Running: the call view exists, the result view does not yet.
-        return call === null ? null : {
-            description: call.description,
+        return {
+            copy,
             card: {
-                command: call.title,
-                cwd: resolveTerminalCwd(call.cwd, sessionCwd),
+                cwd,
                 output: undefined,
                 exitCode: undefined,
                 signal: undefined,
@@ -170,25 +251,19 @@ export function terminalCardModel(block, sessionCwd) {
             },
         };
     }
-    const result = block.resultView?.card === 'terminal' ? block.resultView : null;
-    if (result === null)
+    if (block.isError || (call.kind === 'shell' && call.persistent))
         return null;
+    const output = singleResultText(block);
+    if (output === undefined)
+        return null;
+    const status = call.kind === 'terminal-send' ? { output } : parseExitStatus(output);
     return {
-        description: call?.description,
+        copy,
         card: {
-            // The result's title REPLACES the pending one when the tool supplies it
-            // (the presentation contract's replacement-title rule); the call title is
-            // what a result without one keeps.
-            command: result.title ?? call?.title ?? '',
-            // Only a PRESENT call view can mean "omitted the cwd, so use the
-            // workspace". When the window dropped the call head there is no cwd
-            // anywhere — the result view carries none — and the original call may
-            // well have used an explicit workdir, so the prompt draws a bare `$`
-            // rather than naming a directory this card cannot know.
-            cwd: call === null ? undefined : resolveTerminalCwd(call.cwd, sessionCwd),
-            output: result.output,
-            exitCode: result.exitCode,
-            signal: result.signal,
+            cwd,
+            output: status.output,
+            exitCode: status.exitCode,
+            signal: status.signal,
             running: false,
         },
     };

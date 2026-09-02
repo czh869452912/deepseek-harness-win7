@@ -58,7 +58,8 @@ const allReadyEmpty = (groups) => groups.every(g => g.status === 'ready' && g.it
  * open menu, or the roster is dropped; a settlement or failure leaving every
  * group ready-and-empty (or no groups) auto-closes; `source-failed` silently
  * removes the group (the shell logs); `move` cycles the highlight across
- * ready items.
+ * ready items; `hover` parks it on one ready item (pointer and keyboard
+ * share the single highlight — last input wins).
  *
  * @param state - Current menu state.
  * @param ev - Menu event.
@@ -117,6 +118,17 @@ export const menuReduce = (state, ev) => {
             if (hl && next.source === hl.source && next.index === hl.index)
                 return state;
             return { ...state, highlight: next };
+        }
+        case 'hover': {
+            if (!state.open)
+                return state;
+            const target = validHighlight({ source: ev.source, index: ev.index }, state.groups);
+            if (target === null)
+                return state;
+            const hl = state.highlight;
+            if (hl && hl.source === target.source && hl.index === target.index)
+                return state;
+            return { ...state, highlight: target };
         }
         case 'close':
             return closed(state);

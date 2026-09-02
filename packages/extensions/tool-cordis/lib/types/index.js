@@ -5,6 +5,7 @@
 import { CordisDynamicPackageId, CordisDynamicPluginId, } from '@deepseek-ai/dsh-cordis-host-runner';
 import { createUserMessage } from '@deepseek-ai/dsh-llm';
 import { defineTool } from '@deepseek-ai/dsh-tools';
+import { FIRST_PARTY_SECTION_ORDER } from '@deepseek-ai/dsh-system-prompt';
 import { missingServices, providedServices } from "./inspect.js";
 import { presentDefineCall, presentInspectListCall, presentInspectQueryCall, presentInspectSelfCall, presentRunCall, presentStopCall, presentUndefineCall, } from "./present.js";
 import { CORDIS_SYSTEM_PROMPT } from "./prompt.js";
@@ -18,7 +19,11 @@ function requireAgent(exec) {
 }
 /** Register the Cordis tools and explicit `@pluginId` context injection. */
 export function apply(ctx) {
-    ctx.systemPrompt.section({ name: 'tool:cordis', order: 115, text: CORDIS_SYSTEM_PROMPT });
+    ctx.systemPrompt.section({
+        name: 'tool:cordis',
+        order: FIRST_PARTY_SECTION_ORDER.TOOL_CORDIS,
+        text: CORDIS_SYSTEM_PROMPT,
+    });
     for (const provider of hostInspectProviders(ctx)) {
         ctx.effect(() => ctx.cordisInspect.register(provider), `tool-cordis: inspect ${provider.manifest.id}`);
     }
@@ -357,7 +362,7 @@ export function apply(ctx) {
                 source: { kind: 'plugin', plugin: name, form: 'instructions' },
             });
         });
-        return { kind: 'enter', messages: [...decision.messages, ...contexts] };
+        return { ...decision, messages: [...decision.messages, ...contexts] };
     });
 }
 function requireJsonObject(value) {

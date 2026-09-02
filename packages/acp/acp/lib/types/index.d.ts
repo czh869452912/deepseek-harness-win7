@@ -1,10 +1,10 @@
 /**
  * Automation-only Agent Client Protocol server over JSON-RPC stdio.
  *
- * The bridge exposes fresh harness sessions to trusted programmatic clients. It
- * carries prompt text/images, committed assistant text/images, cancellation,
- * and one-shot permission decisions; presentation and human-interaction
- * features stay with the harness's UI modules.
+ * The bridge exposes persistent harness sessions to trusted programmatic
+ * clients. It carries standard configuration, MCP mounts, prompt content,
+ * committed semantic updates, cancellation, and one-shot permission decisions;
+ * presentation and human-interaction features stay with the harness's UI modules.
  *
  * @module @deepseek-ai/dsh-acp
  */
@@ -12,7 +12,7 @@ import type { Context } from '@deepseek-ai/cordis';
 import Schema from '@deepseek-ai/schemastery';
 import { type Stream } from '@agentclientprotocol/sdk';
 export declare const name = "acp";
-/** The bridge creates and owns agents; every other concern is carried by the agent composition. */
+/** Core services required by the standard automation controls. */
 export declare const inject: string[];
 /** Plugin config: the provider/model selection used for each ACP-created agent. */
 export interface AcpConfig {
@@ -20,6 +20,8 @@ export interface AcpConfig {
     provider?: string;
     /** Model name for created agents. */
     model?: string;
+    /** Maximum summaries returned by one session/list page. */
+    sessionListPageSize?: number;
     /** Runtime-only transport override; production uses stdio. */
     stream?: Stream;
 }

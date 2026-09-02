@@ -7,18 +7,20 @@
  *
  * @module dsh-llm-pi-ai/stream
  */
-import { CallId, CONTEXT_WINDOW_EXCEEDED_CODE, EMPTY_RESPONSE_CODE, isContextWindowExceededError, isQuotaExceededError, LlmError, QUOTA_EXCEEDED_CODE } from '@deepseek-ai/dsh-llm';
+import { ToolCallId, CONTEXT_WINDOW_EXCEEDED_CODE, EMPTY_RESPONSE_CODE, isContextWindowExceededError, isQuotaExceededError, LlmError, QUOTA_EXCEEDED_CODE } from '@deepseek-ai/dsh-llm';
 import { isContextOverflow } from '@earendil-works/pi-ai';
 import { toPiReplayState } from "./replay.js";
 /**
  * Map pi-ai usage (reasoning folded into output by pi-ai).
  * @param usage - cumulative usage from the terminal pi-ai event.
- * @returns harness counts; cache fields appear only when non-zero (pi-ai reports zeros, not absence).
+ * @returns harness counts with pi-ai's exact total; cache fields appear only
+ *   when non-zero (pi-ai reports zeros, not absence).
  */
 export function mapUsage(usage) {
     return {
         inputTokens: usage.input,
         outputTokens: usage.output,
+        totalTokens: usage.totalTokens,
         ...usage.cacheRead > 0 ? { cacheReadTokens: usage.cacheRead } : {},
         ...usage.cacheWrite > 0 ? { cacheWriteTokens: usage.cacheWrite } : {},
     };
@@ -73,7 +75,8 @@ function classifyPiAiError(message) {
  * @returns the mapped harness reason. Recognized error text, `stop` usage above
  *   `contextWindow`, and zero-output `length` usage that fills the window map
  *   to `CONTEXT_WINDOW_EXCEEDED`; a `stop` with no content blocks maps to an
- *   `EMPTY_RESPONSE` error.
+ *   `EMPTY_RESPONSE` error, while terminal `pending` and `deferred` states map
+ *   to non-retryable `PI_AI_ERROR` failures.
  */
 export function mapStopReason(message, contextWindow) {
     const piAiOverflow = isContextOverflow(message, contextWindow);
@@ -105,6 +108,14 @@ export function mapStopReason(message, contextWindow) {
             return { kind: 'stop' };
         case 'length': return { kind: 'max-tokens' };
         case 'toolUse': return { kind: 'tool-calls' };
+        case 'pending': return {
+            kind: 'error',
+            failure: { message: `pi-ai stream for model "${message.model}" ended pending`, code: 'PI_AI_ERROR' },
+        };
+        case 'deferred': return {
+            kind: 'error',
+            failure: { message: `pi-ai deferred response for model "${message.model}" is not supported`, code: 'PI_AI_ERROR' },
+        };
         case 'aborted': return {
             kind: 'aborted',
             failure: { message: message.errorMessage ?? 'pi-ai stream aborted', code: 'ABORTED' },
@@ -121,10 +132,12 @@ export function mapStopReason(message, contextWindow) {
  * `finish` chunks (the harness protocol's other error-delivery style).
  * @param events - one assistant turn's pi-ai event stream.
  * @param contextWindow - resolved catalog capacity for usage-based overflow detection.
+ * @param callerSignal - caller cancellation state; an aborted caller makes any
+ *   in-band terminal error an aborted finish.
  * @returns the harness chunks, ending with `usage` then `finish`; throws
  *   `LlmError` (`STREAM_CLOSED`) if the source ends without a terminal event.
  */
-export async function* toStreamChunks(events, contextWindow) {
+export async function* toStreamChunks(events, contextWindow, callerSignal) {
     // pi-ai contentIndex ↔ our block index map 1:1 (both count blocks from 0
     // in stream order), but we track ids per index for tool calls.
     const toolIds = new Map();
@@ -164,7 +177,7 @@ export async function* toStreamChunks(events, contextWindow) {
                 yield {
                     type: 'tool-call-delta',
                     index: event.contentIndex,
-                    id: CallId(known?.id ?? ''),
+                    id: ToolCallId(known?.id ?? ''),
                     ...known?.name !== undefined && known.name.length > 0 ? { name: known.name } : {},
                     argumentsDelta: event.delta,
                 };
@@ -176,7 +189,7 @@ export async function* toStreamChunks(events, contextWindow) {
                     index: event.contentIndex,
                     block: {
                         type: 'tool-call',
-                        id: CallId(event.toolCall.id),
+                        id: ToolCallId(event.toolCall.id),
                         name: event.toolCall.name,
                         // pi-ai hands back the PARSED arguments; the harness vocabulary
                         // keeps the raw string.
@@ -196,7 +209,10 @@ export async function* toStreamChunks(events, contextWindow) {
                 // In-stream error delivery (pi-ai's style) → error finish chunk
                 // (the harness's other sanctioned error path besides throwing).
                 yield { type: 'usage', usage: mapUsage(event.error.usage) };
-                yield { type: 'finish', reason: mapStopReason(event.error, contextWindow) };
+                yield {
+                    type: 'finish',
+                    reason: mapStopReason(callerSignal?.aborted ? { ...event.error, stopReason: 'aborted' } : event.error, contextWindow),
+                };
                 return;
             // no default: AssistantMessageEvent is pi-ai's closed union; a new
             // event type should fail compilation here via tsc's exhaustiveness

@@ -8,9 +8,8 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
  */
 import { useState } from 'react';
 import clsx from 'clsx';
-import { HoverCard, IconArchiveOutline20, IconBranchOutline16, IconEditOutline16, IconEllipsisOutline16, IconFolderClose16, IconFolderOpen16, IconPlusOutline16, IconTrashOutline16, IconTriangleRightFill14, Menu, StateDot, } from '@deepseek-ai/dsh-client-ui-primitives';
-import { abbreviateHomePath } from '@deepseek-ai/dsh-client-runtime/client';
-import { relativeTime } from "../tree.js";
+import { HoverCard, IconArchiveOutline20, IconBranchOutline16, IconEditOutline16, IconEllipsisOutline16, IconFolderClose16, IconFolderOpen16, IconPlusOutline16, IconTrashOutline16, IconTriangleRightFill14, Menu, relativeTime, StateDot, } from '@deepseek-ai/dsh-client-ui-primitives';
+import { abbreviateHomePath } from '@deepseek-ai/dsh-util-workspace-path';
 import css from './Rows.module.css';
 /** Row display title: blank rows show the localized New Session label. */
 function displayTitle(node, t) {
@@ -79,7 +78,7 @@ export function ProjectRowItem({ group, onToggle, onCreate, actions, drag, home,
                             setMenuOpen(false);
                             // Unknown ids leave before the dispatch: a future menu row must
                             // not inherit the destructive branch as an else fallback.
-                            /* v8 ignore next -- workspaceMenuItems carries exactly these two rows today. */
+                            /* v8 ignore next -- Menu can emit only the rename and delete rows supplied above. */
                             if (id !== 'rename' && id !== 'delete')
                                 return;
                             if (id === 'rename')
@@ -159,7 +158,7 @@ export function SearchResultItem({ result, currentId, onOpen, t }) {
     const selected = result.id === currentId;
     const statuses = sessionStatuses(result, t);
     const primaryStatus = statuses[0];
-    return (_jsxs("button", { type: "button", className: clsx(css.searchResultRow, selected && css.selected), role: "treeitem", "aria-selected": selected, onClick: () => { onOpen(result.id); }, children: [_jsxs("span", { className: css.searchResultHeading, children: [_jsx("span", { className: css.slot, children: (primaryStatus.state !== 'done' || result.completed) && (_jsx(SessionStatusDots, { statuses: statuses })) }), _jsx("span", { className: css.searchResultTitle, children: result.title })] }), _jsxs("span", { className: css.searchResultMeta, children: [_jsx("span", { className: css.searchResultWorkspace, children: result.workspace }), result.snippet !== undefined && (_jsx("span", { className: css.searchResultSnippet, children: result.snippet }))] })] }));
+    return (_jsxs("button", { type: "button", className: clsx(css.searchResultRow, selected && css.selected), role: "treeitem", "aria-selected": selected, onClick: () => { onOpen(result.id); }, children: [_jsxs("span", { className: css.searchResultHeading, children: [_jsx("span", { className: css.slot, children: (primaryStatus.state !== 'done' || result.completed) && (_jsx(SessionStatusDots, { statuses: statuses })) }), _jsx("span", { className: css.searchResultTitle, children: result.title })] }), _jsxs("span", { className: css.searchResultMeta, children: [_jsx("span", { className: css.searchResultWorkspace, children: result.workspace || t('group.ungrouped') }), result.snippet !== undefined && (_jsx("span", { className: css.searchResultSnippet, children: result.snippet }))] })] }));
 }
 /**
  * One top-level 34px session row: status dot (pending user interaction outranks

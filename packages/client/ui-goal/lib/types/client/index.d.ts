@@ -6,9 +6,9 @@
  * refresh chain, and no event listener. The inject face carries only the
  * four mutation verbs through the generated Goal Remote API;
  * their CAS ref reads the session's current projected value at call time.
- * Goal creation stays on the /goal host command.
+ * This plugin does not create goals; deployments may expose /goal separately.
  */
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client';
+import type { Context as ClientContext } from '@deepseek-ai/cordis';
 import { type GoalKey } from './locales.ts';
 export { GoalBar, GoalDock } from './GoalBar.tsx';
 export type { GoalActionResult, GoalBarActions } from './slots.ts';

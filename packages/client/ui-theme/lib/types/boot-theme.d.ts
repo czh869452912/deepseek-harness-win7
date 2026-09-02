@@ -1,17 +1,17 @@
 /**
- * Host-rendered theme bootstrap for the browser's pre-plugin interval. Each
- * index response embeds the current durable built-in preference; the browser
- * resolves only `system`, then writes the same DOM fields ui-layout's
- * ThemePresenter owns after the client plugin tree activates.
+ * Theme bootstrap row for the browser's pre-plugin interval. Each index
+ * render embeds the current durable built-in preference and content font size;
+ * the browser resolves only `system`, then writes the same DOM fields
+ * ui-layout's ThemePresenter owns after the client plugin tree activates.
  */
+import type { IndexInjection } from '@deepseek-ai/dsh-host-webserver';
 import { type ThemePreference } from './theme-settings.ts';
 /**
- * Insert the theme bootstrap immediately after the opening body tag, before
- * the shell mount and module script. Body-less fragments receive it at the
- * end, where the HTML parser has already synthesized a body.
- * @param html - Raw application index HTML.
+ * The theme bootstrap as an injection row: an inline script immediately after
+ * the opening body tag, before the shell mount and module script.
  * @param preference - Current Host-backed built-in preference.
- * @returns HTML containing the theme bootstrap.
+ * @param fontSize - Current Host-backed content font size in px.
+ * @returns the body script row.
  */
-export declare function injectBootTheme(html: string, preference?: ThemePreference): string;
+export declare function bootThemeInjection(preference?: ThemePreference, fontSize?: number): IndexInjection;
 //# sourceMappingURL=boot-theme.d.ts.map

@@ -1,4 +1,4 @@
-import { closeSync, constants, mkdtempSync, openSync, readFileSync, readSync, readdirSync, unlinkSync, writeSync } from "node:fs";
+import { closeSync, constants, mkdtempSync, openSync, readFileSync, readSync, readdirSync, readlinkSync, statSync, unlinkSync, writeSync } from "node:fs";
 import { access, stat } from "node:fs/promises";
 import { delimiter, extname, isAbsolute, join, resolve } from "node:path";
 import * as nodePty from "node-pty";
@@ -70,18 +70,20 @@ var WindowsProcessInspector = class {
 	foregroundPgid(shellPid) {
 		return shellPid;
 	}
-	isStdinWaiting(_pgid) {
+	isStdinWaiting(_pgid, _shellPid) {
 		return false;
-	}
-	processTree(rootPid) {
-		return windowsProcessTree(this.internals.snapshot(), rootPid, (pid) => this.internals.processState(pid)?.started);
-	}
-	processSession(_sessionId) {
-		return [];
 	}
 	isAlive(identity) {
 		const state = this.internals.processState(identity.pid);
 		return state?.active === true && state.started === identity.started;
+	}
+	snapshot() {
+		let entries;
+		return {
+			tree: (rootPid) => windowsProcessTree(entries ??= this.internals.snapshot(), rootPid, (pid) => this.internals.processState(pid)?.started),
+			session: () => [],
+			alive: (identity) => this.isAlive(identity)
+		};
 	}
 	signalGroup(pgid, signal) {
 		this.internals.taskkill(pgid, signal === "SIGKILL");
@@ -264,6 +266,8 @@ function defaultWindowsProcessInternals() {
 const DEFAULT_INTERNALS = {
 	readFile: (path) => readFileSync(path, "utf8"),
 	readDir: (path) => readdirSync(path),
+	readLink: (path) => readlinkSync(path, "utf8"),
+	stat: (path) => statSync(path),
 	open: (path) => openSync(path, "r"),
 	read: (fd, buffer, length, position) => readSync(fd, buffer, 0, length, position),
 	close: closeSync,
@@ -285,6 +289,7 @@ function parseProcStat(text) {
 	const parentPid = Number(rest[1]);
 	const pgrp = Number(rest[2]);
 	const session = Number(rest[3]);
+	const ttyDevice = Number(rest[4]);
 	const tpgid = Number(rest[5]);
 	const started = rest[19];
 	if (![
@@ -292,6 +297,7 @@ function parseProcStat(text) {
 		parentPid,
 		pgrp,
 		session,
+		ttyDevice,
 		tpgid
 	].every(Number.isSafeInteger) || state.length !== 1 || started === void 0) return void 0;
 	return {
@@ -300,6 +306,7 @@ function parseProcStat(text) {
 		pgrp,
 		session,
 		state,
+		ttyDevice,
 		tpgid,
 		started
 	};
@@ -308,6 +315,21 @@ function readLinuxStat(internals, pid) {
 	try {
 		return parseProcStat(internals.readFile(`/proc/${pid}/stat`));
 	} catch (_unreadableProcEntry) {
+		return;
+	}
+}
+function linuxDeviceNumber(value) {
+	return value >>> 0;
+}
+function readLinuxTerminalDevice(internals, pid, ttyDevice, tid) {
+	const terminalDevice = linuxDeviceNumber(ttyDevice);
+	if (terminalDevice === 0) return void 0;
+	const path = tid === void 0 ? `/proc/${pid}/fd/0` : `/proc/${pid}/task/${tid}/fd/0`;
+	try {
+		if (internals.readLink(path) === "/dev/tty") return terminalDevice;
+		const status = internals.stat(path);
+		return status.isCharacterDevice() && linuxDeviceNumber(status.rdev) === terminalDevice ? terminalDevice : void 0;
+	} catch (_unreadableStdinDevice) {
 		return;
 	}
 }
@@ -382,9 +404,9 @@ function pollHasStdin(internals, pid, address, count) {
 	for (let offset = 0; offset + 8 <= memory.length; offset += 8) if (memory.readInt32LE(offset) === 0 && (memory.readInt16LE(offset + 4) & 1) !== 0) return true;
 	return false;
 }
-function epollHasStdin(internals, pid, epfd) {
+function epollHasStdin(internals, pid, tid, epfd) {
 	try {
-		return internals.readFile(`/proc/${pid}/fdinfo/${epfd}`).split("\n").some((line) => /^tfd:\s+0\b/.test(line.trim()));
+		return internals.readFile(`/proc/${pid}/task/${tid}/fdinfo/${epfd}`).split("\n").some((line) => /^tfd:\s+0\b/.test(line.trim()));
 	} catch (_unreadableFdInfo) {
 		return false;
 	}
@@ -406,12 +428,20 @@ const SYSCALLS = {
 		epollPwait: 22
 	}
 };
-function syscallWaitsOnStdin(internals, pid, syscall, table) {
+const SUPPORTED_SYSCALL_TABLES = Object.values(SYSCALLS);
+function linuxSyscallTables(arch) {
+	const primary = SYSCALLS[arch];
+	if (primary === void 0) return void 0;
+	return [primary, ...SUPPORTED_SYSCALL_TABLES.filter((table) => table !== primary)];
+}
+function syscallWaitsOnStdin(internals, pid, tid, syscall, tables) {
 	const [a0 = 0, a1 = 0, a2 = 0] = syscall.args;
-	if (syscall.number === table.read) return a0 === 0;
-	if (syscall.number === table.select || syscall.number === table.pselect) return a0 >= 1 && fdSetHasStdin(internals, pid, a1);
-	if (syscall.number === table.poll || syscall.number === table.ppoll) return a1 >= 1 && pollHasStdin(internals, pid, a0, a1);
-	if (syscall.number === table.epollWait || syscall.number === table.epollPwait) return a2 >= 1 && epollHasStdin(internals, pid, a0);
+	for (const table of tables) {
+		if (syscall.number === table.read) return a0 === 0;
+		if (syscall.number === table.select || syscall.number === table.pselect) return a0 >= 1 && fdSetHasStdin(internals, pid, a1);
+		if (syscall.number === table.poll || syscall.number === table.ppoll) return a1 >= 1 && pollHasStdin(internals, pid, a0, a1);
+		if (syscall.number === table.epollWait || syscall.number === table.epollPwait) return a2 >= 1 && epollHasStdin(internals, pid, tid, a0);
+	}
 	return false;
 }
 var PosixProcessInspector = class {
@@ -424,6 +454,30 @@ var PosixProcessInspector = class {
 	}
 	signalProcess(identity, signal) {
 		if (this.isAlive(identity)) this.internals.kill(identity.pid, signal);
+	}
+};
+function quiescent(state) {
+	return state !== void 0 && /^[ZXx]$/.test(state);
+}
+var PosixProcessSnapshot = class {
+	rows;
+	byPid;
+	constructor(rows) {
+		this.rows = rows;
+		this.byPid = new Map(rows.map((row) => [row.pid, row]));
+	}
+	tree(rootPid) {
+		return processTree(this.rows, rootPid);
+	}
+	session(sessionId) {
+		return this.rows.flatMap((row) => row.session === sessionId ? [{
+			pid: row.pid,
+			started: row.started
+		}] : []);
+	}
+	alive(identity) {
+		const row = this.byPid.get(identity.pid);
+		return row?.started === identity.started && !quiescent(row.state);
 	}
 };
 function processTree(entries, rootPid) {
@@ -459,40 +513,38 @@ var LinuxProcessInspector = class extends PosixProcessInspector {
 		const tpgid = readLinuxStat(this.internals, shellPid)?.tpgid;
 		return tpgid !== void 0 && tpgid > 0 ? tpgid : void 0;
 	}
-	isStdinWaiting(pgid) {
-		const table = SYSCALLS[this.arch];
-		if (table === void 0) return false;
+	isStdinWaiting(pgid, shellPid) {
+		const tables = linuxSyscallTables(this.arch);
+		if (tables === void 0) return false;
+		const shell = readLinuxStat(this.internals, shellPid);
+		if (shell === void 0) return false;
+		const terminalDevice = readLinuxTerminalDevice(this.internals, shellPid, shell.ttyDevice);
+		if (terminalDevice === void 0) return false;
 		for (const pid of numericEntries(this.internals, "/proc")) {
-			if (readLinuxStat(this.internals, pid)?.pgrp !== pgid) continue;
+			const process = readLinuxStat(this.internals, pid);
+			if (process?.pgrp !== pgid) continue;
 			for (const tid of numericEntries(this.internals, `/proc/${pid}/task`)) {
 				const syscall = readSyscall(this.internals, pid, tid);
-				if (syscall !== void 0 && syscallWaitsOnStdin(this.internals, pid, syscall, table)) return true;
+				if (syscall !== void 0 && syscallWaitsOnStdin(this.internals, pid, tid, syscall, tables) && readLinuxTerminalDevice(this.internals, pid, process.ttyDevice, tid) === terminalDevice) return true;
 			}
 		}
 		return false;
 	}
-	processTree(rootPid) {
-		return processTree(numericEntries(this.internals, "/proc").flatMap((pid) => {
+	isAlive(identity) {
+		const stat = readLinuxStat(this.internals, identity.pid);
+		return stat?.started === identity.started && !quiescent(stat.state);
+	}
+	snapshot() {
+		return new PosixProcessSnapshot(numericEntries(this.internals, "/proc").flatMap((pid) => {
 			const stat = readLinuxStat(this.internals, pid);
 			return stat === void 0 ? [] : [{
 				pid,
 				parentPid: stat.parentPid,
-				started: stat.started
+				started: stat.started,
+				session: stat.session,
+				state: stat.state
 			}];
-		}), rootPid);
-	}
-	processSession(sessionId) {
-		return numericEntries(this.internals, "/proc").flatMap((pid) => {
-			const stat = readLinuxStat(this.internals, pid);
-			return stat?.session === sessionId ? [{
-				pid,
-				started: stat.started
-			}] : [];
-		});
-	}
-	isAlive(identity) {
-		const stat = readLinuxStat(this.internals, identity.pid);
-		return stat?.started === identity.started && !/^[ZXx]$/.test(stat.state);
+		}));
 	}
 };
 function macProcessTable(internals) {
@@ -502,7 +554,9 @@ function macProcessTable(internals) {
 		return [{
 			pid: Number(match[1]),
 			parentPid: Number(match[2]),
-			started: match[3]
+			started: match[3],
+			session: void 0,
+			state: void 0
 		}];
 	});
 }
@@ -520,17 +574,14 @@ var MacProcessInspector = class extends PosixProcessInspector {
 			return;
 		}
 	}
-	isStdinWaiting(_pgid) {
+	isStdinWaiting(_pgid, _shellPid) {
 		return false;
-	}
-	processTree(rootPid) {
-		return processTree(macProcessTable(this.internals), rootPid);
-	}
-	processSession(_sessionId) {
-		return [];
 	}
 	isAlive(identity) {
 		return macProcessTable(this.internals).some((entry) => entry.pid === identity.pid && entry.started === identity.started);
+	}
+	snapshot() {
+		return new PosixProcessSnapshot(macProcessTable(this.internals));
 	}
 };
 /**
@@ -997,7 +1048,7 @@ var LocalTerminalHandle = class {
 		this.graceMs = graceMs;
 		this.platform = platform;
 		this.pid = terminal.pid;
-		this.rootIdentity = inspector.processTree(this.pid).find((member) => member.pid === this.pid);
+		this.rootIdentity = inspector.snapshot().tree(this.pid).find((member) => member.pid === this.pid);
 		this.done = this.outcome.promise;
 		this.dataDisposable = terminal.onData((data) => {
 			this.output.write(Buffer$1.from(data, "utf8"));
@@ -1017,12 +1068,12 @@ var LocalTerminalHandle = class {
 		this.terminal.write(data);
 	}
 	async inspectForeground() {
-		this.descendants();
+		this.descendants(this.inspector.snapshot());
 		const processGroupId = this.inspector.foregroundPgid(this.pid);
 		if (processGroupId === void 0) return void 0;
 		return {
 			processGroupId,
-			inputWaiting: this.inspector.isStdinWaiting(processGroupId)
+			inputWaiting: this.inspector.isStdinWaiting(processGroupId, this.pid)
 		};
 	}
 	async signalForeground(signal) {
@@ -1069,22 +1120,23 @@ var LocalTerminalHandle = class {
 			this.terminal.kill("SIGKILL");
 		} catch (_unidentifiedShellExitedDuringHostExit) {}
 	}
-	survivors(members) {
-		return members.filter((member) => this.inspector.isAlive(member));
+	survivors(members, observed) {
+		return members.filter((member) => observed.alive(member));
 	}
-	descendants() {
-		const tree = this.inspector.processTree(this.pid);
+	descendants(observed) {
+		const tree = observed.tree(this.pid);
 		const root = tree.find((member) => member.pid === this.pid);
 		const rootVerified = this.rootIdentity !== void 0 && root !== void 0 && root.started === this.rootIdentity.started;
-		this.trackedDescendants = this.survivors(this.unionMembers(this.trackedDescendants, ...rootVerified ? [tree, this.inspector.processSession(this.pid)] : []).filter((member) => member.pid !== this.pid));
+		this.trackedDescendants = this.survivors(this.unionMembers(this.trackedDescendants, ...rootVerified ? [tree, observed.session(this.pid)] : []).filter((member) => member.pid !== this.pid), observed);
 		return this.trackedDescendants;
 	}
 	async waitForMembers(members) {
+		if (members.length === 0) return [];
 		const until = Date.now() + this.graceMs;
-		let survivors = this.survivors(members);
+		let survivors = this.survivors(members, this.inspector.snapshot());
 		while (survivors.length > 0 && Date.now() < until) {
 			await delay(Math.min(25, Math.max(1, until - Date.now())));
-			survivors = this.survivors(members);
+			survivors = this.survivors(members, this.inspector.snapshot());
 		}
 		return survivors;
 	}
@@ -1096,7 +1148,7 @@ var LocalTerminalHandle = class {
 	forceStopDescendants() {
 		let members = this.trackedDescendants;
 		try {
-			members = this.descendants();
+			members = this.descendants(this.inspector.snapshot());
 		} catch (_processTableUnavailableDuringHostExit) {}
 		this.signalMembers(members, "SIGKILL");
 	}
@@ -1112,13 +1164,14 @@ var LocalTerminalHandle = class {
 		return members;
 	}
 	async stopDescendants() {
-		const captured = this.descendants();
+		const captured = this.descendants(this.inspector.snapshot());
 		this.signalMembers(captured, "SIGTERM");
 		const capturedSurvivors = await this.waitForMembers(captured);
-		const members = this.unionMembers(capturedSurvivors, this.descendants());
+		const members = this.unionMembers(capturedSurvivors, this.descendants(this.inspector.snapshot()));
 		this.signalMembers(members, "SIGKILL");
 		const survivors = await this.waitForMembers(members);
-		return this.survivors(this.unionMembers(survivors, this.descendants()));
+		const observed = this.inspector.snapshot();
+		return this.survivors(this.unionMembers(survivors, this.descendants(observed)), observed);
 	}
 	async stopShell() {
 		if (this.platform === "win32") {

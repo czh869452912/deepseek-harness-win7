@@ -1,7 +1,7 @@
 /**
  * HMR plugin, node half: the host end of the dev reload chain. One interval
- * stat-polls every graph row's client bundle (polling by design: network
- * mounts deliver no inotify events), reports content changes through
+ * stat-polls every graph row's client bundle (polling by design: network mounts
+ * deliver no inotify events), reports changes through
  * `clientModuleHost.rebuilt(id)`, and serves the `/plugins/events` SSE channel
  * broadcasting graph/rebuilt frames to the browser half (src/client/).
  * The web bundle mounts this row unconditionally: without a rebuild
@@ -23,6 +23,16 @@ export const Config = z.object({
 function sseData(frame) {
     return `data: ${JSON.stringify(frame)}\n\n`;
 }
+/** Snapshot the executable bundle metadata that drives reloads. */
+function bundleStat(path) {
+    const bundle = statSync(path);
+    return { mtimeMs: bundle.mtimeMs, size: bundle.size };
+}
+/** Whether the executable bundle is unchanged since the last successful re-hash. */
+function sameBundleStat(left, right) {
+    return left.mtimeMs === right.mtimeMs
+        && left.size === right.size;
+}
 /**
  * Mount the dev chain: bundle watches, rebuilt reporting, and the SSE channel.
  * @param ctx - host plugin context carrying clientModuleHost and webServer.
@@ -35,8 +45,8 @@ export function apply(ctx, config) {
     const watched = new Map();
     const rehash = (id, watch, current) => {
         try {
-            // rebuilt() re-hashes; an unchanged hash stays silent (clientModuleHost
-            // fires onRebuilt only on a real rev change).
+            // rebuilt() replaces the opaque startup rev on its first call; later
+            // calls stay silent when the content hash is unchanged.
             ctx.clientModules.rebuilt(id);
         }
         catch (error) {
@@ -51,29 +61,29 @@ export function apply(ctx, config) {
         watch.size = current.size;
         watch.dirty = false;
     };
-    const watchRow = (id, path) => {
-        let baseline;
+    const watchRow = (id, baseline) => {
+        const watch = { ...baseline, dirty: false };
+        watched.set(id, watch);
+        let current;
         try {
-            baseline = statSync(path);
+            current = bundleStat(baseline.path);
         }
         catch (error) {
-            watched.set(id, { path, mtimeMs: 0, size: 0, dirty: true });
+            watch.dirty = true;
             if (error.code !== 'ENOENT')
                 ctx.logger.warn(error);
             return;
         }
-        const watch = { path, mtimeMs: baseline.mtimeMs, size: baseline.size, dirty: false };
-        watched.set(id, watch);
-        // The module host hashed before publishing the graph. Re-hash immediately
-        // after capturing this baseline so a write in between cannot become an
-        // already-current baseline paired with a stale graph rev.
-        rehash(id, watch, baseline);
+        // The module host captured its baseline before reading the bytes in the
+        // startup batch. Only a mismatch crosses into the content-hash path.
+        if (!sameBundleStat(current, watch))
+            rehash(id, watch, current);
     };
     const pollWatches = () => {
         for (const [id, watch] of watched) {
             let current;
             try {
-                current = statSync(watch.path);
+                current = bundleStat(watch.path);
             }
             catch (error) {
                 watch.dirty = true;
@@ -81,7 +91,7 @@ export function apply(ctx, config) {
                     ctx.logger.warn(error);
                 continue;
             }
-            if (!watch.dirty && current.mtimeMs === watch.mtimeMs && current.size === watch.size)
+            if (!watch.dirty && sameBundleStat(current, watch))
                 continue;
             // Stat-before-hash preserves a detectable older baseline for writes that
             // land during hashing. Repeated stat changes heal a torn read.
@@ -93,18 +103,18 @@ export function apply(ctx, config) {
     const syncWatches = () => {
         const rows = new Map();
         for (const row of ctx.clientModules.graph().entries) {
-            const path = ctx.clientModules.clientPath(row.id);
-            if (path !== undefined)
-                rows.set(row.id, path);
+            const watch = ctx.clientModules.artifactBaseline(row.id);
+            if (watch !== undefined)
+                rows.set(row.id, watch);
         }
         for (const [id, watch] of watched) {
-            if (rows.get(id) === watch.path)
+            if (rows.get(id)?.path === watch.path)
                 continue;
             watched.delete(id);
         }
-        for (const [id, path] of rows) {
+        for (const [id, watch] of rows) {
             if (!watched.has(id))
-                watchRow(id, path);
+                watchRow(id, watch);
         }
     };
     ctx.effect(() => {

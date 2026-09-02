@@ -32,7 +32,10 @@ export function apply(ctx) {
                 const controller = inputTriggers.sessionOf(actx);
                 return {
                     menu: controller.menu,
-                    onPick: (source, index) => { controller.pick(source, index); },
+                    headers: controller.headers,
+                    onPick: (source, index, action) => { controller.pick(source, index, action); },
+                    onCrumb: (source, index) => { controller.pickCrumb(source, index); },
+                    onHover: (source, index) => { controller.hover(source, index); },
                     onDismiss: () => { controller.dismiss(); },
                 };
             },

@@ -35,6 +35,53 @@ export class SessionPreparations {
         return source;
     }
     /**
+     * Borrow one prepared source and pin its ready entry against LRU eviction.
+     * @param id - session identity.
+     * @param load - cold loader used when no entry exists.
+     * @param signal - optional cancellation signal while waiting.
+     * @returns a caller-owned observation lease.
+     */
+    async borrow(id, load, signal) {
+        const entry = this.entryFor(id, load);
+        const pinned = this.entries.get(id) === entry;
+        if (pinned)
+            entry.pins += 1;
+        let loaded;
+        try {
+            loaded = signal === undefined
+                ? await entry.result
+                : await observeQueuedAbort(entry.result, signal);
+        }
+        catch (error) {
+            if (pinned && this.entries.get(id) === entry) {
+                entry.pins -= 1;
+                if (entry.phase === 'ready')
+                    this.touch(entry);
+            }
+            throw error;
+        }
+        const source = entry.source ?? loaded;
+        if (this.entries.get(id) !== entry) {
+            return { source, [Symbol.dispose]: () => { } };
+        }
+        if (entry.phase === 'ready')
+            this.touch(entry);
+        let released = false;
+        return {
+            source,
+            [Symbol.dispose]: () => {
+                if (released)
+                    return;
+                released = true;
+                if (this.entries.get(id) !== entry)
+                    return;
+                entry.pins -= 1;
+                if (entry.phase === 'ready')
+                    this.touch(entry);
+            },
+        };
+    }
+    /**
      * Reserve one ready source after committing its pending durable repair.
      * @param id - session identity.
      * @param load - cold loader used when no entry exists.
@@ -203,6 +250,7 @@ export class SessionPreparations {
             id,
             result: deferred.promise,
             phase: 'loading',
+            pins: 0,
         };
         this.entries.set(id, entry);
         let loading;
@@ -258,7 +306,7 @@ export class SessionPreparations {
         if (readyCount <= this.capacity)
             return;
         for (const [id, candidate] of this.entries) {
-            if (candidate.phase !== 'ready')
+            if (candidate.phase !== 'ready' || candidate.pins > 0)
                 continue;
             this.entries.delete(id);
             return;

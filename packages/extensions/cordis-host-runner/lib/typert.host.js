@@ -35,16 +35,16 @@ const _deepseek_ai_dsh_cordis_host_runner_dynamicCordisRunner_inventory_result$s
   'pluginRunId': z.intersection(z.string(), z.unknown()),
   'packageId': z.intersection(z.string(), z.unknown()),
   'mode': z.union([z.literal("run"), z.literal("update")]),
-  'status': z.union([z.literal("rejected"), z.literal("awaiting-approval"), z.literal("running"), z.literal("cancelled"), z.literal("starting-host"), z.literal("client-pending"), z.literal("waiting"), z.literal("failed"), z.literal("stopped")]),
+  'status': z.union([z.literal("running"), z.literal("failed"), z.literal("rejected"), z.literal("awaiting-approval"), z.literal("cancelled"), z.literal("starting-host"), z.literal("client-pending"), z.literal("waiting"), z.literal("stopped")]),
   'approvalRequestId': z.intersection(z.string(), z.unknown()).optional(),
   'requiresApproval': z.boolean().optional(),
   'host': z.object({
-  'status': z.union([z.literal("running"), z.literal("waiting"), z.literal("failed"), z.literal("stopped"), z.literal("absent"), z.literal("pending")]),
+  'status': z.union([z.literal("pending"), z.literal("running"), z.literal("failed"), z.literal("waiting"), z.literal("stopped"), z.literal("absent")]),
   'waitingFor': z.array(z.string()),
   'error': z.string().optional(),
 }),
   'client': z.object({
-  'status': z.union([z.literal("running"), z.literal("waiting"), z.literal("failed"), z.literal("stopped"), z.literal("absent"), z.literal("pending")]),
+  'status': z.union([z.literal("pending"), z.literal("running"), z.literal("failed"), z.literal("waiting"), z.literal("stopped"), z.literal("absent")]),
   'waitingFor': z.array(z.string()),
   'error': z.string().optional(),
 }),
@@ -154,7 +154,7 @@ const _deepseek_ai_dsh_cordis_host_runner_dynamicCordisRunner_settleUserRun_para
 })])
 const _deepseek_ai_dsh_cordis_host_runner_dynamicCordisRunner_settleUserRun_result$schema = z.union([z.object({
   'ok': z.literal(true),
-  'status': z.union([z.literal("awaiting-approval"), z.literal("starting"), z.literal("running")]),
+  'status': z.union([z.literal("running"), z.literal("awaiting-approval"), z.literal("starting")]),
   'pluginId': z.intersection(z.string(), z.unknown()),
   'packageId': z.intersection(z.string(), z.unknown()),
   'pluginRunId': z.intersection(z.string(), z.unknown()),
@@ -824,7 +824,7 @@ export const TYPERT = {
           },
           {
             "name": "AgentOptions",
-            "declaration": "export interface AgentOptions {\n    provider?: string;\n    model?: string;\n    maxTokens?: number;\n}"
+            "declaration": "export interface AgentOptions {\n    provider?: string;\n    model?: string;\n    reasoningEffort?: ReasoningEffortId;\n    maxTokens?: number;\n    subagentDepth?: number;\n}"
           },
           {
             "name": "AgentStatus",
@@ -859,20 +859,8 @@ export const TYPERT = {
             "declaration": "export type Branded<B extends string> = string & { readonly [BRAND]: B; };"
           },
           {
-            "name": "CallId",
-            "declaration": "export type CallId = Branded<'CallId'>;"
-          },
-          {
             "name": "CancelOptions",
             "declaration": "export interface CancelOptions {\n    keepInbox?: boolean | undefined;\n}"
-          },
-          {
-            "name": "CodeDispatchEventData",
-            "declaration": "export interface CodeDispatchEventData extends CodeDispatchStartEventData {\n    isError: boolean;\n    content: ContentBlock[];\n}"
-          },
-          {
-            "name": "CodeDispatchStartEventData",
-            "declaration": "export interface CodeDispatchStartEventData {\n    rootCallId: CallId;\n    parentCallId: CallId;\n    subCallId: CallId;\n    name: string;\n    arguments: unknown;\n}"
           },
           {
             "name": "CommandId",
@@ -909,6 +897,14 @@ export const TYPERT = {
           {
             "name": "ContextSnapshotSection",
             "declaration": "export interface ContextSnapshotSection {\n    readonly name: string;\n    readonly text: string;\n}"
+          },
+          {
+            "name": "ContinuableSubagentDescriptorData",
+            "declaration": "export interface ContinuableSubagentDescriptorData extends SubagentDescriptorBase {\n    readonly mode: 'continuable';\n    readonly label: string;\n    readonly agentProvider?: string;\n    readonly agentModel?: string;\n    readonly agentReasoningEffort?: ReasoningEffortId;\n    readonly persona?: string;\n    readonly toolFilter?: ToolRestriction;\n}"
+          },
+          {
+            "name": "CoordinatorMessageSource",
+            "declaration": "export interface CoordinatorMessageSource {\n    readonly kind: 'coordinator';\n    readonly form: 'relay';\n    readonly senderSessionId: SessionId;\n}"
           },
           {
             "name": "CordisInspectMethodManifest",
@@ -1000,7 +996,7 @@ export const TYPERT = {
           },
           {
             "name": "ImageAttachmentRef",
-            "declaration": "export interface ImageAttachmentRef {\n    attachmentId: AttachmentId;\n    mediaType: ImageMediaType;\n    bytes: number;\n    width: number;\n    height: number;\n    name?: string;\n}"
+            "declaration": "export interface ImageAttachmentRef {\n    attachmentId: AttachmentId;\n    mediaType: ImageMediaType;\n    bytes: number;\n    width: number;\n    height: number;\n    name?: string;\n    originalDimensions?: { width: number; height: number; };\n}"
           },
           {
             "name": "ImageBlock",
@@ -1048,15 +1044,31 @@ export const TYPERT = {
           },
           {
             "name": "MessageSourceMap",
-            "declaration": "export interface MessageSourceMap {\n    user: { kind: 'user'; };\n    plugin: { kind: 'plugin'; plugin: string; } & ContextFormed;\n    model: ModelMessageSource;\n    tool: ToolMessageSource;\n    goal: GoalMessageSource;\n    'session-reference': SessionReferenceSource;\n}"
+            "declaration": "export interface MessageSourceMap {\n    user: { kind: 'user'; };\n    plugin: { kind: 'plugin'; plugin: string; } & ContextFormed;\n    model: ModelMessageSource;\n    tool: ToolMessageSource;\n    'user-rpc': { kind: 'user'; rpcId: SessionRequestId; clientTimeZone?: string; };\n    coordinator: CoordinatorMessageSource;\n    'subagent-report': SubagentReportMessageSource;\n    'subagent-settled': SubagentSettledMessageSource;\n    'skill-invocation': SkillInvocationSource;\n    'team-message': TeamMessageSource;\n    goal: GoalMessageSource;\n    'session-reference': SessionReferenceSource;\n}"
           },
           {
             "name": "ModelMessageSource",
             "declaration": "export interface ModelMessageSource extends AssistantProvenance {\n    kind: 'model';\n}"
           },
           {
+            "name": "ModelSelection",
+            "declaration": "export interface ModelSelection {\n    readonly provider: string;\n    readonly model: string;\n    readonly reasoningEffort?: string;\n}"
+          },
+          {
+            "name": "OneShotSubagentDescriptorData",
+            "declaration": "export interface OneShotSubagentDescriptorData extends SubagentDescriptorBase {\n    readonly mode: 'one-shot';\n    readonly label?: string;\n}"
+          },
+          {
             "name": "ProviderRequestId",
             "declaration": "export type ProviderRequestId = Branded<'ProviderRequestId'>;"
+          },
+          {
+            "name": "PtcDispatchEventData",
+            "declaration": "export interface PtcDispatchEventData extends PtcDispatchStartEventData {\n    isError: boolean;\n    content: ContentBlock[];\n}"
+          },
+          {
+            "name": "PtcDispatchStartEventData",
+            "declaration": "export interface PtcDispatchStartEventData {\n    rootCallId: ToolCallId;\n    parentCallId: ToolCallId;\n    subCallId: ToolCallId;\n    name: string;\n    arguments: unknown;\n}"
           },
           {
             "name": "ReasoningBlock",
@@ -1076,7 +1088,11 @@ export const TYPERT = {
           },
           {
             "name": "RequestHeaderReason",
-            "declaration": "export type RequestHeaderReason = 'initial' | 'resume' | 'change';"
+            "declaration": "export type RequestHeaderReason = 'initial' | 'resume' | 'change' | 'series';"
+          },
+          {
+            "name": "SandboxMode",
+            "declaration": "export type SandboxMode = 'read-only' | 'workspace-write' | 'danger-full-access';"
           },
           {
             "name": "Session",
@@ -1084,11 +1100,11 @@ export const TYPERT = {
           },
           {
             "name": "SessionEvent",
-            "declaration": "export type SessionEvent<T extends SessionEventType = SessionEventType> = { [K in SessionEventType]: { type: K; seq: number; time: number; data: SessionEventMap[K]; ignorable?: true; } & (K extends SurfaceEventType ? { sourceEventSeqs?: number[]; surfaceOp?: SurfaceOp; } : object) }[T];"
+            "declaration": "export type SessionEvent<T extends SessionEventType = SessionEventType> = { [K in SessionEventType]: { type: K; seq: number; time: number; data: SessionEventMap[K]; } & (K extends SurfaceEventType ? { sourceEventSeqs?: number[]; surfaceOp?: SurfaceOp; } : object) }[T];"
           },
           {
             "name": "SessionEventMap",
-            "declaration": "export interface SessionEventMap {\n    'turn/start': { turn: number; };\n    'turn/end': { turn: number; reason: TurnEndReason; };\n    'step/start': { turn: number; step: number; };\n    'step/end': { turn: number; step: number; };\n    'user/message': UserMessage;\n    'assistant/chunk': { turn: number; step: number; chunk: StreamChunk; };\n    'assistant/message': { turn: number; step: number; message: AssistantMessage; usage?: TokenUsage; interrupted?: true; };\n    'tool/call': { turn: number; step: number; callId: CallId; name: string; arguments: string; };\n    'tool/result': { turn: number; step: number; message: ToolResultMessage; error?: { name: string; code: string; }; meta?: JsonValue; };\n    'todo/write': { todos: TodoItem[]; };\n    'request/header': { header: EpochHeader; reason: RequestHeaderReason; };\n    'request/context': RequestContext;\n    'session/end-seed': Record<string, never>;\n    'agent/inbox/spliced': { target: InboxTarget; start: number; removedCount?: number; inserted: UserMessage[]; outcome?: 'canceled'; };\n    'command/run': { commandId: CommandId; name: string; args?: string; source: CommandSource; };\n    'command/done': { commandId: CommandId; kind: 'success' | 'error'; text?: string; sourceEventSeq?: number; };\n    'approval/asked': { id: ApprovalRequestId; toolName: string; callId?: CallId; reason?: string; };\n    'approval/decided': { id: ApprovalRequestId; outcome: ApprovalOutcome; };\n    'approval/policy': { policy: ApprovalPolicy; source?: 'delegation'; };\n    'tool/code-dispatch-start': CodeDispatchStartEventData;\n    'tool/code-dispatch': CodeDispatchEventData;\n    'goal/change': GoalChangeMeta;\n    'session/title': SessionTitleEventData;\n    'compaction/start': { compactionId: CompactionId; sourceCommandId?: CommandId; turn: number | null; };\n    'compaction/summary': { compactionId: CompactionId; sourceCommandId?: CommandId; summary: ContentBlock[]; shadowedRange: { start: number; end: number; }; shadowedSeqs: number[]; shadowedTokenCount: number; provider: string; model: string; maxTokens?: number; usage?: TokenUsage; } & ({ rawOutput: ContentBlock[]; llmStreamCall: true; } | { rawOutput?: ContentBlock[]; llmStreamCall?: never; });\n    'compaction/end': { compactionId: CompactionId; sourceCommandId?: CommandId; turn: number | null; error?: string; };\n    'compaction/prune': { shadowedRange: { start: number; end: number; }; shadowedSeqs: number[]; shadowedTokenCount: number; };\n}"
+            "declaration": "export interface SessionEventMap {\n    'turn/start': { turn: number; };\n    'turn/end': { turn: number; reason: TurnEndReason; };\n    'step/start': { turn: number; step: number; };\n    'step/end': { turn: number; step: number; };\n    'user/message': UserMessage;\n    'assistant/chunk': { turn: number; step: number; chunk: StreamChunk; };\n    'assistant/message': { turn: number; step: number; message: AssistantMessage; usage?: TokenUsage; interrupted?: true; };\n    'tool/call': { turn: number; step: number; callId: ToolCallId; name: string; arguments: string; };\n    'tool/result': { turn: number; step: number; message: ToolResultMessage; error?: { name: string; code: string; }; meta?: JsonValue; };\n    'request/header': { header: EpochHeader; reason: RequestHeaderReason; startsSeries?: true; };\n    'request/context': RequestContext;\n    'session/end-seed': Record<string, never>;\n    'agent/inbox/spliced': { target: InboxTarget; start: number; removedCount?: number; inserted: UserMessage[]; outcome?: 'canceled'; };\n    'approval/asked': { id: ApprovalRequestId; toolName: string; callId?: ToolCallId; reason?: string; };\n    'approval/decided': { id: ApprovalRequestId; outcome: ApprovalOutcome; };\n    'approval/policy': { policy: ApprovalPolicy; source?: 'delegation'; };\n    'tool/code-dispatch-start': PtcDispatchStartEventData;\n    'tool/code-dispatch': PtcDispatchEventData;\n    'agent-preset/selected': { agentPreset: string; };\n    'session/title': SessionTitleEventData;\n    'todo/write': { todos: TodoItem[]; };\n    'model/selection': ModelSelection;\n    'subagent/descriptor': SubagentDescriptorData;\n    'sandbox/mode': { mode: SandboxMode; source?: 'delegation'; };\n    'command/run': { commandId: CommandId; name: string; args?: string; source: CommandSource; };\n    'command/done': { commandId: CommandId; kind: 'success' | 'error'; text?: string; sourceEventSeq?: number; };\n    'team/member': { version: 1; teamId: TeamId; member: TeamMemberSnapshot; };\n    'team/task': { version: 1; teamId: TeamId; task: TeamTaskSnapshot; };\n    'team/message/queued': { version: 1; teamId: TeamId; message: TeamMessageSnapshot; };\n    'team/message/delivered': { version: 1; teamId: TeamId; messageId: TeamMessageId; targetId: SessionId; };\n    'goal/change': GoalChangeMeta;\n    'compaction/start': { compactionId: CompactionId; sourceCommandId?: CommandId; turn: number | null; };\n    'compaction/summary': { compactionId: CompactionId; sourceCommandId?: CommandId; summary: ContentBlock[]; shadowedRange: { start: number; end: number; }; shadowedSeqs: number[]; shadowedTokenCount: number; provider: string; model: string; maxTokens?: number; usage?: TokenUsage; } & ({ rawOutput: ContentBlock[]; llmStreamCall: true; } | { rawOutput?: ContentBlock[]; llmStreamCall?: never; });\n    'compaction/end': { compactionId: CompactionId; sourceCommandId?: CommandId; turn: number | null; error?: string; };\n    'compaction/prune': { shadowedRange: { start: number; end: number; }; shadowedSeqs: number[]; shadowedTokenCount: number; };\n}"
           },
           {
             "name": "SessionEventType",
@@ -1105,6 +1121,10 @@ export const TYPERT = {
           {
             "name": "SessionReferenceSource",
             "declaration": "export interface SessionReferenceSource {\n    kind: 'session-reference';\n    form: 'recall';\n    version: 1;\n    references: { sessionId: string; label: string; capturedThroughSeq: number | null; compacted: boolean; originalMessages: number; retainedMessages: number; omittedMessages: number; omittedBytes: number; truncated: boolean; inputIndex: number; }[];\n}"
+          },
+          {
+            "name": "SessionRequestId",
+            "declaration": "export type SessionRequestId = Branded<'session-request-id'>;"
           },
           {
             "name": "SessionSurface",
@@ -1127,8 +1147,28 @@ export const TYPERT = {
             "declaration": "export type SessionTitleSource = { readonly kind: 'fallback'; } | { readonly kind: 'provider'; readonly provider: SessionTitleProviderId; readonly model?: SessionTitleModelProvenance; } | { readonly kind: 'user'; };"
           },
           {
+            "name": "SkillInvocationSource",
+            "declaration": "export interface SkillInvocationSource {\n    readonly kind: 'skill-invocation';\n    readonly name: string;\n    readonly form: 'instructions';\n}"
+          },
+          {
             "name": "StreamChunk",
-            "declaration": "export type StreamChunk = { type: 'block-start'; index: number; blockType: ContentBlockType; } | { type: 'text-delta'; index: number; text: string; } | { type: 'reasoning-delta'; index: number; text: string; } | { type: 'tool-call-delta'; index: number; id: CallId; name?: string; argumentsDelta: string; } | { type: 'block-end'; index: number; block: ContentBlock; } | { type: 'usage'; usage: TokenUsage; } | { type: 'finish'; reason: FinishReason; replayState?: ReplayEnvelope; };"
+            "declaration": "export type StreamChunk = { type: 'block-start'; index: number; blockType: ContentBlockType; } | { type: 'text-delta'; index: number; text: string; } | { type: 'reasoning-delta'; index: number; text: string; } | { type: 'tool-call-delta'; index: number; id: ToolCallId; name?: string; argumentsDelta: string; } | { type: 'block-end'; index: number; block: ContentBlock; } | { type: 'usage'; usage: TokenUsage; } | { type: 'finish'; reason: FinishReason; replayState?: ReplayEnvelope; };"
+          },
+          {
+            "name": "SubagentDescriptorBase",
+            "declaration": "export interface SubagentDescriptorBase {\n    readonly version: number;\n    readonly mode: 'one-shot' | 'continuable';\n    readonly provider: string;\n}"
+          },
+          {
+            "name": "SubagentDescriptorData",
+            "declaration": "export type SubagentDescriptorData = OneShotSubagentDescriptorData | ContinuableSubagentDescriptorData;"
+          },
+          {
+            "name": "SubagentReportMessageSource",
+            "declaration": "export interface SubagentReportMessageSource {\n    readonly kind: 'subagent-report';\n    readonly form: 'relay';\n    readonly senderSessionId: SessionId;\n}"
+          },
+          {
+            "name": "SubagentSettledMessageSource",
+            "declaration": "export interface SubagentSettledMessageSource {\n    readonly kind: 'subagent-settled';\n    readonly form: 'notice';\n    readonly summary: string;\n    readonly senderSessionId: SessionId;\n}"
           },
           {
             "name": "SurfaceEventType",
@@ -1143,6 +1183,42 @@ export const TYPERT = {
             "declaration": "export type SurfaceOp = 'append' | { op: 'replace'; start: number; end: number; };"
           },
           {
+            "name": "TeamId",
+            "declaration": "export type TeamId = Branded<'TeamId'>;"
+          },
+          {
+            "name": "TeamMemberPhase",
+            "declaration": "export type TeamMemberPhase = 'provisioning' | 'active' | 'failed';"
+          },
+          {
+            "name": "TeamMemberSnapshot",
+            "declaration": "export interface TeamMemberSnapshot {\n    readonly id: SessionId;\n    readonly name: string;\n    readonly description: string;\n    readonly provider: string;\n    readonly context: 'fresh' | 'fork';\n    readonly phase: TeamMemberPhase;\n    readonly error?: string;\n}"
+          },
+          {
+            "name": "TeamMessageId",
+            "declaration": "export type TeamMessageId = Branded<'TeamMessageId'>;"
+          },
+          {
+            "name": "TeamMessageSnapshot",
+            "declaration": "export interface TeamMessageSnapshot {\n    readonly id: TeamMessageId;\n    readonly senderId: SessionId;\n    readonly senderName: string;\n    readonly targetId: SessionId;\n    readonly delivery: 'quiet' | 'wakeup';\n    readonly content: ContentBlock[];\n}"
+          },
+          {
+            "name": "TeamMessageSource",
+            "declaration": "export interface TeamMessageSource {\n    readonly kind: 'team-message';\n    readonly teamId: TeamId;\n    readonly messageId: TeamMessageId;\n    readonly senderId: SessionId;\n    readonly senderName: string;\n}"
+          },
+          {
+            "name": "TeamTaskId",
+            "declaration": "export type TeamTaskId = Branded<'TeamTaskId'>;"
+          },
+          {
+            "name": "TeamTaskSnapshot",
+            "declaration": "export interface TeamTaskSnapshot {\n    readonly id: TeamTaskId;\n    readonly revision: number;\n    readonly subject: string;\n    readonly description: string;\n    readonly status: TeamTaskStatus;\n    readonly ownerId?: SessionId;\n    readonly blockedBy: TeamTaskId[];\n    readonly writeScopes: string[];\n}"
+          },
+          {
+            "name": "TeamTaskStatus",
+            "declaration": "export type TeamTaskStatus = 'pending' | 'in_progress' | 'completed' | 'deleted';"
+          },
+          {
             "name": "TextBlock",
             "declaration": "export interface TextBlock {\n    type: 'text';\n    text: string;\n}"
           },
@@ -1152,19 +1228,27 @@ export const TYPERT = {
           },
           {
             "name": "TokenUsage",
-            "declaration": "export interface TokenUsage {\n    inputTokens: number;\n    outputTokens: number;\n    cacheReadTokens?: number;\n    cacheWriteTokens?: number;\n    reasoningTokens?: number;\n}"
+            "declaration": "export interface TokenUsage {\n    inputTokens: number;\n    outputTokens: number;\n    totalTokens?: number;\n    cacheReadTokens?: number;\n    cacheWriteTokens?: number;\n    reasoningTokens?: number;\n}"
           },
           {
             "name": "ToolCallBlock",
-            "declaration": "export interface ToolCallBlock {\n    type: 'tool-call';\n    id: CallId;\n    name: string;\n    arguments: string;\n}"
+            "declaration": "export interface ToolCallBlock {\n    type: 'tool-call';\n    id: ToolCallId;\n    name: string;\n    arguments: string;\n}"
+          },
+          {
+            "name": "ToolCallId",
+            "declaration": "export type ToolCallId = Branded<'ToolCallId'>;"
           },
           {
             "name": "ToolMessageSource",
-            "declaration": "export interface ToolMessageSource {\n    kind: 'tool';\n    callId: CallId;\n}"
+            "declaration": "export interface ToolMessageSource {\n    kind: 'tool';\n    callId: ToolCallId;\n}"
+          },
+          {
+            "name": "ToolRestriction",
+            "declaration": "export interface ToolRestriction {\n    readonly allow?: readonly string[];\n    readonly deny?: readonly string[];\n}"
           },
           {
             "name": "ToolResultBlock",
-            "declaration": "export interface ToolResultBlock {\n    type: 'tool-result';\n    toolCallId: CallId;\n    content: ContentBlock[];\n    isError?: boolean;\n}"
+            "declaration": "export interface ToolResultBlock {\n    type: 'tool-result';\n    toolCallId: ToolCallId;\n    content: ContentBlock[];\n    isError?: boolean;\n}"
           },
           {
             "name": "ToolResultMessage",
@@ -1359,7 +1443,7 @@ export const TYPERT = {
           },
           {
             "name": "AgentOptions",
-            "declaration": "export interface AgentOptions {\n    provider?: string;\n    model?: string;\n    maxTokens?: number;\n}"
+            "declaration": "export interface AgentOptions {\n    provider?: string;\n    model?: string;\n    reasoningEffort?: ReasoningEffortId;\n    maxTokens?: number;\n    subagentDepth?: number;\n}"
           },
           {
             "name": "AgentStatus",
@@ -1398,20 +1482,8 @@ export const TYPERT = {
             "declaration": "export type Branded<B extends string> = string & { readonly [BRAND]: B; };"
           },
           {
-            "name": "CallId",
-            "declaration": "export type CallId = Branded<'CallId'>;"
-          },
-          {
             "name": "CancelOptions",
             "declaration": "export interface CancelOptions {\n    keepInbox?: boolean | undefined;\n}"
-          },
-          {
-            "name": "CodeDispatchEventData",
-            "declaration": "export interface CodeDispatchEventData extends CodeDispatchStartEventData {\n    isError: boolean;\n    content: ContentBlock[];\n}"
-          },
-          {
-            "name": "CodeDispatchStartEventData",
-            "declaration": "export interface CodeDispatchStartEventData {\n    rootCallId: CallId;\n    parentCallId: CallId;\n    subCallId: CallId;\n    name: string;\n    arguments: unknown;\n}"
           },
           {
             "name": "CommandId",
@@ -1448,6 +1520,14 @@ export const TYPERT = {
           {
             "name": "ContextSnapshotSection",
             "declaration": "export interface ContextSnapshotSection {\n    readonly name: string;\n    readonly text: string;\n}"
+          },
+          {
+            "name": "ContinuableSubagentDescriptorData",
+            "declaration": "export interface ContinuableSubagentDescriptorData extends SubagentDescriptorBase {\n    readonly mode: 'continuable';\n    readonly label: string;\n    readonly agentProvider?: string;\n    readonly agentModel?: string;\n    readonly agentReasoningEffort?: ReasoningEffortId;\n    readonly persona?: string;\n    readonly toolFilter?: ToolRestriction;\n}"
+          },
+          {
+            "name": "CoordinatorMessageSource",
+            "declaration": "export interface CoordinatorMessageSource {\n    readonly kind: 'coordinator';\n    readonly form: 'relay';\n    readonly senderSessionId: SessionId;\n}"
           },
           {
             "name": "CordisDynamicPackageId",
@@ -1627,7 +1707,7 @@ export const TYPERT = {
           },
           {
             "name": "ImageAttachmentRef",
-            "declaration": "export interface ImageAttachmentRef {\n    attachmentId: AttachmentId;\n    mediaType: ImageMediaType;\n    bytes: number;\n    width: number;\n    height: number;\n    name?: string;\n}"
+            "declaration": "export interface ImageAttachmentRef {\n    attachmentId: AttachmentId;\n    mediaType: ImageMediaType;\n    bytes: number;\n    width: number;\n    height: number;\n    name?: string;\n    originalDimensions?: { width: number; height: number; };\n}"
           },
           {
             "name": "ImageBlock",
@@ -1675,15 +1755,31 @@ export const TYPERT = {
           },
           {
             "name": "MessageSourceMap",
-            "declaration": "export interface MessageSourceMap {\n    user: { kind: 'user'; };\n    plugin: { kind: 'plugin'; plugin: string; } & ContextFormed;\n    model: ModelMessageSource;\n    tool: ToolMessageSource;\n    goal: GoalMessageSource;\n    'session-reference': SessionReferenceSource;\n}"
+            "declaration": "export interface MessageSourceMap {\n    user: { kind: 'user'; };\n    plugin: { kind: 'plugin'; plugin: string; } & ContextFormed;\n    model: ModelMessageSource;\n    tool: ToolMessageSource;\n    'user-rpc': { kind: 'user'; rpcId: SessionRequestId; clientTimeZone?: string; };\n    coordinator: CoordinatorMessageSource;\n    'subagent-report': SubagentReportMessageSource;\n    'subagent-settled': SubagentSettledMessageSource;\n    'skill-invocation': SkillInvocationSource;\n    'team-message': TeamMessageSource;\n    goal: GoalMessageSource;\n    'session-reference': SessionReferenceSource;\n}"
           },
           {
             "name": "ModelMessageSource",
             "declaration": "export interface ModelMessageSource extends AssistantProvenance {\n    kind: 'model';\n}"
           },
           {
+            "name": "ModelSelection",
+            "declaration": "export interface ModelSelection {\n    readonly provider: string;\n    readonly model: string;\n    readonly reasoningEffort?: string;\n}"
+          },
+          {
+            "name": "OneShotSubagentDescriptorData",
+            "declaration": "export interface OneShotSubagentDescriptorData extends SubagentDescriptorBase {\n    readonly mode: 'one-shot';\n    readonly label?: string;\n}"
+          },
+          {
             "name": "ProviderRequestId",
             "declaration": "export type ProviderRequestId = Branded<'ProviderRequestId'>;"
+          },
+          {
+            "name": "PtcDispatchEventData",
+            "declaration": "export interface PtcDispatchEventData extends PtcDispatchStartEventData {\n    isError: boolean;\n    content: ContentBlock[];\n}"
+          },
+          {
+            "name": "PtcDispatchStartEventData",
+            "declaration": "export interface PtcDispatchStartEventData {\n    rootCallId: ToolCallId;\n    parentCallId: ToolCallId;\n    subCallId: ToolCallId;\n    name: string;\n    arguments: unknown;\n}"
           },
           {
             "name": "ReasoningBlock",
@@ -1703,7 +1799,11 @@ export const TYPERT = {
           },
           {
             "name": "RequestHeaderReason",
-            "declaration": "export type RequestHeaderReason = 'initial' | 'resume' | 'change';"
+            "declaration": "export type RequestHeaderReason = 'initial' | 'resume' | 'change' | 'series';"
+          },
+          {
+            "name": "SandboxMode",
+            "declaration": "export type SandboxMode = 'read-only' | 'workspace-write' | 'danger-full-access';"
           },
           {
             "name": "Session",
@@ -1711,11 +1811,11 @@ export const TYPERT = {
           },
           {
             "name": "SessionEvent",
-            "declaration": "export type SessionEvent<T extends SessionEventType = SessionEventType> = { [K in SessionEventType]: { type: K; seq: number; time: number; data: SessionEventMap[K]; ignorable?: true; } & (K extends SurfaceEventType ? { sourceEventSeqs?: number[]; surfaceOp?: SurfaceOp; } : object) }[T];"
+            "declaration": "export type SessionEvent<T extends SessionEventType = SessionEventType> = { [K in SessionEventType]: { type: K; seq: number; time: number; data: SessionEventMap[K]; } & (K extends SurfaceEventType ? { sourceEventSeqs?: number[]; surfaceOp?: SurfaceOp; } : object) }[T];"
           },
           {
             "name": "SessionEventMap",
-            "declaration": "export interface SessionEventMap {\n    'turn/start': { turn: number; };\n    'turn/end': { turn: number; reason: TurnEndReason; };\n    'step/start': { turn: number; step: number; };\n    'step/end': { turn: number; step: number; };\n    'user/message': UserMessage;\n    'assistant/chunk': { turn: number; step: number; chunk: StreamChunk; };\n    'assistant/message': { turn: number; step: number; message: AssistantMessage; usage?: TokenUsage; interrupted?: true; };\n    'tool/call': { turn: number; step: number; callId: CallId; name: string; arguments: string; };\n    'tool/result': { turn: number; step: number; message: ToolResultMessage; error?: { name: string; code: string; }; meta?: JsonValue; };\n    'todo/write': { todos: TodoItem[]; };\n    'request/header': { header: EpochHeader; reason: RequestHeaderReason; };\n    'request/context': RequestContext;\n    'session/end-seed': Record<string, never>;\n    'agent/inbox/spliced': { target: InboxTarget; start: number; removedCount?: number; inserted: UserMessage[]; outcome?: 'canceled'; };\n    'command/run': { commandId: CommandId; name: string; args?: string; source: CommandSource; };\n    'command/done': { commandId: CommandId; kind: 'success' | 'error'; text?: string; sourceEventSeq?: number; };\n    'approval/asked': { id: ApprovalRequestId; toolName: string; callId?: CallId; reason?: string; };\n    'approval/decided': { id: ApprovalRequestId; outcome: ApprovalOutcome; };\n    'approval/policy': { policy: ApprovalPolicy; source?: 'delegation'; };\n    'tool/code-dispatch-start': CodeDispatchStartEventData;\n    'tool/code-dispatch': CodeDispatchEventData;\n    'goal/change': GoalChangeMeta;\n    'session/title': SessionTitleEventData;\n    'compaction/start': { compactionId: CompactionId; sourceCommandId?: CommandId; turn: number | null; };\n    'compaction/summary': { compactionId: CompactionId; sourceCommandId?: CommandId; summary: ContentBlock[]; shadowedRange: { start: number; end: number; }; shadowedSeqs: number[]; shadowedTokenCount: number; provider: string; model: string; maxTokens?: number; usage?: TokenUsage; } & ({ rawOutput: ContentBlock[]; llmStreamCall: true; } | { rawOutput?: ContentBlock[]; llmStreamCall?: never; });\n    'compaction/end': { compactionId: CompactionId; sourceCommandId?: CommandId; turn: number | null; error?: string; };\n    'compaction/prune': { shadowedRange: { start: number; end: number; }; shadowedSeqs: number[]; shadowedTokenCount: number; };\n}"
+            "declaration": "export interface SessionEventMap {\n    'turn/start': { turn: number; };\n    'turn/end': { turn: number; reason: TurnEndReason; };\n    'step/start': { turn: number; step: number; };\n    'step/end': { turn: number; step: number; };\n    'user/message': UserMessage;\n    'assistant/chunk': { turn: number; step: number; chunk: StreamChunk; };\n    'assistant/message': { turn: number; step: number; message: AssistantMessage; usage?: TokenUsage; interrupted?: true; };\n    'tool/call': { turn: number; step: number; callId: ToolCallId; name: string; arguments: string; };\n    'tool/result': { turn: number; step: number; message: ToolResultMessage; error?: { name: string; code: string; }; meta?: JsonValue; };\n    'request/header': { header: EpochHeader; reason: RequestHeaderReason; startsSeries?: true; };\n    'request/context': RequestContext;\n    'session/end-seed': Record<string, never>;\n    'agent/inbox/spliced': { target: InboxTarget; start: number; removedCount?: number; inserted: UserMessage[]; outcome?: 'canceled'; };\n    'approval/asked': { id: ApprovalRequestId; toolName: string; callId?: ToolCallId; reason?: string; };\n    'approval/decided': { id: ApprovalRequestId; outcome: ApprovalOutcome; };\n    'approval/policy': { policy: ApprovalPolicy; source?: 'delegation'; };\n    'tool/code-dispatch-start': PtcDispatchStartEventData;\n    'tool/code-dispatch': PtcDispatchEventData;\n    'agent-preset/selected': { agentPreset: string; };\n    'session/title': SessionTitleEventData;\n    'todo/write': { todos: TodoItem[]; };\n    'model/selection': ModelSelection;\n    'subagent/descriptor': SubagentDescriptorData;\n    'sandbox/mode': { mode: SandboxMode; source?: 'delegation'; };\n    'command/run': { commandId: CommandId; name: string; args?: string; source: CommandSource; };\n    'command/done': { commandId: CommandId; kind: 'success' | 'error'; text?: string; sourceEventSeq?: number; };\n    'team/member': { version: 1; teamId: TeamId; member: TeamMemberSnapshot; };\n    'team/task': { version: 1; teamId: TeamId; task: TeamTaskSnapshot; };\n    'team/message/queued': { version: 1; teamId: TeamId; message: TeamMessageSnapshot; };\n    'team/message/delivered': { version: 1; teamId: TeamId; messageId: TeamMessageId; targetId: SessionId; };\n    'goal/change': GoalChangeMeta;\n    'compaction/start': { compactionId: CompactionId; sourceCommandId?: CommandId; turn: number | null; };\n    'compaction/summary': { compactionId: CompactionId; sourceCommandId?: CommandId; summary: ContentBlock[]; shadowedRange: { start: number; end: number; }; shadowedSeqs: number[]; shadowedTokenCount: number; provider: string; model: string; maxTokens?: number; usage?: TokenUsage; } & ({ rawOutput: ContentBlock[]; llmStreamCall: true; } | { rawOutput?: ContentBlock[]; llmStreamCall?: never; });\n    'compaction/end': { compactionId: CompactionId; sourceCommandId?: CommandId; turn: number | null; error?: string; };\n    'compaction/prune': { shadowedRange: { start: number; end: number; }; shadowedSeqs: number[]; shadowedTokenCount: number; };\n}"
           },
           {
             "name": "SessionEventType",
@@ -1732,6 +1832,10 @@ export const TYPERT = {
           {
             "name": "SessionReferenceSource",
             "declaration": "export interface SessionReferenceSource {\n    kind: 'session-reference';\n    form: 'recall';\n    version: 1;\n    references: { sessionId: string; label: string; capturedThroughSeq: number | null; compacted: boolean; originalMessages: number; retainedMessages: number; omittedMessages: number; omittedBytes: number; truncated: boolean; inputIndex: number; }[];\n}"
+          },
+          {
+            "name": "SessionRequestId",
+            "declaration": "export type SessionRequestId = Branded<'session-request-id'>;"
           },
           {
             "name": "SessionSurface",
@@ -1754,8 +1858,28 @@ export const TYPERT = {
             "declaration": "export type SessionTitleSource = { readonly kind: 'fallback'; } | { readonly kind: 'provider'; readonly provider: SessionTitleProviderId; readonly model?: SessionTitleModelProvenance; } | { readonly kind: 'user'; };"
           },
           {
+            "name": "SkillInvocationSource",
+            "declaration": "export interface SkillInvocationSource {\n    readonly kind: 'skill-invocation';\n    readonly name: string;\n    readonly form: 'instructions';\n}"
+          },
+          {
             "name": "StreamChunk",
-            "declaration": "export type StreamChunk = { type: 'block-start'; index: number; blockType: ContentBlockType; } | { type: 'text-delta'; index: number; text: string; } | { type: 'reasoning-delta'; index: number; text: string; } | { type: 'tool-call-delta'; index: number; id: CallId; name?: string; argumentsDelta: string; } | { type: 'block-end'; index: number; block: ContentBlock; } | { type: 'usage'; usage: TokenUsage; } | { type: 'finish'; reason: FinishReason; replayState?: ReplayEnvelope; };"
+            "declaration": "export type StreamChunk = { type: 'block-start'; index: number; blockType: ContentBlockType; } | { type: 'text-delta'; index: number; text: string; } | { type: 'reasoning-delta'; index: number; text: string; } | { type: 'tool-call-delta'; index: number; id: ToolCallId; name?: string; argumentsDelta: string; } | { type: 'block-end'; index: number; block: ContentBlock; } | { type: 'usage'; usage: TokenUsage; } | { type: 'finish'; reason: FinishReason; replayState?: ReplayEnvelope; };"
+          },
+          {
+            "name": "SubagentDescriptorBase",
+            "declaration": "export interface SubagentDescriptorBase {\n    readonly version: number;\n    readonly mode: 'one-shot' | 'continuable';\n    readonly provider: string;\n}"
+          },
+          {
+            "name": "SubagentDescriptorData",
+            "declaration": "export type SubagentDescriptorData = OneShotSubagentDescriptorData | ContinuableSubagentDescriptorData;"
+          },
+          {
+            "name": "SubagentReportMessageSource",
+            "declaration": "export interface SubagentReportMessageSource {\n    readonly kind: 'subagent-report';\n    readonly form: 'relay';\n    readonly senderSessionId: SessionId;\n}"
+          },
+          {
+            "name": "SubagentSettledMessageSource",
+            "declaration": "export interface SubagentSettledMessageSource {\n    readonly kind: 'subagent-settled';\n    readonly form: 'notice';\n    readonly summary: string;\n    readonly senderSessionId: SessionId;\n}"
           },
           {
             "name": "SurfaceEventType",
@@ -1770,6 +1894,42 @@ export const TYPERT = {
             "declaration": "export type SurfaceOp = 'append' | { op: 'replace'; start: number; end: number; };"
           },
           {
+            "name": "TeamId",
+            "declaration": "export type TeamId = Branded<'TeamId'>;"
+          },
+          {
+            "name": "TeamMemberPhase",
+            "declaration": "export type TeamMemberPhase = 'provisioning' | 'active' | 'failed';"
+          },
+          {
+            "name": "TeamMemberSnapshot",
+            "declaration": "export interface TeamMemberSnapshot {\n    readonly id: SessionId;\n    readonly name: string;\n    readonly description: string;\n    readonly provider: string;\n    readonly context: 'fresh' | 'fork';\n    readonly phase: TeamMemberPhase;\n    readonly error?: string;\n}"
+          },
+          {
+            "name": "TeamMessageId",
+            "declaration": "export type TeamMessageId = Branded<'TeamMessageId'>;"
+          },
+          {
+            "name": "TeamMessageSnapshot",
+            "declaration": "export interface TeamMessageSnapshot {\n    readonly id: TeamMessageId;\n    readonly senderId: SessionId;\n    readonly senderName: string;\n    readonly targetId: SessionId;\n    readonly delivery: 'quiet' | 'wakeup';\n    readonly content: ContentBlock[];\n}"
+          },
+          {
+            "name": "TeamMessageSource",
+            "declaration": "export interface TeamMessageSource {\n    readonly kind: 'team-message';\n    readonly teamId: TeamId;\n    readonly messageId: TeamMessageId;\n    readonly senderId: SessionId;\n    readonly senderName: string;\n}"
+          },
+          {
+            "name": "TeamTaskId",
+            "declaration": "export type TeamTaskId = Branded<'TeamTaskId'>;"
+          },
+          {
+            "name": "TeamTaskSnapshot",
+            "declaration": "export interface TeamTaskSnapshot {\n    readonly id: TeamTaskId;\n    readonly revision: number;\n    readonly subject: string;\n    readonly description: string;\n    readonly status: TeamTaskStatus;\n    readonly ownerId?: SessionId;\n    readonly blockedBy: TeamTaskId[];\n    readonly writeScopes: string[];\n}"
+          },
+          {
+            "name": "TeamTaskStatus",
+            "declaration": "export type TeamTaskStatus = 'pending' | 'in_progress' | 'completed' | 'deleted';"
+          },
+          {
             "name": "TextBlock",
             "declaration": "export interface TextBlock {\n    type: 'text';\n    text: string;\n}"
           },
@@ -1779,19 +1939,27 @@ export const TYPERT = {
           },
           {
             "name": "TokenUsage",
-            "declaration": "export interface TokenUsage {\n    inputTokens: number;\n    outputTokens: number;\n    cacheReadTokens?: number;\n    cacheWriteTokens?: number;\n    reasoningTokens?: number;\n}"
+            "declaration": "export interface TokenUsage {\n    inputTokens: number;\n    outputTokens: number;\n    totalTokens?: number;\n    cacheReadTokens?: number;\n    cacheWriteTokens?: number;\n    reasoningTokens?: number;\n}"
           },
           {
             "name": "ToolCallBlock",
-            "declaration": "export interface ToolCallBlock {\n    type: 'tool-call';\n    id: CallId;\n    name: string;\n    arguments: string;\n}"
+            "declaration": "export interface ToolCallBlock {\n    type: 'tool-call';\n    id: ToolCallId;\n    name: string;\n    arguments: string;\n}"
+          },
+          {
+            "name": "ToolCallId",
+            "declaration": "export type ToolCallId = Branded<'ToolCallId'>;"
           },
           {
             "name": "ToolMessageSource",
-            "declaration": "export interface ToolMessageSource {\n    kind: 'tool';\n    callId: CallId;\n}"
+            "declaration": "export interface ToolMessageSource {\n    kind: 'tool';\n    callId: ToolCallId;\n}"
+          },
+          {
+            "name": "ToolRestriction",
+            "declaration": "export interface ToolRestriction {\n    readonly allow?: readonly string[];\n    readonly deny?: readonly string[];\n}"
           },
           {
             "name": "ToolResultBlock",
-            "declaration": "export interface ToolResultBlock {\n    type: 'tool-result';\n    toolCallId: CallId;\n    content: ContentBlock[];\n    isError?: boolean;\n}"
+            "declaration": "export interface ToolResultBlock {\n    type: 'tool-result';\n    toolCallId: ToolCallId;\n    content: ContentBlock[];\n    isError?: boolean;\n}"
           },
           {
             "name": "ToolResultMessage",

@@ -5,7 +5,7 @@
  * popupSelect shell self-registers into conversation.input.overlay with
  * per-session resolution.
  */
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client';
+import type { Context as ClientContext } from '@deepseek-ai/cordis';
 import { CommandUiRuntime } from './service.ts';
 import { type CommandKey } from './locales.ts';
 export { CommandUiRuntime } from './service.ts';

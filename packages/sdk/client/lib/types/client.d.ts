@@ -11,8 +11,8 @@
  *
  * @module @deepseek-ai/dsh-sdk-client/client
  */
-import { type InitializeParams, type InitializeResult } from '@deepseek-ai/dsh-sdk-protocol';
-import type { ContentBlock } from '@deepseek-ai/dsh-llm';
+import { type InitializeParams, type InitializeResult, type SdkPromptContentBlock } from '@deepseek-ai/dsh-sdk-protocol';
+import { type RuntimeProcessOptions } from './launch.ts';
 import type { HarnessClientOptions, HarnessNotification, NotificationFilter } from './types.ts';
 /**
  * The runtime subprocess is gone or unusable: it exited, its stdio closed, or
@@ -63,7 +63,9 @@ export interface NotificationSubscription extends AsyncIterable<HarnessNotificat
  * runtime is closed.
  */
 export declare class HarnessClient {
+    /** Original public dsh launch and timeout options for this client. */
     readonly options: HarnessClientOptions;
+    private readonly runtime;
     private child;
     private transport;
     private readonly stderrTail;
@@ -74,8 +76,8 @@ export declare class HarnessClient {
     private spawnError;
     private streamsSettled;
     private closeTask;
-    /** @param options - launch spec, complete child environment, and timeouts. */
-    constructor(options: HarnessClientOptions);
+    /** @param options - dsh profile, patch, home, process, environment, and timeout options. */
+    constructor(options?: HarnessClientOptions);
     /**
      * Spawn the runtime subprocess and start reading frames. Idempotent while
      * the process is live; rejects reuse after {@link close}.
@@ -93,7 +95,7 @@ export declare class HarnessClient {
      * @param contentBlocks - the user message, sent verbatim.
      * @returns the queued message id.
      */
-    prompt(sessionId: string, contentBlocks: ContentBlock[]): Promise<string>;
+    prompt(sessionId: string, contentBlocks: SdkPromptContentBlock[]): Promise<string>;
     /**
      * Send one JSON-RPC request and await its result.
      * @param method - the wire method name.
@@ -114,8 +116,8 @@ export declare class HarnessClient {
     subscribe(filter?: NotificationFilter): NotificationSubscription;
     /**
      * Subscribe to one session and the descendants discovered from
-     * `subagent.started` lineage edges (the runtime notifies for every session
-     * in its context; scoping is client-side, mirroring the Python SDK).
+     * `subagent.started` lineage edges. The runtime notifies for every session
+     * in its context, so this client applies the scope.
      * @param sessionId - the root session id.
      * @returns the filtered subscription handle.
      */
@@ -136,6 +138,8 @@ export declare class HarnessClient {
     private settleStreams;
     private closedError;
 }
+/** Construct the transport against a generic process for package-local fake-runtime tests. */
+export declare function createProcessHarnessClient(options: RuntimeProcessOptions): HarnessClient;
 /**
  * Whether `value` is a plain JSON object (the wire-boundary shape probe).
  * @param value - the wire value to probe.

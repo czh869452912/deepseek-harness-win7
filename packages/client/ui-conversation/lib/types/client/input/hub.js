@@ -1,4 +1,4 @@
-import { queueReadFaceOf } from "../queue/store.js";
+import { queueReadFaceOf } from "./queue-store.js";
 import { SessionInputShell } from "./facade.js";
 /** Session-addressed input facade registry (SessionInputResolver face + composer-layer extras). */
 export class InputHub {
@@ -74,8 +74,7 @@ export class InputHub {
             return () => {
                 for (const off of offs)
                     off();
-                const drafts = shell.snapshot.imageIds;
-                shell.dispose();
+                const drafts = shell.dispose();
                 this.shells.delete(id);
                 const conversation = this.rootCtx.get('conversation');
                 for (const imageId of drafts)
@@ -113,7 +112,7 @@ export class InputHub {
      * Resolve the optional slash controller for composer chrome that launches
      * the shared candidate menu without typing a trigger.
      * @param id - session id.
-     * @returns the resident controller, or undefined when ui-input-trigger is absent.
+     * @returns the resident controller, or undefined when no trigger provider is installed.
      */
     inputTriggers(id) {
         const actx = this.sessions().scope(id);

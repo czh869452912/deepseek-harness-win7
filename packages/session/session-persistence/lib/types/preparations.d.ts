@@ -15,6 +15,12 @@ interface PreparationEntry<Source, CommitState> {
     reservation?: SessionPreparationReservation<Source, CommitState>;
     reservationSettled?: Promise<void>;
     settleReservation?: () => void;
+    pins: number;
+}
+/** A borrowed prepared source that remains outside ready-entry eviction until released. */
+export interface PreparationLease<Source> extends Disposable {
+    /** Shared immutable prepared source. */
+    readonly source: Source;
 }
 /** One exclusively held prepared source and its committed persistence state. */
 export interface SessionPreparationReservation<Source, CommitState> {
@@ -41,6 +47,14 @@ export declare class SessionPreparations<Source extends PreparedSource, CommitSt
      * @returns the shared prepared source.
      */
     inspect(id: SessionId, load: () => Promise<Source>, signal?: AbortSignal): Promise<Source>;
+    /**
+     * Borrow one prepared source and pin its ready entry against LRU eviction.
+     * @param id - session identity.
+     * @param load - cold loader used when no entry exists.
+     * @param signal - optional cancellation signal while waiting.
+     * @returns a caller-owned observation lease.
+     */
+    borrow(id: SessionId, load: () => Promise<Source>, signal?: AbortSignal): Promise<PreparationLease<Source>>;
     /**
      * Reserve one ready source after committing its pending durable repair.
      * @param id - session identity.

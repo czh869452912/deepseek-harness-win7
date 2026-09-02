@@ -4,6 +4,7 @@
  * @module @deepseek-ai/dsh-tool-fs/src/read
  */
 import { defineTool } from '@deepseek-ai/dsh-tools';
+import { FIRST_PARTY_SECTION_ORDER } from '@deepseek-ai/dsh-system-prompt';
 import { buildWindow, formatReadOutput, langFromPath, readMetaFromMeta } from "./read-render.js";
 import { resolveRegularReadTarget } from "./read-target.js";
 /** Default and maximum number of lines returned by one `read` call (the `readLimit` config). */
@@ -42,7 +43,7 @@ export function parseReadArgs(args, maxLimit) {
 export function applyReadTool(ctx, caps) {
     ctx.systemPrompt.section({
         name: 'tool:read',
-        order: 100,
+        order: FIRST_PARTY_SECTION_ORDER.TOOL_READ,
         text: 'Use the read tool — not shell commands like cat — to inspect text files. Results include line numbers. Use offset and limit to continue reading large files.',
     });
     ctx.tools.register(defineTool({

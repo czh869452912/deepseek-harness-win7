@@ -5,6 +5,7 @@
  */
 import z from '@deepseek-ai/schemastery';
 import FileReferenceService, { FILE_REFERENCE_PROMPT, } from '@deepseek-ai/dsh-file-reference';
+import { FIRST_PARTY_SECTION_ORDER } from '@deepseek-ai/dsh-system-prompt';
 import { DEFAULT_FILE_SEARCH_EXCLUDED_DIRECTORIES, DEFAULT_FILE_SEARCH_MAX_ENTRIES, DEFAULT_FILE_SEARCH_MAX_RESULTS, WorkspaceFileSearch, } from "./search.js";
 export { DEFAULT_FILE_SEARCH_EXCLUDED_DIRECTORIES, DEFAULT_FILE_SEARCH_MAX_ENTRIES, DEFAULT_FILE_SEARCH_MAX_RESULTS, WorkspaceFileSearch, } from "./search.js";
 export { FILE_REFERENCE_PROMPT } from '@deepseek-ai/dsh-file-reference';
@@ -35,7 +36,7 @@ export class LocalFileReferenceService extends FileReferenceService {
             const fiber = agent.ctx.inject(['systemPrompt', 'tools'], (scope) => {
                 scope.systemPrompt.section({
                     name: 'context:file-reference',
-                    order: 99,
+                    order: FIRST_PARTY_SECTION_ORDER.FILE_REFERENCE,
                     text: () => agent.ctx.tools.get('read', agent) === undefined ? '' : FILE_REFERENCE_PROMPT,
                 });
             });

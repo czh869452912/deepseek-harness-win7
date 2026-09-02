@@ -8,6 +8,7 @@ import { Session, snapshotSessionEvent } from '@deepseek-ai/dsh-session';
 import { foldSessionTitle } from '@deepseek-ai/dsh-session-title';
 import { SESSION_QUERY_DEFAULT_PERSISTED_INSPECT_CONCURRENCY, SESSION_QUERY_READ_WINDOW_MAX, SessionQueryError, } from "./config.js";
 import { SessionCorpus } from "./corpus.js";
+import { SessionObservationReader, } from "./observation.js";
 import { buildSessionEventSearchDocuments } from "./documents.js";
 import { filterSessionEventDocuments, filterSessionResults, materializeSessionEventResultFilters, materializeSessionResultFilters, } from "./filters.js";
 import * as tracing from "./tracing.js";
@@ -28,6 +29,7 @@ export class SessionQueryEngine extends Service {
     static inject = ['sessions'];
     _readWindowMax;
     _corpus;
+    _observations;
     constructor(ctx, config = {}) {
         super(ctx, 'sessionQuery');
         this._readWindowMax = config.readWindowMax ?? SESSION_QUERY_READ_WINDOW_MAX;
@@ -40,6 +42,16 @@ export class SessionQueryEngine extends Service {
             throw new SessionQueryError('session-query: persistedInspectConcurrency must be a positive safe integer', 'SESSION_QUERY_INVALID_CONFIG');
         }
         this._corpus = new SessionCorpus(ctx, persistedInspectConcurrency);
+        this._observations = new SessionObservationReader(ctx);
+    }
+    /**
+     * Observe one exact live or prepared Session without a persistence listing preflight.
+     * @param sessionId - logical Session identity.
+     * @param options - cancellation and projection selection for this read.
+     * @returns a caller-owned observation lease.
+     */
+    observeSession(sessionId, options = {}) {
+        return this._observations.read(sessionId, options);
     }
     /**
      * List the complete logical corpus using live-preferred records.

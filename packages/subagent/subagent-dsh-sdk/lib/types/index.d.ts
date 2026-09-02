@@ -1,10 +1,11 @@
 /**
  * Out-of-process SDK subagent backend. Each child is a complete DeepSeek
- * Harness runtime in its own process — own `cordis.yml`-decided composition,
+ * Harness runtime in its own process — own named profile and patch composition,
  * session, model route, and tools — driven over stdio JSON-RPC through the
- * TypeScript SDK client, so it shares no Cordis context and advertises no
- * parent-enforced start capabilities; the ONE thing it reads off
- * `request.parent` is the session's workspace cwd. This plugin uses named
+ * TypeScript SDK client, so it shares no Cordis context. It accepts the
+ * provider/model/reasoning/maxTokens subset of `agentOptions`; other start
+ * features remain unsupported. The ONE thing it reads off `request.parent`
+ * is the session's workspace cwd. This plugin uses named
  * exports only; a default would hide its loader metadata (see
  * `docs/postmortem/0001-acp-default-export-drops-inject.md`).
  * @module @deepseek-ai/dsh-subagent-dsh-sdk
@@ -17,10 +18,14 @@ export declare const inject: string[];
 export interface Config {
     /** Provider name on `ctx.subagents` (default `dsh-sdk`). */
     providerName: string;
-    /** The executable to spawn for each run (the child runtime bin or packaged exe). */
-    command: string;
-    /** Arguments passed to {@link command} (typically the child's `cordis.yml` path). */
-    args: string[];
+    /** Explicit dsh CLI module, resolved and checked at plugin load; omission uses the SDK dependency. */
+    dshBin?: string;
+    /** Named child profile (default `sdk`). */
+    profile: string;
+    /** Ordered per-launch profile patch files, resolved and checked at plugin load. */
+    patches: string[];
+    /** Absolute isolated Harness home for every nested child process. */
+    dshHome: string;
     /**
      * Working directory override for the child process and its SDK session
      * workspace. Must be non-empty; a relative path resolves against the
@@ -38,8 +43,7 @@ export interface Config {
     maxTokens?: number;
     /**
      * Extra environment variables for the child process — e.g. the child
-     * runtime's own `DEEPSEEK_API_KEY`, or `DSH_CORDIS_CONFIG` naming its
-     * config. Forwarded on top of a credential-scrubbed copy of the parent
+     * runtime's own `DEEPSEEK_API_KEY`. Forwarded on top of a credential-scrubbed copy of the parent
      * env, so an explicit key here reaches the child while ambient secrets do
      * not leak implicitly.
      */

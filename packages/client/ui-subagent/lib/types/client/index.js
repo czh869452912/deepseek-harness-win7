@@ -1,4 +1,4 @@
-import { SubagentCatalogAction } from "./SubagentCatalogAction.js";
+import { SubagentHeaderLineage } from "./SubagentHeaderLineage.js";
 import { SubagentReadOnlyComposer, } from "./SubagentReadOnlyComposer.js";
 import { en, NS, zh } from "./locales.js";
 /** Required services for conversation slots and session navigation. */
@@ -10,7 +10,10 @@ function selectReadOnlySubagent(owner) {
         return null;
     if (subagent.address.mode === 'one-shot')
         return { reason: 'one-shot' };
-    if (subagent.parentAvailable)
+    // The parent catalog is fetched ahead of the selected Session. Until it
+    // resolves, leave the normal disabled composer in place instead of briefly
+    // claiming that the parent is offline.
+    if (subagent.parentAvailable !== false)
         return null;
     // A RUNNING parent-offline continuable child keeps the default composer:
     // its input is disabled there, but the same primary Stop stays available so
@@ -35,13 +38,11 @@ export function apply(ctx) {
             sessions.setSubagentCatalogOpen(parentSessionId, open);
         },
     });
-    ctx.slots.inject('conversation.session.header.actions', () => ctx.slots.register({
-        name: 'conversation.session.header.actions',
-        id: 'subagent-catalog',
-        order: 10,
+    ctx.slots.inject('conversation.session.header.lineage', () => ctx.slots.register({
+        name: 'conversation.session.header.lineage',
         locale: NS,
         inject: catalogActions,
-    }, SubagentCatalogAction));
+    }, SubagentHeaderLineage));
     ctx.slots.inject('conversation.composer', () => ctx.slots.register({
         name: 'conversation.composer',
         priority: -10,

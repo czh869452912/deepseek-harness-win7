@@ -2,6 +2,7 @@ import { Service } from "@deepseek-ai/cordis";
 import { z } from "zod";
 import { createUserMessage } from "@deepseek-ai/dsh-llm";
 import { defineTool } from "@deepseek-ai/dsh-tools";
+import { FIRST_PARTY_SECTION_ORDER } from "@deepseek-ai/dsh-system-prompt";
 import { UserQuestionError } from "@deepseek-ai/dsh-user-questions";
 //#region lib/types/index.js
 /**
@@ -80,6 +81,14 @@ function foldPlanMode(events, end = events.length) {
 	}
 	return active;
 }
+const planUnitStateSchema = z.object({
+	active: z.boolean(),
+	wanted: z.boolean().nullable(),
+	running: z.object({
+		commandId: z.string(),
+		wanted: z.boolean()
+	}).strict().nullable()
+}).strict();
 /** Wire payload schema of the `plan` projection. */
 const planProjectionSchema = z.object({
 	active: z.boolean(),
@@ -143,7 +152,7 @@ var PlanModeController = class extends Service {
 		}, "dsh-plan-mode: close service lifetime");
 		ctx.systemPrompt.section({
 			name: "plan:policy",
-			order: 50,
+			order: FIRST_PARTY_SECTION_ORDER.PLAN_POLICY,
 			text: (context) => {
 				if (context.agent === void 0) return "";
 				return this.pendingIntents.get(context.agent.session)?.active ?? foldPlanMode(context.agent.session.events) ? this.section : "";
@@ -152,7 +161,7 @@ var PlanModeController = class extends Service {
 		ctx.inject(["sessionProjections"], (projectionCtx) => {
 			projectionCtx.sessionProjections.register({
 				key: "plan",
-				schema: planProjectionSchema,
+				stateSchema: planUnitStateSchema,
 				init: () => ({
 					active: false,
 					wanted: null,
@@ -185,12 +194,15 @@ var PlanModeController = class extends Service {
 					};
 					return state;
 				},
-				view: (state) => {
-					const wanted = state.running?.wanted ?? state.wanted;
-					return {
-						active: state.active,
-						pending: wanted !== null && wanted !== state.active
-					};
+				wire: {
+					viewSchema: planProjectionSchema,
+					view: (state) => {
+						const wanted = state.running?.wanted ?? state.wanted;
+						return {
+							active: state.active,
+							pending: wanted !== null && wanted !== state.active
+						};
+					}
 				},
 				stateVersion: 2
 			});

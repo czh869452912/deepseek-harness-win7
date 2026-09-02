@@ -111,7 +111,7 @@ const trajectorySessionEndDefinition = {
  * @param ctx - Plugin context receiving the Definitions.
  */
 export function registerTrajectoryCompactionDefinitions(ctx) {
-    ctx.conversationEvents.register(trajectoryCompactionDefinition);
-    ctx.conversationEvents.register(trajectorySessionEndDefinition);
+    ctx.uiConversation.events.register(trajectoryCompactionDefinition);
+    ctx.uiConversation.events.register(trajectorySessionEndDefinition);
 }
 //# sourceMappingURL=trajectory-compaction-definition.js.map

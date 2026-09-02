@@ -35,14 +35,28 @@ export class AppWebEntry {
      */
     async run() {
         try {
+            // Boot-readiness gate: whichever bootstrap applies the injection table
+            // settles this deferred once every row has taken effect — the served
+            // index resolves it in the rendered tail, so the await returns on the
+            // next microtask; an asynchronous bootstrap resolves it after its last
+            // row, or rejects it into the failure rendering below. An absent global
+            // means no bootstrap owns the document and there is nothing to wait for.
+            await globalThis.__DSH_BOOT_READY__?.promise;
             const win = globalThis;
             const moduleLoader = win.__ModuleLoader__;
             if (moduleLoader === undefined) {
                 throw new Error('web boot: window.__ModuleLoader__ bootstrap facade is missing');
             }
+            // A pre-injected transport (the worker preview page) owns bundle bytes;
+            // its loadBundle is the default and explicit seams still win. The global
+            // is `ClientTransportHooks`, owned by @deepseek-ai/dsh-client-connection;
+            // this structural slice reads one optional member without adding a
+            // package edge.
+            const transport = globalThis.__DSH_TRANSPORT__;
             this.modules = moduleLoader.create({
                 boot: win.__DSH_BOOT__,
                 staticModules: getStaticModules(),
+                ...transport?.loadBundle === undefined ? {} : { loadBundle: transport.loadBundle },
                 ...this.seams,
             });
             this.manifest = this.modules.manifest;
@@ -72,7 +86,7 @@ export class AppWebEntry {
         });
         await mounted;
     }
-    /** Prefetch stage-one bundles; their import path owns any eventual failure. */
+    /** Prefetch stage-one bundles and their dynamic requests before concurrent plugin imports. */
     async prefetchImmediateTier() {
         await Promise.all(this.manifest.plugins
             .filter(row => row.immediately)

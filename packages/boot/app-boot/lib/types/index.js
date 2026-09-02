@@ -1,5 +1,5 @@
 /**
- * Shared boot glue for the app bins (`dsh`, `dsh-acp-demo`): load the gitignored
+ * Shared boot glue for `dsh` profiles, including the CLI packaged by the Python runtime wheel: load the gitignored
  * `.env`, install the fail-loud Loader guards, resolve the config path (snapshot-aware), load the
  * optional user patch layers from the Harness home (`~/.dsh`), expose its path resolver to
  * config expressions, and drive the Cordis Loader against a leaf `cordis.yml` until the tree settles.
@@ -16,7 +16,8 @@ import Include, { applyEntryPatches, entryListSchema } from '@deepseek-ai/cordis
 import Group from '@deepseek-ai/cordis-plugin-group';
 import { dshHomePath, resolveDshHome } from '@deepseek-ai/dsh-home-paths';
 import { createLaunchEnvironmentSnapshot } from '@deepseek-ai/dsh-launch-environment';
-export { composeEntries, DEFAULT_PROFILE_BUNDLES, healProfilesModuleFallback, initProfile, loadProfile, PROFILE_PATCH_FILENAME, PROFILE_TEMPLATES, PROFILES_DIR, readProfileManifest, resolveBundleDir, resolveProfileDir, writeProfileManifest, } from "./profile.js";
+import { FIRST_PARTY_SECTION_ORDER } from '@deepseek-ai/dsh-system-prompt';
+export { composeEntries, DEFAULT_PROFILE_BUNDLES, DEFAULT_PROFILE_PATCH_RELOAD, healProfilesModuleFallback, initProfile, loadProfile, PROFILE_PATCH_FILENAME, PROFILE_TEMPLATES, PROFILES_DIR, readProfileManifest, resolveBundleDir, resolveProfileDir, writeProfileManifest, } from "./profile.js";
 /**
  * Resolve the config to boot. Replay swaps a `cordis.yml` basename for
  * `cordis.snapshot.yml` in the same directory; every other mode keeps the path.
@@ -175,9 +176,8 @@ export async function watchUserPatches(ctx, options) {
     if (entry === undefined)
         throw new Error(`${binName}: user patch-layer watching requires the root Include entry`);
     const register = hmr.registerConfig(filename, async () => {
-        // Re-read the include's non-patch options per refresh: a writer that
-        // updates the root Include's other options between refreshes (none exists
-        // today) must not have them silently reverted by a user-layer reload.
+        // Re-read the include's non-patch options per refresh so a writer that
+        // updates another option between refreshes is not silently reverted.
         const { patches: _previousPatches, ...includeConfig } = entry.options.config;
         const userPatches = loadOptionalPatches(binName, filename) ?? [];
         const patches = compose(userPatches);
@@ -243,6 +243,20 @@ export function loadOverlayPatches(binName, file) {
     }
     return parsePatchList(binName, file, content, 'overlay');
 }
+/** Resolve relative plugin paths in one patch file's `insert` rows without changing assertion names. */
+function anchorInsertedPluginNames(patches, file) {
+    const base = dirname(resolve(file));
+    const visit = (entry) => {
+        if (typeof entry.name === 'string' && (entry.name.startsWith('./') || entry.name.startsWith('../'))) {
+            entry.name = pathToFileURL(resolve(base, entry.name)).href;
+        }
+        if (entry.group && Array.isArray(entry.config))
+            entry.config.forEach(visit);
+    };
+    for (const patch of patches)
+        patch.insert?.forEach(visit);
+    return patches;
+}
 /**
  * Parse one loader patch list: a top-level YAML array of
  * `@deepseek-ai/cordis-plugin-include` `PatchOptions` (id-targeted config overrides and
@@ -272,7 +286,7 @@ function parsePatchList(binName, file, content, label) {
             throw new Error(`${binName}: ${label} entry ${index + 1} in ${file} must be a mapping (a loader patch entry)`);
         }
     });
-    return parsed;
+    return anchorInsertedPluginNames(parsed, file);
 }
 /**
  * Compose the effective entry list exactly as `boot()` would mount it: parse
@@ -697,7 +711,9 @@ export async function boot(binName, absoluteConfigPath, patches, prepare, bareMo
         let deepest = cause;
         while (deepest instanceof Error && deepest.cause !== undefined)
             deepest = deepest.cause;
-        const stack = deepest instanceof Error && deepest !== cause ? `\n${deepest.stack ?? deepest.message}` : '';
+        const stack = deepest instanceof AggregateError
+            ? `\n${deepest.stack ?? deepest.message}\n${deepest.errors.map(formatActivationError).join('\n')}`
+            : deepest instanceof Error && deepest !== cause ? `\n${deepest.stack ?? deepest.message}` : '';
         throw new Error(`${binName}: ${stage}: ${detail}${stack}`, { cause });
     }
 }
@@ -708,8 +724,8 @@ export const HARNESS_SOURCE_SECTION = 'harness:source';
  * explicitly distinguishing it from the task workspace and current working
  * directory. The self-referential `dsh-tool-cordis` toolset reads and edits this
  * checkout. Call once on the settled boot context ({@link boot}); the section
- * orders just after the harness identity opener (`-100`) and before the deployment
- * persona (`0`). A booted tree with no `systemPrompt` service has no prompt to
+ * uses the shared first-party placement just after the harness identity opener
+ * and before the deployment persona. A booted tree with no `systemPrompt` service has no prompt to
  * augment, so this is then a no-op that returns `undefined`. The section is
  * registered against the `systemPrompt` service's fiber, so a dev HMR reload of
  * that plugin drops it until the next boot.
@@ -723,7 +739,7 @@ export function addHarnessSourceSection(ctx, sourceRoot) {
         return undefined;
     return systemPrompt.section({
         name: HARNESS_SOURCE_SECTION,
-        order: -99,
+        order: FIRST_PARTY_SECTION_ORDER.HARNESS_SOURCE,
         text: `The DeepSeek Harness implementation checkout is at ${sourceRoot}. The checkout location and current working directory are separate values and may differ; never infer the working directory from this path. Use pwd to determine the current working directory. Use this checkout only to inspect or extend DSH itself.`,
     });
 }

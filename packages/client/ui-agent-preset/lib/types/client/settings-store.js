@@ -1,12 +1,12 @@
 /**
  * Agent-preset default-settings controller.
  *
- * Options and the current default both come from one `agentPreset.list` call:
+ * Options and the current default both come from one `agentPresets.list` call:
  * the roster already reports which id a session with no explicit choice gets,
  * so the row needs no schema introspection. Writes target the settings
  * namespace's `default` field, which is what the host resolves at creation.
  */
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-runtime/client';
+import { createSnapshotStore } from '@deepseek-ai/dsh-client-store';
 /** The agent-preset settings namespace on the host wire. */
 export const AGENT_PRESET_SETTINGS_NS = 'agent-presets';
 /**
@@ -32,15 +32,16 @@ export function messageOf(error) {
 export async function writeDefaultPreset(api, id) {
     let response;
     try {
-        response = await api.settings.update({ ns: AGENT_PRESET_SETTINGS_NS, patch: { default: id } });
+        response = await api.settings.update(AGENT_PRESET_SETTINGS_NS, { default: id }, undefined);
     }
     catch (error) {
         // The transport rejected rather than answering; the caller must be able to
         // say so instead of the row silently snapping back.
         return messageOf(error);
     }
-    return response.result.ok ? undefined : response.result.error.message;
+    return response.ok ? undefined : response.error.message;
 }
+const EMPTY_ROSTER = { presets: [], authorable: false };
 /**
  * Read the roster, folding both refusal shapes into one message.
  *
@@ -48,15 +49,20 @@ export async function writeDefaultPreset(api, id) {
  * `ok: false` envelope — and every surface treats them identically. Folding
  * them here keeps each store's `load` about what it does with a roster rather
  * than about how the call can fail.
- * @param api - the agent-preset wire face.
+ * @param remote - the agent-preset Remote namespace.
  * @returns the roster, or the message to show in its place.
  */
-export async function readRoster(api) {
+export async function readRoster(remote) {
     try {
-        const response = await api.agentPresets.list({});
-        return response.result.ok
-            ? { ok: true, value: response.result.value }
-            : { ok: false, error: response.result.error.message };
+        const result = await remote.agentPresets.list();
+        if (result.ok)
+            return { ok: true, value: result.value };
+        // Agent presets are optional: without that service every session uses the
+        // Host composition, so callers receive the same empty roster as a mounted
+        // service with no configured roots.
+        if (result.error.code === 'invocation-unavailable')
+            return { ok: true, value: EMPTY_ROSTER };
+        return { ok: false, error: result.error.message };
     }
     catch (error) {
         return { ok: false, error: messageOf(error) };
@@ -69,16 +75,16 @@ export async function readRoster(api) {
  * A surface that gets `undefined` returns without touching its snapshot
  * further — either another read owns it, or this one already wrote the
  * failure. What differs between surfaces starts after this.
- * @param api - the agent-preset wire face.
+ * @param remote - the agent-preset Remote namespace.
  * @param store - the surface's own snapshot store.
  * @returns the roster, or undefined when the caller should return.
  */
-export async function beginRosterRead(api, store) {
+export async function beginRosterRead(remote, store) {
     const before = store.getSnapshot();
     if (before.status === 'loading')
         return undefined;
     store.set({ ...before, status: 'loading', error: null });
-    const roster = await readRoster(api);
+    const roster = await readRoster(remote);
     if (roster.ok)
         return roster.value;
     store.set({ ...store.getSnapshot(), status: 'error', error: roster.error });
@@ -119,15 +125,18 @@ const INITIAL = {
 /** Reads the roster and persists the chosen default. */
 export class AgentPresetSettingsController {
     api;
+    remote;
     describeFace;
     /** Row snapshot the renderer subscribes to. */
     store = createSnapshotStore(INITIAL);
     /**
-     * @param api - the agent-preset and settings wire faces (roster and default write).
+     * @param api - the settings wire face (the default write).
+     * @param remote - the agent-preset Remote namespace (the roster read).
      * @param describeFace - the shared mirror's describe face (writability source).
      */
-    constructor(api, describeFace) {
+    constructor(api, remote, describeFace) {
         this.api = api;
+        this.remote = remote;
         this.describeFace = describeFace;
     }
     set(patch) {
@@ -140,7 +149,7 @@ export class AgentPresetSettingsController {
      * @returns once the snapshot reflects the host.
      */
     async load() {
-        const roster = await beginRosterRead(this.api, this.store);
+        const roster = await beginRosterRead(this.remote, this.store);
         if (roster === undefined)
             return;
         const { presets } = roster;

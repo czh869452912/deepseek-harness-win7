@@ -8,14 +8,71 @@
  * private fields bypass that rebinding.
  */
 import { Service } from '@deepseek-ai/cordis';
+import { randomUUID } from '@deepseek-ai/dsh-util-crypto';
 /** Create one browser-only draft descriptor; only its id enters input state. */
 function browserDraftAttachment(file) {
     return {
         kind: 'image',
-        id: crypto.randomUUID(),
+        id: randomUUID(),
         previewUrl: URL.createObjectURL(file),
         file,
     };
+}
+/**
+ * Fill the draft's intrinsic dimensions once the browser parses the image
+ * header (a metadata read off the preview URL, not a full decode). Failures
+ * and non-browser runtimes leave them absent — consumers size those images
+ * from CSS constraints instead. The descriptors stay registry-owned; submit
+ * reads the dimensions into an immutable echo snapshot, so this late write
+ * does not require a store notification.
+ */
+function probeDimensions(attachment) {
+    if (typeof Image !== 'function')
+        return;
+    const probe = new Image();
+    probe.onload = () => {
+        attachment.width = probe.naturalWidth;
+        attachment.height = probe.naturalHeight;
+    };
+    probe.src = attachment.previewUrl;
+}
+/** Give the echo one paint opportunity without letting a throttled frame clock block admission. */
+function nextPaint() {
+    return new Promise((resolve) => {
+        if (typeof requestAnimationFrame === 'function') {
+            if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+                setTimeout(resolve, 0);
+                return;
+            }
+            let settled = false;
+            const finish = () => {
+                if (settled)
+                    return;
+                settled = true;
+                clearTimeout(fallback);
+                setTimeout(resolve, 0);
+            };
+            const fallback = setTimeout(finish, 100);
+            requestAnimationFrame(finish);
+        }
+        else {
+            setTimeout(resolve, 0);
+        }
+    });
+}
+/** Native canonical base64 of one browser file (FileReader data-URL encode; no main-thread byte loop). */
+function base64Of(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const url = reader.result;
+            resolve(url.slice(url.indexOf(',') + 1));
+        };
+        reader.onerror = () => {
+            reject(reader.error ?? new Error('conversation: image read failed'));
+        };
+        reader.readAsDataURL(file);
+    });
 }
 /** Unsupported browser-declared image type, localized by the UI boundary. */
 export class UnsupportedImageMediaTypeError extends Error {
@@ -35,10 +92,6 @@ export class ConversationController extends Service {
     /** The per-session composer-block registry. */
     blocks;
     draftAttachments = new Map();
-    imageUrls = new Map();
-    imageGenerations = new Map();
-    createdImageUrls = new Set();
-    disposed = false;
     /**
      * @param ctx - owning root context (the plugin apply context; the service
      * registers itself and follows that fiber's lifetime).
@@ -51,14 +104,11 @@ export class ConversationController extends Service {
         this.input = config.input;
         this.blocks = config.blocks;
         ctx.effect(() => () => {
-            this.disposed = true;
-            for (const url of this.createdImageUrls)
-                revokePreview(url);
-            this.createdImageUrls.clear();
+            for (const attachment of this.draftAttachments.values()) {
+                revokePreview(attachment.previewUrl);
+            }
             this.draftAttachments.clear();
-            this.imageUrls.clear();
-            this.imageGenerations.clear();
-        }, 'conversation attachment URL cache');
+        }, 'conversation draft attachments');
     }
     /**
      * Send a prompt into the scoped session. Business failures also land in the
@@ -73,7 +123,12 @@ export class ConversationController extends Service {
             throw new Error(`conversation.send failed: ${result.error.code}: ${result.error.message}`);
     }
     /**
-     * Submit ordered draft images with text through one host admission.
+     * Submit ordered draft images with text through one host admission. A local
+     * submission echo enters the session snapshot synchronously; serialization
+     * and the prompt round-trip start after the browser can paint it. On the
+     * echo's observed retirement the draft images hand their preview URLs to
+     * the durable image cache and leave the registry; on failure they stay
+     * registered so the composer can restore them.
      * @param session - target session.
      * @param text - serialized prompt text.
      * @param imageIds - ordered draft-local attachment ids.
@@ -86,12 +141,44 @@ export class ConversationController extends Service {
         if (attachments.length !== imageIds.length) {
             throw new Error('conversation.sendSession: one or more draft images are no longer available');
         }
-        const uploaded = await this.serializeImages(attachments.map(attachment => attachment.file));
-        const content = [...uploaded, ...(text === '' ? [] : [{ type: 'text', text }])];
-        const result = await session.prompt(content, mode, signal);
+        if (session.getSnapshot().subagent !== null) {
+            const uploaded = await this.serializeImages(attachments.map(attachment => attachment.file));
+            const content = [...uploaded, ...(text === '' ? [] : [{ type: 'text', text }])];
+            const result = await session.prompt(content, mode, signal);
+            return result.ok ? { kind: 'success' } : { kind: 'error' };
+        }
+        let finishRetirement;
+        const retirement = attachments.length === 0
+            ? undefined
+            : new Promise((resolve) => { finishRetirement = resolve; });
+        const submission = session.beginSubmission({
+            text,
+            images: attachments.map(attachment => ({
+                previewUrl: attachment.previewUrl,
+                ...(attachment.file.name === '' ? {} : { name: attachment.file.name }),
+                ...(attachment.width === undefined ? {} : { width: attachment.width }),
+                ...(attachment.height === undefined ? {} : { height: attachment.height }),
+            })),
+            onRetire: (settlement) => {
+                this.settleSubmittedImages(session.sessionId, attachments, settlement);
+                finishRetirement?.(settlement);
+            },
+        });
+        let content;
+        try {
+            await nextPaint();
+            const uploaded = await this.serializeImages(attachments.map(attachment => attachment.file));
+            content = [...uploaded, ...(text === '' ? [] : [{ type: 'text', text }])];
+        }
+        catch (error) {
+            submission.abandon();
+            throw error;
+        }
+        const result = await session.prompt(content, mode, signal, submission.requestId);
         if (!result.ok)
             return { kind: 'error' };
-        this.releaseDraftImages(attachments);
+        if (retirement !== undefined && (await retirement).reason !== 'observed')
+            return { kind: 'error' };
         return { kind: 'success' };
     }
     /**
@@ -105,7 +192,7 @@ export class ConversationController extends Service {
         return files.map((file) => {
             const attachment = browserDraftAttachment(file);
             this.draftAttachments.set(attachment.id, attachment);
-            this.createdImageUrls.add(attachment.previewUrl);
+            probeDimensions(attachment);
             return attachment;
         });
     }
@@ -146,7 +233,6 @@ export class ConversationController extends Service {
         if (attachment === undefined)
             return;
         this.draftAttachments.delete(id);
-        this.createdImageUrls.delete(attachment.previewUrl);
         revokePreview(attachment.previewUrl);
     }
     /**
@@ -156,68 +242,6 @@ export class ConversationController extends Service {
     releaseDraftImages(attachments) {
         for (const attachment of attachments)
             this.releaseDraftImage(attachment.id);
-    }
-    /**
-     * Resolve and cache one session-authorized historical image URL.
-     * @param sessionId - owning session authorization scope.
-     * @param attachment - durable image reference.
-     * @returns browser URL valid until its rendered session is released.
-     */
-    resolveImage(sessionId, attachment) {
-        if (this.disposed)
-            return Promise.reject(new Error('conversation.resolveImage: service is disposed'));
-        const key = `${sessionId}:${attachment.attachmentId}`;
-        const cached = this.imageUrls.get(key);
-        if (cached !== undefined)
-            return cached.pending;
-        const generation = this.imageGenerations.get(sessionId) ?? 0;
-        const session = this.requireSessions().binding(sessionId)?.session;
-        if (session === undefined) {
-            return Promise.reject(new Error(`conversation.resolveImage: unknown session "${sessionId}"`));
-        }
-        const pending = session.readAttachment(attachment.attachmentId)
-            .then((result) => {
-            if (!result.ok)
-                throw new Error(`${result.error.code}: ${result.error.message}`);
-            if (this.disposed)
-                throw new Error('conversation.resolveImage: service was disposed before loading completed');
-            if ((this.imageGenerations.get(sessionId) ?? 0) !== generation) {
-                throw new Error('historical image scope was released before loading completed');
-            }
-            if (typeof URL.createObjectURL !== 'function') {
-                return `data:${result.value.attachment.mediaType};base64,${bytesToBase64(result.value.data)}`;
-            }
-            const bytes = Uint8Array.from(result.value.data);
-            const url = URL.createObjectURL(new Blob([bytes.buffer], { type: result.value.attachment.mediaType }));
-            this.createdImageUrls.add(url);
-            return url;
-        })
-            .catch((error) => {
-            if (this.imageUrls.get(key)?.generation === generation)
-                this.imageUrls.delete(key);
-            throw error;
-        });
-        this.imageUrls.set(key, { sessionId, generation, pending });
-        return pending;
-    }
-    /**
-     * Release every historical image URL owned by one rendered session.
-     * @param sessionId - rendered session scope.
-     */
-    releaseSessionImages(sessionId) {
-        this.imageGenerations.set(sessionId, (this.imageGenerations.get(sessionId) ?? 0) + 1);
-        for (const [key, entry] of this.imageUrls) {
-            if (entry.sessionId !== sessionId)
-                continue;
-            this.imageUrls.delete(key);
-            void entry.pending.then((url) => {
-                if (!this.createdImageUrls.delete(url))
-                    return;
-                revokePreview(url);
-            }, () => {
-                // A failed or invalidated load owns no object URL.
-            });
-        }
     }
     /** Apply one operation to a pending queue occurrence. */
     async updateQueue(itemId, action) {
@@ -265,6 +289,29 @@ export class ConversationController extends Service {
             throw new Error('conversation: sessions service unavailable');
         return sessions;
     }
+    /**
+     * Settle one submission's draft images when its echo retires. Observed:
+     * each image leaves the registry, handing its preview URL to the durable
+     * image cache (seeded under the admitted reference so the transcript node
+     * renders immediately while the cache reads canonical bytes) or revoking it
+     * when the cache already holds that reference. Failed: nothing changes;
+     * the ids stay registered for the composer's rail restore.
+     */
+    settleSubmittedImages(sessionId, attachments, retirement) {
+        if (retirement.reason !== 'observed')
+            return;
+        const uiConversation = this.ctx.get('uiConversation');
+        attachments.forEach((attachment, index) => {
+            const live = this.draftAttachments.get(attachment.id);
+            if (live === undefined)
+                return;
+            this.draftAttachments.delete(attachment.id);
+            const ref = retirement.attachments[index];
+            if (ref !== undefined && uiConversation?.seedImageUrl(sessionId, ref, attachment.previewUrl) === true)
+                return;
+            revokePreview(attachment.previewUrl);
+        });
+    }
     /** Convert browser files to canonical base64 prompt parts. */
     serializeImages(images) {
         return Promise.all(images.map(async (file) => ({ type: 'image', ...await this.encodeImage(file) })));
@@ -273,7 +320,7 @@ export class ConversationController extends Service {
     async encodeImage(file) {
         return {
             mediaType: imageMediaType(file.type),
-            data: bytesToBase64(new Uint8Array(await file.arrayBuffer())),
+            data: await base64Of(file),
             ...(file.name === '' ? {} : { name: file.name }),
         };
     }
@@ -288,14 +335,6 @@ function imageMediaType(value) {
         default:
             throw new UnsupportedImageMediaTypeError(value);
     }
-}
-function bytesToBase64(data) {
-    let binary = '';
-    const chunk = 0x8000;
-    for (let offset = 0; offset < data.length; offset += chunk) {
-        binary += String.fromCharCode(...data.subarray(offset, offset + chunk));
-    }
-    return btoa(binary);
 }
 function revokePreview(url) {
     if (url.startsWith('blob:'))

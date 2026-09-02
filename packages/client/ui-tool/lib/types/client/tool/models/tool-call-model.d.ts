@@ -1,11 +1,28 @@
-import type { ToolCallBlock, ToolResultNode } from '@deepseek-ai/dsh-client-runtime/client';
-export type { ToolCallBlock } from '@deepseek-ai/dsh-client-runtime/client';
+/**
+ * Pure row-model derivation for tool summary rows: variant classification,
+ * one-line summary, expanded-body text, and flattened result output from the
+ * frozen call slice. Input material comes from the call ARGUMENTS; output and
+ * error material from the settled result node. A supported terminal call gets
+ * its expanded body from `terminalCardModel` instead.
+ */
+import type { ToolCallBlock, ToolResultNode } from '@deepseek-ai/dsh-client-ui-chat/client';
+import type { LocaleKeysOf } from '@deepseek-ai/dsh-client-ui-slots';
+export type { ToolCallBlock } from '@deepseek-ai/dsh-client-ui-chat/client';
 /** Tool-call row variants selected by the generic atomic renderer. */
 export type ToolRowVariant = 'search' | 'read' | 'bash' | 'write' | 'edit' | 'code' | 'others';
 /** Row state semantic; colors self-supplied via StateDot (design gives none). */
 export type ToolRowState = 'running' | 'ok' | 'error' | 'stopped';
-/** Figma row titles per variant (design literals, not translatable copy). */
-export declare const VARIANT_TITLES: Record<ToolRowVariant, string>;
+type ToolTitleKey = Extract<LocaleKeysOf<'conversation'>, `tool.title.${string}`>;
+/** Locale key per generic row variant. */
+export declare const VARIANT_TITLE_KEYS: {
+    readonly search: "tool.title.search";
+    readonly read: "tool.title.read";
+    readonly bash: "tool.title.bash";
+    readonly write: "tool.title.write";
+    readonly edit: "tool.title.edit";
+    readonly code: "tool.title.code";
+    readonly others: "tool.title.generic";
+};
 /**
  * Classify a tool name into its row variant.
  * @param toolName - wire tool name.
@@ -15,7 +32,7 @@ export declare function classifyTool(toolName: string): ToolRowVariant;
 /** Everything ToolRow needs, derived once from the frozen slice. */
 export interface ToolRowModel {
     variant: ToolRowVariant;
-    title: string;
+    titleKey: ToolTitleKey;
     summary: string;
     /**
      * Filesystem path from args (`path` / `file_path`) when the row is a file

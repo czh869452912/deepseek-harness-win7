@@ -1,4 +1,4 @@
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-runtime/client';
+import { createSnapshotStore } from '@deepseek-ai/dsh-client-store';
 import { detectTrigger } from "../core/detect.js";
 import { MENU_CLOSED, menuReduce, seedGroups } from "../core/menu.js";
 /**
@@ -17,6 +17,13 @@ export class InputTriggerController {
      */
     launcher = createSnapshotStore(null);
     /**
+     * Crumbs published by each header-bearing source for the open menu, keyed
+     * by source name. A snapshot store like {@link InputTriggerController.launcher}:
+     * the answer changes with every hit, and render-side consumers subscribe
+     * instead of re-polling sources during a render.
+     */
+    headers = createSnapshotStore(new Map());
+    /**
      * Aggregated hot reference lexicon, grouped by trigger (plain-text-reference decision;
      * see .agents/notes/implemented/architecture/2026-07-25-web-input-machine-and-slash-pipeline.md):
      * sources implementing the lexicon hook are polled with the session
@@ -29,6 +36,8 @@ export class InputTriggerController {
     lexicon = createSnapshotStore(new Map());
     /** The authoritative hit: single truth for span CAS material (menu snapshot never carries it alone). */
     hit = null;
+    /** Whether the open menu was reached by a drill pick; cleared with the menu. */
+    drilled = false;
     fetch = null;
     disposed = false;
     /** Per-source lexicon unsubscribers (sources without the hook never enter). */
@@ -84,6 +93,7 @@ export class InputTriggerController {
             this.menu.set(seedGroups(this.menu.getSnapshot(), roster));
         }
         this.reduce({ type: 'hit', hit });
+        this.refreshHeaders(hit, roster);
         this.fetchCandidates(hit, roster);
     }
     /**
@@ -111,6 +121,7 @@ export class InputTriggerController {
         this.launcher.set(source);
         this.menu.set(seedGroups(this.menu.getSnapshot(), [match]));
         this.reduce({ type: 'hit', hit });
+        this.refreshHeaders(hit, [match]);
         this.fetchCandidates(hit, [match]);
     }
     /**
@@ -118,8 +129,9 @@ export class InputTriggerController {
      * and execute claim/insert outcomes via the scoped input events.
      * @param source - source (group) name.
      * @param index - candidate index within the group.
+     * @param action - settling pick (default) or the candidate's drill action.
      */
-    pick(source, index) {
+    pick(source, index, action = 'pick') {
         const state = this.menu.getSnapshot();
         const hit = this.hit;
         if (this.disposed || !state.open || hit === null)
@@ -131,16 +143,38 @@ export class InputTriggerController {
         const src = this.deps.roster.sources(hit.trigger).find(s => s.name === source);
         if (src === undefined)
             return;
-        const outcome = src.onPick({
-            candidate,
-            session: this.project(),
-            position: hit.position,
-            via: 'menu',
-            span: hit.span,
-        });
-        this.stopFetch();
-        this.reduce({ type: 'close' });
-        this.execute(outcome, hit.span);
+        this.settle(src, candidate, hit, action);
+    }
+    /**
+     * Pointer pick on one crumb of a source's menu header: route it through the
+     * same drill path a folder row takes, so returning to a step and descending
+     * into one share one outcome.
+     * @param source - source (group) name.
+     * @param index - crumb index within that source's published header.
+     */
+    pickCrumb(source, index) {
+        const hit = this.hit;
+        if (this.disposed || !this.menu.getSnapshot().open || hit === null)
+            return;
+        const crumb = this.headers.getSnapshot().get(source)?.[index];
+        if (crumb === undefined || crumb.current === true)
+            return;
+        const src = this.deps.roster.sources(hit.trigger).find(s => s.name === source);
+        if (src === undefined)
+            return;
+        this.settle(src, { name: crumb.label, value: crumb.value }, hit, 'drill');
+    }
+    /**
+     * Pointer hover from MenuView: park the shared highlight on the hovered
+     * candidate (keyboard `move` and pointer hover drive one highlight —
+     * last input wins).
+     * @param source - source (group) name.
+     * @param index - candidate index within the group.
+     */
+    hover(source, index) {
+        if (this.disposed)
+            return;
+        this.reduce({ type: 'hover', source, index });
     }
     /**
      * Keyboard arbitration while the menu is open.
@@ -173,6 +207,20 @@ export class InputTriggerController {
                     return 'pass';
                 this.pick(state.highlight.source, state.highlight.index);
                 return 'pick-highlighted';
+            }
+            case 'tab': {
+                // Tab drills into the highlighted candidate when it offers descent;
+                // otherwise the key passes so native focus behavior is untouched.
+                if (state.highlight === null)
+                    return 'pass';
+                const group = state.groups.find(g => g.source === state.highlight?.source);
+                const item = group !== undefined && group.status === 'ready'
+                    ? group.items[state.highlight.index]
+                    : undefined;
+                if (item?.drill !== true)
+                    return 'pass';
+                this.pick(state.highlight.source, state.highlight.index, 'drill');
+                return 'consumed';
             }
         }
     }
@@ -335,7 +383,19 @@ export class InputTriggerController {
     watchLexicon(source, projection) {
         if (source.lexicon === undefined || source.subscribeLexicon === undefined)
             return;
-        this.lexiconOffs.set(source, source.subscribeLexicon(projection, () => { this.refreshLexicon(); }));
+        this.lexiconOffs.set(source, source.subscribeLexicon(projection, () => {
+            this.refreshLexicon();
+            const hit = this.hit;
+            if (hit === null || !this.menu.getSnapshot().open || hit.trigger !== source.trigger)
+                return;
+            // Let every source process the same invalidation before rebuilding the
+            // open menu, so one source cannot contribute its previous catalog.
+            void Promise.resolve().then(() => {
+                if (this.disposed || this.hit !== hit || !this.menu.getSnapshot().open)
+                    return;
+                this.fetchCandidates(hit, this.deps.roster.sources(hit.trigger));
+            });
+        }));
     }
     /** Launch the candidate fetch for one hit generation, superseding the previous one. */
     fetchCandidates(hit, roster) {
@@ -350,6 +410,7 @@ export class InputTriggerController {
                 query: hit.query,
                 quoted: hit.quoted,
                 position: hit.position,
+                drilled: this.drilled,
                 signal: controller.signal,
             })
                 .then((items) => {
@@ -368,6 +429,65 @@ export class InputTriggerController {
         this.fetch?.abort();
         this.fetch = null;
     }
+    /**
+     * Run one candidate (or crumb) through its source and apply the outcome.
+     *
+     * A drill is the one pick that leaves the menu open, so it is also the one
+     * that records how the next query was reached; every other pick closes the
+     * menu, which clears that record.
+     * @param src - the owning source.
+     * @param candidate - the picked candidate, or a crumb projected as one.
+     * @param hit - the authoritative hit supplying position and span CAS.
+     * @param action - settling pick or drill.
+     */
+    settle(src, candidate, hit, action) {
+        const outcome = src.onPick({
+            candidate,
+            session: this.project(),
+            position: hit.position,
+            via: 'menu',
+            action,
+            span: hit.span,
+        });
+        this.stopFetch();
+        this.reduce({ type: 'close' });
+        const applied = this.execute(outcome, hit.span);
+        // Set after the close above, so the reducer's own teardown cannot clear
+        // it, and only when the descent text actually landed: a refused edit
+        // (stale draft revision, or no listener) leaves the draft where it was,
+        // and a header over that draft would name a directory nobody descended
+        // into while hiding the locations its rows still need.
+        this.drilled = action === 'drill' && applied;
+    }
+    /** Re-poll every header-bearing source in the hit roster and publish their crumbs. */
+    refreshHeaders(hit, roster) {
+        const projection = this.project();
+        const crumbs = new Map();
+        for (const src of roster) {
+            if (src.header === undefined)
+                continue;
+            let published;
+            try {
+                published = src.header(projection, { query: hit.query, quoted: hit.quoted, drilled: this.drilled });
+            }
+            catch (error) {
+                // A faulty source drops silently with a console record (the
+                // candidate-fetch failure policy); a header is decoration and must
+                // not take down the menu that carries the candidates.
+                console.error(`[ui-input-trigger] source "${src.name}" header failed:`, error);
+                continue;
+            }
+            if (published === undefined || published.length === 0)
+                continue;
+            crumbs.set(src.name, published);
+        }
+        this.setHeaders(crumbs);
+    }
+    setHeaders(next) {
+        if (this.headers.getSnapshot().size === 0 && next.size === 0)
+            return;
+        this.headers.set(next);
+    }
     clearLauncher() {
         if (this.launcher.getSnapshot() !== null)
             this.launcher.set(null);
@@ -377,8 +497,11 @@ export class InputTriggerController {
         const next = menuReduce(cur, ev);
         if (next !== cur)
             this.menu.set(next);
-        if (!next.open)
-            this.clearLauncher();
+        if (next.open)
+            return;
+        this.clearLauncher();
+        this.drilled = false;
+        this.setHeaders(new Map());
     }
 }
 //# sourceMappingURL=controller.js.map

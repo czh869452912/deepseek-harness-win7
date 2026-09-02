@@ -1,5 +1,6 @@
 import z from "@deepseek-ai/schemastery";
 import { defineTool } from "@deepseek-ai/dsh-tools";
+import { FIRST_PARTY_SECTION_ORDER } from "@deepseek-ai/dsh-system-prompt";
 //#region lib/types/index.js
 /**
 * The model-facing `workflow` tool: run a JavaScript orchestration script that fans out
@@ -137,7 +138,7 @@ function apply(ctx, config) {
 	const recorder = createWorkflowRecorder(ctx);
 	ctx.systemPrompt.section({
 		name: `tool:${toolName}`,
-		order: 115,
+		order: FIRST_PARTY_SECTION_ORDER.TOOL_WORKFLOW,
 		text: `Use the ${toolName} tool ONLY when the user explicitly asks for a workflow or for large multi-agent orchestration: you write a JavaScript script (the tool description documents the exact format) that fans work out across many subagents with phases and structured results. For one or two delegations, prefer plain subagent calls.`
 	});
 	ctx.tools.register(defineTool({

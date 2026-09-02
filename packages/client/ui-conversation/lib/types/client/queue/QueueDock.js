@@ -1,6 +1,6 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useEffect, useId, useMemo, useState } from 'react';
-import { IconCheckOutline16, IconChevronDownOutline14, IconChevronUpOutline14, IconCloseOutline16, IconEditOutline16, IconQueueOutline14, IconSendOutline14, IconTrashOutline16, Tooltip, } from '@deepseek-ai/dsh-client-ui-primitives';
+import { IconCheckOutline16, IconChevronDownOutline14, IconChevronUpOutline14, IconCloseOutline16, IconEditOutline16, IconQueueOutline14, IconSendOutline14, IconTrashOutline16, projectUserText, Tooltip, } from '@deepseek-ai/dsh-client-ui-primitives';
 import { NS } from "../locales.js";
 import css from './QueueDock.module.css';
 /**
@@ -58,7 +58,7 @@ export function QueueDock({ useSession, updateQueue, notify, t }) {
                                             void saveEdit();
                                         }
                                     } }))
-                                : _jsx("span", { className: css.preview, children: row.preview }), queueMutable && _jsx("div", { className: css.actions, children: editing?.id === row.id
+                                : _jsx("span", { className: css.preview, children: projectUserText(row.preview, []) }), queueMutable && _jsx("div", { className: css.actions, children: editing?.id === row.id
                                     ? (_jsxs(_Fragment, { children: [_jsx(Tooltip, { label: t('queue.save'), side: "bottom", delayMs: 500, children: _jsx("button", { type: "button", className: css.action, "aria-label": t('queue.save'), disabled: busy !== null || editing.text.trim() === '', onClick: () => { void saveEdit(); }, children: _jsx(IconCheckOutline16, { size: 14 }) }) }), _jsx(Tooltip, { label: t('queue.cancelEdit'), side: "bottom", delayMs: 500, children: _jsx("button", { type: "button", className: css.action, "aria-label": t('queue.cancelEdit'), disabled: busy !== null, onClick: () => { setEditing(null); }, children: _jsx(IconCloseOutline16, { size: 14 }) }) })] }))
                                     : (_jsxs(_Fragment, { children: [_jsx(Tooltip, { label: t('queue.edit'), side: "bottom", delayMs: 500, disabled: row.text === null, children: _jsx("button", { type: "button", className: css.action, "aria-label": t('queue.edit'), 
                                                     // Disabled buttons fire no hover events, so the
@@ -72,17 +72,10 @@ export function QueueDock({ useSession, updateQueue, notify, t }) {
                                                         void applyAction(row.id, { kind: 'steer' }, t('queue.steerFailed'));
                                                     }, children: _jsx(IconSendOutline14, {}) }) })] })) })] }, row.id))) })] }) }));
 }
-/**
- * The dock entry as a plain registrant plugin. The conversation service is
- * the action contract; the slot declaration has an independent lifecycle boundary.
- */
+/** Registers queue actions backed by the session-scoped conversation service. */
 export const queueDockEntry = {
     name: 'conversation-queue-dock',
     inject: ['slots', 'conversation', 'sessions'],
-    /**
-     * Register the queue strip as the terminal input-dock entry (order 20).
-     * @param ctx - registrant context (disposal rides ctx.effect inside slots.register).
-     */
     apply(ctx) {
         ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({
             name: 'conversation.input.dock',

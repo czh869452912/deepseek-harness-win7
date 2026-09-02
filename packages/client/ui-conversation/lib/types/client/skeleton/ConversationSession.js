@@ -1,14 +1,14 @@
-import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-runtime";
 /** Strict per-session header/body content inserted into the resident conversation layout. */
-import { useEffect, useSyncExternalStore } from 'react';
+import { useEffect } from 'react';
 import clsx from 'clsx';
+import { conversationPhase } from "../contract/snapshot.js";
 import css from './ConversationRoot.module.css';
 const DEFAULT_VIEW_ID = 'chat';
-/** Resolve by id and keep stale persisted selections on the stable Chat fallback. */
+/** Resolve a persisted selection, then registered Chat, without choosing another View. */
 function resolveActiveView(tabs, selectedId) {
-    const requestedId = selectedId ?? DEFAULT_VIEW_ID;
-    return tabs.find(view => view.id === requestedId)
-        ?? tabs.find(view => view.id === DEFAULT_VIEW_ID);
+    const selected = selectedId === null ? undefined : tabs.find(view => view.id === selectedId);
+    return selected ?? tabs.find(view => view.id === DEFAULT_VIEW_ID);
 }
 function deriveAncestry(list, id) {
     const chain = [];
@@ -21,7 +21,11 @@ function deriveAncestry(list, id) {
         const summary = list.byId[cursor];
         if (summary === undefined)
             break;
-        chain.unshift({ id: summary.id, displayTitle: summary.displayTitle });
+        chain.unshift({
+            id: summary.id,
+            displayTitle: summary.displayTitle,
+            subagent: summary.origin === 'subagent',
+        });
         if (summary.origin !== 'subagent')
             break;
         cursor = summary.parentId;
@@ -40,18 +44,28 @@ function equalBreadcrumbs(left, right) {
  * @param props - Strict Session store, view ledger, navigation, render, and locale shares.
  * @returns the hidden blank-session header or visible title and tabs.
  */
-export function ConversationSessionHeader({ sessionId, useSession, useSessions, useStore, actions, renderSlot, views, open, t, }) {
-    useSyncExternalStore(views.subscribe, views.version);
-    const tabs = views.list();
+export function ConversationSessionHeader({ sessionId, useSession, useSessions, useConversation, useConversationViews, useStore, actions, renderSlot, open, t, }) {
+    const tabs = useConversationViews(value => value);
     const selectedId = useStore(s => s.view);
     const active = resolveActiveView(tabs, selectedId);
     const ancestry = useSessions(s => deriveAncestry(s, sessionId), equalBreadcrumbs);
-    const composerPhase = useSession(s => s.composerPhase);
-    const blank = useSession(s => s.blank);
-    const hideChrome = blank && composerPhase === 'blank';
+    const session = useSession(s => s);
+    const conversation = useConversation(s => s);
+    const hideChrome = session.blank && conversationPhase(session, conversation) === 'blank';
     return (_jsx("header", { className: clsx(css.header, hideChrome && css.headerHidden), "aria-hidden": hideChrome || undefined, children: !hideChrome && (_jsxs(_Fragment, { children: [_jsxs("div", { className: css.titleRow, children: [_jsxs("div", { className: css.titleCluster, children: [_jsxs("nav", { className: css.crumbs, "aria-label": t('session.hierarchy'), children: [ancestry.map((summary, index) => {
                                             const last = index === ancestry.length - 1;
-                                            return (_jsxs("span", { className: css.crumbSeg, children: [index > 0 && _jsx("span", { className: css.crumbSep, children: "/" }), _jsx("button", { type: "button", className: clsx(css.crumb, last && css.crumbCurrent), disabled: last, onClick: () => { open(summary.id); }, children: summary.displayTitle })] }, summary.id));
+                                            const title = (_jsx("button", { type: "button", className: clsx(css.crumb, summary.subagent && css.crumbSubagent, last && css.crumbCurrent), disabled: last, onClick: () => { open(summary.id); }, children: summary.displayTitle }));
+                                            const lineage = last || summary.subagent;
+                                            const lineageOwner = {
+                                                lineageSessionId: summary.id,
+                                                displayTitle: summary.displayTitle,
+                                                ...last ? {} : { openTitle: () => { open(summary.id); } },
+                                            };
+                                            return (_jsxs("span", { className: css.crumbSeg, children: [index > 0 && _jsx("span", { className: css.crumbSep, children: "/" }), lineage
+                                                        ? summary.subagent
+                                                            ? renderSlot('conversation.session.header.lineage', lineageOwner, { fallback: title })
+                                                            : (_jsxs(_Fragment, { children: [title, renderSlot('conversation.session.header.lineage', lineageOwner, { fallback: null })] }))
+                                                        : title] }, summary.id));
                                         }), ancestry.length === 0 && _jsx("span", { className: css.crumbCurrent, children: sessionId })] }), _jsx("div", { className: css.headerActions, children: renderSlot('conversation.session.header.actions', {}) })] }), _jsx("div", { className: css.headerUtilities, children: renderSlot('conversation.session.header.utilities', {}) })] }), tabs.length > 1 && (_jsx("div", { className: css.tabs, role: "tablist", children: tabs.map(viewTab => (_jsx("button", { type: "button", role: "tab", "aria-selected": viewTab.id === active?.id, className: clsx(css.tab, viewTab.id === active?.id && css.tabActive), onClick: () => { actions.setView(viewTab.id); }, children: viewTab.label }, viewTab.id))) }))] })) }));
 }
 /**
@@ -60,17 +74,15 @@ export function ConversationSessionHeader({ sessionId, useSession, useSessions, 
  * @param props - Strict Session input/store, view ledger, and render shares.
  * @returns the active view area, or null while the Session remains blank.
  */
-export function ConversationSession({ sessionId, useSession, useInput, inputActions, useStore, actions, renderSlot, views, bindDraftMirror, releaseSessionImages, }) {
-    useSyncExternalStore(views.subscribe, views.version);
-    const tabs = views.list();
+export function ConversationSession({ useSession, useConversation, useConversationViews, useInput, inputActions, useStore, actions, renderSlot, bindDraftMirror, }) {
+    const tabs = useConversationViews(value => value);
     const selectedId = useStore(s => s.view);
     const active = resolveActiveView(tabs, selectedId);
-    const composerPhase = useSession(s => s.composerPhase);
-    const blank = useSession(s => s.blank);
+    const session = useSession(s => s);
+    const conversation = useConversation(s => s);
     const inputState = useInput(s => s);
     const storedDraft = useStore(s => s.draft);
-    // `?? null`: persisted snapshots from before the inspect field rehydrate without it.
-    const inspect = useStore(s => s.inspect ?? null);
+    const viewRequest = useStore(s => s.viewRequest ?? null);
     useEffect(() => {
         if (inputState.draft === '' && storedDraft !== '')
             inputActions.setDraft(storedDraft);
@@ -79,14 +91,12 @@ export function ConversationSession({ sessionId, useSession, useInput, inputActi
         // Mount-only (deps pinned to inputActions): later store writes come from
         // the machine mirror, not this seed effect.
     }, [inputActions]);
-    useEffect(() => () => {
-        releaseSessionImages(sessionId);
-    }, [releaseSessionImages, sessionId]);
-    if (blank && composerPhase === 'blank')
+    if (session.blank && conversationPhase(session, conversation) === 'blank')
         return null;
     return (_jsx("div", { className: css.viewArea, children: active !== undefined && renderSlot('conversation.view', {
-            inspect,
-            onInspectDone: () => { actions.setInspect(null); },
+            viewRequest,
+            openView: actions.openView,
+            completeViewRequest: actions.completeViewRequest,
         }, { only: active.id }) }));
 }
 //# sourceMappingURL=ConversationSession.js.map

@@ -41,18 +41,16 @@
  */
 import { existsSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { Win32Error } from '@deepseek-ai/dsh-win32-process';
 import { grantWrite, revokeWrite } from "./acl.js";
-import { Win32Error } from "./errors.js";
 import { allocPtrSlot, decodePtr, isNullPtr, throwLastError, win32 } from "./ffi.js";
 import { assertPrivateTempDisjoint } from "./path-boundary.js";
 import { drainPipe, spawnSandboxed, spawnSandboxedInherited, waitForExit } from "./spawn.js";
 import { createRestrictedToken, findLogonSid, makeWellKnownSid, openCurrentProcessToken, setTokenDefaultDaclGrant } from "./token.js";
 import * as abi from "./win32-abi.js";
-export { quoteArg } from "./spawn.js";
 export { AclWriteGrant } from "./grant.js";
 export { assertTempRootOutsideWorkspace } from "./path-boundary.js";
 export { tempWriteSid, workspaceWriteSid } from "./workspace-sid.js";
-export { Win32Error } from "./errors.js";
 /** Free one optional SID while retaining a failure for best-effort sibling cleanup. */
 function freeSidBestEffort(api, sidPtr, label, failures) {
     if (sidPtr === undefined)

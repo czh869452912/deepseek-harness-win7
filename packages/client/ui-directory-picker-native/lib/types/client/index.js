@@ -1,6 +1,6 @@
 import { NativeDirectoryFlow } from "./flow.js";
-/** Required services (cordis fiber inject): the slot registry and the wire-facing workspace service. */
-export const inject = ['slots', 'workspaces'];
+/** Required services (cordis fiber inject): the slot registry and workspace UI service. */
+export const inject = ['slots', 'uiWorkspace'];
 /**
  * Client plugin body: register the renderless native flow into both
  * directory-flow holes through `slots.inject()` because the ui-workspace
@@ -8,7 +8,7 @@ export const inject = ['slots', 'workspaces'];
  * @param ctx - client root context.
  */
 export function apply(ctx) {
-    const injected = () => ({ pick: () => ctx.workspaces.pickDirectory() });
+    const injected = () => ({ pick: () => ctx.uiWorkspace.pickDirectory() });
     // Both declaration lifetimes must be live before the pair installs; the
     // generator makes the two registrations one transactional effect. The
     // outer/inner nesting order is arbitrary; neither hole has precedence.

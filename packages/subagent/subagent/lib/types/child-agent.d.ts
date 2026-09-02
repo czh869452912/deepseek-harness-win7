@@ -30,9 +30,20 @@ export declare class SubagentDepthError extends Error {
  */
 export declare function resolveChildDepth(parent: Agent, maxDepth: number | undefined): number;
 /**
- * Resolve the child's `AgentOptions`: the parent's provider/model/maxTokens
- * route unless the request overrides it, stamped with the child's own
- * delegation depth.
+ * Resolve the parent values inherited by a child. The latest request header
+ * owns provider, model, and reasoning effort after request-time selection;
+ * creation options remain the fallback before the first request and retain
+ * the configured output-token limit.
+ * @param parent - delegating parent Agent.
+ * @returns detached Agent options for child-option merging.
+ */
+export declare function parentAgentOptionsForDelegation(parent: Agent): AgentOptions;
+/**
+ * Resolve the child's `AgentOptions`: the parent's provider/model,
+ * reasoning-effort, and maxTokens values unless the request overrides them,
+ * stamped with the child's own delegation depth. Changing the route without
+ * naming an effort clears the parent's route-owned effort so the selected
+ * model resolves its own default.
  * @param parent - the delegating parent whose route the child inherits.
  * @param requested - per-child overrides, if any.
  * @param childDepth - the resolved delegation depth to stamp.

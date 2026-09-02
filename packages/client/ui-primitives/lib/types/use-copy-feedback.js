@@ -1,8 +1,3 @@
-// The copy-to-clipboard-with-feedback hook shared by the block primitives
-// (TerminalBlock, SearchBlock): write the given text, and on success flip a
-// transient `copied` flag that the caller renders as a "复制成功" label for one
-// second. A refused write leaves the flag untouched, so the control never claims
-// a copy the host declined.
 import { useCallback, useState } from 'react';
 import { writeClipboard } from "./clipboard.js";
 /** How long the `copied` flag stays true after a successful write, in ms. */

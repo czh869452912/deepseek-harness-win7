@@ -23,6 +23,7 @@ export declare class HarnessSdkJsonRpcServer {
     private cwd;
     private provider;
     private model;
+    private reasoningEffort;
     private maxTokens;
     private llmFiber;
     private readonly sessions;
@@ -30,9 +31,10 @@ export declare class HarnessSdkJsonRpcServer {
     private readonly disposers;
     private shutdownTask;
     private shuttingDown;
+    private initialized;
     constructor(ctx: Context, transport: JsonRpcTransportPeer, options?: HarnessSdkJsonRpcServerOptions);
     /**
-     * Configure the SDK route, mounting the DeepSeek fallback only when unowned.
+     * Validate and configure the SDK route, mounting the DeepSeek fallback only when unowned.
      * @param params - SDK handshake parameters.
      * @returns server identity for the handshake.
      */
@@ -43,6 +45,7 @@ export declare class HarnessSdkJsonRpcServer {
      * @returns the durable message identity.
      */
     prompt(params: SessionPromptParams): Promise<SessionPromptResult>;
+    private assertLiveAgent;
     /**
      * Dispose server-owned agents, adapter, and subscriptions to quiescence.
      * The surrounding context remains running.

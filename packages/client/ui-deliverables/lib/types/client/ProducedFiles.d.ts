@@ -1,6 +1,5 @@
-import type { HostDescriptionSource } from '@deepseek-ai/dsh-client-connection/client';
-import type { InjectFace, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots';
-import type { TurnTailOwnerProps } from '@deepseek-ai/dsh-client-ui-conversation/client';
+import type { HostObservable, InjectFace, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots';
+import type { TurnTailOwnerProps } from '@deepseek-ai/dsh-client-ui-chat/client';
 import type { NS } from './locales.ts';
 /**
  * Select the largest prefix whose measured chips and exact remainder fit.
@@ -15,9 +14,11 @@ export declare function fitProducedFiles(available: number, gap: number, chipWid
 export interface ProducedFilesInjected {
     /** Whether the browser itself is connected over loopback. */
     isLoopback: boolean;
+    /** Load the opener capability when this row first reaches the page. */
+    ensureWorkspacePathOpen(): void;
     hooks: {
-        /** Current generation's Host description, bound by the slot renderer. */
-        hostDescription: HostDescriptionSource;
+        /** Current generation's Session workspace opener capability. */
+        workspacePathOpen: HostObservable<boolean | undefined>;
     };
 }
 /** Matched paths plus the opener, locale, and injected Host capability. */
@@ -29,5 +30,5 @@ export type ProducedFilesProps = Pick<TurnTailOwnerProps, 'openFile'> & {
  * @param props - selector-matched paths, the chat view's file opener, and the locale seat.
  * @returns The produced-files row.
  */
-export declare function ProducedFiles({ matched: paths, openFile, isLoopback, useHostDescription, t, }: ProducedFilesProps): import("react").JSX.Element;
+export declare function ProducedFiles({ matched: paths, openFile, isLoopback, ensureWorkspacePathOpen, useWorkspacePathOpen, t, }: ProducedFilesProps): import("react").JSX.Element;
 //# sourceMappingURL=ProducedFiles.d.ts.map

@@ -1,5 +1,5 @@
 /**
- * Schema-17 physical chunk-row codec. This package owns the durable tags,
+ * Schema-19 physical chunk-row codec. This package owns the durable tags,
  * validation, and row-size limits independently from other persistence formats.
  * @module @deepseek-ai/dsh-session-persistence-sqlite/codec
  */
@@ -21,7 +21,7 @@ interface ToolCallRunData extends RunDataBase {
     readonly name?: string;
     readonly args: string[];
 }
-/** One schema-17 packed physical record. */
+/** One schema-19 packed physical record. */
 export type ChunkRow = {
     readonly type: 'text-chunks';
     readonly seq0: number;
@@ -38,7 +38,7 @@ export type ChunkRow = {
     readonly time0: number;
     readonly data: ToolCallRunData;
 };
-/** One scalar event or schema-17 packed physical record. */
+/** One scalar event or schema-19 packed physical record. */
 export type StorageRecord = SessionEvent | ChunkRow;
 /** Minimum eligible members in a packed physical record. */
 export declare const MIN_PACKED_ROW_MEMBERS = 3;
@@ -47,13 +47,13 @@ export declare const MAX_PACKED_ROW_MEMBERS = 1024;
 /** Maximum UTF-8 bytes in one packed physical record's data column. */
 export declare const MAX_PACKED_DATA_BYTES = 1048576;
 /**
- * Pack eligible logical chunk runs into bounded schema-17 records.
+ * Pack eligible logical chunk runs into bounded schema-19 records.
  * @param events - logical events in sequence order.
  * @returns scalar and packed physical records in equivalent order.
  */
 export declare function packChunkRuns(events: readonly SessionEvent[]): StorageRecord[];
 /**
- * Decode one scalar or packed schema-17 record.
+ * Decode one scalar or packed schema-19 record.
  * @param value - parsed physical-record value.
  * @returns the represented logical events.
  */

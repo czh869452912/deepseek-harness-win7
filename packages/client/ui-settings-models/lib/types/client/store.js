@@ -1,16 +1,47 @@
 /**
  * Models settings page store: one snapshot joining the configurable-provider
- * directory (`llm.providers`), the settings namespaces (shared settings mirror),
- * and the referenced credentials (`credentials.describe`). The host stays the
+ * directory (`llm/listProviders` joined with `llm/listConfigurableProviders`),
+ * the settings namespaces (shared settings mirror),
+ * and the referenced credentials (`credentials/describe`). The host stays the
  * single fact source — every mutation writes through the wire and the page
  * re-renders from the next describe, pushed or refetched.
  */
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-runtime/client';
+import { createSnapshotStore } from '@deepseek-ai/dsh-client-store';
 /**
  * Any route key walks a dict schema to the same profile node, so the lookup
  * names one that cannot collide with a configured route.
  */
 const PROBE_ROUTE = '\u0000probe';
+/**
+ * Join declared configurable providers with the currently registered routes.
+ * @param registered - live provider routes in registration order.
+ * @param directory - declared configurable providers in declaration order.
+ * @returns declared rows followed by live routes with no declaration.
+ */
+export function joinProviderDirectory(registered, directory) {
+    const active = new Set(registered.map(provider => provider.id));
+    const declared = new Set(directory.map(entry => entry.provider));
+    const rows = directory.map(entry => ({
+        provider: entry.provider,
+        displayName: entry.displayName,
+        settingsNs: entry.settingsNs,
+        settingsPath: [...entry.settingsPath],
+        active: active.has(entry.provider),
+        ...entry.declared === undefined ? {} : { declared: entry.declared },
+    }));
+    for (const provider of registered) {
+        if (declared.has(provider.id))
+            continue;
+        rows.push({
+            provider: provider.id,
+            displayName: provider.name,
+            settingsNs: '',
+            settingsPath: [],
+            active: true,
+        });
+    }
+    return rows;
+}
 /**
  * Human text for a rejected wire call. A transport failure rejects with an
  * Error; a host or a runtime can reject with anything, and the page still has
@@ -71,7 +102,7 @@ export class ModelsSettingsStore {
     /** Latest load wins; an older response never overwrites a newer one. */
     generation = 0;
     /**
-     * @param api - the wire face (credentials/llm domains, and settings writes).
+     * @param api - the page's credentials Remote and LLM wire faces.
      * @param describeFace - the shared mirror's describe face (namespace views and writability).
      */
     constructor(api, schema, describeFace) {
@@ -94,17 +125,20 @@ export class ModelsSettingsStore {
         let writable;
         let views;
         try {
-            const [providersResponse] = await Promise.all([
-                this.api.llm.providers({}),
+            const [registered, declared] = await Promise.all([
+                this.api.llm.listProviders(),
+                this.api.llm.listConfigurableProviders(),
                 this.describeFace.ensure(),
             ]);
-            if (!providersResponse.result.ok)
-                throw new Error(providersResponse.result.error.message);
+            if (!registered.ok)
+                throw new Error(registered.error.message);
+            if (!declared.ok)
+                throw new Error(declared.error.message);
             const mirrored = this.describeFace.getSnapshot();
             if (mirrored.view === undefined) {
                 throw new Error(mirrored.error ?? 'settings are unavailable in this browser');
             }
-            providers = providersResponse.result.value.providers;
+            providers = joinProviderDirectory(registered.value, declared.value);
             writable = mirrored.view.writable;
             views = mirrored.view.namespaces;
         }
@@ -134,19 +168,19 @@ export class ModelsSettingsStore {
                 credential: undefined,
             };
         });
-        const refs = [...new Set(rows.flatMap(row => row.apiKeyEnv === undefined ? [] : [row.apiKeyEnv]))];
+        const refs = [...new Set(rows.map(row => row.apiKeyEnv ?? deriveKeyRef(row.entry.provider)))];
         let credentials = {};
         let credentialError = null;
         if (refs.length > 0) {
             try {
-                const response = await this.api.credentials.describe({ refs });
+                const response = await this.api.credentials.describe(refs);
                 // Credential state is an enrichment for the Models page: neither a
                 // business rejection nor a transport failure fails the load. The
                 // onboarding projection below retains the failure distinction.
-                if (response.result.ok)
-                    credentials = response.result.value.credentials;
+                if (response.ok)
+                    credentials = response.value;
                 else
-                    credentialError = response.result.error.message;
+                    credentialError = response.error.message;
             }
             catch (error) {
                 credentialError = messageOf(error);
@@ -159,12 +193,15 @@ export class ModelsSettingsStore {
             s.error = null;
             s.credentialError = credentialError;
             s.writable = writable;
-            s.rows = rows.map(row => ({
-                ...row,
-                ...row.apiKeyEnv !== undefined && credentials[row.apiKeyEnv] !== undefined
-                    ? { credential: credentials[row.apiKeyEnv] }
-                    : {},
-            }));
+            s.rows = rows.map((row) => {
+                const named = row.apiKeyEnv === undefined ? undefined : credentials[row.apiKeyEnv];
+                const derived = row.apiKeyEnv !== undefined ? undefined : credentials[deriveKeyRef(row.entry.provider)];
+                return {
+                    ...row,
+                    ...named === undefined ? {} : { credential: named },
+                    ...derived === undefined ? {} : { derivedCredential: derived },
+                };
+            });
             s.namespaces = namespaces;
         });
     }

@@ -12,7 +12,7 @@
  * presence, not a value comparison, is what marks a field overridden: an
  * override equal to the composition default is still an override.
  */
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-runtime/client';
+import { createSnapshotStore } from '@deepseek-ai/dsh-client-store';
 /**
  * A whole-number field. An empty draft clears the field; any other draft that
  * is not a finite number blocks the save.

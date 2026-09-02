@@ -1,11 +1,6 @@
-/**
- * Turn-scoped produced-file Definition and readers. Client-only and
- * model-free: the vocabulary is the mutation tools' own follow-along
- * `locations`, never the closing prose.
- */
-import type { ConversationNodeDefinition, ToolResultNode } from '@deepseek-ai/dsh-client-runtime/client';
+import type { TurnTailOwnerProps } from '@deepseek-ai/dsh-client-ui-chat/client';
+import type { ConversationNodeDefinition } from '@deepseek-ai/dsh-client-ui-conversation/client';
 import type { MarkdownFileMentions } from '@deepseek-ai/dsh-client-ui-primitives';
-import type { TurnTailOwnerProps } from '@deepseek-ai/dsh-client-ui-conversation/client';
 interface ProducedPath {
     readonly seq: number;
     readonly path: string;
@@ -14,7 +9,7 @@ interface ProducedPath {
 export interface DeliverablesTurnData {
     readonly produced: readonly ProducedPath[];
 }
-declare module '@deepseek-ai/dsh-client-runtime/client' {
+declare module '@deepseek-ai/dsh-client-ui-conversation/client' {
     interface ConversationTurnDataMap {
         /** Successful mutation paths accumulated in this Turn. */
         deliverables: DeliverablesTurnData;
@@ -22,20 +17,17 @@ declare module '@deepseek-ai/dsh-client-runtime/client' {
 }
 interface DeliverablesState extends DeliverablesTurnData {
     readonly turn: number;
-    readonly calls: ReadonlyMap<string, ToolResultNode['callView']>;
+    readonly calls: ReadonlyMap<string, string | null>;
 }
 /**
  * Files produced by one Turn data value.
  *
- * The source is the mutation tools' own follow-along `locations`, not the
- * closing prose: a produced file must be listed whether or not the model
- * remembered to name it. A mutation is recognized by render intent, not by
- * tool name — a diff card, or a generic card whose `kind` is `edit` (the shape
- * `str_replace_editor`'s insert presents) — so a new mutation tool joins by
- * declaring what it does. Reads contribute nothing (looking at a file does not
- * produce it), and neither do deletes (there is nothing left to open) or
- * failed calls. Paths keep first-seen order and appear once, so a file written
- * and then edited in the same turn is one entry.
+ * The source is the arguments of successful `write`, `edit`, and mutating
+ * `str_replace_editor` calls, not the closing prose: a produced file must be
+ * listed whether or not the model remembered to name it. Reads, unsupported
+ * tools, malformed calls, and failed results contribute nothing. Paths keep
+ * first-seen order and appear once, so a file written and then edited in the
+ * same turn is one entry.
  *
  * The Conversation Location index owns turn membership before this function
  * runs, so paths cannot spill across turns and this derivation does not infer

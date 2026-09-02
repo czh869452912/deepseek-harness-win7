@@ -1,4 +1,5 @@
 import z from "@deepseek-ai/schemastery";
+import { scopeOf } from "@deepseek-ai/dsh-scope";
 import { MAX_TIMER_DELAY_MS } from "@deepseek-ai/dsh-timeout";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { ListToolsResultSchema, ToolListChangedNotificationSchema } from "@modelcontextprotocol/sdk/types.js";
@@ -723,10 +724,9 @@ const DEFAULT_TOOL_CALL_TIMEOUT_MS = 6e4;
 /** Valid `serverName`, kept below the public tool-name budget. */
 const SERVER_NAME_PATTERN = /^[A-Za-z0-9_-]{1,32}$/;
 /**
-* Live `serverName` reservations per app, keyed off `ctx.root` (multiple apps
-* in one process — tests — must not see each other's names). A duplicate
-* namespace is a configuration error surfaced at plugin load, never silent
-* shadowing.
+* Live `serverName` reservations per registration scope. Agent-scoped MCP
+* servers may reuse a namespace in another Agent, while global instances and
+* duplicates inside one Agent remain mutually exclusive.
 */
 const activeServerNames = /* @__PURE__ */ new WeakMap();
 const Reconnect = z.object({
@@ -765,10 +765,11 @@ const Config = z.union([z.object({
 async function apply(ctx, config) {
 	const reconnect = resolveReconnectPolicy(config.reconnect, `mcp-client(${config.serverName}): reconnect`);
 	ctx.effect(() => {
-		let names = activeServerNames.get(ctx.root);
+		const owner = scopeOf(ctx) ?? ctx.root;
+		let names = activeServerNames.get(owner);
 		if (!names) {
 			names = /* @__PURE__ */ new Set();
-			activeServerNames.set(ctx.root, names);
+			activeServerNames.set(owner, names);
 		}
 		if (names.has(config.serverName)) throw new Error(`mcp-client: serverName "${config.serverName}" is already in use by another mcp-client instance — pick a unique serverName in cordis.yml`);
 		names.add(config.serverName);

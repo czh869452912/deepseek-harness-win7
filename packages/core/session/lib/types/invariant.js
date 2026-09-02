@@ -108,7 +108,6 @@ function validateEvent(trace, event, fail) {
         case 'session/end-seed':
             // Unconstrained: an unbalanced seed legally puts it inside an open turn.
             break;
-        case 'todo/write':
         case 'request/header':
         case 'request/context': {
             if (trace.openTurn === null) {

@@ -1,7 +1,7 @@
 import { SkillRow } from "./SkillRow.js";
 import { en, NS, zh } from "./locales.js";
 /** Required services: reference source faces plus the tool-row and locale registries. */
-export const inject = ['inputTriggers', 'connection', 'sessions', 'slots', 'locale', 'remote'];
+export const inject = ['inputTriggers', 'connection', 'sessions', 'slots', 'locale', 'remote', 'remote.skills'];
 /**
  * Client plugin body: register the '/' source, dictionaries, and keyed tool row.
  * @param ctx - client root context.
@@ -9,8 +9,8 @@ export const inject = ['inputTriggers', 'connection', 'sessions', 'slots', 'loca
 export function apply(ctx) {
     ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-skill: dictionaries');
     ctx.slots.inject('tool.call.toolview', () => ctx.slots.register({ name: 'tool.call.toolview', key: 'skill', locale: NS }, SkillRow));
-    const skills = ctx.get('connection').api.skills;
-    const sessions = ctx.get('sessions');
+    const skills = ctx.remote.skills;
+    const sessions = ctx.sessions;
     // Session-keyed catalog cache; single-flight per key. Plugin-closure state:
     // the fiber effect below is its teardown boundary.
     const fetches = new Map();
@@ -37,9 +37,9 @@ export function apply(ctx) {
             return existing.promise;
         const abort = new AbortController();
         const promise = (async () => {
-            const { result } = await skills.list({ sessionId }, abort.signal);
+            const result = await skills.list({ sessionId }, abort.signal);
             if (!result.ok)
-                throw new Error(`skill.list failed: ${result.error.code}: ${result.error.message}`);
+                throw new Error(`skills/list failed: ${result.error.code}: ${result.error.message}`);
             return result.value.skills;
         })();
         const entry = { promise, abort };

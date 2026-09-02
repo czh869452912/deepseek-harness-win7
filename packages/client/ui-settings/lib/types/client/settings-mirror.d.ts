@@ -8,8 +8,20 @@
  * invalidations its owning plugin subscribes to and folds write answers in
  * through {@link SettingsDescribeMirror.acceptView}.
  */
-import type { IApiClient, SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client';
-type SettingsFace = Pick<IApiClient, 'settings'>;
+import type { ClientRemote, SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client';
+/**
+ * The settings Remote methods browser configuration surfaces may reach: the
+ * redacted read plus merge, replacement, and path-addressed writes.
+ * Named once here so the consumers share one face instead of each re-deriving
+ * it from the namespace.
+ */
+export type SettingsRemote = Pick<ClientRemote['settings'], 'describe' | 'update' | 'replace' | 'mutate'>;
+/** Wire face carrying the settings Remote namespace. */
+export interface SettingsWireFace {
+    /** The settings Remote namespace. */
+    settings: SettingsRemote;
+}
+type SettingsFace = SettingsWireFace;
 /** The full `settings.describe` answer the mirror serves. */
 export interface SettingsDescribeView {
     /** Every namespace a live Host plugin registered, as the Host reported it. */
@@ -73,7 +85,7 @@ export declare class SettingsDescribeMirror implements SettingsDescribeFace {
     private generation;
     /**
      * @param api - settings wire face.
-     * @param persistence - remote browsers stay process-local because settings RPCs are loopback-only.
+     * @param persistence - client-selected Host persistence; non-loopback pages may remain process-local.
      */
     constructor(api: SettingsFace, persistence?: 'host' | 'memory');
     /** @returns the current sync snapshot (stable reference until the next change). */

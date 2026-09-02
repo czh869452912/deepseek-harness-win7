@@ -11,7 +11,7 @@
  * This is an affordance, not enforcement: the Host refuses a prompt it cannot
  * route regardless of what any client disables.
  */
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-runtime/client';
+import { createSnapshotStore } from '@deepseek-ai/dsh-client-store';
 /** The per-session composer-block registry (one instance per plugin fiber). */
 export class ComposerBlockRegistry {
     stores = new Map();

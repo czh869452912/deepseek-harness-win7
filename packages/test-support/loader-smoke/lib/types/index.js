@@ -71,7 +71,9 @@ export function resolveExampleLaunch(options) {
         if (options.tsconfigPath === undefined) {
             throw new Error("resolveExampleLaunch: 'src' mode needs tsconfigPath for the workspace paths map.");
         }
-        const tsxLoader = import.meta.resolve('tsx');
+        const tsxLoader = options.sourceImport === 'tsx/esm'
+            ? import.meta.resolve('tsx/esm')
+            : import.meta.resolve('tsx');
         env.TSX_TSCONFIG_PATH = options.tsconfigPath;
         return { command: process.execPath, args: ['--import', tsxLoader, options.srcBin, ...configArgs], env };
     }
@@ -85,7 +87,7 @@ export function resolveExampleLaunch(options) {
  * @returns captured stdout and stderr after a zero exit.
  */
 export async function runLoaderSmoke(options) {
-    const cwd = await mkdtemp(join(tmpdir(), options.tempDirPrefix));
+    const cwd = await mkdtemp(join(options.tempDirParent ?? tmpdir(), options.tempDirPrefix));
     const processTimeoutMs = options.processTimeoutMs ?? DEFAULT_PROCESS_TIMEOUT_MS;
     try {
         await options.prepare?.(cwd);

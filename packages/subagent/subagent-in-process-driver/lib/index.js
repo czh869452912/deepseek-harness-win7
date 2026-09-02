@@ -3,6 +3,7 @@ import { foldConsumedWork } from "@deepseek-ai/dsh-agent";
 import { SessionId } from "@deepseek-ai/dsh-session";
 import { createUserMessage } from "@deepseek-ai/dsh-llm";
 import { appendDelegatedPolicyOverrides, applyChildComposition, assertSubagentMaxDepth, captureDelegatedPolicyOverrides, childSessionMeta, finalAssistantOutput, resolveChildAgentOptions, resolveChildDepth } from "@deepseek-ai/dsh-subagent";
+import { FIRST_PARTY_SECTION_ORDER } from "@deepseek-ai/dsh-system-prompt";
 import { ToolArgsError, validateJsonSchemaValue } from "@deepseek-ai/dsh-tools";
 //#region lib/types/structured.js
 /**
@@ -11,7 +12,7 @@ import { ToolArgsError, validateJsonSchemaValue } from "@deepseek-ai/dsh-tools";
 * scope, so concurrent runs do not interact and disposal leaves no global residue. The prompt
 * contribution is ordinary reconstructed request state.
 *
-* Capture commits only after the authoritative `tools/result` succeeds; Code Mode capture also
+* Capture commits only after the authoritative `tools/result` succeeds; PTC mode capture also
 * waits for the enclosing `run_code` result. The terminal result marker and monotonic tool
 * guard prevent later calls from reopening a completed structured run.
 * @module @deepseek-ai/dsh-subagent-in-process-driver/structured
@@ -19,8 +20,8 @@ import { ToolArgsError, validateJsonSchemaValue } from "@deepseek-ai/dsh-tools";
 /** The model-facing tool name a structured child must call to finish. */
 const STRUCTURED_OUTPUT_TOOL = "structured_output";
 /**
-* The instruction registered as the child's trailing (order-190, the end of
-* the tool-guidance band) scoped prompt section: the demand travels with the
+* The instruction registered as the child's trailing scoped prompt section:
+* the demand travels with the
 * tool, as ordinary prompt state of exactly one agent.
 */
 const STRUCTURED_OUTPUT_INSTRUCTION = `When you have your final answer, you MUST report it by calling the \`${STRUCTURED_OUTPUT_TOOL}\` tool with arguments matching its parameter schema exactly. Do not finish with a plain text answer: only the tool call counts as your result.`;
@@ -78,7 +79,7 @@ function attachStructuredRuntime(childCtx, schema) {
 	});
 	childCtx.systemPrompt.section({
 		name: `tool:${STRUCTURED_OUTPUT_TOOL}`,
-		order: 190,
+		order: FIRST_PARTY_SECTION_ORDER.STRUCTURED_OUTPUT,
 		text: STRUCTURED_OUTPUT_INSTRUCTION
 	});
 	childCtx.tools.guard((exec) => captured === void 0 && pending === void 0 ? void 0 : `structured output already recorded: the run is complete, so \`${exec.name}\` is not executed`);
@@ -101,7 +102,7 @@ function attachStructuredRuntime(childCtx, schema) {
 		const entry = pending;
 		pending = void 0;
 		if (result.isError) return;
-		/* v8 ignore else -- Code Mode serializes outer executions, so the guard blocks every later supported call */
+		/* v8 ignore else -- PTC mode serializes outer executions, so the guard blocks every later supported call */
 		if (captured === void 0) captured = { value: entry.value };
 	});
 	return { captured: () => captured };

@@ -6,6 +6,7 @@
  */
 import { adoptSessionEvent, interruptedTurnClosers, KNOWN_SESSION_EVENT_TYPES, SESSION_FORMAT_VERSION, SessionPreparation, snapshotJsonValue, snapshotSessionEvent, } from '@deepseek-ai/dsh-session';
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout';
+import { SessionPersistenceNotFoundError } from "./errors.js";
 import { observeQueuedAbort, SessionPreparations } from "./preparations.js";
 import { SessionWriteBehind } from "./write-behind.js";
 /** Default number of detached session preparations retained by a coordinator. */
@@ -28,10 +29,9 @@ export class SessionPersistenceCorruptionError extends Error {
 /**
  * The stored log is intact but this runtime cannot faithfully interpret it:
  * the header carries an unsupported format version, or an event's type is
- * unknown to this build and the event is not marked ignorable. Distinct from
- * {@link SessionPersistenceCorruptionError} — nothing is damaged; the raw log
- * remains readable at {@link location} when the backend keeps one artifact
- * per session.
+ * unknown to this build. Distinct from {@link SessionPersistenceCorruptionError}
+ * — nothing is damaged; the raw log remains readable at {@link location} when
+ * the backend keeps one artifact per session.
  */
 export class SessionFormatUnsupportedError extends Error {
     location;
@@ -50,7 +50,7 @@ export class SessionFormatUnsupportedError extends Error {
  * Direction-aware refusal text for a stored session whose format version this
  * build does not read. Shared by the coordinator's load-time check and by
  * backends that must refuse BEFORE decoding version-dependent structure (a
- * future format may not satisfy today's structural checks at all, and the
+ * future format may not satisfy this build's structural checks at all, and the
  * user must see "upgrade the harness", never "corrupt").
  * @param id - the stored session id, for message context.
  * @param version - the stored format version.
@@ -443,6 +443,27 @@ export class PersistenceCoordinator {
         }
         return this.serialize(snapshot.id, () => this.createCore(snapshot));
     }
+    /**
+     * Materialize one exact live session without inventing a session event.
+     * @param session - live session already registered through the write path.
+     */
+    async ensureMaterialized(session) {
+        await this.flush(session);
+        await this.serialize(session.id, async () => {
+            const state = this.states.get(session.id);
+            /* v8 ignore next -- successful live flush always initializes the exact session state. */
+            if (state === undefined)
+                throw new Error(`session "${session.id}" is not registered for persistence`);
+            if (state.materialized)
+                return;
+            if (this.backend.materializeHeader === undefined) {
+                throw new Error('session persistence backend cannot materialize an empty session');
+            }
+            await this.backend.materializeHeader(state.meta);
+            state.materialized = true;
+            this.preparations.invalidate(session.id);
+        });
+    }
     async createCore(meta) {
         // Do NOT clobber an existing session: the SessionId IS the identity.
         if (this.states.has(meta.id) || this.preparations.has(meta.id)) {
@@ -485,8 +506,8 @@ export class PersistenceCoordinator {
         // retired shape this backend refuses to load. The unknown-type guard is
         // deliberately read-side only: an append-time refusal would stall a live
         // session's durability mid-flight, which costs more than a loud refusal at
-        // the log's next load (trade-off owned by the session-log-version-mechanism
-        // Agent Note).
+        // the log's next load (trade-off owned by the fail-closed-session-event-
+        // vocabulary Agent Note).
         assertSupportedEvents(events, id);
         if (events.length === 0)
             return;
@@ -604,6 +625,57 @@ export class PersistenceCoordinator {
         }
     }
     /**
+     * Borrow one exact logical view while pinning its reusable prepared Session.
+     * @param id - persisted session to observe.
+     * @param signal - optional cancellation for preparation work.
+     * @returns a disposable observation retaining the prepared source.
+     */
+    async borrowSession(id, signal) {
+        for (;;) {
+            signal?.throwIfAborted();
+            if (this.retirements.has(id))
+                await this.waitForRetirement(id, signal);
+            const live = this.ctx.sessions.get(id);
+            if (live !== undefined) {
+                return { source: 'live', inspection: this.inspectLive(live), [Symbol.dispose]: () => { } };
+            }
+            const observation = await this.preparations.borrow(id, () => this.serialize(id, () => this.prepareCore(id)), signal);
+            const source = observation.source;
+            try {
+                const attached = this.ctx.sessions.get(id);
+                if (attached !== undefined) {
+                    observation[Symbol.dispose]();
+                    return { source: 'live', inspection: this.inspectLive(attached), [Symbol.dispose]: () => { } };
+                }
+                const current = await this.serialize(id, () => this.isPreparedSourceCurrent(source, signal), signal);
+                const published = this.ctx.sessions.get(id);
+                if (published !== undefined) {
+                    observation[Symbol.dispose]();
+                    return { source: 'live', inspection: this.inspectLive(published), [Symbol.dispose]: () => { } };
+                }
+                if (current || this.preparations.discardReady(id, source) === 'retained') {
+                    return {
+                        source: 'prepared',
+                        inspection: source.inspection,
+                        revision: source.revision,
+                        preparedSession: source.session,
+                        [Symbol.dispose]: () => { observation[Symbol.dispose](); },
+                    };
+                }
+            }
+            catch (error) {
+                observation[Symbol.dispose]();
+                signal?.throwIfAborted();
+                const attached = this.ctx.sessions.get(id);
+                if (attached !== undefined) {
+                    return { source: 'live', inspection: this.inspectLive(attached), [Symbol.dispose]: () => { } };
+                }
+                throw error;
+            }
+            observation[Symbol.dispose]();
+        }
+    }
+    /**
      * Read the stored events from `fromSeq` onward, detached and non-mutating
      * (the read-from-seq primitive behind the service's `readFrom`). Runs on
      * the same per-id chain as writes; a backend with the seek-capable
@@ -636,7 +708,7 @@ export class PersistenceCoordinator {
             }
             signal?.throwIfAborted();
             if (suffix === undefined)
-                throw new Error(`session "${id}" not found`);
+                throw new SessionPersistenceNotFoundError(id);
             this.assertStoredId(id, suffix.meta);
             this.assertVersion(suffix.meta);
             if (suffix.events.some(needsLegacyPrefix)) {
@@ -657,7 +729,7 @@ export class PersistenceCoordinator {
         const stored = await this.backend.loadStored(id, signal);
         signal?.throwIfAborted();
         if (stored === undefined)
-            throw new Error(`session "${id}" not found`);
+            throw new SessionPersistenceNotFoundError(id);
         this.assertStoredId(id, stored.meta);
         this.assertVersion(stored.meta);
         const events = snapshotStoredEvents(stored.events, id);
@@ -671,7 +743,7 @@ export class PersistenceCoordinator {
     async prepareCore(id) {
         const stored = await this.backend.loadStored(id);
         if (stored === undefined)
-            throw new Error(`session "${id}" not found`);
+            throw new SessionPersistenceNotFoundError(id);
         try {
             const { meta, events, revision, tornMarker } = stored;
             this.assertStoredId(id, meta);
@@ -749,7 +821,7 @@ export class PersistenceCoordinator {
         /* v8 ignore next -- successful flush always publishes this live session's durable state */
         if (state === undefined)
             throw new Error(`session "${session.id}" lost persistence state during load`);
-        if (events.length === 0)
+        if (events.length === 0 && !state.materialized)
             throw new Error(`session "${session.id}" not found`);
         if (interruptedTurnClosers(events).length > 0) {
             throw new Error(`cannot load session "${session.id}" while its live turn is open; use the live Session or wait for the turn to close`);
@@ -813,20 +885,17 @@ export class PersistenceCoordinator {
         throw this.unsupported(meta, sessionFormatVersionRefusal(meta.id, meta.version));
     }
     /**
-     * Refuse a log containing an event type this build does not know, unless the
-     * writer marked the event ignorable: an unrecognized required event may
-     * change how the rest of the log must be interpreted, so silently skipping
-     * it would reconstruct a wrong session (the envelope contract on
-     * `SessionEvent.ignorable`). Runs on NORMALIZED events — after
-     * `snapshotStoredEvents`/`adoptStoredEvents` has upgraded the legacy shapes
-     * this build still reads and rejected the ones it does not, so those keep
-     * their specific diagnostics.
+     * Refuse a log containing an event type this build does not know: silently
+     * skipping an unknown event could reconstruct a wrong session. Runs on
+     * NORMALIZED events — after `snapshotStoredEvents`/`adoptStoredEvents` has
+     * upgraded the legacy shapes this build still reads and rejected the ones it
+     * does not, so those keep their specific diagnostics.
      */
     assertEventsSupported(meta, events) {
         for (const event of events) {
-            if (KNOWN_SESSION_EVENT_TYPES.has(event.type) || event.ignorable === true)
+            if (KNOWN_SESSION_EVENT_TYPES.has(event.type))
                 continue;
-            throw this.unsupported(meta, `session "${meta.id}" contains event type "${event.type}" (seq ${event.seq}) unknown to this harness and not marked ignorable; refusing to interpret the log — it was likely written by a newer harness`);
+            throw this.unsupported(meta, `session "${meta.id}" contains event type "${event.type}" (seq ${event.seq}) unknown to this harness; refusing to interpret the log — it was likely written by a newer harness`);
         }
     }
     /** Build a format refusal that points at the raw artifact when the backend has one. */
@@ -888,8 +957,7 @@ export class PersistenceCoordinator {
         ctx.on('session/flush', session => this.flush(session));
         // Session disposal is observe-only, so retirement contains its own failure.
         ctx.on('session/disposed', (session) => { this.retire(session); });
-        // HMR: a hot reload does not replay session/created, so seed existing live
-        // sessions (mirrors dsh-invariants).
+        // HMR does not replay session/created, so seed existing live sessions.
         for (const session of ctx.sessions.list())
             void this.initFor(session);
     }

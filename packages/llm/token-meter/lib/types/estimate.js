@@ -12,6 +12,16 @@ const BLOCK_OVERHEAD = 4;
 /** Role-field framing overhead added to every priced message. */
 export const ROLE_OVERHEAD = 4;
 /**
+ * Structural JSON price of one block outside the typed pricing arms: the
+ * fixed heuristic for merge-extended blocks and for image references, whose
+ * request price is route-owned rather than fixed.
+ * @param block - block to price without mutation.
+ * @returns heuristic tokens for the block's JSON structure.
+ */
+export function estimateStructuralBlock(block) {
+    return BLOCK_OVERHEAD + Math.ceil(JSON.stringify(block).length / CHARS_PER_TOKEN);
+}
+/**
  * Price content blocks recursively under the fixed density heuristic.
  * @param blocks - content blocks to price without mutation.
  * @returns heuristic tokens including per-block structural overhead.
@@ -33,9 +43,10 @@ export function estimateContent(blocks) {
                 tokens += estimateContent(block.content) + BLOCK_OVERHEAD;
                 break;
             default:
-                // ContentBlockMap is merge-extensible; unknown blocks retain a
+                // ContentBlockMap is merge-extensible; unknown blocks (and image
+                // references, whose request price is route-owned) retain a
                 // conservative structural JSON price under the fixed heuristic.
-                tokens += BLOCK_OVERHEAD + Math.ceil(JSON.stringify(block).length / CHARS_PER_TOKEN);
+                tokens += estimateStructuralBlock(block);
         }
     }
     return tokens;

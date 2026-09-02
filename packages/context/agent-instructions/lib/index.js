@@ -1281,9 +1281,10 @@ function apply(ctx, config) {
 		for (const message of pending) agent.inbox.remove(message.id);
 		if (desired === void 0 || decision.messages.some((message) => sameContextPayload(message, desired))) return decision;
 		const lastClaimedIndex = decision.messages.findLastIndex((message) => messages.includes(message));
+		const entered = decision.messages.toSpliced(lastClaimedIndex + 1, 0, desired);
 		return {
-			kind: "enter",
-			messages: decision.messages.toSpliced(lastClaimedIndex + 1, 0, desired)
+			...decision,
+			messages: entered
 		};
 	});
 	ctx.on("tools/result", (exec, result) => {

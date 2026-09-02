@@ -12,6 +12,7 @@ export function stubSettingsScope() {
     };
     const listeners = new Set();
     const set = vi.fn(() => Promise.resolve());
+    const mutate = vi.fn(() => Promise.resolve());
     const unset = vi.fn(() => Promise.resolve());
     return {
         scope: {
@@ -20,10 +21,12 @@ export function stubSettingsScope() {
                 listeners.add(listener);
                 return () => { listeners.delete(listener); };
             },
+            mutate,
             set,
             unset,
         },
         set,
+        mutate,
         unset,
         listenerCount: () => listeners.size,
         publish: (next) => {

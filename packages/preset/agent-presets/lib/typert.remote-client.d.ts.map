@@ -1,0 +1,1 @@
+{"version":3,"file":"typert.remote-client.d.ts","names":["copy","deletePreset","list","read","select"],"sources":["../src/index.ts"],"sourcesContent":[null],"mappings":";;;;;;;;;;IA+iBQA,I;IA0CAC,Y;IA5RAC,I;IA0LAC,I;IAkMAC,M;;;IA1IAJ,mB;IA0CAC,2B;IA5RAC,mB;IA0LAC,mB;IAkMAC,qB;;;;;;IAAAA,2B","ignoreList":[]}

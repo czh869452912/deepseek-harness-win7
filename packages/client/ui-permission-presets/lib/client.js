@@ -7,7 +7,7 @@ window.__ModuleLoader__.load({
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let react = require("react");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
-		let _deepseek_ai_dsh_client_runtime_client = require("@deepseek-ai/dsh-client-runtime/client");
+		let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
 		//#region lib/types/client/presentation.js
 		/** Machine value of the preset that requires an explicit GUI risk gate. */
 		const FULL_ACCESS_PRESET = "danger-full-access";
@@ -30,8 +30,8 @@ window.__ModuleLoader__.load({
 			return value === "danger-full-access" ? "Full access" : displayPresetName(name);
 		}
 		//#endregion
-		//#region \0dsh-css:D:\Claude-project\deepseek-harness-win7\reference\deepseek-harness\packages\client\ui-permission-presets\src\client\PermissionRow.module.css.mjs
-		const css = "._0pkr-a_row{border-bottom:1px solid var(--dsw-alias-border-l2);align-items:center;gap:8px;padding:16px 0;display:flex}._0pkr-a_rowText{flex-direction:column;flex:1;gap:4px;min-width:0;padding-right:48px;display:flex}._0pkr-a_title{color:var(--dsw-alias-label-primary);font-size:14px;font-weight:400;line-height:22px}._0pkr-a_desc{color:var(--dsw-alias-label-tertiary);font-size:12px;font-weight:400;line-height:18px}._0pkr-a_selector{background:var(--dsw-alias-bg-module-platform);height:36px;font:inherit;color:var(--dsw-alias-label-primary);cursor:pointer;border:none;border-radius:18px;align-items:center;gap:12px;padding:0 14px;font-size:14px;line-height:22px;display:inline-flex}._0pkr-a_selector:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}._0pkr-a_selector:disabled{cursor:default}._0pkr-a_chevron{flex:none}";
+		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-permission-presets\src\client\PermissionRow.module.css.mjs
+		const css = ".zGvlua_row{border-bottom:1px solid var(--dsw-alias-border-l2);align-items:center;gap:8px;padding:16px 0;display:flex}.zGvlua_rowText{flex-direction:column;flex:1;gap:4px;min-width:0;padding-right:48px;display:flex}.zGvlua_title{color:var(--dsw-alias-label-primary);font-size:14px;font-weight:400;line-height:22px}.zGvlua_desc{color:var(--dsw-alias-label-tertiary);font-size:12px;font-weight:400;line-height:18px}.zGvlua_selector{background:var(--dsw-alias-bg-module-platform);height:36px;font:inherit;color:var(--dsw-alias-label-primary);cursor:pointer;border:none;border-radius:18px;align-items:center;gap:12px;padding:0 14px;font-size:14px;line-height:22px;display:inline-flex}.zGvlua_selector:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.zGvlua_selector:disabled{cursor:default}.zGvlua_chevron{flex:none}";
 		const tagId = "@deepseek-ai/dsh-client-ui-permission-presets/PermissionRow.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -41,12 +41,12 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var PermissionRow_module_css_default = {
-			"chevron": "_0pkr-a_chevron",
-			"desc": "_0pkr-a_desc",
-			"row": "_0pkr-a_row",
-			"rowText": "_0pkr-a_rowText",
-			"selector": "_0pkr-a_selector",
-			"title": "_0pkr-a_title"
+			"chevron": "zGvlua_chevron",
+			"desc": "zGvlua_desc",
+			"row": "zGvlua_row",
+			"rowText": "zGvlua_rowText",
+			"selector": "zGvlua_selector",
+			"title": "zGvlua_title"
 		};
 		//#endregion
 		//#region lib/types/client/PermissionRow.js
@@ -131,6 +131,7 @@ window.__ModuleLoader__.load({
 				description: t("confirm.description"),
 				acknowledgeLabel: t("confirm.acknowledge"),
 				cancelLabel: t("confirm.cancel"),
+				closeLabel: t("close"),
 				confirmLabel: t("confirm.enable"),
 				acknowledged,
 				disabled: !state.writable || state.status === "saving",
@@ -232,7 +233,7 @@ window.__ModuleLoader__.load({
 			api;
 			schema;
 			/** Row snapshot consumed through a bound selector hook. */
-			store = (0, _deepseek_ai_dsh_client_runtime_client.createSnapshotStore)({
+			store = (0, _deepseek_ai_dsh_client_store.createSnapshotStore)({
 				status: "idle",
 				error: null,
 				writable: false,
@@ -287,19 +288,15 @@ window.__ModuleLoader__.load({
 					draft.error = null;
 				});
 				try {
-					const response = await this.api.settings.mutate({
-						ns: PERMISSION_SETTINGS_NS,
-						ops: [{
-							op: "set",
-							path: ["defaultPreset"],
-							value: preset
-						}],
-						expectedRevision: view.revision
-					});
-					if (!response.result.ok) throw new Error(response.result.error.message);
+					const response = await this.api.settings.mutate(PERMISSION_SETTINGS_NS, [{
+						op: "set",
+						path: ["defaultPreset"],
+						value: preset
+					}], view.revision);
+					if (!response.ok) throw new Error(response.error.message);
 					this.saving = false;
 					if (this.disposed) return;
-					this.describeFace.acceptView(response.result.value);
+					this.describeFace.acceptView(response.value);
 				} catch (error) {
 					this.saving = false;
 					if (this.disposed) return;
@@ -368,8 +365,8 @@ window.__ModuleLoader__.load({
 			"sessions",
 			"slots",
 			"locale",
-			"connection",
 			"remote",
+			"remote.settings",
 			"settingsScope",
 			"settingsSchema"
 		];
@@ -426,8 +423,7 @@ window.__ModuleLoader__.load({
 				zh,
 				en
 			}), "ui-permission: settings row dictionaries");
-			const connection = ctx.get("connection");
-			const controller = new PermissionPresetSettingsController(ctx.settingsScope.describe(), connection.api, ctx.settingsSchema);
+			const controller = new PermissionPresetSettingsController(ctx.settingsScope.describe(), { settings: ctx.remote.settings }, ctx.settingsSchema);
 			const load = () => controller.load();
 			const select = (preset) => controller.select(preset);
 			const injected = () => ({

@@ -6,7 +6,7 @@
  * messageFeedback Remote; the Host owns per-item compare-and-set.
  * @module @deepseek-ai/dsh-client-ui-message-feedback/client
  */
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client';
+import type { Context as ClientContext } from '@deepseek-ai/cordis';
 export type { MessageFeedbackActionResult, MessageFeedbackStatus, MessageFeedbackView, MessageFeedbackRemote, } from './controller.ts';
 export type { MessageFeedbackActionProps, MessageFeedbackInjected } from './slots.ts';
 export type { MessageFeedbackKey } from './locales.ts';

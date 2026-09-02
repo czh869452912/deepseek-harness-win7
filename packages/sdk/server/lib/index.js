@@ -1,7 +1,8 @@
 import Schema from "@deepseek-ai/schemastery";
 import { JsonRpcLineTransport } from "@deepseek-ai/dsh-sdk-protocol";
 import { resolve } from "node:path";
-import { createUserMessage } from "@deepseek-ai/dsh-llm";
+import { admitEncodedImages } from "@deepseek-ai/dsh-attachment";
+import { ReasoningEffortId, createUserMessage } from "@deepseek-ai/dsh-llm";
 import { carrierKeyOf } from "@deepseek-ai/dsh-scope";
 import { SessionId } from "@deepseek-ai/dsh-session";
 import * as LlmDeepSeek from "@deepseek-ai/dsh-llm-deepseek";
@@ -12,6 +13,24 @@ import * as LlmDeepSeek from "@deepseek-ai/dsh-llm-deepseek";
 *
 * @module @deepseek-ai/dsh-sdk-jsonrpc-server/server
 */
+function encodedImage(block) {
+	return block.type === "image" && "data" in block;
+}
+async function durablePromptContent(ctx, blocks) {
+	const images = blocks.filter(encodedImage);
+	if (images.length === 0) return blocks;
+	const attachments = ctx.get("attachments");
+	if (attachments === void 0) throw new Error("SDK image prompt requires an attachment store");
+	const refs = await admitEncodedImages(attachments, images.map((image) => ({
+		data: image.data,
+		mediaType: image.mimeType
+	})));
+	let next = 0;
+	return blocks.map((block) => encodedImage(block) ? {
+		type: "image",
+		attachment: refs[next++]
+	} : block);
+}
 /** Recover the delegating parent from the service-owned scoped carrier. */
 function subagentParentOf(carrier) {
 	return carrierKeyOf(carrier);
@@ -32,6 +51,7 @@ var HarnessSdkJsonRpcServer = class {
 	cwd = process.cwd();
 	provider = "deepseek-official";
 	model = "deepseek-official";
+	reasoningEffort;
 	maxTokens;
 	llmFiber;
 	sessions = /* @__PURE__ */ new Map();
@@ -39,6 +59,7 @@ var HarnessSdkJsonRpcServer = class {
 	disposers = [];
 	shutdownTask;
 	shuttingDown = false;
+	initialized = false;
 	constructor(ctx, transport, options = {}) {
 		this.ctx = ctx;
 		this.transport = transport;
@@ -82,20 +103,33 @@ var HarnessSdkJsonRpcServer = class {
 		}));
 	}
 	/**
-	* Configure the SDK route, mounting the DeepSeek fallback only when unowned.
+	* Validate and configure the SDK route, mounting the DeepSeek fallback only when unowned.
 	* @param params - SDK handshake parameters.
 	* @returns server identity for the handshake.
 	*/
 	async initialize(params) {
+		if (params.reasoningEffort !== void 0 && (typeof params.reasoningEffort !== "string" || params.reasoningEffort.length === 0)) throw new TypeError("initialize reasoningEffort must be a non-empty string");
 		if (params.maxTokens !== void 0 && (!Number.isSafeInteger(params.maxTokens) || params.maxTokens <= 0)) throw new TypeError("initialize maxTokens must be a positive safe integer");
-		this.cwd = resolve(params.cwd);
-		this.provider = params.provider;
-		this.model = params.model;
-		this.maxTokens = params.maxTokens;
-		if (!this.hasAdapterFor(this.provider)) {
-			if (this.provider !== "deepseek-official") throw new Error(`no adapter registered for provider "${this.provider}"`);
+		const cwd = resolve(params.cwd);
+		const provider = params.provider;
+		const model = params.model;
+		const reasoningEffort = params.reasoningEffort === void 0 ? void 0 : ReasoningEffortId(params.reasoningEffort);
+		if (!this.hasAdapterFor(provider)) {
+			if (provider !== "deepseek-official") throw new Error(`no adapter registered for provider "${provider}"`);
 			this.llmFiber = await this.ctx.plugin(LlmDeepSeek, {});
 		}
+		await this.ctx.get("llm").resolveCallConfig({
+			provider,
+			model,
+			...reasoningEffort === void 0 ? {} : { reasoningEffort },
+			...params.maxTokens === void 0 ? {} : { maxTokens: params.maxTokens }
+		});
+		this.cwd = cwd;
+		this.provider = provider;
+		this.model = model;
+		this.reasoningEffort = reasoningEffort;
+		this.maxTokens = params.maxTokens;
+		this.initialized = true;
 		return { serverInfo: {
 			name: "deepseek-harness-sdk-runtime",
 			version: "0.0.1"
@@ -107,14 +141,20 @@ var HarnessSdkJsonRpcServer = class {
 	* @returns the durable message identity.
 	*/
 	async prompt(params) {
+		if (!this.initialized) throw new Error("SDK server is not initialized");
 		const rec = await this.getOrCreateSession(params.sessionId);
-		if (this.ctx.agents.get(rec.handle.agent.id) !== rec.handle.agent) throw new Error(`session agent was disposed outside the server: ${params.sessionId}`);
+		this.assertLiveAgent(rec, params.sessionId);
+		const content = await durablePromptContent(this.ctx, params.contentBlocks);
+		this.assertLiveAgent(rec, params.sessionId);
 		const message = createUserMessage({
-			content: params.contentBlocks,
+			content,
 			source: { kind: "user" }
 		});
 		rec.handle.agent.followup(message);
 		return { messageId: message.id };
+	}
+	assertLiveAgent(rec, sessionId) {
+		if (this.ctx.agents.get(rec.handle.agent.id) !== rec.handle.agent) throw new Error(`session agent was disposed outside the server: ${sessionId}`);
 	}
 	/**
 	* Dispose server-owned agents, adapter, and subscriptions to quiescence.
@@ -182,6 +222,7 @@ var HarnessSdkJsonRpcServer = class {
 			agentOptions: {
 				provider: this.provider,
 				model: this.model,
+				...this.reasoningEffort === void 0 ? {} : { reasoningEffort: this.reasoningEffort },
 				...this.maxTokens === void 0 ? {} : { maxTokens: this.maxTokens }
 			}
 		}) };
@@ -195,8 +236,8 @@ var HarnessSdkJsonRpcServer = class {
 //#endregion
 //#region lib/types/index.js
 /**
-* SDK-facing JSON-RPC plugin over stdio. An external `cordis.yml` decides
-* whether to load it; see the single-executable Agent Note and package README.
+* SDK-facing JSON-RPC plugin over stdio. The selected dsh profile decides
+* whether to load it; see the single-launch Agent Note and package README.
 * Stdout is reserved for protocol frames, so the tree must not load a stdout logger.
 * This plugin answers `shutdown`, disposes the complete root runtime, and exits 0; the app bin
 * owns EOF and signal exits. Keep named plugin exports with no default export so

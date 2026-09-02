@@ -146,7 +146,6 @@ function assertSessionEventEnvelope(value, index) {
             case 'data':
             case 'surfaceOp':
             case 'sourceEventSeqs':
-            case 'ignorable':
                 break;
             default:
                 throw new Error(`seed event at index ${index} has an invalid event envelope`);
@@ -158,8 +157,7 @@ function assertSessionEventEnvelope(value, index) {
     if (typeof type !== 'string'
         || typeof seq !== 'number' || !Number.isSafeInteger(seq) || seq < 0
         || typeof time !== 'number' || !Number.isSafeInteger(time)
-        || event['data'] === undefined
-        || (event['ignorable'] !== undefined && event['ignorable'] !== true)) {
+        || event['data'] === undefined) {
         throw new Error(`seed event at index ${index} has an invalid event envelope`);
     }
     switch (type) {
@@ -995,5 +993,6 @@ export class SessionStore extends Service {
         return source;
     }
 }
+export { decodeSeqRanges, encodeSeqRanges } from "./seq-ranges.js";
 export default SessionStore;
 //# sourceMappingURL=index.js.map

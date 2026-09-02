@@ -8,14 +8,54 @@ import { AnonymousEntries, NamedEntries, ScopedLayers, scopeTarget } from "@deep
 * @module @deepseek-ai/dsh-system-prompt
 */
 /**
+* Sparse integer placements for repository-owned prompt sections.
+*
+* Adjacent values differ by at least ten to keep the first-party groups sparse
+* and make accidental collisions mechanically detectable.
+* External plugins may use any finite order; equal orders are deterministic by
+* section name.
+*/
+const FIRST_PARTY_SECTION_ORDER = {
+	HARNESS_IDENTITY: -1e3,
+	HARNESS_SOURCE: -900,
+	WEB_SURFACE: -800,
+	DEPLOYMENT_PERSONA: 0,
+	PLAN_POLICY: 500,
+	TEAM_POLICY: 600,
+	PTC_ONLY: 800,
+	FILE_REFERENCE: 900,
+	TOOL_BASH: 1e3,
+	TOOL_PWSH: 1010,
+	TOOL_READ: 1100,
+	TOOL_WRITE: 1200,
+	TOOL_EDIT: 1300,
+	TOOL_GLOB: 1400,
+	TOOL_GREP: 1500,
+	TOOL_JOBS: 1600,
+	TOOL_PTY: 1700,
+	TOOL_WEB_SEARCH: 2e3,
+	TOOL_WEB_FETCH: 2100,
+	TOOL_LSP: 2200,
+	TOOL_SESSION_QUERY: 2300,
+	TOOL_GOAL: 2400,
+	TOOL_CORDIS: 2500,
+	TOOL_WORKFLOW: 2600,
+	TOOL_RALPH: 2700,
+	TOOL_SUBAGENT: 2800,
+	TOOL_REPORT: 2900,
+	TOOLS_SDK: 5e3,
+	DELIVERABLE_FILE_REFERENCES: 9e3,
+	STRUCTURED_OUTPUT: 9900
+};
+/**
 * The deployment persona's section name and order. Exported because a
 * composition can replace this slot — an agent preset shadows the
 * deployment's persona with its own — and both sides naming the same section
 * is what makes the replacement work rather than duplicate.
 */
 const PERSONA_SECTION = "deployment:persona";
-/** Prompt order of the persona slot; the first section a model reads. */
-const PERSONA_ORDER = 0;
+/** Prompt order of the persona slot. */
+const PERSONA_ORDER = FIRST_PARTY_SECTION_ORDER.DEPLOYMENT_PERSONA;
 /** Valid variable names: how they are written between the braces. */
 const VARIABLE_NAME = /^[a-z][a-z0-9_]*$/;
 /** A complete `{{...}}` reference group at the scan position (validated after). */
@@ -50,9 +90,17 @@ function orderTools(tools, toolOrder, knownNames) {
 	const rest = tools.filter((tool) => !listed.has(tool.name)).sort(compareToolNames);
 	return toolOrder.flatMap((name) => name === "<unlisted-tools>" ? rest : tools.filter((tool) => tool.name === name));
 }
-/** Lexicographic (code-unit) name comparison — locale-independent, so the order is identical on every machine. */
+/** Code-unit name comparison — locale-independent, so the order is identical on every machine. */
+function compareNames(a, b) {
+	return a < b ? -1 : a > b ? 1 : 0;
+}
+/** Order prompt sections by their explicit placement, then deterministically by name. */
+function comparePromptSections(a, b) {
+	return a.order - b.order || compareNames(a.name, b.name);
+}
+/** Order tool schemas lexicographically by name. */
 function compareToolNames(a, b) {
-	return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
+	return compareNames(a.name, b.name);
 }
 /**
 * Interpolate strict `{{variable}}` references, drop empty sections, and join
@@ -165,12 +213,12 @@ var SystemPrompt = class extends Service {
 		this.toolOrder = validateToolOrder(config.toolOrder);
 		if (config.includeHarnessIdentity ?? true) this.section({
 			name: "harness:identity",
-			order: -100,
+			order: FIRST_PARTY_SECTION_ORDER.HARNESS_IDENTITY,
 			text: "You are an AI agent powered by DeepSeek Harness."
 		});
 		this.section({
 			name: PERSONA_SECTION,
-			order: 0,
+			order: PERSONA_ORDER,
 			text: config.persona ?? ""
 		});
 		if (!(config.includeRuntimeContext ?? true)) this.suppressRuntimeContext();
@@ -260,7 +308,7 @@ var SystemPrompt = class extends Service {
 			collected.push(...schemas);
 			for (const name of acceptedKnownNames) knownNames.add(name);
 		}
-		const sectionDefinitions = [...sectionByName.values()].sort((a, b) => a.order - b.order);
+		const sectionDefinitions = [...sectionByName.values()].sort(comparePromptSections);
 		const completeSections = sectionDefinitions.filter((section) => section.complete === true);
 		if (completeSections.length > 1) throw new Error(`multiple complete prompt sections are active: ${completeSections.map((section) => JSON.stringify(section.name)).join(", ")}`);
 		let completeSection;
@@ -290,4 +338,4 @@ var SystemPrompt = class extends Service {
 	}
 };
 //#endregion
-export { PERSONA_ORDER, PERSONA_SECTION, SystemPrompt, SystemPrompt as default, TOOL_ORDER_REST, joinContextSections, renderContextSections, renderContextSnapshot, renderPrompt };
+export { FIRST_PARTY_SECTION_ORDER, PERSONA_ORDER, PERSONA_SECTION, SystemPrompt, SystemPrompt as default, TOOL_ORDER_REST, joinContextSections, renderContextSections, renderContextSnapshot, renderPrompt };

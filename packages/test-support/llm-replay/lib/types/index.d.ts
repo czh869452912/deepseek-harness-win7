@@ -7,7 +7,7 @@
  * @module @deepseek-ai/dsh-llm-replay
  */
 import type { Context } from '@deepseek-ai/cordis';
-import type { SessionEvent } from '@deepseek-ai/dsh-session';
+import { type SessionEvent } from '@deepseek-ai/dsh-session';
 import type { GenerateOptions, ModelModality, RetryPolicyConfig, StreamChunk } from '@deepseek-ai/dsh-llm';
 /**
  * One recorded model call. `throw` may replay prefix chunks before failing;
@@ -23,6 +23,7 @@ export type ReplayEntry = {
     chunks: StreamChunk[];
     message: string;
     code: string;
+    accepted?: boolean;
 } | {
     kind: 'hang';
     /** Optional marker written after the prefix chunks are consumed and before the stream waits for cancellation. */
@@ -45,6 +46,15 @@ export interface ReplayModelConfig {
      * omit one, so replay reconstructs the request header a live catalog produced.
      */
     defaultMaxTokens?: number;
+    /**
+     * Optional flat visual-token price the replay route declares for every
+     * retained request image, so keyless scenarios exercise route-priced
+     * request pressure; each occurrence is priced at this value plus its
+     * request-preview handle text. Requires {@link inputModalities} to include
+     * `image` — a text-only route never sends visual tokens. Absent declares
+     * no image pricing.
+     */
+    imageRequestTokens?: number;
     /** Optional reasoning-effort ids the replay route accepts, in display order. */
     reasoningEfforts?: string[];
     /**
@@ -98,7 +108,7 @@ export interface ReplayConfig {
      * this long before yielding, so a downstream transport (e.g. the web SSE
      * mux observed by a browser) sees genuinely incremental delivery. A realism
      * knob only — correctness must never depend on it. Absent or `0` keeps
-     * today's synchronous burst yield. Must be a non-negative finite integer;
+     * a synchronous burst yield. Must be a non-negative finite integer;
      * aborting mid-wait cancels the stream like any other abort.
      */
     paceMs?: number;
@@ -139,9 +149,10 @@ export interface SessionScript {
 /**
  * Parse a session `.jsonl` buffer into its event list. Line 0 is the session
  * header (a `{type:'session',…}` record), every subsequent non-empty line is a
- * {@link SessionEvent} or a packed chunk row (expanded back into its events, so
- * a fixture recorded with `packChunks` on derives the same script). The header
- * is skipped; malformed lines fail loud.
+ * {@link SessionEvent} or a packed chunk row. Packed rows expand back into
+ * events, and JSONL storage-form provenance ranges expand back into
+ * `number[]`, so physical fixture encodings derive the same script. The
+ * header is skipped; malformed lines fail loud.
  * @param text - the raw `.jsonl` file contents.
  * @returns every event after the header, in log order.
  */

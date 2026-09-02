@@ -14,6 +14,7 @@ export const inject = ['subagents', 'subprocess'];
 const DEFAULT_PROVIDER_NAME = 'claude-code';
 export const Config = z.object({
     providerName: z.string().min(1).default(DEFAULT_PROVIDER_NAME),
+    model: z.string().min(1),
     env: z.dict(z.string()).default({}),
     permissionMode: z.union([...CLAUDE_CODE_PERMISSION_MODES])
         .default(DEFAULT_CLAUDE_CODE_PERMISSION_MODE),
@@ -52,6 +53,7 @@ class ClaudeCodeProvider {
         }
         const spec = {
             cwd,
+            ...this.config.model === undefined ? {} : { model: this.config.model },
             permissionMode: this.config.permissionMode,
             env: this.config.env,
             disposeGraceMs: this.config.disposeGraceMs,
@@ -66,11 +68,12 @@ class ClaudeCodeProvider {
 /**
  * Register one Profile-named Claude Code provider.
  * @param ctx - context carrying shared subagent and subprocess services.
- * @param config - registry name, permission mode, child environment, and disposal grace.
+ * @param config - registry name, optional model, permission mode, child environment, and disposal grace.
  */
 export function apply(ctx, config) {
     const resolved = {
         providerName: config.providerName ?? DEFAULT_PROVIDER_NAME,
+        ...config.model === undefined ? {} : { model: config.model },
         env: config.env,
         permissionMode: config.permissionMode ?? DEFAULT_CLAUDE_CODE_PERMISSION_MODE,
         disposeGraceMs: config.disposeGraceMs,

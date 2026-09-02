@@ -1,7 +1,7 @@
 /** Tool UI slot declarations and their composed component props. */
-import type { HostDescriptionSource } from '@deepseek-ai/dsh-client-connection/client';
+import type { ConnectionGenerationState } from '@deepseek-ai/dsh-client-connection/client';
 import type { InjectFace, PropsLocale, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots';
-import type { ToolCallBlock } from '@deepseek-ai/dsh-client-runtime/client';
+import type { ToolCallBlock } from '@deepseek-ai/dsh-client-ui-chat/client';
 declare module '@deepseek-ai/dsh-client-ui-slots' {
     interface SlotMap {
         /**
@@ -45,14 +45,14 @@ export interface ToolCallOwnerProps {
 /** Full props of a registered atomic Tool view. */
 export type ToolCallViewProps = PropsRuntime<'tool.call.toolview'>;
 /** Injected Host description for POSIX home-path display. */
-export type ToolHostDescriptionInjected = {
+export type ToolConnectionGenerationInjected = {
     hooks: {
-        /** Current generation's Host description, bound by the slot renderer. */
-        hostDescription: HostDescriptionSource;
+        /** Current Connection generation, bound by the slot renderer. */
+        connectionGeneration: ConnectionGenerationState;
     };
 };
 /** Full props of the Tool call-tree renderer registered as a `tool-call` Chat Node. */
-export type ToolTreeProps = PropsRuntime<'conversation.chat.node', 'tool-call'> & PropsRenderSlots<'tool.call.toolview'> & PropsLocale<'conversation'> & InjectFace<ToolHostDescriptionInjected>;
+export type ToolTreeProps = PropsRuntime<'conversation.chat.node', 'tool-call'> & PropsRenderSlots<'tool.call.toolview'> & PropsLocale<'conversation'> & InjectFace<ToolConnectionGenerationInjected>;
 /** Full props of the selected Tool output renderer in the details panel. */
-export type ToolDetailsProps = PropsRuntime<'conversation.details.tool'> & PropsLocale<'conversation'> & InjectFace<ToolHostDescriptionInjected>;
+export type ToolDetailsProps = PropsRuntime<'conversation.details.tool'> & PropsLocale<'conversation'> & InjectFace<ToolConnectionGenerationInjected>;
 //# sourceMappingURL=slots.d.ts.map

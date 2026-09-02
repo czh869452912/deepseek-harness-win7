@@ -1,5 +1,5 @@
 /**
- * Shared boot glue for the app bins (`dsh`, `dsh-acp-demo`): load the gitignored
+ * Shared boot glue for `dsh` profiles, including the CLI packaged by the Python runtime wheel: load the gitignored
  * `.env`, install the fail-loud Loader guards, resolve the config path (snapshot-aware), load the
  * optional user patch layers from the Harness home (`~/.dsh`), expose its path resolver to
  * config expressions, and drive the Cordis Loader against a leaf `cordis.yml` until the tree settles.
@@ -16,7 +16,7 @@ declare module '@deepseek-ai/cordis' {
         dshHomePath?: typeof dshHomePath;
     }
 }
-export { composeEntries, DEFAULT_PROFILE_BUNDLES, healProfilesModuleFallback, initProfile, loadProfile, PROFILE_PATCH_FILENAME, PROFILE_TEMPLATES, PROFILES_DIR, readProfileManifest, resolveBundleDir, resolveProfileDir, writeProfileManifest, type DshBundleManifest, type DshManifestSection, type DshProfileManifest, type Profile, type ProfileLayer, type ProfileManifest, } from './profile.ts';
+export { composeEntries, DEFAULT_PROFILE_BUNDLES, DEFAULT_PROFILE_PATCH_RELOAD, healProfilesModuleFallback, initProfile, loadProfile, PROFILE_PATCH_FILENAME, PROFILE_TEMPLATES, PROFILES_DIR, readProfileManifest, resolveBundleDir, resolveProfileDir, writeProfileManifest, type DshBundleManifest, type DshManifestSection, type DshProfileManifest, type Profile, type ProfileLayer, type ProfileManifest, type ProfileModuleFallbackOptions, type ProfilePatchReload, type ProfileTemplate, } from './profile.ts';
 /**
  * Resolve the config to boot. Replay swaps a `cordis.yml` basename for
  * `cordis.snapshot.yml` in the same directory; every other mode keeps the path.
@@ -254,8 +254,8 @@ export declare const HARNESS_SOURCE_SECTION = "harness:source";
  * explicitly distinguishing it from the task workspace and current working
  * directory. The self-referential `dsh-tool-cordis` toolset reads and edits this
  * checkout. Call once on the settled boot context ({@link boot}); the section
- * orders just after the harness identity opener (`-100`) and before the deployment
- * persona (`0`). A booted tree with no `systemPrompt` service has no prompt to
+ * uses the shared first-party placement just after the harness identity opener
+ * and before the deployment persona. A booted tree with no `systemPrompt` service has no prompt to
  * augment, so this is then a no-op that returns `undefined`. The section is
  * registered against the `systemPrompt` service's fiber, so a dev HMR reload of
  * that plugin drops it until the next boot.

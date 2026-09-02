@@ -1,15 +1,49 @@
 /**
- * @deepseek-ai/dsh-host-webserver — Web route-registration plugin: a node:http
- * server plus the `webServer` service (HTTP and upgrade route registries,
- * index transform taps, and the single fallback seat for everything no route
- * claims). Knows no harness concepts and serves no files; the composing
- * application's frontend plugin owns dist serving through the fallback hook.
- * Web shape only — Electron loads dist over file:// and carries fetch over an
- * IPC bridge. This package never prints: the URL line belongs to the shell.
+ * @deepseek-ai/dsh-host-webserver — node:http route registration with optional
+ * gzip, index injection, and one fallback seat. It knows no harness concepts
+ * and serves no files; the composing application owns dist serving. Electron
+ * uses file:// plus IPC instead, and this package never prints the URL.
+ * Route handlers retain direct response ownership.
  */
 import { createServer } from 'node:http';
 import { Service } from '@deepseek-ai/cordis';
 import z from '@deepseek-ai/schemastery';
+import compressionMiddleware from 'compression';
+import Negotiator from 'negotiator';
+import { renderIndexInjections } from "./injections.js";
+export { renderIndexInjections } from "./injections.js";
+const DEFAULT_COMPRESSION = 'none';
+const DEFAULT_COMPRESSION_LEVEL = 1;
+const DEFAULT_COMPRESSION_THRESHOLD_BYTES = 1024;
+function createGzipMiddleware(config) {
+    // `compression` is typed for Express, but its runtime uses only the
+    // node:http request and response members supplied here.
+    const middleware = compressionMiddleware({
+        level: config.compressionLevel,
+        threshold: config.compressionThresholdBytes,
+        filter(request, response) {
+            if (response.getHeader('content-range') !== undefined)
+                return false;
+            const contentType = response.getHeader('content-type');
+            if (typeof contentType === 'string' && contentType.toLowerCase().startsWith('text/event-stream'))
+                return false;
+            return compressionMiddleware.filter(request, response);
+        },
+    });
+    return (req, res, next) => {
+        // The Web Worker tunnel has no socket and transfers identity bytes.
+        if (res.socket === undefined) {
+            next();
+            return;
+        }
+        const encoding = new Negotiator(req).encoding(['gzip', 'identity']);
+        const gzipRequest = Object.create(req);
+        Object.defineProperty(gzipRequest, 'headers', {
+            value: { ...req.headers, 'accept-encoding': encoding === 'gzip' ? 'gzip' : 'identity' },
+        });
+        middleware(gzipRequest, res, next);
+    };
+}
 /**
  * The browser HTTP carrier service. Activation listens immediately. Route
  * registration order does not affect requests because configured named routes
@@ -22,6 +56,9 @@ export class WebServer extends Service {
     static Config = z.object({
         host: z.union([z.const('127.0.0.1'), z.const('0.0.0.0')]).required(),
         port: z.natural().max(65535).required(),
+        compression: z.union([z.const('none'), z.const('gzip')]).default(DEFAULT_COMPRESSION),
+        compressionLevel: z.number().step(1).min(0).max(9).default(DEFAULT_COMPRESSION_LEVEL),
+        compressionThresholdBytes: z.natural().default(DEFAULT_COMPRESSION_THRESHOLD_BYTES),
     });
     exact = new Map();
     prefixes = new Map();
@@ -31,9 +68,12 @@ export class WebServer extends Service {
     fallback;
     server;
     listenedPort;
+    gzip;
     constructor(ctx, config) {
         super(ctx, 'webServer');
         this.config = config;
+        const resolved = config;
+        this.gzip = resolved.compression === 'gzip' ? createGzipMiddleware(resolved) : undefined;
     }
     /** The listening port (the OS-assigned value when config.port is 0). */
     get port() {
@@ -86,8 +126,9 @@ export class WebServer extends Service {
         return () => { this.fallback = undefined; };
     }
     /**
-     * Register an index.html transform, applied by the fallback owner to every
-     * index response ({@link applyIndexTaps}) in registration order.
+     * Register a raw-HTML index transform, the escape hatch for markup no
+     * {@link IndexInjection} row expresses: {@link renderIndex} applies taps in
+     * registration order after rendering the structured rows.
      * @param transform - pure html-to-html function.
      * @returns the disposer removing the transform.
      */
@@ -123,15 +164,21 @@ export class WebServer extends Service {
         // client dropping mid-body). Per-request failures log and answer 400 —
         // never a process exit.
         this.server = createServer((req, res) => {
-            handle(req, res).catch((err) => {
-                this.ctx.logger.warn(err instanceof Error ? err : new Error(String(err)));
-                if (res.headersSent) {
-                    res.destroy();
-                    return;
-                }
-                res.writeHead(400);
-                res.end();
-            });
+            const next = () => {
+                void handle(req, res).catch((err) => {
+                    this.ctx.logger.warn(err instanceof Error ? err : new Error(String(err)));
+                    if (res.headersSent) {
+                        res.destroy();
+                        return;
+                    }
+                    res.writeHead(400);
+                    res.end();
+                });
+            };
+            if (this.gzip === undefined)
+                next();
+            else
+                this.gzip(req, res, next);
         });
         this.server.on('upgrade', (req, socket, head) => {
             const onError = (error) => {
@@ -217,6 +264,26 @@ export class WebServer extends Service {
         for (const transform of this.indexTaps)
             out = transform(out);
         return out;
+    }
+    /**
+     * Gather the structured injection table: one `webserver/index-inject` emit,
+     * every subscriber pushes its current rows. Fresh per call, so subscribers
+     * read live state (module graph, theme preference) at emit time.
+     * @returns rows in subscriber activation order.
+     */
+    collectIndexInjections() {
+        const table = [];
+        this.ctx.emit('webserver/index-inject', table);
+        return table;
+    }
+    /**
+     * Render one index.html body: the structured injection table first, then
+     * the raw `tapIndex` transforms over the result.
+     * @param html - the raw index.html body.
+     * @returns the transformed body.
+     */
+    renderIndex(html) {
+        return this.applyIndexTaps(renderIndexInjections(html, this.collectIndexInjections()));
     }
 }
 export default WebServer;

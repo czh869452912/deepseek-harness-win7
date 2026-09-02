@@ -5,23 +5,32 @@
  *
  * @module @deepseek-ai/dsh-web-fetch-http/policy
  */
+/** Maximum accepted request URL length enforced by the public fetch provider. */
+export declare const WEB_FETCH_MAX_URL_LENGTH = 2048;
 /** The body kinds this provider decodes. */
 export type FetchableKind = 'html' | 'text';
 /**
- * Validate a request URL against the basic transport hygiene the provider
- * enforces before any network access: http(s) only, no embedded credentials,
- * bounded length. Returns the parsed `URL`. Throws {@link WebError} otherwise.
- * (SSRF / private-network blocking is deferred — see the package Agent Note.)
+ * Parse a request URL and enforce network-independent transport restrictions:
+ * HTTP(S) only and no embedded credentials. The provider applies this before
+ * resolving a destination.
  *
  * @param input - the raw URL string from the fetch request.
- * @param maxUrlLength - inclusive upper bound on `input`'s length.
  * @returns the parsed `URL`.
  */
-export declare function validateFetchUrl(input: string, maxUrlLength: number): URL;
+export declare function parseFetchUrl(input: string): URL;
+/**
+ * Validate a request URL against the provider's complete pre-network policy:
+ * bounded length plus the restrictions enforced by {@link parseFetchUrl}.
+ * Public-address resolution and connection pinning run after this check.
+ *
+ * @param input - the raw URL string from the fetch request.
+ * @returns the parsed `URL`.
+ */
+export declare function validateFetchUrl(input: string): URL;
 /**
  * Two URLs are same-origin when scheme, hostname, and port match. A redirect
  * that crosses origins is refused so each new origin requires a fresh tool call
- * (and thus a fresh provider/permission decision).
+ * and public-address validation.
  *
  * @param a - one of the two URLs to compare.
  * @param b - the other URL to compare.

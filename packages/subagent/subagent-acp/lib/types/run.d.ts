@@ -2,9 +2,6 @@
  * Fresh-process ACP subagent client. Drives one child session and owns cancellation and
  * quiescent disposal.
  *
- * TODO(acp-subagent-replay): add snapshot-tier coverage with a separate replay fixture and
- * sessions root inside each child process. Current keyless coverage uses a scripted ACP child;
- * with-key coverage drives the real ACP example.
  * @module @deepseek-ai/dsh-subagent-acp/run
  */
 import { type ContentBlock as AcpContentBlock, type StopReason } from '@agentclientprotocol/sdk';
@@ -45,9 +42,11 @@ export interface AcpRunSpec {
      */
     disposeEofGraceMs: number;
     /**
-     * Termination-escalation grace (ms) in {@link SubagentRun.dispose}; POSIX
-     * waits this long after `SIGTERM` before `SIGKILL`, while Windows
-     * force-terminates directly. The plugin fills it from `disposeGraceMs`.
+     * Process-observation and termination-escalation grace (ms). Failure
+     * classification waits at most this long for structured exit facts; POSIX
+     * dispose also waits this long after `SIGTERM` before `SIGKILL`, while
+     * Windows force-terminates directly. The plugin fills it from
+     * `disposeGraceMs`.
      */
     disposeGraceMs: number;
     /**
@@ -57,12 +56,9 @@ export interface AcpRunSpec {
      */
     spawn: (spec: SubprocessSpawnSpec) => SubprocessHandle;
     /**
-     * Sink for a child-level failure that the run flattened into a stop reason
-     * (the seam contract forbids `result` rejecting). The driver calls this with
-     * the original error and the chosen stop reason so the fault is preserved
-     * rather than silently lost; the provider wires it to `ctx.logger.warn`.
-     * A throw from the sink itself is contained — it cannot reject `result`.
-     * Optional — omitted in a unit test that asserts the stop reason directly.
+     * Host sink for startup, published-run, or teardown failures. Model-visible
+     * text uses fixed safe facts, while this callback retains the original Error
+     * when one exists. A throw from the sink itself is contained.
      */
     onError?: (error: Error, stopReason: SubagentStopReason) => void;
 }
@@ -70,6 +66,12 @@ export interface AcpRunSpec {
 export declare const DEFAULT_DISPOSE_EOF_GRACE_MS = 6000;
 /** Default POSIX grace between SIGTERM and SIGKILL on dispose (the `disposeGraceMs` config). */
 export declare const DEFAULT_DISPOSE_GRACE_MS = 3000;
+/**
+ * Hide a pre-spawn workspace/configuration failure behind fixed safe facts.
+ * @param cause - original Host failure retained on the Error cause chain.
+ * @returns an Error whose message contains only the fixed ACP failure line.
+ */
+export declare function acpConfigurationFailure(cause: unknown): Error;
 /**
  * Cooperative teardown ladder for an out-of-process agent, over the seam's
  * public verbs; resolves only at whole-tree quiescence: stdin EOF (the child's
@@ -101,8 +103,11 @@ export declare function acpContentText(content: AcpContentBlock): string;
 export declare function toAcpPrompt(prompt: ContentBlock[]): AcpContentBlock[];
 /**
  * Start and publish one ACP child after initialization and session creation.
- * Child failures resolve through the run result; startup failures reject after
- * process reap. Disposal cancels, kills, and reaps the child.
+ * Child failures resolve through the run result. Startup rejects with fixed
+ * safe facts after provider-owned cleanup; successful cleanup proves process
+ * reap. Cleanup failure preserves startup plus teardown facts for an ordinary
+ * failure, or teardown alone after cancellation, without claiming quiescence.
+ * Disposal cancels, kills, and reaps the child.
  * @param request - the start request; its signal is the cancellation channel.
  * @param spec - the resolved spawn spec: command/args/cwd, env, permission
  * policy, dispose graces, and the optional error sink.

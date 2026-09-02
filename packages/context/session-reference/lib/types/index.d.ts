@@ -37,6 +37,10 @@ export declare class SessionReferenceResolver extends TypertRemoteService {
     private prepareDirectMessages;
     /**
      * List reference candidates, ranked by working-directory affinity.
+     *
+     * Discovery runs at keystroke rate, so a title only ever comes from a
+     * projection read: see {@link SessionReferenceResolver.projectedTitle} for
+     * which sessions can answer one and which fall back to their id.
      * @param agent - target agent; self is excluded and its cwd drives ranking.
      * @param query - optional case-insensitive session-id/cwd/title substring.
      * @param limit - optional positive result cap.
@@ -44,6 +48,29 @@ export declare class SessionReferenceResolver extends TypertRemoteService {
      * @returns candidates labeled by latest title or, when absent, session id.
      */
     listCandidates(agent: Agent, query?: string, limit?: number, signal?: AbortSignal): Promise<SessionReferenceCandidate[]>;
+    /**
+     * The title a session's projections can answer without reading its log.
+     *
+     * Attachment is decided by the store at read time, not by the listing:
+     * a session that attached in between would otherwise be answered from a
+     * checkpoint its live log has already moved past.
+     *
+     * An attached session answers from its live registry cut, which advances
+     * with every committed event, so a rename or a just-generated title is
+     * visible immediately; its events are already in memory, so the lazy fold
+     * costs no I/O. A cold session answers from the durable checkpoint the
+     * projection cache wrote when it went cold.
+     *
+     * Nothing else is attempted. Folding a title from a log costs the whole
+     * log, and this call sits under every keystroke of `@` completion. A
+     * session that no projection can answer for — one persisted before the
+     * cache was composed, or seeded straight to disk — is labeled by its id
+     * and cannot be found by its title until it is opened once, which
+     * checkpoints it.
+     * @param record - the listed session, live or cold.
+     * @returns the projected title, or undefined when no projection holds one.
+     */
+    private projectedTitle;
     /**
      * Remote face of {@link listCandidates}: the configured candidate limit
      * applies, and every candidate carries the canonical mention a host inserts

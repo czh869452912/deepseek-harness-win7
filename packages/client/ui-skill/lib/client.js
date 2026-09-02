@@ -7,8 +7,8 @@ window.__ModuleLoader__.load({
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let react = require("react");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
-		//#region \0dsh-css:D:\Claude-project\deepseek-harness-win7\reference\deepseek-harness\packages\client\ui-skill\src\client\SkillRow.module.css.mjs
-		const css = ".GDrliG_card{flex-direction:column;display:flex}.GDrliG_row{align-items:center;min-width:0;height:24px;display:flex;position:relative;overflow:hidden}.GDrliG_row[data-expandable]{cursor:pointer}.GDrliG_card[data-state=running] .GDrliG_row:after{content:\"\";background:linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent) 55%, transparent 100%);pointer-events:none;width:300px;animation:2.6s ease-out infinite GDrliG_dsh-skill-row-sweep;position:absolute;inset:0 auto 0 0}@keyframes GDrliG_dsh-skill-row-sweep{0%{left:-300px}90%,to{left:100%}}.GDrliG_leading{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);flex:none;justify-content:center;align-items:center;margin-right:6px;display:inline-flex;position:relative}.GDrliG_chevron{color:var(--dsw-alias-label-secondary)}.GDrliG_iconIdle{opacity:1;transition:opacity .1s;display:inline-flex}.GDrliG_chevronHover{opacity:0;margin:auto;transition:opacity .1s;position:absolute;inset:0}.GDrliG_row:hover .GDrliG_iconIdle{opacity:0}.GDrliG_row:hover .GDrliG_chevronHover{opacity:1}.GDrliG_title{color:var(--dsw-alias-label-secondary);flex:none;font-size:14px;line-height:24px}.GDrliG_separator{background:var(--dsw-alias-label-caption);border-radius:1px;flex:none;width:2px;height:2px;margin:0 8px}.GDrliG_summary{text-overflow:ellipsis;white-space:nowrap;min-width:0;color:var(--dsw-alias-label-tertiary);flex:auto;font-size:14px;line-height:24px;overflow:hidden}.GDrliG_errorSummary{color:var(--dsw-alias-state-error-primary)}.GDrliG_bodyWrap{flex-direction:column;display:flex}.GDrliG_instructionsCard{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-markdown-code-block);border-radius:12px;flex-direction:column;max-height:260px;margin:4px 0 4px 4px;display:flex;overflow:hidden}.GDrliG_instructionsHeader{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-markdown-code-block-banner);color:var(--dsw-alias-label-caption);text-transform:uppercase;letter-spacing:.04em;flex:none;padding:8px 12px;font-size:11px;font-weight:500;line-height:16px}.GDrliG_instructions{white-space:pre-wrap;overflow-wrap:anywhere;min-height:0;font:var(--dsw-font-markdown-code-block-small);color:var(--dsw-alias-label-secondary);margin:0;padding:10px 12px 12px;overflow:auto}.GDrliG_instructions[data-error]{color:var(--dsw-alias-state-error-primary)}.GDrliG_instructions::-webkit-scrollbar-thumb{background-clip:padding-box;border:2px solid #0000;border-radius:6px}.GDrliG_instructions::-webkit-scrollbar-track{margin:6px 0}.GDrliG_inspectButton{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:0;border-radius:999px;align-self:flex-start;align-items:center;gap:4px;margin:4px 0 2px 4px;padding:2px 8px;font-size:11px;line-height:16px;transition:opacity .1s;display:inline-flex}.GDrliG_card:hover .GDrliG_inspectButton,.GDrliG_inspectButton:focus-visible{opacity:1}.GDrliG_inspectButton:hover{background:var(--dsw-alias-interactive-bg-hover-solid);color:var(--dsw-alias-label-primary)}.GDrliG_visuallyHidden{clip:rect(0 0 0 0);white-space:nowrap;width:1px;height:1px;position:absolute;overflow:hidden}@media (prefers-reduced-motion:reduce){.GDrliG_card[data-state=running] .GDrliG_row:after{animation:none;display:none}.GDrliG_iconIdle,.GDrliG_chevronHover,.GDrliG_inspectButton{transition:none}}";
+		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-skill\src\client\SkillRow.module.css.mjs
+		const css = ".GyJ8hG_card{flex-direction:column;display:flex}.GyJ8hG_row{align-items:center;min-width:0;height:24px;display:flex;position:relative;overflow:hidden}.GyJ8hG_row[data-expandable]{cursor:pointer}.GyJ8hG_card[data-state=running] .GyJ8hG_row:after{content:\"\";background:linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent) 55%, transparent 100%);pointer-events:none;width:300px;animation:2.6s ease-out infinite GyJ8hG_dsh-skill-row-sweep;position:absolute;inset:0 auto 0 0}@keyframes GyJ8hG_dsh-skill-row-sweep{0%{left:-300px}90%,to{left:100%}}.GyJ8hG_leading{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);flex:none;justify-content:center;align-items:center;margin-right:6px;display:inline-flex;position:relative}.GyJ8hG_chevron{color:var(--dsw-alias-label-secondary)}.GyJ8hG_iconIdle{opacity:1;transition:opacity .1s;display:inline-flex}.GyJ8hG_chevronHover{opacity:0;margin:auto;transition:opacity .1s;position:absolute;inset:0}.GyJ8hG_row:hover .GyJ8hG_iconIdle{opacity:0}.GyJ8hG_row:hover .GyJ8hG_chevronHover{opacity:1}.GyJ8hG_title{color:var(--dsw-alias-label-secondary);flex:none;font-size:14px;line-height:24px}.GyJ8hG_separator{background:var(--dsw-alias-label-caption);border-radius:1px;flex:none;width:2px;height:2px;margin:0 8px}.GyJ8hG_summary{text-overflow:ellipsis;white-space:nowrap;min-width:0;color:var(--dsw-alias-label-tertiary);flex:auto;font-size:14px;line-height:24px;overflow:hidden}.GyJ8hG_errorSummary{color:var(--dsw-alias-state-error-primary)}.GyJ8hG_bodyWrap{flex-direction:column;display:flex}.GyJ8hG_instructionsCard{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-markdown-code-block);border-radius:12px;flex-direction:column;max-height:260px;margin:4px 0 4px 4px;display:flex;overflow:hidden}.GyJ8hG_instructionsHeader{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-markdown-code-block-banner);color:var(--dsw-alias-label-caption);text-transform:uppercase;letter-spacing:.04em;flex:none;padding:8px 12px;font-size:11px;font-weight:500;line-height:16px}.GyJ8hG_instructions{white-space:pre-wrap;overflow-wrap:anywhere;min-height:0;font:var(--dsw-font-markdown-code-block-small);color:var(--dsw-alias-label-secondary);margin:0;padding:10px 12px 12px;overflow:auto}.GyJ8hG_instructions[data-error]{color:var(--dsw-alias-state-error-primary)}.GyJ8hG_instructions::-webkit-scrollbar-thumb{background-clip:padding-box;border:2px solid #0000;border-radius:6px}.GyJ8hG_instructions::-webkit-scrollbar-track{margin:6px 0}.GyJ8hG_inspectButton{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:0;border-radius:999px;align-self:flex-start;align-items:center;gap:4px;margin:4px 0 2px 4px;padding:2px 8px;font-size:11px;line-height:16px;transition:opacity .1s;display:inline-flex}.GyJ8hG_card:hover .GyJ8hG_inspectButton,.GyJ8hG_inspectButton:focus-visible{opacity:1}.GyJ8hG_inspectButton:hover{background:var(--dsw-alias-interactive-bg-hover-solid);color:var(--dsw-alias-label-primary)}.GyJ8hG_visuallyHidden{clip:rect(0 0 0 0);white-space:nowrap;width:1px;height:1px;position:absolute;overflow:hidden}@media (prefers-reduced-motion:reduce){.GyJ8hG_card[data-state=running] .GyJ8hG_row:after{animation:none;display:none}.GyJ8hG_iconIdle,.GyJ8hG_chevronHover,.GyJ8hG_inspectButton{transition:none}}";
 		const tagId = "@deepseek-ai/dsh-client-ui-skill/SkillRow.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -18,23 +18,23 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var SkillRow_module_css_default = {
-			"bodyWrap": "GDrliG_bodyWrap",
-			"card": "GDrliG_card",
-			"chevron": "GDrliG_chevron",
-			"chevronHover": "GDrliG_chevronHover",
-			"dsh-skill-row-sweep": "GDrliG_dsh-skill-row-sweep",
-			"errorSummary": "GDrliG_errorSummary",
-			"iconIdle": "GDrliG_iconIdle",
-			"inspectButton": "GDrliG_inspectButton",
-			"instructions": "GDrliG_instructions",
-			"instructionsCard": "GDrliG_instructionsCard",
-			"instructionsHeader": "GDrliG_instructionsHeader",
-			"leading": "GDrliG_leading",
-			"row": "GDrliG_row",
-			"separator": "GDrliG_separator",
-			"summary": "GDrliG_summary",
-			"title": "GDrliG_title",
-			"visuallyHidden": "GDrliG_visuallyHidden"
+			"bodyWrap": "GyJ8hG_bodyWrap",
+			"card": "GyJ8hG_card",
+			"chevron": "GyJ8hG_chevron",
+			"chevronHover": "GyJ8hG_chevronHover",
+			"dsh-skill-row-sweep": "GyJ8hG_dsh-skill-row-sweep",
+			"errorSummary": "GyJ8hG_errorSummary",
+			"iconIdle": "GyJ8hG_iconIdle",
+			"inspectButton": "GyJ8hG_inspectButton",
+			"instructions": "GyJ8hG_instructions",
+			"instructionsCard": "GyJ8hG_instructionsCard",
+			"instructionsHeader": "GyJ8hG_instructionsHeader",
+			"leading": "GyJ8hG_leading",
+			"row": "GyJ8hG_row",
+			"separator": "GyJ8hG_separator",
+			"summary": "GyJ8hG_summary",
+			"title": "GyJ8hG_title",
+			"visuallyHidden": "GyJ8hG_visuallyHidden"
 		};
 		//#endregion
 		//#region lib/types/client/SkillRow.js
@@ -150,7 +150,7 @@ window.__ModuleLoader__.load({
 						}) : null,
 						(0, react_jsx_runtime.jsx)("span", {
 							className: SkillRow_module_css_default.title,
-							children: "Skill"
+							children: t("row.title")
 						}),
 						(0, react_jsx_runtime.jsx)("span", {
 							className: SkillRow_module_css_default.separator,
@@ -178,7 +178,7 @@ window.__ModuleLoader__.load({
 						type: "button",
 						className: SkillRow_module_css_default.inspectButton,
 						onClick: inspect,
-						children: [(0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconInspectOutline12, {}), "Inspect"]
+						children: [(0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconInspectOutline12, {}), t("row.inspect")]
 					}) : null]
 				}) : null]
 			});
@@ -190,18 +190,22 @@ window.__ModuleLoader__.load({
 		const NS = "skill";
 		/** Simplified Chinese dictionary (the key-set source of truth). */
 		const zh = {
+			"row.title": "Skill",
 			"row.running": "正在加载 skill",
 			"row.failed": "skill 加载失败",
 			"row.stopped": "skill 加载已中止",
 			"row.instructions": "说明",
+			"row.inspect": "查看",
 			"menu.userOnly": "仅用户"
 		};
 		/** English dictionary, checked complete against the zh key set. */
 		const en = {
+			"row.title": "Skill",
 			"row.running": "Loading skill",
 			"row.failed": "Skill load failed",
 			"row.stopped": "Skill load stopped",
 			"row.instructions": "Instructions",
+			"row.inspect": "Inspect",
 			"menu.userOnly": "user-only"
 		};
 		//#endregion
@@ -213,7 +217,8 @@ window.__ModuleLoader__.load({
 			"sessions",
 			"slots",
 			"locale",
-			"remote"
+			"remote",
+			"remote.skills"
 		];
 		/**
 		* Client plugin body: register the '/' source, dictionaries, and keyed tool row.
@@ -229,8 +234,8 @@ window.__ModuleLoader__.load({
 				key: "skill",
 				locale: NS
 			}, SkillRow));
-			const skills = ctx.get("connection").api.skills;
-			const sessions = ctx.get("sessions");
+			const skills = ctx.remote.skills;
+			const sessions = ctx.sessions;
 			const fetches = /* @__PURE__ */ new Map();
 			const lexiconListeners = /* @__PURE__ */ new Map();
 			const notifyLexicon = (sessionId) => {
@@ -246,8 +251,8 @@ window.__ModuleLoader__.load({
 				if (existing !== void 0) return existing.promise;
 				const abort = new AbortController();
 				const promise = (async () => {
-					const { result } = await skills.list({ sessionId }, abort.signal);
-					if (!result.ok) throw new Error(`skill.list failed: ${result.error.code}: ${result.error.message}`);
+					const result = await skills.list({ sessionId }, abort.signal);
+					if (!result.ok) throw new Error(`skills/list failed: ${result.error.code}: ${result.error.message}`);
 					return result.value.skills;
 				})();
 				const entry = {

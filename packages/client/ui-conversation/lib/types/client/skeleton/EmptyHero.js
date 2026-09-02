@@ -1,12 +1,9 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-// Hero chrome for the blank-draft phase of ConversationRoot: fish headline,
-// glow backdrop, and the workspace row. Pure presentation — the resident
-// composer is NOT rendered here (it keeps its own stable tree position in
-// ConversationRoot so the textarea survives the hero → composer flip); CSS
-// positions it over this shell's glow area during the hero phase.
+// The composer remains in ConversationRoot so switching out of the blank-draft
+// phase does not remount its textarea.
 import { useId } from 'react';
 import { FishLogo, IconChevronDownOutline14, IconFolderClose16, IconFolderOpen16, } from '@deepseek-ai/dsh-client-ui-primitives';
-import { workspaceTitleOf } from '@deepseek-ai/dsh-client-runtime/client';
+import { workspaceTitleOf } from '@deepseek-ai/dsh-util-workspace-path';
 import css from './HeroShell.module.css';
 /**
  * Basename label for the workspace chip (the shared derivation);

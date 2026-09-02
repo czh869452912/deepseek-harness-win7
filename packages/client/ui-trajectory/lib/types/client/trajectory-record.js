@@ -16,20 +16,24 @@ export function trajectoryRecordId(cell) {
 /**
  * Format a duration in milliseconds with thousands separators.
  * @param milliseconds - Duration in milliseconds, or `null` when absent.
+ * @param t - Trajectory locale translator.
  * @returns `—` when unknown, otherwise an integer-millisecond label.
  */
-export function formatDurationMillis(milliseconds) {
+export function formatDurationMillis(milliseconds, t) {
     if (milliseconds === null || !Number.isFinite(milliseconds))
         return '—';
     const integer = String(Math.round(milliseconds));
-    return `${integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} ms`;
+    return t('unit.milliseconds', {
+        value: integer.replace(/\B(?=(\d{3})+(?!\d))/g, ','),
+    });
 }
 /**
  * Format an elapsed duration given in seconds as a millisecond label.
  * @param seconds - Duration seconds, or `null` when absent.
+ * @param t - Trajectory locale translator.
  * @returns `—` when unknown, otherwise an integer-millisecond label.
  */
-export function formatElapsedSeconds(seconds) {
-    return formatDurationMillis(seconds === null ? null : seconds * 1000);
+export function formatElapsedSeconds(seconds, t) {
+    return formatDurationMillis(seconds === null ? null : seconds * 1000, t);
 }
 //# sourceMappingURL=trajectory-record.js.map

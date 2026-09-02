@@ -1,17 +1,21 @@
-// FixtureApi: standalone UI development without a server. Real contract shape: unary takes
-// RpcRequest<P> and returns RpcResponse<T> (echoing the rpcId); streams yield RpcRequest<frame>
-// (the fixture IS the fake server, so it mints frame rpcIds); root respond takes ClientResponse
-// and returns RpcReceipt. fx-alpha carries a hand-built history script (74 turns, pageable);
-// prompt triggers a chunked streaming replay; cancel stops the replay; resident pending
-// approval/question requests exercise replay and composer takeover with stable rpcIds.
-import { createAssistantMessage, createToolResultMessage, createUserMessage, isTokenDelta, } from '@deepseek-ai/dsh-llm/message';
-import { CallId } from '@deepseek-ai/dsh-llm/brand';
+// Standalone browser fixture for UI development without a server.
+import { createAssistantMessage, createToolResultMessage, createUserMessage, } from '@deepseek-ai/dsh-llm/message';
+import { ToolCallId } from '@deepseek-ai/dsh-llm/brand';
+import { isChunkRow, packChunkRuns } from '@deepseek-ai/dsh-session/chunk-rows';
 import { deriveEventMessage, foldSurface } from '@deepseek-ai/dsh-session/surface';
-import { AbstractApiClient, RpcId, SESSION_SEARCH_RESULT_LIMIT } from "./api.js";
 import { randomUuid } from "./random-uuid.js";
-/** The fake carrier mints like a real one (business code never mints). */
-function rpcRequest(payload) {
-    return { rpcId: RpcId(randomUuid()), payload };
+const FIXTURE_SESSION_SEARCH_RESULT_LIMIT = 20;
+/* jscpd:ignore-start -- The standalone fixture mirrors host timing without importing a target implementation. */
+function isFixtureTokenDelta(chunk) {
+    switch (chunk.type) {
+        case 'text-delta':
+        case 'reasoning-delta':
+            return chunk.text !== '';
+        case 'tool-call-delta':
+            return chunk.argumentsDelta !== '' || chunk.name !== undefined;
+        default:
+            return false;
+    }
 }
 function text(t) {
     return [{ type: 'text', text: t }];
@@ -26,7 +30,7 @@ function assistantMessage(content, model = 'fx-1') {
     });
 }
 function toolResultMessage(callId, content, isError) {
-    return createToolResultMessage({ callId: CallId(callId), content, isError });
+    return createToolResultMessage({ callId: ToolCallId(callId), content, isError });
 }
 const MARKDOWN_FIXTURE = [
     '# Markdown fixture',
@@ -64,11 +68,9 @@ function sgr(code, body) {
  * basic-16 SGR foreground runs (green, red, bright-black) that must resolve to
  * `--dsw-*` tokens, a bold run, column-aligned table rows that must scroll
  * rather than fold, more than DEFAULT_TERMINAL_MAX_LINES (16) lines so the
- * height cap collapses the middle. The exit status is authored separately in
- * TERMINAL_EXIT_STATUS and deliberately absent from this text: the real bash
- * presenter CONSUMES its `[exit code: N]` marker out of the body, because a
- * terminal card shows the exit as its own pill and leaving the marker in would
- * render it twice (packages/shell/tool-bash/src/render.ts).
+ * height cap collapses the middle. This constant is the visible body; the call
+ * site appends the shell result's `[exit code: N]` marker so Client derivation
+ * can consume it into the terminal status pill.
  */
 const TERMINAL_OUTPUT_FIXTURE = [
     sgr(1, 'Running 4 checks'),
@@ -94,19 +96,10 @@ const TERMINAL_OUTPUT_FIXTURE = [
     sgr(31, '1 of 4 checks failed'),
 ].join('\n');
 /**
- * Exit status for each terminal sample, keyed by its output text. Authored
- * alongside the sample rather than parsed back out of its trailing marker,
- * which is the bash tool's own job and not something to reimplement here.
- */
-const TERMINAL_EXIT_STATUS = {
-    [TERMINAL_OUTPUT_FIXTURE]: { exitCode: 1 },
-};
-/**
- * Structured grep result for the search sample (turn 67): matches grouped by
- * file, authored inline because the client-side fixture cannot import the tool
- * that produces the canonical value. `truncated` with a larger `total` than the
- * retained match count exercises the search card's capped indicator; the file
- * with more than CHAT_SEARCH_MAX_LINES rows exercises its head/tail height cap.
+ * Structured grep metadata for the search sample (turn 67). `truncated` with a
+ * larger `total` than the retained match count exercises the search card's
+ * capped indicator; the file with more than CHAT_SEARCH_MAX_LINES rows
+ * exercises its head/tail height cap.
  */
 const SEARCH_MATCHES_FIXTURE = [
     {
@@ -134,13 +127,6 @@ const SEARCH_MATCHES_FIXTURE = [
         ],
     },
 ];
-/**
- * The model-facing grep render text for the sample — what a UI without a search
- * card shows, attached as the view's `content`. Mirrors the real grep
- * presenter's shape (see formatGrepOutput in dsh-tool-fs-search): a
- * `Found X of Y matches` header, the matches grouped under file headers with
- * `Line N:` rows, then a spill-recovery footer.
- */
 const SEARCH_MATCHES_TEXT = [
     'Found 9 of 42 matches',
     '',
@@ -148,10 +134,6 @@ const SEARCH_MATCHES_TEXT = [
     '',
     '(Full grep result stored at: fixture://spill/grep-66. Read it to see every match.)',
 ].join('\n');
-/**
- * Structured glob result for the search sample (turn 68): a flat path list,
- * truncated with a larger `total` so the path card shows its capped indicator.
- */
 const SEARCH_PATHS_FIXTURE = [
     'packages/client/ui-primitives/src/SearchBlock.tsx',
     'packages/client/ui-primitives/src/SearchBlock.module.css',
@@ -159,24 +141,11 @@ const SEARCH_PATHS_FIXTURE = [
     'packages/client/ui-tool/src/client/tool/toolviews/search-row.tsx',
     'packages/client/ui-tool/tests/search-card.client.spec.tsx',
 ];
-/**
- * The model-facing glob render text — the newline-joined path list plus a
- * spill-recovery footer, mirroring the real glob presenter's shape (see
- * formatGlobOutput in dsh-tool-fs-search).
- */
 const SEARCH_PATHS_TEXT = [
     ...SEARCH_PATHS_FIXTURE,
     '',
     '(Showing 5 of 23 paths. Full sorted result stored at: fixture://spill/glob-67. Read it to see every path.)',
 ].join('\n');
-/**
- * Read-card sample for the read turn: a WINDOW past an offset, so the line
- * numbers start above 1 (the card's gutter keeps the file's own numbering) and
- * `totalLines` exceeds the window (the card shows a "showing N of M" note). The
- * fixture is client-side and cannot import the read tool, so the structured
- * window is authored inline exactly as the tool would project it through
- * `presentationMeta`. `lang` is a `ts` hint so the shiki path highlights it.
- */
 const READ_SAMPLE_FIRST_LINE = 41;
 const READ_SAMPLE_SOURCE = [
     'export interface ReadBlockProps {',
@@ -194,17 +163,22 @@ const READ_SAMPLE_SOURCE = [
 const READ_SAMPLE_LINES = READ_SAMPLE_SOURCE.map((text, index) => ({ number: READ_SAMPLE_FIRST_LINE + index, text }));
 const READ_SAMPLE_PATH = 'packages/client/ui-primitives/src/ReadBlock.tsx';
 const READ_SAMPLE_TOTAL = 180;
-const READ_SAMPLE_TEXT = READ_SAMPLE_SOURCE.map((text, index) => `${READ_SAMPLE_FIRST_LINE + index}: ${text}`).join('\n');
+const READ_SAMPLE_LAST_LINE = READ_SAMPLE_FIRST_LINE + READ_SAMPLE_SOURCE.length - 1;
+const READ_SAMPLE_TEXT = [
+    `<path>${READ_SAMPLE_PATH}</path>`,
+    '<type>file</type>',
+    '<content>',
+    ...READ_SAMPLE_SOURCE.map((text, index) => `${READ_SAMPLE_FIRST_LINE + index}: ${text}`),
+    '',
+    `(Showing lines ${READ_SAMPLE_FIRST_LINE}-${READ_SAMPLE_LAST_LINE} of ${READ_SAMPLE_TOTAL}. Use offset=${READ_SAMPLE_LAST_LINE + 1} to continue.)`,
+    '</content>',
+].join('\n');
 /**
- * The structured `web_search` result view for the web-search turn, authored inline
- * because this client-side fixture cannot import the web tool that projects it.
- * The sources exercise the citation list's features: a titled source with a
- * snippet and a date, a source with no title (its hostname labels the link) and
- * a snippet but no date, and a source with a title and a date but no snippet.
- * `truncated` marks the capped indicator. The shape is the contract's own
- * search view minus its wire discriminants.
+ * The `web_search` result metadata for the web-search turn. The sources cover a
+ * titled source with a snippet and date, a hostname-label fallback, and a
+ * titled source without a snippet; `truncated` exercises the capped indicator.
  */
-const WEB_SEARCH_RESULT = {
+const WEB_SEARCH_META = {
     answer: 'DeepSeek Harness is a plugin-based agent harness on vendored Cordis where **every capability is a plugin**.',
     sources: [
         {
@@ -225,8 +199,8 @@ const WEB_SEARCH_RESULT = {
     ],
     truncated: true,
 };
-/** The `web_fetch` result view for the web-fetch turn, authored inline for the same reason. */
-const WEB_FETCH_RESULT = {
+/** The `web_fetch` result metadata for the web-fetch turn. */
+const WEB_FETCH_META = {
     url: 'https://www.deepseek.com/blog/harness-architecture',
     statusCode: 200,
     truncated: false,
@@ -248,7 +222,7 @@ const OPENAI_REASONING = {
     ],
     defaultEffort: 'medium',
 };
-/** Catalog served by `session.models` and `llm.models` alike (fresh copies per call). */
+/** Catalog served by `session/modelCatalog` (fresh copies per call). */
 function fixtureModelGroups() {
     return [
         {
@@ -317,8 +291,7 @@ function buildAlphaLog() {
         events.push({ seq, time: (time += 800), ...authored });
         return seq;
     };
-    // This resident history represents completed model requests, so retain the
-    // route capacity that accompanied them just as the live prompt path does.
+    // Completed fixture requests retain the route capacity recorded with them.
     push({
         type: 'request/context',
         data: { provider: 'deepseek-official', model: 'deepseek-v4-flash', contextWindow: 128_000 },
@@ -362,10 +335,10 @@ function buildAlphaLog() {
         }
         push({ type: 'turn/end', data: { turn, reason: { kind: 'completed' } } });
     }
-    // Three view-sample turns (60-62) cover the built-in card types. The real filesystem names in
-    // turns 62-63 also exercise their dedicated generic-row icon/title/path summaries. `echo` above
-    // stays presenter-less as the unknown fallback.
-    const toolTurn = (turn, name, args, resultText) => {
+    // The structured samples use real first-party names and result metadata so
+    // the fixture follows the same event-to-card path as a persisted Session.
+    // `echo` above remains the unknown-tool fallback.
+    const toolTurn = (turn, name, args, resultText, resultMeta) => {
         const callId = `fx-call-${turn}`;
         push({ type: 'turn/start', data: { turn } });
         push({ type: 'user/message', surfaceOp: 'append', data: userMessage(text(`问题 ${turn}：${name} 样本。`)) });
@@ -375,23 +348,37 @@ function buildAlphaLog() {
             data: { turn, step: 0, message: assistantMessage([{ type: 'tool-call', id: callId, name, arguments: args }]) },
         });
         push({ type: 'tool/call', data: { turn, step: 0, callId, name, arguments: args } });
-        push({ type: 'tool/result', surfaceOp: 'append', data: { turn, step: 0, message: toolResultMessage(callId, text(resultText), false) } });
+        push({
+            type: 'tool/result',
+            surfaceOp: 'append',
+            data: {
+                turn,
+                step: 0,
+                message: toolResultMessage(callId, text(resultText), false),
+                ...resultMeta === undefined ? {} : { meta: resultMeta },
+            },
+        });
         push({ type: 'step/end', data: { turn, step: 0 } });
         push({ type: 'turn/end', data: { turn, reason: { kind: 'completed' } } });
     };
     // A two-line command, so the fixture covers the terminal card's one-row-per-
     // command-line prompt (and that the card still marks the call exactly once).
-    toolTurn(60, 'fx-bash', '{"command":"ls -la\\necho done","cwd":"/tmp/fixture"}', 'total 2\ndrwxr-xr-x fixture\n-rw-r--r-- demo.txt');
-    toolTurn(61, 'fx-write', '{"path":"notes/demo.txt","content":"hello fixture\\n"}', 'wrote notes/demo.txt');
-    toolTurn(62, 'edit', '{"file_path":"notes/demo.txt","old_string":"hello","new_string":"hello fixture"}', '已编辑');
-    toolTurn(63, 'write', '{"file_path":"notes/new-demo.txt","content":"hello fixture\\n"}', '已写入');
+    toolTurn(60, 'bash', '{"command":"ls -la\\necho done","description":"fixture 终端样本","workdir":"/tmp/fixture"}', 'total 2\ndrwxr-xr-x fixture\n-rw-r--r-- demo.txt');
+    toolTurn(61, 'write', '{"file_path":"notes/demo.txt","content":"hello fixture\\n"}', 'wrote notes/demo.txt', { diffs: [{ path: 'notes/demo.txt', oldText: null, newText: 'hello fixture\n' }] });
+    toolTurn(62, 'edit', '{"file_path":"notes/demo.txt","old_string":"hello","new_string":"hello fixture"}', '已编辑', { diffs: [{ path: 'notes/demo.txt', oldText: 'hello', newText: 'hello fixture' }] });
+    toolTurn(63, 'write', '{"file_path":"notes/new-demo.txt","content":"hello fixture\\n"}', '已写入', { diffs: [{ path: 'notes/new-demo.txt', oldText: null, newText: 'hello fixture\n' }] });
     // Turn 64: a multi-hunk edit — two scattered replacements in one file. Named
     // `edit` so it lands on the keyed FileMutationRow (the resident diff card the
-    // single-hunk turn 62 also uses), and file_path `src/config.ts` is the marker
-    // the presenter reads to emit the two-hunk sample: the card draws one path
-    // header, the first hunk, a `⋯` gap, then the second (the same-file
+    // single-hunk turn 62 also uses). Its result metadata carries two scattered
+    // hunks under one path header, so the card draws the first hunk, a `⋯` gap,
+    // then the second (the same-file
     // second-hunk arm turns 62/63 cannot reach).
-    toolTurn(64, 'edit', '{"file_path":"src/config.ts","old_string":"const timeout = 30","new_string":"const timeout = 60"}', '已编辑');
+    toolTurn(64, 'edit', '{"file_path":"src/config.ts","old_string":"const timeout = 30","new_string":"const timeout = 60"}', '已编辑', {
+        diffs: [
+            { path: 'src/config.ts', oldText: 'const timeout = 30', newText: 'const timeout = 60' },
+            { path: 'src/config.ts', oldText: 'retries: 1', newText: 'retries: 3' },
+        ],
+    });
     // Turn 65: one run_code turn with three logged sub-dispatches — the Code
     // Mode acceptance surface (parent code row + nested native-identical rows,
     // including an isError sub-call and a bash sub-call that must hit the same
@@ -447,49 +434,37 @@ function buildAlphaLog() {
     ];
     // Turn 66: the terminal sample turn 60's two clean prompt rows cannot cover —
     // ANSI SGR coloring, output past the terminal card's height cap, a nested cwd
-    // whose prompt label is its last segment, and a non-zero exit authored beside
-    // the sample in TERMINAL_EXIT_STATUS — its body deliberately carries no
-    // `[exit code: N]` marker, since the real presenter consumes that one out of
-    // the body. Named `bash`, so it also covers
-    // the keyed toolview row (turn 60's `fx-bash` covers the render-site fallback
-    // row) — the two chat-row shapes the terminal card renders in.
+    // whose prompt label is its last segment, and a non-zero exit. The raw result
+    // includes an `[exit code: N]` marker below; Client
+    // derivation consumes it into the status pill before rendering the body.
     //
     // Ordered BEFORE the todo turn deliberately: the standing plan retires at the
     // next `turn/start`, so a turn appended after it would leave the dock's plan
     // strip empty and take the todo surfaces' own coverage with it.
-    toolTurn(66, 'bash', '{"command":"pnpm run check","cwd":"/tmp/fixture/deep/nested"}', TERMINAL_OUTPUT_FIXTURE);
-    // Turns 67-68: the search card's two shapes. `grep` emits a `card: 'search'`
-    // `shape: 'matches'` result view (grouped-by-file matches, truncated with a
-    // larger `total`), `glob` emits `shape: 'paths'` (a flat path list, likewise
-    // truncated). Both ride the keyed SearchRow registration under their own
-    // names; the render-site fallback row is covered by the model derivation
-    // tests, since every fixture search tool has a keyed row. Ordered before the
-    // todo turn for the same standing-plan reason the bash turn is.
-    toolTurn(67, 'grep', '{"pattern":"SEARCH_MAX_LINES","path":"packages/client"}', SEARCH_MATCHES_TEXT);
-    toolTurn(68, 'glob', '{"pattern":"**/SearchBlock*","path":"packages/client"}', SEARCH_PATHS_TEXT);
+    toolTurn(66, 'bash', '{"command":"pnpm run check","description":"fixture 终端样本","workdir":"/tmp/fixture/deep/nested"}', `${TERMINAL_OUTPUT_FIXTURE}\n[exit code: 1]`);
+    // Turns 67-68 carry the search card's two metadata variants: grouped matches
+    // and a flat path list, both truncated with a larger pre-cap total. Both use
+    // the keyed SearchRow registration. They stay before the todo turn for the
+    // same standing-plan reason as the bash turn.
+    toolTurn(67, 'grep', '{"pattern":"SEARCH_MAX_LINES","path":"packages/client"}', SEARCH_MATCHES_TEXT, { shape: 'matches', files: SEARCH_MATCHES_FIXTURE, truncated: true, total: 42 });
+    toolTurn(68, 'glob', '{"pattern":"**/SearchBlock*","path":"packages/client"}', SEARCH_PATHS_TEXT, { shape: 'paths', paths: SEARCH_PATHS_FIXTURE, truncated: true, total: 23 });
     // Turn 69: the read sample — a WINDOW past an offset so the card draws file
     // line numbers starting above 1 and a "showing N of M" note (the window is
     // shorter than READ_SAMPLE_TOTAL), with a `ts` language hint the shiki path
     // highlights. Named `read`, so it exercises the keyed ReadRow registration.
-    // The render-site fallback ROW SHAPE (a read call on the generic flattened
-    // path) is covered by the turn 65 run_code read sub-dispatches, which
-    // session.ts folds with resultView: null; the fallback-row + read-CARD
-    // combination is pinned by the web_fetch case in read-card.spec.tsx, not by
-    // this fixture. The read render intent is result-side only, so its pending
-    // call stays a generic `kind: 'read'` card; presentResult carries the
-    // structured window.
-    toolTurn(69, 'read', `{"file_path":${JSON.stringify(READ_SAMPLE_PATH)},"offset":${READ_SAMPLE_FIRST_LINE}}`, READ_SAMPLE_TEXT);
-    // Turns 70-71: the web render intent — a web_search whose result view carries
-    // structured sources plus an answer (the citation list, one source lacking a
-    // title so its hostname labels the link, the capped indicator on), and a
-    // web_fetch whose result view carries the fetched URL and its HTTP status.
-    // Both keep a generic pending call view and add the `web` card only at
-    // result time, which is the contract's result-only web shape. Named after
-    // the real tools so they hit the keyed WebRow registration. Ordered BEFORE
-    // the todo turn for the same reason turn 66 is: the standing plan retires at
-    // the next turn/start, so a turn after it would empty the dock's plan strip.
-    toolTurn(70, 'web_search', '{"queries":["deepseek harness architecture"]}', 'Search results for deepseek harness architecture.');
-    toolTurn(71, 'web_fetch', '{"url":"https://www.deepseek.com/blog/harness-architecture"}', '# Harness architecture\n\nEverything is a plugin.');
+    // The run_code sub-dispatches above cover nested read calls without result
+    // metadata; this top-level result carries the structured window.
+    toolTurn(69, 'read', `{"file_path":${JSON.stringify(READ_SAMPLE_PATH)},"offset":${READ_SAMPLE_FIRST_LINE}}`, READ_SAMPLE_TEXT, {
+        path: READ_SAMPLE_PATH,
+        offset: READ_SAMPLE_FIRST_LINE,
+        lines: READ_SAMPLE_LINES,
+        totalLines: READ_SAMPLE_TOTAL,
+        lang: 'ts',
+    });
+    // Turns 70-71 carry the web tools' result metadata. They stay before the todo
+    // turn because a later turn/start retires the standing plan projection.
+    toolTurn(70, 'web_search', '{"queries":["deepseek harness architecture"]}', 'Search results for deepseek harness architecture.', WEB_SEARCH_META);
+    toolTurn(71, 'web_fetch', '{"url":"https://www.deepseek.com/blog/harness-architecture"}', '# Harness architecture\n\nEverything is a plugin.', WEB_FETCH_META);
     // Turn 72: max-tokens sample — the provider ends the turn at its output cap
     // mid-sentence, so the chat flow must render the turn-max-tokens notice
     // instead of ending silently. Ordered before the todo turn for the same
@@ -534,149 +509,6 @@ function buildAlphaLog() {
     events.splice(callIndex + 1, 0, { type: 'todo/write', time: callTime + 400, data: { todos: fixtureTodos } });
     events.forEach((e, i) => { e.seq = i; });
     return events;
-}
-/** Narrows a parsed-JSON field to string; fixture args are authored in-file, so non-strings only mean a typo here. */
-/* v8 ignore next -- the fallback arm is the same in-file-typo guard as the JSON.parse catch above. */
-const str = (value, fallback = '') => typeof value === 'string' ? value : fallback;
-/** Fixture presenter registry (mirrors host viewFor): pure derivation, undefined = no view. */
-function presentCall(name, argsRaw) {
-    let args;
-    try {
-        args = JSON.parse(argsRaw);
-    }
-    catch {
-        /* v8 ignore next 2 -- defensive: fixture args are authored in-file as valid JSON; only an in-file typo could reach the catch. */
-        return undefined;
-    }
-    switch (name) {
-        // Both names present the same terminal card: `fx-bash` lands on the
-        // render-site fallback row, `bash` on the keyed BashRow registration.
-        case 'fx-bash':
-        case 'bash':
-            return { card: 'terminal', title: str(args.command), cwd: str(args.cwd, '/tmp/fixture'), description: 'fixture 终端样本' };
-        case 'fx-write':
-            return {
-                card: 'diff', title: `Write ${str(args.path)}`,
-                diffs: [{ path: str(args.path), oldText: null, newText: str(args.content) }],
-            };
-        // A read pending call is a GENERIC card (kind: 'read', a follow-along
-        // location): the read render intent is result-side only, because a call
-        // carries no file content until execute returns. The rich read card arrives
-        // in presentResult.
-        case 'read':
-            return { card: 'generic', title: `Read ${str(args.file_path)}`, kind: 'read', locations: [{ path: str(args.file_path) }] };
-        case 'edit':
-            // The multi-hunk sample (turn 64) is keyed on its file_path, so the two
-            // scattered hunks share one path header and the card draws the `⋯` gap.
-            if (str(args.file_path) === 'src/config.ts') {
-                return {
-                    card: 'diff', title: `Edit ${str(args.file_path)}`,
-                    diffs: [
-                        { path: str(args.file_path), oldText: 'const timeout = 30', newText: 'const timeout = 60' },
-                        { path: str(args.file_path), oldText: 'retries: 1', newText: 'retries: 3' },
-                    ],
-                };
-            }
-            return {
-                card: 'diff', title: `Edit ${str(args.file_path)}`,
-                diffs: [{ path: str(args.file_path), oldText: str(args.old_string), newText: str(args.new_string) }],
-            };
-        case 'write':
-            return {
-                card: 'diff', title: `Write ${str(args.file_path)}`,
-                diffs: [{ path: str(args.file_path), oldText: null, newText: str(args.content) }],
-            };
-        // A search call stays a generic card (kind: 'search'): the structured
-        // matches/paths exist only after execute, so the search card is result-time
-        // only (presentResult builds it). This mirrors the real grep/glob presenters.
-        case 'grep':
-            return { card: 'generic', title: `Grep ${str(args.pattern)}`, kind: 'search', rawInput: args };
-        case 'glob':
-            return { card: 'generic', title: `Glob ${str(args.pattern)}`, kind: 'search', rawInput: args };
-        // The web tools keep a GENERIC pending card and add the `web` result card
-        // only at result time (the contract's result-only web shape); their pending
-        // kind matches the result kind so a call and its result read as one category.
-        case 'web_search': {
-            const queries = Array.isArray(args.queries) ? args.queries.filter((query) => typeof query === 'string' && query !== '') : [];
-            const title = queries.join(', ');
-            return { card: 'generic', title: `Search ${title}`, kind: 'search', rawInput: args };
-        }
-        case 'web_fetch':
-            return { card: 'generic', title: `Fetch ${str(args.url)}`, kind: 'fetch', rawInput: args };
-        default:
-            return undefined; // echo et al: the documented no-view fallback path
-    }
-}
-function presentResult(name, argsRaw, resultText) {
-    const call = presentCall(name, argsRaw);
-    if (call === undefined)
-        return undefined;
-    // Search is result-time only: the call stays a generic search card, and the
-    // result view carries the structured shape the card renders. The view holds no
-    // result text — a UI without a search card falls back to the raw tool/result
-    // content — so the truncation recovery footer rides that raw content (the
-    // `toolTurn` message text), not the view. `total` exceeds the retained count so
-    // the card shows its capped indicator.
-    if (name === 'grep') {
-        return { card: 'search', shape: 'matches', files: SEARCH_MATCHES_FIXTURE, truncated: true, total: 42 };
-    }
-    if (name === 'glob') {
-        return { card: 'search', shape: 'paths', paths: SEARCH_PATHS_FIXTURE, truncated: true, total: 23 };
-    }
-    // The read result is the structured window the tool projects through
-    // `presentationMeta`; the fixture authors it inline (it cannot import the
-    // tool). Keyed on the name because the read pending call is a generic card,
-    // so `call.card` alone does not distinguish it from edit/write.
-    if (name === 'read') {
-        return {
-            card: 'read', path: READ_SAMPLE_PATH, offset: READ_SAMPLE_FIRST_LINE, lines: READ_SAMPLE_LINES,
-            totalLines: READ_SAMPLE_TOTAL, lang: 'ts', content: text(resultText),
-        };
-    }
-    // The web tools keep a generic pending card, so their result card is chosen
-    // by tool name rather than by the pending card tag: the structured `web` card
-    // the frontend consumes. The view carries no `content` copy (per the contract
-    // and the web-result-card note); a capability-less UI falls back to the raw
-    // `tool/result` content, which this fixture emits from `resultText`.
-    if (name === 'web_search') {
-        return { card: 'web', kind: 'search', ...WEB_SEARCH_RESULT };
-    }
-    if (name === 'web_fetch') {
-        return { card: 'web', kind: 'fetch', ...WEB_FETCH_RESULT };
-    }
-    switch (call.card) {
-        case 'terminal':
-            // The sample's own exit status, authored beside it: re-parsing the
-            // trailing marker here would duplicate the bash tool's `parseExitStatus`,
-            // which this client-side fixture cannot import.
-            return { card: 'terminal', output: resultText, ...(TERMINAL_EXIT_STATUS[resultText] ?? { exitCode: 0 }) };
-        case 'diff':
-            return { card: 'diff', diffs: call.diffs };
-        case 'generic':
-            return { card: 'generic', content: text(resultText) };
-    }
-}
-/** Host-side viewFor mirror: tool/call presents from its own args; tool/result back-scans the log for the paired call. */
-function viewFor(event, log) {
-    if (event.type === 'tool/call') {
-        const view = presentCall(event.data.name, event.data.arguments);
-        return view === undefined ? undefined : { for: 'call', view };
-    }
-    if (event.type === 'tool/result') {
-        const callId = String(event.data.message.source.callId);
-        for (let i = log.length - 1; i >= 0; i--) {
-            const candidate = log[i];
-            /* v8 ignore next -- dense-array guard: i stays within [0, log.length),
-            so the undefined arm needs a sparse log no code path builds. */
-            if (candidate !== undefined && candidate.type === 'tool/call' && String(candidate.data.callId) === callId) {
-                const resultText = event.data.message.content[0].content.map(b => (b.type === 'text' ? b.text : '')).join('');
-                const view = presentResult(candidate.data.name, candidate.data.arguments, resultText);
-                return view === undefined ? undefined : { for: 'result', view };
-            }
-        }
-        return undefined; // cross-page unpaired: documented default
-    }
-    return undefined;
 }
 /**
  * Fixture parallel of the plan unit's lifecycle fold. The paired
@@ -813,7 +645,7 @@ function sessionStatsOf(log) {
                 break;
             case 'assistant/chunk':
                 if (openStep !== null && openStep.turn === event.data.turn && openStep.step === event.data.step
-                    && openStep.firstTokenTime === null && isTokenDelta(event.data.chunk)) {
+                    && openStep.firstTokenTime === null && isFixtureTokenDelta(event.data.chunk)) {
                     openStep.firstTokenTime = event.time;
                 }
                 break;
@@ -944,6 +776,7 @@ function contextPressureOf(log) {
 }
 function projectionValuesOf(log) {
     const values = {};
+    values['modelSelection'] = modelSelectionProjectionOf(log);
     const titleEvent = log.findLast(item => item.type === 'session/title');
     if (titleEvent !== undefined) {
         values['title'] = titleEvent.data.title;
@@ -979,17 +812,54 @@ function projectionValuesOf(log) {
     };
     return values;
 }
-/** Host push-frame parallel: emit one session/projection frame per key the given event advanced. */
+function modelSelectionProjectionOf(log) {
+    let lastUsed = null;
+    let pending = null;
+    for (const event of log) {
+        if (event.type === 'model/selection') {
+            pending = event.data;
+            continue;
+        }
+        if (event.type !== 'request/header')
+            continue;
+        lastUsed = {
+            provider: event.data.header.config.provider,
+            model: event.data.header.config.model,
+            ...(event.data.header.config.reasoningEffort === undefined
+                ? {}
+                : { reasoningEffort: event.data.header.config.reasoningEffort }),
+        };
+        if (sameModelSelection(pending, lastUsed))
+            pending = null;
+    }
+    return { lastUsed, next: pending ?? lastUsed };
+}
+function sameModelSelection(left, right) {
+    return left === right || (left !== null && right !== null
+        && left.provider === right.provider
+        && left.model === right.model
+        && left.reasoningEffort === right.reasoningEffort);
+}
+/** Host parallel: emit one Session control projection frame per key advanced by the event. */
 function projectionFramesOf(id, log, event) {
     const type = event.type;
     const frames = [];
+    if (type === 'model/selection' || type === 'request/header') {
+        frames.push({
+            type: 'projection',
+            sessionId: id,
+            key: 'modelSelection',
+            value: modelSelectionProjectionOf(log),
+            seq: event.seq,
+        });
+    }
     // One usage sample advances both token-meter units.
     if (usageSampleOf(event) !== undefined) {
-        frames.push({ type: 'session/projection', sessionId: id, key: 'tokenUsage', value: tokenUsageOf(log), seq: event.seq }, { type: 'session/projection', sessionId: id, key: 'contextPressure', value: contextPressureOf(log), seq: event.seq });
+        frames.push({ type: 'projection', sessionId: id, key: 'tokenUsage', value: tokenUsageOf(log), seq: event.seq }, { type: 'projection', sessionId: id, key: 'contextPressure', value: contextPressureOf(log), seq: event.seq });
     }
     if (type === 'request/context') {
         frames.push({
-            type: 'session/projection',
+            type: 'projection',
             sessionId: id,
             key: 'contextPressure',
             value: contextPressureOf(log),
@@ -1001,7 +871,7 @@ function projectionFramesOf(id, log, event) {
         || type === 'assistant/message'
         || type === 'tool/result') {
         frames.push({
-            type: 'session/projection',
+            type: 'projection',
             sessionId: id,
             key: 'contextBreakdown',
             value: contextBreakdownOf(log),
@@ -1012,7 +882,7 @@ function projectionFramesOf(id, log, event) {
     // (wall times) and on step close (counts).
     if (type === 'assistant/message' || type === 'tool/result' || type === 'step/end') {
         frames.push({
-            type: 'session/projection',
+            type: 'projection',
             sessionId: id,
             key: 'sessionStats',
             value: sessionStatsOf(log),
@@ -1026,16 +896,16 @@ function projectionFramesOf(id, log, event) {
         /* v8 ignore next -- the advancing title event is in the log, so the key is present. */
         if (!Object.hasOwn(values, 'title'))
             return [];
-        return [{ type: 'session/projection', sessionId: id, key: 'title', value: values['title'], seq: event.seq }];
+        return [{ type: 'projection', sessionId: id, key: 'title', value: values['title'], seq: event.seq }];
     }
     // The goal domain's own durable change advances its projection.
     if (type === 'goal/change') {
-        return [{ type: 'session/projection', sessionId: id, key: 'goal', value: backscanGoal(log), seq: event.seq }];
+        return [{ type: 'projection', sessionId: id, key: 'goal', value: backscanGoal(log), seq: event.seq }];
     }
     // Standing-plan fold: writes replace the list; turn/start clears it (null).
     if (type === 'todo/write' || type === 'turn/start') {
         return [{
-                type: 'session/projection',
+                type: 'projection',
                 sessionId: id,
                 key: 'todos',
                 value: backscanTodos(log) ?? null,
@@ -1045,7 +915,7 @@ function projectionFramesOf(id, log, event) {
     // Knob fold: any of the three whole-value knob events advances the select.
     if (type === 'permission/preset' || type === 'sandbox/mode' || type === 'approval/policy') {
         return [{
-                type: 'session/projection',
+                type: 'projection',
                 sessionId: id,
                 key: 'permissions',
                 value: permissionSelectOf(log),
@@ -1058,7 +928,7 @@ function projectionFramesOf(id, log, event) {
     if (type === 'plan/mode' || (type === 'command/run'
         && commandData.data.name === 'plan' && typeof commandData.data.args === 'string')) {
         return [{
-                type: 'session/projection',
+                type: 'projection',
                 sessionId: id,
                 key: 'plan',
                 value: planViewOf(log),
@@ -1068,11 +938,9 @@ function projectionFramesOf(id, log, event) {
     return [];
 }
 /**
- * Message-boundary paging (mirrors the host's paging contract): count
- * maxMessages messages
- *  backwards from end, cut at a turn/start boundary.
- Entries carry pagination-time views
- *  (the host analogue computes viewFor per entry at page time). */
+ * Message-boundary paging mirrors the Host contract: count `maxMessages`
+ * backwards from the end and cut at a turn/start boundary.
+ */
 function pageOf(log, beforeSeq, maxMessages) {
     const end = beforeSeq === undefined ? log.length : Math.max(0, Math.min(beforeSeq, log.length));
     let start = 0;
@@ -1089,11 +957,28 @@ function pageOf(log, beforeSeq, maxMessages) {
             break;
         }
     }
-    const events = log.slice(start, end).map((event) => {
-        const view = viewFor(event, log);
-        return view === undefined ? { event } : { event, view };
+    const records = packChunkRuns(log.slice(start, end)).map((record) => {
+        if (!isChunkRow(record))
+            return { type: 'event', event: record };
+        switch (record.type) {
+            case 'text-chunks':
+                return {
+                    type: 'chunks',
+                    event: { type: 'chunkrow/text-chunks', seq: record.seq0, time: record.time0, data: record.data },
+                };
+            case 'reasoning-chunks':
+                return {
+                    type: 'chunks',
+                    event: { type: 'chunkrow/reasoning-chunks', seq: record.seq0, time: record.time0, data: record.data },
+                };
+            case 'tool-call-chunks':
+                return {
+                    type: 'chunks',
+                    event: { type: 'chunkrow/tool-call-chunks', seq: record.seq0, time: record.time0, data: record.data },
+                };
+        }
     });
-    return { events, hasMore: start > 0 };
+    return { records, hasMore: start > 0 };
 }
 /** Fixture mirror of host session-scoped attachment authorization. */
 function logReferencesAttachment(log, attachmentId) {
@@ -1262,8 +1147,8 @@ class FxInbox {
     inbox = [];
     wake = null;
     broken = false;
-    push(envelope) {
-        this.inbox.push(envelope);
+    push(value) {
+        this.inbox.push(value);
         this.wake?.();
     }
     breakNow() {
@@ -1295,23 +1180,14 @@ class FxInbox {
     }
 }
 /**
- * In-memory fake host: fx-alpha carries history and replay scripts; fx-beta is fx-alpha's child session (lineage indent material).
+ * Build the fixture RPC face over one in-memory state graph.
  * @param options - fixture branches for empty state and failure timing.
- * @returns an ApiProxy backed entirely by in-memory state — no host process, no network.
- */
-export function createFixtureApi(options = {}) {
-    return createFixtureWorld(options).api;
-}
-/**
- * Build both fixture faces so a caller can drive the Remote endpoints and the
- * legacy API against one in-memory state graph.
- * @param options - fixture branches for empty state and failure timing.
- * @returns the legacy API face and the Remote RPC face.
+ * @returns the Remote RPC face.
  */
 export function createFixtureFaces(options = {}) {
     return createFixtureWorld(options);
 }
-/** Build the fixture's legacy API and Remote RPC faces over one state graph. */
+/** Build the fixture's Remote RPC face over one state graph. */
 function createFixtureWorld(options) {
     // The resident fixture sessions all carry history, so none of them is blank.
     const sessions = options.empty ? [] : [
@@ -1334,6 +1210,97 @@ function createFixtureWorld(options) {
         // DeepSeek route so unrelated GUI journeys do not enter first-run setup.
         ['DEEPSEEK_API_KEY', true],
     ]);
+    /** Canonical fixture implementation of the generated Settings Remote contract. */
+    const settingsRemotes = {
+        // Only the resolved DeepSeek address needed by first-run readiness is
+        // represented here. Fixture-backed journeys do not open its Models editor;
+        // real schema-driven forms ride the HTTP transport.
+        describe() {
+            return {
+                ok: true,
+                value: {
+                    writable: true,
+                    hasDocument: true,
+                    namespaces: [{
+                            ns: 'llm-deepseek',
+                            schema: {},
+                            value: { apiKeyEnv: 'DEEPSEEK_API_KEY' },
+                            applies: 'live',
+                            secrets: [{ path: ['apiKey'], set: false }],
+                            revision: 0,
+                        }],
+                },
+            };
+        },
+        update(ns) {
+            return {
+                ok: false,
+                error: {
+                    code: 'settings-rejected',
+                    message: 'fixture: the minimal readiness settings descriptor is read-only',
+                    details: { ns },
+                },
+            };
+        },
+        replace(ns) {
+            return {
+                ok: false,
+                error: {
+                    code: 'settings-rejected',
+                    message: 'fixture: the minimal readiness settings descriptor is read-only',
+                    details: { ns },
+                },
+            };
+        },
+        mutate(ns) {
+            // A Remote failure code is free-form, unlike the unary error vocabulary.
+            return {
+                ok: false,
+                error: {
+                    code: 'settings-rejected',
+                    message: 'fixture: no settings namespaces are registered',
+                    details: { ns },
+                },
+            };
+        },
+        openSettingsDocument() {
+            return { ok: true, value: { opened: true } };
+        },
+        openAgentPresetDirectory(agentPreset) {
+            const existing = fixturePresets.get(agentPreset);
+            if (existing === undefined || existing.trust === 'system') {
+                return {
+                    ok: false,
+                    error: {
+                        code: 'agent-preset-read-only',
+                        message: `agent preset "${agentPreset}" ships with the deployment`,
+                        details: { agentPreset, reason: 'it ships with the deployment' },
+                    },
+                };
+            }
+            return { ok: true, value: { opened: true } };
+        },
+    };
+    const credentialRemotes = {
+        describe(refs) {
+            return {
+                ok: true,
+                value: Object.fromEntries(refs.map(ref => [ref, {
+                        configured: fixtureCredentials.has(ref),
+                        ...fixtureCredentials.has(ref) ? { source: 'file' } : {},
+                        writable: true,
+                    }])),
+            };
+        },
+        set(ref) {
+            fixtureCredentials.set(ref, true);
+            return { ok: true, value: undefined };
+        },
+        unset(ref) {
+            fixtureCredentials.delete(ref);
+            return { ok: true, value: undefined };
+        },
+    };
     /**
      * Preset compositions the fixture serves. Held as state rather than
      * constants so the settings editor's save and delete are exercisable: the
@@ -1347,8 +1314,6 @@ function createFixtureWorld(options) {
     let fixtureDefaultPreset = 'standard';
     const nextTurn = new Map([[sid('fx-alpha'), 75]]);
     let nextSession = 1;
-    let nextRpc = 1;
-    let attachedSessions = options.empty ? 0 : 1;
     // Workspace entities mirroring the host registry: the fixture sessions all
     // live under one workspace, whose account carries them in attach order.
     const wid = (raw) => raw;
@@ -1373,6 +1338,17 @@ function createFixtureWorld(options) {
     // Registry-global archive set mirroring the host: archived sessions keep
     // their workspace accounting slot and only grouping surfaces hide them.
     const archivedSessionIds = [];
+    const workspaceSnapshot = (workspace) => ({
+        ...workspace,
+        sessionIds: [...workspace.sessionIds],
+    });
+    const workspaceBaseline = () => ({
+        type: 'baseline',
+        value: {
+            items: workspaces.map(workspaceSnapshot),
+            archivedSessionIds: [...archivedSessionIds],
+        },
+    });
     // In-memory browse tree behind the fixture's `browse` picker capability —
     // deterministic content mirroring the design mock so assembled Web tests
     // and snapshots can walk it. Leaves are materialized lazily: a child listed
@@ -1403,14 +1379,11 @@ function createFixtureWorld(options) {
         }
         return crumbs;
     };
-    const mint = () => RpcId(`fx-rpc-${nextRpc++}`);
-    /** Resident pending approval (stable rpcId: every mux open replays the same id while unanswered, matching host replay semantics). */
-    const pendingApprovalRpcId = mint();
-    const pendingApprovalId = 'fx-approval-1';
-    /** Cleared once answered through respond; replay stops and approval/resolved is broadcast. */
-    let approvalPending = true;
-    const pendingQuestionRpcId = mint();
-    let questionPending = true;
+    /** Resident waterfalls retain their event ids across Remote Event generations. */
+    const pendingApprovalEventId = 'fx-interaction-approval';
+    let approvalPending = !options.empty;
+    const pendingQuestionEventId = 'fx-interaction-question';
+    let questionPending = !options.empty;
     const fixtureQuestions = [
         {
             id: 'harness-profile',
@@ -1444,33 +1417,44 @@ function createFixtureWorld(options) {
             ],
         },
     ];
-    const muxConns = new Set();
-    const hostConns = new Set();
-    const emitMux = (frame) => {
-        for (const conn of muxConns)
-            conn.push({ rpcId: mint(), payload: frame });
+    const controlConns = new Set();
+    const followConns = new Map();
+    const workspaceConns = new Set();
+    const remoteEventConns = new Map();
+    const emitControl = (frame) => {
+        for (const conn of controlConns)
+            conn.push(frame);
     };
-    const emitHost = (frame) => {
-        for (const conn of hostConns)
-            conn.push({ rpcId: mint(), payload: frame });
+    const emitWorkspace = (frame) => {
+        for (const conn of workspaceConns)
+            conn.push(frame);
     };
-    /** OK response echoing the caller's rpcId (contract: responses always backfill, never mint). */
-    function ok(request, value) {
-        return Promise.resolve({ rpcId: request.rpcId, result: { ok: true, value } });
+    const emitRemote = (event, args) => {
+        for (const conn of remoteEventConns.values())
+            conn.push({ type: 'emit', event, args });
+    };
+    const emitRemoteFrame = (frame) => {
+        for (const conn of remoteEventConns.values())
+            conn.push(frame);
+    };
+    const emitFollow = (sessionId, entry) => {
+        for (const conn of followConns.get(sessionId) ?? [])
+            conn.push(entry);
+    };
+    function sessionOk(value) {
+        return Promise.resolve({ ok: true, value });
     }
-    function err(request, error) {
-        return Promise.resolve({ rpcId: request.rpcId, result: { ok: false, error } });
+    function sessionErr(error) {
+        return Promise.resolve({ ok: false, error });
     }
     const summaryOf = (id) => sessions.find(s => s.sessionId === id);
-    /** Shared session guard for sessionId-addressed catalog routes: the error
-     *  response when the session is unknown, undefined when it exists. */
-    const requireSession = (request) => {
-        if (summaryOf(request.payload.sessionId) !== undefined)
+    const requireRemoteSession = (request) => {
+        if (summaryOf(request.sessionId) !== undefined)
             return undefined;
-        return err(request, {
+        return sessionErr({
             code: 'session-not-found',
-            message: `no session ${request.payload.sessionId}`,
-            details: { sessionId: request.payload.sessionId },
+            message: `no session ${request.sessionId}`,
+            details: { sessionId: request.sessionId },
         });
     };
     const setRunning = (id, running) => {
@@ -1478,7 +1462,7 @@ function createFixtureWorld(options) {
         if (summary === undefined || summary.running === running)
             return;
         summary.running = running;
-        emitHost({ type: 'host/session-status', sessionId: id, running });
+        emitRemote('api-session/status', [id, running]);
     };
     const logOf = (id) => {
         let log = logs.get(id);
@@ -1492,17 +1476,16 @@ function createFixtureWorld(options) {
         const log = logOf(id);
         const event = { seq: log.length, time: Date.now(), ...e };
         log.push(event);
-        // Emission-time view derivation (mirrors the host's live path).
-        const view = viewFor(event, log);
-        /* v8 ignore next 3 -- the view-present arm needs a live tool/call emission,
-        but the fixture replay produces text-only turns; view vocabulary is
-        exercised through the history samples (turns 60-62). */
-        emitMux(view === undefined
-            ? { type: 'session/event', sessionId: id, event }
-            : { type: 'session/event', sessionId: id, event, view });
+        emitFollow(id, { type: 'event', event });
         // Host eager-drive parallel: a unit-advancing event pushes its finished value.
         for (const frame of projectionFramesOf(id, log, event))
-            emitMux(frame);
+            emitControl(frame);
+        if (event.type === 'user/message' && event.data.source.kind === 'user') {
+            const summary = summaryOf(id);
+            if (summary !== undefined)
+                summary.updatedAt = event.time;
+            emitRemote('api-session/activity', [id, event.time]);
+        }
     };
     /** Append one durable goal/change (host GoalService parallel). */
     const appendGoalChange = (id, change) => {
@@ -1690,6 +1673,54 @@ function createFixtureWorld(options) {
             return { ok: true, value };
         },
     };
+    /**
+     * Canonical fixture implementation of the generated Directory Picker Remote
+     * contract. The pick is deterministic — the keyless lanes drive the full
+     * pick-then-adopt path without an OS chooser — over the same design-mock
+     * tree the browse primitives serve.
+     */
+    const directoryPickerRemotes = {
+        pick() {
+            return { ok: true, value: `${FIXTURE_HOME}/Documents/project` };
+        },
+        list(path) {
+            const target = path ?? FIXTURE_HOME;
+            const children = childrenOf(target);
+            if (children === undefined) {
+                return {
+                    ok: false,
+                    error: { code: 'directory-unreadable', message: `cannot list ${target}: not in the fixture tree`, details: { path: target } },
+                };
+            }
+            return {
+                ok: true,
+                value: {
+                    path: target,
+                    home: FIXTURE_HOME,
+                    crumbs: crumbsOf(target),
+                    entries: [...children].sort((a, b) => a.localeCompare(b))
+                        .map(name => ({ name, path: target === '/' ? `/${name}` : `${target}/${name}`, hidden: name.startsWith('.') })),
+                    // The fixture tree is tiny; no level ever reaches a backend bound.
+                    truncated: false,
+                },
+            };
+        },
+        createDirectory(parent, name) {
+            const children = childrenOf(parent);
+            if (children === undefined) {
+                return { ok: false, error: { code: 'directory-create-failed', message: `missing parent ${parent}`, details: { path: parent } } };
+            }
+            // Same root special case as list's entry paths: a plain join under '/'
+            // would mint '//name' and fork the tree's identity.
+            const target = parent === '/' ? `/${name}` : `${parent}/${name}`;
+            if (children.includes(name)) {
+                return { ok: false, error: { code: 'directory-exists', message: `${target} already exists`, details: { path: target } } };
+            }
+            directoryTree.set(parent, [...children, name]);
+            directoryTree.set(target, []);
+            return { ok: true, value: target };
+        },
+    };
     const goalRemotes = {
         create(id, request) {
             const missing = requireGoalSession(id);
@@ -1776,12 +1807,84 @@ function createFixtureWorld(options) {
         });
         return { ok: true, value: goalView(projection) };
     }
-    const mapGoalResult = (result, map) => (result.ok ? { ok: true, value: map(result.value) } : result);
-    const goalRefResult = (result) => (mapGoalResult(result, view => ({ ref: { id: view.id, revision: view.revision } })));
-    const legacyGoalResponse = (request, result) => (Promise.resolve({ rpcId: request.rpcId, result }));
+    /** Canonical fixture implementation of the generated AgentPresets Remote contract. */
+    const presetRemotes = {
+        // Both trusts appear, because a surface must present a locally authored
+        // preset differently from one the deployment vetted.
+        list() {
+            return {
+                ok: true,
+                value: {
+                    presets: [...fixturePresets].map(([id, preset]) => ({
+                        id,
+                        trust: preset.trust,
+                        isDefault: id === fixtureDefaultPreset,
+                    })),
+                    authorable: true,
+                },
+            };
+        },
+        select(_id, agentPreset) {
+            fixtureDefaultPreset = agentPreset;
+            return { ok: true, value: agentPreset };
+        },
+        read(agentPreset) {
+            const preset = fixturePresets.get(agentPreset);
+            if (preset === undefined) {
+                return {
+                    ok: false,
+                    error: {
+                        code: 'agent-preset-not-found',
+                        message: `unknown agent preset "${agentPreset}"`,
+                        details: { agentPreset, available: [...fixturePresets.keys()] },
+                    },
+                };
+            }
+            return { ok: true, value: { agentPreset, trust: preset.trust, content: preset.content } };
+        },
+        copy(from, id) {
+            const source = fixturePresets.get(from);
+            if (source === undefined) {
+                return {
+                    ok: false,
+                    error: {
+                        code: 'agent-preset-not-found',
+                        message: `unknown agent preset "${from}"`,
+                        details: { agentPreset: from, available: [...fixturePresets.keys()] },
+                    },
+                };
+            }
+            if (fixturePresets.has(id)) {
+                return {
+                    ok: false,
+                    error: {
+                        code: 'agent-preset-invalid',
+                        message: `agent preset "${id}" already exists`,
+                        details: { agentPreset: id, reason: 'already exists' },
+                    },
+                };
+            }
+            fixturePresets.set(id, { trust: 'user', content: source.content });
+            return { ok: true, value: undefined };
+        },
+        deletePreset(id) {
+            if (fixturePresets.get(id)?.trust === 'system') {
+                return {
+                    ok: false,
+                    error: {
+                        code: 'agent-preset-read-only',
+                        message: `agent preset "${id}" ships with the deployment`,
+                        details: { agentPreset: id, reason: 'it ships with the deployment' },
+                    },
+                };
+            }
+            fixturePresets.delete(id);
+            return { ok: true, value: undefined };
+        },
+    };
     /** At most one in-flight replay per session; cancel clears it. */
     const replays = new Map();
-    /** history transit delay (timing hooks below); the page snapshot is taken at request time, like a real host. */
+    /** History transit delay; the page snapshot is taken at request time. */
     let historyDelayMs = 0;
     /** One-shot history failure (timing hook: a pre-disconnect history request already doomed when reconnect lands). */
     let failNextHistory = false;
@@ -1791,10 +1894,7 @@ function createFixtureWorld(options) {
     const retryScenarios = new Map();
     /** The single opt-in browser stress producer; normal fixture journeys never start it. */
     let activeReasoningChunkStorm = null;
-    // Timing-acceptance hooks (browser test backdoor): the in-memory fixture is
-    // ideally timed. These let
-    // browser acceptance runs create slow-history, lost-frame, and reconnect
-    // windows a real host produces naturally.
+    // Browser-only timing hooks for slow history, lost frames, and reconnects.
     const timingHooks = {
         setHistoryDelay(ms) {
             historyDelayMs = ms;
@@ -1803,7 +1903,7 @@ function createFixtureWorld(options) {
         failNextHistory() {
             failNextHistory = true;
         },
-        /** Log append + mux emit (the normal live path). */
+        /** Log append plus follow-stream delivery (the normal live path). */
         appendUser(id, msg) {
             append(sid(id), { type: 'user/message', surfaceOp: 'append', data: userMessage(text(msg)) });
         },
@@ -1968,7 +2068,7 @@ function createFixtureWorld(options) {
             append(sessionId, { type: 'turn/end', data: { turn: scenario.turn, reason: { kind: 'completed' } } });
             setRunning(sessionId, false);
         },
-        /** Log append WITHOUT the mux emit: a frame lost in transit — history still serves it, the client must repull. */
+        /** Log append without follow delivery: a frame lost in transit that page repair must recover. */
         appendSilent(id, msg) {
             const log = logOf(sid(id));
             log.push({ type: 'user/message', surfaceOp: 'append', seq: log.length, time: Date.now(), data: userMessage(text(msg)) });
@@ -2018,953 +2118,838 @@ function createFixtureWorld(options) {
         };
         replays.set(id, { timer: setTimeout(tick, 80), finish });
     };
-    const api = {
-        sessions: {
-            list: request => ok(request, { items: [...sessions].sort((a, b) => b.updatedAt - a.updatedAt) }),
-            search: (request, signal) => {
-                if (signal.aborted) {
-                    return err(request, {
-                        code: 'cancelled',
-                        message: 'fixture session search was aborted',
-                        details: {},
-                    });
-                }
-                const query = searchTokenSpans(request.payload.query).tokens.map(token => token.value);
-                const matches = sessions.flatMap((summary) => {
-                    const log = logs.get(summary.sessionId) ?? [];
-                    const current = new Set(foldSurface(log).nodes);
-                    const best = log.flatMap((event) => {
-                        if (!current.has(event.seq))
-                            return [];
-                        const eventText = searchEventText(event);
-                        const document = searchTokenSpans(eventText);
-                        const match = phraseMatch(document.tokens, query);
-                        if (match.count === 0)
-                            return [];
-                        return [{
-                                sessionId: summary.sessionId,
-                                seq: event.seq,
-                                time: event.time,
-                                text: document.text,
-                                matchCount: match.count,
-                                matchStart: match.start,
-                                matchEnd: match.end,
-                                documentLength: Array.from(eventText).length,
-                            }];
-                    }).sort(compareSearchCandidates)[0];
-                    return best === undefined ? [] : [best];
-                }).sort(compareSearchCandidates);
-                return ok(request, {
-                    items: matches.slice(0, SESSION_SEARCH_RESULT_LIMIT).map(match => ({
-                        sessionId: match.sessionId,
-                        snippet: searchSnippet(match.text, match.matchStart, match.matchEnd),
-                    })),
-                    hasMore: matches.length > SESSION_SEARCH_RESULT_LIMIT,
+    const sessionApi = {
+        list: _request => sessionOk({ items: [...sessions].sort((a, b) => b.updatedAt - a.updatedAt) }),
+        search: (request, signal) => {
+            if (signal.aborted) {
+                return sessionErr({
+                    code: 'cancelled',
+                    message: 'fixture session search was aborted',
+                    details: {},
                 });
-            },
-            create: async (request) => {
-                const workspace = request.payload.workspaceId === undefined
-                    ? undefined
-                    : workspaces.find(w => w.workspaceId === request.payload.workspaceId);
-                if (request.payload.workspaceId !== undefined && workspace === undefined) {
-                    return err(request, {
-                        code: 'workspace-not-found',
-                        message: `no workspace ${request.payload.workspaceId}`,
-                        details: { workspaceId: request.payload.workspaceId },
-                    });
-                }
-                const cwd = workspace?.path ?? request.payload.cwd ?? '/tmp/fixture';
-                const requestedId = request.payload.sessionId;
-                const attachWorkspace = (sessionId) => {
-                    /* v8 ignore next -- callers enter only when a target Workspace exists. */
-                    if (workspace === undefined || workspace.sessionIds.includes(sessionId))
-                        return;
-                    workspace.sessionIds = [sessionId, ...workspace.sessionIds];
-                    workspace.updatedAt = new Date().toISOString();
-                    emitHost({ type: 'host/workspace-changed', workspace: { ...workspace } });
-                };
-                const attachFailure = (sessionId, workspaceId) => err(request, {
-                    code: 'workspace-attach-failed',
-                    message: `fixture rejected Workspace attachment for ${sessionId}`,
-                    details: { sessionId, workspaceId },
-                });
-                if (requestedId !== undefined) {
-                    const existing = summaryOf(requestedId);
-                    if (existing !== undefined) {
-                        if (existing.cwd !== cwd) {
-                            return err(request, {
-                                code: 'session-conflict',
-                                message: `session ${requestedId} already uses ${existing.cwd ?? 'no cwd'}`,
-                                details: { sessionId: requestedId, requestedCwd: cwd, ...existing.cwd === undefined ? {} : { existingCwd: existing.cwd } },
-                            });
-                        }
-                        if (workspace !== undefined && !workspace.sessionIds.includes(requestedId)) {
-                            if (options.failWorkspaceAttach)
-                                return attachFailure(requestedId, workspace.workspaceId);
-                            attachWorkspace(requestedId);
-                        }
-                        return ok(request, { sessionId: requestedId });
-                    }
-                }
-                const created = {
-                    sessionId: requestedId ?? sid(`fx-${nextSession++}`), updatedAt: Date.now(), running: false, blank: true, cwd,
-                };
-                sessions.push(created);
-                modelSelections.set(created.sessionId, { provider: 'deepseek-official', model: 'deepseek-v4-flash' });
-                attachedSessions += 1;
-                const emitSession = () => {
-                    // Mirrors the host: the frame fires at creation, so blank is constantly true.
-                    emitHost({ type: 'host/session-added', sessionId: created.sessionId, blank: true, cwd });
-                };
-                if (workspace !== undefined && options.failWorkspaceAttach) {
-                    emitSession();
-                    return attachFailure(created.sessionId, workspace.workspaceId);
-                }
-                if (workspace !== undefined && options.createFrameOrder === 'workspace-first') {
-                    attachWorkspace(created.sessionId);
-                    emitSession();
-                }
-                else {
-                    emitSession();
-                    if (workspace !== undefined)
-                        attachWorkspace(created.sessionId);
-                }
-                if (options.dropSessionCreateResponse)
-                    throw new Error('fixture: dropped session.create response after publication');
-                return ok(request, { sessionId: created.sessionId });
-            },
-            rename: (request) => {
-                const missing = requireSession(request);
-                if (missing !== undefined)
-                    return missing;
-                const { sessionId, title } = request.payload;
-                const normalized = title.trim().replace(/\s+/g, ' ');
-                if (normalized.length === 0) {
-                    return err(request, {
-                        code: 'title-invalid',
-                        message: 'session title must contain visible characters',
-                        details: { sessionId },
-                    });
-                }
-                // The append emits the session/event and its session/projection frame
-                // (host parallel); the unary response settles the caller first.
-                append(sessionId, {
-                    type: 'session/title',
-                    data: { title: normalized, messageSeqs: [], source: { kind: 'user' } },
-                });
-                const appended = logOf(sessionId).at(-1);
-                return ok(request, { title: normalized, seq: appended.seq });
-            },
-            fork: (request) => {
-                const { sessionId, atSeq } = request.payload;
-                const source = summaryOf(sessionId);
-                if (source === undefined) {
-                    return err(request, {
-                        code: 'session-not-found',
-                        message: `no session ${sessionId}`,
-                        details: { sessionId },
-                    });
-                }
-                const log = logs.get(sessionId) ?? [];
-                const lastSeq = log.at(-1)?.seq ?? -1;
-                const anchoredBoundary = atSeq === undefined
-                    ? undefined
-                    : log.find(e => e.type === 'turn/end' && e.seq >= atSeq);
-                const boundary = anchoredBoundary
-                    ?? (atSeq === undefined || atSeq > lastSeq
-                        ? log.findLast(e => e.type === 'turn/end')
-                        : undefined);
-                if (boundary === undefined) {
-                    return err(request, {
-                        code: 'fork-unavailable',
-                        message: atSeq !== undefined && atSeq <= lastSeq
-                            ? `session ${sessionId} has not completed the turn containing event ${String(atSeq)}`
-                            : `session ${sessionId} has no completed turn`,
-                        details: { sessionId },
-                    });
-                }
-                let cut = boundary.seq + 1;
-                while (cut < log.length && log[cut]?.type !== 'turn/start')
-                    cut++;
-                const child = {
-                    sessionId: sid(`fx-${nextSession++}`), updatedAt: Date.now(), running: false, blank: false,
-                    parentSessionId: sessionId,
-                    ...source.cwd === undefined ? {} : { cwd: source.cwd },
-                };
-                logs.set(child.sessionId, log.slice(0, cut));
-                sessions.push(child);
-                emitHost({
-                    type: 'host/session-added', sessionId: child.sessionId, blank: false,
-                    parentSessionId: sessionId,
-                    ...source.cwd === undefined ? {} : { cwd: source.cwd },
-                });
-                const workspace = workspaces.find(w => w.sessionIds.includes(sessionId));
-                if (workspace !== undefined) {
-                    workspace.sessionIds = [child.sessionId, ...workspace.sessionIds];
-                    workspace.updatedAt = new Date().toISOString();
-                    emitHost({ type: 'host/workspace-changed', workspace: { ...workspace } });
-                }
-                return ok(request, { sessionId: child.sessionId });
-            },
-            history: async (request) => {
-                const log = logs.get(request.payload.sessionId) ?? [];
-                // Snapshot at request time, deliver after the transit delay (mirrors a real host under latency).
-                const page = pageOf(log, request.payload.beforeSeq, request.payload.maxMessages ?? 50);
-                // Tail page carries the projections block (host parallel: one consistent
-                // cut over the registered units; asOfSeq = window tail seq, -1 on an
-                // empty log — the host's session.seq-1 convention).
-                const projections = request.payload.beforeSeq === undefined
-                    ? { asOfSeq: log.length - 1, values: projectionValuesOf(log) }
-                    : undefined;
-                const doomed = failNextHistory;
-                failNextHistory = false;
-                const delay = historyDelayMs;
-                if (delay > 0)
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                if (doomed)
-                    throw new Error('fixture: simulated history transport failure');
-                return ok(request, { ...page, ...projections === undefined ? {} : { projections } });
-            },
-            models: request => ok(request, {
-                current: modelSelections.get(request.payload.sessionId)
-                    ?? { provider: 'deepseek-official', model: 'deepseek-v4-flash' },
-                // The fixture's routes all serve; a surface exercising the blocked
-                // posture drives it through its own stub.
-                routable: true,
-                groups: fixtureModelGroups(),
-                failures: [],
-            }),
-            selectModel: (request) => {
-                const selected = {
-                    provider: request.payload.provider,
-                    model: request.payload.model,
-                    ...request.payload.reasoningEffort === undefined
-                        ? {}
-                        : { reasoningEffort: request.payload.reasoningEffort },
-                };
-                modelSelections.set(request.payload.sessionId, selected);
-                return ok(request, { selected });
-            },
-            prompt: (request) => {
-                const { sessionId: id, mode, content } = request.payload;
-                const summary = summaryOf(id);
-                if (summary === undefined) {
-                    return err(request, { code: 'session-not-found', message: `no session ${id}`, details: { sessionId: id } });
-                }
-                if (options.rejectPrompt) {
-                    if (content.some(block => block.type === 'image')) {
-                        return err(request, {
-                            code: 'attachment-error',
-                            message: 'fixture: image side exceeds the deployment limit',
-                            details: { reason: 'IMAGE_DIMENSION_TOO_LARGE' },
-                        });
-                    }
-                    return err(request, {
-                        code: 'agent-busy',
-                        message: 'fixture: prompt rejected before acceptance',
-                        details: { reason: 'fixture-prompt-rejection' },
-                    });
-                }
-                summary.updatedAt = Date.now();
-                // First accepted prompt appends events: the summary stops being blank.
-                summary.blank = false;
-                const userText = content.map(b => (b.type === 'text' ? b.text : '')).join('');
-                const durable = content.map((block) => {
-                    if (block.type === 'text')
-                        return block;
-                    const attachment = {
-                        attachmentId: `fixture:${randomUuid()}`,
-                        mediaType: block.mediaType,
-                        bytes: Math.max(1, Math.floor(block.data.length * 3 / 4)
-                            - (block.data.endsWith('==') ? 2 : block.data.endsWith('=') ? 1 : 0)),
-                        width: 160,
-                        height: 90,
-                        ...block.name === undefined ? {} : { name: block.name },
-                    };
-                    attachments.set(String(attachment.attachmentId), { attachment, data: block.data });
-                    return { type: 'image', attachment };
-                });
-                if (mode === 'steer' && replays.has(id)) {
-                    // Steering: the durable user/message lands inside the current turn; the replay continues.
-                    append(id, { type: 'user/message', surfaceOp: 'append', data: userMessage(durable) });
-                    return ok(request, { accepted: true });
-                }
-                const turn = nextTurn.get(id) ?? 0;
-                nextTurn.set(id, turn + 1);
-                setRunning(id, true);
-                append(id, { type: 'turn/start', data: { turn } });
-                // Boundary flush parallel (the host's step/start observer): an outstanding
-                // /plan selection commits as plan/mode inside the opened turn.
-                const plan = foldPlan(logOf(id));
-                if (plan.wanted !== null && plan.wanted !== plan.active) {
-                    append(id, { type: 'plan/mode', data: { active: plan.wanted } });
-                }
-                append(id, { type: 'user/message', surfaceOp: 'append', data: userMessage(durable) });
-                // Capacity parallel of the host token-meter's request/context record:
-                // log-only, appended inside the open turn, and deduplicated against the
-                // route already recorded (the fixture never varies contextWindow).
-                const selection = modelSelections.get(id) ?? { provider: 'deepseek', model: 'deepseek-v4-flash' };
-                if (lastRequestContext(logOf(id))?.model !== selection.model) {
-                    append(id, {
-                        type: 'request/context',
-                        data: { provider: selection.provider, model: selection.model, contextWindow: 128_000 },
-                    });
-                }
-                startReply(id, turn, userText === 'render markdown'
-                    ? MARKDOWN_FIXTURE
-                    : userText === 'report model'
-                        ? (() => {
-                            const selection = modelSelections.get(id);
-                            return `当前模型：${selection?.provider ?? 'unknown'}/${selection?.model ?? 'unknown'}`
-                                + (selection?.reasoningEffort === undefined ? '' : ` · 推理等级：${selection.reasoningEffort}`);
-                        })()
-                        : `回声：${userText}。这是 fixture 的流式回复，用于验证打字机增长与定稿切换。`);
-                return ok(request, { accepted: true });
-            },
-            attachment: (request) => {
-                const stored = attachments.get(String(request.payload.attachmentId));
-                if (stored === undefined) {
-                    return err(request, {
-                        code: 'attachment-error',
-                        message: 'fixture attachment missing',
-                        details: { reason: 'ATTACHMENT_NOT_FOUND' },
-                    });
-                }
-                if (!logReferencesAttachment(logs.get(request.payload.sessionId) ?? [], String(request.payload.attachmentId))) {
-                    return err(request, {
-                        code: 'attachment-error',
-                        message: 'fixture attachment is not referenced by this session',
-                        details: { reason: 'ATTACHMENT_NOT_REFERENCED' },
-                    });
-                }
-                return ok(request, stored);
-            },
-            updateQueue: request => err(request, {
-                code: 'queue-item-not-found',
-                message: 'fixture has no pending queue item',
-                details: { itemId: request.payload.itemId },
-            }),
-            cancel: (request) => {
-                const replay = replays.get(request.payload.sessionId);
-                if (replay !== undefined) {
-                    clearTimeout(replay.timer);
-                    replay.finish(true);
-                }
-                else {
-                    setRunning(request.payload.sessionId, false);
-                }
-                return ok(request, { accepted: true });
-            },
-        },
-        subagents: {
-            list: request => ok(request, { entries: [], parentAvailable: true }),
-            history: (request) => {
-                const log = logs.get(request.payload.childSessionId) ?? [];
-                return Promise.resolve(ok(request, pageOf(log, request.payload.beforeSeq, request.payload.maxMessages ?? 50)));
-            },
-            prompt: request => Promise.resolve(ok(request, {
-                messageId: `fixture-message-${request.payload.childSessionId}`,
-            })),
-            interrupt: request => Promise.resolve(ok(request, { accepted: true })),
-        },
-        host: {
-            describe: request => ok(request, {
-                version: '0.0.0-fixture', cwd: '/tmp/fixture', attachedSessions, home: FIXTURE_HOME, canOpenPath: true,
-            }),
-            // Deterministic native pick: the keyless lanes drive the full
-            // pick-then-adopt path without an OS chooser (design-mock content,
-            // same tree the browse primitives serve).
-            pickDirectory: request => ok(request, { path: `${FIXTURE_HOME}/Documents/project` }),
-            listDirectory: (request) => {
-                const target = request.payload.path ?? FIXTURE_HOME;
-                const children = childrenOf(target);
-                if (children === undefined) {
-                    return err(request, { code: 'directory-unreadable', message: `cannot list ${target}: not in the fixture tree`, details: { path: target } });
-                }
-                return ok(request, {
-                    path: target,
-                    home: FIXTURE_HOME,
-                    crumbs: crumbsOf(target),
-                    entries: [...children].sort((a, b) => a.localeCompare(b))
-                        .map(name => ({ name, path: target === '/' ? `/${name}` : `${target}/${name}`, hidden: name.startsWith('.') })),
-                    // The fixture tree is tiny; no level ever reaches a backend bound.
-                    truncated: false,
-                });
-            },
-            createDirectory: (request) => {
-                const parent = request.payload.path;
-                const children = childrenOf(parent);
-                if (children === undefined) {
-                    return err(request, { code: 'directory-create-failed', message: `missing parent ${parent}`, details: { path: parent } });
-                }
-                // Same root special case as listDirectory's entry paths: a plain join
-                // under '/' would mint '//name' and fork the tree's identity.
-                const target = parent === '/' ? `/${request.payload.name}` : `${parent}/${request.payload.name}`;
-                if (children.includes(request.payload.name)) {
-                    return err(request, { code: 'directory-exists', message: `${target} already exists`, details: { path: target } });
-                }
-                directoryTree.set(parent, [...children, request.payload.name]);
-                directoryTree.set(target, []);
-                return ok(request, { path: target });
-            },
-            openPath: request => ok(request, { opened: true }),
-        },
-        workspace: {
-            list: request => ok(request, {
-                items: workspaces.map(w => ({ ...w })),
-                archivedSessionIds: [...archivedSessionIds],
-            }),
-            create: (request) => {
-                const { path } = request.payload;
-                const existing = workspaces.find(w => w.path === path);
-                if (existing !== undefined)
-                    return ok(request, { workspace: { ...existing }, created: false });
-                const now = new Date().toISOString();
-                const created = {
-                    workspaceId: wid(`fx-ws-${nextWorkspace++}`),
-                    path,
-                    title: path.split('/').filter(Boolean).at(-1) ?? path,
-                    sessionIds: [],
-                    createdAt: now,
-                    updatedAt: now,
-                };
-                workspaces.unshift(created);
-                emitHost({ type: 'host/workspace-changed', workspace: { ...created } });
-                return ok(request, { workspace: { ...created }, created: true });
-            },
-            rename: (request) => {
-                const { workspaceId, title } = request.payload;
-                const workspace = workspaces.find(w => w.workspaceId === workspaceId);
-                if (workspace === undefined) {
-                    return err(request, {
-                        code: 'workspace-not-found',
-                        message: `no workspace ${workspaceId}`,
-                        details: { workspaceId },
-                    });
-                }
-                const trimmed = title.trim();
-                if (trimmed !== workspace.title) {
-                    if (workspaces.some(w => w.workspaceId !== workspaceId && w.title === trimmed)) {
-                        return err(request, {
-                            code: 'workspace-name-conflict',
-                            message: `workspace name '${trimmed}' is already in use`,
-                            details: { name: trimmed },
-                        });
-                    }
-                    workspace.title = trimmed;
-                    workspace.updatedAt = new Date().toISOString();
-                    emitHost({ type: 'host/workspace-changed', workspace: { ...workspace } });
-                }
-                return ok(request, { workspace: { ...workspace } });
-            },
-            delete: (request) => {
-                const { workspaceId } = request.payload;
-                const index = workspaces.findIndex(workspace => workspace.workspaceId === workspaceId);
-                if (index === -1) {
-                    return err(request, {
-                        code: 'workspace-not-found',
-                        message: `no workspace ${workspaceId}`,
-                        details: { workspaceId },
-                    });
-                }
-                workspaces.splice(index, 1);
-                emitHost({ type: 'host/workspace-removed', workspaceId });
-                return ok(request, { deleted: true });
-            },
-            insertBefore: (request) => {
-                const { workspaceId, beforeWorkspaceId } = request.payload;
-                const source = workspaces.findIndex(workspace => workspace.workspaceId === workspaceId);
-                const anchor = beforeWorkspaceId === undefined
-                    ? workspaces.length
-                    : workspaces.findIndex(workspace => workspace.workspaceId === beforeWorkspaceId);
-                const missing = source === -1 ? workspaceId : anchor === -1 ? beforeWorkspaceId : undefined;
-                if (missing !== undefined) {
-                    return err(request, {
-                        code: 'workspace-not-found',
-                        message: `no workspace ${missing}`,
-                        details: { workspaceId: missing },
-                    });
-                }
-                if (beforeWorkspaceId !== workspaceId) {
-                    const previousOrder = workspaces.map(candidate => candidate.workspaceId);
-                    const [workspace] = workspaces.splice(source, 1);
-                    /* v8 ignore next -- source was resolved from the same array immediately above. */
-                    if (workspace === undefined)
-                        throw new Error(`fixture lost workspace ${workspaceId}`);
-                    const at = beforeWorkspaceId === undefined
-                        ? workspaces.length
-                        : workspaces.findIndex(candidate => candidate.workspaceId === beforeWorkspaceId);
-                    workspaces.splice(at, 0, workspace);
-                    if (workspaces.some((candidate, index) => candidate.workspaceId !== previousOrder[index])) {
-                        emitHost({
-                            type: 'host/workspace-order-changed',
-                            workspaceIds: workspaces.map(candidate => candidate.workspaceId),
-                        });
-                    }
-                }
-                return ok(request, { workspaceIds: workspaces.map(candidate => candidate.workspaceId) });
-            },
-            insertSessionBefore: (request) => {
-                const { workspaceId, sessionId, beforeSessionId } = request.payload;
-                const workspace = workspaces.find(w => w.workspaceId === workspaceId);
-                if (workspace === undefined) {
-                    return err(request, {
-                        code: 'workspace-not-found',
-                        message: `no workspace ${workspaceId}`,
-                        details: { workspaceId },
-                    });
-                }
-                if (!workspace.sessionIds.includes(sessionId)
-                    || (beforeSessionId !== undefined && !workspace.sessionIds.includes(beforeSessionId))) {
-                    return err(request, {
-                        code: 'workspace-move-invalid',
-                        message: `session or anchor is not accounted by workspace ${workspaceId}`,
-                        details: { workspaceId, sessionId, ...beforeSessionId === undefined ? {} : { beforeSessionId } },
-                    });
-                }
-                const without = workspace.sessionIds.filter(id => id !== sessionId);
-                const at = beforeSessionId === undefined ? without.length : without.indexOf(beforeSessionId);
-                const sessionIds = [...without.slice(0, at), sessionId, ...without.slice(at)];
-                if (!sessionIds.every((id, index) => id === workspace.sessionIds[index])) {
-                    workspace.sessionIds = sessionIds;
-                    workspace.updatedAt = new Date().toISOString();
-                    emitHost({ type: 'host/workspace-changed', workspace: { ...workspace } });
-                }
-                return ok(request, { workspace: { ...workspace } });
-            },
-            archiveSession: (request) => {
-                const missing = requireSession(request);
-                if (missing !== undefined)
-                    return missing;
-                const { sessionId } = request.payload;
-                if (!archivedSessionIds.includes(sessionId)) {
-                    archivedSessionIds.push(sessionId);
-                    emitHost({ type: 'host/archived-sessions-changed', archivedSessionIds: [...archivedSessionIds] });
-                }
-                return ok(request, { archivedSessionIds: [...archivedSessionIds] });
-            },
-        },
-        agentPresets: {
-            // Both trusts appear, because a surface must present a locally authored
-            // preset differently from one the deployment vetted.
-            list: request => ok(request, {
-                presets: [...fixturePresets].map(([id, preset]) => ({
-                    id,
-                    trust: preset.trust,
-                    isDefault: id === fixtureDefaultPreset,
+            }
+            const query = searchTokenSpans(request.query).tokens.map(token => token.value);
+            const matches = sessions.flatMap((summary) => {
+                const log = logs.get(summary.sessionId) ?? [];
+                const current = new Set(foldSurface(log).nodes);
+                const best = log.flatMap((event) => {
+                    if (!current.has(event.seq))
+                        return [];
+                    const eventText = searchEventText(event);
+                    const document = searchTokenSpans(eventText);
+                    const match = phraseMatch(document.tokens, query);
+                    if (match.count === 0)
+                        return [];
+                    return [{
+                            sessionId: summary.sessionId,
+                            seq: event.seq,
+                            time: event.time,
+                            text: document.text,
+                            matchCount: match.count,
+                            matchStart: match.start,
+                            matchEnd: match.end,
+                            documentLength: Array.from(eventText).length,
+                        }];
+                }).sort(compareSearchCandidates)[0];
+                return best === undefined ? [] : [best];
+            }).sort(compareSearchCandidates);
+            return sessionOk({
+                items: matches.slice(0, FIXTURE_SESSION_SEARCH_RESULT_LIMIT).map(match => ({
+                    sessionId: match.sessionId,
+                    snippet: searchSnippet(match.text, match.matchStart, match.matchEnd),
                 })),
-                authorable: true,
-                hasDocument: true,
-            }),
-            select: (request) => {
-                fixtureDefaultPreset = request.payload.agentPreset;
-                return ok(request, { agentPreset: request.payload.agentPreset });
-            },
-            read: (request) => {
-                const { agentPreset } = request.payload;
-                const preset = fixturePresets.get(agentPreset);
-                if (preset === undefined) {
-                    return err(request, {
-                        code: 'agent-preset-not-found',
-                        message: `unknown agent preset "${agentPreset}"`,
-                        details: { agentPreset, available: [...fixturePresets.keys()] },
-                    });
-                }
-                return ok(request, {
-                    agentPreset,
-                    trust: preset.trust,
-                    content: preset.content,
-                });
-            },
-            copy: (request) => {
-                const { from, agentPreset } = request.payload;
-                const source = fixturePresets.get(from);
-                if (source === undefined) {
-                    return err(request, {
-                        code: 'agent-preset-not-found',
-                        message: `unknown agent preset "${from}"`,
-                        details: { agentPreset: from, available: [...fixturePresets.keys()] },
-                    });
-                }
-                if (fixturePresets.has(agentPreset)) {
-                    return err(request, {
-                        code: 'agent-preset-invalid',
-                        message: `agent preset "${agentPreset}" already exists`,
-                        details: { agentPreset, reason: 'already exists' },
-                    });
-                }
-                fixturePresets.set(agentPreset, { trust: 'user', content: source.content });
-                return ok(request, { agentPreset });
-            },
-            // Native opens are deterministic no-op successes in this fixture, so the
-            // open-directory affordance renders and the path-text fallback stays a
-            // component-test concern.
-            openDocument: (request) => {
-                const { agentPreset } = request.payload;
-                const existing = fixturePresets.get(agentPreset);
-                if (existing === undefined || existing.trust === 'system') {
-                    return err(request, {
-                        code: 'agent-preset-read-only',
-                        message: `agent preset "${agentPreset}" ships with the deployment`,
-                        details: { agentPreset, reason: 'it ships with the deployment' },
-                    });
-                }
-                return ok(request, { opened: true });
-            },
-            remove: (request) => {
-                const { agentPreset } = request.payload;
-                const existing = fixturePresets.get(agentPreset);
-                if (existing?.trust === 'system') {
-                    return err(request, {
-                        code: 'agent-preset-read-only',
-                        message: `agent preset "${agentPreset}" ships with the deployment`,
-                        details: { agentPreset, reason: 'it ships with the deployment' },
-                    });
-                }
-                fixturePresets.delete(agentPreset);
-                return ok(request, {});
-            },
-        },
-        skills: {
-            list: (request) => {
-                const missing = requireSession(request);
-                if (missing !== undefined)
-                    return missing;
-                return ok(request, {
-                    skills: [
-                        { name: 'fixture-demo', description: 'fixture 技能样本', whenToUse: '仅供 UI 目录渲染验收', modelInvocable: true },
-                        { name: 'fixture-user-only', description: 'fixture 仅用户技能样本', modelInvocable: false },
-                    ],
-                });
-            },
-        },
-        goals: {
-            // Compatibility face only: old API Proxy payloads and acknowledgements
-            // adapt to the canonical fixture Remote implementation above.
-            create: request => legacyGoalResponse(request, mapGoalResult(goalRemotes.create(request.payload.sessionId, {
-                objective: request.payload.objective,
-                ...request.payload.maxGoalRounds === undefined ? {} : { maxGoalRounds: request.payload.maxGoalRounds },
-            }), value => ({ ref: { id: value.ref.id, revision: value.ref.revision } }))),
-            edit: request => legacyGoalResponse(request, goalRefResult(goalRemotes.edit(request.payload.sessionId, request.payload.ref, {
-                ...request.payload.objective === undefined ? {} : { objective: request.payload.objective },
-                ...request.payload.maxGoalRounds === undefined ? {} : { maxGoalRounds: request.payload.maxGoalRounds },
-            }))),
-            pause: request => legacyGoalResponse(request, goalRefResult(goalRemotes.pause(request.payload.sessionId, request.payload.ref))),
-            resume: request => legacyGoalResponse(request, goalRefResult(goalRemotes.resume(request.payload.sessionId, request.payload.ref))),
-            complete: request => legacyGoalResponse(request, goalRefResult(goalRemotes.complete(request.payload.sessionId, request.payload.ref))),
-            clear: request => legacyGoalResponse(request, mapGoalResult(goalRemotes.clear(request.payload.sessionId, request.payload.ref), () => ({ cleared: true }))),
-        },
-        events: {
-            async *mux(_request, signal) {
-                const conn = new FxInbox();
-                muxConns.add(conn);
-                const breakNow = () => { conn.breakNow(); };
-                streamBreakers.add(breakNow);
-                // Open baseline: subscribed sessions + pending interactions replayed with stable rpcIds.
-                for (const s of sessions) {
-                    if (!s.running)
-                        continue;
-                    const log = logs.get(s.sessionId) ?? [];
-                    conn.push({ rpcId: mint(), payload: { type: 'session/subscribed', sessionId: s.sessionId, lastSeq: log.length - 1 } });
-                    // Post-subscribe projection baseline (host parallel: recomputed unit values ride push frames).
-                    const values = projectionValuesOf(log);
-                    for (const key of Object.keys(values)) {
-                        conn.push({ rpcId: mint(), payload: { type: 'session/projection', sessionId: s.sessionId, key, value: values[key], seq: log.length - 1 } });
-                    }
-                }
-                if (approvalPending) {
-                    conn.push({
-                        rpcId: pendingApprovalRpcId,
-                        payload: {
-                            type: 'approval/requested', sessionId: sid('fx-alpha'),
-                            approvalId: pendingApprovalId,
-                            toolName: 'dangerous_tool', reason: 'fixture 常驻审批（可答：批准/拒绝后消失）',
-                        },
-                    });
-                }
-                if (questionPending) {
-                    conn.push({
-                        rpcId: pendingQuestionRpcId,
-                        payload: {
-                            type: 'question/requested', sessionId: sid('fx-alpha'), questions: fixtureQuestions,
-                        },
-                    });
-                }
-                try {
-                    yield* conn.drain(signal);
-                }
-                finally {
-                    streamBreakers.delete(breakNow);
-                    muxConns.delete(conn);
-                }
-            },
-            async *host(_request, signal) {
-                const conn = new FxInbox();
-                hostConns.add(conn);
-                const breakNow = () => { conn.breakNow(); };
-                streamBreakers.add(breakNow);
-                // Periodic material (the RPC-panel acceptance's clear-then-new-frames step depends on it): flip fx-gamma every 5s.
-                // fx-gamma only: never touch fx-alpha's running semantics (the conversation replay drives that).
-                const timer = setInterval(() => {
-                    const gamma = summaryOf(sid('fx-gamma'));
-                    /* v8 ignore next -- the undefined arm needs fx-gamma deleted, but the fixture never removes sessions. */
-                    if (gamma !== undefined)
-                        setRunning(gamma.sessionId, !gamma.running);
-                }, 5000);
-                try {
-                    yield* conn.drain(signal);
-                }
-                finally {
-                    clearInterval(timer);
-                    streamBreakers.delete(breakNow);
-                    hostConns.delete(conn);
-                }
-            },
-        },
-        settings: {
-            // Only the resolved DeepSeek address needed by first-run readiness is
-            // represented here. Fixture-backed journeys do not open its Models
-            // editor; real schema-driven forms ride the HTTP transport.
-            describe: request => ok(request, {
-                writable: true,
-                hasDocument: true,
-                namespaces: [{
-                        ns: 'llm-deepseek',
-                        schema: {},
-                        value: { apiKeyEnv: 'DEEPSEEK_API_KEY' },
-                        applies: 'live',
-                        secrets: [{ path: ['apiKey'], set: false }],
-                        revision: 0,
-                    }],
-            }),
-            // Native opens are deterministic no-op successes in this fixture, as is host.openPath.
-            openDocument: request => ok(request, { opened: true }),
-            update: request => err(request, {
-                code: 'settings-rejected',
-                message: 'fixture: the minimal readiness settings descriptor is read-only',
-                details: { ns: request.payload.ns },
-            }),
-            replace: request => err(request, {
-                code: 'settings-rejected',
-                message: 'fixture: the minimal readiness settings descriptor is read-only',
-                details: { ns: request.payload.ns },
-            }),
-            mutate: request => err(request, {
-                code: 'settings-rejected',
-                message: 'fixture: no settings namespaces are registered',
-                details: { ns: request.payload.ns },
-            }),
-        },
-        credentials: {
-            describe: request => ok(request, {
-                credentials: Object.fromEntries(request.payload.refs.map(ref => [ref, {
-                        configured: fixtureCredentials.has(ref),
-                        ...fixtureCredentials.has(ref) ? { source: 'file' } : {},
-                        writable: true,
-                    }])),
-            }),
-            set: (request) => {
-                fixtureCredentials.set(request.payload.ref, true);
-                return ok(request, {});
-            },
-            unset: (request) => {
-                fixtureCredentials.delete(request.payload.ref);
-                return ok(request, {});
-            },
-        },
-        llm: {
-            providers: request => ok(request, {
-                providers: [
-                    { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [], active: true },
-                    { provider: 'openai', displayName: 'openai', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'openai'], active: true, declared: false },
-                    { provider: 'anthropic', displayName: 'anthropic', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'anthropic'], active: false, declared: false },
-                    // One hand-declared route, so a surface reading this fixture meets
-                    // the tagged shape rather than only the shipped one.
-                    { provider: 'acme-gateway', displayName: 'Acme Gateway', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'acme-gateway'], active: true, declared: true },
-                ],
-            }),
-            models: request => ok(request, { groups: fixtureModelGroups(), failures: [] }),
-            // The fixture endpoint is imaginary, so the interrogation answers the
-            // catalog it already serves — enough for a surface to exercise adopting
-            // candidates without a reachable provider.
-            discoverModels: request => ok(request, {
-                models: fixtureModelGroups().flatMap(group => group.models.map(model => ({ id: model.id, name: model.name }))),
-            }),
-        },
-        respond(message) {
-            // Same routing discipline as the host: rpcId first, then the payload's
-            // audit correlation; a settled or unknown id is not-pending.
-            if (message.rpcId === pendingApprovalRpcId) {
-                if (!approvalPending)
-                    return Promise.resolve({ accepted: false, reason: 'not-pending' });
-                if (!message.result.ok)
-                    return Promise.resolve({ accepted: false, reason: 'bad-response' });
-                const value = message.result.value;
-                if (value.approvalId !== pendingApprovalId || (value.outcome !== 'allowed-once' && value.outcome !== 'rejected')) {
-                    return Promise.resolve({ accepted: false, reason: 'bad-response' });
-                }
-                approvalPending = false;
-                emitMux({ type: 'approval/resolved', sessionId: sid('fx-alpha'), approvalId: pendingApprovalId, outcome: value.outcome });
-                return Promise.resolve({ accepted: true });
-            }
-            if (!questionPending || message.rpcId !== pendingQuestionRpcId) {
-                return Promise.resolve({ accepted: false, reason: 'not-pending' });
-            }
-            questionPending = false;
-            emitMux({
-                type: 'question/resolved', sessionId: sid('fx-alpha'),
-                questionRpcId: pendingQuestionRpcId,
-                outcome: message.result.ok ? 'answered' : 'cancelled',
+                hasMore: matches.length > FIXTURE_SESSION_SEARCH_RESULT_LIMIT,
             });
-            return Promise.resolve({ accepted: true });
         },
-        // Satisfies the ApiProxy contract type only: the browser export button
-        // hands GET /api/session.export to the native download manager, so this
-        // stub is never reached through the fixture's dispatch.
-        downloads: {
-            sessionLog: () => Promise.resolve(new Response('fixture mode does not serve session export', { status: 404 })),
+        create: async (request) => {
+            const workspace = request.workspaceId === undefined
+                ? undefined
+                : workspaces.find(w => w.workspaceId === request.workspaceId);
+            if (request.workspaceId !== undefined && workspace === undefined) {
+                return sessionErr({
+                    code: 'workspace-not-found',
+                    message: `no workspace ${request.workspaceId}`,
+                    details: { workspaceId: request.workspaceId },
+                });
+            }
+            const cwd = workspace?.path ?? request.cwd ?? '/tmp/fixture';
+            const requestedId = request.sessionId;
+            const attachWorkspace = (sessionId) => {
+                /* v8 ignore next -- callers enter only when a target Workspace exists. */
+                if (workspace === undefined || workspace.sessionIds.includes(sessionId))
+                    return;
+                workspace.sessionIds = [sessionId, ...workspace.sessionIds];
+                workspace.updatedAt = new Date().toISOString();
+                emitWorkspace({ type: 'upsert', workspace: workspaceSnapshot(workspace) });
+            };
+            const attachFailure = (sessionId, workspaceId) => sessionErr({
+                code: 'workspace-attach-failed',
+                message: `fixture rejected Workspace attachment for ${sessionId}`,
+                details: { sessionId, workspaceId },
+            });
+            if (requestedId !== undefined) {
+                const existing = summaryOf(requestedId);
+                if (existing !== undefined) {
+                    if (existing.cwd !== cwd) {
+                        return sessionErr({
+                            code: 'session-conflict',
+                            message: `session ${requestedId} already uses ${existing.cwd ?? 'no cwd'}`,
+                            details: { sessionId: requestedId, requestedCwd: cwd, ...existing.cwd === undefined ? {} : { existingCwd: existing.cwd } },
+                        });
+                    }
+                    if (workspace !== undefined && !workspace.sessionIds.includes(requestedId)) {
+                        if (options.failWorkspaceAttach)
+                            return attachFailure(requestedId, workspace.workspaceId);
+                        attachWorkspace(requestedId);
+                    }
+                    return sessionOk({ sessionId: requestedId });
+                }
+            }
+            const created = {
+                sessionId: requestedId ?? sid(`fx-${nextSession++}`), updatedAt: Date.now(), running: false, blank: true, cwd,
+            };
+            sessions.push(created);
+            modelSelections.set(created.sessionId, { provider: 'deepseek-official', model: 'deepseek-v4-flash' });
+            const emitSession = () => {
+                emitRemote('api-session/added', [created]);
+            };
+            if (workspace !== undefined && options.failWorkspaceAttach) {
+                emitSession();
+                return attachFailure(created.sessionId, workspace.workspaceId);
+            }
+            if (workspace !== undefined && options.createFrameOrder === 'workspace-first') {
+                attachWorkspace(created.sessionId);
+                emitSession();
+            }
+            else {
+                emitSession();
+                if (workspace !== undefined)
+                    attachWorkspace(created.sessionId);
+            }
+            if (options.dropSessionCreateResponse)
+                throw new Error('fixture: dropped session.create response after publication');
+            return sessionOk({ sessionId: created.sessionId });
+        },
+        rename: (request) => {
+            const missing = requireRemoteSession(request);
+            if (missing !== undefined)
+                return missing;
+            const { sessionId, title } = request;
+            const normalized = title.trim().replace(/\s+/g, ' ');
+            if (normalized.length === 0) {
+                return sessionErr({
+                    code: 'title-invalid',
+                    message: 'session title must contain visible characters',
+                    details: { sessionId },
+                });
+            }
+            // The append emits the durable event and its control projection frame;
+            // the unary response settles the caller first.
+            append(sessionId, {
+                type: 'session/title',
+                data: { title: normalized, messageSeqs: [], source: { kind: 'user' } },
+            });
+            const appended = logOf(sessionId).at(-1);
+            return sessionOk({ title: normalized, seq: appended.seq });
+        },
+        fork: (request) => {
+            const { sessionId, atSeq } = request;
+            const source = summaryOf(sessionId);
+            if (source === undefined) {
+                return sessionErr({
+                    code: 'session-not-found',
+                    message: `no session ${sessionId}`,
+                    details: { sessionId },
+                });
+            }
+            const log = logs.get(sessionId) ?? [];
+            const lastSeq = log.at(-1)?.seq ?? -1;
+            const anchoredBoundary = atSeq === undefined
+                ? undefined
+                : log.find(e => e.type === 'turn/end' && e.seq >= atSeq);
+            const boundary = anchoredBoundary
+                ?? (atSeq === undefined || atSeq > lastSeq
+                    ? log.findLast(e => e.type === 'turn/end')
+                    : undefined);
+            if (boundary === undefined) {
+                return sessionErr({
+                    code: 'fork-unavailable',
+                    message: atSeq !== undefined && atSeq <= lastSeq
+                        ? `session ${sessionId} has not completed the turn containing event ${String(atSeq)}`
+                        : `session ${sessionId} has no completed turn`,
+                    details: { sessionId },
+                });
+            }
+            let cut = boundary.seq + 1;
+            while (cut < log.length && log[cut]?.type !== 'turn/start')
+                cut++;
+            const child = {
+                sessionId: sid(`fx-${nextSession++}`), updatedAt: Date.now(), running: false, blank: false,
+                parentSessionId: sessionId,
+                ...source.cwd === undefined ? {} : { cwd: source.cwd },
+            };
+            logs.set(child.sessionId, log.slice(0, cut));
+            sessions.push(child);
+            emitRemote('api-session/added', [child]);
+            const workspace = workspaces.find(w => w.sessionIds.includes(sessionId));
+            if (workspace !== undefined) {
+                workspace.sessionIds = [child.sessionId, ...workspace.sessionIds];
+                workspace.updatedAt = new Date().toISOString();
+                emitWorkspace({ type: 'upsert', workspace: workspaceSnapshot(workspace) });
+            }
+            return sessionOk({ sessionId: child.sessionId });
+        },
+        history: async (request) => {
+            const log = logs.get(request.sessionId) ?? [];
+            const throughSeq = request.throughSeq ?? log.length - 1;
+            const boundedLog = log.slice(0, throughSeq + 1);
+            // Snapshot at request time, then deliver after the transit delay.
+            const page = pageOf(boundedLog, request.beforeSeq, request.maxMessages ?? 50);
+            const doomed = failNextHistory;
+            failNextHistory = false;
+            const delay = historyDelayMs;
+            if (delay > 0)
+                await new Promise(resolve => setTimeout(resolve, delay));
+            if (doomed)
+                throw new Error('fixture: simulated history transport failure');
+            return sessionOk(page);
+        },
+        selectModel: (request) => {
+            const selected = {
+                provider: request.provider,
+                model: request.model,
+                ...request.reasoningEffort === undefined
+                    ? {}
+                    : { reasoningEffort: request.reasoningEffort },
+            };
+            append(request.sessionId, { type: 'model/selection', data: selected });
+            modelSelections.set(request.sessionId, selected);
+            return sessionOk({ selected });
+        },
+        prompt: (request) => {
+            const { sessionId: id, mode, content } = request;
+            const summary = summaryOf(id);
+            if (summary === undefined) {
+                return sessionErr({ code: 'session-not-found', message: `no session ${id}`, details: { sessionId: id } });
+            }
+            if (options.rejectPrompt) {
+                if (content.some(block => block.type === 'image')) {
+                    return sessionErr({
+                        code: 'attachment-error',
+                        message: 'fixture: image side exceeds the deployment limit',
+                        details: { reason: 'IMAGE_DIMENSION_TOO_LARGE' },
+                    });
+                }
+                return sessionErr({
+                    code: 'agent-busy',
+                    message: 'fixture: prompt rejected before acceptance',
+                    details: { reason: 'fixture-prompt-rejection' },
+                });
+            }
+            summary.updatedAt = Date.now();
+            // First accepted prompt appends events: the summary stops being blank.
+            summary.blank = false;
+            const userText = content.map(b => (b.type === 'text' ? b.text : '')).join('');
+            const durable = content.map((block) => {
+                if (block.type === 'text')
+                    return block;
+                const attachment = {
+                    attachmentId: `fixture:${randomUuid()}`,
+                    mediaType: block.mediaType,
+                    bytes: Math.max(1, Math.floor(block.data.length * 3 / 4)
+                        - (block.data.endsWith('==') ? 2 : block.data.endsWith('=') ? 1 : 0)),
+                    width: 160,
+                    height: 90,
+                    ...block.name === undefined ? {} : { name: block.name },
+                };
+                attachments.set(String(attachment.attachmentId), { attachment, data: block.data });
+                return { type: 'image', attachment };
+            });
+            // The host echoes the prompt's requestId as the user source's rpcId;
+            // the Session object retires its local submission echo on it. The
+            // user-rpc source member is declared by dsh-api-session-controller,
+            // which this standalone fixture does not import — hence the assertion.
+            const promptSource = { kind: 'user', rpcId: request.requestId };
+            if (mode === 'steer' && replays.has(id)) {
+                // Steering: the durable user/message lands inside the current turn; the replay continues.
+                append(id, { type: 'user/message', surfaceOp: 'append', data: userMessage(durable, promptSource) });
+                return sessionOk({ accepted: true });
+            }
+            const turn = nextTurn.get(id) ?? 0;
+            nextTurn.set(id, turn + 1);
+            setRunning(id, true);
+            append(id, { type: 'turn/start', data: { turn } });
+            // Boundary flush parallel (the host's step/start observer): an outstanding
+            // /plan selection commits as plan/mode inside the opened turn.
+            const plan = foldPlan(logOf(id));
+            if (plan.wanted !== null && plan.wanted !== plan.active) {
+                append(id, { type: 'plan/mode', data: { active: plan.wanted } });
+            }
+            append(id, { type: 'user/message', surfaceOp: 'append', data: userMessage(durable, promptSource) });
+            // Capacity parallel of the host token-meter's request/context record:
+            // log-only, appended inside the open turn, and deduplicated against the
+            // route already recorded (the fixture never varies contextWindow).
+            const selection = modelSelections.get(id) ?? { provider: 'deepseek', model: 'deepseek-v4-flash' };
+            const previousHeader = logOf(id).findLast(event => event.type === 'request/header');
+            const previousSelection = previousHeader?.type === 'request/header'
+                ? {
+                    provider: previousHeader.data.header.config.provider,
+                    model: previousHeader.data.header.config.model,
+                    ...(previousHeader.data.header.config.reasoningEffort === undefined
+                        ? {}
+                        : { reasoningEffort: previousHeader.data.header.config.reasoningEffort }),
+                }
+                : null;
+            if (!sameModelSelection(previousSelection, selection)) {
+                append(id, {
+                    type: 'request/header',
+                    data: {
+                        header: { config: selection },
+                        reason: previousHeader === undefined ? 'initial' : 'change',
+                    },
+                });
+            }
+            if (lastRequestContext(logOf(id))?.model !== selection.model) {
+                append(id, {
+                    type: 'request/context',
+                    data: { provider: selection.provider, model: selection.model, contextWindow: 128_000 },
+                });
+            }
+            startReply(id, turn, userText === 'render markdown'
+                ? MARKDOWN_FIXTURE
+                : userText === 'report model'
+                    ? (() => {
+                        const selection = modelSelections.get(id);
+                        return `当前模型：${selection?.provider ?? 'unknown'}/${selection?.model ?? 'unknown'}`
+                            + (selection?.reasoningEffort === undefined ? '' : ` · 推理等级：${selection.reasoningEffort}`);
+                    })()
+                    : `回声：${userText}。这是 fixture 的流式回复，用于验证打字机增长与定稿切换。`);
+            return sessionOk({ accepted: true });
+        },
+        attachment: (request) => {
+            const stored = attachments.get(String(request.attachmentId));
+            if (stored === undefined) {
+                return sessionErr({
+                    code: 'attachment-error',
+                    message: 'fixture attachment missing',
+                    details: { reason: 'ATTACHMENT_NOT_FOUND' },
+                });
+            }
+            if (!logReferencesAttachment(logs.get(request.sessionId) ?? [], String(request.attachmentId))) {
+                return sessionErr({
+                    code: 'attachment-error',
+                    message: 'fixture attachment is not referenced by this session',
+                    details: { reason: 'ATTACHMENT_NOT_REFERENCED' },
+                });
+            }
+            return sessionOk(stored);
+        },
+        updateQueue: request => sessionErr({
+            code: 'queue-item-not-found',
+            message: 'fixture has no pending queue item',
+            details: { itemId: request.itemId },
+        }),
+        cancel: (request) => {
+            const replay = replays.get(request.sessionId);
+            if (replay !== undefined) {
+                clearTimeout(replay.timer);
+                replay.finish(true);
+            }
+            else {
+                setRunning(request.sessionId, false);
+            }
+            return sessionOk({ accepted: true });
+        },
+    };
+    const controlBaseline = () => {
+        const queues = {};
+        const jobs = {};
+        const projections = {};
+        for (const summary of sessions) {
+            queues[summary.sessionId] = [];
+            jobs[summary.sessionId] = [];
+            const log = logs.get(summary.sessionId) ?? [];
+            projections[summary.sessionId] = {
+                asOfSeq: log.length - 1,
+                values: projectionValuesOf(log),
+            };
+        }
+        return {
+            type: 'baseline',
+            value: {
+                queues,
+                jobs,
+                approvals: [],
+                questions: [],
+                projections,
+            },
+        };
+    };
+    const approvalInvocation = () => ({
+        type: 'waterfall',
+        event: 'approval/request',
+        eventId: pendingApprovalEventId,
+        agentId: sid('fx-alpha'),
+        request: {
+            toolName: 'dangerous_tool',
+            reason: 'fixture 常驻审批（可答：批准/拒绝后消失）',
+        },
+    });
+    const questionInvocation = () => ({
+        type: 'waterfall',
+        event: 'user-questions/request',
+        eventId: pendingQuestionEventId,
+        agentId: sid('fx-alpha'),
+        request: {
+            questions: fixtureQuestions,
+        },
+    });
+    async function* openControl(signal) {
+        signal.throwIfAborted();
+        const conn = new FxInbox();
+        controlConns.add(conn);
+        const breakNow = () => { conn.breakNow(); };
+        streamBreakers.add(breakNow);
+        try {
+            yield controlBaseline();
+            yield* conn.drain(signal);
+        }
+        finally {
+            streamBreakers.delete(breakNow);
+            controlConns.delete(conn);
+        }
+    }
+    async function* openWorkspace(signal) {
+        signal.throwIfAborted();
+        const conn = new FxInbox();
+        workspaceConns.add(conn);
+        const breakNow = () => { conn.breakNow(); };
+        streamBreakers.add(breakNow);
+        try {
+            yield workspaceBaseline();
+            yield* conn.drain(signal);
+        }
+        finally {
+            streamBreakers.delete(breakNow);
+            workspaceConns.delete(conn);
+        }
+    }
+    async function* openRemoteEvents(signal) {
+        signal.throwIfAborted();
+        const clientId = randomUuid();
+        const conn = new FxInbox();
+        remoteEventConns.set(clientId, conn);
+        // Periodic material for the RPC-panel acceptance: flip fx-gamma every 5s.
+        // fx-gamma only; the conversation replay owns fx-alpha's running state.
+        const timer = setInterval(() => {
+            const gamma = summaryOf(sid('fx-gamma'));
+            /* v8 ignore next -- the fixture never removes fx-gamma. */
+            if (gamma !== undefined)
+                setRunning(gamma.sessionId, !gamma.running);
+        }, 5000);
+        try {
+            yield { type: 'ready', clientId, host: { home: FIXTURE_HOME } };
+            if (approvalPending)
+                yield approvalInvocation();
+            if (questionPending)
+                yield questionInvocation();
+            yield* conn.drain(signal);
+        }
+        finally {
+            clearInterval(timer);
+            remoteEventConns.delete(clientId);
+        }
+    }
+    async function* openFollow(request, signal) {
+        signal.throwIfAborted();
+        const sessionId = request.address.kind === 'session'
+            ? request.address.sessionId
+            : request.address.childSessionId;
+        if (summaryOf(sessionId) === undefined)
+            throw new Error(`fixture: no session ${sessionId}`);
+        const conn = new FxInbox();
+        let conns = followConns.get(sessionId);
+        if (conns === undefined) {
+            conns = new Set();
+            followConns.set(sessionId, conns);
+        }
+        conns.add(conn);
+        const breakNow = () => { conn.breakNow(); };
+        streamBreakers.add(breakNow);
+        const snapshot = [...logOf(sessionId)];
+        const cursor = snapshot.at(-1)?.seq ?? -1;
+        const summary = summaryOf(sessionId);
+        /* v8 ignore next -- existence was checked before the stream registered. */
+        if (summary === undefined)
+            throw new Error(`fixture: no session ${sessionId}`);
+        const initial = pageOf(snapshot, undefined, request.maxMessages ?? 50);
+        let nextSeq = cursor + 1;
+        try {
+            yield {
+                type: 'snapshot',
+                header: {
+                    version: 0,
+                    id: sessionId,
+                    createdAt: summary.updatedAt,
+                    ...(summary.cwd === undefined ? {} : { cwd: summary.cwd }),
+                    ...(summary.parentSessionId === undefined ? {} : { parentSession: summary.parentSessionId }),
+                    ...(summary.origin === undefined ? {} : { origin: summary.origin }),
+                    ...(summary.agentPreset === undefined ? {} : { agentPreset: summary.agentPreset }),
+                },
+                cursor,
+                records: initial.records,
+                hasMore: initial.hasMore,
+                projections: { asOfSeq: cursor, values: projectionValuesOf(snapshot) },
+            };
+            for await (const frame of conn.drain(signal)) {
+                if (frame.event.seq < nextSeq)
+                    continue;
+                if (frame.event.seq !== nextSeq) {
+                    throw new Error(`fixture: session event stream skipped seq ${String(nextSeq)}`);
+                }
+                nextSeq++;
+                yield frame;
+            }
+        }
+        finally {
+            streamBreakers.delete(breakNow);
+            conns.delete(conn);
+            if (conns.size === 0)
+                followConns.delete(sessionId);
+        }
+    }
+    const answerRemoteEvent = (result) => {
+        if (!remoteEventConns.has(result.clientId)) {
+            return {
+                ok: false,
+                error: {
+                    code: 'invocation-unavailable',
+                    message: 'fixture Remote event result identifies no active event stream',
+                    details: {},
+                },
+            };
+        }
+        if (result.eventId === pendingApprovalEventId) {
+            if (!approvalPending)
+                return { ok: true, value: undefined };
+            approvalPending = false;
+        }
+        else if (result.eventId === pendingQuestionEventId) {
+            if (!questionPending)
+                return { ok: true, value: undefined };
+            questionPending = false;
+        }
+        else {
+            return { ok: true, value: undefined };
+        }
+        emitRemoteFrame({ type: 'cancel', eventId: result.eventId });
+        return { ok: true, value: undefined };
+    };
+    const workspaceApi = {
+        create: (request) => {
+            const existing = workspaces.find(workspace => workspace.path === request.path);
+            if (existing !== undefined) {
+                return sessionOk({ workspace: workspaceSnapshot(existing), created: false });
+            }
+            const now = new Date().toISOString();
+            const created = {
+                workspaceId: wid(`fx-ws-${nextWorkspace++}`),
+                path: request.path,
+                title: request.path.split('/').filter(Boolean).at(-1) ?? request.path,
+                sessionIds: [],
+                createdAt: now,
+                updatedAt: now,
+            };
+            workspaces.unshift(created);
+            const workspace = workspaceSnapshot(created);
+            emitWorkspace({ type: 'upsert', workspace });
+            return sessionOk({ workspace, created: true });
+        },
+        rename: (request) => {
+            const workspace = workspaces.find(candidate => candidate.workspaceId === request.workspaceId);
+            if (workspace === undefined) {
+                return sessionErr({
+                    code: 'workspace-not-found',
+                    message: `no workspace ${request.workspaceId}`,
+                    details: { workspaceId: request.workspaceId },
+                });
+            }
+            const title = request.title.trim();
+            if (title === '') {
+                return sessionErr({
+                    code: 'bad-request',
+                    message: 'Workspace rename requires a non-blank title',
+                    details: {},
+                });
+            }
+            if (title !== workspace.title) {
+                if (workspaces.some(candidate => candidate.workspaceId !== request.workspaceId && candidate.title === title)) {
+                    return sessionErr({
+                        code: 'workspace-name-conflict',
+                        message: `workspace name '${title}' is already in use`,
+                        details: { name: title },
+                    });
+                }
+                workspace.title = title;
+                workspace.updatedAt = new Date().toISOString();
+                emitWorkspace({ type: 'upsert', workspace: workspaceSnapshot(workspace) });
+            }
+            return sessionOk({ workspace: workspaceSnapshot(workspace) });
+        },
+        delete: (request) => {
+            const index = workspaces.findIndex(workspace => workspace.workspaceId === request.workspaceId);
+            if (index === -1) {
+                return sessionErr({
+                    code: 'workspace-not-found',
+                    message: `no workspace ${request.workspaceId}`,
+                    details: { workspaceId: request.workspaceId },
+                });
+            }
+            workspaces.splice(index, 1);
+            emitWorkspace({ type: 'remove', workspaceId: request.workspaceId });
+            return sessionOk({ deleted: true });
+        },
+        insertBefore: (request) => {
+            const source = workspaces.findIndex(workspace => workspace.workspaceId === request.workspaceId);
+            const anchor = request.beforeWorkspaceId === undefined
+                ? workspaces.length
+                : workspaces.findIndex(workspace => workspace.workspaceId === request.beforeWorkspaceId);
+            const missing = source === -1
+                ? request.workspaceId
+                : anchor === -1
+                    ? request.beforeWorkspaceId
+                    : undefined;
+            if (missing !== undefined) {
+                return sessionErr({
+                    code: 'workspace-not-found',
+                    message: `no workspace ${missing}`,
+                    details: { workspaceId: missing },
+                });
+            }
+            if (request.beforeWorkspaceId !== request.workspaceId) {
+                const previousOrder = workspaces.map(workspace => workspace.workspaceId);
+                const [workspace] = workspaces.splice(source, 1);
+                /* v8 ignore next -- source was resolved from the same array immediately above. */
+                if (workspace === undefined)
+                    throw new Error(`fixture lost workspace ${request.workspaceId}`);
+                const at = request.beforeWorkspaceId === undefined
+                    ? workspaces.length
+                    : workspaces.findIndex(candidate => candidate.workspaceId === request.beforeWorkspaceId);
+                workspaces.splice(at, 0, workspace);
+                if (workspaces.some((candidate, index) => candidate.workspaceId !== previousOrder[index])) {
+                    emitWorkspace({
+                        type: 'order',
+                        workspaceIds: workspaces.map(candidate => candidate.workspaceId),
+                    });
+                }
+            }
+            return sessionOk({ workspaceIds: workspaces.map(candidate => candidate.workspaceId) });
+        },
+        insertSessionBefore: (request) => {
+            const workspace = workspaces.find(candidate => candidate.workspaceId === request.workspaceId);
+            if (workspace === undefined) {
+                return sessionErr({
+                    code: 'workspace-not-found',
+                    message: `no workspace ${request.workspaceId}`,
+                    details: { workspaceId: request.workspaceId },
+                });
+            }
+            if (!workspace.sessionIds.includes(request.sessionId)
+                || (request.beforeSessionId !== undefined && !workspace.sessionIds.includes(request.beforeSessionId))) {
+                return sessionErr({
+                    code: 'workspace-move-invalid',
+                    message: `session or anchor is not accounted by workspace ${request.workspaceId}`,
+                    details: {
+                        workspaceId: request.workspaceId,
+                        sessionId: request.sessionId,
+                        ...request.beforeSessionId === undefined ? {} : { beforeSessionId: request.beforeSessionId },
+                    },
+                });
+            }
+            const without = workspace.sessionIds.filter(id => id !== request.sessionId);
+            const at = request.beforeSessionId === undefined ? without.length : without.indexOf(request.beforeSessionId);
+            const sessionIds = [...without.slice(0, at), request.sessionId, ...without.slice(at)];
+            if (!sessionIds.every((id, index) => id === workspace.sessionIds[index])) {
+                workspace.sessionIds = sessionIds;
+                workspace.updatedAt = new Date().toISOString();
+                emitWorkspace({ type: 'upsert', workspace: workspaceSnapshot(workspace) });
+            }
+            return sessionOk({ workspace: workspaceSnapshot(workspace) });
+        },
+        archiveSession: (request) => {
+            if (summaryOf(request.sessionId) === undefined) {
+                return sessionErr({
+                    code: 'session-not-found',
+                    message: `no session ${request.sessionId}`,
+                    details: { sessionId: request.sessionId },
+                });
+            }
+            if (!archivedSessionIds.includes(request.sessionId)) {
+                archivedSessionIds.push(request.sessionId);
+                emitWorkspace({ type: 'archived', archivedSessionIds: [...archivedSessionIds] });
+            }
+            return sessionOk({ archivedSessionIds: [...archivedSessionIds] });
         },
     };
     const rpc = {
-        call(channel, endpoint, payload) {
+        call(channel, endpoint, payload, signal) {
             if (channel !== '/api') {
                 return Promise.reject(new Error(`fixture connection RPC channel ${JSON.stringify(channel)} is unavailable`));
             }
             const args = payload.args;
             const sessionId = args.agentId;
+            const callSignal = signal ?? new AbortController().signal;
+            const request = args.request;
             switch (endpoint) {
                 case 'commands/list': return Promise.resolve(commandRemotes.list(sessionId));
                 case 'commands/execute': return Promise.resolve(commandRemotes.execute(sessionId, args.line, args.images ?? []));
                 case 'fileReferences/list': return Promise.resolve(referenceRemotes.files(sessionId, args.query ?? ''));
                 case 'sessionReferenceResolver/candidates': return Promise.resolve(referenceRemotes.sessions(sessionId, args.query ?? ''));
+                case 'directoryPicker/pick': return Promise.resolve(directoryPickerRemotes.pick());
+                case 'directoryPicker/list': return Promise.resolve(directoryPickerRemotes.list(args.path));
+                case 'directoryPicker/createDirectory':
+                    return Promise.resolve(directoryPickerRemotes.createDirectory(args.path ?? '', args.name ?? ''));
                 case 'goals/create': return Promise.resolve(goalRemotes.create(sessionId, {
-                    objective: args.request?.objective,
-                    ...args.request?.maxGoalRounds === undefined ? {} : { maxGoalRounds: args.request.maxGoalRounds },
+                    objective: request?.objective,
+                    ...request?.maxGoalRounds === undefined
+                        ? {}
+                        : { maxGoalRounds: request.maxGoalRounds },
                 }));
-                case 'goals/edit': return Promise.resolve(goalRemotes.edit(sessionId, args.ref, args.request ?? {}));
+                case 'goals/edit': return Promise.resolve(goalRemotes.edit(sessionId, args.ref, request));
                 case 'goals/pause': return Promise.resolve(goalRemotes.pause(sessionId, args.ref));
                 case 'goals/resume': return Promise.resolve(goalRemotes.resume(sessionId, args.ref));
                 case 'goals/complete': return Promise.resolve(goalRemotes.complete(sessionId, args.ref));
                 case 'goals/clear': return Promise.resolve(goalRemotes.clear(sessionId, args.ref));
+                case 'agentPresets/list': return Promise.resolve(presetRemotes.list());
+                case 'agentPresets/select': return Promise.resolve(presetRemotes.select(sessionId, args.agentPreset));
+                case 'agentPresets/read': return Promise.resolve(presetRemotes.read(args.agentPreset));
+                case 'agentPresets/copy': return Promise.resolve(presetRemotes.copy(args.from, args.id));
+                case 'agentPresets/deletePreset': return Promise.resolve(presetRemotes.deletePreset(args.id));
+                case 'subagents/list': return Promise.resolve({
+                    ok: true,
+                    value: { entries: [], parentAvailable: true },
+                });
+                case 'subagents/prompt': return Promise.resolve({
+                    ok: true,
+                    value: {
+                        messageId: `fixture-message-${request.childSessionId}`,
+                    },
+                });
+                case 'subagents/interruptByParent': return Promise.resolve({ ok: true, value: { accepted: true } });
+                case 'credentials/describe': return Promise.resolve(credentialRemotes.describe(args.refs ?? []));
+                case 'credentials/set': return Promise.resolve(credentialRemotes.set(args.ref));
+                case 'credentials/unset': return Promise.resolve(credentialRemotes.unset(args.ref));
+                case 'settings/describe': return Promise.resolve(settingsRemotes.describe());
+                case 'settings/canOpenAgentPresetDirectory': return Promise.resolve({ ok: true, value: true });
+                case 'settings/openSettingsDocument': return Promise.resolve(settingsRemotes.openSettingsDocument());
+                case 'settings/openAgentPresetDirectory': return Promise.resolve(settingsRemotes.openAgentPresetDirectory(args.agentPreset));
+                case 'skills/list': {
+                    const skillRequest = request;
+                    const missing = requireRemoteSession(skillRequest);
+                    if (missing !== undefined)
+                        return missing;
+                    return sessionOk({
+                        skills: [
+                            { name: 'fixture-demo', description: 'fixture 技能样本', whenToUse: '仅供 UI 目录渲染验收', modelInvocable: true },
+                            { name: 'fixture-user-only', description: 'fixture 仅用户技能样本', modelInvocable: false },
+                        ],
+                    });
+                }
+                case 'session/openWorkspacePath': {
+                    return sessionOk({ opened: true });
+                }
+                case 'session/canOpenWorkspacePath': return Promise.resolve({ ok: true, value: true });
+                case 'session/modelCatalog': return Promise.resolve({
+                    ok: true,
+                    value: {
+                        default: { provider: 'deepseek-official', model: 'deepseek-v4-flash' },
+                        routableProviders: ['deepseek-official', 'openai', 'acme-gateway'],
+                        groups: fixtureModelGroups(),
+                        failures: [],
+                    },
+                });
+                case 'llm/listProviders': return Promise.resolve({
+                    ok: true,
+                    value: [
+                        { id: 'deepseek-official', name: 'DeepSeek' },
+                        { id: 'openai', name: 'openai' },
+                        { id: 'acme-gateway', name: 'Acme Gateway' },
+                    ],
+                });
+                case 'llm/listConfigurableProviders': return Promise.resolve({
+                    ok: true,
+                    value: [
+                        { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [] },
+                        { provider: 'openai', displayName: 'openai', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'openai'], declared: false },
+                        { provider: 'anthropic', displayName: 'anthropic', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'anthropic'], declared: false },
+                        { provider: 'acme-gateway', displayName: 'Acme Gateway', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'acme-gateway'], declared: true },
+                    ],
+                });
+                // The fixture endpoint is imaginary, so interrogation answers the
+                // catalog it already serves without a network request.
+                case 'llm/discoverModels': return Promise.resolve({
+                    ok: true,
+                    value: fixtureModelGroups().flatMap(group => group.models.map(model => ({ id: model.id, name: model.name }))),
+                });
+                case 'settings/update': return Promise.resolve(settingsRemotes.update(args.ns));
+                case 'settings/replace': return Promise.resolve(settingsRemotes.replace(args.ns));
+                case 'settings/mutate': return Promise.resolve(settingsRemotes.mutate(args.ns));
+                case 'session/list': return sessionApi.list(args._request);
+                case 'session/search': return sessionApi.search(request, callSignal);
+                case 'session/create': return sessionApi.create(request);
+                case 'session/selectModel': return sessionApi.selectModel(request);
+                case 'session/rename': return sessionApi.rename(request);
+                case 'session/fork': return sessionApi.fork(request);
+                case 'session/prompt': return sessionApi.prompt(request);
+                case 'session/attachment': return sessionApi.attachment(request);
+                case 'session/updateQueue': return sessionApi.updateQueue(request);
+                case 'session/cancel': return sessionApi.cancel(request);
+                case 'session/page': {
+                    const page = request;
+                    const pageSessionId = page.address.kind === 'session'
+                        ? page.address.sessionId
+                        : page.address.childSessionId;
+                    return sessionApi.history({
+                        sessionId: pageSessionId,
+                        throughSeq: page.throughSeq,
+                        ...page.beforeSeq === undefined ? {} : { beforeSeq: page.beforeSeq },
+                        ...page.maxMessages === undefined ? {} : { maxMessages: page.maxMessages },
+                    });
+                }
+                case '$events/result': return Promise.resolve(answerRemoteEvent(args));
+                case 'workspace/create': return workspaceApi.create(request);
+                case 'workspace/rename': return workspaceApi.rename(request);
+                case 'workspace/delete': return workspaceApi.delete(request);
+                case 'workspace/insertBefore': return workspaceApi.insertBefore(request);
+                case 'workspace/insertSessionBefore': return workspaceApi.insertSessionBefore(request);
+                case 'workspace/archiveSession': return workspaceApi.archiveSession(request);
                 default:
                     return Promise.reject(new Error(`fixture connection RPC endpoint ${JSON.stringify(endpoint)} is unavailable`));
             }
         },
+        open(channel, endpoint, payload, signal) {
+            if (channel !== '/api') {
+                throw new Error(`fixture connection RPC channel ${JSON.stringify(channel)} is unavailable`);
+            }
+            const args = payload.args;
+            switch (endpoint) {
+                case '$events': return openRemoteEvents(signal);
+                case 'session/control': return openControl(signal);
+                case 'session/follow': return openFollow(args.request, signal);
+                case 'workspace/follow': return openWorkspace(signal);
+                default:
+                    throw new Error(`fixture connection stream endpoint ${JSON.stringify(endpoint)} is unavailable`);
+            }
+        },
     };
-    return { api, rpc };
+    return { rpc };
 }
 /**
- * Fixture platform subclass: there is no HTTP at all, so instead of a doFetch transport it
- * overrides the protocol-level virtuals (callUnary/openMux/openHost/respond) to dispatch
- * straight into the in-memory ApiProxy — while still minting rpcIds, fabricating the four
- * named full forms, and feeding the same tap as a real carrier. TODO: delete when the fixture
- * moves to the isomorphic pipeline (InProcessApiClient over toFetchHandler(fixtureImpl)).
+ * Build the browser fixture transport from the current page's query switches.
+ * @returns an in-memory Connection RPC transport.
  */
-export class FixtureApiClient extends AbstractApiClient {
-    api;
-    /** Generic Remote caller backed by the same in-memory state as the legacy fixture API. */
-    rpc;
-    constructor() {
-        super();
-        const world = createFixtureWorld(fixtureOptionsFromLocation());
-        this.api = world.api;
-        this.rpc = world.rpc;
-    }
-    doFetch() {
-        throw new Error('FixtureApiClient overrides all protocol paths; doFetch must be unreachable');
-    }
-    async callUnary(method, payload, signal) {
-        const request = rpcRequest(payload);
-        const full = { type: 'client-request', rpcId: request.rpcId, method, payload };
-        this.onEnvelope(full);
-        const response = await this.dispatch(method, request, signal ?? new AbortController().signal);
-        const fullResponse = { type: 'server-response', rpcId: response.rpcId, result: response.result };
-        this.onEnvelope(fullResponse);
-        return response;
-    }
-    /** Method-key dispatch into the in-memory contract impl (a real carrier routes by URL path instead). */
-    dispatch(method, request, signal) {
-        switch (method) {
-            case 'session.list': return this.api.sessions.list(request);
-            case 'session.search': return this.api.sessions.search(request, signal);
-            case 'session.create': return this.api.sessions.create(request);
-            case 'session.history': return this.api.sessions.history(request);
-            case 'session.models': return this.api.sessions.models(request);
-            case 'session.selectModel': return this.api.sessions.selectModel(request);
-            case 'session.rename': return this.api.sessions.rename(request);
-            case 'session.fork': return this.api.sessions.fork(request);
-            case 'session.prompt': return this.api.sessions.prompt(request);
-            case 'session.attachment': return this.api.sessions.attachment(request);
-            case 'session.updateQueue': return this.api.sessions.updateQueue(request);
-            case 'session.cancel': return this.api.sessions.cancel(request);
-            case 'subagent.list': return this.api.subagents.list(request);
-            case 'subagent.history': return this.api.subagents.history(request);
-            case 'subagent.prompt': return this.api.subagents.prompt(request, signal);
-            case 'subagent.interrupt': return this.api.subagents.interrupt(request);
-            case 'host.describe': return this.api.host.describe(request);
-            case 'host.pickDirectory': return this.api.host.pickDirectory(request, new AbortController().signal);
-            case 'host.listDirectory': return this.api.host.listDirectory(request, new AbortController().signal);
-            case 'host.createDirectory': return this.api.host.createDirectory(request);
-            case 'host.openPath': return this.api.host.openPath(request, new AbortController().signal);
-            case 'workspace.list': return this.api.workspace.list(request);
-            case 'workspace.create': return this.api.workspace.create(request);
-            case 'workspace.rename': return this.api.workspace.rename(request);
-            case 'workspace.delete': return this.api.workspace.delete(request);
-            case 'workspace.insertBefore': return this.api.workspace.insertBefore(request);
-            case 'workspace.insertSessionBefore': return this.api.workspace.insertSessionBefore(request);
-            case 'workspace.archiveSession': return this.api.workspace.archiveSession(request);
-            case 'skill.list': return this.api.skills.list(request);
-            case 'agentPreset.list': return this.api.agentPresets.list(request);
-            case 'agentPreset.select': return this.api.agentPresets.select(request);
-            case 'agentPreset.read': return this.api.agentPresets.read(request);
-            case 'agentPreset.copy': return this.api.agentPresets.copy(request);
-            case 'agentPreset.openDocument': return this.api.agentPresets.openDocument(request, new AbortController().signal);
-            case 'agentPreset.remove': return this.api.agentPresets.remove(request);
-            case 'goal.create': return this.api.goals.create(request);
-            case 'goal.edit': return this.api.goals.edit(request);
-            case 'goal.pause': return this.api.goals.pause(request);
-            case 'goal.resume': return this.api.goals.resume(request);
-            case 'goal.complete': return this.api.goals.complete(request);
-            case 'goal.clear': return this.api.goals.clear(request);
-            case 'settings.describe': return this.api.settings.describe(request);
-            case 'settings.openDocument': return this.api.settings.openDocument(request, signal);
-            case 'settings.update': return this.api.settings.update(request);
-            case 'settings.replace': return this.api.settings.replace(request);
-            case 'settings.mutate': return this.api.settings.mutate(request);
-            case 'credentials.describe': return this.api.credentials.describe(request);
-            case 'credentials.set': return this.api.credentials.set(request);
-            case 'credentials.unset': return this.api.credentials.unset(request);
-            case 'llm.providers': return this.api.llm.providers(request);
-            case 'llm.models': return this.api.llm.models(request);
-            case 'llm.discoverModels': return this.api.llm.discoverModels(request, signal);
-        }
-    }
-    openMux(payload, signal, onOpen) {
-        return this.tapStream(this.api.events.mux(rpcRequest(payload), signal), onOpen);
-    }
-    openHost(payload, signal, onOpen) {
-        return this.tapStream(this.api.events.host(rpcRequest(payload), signal), onOpen);
-    }
-    async *tapStream(stream, onOpen) {
-        // No HTTP here: the in-memory stream is established the moment iteration starts (mirrors
-        // readSse firing onOpen after response headers, before any frame).
-        onOpen?.();
-        for await (const envelope of stream) {
-            const full = { type: 'server-request', rpcId: envelope.rpcId, method: envelope.payload.type, payload: envelope.payload };
-            this.onEnvelope(full);
-            yield envelope;
-        }
-    }
-    /**
-     * Deliver a client response to the in-memory contract impl (no HTTP POST),
-     * echoing the envelope to the observation tap like every other path.
-     * @param message - the client-response envelope answering a server request.
-     * @returns the carrier receipt from the fixture impl.
-     */
-    async respond(message) {
-        this.onEnvelope(message);
-        return this.api.respond(message);
-    }
+export function createFixtureConnectionRpc() {
+    return createFixtureWorld(fixtureOptionsFromLocation()).rpc;
 }
 /** Browser query mapping; direct unit callers pass FixtureOptions explicitly. */
 function fixtureOptionsFromLocation() {

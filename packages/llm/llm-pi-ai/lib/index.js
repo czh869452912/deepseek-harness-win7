@@ -1,14 +1,17 @@
 import { launchEnvironmentOf } from "@deepseek-ai/dsh-launch-environment";
-import { CONTEXT_WINDOW_EXCEEDED_CODE, CallId, EMPTY_RESPONSE_CODE, INVALID_CREDENTIAL_CODE, LlmAdapter, LlmError, QUOTA_EXCEEDED_CODE, ReasoningEffortId, RetryPolicySchema, assertUsableApiKey, attributionHeaders, contentHasImage, isContextWindowExceededError, isQuotaExceededError, normalizeApiKey, offloadRequestImages, resolveRetryPolicy } from "@deepseek-ai/dsh-llm";
+import { CONTEXT_WINDOW_EXCEEDED_CODE, EMPTY_RESPONSE_CODE, INVALID_CREDENTIAL_CODE, LlmAdapter, LlmError, QUOTA_EXCEEDED_CODE, ReasoningEffortId, RetryPolicySchema, ToolCallId, assertUsableApiKey, attributionHeaders, contentHasImage, isContextWindowExceededError, isQuotaExceededError, normalizeApiKey, offloadRequestImagesWithPolicy, offloadedImageText, requestImageHandleText, resolveImageAttachmentAccess, resolveRetryPolicy } from "@deepseek-ai/dsh-llm";
 import { deepEqualJson, installSettingsSection, settingsNamespace } from "@deepseek-ai/dsh-settings";
 import { createModels, createProvider, getSupportedThinkingLevels, isContextOverflow } from "@earendil-works/pi-ai";
 import { MAX_TIMER_DELAY_MS, idleWatchdog, timeoutOf } from "@deepseek-ai/dsh-timeout";
-import { builtinProviders, getBuiltinModels, getBuiltinProviders } from "@earendil-works/pi-ai/providers/all";
 import z from "@deepseek-ai/schemastery";
-import { credentialRef } from "@deepseek-ai/dsh-credentials";
+import { credentialKey, credentialKeyId, credentialKeyScope, credentialRef, isCredentialKeySegment, isCredentialRefName } from "@deepseek-ai/dsh-credentials";
+import { builtinProviders, getBuiltinModels, getBuiltinProviders } from "@earendil-works/pi-ai/providers/all";
 import { anthropicMessagesApi } from "@earendil-works/pi-ai/api/anthropic-messages.lazy";
 import { openAICompletionsApi } from "@earendil-works/pi-ai/api/openai-completions.lazy";
 import { openAIResponsesApi } from "@earendil-works/pi-ai/api/openai-responses.lazy";
+import { homedir } from "node:os";
+import { access } from "node:fs/promises";
+import { resolve } from "node:path";
 //#region lib/types/replay.js
 /**
 * Durable pi-ai replay metadata and assistant-history reconstruction.
@@ -233,686 +236,13 @@ function toPiAssistant(message, onDegrade) {
 	try {
 		return replayedAssistant(message, source, source.replayState);
 	} catch (error) {
-		/* v8 ignore next -- replayedAssistant throws only INVALID_REPLAY_STATE LlmErrors today; the
+		/* v8 ignore next -- replayedAssistant throws only INVALID_REPLAY_STATE LlmErrors; the
 		guard keeps a future non-replay failure loud instead of silently degrading it */
 		if (!(error instanceof LlmError) || error.code !== "INVALID_REPLAY_STATE") throw error;
 		onDegrade?.(error.message);
 		return foreignAssistant(message);
 	}
 }
-//#endregion
-//#region lib/types/context.js
-/**
-* Harness request-history conversion into pi-ai's Context vocabulary.
-*
-* @module dsh-llm-pi-ai/context
-*/
-/** Join the text blocks of a harness message. */
-function flattenText(message) {
-	return message.content.filter((block) => block.type === "text").map((block) => block.text).join("");
-}
-/** Flatten text recursively inside one tool result. */
-function toolResultText(blocks) {
-	return blocks.map((block) => block.type === "text" ? block.text : block.type === "tool-result" ? toolResultText(block.content) : "").join("");
-}
-/** Reject image roles that pi-ai cannot replay before request-size offloading can replace them. */
-function assertSupportedImageRoles(messages) {
-	for (const message of messages) if (message.role !== "user" && contentHasImage(message.content)) throw new LlmError(`pi-ai cannot represent an image in an in-history ${message.role} message`, "UNSUPPORTED_CONTENT");
-}
-async function userContent(blocks, attachments) {
-	const content = [];
-	for (const block of blocks) switch (block.type) {
-		case "text":
-			if (block.text.length > 0) content.push({
-				type: "text",
-				text: block.text
-			});
-			break;
-		case "image": {
-			const stored = await attachments.readImage(block.attachment);
-			content.push({
-				type: "image",
-				data: Buffer.from(stored.data).toString("base64"),
-				mimeType: stored.ref.mediaType
-			});
-			break;
-		}
-		case "tool-result":
-			{
-				const nested = await userContent(block.content, attachments);
-				if (typeof nested === "string") {
-					if (nested.length > 0) content.push({
-						type: "text",
-						text: nested
-					});
-				} else content.push(...nested);
-			}
-			break;
-		default: break;
-	}
-	if (content.every((block) => block.type === "text")) return content.map((block) => block.text).join("");
-	return content;
-}
-function toolsOf(options) {
-	return options.tools?.map((tool) => ({
-		name: tool.name,
-		description: tool.description,
-		parameters: tool.parameters
-	}));
-}
-/** Assemble the request-level pi-ai context envelope shared by both conversion paths. */
-function piContext(options, messages) {
-	const tools = toolsOf(options);
-	return {
-		...options.system !== void 0 ? { systemPrompt: options.system } : {},
-		messages,
-		...tools !== void 0 && tools.length > 0 ? { tools } : {}
-	};
-}
-function textOnlyContext(options, onReplayDegrade) {
-	const toolNames = /* @__PURE__ */ new Map();
-	const messages = [];
-	for (const message of options.messages) {
-		if (contentHasImage(message.content)) throw new LlmError("pi-ai image conversion requires the durable attachment service", "UNSUPPORTED_CONTENT");
-		if (message.role === "system") {
-			messages.push({
-				role: "user",
-				content: flattenText(message),
-				timestamp: 0
-			});
-			continue;
-		}
-		if (message.role === "assistant") {
-			const assistant = toPiAssistant(message, onReplayDegrade);
-			for (const block of assistant.content) if (block.type === "toolCall") toolNames.set(CallId(block.id), block.name);
-			messages.push(assistant);
-			continue;
-		}
-		const text = flattenText(message);
-		const results = message.content.filter((block) => block.type === "tool-result");
-		if (text.length > 0 || results.length === 0) messages.push({
-			role: "user",
-			content: text,
-			timestamp: 0
-		});
-		for (const result of results) messages.push({
-			role: "toolResult",
-			toolCallId: result.toolCallId,
-			toolName: toolNames.get(result.toolCallId) ?? "unknown",
-			content: [{
-				type: "text",
-				text: toolResultText(result.content) || "(no output)"
-			}],
-			isError: result.isError ?? false,
-			timestamp: 0
-		});
-	}
-	return piContext(options, messages);
-}
-function toPiContext(options, attachments, onReplayDegrade, maxRequestImageBytes) {
-	return attachments === void 0 ? textOnlyContext(options, onReplayDegrade) : toPiContextWithImages(options, attachments, onReplayDegrade, maxRequestImageBytes);
-}
-async function toPiContextWithImages(options, attachments, onReplayDegrade, maxRequestImageBytes) {
-	assertSupportedImageRoles(options.messages);
-	const requestMessages = offloadRequestImages(options.messages, maxRequestImageBytes);
-	const toolNames = /* @__PURE__ */ new Map();
-	const messages = [];
-	for (const message of requestMessages) {
-		if (message.role === "system") {
-			messages.push({
-				role: "user",
-				content: flattenText(message),
-				timestamp: 0
-			});
-			continue;
-		}
-		if (message.role === "assistant") {
-			const assistant = toPiAssistant(message, onReplayDegrade);
-			for (const block of assistant.content) if (block.type === "toolCall") toolNames.set(CallId(block.id), block.name);
-			messages.push(assistant);
-			continue;
-		}
-		const content = await userContent(message.content.filter((block) => block.type !== "tool-result"), attachments);
-		const results = message.content.filter((block) => block.type === "tool-result");
-		if (content.length > 0 || results.length === 0) messages.push({
-			role: "user",
-			content,
-			timestamp: 0
-		});
-		for (const result of results) {
-			const resultContent = await userContent(result.content, attachments);
-			messages.push({
-				role: "toolResult",
-				toolCallId: result.toolCallId,
-				toolName: toolNames.get(result.toolCallId) ?? "unknown",
-				content: typeof resultContent === "string" ? [{
-					type: "text",
-					text: resultContent || "(no output)"
-				}] : resultContent,
-				isError: result.isError ?? false,
-				timestamp: 0
-			});
-		}
-	}
-	return piContext(options, messages);
-}
-//#endregion
-//#region lib/types/stream.js
-/**
-* pi-ai assistant event translation into the Harness streaming protocol.
-*
-* pi-ai tool-call arguments are parsed objects while the Harness keeps their
-* raw JSON representation. pi-ai also reports failures as terminal stream
-* events, which this module maps into Harness finish chunks.
-*
-* @module dsh-llm-pi-ai/stream
-*/
-/**
-* Map pi-ai usage (reasoning folded into output by pi-ai).
-* @param usage - cumulative usage from the terminal pi-ai event.
-* @returns harness counts; cache fields appear only when non-zero (pi-ai reports zeros, not absence).
-*/
-function mapUsage(usage) {
-	return {
-		inputTokens: usage.input,
-		outputTokens: usage.output,
-		...usage.cacheRead > 0 ? { cacheReadTokens: usage.cacheRead } : {},
-		...usage.cacheWrite > 0 ? { cacheWriteTokens: usage.cacheWrite } : {}
-	};
-}
-function classifyPiAiError(message) {
-	if (/\b(?:401|403)\b/.test(message)) return "AUTH";
-	if (isQuotaExceededError(message)) return QUOTA_EXCEEDED_CODE;
-	if (/\b429\b|rate.?limit/i.test(message)) return "RATE_LIMIT";
-	if (/\b413\b|failed to buffer the request body:\s*length limit exceeded|payload too large|request body too large/i.test(message)) return "INVALID_REQUEST";
-	if (/\b400\b|invalid.?request/i.test(message)) return "INVALID_REQUEST";
-	if (/\b5\d\d\b/.test(message)) return "SERVER";
-	if (/\btime(?:d)?\s*out\b|timeout/i.test(message)) return "TIMEOUT";
-	if (/stream ended (?:before|without)\b/i.test(message)) return "TRANSPORT";
-	if (/\b(?:network|connection|socket|fetch)\b|\bECONN[A-Z]+\b/i.test(message) || /\b(?:other side closed|HTTP2 request did not get a response|WebSocket closed unexpectedly)\b/i.test(message) || /\bterminated\b|premature close/i.test(message)) return "TRANSPORT";
-	return "PI_AI_ERROR";
-}
-/**
-* Map a terminal pi-ai event to the harness finish reason.
-* @param message - the assistant message carried by the `done` or `error` event.
-* @param contextWindow - resolved catalog capacity for usage-based overflow detection.
-* @returns the mapped harness reason. Recognized error text, `stop` usage above
-*   `contextWindow`, and zero-output `length` usage that fills the window map
-*   to `CONTEXT_WINDOW_EXCEEDED`; a `stop` with no content blocks maps to an
-*   `EMPTY_RESPONSE` error.
-*/
-function mapStopReason(message, contextWindow) {
-	const piAiOverflow = isContextOverflow(message, contextWindow);
-	const harnessOverflow = message.stopReason === "error" && message.errorMessage !== void 0 && isContextWindowExceededError(message.errorMessage);
-	if (piAiOverflow || harnessOverflow) return {
-		kind: "error",
-		failure: {
-			message: message.errorMessage ?? `pi-ai detected context overflow for model "${message.model}"`,
-			code: CONTEXT_WINDOW_EXCEEDED_CODE
-		}
-	};
-	switch (message.stopReason) {
-		case "stop":
-			if (message.content.length === 0) return {
-				kind: "error",
-				failure: {
-					message: `model "${message.model}" returned a completed response with no content`,
-					code: EMPTY_RESPONSE_CODE
-				}
-			};
-			return { kind: "stop" };
-		case "length": return { kind: "max-tokens" };
-		case "toolUse": return { kind: "tool-calls" };
-		case "aborted": return {
-			kind: "aborted",
-			failure: {
-				message: message.errorMessage ?? "pi-ai stream aborted",
-				code: "ABORTED"
-			}
-		};
-		case "error": {
-			const text = message.errorMessage ?? "pi-ai stream error";
-			return {
-				kind: "error",
-				failure: {
-					message: text,
-					code: classifyPiAiError(text)
-				}
-			};
-		}
-	}
-}
-/**
-* Translate the pi-ai event stream into StreamChunks. pi-ai never throws
-* mid-stream — failures arrive as `error` events, which become error/aborted
-* `finish` chunks (the harness protocol's other error-delivery style).
-* @param events - one assistant turn's pi-ai event stream.
-* @param contextWindow - resolved catalog capacity for usage-based overflow detection.
-* @returns the harness chunks, ending with `usage` then `finish`; throws
-*   `LlmError` (`STREAM_CLOSED`) if the source ends without a terminal event.
-*/
-async function* toStreamChunks(events, contextWindow) {
-	const toolIds = /* @__PURE__ */ new Map();
-	for await (const event of events) switch (event.type) {
-		case "start": break;
-		case "text_start":
-			yield {
-				type: "block-start",
-				index: event.contentIndex,
-				blockType: "text"
-			};
-			break;
-		case "text_delta":
-			yield {
-				type: "text-delta",
-				index: event.contentIndex,
-				text: event.delta
-			};
-			break;
-		case "text_end":
-			yield {
-				type: "block-end",
-				index: event.contentIndex,
-				block: {
-					type: "text",
-					text: event.content
-				}
-			};
-			break;
-		case "thinking_start":
-			yield {
-				type: "block-start",
-				index: event.contentIndex,
-				blockType: "reasoning"
-			};
-			break;
-		case "thinking_delta":
-			yield {
-				type: "reasoning-delta",
-				index: event.contentIndex,
-				text: event.delta
-			};
-			break;
-		case "thinking_end":
-			yield {
-				type: "block-end",
-				index: event.contentIndex,
-				block: {
-					type: "reasoning",
-					text: event.content
-				}
-			};
-			break;
-		case "toolcall_start": {
-			const partial = event.partial.content[event.contentIndex];
-			const id = partial?.type === "toolCall" ? partial.id : "";
-			const name = partial?.type === "toolCall" ? partial.name : "";
-			toolIds.set(event.contentIndex, {
-				id,
-				name
-			});
-			yield {
-				type: "block-start",
-				index: event.contentIndex,
-				blockType: "tool-call"
-			};
-			break;
-		}
-		case "toolcall_delta": {
-			const known = toolIds.get(event.contentIndex);
-			yield {
-				type: "tool-call-delta",
-				index: event.contentIndex,
-				id: CallId(known?.id ?? ""),
-				...known?.name !== void 0 && known.name.length > 0 ? { name: known.name } : {},
-				argumentsDelta: event.delta
-			};
-			break;
-		}
-		case "toolcall_end":
-			yield {
-				type: "block-end",
-				index: event.contentIndex,
-				block: {
-					type: "tool-call",
-					id: CallId(event.toolCall.id),
-					name: event.toolCall.name,
-					arguments: JSON.stringify(event.toolCall.arguments)
-				}
-			};
-			break;
-		case "done":
-			yield {
-				type: "usage",
-				usage: mapUsage(event.message.usage)
-			};
-			yield {
-				type: "finish",
-				reason: mapStopReason(event.message, contextWindow),
-				replayState: toPiReplayState(event.message)
-			};
-			return;
-		case "error":
-			yield {
-				type: "usage",
-				usage: mapUsage(event.error.usage)
-			};
-			yield {
-				type: "finish",
-				reason: mapStopReason(event.error, contextWindow)
-			};
-			return;
-	}
-	throw new LlmError("pi-ai event stream ended without done/error", "STREAM_CLOSED");
-}
-//#endregion
-//#region lib/types/adapter.js
-/**
-* Generic pi-ai-backed implementation of the Harness LLM seam.
-*
-* Each resolution produces one **immutable** snapshot — the profiles plus a
-* `Models` collection holding the `Provider` each route built — and an
-* operation captures a whole snapshot before its first `await`. A
-* configuration change builds a *new* collection rather than mutating the one
-* in use, because `Models.streamSimple()` is lazy: it resolves the provider
-* when the stream is first consumed, which is after the credential await, so a
-* mutated collection would let a request that started under one configuration
-* finish under another — or fail with a provider that no longer exists. This is
-* what makes the seam's per-step call freeze (`llm.prepareCall()`) hold all the
-* way down: switching models mid-reply takes effect on the next step, never
-* inside the one in flight.
-*
-* Credentials stay outside that collection. The harness resolves a route's key
-* through its own seam and passes it as the request's `apiKey` option, which
-* pi-ai treats as the highest-priority auth override — so `Models` never holds
-* a credential store and the harness keeps its fail-loud reference semantics.
-*
-* @module dsh-llm-pi-ai/adapter
-*/
-var __addDisposableResource = function(env, value, async) {
-	if (value !== null && value !== void 0) {
-		if (typeof value !== "object" && typeof value !== "function") throw new TypeError("Object expected.");
-		var dispose, inner;
-		if (async) {
-			if (!Symbol.asyncDispose) throw new TypeError("Symbol.asyncDispose is not defined.");
-			dispose = value[Symbol.asyncDispose];
-		}
-		if (dispose === void 0) {
-			if (!Symbol.dispose) throw new TypeError("Symbol.dispose is not defined.");
-			dispose = value[Symbol.dispose];
-			if (async) inner = dispose;
-		}
-		if (typeof dispose !== "function") throw new TypeError("Object not disposable.");
-		if (inner) dispose = function() {
-			try {
-				inner.call(this);
-			} catch (e) {
-				return Promise.reject(e);
-			}
-		};
-		env.stack.push({
-			value,
-			dispose,
-			async
-		});
-	} else if (async) env.stack.push({ async: true });
-	return value;
-};
-var __disposeResources = (function(SuppressedError) {
-	return function(env) {
-		function fail(e) {
-			env.error = env.hasError ? new SuppressedError(e, env.error, "An error was suppressed during disposal.") : e;
-			env.hasError = true;
-		}
-		var r, s = 0;
-		function next() {
-			while (r = env.stack.pop()) try {
-				if (!r.async && s === 1) return s = 0, env.stack.push(r), Promise.resolve().then(next);
-				if (r.dispose) {
-					var result = r.dispose.call(r.value);
-					if (r.async) return s |= 2, Promise.resolve(result).then(next, function(e) {
-						fail(e);
-						return next();
-					});
-				} else s |= 1;
-			} catch (e) {
-				fail(e);
-			}
-			if (s === 1) return env.hasError ? Promise.reject(env.error) : Promise.resolve();
-			if (env.hasError) throw env.error;
-		}
-		return next();
-	};
-})(typeof SuppressedError === "function" ? SuppressedError : function(error, suppressed, message) {
-	var e = new Error(message);
-	return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
-});
-/** Copy profile stream knobs into pi-ai's common option vocabulary. */
-function profileOptions(profile, reasoning, apiKey) {
-	const enabledReasoning = reasoning === "off" ? void 0 : reasoning;
-	return {
-		...apiKey === void 0 ? {} : { apiKey },
-		...enabledReasoning === void 0 ? {} : { reasoning: enabledReasoning },
-		...profile.thinkingBudgets === void 0 ? {} : { thinkingBudgets: profile.thinkingBudgets },
-		...profile.cacheRetention === void 0 ? {} : { cacheRetention: profile.cacheRetention },
-		...profile.transport === void 0 ? {} : { transport: profile.transport },
-		...profile.timeoutMs === void 0 ? {} : { timeoutMs: profile.timeoutMs },
-		...profile.websocketConnectTimeoutMs === void 0 ? {} : { websocketConnectTimeoutMs: profile.websocketConnectTimeoutMs },
-		maxRetries: 0
-	};
-}
-/**
-* The profile default this exact model can actually take, for DESCRIBING it.
-* A configured level the model does not support yields none rather than
-* throwing: `resolveModel` builds the model catalog, and a catalog that fails
-* takes its whole provider out of every picker — so one mis-set profile field
-* would hide every model on the route, including the ones that support the
-* level. The request path still refuses, which is where a bad configuration
-* belongs: describing what a model can do must not fail because a deployment
-* asked it for something it cannot.
-* @param model - the resolved model descriptor.
-* @param effort - the profile's configured level, if any.
-* @returns the level when this model supports it, otherwise undefined.
-*/
-function describableReasoningLevel(model, effort) {
-	if (effort === void 0) return void 0;
-	return getSupportedThinkingLevels(model).some((level) => level === effort) ? effort : void 0;
-}
-/** Validate an explicit Harness/profile effort without invoking pi-ai's clamp. */
-function resolveReasoningLevel(model, effort) {
-	if (effort === void 0) return void 0;
-	if (getSupportedThinkingLevels(model).some((level) => level === effort)) return effort;
-	throw new LlmError(`pi-ai provider "${model.provider}" model "${model.id}" does not support reasoning effort "${effort}"`, "UNSUPPORTED_REASONING_EFFORT");
-}
-/**
-* Selectable reasoning efforts for one model, or nothing at all.
-*
-* A model that carries no reasoning metadata — every hand-declared one, and
-* every catalog model pi-ai marks as non-reasoning — is reported by pi-ai as
-* supporting the single level `off`. Passing that through would offer a control
-* that cannot do what it says: `off` is translated to *omitting* the reasoning
-* option, which for such a model is byte-for-byte the same request as naming no
-* effort — so a provider whose own default is to think would keep thinking with
-* `off` selected. Omitting `reasoning` entirely is the seam's way of saying the
-* capability is unavailable, which leaves the surface offering only the
-* provider's default.
-* @param model - the resolved model descriptor.
-* @param defaultLevel - the profile's configured effort, already validated.
-* @returns the `reasoning` field, or an empty object when none can be offered.
-*/
-function reasoningInfo(model, defaultLevel) {
-	if (!model.reasoning) return {};
-	return { reasoning: {
-		efforts: getSupportedThinkingLevels(model).map((level) => ({
-			id: ReasoningEffortId(level),
-			name: `${level.charAt(0).toUpperCase()}${level.slice(1)}`
-		})),
-		...defaultLevel === void 0 ? {} : { defaultEffort: ReasoningEffortId(defaultLevel) }
-	} };
-}
-/** Merge deployment headers while removing case-insensitive attribution collisions. */
-function requestHeaders(headers) {
-	const attribution = attributionHeaders();
-	const reserved = new Set(Object.keys(attribution).map((name) => name.toLowerCase()));
-	return {
-		...Object.fromEntries(Object.entries(headers ?? {}).filter(([name]) => !reserved.has(name.toLowerCase()))),
-		...attribution
-	};
-}
-/**
-* pi-ai-backed multi-provider adapter. Each operation reads the current
-* profiles, so a configuration change reaches the next request without a
-* restart; model descriptors come from the collection those profiles built.
-*/
-var PiAiAdapter = class extends LlmAdapter {
-	config;
-	snapshot;
-	constructor(config) {
-		super();
-		this.config = config;
-	}
-	/**
-	* The snapshot for the current profiles. Resolution memoizes its result, so
-	* an unchanged configuration is recognized by identity; a changed one gets a
-	* brand-new collection, leaving any snapshot an operation already captured
-	* untouched for as long as that operation holds it.
-	*/
-	current() {
-		const profiles = this.config.profiles();
-		if (this.snapshot?.profiles === profiles) return this.snapshot;
-		const models = createModels();
-		for (const profile of profiles.values()) models.setProvider(profile.piProvider);
-		this.snapshot = {
-			profiles,
-			models
-		};
-		return this.snapshot;
-	}
-	/** The profile for one route within one snapshot, or the not-owned failure. */
-	profileOf(snapshot, provider) {
-		const profile = snapshot.profiles.get(provider);
-		if (profile === void 0) throw new LlmError(`pi-ai adapter does not own provider "${provider}"`, "NO_ADAPTER");
-		return profile;
-	}
-	/** The configured descriptor for one exact route/model pair within one snapshot. */
-	modelOf(snapshot, provider, model) {
-		this.profileOf(snapshot, provider);
-		const resolved = snapshot.models.getModel(provider, model);
-		if (resolved === void 0) throw new LlmError(`pi-ai provider "${provider}" has no configured model "${model}"`, "UNKNOWN_MODEL");
-		return resolved;
-	}
-	providerInfo(provider) {
-		return {
-			id: provider,
-			name: this.current().profiles.get(provider)?.displayName ?? provider
-		};
-	}
-	providerRetryPolicy(provider) {
-		return this.current().profiles.get(provider)?.retryPolicy;
-	}
-	listModels(provider) {
-		return Promise.resolve().then(() => {
-			const snapshot = this.current();
-			this.profileOf(snapshot, provider);
-			return snapshot.models.getModels(provider).map((model) => ({
-				provider,
-				id: model.id,
-				name: model.name,
-				inputModalities: [...model.input]
-			}));
-		});
-	}
-	resolveModel(provider, model, _signal) {
-		return Promise.resolve().then(() => {
-			const snapshot = this.current();
-			const profile = this.profileOf(snapshot, provider);
-			const resolvedModel = this.modelOf(snapshot, provider, model);
-			const defaultLevel = describableReasoningLevel(resolvedModel, profile.reasoning);
-			const configuredMaxTokens = profile.configuredMaxTokens.get(model);
-			return {
-				provider,
-				id: model,
-				name: resolvedModel.name,
-				inputModalities: [...resolvedModel.input],
-				context: { contextWindow: resolvedModel.contextWindow },
-				...configuredMaxTokens === void 0 ? {} : { defaultMaxTokens: configuredMaxTokens },
-				...reasoningInfo(resolvedModel, defaultLevel)
-			};
-		});
-	}
-	async *stream(options) {
-		const env_1 = {
-			stack: [],
-			error: void 0,
-			hasError: false
-		};
-		try {
-			if (options.stop !== void 0) throw new LlmError("llm-pi-ai does not support GenerateOptions.stop", "UNSUPPORTED_OPTION");
-			const snapshot = this.current();
-			const profile = this.profileOf(snapshot, options.provider);
-			const model = this.modelOf(snapshot, options.provider, options.model);
-			const reasoning = resolveReasoningLevel(model, options.reasoningEffort ?? profile.reasoning);
-			const apiKey = await this.config.resolveApiKey(options.provider, profile);
-			const consumer = new AbortController();
-			const upstream = options.signal === void 0 ? consumer.signal : AbortSignal.any([options.signal, consumer.signal]);
-			const streamIdleTimeoutMs = profile.streamIdleTimeoutMs;
-			const watchdog = __addDisposableResource(env_1, idleWatchdog(upstream, streamIdleTimeoutMs, "LLM_STREAM_IDLE_TIMEOUT"), false);
-			try {
-				const containsImage = options.messages.some((message) => contentHasImage(message.content));
-				if (containsImage && !model.input.includes("image")) throw new LlmError(`pi-ai model "${model.id}" does not support image input`, "UNSUPPORTED_CONTENT");
-				const attachments = containsImage ? this.config.resolveAttachments?.() : void 0;
-				if (containsImage && attachments === void 0) throw new LlmError("pi-ai image input requires the durable attachment service", "UNSUPPORTED_CONTENT");
-				const onReplayDegrade = (reason) => {
-					this.config.onReplayDegrade?.({
-						provider: options.provider,
-						model: options.model,
-						reason
-					});
-				};
-				const context = attachments === void 0 ? toPiContext(options, void 0, onReplayDegrade) : await toPiContext(options, attachments, onReplayDegrade, profile.maxRequestImageBytes);
-				const iterator = toStreamChunks(snapshot.models.streamSimple(model, context, {
-					...profileOptions(profile, reasoning, apiKey),
-					...options.temperature === void 0 ? {} : { temperature: options.temperature },
-					...options.maxTokens === void 0 ? {} : { maxTokens: options.maxTokens },
-					...options.sessionId === void 0 ? {} : { sessionId: String(options.sessionId) },
-					signal: watchdog.signal,
-					headers: requestHeaders(profile.headers)
-				}), model.contextWindow)[Symbol.asyncIterator]();
-				let exhausted = false;
-				try {
-					while (true) {
-						const result = await watchdog.next(iterator);
-						const timeout = timeoutOf(watchdog.signal, "LLM_STREAM_IDLE_TIMEOUT");
-						if (timeout !== void 0) throw timeout;
-						if (result.done) {
-							exhausted = true;
-							return;
-						}
-						yield result.value;
-					}
-				} finally {
-					if (!exhausted) {
-						consumer.abort("pi-ai stream consumer stopped");
-						try {
-							await iterator.return(void 0);
-						} catch (_abortedSdkTeardown) {}
-					}
-				}
-			} catch (error) {
-				if (timeoutOf(watchdog.signal, "LLM_STREAM_IDLE_TIMEOUT") !== void 0) throw new LlmError(`pi-ai stream idle timeout after ${streamIdleTimeoutMs}ms`, "TIMEOUT", { cause: error });
-				if (options.signal?.aborted) throw new LlmError("pi-ai request aborted by caller", "ABORTED", { cause: error });
-				throw error;
-			} finally {
-				consumer.abort("pi-ai stream consumer stopped");
-			}
-		} catch (e_1) {
-			env_1.error = e_1;
-			env_1.hasError = true;
-		} finally {
-			__disposeResources(env_1);
-		}
-	}
-};
 //#endregion
 //#region lib/types/catalog.js
 /**
@@ -972,6 +302,7 @@ const SUPPORTED_THINKING_FORMATS = Object.keys({
 	"deepseek": true,
 	"openrouter": true,
 	"together": true,
+	"baseten": true,
 	"zai": true,
 	"qwen": true,
 	"chat-template": true,
@@ -1018,25 +349,6 @@ function catalogProviderIds() {
 	return getBuiltinProviders();
 }
 /**
-* Whether the installed catalog provider for one route declares an api-key
-* method — the only authentication this adapter obtains on its own.
-*
-* A key is what the harness resolves through its own credential seam and hands
-* pi-ai per request. pi-ai's other method, OAuth, resolves from a *stored*
-* OAuth credential alone: `resolveProviderAuth` has no ambient path for it,
-* this adapter builds its `Models` collection with no credential store, and
-* nothing here runs a login flow. So a provider offering OAuth by itself
-* leaves nothing for this adapter to authenticate with, and the posture such a
-* provider invites — no key configured, credentials discovered by the provider
-* — fails every request with `Provider is not configured`.
-* @param provider - provider route key.
-* @returns whether the catalog provider takes an api key; false for a route
-*   pi-ai does not ship, which the caller answers for separately.
-*/
-function catalogProviderTakesApiKey(provider) {
-	return catalogProvider(provider)?.auth.apiKey !== void 0;
-}
-/**
 * The installed catalog models for one route, indexed by model id.
 * @param provider - provider route key.
 * @returns catalog models by id; empty for a route pi-ai does not ship.
@@ -1056,6 +368,7 @@ const COMPLETIONS_COMPAT_GATE = {
 	supportsDeveloperRole: "offer",
 	supportsReasoningEffort: "offer",
 	supportsUsageInStreaming: "offer",
+	supportsFinishReason: "offer",
 	maxTokensField: "offer",
 	requiresToolResultName: "offer",
 	requiresAssistantAfterToolResult: "offer",
@@ -1063,6 +376,8 @@ const COMPLETIONS_COMPAT_GATE = {
 	requiresReasoningContentOnAssistantMessages: "offer",
 	thinkingFormat: "offer",
 	chatTemplateKwargs: "offer",
+	chatTemplateArgs: "offer",
+	supportsThinkingTokenBudget: "offer",
 	supportsStrictMode: "offer",
 	cacheControlFormat: "offer",
 	supportsLongCacheRetention: "offer",
@@ -1081,6 +396,7 @@ const RESPONSES_COMPAT_GATE = {
 	supportsLongCacheRetention: "offer",
 	sessionAffinityFormat: "withhold",
 	supportsOpenAIGrammarTools: "withhold",
+	supportsAdditionalTools: "withhold",
 	supportsToolSearch: "withhold",
 	supportsExplicitPromptCacheMode: "withhold"
 };
@@ -1126,10 +442,10 @@ function compatGate(api) {
 *
 * schemastery materializes an absent dict as `{}` — the behavior
 * `reasoningEfforts` works around with a union — so every parsed profile
-* carries a `chatTemplateKwargs` key whether or not anyone wrote one. An empty
-* one states nothing here: it would send no kwargs, which is exactly what
-* leaving the field out does, so absent and empty are the same request and
-* neither may make a route look like it configured a switch. A valueless
+* carries both template-argument keys whether or not anyone wrote them. An
+* empty one states nothing here: it would send no arguments, which is exactly
+* what leaving the field out does, so absent and empty are the same request
+* and neither may make a route look like it configured a switch. A valueless
 * scalar is the other thing schemastery lets through, and it is refused by
 * {@link assertOfferedCompatFields} before this runs rather than filtered.
 * @param compat - the configured switches, when any.
@@ -1384,7 +700,7 @@ function resolveRouteModels(request) {
 * catalog route would.
 *
 * The table is deliberately narrow: the protocols a hand-declared route
-* actually reaches for today, each completely describable with a key, an
+* actually reads, each completely describable with a key, an
 * endpoint, and headers. Bedrock signs with SigV4 over AWS credentials and a
 * region, Vertex needs a project, a location, and application-default
 * credentials, Azure needs provider environment plus an api-version, and Codex
@@ -1524,12 +840,16 @@ const DEFAULT_STREAM_IDLE_TIMEOUT_MS = 3e5;
 * Default request-level bound on base64-encoded image payload. Every image in
 * history is re-encoded into every request body, so an unbounded conversation
 * eventually exceeds a provider or gateway request-size cap and the session
-* can never complete another request. The 20MiB default admits four images at
-* the attachment store's 3.5MiB raw-image default after base64 expansion and
-* reserves request capacity for system prompts, history, tools, and JSON.
+* can never complete another request. The 20MiB default admits fifteen 1MiB
+* request versions after base64 expansion and reserves request capacity for
+* system prompts, history, tools, and JSON.
 * Deployments behind stricter gateways lower it per route.
 */
 const DEFAULT_MAX_REQUEST_IMAGE_BYTES = 20 * 1024 * 1024;
+/** Default total-pixel budget preserves the complete 2048px normalized attachment. */
+const DEFAULT_REQUEST_IMAGE_PIXEL_BUDGET = 2048 * 2048;
+/** Default raw encoded-byte target before inline base64 expansion; the smallest quality-ladder output is used when no quality fits. */
+const DEFAULT_REQUEST_IMAGE_MAX_BYTES = 1024 * 1024;
 /** Context capacity assumed for a model neither configuration nor the catalog sizes. */
 const DEFAULT_CONTEXT_WINDOW = 262144;
 /** Output capability assumed for a model neither configuration nor the catalog sizes. */
@@ -1552,9 +872,10 @@ const thinkingBudgets = z.object({
 	high: z.number()
 });
 /**
-* One `chat_template_kwargs` value. The `$var` member is pi-ai's placeholder
-* for a value dispatch fills from the request's thinking state, which is what
-* makes a chat-template gateway configurable without restating its template.
+* One `chat_template_kwargs` or `chat_template_args` value. The `$var` member
+* is pi-ai's placeholder for a value dispatch fills from the request's
+* thinking state, which makes a template-driven gateway configurable without
+* restating its template.
 */
 const chatTemplateKwarg = z.union([
 	z.string(),
@@ -1571,6 +892,7 @@ const compatProfile = z.object({
 	supportsDeveloperRole: z.boolean(),
 	supportsReasoningEffort: z.boolean(),
 	supportsUsageInStreaming: z.boolean(),
+	supportsFinishReason: z.boolean(),
 	maxTokensField: z.union(MAX_TOKENS_FIELDS),
 	requiresToolResultName: z.boolean(),
 	requiresAssistantAfterToolResult: z.boolean(),
@@ -1578,6 +900,8 @@ const compatProfile = z.object({
 	requiresReasoningContentOnAssistantMessages: z.boolean(),
 	thinkingFormat: z.union(SUPPORTED_THINKING_FORMATS),
 	chatTemplateKwargs: z.dict(chatTemplateKwarg),
+	chatTemplateArgs: z.dict(chatTemplateKwarg),
+	supportsThinkingTokenBudget: z.boolean(),
 	supportsStrictMode: z.boolean(),
 	cacheControlFormat: z.union(CACHE_CONTROL_FORMATS),
 	supportsLongCacheRetention: z.boolean(),
@@ -1643,6 +967,8 @@ const profile = z.object({
 	websocketConnectTimeoutMs: z.natural(),
 	streamIdleTimeoutMs: z.number().min(Number.MIN_VALUE).max(MAX_TIMER_DELAY_MS).default(DEFAULT_STREAM_IDLE_TIMEOUT_MS),
 	maxRequestImageBytes: z.number().step(1).min(1).default(DEFAULT_MAX_REQUEST_IMAGE_BYTES),
+	requestImagePixelBudget: z.number().step(1).min(1).default(DEFAULT_REQUEST_IMAGE_PIXEL_BUDGET),
+	requestImageMaxBytes: z.number().step(1).min(1).default(DEFAULT_REQUEST_IMAGE_MAX_BYTES),
 	retryPolicy: RetryPolicySchema
 });
 /** Runtime schema for {@link Config}. */
@@ -1689,6 +1015,10 @@ function resolveProfiles(providers) {
 		if (!Number.isFinite(streamIdleTimeoutMs) || streamIdleTimeoutMs <= 0 || streamIdleTimeoutMs > MAX_TIMER_DELAY_MS) throw new Error(`llm-pi-ai: provider "${provider}" streamIdleTimeoutMs must be a positive finite number no greater than ${MAX_TIMER_DELAY_MS}`);
 		const maxRequestImageBytes = source.maxRequestImageBytes ?? 20971520;
 		if (!Number.isInteger(maxRequestImageBytes) || maxRequestImageBytes <= 0) throw new Error(`llm-pi-ai: provider "${provider}" maxRequestImageBytes must be a positive integer`);
+		const requestImagePixelBudget = source.requestImagePixelBudget ?? 4194304;
+		if (!Number.isSafeInteger(requestImagePixelBudget) || requestImagePixelBudget <= 0) throw new Error(`llm-pi-ai: provider "${provider}" requestImagePixelBudget must be a positive safe integer`);
+		const requestImageMaxBytes = source.requestImageMaxBytes ?? 1048576;
+		if (!Number.isSafeInteger(requestImageMaxBytes) || requestImageMaxBytes <= 0) throw new Error(`llm-pi-ai: provider "${provider}" requestImageMaxBytes must be a positive safe integer`);
 		const defaultInput = [...source.defaultInput ?? DEFAULT_INPUT];
 		if (defaultInput.length === 0) throw new Error(`llm-pi-ai: provider "${provider}" defaultInput must name at least one modality`);
 		const displayName = source.displayName ?? provider;
@@ -1711,6 +1041,8 @@ function resolveProfiles(providers) {
 			...apiKeyEnv === void 0 ? {} : { apiKeyEnv: credentialRef(apiKeyEnv) },
 			streamIdleTimeoutMs,
 			maxRequestImageBytes,
+			requestImagePixelBudget,
+			requestImageMaxBytes,
 			retryPolicy: resolveRetryPolicy(retryPolicy, `llm-pi-ai: provider "${provider}" retryPolicy`),
 			...rest.headers === void 0 ? {} : { headers: { ...rest.headers } },
 			...rest.thinkingBudgets === void 0 ? {} : { thinkingBudgets: { ...rest.thinkingBudgets } },
@@ -1726,6 +1058,947 @@ function resolveProfiles(providers) {
 		});
 	}
 	return resolved;
+}
+//#endregion
+//#region lib/types/context.js
+/**
+* Harness request-history conversion into pi-ai's Context vocabulary.
+*
+* @module dsh-llm-pi-ai/context
+*/
+/** Join the text blocks of a harness message. */
+function flattenText(message) {
+	return message.content.filter((block) => block.type === "text").map((block) => block.text).join("");
+}
+/** Flatten text recursively inside one tool result. */
+function toolResultText(blocks) {
+	return blocks.map((block) => block.type === "text" ? block.text : block.type === "tool-result" ? toolResultText(block.content) : "").join("");
+}
+/** Reject image roles that pi-ai cannot replay before request-size offloading can replace them. */
+function assertSupportedImageRoles(messages) {
+	for (const message of messages) if (message.role !== "user" && contentHasImage(message.content)) throw new LlmError(`pi-ai cannot represent an image in an in-history ${message.role} message`, "UNSUPPORTED_CONTENT");
+}
+async function userContent(blocks, requestImages, resolveImageAccess) {
+	const content = [];
+	for (const block of blocks) switch (block.type) {
+		case "text":
+			if (block.text.length > 0) content.push({
+				type: "text",
+				text: block.text
+			});
+			break;
+		case "image": {
+			const version = requestImages.get(block.attachment.attachmentId);
+			content.push({
+				type: "text",
+				text: requestImageHandleText(block.attachment, version, resolveImageAccess(block.attachment))
+			});
+			content.push({
+				type: "image",
+				data: Buffer.from(version.data).toString("base64"),
+				mimeType: version.mediaType
+			});
+			break;
+		}
+		case "tool-result":
+			{
+				const nested = await userContent(block.content, requestImages, resolveImageAccess);
+				if (typeof nested === "string") {
+					if (nested.length > 0) content.push({
+						type: "text",
+						text: nested
+					});
+				} else content.push(...nested);
+			}
+			break;
+		default: break;
+	}
+	if (content.every((block) => block.type === "text")) return content.map((block) => block.text).join("");
+	return content;
+}
+function collectImageRefs(blocks, refs) {
+	for (const block of blocks) if (block.type === "image") refs.set(block.attachment.attachmentId, block.attachment);
+	else if (block.type === "tool-result") collectImageRefs(block.content, refs);
+}
+async function prepareRequestImages(messages, attachments, policy, signal) {
+	const refs = /* @__PURE__ */ new Map();
+	for (const message of messages) collectImageRefs(message.content, refs);
+	const orderedRefs = [...refs.values()];
+	const prepared = await Promise.all(orderedRefs.map((ref) => attachments.readImageRequest(ref, policy, signal)));
+	const versions = /* @__PURE__ */ new Map();
+	for (const [index, ref] of orderedRefs.entries()) versions.set(ref.attachmentId, prepared[index]);
+	return versions;
+}
+function toolsOf(options) {
+	return options.tools?.map((tool) => ({
+		name: tool.name,
+		description: tool.description,
+		parameters: tool.parameters
+	}));
+}
+/** Assemble the request-level pi-ai context envelope shared by both conversion paths. */
+function piContext(options, messages) {
+	const tools = toolsOf(options);
+	return {
+		...options.system !== void 0 ? { systemPrompt: options.system } : {},
+		messages,
+		...tools !== void 0 && tools.length > 0 ? { tools } : {}
+	};
+}
+function textOnlyContext(options, onReplayDegrade) {
+	const toolNames = /* @__PURE__ */ new Map();
+	const messages = [];
+	for (const message of options.messages) {
+		if (contentHasImage(message.content)) throw new LlmError("pi-ai image conversion requires the durable attachment service", "UNSUPPORTED_CONTENT");
+		if (message.role === "system") {
+			messages.push({
+				role: "user",
+				content: flattenText(message),
+				timestamp: 0
+			});
+			continue;
+		}
+		if (message.role === "assistant") {
+			const assistant = toPiAssistant(message, onReplayDegrade);
+			for (const block of assistant.content) if (block.type === "toolCall") toolNames.set(ToolCallId(block.id), block.name);
+			messages.push(assistant);
+			continue;
+		}
+		const text = flattenText(message);
+		const results = message.content.filter((block) => block.type === "tool-result");
+		if (text.length > 0 || results.length === 0) messages.push({
+			role: "user",
+			content: text,
+			timestamp: 0
+		});
+		for (const result of results) messages.push({
+			role: "toolResult",
+			toolCallId: result.toolCallId,
+			toolName: toolNames.get(result.toolCallId) ?? "unknown",
+			content: [{
+				type: "text",
+				text: toolResultText(result.content) || "(no output)"
+			}],
+			isError: result.isError ?? false,
+			timestamp: 0
+		});
+	}
+	return piContext(options, messages);
+}
+function toPiContext(options, images, onReplayDegrade) {
+	return images === void 0 ? textOnlyContext(options, onReplayDegrade) : toPiContextWithImages(options, images, onReplayDegrade);
+}
+async function toPiContextWithImages(options, images, onReplayDegrade) {
+	const { attachments, resolveImageAccess, maxRequestImageBytes } = images;
+	const requestImagePolicy = images.requestImagePolicy ?? {
+		maxPixels: 4194304,
+		maxBytes: 1048576
+	};
+	assertSupportedImageRoles(options.messages);
+	const requestMessages = offloadRequestImagesWithPolicy(options.messages, {
+		representation: "base64",
+		...maxRequestImageBytes === void 0 ? {} : { maxBytes: maxRequestImageBytes },
+		byteQuantum: 1,
+		byteLength: (ref) => Math.min(ref.bytes, requestImagePolicy.maxBytes),
+		placeholder: (ref) => offloadedImageText(ref, resolveImageAccess(ref))
+	});
+	const requestImages = await prepareRequestImages(requestMessages, attachments, requestImagePolicy, options.signal);
+	const exactMessages = offloadRequestImagesWithPolicy(requestMessages, {
+		representation: "base64",
+		...maxRequestImageBytes === void 0 ? {} : { maxBytes: maxRequestImageBytes },
+		byteQuantum: 1,
+		byteLength: (ref) => requestImages.get(ref.attachmentId).bytes,
+		placeholder: (ref) => offloadedImageText(ref, resolveImageAccess(ref))
+	});
+	const toolNames = /* @__PURE__ */ new Map();
+	const messages = [];
+	for (const message of exactMessages) {
+		if (message.role === "system") {
+			messages.push({
+				role: "user",
+				content: flattenText(message),
+				timestamp: 0
+			});
+			continue;
+		}
+		if (message.role === "assistant") {
+			const assistant = toPiAssistant(message, onReplayDegrade);
+			for (const block of assistant.content) if (block.type === "toolCall") toolNames.set(ToolCallId(block.id), block.name);
+			messages.push(assistant);
+			continue;
+		}
+		const content = await userContent(message.content.filter((block) => block.type !== "tool-result"), requestImages, resolveImageAccess);
+		const results = message.content.filter((block) => block.type === "tool-result");
+		if (content.length > 0 || results.length === 0) messages.push({
+			role: "user",
+			content,
+			timestamp: 0
+		});
+		for (const result of results) {
+			const resultContent = await userContent(result.content, requestImages, resolveImageAccess);
+			messages.push({
+				role: "toolResult",
+				toolCallId: result.toolCallId,
+				toolName: toolNames.get(result.toolCallId) ?? "unknown",
+				content: typeof resultContent === "string" ? [{
+					type: "text",
+					text: resultContent || "(no output)"
+				}] : resultContent,
+				isError: result.isError ?? false,
+				timestamp: 0
+			});
+		}
+	}
+	return piContext(options, messages);
+}
+//#endregion
+//#region lib/types/stream.js
+/**
+* pi-ai assistant event translation into the Harness streaming protocol.
+*
+* pi-ai tool-call arguments are parsed objects while the Harness keeps their
+* raw JSON representation. pi-ai also reports failures as terminal stream
+* events, which this module maps into Harness finish chunks.
+*
+* @module dsh-llm-pi-ai/stream
+*/
+/**
+* Map pi-ai usage (reasoning folded into output by pi-ai).
+* @param usage - cumulative usage from the terminal pi-ai event.
+* @returns harness counts with pi-ai's exact total; cache fields appear only
+*   when non-zero (pi-ai reports zeros, not absence).
+*/
+function mapUsage(usage) {
+	return {
+		inputTokens: usage.input,
+		outputTokens: usage.output,
+		totalTokens: usage.totalTokens,
+		...usage.cacheRead > 0 ? { cacheReadTokens: usage.cacheRead } : {},
+		...usage.cacheWrite > 0 ? { cacheWriteTokens: usage.cacheWrite } : {}
+	};
+}
+function classifyPiAiError(message) {
+	if (/\b(?:401|403)\b/.test(message)) return "AUTH";
+	if (isQuotaExceededError(message)) return QUOTA_EXCEEDED_CODE;
+	if (/\b429\b|rate.?limit/i.test(message)) return "RATE_LIMIT";
+	if (/\b413\b|failed to buffer the request body:\s*length limit exceeded|payload too large|request body too large/i.test(message)) return "INVALID_REQUEST";
+	if (/\b400\b|invalid.?request/i.test(message)) return "INVALID_REQUEST";
+	if (/\b5\d\d\b/.test(message)) return "SERVER";
+	if (/\btime(?:d)?\s*out\b|timeout/i.test(message)) return "TIMEOUT";
+	if (/stream ended (?:before|without)\b/i.test(message)) return "TRANSPORT";
+	if (/\b(?:network|connection|socket|fetch)\b|\bECONN[A-Z]+\b/i.test(message) || /\b(?:other side closed|HTTP2 request did not get a response|WebSocket closed unexpectedly)\b/i.test(message) || /\bterminated\b|premature close/i.test(message)) return "TRANSPORT";
+	return "PI_AI_ERROR";
+}
+/**
+* Map a terminal pi-ai event to the harness finish reason.
+* @param message - the assistant message carried by the `done` or `error` event.
+* @param contextWindow - resolved catalog capacity for usage-based overflow detection.
+* @returns the mapped harness reason. Recognized error text, `stop` usage above
+*   `contextWindow`, and zero-output `length` usage that fills the window map
+*   to `CONTEXT_WINDOW_EXCEEDED`; a `stop` with no content blocks maps to an
+*   `EMPTY_RESPONSE` error, while terminal `pending` and `deferred` states map
+*   to non-retryable `PI_AI_ERROR` failures.
+*/
+function mapStopReason(message, contextWindow) {
+	const piAiOverflow = isContextOverflow(message, contextWindow);
+	const harnessOverflow = message.stopReason === "error" && message.errorMessage !== void 0 && isContextWindowExceededError(message.errorMessage);
+	if (piAiOverflow || harnessOverflow) return {
+		kind: "error",
+		failure: {
+			message: message.errorMessage ?? `pi-ai detected context overflow for model "${message.model}"`,
+			code: CONTEXT_WINDOW_EXCEEDED_CODE
+		}
+	};
+	switch (message.stopReason) {
+		case "stop":
+			if (message.content.length === 0) return {
+				kind: "error",
+				failure: {
+					message: `model "${message.model}" returned a completed response with no content`,
+					code: EMPTY_RESPONSE_CODE
+				}
+			};
+			return { kind: "stop" };
+		case "length": return { kind: "max-tokens" };
+		case "toolUse": return { kind: "tool-calls" };
+		case "pending": return {
+			kind: "error",
+			failure: {
+				message: `pi-ai stream for model "${message.model}" ended pending`,
+				code: "PI_AI_ERROR"
+			}
+		};
+		case "deferred": return {
+			kind: "error",
+			failure: {
+				message: `pi-ai deferred response for model "${message.model}" is not supported`,
+				code: "PI_AI_ERROR"
+			}
+		};
+		case "aborted": return {
+			kind: "aborted",
+			failure: {
+				message: message.errorMessage ?? "pi-ai stream aborted",
+				code: "ABORTED"
+			}
+		};
+		case "error": {
+			const text = message.errorMessage ?? "pi-ai stream error";
+			return {
+				kind: "error",
+				failure: {
+					message: text,
+					code: classifyPiAiError(text)
+				}
+			};
+		}
+	}
+}
+/**
+* Translate the pi-ai event stream into StreamChunks. pi-ai never throws
+* mid-stream — failures arrive as `error` events, which become error/aborted
+* `finish` chunks (the harness protocol's other error-delivery style).
+* @param events - one assistant turn's pi-ai event stream.
+* @param contextWindow - resolved catalog capacity for usage-based overflow detection.
+* @param callerSignal - caller cancellation state; an aborted caller makes any
+*   in-band terminal error an aborted finish.
+* @returns the harness chunks, ending with `usage` then `finish`; throws
+*   `LlmError` (`STREAM_CLOSED`) if the source ends without a terminal event.
+*/
+async function* toStreamChunks(events, contextWindow, callerSignal) {
+	const toolIds = /* @__PURE__ */ new Map();
+	for await (const event of events) switch (event.type) {
+		case "start": break;
+		case "text_start":
+			yield {
+				type: "block-start",
+				index: event.contentIndex,
+				blockType: "text"
+			};
+			break;
+		case "text_delta":
+			yield {
+				type: "text-delta",
+				index: event.contentIndex,
+				text: event.delta
+			};
+			break;
+		case "text_end":
+			yield {
+				type: "block-end",
+				index: event.contentIndex,
+				block: {
+					type: "text",
+					text: event.content
+				}
+			};
+			break;
+		case "thinking_start":
+			yield {
+				type: "block-start",
+				index: event.contentIndex,
+				blockType: "reasoning"
+			};
+			break;
+		case "thinking_delta":
+			yield {
+				type: "reasoning-delta",
+				index: event.contentIndex,
+				text: event.delta
+			};
+			break;
+		case "thinking_end":
+			yield {
+				type: "block-end",
+				index: event.contentIndex,
+				block: {
+					type: "reasoning",
+					text: event.content
+				}
+			};
+			break;
+		case "toolcall_start": {
+			const partial = event.partial.content[event.contentIndex];
+			const id = partial?.type === "toolCall" ? partial.id : "";
+			const name = partial?.type === "toolCall" ? partial.name : "";
+			toolIds.set(event.contentIndex, {
+				id,
+				name
+			});
+			yield {
+				type: "block-start",
+				index: event.contentIndex,
+				blockType: "tool-call"
+			};
+			break;
+		}
+		case "toolcall_delta": {
+			const known = toolIds.get(event.contentIndex);
+			yield {
+				type: "tool-call-delta",
+				index: event.contentIndex,
+				id: ToolCallId(known?.id ?? ""),
+				...known?.name !== void 0 && known.name.length > 0 ? { name: known.name } : {},
+				argumentsDelta: event.delta
+			};
+			break;
+		}
+		case "toolcall_end":
+			yield {
+				type: "block-end",
+				index: event.contentIndex,
+				block: {
+					type: "tool-call",
+					id: ToolCallId(event.toolCall.id),
+					name: event.toolCall.name,
+					arguments: JSON.stringify(event.toolCall.arguments)
+				}
+			};
+			break;
+		case "done":
+			yield {
+				type: "usage",
+				usage: mapUsage(event.message.usage)
+			};
+			yield {
+				type: "finish",
+				reason: mapStopReason(event.message, contextWindow),
+				replayState: toPiReplayState(event.message)
+			};
+			return;
+		case "error":
+			yield {
+				type: "usage",
+				usage: mapUsage(event.error.usage)
+			};
+			yield {
+				type: "finish",
+				reason: mapStopReason(callerSignal?.aborted ? {
+					...event.error,
+					stopReason: "aborted"
+				} : event.error, contextWindow)
+			};
+			return;
+	}
+	throw new LlmError("pi-ai event stream ended without done/error", "STREAM_CLOSED");
+}
+//#endregion
+//#region lib/types/adapter.js
+/**
+* Generic pi-ai-backed implementation of the Harness LLM seam.
+*
+* Each resolution produces one **immutable** snapshot — the profiles plus a
+* `Models` collection holding the `Provider` each route built — and an
+* operation captures a whole snapshot before its first `await`. A
+* configuration change builds a *new* collection rather than mutating the one
+* in use, because `Models.streamSimple()` is lazy: it resolves the provider
+* when the stream is first consumed, which is after the credential await, so a
+* mutated collection would let a request that started under one configuration
+* finish under another — or fail with a provider that no longer exists. This is
+* what makes the seam's per-step call freeze (`llm.prepareCall()`) hold all the
+* way down: switching models mid-reply takes effect on the next step, never
+* inside the one in flight.
+*
+* A route naming a credential reference still resolves it through the harness
+* seam and passes it as the request's `apiKey` option, which pi-ai treats as
+* the highest-priority auth override — that is what keeps the fail-loud
+* reference semantics. Everything that override does not cover reaches pi-ai
+* through the collection's own auth: the credential store holds the records a
+* login wrote and a refresh rotates, and the auth context answers the ambient
+* questions a provider asks while resolving. Both are stable across snapshots,
+* so a configuration change rebuilds the collection without forgetting who is
+* signed in.
+*
+* @module dsh-llm-pi-ai/adapter
+*/
+var __addDisposableResource = function(env, value, async) {
+	if (value !== null && value !== void 0) {
+		if (typeof value !== "object" && typeof value !== "function") throw new TypeError("Object expected.");
+		var dispose, inner;
+		if (async) {
+			if (!Symbol.asyncDispose) throw new TypeError("Symbol.asyncDispose is not defined.");
+			dispose = value[Symbol.asyncDispose];
+		}
+		if (dispose === void 0) {
+			if (!Symbol.dispose) throw new TypeError("Symbol.dispose is not defined.");
+			dispose = value[Symbol.dispose];
+			if (async) inner = dispose;
+		}
+		if (typeof dispose !== "function") throw new TypeError("Object not disposable.");
+		if (inner) dispose = function() {
+			try {
+				inner.call(this);
+			} catch (e) {
+				return Promise.reject(e);
+			}
+		};
+		env.stack.push({
+			value,
+			dispose,
+			async
+		});
+	} else if (async) env.stack.push({ async: true });
+	return value;
+};
+var __disposeResources = (function(SuppressedError) {
+	return function(env) {
+		function fail(e) {
+			env.error = env.hasError ? new SuppressedError(e, env.error, "An error was suppressed during disposal.") : e;
+			env.hasError = true;
+		}
+		var r, s = 0;
+		function next() {
+			while (r = env.stack.pop()) try {
+				if (!r.async && s === 1) return s = 0, env.stack.push(r), Promise.resolve().then(next);
+				if (r.dispose) {
+					var result = r.dispose.call(r.value);
+					if (r.async) return s |= 2, Promise.resolve(result).then(next, function(e) {
+						fail(e);
+						return next();
+					});
+				} else s |= 1;
+			} catch (e) {
+				fail(e);
+			}
+			if (s === 1) return env.hasError ? Promise.reject(env.error) : Promise.resolve();
+			if (env.hasError) throw env.error;
+		}
+		return next();
+	};
+})(typeof SuppressedError === "function" ? SuppressedError : function(error, suppressed, message) {
+	var e = new Error(message);
+	return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+});
+/** Copy profile stream knobs into pi-ai's common option vocabulary. */
+function profileOptions(profile, reasoning, apiKey) {
+	const enabledReasoning = reasoning === "off" ? void 0 : reasoning;
+	return {
+		...apiKey === void 0 ? {} : { apiKey },
+		...enabledReasoning === void 0 ? {} : { reasoning: enabledReasoning },
+		...profile.thinkingBudgets === void 0 ? {} : { thinkingBudgets: profile.thinkingBudgets },
+		...profile.cacheRetention === void 0 ? {} : { cacheRetention: profile.cacheRetention },
+		...profile.transport === void 0 ? {} : { transport: profile.transport },
+		...profile.timeoutMs === void 0 ? {} : { timeoutMs: profile.timeoutMs },
+		...profile.websocketConnectTimeoutMs === void 0 ? {} : { websocketConnectTimeoutMs: profile.websocketConnectTimeoutMs },
+		maxRetries: 0
+	};
+}
+/**
+* The profile default this exact model can actually take, for DESCRIBING it.
+* A configured level the model does not support yields none rather than
+* throwing: `resolveModel` builds the model catalog, and a catalog that fails
+* takes its whole provider out of every picker — so one mis-set profile field
+* would hide every model on the route, including the ones that support the
+* level. The request path still refuses, which is where a bad configuration
+* belongs: describing what a model can do must not fail because a deployment
+* asked it for something it cannot.
+* @param model - the resolved model descriptor.
+* @param effort - the profile's configured level, if any.
+* @returns the level when this model supports it, otherwise undefined.
+*/
+function describableReasoningLevel(model, effort) {
+	if (effort === void 0) return void 0;
+	return getSupportedThinkingLevels(model).some((level) => level === effort) ? effort : void 0;
+}
+/** Validate an explicit Harness/profile effort without invoking pi-ai's clamp. */
+function resolveReasoningLevel(model, effort) {
+	if (effort === void 0) return void 0;
+	if (getSupportedThinkingLevels(model).some((level) => level === effort)) return effort;
+	throw new LlmError(`pi-ai provider "${model.provider}" model "${model.id}" does not support reasoning effort "${effort}"`, "UNSUPPORTED_REASONING_EFFORT");
+}
+/**
+* Selectable reasoning efforts for one model, or nothing at all.
+*
+* A model that carries no reasoning metadata — every hand-declared one, and
+* every catalog model pi-ai marks as non-reasoning — is reported by pi-ai as
+* supporting the single level `off`. Passing that through would offer a control
+* that cannot do what it says: `off` is translated to *omitting* the reasoning
+* option, which for such a model is byte-for-byte the same request as naming no
+* effort — so a provider whose own default is to think would keep thinking with
+* `off` selected. Omitting `reasoning` entirely is the seam's way of saying the
+* capability is unavailable, which leaves the surface offering only the
+* provider's default.
+* @param model - the resolved model descriptor.
+* @param defaultLevel - the profile's configured effort, already validated.
+* @returns the `reasoning` field, or an empty object when none can be offered.
+*/
+function reasoningInfo(model, defaultLevel) {
+	if (!model.reasoning) return {};
+	return { reasoning: {
+		efforts: getSupportedThinkingLevels(model).map((level) => ({
+			id: ReasoningEffortId(level),
+			name: `${level.charAt(0).toUpperCase()}${level.slice(1)}`
+		})),
+		...defaultLevel === void 0 ? {} : { defaultEffort: ReasoningEffortId(defaultLevel) }
+	} };
+}
+/** Merge deployment headers while removing case-insensitive attribution collisions. */
+function requestHeaders(headers) {
+	const attribution = attributionHeaders();
+	const reserved = new Set(Object.keys(attribution).map((name) => name.toLowerCase()));
+	return {
+		...Object.fromEntries(Object.entries(headers ?? {}).filter(([name]) => !reserved.has(name.toLowerCase()))),
+		...attribution
+	};
+}
+/**
+* pi-ai-backed multi-provider adapter. Each operation reads the current
+* profiles, so a configuration change reaches the next request without a
+* restart; model descriptors come from the collection those profiles built.
+*/
+var PiAiAdapter = class extends LlmAdapter {
+	config;
+	snapshot;
+	constructor(config) {
+		super();
+		this.config = config;
+	}
+	/**
+	* The snapshot for the current profiles. Resolution memoizes its result, so
+	* an unchanged configuration is recognized by identity; a changed one gets a
+	* brand-new collection, leaving any snapshot an operation already captured
+	* untouched for as long as that operation holds it.
+	*/
+	current() {
+		const profiles = this.config.profiles();
+		if (this.snapshot?.profiles === profiles) return this.snapshot;
+		const models = createModels(this.config.auth);
+		for (const profile of profiles.values()) models.setProvider(profile.piProvider);
+		this.snapshot = {
+			profiles,
+			models
+		};
+		return this.snapshot;
+	}
+	/** The profile for one route within one snapshot, or the not-owned failure. */
+	profileOf(snapshot, provider) {
+		const profile = snapshot.profiles.get(provider);
+		if (profile === void 0) throw new LlmError(`pi-ai adapter does not own provider "${provider}"`, "NO_ADAPTER");
+		return profile;
+	}
+	/** The configured descriptor for one exact route/model pair within one snapshot. */
+	modelOf(snapshot, provider, model) {
+		this.profileOf(snapshot, provider);
+		const resolved = snapshot.models.getModel(provider, model);
+		if (resolved === void 0) throw new LlmError(`pi-ai provider "${provider}" has no configured model "${model}"`, "UNKNOWN_MODEL");
+		return resolved;
+	}
+	providerInfo(provider) {
+		return {
+			id: provider,
+			name: this.current().profiles.get(provider)?.displayName ?? provider
+		};
+	}
+	providerRetryPolicy(provider) {
+		return this.current().profiles.get(provider)?.retryPolicy;
+	}
+	listModels(provider) {
+		return Promise.resolve().then(() => {
+			const snapshot = this.current();
+			this.profileOf(snapshot, provider);
+			return snapshot.models.getModels(provider).map((model) => ({
+				provider,
+				id: model.id,
+				name: model.name,
+				inputModalities: [...model.input]
+			}));
+		});
+	}
+	resolveModel(provider, model, _signal) {
+		return Promise.resolve().then(() => {
+			const snapshot = this.current();
+			return this.modelInfo(snapshot, provider, model);
+		});
+	}
+	modelInfo(snapshot, provider, model) {
+		const profile = this.profileOf(snapshot, provider);
+		const resolvedModel = this.modelOf(snapshot, provider, model);
+		const defaultLevel = describableReasoningLevel(resolvedModel, profile.reasoning);
+		const configuredMaxTokens = profile.configuredMaxTokens.get(model);
+		return {
+			provider,
+			id: model,
+			name: resolvedModel.name,
+			inputModalities: [...resolvedModel.input],
+			context: { contextWindow: resolvedModel.contextWindow },
+			...configuredMaxTokens === void 0 ? {} : { defaultMaxTokens: configuredMaxTokens },
+			...reasoningInfo(resolvedModel, defaultLevel)
+		};
+	}
+	prepareCall(provider, model, _signal) {
+		const snapshot = this.current();
+		return Promise.resolve({
+			model: this.modelInfo(snapshot, provider, model),
+			stream: (options) => this.streamWithSnapshot(options, snapshot)
+		});
+	}
+	stream(options) {
+		return this.streamWithSnapshot(options, this.current());
+	}
+	async *streamWithSnapshot(options, snapshot) {
+		const env_1 = {
+			stack: [],
+			error: void 0,
+			hasError: false
+		};
+		try {
+			if (options.stop !== void 0) throw new LlmError("llm-pi-ai does not support GenerateOptions.stop", "UNSUPPORTED_OPTION");
+			const profile = this.profileOf(snapshot, options.provider);
+			const model = this.modelOf(snapshot, options.provider, options.model);
+			const reasoning = resolveReasoningLevel(model, options.reasoningEffort ?? profile.reasoning);
+			const apiKey = await this.config.resolveApiKey(options.provider, profile);
+			const consumer = new AbortController();
+			const upstream = options.signal === void 0 ? consumer.signal : AbortSignal.any([options.signal, consumer.signal]);
+			const streamIdleTimeoutMs = profile.streamIdleTimeoutMs;
+			const watchdog = __addDisposableResource(env_1, idleWatchdog(upstream, streamIdleTimeoutMs, "LLM_STREAM_IDLE_TIMEOUT"), false);
+			try {
+				const containsImage = options.messages.some((message) => contentHasImage(message.content));
+				if (containsImage && !model.input.includes("image")) throw new LlmError(`pi-ai model "${model.id}" does not support image input`, "UNSUPPORTED_CONTENT");
+				const attachments = containsImage ? this.config.resolveAttachments?.() : void 0;
+				if (containsImage && attachments === void 0) throw new LlmError("pi-ai image input requires the durable attachment service", "UNSUPPORTED_CONTENT");
+				const onReplayDegrade = (reason) => {
+					this.config.onReplayDegrade?.({
+						provider: options.provider,
+						model: options.model,
+						reason
+					});
+				};
+				const context = attachments === void 0 ? toPiContext(options, void 0, onReplayDegrade) : await toPiContext({
+					...options,
+					signal: watchdog.signal
+				}, {
+					attachments,
+					resolveImageAccess: (ref) => this.config.resolveImageAccess?.(attachments, ref),
+					maxRequestImageBytes: profile.maxRequestImageBytes,
+					requestImagePolicy: {
+						maxPixels: profile.requestImagePixelBudget,
+						maxBytes: profile.requestImageMaxBytes
+					}
+				}, onReplayDegrade);
+				const iterator = toStreamChunks(snapshot.models.streamSimple(model, context, {
+					...profileOptions(profile, reasoning, apiKey),
+					...options.temperature === void 0 ? {} : { temperature: options.temperature },
+					...options.maxTokens === void 0 ? {} : { maxTokens: options.maxTokens },
+					...options.sessionId === void 0 ? {} : { sessionId: String(options.sessionId) },
+					signal: watchdog.signal,
+					headers: requestHeaders(profile.headers)
+				}), model.contextWindow, options.signal)[Symbol.asyncIterator]();
+				let exhausted = false;
+				try {
+					while (true) {
+						const result = await watchdog.next(iterator);
+						const timeout = timeoutOf(watchdog.signal, "LLM_STREAM_IDLE_TIMEOUT");
+						if (timeout !== void 0) throw timeout;
+						if (result.done) {
+							exhausted = true;
+							return;
+						}
+						yield result.value;
+					}
+				} finally {
+					if (!exhausted) {
+						consumer.abort("pi-ai stream consumer stopped");
+						try {
+							await iterator.return(void 0);
+						} catch (_abortedSdkTeardown) {}
+					}
+				}
+			} catch (error) {
+				if (timeoutOf(watchdog.signal, "LLM_STREAM_IDLE_TIMEOUT") !== void 0) throw new LlmError(`pi-ai stream idle timeout after ${streamIdleTimeoutMs}ms`, "TIMEOUT", { cause: error });
+				if (options.signal?.aborted) throw new LlmError("pi-ai request aborted by caller", "ABORTED", { cause: error });
+				throw error;
+			} finally {
+				consumer.abort("pi-ai stream consumer stopped");
+			}
+		} catch (e_1) {
+			env_1.error = e_1;
+			env_1.hasError = true;
+		} finally {
+			__disposeResources(env_1);
+		}
+	}
+};
+//#endregion
+//#region lib/types/auth.js
+/**
+* The three adapters between pi-ai's auth model and the harness credential
+* plane. Every pi-ai-specific concept stays on this side of them: the harness
+* seams they consume — `ctx.credentials` records and `ctx.authorization` flows —
+* name nothing from this library, so another adapter family can arrive with a
+* different auth model and share the same two seams.
+*
+* @module dsh-llm-pi-ai/auth
+*/
+/**
+* The record scope every credential this adapter family stores is written
+* under. It is the plugin's registered name, which is what tells a later
+* reader — a configuration UI, or a second adapter family serving the same
+* provider name — that this plugin owns the format inside the record.
+*/
+const RECORD_SCOPE = "llm-pi-ai";
+/**
+* The record address for one pi-ai provider id.
+* @param providerId - pi-ai's own provider id, which is also the harness route key.
+* @returns the scoped credential key this adapter family reads and writes.
+*/
+function recordKeyFor(providerId) {
+	return credentialKey(RECORD_SCOPE, providerId);
+}
+/**
+* The JSON image of one grant payload: plain objects lose their
+* explicitly-undefined members and array entries JSON cannot hold become
+* null, exactly as `JSON.stringify` would render them. pi-ai credentials
+* idiomatically carry optional members as explicit `undefined` (a github.com
+* Copilot grant holds `enterpriseUrl: undefined`), which the credential
+* store's strict validator refuses as unrepresentable. Everything else —
+* non-finite numbers and foreign prototypes included — passes through
+* untouched, so a genuinely unstorable value still fails loud at the store.
+* @param value - the value to render.
+* @returns the value's JSON image.
+*/
+function jsonImage(value) {
+	if (Array.isArray(value)) return value.map((entry) => entry === void 0 ? null : jsonImage(entry));
+	if (typeof value === "object" && value !== null && Object.getPrototypeOf(value) === Object.prototype) {
+		const image = {};
+		for (const [key, member] of Object.entries(value)) if (member !== void 0) image[key] = jsonImage(member);
+		return image;
+	}
+	return value;
+}
+/**
+* Translate a stored record into the credential pi-ai expects.
+*
+* An `api-key` record is structural on both sides, so it is rebuilt field by
+* field. A `grant` payload is pi-ai's own OAuth credential, stored verbatim:
+* the seam treats it as opaque JSON precisely so a library that owns a token
+* format keeps owning it, refresh fields and all.
+* @param record - the stored record, or undefined when nothing is stored.
+* @returns the pi-ai credential, or undefined for an absent record.
+*/
+function toPiCredential(record) {
+	if (record === void 0) return void 0;
+	if (record.kind === "api-key") return {
+		type: "api_key",
+		...record.key === void 0 ? {} : { key: record.key },
+		...record.env === void 0 ? {} : { env: { ...record.env } }
+	};
+	return record.payload;
+}
+/**
+* Translate a pi-ai credential into the record to store.
+* @param credential - what a login or refresh produced.
+* @returns the record to commit, in the union the credential seam stores.
+*/
+function toRecord(credential) {
+	if (credential.type === "api_key") return {
+		kind: "api-key",
+		...credential.key === void 0 ? {} : { key: credential.key },
+		...credential.env === void 0 ? {} : { env: { ...credential.env } }
+	};
+	return {
+		kind: "grant",
+		payload: jsonImage(credential)
+	};
+}
+/**
+* The credential service, or the failure that names what is missing. Reads
+* answer "nothing stored" without a service, because a composition with no
+* credential plane genuinely holds no credential; writes refuse, because a
+* login whose grant silently evaporated would report success and then fail
+* every request.
+* @param ctx - the plugin context.
+* @returns the live service.
+* @throws {LlmError} code `NO_CREDENTIAL_STORE` when none is mounted.
+*/
+function writableStore(ctx) {
+	const credentials = ctx.get("credentials");
+	if (credentials === void 0) throw new LlmError("llm-pi-ai: this composition mounts no credentials service, so there is nowhere to store the credential a sign-in produces; mount one (dsh-credentials-local) to sign in", "NO_CREDENTIAL_STORE");
+	return credentials;
+}
+/**
+* A pi-ai `CredentialStore` over the harness credential records.
+*
+* pi-ai runs OAuth refresh *inside* `modify()`, so this store's exclusion has
+* to cover a network round trip rather than a file rename — which is why the
+* record write path takes a wait limit of its own rather than the short one a
+* local write would need.
+*
+* pi-ai asks this store about every provider in the collection, hand-declared
+* routes included, and a route key is an arbitrary settings dict key while a
+* record id is not. An id outside the record grammar can never have stored a
+* record, so reads answer "nothing stored" and a delete has nothing to remove;
+* only `modify` refuses it, because a write that cannot land must not report
+* that it did.
+* @param ctx - the plugin context carrying the optional `ctx.credentials`.
+* @returns the store to hand `createModels()`.
+*/
+function credentialStoreFrom(ctx) {
+	return {
+		async read(providerId) {
+			const credentials = ctx.get("credentials");
+			if (credentials === void 0) return void 0;
+			if (!isCredentialKeySegment(providerId)) return void 0;
+			return toPiCredential(await credentials.readRecord(recordKeyFor(providerId)));
+		},
+		async list() {
+			const stored = await ctx.get("credentials")?.listRecords() ?? [];
+			const mine = [];
+			for (const entry of stored) {
+				if (credentialKeyScope(entry.key) !== "llm-pi-ai") continue;
+				mine.push({
+					providerId: credentialKeyId(entry.key),
+					type: entry.kind === "api-key" ? "api_key" : "oauth"
+				});
+			}
+			return mine;
+		},
+		async modify(providerId, mutate) {
+			if (!isCredentialKeySegment(providerId)) throw new LlmError(`llm-pi-ai: provider id "${providerId}" cannot address a stored credential record (a record id is a lowercase hyphenated identifier); authenticate this route through apiKeyEnv instead of a stored credential`, "UNSTORABLE_PROVIDER_ID");
+			return toPiCredential(await writableStore(ctx).modifyRecord(recordKeyFor(providerId), async (current) => {
+				const next = await mutate(toPiCredential(current));
+				return next === void 0 ? void 0 : toRecord(next);
+			}));
+		},
+		async delete(providerId) {
+			if (!isCredentialKeySegment(providerId)) return;
+			await writableStore(ctx).deleteRecord(recordKeyFor(providerId));
+		}
+	};
+}
+/**
+* A pi-ai `AuthContext` over the harness credential plane and the host
+* filesystem.
+*
+* `env()` answers from the credential seam first, so a value a deployment
+* stored through the harness is found by a provider's own ambient discovery —
+* without this, that discovery reads only the process environment and a stored
+* `AWS_ACCESS_KEY_ID` is invisible to it. `fileExists()` answers about the host
+* process's own filesystem rather than the workspace `ctx.fs` seam, because the
+* paths it is asked about (`~/.aws/credentials`, application-default
+* credentials) are facts about where this process runs, not about the project
+* under edit.
+* @param ctx - the plugin context carrying the optional `ctx.credentials`.
+* @returns the auth context to hand `createModels()`.
+*/
+function authContextFrom(ctx) {
+	return {
+		async env(name) {
+			if (isCredentialRefName(name)) {
+				const hit = await ctx.get("credentials")?.resolve(credentialRef(name));
+				if (hit !== void 0) return hit.value;
+			}
+			return launchEnvironmentOf(ctx).get(name)?.value;
+		},
+		async fileExists(path) {
+			const expanded = path.startsWith("~/") || path === "~" ? resolve(homedir(), path.slice(1).replace(/^\//, "")) : path;
+			try {
+				await access(expanded);
+				return true;
+			} catch {
+				return false;
+			}
+		}
+	};
 }
 //#endregion
 //#region lib/types/discovery.js
@@ -1922,6 +2195,156 @@ async function discoverModels(request, storedApiKey) {
 	return readListing(body);
 }
 //#endregion
+//#region lib/types/login.js
+/**
+* Authorization flows for the pi-ai providers that ship a login. This is the
+* whole of the translation between the harness's neutral notice/prompt
+* vocabulary and pi-ai's `AuthInteraction`; nothing above it knows which
+* library ran the conversation.
+*
+* @module dsh-llm-pi-ai/login
+*/
+/**
+* The login methods one catalog provider offers.
+*
+* A method appears only when pi-ai can actually run it: `oauth` always carries
+* a `login`, while an api-key method has one only when the provider collects
+* its key interactively — which every installed one currently does, so a key is
+* typed into pi-ai's own prompt rather than into the settings form.
+* @param provider - the installed catalog provider, if pi-ai ships one.
+* @returns its methods, most preferred first; empty when it offers no login.
+*/
+function loginMethods(provider) {
+	const methods = [];
+	const oauth = provider?.auth.oauth;
+	if (oauth !== void 0) methods.push({
+		id: "oauth",
+		label: oauth.loginLabel ?? oauth.name
+	});
+	const apiKey = provider?.auth.apiKey;
+	if (apiKey?.login !== void 0) methods.push({
+		id: "api-key",
+		label: apiKey.name
+	});
+	return methods;
+}
+/**
+* Restate one pi-ai login event in the seam's vocabulary.
+*
+* A device-code grant is the one event carrying two things the human needs at
+* once — where to go and what to type there — which is why the neutral notice
+* has a `code` beside its `url` rather than folding the code into the message.
+* @param event - what pi-ai reported.
+* @param session - the attempt to report it to.
+*/
+function relay(event, session) {
+	switch (event.type) {
+		case "info": {
+			const link = event.links?.[0];
+			session.notify({
+				message: event.message,
+				...link === void 0 ? {} : { url: link.url }
+			});
+			return;
+		}
+		case "auth_url":
+			session.notify({
+				message: event.instructions ?? "Open this page to continue signing in.",
+				url: event.url
+			});
+			return;
+		case "device_code":
+			session.notify({
+				message: "Enter this code on the verification page to finish signing in.",
+				url: event.verificationUri,
+				code: event.userCode
+			});
+			return;
+		case "progress":
+			session.notify({ message: event.message });
+			return;
+		default: session.notify({ message: "Signing in…" });
+	}
+}
+/**
+* Restate one pi-ai prompt in the seam's vocabulary.
+*
+* `manual_code` becomes a plain text question because the difference pi-ai
+* draws — a code the human copies from a browser rather than a value they know
+* — changes nothing a surface renders. Its own `signal` is carried through, and
+* that is the part which matters: it is how a flow racing a typed code against
+* a browser callback withdraws the losing question.
+* @param prompt - what pi-ai asked.
+* @returns the neutral prompt to put to the human.
+*/
+function restate(prompt) {
+	const signal = prompt.signal === void 0 ? {} : { signal: prompt.signal };
+	switch (prompt.type) {
+		case "select": return {
+			...signal,
+			kind: "select",
+			message: prompt.message,
+			options: prompt.options
+		};
+		case "secret": return {
+			...signal,
+			kind: "secret",
+			message: prompt.message,
+			...prompt.placeholder === void 0 ? {} : { placeholder: prompt.placeholder }
+		};
+		default: return {
+			...signal,
+			kind: "text",
+			message: prompt.message,
+			...prompt.placeholder === void 0 ? {} : { placeholder: prompt.placeholder }
+		};
+	}
+}
+/**
+* Register one authorization flow per installed provider that ships a login.
+*
+* Registration is unconditional on configuration: a provider has to be signed
+* into before a route for it is worth adding, so the flow exists from the
+* moment the plugin mounts rather than appearing once a profile does.
+* @param ctx - the plugin context carrying `ctx.authorization`.
+* @param auth - the injectables every collection here is built with.
+*/
+function registerPiAiFlows(ctx, auth) {
+	for (const providerId of catalogProviderIds()) {
+		const provider = catalogProvider(providerId);
+		const [first, ...rest] = loginMethods(provider);
+		/* v8 ignore next 3 -- every id here names an installed provider and every
+		installed provider ships a login, so no entry is skipped; the guard
+		is what keeps that from becoming a crash if either stops being true. */
+		if (provider === void 0 || first === void 0) continue;
+		/* v8 ignore next 7 -- every installed catalog id is a lowercase
+		hyphenated identifier; the guard keeps a future upstream id outside the
+		record grammar (dotted or uppercase, as vendor ids elsewhere already
+		are) from throwing in `recordKeyFor` and failing the whole mount. */
+		if (!isCredentialKeySegment(providerId)) {
+			ctx.logger.warn("llm-pi-ai: catalog provider \"%s\" cannot address a credential record; its sign-in is not offered", providerId);
+			continue;
+		}
+		ctx.authorization.registerFlow({
+			key: recordKeyFor(providerId),
+			label: provider.name,
+			methods: [first, ...rest],
+			async run(session) {
+				const models = createModels(auth);
+				models.setProvider(provider);
+				const type = session.method === "oauth" ? "oauth" : "api_key";
+				await models.login(providerId, type, {
+					signal: session.signal,
+					notify: (event) => {
+						relay(event, session);
+					},
+					prompt: (prompt) => session.prompt(restate(prompt))
+				});
+			}
+		});
+	}
+}
+//#endregion
 //#region lib/types/index.js
 /**
 * Generic pi-ai-backed LLM adapter plugin. One plugin instance owns a dict of
@@ -1995,15 +2418,10 @@ function registrationFacts(profiles) {
 	})).sort((left, right) => left.provider.localeCompare(right.provider));
 }
 /**
-* The configurable-provider directory: every installed catalog route this
-* adapter can authenticate, plus every route the current profiles declare. A
-* hand-declared route has no catalog entry, so without this union it would
-* have no settings address and configuration surfaces could neither show nor
-* edit it.
-*
-* The profile half is unconditional, which is what keeps a route already
-* stored against a withheld provider editable and deletable rather than
-* stranded in the settings document with nothing on the page to remove it.
+* The configurable-provider directory: every installed catalog route, plus
+* every route the current profiles declare. A hand-declared route has no
+* catalog entry, so without this union it would have no settings address and
+* configuration surfaces could neither show nor edit it.
 * @param profiles - the currently resolved provider profiles.
 * @returns the directory entries in catalog order, declared routes last.
 */
@@ -2019,7 +2437,7 @@ function directoryEntries(profiles) {
 			declared: !catalog.has(provider)
 		});
 	};
-	for (const provider of catalog) if (catalogProviderTakesApiKey(provider)) declare(provider, provider);
+	for (const provider of catalog) declare(provider, provider);
 	for (const [provider, profile] of profiles) declare(provider, profile.displayName);
 	return [...entries.values()];
 }
@@ -2056,13 +2474,22 @@ function apply(ctx, config) {
 		if (hit !== void 0 && hit.length > 0) return assertUsableApiKey(hit, "llm-pi-ai", ref);
 		throw new LlmError(`llm-pi-ai: no credential for provider route "${provider}"; its profile resolves ${ref}, which is not set — store ${ref} through the credentials service (the web Models page writes it) or export it, and remove apiKeyEnv only if this provider should authenticate from pi-ai's own environment discovery`, "MISSING_CREDENTIAL");
 	};
+	const auth = {
+		credentials: credentialStoreFrom(ctx),
+		authContext: authContextFrom(ctx)
+	};
 	const adapter = new PiAiAdapter({
 		profiles,
 		resolveApiKey,
+		auth,
 		resolveAttachments: () => ctx.get("attachments"),
+		resolveImageAccess: (attachments, ref) => resolveImageAttachmentAccess(attachments, (hostPath) => ctx.get("fs")?.processPathFromHostPath(hostPath), ref),
 		onReplayDegrade: ({ provider, model, reason }) => {
 			ctx.logger.warn(`llm-pi-ai: unusable replay state on assistant history for route "${provider}/${model}"; sending that message as provider-neutral content (${reason})`);
 		}
+	});
+	ctx.inject(["authorization"], (authorized) => {
+		registerPiAiFlows(authorized, auth);
 	});
 	let directory;
 	let directoryFacts;
@@ -2087,7 +2514,10 @@ function apply(ctx, config) {
 		if (profile === void 0) return void 0;
 		return resolveApiKey(provider, profile);
 	};
-	ctx.llm.registerModelDiscovery(NS, (request) => discoverModels(request, () => storedApiKey(request.provider)));
+	ctx.llm.registerModelDiscovery(NS, (request, signal) => discoverModels({
+		...request,
+		...signal === void 0 ? {} : { signal }
+	}, () => storedApiKey(request.provider)));
 	let registration;
 	let registeredFacts;
 	const ensureRegistrationFacts = () => {
@@ -2126,4 +2556,4 @@ function apply(ctx, config) {
 	});
 }
 //#endregion
-export { Config, PiAiAdapter, apply, inject, name, supportedProtocols };
+export { Config, PiAiAdapter, apply, inject, name, recordKeyFor, supportedProtocols };

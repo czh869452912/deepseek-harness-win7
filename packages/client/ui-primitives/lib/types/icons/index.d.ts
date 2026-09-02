@@ -67,6 +67,8 @@ export declare const IconThinkOutline16: ({ size, className }: IconProps) => imp
 export declare const IconAgentPresetOutline16: ({ size, className }: IconProps) => import("react").JSX.Element;
 /** ic_ds_browse_outline_16 */
 export declare const IconBrowseOutline16: ({ size, className }: IconProps) => import("react").JSX.Element;
+/** ic_ds_context_injection_outline_16 (figma extract): browse document frame with an open top and an arrow dropping in. */
+export declare const IconContextInjectionOutline16: ({ size, className }: IconProps) => import("react").JSX.Element;
 /** ic_ds_link_outline_14 */
 export declare const IconLinkOutline14: ({ size, className }: IconProps) => import("react").JSX.Element;
 /** ic_ds_link_outline_16 */

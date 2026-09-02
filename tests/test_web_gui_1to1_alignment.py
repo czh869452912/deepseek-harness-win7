@@ -79,3 +79,38 @@ async def test_async_iter_chunks_non_blocking():
     assert len(chunks) == 3
     assert chunks[0]["text"] == "hello "
     assert chunks[1]["text"] == "world"
+
+
+@pytest.mark.asyncio
+async def test_client_modules_v012_alpha_roster_and_bundles():
+    import os
+    from dsh.host.client_modules.registry import ClientModuleRegistry, OFFICIAL_WEB_ROSTER
+
+    ctx = Context()
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    pkgs_dir = os.path.join(repo_root, "packages")
+    registry = ClientModuleRegistry(ctx, search_dirs=[pkgs_dir])
+    registry.scan_packages()
+
+    g = registry.graph()
+    assert g is not None
+    assert "entries" in g
+    entries = g["entries"]
+    assert len(entries) > 30
+
+    ids = [e["id"] for e in entries]
+    assert "@deepseek-ai/dsh-client-ui-approval" in ids
+    assert "@deepseek-ai/dsh-client-ui-chat" in ids
+    assert "@deepseek-ai/dsh-client-ui-session" in ids
+    assert "@deepseek-ai/dsh-client-connection" in ids
+    assert "@deepseek-ai/dsh-client-modules" in ids
+
+    # Verify every composed plugin has valid hash and bundle
+    for entry in entries:
+        assert entry["rev"] != "000000000000"
+        path = registry.client_path(entry["id"])
+        assert path is not None
+        assert os.path.isfile(path)
+        assert os.path.getsize(path) > 0
+
+

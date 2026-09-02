@@ -18,7 +18,7 @@ export function apply(ctx) {
     ctx.plugin(CommandUiRuntime);
     ctx.inject(['slots', 'commandUi', 'sessions'], (scope) => {
         const command = scope.commandUi;
-        const sessions = scope.sessions;
+        const sessions = scope.get('sessions');
         scope.slots.inject('conversation.input.overlay', () => scope.slots.register({
             name: 'conversation.input.overlay',
             id: 'command-popup',

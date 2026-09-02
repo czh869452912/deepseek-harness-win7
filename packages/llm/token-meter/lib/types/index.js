@@ -10,7 +10,8 @@ import { canonicalHeader, headerEquals, isSurfaceEvent } from '@deepseek-ai/dsh-
 import { contextBreakdownProjectionDefinition } from "./breakdown-projection.js";
 import { contextPressureProjectionDefinition, tokenUsageProjectionDefinition } from "./usage-projection.js";
 import { estimateContent, estimateHeader, estimateMessage, ROLE_OVERHEAD } from "./estimate.js";
-import { foldSurfaceTokens } from "./surface-fold.js";
+import { commitSurfaceTokens, planSurfaceTokens } from "./surface-fold.js";
+import { priceSurface } from "./route-pricing.js";
 /** Sum disjoint provider usage buckets without double-counting reasoning output. */
 function usageTokens(usage) {
     return usage.inputTokens
@@ -56,14 +57,18 @@ export class TokenMeter extends Service {
     /**
      * Measure current request pressure and surface through the durable tail.
      *
-     * Provider usage is reused only when the latest successful call's canonical
-     * request envelope matches `requestHeader` and its total is no lower than
-     * that call's full heuristic anchor; otherwise the complete envelope and
-     * surface are heuristically repriced.
+     * The effective envelope's routed provider/model selects the request-image
+     * pricing every node is priced under: a route whose adapter declares image
+     * pricing charges each retained image its visual tokens plus its
+     * model-visible text, while other routes keep the fixed heuristic. Provider
+     * usage is reused only when the latest successful call's canonical request
+     * envelope matches `requestHeader` and its total is no lower than that
+     * call's full route-priced anchor; otherwise the complete envelope and
+     * surface are repriced.
      *
-     * `requestHeader` affects request pressure only; surface fields always
-     * describe the current session surface. Every call clones those positional
-     * nodes, so measurement is O(surface).
+     * `requestHeader` replaces the latest logged envelope for pressure and node
+     * pricing; the node set always describes the current session surface. Every
+     * call clones those positional nodes, so measurement is O(surface).
      *
      * @param session - session to replay through its current durable tail.
      * @param requestHeader - optional effective request envelope replacing the latest logged header.
@@ -74,21 +79,34 @@ export class TokenMeter extends Service {
         const header = requestHeader === undefined
             ? state.header
             : canonicalHeader(requestHeader);
+        const pricing = this._routeImagePricing(header);
+        const surface = priceSurface(state.surface, pricing);
         const anchor = state.anchor;
         let baseline;
         let surfaceDeltaTokens;
         if (anchor !== undefined && optionalHeaderEquals(anchor.header, header)) {
-            baseline = anchor.baseline;
-            surfaceDeltaTokens = state.surfaceTokens - anchor.surfaceTokens;
+            // Matching headers share one route, so the anchored snapshot reprices
+            // under the same pricing as the current surface and the signed delta
+            // compares like with like.
+            const anchorSurfaceTokens = priceSurface(anchor.nodes, pricing).surfaceTokens
+                + anchor.assistantTokens;
+            const estimatedAnchorTokens = estimateHeader(header) + anchorSurfaceTokens;
+            const usage = anchor.usage;
+            // Signed heuristic deltas remain conservative only from an anchor
+            // that is at least as large as the matching full heuristic price.
+            baseline = usage !== undefined && usageTokens(usage) >= estimatedAnchorTokens
+                ? { kind: 'usage', tokens: usageTokens(usage), usage }
+                : { kind: 'estimated', tokens: estimatedAnchorTokens };
+            surfaceDeltaTokens = surface.surfaceTokens - anchorSurfaceTokens;
         }
-        else if (header === undefined && state.surfaceTokens === 0) {
+        else if (header === undefined && surface.surfaceTokens === 0) {
             baseline = { kind: 'none', tokens: 0 };
             surfaceDeltaTokens = 0;
         }
         else {
             baseline = {
                 kind: 'estimated',
-                tokens: estimateHeader(header) + state.surfaceTokens,
+                tokens: estimateHeader(header) + surface.surfaceTokens,
             };
             surfaceDeltaTokens = 0;
         }
@@ -97,9 +115,16 @@ export class TokenMeter extends Service {
             baseline,
             surfaceDeltaTokens,
             totalTokens: Math.max(0, baseline.tokens + surfaceDeltaTokens),
-            surfaceTokens: state.surfaceTokens,
-            nodes: state.surface,
+            surfaceTokens: surface.surfaceTokens,
+            nodes: surface.nodes,
         }));
+    }
+    /** Resolve the routed model's image pricing, when the llm service and route declare one. */
+    _routeImagePricing(header) {
+        const config = header?.config;
+        if (config === undefined)
+            return undefined;
+        return this.ctx.get('llm')?.imageRequestPricing(config.provider, config.model);
     }
     /**
      * Heuristically price one model-visible message (instance face of the pure
@@ -118,7 +143,6 @@ export class TokenMeter extends Service {
                 consumedEvents: 0,
                 header: undefined,
                 surface: [],
-                surfaceTokens: 0,
                 stepStart: undefined,
                 anchor: undefined,
             };
@@ -133,9 +157,9 @@ export class TokenMeter extends Service {
         return state;
     }
     /**
-     * Validate and prepare every fallible part before mutating replay state.
-     * A malformed event remains unread on every retry instead of partially
-     * applying the same mutation more than once.
+     * Run every fallible step — surface plan and anchor validation — before
+     * mutating replay state, so a malformed event remains unread on every
+     * retry instead of half-applying.
      */
     _foldEvent(session, state, event) {
         let nextHeader = state.header;
@@ -149,7 +173,7 @@ export class TokenMeter extends Service {
                 if (state.stepStart !== undefined) {
                     throw new Error(`token meter: step/start at seq ${event.seq} arrived before turn ${state.stepStart.turn}/step ${state.stepStart.step} ended`);
                 }
-                nextStepStart = { ...event.data, surfaceTokens: state.surfaceTokens };
+                nextStepStart = { ...event.data, nodes: [...state.surface] };
                 break;
             case 'step/end':
                 if (state.stepStart === undefined
@@ -162,8 +186,8 @@ export class TokenMeter extends Service {
             default:
                 break;
         }
-        const surface = isSurfaceEvent(event)
-            ? foldSurfaceTokens(state.surface, event)
+        const plan = isSurfaceEvent(event)
+            ? planSurfaceTokens(state.surface, event)
             : undefined;
         if (event.type === 'assistant/message') {
             const stepStart = state.stepStart;
@@ -174,39 +198,28 @@ export class TokenMeter extends Service {
             }
             // assistant/message is surface-mandatory at every append/seed boundary.
             // oxlint-disable-next-line typescript/no-non-null-assertion
-            const eventTokens = surface.tokens;
+            const eventTokens = plan.tokens;
             if (event.data.usage !== undefined && nextHeader !== undefined) {
-                const providerAssistantTokens = this._estimateProviderAssistant(session, event, eventTokens);
-                const anchorSurfaceTokens = stepStart.surfaceTokens + providerAssistantTokens;
-                const providerTokens = usageTokens(event.data.usage);
-                const estimatedAnchorTokens = estimateHeader(nextHeader) + anchorSurfaceTokens;
                 nextAnchor = {
                     header: nextHeader,
-                    surfaceTokens: anchorSurfaceTokens,
-                    // Signed heuristic deltas remain conservative only from an anchor
-                    // that is at least as large as the matching full heuristic price.
-                    baseline: providerTokens >= estimatedAnchorTokens
-                        ? { kind: 'usage', tokens: providerTokens, usage: event.data.usage }
-                        : { kind: 'estimated', tokens: estimatedAnchorTokens },
+                    nodes: stepStart.nodes,
+                    assistantTokens: this._estimateProviderAssistant(session, event, eventTokens),
+                    usage: event.data.usage,
                 };
             }
             else {
-                const anchorSurfaceTokens = stepStart.surfaceTokens + eventTokens;
                 nextAnchor = {
                     header: nextHeader,
-                    surfaceTokens: anchorSurfaceTokens,
-                    baseline: {
-                        kind: 'estimated',
-                        tokens: estimateHeader(nextHeader) + anchorSurfaceTokens,
-                    },
+                    nodes: stepStart.nodes,
+                    assistantTokens: eventTokens,
+                    usage: undefined,
                 };
             }
         }
         state.header = nextHeader;
         state.stepStart = nextStepStart;
-        if (surface !== undefined) {
-            state.surface = surface.nodes;
-            state.surfaceTokens += surface.deltaTokens;
+        if (plan !== undefined) {
+            commitSurfaceTokens(state.surface, plan);
         }
         state.anchor = nextAnchor;
     }

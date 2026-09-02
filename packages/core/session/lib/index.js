@@ -1,7 +1,8 @@
 import { Service } from "@deepseek-ai/cordis";
 import { isAbsolute } from "node:path";
-import { CallId, MessageId, assertNever, callConfigEquals, deepFreeze, freezeMessage } from "@deepseek-ai/dsh-llm";
+import { MessageId, callConfigEquals, deepFreeze, freezeMessage } from "@deepseek-ai/dsh-llm";
 import { scopeOf, scopeTarget } from "@deepseek-ai/dsh-scope";
+import { ToolCallId } from "@deepseek-ai/dsh-llm/brand";
 //#region lib/types/types.js
 /**
 * Brand a string as a {@link SessionId}.
@@ -26,13 +27,13 @@ function SessionId(id) {
 * wrong read). Only structural changes reach that bar: the header shape, the
 * {@link SessionEvent} envelope, core event semantics, or the surface
 * mechanism (the {@link SurfaceEventType} set and {@link SurfaceOp} variants).
-* Adding an ordinary event type does not bump — the per-event
-* {@link SessionEvent.ignorable} guard covers vocabulary growth instead. When
-* in doubt, bump: a near-identity upgrade step is almost free, a missed bump
-* makes older runtimes read new logs wrong silently. The full mechanism
+* Adding an ordinary event type does not bump: the generated known-event guard
+* makes older runtimes refuse logs containing a type they do not understand.
+* When in doubt, bump: a near-identity upgrade step is almost free, a missed
+* bump makes older runtimes read new logs wrong silently. The full mechanism
 * (upgrade-step chain, in-memory view conversion, migrate-on-continue) is
-* recorded in the session-log-version-mechanism Agent Note
-* (`.agents/notes/implemented/architecture/2026-08-10-session-log-version-mechanism.md`).
+* recorded in the fail-closed-session-event-vocabulary Agent Note
+* (`.agents/notes/implemented/simplification/2026-08-25-fail-closed-session-event-vocabulary.md`).
 */
 const SESSION_FORMAT_VERSION = 0;
 //#endregion
@@ -726,21 +727,22 @@ function interruptedTurnClosers(events) {
 //#endregion
 //#region lib/types/chunk-rows.js
 /**
-* Lossless storage packing for `assistant/chunk` delta runs. Providers stream
+* Lossless row packing for `assistant/chunk` delta runs. Providers stream
 * token-sized deltas, so a log stores hundreds of near-identical event lines
 * whose JSON envelopes dwarf their payloads (~56× measured on a real DeepSeek
 * session). This module packs each run of consecutive same-block delta chunks
 * into ONE storage row — `text-chunks`, `reasoning-chunks`, or
 * `tool-call-chunks` — and expands rows back to the exact original events.
 *
-* Storage rows are a durable-encoding vocabulary, NOT session events: they
-* never enter `Session.events`, have no `SessionEventMap` entry, and use bare
-* (slash-less) type tags so a reader cannot confuse them with the event
-* taxonomy (precedent: the JSONL header line's `session` tag). The encoder
-* whitelists exact shapes — anything it does not fully recognize is stored
-* verbatim, so unknown fields or future chunk variants lose compression, never
-* data. The decoder validates before expanding and fails loud on a malformed
-* row-tagged value instead of silently dropping a whole run.
+* Packed rows are an encoding vocabulary, NOT session events: they never enter
+* `Session.events`, have no `SessionEventMap` entry, and use bare (slash-less)
+* type tags so a reader cannot confuse them with the event taxonomy
+* (precedent: the JSONL header line's `session` tag). Persistence and bounded
+* history transport both use the codec. The encoder whitelists exact shapes —
+* anything it does not fully recognize stays verbatim, so unknown fields or
+* future chunk variants lose compression, never data. The decoder validates
+* before expanding and fails loud on a malformed row-tagged value instead of
+* silently dropping a whole run.
 *
 * @module @deepseek-ai/dsh-session/chunk-rows
 */
@@ -844,7 +846,7 @@ function buildRow(kind, run) {
 			...envelope,
 			data: {
 				...base,
-				id: CallId(call.id),
+				id: ToolCallId(call.id),
 				...Object.hasOwn(call, "name") ? { name: call.name } : {},
 				args: run.map((event) => event.data.chunk.argumentsDelta)
 			}
@@ -961,7 +963,7 @@ function validateRow(value, tag) {
 		])) malformed(tag, "data must be exactly {turn, step, index, dt, texts}");
 		payload = validateRunData(tag, data, "texts");
 	}
-	if (!Number.isSafeInteger(value.seq0 + payload.length - 1)) malformed(tag, "member seqs must stay safe integers");
+	if (payload.length - 1 > Number.MAX_SAFE_INTEGER - value.seq0) malformed(tag, "member seqs must stay safe integers");
 	let time = value.time0;
 	for (const gap of data.dt) {
 		time += gap;
@@ -1001,8 +1003,8 @@ function expandRow(row) {
 					argumentsDelta: members[k]
 				};
 				break;
-			/* v8 ignore next 2 -- validateRow only returns the three row tags */
-			default: return assertNever(row, "chunk-rows expandRow");
+			/* v8 ignore next 4 -- validateRow only returns the three row tags */
+			default: throw new Error(`chunk-rows received unsupported row ${String(row)}`);
 		}
 		events.push({
 			type: "assistant/chunk",
@@ -1043,10 +1045,9 @@ function decodeStorageRecord(value) {
 /**
 * Every `SessionEventMap` member declared in this repository — the event
 * vocabulary this build understands. The persistence read path refuses to
-* interpret a log containing a type outside this set unless the event
-* carries the envelope's `ignorable` marker (see `SessionEvent.ignorable`
-* in `./types.ts`): such a log was likely written by a newer harness, and
-* silently skipping a required event would reconstruct a wrong session.
+* interpret a log containing a type outside this set: such a log was likely
+* written by a newer harness, and silently skipping the event could
+* reconstruct a wrong session.
 * Downstream (out-of-repo) plugin events are outside this list by
 * construction; a registration surface for them is deferred until such a
 * consumer exists.
@@ -1071,18 +1072,21 @@ const KNOWN_SESSION_EVENT_TYPES = new Set([
 	"hook/result",
 	"llm/retry",
 	"llm/retry-started",
+	"model/selection",
 	"permission/preset",
 	"plan/mode",
 	"request/context",
 	"request/header",
 	"sandbox/mode",
 	"schedule/change",
+	"session-log-deepseek/delivery-accepted",
 	"session/end-seed",
 	"session/title",
 	"session/title-llm-request",
 	"step/end",
 	"step/start",
 	"subagent/descriptor",
+	"subagent/model-selection-policy",
 	"team/member",
 	"team/message/delivered",
 	"team/message/queued",
@@ -1101,6 +1105,62 @@ const KNOWN_SESSION_EVENT_TYPES = new Set([
 	"user/message",
 	"web/deepseek-search-llm-request"
 ]);
+//#endregion
+//#region lib/types/seq-ranges.js
+/** Lossless range encoding for JSONL `sourceEventSeqs` arrays. */
+function isStrictlyIncreasing(values) {
+	return values.every((value, index) => index === 0 || value > values[index - 1]);
+}
+/**
+* Replace profitable consecutive runs with inclusive pairs.
+* @param values - validated in-memory source sequences.
+* @returns a lossless JSON storage form.
+*/
+function encodeSeqRanges(values) {
+	if (!isStrictlyIncreasing(values)) return [...values];
+	const encoded = [];
+	for (let start = 0; start < values.length;) {
+		let end = start;
+		while (end + 1 < values.length && values[end + 1] === values[end] + 1) end += 1;
+		if (end - start >= 2) encoded.push([values[start], values[end]]);
+		else for (let index = start; index <= end; index += 1) encoded.push(values[index]);
+		start = end + 1;
+	}
+	return encoded;
+}
+/**
+* Expand a JSON storage-form source sequence array.
+* @param value - parsed storage value.
+* @param maxEntries - largest list permitted by the owning event.
+* @returns the in-memory source sequences.
+*/
+function decodeSeqRanges(value, maxEntries = Number.MAX_SAFE_INTEGER) {
+	if (!Array.isArray(value)) throw new TypeError("sourceEventSeqs must be an array");
+	const decoded = [];
+	let hasRange = false;
+	for (const entry of value) {
+		if (typeof entry === "number") {
+			assertSeq(entry);
+			if (decoded.length >= maxEntries) throw new TypeError("sourceEventSeqs exceeds its event sequence");
+			decoded.push(entry);
+			continue;
+		}
+		if (!Array.isArray(entry) || entry.length !== 2) throw new TypeError("sourceEventSeqs range entries must be [start, end] pairs");
+		const start = entry[0];
+		const end = entry[1];
+		assertSeq(start);
+		assertSeq(end);
+		if (end < start) throw new TypeError("sourceEventSeqs ranges require start <= end");
+		if (end - start + 1 > maxEntries - decoded.length) throw new TypeError("sourceEventSeqs range exceeds its event sequence");
+		for (let seq = start; seq <= end; seq += 1) decoded.push(seq);
+		hasRange = true;
+	}
+	if (hasRange && !isStrictlyIncreasing(decoded)) throw new TypeError("sourceEventSeqs ranges must be strictly increasing");
+	return decoded;
+}
+function assertSeq(value) {
+	if (!Number.isSafeInteger(value) || value < 0) throw new TypeError("sourceEventSeqs must contain non-negative safe integers");
+}
 //#endregion
 //#region lib/types/index.js
 /**
@@ -1199,14 +1259,13 @@ function assertSessionEventEnvelope(value, index) {
 		case "time":
 		case "data":
 		case "surfaceOp":
-		case "sourceEventSeqs":
-		case "ignorable": break;
+		case "sourceEventSeqs": break;
 		default: throw new Error(`seed event at index ${index} has an invalid event envelope`);
 	}
 	const type = event["type"];
 	const seq = event["seq"];
 	const time = event["time"];
-	if (typeof type !== "string" || typeof seq !== "number" || !Number.isSafeInteger(seq) || seq < 0 || typeof time !== "number" || !Number.isSafeInteger(time) || event["data"] === void 0 || event["ignorable"] !== void 0 && event["ignorable"] !== true) throw new Error(`seed event at index ${index} has an invalid event envelope`);
+	if (typeof type !== "string" || typeof seq !== "number" || !Number.isSafeInteger(seq) || seq < 0 || typeof time !== "number" || !Number.isSafeInteger(time) || event["data"] === void 0) throw new Error(`seed event at index ${index} has an invalid event envelope`);
 	switch (type) {
 		case "request/header":
 		case "user/message":
@@ -1887,4 +1946,4 @@ var SessionStore = class extends Service {
 	}
 };
 //#endregion
-export { KNOWN_SESSION_EVENT_TYPES, SESSION_FORMAT_VERSION, Session, SessionForkError, SessionId, SessionPreparation, SessionStore, SessionStore as default, TOOL_NOT_STARTED, TOOL_OUTCOME_UNKNOWN, adoptSessionEvent, canonicalHeader, decodeStorageRecord, deriveEventMessage, foldRequestHeader, foldSurface, headerEquals, interruptedTurnClosers, isAppendSurfaceEvent, isJsonValue, isReplacementSurfaceEvent, isSurfaceEligibleType, isSurfaceEvent, packChunkRuns, snapshotJsonValue, snapshotSessionEvent };
+export { KNOWN_SESSION_EVENT_TYPES, SESSION_FORMAT_VERSION, Session, SessionForkError, SessionId, SessionPreparation, SessionStore, SessionStore as default, TOOL_NOT_STARTED, TOOL_OUTCOME_UNKNOWN, adoptSessionEvent, canonicalHeader, decodeSeqRanges, decodeStorageRecord, deriveEventMessage, encodeSeqRanges, foldRequestHeader, foldSurface, headerEquals, interruptedTurnClosers, isAppendSurfaceEvent, isJsonValue, isReplacementSurfaceEvent, isSurfaceEligibleType, isSurfaceEvent, packChunkRuns, snapshotJsonValue, snapshotSessionEvent };

@@ -1,8 +1,8 @@
-import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+import { jsxs as _jsxs, jsx as _jsx, Fragment as _Fragment } from "react/jsx-runtime";
 /**
  * One provider's editor card, hand-written per adapter family: the primary
  * field is a single write-only **API key** input (the page never asks for an
- * environment-variable name — a typed key stores through `credentials.set`
+ * environment-variable name — a typed key stores through `credentials/set`
  * under the profile's reference, deriving `<ROUTE>_API_KEY` when the profile
  * has none. The pi-ai profile records that derivation as `apiKeyEnv` only when
  * a key is entered; a blank key materializes a reference-free profile for
@@ -55,7 +55,7 @@ export function pathOps(base, before, after) {
     for (const [key, value] of Object.entries(after)) {
         if (JSON.stringify(previous[key]) === JSON.stringify(value))
             continue;
-        ops.push({ op: 'set', path: [...base, key], value });
+        ops.push({ op: 'set', path: [...base, key], value: value });
     }
     for (const key of Object.keys(previous)) {
         if (!(key in after))
@@ -114,10 +114,10 @@ export function ProviderEditor(props) {
         // neither a business rejection nor a transport failure may reach the
         // browser as an unhandled rejection, so the card simply renders without
         // the "already configured" hint.
-        void api.credentials.describe({ refs: [keyRef] }).then((response) => {
-            if (stale || !response.result.ok)
+        void api.credentials.describe([keyRef]).then((response) => {
+            if (stale || !response.ok)
                 return;
-            setKeyState(response.result.value.credentials[keyRef]);
+            setKeyState(response.value[keyRef]);
         }, () => undefined);
         return () => { stale = true; };
     }, [api.credentials, keyRef]);
@@ -203,20 +203,20 @@ export function ProviderEditor(props) {
                 ? [{ op: 'set', path: [...settingsPath], value: {} }]
                 : pathOps(settingsPath, committedOriginal, next);
         if (ops.length > 0) {
-            const response = await api.settings.mutate({ ns, ops, expectedRevision });
-            if (!response.result.ok) {
-                return response.result.error.code === 'settings-conflict'
+            const response = await api.settings.mutate(ns, ops, expectedRevision);
+            if (!response.ok) {
+                return response.error.code === 'settings-conflict'
                     ? t('conflict')
-                    : response.result.error.message;
+                    : response.error.message;
             }
-            setCommittedOriginal(schema.getPath(response.result.value.user, settingsPath));
-            setExpectedRevision(response.result.value.revision);
+            setCommittedOriginal(schema.getPath(response.value.user, settingsPath));
+            setExpectedRevision(response.value.revision);
             setDraft(next);
         }
         if (keyValue.length > 0) {
-            const stored = await api.credentials.set({ ref: keyRef, value: keyValue });
-            if (!stored.result.ok)
-                return stored.result.error.message;
+            const stored = await api.credentials.set(keyRef, keyValue);
+            if (!stored.ok)
+                return stored.error.message;
         }
         setKeyDraft('');
         return undefined;
@@ -245,7 +245,7 @@ export function ProviderEditor(props) {
     if (node === undefined) {
         // A directory entry addressing a position its schema cannot resolve is a
         // host-side inconsistency; showing it beats a blank card.
-        return _jsx("p", { className: styles['error'], children: `${props.provider}: unresolvable settings path` });
+        return _jsxs("p", { className: styles['error'], children: [props.provider, ": ", props.t('settingsPathUnresolvable')] });
     }
     const keyLocked = keyState?.writable === false;
     /**
@@ -324,6 +324,6 @@ export function ProviderEditor(props) {
                 : (_jsx("p", { className: styles['advancedHint'], children: `${t('model')} ${String(modelFailure.index + 1)}: ${t(modelFailure.key)}` })), _jsx(EditorFooter, { t: t, busy: busy, submitDisabled: disabled || layout === 'unknown'
                     || (props.credentialOnly !== true && modelFailure !== undefined)
                     || shownKeyFailure !== undefined
-                    || (props.credentialRequired === true && keyValue.length === 0), submitLabel: props.submitLabel ?? 'apply', submitBusyLabel: props.submitBusyLabel ?? 'applying', ...props.cancelLabel === undefined ? {} : { cancelLabel: props.cancelLabel }, onCancel: () => { props.onClose(false); }, onSubmit: () => { void apply(); } })] }));
+                    || (props.credentialRequired === true && keyValue.length === 0), submitLabelKey: props.submitLabelKey ?? 'apply', submitBusyLabelKey: props.submitBusyLabelKey ?? 'applying', ...props.cancelLabelKey === undefined ? {} : { cancelLabelKey: props.cancelLabelKey }, onCancel: () => { props.onClose(false); }, onSubmit: () => { void apply(); } })] }));
 }
 //# sourceMappingURL=ProviderEditor.js.map

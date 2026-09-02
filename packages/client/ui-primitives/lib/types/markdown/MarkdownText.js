@@ -18,13 +18,13 @@ import { collectReferenceTargets, createReferenceTargets, renderBlocks, renderFo
 import 'katex/dist/katex.min.css';
 import css from './MarkdownText.module.css';
 /** One settled full render: parse with math, resolve references, append the footnote section. */
-function renderSettled(text, codeLabels, fileMentions) {
+function renderSettled(text, labels, fileMentions) {
     const root = parseGfmWithMath(text);
     const targets = createReferenceTargets();
     collectReferenceTargets(root.children, targets);
     const context = {
         streaming: false,
-        codeLabels,
+        labels,
         fileMentions,
         targets,
         footnoteOrder: [],
@@ -41,7 +41,7 @@ function renderSettled(text, codeLabels, fileMentions) {
  * final, so the tail continues from a copy of it each frame).
  */
 class StreamingRenderer {
-    codeLabels;
+    labels;
     parser = new IncrementalMarkdownParser(parseGfm);
     generation = -1;
     frozenCount = 0;
@@ -51,9 +51,9 @@ class StreamingRenderer {
     frozenFootnoteCounts = new Map();
     lastText = null;
     lastRendered = [];
-    /** @param codeLabels - Fence copy labels baked into cached elements; the owner replaces the renderer when they change. */
-    constructor(codeLabels) {
-        this.codeLabels = codeLabels;
+    /** @param labels - Localized Markdown chrome baked into cached elements; the owner replaces the renderer when it changes. */
+    constructor(labels) {
+        this.labels = labels;
     }
     /**
      * Render the current accumulated text. Idempotent per text value, so React
@@ -86,7 +86,7 @@ class StreamingRenderer {
         if (newlyFrozen.length > 0) {
             const frozenContext = {
                 streaming: true,
-                codeLabels: this.codeLabels,
+                labels: this.labels,
                 fileMentions: undefined,
                 targets: frameTargets,
                 footnoteOrder: this.frozenFootnoteOrder,
@@ -105,7 +105,7 @@ class StreamingRenderer {
         }
         const tailContext = {
             streaming: true,
-            codeLabels: this.codeLabels,
+            labels: this.labels,
             fileMentions: undefined,
             targets: frameTargets,
             footnoteOrder: [...this.frozenFootnoteOrder],
@@ -128,9 +128,10 @@ class StreamingRenderer {
 /**
  * Render untrusted assistant-authored Markdown as semantic React elements.
  * @param props - Markdown source text preserved by the session projection;
- * `streaming` renders fences and TeX plain (highlighting and KaTeX land on
- * the finalize swap) and parses incrementally across chunks; `codeLabels`
- * forwards localized copy-button labels to fence CodeBlocks — pass a
+ * `streaming` parses incrementally across chunks and highlights fences as
+ * they grow (each fence re-tokenizes only appended text; TeX stays literal
+ * until the finalize swap so incomplete formulae never flash errors);
+ * `labels` forwards localized fence and footnote chrome — pass a
  * reference-stable object (memoized per locale revision), because a new
  * identity discards the streaming render cache mid-message. `fileMentions`
  * links inline-code tokens its resolver recognizes as real files; this is
@@ -141,20 +142,20 @@ class StreamingRenderer {
  * relative links, and unsafe protocols are disabled, while absolute HTTP(S)
  * images render directly.
  */
-export const MarkdownText = memo(function MarkdownText({ text, streaming = false, codeLabels, fileMentions }) {
+export const MarkdownText = memo(function MarkdownText({ text, streaming = false, labels, fileMentions }) {
     const streamRef = useRef(null);
-    const streamLabelsRef = useRef(codeLabels);
+    const streamLabelsRef = useRef(labels);
     const children = useMemo(() => {
         if (!streaming) {
             streamRef.current = null;
-            return renderSettled(text, codeLabels, fileMentions);
+            return renderSettled(text, labels, fileMentions);
         }
-        if (streamRef.current === null || streamLabelsRef.current !== codeLabels) {
-            streamRef.current = new StreamingRenderer(codeLabels);
-            streamLabelsRef.current = codeLabels;
+        if (streamRef.current === null || streamLabelsRef.current !== labels) {
+            streamRef.current = new StreamingRenderer(labels);
+            streamLabelsRef.current = labels;
         }
         return streamRef.current.render(text);
-    }, [text, streaming, codeLabels, fileMentions]);
+    }, [text, streaming, labels, fileMentions]);
     return _jsx("div", { className: css.markdown, children: children });
 });
 //# sourceMappingURL=MarkdownText.js.map

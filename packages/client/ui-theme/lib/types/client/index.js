@@ -1,8 +1,9 @@
 import { AppearanceRow } from "./AppearanceRow.js";
-import { createAppearanceRowStore } from "./settings-store.js";
+import { FontSizeRow } from "./FontSizeRow.js";
+import { createAppearanceRowStore, createFontSizeRowStore } from "./settings-store.js";
 import { installThemeStyles } from "./styles.js";
 import { en, zh } from "./locales.js";
-import { DEFAULT_PREFERENCE, isThemePreference, THEME_PREFERENCE_FIELD, THEME_SETTINGS_NAMESPACE, } from "../theme-settings.js";
+import { DEFAULT_FONT_SIZE, DEFAULT_PREFERENCE, FONT_SIZE_FIELD, FONT_SIZE_MAX, FONT_SIZE_MIN, isThemePreference, THEME_PREFERENCE_FIELD, THEME_SETTINGS_NAMESPACE, } from "../theme-settings.js";
 /** Namespace owning this feature's settings-row copy. */
 export const SETTINGS_NS = 'settings.theme';
 const BUILTIN_THEMES = Object.freeze([
@@ -40,6 +41,7 @@ export class ThemeRuntime {
     host;
     themes = [...BUILTIN_THEMES];
     preference;
+    fontSize = bootstrapFontSize();
     revision = 0;
     snapshot;
     media;
@@ -117,12 +119,31 @@ export class ThemeRuntime {
             void this.host.set(THEME_PREFERENCE_FIELD, id);
         this.publish();
     }
+    /**
+     * Change the conversation content font size — the only font-size write
+     * entry. Accepted values are written through the settings scope and emit
+     * `theme/change`.
+     * @param px - integer px within FONT_SIZE_MIN..FONT_SIZE_MAX; out-of-range or fractional values throw.
+     */
+    setFontSize(px) {
+        if (!Number.isInteger(px) || px < FONT_SIZE_MIN || px > FONT_SIZE_MAX) {
+            throw new Error(`font size ${px} is outside ${FONT_SIZE_MIN}..${FONT_SIZE_MAX}`);
+        }
+        if (this.fontSize === px)
+            return;
+        this.fontSize = px;
+        void this.host.set(FONT_SIZE_FIELD, px);
+        this.publish();
+    }
     /** Adopt the scope's accepted durable preference without writing it back. */
     adopt() {
         const section = this.host.getSnapshot().value;
-        if (section === undefined || this.preference === section.preference)
+        if (section === undefined)
+            return;
+        if (this.preference === section.preference && this.fontSize === section.fontSize)
             return;
         this.preference = section.preference;
+        this.fontSize = section.fontSize;
         this.publish();
     }
     /**
@@ -190,6 +211,7 @@ export class ThemeRuntime {
             throw new Error(`theme registry lost "${resolvedId}"`);
         return Object.freeze({
             preference: this.preference,
+            fontSize: this.fontSize,
             active: this.composeActive(active),
             themes: Object.freeze([...this.themes]),
             revision: this.revision,
@@ -219,12 +241,28 @@ export class ThemeRuntime {
     }
 }
 /**
+ * Read the font size the Host boot script wrote on `body` before any plugin
+ * ran, so the initial snapshot matches first paint and ui-layout's presenter
+ * does not flash the schema default while the settings read is in flight.
+ * Non-browser runs and mounts without the boot script fall back to the
+ * schema default; the durable settings adoption still lands afterwards.
+ */
+function bootstrapFontSize() {
+    /* v8 ignore next -- needs a documentless run (node e2e booting the client tree), not constructible under jsdom */
+    if (typeof document === 'undefined')
+        return DEFAULT_FONT_SIZE;
+    const raw = document.body.style.getPropertyValue('--dsh-content-font-size');
+    const parsed = Number.parseInt(raw, 10);
+    return Number.isInteger(parsed) && parsed >= FONT_SIZE_MIN && parsed <= FONT_SIZE_MAX
+        ? parsed
+        : DEFAULT_FONT_SIZE;
+}
+/**
  * Runtime shape check for one override layer (model-authored callers pass
  * untyped JS through the dynamic-package façade, so the static type cannot
  * enforce the pair shape there). Returns a defensive per-token copy so later
  * caller mutation cannot reach the stored layer.
- */
-function validateOverrides(source, tokens) {
+ */ function validateOverrides(source, tokens) {
     const validated = {};
     for (const [name, value] of Object.entries(tokens)) {
         if (typeof value === 'string') {
@@ -270,8 +308,11 @@ export function apply(ctx) {
     ctx.effect(() => ctx.locale.register(SETTINGS_NS, { zh, en }), 'ui-theme: settings row dictionaries');
     const store = createAppearanceRowStore();
     let bound;
+    const fontSizeStore = createFontSizeRowStore();
+    let fontSizeBound;
     const sync = (snapshot) => {
         bound?.sync(snapshot.preference, snapshot.revision);
+        fontSizeBound?.sync(snapshot.fontSize, snapshot.revision);
     };
     ctx.on('theme/change', sync);
     const injected = (actions) => {
@@ -291,5 +332,20 @@ export function apply(ctx) {
         locale: SETTINGS_NS,
         inject: injected,
     }, AppearanceRow));
+    const fontSizeInjected = (actions) => {
+        fontSizeBound = actions;
+        sync(theme.getTheme());
+        return {
+            setFontSize: (px) => { theme.setFontSize(px); },
+        };
+    };
+    ctx.slots.inject('settings.general.item', () => ctx.slots.register({
+        name: 'settings.general.item',
+        id: 'font-size',
+        order: 11,
+        store: fontSizeStore,
+        locale: SETTINGS_NS,
+        inject: fontSizeInjected,
+    }, FontSizeRow));
 }
 //# sourceMappingURL=index.js.map

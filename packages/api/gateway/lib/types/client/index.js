@@ -4,6 +4,13 @@
  * participates in method lookup, invocation, or type exposure.
  */
 import { Service } from '@deepseek-ai/cordis';
+import { RemoteStreamCarrierError, RemoteStreamError, RemoteStreamMuxClient, } from "./stream-client.js";
+import { ClientRemoteEvents } from "./remote-events.js";
+import { RemoteStream, } from "./remote-stream.js";
+export { RemoteStreamCarrierError, RemoteStreamError } from "./stream-client.js";
+export { RemoteJournalStream } from "./journal-stream.js";
+export { RemoteStream } from "./remote-stream.js";
+export { RemoteSnapshotStream } from "./snapshot-stream.js";
 /** Required Client services: the Typert registry and the existing Connection carrier. */
 export const inject = ['typert', 'connection'];
 /**
@@ -15,13 +22,42 @@ export function apply(ctx) {
 }
 class ClientRemoteService extends Service {
     ownerCtx;
+    connection;
     namespaces = new Map();
-    subscriptions = new Map();
+    streams = new RemoteStreamMuxClient();
+    events;
     mutations = Promise.resolve();
     constructor(ctx) {
         super(ctx, 'remote');
         this.ownerCtx = ctx;
-        ctx.effect(() => () => { this.subscriptions.clear(); }, 'api-gateway.client.subscriptions');
+        const connection = ctx.get('connection');
+        this.connection = connection;
+        this.events = new ClientRemoteEvents(ctx, connection, (endpoint, payload, signal) => this.openRemoteStream(endpoint, payload, signal));
+        if (connection.rpc.open === undefined)
+            this.streams.start();
+        let disposed = false;
+        let loop;
+        const start = () => {
+            if (disposed)
+                return;
+            loop = connection.start({
+                onConnected: () => { this.ownerCtx.emit('connection/reset'); },
+            });
+        };
+        const loader = ctx.get('loader');
+        if (loader === undefined)
+            start();
+        else
+            void loader.await().then(start, () => { });
+        ctx.effect(() => async () => {
+            disposed = true;
+            loop?.stop();
+            await this.events.dispose();
+            await this.streams.close();
+        }, 'api-gateway.client.transport');
+    }
+    $stream(options) {
+        return new RemoteStream(this.connection, options);
     }
     async $mount(contribution) {
         const callerCtx = this.ctx;
@@ -33,60 +69,17 @@ class ClientRemoteService extends Service {
         return async () => { await owned(); };
     }
     $on(event, listener) {
-        // The table is keyed by the runtime event name, so the argument list this
-        // signature pins per event cannot survive in it; `$deliver` restores it
-        // from the frame the Host emitted for that same name.
-        const subscription = { listener };
-        const owned = this.ctx.effect(() => {
-            const listeners = this.listeners(event);
-            listeners.push(subscription);
-            return () => {
-                const at = listeners.indexOf(subscription);
-                /* v8 ignore next -- listener */
-                if (at >= 0)
-                    listeners.splice(at, 1);
-            };
-        }, `api-gateway.client.$on(${JSON.stringify(event)})`);
-        return () => { void owned(); };
+        return this.events.subscribe(this.ctx, event, listener);
     }
-    /**
-     * Deliver one forwarded event in registration order, isolating a listener
-     * that fails either synchronously or by rejecting a returned promise; see
-     * {@link TypertClientRemote.$dispatch} for the caller contract.
-     */
-    $dispatch(event, args) {
-        const listeners = this.subscriptions.get(event);
-        if (listeners === undefined)
-            return;
-        // Snapshot: a listener may subscribe or dispose during delivery, and this
-        // round's recipients are the ones registered when the frame arrived.
-        for (const { listener } of [...listeners]) {
-            const report = (error) => {
-                console.error(`client api: Remote event ${JSON.stringify(event)} listener threw:`, error);
-            };
-            try {
-                /* oxlint-disable-next-line typescript/no-confusing-void-expression --
-                 * The declared return is void, so nobody awaits an async listener; the
-                 * runtime value is still a promise, and reading it is the only way to
-                 * keep its rejection inside this containment instead of surfacing as an
-                 * unhandled one. */
-                const settled = listener(...args);
-                if (settled instanceof Promise)
-                    settled.catch(report);
-            }
-            catch (error) {
-                report(error);
-            }
-        }
-    }
-    /** Subscriptions for one event name; empty arrays are retained, bounded by the Host's selection. */
-    listeners(event) {
-        let listeners = this.subscriptions.get(event);
-        if (listeners === undefined) {
-            listeners = [];
-            this.subscriptions.set(event, listeners);
-        }
-        return listeners;
+    /** Open one Remote stream and normalize a worker-local carrier's structural failures. */
+    openRemoteStream(endpoint, payload, signal, noConnection = `client api: ${endpoint} has no active Connection`) {
+        const connection = this.ownerCtx.get('connection');
+        if (connection === undefined)
+            throw new Error(noConnection);
+        const local = connection.rpc.open?.('/api', endpoint, payload, signal);
+        return local === undefined
+            ? this.streams.open(endpoint, payload, signal)
+            : normalizeConnectionStream(local);
     }
     enqueue(operation) {
         const result = this.mutations.then(operation, operation);
@@ -96,10 +89,19 @@ class ClientRemoteService extends Service {
     async mountContribution(callerCtx, contribution) {
         this.validateContribution(contribution);
         const disposeRemote = callerCtx.typert.remotes.register(contribution);
+        const groups = new Map();
+        for (const descriptor of contribution.descriptors) {
+            const group = groups.get(descriptor.namespace);
+            if (group === undefined)
+                groups.set(descriptor.namespace, [descriptor]);
+            else
+                group.push(descriptor);
+        }
         const installed = [];
         try {
-            for (const descriptor of contribution.descriptors)
-                installed.push(await this.install(descriptor));
+            for (const [namespace, descriptors] of groups) {
+                installed.push(await this.installNamespace(namespace, descriptors));
+            }
         }
         catch (error) {
             for (const dispose of installed.reverse())
@@ -156,71 +158,51 @@ class ClientRemoteService extends Service {
             }
         }
     }
-    async install(descriptor) {
-        const token = { active: true, abort: new AbortController() };
-        const installed = [];
-        try {
-            if (descriptor.invocation.kind === 'direct') {
-                installed.push(await this.installDirect(descriptor, token));
-            }
-            const projection = scopedProjection(descriptor);
-            if (projection !== undefined)
-                installed.push(await this.installScoped(descriptor, projection, token));
-        }
-        catch (error) {
-            token.active = false;
-            token.abort.abort();
-            for (const dispose of installed.reverse())
-                await dispose();
-            throw error;
-        }
-        return async () => {
-            /* v8 ignore next -- Cordis effect disposers are idempotent and invoke this cleanup at most once. */
-            if (!token.active)
-                return;
-            token.active = false;
-            token.abort.abort();
-            for (const dispose of installed.reverse())
-                await dispose();
-        };
-    }
-    async installDirect(descriptor, token) {
-        const namespace = await this.namespace(descriptor.namespace);
-        try {
-            namespace.service.installDirect(descriptor, token);
-        }
-        catch (error) {
-            await this.disposeNamespace(descriptor.namespace, namespace);
-            throw error;
-        }
-        return async () => {
-            namespace.service.remove('direct', descriptor.method, token);
-            await this.disposeNamespace(descriptor.namespace, namespace);
-        };
-    }
-    async installScoped(descriptor, projection, token) {
-        const namespace = await this.namespace(descriptor.namespace);
-        try {
-            namespace.service.installScoped(descriptor, projection, token);
-        }
-        catch (error) {
-            await this.disposeNamespace(descriptor.namespace, namespace);
-            throw error;
-        }
-        return async () => {
-            namespace.service.remove('scoped', descriptor.method, token);
-            await this.disposeNamespace(descriptor.namespace, namespace);
-        };
-    }
-    async namespace(name) {
+    /**
+     * Mount one namespace's descriptor group with no visibility gap: a fresh
+     * namespace installs its whole group synchronously inside its fiber's
+     * apply, so a plugin parked on the namespace service never observes it
+     * without the methods the same contribution carries; an existing namespace
+     * takes the group in one synchronous step.
+     * @param name - Remote namespace.
+     * @param descriptors - Every contribution descriptor naming that namespace.
+     * @returns disposer unmounting the group and the namespace once empty.
+     */
+    async installNamespace(name, descriptors) {
         let namespace = this.namespaces.get(name);
-        if (namespace !== undefined)
-            return namespace;
+        let installed;
+        if (namespace === undefined) {
+            ({ namespace, installed } = await this.createNamespace(name, descriptors));
+        }
+        else {
+            installed = installMethods(namespace.service, descriptors);
+        }
+        const handle = namespace;
+        return async () => {
+            for (const method of [...installed].reverse()) {
+                /* v8 ignore next -- Cordis effect disposers are idempotent and invoke this cleanup at most once. */
+                if (!method.token.active)
+                    continue;
+                method.token.active = false;
+                method.token.abort.abort();
+                if (method.scoped)
+                    handle.service.remove('scoped', method.descriptor.method, method.token);
+                if (method.direct)
+                    handle.service.remove('direct', method.descriptor.method, method.token);
+            }
+            await this.disposeNamespace(name, handle);
+        };
+    }
+    async createNamespace(name, descriptors) {
         let service;
+        let installed;
         const fiber = this.ownerCtx.plugin({
             name: remoteServiceKey(name),
             apply: (ctx) => {
                 service = new RemoteNamespaceService(ctx, name, (direct, scoped, caller, args) => this.invokeMethod(direct, scoped, caller, args));
+                // Same synchronous window as the service registration: a dependent the
+                // new service unparks runs only after the methods exist.
+                installed = installMethods(service, descriptors);
             },
         });
         try {
@@ -230,12 +212,13 @@ class ClientRemoteService extends Service {
             await fiber.dispose();
             throw error;
         }
-        /* v8 ignore next -- a settled namespace fiber synchronously constructs its Service. */
-        if (service === undefined)
+        /* v8 ignore next 3 -- a settled namespace fiber synchronously constructs its Service and installs the group. */
+        if (service === undefined || installed === undefined) {
             throw new Error(`client api: namespace ${JSON.stringify(name)} did not start`);
-        namespace = { service, dispose: fiber.dispose };
+        }
+        const namespace = { service, dispose: fiber.dispose };
         this.namespaces.set(name, namespace);
-        return namespace;
+        return { namespace, installed };
     }
     async disposeNamespace(name, namespace) {
         if (!namespace.service.empty || this.namespaces.get(name) !== namespace)
@@ -245,24 +228,62 @@ class ClientRemoteService extends Service {
     }
     invokeMethod(direct, scoped, callerCtx, values) {
         if (scoped !== undefined) {
-            const binder = this.ownerCtx.typert.contexts.getClient(scoped.projection.context);
-            const identity = binder?.identity(callerCtx);
+            const adapter = this.ownerCtx.typert.contexts.getClient(scoped.projection.context);
+            const identity = adapter?.identity(callerCtx);
             if (identity !== undefined) {
-                return this.invoke(scoped.descriptor, scoped.projection, scoped.token, callerCtx, values, { value: identity });
+                return this.invokeSelected(scoped.descriptor, scoped.projection, scoped.token, callerCtx, values, { value: identity });
             }
         }
         if (direct !== undefined) {
-            return this.invoke(direct.descriptor, undefined, direct.token, callerCtx, values);
+            return this.invokeSelected(direct.descriptor, undefined, direct.token, callerCtx, values);
         }
         if (scoped !== undefined) {
-            return this.invoke(scoped.descriptor, scoped.projection, scoped.token, callerCtx, values);
+            return this.invokeSelected(scoped.descriptor, scoped.projection, scoped.token, callerCtx, values);
         }
         throw new Error('client api: Remote method is no longer mounted');
+    }
+    invokeSelected(descriptor, projection, token, callerCtx, values, boundIdentity) {
+        if (descriptor.mode === 'stream') {
+            return this.invokeStream(descriptor, projection, token, callerCtx, values, boundIdentity);
+        }
+        return this.invoke(descriptor, projection, token, callerCtx, values, boundIdentity);
     }
     async invoke(descriptor, projection, token, callerCtx, values, boundIdentity) {
         const endpoint = endpointOf(descriptor);
         if (!token.active)
             return withdrawn(endpoint);
+        const prepared = this.prepareInvocation(descriptor, projection, token, callerCtx, values, boundIdentity);
+        const connection = this.ownerCtx.get('connection');
+        if (connection === undefined)
+            throw new Error(`client api: ${endpoint} has no active Connection`);
+        try {
+            const result = await connection.rpc.call('/api', endpoint, { args: prepared.args }, prepared.signal);
+            if (!mountActive(token))
+                return withdrawn(endpoint);
+            if (!result.ok)
+                return { ok: false, error: result.error };
+            return { ok: true, value: result.value };
+        }
+        catch (error) {
+            // Carrier throws (offline or abort) are outcomes of the call, not assembly
+            // faults, so they join the same error branch.
+            return carrierFailure(endpoint, error);
+        }
+    }
+    async *invokeStream(descriptor, projection, token, callerCtx, values, boundIdentity) {
+        const endpoint = endpointOf(descriptor);
+        if (!token.active)
+            throw new Error(withdrawn(endpoint).error.message);
+        const prepared = this.prepareInvocation(descriptor, projection, token, callerCtx, values, boundIdentity);
+        const stream = this.openRemoteStream(endpoint, { args: prepared.args }, prepared.signal);
+        for await (const value of stream) {
+            if (!mountActive(token))
+                throw new Error(withdrawn(endpoint).error.message);
+            yield value;
+        }
+    }
+    prepareInvocation(descriptor, projection, token, callerCtx, values, boundIdentity) {
+        const endpoint = endpointOf(descriptor);
         const expected = descriptor.parameters.length - (projection?.parameterIndex === undefined ? 0 : 1);
         const hasCallerSignal = descriptor.cancellation !== undefined && values.length === expected + 1;
         if (values.length !== expected && !hasCallerSignal) {
@@ -273,49 +294,34 @@ class ClientRemoteService extends Service {
         }
         const args = Object.create(null);
         if (projection !== undefined) {
-            const binder = boundIdentity === undefined
+            const adapter = boundIdentity === undefined
                 ? this.ownerCtx.typert.contexts.getClient(projection.context)
                 : undefined;
-            if (boundIdentity === undefined && binder === undefined) {
-                throw new Error(`client api: ${endpoint} has no Client Context binder for ${JSON.stringify(projection.context)}`);
+            if (boundIdentity === undefined && adapter === undefined) {
+                throw new Error(`client api: ${endpoint} has no Client Context adapter for ${JSON.stringify(projection.context)}`);
             }
             const identity = boundIdentity === undefined
-                ? binder?.identity(callerCtx)
+                ? adapter?.identity(callerCtx)
                 : boundIdentity.value;
             if (identity === undefined) {
                 throw new Error(`client api: ${endpoint} requires a ${JSON.stringify(projection.context)} Context`);
             }
-            args[projection.wire] = parse(projection.codec, identity, endpoint, projection.wire);
+            args[projection.wire] = parseInput(projection.codec, identity, endpoint, projection.wire);
         }
         let valueIndex = 0;
         descriptor.parameters.forEach((parameter, parameterIndex) => {
             if (parameterIndex === projection?.parameterIndex)
                 return;
-            const value = parse(parameter.codec, values[valueIndex], endpoint, parameter.wire);
+            const value = parseInput(parameter.codec, values[valueIndex], endpoint, parameter.wire);
             if (value !== undefined)
                 args[parameter.wire] = value;
             valueIndex += 1;
         });
-        const connection = this.ownerCtx.get('connection');
-        if (connection === undefined)
-            throw new Error(`client api: ${endpoint} has no active Connection`);
         const callerSignal = hasCallerSignal ? values[expected] : undefined;
         const signal = callerSignal === undefined
             ? token.abort.signal
             : AbortSignal.any([token.abort.signal, callerSignal]);
-        try {
-            const result = await connection.rpc.call('/api', endpoint, { args }, signal);
-            if (!mountActive(token))
-                return withdrawn(endpoint);
-            if (!result.ok)
-                return { ok: false, error: result.error };
-            return { ok: true, value: parse(descriptor.result, result.value, endpoint, 'result') };
-        }
-        catch (error) {
-            // Carrier throws (offline, abort, a rejected result payload) are outcomes
-            // of the call, not assembly faults, so they join the same error branch.
-            return carrierFailure(endpoint, error);
-        }
+        return { endpoint, args, signal };
     }
 }
 class RemoteNamespaceService extends Service {
@@ -392,6 +398,48 @@ class RemoteNamespaceService extends Service {
         Reflect.deleteProperty(this, method);
     }
 }
+/**
+ * Install one descriptor group on a namespace service, unwinding the partial
+ * group when a descriptor is refused.
+ * @param service - Namespace service taking the methods.
+ * @param descriptors - Descriptor group of one contribution.
+ * @returns per-descriptor records for the group disposer.
+ */
+function installMethods(service, descriptors) {
+    const installed = [];
+    try {
+        for (const descriptor of descriptors) {
+            const method = {
+                descriptor,
+                token: { active: true, abort: new AbortController() },
+                direct: false,
+                scoped: false,
+            };
+            installed.push(method);
+            if (descriptor.invocation.kind === 'direct') {
+                service.installDirect(descriptor, method.token);
+                method.direct = true;
+            }
+            const projection = scopedProjection(descriptor);
+            if (projection !== undefined) {
+                service.installScoped(descriptor, projection, method.token);
+                method.scoped = true;
+            }
+        }
+    }
+    catch (error) {
+        for (const method of [...installed].reverse()) {
+            method.token.active = false;
+            method.token.abort.abort();
+            if (method.scoped)
+                service.remove('scoped', method.descriptor.method, method.token);
+            if (method.direct)
+                service.remove('direct', method.descriptor.method, method.token);
+        }
+        throw error;
+    }
+    return installed;
+}
 const REMOTE_NAMESPACE_FIELDS = new Set(['ctx', 'empty', 'invokeRemote', 'methods', 'name', 'namespace']);
 function remoteServiceKey(namespace) {
     return `remote.${namespace}`;
@@ -430,7 +478,6 @@ function scopedProjection(descriptor) {
 }
 function requireStrictDescriptor(descriptor) {
     const endpoint = endpointOf(descriptor);
-    requireStrictCodec(descriptor.result, endpoint, 'result');
     for (const parameter of descriptor.parameters) {
         requireStrictCodec(parameter.codec, endpoint, parameter.wire);
     }
@@ -443,7 +490,7 @@ function requireStrictCodec(codec, endpoint, field) {
         throw new Error(`client api: generated Remote ${endpoint} field ${JSON.stringify(field)} has no strict codec`);
     }
 }
-function parse(codec, value, endpoint, field) {
+function parseInput(codec, value, endpoint, field) {
     if (codec.mode !== 'strict') {
         throw new Error(`client api: generated Remote ${endpoint} field ${JSON.stringify(field)} has no strict codec`);
     }
@@ -463,5 +510,23 @@ function carrierFailure(endpoint, error) {
 }
 function internalFailure(message) {
     return { ok: false, error: { code: 'internal', message, details: {} } };
+}
+/** Preserve Gateway error classes across a worker transport's separately bundled page half. */
+async function* normalizeConnectionStream(source) {
+    try {
+        yield* source;
+    }
+    catch (error) {
+        if (!(error instanceof Error))
+            throw error;
+        const marker = error.dshRemoteStreamFailure;
+        if (marker?.kind === 'remote') {
+            throw new RemoteStreamError(marker.code, error.message, marker.details);
+        }
+        if (marker?.kind === 'carrier') {
+            throw new RemoteStreamCarrierError(error.message, { cause: error });
+        }
+        throw error;
+    }
 }
 //# sourceMappingURL=index.js.map

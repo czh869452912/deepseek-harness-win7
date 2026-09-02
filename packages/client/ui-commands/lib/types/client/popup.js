@@ -9,7 +9,7 @@
  * Input side owns the span/bare-token CAS guard) and focuses the composer;
  * the controller never touches the input machine.
  */
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-runtime/client';
+import { createSnapshotStore } from '@deepseek-ai/dsh-client-store';
 const CLOSED = {
     open: false, command: null, status: 'pending', options: [], search: '', active: 0,
     submitting: false, confirming: null, acknowledged: false, error: null,

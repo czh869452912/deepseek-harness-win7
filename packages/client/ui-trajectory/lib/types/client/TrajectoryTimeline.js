@@ -39,15 +39,15 @@ function timelineRecordDetail(cell) {
         ...assistantTimingDetail(cell.assistantMetrics),
     };
 }
-function timelineKindLabel(kind) {
+function timelineKindLabel(kind, t) {
     switch (kind) {
-        case 'system': return 'SYSTEM';
-        case 'user': return 'USER';
-        case 'context': return 'CONTEXT';
-        case 'compacted': return 'COMPACTED';
-        case 'message': return 'ASSISTANT';
-        case 'tool': return 'TOOL';
-        case 'subtool': return 'SUBTOOL';
+        case 'system': return t('kind.system');
+        case 'user': return t('kind.user');
+        case 'context': return t('kind.context');
+        case 'compacted': return t('kind.compacted');
+        case 'message': return t('kind.assistant');
+        case 'tool': return t('kind.tool');
+        case 'subtool': return t('kind.subtool');
     }
 }
 function formatRecordedTime(timestamp) {
@@ -58,21 +58,24 @@ function formatRecordedTime(timestamp) {
         fractionalSecondDigits: 3,
     });
 }
-function timelineTooltipLabel(kind, detail) {
-    const heading = timelineKindLabel(kind);
+function timelineTooltipLabel(kind, detail, t) {
+    const heading = timelineKindLabel(kind, t);
     if (detail === undefined)
         return heading;
     const duration = detail.durationMs === undefined
         ? null
-        : `Total ${formatTimelineOffset(detail.durationMs)}`;
+        : t('timeline.total', { duration: formatTimelineOffset(detail.durationMs, t) });
     const range = detail.startedAt === undefined
         ? null
         : detail.durationMs === undefined
-            ? `Started ${formatRecordedTime(detail.startedAt)}`
+            ? t('timeline.started', { time: formatRecordedTime(detail.startedAt) })
             : `${formatRecordedTime(detail.startedAt)} → ${formatRecordedTime(detail.startedAt + detail.durationMs)}`;
     const segments = detail.ttftMs === undefined || detail.decodingMs === undefined
         ? null
-        : `TTFT ${formatTimelineOffset(detail.ttftMs)} · Decoding ${formatTimelineOffset(detail.decodingMs)}`;
+        : t('timeline.ttftDecoding', {
+            ttft: formatTimelineOffset(detail.ttftMs, t),
+            decoding: formatTimelineOffset(detail.decodingMs, t),
+        });
     const timing = [duration, segments].filter(value => value !== null).join(' · ');
     return [heading, range, timing].filter(value => value !== null && value !== '').join('\n');
 }
@@ -94,17 +97,17 @@ function rangeFraction(range, start, duration, minimum, maximum) {
         end: (bounded.end - start) / duration,
     };
 }
-function LaneLabels() {
-    return (_jsxs("div", { className: css.labels, "aria-hidden": "true", children: [_jsx("span", { children: "Input" }), _jsx("span", { children: "Model" }), _jsx("span", { children: "Tools" })] }));
+function LaneLabels({ t }) {
+    return (_jsxs("div", { className: css.labels, "aria-hidden": "true", children: [_jsx("span", { children: t('column.input') }), _jsx("span", { children: t('column.model') }), _jsx("span", { children: t('column.tools') })] }));
 }
-function EarlierHistoryBoundary({ loading, onHover, onLoad, }) {
-    return (_jsx(Tooltip, { label: loading ? 'Loading earlier history…' : 'Click to load earlier history', side: "right", delayMs: TIMELINE_TOOLTIP_DELAY_MS, children: _jsx("button", { type: "button", className: css.earlierHistory, "data-earlier-history": true, "data-loading": loading || undefined, "aria-label": loading ? 'Loading earlier history' : 'Load earlier history', "aria-disabled": loading || onLoad === undefined, onClick: onLoad, onPointerEnter: (event) => {
+function EarlierHistoryBoundary({ loading, onHover, onLoad, t, }) {
+    return (_jsx(Tooltip, { label: loading ? t('history.loadingEarlier') : t('history.clickToLoadEarlier'), side: "right", delayMs: TIMELINE_TOOLTIP_DELAY_MS, children: _jsx("button", { type: "button", className: css.earlierHistory, "data-earlier-history": true, "data-loading": loading || undefined, "aria-label": loading ? t('history.loadingEarlierAria') : t('history.loadEarlier'), "aria-disabled": loading || onLoad === undefined, onClick: onLoad, onPointerEnter: (event) => {
                 event.stopPropagation();
                 onHover();
             }, onPointerMove: (event) => { event.stopPropagation(); }, onPointerDown: (event) => { event.stopPropagation(); }, children: "\u2026" }) }));
 }
 /** Overview renderer with drag ranges, click-sized focus, and Escape reset. */
-export const TrajectoryTimeline = memo(function TrajectoryTimeline({ turns, mode, range, hasEarlierRecords = false, onLoadEarlier, selectedIndex = null, searchMatchIndexes = null, onRangeChange, onRecordSelect, onRecordFocus, }) {
+export const TrajectoryTimeline = memo(function TrajectoryTimeline({ t, turns, mode, range, hasEarlierRecords = false, onLoadEarlier, selectedIndex = null, searchMatchIndexes = null, onRangeChange, onRecordSelect, onRecordFocus, }) {
     const model = useMemo(() => deriveTrajectoryTimeline(turns, mode), [mode, turns]);
     const detailByIndex = useMemo(() => new Map(turns.flatMap(turn => turn.groups.flatMap(group => group.cells.map(cell => [cell.index, timelineRecordDetail(cell)])))), [turns]);
     const dragRef = useRef(null);
@@ -210,7 +213,7 @@ export const TrajectoryTimeline = memo(function TrajectoryTimeline({ turns, mode
         return () => { root.removeEventListener('wheel', onWheel); };
     }, [domainDuration, domainStart, fullDuration, mode, model]);
     if (model === null) {
-        return (_jsx("section", { ref: rootRef, className: css.root, "aria-label": "Trajectory timeline", children: _jsxs("div", { className: css.plot, children: [_jsx(LaneLabels, {}), _jsxs("div", { className: css.track, children: [_jsx("span", { className: css.empty, children: "No timing data" }), hasEarlierRecords && (_jsx(EarlierHistoryBoundary, { loading: loadingEarlier, onHover: () => { setHover(null); }, onLoad: loadEarlier }))] })] }) }));
+        return (_jsx("section", { ref: rootRef, className: css.root, "aria-label": t('timeline.aria'), children: _jsxs("div", { className: css.plot, children: [_jsx(LaneLabels, { t: t }), _jsxs("div", { className: css.track, children: [_jsx("span", { className: css.empty, children: t('timeline.noTimingData') }), hasEarlierRecords && (_jsx(EarlierHistoryBoundary, { loading: loadingEarlier, onHover: () => { setHover(null); }, onLoad: loadEarlier, t: t }))] })] }) }));
     }
     const minimumSelectionDuration = Math.min(domainDuration, fullDuration / model.spans.length);
     const fractionAt = (event) => {
@@ -370,7 +373,7 @@ export const TrajectoryTimeline = memo(function TrajectoryTimeline({ turns, mode
         setHover(null);
         setPanning(false);
     };
-    return (_jsx("section", { ref: rootRef, className: css.root, "aria-label": "Trajectory timeline", children: _jsxs("div", { className: css.plot, children: [_jsx(LaneLabels, {}), _jsxs("div", { ref: trackRef, className: css.track, "data-panning": panning || undefined, "aria-label": "Timeline overview; drag horizontally to focus events", tabIndex: 0, onKeyDown: onKeyDown, onPointerDown: onPointerDown, onPointerMove: onPointerMove, onPointerUp: onPointerEnd, onPointerCancel: onPointerCancel, onPointerLeave: () => {
+    return (_jsx("section", { ref: rootRef, className: css.root, "aria-label": t('timeline.aria'), children: _jsxs("div", { className: css.plot, children: [_jsx(LaneLabels, { t: t }), _jsxs("div", { ref: trackRef, className: css.track, "data-panning": panning || undefined, "aria-label": t('timeline.overviewAria'), tabIndex: 0, onKeyDown: onKeyDown, onPointerDown: onPointerDown, onPointerMove: onPointerMove, onPointerUp: onPointerEnd, onPointerCancel: onPointerCancel, onPointerLeave: () => {
                         if (dragRef.current === null && panRef.current === null)
                             setHover(null);
                     }, onDoubleClick: (event) => {
@@ -378,7 +381,7 @@ export const TrajectoryTimeline = memo(function TrajectoryTimeline({ turns, mode
                         onRangeChange(null);
                     }, onContextMenu: (event) => {
                         event.preventDefault();
-                    }, children: [showsEarlierBoundary && (_jsx(EarlierHistoryBoundary, { loading: loadingEarlier, onHover: () => { setHover(null); }, onLoad: loadEarlier })), hover !== null && hover.recordIndex === null && draft === null && (_jsx("div", { className: css.hoverLine, "data-timeline-hover-line": true, "aria-hidden": "true", style: {
+                    }, children: [showsEarlierBoundary && (_jsx(EarlierHistoryBoundary, { loading: loadingEarlier, onHover: () => { setHover(null); }, onLoad: loadEarlier, t: t })), hover !== null && hover.recordIndex === null && draft === null && (_jsx("div", { className: css.hoverLine, "data-timeline-hover-line": true, "aria-hidden": "true", style: {
                                 '--trajectory-hover-left': `${hover.fraction * 100}%`,
                             } })), visibleRange !== null && (_jsxs(_Fragment, { children: [_jsx("div", { className: css.selection, "data-dragging": draft === null ? undefined : 'true', "aria-hidden": "true", style: {
                                         '--trajectory-selection-left': `${visibleRange.start * 100}%`,
@@ -407,7 +410,7 @@ export const TrajectoryTimeline = memo(function TrajectoryTimeline({ turns, mode
                                     || ttftMs + decodingMs <= 0
                                     ? null
                                     : ttftMs / (ttftMs + decodingMs);
-                                return (_jsx(Tooltip, { label: () => timelineTooltipLabel(span.kind, detail), side: "bottom", delayMs: TIMELINE_TOOLTIP_DELAY_MS, children: _jsx("span", { "aria-hidden": "true", className: css.span, "data-timeline-span": span.kind, "data-timeline-record-index": span.index, "data-assistant-timing": ttftFraction === null ? undefined : 'true', "data-error": span.isError || undefined, "data-equal-duration": mode === 'time' || undefined, "data-current": span.index === selectedIndex || undefined, "data-hovered": hover?.recordIndex === span.index || undefined, "data-search-match": searchMatchIndexes === null
+                                return (_jsx(Tooltip, { label: () => timelineTooltipLabel(span.kind, detail, t), side: "bottom", delayMs: TIMELINE_TOOLTIP_DELAY_MS, children: _jsx("span", { "aria-hidden": "true", className: css.span, "data-timeline-span": span.kind, "data-timeline-record-index": span.index, "data-assistant-timing": ttftFraction === null ? undefined : 'true', "data-error": span.isError || undefined, "data-equal-duration": mode === 'time' || undefined, "data-current": span.index === selectedIndex || undefined, "data-hovered": hover?.recordIndex === span.index || undefined, "data-search-match": searchMatchIndexes === null
                                             ? undefined
                                             : searchMatchIndexes.has(span.index) ? 'true' : 'false', "data-selected": activeRange === null
                                             ? undefined

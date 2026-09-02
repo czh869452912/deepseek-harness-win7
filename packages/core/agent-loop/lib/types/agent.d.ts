@@ -24,6 +24,8 @@ export declare class ReactLoopAgent implements Agent {
     private readonly dispatch;
     /** Whether this loop instance has appended its initial/resume request anchor. */
     private requestHeaderLogged;
+    /** Surface generation of the preceding built request. */
+    private requestSurfaceGeneration;
     private readonly runtimeContext;
     constructor(loopCtx: Context, id: SessionId, options: AgentOptions, session: Session);
     get status(): AgentStatus;

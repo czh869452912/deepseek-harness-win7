@@ -13,7 +13,7 @@ const NS = 'settings';
  * ui-settings' apply, whose activation order relative to this one is NOT
  * constrained; registrations depend on their slots through `slots.inject()`.
  */
-export const inject = ['slots', 'locale', 'connection', 'settingsScope'];
+export const inject = ['slots', 'locale', 'connection', 'remote', 'remote.settings', 'settingsScope'];
 /**
  * Register the `settings` dictionaries, the chrome content, and the General
  * section, each once its slot declaration is on the ledger.
@@ -26,10 +26,9 @@ export function apply(ctx) {
     // locale/change re-registration wiring.
     const t = ctx.locale.bind(NS);
     const connection = ctx.get('connection');
-    // The action follows the shared describe mirror, whose owning plugin
-    // already refreshes it on document commits and reconnects.
+    // The shared SettingsScope mirror updates after document commits and reconnects.
     const documentController = connection.isLoopback
-        ? new SettingsDocumentStore(connection.api, ctx.settingsScope.describe())
+        ? new SettingsDocumentStore(ctx.remote, ctx.settingsScope.describe())
         : undefined;
     const documentInjected = documentController === undefined
         ? undefined

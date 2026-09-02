@@ -1,12 +1,383 @@
+import { randomUUID } from "node:crypto";
 import { Service, symbols } from "@deepseek-ai/cordis";
-import { TypertLookupFailure, remoteMethods } from "@deepseek-ai/dsh-typert-protocol";
+import { MAX_TIMER_DELAY_MS } from "@deepseek-ai/dsh-timeout";
+import z from "@deepseek-ai/schemastery";
+import { TypertLookupFailure, TypertRemoteFailure, remoteMethods } from "@deepseek-ai/dsh-typert-protocol";
+import WebSocket, { WebSocketServer } from "ws";
+//#region lib/types/stream-protocol.js
+/** Wire messages for Gateway-owned Remote streams and event-result RPCs. */
+/** Exact WebSocket route carrying every Typert Remote stream. */
+const REMOTE_STREAM_MUX_PATH = "/api/remote.mux";
+/** Gateway-internal logical stream carrying application-selected Cordis events. */
+const REMOTE_EVENT_STREAM_ENDPOINT = "$events";
+/** Discriminator for the first item proving the Host event source is ready. */
+const REMOTE_EVENT_STREAM_READY = { type: "ready" };
+/**
+* Parse one result sent through the Client's `$events/result` HTTP RPC.
+* @param value - untrusted result payload.
+* @returns validated event correlation and outcome fields.
+*/
+function parseRemoteEventResult(value) {
+	if (!isRecord(value) || !exactKeys(value, [
+		"clientId",
+		"eventId",
+		"outcome"
+	]) || !isRemoteEventClientId(value.clientId) || !isRemoteEventId(value.eventId) || !isRecord(value.outcome)) throw new Error("api gateway: invalid Remote event result");
+	const outcome = value.outcome;
+	if (outcome.kind === "next" && exactKeys(outcome, ["kind"])) return {
+		clientId: value.clientId,
+		eventId: value.eventId,
+		outcome: { kind: "next" }
+	};
+	if (outcome.kind === "result" && (exactKeys(outcome, ["kind"]) || exactKeys(outcome, ["kind", "value"])) && (!Object.hasOwn(outcome, "value") || isRemoteJsonValue(outcome.value))) return {
+		clientId: value.clientId,
+		eventId: value.eventId,
+		outcome: Object.hasOwn(outcome, "value") ? {
+			kind: "result",
+			value: outcome.value
+		} : { kind: "result" }
+	};
+	if (outcome.kind === "rejected" && exactKeys(outcome, ["kind", "error"])) return {
+		clientId: value.clientId,
+		eventId: value.eventId,
+		outcome: {
+			kind: "rejected",
+			error: parseRemoteEventRejection(outcome.error)
+		}
+	};
+	throw new Error("api gateway: invalid Remote event result");
+}
+/**
+* Remove the direct Agent and cancellation fields from one waterfall request.
+* @param value - request object before the waterfall's `next` callback.
+* @param subject - Agent used by the Cordis scope carrier.
+* @returns JSON-safe request fields and the optional Host cancellation signal.
+*/
+function projectRemoteEventRequest(value, subject) {
+	if (!isPlainRecord(value) || !Object.hasOwn(value, "agent") || value.agent !== subject) throw new TypeError("api gateway: Remote event request must carry its scoped Agent directly");
+	const signal = value.signal;
+	if (signal !== void 0 && !(signal instanceof AbortSignal)) throw new TypeError("api gateway: Remote event request signal must be an AbortSignal");
+	const request = Object.create(null);
+	for (const key of Reflect.ownKeys(value)) {
+		if (key === "agent" || key === "signal") continue;
+		if (typeof key !== "string" || (typeof key === "string" ? Object.getOwnPropertyDescriptor(value, key) : void 0)?.enumerable !== true) throw new TypeError("api gateway: Remote event request has a non-JSON property");
+		request[key] = Reflect.get(value, key);
+	}
+	if (!isRemoteJsonValue(request)) throw new TypeError("api gateway: Remote event request is not lossless JSON data");
+	return {
+		request,
+		...signal === void 0 ? {} : { signal }
+	};
+}
+/**
+* Recreate a Client rejection for the Host continuation.
+* @param rejection - validated wire-safe error fields.
+* @returns an Error preserving the remote name, code, and JSON-safe details.
+*/
+function restoreRemoteEventRejection(rejection) {
+	const error = new Error(rejection.message);
+	error.name = rejection.name;
+	if (rejection.code !== void 0) error.code = rejection.code;
+	if (rejection.details !== void 0) error.details = rejection.details;
+	return error;
+}
+/**
+* Test whether a value crosses JSON transport without coercion or omission.
+* @param value - candidate boundary value.
+* @returns whether the value is losslessly JSON-compatible.
+*/
+function isRemoteJsonValue(value) {
+	return visitJsonValue(value, /* @__PURE__ */ new Set());
+}
+/**
+* Recognize a non-empty Remote Event correlation id at a wire boundary.
+* @param value - untrusted wire value.
+* @returns whether the value is a valid Remote Event id.
+*/
+function isRemoteEventId(value) {
+	return typeof value === "string" && value.length > 0;
+}
+/**
+* Recognize a non-empty Remote Event Client id at a wire boundary.
+* @param value - untrusted wire value.
+* @returns whether the value identifies one event-stream generation.
+*/
+function isRemoteEventClientId(value) {
+	return typeof value === "string" && value.length > 0;
+}
+/**
+* Recognize the direct Agent identity used by a scoped Remote Event.
+* @param value - untrusted wire value.
+* @returns whether the value is a non-empty Agent identity.
+*/
+function isRemoteEventAgentId(value) {
+	return typeof value === "string" && value.length > 0;
+}
+/**
+* Parse and validate one browser-to-Host text message.
+* @param text - complete WebSocket text message.
+* @returns the validated logical-stream request.
+*/
+function parseRemoteStreamClientMessage(text) {
+	return parseMessage(text, (value) => {
+		if (value.type === "cancel" && exactKeys(value, ["type", "streamId"]) && validId(value.streamId)) return value;
+		if (value.type === "open" && exactKeys(value, [
+			"type",
+			"streamId",
+			"endpoint",
+			"payload"
+		]) && validId(value.streamId) && typeof value.endpoint === "string" && value.endpoint.length > 0) return value;
+		throw new Error("api gateway: invalid Remote stream client message");
+	});
+}
+function parseMessage(text, validate) {
+	let decoded;
+	try {
+		decoded = JSON.parse(text);
+	} catch (cause) {
+		throw new Error("api gateway: Remote stream message is not JSON", { cause });
+	}
+	if (!isRecord(decoded)) throw new Error("api gateway: Remote stream message must be an object");
+	return validate(decoded);
+}
+function isRecord(value) {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function isPlainRecord(value) {
+	if (!isRecord(value)) return false;
+	const prototype = Object.getPrototypeOf(value);
+	return prototype === Object.prototype || prototype === null;
+}
+function exactKeys(value, expected) {
+	return Reflect.ownKeys(value).length === expected.length && expected.every((key) => Object.hasOwn(value, key));
+}
+function validId(value) {
+	return typeof value === "string" && value.length > 0;
+}
+function parseRemoteEventRejection(value) {
+	if (!isRecord(value) || !hasOnlyKeys(value, ["name", "message"], ["code", "details"]) || typeof value.name !== "string" || value.name.length === 0 || typeof value.message !== "string" || Object.hasOwn(value, "code") && typeof value.code !== "string" || Object.hasOwn(value, "details") && !isRemoteJsonValue(value.details)) throw new Error("api gateway: invalid Remote event rejection");
+	return {
+		name: value.name,
+		message: value.message,
+		...typeof value.code === "string" ? { code: value.code } : {},
+		...Object.hasOwn(value, "details") ? { details: value.details } : {}
+	};
+}
+function hasOnlyKeys(value, required, optional) {
+	const keys = Reflect.ownKeys(value);
+	return required.every((key) => Object.hasOwn(value, key)) && keys.every((key) => typeof key === "string" && (required.includes(key) || optional.includes(key)));
+}
+function visitJsonValue(value, ancestors) {
+	if (value === null || typeof value === "string" || typeof value === "boolean") return true;
+	if (typeof value === "number") return Number.isFinite(value) && !Object.is(value, -0);
+	if (typeof value !== "object") return false;
+	if (ancestors.has(value)) return false;
+	ancestors.add(value);
+	try {
+		if (Array.isArray(value)) {
+			if (Object.getPrototypeOf(value) !== Array.prototype || Reflect.ownKeys(value).length !== value.length + 1) return false;
+			for (let index = 0; index < value.length; index++) if (!Object.hasOwn(value, index) || !visitJsonValue(value[index], ancestors)) return false;
+			return true;
+		}
+		const prototype = Object.getPrototypeOf(value);
+		if (prototype !== Object.prototype && prototype !== null) return false;
+		for (const key of Reflect.ownKeys(value)) {
+			if (typeof key !== "string") return false;
+			if (Object.getOwnPropertyDescriptor(value, key)?.enumerable !== true || !visitJsonValue(Reflect.get(value, key), ancestors)) return false;
+		}
+		return true;
+	} finally {
+		ancestors.delete(value);
+	}
+}
+//#endregion
+//#region lib/types/stream-server.js
+/** Host WebSocket owner for multiplexed Typert Remote streams. */
+/** Own the no-server WebSocket acceptor and every active logical stream. */
+var RemoteStreamMuxServer = class {
+	open;
+	failure;
+	heartbeatIntervalMs;
+	server = new WebSocketServer({ noServer: true });
+	connections = /* @__PURE__ */ new Set();
+	heartbeatTimer;
+	/**
+	* @param open - Gateway stream dispatcher.
+	* @param failure - Gateway error-to-wire mapper.
+	* @param heartbeatIntervalMs - interval between WebSocket Ping control frames.
+	*/
+	constructor(open, failure, heartbeatIntervalMs) {
+		this.open = open;
+		this.failure = failure;
+		this.heartbeatIntervalMs = heartbeatIntervalMs;
+	}
+	/**
+	* Upgrade one trusted request and begin serving its logical streams.
+	* @param req - authenticated HTTP upgrade request.
+	* @param socket - carrier socket transferred to the WebSocket server.
+	* @param head - bytes already read after the HTTP upgrade headers.
+	*/
+	handleUpgrade(req, socket, head) {
+		this.server.handleUpgrade(req, socket, head, (websocket) => {
+			this.startHeartbeat();
+			const done = new RemoteStreamMuxConnection(websocket, this.open, this.failure).run();
+			this.connections.add(done);
+			done.then(() => {
+				this.connections.delete(done);
+			});
+		});
+	}
+	/** Terminate all sockets and wait until every iterator has returned. */
+	async close() {
+		clearInterval(this.heartbeatTimer);
+		this.heartbeatTimer = void 0;
+		for (const socket of this.server.clients) socket.terminate();
+		const closed = Promise.withResolvers();
+		this.server.close((error) => {
+			if (error === void 0) closed.resolve();
+			else closed.reject(error);
+		});
+		await closed.promise;
+		await Promise.all(this.connections);
+	}
+	/** Start one `unref()` timer after the first upgrade; it spans empty-client periods until close(). */
+	startHeartbeat() {
+		if (this.heartbeatTimer !== void 0) return;
+		this.heartbeatTimer = setInterval(() => {
+			for (const socket of this.server.clients) if (socket.readyState === WebSocket.OPEN) socket.ping();
+		}, this.heartbeatIntervalMs);
+		this.heartbeatTimer.unref();
+	}
+};
+var RemoteStreamMuxConnection = class {
+	socket;
+	open;
+	failure;
+	streams = /* @__PURE__ */ new Map();
+	writes = Promise.resolve();
+	constructor(socket, open, failure) {
+		this.socket = socket;
+		this.open = open;
+		this.failure = failure;
+	}
+	async run() {
+		await new Promise((resolve) => {
+			this.socket.once("close", resolve);
+			this.socket.once("error", () => {
+				this.socket.terminate();
+			});
+			this.socket.on("message", (data, isBinary) => {
+				if (isBinary) {
+					this.socket.close(1003, "text messages required");
+					return;
+				}
+				try {
+					this.receive(rawText(data));
+				} catch {
+					this.socket.close(1008, "invalid Remote stream request");
+				}
+			});
+		});
+		const active = [...this.streams.values()];
+		for (const stream of active) stream.abort.abort(/* @__PURE__ */ new Error("Remote stream socket closed"));
+		await Promise.all(active.map((stream) => stream.done));
+	}
+	receive(text) {
+		const message = parseRemoteStreamClientMessage(text);
+		if (message.type === "cancel") {
+			this.streams.get(message.streamId)?.abort.abort(/* @__PURE__ */ new Error("Remote stream cancelled"));
+			return;
+		}
+		if (this.streams.has(message.streamId)) throw new Error(`api gateway: duplicate Remote stream id ${JSON.stringify(message.streamId)}`);
+		const active = {
+			abort: new AbortController(),
+			done: Promise.resolve()
+		};
+		this.streams.set(message.streamId, active);
+		const done = this.pump(message.streamId, message.endpoint, message.payload, active);
+		active.done = done;
+		const remove = () => {
+			this.streams.delete(message.streamId);
+		};
+		done.then(remove, remove);
+	}
+	async pump(streamId, endpoint, payload, active) {
+		try {
+			const source = await this.open(endpoint, payload, active.abort.signal);
+			for await (const value of source) await this.send({
+				type: "item",
+				streamId,
+				value
+			});
+			if (!active.abort.signal.aborted) await this.send({
+				type: "end",
+				streamId
+			});
+		} catch (error) {
+			if (!active.abort.signal.aborted && this.socket.readyState === WebSocket.OPEN) try {
+				await this.send({
+					type: "error",
+					streamId,
+					error: this.failure(error)
+				});
+			} catch {
+				this.socket.close(1011, "Remote stream failure could not be delivered");
+			}
+		}
+	}
+	send(message) {
+		let text;
+		try {
+			text = JSON.stringify(message);
+		} catch (cause) {
+			return Promise.reject(new Error("api gateway: Remote stream item is not JSON serializable", { cause }));
+		}
+		const delivery = this.writes.then(() => new Promise((resolve, reject) => {
+			if (this.socket.readyState !== WebSocket.OPEN) {
+				reject(/* @__PURE__ */ new Error("api gateway: Remote stream socket is closed"));
+				return;
+			}
+			this.socket.send(text, (error) => {
+				if (error) reject(error);
+				else resolve();
+			});
+		}));
+		this.writes = delivery.catch(() => void 0);
+		return delivery;
+	}
+};
+function rawText(data) {
+	if (Array.isArray(data)) return Buffer.concat(data).toString("utf8");
+	if (data instanceof ArrayBuffer) return Buffer.from(data).toString("utf8");
+	return Buffer.from(data).toString("utf8");
+}
+/**
+* Reject an upgrade without transferring socket ownership to ws.
+* @param socket - carrier socket that receives the HTTP rejection.
+* @param status - authentication or browser-trust rejection status.
+*/
+function rejectRemoteStreamUpgrade(socket, status) {
+	const reason = status === 401 ? "Unauthorized" : "Forbidden";
+	const body = reason.toLowerCase();
+	socket.end([
+		`HTTP/1.1 ${String(status)} ${reason}`,
+		"Connection: close",
+		"Content-Type: text/plain; charset=utf-8",
+		`Content-Length: ${String(Buffer.byteLength(body))}`,
+		"",
+		body
+	].join("\r\n"));
+}
+//#endregion
 //#region lib/types/index.js
 /**
 * Live Typert Remote dispatch over Cordis Services and registered providers.
-* Transport, request correlation, and response envelopes belong to Connection.
+* Unary transport and response envelopes belong to Connection; live Remote
+* streams use the Gateway-owned WebSocket mux.
 * @module @deepseek-ai/dsh-api-gateway
 */
 const NEVER_ABORTED_SIGNAL = new AbortController().signal;
+const DEFAULT_WEBSOCKET_HEARTBEAT_INTERVAL_MS = 3e4;
 /** Dispatch failure produced outside the invoked business method. */
 var TypertGatewayError = class extends Error {
 	/** Machine-readable failure category. */
@@ -48,21 +419,85 @@ var RemoteInvocationCancelled = class extends Error {
 */
 var TypertGatewayService = class extends Service {
 	static inject = ["typert"];
+	static Config = z.object({ websocketHeartbeatIntervalMs: z.number().step(1).min(1).max(MAX_TIMER_DELAY_MS).default(DEFAULT_WEBSOCKET_HEARTBEAT_INTERVAL_MS) });
+	/** Carrier adapter shared by the WebSocket mux and local Host transports. */
+	wireStream = {
+		open: (endpoint, payload, signal) => this.openWireStream(endpoint, payload, signal),
+		failure: (error) => rpcError(error)
+	};
 	srcClaims;
+	remoteEvents;
+	remoteEventClients = /* @__PURE__ */ new Map();
+	pendingRemoteEvents = /* @__PURE__ */ new Map();
 	/**
 	* Register the Gateway against the active Typert registry.
 	* @param ctx - owning Host Context with Typert registry access.
+	* @param config - validated Gateway transport configuration.
 	*/
-	constructor(ctx) {
+	constructor(ctx, config) {
 		super(ctx, "typertGateway");
+		const resolved = config;
 		ctx.on("internal/service", () => {
 			this.srcClaims = void 0;
 		});
 		ctx.inject(["connection"], (connectionCtx) => {
-			connectionCtx.connection.rpc.intercept("/api", (endpoint) => this.claimsEndpoint(endpoint), (endpoint, payload, signal) => this.dispatchRpc(endpoint, payload, signal), { authority: "trusted-host" });
+			connectionCtx.connection.rpc.intercept("/api", (endpoint) => this.claimsEndpoint(endpoint), (endpoint, payload, signal) => this.dispatchRpc(endpoint, payload, signal));
+		});
+		ctx.inject(["connection", "webServer"], (webCtx) => {
+			const mux = new RemoteStreamMuxServer((endpoint, payload, signal) => this.openWireStream(endpoint, payload, signal), this.wireStream.failure, resolved.websocketHeartbeatIntervalMs);
+			webCtx.effect(() => {
+				const route = {
+					path: REMOTE_STREAM_MUX_PATH,
+					handler: (req, socket, head) => {
+						const rejection = webCtx.connection.requestRejection(req);
+						if (rejection !== void 0) {
+							rejectRemoteStreamUpgrade(socket, rejection);
+							return;
+						}
+						mux.handleUpgrade(req, socket, head);
+					}
+				};
+				const unregister = webCtx.webServer.registerUpgrade(route);
+				return async () => {
+					unregister();
+					await mux.close();
+				};
+			}, `api-gateway: ${REMOTE_STREAM_MUX_PATH} WebSocket`);
 		});
 	}
+	/**
+	* Register the sole application-selected forwarded-event source.
+	* @param source - stream factory installed by the Remote assembly.
+	* @param host - stable Host facts included in each Client generation's opening frame.
+	* @returns disposer removing this source and cancelling its active streams.
+	*/
+	registerRemoteEvents(source, host) {
+		if (this.remoteEvents !== void 0) throw new Error("typert gateway: forwarded Remote event source is already registered");
+		const lifetime = new AbortController();
+		const stream = source(lifetime.signal);
+		const registration = {
+			lifetime,
+			done: this.consumeRemoteEvents(stream, lifetime.signal).catch((error) => {
+				if (this.remoteEvents?.lifetime !== lifetime || lifetime.signal.aborted) return;
+				this.closeRemoteEvents(error);
+				this.remoteEvents = void 0;
+				lifetime.abort(error);
+			}),
+			host: { home: host.home }
+		};
+		this.remoteEvents = registration;
+		return async () => {
+			if (this.remoteEvents === registration) {
+				this.remoteEvents = void 0;
+				const error = /* @__PURE__ */ new Error("typert gateway: forwarded Remote event source was removed");
+				registration.lifetime.abort(error);
+				this.closeRemoteEvents(error);
+			}
+			await registration.done;
+		};
+	}
 	claimsEndpoint(endpoint) {
+		if (endpoint === "$events/result") return true;
 		const segments = endpoint.split("/");
 		if (segments.length !== 2 || segments[0] === "" || segments[1] === "") return false;
 		if (this.ctx.typert.local.get(endpoint) !== void 0 || this.ctx.typert.local.hasSeen(endpoint)) return true;
@@ -86,10 +521,215 @@ var TypertGatewayService = class extends Service {
 	/**
 	* Invoke one live Remote method through strict generated reflection or SRC markers.
 	* @param request - decoded endpoint and exact named wire arguments.
-	* @returns the validated business result.
+	* @returns the business result without output decoding.
 	* @throws {@link TypertGatewayError} for dispatch, provider, or boundary failures; lookup-policy and business errors retain identity.
 	*/
 	async invoke(request) {
+		const prepared = await this.prepareInvocation(request);
+		if (prepared.descriptor.mode === "stream") throw new TypertGatewayError("signature-invalid", prepared.endpoint, "stream Remote methods must be opened through the stream carrier");
+		try {
+			return await Reflect.apply(prepared.method, prepared.receiver, prepared.args);
+		} catch (error) {
+			if (request.signal?.aborted === true) throw new RemoteInvocationCancelled(prepared.endpoint, error);
+			throw error;
+		}
+	}
+	/**
+	* Open one live stream Remote method without assuming a physical carrier.
+	* @param request - decoded endpoint and named wire arguments.
+	* @returns a cancellation-aware iterable over the business results.
+	*/
+	async stream(request) {
+		const prepared = await this.prepareInvocation(request);
+		if (prepared.descriptor.mode !== "stream") throw new TypertGatewayError("signature-invalid", prepared.endpoint, "unary Remote methods cannot be opened through the stream carrier");
+		let source;
+		try {
+			source = Reflect.apply(prepared.method, prepared.receiver, prepared.args);
+		} catch (error) {
+			if (request.signal?.aborted === true) throw new RemoteInvocationCancelled(prepared.endpoint, error);
+			throw error;
+		}
+		if (!isIterable(source)) throw new TypertGatewayError("result-invalid", prepared.endpoint, "stream Remote method did not return Iterable or AsyncIterable", { field: "result" });
+		return cancellableStream(source, prepared.endpoint, request.signal ?? NEVER_ABORTED_SIGNAL);
+	}
+	async dispatchRpc(endpoint, payload, signal) {
+		if (endpoint === "$events/result") try {
+			const result = parseRemoteEventResultPayload(payload);
+			const client = this.remoteEventClients.get(result.clientId);
+			if (client === void 0) throw new Error("typert gateway: Remote event result identifies no active event stream");
+			this.receiveRemoteEventResult(client, result);
+			return {
+				ok: true,
+				value: void 0
+			};
+		} catch (error) {
+			return rpcFailure(error);
+		}
+		return this.invokeRpc(endpoint, payload, signal);
+	}
+	async openWireStream(endpoint, payload, signal) {
+		if (endpoint === "$events") return this.openRemoteEvents(payload, signal);
+		return this.stream(remoteRequest(endpoint, payload, signal));
+	}
+	async *openRemoteEvents(payload, signal) {
+		if (!isObject(payload) || !isPlainObject(payload) || Reflect.ownKeys(payload).length !== 1 || !Object.hasOwn(payload, "args") || !isObject(payload.args) || !isPlainObject(payload.args) || Reflect.ownKeys(payload.args).length !== 0) throw new TypertGatewayError("arguments-invalid", REMOTE_EVENT_STREAM_ENDPOINT, "forwarded Remote event stream requires an empty args object");
+		const registration = this.remoteEvents;
+		if (registration === void 0) throw new TypertGatewayError("service-unavailable", REMOTE_EVENT_STREAM_ENDPOINT, "forwarded Remote event source is unavailable");
+		const lifetime = AbortSignal.any([signal, registration.lifetime.signal]);
+		let clientId = randomUUID();
+		while (this.remoteEventClients.has(clientId)) clientId = randomUUID();
+		const client = {
+			id: clientId,
+			queue: new RemoteEventQueue(),
+			deliveries: /* @__PURE__ */ new Map()
+		};
+		this.remoteEventClients.set(clientId, client);
+		for (const pending of this.pendingRemoteEvents.values()) this.deliverRemoteEvent(pending, client);
+		try {
+			yield {
+				...REMOTE_EVENT_STREAM_READY,
+				clientId,
+				host: registration.host
+			};
+			yield* client.queue.iterate(lifetime);
+		} finally {
+			this.removeRemoteEventClient(client);
+		}
+	}
+	async consumeRemoteEvents(source, signal) {
+		for await (const dispatch of source) {
+			if (signal.aborted) {
+				if ("context" in dispatch) dispatch.reject(signal.reason);
+				return;
+			}
+			if ("context" in dispatch) this.startRemoteEvent(dispatch);
+			else this.broadcastRemoteEvent(dispatch);
+		}
+		if (!signal.aborted) throw new Error("typert gateway: forwarded Remote event source ended unexpectedly");
+	}
+	broadcastRemoteEvent(frame) {
+		assertRemoteEventFrame(frame);
+		const wire = {
+			type: "emit",
+			event: frame.event,
+			args: frame.args
+		};
+		for (const client of this.remoteEventClients.values()) client.queue.push(wire);
+	}
+	startRemoteEvent(source) {
+		try {
+			assertRemoteEventName(source);
+			const context = this.ctx.typert.contexts.identifyHost(source.context.value);
+			if (context === void 0) {
+				source.resolve({ kind: "next" });
+				return;
+			}
+			if (context.kind !== "agent" || !isRemoteEventAgentId(context.identity)) throw new TypeError("typert gateway: scoped Remote events require a non-empty Agent identity");
+			const projected = projectRemoteEventRequest(source.request, source.context.subject);
+			let id = randomUUID();
+			while (this.pendingRemoteEvents.has(id)) id = randomUUID();
+			let releaseContext;
+			try {
+				const dispose = source.context.value.effect(() => () => {
+					this.cancelRemoteEvent(pending, /* @__PURE__ */ new Error(`typert gateway: Remote event Context ${JSON.stringify(context.kind)} was released`));
+				}, `api-gateway: Remote event ${JSON.stringify(source.event)}`);
+				releaseContext = () => {
+					dispose();
+				};
+			} catch {
+				source.resolve({ kind: "next" });
+				return;
+			}
+			const signals = new Set(projected.signal === void 0 ? [] : [projected.signal]);
+			const abort = () => {
+				const reason = [...signals].find((signal) => signal.aborted)?.reason;
+				this.cancelRemoteEvent(pending, reason instanceof Error ? reason : new Error("typert gateway: Remote event was cancelled", { cause: reason }));
+			};
+			const pending = {
+				id,
+				source,
+				frame: {
+					type: "waterfall",
+					event: source.event,
+					eventId: id,
+					agentId: context.identity,
+					request: projected.request
+				},
+				deliveries: /* @__PURE__ */ new Set(),
+				releaseContext,
+				releaseSignal: () => {
+					for (const signal of signals) signal.removeEventListener("abort", abort);
+				}
+			};
+			this.pendingRemoteEvents.set(id, pending);
+			for (const signal of signals) signal.addEventListener("abort", abort, { once: true });
+			if ([...signals].some((signal) => signal.aborted)) abort();
+			else for (const client of this.remoteEventClients.values()) this.deliverRemoteEvent(pending, client);
+		} catch (error) {
+			source.reject(error);
+		}
+	}
+	deliverRemoteEvent(pending, client) {
+		pending.deliveries.add(client);
+		client.deliveries.set(pending.id, pending);
+		client.queue.push(pending.frame);
+	}
+	receiveRemoteEventResult(client, result) {
+		const pending = this.pendingRemoteEvents.get(result.eventId);
+		if (pending === void 0 || !pending.deliveries.has(client)) return;
+		this.removeRemoteEventDelivery(pending, client);
+		if (result.outcome.kind === "result") this.settleRemoteEvent(pending, {
+			kind: "result",
+			value: result.outcome.value
+		});
+		else if (result.outcome.kind === "rejected") this.cancelRemoteEvent(pending, restoreRemoteEventRejection(result.outcome.error));
+		else if (pending.deliveries.size === 0) this.settleRemoteEvent(pending, { kind: "next" });
+	}
+	removeRemoteEventDelivery(pending, client) {
+		pending.deliveries.delete(client);
+		client.deliveries.delete(pending.id);
+	}
+	removeRemoteEventClient(client) {
+		this.remoteEventClients.delete(client.id);
+		for (const pending of [...client.deliveries.values()]) this.removeRemoteEventDelivery(pending, client);
+		client.queue.end();
+	}
+	settleRemoteEvent(pending, outcome) {
+		this.finishRemoteEvent(pending);
+		pending.source.resolve(outcome);
+	}
+	cancelRemoteEvent(pending, reason) {
+		if (this.pendingRemoteEvents.get(pending.id) !== pending) return;
+		this.finishRemoteEvent(pending);
+		pending.source.reject(reason);
+	}
+	finishRemoteEvent(pending) {
+		this.pendingRemoteEvents.delete(pending.id);
+		pending.releaseSignal();
+		pending.releaseContext();
+		const clients = new Set(pending.deliveries);
+		for (const client of clients) this.removeRemoteEventDelivery(pending, client);
+		const cancellation = {
+			type: "cancel",
+			eventId: pending.id
+		};
+		for (const client of clients) client.queue.push(cancellation);
+	}
+	closeRemoteEvents(reason) {
+		for (const pending of [...this.pendingRemoteEvents.values()]) this.cancelRemoteEvent(pending, reason);
+		for (const client of [...this.remoteEventClients.values()]) client.queue.end();
+	}
+	async invokeRpc(endpoint, payload, signal) {
+		try {
+			return {
+				ok: true,
+				value: await this.invoke(remoteRequest(endpoint, payload, signal))
+			};
+		} catch (error) {
+			return rpcFailure(error);
+		}
+	}
+	async prepareInvocation(request) {
 		const endpoint = endpointOf(request.namespace, request.method);
 		const descriptor = this.resolveDescriptor(request.namespace, request.method, endpoint);
 		assertExactArguments(request.args, descriptor, endpoint);
@@ -101,37 +741,13 @@ var TypertGatewayService = class extends Service {
 		const implementation = descriptor.implementation ?? descriptor.method;
 		const method = Reflect.get(receiver, implementation);
 		if (typeof method !== "function") throw new TypertGatewayError("method-unavailable", endpoint, `active Service ${JSON.stringify(descriptor.service)} has no callable method ${JSON.stringify(implementation)}`);
-		let result;
-		try {
-			result = await Reflect.apply(method, receiver, args);
-		} catch (error) {
-			if (request.signal?.aborted === true) throw new RemoteInvocationCancelled(endpoint, error);
-			throw error;
-		}
-		if (result === void 0 && descriptor.result.mode !== "strict") return result;
-		return decode(descriptor.result, result, "result-invalid", endpoint, "result");
-	}
-	async dispatchRpc(endpoint, payload, signal) {
-		return this.invokeRpc(endpoint, payload, signal);
-	}
-	async invokeRpc(endpoint, payload, signal) {
-		try {
-			const segments = endpoint.split("/");
-			if (segments.length !== 2 || segments[0] === "" || segments[1] === "") throw new Error(`invalid Remote endpoint ${JSON.stringify(endpoint)}`);
-			const [namespace, method] = segments;
-			if (!isObject(payload) || !isPlainObject(payload) || Reflect.ownKeys(payload).length !== 1 || !Object.hasOwn(payload, "args") || !isObject(payload.args) || !isPlainObject(payload.args)) throw new Error("Remote payload must contain exactly one plain-object args field");
-			return {
-				ok: true,
-				value: await this.invoke({
-					namespace,
-					method,
-					args: payload.args,
-					signal
-				})
-			};
-		} catch (error) {
-			return rpcFailure(error);
-		}
+		return {
+			endpoint,
+			descriptor,
+			receiver,
+			args,
+			method
+		};
 	}
 	resolveDescriptor(namespace, method, endpoint) {
 		const strict = this.ctx.typert.local.get(endpoint);
@@ -204,6 +820,7 @@ var TypertGatewayService = class extends Service {
 			namespace: binding.namespace,
 			method,
 			...marker.method === method ? {} : { implementation: marker.method },
+			...marker.mode === void 0 ? {} : { mode: marker.mode },
 			invocation: receiver,
 			parameters,
 			...cancellation === void 0 ? {} : { cancellation },
@@ -216,7 +833,7 @@ var TypertGatewayService = class extends Service {
 		const provider = this.ctx.typert.contexts.getHost(invocation.context);
 		if (provider === void 0) throw new TypertGatewayError("context-unavailable", endpoint, `Context provider ${JSON.stringify(invocation.context)} is unavailable`);
 		if (provider.wire !== invocation.wire || invocation.codec.mode === "strict" && provider.wireTypeSymbol !== invocation.codec.typeSymbol) throw new TypertGatewayError("provider-mismatch", endpoint, `Context provider ${JSON.stringify(invocation.context)} does not match its strict definition`, { field: invocation.wire });
-		const identity = decode(invocation.codec, args[invocation.wire], "input-invalid", endpoint, invocation.wire);
+		const identity = decode(invocation.codec, args[invocation.wire], endpoint, invocation.wire);
 		let context;
 		try {
 			context = await provider.resolve(identity);
@@ -232,7 +849,7 @@ var TypertGatewayService = class extends Service {
 	}
 	async resolveParameter(parameter, args, endpoint) {
 		if (!Object.hasOwn(args, parameter.wire)) return void 0;
-		const value = decode(parameter.codec, args[parameter.wire], "input-invalid", endpoint, parameter.wire);
+		const value = decode(parameter.codec, args[parameter.wire], endpoint, parameter.wire);
 		if (parameter.source === "json") return value;
 		const key = parameter.lookup;
 		/* v8 ignore next -- registry validation rejects strict descriptors without a key, and SRC derivation always supplies one. */
@@ -254,6 +871,90 @@ var TypertGatewayService = class extends Service {
 		return resolved;
 	}
 };
+/** Pull-driven queue owned by one connected Client event generation. */
+var RemoteEventQueue = class {
+	frames = [];
+	waiter;
+	closed = false;
+	push(frame) {
+		if (this.closed) return;
+		this.frames.push(frame);
+		this.waiter?.();
+	}
+	end() {
+		if (this.closed) return;
+		this.closed = true;
+		this.waiter?.();
+	}
+	async *iterate(signal) {
+		const abort = () => {
+			this.end();
+		};
+		signal.addEventListener("abort", abort, { once: true });
+		try {
+			while (true) {
+				while (this.frames.length > 0) yield this.frames.shift();
+				if (this.closed || signal.aborted) return;
+				await new Promise((resolve) => {
+					this.waiter = resolve;
+				});
+				this.waiter = void 0;
+			}
+		} finally {
+			signal.removeEventListener("abort", abort);
+		}
+	}
+};
+function assertRemoteEventFrame(frame) {
+	assertRemoteEventName(frame);
+	if (!Array.isArray(frame.args) || !isRemoteJsonValue(frame.args)) throw new TypeError(`typert gateway: Remote event ${JSON.stringify(frame.event)} arguments are not lossless JSON data`);
+}
+function assertRemoteEventName(frame) {
+	if (typeof frame.event !== "string" || frame.event.length === 0) throw new TypeError("typert gateway: Remote event name must be a nonempty string");
+}
+function parseRemoteEventResultPayload(payload) {
+	if (!isObject(payload) || !isPlainObject(payload) || Reflect.ownKeys(payload).length !== 1 || !Object.hasOwn(payload, "args")) throw new Error("typert gateway: Remote event result requires exactly one plain-object args field");
+	return parseRemoteEventResult(payload.args);
+}
+function remoteRequest(endpoint, payload, signal) {
+	const segments = endpoint.split("/");
+	if (segments.length !== 2 || segments[0] === "" || segments[1] === "") throw new Error(`invalid Remote endpoint ${JSON.stringify(endpoint)}`);
+	const [namespace, method] = segments;
+	if (!isObject(payload) || !isPlainObject(payload) || Reflect.ownKeys(payload).length !== 1 || !Object.hasOwn(payload, "args") || !isObject(payload.args) || !isPlainObject(payload.args)) throw new Error("Remote payload must contain exactly one plain-object args field");
+	return {
+		namespace,
+		method,
+		args: payload.args,
+		signal
+	};
+}
+function isIterable(value) {
+	return isObject(value) && (typeof Reflect.get(value, Symbol.iterator) === "function" || typeof Reflect.get(value, Symbol.asyncIterator) === "function");
+}
+async function* cancellableStream(source, endpoint, signal) {
+	const asyncFactory = Reflect.get(source, Symbol.asyncIterator);
+	const syncFactory = Reflect.get(source, Symbol.iterator);
+	const iterator = typeof asyncFactory === "function" ? Reflect.apply(asyncFactory, source, []) : Reflect.apply(syncFactory, source, []);
+	let rejectAbort;
+	const aborted = new Promise((_resolve, reject) => {
+		rejectAbort = reject;
+	});
+	const onAbort = () => {
+		rejectAbort?.(new RemoteInvocationCancelled(endpoint, signal.reason));
+	};
+	signal.addEventListener("abort", onAbort, { once: true });
+	try {
+		if (signal.aborted) throw new RemoteInvocationCancelled(endpoint, signal.reason);
+		while (true) {
+			const next = await Promise.race([Promise.resolve(iterator.next()), aborted]);
+			if (next.done === true) return;
+			yield next.value;
+		}
+	} finally {
+		signal.removeEventListener("abort", onAbort);
+		await iterator.return?.();
+	}
+}
 function rpcFailure(error) {
 	if (error instanceof RemoteInvocationCancelled) return {
 		ok: false,
@@ -267,6 +968,10 @@ function rpcFailure(error) {
 		ok: false,
 		error: error.failure
 	};
+	if (error instanceof TypertRemoteFailure) return {
+		ok: false,
+		error: error.failure
+	};
 	return {
 		ok: false,
 		error: {
@@ -275,6 +980,9 @@ function rpcFailure(error) {
 			details: {}
 		}
 	};
+}
+function rpcError(error) {
+	return rpcFailure(error).error;
 }
 function endpointOf(namespace, method) {
 	return `${namespace}/${method}`;
@@ -339,16 +1047,17 @@ function assertExactArguments(args, descriptor, endpoint) {
 	if (extra.length > 0) clauses.push(`unexpected ${extra.map((key) => JSON.stringify(String(key))).join(", ")}`);
 	throw new TypertGatewayError("arguments-invalid", endpoint, `args fields do not match the descriptor: ${clauses.join("; ")}`);
 }
-function decode(codec, value, code, endpoint, field) {
+function decode(codec, value, endpoint, field) {
 	try {
 		if (codec.mode === "strict") {
 			value = codec.schema.parse(value);
+			/* v8 ignore next -- generated optional-input codecs are the only strict codecs that return undefined. */
 			if (value === void 0) return value;
 		}
 		assertJsonValue(value, /* @__PURE__ */ new Set());
 		return value;
 	} catch (cause) {
-		throw new TypertGatewayError(code, endpoint, code === "input-invalid" ? `wire field ${JSON.stringify(field)} failed boundary validation` : "business result failed boundary validation", {
+		throw new TypertGatewayError("input-invalid", endpoint, `wire field ${JSON.stringify(field)} failed boundary validation`, {
 			cause,
 			field
 		});

@@ -6,6 +6,7 @@
  */
 import z from '@deepseek-ai/schemastery';
 import { defineTool } from '@deepseek-ai/dsh-tools';
+import { FIRST_PARTY_SECTION_ORDER } from '@deepseek-ai/dsh-system-prompt';
 export const name = 'tool-ralph';
 export const inject = ['tools', 'workflowEngine', 'subagents', 'systemPrompt'];
 /** Schemastery configuration for the Ralph tool. */
@@ -327,7 +328,7 @@ export function apply(ctx, config) {
     const resolved = resolveConfig(config);
     ctx.systemPrompt.section({
         name: 'tool:ralph',
-        order: 116,
+        order: FIRST_PARTY_SECTION_ORDER.TOOL_RALPH,
         text: 'Use the ralph tool ONLY when the direct human explicitly asks for a Ralph loop or fresh-agent iterative execution. Each Ralph round starts a fresh child with no conversation seed and uses the shared workspace as durable memory. Completion and blockers are worker reports, not independent evaluation. Use same-session goal tools for ordinary long-running objectives, and plain subagents or workflows for bounded delegation and fan-out.',
     });
     ctx.tools.register(defineTool({

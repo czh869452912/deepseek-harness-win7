@@ -4,10 +4,8 @@
  * child before returning its run, so fulfillment is the single publication and
  * ownership-transfer boundary.
  *
- * Unlike the bash seam (one executor per context, second load throws), MULTIPLE
- * providers coexist here: each registers under a unique name and a caller picks
- * one by name. The shape mirrors the LLM adapter registry
- * (`LlmRuntime.registerAdapter`), not the single-service bash executor.
+ * Multiple providers coexist: each registers under a unique name and callers
+ * select one by name.
  *
  * This package owns the Service Definition role of the capability seam. Service Providers
  * (`@deepseek-ai/dsh-subagent-spawn-in-process`, `-fork`, `-acp`) and the model-facing
@@ -30,11 +28,13 @@
  *
  * @module @deepseek-ai/dsh-subagent
  */
-import { Context, Service } from '@deepseek-ai/cordis';
+import { Context } from '@deepseek-ai/cordis';
 import type { Scoped } from '@deepseek-ai/dsh-scope';
 import type { ContentBlock, MessageId } from '@deepseek-ai/dsh-llm';
 import type { Agent } from '@deepseek-ai/dsh-agent';
 import type { SessionId } from '@deepseek-ai/dsh-session';
+import { TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol';
+import type { SubagentCatalog, SubagentInterruptReceipt, SubagentPromptReceipt, SubagentPromptRequest } from './control-types.ts';
 import type { SubagentProvider, SubagentRun, SubagentRunEndInfo, SubagentRunInfo, SubagentStartRequest } from './types.ts';
 import type { ContinuableStart, ContinuableStartSpec, SubagentFollowupOptions, SubagentInterruptAuthority, SubagentReportOptions } from './continuation.ts';
 import type { ContinuableSetupContribution } from './activation-setup-registry.ts';
@@ -49,11 +49,12 @@ export { seedDescriptorTurn } from './descriptor-seed.ts';
 export { SubagentError } from './error.ts';
 export { settleRun } from './run-settlement.ts';
 export { assertSubagentMaxDepth, delegationDepthOf } from './depth.ts';
-export { appendDelegatedPolicyOverrides, applyChildComposition, captureDelegatedPolicyOverrides, childSessionMeta, resolveChildAgentOptions, resolveChildDepth, SubagentDepthError, } from './child-agent.ts';
+export { appendDelegatedPolicyOverrides, applyChildComposition, captureDelegatedPolicyOverrides, childSessionMeta, parentAgentOptionsForDelegation, resolveChildAgentOptions, resolveChildDepth, SubagentDepthError, } from './child-agent.ts';
 export type { ChildComposition, DelegatedPolicyOverrides } from './child-agent.ts';
 export type { ContinuableStart, ContinuableStartSpec, CoordinatorMessageSource, SubagentFollowupOptions, SubagentInterruptAuthority, SubagentReportDelivery, SubagentReportMessageSource, SubagentReportOptions, SubagentSettledMessageSource, } from './continuation.ts';
 export type { ContinuableSetupContribution } from './activation-setup-registry.ts';
-export type { SubagentDescendantListEntry, SubagentListEntry } from './list-children.ts';
+export type * from './control-types.ts';
+export type { SubagentDescendantListEntry } from './list-children.ts';
 export type { SubagentRunEndInfo, SubagentRunInfo } from './types.ts';
 export type { SubagentIdentityProjection, SubagentTimingProjection } from './projection-types.ts';
 declare module '@deepseek-ai/cordis' {
@@ -96,7 +97,7 @@ declare module '@deepseek-ai/cordis' {
     }
 }
 /** Named provider registry with one-shot runs, durable discovery, and continuable-child operations. */
-export declare class SubagentRuntime extends Service {
+export declare class SubagentRuntime extends TypertRemoteService {
     private providers;
     private continuations;
     /** Deployment contributions composed into unpublished continuable children. */
@@ -195,27 +196,16 @@ export declare class SubagentRuntime extends Service {
     drainContinuableChildren(parent: Agent, childIds: readonly SessionId[]): Promise<void>;
     /**
      * Enumerate the parent's direct session-backed subagents without loading or
-     * resuming an Agent and without any query service: the listing merges the live
-     * session store with optional session persistence (live-preferred) and
-     * serves each child's durable mode/label from the registered `subagent`
-     * projection unit down a three-rung ladder — the registry's watermark
-     * snapshot for a live child; for a cold one, a durable projection-cache
-     * row when the optional cache serves an own-suffix identity (its `seq`
-     * gate proves the value postdates the fork seed, where a child's own
-     * descriptor is immutable once appended), else one persistence inspection
-     * folded through the registry. The
-     * projection fold is the single classification authority; per-child
-     * diagnostics relay a fold that served no identity or a failed inspection,
-     * never a list-time descriptor parse. Absent persistence, enumeration is
-     * live-only (a cold child cannot be resumed then either, so its absence is
-     * capability absence, not an error). This service consults no Agent
-     * registrations, Activations, or providers.
+     * resuming an Agent. The Session query service supplies one live-preferred
+     * corpus and shared point observations; the projection cache supplies
+     * immutable descriptor hits without opening cold logs. The registered
+     * `subagent` projection remains the sole mode/label classifier.
      *
-     * Every persistence read receives `signal`, and the listing rechecks
-     * cancellation around each of those awaits. Read rejections that settle
+     * Every query receives `signal`, and the listing rechecks cancellation
+     * around each await. Read rejections that settle
      * after an abort become a stable `SubagentError` with code `CANCELLED`.
      * @param parentSessionId - parent session whose direct children are listed.
-     * @param signal - caller-owned cancellation forwarded to persistence reads
+     * @param signal - caller-owned cancellation forwarded to Session queries
      *   and observed around every read await.
      * @returns children and per-child diagnostics ordered by `createdAt`, then id.
      * @throws {@link SubagentError} when the projection registry or the session
@@ -238,6 +228,50 @@ export declare class SubagentRuntime extends Service {
      * @throws {@link SubagentError} under the same conditions as {@link listChildren}.
      */
     listDescendants(rootSessionId: SessionId, signal?: AbortSignal): Promise<SubagentDescendantListEntry[]>;
+    /**
+     * Remote face of {@link listChildren} for one browser: the durable listing
+     * plus live Agent activity and the delivery-time parent availability hint.
+     * Parent availability is a hint; {@link prompt} performs the authoritative
+     * check. Named apart from the provider-name {@link list}, which owns the
+     * member.
+     * @param parentSessionId - parent session whose direct children are listed.
+     * @param signal - carrier cancellation forwarded to Session queries.
+     * @returns the catalog view for that parent.
+     * @throws {TypertRemoteFailure} `bad-request` for an empty parent id,
+     *   `cancelled` for an aborted read, `subagent-projections-unavailable` when
+     *   the deployment has no projection registry, otherwise `internal`.
+     */
+    remoteExportList(parentSessionId: SessionId, signal: AbortSignal): Promise<SubagentCatalog>;
+    /**
+     * Deliver one browser-authored message to a continuable child through the
+     * exact live direct parent, retaining the caller-minted request identity and
+     * validated browser zone on the accepted message. Success identifies the
+     * message the child's FIFO inbox accepted; later execution is independent of
+     * this call.
+     * @param request - durable address, minted identity, content, and optional browser zone.
+     * @param signal - carrier cancellation, owning the call until inbox acceptance.
+     * @returns the accepted message's inbox identity.
+     * @throws {TypertRemoteFailure} `bad-request`, `invalid-time-zone`,
+     *   `subagent-parent-unavailable`, `subagent-not-resumable`,
+     *   `subagent-unauthorized`, `subagent-delivery-unavailable`, `cancelled`, or
+     *   `internal`.
+     */
+    prompt(request: SubagentPromptRequest, signal: AbortSignal): Promise<SubagentPromptReceipt>;
+    /**
+     * Remote face of {@link interrupt} under one durable parent address. No
+     * catalog, history, persistence, or parent Agent lookup runs: the core
+     * primitive alone authorizes the address against the live Activation, which
+     * is what keeps a live child interruptible while its parent Agent is offline.
+     * Absent, idle, and already-completed targets are accepted no-ops there.
+     * @param childSessionId - durable child session id to interrupt.
+     * @param parentSessionId - durable direct parent whose authority is claimed.
+     * @param mode - required continuable-address discriminator.
+     * @returns acknowledgement that the cancel signal was admitted, not that the target is quiescent.
+     * @throws {TypertRemoteFailure} `bad-request` for an empty id,
+     *   `subagent-unauthorized` when the address does not own the live target,
+     *   otherwise `internal`.
+     */
+    interruptByParent(childSessionId: SessionId, parentSessionId: SessionId, mode: 'continuable'): SubagentInterruptReceipt;
     /**
      * Register a provider under its name. Registration is effect-scoped and HMR
      * safe; removing a provider blocks new starts but does not revoke runs that

@@ -16,7 +16,9 @@ function optionsOf(directory, t) {
                 id: rowId(group.id, model.id),
                 label: model.name,
                 detail: model.description !== undefined ? `${group.name} · ${model.description}` : group.name,
-                ...(directory.current.provider === group.id && directory.current.model === model.id
+                ...(directory.current !== null
+                    && directory.current.provider === group.id
+                    && directory.current.model === model.id
                     ? { active: true } : {}),
             });
         }
@@ -58,7 +60,7 @@ function selectionOf(state, id) {
 /** Dictionary namespace owned by this plugin. */
 const NS = 'model';
 /** Required services: the contribution registry, the seat's slot registry, locale, and the service's own faces. */
-export const inject = ['commandUi', 'connection', 'locale', 'sessions', 'slots', 'remote'];
+export const inject = ['commandUi', 'locale', 'sessions', 'slots', 'remote', 'remote.session'];
 /**
  * Client plugin body: mount ModelDirectoryResolver, register the `model` dictionaries,
  * then register the /model popup contribution and the composer model seat

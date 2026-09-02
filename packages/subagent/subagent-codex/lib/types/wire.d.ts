@@ -1,5 +1,5 @@
 /**
- * Minimal Codex app-server 0.147.0 protocol adapter. The shared JSON-RPC
+ * Minimal Codex app-server 0.149.1 protocol adapter. The shared JSON-RPC
  * transport owns framing and request correlation; this module owns only the
  * product methods, current thread/turn association, unattended approval
  * responses, and terminal-answer selection.
@@ -13,7 +13,7 @@ import type { CodexPermissionMode } from './run.ts';
 /** Product facts owned by the Codex wire after publication. */
 export interface CodexWireFailureFacts {
     readonly stage: 'turn-start' | 'turn';
-    readonly category: string;
+    readonly category: 'limit' | 'access-policy' | 'service' | 'transport' | 'product-error' | 'invalid-result' | 'unknown';
     readonly httpStatus?: number | undefined;
 }
 /**
@@ -25,6 +25,7 @@ export interface CodexWireFailureFacts {
 export declare class CodexAppServerWire {
     private readonly input;
     private readonly permissionMode;
+    private readonly model?;
     private readonly transport;
     private readonly fatal;
     private threadId;
@@ -39,11 +40,10 @@ export declare class CodexAppServerWire {
     private diagnosticOrder;
     private observationOrder;
     private pendingDiagnostic;
-    private stderrTail;
     private inputEnded;
     private terminalObserved;
     private closed;
-    constructor(input: Readable, output: Writable, permissionMode: CodexPermissionMode);
+    constructor(input: Readable, output: Writable, permissionMode: CodexPermissionMode, model?: string | undefined);
     /** Start reading app-server frames. */
     start(): void;
     /**
@@ -91,12 +91,6 @@ export declare class CodexAppServerWire {
      * @returns the fixed stage/category pair and optional HTTP status.
      */
     collectFailure(): CodexWireFailureFacts;
-    /**
-     * Observe product stderr while retaining only enough tail to recognize fixed
-     * permission signatures. The raw text is never copied into the diagnostic.
-     * @param chunk - one decoded stderr chunk already forwarded to the host.
-     */
-    observeStderr(chunk: string): void;
     /** Detach JSON-RPC listeners and reject outstanding requests. Idempotent. */
     close(): void;
     private guarded;

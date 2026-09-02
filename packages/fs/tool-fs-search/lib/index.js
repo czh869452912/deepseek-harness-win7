@@ -1,7 +1,8 @@
 import z from "@deepseek-ai/schemastery";
 import { MAX_TIMER_DELAY_MS } from "@deepseek-ai/dsh-timeout";
-import { isAbsolute, relative, sep } from "node:path";
+import { isAbsolute, join, parse, relative, sep } from "node:path";
 import { defineTool } from "@deepseek-ai/dsh-tools";
+import { FIRST_PARTY_SECTION_ORDER } from "@deepseek-ai/dsh-system-prompt";
 import { existsSync } from "node:fs";
 import { HarnessError } from "@deepseek-ai/dsh-llm";
 import { ItemRetainer, TextRetainer } from "@deepseek-ai/dsh-output-retention";
@@ -119,7 +120,8 @@ let rgPathPromise;
 */
 function resolveRgPath() {
 	rgPathPromise ??= Promise.resolve().then(async () => {
-		const executableSidecar = `${process.execPath}-rg`;
+		const executable = parse(process.execPath);
+		const executableSidecar = process.platform === "win32" ? join(executable.dir, `${executable.name}-rg.exe`) : `${process.execPath}-rg`;
 		if ("pkg" in process && existsSync(executableSidecar)) return executableSidecar;
 		return (await import("@vscode/ripgrep")).rgPath;
 	});
@@ -771,7 +773,7 @@ function applyGlobTool(ctx, caps) {
 	const overCapGuidance = caps.sampleOverCapGlobResults ? "while a larger one is sampled across top-level entries, so it spans the tree instead of one subtree." : "while a larger one keeps the modification-time-ordered head.";
 	ctx.systemPrompt.section({
 		name: "tool:glob",
-		order: 103,
+		order: FIRST_PARTY_SECTION_ORDER.TOOL_GLOB,
 		text: `Use the glob tool — not shell find — to discover files by path pattern. A pattern with no "/" matches basenames at any depth, so "*" matches every file in the tree rather than its top level. Results are files only, never directories, and include hidden and ignored files: a result that fits comes back in modification-time order, ${overCapGuidance}`
 	});
 	const overCapDescription = caps.sampleOverCapGlobResults ? `a larger result instead returns ${caps.maxResults} paths sampled across top-level entries` : `a larger result returns the first ${caps.maxResults} paths in modification-time order`;
@@ -1080,7 +1082,7 @@ function presentGrepResult(_args, result) {
 function applyGrepTool(ctx, caps) {
 	ctx.systemPrompt.section({
 		name: "tool:grep",
-		order: 104,
+		order: FIRST_PARTY_SECTION_ORDER.TOOL_GREP,
 		text: "Use the grep tool — not shell grep or rg — to search file contents. Use read on a matched file when you need surrounding context."
 	});
 	const tool = defineTool({

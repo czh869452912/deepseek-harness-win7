@@ -9,7 +9,7 @@ import { SessionId } from "@deepseek-ai/dsh-session";
 import { JsonRpcLineTransport } from "@deepseek-ai/dsh-sdk-protocol";
 //#region lib/types/wire.js
 /**
-* Minimal Codex app-server 0.147.0 protocol adapter. The shared JSON-RPC
+* Minimal Codex app-server 0.149.1 protocol adapter. The shared JSON-RPC
 * transport owns framing and request correlation; this module owns only the
 * product methods, current thread/turn association, unattended approval
 * responses, and terminal-answer selection.
@@ -28,25 +28,6 @@ const THREAD_PERMISSION_PARAMS = {
 		sandbox: "danger-full-access"
 	}
 };
-const STDERR_PERMISSION_SIGNATURES = [{
-	text: "approval policy is Never; reject command",
-	request: "command execution",
-	decision: "denied",
-	reason: "Codex rejected an escalation because the selected policy never asks for approval"
-}, {
-	text: "recorded sandbox violation:",
-	request: "sandbox execution",
-	decision: "failed",
-	reason: "Codex reported a sandbox violation"
-}];
-const STDERR_SIGNATURE_TAIL_CHARS = Math.max(...STDERR_PERMISSION_SIGNATURES.map((signature) => signature.text.length)) - 1;
-function stderrSignatureTail(value) {
-	for (let length = Math.min(STDERR_SIGNATURE_TAIL_CHARS, value.length); length > 0; length -= 1) {
-		const tail = value.slice(-length);
-		if (STDERR_PERMISSION_SIGNATURES.some((signature) => tail.length < signature.text.length && signature.text.startsWith(tail))) return tail;
-	}
-	return "";
-}
 function object(value, label) {
 	if (value === null || typeof value !== "object" || Array.isArray(value)) throw new Error(`subagent-codex: app-server returned invalid ${label}`);
 	return value;
@@ -80,12 +61,12 @@ function objectFailureInfo(value) {
 		case "responseStreamDisconnected":
 		case "responseTooManyFailedAttempts": {
 			const httpStatus = numericHttpStatus(fields.httpStatusCode);
-			return httpStatus === void 0 ? { category } : {
-				category,
+			return httpStatus === void 0 ? { category: "transport" } : {
+				category: "transport",
 				httpStatus
 			};
 		}
-		case "activeTurnNotSteerable": return { category };
+		case "activeTurnNotSteerable": return { category: "product-error" };
 		default: return { category: "unknown" };
 	}
 }
@@ -95,17 +76,24 @@ function failureInfo(turn) {
 	if (error === null || typeof error !== "object" || Array.isArray(error)) return { category: "unknown" };
 	const info = error.codexErrorInfo;
 	if (typeof info === "string") switch (info) {
-		case "contextWindowExceeded":
+		case "contextWindowExceeded": return {
+			category: "limit",
+			maxTokens: true
+		};
 		case "sessionBudgetExceeded":
-		case "usageLimitExceeded":
+		case "usageLimitExceeded": return { category: "limit" };
 		case "serverOverloaded":
+		case "internalServerError": return { category: "service" };
 		case "cyberPolicy":
-		case "internalServerError":
-		case "unauthorized":
+		case "misalignmentPolicyViolation":
+		case "unauthorized": return { category: "access-policy" };
 		case "badRequest":
 		case "threadRollbackFailed":
-		case "sandboxError":
-		case "other": return { category: info };
+		case "other": return { category: "product-error" };
+		case "sandboxError": return {
+			category: "access-policy",
+			sandboxFailure: true
+		};
 		default: return { category: "unknown" };
 	}
 	return info !== null && typeof info === "object" && !Array.isArray(info) ? objectFailureInfo(info) : { category: "unknown" };
@@ -148,6 +136,7 @@ async function raceAbort(pending, signal) {
 var CodexAppServerWire = class {
 	input;
 	permissionMode;
+	model;
 	transport;
 	fatal = Promise.withResolvers();
 	threadId;
@@ -162,13 +151,13 @@ var CodexAppServerWire = class {
 	diagnosticOrder = 0;
 	observationOrder = 0;
 	pendingDiagnostic;
-	stderrTail = "";
 	inputEnded = false;
 	terminalObserved = false;
 	closed = false;
-	constructor(input, output, permissionMode) {
+	constructor(input, output, permissionMode, model) {
 		this.input = input;
 		this.permissionMode = permissionMode;
+		this.model = model;
 		this.transport = new JsonRpcLineTransport(input, output);
 		this.fatal.promise.catch(() => {});
 		this.transport.onRequest((method, params) => this.handleServerRequest(method, params));
@@ -222,6 +211,7 @@ var CodexAppServerWire = class {
 		const thread = object(object(await this.guarded(this.transport.request("thread/start", {
 			cwd,
 			ephemeral: true,
+			...this.model === void 0 ? {} : { model: this.model },
 			...THREAD_PERMISSION_PARAMS[this.permissionMode]
 		}, signal), signal), "thread/start response").thread, "thread/start thread");
 		const id = string(thread.id, "thread/start thread id");
@@ -279,8 +269,8 @@ var CodexAppServerWire = class {
 				category: parsed.category,
 				httpStatus: parsed.httpStatus
 			});
-			if (parsed.category === "sandboxError") this.recordDiagnostic("sandbox execution", "failed", "Codex reported a sandbox failure", completed.order);
-			if (parsed.category === "contextWindowExceeded") return {
+			if (parsed.sandboxFailure) this.recordDiagnostic("sandbox execution", "failed", "Codex reported a sandbox failure", completed.order);
+			if (parsed.maxTokens) return {
 				output: this.collectOutput(),
 				stopReason: "max-tokens"
 			};
@@ -291,7 +281,7 @@ var CodexAppServerWire = class {
 		if (output.length === 0) {
 			this.recordFailure({
 				stage: "turn",
-				category: "unknown"
+				category: "invalid-result"
 			});
 			throw new Error("subagent-codex: Codex completed without a final answer");
 		}
@@ -336,25 +326,6 @@ var CodexAppServerWire = class {
 	*/
 	collectFailure() {
 		return this.failure;
-	}
-	/**
-	* Observe product stderr while retaining only enough tail to recognize fixed
-	* permission signatures. The raw text is never copied into the diagnostic.
-	* @param chunk - one decoded stderr chunk already forwarded to the host.
-	*/
-	observeStderr(chunk) {
-		const observed = `${this.stderrTail}${chunk}`;
-		let latestIndex = -1;
-		let latest;
-		for (const signature of STDERR_PERMISSION_SIGNATURES) {
-			const index = observed.lastIndexOf(signature.text);
-			if (index > latestIndex) {
-				latestIndex = index;
-				latest = signature;
-			}
-		}
-		if (latest !== void 0) this.recordDiagnostic(latest.request, latest.decision, latest.reason);
-		this.stderrTail = stderrSignatureTail(observed);
 	}
 	/** Detach JSON-RPC listeners and reject outstanding requests. Idempotent. */
 	close() {
@@ -691,10 +662,9 @@ async function startCodexRun(request, spec) {
 			category: "unknown"
 		}, thrown(error));
 	}
-	const wire = new CodexAppServerWire(child.stdout, child.stdin, spec.permissionMode);
+	const wire = new CodexAppServerWire(child.stdout, child.stdin, spec.permissionMode, spec.model);
 	const onStderr = (chunk) => {
 		const bytes = typeof chunk === "string" ? Buffer.from(chunk) : chunk;
-		wire.observeStderr(bytes.toString());
 		try {
 			writeFileSync(process.stderr.fd, bytes);
 		} catch {}
@@ -717,7 +687,7 @@ async function startCodexRun(request, spec) {
 	const processFailure = child.done.then((outcome) => {
 		processFailureFacts = {
 			stage: "process",
-			category: "process-exit",
+			category: "process",
 			outcome
 		};
 		throw new CodexRunFailure(processFailureFacts);
@@ -847,6 +817,7 @@ const inject = ["subagents", "subprocess"];
 const DEFAULT_PROVIDER_NAME = "codex";
 const Config = z.object({
 	providerName: z.string().min(1).default(DEFAULT_PROVIDER_NAME),
+	model: z.string().min(1),
 	env: z.dict(z.string()).default({}),
 	permissionMode: z.union([...CODEX_PERMISSION_MODES]).default(DEFAULT_CODEX_PERMISSION_MODE),
 	disposeGraceMs: z.number().default(DEFAULT_DISPOSE_GRACE_MS)
@@ -874,6 +845,7 @@ var CodexProvider = class {
 		}
 		return startCodexRun(request, {
 			cwd,
+			...this.config.model === void 0 ? {} : { model: this.config.model },
 			permissionMode: this.config.permissionMode,
 			env: this.config.env,
 			disposeGraceMs: this.config.disposeGraceMs,
@@ -887,11 +859,12 @@ var CodexProvider = class {
 /**
 * Register one Profile-named Codex provider.
 * @param ctx - context carrying shared subagent and subprocess services.
-* @param config - registry name, permission mode, child environment, and disposal grace.
+* @param config - registry name, optional model, permission mode, child environment, and disposal grace.
 */
 function apply(ctx, config) {
 	const resolved = {
 		providerName: config.providerName ?? DEFAULT_PROVIDER_NAME,
+		...config.model === void 0 ? {} : { model: config.model },
 		env: config.env,
 		permissionMode: config.permissionMode ?? "never",
 		disposeGraceMs: config.disposeGraceMs

@@ -1,17 +1,14 @@
 /**
- * Safe HTTP(S) retrieval for `ctx.web`: validates URLs, follows only same-origin redirects,
- * enforces time and size limits, classifies and decodes text, and leaves presentation to
- * `@deepseek-ai/dsh-tool-web`. Requests carry no browser cookies or ambient credentials.
- *
- * Private-network and SSRF protection is not implemented; do not enable this provider where
- * it can reach sensitive internal targets.
+ * Safe HTTP(S) retrieval for `ctx.web`: validates and pins public IP destinations, follows
+ * only same-origin redirects, enforces time and size limits, classifies and decodes text,
+ * and leaves presentation to `@deepseek-ai/dsh-tool-web`. Requests carry no browser cookies
+ * or ambient credentials.
  * @module @deepseek-ai/dsh-web-fetch-http/provider
  */
 import type { WebFetchProvider, WebFetchRequest, WebFetchResult } from '@deepseek-ai/dsh-web';
+import type { PublicAddress } from './network.ts';
 /** Resolved provider limits (the plugin's schemastery Config supplies defaults). */
 export interface HttpFetchLimits {
-    /** Maximum accepted request URL length. */
-    maxUrlLength: number;
     /** Maximum response body size in bytes (read is aborted past this). */
     maxResponseBytes: number;
     /** Maximum decoded body length in characters (truncated past this). */
@@ -23,13 +20,20 @@ export interface HttpFetchLimits {
     /** `User-Agent` header sent on every request. */
     userAgent: string;
 }
+/** Resolve one hostname to an already policy-validated address set. */
+export type HttpFetchResolver = (hostname: string, signal: AbortSignal) => Promise<PublicAddress[]>;
 /** Stable id this provider registers under. */
 export declare const LOCAL_FETCH_PROVIDER_ID = "http";
 /** The anonymous public HTTP(S) fetch provider. */
 export declare class HttpFetchProvider implements WebFetchProvider {
     private readonly limits;
+    private readonly resolveAddresses;
     readonly id = "http";
-    constructor(limits: HttpFetchLimits);
+    /**
+     * @param limits - resolved transport and response limits.
+     * @param resolveAddresses - resolver that rejects non-public destinations before returning.
+     */
+    constructor(limits: HttpFetchLimits, resolveAddresses?: HttpFetchResolver);
     /** No credentials to check — an anonymous public fetcher is always usable. */
     available(): boolean;
     fetch(request: WebFetchRequest, signal?: AbortSignal): Promise<WebFetchResult>;

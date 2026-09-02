@@ -6,7 +6,7 @@ import css from './TrajectoryTurn.module.css';
  * @param props - turn index and body children.
  * @returns the turn section element.
  */
-export function TrajectoryTurn({ turn, children }) {
-    return (_jsxs("section", { className: css.root, "data-turn": turn, children: [_jsx(TrajectoryTurnHeader, { turn: turn }), _jsx("div", { className: css.body, children: children })] }));
+export function TrajectoryTurn({ turn, children, t }) {
+    return (_jsxs("section", { className: css.root, "data-turn": turn, children: [_jsx(TrajectoryTurnHeader, { turn: turn, t: t }), _jsx("div", { className: css.body, children: children })] }));
 }
 //# sourceMappingURL=TrajectoryTurn.js.map

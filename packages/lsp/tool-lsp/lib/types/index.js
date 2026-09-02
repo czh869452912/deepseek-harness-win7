@@ -13,6 +13,7 @@ import z from '@deepseek-ai/schemastery';
 import { defineTool } from '@deepseek-ai/dsh-tools';
 import { assertNever } from '@deepseek-ai/dsh-llm';
 import { LspError } from '@deepseek-ai/dsh-lsp';
+import { FIRST_PARTY_SECTION_ORDER } from '@deepseek-ai/dsh-system-prompt';
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout';
 import { DEFAULT_MAX_LOCATIONS, DEFAULT_MAX_RESULT_CHARS, formatHover, formatLocations, LSP_OPERATIONS, parseLspArgs, presentLspCall, } from "./render.js";
 import { sessionCwd } from "./session-cwd.js";
@@ -57,7 +58,11 @@ export function apply(ctx, config) {
     assertPositiveInteger('maxLocations', resolved.maxLocations);
     assertPositiveInteger('maxResultChars', resolved.maxResultChars);
     assertTimer('timeoutMs', resolved.timeoutMs);
-    ctx.systemPrompt.section({ name: 'tool:lsp', order: 112, text: LSP_PROMPT_TEXT });
+    ctx.systemPrompt.section({
+        name: 'tool:lsp',
+        order: FIRST_PARTY_SECTION_ORDER.TOOL_LSP,
+        text: LSP_PROMPT_TEXT,
+    });
     ctx.tools.register(defineTool({
         name: 'lsp',
         description: 'Query a language server for precise code navigation. operation is one of goToDefinition, findReferences, goToImplementation, hover. line and character are one-based UTF-16 cursor coordinates. findReferences includes the declaration.',

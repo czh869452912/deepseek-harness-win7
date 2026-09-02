@@ -175,12 +175,16 @@ var SessionTitleService = class extends Service {
 			this.work.clear();
 		}, "sessionTitle lifecycle");
 		ctx.inject(["sessionProjections"], (projectionCtx) => {
+			const titleSchema = z$1.union([z$1.string().min(1), z$1.null()]);
 			projectionCtx.sessionProjections.register({
 				key: "title",
-				schema: z$1.union([z$1.string().min(1), z$1.null()]),
+				stateSchema: titleSchema,
 				init: () => null,
 				apply: (state, event) => event.type === "session/title" ? event.data.title : state,
-				view: (state) => state,
+				wire: {
+					viewSchema: titleSchema,
+					view: (state) => state
+				},
 				stateVersion: 1
 			});
 		});

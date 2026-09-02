@@ -13,10 +13,15 @@
  * way down: switching models mid-reply takes effect on the next step, never
  * inside the one in flight.
  *
- * Credentials stay outside that collection. The harness resolves a route's key
- * through its own seam and passes it as the request's `apiKey` option, which
- * pi-ai treats as the highest-priority auth override — so `Models` never holds
- * a credential store and the harness keeps its fail-loud reference semantics.
+ * A route naming a credential reference still resolves it through the harness
+ * seam and passes it as the request's `apiKey` option, which pi-ai treats as
+ * the highest-priority auth override — that is what keeps the fail-loud
+ * reference semantics. Everything that override does not cover reaches pi-ai
+ * through the collection's own auth: the credential store holds the records a
+ * login wrote and a refresh rotates, and the auth context answers the ambient
+ * questions a provider asks while resolving. Both are stable across snapshots,
+ * so a configuration change rebuilds the collection without forgetting who is
+ * signed in.
  *
  * @module dsh-llm-pi-ai/adapter
  */
@@ -182,7 +187,7 @@ export class PiAiAdapter extends LlmAdapter {
         const profiles = this.config.profiles();
         if (this.snapshot?.profiles === profiles)
             return this.snapshot;
-        const models = createModels();
+        const models = createModels(this.config.auth);
         for (const profile of profiles.values())
             models.setProvider(profile.piProvider);
         this.snapshot = { profiles, models };
@@ -229,24 +234,37 @@ export class PiAiAdapter extends LlmAdapter {
     resolveModel(provider, model, _signal) {
         return Promise.resolve().then(() => {
             const snapshot = this.current();
-            const profile = this.profileOf(snapshot, provider);
-            const resolvedModel = this.modelOf(snapshot, provider, model);
-            const defaultLevel = describableReasoningLevel(resolvedModel, profile.reasoning);
-            // Only a cap the deployment configured is a request default; the
-            // catalog's `maxTokens` sizes the model and stops there.
-            const configuredMaxTokens = profile.configuredMaxTokens.get(model);
-            return {
-                provider,
-                id: model,
-                name: resolvedModel.name,
-                inputModalities: [...resolvedModel.input],
-                context: { contextWindow: resolvedModel.contextWindow },
-                ...configuredMaxTokens === undefined ? {} : { defaultMaxTokens: configuredMaxTokens },
-                ...reasoningInfo(resolvedModel, defaultLevel),
-            };
+            return this.modelInfo(snapshot, provider, model);
         });
     }
-    async *stream(options) {
+    modelInfo(snapshot, provider, model) {
+        const profile = this.profileOf(snapshot, provider);
+        const resolvedModel = this.modelOf(snapshot, provider, model);
+        const defaultLevel = describableReasoningLevel(resolvedModel, profile.reasoning);
+        // Only a cap the deployment configured is a request default; the
+        // catalog's `maxTokens` sizes the model and stops there.
+        const configuredMaxTokens = profile.configuredMaxTokens.get(model);
+        return {
+            provider,
+            id: model,
+            name: resolvedModel.name,
+            inputModalities: [...resolvedModel.input],
+            context: { contextWindow: resolvedModel.contextWindow },
+            ...configuredMaxTokens === undefined ? {} : { defaultMaxTokens: configuredMaxTokens },
+            ...reasoningInfo(resolvedModel, defaultLevel),
+        };
+    }
+    prepareCall(provider, model, _signal) {
+        const snapshot = this.current();
+        return Promise.resolve({
+            model: this.modelInfo(snapshot, provider, model),
+            stream: options => this.streamWithSnapshot(options, snapshot),
+        });
+    }
+    stream(options) {
+        return this.streamWithSnapshot(options, this.current());
+    }
+    async *streamWithSnapshot(options, snapshot) {
         const env_1 = { stack: [], error: void 0, hasError: false };
         try {
             if (options.stop !== undefined) {
@@ -257,7 +275,6 @@ export class PiAiAdapter extends LlmAdapter {
             // snapshot, and the credential freezes with them. A configuration change
             // mid-request builds a separate snapshot, so this request finishes under
             // the one it started with and the next call picks up the new one.
-            const snapshot = this.current();
             const profile = this.profileOf(snapshot, options.provider);
             const model = this.modelOf(snapshot, options.provider, options.model);
             const reasoning = resolveReasoningLevel(model, options.reasoningEffort ?? profile.reasoning);
@@ -282,7 +299,15 @@ export class PiAiAdapter extends LlmAdapter {
                 };
                 const context = attachments === undefined
                     ? toPiContext(options, undefined, onReplayDegrade)
-                    : await toPiContext(options, attachments, onReplayDegrade, profile.maxRequestImageBytes);
+                    : await toPiContext({ ...options, signal: watchdog.signal }, {
+                        attachments,
+                        resolveImageAccess: ref => this.config.resolveImageAccess?.(attachments, ref),
+                        maxRequestImageBytes: profile.maxRequestImageBytes,
+                        requestImagePolicy: {
+                            maxPixels: profile.requestImagePixelBudget,
+                            maxBytes: profile.requestImageMaxBytes,
+                        },
+                    }, onReplayDegrade);
                 const events = snapshot.models.streamSimple(model, context, {
                     ...profileOptions(profile, reasoning, apiKey),
                     ...options.temperature === undefined ? {} : { temperature: options.temperature },
@@ -293,7 +318,7 @@ export class PiAiAdapter extends LlmAdapter {
                     // Harness-owned and therefore win collisions.
                     headers: requestHeaders(profile.headers),
                 });
-                const iterator = toStreamChunks(events, model.contextWindow)[Symbol.asyncIterator]();
+                const iterator = toStreamChunks(events, model.contextWindow, options.signal)[Symbol.asyncIterator]();
                 let exhausted = false;
                 try {
                     while (true) {

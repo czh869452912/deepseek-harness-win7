@@ -37,6 +37,8 @@ export class ReactLoopAgent {
     dispatch;
     /** Whether this loop instance has appended its initial/resume request anchor. */
     requestHeaderLogged = false;
+    /** Surface generation of the preceding built request. */
+    requestSurfaceGeneration;
     runtimeContext;
     constructor(loopCtx, id, options, session) {
         this.loopCtx = loopCtx;
@@ -239,7 +241,7 @@ export class ReactLoopAgent {
                     }
                     // max-tokens is sticky: once any step hits the ceiling, later steps
                     // that complete normally must not downgrade the turn outcome.
-                    const stepEnd = await this.step(decision.assembly);
+                    const stepEnd = await this.step(decision.assembly, decision.startsRequestSeries === true);
                     // max-tokens stays sticky: a later completed step must not
                     // downgrade the turn outcome.
                     if (turnEnds === null || turnEnds.kind !== 'max-tokens')
@@ -290,7 +292,7 @@ export class ReactLoopAgent {
         phase.step = 0;
         return true;
     }
-    async step(assembly) {
+    async step(assembly, startsRequestSeries) {
         /* v8 ignore next -- private callers establish the running phase before executing a step */
         if (this.phase.kind !== 'running')
             throw new Error(`agent "${this.id}": step outside running phase`);
@@ -298,7 +300,9 @@ export class ReactLoopAgent {
         signal.throwIfAborted();
         const system = renderPrompt(assembly);
         while (true) {
-            const { request, preparedCall } = await this.buildRequest(turn, step, assembly.tools, system, this.session.deriveMessages(), signal);
+            const surfaceGeneration = this.session.surface.replaceGeneration;
+            const { request, preparedCall } = await this.buildRequest(turn, step, assembly.tools, system, this.session.deriveMessages(), startsRequestSeries, surfaceGeneration, signal);
+            startsRequestSeries = false;
             const assembler = new BlockAssembler();
             const chunkSeqs = [];
             try {
@@ -372,18 +376,19 @@ export class ReactLoopAgent {
      * Compose one frozen request and bind it to the adapter registration that
      * resolved its exact-model defaults.
      */
-    async buildRequest(turn, step, tools, system, boundaryMessages, signal) {
+    async buildRequest(turn, step, tools, system, boundaryMessages, startsRequestSeries, surfaceGeneration, signal) {
         const { session } = this;
         // A loop instance starts from its declared route, restoring only an explicit
         // effort owned by that exact model. Later steps re-resolve marked defaults.
         const persistedHeader = session.requestHeader();
         const persistedConfig = persistedHeader?.config;
         const route = { provider: this.options.provider ?? '', model: this.options.model ?? '' };
-        const reasoningEffort = persistedConfig?.provider === route.provider
+        const persistedReasoningEffort = persistedConfig?.provider === route.provider
             && persistedConfig.model === route.model
             && persistedHeader?.adapterDefaults?.reasoningEffort !== true
             ? persistedConfig.reasoningEffort
             : undefined;
+        const reasoningEffort = this.options.reasoningEffort ?? persistedReasoningEffort;
         const maxTokens = this.options.maxTokens;
         const seedConfig = deepFreeze(structuredClone(this.requestHeaderLogged
             // oxlint-disable-next-line typescript/no-non-null-assertion -- the instance logged the header it now folds
@@ -418,13 +423,23 @@ export class ReactLoopAgent {
             ...tools.length > 0 ? { tools } : {},
         });
         const baseline = this.session.requestHeader();
+        const startsSeries = startsRequestSeries
+            || this.requestSurfaceGeneration !== surfaceGeneration;
         if (!this.requestHeaderLogged) {
             this.session.append('request/header', { header, reason: baseline === undefined ? 'initial' : 'resume' });
             this.requestHeaderLogged = true;
         }
         else if (baseline === undefined || !headerEquals(baseline, header)) {
-            this.session.append('request/header', { header, reason: 'change' });
+            this.session.append('request/header', {
+                header,
+                reason: 'change',
+                ...startsSeries ? { startsSeries: true } : {},
+            });
         }
+        else if (startsSeries) {
+            this.session.append('request/header', { header, reason: 'series' });
+        }
+        this.requestSurfaceGeneration = surfaceGeneration;
         const contextWindow = preparedCall?.context?.contextWindow;
         const requestContext = {
             provider: config.provider,

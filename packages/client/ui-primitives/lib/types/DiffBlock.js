@@ -1,22 +1,10 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-// DiffBlock: the inline-diff surface for a file mutation (write/edit) — a copy
-// control over one or more per-file hunks, each a bold path header followed by
-// the removed block (`-`, error color) and the added block (`+`, success
-// color), with a dim `└ +A -R · N file(s)` footer. Unlike the TUI's exact
-// changed-row comparison, this block renders the old and new sides in full.
-// Both front ends share the line-terminator rule and distinct-path file count.
-// Output never soft-wraps — an aligned source line keeps its indentation and
-// scrolls horizontally instead of folding. Colors resolve through --dsw-*
-// tokens; geometry mirrors CodeBlock.
 import { useCallback, useMemo, useState } from 'react';
 import clsx from 'clsx';
+import { FoldToggle } from "./FoldToggle.js";
 import { writeClipboard } from "./clipboard.js";
 import css from './DiffBlock.module.css';
-/**
- * Output lines shown before the height cap collapses the middle. Matches
- * {@link DEFAULT_TERMINAL_MAX_LINES} so a diff card and a terminal card cut a
- * long body at the same place.
- */
+/** Output lines shown before the height cap collapses the middle. */
 export const DEFAULT_DIFF_MAX_LINES = 16;
 /** Local exhaustiveness helper — this package does not depend on `dsh-llm`. */
 /* v8 ignore next 3 -- closed-union backstop; only reached if a row kind is forged */
@@ -105,7 +93,7 @@ function copyText(rows) {
  * @param props - see {@link DiffBlockProps}.
  * @returns the diff block element.
  */
-export function DiffBlock({ diffs, maxLines = DEFAULT_DIFF_MAX_LINES, className }) {
+export function DiffBlock({ diffs, labels, maxLines = DEFAULT_DIFF_MAX_LINES, className }) {
     const { rows, added, removed, files } = useMemo(() => buildRows(diffs), [diffs]);
     const [expanded, setExpanded] = useState(false);
     const [copied, setCopied] = useState(false);
@@ -130,6 +118,6 @@ export function DiffBlock({ diffs, maxLines = DEFAULT_DIFF_MAX_LINES, className 
     const tailLines = maxLines - headLines;
     const head = capped ? rows.slice(0, headLines) : rows;
     const tail = capped ? rows.slice(rows.length - tailLines) : [];
-    return (_jsxs("div", { className: clsx(css.block, className), "data-diff": "", children: [_jsx("button", { type: "button", className: css.copyButton, onClick: onCopy, children: copied ? '复制成功' : '复制' }), _jsxs("div", { className: css.body, children: [head.map((row, index) => (_jsx("div", { className: clsx(css.line, ROW_CLASS[row.kind]), children: row.text }, index))), hidden > 0 && (_jsx("button", { type: "button", className: css.expand, "aria-expanded": expanded, "aria-label": expanded ? '收起差异' : `展开其余 ${hidden} 行差异`, onClick: onToggle, children: expanded ? '收起' : `… 其余 ${hidden} 行` })), tail.map((row, index) => (_jsx("div", { className: clsx(css.line, ROW_CLASS[row.kind]), children: row.text }, index)))] }), _jsxs("div", { className: css.footer, children: ["\u2514 +", added, " -", removed, " \u00B7 ", files, " file", files === 1 ? '' : 's'] })] }));
+    return (_jsxs("div", { className: clsx(css.block, className), "data-diff": "", children: [_jsx("button", { type: "button", className: css.copyButton, onClick: onCopy, children: copied ? labels.copied : labels.copy }), _jsxs("div", { className: css.body, children: [head.map((row, index) => (_jsx("div", { className: clsx(css.line, ROW_CLASS[row.kind]), children: row.text }, index))), hidden > 0 && (_jsx(FoldToggle, { className: css.expand, expanded: expanded, hidden: hidden, labels: labels, onToggle: onToggle })), tail.map((row, index) => (_jsx("div", { className: clsx(css.line, ROW_CLASS[row.kind]), children: row.text }, index)))] }), _jsxs("div", { className: css.footer, children: ["\u2514 +", added, " -", removed, " \u00B7 ", labels.files(files)] })] }));
 }
 //# sourceMappingURL=DiffBlock.js.map

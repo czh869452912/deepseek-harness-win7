@@ -159,10 +159,10 @@ var ClaudeCodeFailure = class extends Error {
 };
 function sdkFailureCategory(subtype) {
 	switch (subtype) {
-		case "error_during_execution":
 		case "error_max_turns":
 		case "error_max_budget_usd":
-		case "error_max_structured_output_retries": return subtype;
+		case "error_max_structured_output_retries": return "limit";
+		case "error_during_execution": return "product-error";
 		default: return "unknown";
 	}
 }
@@ -219,7 +219,7 @@ function successfulResult(message) {
 	}
 	if (message.is_error || message.result.trim().length === 0) throw new ClaudeCodeFailure({
 		stage: "query-run",
-		category: "invalid-success"
+		category: "invalid-result"
 	});
 	return message.result;
 }
@@ -244,7 +244,7 @@ async function consumeClaudeQuery(query, onPermissionDenied, onResult) {
 	}
 	if (answer === void 0) throw new ClaudeCodeFailure({
 		stage: "query-run",
-		category: "missing-result"
+		category: "invalid-result"
 	});
 	return {
 		output: [{
@@ -294,6 +294,7 @@ function claudeQueryOptions(spec, controller, capture, captureDiagnostic) {
 	return {
 		abortController: controller,
 		cwd: spec.cwd,
+		...spec.model === void 0 ? {} : { model: spec.model },
 		env: {
 			...scrubbedParentEnv(),
 			...spec.env
@@ -454,7 +455,7 @@ async function startClaudeCodeRun(request, spec) {
 				};
 				else if (processOutcome !== void 0 && !receivedResult) facts = {
 					stage: "process",
-					category: "process-exit",
+					category: "process",
 					outcome: processOutcome
 				};
 				else facts = {
@@ -504,6 +505,7 @@ const inject = ["subagents", "subprocess"];
 const DEFAULT_PROVIDER_NAME = "claude-code";
 const Config = z.object({
 	providerName: z.string().min(1).default(DEFAULT_PROVIDER_NAME),
+	model: z.string().min(1),
 	env: z.dict(z.string()).default({}),
 	permissionMode: z.union([...CLAUDE_CODE_PERMISSION_MODES]).default(DEFAULT_CLAUDE_CODE_PERMISSION_MODE),
 	disposeGraceMs: z.number().default(DEFAULT_DISPOSE_GRACE_MS)
@@ -533,6 +535,7 @@ var ClaudeCodeProvider = class {
 		}
 		return startClaudeCodeRun(request, {
 			cwd,
+			...this.config.model === void 0 ? {} : { model: this.config.model },
 			permissionMode: this.config.permissionMode,
 			env: this.config.env,
 			disposeGraceMs: this.config.disposeGraceMs,
@@ -546,11 +549,12 @@ var ClaudeCodeProvider = class {
 /**
 * Register one Profile-named Claude Code provider.
 * @param ctx - context carrying shared subagent and subprocess services.
-* @param config - registry name, permission mode, child environment, and disposal grace.
+* @param config - registry name, optional model, permission mode, child environment, and disposal grace.
 */
 function apply(ctx, config) {
 	const resolved = {
 		providerName: config.providerName ?? DEFAULT_PROVIDER_NAME,
+		...config.model === void 0 ? {} : { model: config.model },
 		env: config.env,
 		permissionMode: config.permissionMode ?? "dontAsk",
 		disposeGraceMs: config.disposeGraceMs

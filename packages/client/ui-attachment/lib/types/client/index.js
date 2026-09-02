@@ -12,5 +12,9 @@ export function apply(ctx) {
         name: 'conversation.message.images',
         locale: 'conversation',
     }, MessageImages));
+    ctx.slots.inject('conversation.trajectory.images', () => ctx.slots.register({
+        name: 'conversation.trajectory.images',
+        locale: 'conversation',
+    }, MessageImages));
 }
 //# sourceMappingURL=index.js.map

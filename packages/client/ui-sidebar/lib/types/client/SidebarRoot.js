@@ -1,4 +1,4 @@
-import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-runtime";
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 /**
  * Sidebar shell: column geometry only. Collapse is a slide plus crossfade:
  * content freezes at its expanded width (inline style) and fades out in place
@@ -29,6 +29,16 @@ const COLLAPSE_SETTLE_MS = 150;
  * edge — on the way to the conversation, or around a portalled menu.
  */
 const SCROLLBAR_LINGER_MS = 2000;
+/** Format complete-build metadata for the local brand badge. */
+function localBuildVersion() {
+    const version = process.env.DSH_CLIENT_VERSION;
+    if (version === undefined)
+        return undefined;
+    const commit = process.env.DSH_CLIENT_COMMIT_HASH;
+    return version
+        + (commit === undefined ? '' : `-${commit}`)
+        + (process.env.DSH_CLIENT_GIT_DIRTY === 'true' ? '-dirty' : '');
+}
 /**
  * Render the sidebar column shell.
  * @param props - composed slot props (runtime share + injected callbacks, contract/slots.ts).
@@ -105,13 +115,14 @@ export function SidebarRoot({ collapsed, width, startSession, toggleSidebar, t, 
             cancelLinger();
         };
     }, [pointerInside]);
+    const buildVersion = localBuildVersion();
     return (_jsxs("div", { ref: column, className: clsx(css.root, !wide && css.collapsed, !wide && everWide.current && css.railIn, collapsed && wide && css.fading, !pointerInside && css.quietBars), style: wide ? { width: collapsed ? lastWideWidth.current : width } : undefined, onPointerEnter: () => {
             cancelLinger();
             setPointerInside(true);
         }, onPointerLeave: () => { armLinger(); }, children: [_jsxs("div", { className: css.logoRow, children: [wide && (_jsx("button", { type: "button", className: clsx(css.brand, css.wide), "aria-label": t('session.new.label'), onClick: () => { startSession(); }, children: _jsxs("span", { className: css.brandIdentity, "aria-hidden": "true", children: [_jsx("span", { className: css.brandMark, children: renderSlot('sidebar.brand.mark', { size: 24 }, { fallback: _jsx(FishLogo, { size: 24 }) }) }), _jsx("span", { className: css.brandName, children: renderSlot('sidebar.brand.name', {}, {
-                                        fallback: (_jsxs(_Fragment, { children: [_jsx("span", { className: css.fallbackBrandName, children: "DSH Local Build" }), process.env.DSH_CLIENT_COMMIT_HASH
-                                                    ? _jsx("span", { className: css.buildRevision, children: process.env.DSH_CLIENT_COMMIT_HASH })
-                                                    : null] })),
+                                        fallback: buildVersion === undefined
+                                            ? _jsx("span", { className: css.fallbackBrandName, children: t('brand.localBuild') })
+                                            : (_jsxs("span", { className: css.localBuildBrand, children: [_jsx("span", { className: css.localBuildTitle, children: t('brand.localBuild') }), _jsx("span", { className: css.buildVersion, children: buildVersion })] })),
                                     }) })] }) })), _jsx(Tooltip, { label: collapsed ? t('toggle.open') : t('toggle.collapse'), delayMs: 500, children: _jsxs("button", { type: "button", className: clsx(css.iconButton, css.toggle), "aria-label": collapsed ? t('toggle.open') : t('toggle.collapse'), onClick: () => { toggleSidebar(); }, children: [!wide && (_jsx("span", { className: css.railMark, "aria-hidden": "true", children: renderSlot('sidebar.brand.mark', { size: 24 }, { fallback: _jsx(FishLogo, { size: 24 }) }) })), _jsx(IconPanelLeftOutline16, { className: css.panelIcon, size: wide ? 16 : 18 })] }) })] }), _jsx(Tooltip, { label: t('session.new.label'), delayMs: 500, disabled: wide, children: _jsxs("button", { type: "button", className: css.newSession, "aria-label": t('session.new.label'), onClick: () => { startSession(); }, children: [_jsx(IconNewChatOutline16, { size: wide ? 14 : 18 }), wide && _jsx("span", { className: clsx(css.newSessionLabel, css.wide), children: t('session.new') })] }) }), _jsx("div", { className: css.regionArea, children: renderSlot('sidebar.workspaces', {
                     wide,
                     expandSidebar: () => { if (collapsed)

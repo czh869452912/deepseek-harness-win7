@@ -7,7 +7,7 @@
  * Translate DeepSeek wire chunks into the harness `StreamChunk` protocol.
  * @module dsh-llm-deepseek/translate
  */
-import { CallId, EMPTY_RESPONSE_CODE, LlmError } from '@deepseek-ai/dsh-llm';
+import { ToolCallId, EMPTY_RESPONSE_CODE, LlmError } from '@deepseek-ai/dsh-llm';
 import { DONE } from "./sse.js";
 /**
  * Map the wire finish_reason vocabulary to the harness FinishReason.
@@ -33,14 +33,23 @@ export function mapFinishReason(reason) {
  * api/create-chat-completion); the harness TokenUsage convention is
  * DISJOINT counts, so cache reads are subtracted out of `inputTokens`.
  * @param usage - wire usage from the finish chunk or the trailing usage-only chunk.
- * @returns disjoint harness counts; cache/reasoning fields present only when the wire reported them.
+ * @returns disjoint harness counts; an exact total is present only when the
+ *   aggregate prompt/completion counters are valid and agree with any wire total.
  */
 export function mapUsage(usage) {
     const cacheRead = usage.prompt_tokens_details?.cached_tokens ?? usage.prompt_cache_hit_tokens;
     const reasoning = usage.completion_tokens_details?.reasoning_tokens;
+    const combined = usage.prompt_tokens + usage.completion_tokens;
+    const hasExactTotal = Number.isSafeInteger(usage.prompt_tokens)
+        && usage.prompt_tokens >= 0
+        && Number.isSafeInteger(usage.completion_tokens)
+        && usage.completion_tokens >= 0
+        && Number.isSafeInteger(combined)
+        && (usage.total_tokens === undefined || usage.total_tokens === combined);
     return {
         inputTokens: usage.prompt_tokens - (cacheRead ?? 0),
         outputTokens: usage.completion_tokens,
+        ...hasExactTotal ? { totalTokens: combined } : {},
         ...cacheRead !== undefined ? { cacheReadTokens: cacheRead } : {},
         ...reasoning !== undefined ? { reasoningTokens: reasoning } : {},
     };
@@ -52,7 +61,7 @@ function closeBlock(block) {
         case 'reasoning': return { type: 'reasoning', text: block.text };
         case 'tool-call': return {
             type: 'tool-call',
-            id: CallId(block.callId ?? ''),
+            id: ToolCallId(block.callId ?? ''),
             name: block.name ?? '',
             arguments: block.text,
         };
@@ -143,7 +152,7 @@ export async function* translate(payloads) {
                 yield {
                     type: 'tool-call-delta',
                     index: block.index,
-                    id: CallId(block.callId ?? ''),
+                    id: ToolCallId(block.callId ?? ''),
                     ...block.name !== undefined ? { name: block.name } : {},
                     argumentsDelta: fragment,
                 };

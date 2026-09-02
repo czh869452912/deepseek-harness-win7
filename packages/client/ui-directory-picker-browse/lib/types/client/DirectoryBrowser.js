@@ -38,12 +38,15 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
 import { useCallback, useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { Button, IconCheckOutline16, IconChevronRightOutline14, IconEditOutline16, IconFolderClose16, IconFolderOpen16, IconPlusOutline16, Modal, } from '@deepseek-ai/dsh-client-ui-primitives';
-import { DirectoryBrowseError } from '@deepseek-ai/dsh-client-runtime/client';
 import css from './DirectoryBrowser.module.css';
-/** Failure text: the Host business message when typed, else the throw's text. */
+/** Failure text from the injected directory operation. */
 function failureText(error) {
-    if (error instanceof DirectoryBrowseError)
-        return error.rpcError.message;
+    if (error !== null && typeof error === 'object' && 'rpcError' in error) {
+        const rpcError = error.rpcError;
+        if (rpcError !== null && typeof rpcError === 'object' && 'message' in rpcError
+            && typeof rpcError.message === 'string')
+            return rpcError.message;
+    }
     return error instanceof Error ? error.message : String(error);
 }
 /**
@@ -141,10 +144,9 @@ function readDraft(listing, draft, scanned) {
  * orphan it. A prefix narrows the level only while some row it would actually
  * show matches — a tail nobody matches is a name being spelled, not a demand
  * for an empty pane, so the level shows whole and its hidden rows return to
- * obeying the toggle. Counting only displayable rows is what keeps that true:
- * were a hidden row ever to match a prefix that does not reveal it (today
- * `hidden` means dot-prefixed, so it cannot), the level would narrow to
- * nothing.
+ * obeying the toggle. Counting only displayable rows keeps that true because
+ * every hidden name is dot-prefixed, and a matching prefix therefore reveals
+ * it; otherwise the level could narrow to nothing.
  */
 function visibleEntries(entries, selectedPath, showHidden, filterPrefix) {
     const needle = filterPrefix === null ? '' : filterPrefix.toLowerCase();
@@ -206,7 +208,6 @@ export function DirectoryBrowser({ open, listDirectory, createDirectory, onOpen,
     const [pathDraft, setPathDraft] = useState(null);
     // Show-hidden toggle state (pure client-side filter, reset on each open).
     const [showHidden, setShowHidden] = useState(false);
-    // Create-folder state: null = closed; a string = the nested dialog's draft.
     const [folderDraft, setFolderDraft] = useState(null);
     const [creatingFolder, setCreatingFolder] = useState(false);
     const [createError, setCreateError] = useState(null);

@@ -52,11 +52,12 @@ class ClaudeCodeFailure extends Error {
 }
 function sdkFailureCategory(subtype) {
     switch (subtype) {
-        case 'error_during_execution':
         case 'error_max_turns':
         case 'error_max_budget_usd':
         case 'error_max_structured_output_retries':
-            return subtype;
+            return 'limit';
+        case 'error_during_execution':
+            return 'product-error';
         default:
             return 'unknown';
     }
@@ -123,7 +124,7 @@ export function successfulResult(message) {
     if (message.is_error || message.result.trim().length === 0) {
         throw new ClaudeCodeFailure({
             stage: 'query-run',
-            category: 'invalid-success',
+            category: 'invalid-result',
         });
     }
     return message.result;
@@ -151,7 +152,7 @@ export async function consumeClaudeQuery(query, onPermissionDenied, onResult) {
     if (answer === undefined) {
         throw new ClaudeCodeFailure({
             stage: 'query-run',
-            category: 'missing-result',
+            category: 'invalid-result',
         });
     }
     return {
@@ -207,6 +208,7 @@ export function claudeQueryOptions(spec, controller, capture, captureDiagnostic)
     return {
         abortController: controller,
         cwd: spec.cwd,
+        ...spec.model === undefined ? {} : { model: spec.model },
         env: { ...scrubbedParentEnv(), ...spec.env },
         persistSession: false,
         disallowedTools: spec.permissionMode === 'plan'
@@ -397,7 +399,7 @@ export async function startClaudeCodeRun(request, spec) {
                 else if (processOutcome !== undefined && !receivedResult) {
                     facts = {
                         stage: 'process',
-                        category: 'process-exit',
+                        category: 'process',
                         outcome: processOutcome,
                     };
                 }

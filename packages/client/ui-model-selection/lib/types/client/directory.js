@@ -1,67 +1,59 @@
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-runtime/client';
+import { createSnapshotStore } from '@deepseek-ai/dsh-client-store';
 /** One session's shared directory controller; disposed with the session scope. */
 export class ModelDirectory {
     sessions;
     sessionId;
     available;
+    catalog;
+    projected;
     /** The shared snapshot both entries render from (uSES-safe store). */
     store = createSnapshotStore({
         current: null, routable: null, groups: [], failures: [], status: 'idle', error: null,
     });
-    /** Latest operation wins; an older response never overwrites a newer one. */
+    /** Latest selection operation wins; an older response never overwrites a newer one. */
     generation = 0;
     disposed = false;
+    resolved = false;
+    unsubscribeCatalog;
+    unsubscribeSelection;
     /**
      * @param sessions - the session wire face (captured from the plugin's root connection).
      * @param sessionId - the owning session.
      * @param available - whether this session may use Agent-bound model RPCs.
+     * @param catalog - Host-generation catalog shared by every Session.
+     * @param projected - durable model selection projected from Session history.
      */
-    constructor(sessions, sessionId, available) {
+    constructor(sessions, sessionId, available, catalog, projected) {
         this.sessions = sessions;
         this.sessionId = sessionId;
         this.available = available;
+        this.catalog = catalog;
+        this.projected = projected;
+        this.unsubscribeCatalog = catalog.store.subscribe(() => { this.syncInputs(); });
+        this.unsubscribeSelection = projected.subscribe(() => { this.syncInputs(); });
+        this.syncInputs();
     }
     /**
-     * Refresh the advisory directory (both entries call this on open).
-     * Failure preserves the last good groups and current selection.
+     * Ensure the Host generation's shared advisory catalog is loaded.
      * @returns the fresh directory value.
      */
     async load() {
         this.assertAvailable();
-        const generation = ++this.generation;
-        this.store.update((s) => { s.status = 'loading'; s.error = null; });
-        const { result } = await this.sessions.models({ sessionId: this.sessionId });
-        if (this.disposed || generation !== this.generation) {
-            if (!result.ok)
-                throw new Error(`${result.error.code}: ${result.error.message}`);
-            return result.value;
-        }
-        if (!result.ok) {
-            this.store.update((s) => { s.status = 'error'; s.error = `${result.error.code}: ${result.error.message}`; });
-            throw new Error(`session.models failed: ${result.error.code}: ${result.error.message}`);
-        }
-        const { current, routable, groups, failures } = result.value;
-        this.store.update((s) => {
-            s.current = current;
-            s.routable = routable;
-            s.groups = groups;
-            s.failures = failures;
-            s.status = 'ready';
-            s.error = null;
-        });
-        return result.value;
+        await this.catalog.load();
+        this.syncInputs();
+        return this.store.getSnapshot();
     }
     /**
-     * Select the complete provider/model/reasoning selection (both entries submit through here). Success
-     * updates the shared current; failure surfaces on the store and throws so
-     * each entry's own retry surface engages.
+     * Select the complete provider/model/reasoning selection. The durable
+     * projection frame updates the shared current; failures surface on the store
+     * and throw so each entry's own retry surface engages.
      * @param selection - provider, provider-owned model id, and optional adapter-owned effort.
    */
     async select(selection) {
         this.assertAvailable();
         const generation = ++this.generation;
         this.store.update((s) => { s.status = 'selecting'; s.error = null; });
-        const { result } = await this.sessions.selectModel({
+        const result = await this.sessions.selectModel({
             sessionId: this.sessionId,
             provider: selection.provider,
             model: selection.model,
@@ -78,44 +70,74 @@ export class ModelDirectory {
             this.store.update((s) => { s.status = 'error'; s.error = `${result.error.code}: ${result.error.message}`; });
             throw new Error(`session.selectModel failed: ${result.error.code}: ${result.error.message}`);
         }
-        // The Host validated the route before accepting it, so a selection that
-        // landed is by construction one it can serve.
-        this.store.update((s) => {
-            s.current = result.value.selected;
-            s.routable = true;
-            s.status = 'ready';
-            s.error = null;
-        });
+        this.store.update((s) => { s.status = 'ready'; s.error = null; });
+        this.syncInputs();
     }
     /**
-     * Drop the previous Host generation's projection and repull it. Clearing
-     * first prevents an unconsumed process-local selection from being displayed
-     * while the restarted Host has restored the last logged model selection.
+     * Invalidate an in-flight selection response from the previous Host generation.
      */
     resetConnected() {
         if (this.disposed)
             return;
         ++this.generation;
-        this.store.update((s) => {
-            s.current = null;
-            s.routable = null;
-            s.groups = [];
-            s.failures = [];
-            s.status = 'idle';
-            s.error = null;
+        this.store.update((state) => {
+            if (state.status === 'selecting')
+                state.status = 'idle';
+            state.error = null;
         });
-        if (!this.available())
-            return;
-        void this.load().catch(() => { });
+        this.syncInputs();
     }
     /** Scope teardown: late settlements lose write access to the store. */
     dispose() {
         this.disposed = true;
+        this.unsubscribeSelection();
+        this.unsubscribeCatalog();
     }
     assertAvailable() {
         if (!this.available()) {
             throw new Error('model selection is unavailable for addressed subagent sessions');
         }
     }
+    syncInputs() {
+        if (this.disposed)
+            return;
+        const catalog = this.catalog.store.getSnapshot();
+        const projected = modelSelectionProjection(this.projected.getSnapshot());
+        if (catalog.status !== 'ready' || catalog.value === null || projected === undefined) {
+            if (this.resolved) {
+                if (catalog.status === 'error') {
+                    this.store.update((state) => {
+                        state.status = 'error';
+                        state.error = catalog.error;
+                    });
+                }
+                return;
+            }
+            this.store.set({
+                current: null,
+                routable: null,
+                groups: [],
+                failures: [],
+                status: catalog.status === 'error' ? 'error' : 'loading',
+                error: catalog.error,
+            });
+            return;
+        }
+        const current = projected.next ?? catalog.value.default;
+        this.resolved = true;
+        this.store.set({
+            current,
+            routable: catalog.value.routableProviders.includes(current.provider),
+            groups: catalog.value.groups,
+            failures: catalog.value.failures,
+            status: this.store.getSnapshot().status === 'selecting'
+                ? 'selecting'
+                : 'ready',
+            error: null,
+        });
+    }
+}
+function modelSelectionProjection(value) {
+    return value === undefined ? undefined : value;
 }
 //# sourceMappingURL=directory.js.map

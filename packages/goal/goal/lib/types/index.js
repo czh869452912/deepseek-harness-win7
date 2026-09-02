@@ -178,10 +178,10 @@ let GoalService = (() => {
             ctx.inject(['sessionProjections'], (projectionCtx) => {
                 projectionCtx.sessionProjections.register({
                     key: 'goal',
-                    schema: goalProjectionSchema,
+                    stateSchema: goalProjectionSchema,
                     init: () => null,
                     apply: applyGoalProjection,
-                    view: state => state,
+                    wire: { viewSchema: goalProjectionSchema, view: state => state },
                     stateVersion: 4,
                 });
             });

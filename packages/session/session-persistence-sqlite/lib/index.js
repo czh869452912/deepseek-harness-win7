@@ -153,7 +153,7 @@ function emitBoundedRun(out, kind, completeRun) {
 	out.push(...completeRun.slice(offset));
 }
 /**
-* Pack eligible logical chunk runs into bounded schema-17 records.
+* Pack eligible logical chunk runs into bounded schema-19 records.
 * @param events - logical events in sequence order.
 * @returns scalar and packed physical records in equivalent order.
 */
@@ -314,11 +314,31 @@ function decodeSerializedChunkRow(tag, seq0, time0, serializedData) {
 		data: JSON.parse(serializedData)
 	}, tag, bytes));
 }
-const MAX_SAFE_INTEGER = BigInt(Number.MAX_SAFE_INTEGER);
-const MAX_ZIGZAG_INTEGER = MAX_SAFE_INTEGER * 2n;
+//#endregion
+//#region lib/types/compression.js
+/**
+* Fixed physical-record compression for SQLite. Schema-owned functions
+* encode logical events and decode tagged rows before persistence consumers
+* observe them.
+* @module @deepseek-ai/dsh-session-persistence-sqlite/compression
+*/
 const UTF8_DECODER = new TextDecoder("utf-8", { fatal: true });
 const ZSTD_COMPRESSION_LEVEL = 3;
-const PACKED_ROW_SENTINEL = 0;
+const DELTA_TAG = 0;
+const RUN_TAG = 1;
+const MAX_SAFE_INTEGER = BigInt(Number.MAX_SAFE_INTEGER);
+const MAX_ZIGZAG_INTEGER = MAX_SAFE_INTEGER * 2n;
+/**
+* Schema-19 raw-content zstd dictionary for independently decodable data rows.
+* Its exact bytes are part of the physical format; changing the resource
+* requires a schema-version bump.
+*/
+const ZSTD_DICTIONARY = readFileSync(new URL("../resources/zstd-dictionary.bin", import.meta.url));
+/** Compress options shared by every data-column frame. */
+const DATA_ZSTD_OPTIONS = {
+	dictionary: ZSTD_DICTIONARY,
+	params: { [constants.ZSTD_c_compressionLevel]: ZSTD_COMPRESSION_LEVEL }
+};
 const CHUNK_TAGS = [
 	"text-chunks",
 	"reasoning-chunks",
@@ -333,7 +353,7 @@ function isChunkTag(value) {
 * @returns every logical event represented by the row.
 */
 function decodeRow(row) {
-	if (row.ignorable !== PACKED_ROW_SENTINEL) return [decodeScalarRow(row)];
+	if (row.is_packed === 0) return [decodeScalarRow(row)];
 	if (!isChunkTag(row.type)) throw new Error(`malformed ${row.type} storage row: packed discriminator requires a chunk tag`);
 	if (row.source_event_seqs !== null || row.surface_op !== null) throw new Error(`malformed ${row.type} storage row: packed surface fields must be null`);
 	return decodeSerializedChunkRow(row.type, row.seq, row.time, decodeData(row.data, MAX_PACKED_DATA_BYTES));
@@ -351,7 +371,7 @@ function bindRecord(record) {
 		data: encodeData(JSON.stringify(record.data)),
 		sourceEventSeqs: null,
 		surfaceOp: null,
-		ignorable: PACKED_ROW_SENTINEL
+		isPacked: 1
 	};
 	const event = record;
 	const surface = event;
@@ -362,31 +382,54 @@ function bindRecord(record) {
 		data: encodeData(JSON.stringify(event.data)),
 		sourceEventSeqs: surface.sourceEventSeqs === void 0 ? null : encodeSourceEventSeqs(surface.sourceEventSeqs),
 		surfaceOp: surface.surfaceOp === void 0 ? null : JSON.stringify(surface.surfaceOp),
-		ignorable: event.ignorable === true ? 1 : null
+		isPacked: 0
 	};
 }
 function encodeData(serialized) {
 	const bytes = Buffer.from(serialized);
-	if (bytes.length < 4096) return serialized;
-	const compressed = zstdCompressSync(bytes, { params: { [constants.ZSTD_c_compressionLevel]: ZSTD_COMPRESSION_LEVEL } });
+	const compressed = zstdCompressSync(bytes, DATA_ZSTD_OPTIONS);
 	return compressed.length < bytes.length ? compressed : serialized;
 }
 function decodeData(value, maxOutputLength) {
 	if (typeof value === "string") return value;
-	const decoded = maxOutputLength === void 0 ? zstdDecompressSync(value) : zstdDecompressSync(value, { maxOutputLength });
+	const decoded = maxOutputLength === void 0 ? zstdDecompressSync(value, { dictionary: ZSTD_DICTIONARY }) : zstdDecompressSync(value, {
+		dictionary: ZSTD_DICTIONARY,
+		maxOutputLength
+	});
 	return UTF8_DECODER.decode(decoded);
 }
 function encodeSourceEventSeqs(values) {
-	const bytes = [];
+	if (values.length === 0) return new Uint8Array();
+	const deltas = [DELTA_TAG];
 	let previous = 0n;
 	for (let index = 0; index < values.length; index += 1) {
-		const sourceSeq = values[index];
-		if (!Number.isSafeInteger(sourceSeq) || sourceSeq < 0) throw new TypeError("sourceEventSeqs must contain non-negative safe integers");
-		const value = BigInt(sourceSeq);
-		appendVarint(bytes, index === 0 ? value : value >= previous ? (value - previous) * 2n : (previous - value) * 2n - 1n);
-		previous = value;
+		const value = values[index];
+		if (!Number.isSafeInteger(value) || value < 0) throw new TypeError("sourceEventSeqs must contain non-negative safe integers");
+		const current = BigInt(value);
+		appendVarint(deltas, index === 0 ? current : current >= previous ? (current - previous) * 2n : (previous - current) * 2n - 1n);
+		previous = current;
 	}
-	return Buffer.from(bytes);
+	if (!isStrictlyIncreasing(values)) return Uint8Array.from(deltas);
+	const runs = [RUN_TAG];
+	let start = values[0];
+	let end = start;
+	for (let index = 1; index < values.length; index += 1) {
+		const value = values[index];
+		if (value === end + 1) {
+			end = value;
+			continue;
+		}
+		appendVarint(runs, BigInt(start));
+		appendVarint(runs, BigInt(end - start + 1));
+		start = value;
+		end = start;
+	}
+	appendVarint(runs, BigInt(start));
+	appendVarint(runs, BigInt(end - start + 1));
+	return Uint8Array.from(runs.length < deltas.length ? runs : deltas);
+}
+function isStrictlyIncreasing(values) {
+	return values.every((value, index) => index === 0 || value > values[index - 1]);
 }
 function appendVarint(bytes, value) {
 	let remaining = value;
@@ -396,10 +439,18 @@ function appendVarint(bytes, value) {
 	}
 	bytes.push(Number(remaining));
 }
-function decodeSourceEventSeqs(bytes) {
+function decodeSourceEventSeqs(bytes, maxEntries) {
+	if (bytes.length === 0) return [];
+	if (bytes.length === 1) throw new Error("malformed source_event_seqs storage value: truncated tagged payload");
+	switch (bytes[0]) {
+		case DELTA_TAG: return decodeDeltaVarints(bytes, 1);
+		case RUN_TAG: return decodeRunVarints(bytes, 1, maxEntries);
+		default: throw new Error("malformed source_event_seqs storage value: unknown encoding tag");
+	}
+}
+function decodeDeltaVarints(bytes, offset) {
 	const values = [];
 	let previous = 0n;
-	let offset = 0;
 	while (offset < bytes.length) {
 		const first = values.length === 0;
 		const decoded = readVarint(bytes, offset, first ? MAX_SAFE_INTEGER : MAX_ZIGZAG_INTEGER);
@@ -409,6 +460,23 @@ function decodeSourceEventSeqs(bytes) {
 		if (value < 0n || value > MAX_SAFE_INTEGER) throw new Error("malformed source_event_seqs storage value: decoded seq is out of range");
 		values.push(Number(value));
 		previous = value;
+	}
+	return values;
+}
+function decodeRunVarints(bytes, offset, maxEntries) {
+	const values = [];
+	let previousEnd = -1;
+	while (offset < bytes.length) {
+		const start = readVarint(bytes, offset, MAX_SAFE_INTEGER);
+		const count = readVarint(bytes, start.offset, MAX_SAFE_INTEGER);
+		offset = count.offset;
+		const first = Number(start.value);
+		const length = Number(count.value);
+		if (length < 1) throw new Error("malformed source_event_seqs storage value: run count must be positive");
+		if (first <= previousEnd || !Number.isSafeInteger(first + length - 1)) throw new Error("malformed source_event_seqs storage value: runs must ascend within safe integers");
+		if (length > maxEntries - values.length) throw new Error("malformed source_event_seqs storage value: run exceeds its event sequence");
+		for (let index = 0; index < length; index += 1) values.push(first + index);
+		previousEnd = first + length - 1;
 	}
 	return values;
 }
@@ -437,7 +505,7 @@ function isChunkRow(record) {
 }
 function decodeScalarRow(row) {
 	const surfaceFields = {
-		...row.source_event_seqs === null ? {} : { sourceEventSeqs: decodeSourceEventSeqs(row.source_event_seqs) },
+		...row.source_event_seqs === null ? {} : { sourceEventSeqs: decodeSourceEventSeqs(row.source_event_seqs, row.seq) },
 		...row.surface_op === null ? {} : { surfaceOp: JSON.parse(row.surface_op) }
 	};
 	return {
@@ -445,8 +513,7 @@ function decodeScalarRow(row) {
 		seq: row.seq,
 		time: row.time,
 		data: JSON.parse(decodeData(row.data)),
-		...surfaceFields,
-		...row.ignorable === 1 ? { ignorable: true } : {}
+		...surfaceFields
 	};
 }
 /**
@@ -525,7 +592,7 @@ function sql(name) {
 * @module @deepseek-ai/dsh-session-persistence-sqlite/schema
 */
 /** Current physical-record schema with packed and compressed event rows. */
-const SCHEMA_VERSION = 17;
+const SCHEMA_VERSION = 19;
 /** Application id reserved for DeepSeek Harness SQLite session databases. */
 const SESSION_PERSISTENCE_SQLITE_APPLICATION_ID = 1146308688;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
@@ -565,6 +632,7 @@ function configureConnectionSecurity(db, path) {
 	if (mmapSize !== 0) throw new Error(`session database at "${path}" retained mmap_size=${mmapSize}, expected 0`);
 }
 function configureDatabase(Database, db, path) {
+	db.exec(sql("page-size"));
 	db.exec(sql("foreign-keys-on"));
 	let began = false;
 	try {
@@ -574,7 +642,7 @@ function configureDatabase(Database, db, path) {
 		const applicationId = integerField(db.prepare(sql("select-application-id")).get(), "application_id");
 		const userObjectCount = integerField(db.prepare(sql("select-user-object-count")).get(), "count");
 		if (onDisk === 0 && (applicationId !== 0 || userObjectCount > 0)) throw new Error(`session database at "${path}" has an unversioned schema or application identity`);
-		if (onDisk !== 0 && onDisk !== 17) throw new Error(`session database at "${path}" has schema version ${onDisk}, incompatible with this build (17)`);
+		if (onDisk !== 0 && onDisk !== 19) throw new Error(`session database at "${path}" has schema version ${onDisk}, incompatible with this build (19)`);
 		if (onDisk !== 0 && applicationId !== 1146308688) throw new Error(`session database at "${path}" has application id ${applicationId}, expected ${SESSION_PERSISTENCE_SQLITE_APPLICATION_ID}`);
 		if (onDisk === 0) initializeDatabase(db);
 		validateRequiredSchema(Database, db, path);
@@ -627,7 +695,7 @@ function initializeDatabase(db) {
 	db.exec(sql("schema"));
 	db.prepare(sql("insert-persistence-state")).run(randomUUID());
 	db.exec(sql("set-application-id"));
-	db.exec(sql("set-user-version-17"));
+	db.exec(sql("set-user-version-19"));
 }
 let canonicalSchema;
 function expectedSchema(Database) {
@@ -671,7 +739,7 @@ function validateSchemaForMutation(Database, db, path) {
 	const applicationId = integerField(db.prepare(sql("select-application-id")).get(), "application_id");
 	if (applicationId !== 1146308688) throw new Error(`session database application id changed before mutation (expected ${SESSION_PERSISTENCE_SQLITE_APPLICATION_ID}, got ${applicationId})`);
 	validateRequiredSchema(Database, db, path);
-	if (version !== 17) throw new Error(`session database schema changed before mutation (expected 17, got ${version})`);
+	if (version !== 19) throw new Error(`session database schema changed before mutation (expected 19, got ${version})`);
 }
 /**
 * Decode and validate one durable session row.
@@ -710,8 +778,8 @@ function decodeSessionRow(value) {
 */
 function decodeEventRow(value) {
 	const row = record(value, "stored event");
-	const ignorable = nullableSafeIntegerField(row, "ignorable");
-	if (ignorable !== null && ignorable !== 0 && ignorable !== 1) throw new Error("stored event ignorable must be 0, 1, or null");
+	const isPacked = safeIntegerField(row, "is_packed");
+	if (isPacked !== 0 && isPacked !== 1) throw new Error("stored event is_packed must be 0 or 1");
 	return {
 		seq: nonnegativeSafeIntegerField(row, "seq"),
 		type: nonemptyStringField(row, "type"),
@@ -719,7 +787,7 @@ function decodeEventRow(value) {
 		data: stringOrBlobField(row, "data"),
 		source_event_seqs: nullableBlobField(row, "source_event_seqs"),
 		surface_op: nullableStringField(row, "surface_op"),
-		ignorable
+		is_packed: isPacked
 	};
 }
 /**
@@ -889,7 +957,7 @@ var SqliteStore = class {
 			if (row === void 0) return void 0;
 			return {
 				row,
-				eventRows: this.db.prepare(sql("select-events")).all(id).map(decodeEventRow)
+				eventRows: this.db.prepare(sql("select-events")).all(this.sessionKey(id)).map(decodeEventRow)
 			};
 		});
 		signal?.throwIfAborted();
@@ -915,7 +983,7 @@ var SqliteStore = class {
 			if (row === void 0) return void 0;
 			return {
 				row,
-				...this.physicalSpanFrom(id, fromSeq)
+				...this.physicalSpanFrom(this.sessionKey(id), fromSeq)
 			};
 		});
 		signal?.throwIfAborted();
@@ -932,18 +1000,30 @@ var SqliteStore = class {
 		this.db.exec(sql("begin-immediate"));
 		try {
 			validateSchemaForMutation(this.databaseConstructor, this.db, this.databasePath);
-			const tailRows = this.tailRows(meta.id);
+			const sessionKey = isMaterialized ? this.sessionKey(meta.id) : this.writeRow(meta);
+			const tailRows = this.tailRows(sessionKey);
 			const currentLast = this.logicalLastEvent(meta.id, tailRows);
 			const expected = currentLast === void 0 ? 0 : currentLast.seq + 1;
 			const first = events[0];
 			if (first.seq !== expected) throw new Error(`session ${meta.id} append starts at seq ${first.seq}, stored next seq is ${expected}`);
-			if (!isMaterialized) this.writeRow(meta);
 			const insert = this.insertStatement();
-			for (const record of packChunkRuns(events)) this.insertRecord(insert, meta.id, bindRecord(record));
+			for (const record of packChunkRuns(events)) this.insertRecord(insert, sessionKey, bindRecord(record));
 			this.incrementRevision(meta.id);
 			this.db.exec(sql("commit"));
 		} catch (error) {
 			this.rollback(error, "append");
+		}
+	}
+	async materializeHeader(meta) {
+		await this.open();
+		this.db.exec(sql("begin-immediate"));
+		try {
+			validateSchemaForMutation(this.databaseConstructor, this.db, this.databasePath);
+			this.writeRow(meta);
+			this.db.exec(sql("commit"));
+		} catch (error) {
+			/* v8 ignore next -- validate/write failure uses the same transaction rollback path covered by append and repair. */
+			this.rollback(error, "materialize empty session");
 		}
 	}
 	async commitRepair(meta, tornMarker, closers) {
@@ -953,16 +1033,17 @@ var SqliteStore = class {
 		try {
 			validateSchemaForMutation(this.databaseConstructor, this.db, this.databasePath);
 			if (this.rowFor(meta.id) === void 0) throw new Error(`session ${meta.id} metadata row is missing`);
-			const current = scanRows(this.db.prepare(sql("select-events")).all(meta.id).map(decodeEventRow));
+			const sessionKey = this.sessionKey(meta.id);
+			const current = scanRows(this.db.prepare(sql("select-events")).all(sessionKey).map(decodeEventRow));
 			if (tornMarker !== void 0) {
 				if (current.tornFrom !== tornMarker) throw new Error(`session ${meta.id} repair is stale: physical tail no longer starts at seq ${tornMarker}`);
-				this.db.prepare(sql("delete-events-from")).run(meta.id, tornMarker);
+				this.db.prepare(sql("delete-events-from")).run(sessionKey, tornMarker);
 			} else if (current.tornFrom !== void 0) throw new Error(`session ${meta.id} repair omitted current torn tail at seq ${current.tornFrom}`);
 			if (closers.length > 0) {
 				const expected = current.preserved.at(-1)?.seq === void 0 ? 0 : current.preserved.at(-1).seq + 1;
 				if (closers[0]?.seq !== expected) throw new Error(`session ${meta.id} repair is stale: closer starts at seq ${closers[0]?.seq}, stored next seq is ${expected}`);
 				const insert = this.insertStatement();
-				for (const closer of closers) this.insertRecord(insert, meta.id, bindRecord(closer));
+				for (const closer of closers) this.insertRecord(insert, sessionKey, bindRecord(closer));
 			}
 			this.incrementRevision(meta.id);
 			this.db.exec(sql("commit"));
@@ -1004,6 +1085,11 @@ var SqliteStore = class {
 		const value = this.db.prepare(sql("select-session")).get(id);
 		return value === void 0 ? void 0 : decodeSessionRow(value);
 	}
+	sessionKey(id) {
+		const row = this.db.prepare(sql("select-session-key")).get(id);
+		if (row === void 0) throw new Error(`session ${id} metadata row is missing`);
+		return row.id;
+	}
 	async observe(signal) {
 		signal?.throwIfAborted();
 		await this.open();
@@ -1036,15 +1122,15 @@ var SqliteStore = class {
 		/* v8 ignore next -- materialized writes follow coordinator create(); other writes upsert in this transaction. */
 		if (Number(updated.changes) !== 1) throw new Error(`session ${id} metadata row is missing`);
 	}
-	tailRows(id) {
-		const tail = this.db.prepare(sql("select-tail-events")).all(id, 2).map(decodeEventRow).reverse();
+	tailRows(sessionKey) {
+		const tail = this.db.prepare(sql("select-tail-events")).all(sessionKey, 2).map(decodeEventRow).reverse();
 		if (tail.length === 0) return [];
-		return this.physicalSpanFrom(id, tail[0].seq).eventRows;
+		return this.physicalSpanFrom(sessionKey, tail[0].seq).eventRows;
 	}
 	/** Select the bounded physical span that may represent `fromSeq`. */
-	physicalSpanFrom(id, fromSeq) {
+	physicalSpanFrom(sessionKey, fromSeq) {
 		const packedFloor = Math.max(0, fromSeq - MAX_PACKED_ROW_MEMBERS + 1);
-		const packedPredecessors = this.db.prepare(sql("select-packed-predecessors")).all(id, packedFloor, fromSeq).map(decodeEventRow);
+		const packedPredecessors = this.db.prepare(sql("select-packed-predecessors")).all(sessionKey, packedFloor, fromSeq).map(decodeEventRow);
 		let base = fromSeq;
 		for (const predecessor of packedPredecessors) try {
 			const last = decodeRow(predecessor).at(-1);
@@ -1052,7 +1138,7 @@ var SqliteStore = class {
 		} catch {
 			base = Math.min(base, predecessor.seq);
 		}
-		const eventRows = this.db.prepare(sql("select-events-from")).all(id, base).map(decodeEventRow);
+		const eventRows = this.db.prepare(sql("select-events-from")).all(sessionKey, base).map(decodeEventRow);
 		return {
 			base,
 			eventRows
@@ -1067,11 +1153,11 @@ var SqliteStore = class {
 	insertStatement() {
 		return this.db.prepare(sql("insert-event"));
 	}
-	insertRecord(insert, id, record) {
-		insert.run(id, record.seq, record.type, record.time, record.data, record.sourceEventSeqs, record.surfaceOp, record.ignorable);
+	insertRecord(insert, sessionKey, record) {
+		insert.run(sessionKey, record.seq, record.type, record.time, record.data, record.sourceEventSeqs, record.surfaceOp, record.isPacked);
 	}
 	writeRow(meta) {
-		this.db.prepare(sql("upsert-session")).run(meta.id, meta.version, meta.createdAt, meta.cwd ?? null, meta.parentSession ?? null, meta.seedLength ?? null, meta.origin ?? null, meta.delegationDepth ?? null, meta.agentPreset ?? null, randomUUID());
+		return this.db.prepare(sql("upsert-session")).get(meta.id, meta.version, meta.createdAt, meta.cwd ?? null, meta.parentSession ?? null, meta.seedLength ?? null, meta.origin ?? null, meta.delegationDepth ?? null, meta.agentPreset ?? null, randomUUID()).id;
 	}
 };
 function sqliteRevision(storeIdentity, row) {
@@ -1138,7 +1224,7 @@ async function importNodeSqlite() {
 //#region lib/types/index.js
 /**
 * Opt-in SQLite persistence provider. Logical sessions remain unchanged;
-* the physical backend packs eligible chunk runs into schema-17 rows.
+* the physical backend packs eligible chunk runs into schema-19 rows.
 * @module @deepseek-ai/dsh-session-persistence-sqlite
 */
 /** Default wait for another SQLite connection's write reservation. */
@@ -1191,6 +1277,9 @@ var SqliteSessionPersistence = class extends SessionPersistence {
 	create(meta) {
 		return this.coordinator.create(meta);
 	}
+	ensureMaterialized(session) {
+		return this.coordinator.ensureMaterialized(session);
+	}
 	append(id, events) {
 		return this.coordinator.append(id, events);
 	}
@@ -1202,6 +1291,9 @@ var SqliteSessionPersistence = class extends SessionPersistence {
 	}
 	inspect(id, signal) {
 		return this.coordinator.inspect(id, signal);
+	}
+	borrowSession(id, signal) {
+		return this.coordinator.borrowSession(id, signal);
 	}
 	readFrom(id, fromSeq, signal) {
 		return this.coordinator.readFrom(id, fromSeq, signal);

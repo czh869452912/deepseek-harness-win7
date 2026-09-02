@@ -1,5 +1,6 @@
 import z from "@deepseek-ai/schemastery";
 import { TeamTaskId } from "@deepseek-ai/dsh-experimental-agent-team";
+import { FIRST_PARTY_SECTION_ORDER } from "@deepseek-ai/dsh-system-prompt";
 import { defineTool } from "@deepseek-ai/dsh-tools";
 //#region lib/types/index.js
 /** Scoped model-facing tools for the opt-in Agent Teams runtime. */
@@ -237,7 +238,7 @@ function install(agent, ctx, config) {
 	try {
 		register(scoped.systemPrompt.section({
 			name: "team:policy",
-			order: 60,
+			order: FIRST_PARTY_SECTION_ORDER.TEAM_POLICY,
 			text: () => {
 				const membership = ctx.agentTeams.membership(agent);
 				return `${POLICY}\n\nYour Team role is ${membership.role}; your Team name is ${membership.name}; Team id is ${membership.id}.`;

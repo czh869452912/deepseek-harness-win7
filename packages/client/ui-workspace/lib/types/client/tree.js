@@ -1,24 +1,18 @@
-/**
- * Derives the workspace browser tree from Host Workspace order and membership.
- * Unassigned Sessions trail under Ungrouped; only the selected blank Session
- * remains visible.
- */
-import { indexSubagentDescendants, } from '@deepseek-ai/dsh-client-runtime/client';
+import { workspaceTitleOf } from '@deepseek-ai/dsh-util-workspace-path';
+import { indexSubagentDescendants, } from "./subagent-lineage.js";
 /** Group key for Sessions outside every Workspace. */
 export const UNGROUPED_KEY = '';
-/** Display label for the ungrouped bucket row. */
-export const UNGROUPED_LABEL = 'Ungrouped';
 /**
  * Directory display label: basename of the path (both separators accepted).
  * Ungrouped-bucket fallback for surfaces without a workspace title.
  * @param cwd - directory path, or undefined for the ungrouped bucket.
- * @returns basename, the raw cwd when it has no basename, or the ungrouped label.
+ * @returns basename, the raw cwd when it has no basename, or an empty ungrouped marker.
  */
 export function workspaceLabel(cwd) {
     if (cwd === undefined || cwd === '')
-        return UNGROUPED_LABEL;
-    const base = cwd.replace(/[/\\]+$/, '').split(/[/\\]/).pop();
-    return base !== undefined && base !== '' ? base : cwd;
+        return '';
+    const base = workspaceTitleOf(cwd);
+    return base !== '' ? base : cwd;
 }
 /** Recency comparator: newest first, id as the deterministic tiebreak (ids are unique per group). */
 function byRecency(a, b) {
@@ -43,7 +37,7 @@ function sessionVisible(session, current, archived) {
  * and the renderer localizes its display label.
  */
 function sessionTitle(session) {
-    return session.blank ? 'New Session' : session.displayTitle;
+    return session.blank ? '' : session.displayTitle;
 }
 /** Build one group without projecting session lineage into presentation. */
 function buildGroup(key, workspaceId, cwd, createdAt, label, members, order) {
@@ -99,11 +93,23 @@ function groupByWorkspace(list, workspaces, archived, ungroupedOrder) {
         .map(id => list.byId[id])
         .filter((s) => s !== undefined && !accounted.has(s.id) && sessionVisible(s, list.current, archived));
     if (stray.length > 0) {
-        groups.push(buildGroup(UNGROUPED_KEY, undefined, undefined, undefined, UNGROUPED_LABEL, ungroupedOrder === undefined ? stray : orderedUngrouped(stray, ungroupedOrder), ungroupedOrder === undefined ? 'recency' : 'account'));
+        groups.push(buildGroup(UNGROUPED_KEY, undefined, undefined, undefined, '', ungroupedOrder === undefined ? stray : orderedUngrouped(stray, ungroupedOrder), ungroupedOrder === undefined ? 'recency' : 'account'));
     }
     return groups;
 }
-function sessionNode(s, descendants) {
+/** Keep navigation presentation independent from domain-owned interaction objects. */
+function visiblePendingKind(kind) {
+    switch (kind) {
+        case 'approval':
+        case 'plan-review':
+        case 'question':
+            return kind;
+        default:
+            return undefined;
+    }
+}
+function sessionNode(s, descendants, pendingInteractions) {
+    const pendingInteraction = visiblePendingKind(pendingInteractions.get(s.id)?.kind);
     return {
         id: s.id,
         title: sessionTitle(s),
@@ -112,7 +118,7 @@ function sessionNode(s, descendants) {
         runningSubagentCount: descendants.get(s.id)?.runningCount ?? 0,
         completed: s.completed === true,
         updatedAt: s.updatedAt,
-        ...(s.pendingInteraction === undefined ? {} : { pendingInteraction: s.pendingInteraction }),
+        ...(pendingInteraction === undefined ? {} : { pendingInteraction }),
     };
 }
 /**
@@ -126,10 +132,11 @@ function sessionNode(s, descendants) {
  * @param list - sessions list snapshot (`current` feeds containsCurrent).
  * @param workspaces - real workspaces in stable Host order.
  * @param archivedSessionIds - registry-global archive set.
+ * @param pendingInteractions - pending UI interactions by Session.
  * @param view - local expansion arrays.
  * @returns group sections in render order.
  */
-export function deriveGroups(list, workspaces, archivedSessionIds, view) {
+export function deriveGroups(list, workspaces, archivedSessionIds, pendingInteractions, view) {
     const archived = new Set(archivedSessionIds);
     const expandedGroups = new Set(view.expandedGroups);
     const descendants = indexSubagentDescendants(list.byId);
@@ -149,7 +156,9 @@ export function deriveGroups(list, workspaces, archivedSessionIds, view) {
             sessionCount: g.sessions.length,
             expanded,
             containsCurrent: g.key === currentGroup,
-            sessions: expanded ? g.sessions.map(session => sessionNode(session, descendants)) : [],
+            sessions: expanded
+                ? g.sessions.map(session => sessionNode(session, descendants, pendingInteractions))
+                : [],
         });
     }
     return groups;
@@ -161,9 +170,10 @@ export function deriveGroups(list, workspaces, archivedSessionIds, view) {
  * (see {@link deriveSearchResults}).
  * @param list - sessions list snapshot.
  * @param archivedSessionIds - registry-global archive set.
+ * @param pendingInteractions - pending UI interactions by Session.
  * @returns flat rows in render order.
  */
-export function deriveFlat(list, archivedSessionIds) {
+export function deriveFlat(list, archivedSessionIds, pendingInteractions) {
     const archived = new Set(archivedSessionIds);
     const descendants = indexSubagentDescendants(list.byId);
     const rows = [];
@@ -174,7 +184,7 @@ export function deriveFlat(list, archivedSessionIds) {
         rows.push(s);
     }
     rows.sort(byRecency);
-    return rows.map(session => sessionNode(session, descendants));
+    return rows.map(session => sessionNode(session, descendants, pendingInteractions));
 }
 /**
  * Merge immediate title/Workspace substring matches with ranked Host content
@@ -184,11 +194,12 @@ export function deriveFlat(list, archivedSessionIds) {
  * @param workspaces - Workspace membership and display labels.
  * @param query - caller text; surrounding whitespace is ignored.
  * @param archivedSessionIds - registry-global archive set (members never match).
+ * @param pendingInteractions - pending UI interactions by Session.
  * @param content - ranked Host content-search page.
  * @param limit - protocol-owned maximum merged row count.
  * @returns bounded deduplicated flat rows and a refine-query hint bit.
  */
-export function deriveSearchResults(list, workspaces, query, archivedSessionIds, content, limit) {
+export function deriveSearchResults(list, workspaces, query, archivedSessionIds, pendingInteractions, content, limit) {
     const q = query.trim().toLowerCase();
     if (q === '')
         return { items: [], hasMore: false };
@@ -238,44 +249,21 @@ export function deriveSearchResults(list, workspaces, query, archivedSessionIds,
     return {
         items: ordered.slice(0, limit).map((summary) => {
             const match = contentBySession.get(summary.id);
+            const pendingInteraction = visiblePendingKind(pendingInteractions.get(summary.id)?.kind);
             return {
                 id: summary.id,
                 title: sessionTitle(summary),
                 workspace: labelOf(summary),
                 running: summary.running,
                 runningSubagentCount: descendants.get(summary.id)?.runningCount ?? 0,
-                ...(summary.pendingInteraction === undefined
+                ...(pendingInteraction === undefined
                     ? {}
-                    : { pendingInteraction: summary.pendingInteraction }),
+                    : { pendingInteraction }),
                 completed: summary.completed === true,
                 ...match === undefined ? {} : { snippet: match.snippet },
             };
         }),
         hasMore: content.hasMore || ordered.length > limit,
     };
-}
-/**
- * Compact relative time for session rows, as a structured bucket the
- * renderer localizes ("now"/"5min"/"3h"/"2d"/"4mo"/"1y" in en).
- * @param updatedAt - epoch ms of the session's last activity.
- * @param now - current epoch ms (injected for pure rendering).
- * @returns the row's trailing time bucket and magnitude.
- */
-export function relativeTime(updatedAt, now) {
-    const MIN = 60_000;
-    const HOUR = 3_600_000;
-    const DAY = 86_400_000;
-    const diff = Math.max(0, now - updatedAt);
-    if (diff < MIN)
-        return { unit: 'now', n: 0 };
-    if (diff < HOUR)
-        return { unit: 'minutes', n: Math.floor(diff / MIN) };
-    if (diff < DAY)
-        return { unit: 'hours', n: Math.floor(diff / HOUR) };
-    if (diff < 30 * DAY)
-        return { unit: 'days', n: Math.floor(diff / DAY) };
-    if (diff < 365 * DAY)
-        return { unit: 'months', n: Math.floor(diff / (30 * DAY)) };
-    return { unit: 'years', n: Math.floor(diff / (365 * DAY)) };
 }
 //# sourceMappingURL=tree.js.map

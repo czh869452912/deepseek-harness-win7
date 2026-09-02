@@ -18,7 +18,10 @@ import css from './AgentPresetLabel.module.css';
  * @returns the label, or null when the session records no preset.
  */
 export function AgentPresetLabel({ sessionId, useSessions, useAgentPresets, load, t, }) {
-    const preset = useSessions(state => state.byId[sessionId]?.agentPreset);
+    const preset = useSessions((state) => {
+        const value = state.byId[sessionId]?.projectionValues?.agentPreset;
+        return typeof value === 'string' ? value : undefined;
+    });
     const options = useAgentPresets(state => state.options);
     useEffect(() => {
         // Deployments that compose no presets never label anything, so the roster

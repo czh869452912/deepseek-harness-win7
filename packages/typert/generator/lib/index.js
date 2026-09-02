@@ -705,13 +705,15 @@ var FaceAnalyzer = class {
 				};
 			}
 		}
-		const resultType = this.remoteResultType(method);
+		const mode = invocation.kind === "direct" ? invocation.mode : void 0;
+		const resultType = this.remoteResultType(method, mode);
 		return {
 			id: `${registration.name}#${binding.namespace}/${exportedMethod}`,
 			service: binding.service,
 			namespace: binding.namespace,
 			method: exportedMethod,
 			...exportedMethod === methodName ? {} : { implementation: methodName },
+			...mode === void 0 ? {} : { mode },
 			invocation: receiver,
 			...scope === void 0 ? {} : { scope },
 			parameters,
@@ -781,13 +783,26 @@ var FaceAnalyzer = class {
 			let marker;
 			if (this.isTypeMetaSymbol(expression, "Remote")) marker = { kind: "direct" };
 			else if (ts.isCallExpression(expression) && this.isTypeMetaSymbol(expression.expression, "Remote")) {
-				if (expression.arguments.length !== 1) this.fail(expression, "Remote() requires one exported method name");
-				const exportName = stringLiteralValue(expression.arguments[0]);
-				if (exportName === void 0 || !isRemoteSegment(exportName)) this.fail(expression.arguments[0] ?? expression, "Remote() name must be a string literal containing only RPC endpoint segment characters");
-				marker = {
-					kind: "direct",
-					exportName
-				};
+				if (expression.arguments.length !== 1) this.fail(expression, "Remote() requires one name or options object");
+				const argument = expression.arguments[0];
+				if (argument === void 0) this.fail(expression, "Remote() requires one name or options object");
+				const exportName = stringLiteralValue(argument);
+				if (exportName !== void 0) {
+					if (!isRemoteSegment(exportName)) this.fail(argument, "Remote() name must contain only RPC endpoint segment characters");
+					marker = {
+						kind: "direct",
+						exportName
+					};
+				} else {
+					if (!ts.isObjectLiteralExpression(argument) || argument.properties.length !== 1) this.fail(argument, "Remote() options must contain exactly mode: \"stream\"");
+					const [property] = argument.properties;
+					if (property === void 0) this.fail(argument, "Remote() options must contain exactly mode: \"stream\"");
+					if (!ts.isPropertyAssignment(property) || memberName(property.name) !== "mode" || stringLiteralValue(property.initializer) !== "stream") this.fail(property, "Remote() options must contain exactly mode: \"stream\"");
+					marker = {
+						kind: "direct",
+						mode: "stream"
+					};
+				}
 			} else if (ts.isCallExpression(expression) && this.isTypeMetaSymbol(expression.expression, "RemoteScope")) {
 				if (expression.arguments.length < 1 || expression.arguments.length > 2) this.fail(expression, "RemoteScope() requires a Context key and optional exported method name");
 				const context = stringLiteralValue(expression.arguments[0]);
@@ -806,16 +821,18 @@ var FaceAnalyzer = class {
 		}
 		return found;
 	}
-	remoteResultType(method) {
+	remoteResultType(method, mode) {
 		const authored = this.requiredType(method, method.type, "return");
-		if (!ts.isTypeReferenceNode(authored)) return authored;
-		const symbol = this.checker.getSymbolAtLocation(authored.typeName);
-		const resolved = symbol === void 0 ? void 0 : this.resolveSymbol(symbol);
-		const resultType = authored.typeArguments?.[0];
-		if (resolved?.name !== "Promise" || resultType === void 0 || authored.typeArguments?.length !== 1) return authored;
-		const declaration = preferredDeclaration(resolved);
-		if (declaration === void 0 || !isStandardLibraryFile(declaration.getSourceFile().fileName)) return authored;
-		return resultType;
+		if (ts.isTypeReferenceNode(authored)) {
+			const symbol = this.checker.getSymbolAtLocation(authored.typeName);
+			const resolved = symbol === void 0 ? void 0 : this.resolveSymbol(symbol);
+			const resultType = authored.typeArguments?.[0];
+			const wrappers = mode === "stream" ? ["Iterable", "AsyncIterable"] : ["Promise"];
+			const declaration = resolved === void 0 ? void 0 : preferredDeclaration(resolved);
+			if (resolved !== void 0 && wrappers.includes(resolved.name) && resultType !== void 0 && authored.typeArguments?.length === 1 && declaration !== void 0 && isStandardLibraryFile(declaration.getSourceFile().fileName)) return resultType;
+		}
+		if (mode === "stream") this.fail(method, "stream Remote methods must return Iterable<T> or AsyncIterable<T>");
+		return authored;
 	}
 	isGlobalAbortSignal(type) {
 		const symbol = this.symbolAtType(type);
@@ -2783,6 +2800,7 @@ var FaceModelEmitter = class {
 			`  method: ${quote$1(invocation.method)},`
 		];
 		if (invocation.implementation !== void 0) lines.push(`  implementation: ${quote$1(invocation.implementation)},`);
+		if (invocation.mode !== void 0) lines.push(`  mode: ${quote$1(invocation.mode)},`);
 		if (invocation.invocation.kind === "direct") lines.push("  invocation: { kind: 'direct' },");
 		else {
 			lines.push("  invocation: {");
@@ -2912,6 +2930,7 @@ var FaceModelEmitter = class {
 		const parameters = invocation.parameters.filter((parameter) => !scoped || invocation.invocation.kind === "context" || parameter.wire !== invocation.scope?.wire).map((parameter) => `${safeIdentifier(parameter.wire)}${parameter.optional === true ? "?" : ""}: ${this.renderer.renderType(parameter.boundary.type, referenceNames)}`);
 		if (invocation.cancellation !== void 0) parameters.push("signal?: AbortSignal");
 		const result = this.renderer.renderType(invocation.result.type, referenceNames);
+		if (invocation.mode === "stream") return `(${parameters.join(", ")}) => AsyncIterable<${result}>`;
 		return `(${parameters.join(", ")}) => Promise<RemoteResult<${result}>>`;
 	}
 };
@@ -3824,7 +3843,7 @@ function renderRuntimeApi(services, events, types, inheritedServices) {
 	}
 	lines.push("]", "", "/** The inherited `ctx` API (cordis core + loader/hmr/timer), in curated order. */", "export const INHERITED_CTX_API: readonly InheritedApiEntry[] = [");
 	for (const inherited of inheritedServices) lines.push(`  { name: ${quote(inherited.name)}, summary: ${quote(inherited.summary)} },`);
-	lines.push("]", "", "function referencedTypeClosure(seeds: readonly string[]): TypeApiEntry[] {", "  const included = new Set<string>()", "  let frontier = [...seeds]", "  while (frontier.length > 0) {", "    const next: string[] = []", "    for (const entry of TYPE_API) {", "      if (included.has(entry.name)) continue", "      const pattern = new RegExp(`\\b${entry.name}\\b`)", "      if (!frontier.some(text => pattern.test(text))) continue", "      included.add(entry.name)", "      next.push(entry.declaration)", "    }", "    frontier = next", "  }", "  return TYPE_API.filter(entry => included.has(entry.name))", "}", "", "function contextProperty(key: string): string {", "  return /^[A-Za-z_$][\\w$]*$/.test(key) ? `ctx.${key}` : `ctx[${JSON.stringify(key)}]`", "}", "", "/**", " * Project the Service Catalog as a compact directory or one exact coding contract.", " * @param key - exact Service key; omit it to list all Services and method signatures.", " * @param services - platform-specific visible Service entries.", " * @returns compact navigation data or one detailed Service with its referenced type closure.", " */", "export function queryServiceApi(key?: string, services: readonly ServiceApiEntry[] = SERVICE_API): object {", "  if (key === undefined) {", "    return {", "      mode: 'catalog',", "      services: services.map(service => ({", "        key: service.key,", "        description: service.summary,", "        methods: service.methods.map(method => ({ signature: method.signature })),", "      })),", "    }", "  }", "  const service = services.find(candidate => candidate.key === key)", "  if (service === undefined) throw new Error(`no catalogued Service named \"${key}\"`)", "  return {", "    mode: 'service',", "    service: {", "      key: service.key,", "      description: service.description,", "      access: {", "        optional: { expression: `ctx.get(${JSON.stringify(service.key)})`, requiresUndefinedCheck: true },", "        hardDependency: { inject: [service.key], expression: contextProperty(service.key) },", "      },", "      methods: service.methods,", "    },", "    referencedTypes: referencedTypeClosure(service.methods.map(method => method.signature)),", "  }", "}", "", "/**", " * Project the Event Catalog as a compact directory or one exact listener contract.", " * @param name - exact Event name; omit it to list all Events and listener signatures.", " * @param events - platform-specific visible Event entries.", " * @returns compact navigation data or one detailed Event with its referenced type closure.", " */", "export function queryEventApi(name?: string, events: readonly EventApiEntry[] = EVENT_API): object {", "  if (name === undefined) {", "    return {", "      mode: 'catalog',", "      events: events.map(event => ({", "        name: event.name,", "        description: event.summary,", "        mode: event.mode,", "        signature: event.signature,", "      })),", "    }", "  }", "  const event = events.find(candidate => candidate.name === name)", "  if (event === undefined) throw new Error(`no catalogued Event named \"${name}\"`)", "  return {", "    mode: 'event',", "    event: {", "      name: event.name,", "      description: event.description,", "      mode: event.mode,", "      signature: event.signature,", "      parameters: event.parameters,", "    },", "    referencedTypes: referencedTypeClosure([event.signature]),", "  }", "}", "/* jscpd:ignore-end */", "");
+	lines.push("]", "", "function referencedTypeClosure(seeds: readonly string[]): TypeApiEntry[] {", "  const included = new Set<string>()", "  let frontier = [...seeds]", "  while (frontier.length > 0) {", "    const next: string[] = []", "    for (const entry of TYPE_API) {", "      if (included.has(entry.name)) continue", "      const pattern = new RegExp(`\\\\b${entry.name}\\\\b`)", "      if (!frontier.some(text => pattern.test(text))) continue", "      included.add(entry.name)", "      next.push(entry.declaration)", "    }", "    frontier = next", "  }", "  return TYPE_API.filter(entry => included.has(entry.name))", "}", "", "function contextProperty(key: string): string {", "  return /^[A-Za-z_$][\\w$]*$/.test(key) ? `ctx.${key}` : `ctx[${JSON.stringify(key)}]`", "}", "", "/**", " * Project the Service Catalog as a compact directory or one exact coding contract.", " * @param key - exact Service key; omit it to list all Services and method signatures.", " * @param services - platform-specific visible Service entries.", " * @returns compact navigation data or one detailed Service with its referenced type closure.", " */", "export function queryServiceApi(key?: string, services: readonly ServiceApiEntry[] = SERVICE_API): object {", "  if (key === undefined) {", "    return {", "      mode: 'catalog',", "      services: services.map(service => ({", "        key: service.key,", "        description: service.summary,", "        methods: service.methods.map(method => ({ signature: method.signature })),", "      })),", "    }", "  }", "  const service = services.find(candidate => candidate.key === key)", "  if (service === undefined) throw new Error(`no catalogued Service named \"${key}\"`)", "  return {", "    mode: 'service',", "    service: {", "      key: service.key,", "      description: service.description,", "      access: {", "        optional: { expression: `ctx.get(${JSON.stringify(service.key)})`, requiresUndefinedCheck: true },", "        hardDependency: { inject: [service.key], expression: contextProperty(service.key) },", "      },", "      methods: service.methods,", "    },", "    referencedTypes: referencedTypeClosure(service.methods.map(method => method.signature)),", "  }", "}", "", "/**", " * Project the Event Catalog as a compact directory or one exact listener contract.", " * @param name - exact Event name; omit it to list all Events and listener signatures.", " * @param events - platform-specific visible Event entries.", " * @returns compact navigation data or one detailed Event with its referenced type closure.", " */", "export function queryEventApi(name?: string, events: readonly EventApiEntry[] = EVENT_API): object {", "  if (name === undefined) {", "    return {", "      mode: 'catalog',", "      events: events.map(event => ({", "        name: event.name,", "        description: event.summary,", "        mode: event.mode,", "        signature: event.signature,", "      })),", "    }", "  }", "  const event = events.find(candidate => candidate.name === name)", "  if (event === undefined) throw new Error(`no catalogued Event named \"${name}\"`)", "  return {", "    mode: 'event',", "    event: {", "      name: event.name,", "      description: event.description,", "      mode: event.mode,", "      signature: event.signature,", "      parameters: event.parameters,", "    },", "    referencedTypes: referencedTypeClosure([event.signature]),", "  }", "}", "/* jscpd:ignore-end */", "");
 	return lines.join("\n");
 }
 /** Opening region delimiter; injected content lives between the pair and the page owns everything outside. */
@@ -3859,6 +3878,11 @@ function githubSlug(heading) {
 function anchorFor(headingText) {
 	return [`<a id="${githubSlug(headingText)}"></a>`, ""];
 }
+/** Render a subsystem `file:line` source pointer as a file-only link. */
+function sourceLink(source) {
+	const file = source.split(":")[0];
+	return `[\`${file}\`](../../${file})`;
+}
 /** Render one harness event entry onto its owning page, nested under its scope heading. */
 function renderEvent(e, onPage, linkedTypePages) {
 	const out = [
@@ -3870,7 +3894,7 @@ function renderEvent(e, onPage, linkedTypePages) {
 	out.push("```ts cordis-catalog", e.jsDoc, e.signature, "```", "");
 	const links = typeLinks(e.signature, onPage, linkedTypePages);
 	if (links) out.push(links, "");
-	out.push(`Source: [\`${e.source}\`](../../${e.source.split(":")[0]})`, "");
+	out.push(`Source: ${sourceLink(e.source)}`, "");
 	return out;
 }
 /** Render one harness service entry onto its owning page. */
@@ -3893,7 +3917,7 @@ function renderService(s, onPage, linkedTypePages) {
 		const links = typeLinks(methods.map((method) => method.signature).join("\n"), onPage, linkedTypePages);
 		if (links) out.push(links, "");
 	}
-	out.push(`Source: [\`${s.source}\`](../../${s.source.split(":")[0]})`, "");
+	out.push(`Source: ${sourceLink(s.source)}`, "");
 	return out;
 }
 /** The shared generated-file banner comment. */
@@ -3922,7 +3946,7 @@ function renderPageRegion(page, services, events, policy) {
 		"",
 		"## Cordis API",
 		"",
-		"Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnpm run verify-cordis-catalog` in doc-sync; regenerate with `pnpm run gen-cordis-catalog`) — this section is byte-identical in both language sides of the page. Signature blocks use a `ts cordis-catalog` fence and keep the original source JSDoc; dispatch modes are defined in the [primer](../cordis-primer.md#dispatch-modes), and the framework-inherited `ctx` API lives in [cordis-api/inherited.md](../cordis-api/inherited.md).",
+		"Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnpm run verify-cordis-catalog` in doc-sync; regenerate with `pnpm run gen-cordis-catalog`) — the language sides differ only in locale-specific paired document paths. Signature blocks use a `ts cordis-catalog` fence and keep the original source JSDoc; dispatch modes are defined in the [primer](../cordis-primer.md#dispatch-modes), and the framework-inherited `ctx` API lives in [cordis-api/inherited.md](../cordis-api/inherited.md).",
 		""
 	];
 	for (const s of services) lines.push(...renderService(s, page, policy.linkedTypePages));
@@ -3967,12 +3991,17 @@ function renderInheritedPage(policy) {
 /** Discover, analyze, and emit package reflection from independent faces. */
 var WorkspaceTypertGenerator = class {
 	root;
+	options;
+	/** Parsed-config and program-host state shared by every analyzer this generator creates. */
+	caches = new WorkspaceCaches();
 	/**
 	* Bind generation to one workspace root.
 	* @param root - directory containing face aggregate tsconfigs.
+	* @param options - behavior switches applied to every pass of this generator.
 	*/
-	constructor(root) {
+	constructor(root, options = {}) {
 		this.root = root;
+		this.options = options;
 	}
 	/**
 	* Find public package faces that contribute Cordis services/events or
@@ -3983,6 +4012,7 @@ var WorkspaceTypertGenerator = class {
 	discover(faces) {
 		return new WorkspaceAnalyzer({
 			root: this.root,
+			caches: this.caches,
 			...faces === void 0 ? {} : { faces }
 		}).discoverPackages();
 	}
@@ -3997,7 +4027,9 @@ var WorkspaceTypertGenerator = class {
 		const workspace = new WorkspaceAnalyzer({
 			root: this.root,
 			packages: selected,
-			...faces === void 0 ? {} : { faces }
+			caches: this.caches,
+			...faces === void 0 ? {} : { faces },
+			...this.options.checkDiagnostics === void 0 ? {} : { checkDiagnostics: this.options.checkDiagnostics }
 		}).analyze();
 		const artifacts = [];
 		for (const face of workspace.faces) {

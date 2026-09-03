@@ -1,3 +1,4 @@
+import { COMPACTION_INTERRUPTED_ERROR } from "./copy-codes.js";
 const EMPTY_LIST = [];
 /** Stable empty target used until a Session has assembled Trajectory records. */
 export const EMPTY_TRAJECTORY_SNAPSHOT = {
@@ -19,15 +20,20 @@ function headerStepKey(header) {
 }
 function headerFor(request, headersByStep, previous) {
     return headersByStep.get(stepKey(request.turn, request.step))
-        ?? (previous !== undefined && previous.seq < request.startSeq ? previous : undefined);
+        ?? (previous !== undefined && previous.seq < request.startSeq
+            ? {
+                latest: previous,
+                ...(previous.change === undefined ? {} : { change: previous.change }),
+            }
+            : undefined);
 }
 function applyHeader(request, header, includeChange) {
     return header === undefined
         ? request
         : {
             ...request,
-            prompt: header.prompt,
-            requestConfig: header.prompt.config,
+            prompt: header.latest.prompt,
+            requestConfig: header.latest.prompt.config,
             ...(includeChange && header.change !== undefined ? { promptChange: header.change } : {}),
         };
 }
@@ -71,7 +77,7 @@ function interruptCompactions(requests, boundaries) {
             ...request,
             completedAt: boundary.time,
             status: 'error',
-            error: 'Compaction was interrupted before completion.',
+            error: COMPACTION_INTERRUPTED_ERROR,
         };
     }
 }
@@ -95,6 +101,7 @@ function applyTurnErrors(requests, endings) {
             completedAt: request.completedAt ?? ending.time,
             status: 'error',
             error: ending.error,
+            ...(ending.errorCode === undefined ? {} : { errorCode: ending.errorCode }),
         };
     }
 }
@@ -136,8 +143,15 @@ export class TrajectorySnapshotBuilder {
             if (contribution.data.kind !== 'request-header')
                 continue;
             const key = headerStepKey(contribution.data.header);
-            if (key !== undefined)
-                headersByStep.set(key, contribution.data.header);
+            if (key === undefined)
+                continue;
+            const previous = headersByStep.get(key);
+            headersByStep.set(key, {
+                latest: contribution.data.header,
+                ...(contribution.data.header.change !== undefined
+                    ? { change: contribution.data.header.change }
+                    : previous?.change === undefined ? {} : { change: previous.change }),
+            });
         }
         const finalized = [];
         const eventLocations = new Map();
@@ -167,15 +181,16 @@ export class TrajectorySnapshotBuilder {
                     ? undefined
                     : headerFor(data.request, headersByStep, previousHeader);
                 if (data.node !== undefined)
-                    finalized.push(withRequestConfig(data.node, header?.prompt));
+                    finalized.push(withRequestConfig(data.node, header?.latest.prompt));
                 if (data.partial !== null)
                     partial = data.partial;
                 if (data.request !== undefined) {
-                    const includeChange = header?.change !== undefined
-                        && !consumedPromptChanges.has(header.seq);
+                    const change = header?.change;
+                    const includeChange = change !== undefined
+                        && !consumedPromptChanges.has(change.seq);
                     requests.push(applyHeader(data.request, header, includeChange));
                     if (includeChange)
-                        consumedPromptChanges.add(header.seq);
+                        consumedPromptChanges.add(change.seq);
                 }
                 continue;
             }
@@ -201,6 +216,7 @@ export class TrajectorySnapshotBuilder {
                 turn: data.turn,
                 time: data.time,
                 ...(data.error === undefined ? {} : { error: data.error }),
+                ...(data.errorCode === undefined ? {} : { errorCode: data.errorCode }),
             });
         }
         requests.sort((left, right) => left.startSeq - right.startSeq);
@@ -237,6 +253,6 @@ export const trajectoryViewDefinition = {
  * @param ctx - Plugin context receiving the view Definition.
  */
 export function registerTrajectoryConversationView(ctx) {
-    ctx.conversationViews.register(trajectoryViewDefinition);
+    ctx.uiConversation.views.register(trajectoryViewDefinition);
 }
 //# sourceMappingURL=trajectory-snapshot-builder.js.map

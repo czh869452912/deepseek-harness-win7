@@ -40,6 +40,7 @@ export declare class SqliteStore implements PersistenceBackend<number> {
     readStoredRevision(id: SessionId, signal?: AbortSignal): Promise<PersistenceRevision | undefined>;
     loadStoredFrom(id: SessionId, fromSeq: number, signal?: AbortSignal): Promise<StoredSuffix | undefined>;
     appendBatch(meta: SessionHeader, events: readonly SessionEvent[], isMaterialized: boolean): Promise<void>;
+    materializeHeader(meta: SessionHeader): Promise<void>;
     commitRepair(meta: SessionHeader, tornMarker: number | undefined, closers: readonly SessionEvent[]): Promise<void>;
     list(signal?: AbortSignal): Promise<SessionHeader[]>;
     /**
@@ -50,6 +51,7 @@ export declare class SqliteStore implements PersistenceBackend<number> {
     listSnapshots(signal?: AbortSignal): Promise<SessionPersistenceSnapshot[]>;
     close(): Promise<void>;
     private rowFor;
+    private sessionKey;
     private observe;
     private readTransaction;
     private sessionRows;

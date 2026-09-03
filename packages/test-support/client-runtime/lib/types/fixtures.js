@@ -1,24 +1,17 @@
-import { EMPTY_CHAT_SNAPSHOT, EMPTY_CONVERSATION_VIEWS, } from '@deepseek-ai/dsh-client-runtime/client';
+import { EMPTY_CONVERSATION_SNAPSHOT, } from '@deepseek-ai/dsh-client-ui-conversation/client';
+import { EMPTY_CHAT_SNAPSHOT, } from '@deepseek-ai/dsh-client-ui-chat/client';
 /**
- * A complete quiescent conversation snapshot (open window, no traffic).
+ * A complete quiescent Session Controller snapshot.
  * @param sessionId - owning session id.
  * @returns the snapshot; spread fixture overrides on top.
  */
-export function conversationSnapshot(sessionId) {
+export function sessionSnapshot(sessionId) {
     return {
         sessionId,
-        views: EMPTY_CONVERSATION_VIEWS,
-        chat: EMPTY_CHAT_SNAPSHOT,
-        nodes: [],
-        turnTimings: new Map(),
-        turnEnds: new Map(),
-        partial: null,
-        runningCalls: [],
-        pending: [],
         queue: [],
+        pendingSubmissions: [],
         running: false,
         subagent: null,
-        composerPhase: 'active',
         removed: false,
         openState: 'open',
         openError: null,
@@ -27,22 +20,37 @@ export function conversationSnapshot(sessionId) {
         promptError: null,
         blank: false,
         lastAgentError: null,
+        promptAttempted: false,
+        awaitingFirstTurn: false,
     };
 }
 /**
- * A ready workspace list with no workspaces (the shape WorkspaceRuntime
- * projects after both baselines land).
- * @returns the initial state of the test workspaces store.
+ * A target-neutral Conversation snapshot.
+ * @param overrides - target roster or activity overrides.
+ * @returns an immutable fixture value.
  */
-export function workspaceListState() {
+export function conversationSnapshot(overrides = {}) {
+    return { ...EMPTY_CONVERSATION_SNAPSHOT, ...overrides };
+}
+/**
+ * A Chat target snapshot.
+ * @param overrides - Chat target overrides.
+ * @returns an immutable fixture value.
+ */
+export function chatSnapshot(overrides = {}) {
+    return { ...EMPTY_CHAT_SNAPSHOT, ...overrides };
+}
+/**
+ * A ready Workspace Controller snapshot with no Workspace rows.
+ * @returns the initial state of the test Workspace source.
+ */
+export function workspaceSnapshot() {
     return {
         items: [],
         archivedSessionIds: [],
         state: 'idle',
         phase: 'ready',
         error: null,
-        baselinesReady: true,
-        recentWorkspaceId: undefined,
     };
 }
 //# sourceMappingURL=fixtures.js.map

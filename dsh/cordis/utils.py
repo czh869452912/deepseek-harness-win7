@@ -18,36 +18,73 @@ def clone(value: Any) -> Any:
     return copy.deepcopy(value)
 
 
-def deep_equal(a: Any, b: Any, is_dict: bool = False) -> bool:
+import math
+import re
+import datetime
+from collections import OrderedDict
+
+
+def clone(value: Any) -> Any:
+    """Deep clone a value matching Cosmokit clone."""
+    return copy.deepcopy(value)
+
+
+def deep_equal(a: Any, b: Any, strict: bool = False) -> bool:
     """Deep equality check matching Cosmokit deepEqual."""
+    if a is b:
+        return True
     if a == b:
+        # Check bool vs int: in Python True == 1 is True, but TS 1 === true is False!
+        if isinstance(a, bool) != isinstance(b, bool):
+            return False
         return True
     if type(a) != type(b):
-        return False
+        # Allow numbers int vs float
+        if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+            return not (isinstance(a, bool) or isinstance(b, bool)) and a == b
+        # Allow dict vs OrderedDict
+        if isinstance(a, dict) and isinstance(b, dict):
+            pass
+        else:
+            return False
     if isinstance(a, dict):
         if len(a) != len(b):
             return False
         for k in a:
-            if k not in b or not deep_equal(a[k], b[k]):
+            if k not in b or not deep_equal(a[k], b[k], strict=strict):
                 return False
         return True
     if isinstance(a, (list, tuple)):
         if len(a) != len(b):
             return False
         for x, y in zip(a, b):
-            if not deep_equal(x, y):
+            if not deep_equal(x, y, strict=strict):
                 return False
         return True
+    if isinstance(a, type(re.compile(""))) and isinstance(b, type(re.compile(""))):
+        return a.pattern == b.pattern and a.flags == b.flags
+    if isinstance(a, (datetime.datetime, datetime.date)) and isinstance(b, (datetime.datetime, datetime.date)):
+        return a == b
     return False
 
 
-def pick(obj: Dict[str, Any], keys: List[str]) -> Dict[str, Any]:
+def pick(obj: Dict[str, Any], keys: Optional[Any] = None, forced: bool = False) -> Dict[str, Any]:
     """Pick specified keys from a dictionary matching Cosmokit pick."""
-    return {k: obj[k] for k in keys if k in obj}
+    if keys is None:
+        return dict(obj)
+    res = {}
+    for k in keys:
+        if forced or (k in obj and obj[k] is not None):
+            res[k] = obj.get(k)
+        elif k in obj:
+            res[k] = obj[k]
+    return res
 
 
-def omit(obj: Dict[str, Any], keys: List[str]) -> Dict[str, Any]:
+def omit(obj: Dict[str, Any], keys: Optional[Any] = None) -> Dict[str, Any]:
     """Omit specified keys from a dictionary matching Cosmokit omit."""
+    if keys is None:
+        return dict(obj)
     key_set = set(keys)
     return {k: v for k, v in obj.items() if k not in key_set}
 
@@ -56,58 +93,117 @@ def value_map(obj: Dict[str, Any], transform: Callable[..., Any]) -> Dict[str, A
     """Transform values of a dictionary matching Cosmokit valueMap."""
     res = {}
     for k, v in obj.items():
+        sig = None
         try:
-            res[k] = transform(v, k)
-        except TypeError:
-            res[k] = transform(v)
+            sig = inspect.signature(transform)
+        except Exception:
+            pass
+        if sig is not None:
+            params = list(sig.parameters.values())
+            takes_two = len(params) >= 2 or any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
+            if takes_two:
+                res[k] = transform(v, k)
+            else:
+                res[k] = transform(v)
+        else:
+            try:
+                res[k] = transform(v, k)
+            except TypeError:
+                res[k] = transform(v)
     return res
 
 
-def filter_keys(obj: Dict[str, Any], predicate: Callable[[str], bool]) -> Dict[str, Any]:
+def filter_keys(obj: Dict[str, Any], predicate: Callable[..., bool]) -> Dict[str, Any]:
     """Filter dictionary keys matching Cosmokit filterKeys."""
-    return {k: v for k, v in obj.items() if predicate(k)}
+    res = {}
+    try:
+        sig = inspect.signature(predicate)
+        params = list(sig.parameters.values())
+        has_two_params = len(params) >= 2 or any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
+    except Exception:
+        has_two_params = False
+
+    for k, v in obj.items():
+        if has_two_params:
+            if predicate(k, v):
+                res[k] = v
+        else:
+            if predicate(k):
+                res[k] = v
+    return res
 
 
 def capitalize(source: str) -> str:
     """Uppercase the first character of a string."""
     if not source:
-        return source
+        return source or ""
     return source[0].upper() + source[1:]
 
 
 def uncapitalize(source: str) -> str:
     """Lowercase the first character of a string."""
     if not source:
-        return source
+        return source or ""
     return source[0].lower() + source[1:]
 
 
 def camel_case(source: str) -> str:
-    """Convert dash or underscore delimited text to camelCase."""
-    import re
-    return re.sub(r"[_-]([a-zA-Z])", lambda m: m.group(1).upper(), source)
+    """Convert dash or underscore delimited text to camelCase matching Cosmokit camelCase."""
+    if not source:
+        return source or ""
+    return re.sub(r"[_-]([a-z])", lambda m: m.group(1).upper(), source)
 
 
 camelCase = camel_case
+camelize = camel_case
+
+
+class _TokenizeState:
+    DELIM = 0
+    UPPER = 1
+    LOWER = 2
+
+
+def _tokenize(source: str, delimiters: List[int], delimiter: int) -> str:
+    output = []
+    state = _TokenizeState.DELIM
+    for i, ch in enumerate(source):
+        code = ord(ch)
+        if 65 <= code <= 90:
+            if state == _TokenizeState.UPPER:
+                next_code = ord(source[i + 1]) if i + 1 < len(source) else 0
+                if 97 <= next_code <= 122:
+                    output.append(delimiter)
+                output.append(code + 32)
+            else:
+                if state != _TokenizeState.DELIM:
+                    output.append(delimiter)
+                output.append(code + 32)
+            state = _TokenizeState.UPPER
+        elif 97 <= code <= 122:
+            output.append(code)
+            state = _TokenizeState.LOWER
+        elif code in delimiters:
+            if state != _TokenizeState.DELIM:
+                output.append(delimiter)
+            state = _TokenizeState.DELIM
+        else:
+            output.append(code)
+    return "".join(chr(c) for c in output)
 
 
 def param_case(source: str) -> str:
-    """Convert text to dash-delimited kebab-case."""
-    import re
-    s = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1-\2", source)
-    s = re.sub(r"([a-z\d])([A-Z])", r"\1-\2", s)
-    return re.sub(r"[_\s]+", "-", s).lower()
+    """Convert text to dash-delimited parameter case matching Cosmokit paramCase."""
+    return _tokenize(source, [45, 95], 45)
 
 
 paramCase = param_case
+hyphenate = param_case
 
 
 def snake_case(source: str) -> str:
-    """Convert text to underscore-delimited snake_case."""
-    import re
-    s = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", source)
-    s = re.sub(r"([a-z\d])([A-Z])", r"\1_\2", s)
-    return re.sub(r"[-\s]+", "_", s).lower()
+    """Convert text to underscore-delimited snake_case matching Cosmokit snakeCase."""
+    return _tokenize(source, [45, 95], 95)
 
 
 snakeCase = snake_case
@@ -115,7 +211,6 @@ snakeCase = snake_case
 
 def template(source: str, params: Dict[str, Any]) -> str:
     """Interpolate {key} or {{key}} placeholders in a string matching Cosmokit template."""
-    import re
     def _repl(match):
         k = match.group(1) or match.group(2)
         return str(params.get(k, match.group(0)))
@@ -132,7 +227,6 @@ class DisposableList(Generic[T]):
         self._sn = 0
         self._map: Dict[int, T] = {}
         self._id_to_sn: Dict[int, int] = {}
-        self._val_to_sn: Dict[Any, int] = {}
 
     @property
     def length(self) -> int:
@@ -142,54 +236,52 @@ class DisposableList(Generic[T]):
         return len(self._map)
 
     def push(self, value: T) -> Callable[[], bool]:
-        """
-        Push a disposable item to the list.
-        Returns a disposer function that removes this item.
-        """
+        """Push a disposable item to the list and return disposer."""
         self._sn += 1
         sn = self._sn
         self._map[sn] = value
-        try:
-            self._val_to_sn[value] = sn
-        except TypeError:
-            pass
         self._id_to_sn[id(value)] = sn
+        return lambda: self.delete_by_sn(sn)
 
-        def disposer() -> bool:
-            return self.delete_by_sn(sn)
-
-        return disposer
+    def unshift(self, value: T) -> Callable[[], bool]:
+        """Insert at beginning matching TS DisposableList.unshift / events."""
+        self._sn += 1
+        sn = self._sn
+        new_map = {sn: value}
+        new_map.update(self._map)
+        self._map = new_map
+        self._id_to_sn[id(value)] = sn
+        return lambda: self.delete_by_sn(sn)
 
     def delete_by_sn(self, sn: int) -> bool:
         if sn in self._map:
             val = self._map.pop(sn)
-            if id(val) in self._id_to_sn and self._id_to_sn[id(val)] == sn:
-                del self._id_to_sn[id(val)]
-            try:
-                if val in self._val_to_sn and self._val_to_sn[val] == sn:
-                    del self._val_to_sn[val]
-            except TypeError:
-                pass
+            self._id_to_sn.pop(id(val), None)
             return True
         return False
 
     def delete(self, value: T) -> bool:
-        """Delete an item by value or identity."""
-        try:
-            if value in self._val_to_sn:
-                sn = self._val_to_sn[value]
-                return self.delete_by_sn(sn)
-        except TypeError:
-            pass
-
+        """Delete an item by identity, with bound method fallback."""
         val_id = id(value)
         if val_id in self._id_to_sn:
-            sn = self._id_to_sn[val_id]
-            return self.delete_by_sn(sn)
+            sn = self._id_to_sn.pop(val_id)
+            if sn in self._map:
+                del self._map[sn]
+                return True
 
         for sn, v in list(self._map.items()):
-            if v == value or v is value:
-                return self.delete_by_sn(sn)
+            if v is value:
+                del self._map[sn]
+                self._id_to_sn.pop(id(v), None)
+                return True
+
+        if inspect.ismethod(value):
+            for sn, v in list(self._map.items()):
+                if inspect.ismethod(v) and v.__self__ is value.__self__ and v.__func__ is value.__func__:
+                    del self._map[sn]
+                    self._id_to_sn.pop(id(v), None)
+                    return True
+
         return False
 
     def clear(self) -> List[T]:
@@ -197,7 +289,6 @@ class DisposableList(Generic[T]):
         values = list(self._map.values())
         self._map.clear()
         self._id_to_sn.clear()
-        self._val_to_sn.clear()
         values.reverse()
         return values
 
@@ -240,8 +331,12 @@ symbols = Symbols()
 
 
 def is_object(value: Any) -> bool:
-    """Return true for non-null objects and functions."""
-    return value is not None and (hasattr(value, "__dict__") or isinstance(value, (dict, list, tuple, set)) or callable(value))
+    """Return true for non-null objects and functions matching TS isObject."""
+    if value is None:
+        return False
+    if isinstance(value, (int, float, str, bool, bytes, bytearray)):
+        return False
+    return True
 
 
 def is_nullable(value: Any) -> bool:
@@ -252,58 +347,98 @@ def is_nullable(value: Any) -> bool:
 isNullable = is_nullable
 
 
-def capitalize(source: str) -> str:
-    """Uppercase the first character of a string."""
-    if not source:
-        return ""
-    return source[0].upper() + source[1:]
+def noop(*args: Any, **kwargs: Any) -> None:
+    """No-op callback matching Cosmokit noop."""
+    return None
 
 
-def uncapitalize(source: str) -> str:
-    """Lowercase the first character of a string."""
-    if not source:
-        return ""
-    return source[0].lower() + source[1:]
+def is_non_nullable(value: Any) -> bool:
+    """Return true when value is not None."""
+    return value is not None
 
 
-def camel_case(source: str) -> str:
-    """Convert dash or underscore delimited text to camelCase."""
-    import re
-    if not source:
-        return ""
-    return re.sub(r"[_-]([a-zA-Z0-9])", lambda m: m.group(1).upper(), source)
+def is_plain_object(data: Any) -> bool:
+    """Return true for non-array dict values."""
+    return bool(data and isinstance(data, dict))
 
 
-camelCase = camel_case
-camelize = camel_case
+def trim_slash(source: str) -> str:
+    """Trim leading and trailing slashes."""
+    return source.strip("/")
 
 
-def hyphenate(source: str) -> str:
-    """Convert text to dash-delimited parameter case matching Cosmokit hyphenate/paramCase."""
-    import re
-    if not source:
-        return ""
-    # Convert camelCase to hyphen-case
-    s1 = re.sub(r"([a-z0-9])([A-Z])", r"\1-\2", source)
-    s2 = re.sub(r"[_\s]+", "-", s1)
-    return s2.lower().strip("-")
+def sanitize(path: str) -> str:
+    """Normalize path."""
+    import posixpath
+    return posixpath.normpath(path)
 
 
-paramCase = hyphenate
-param_case = hyphenate
+def contain(array1: Any, array2: Any) -> bool:
+    """Return true when every item in array2 is present in array1."""
+    return all(item in array1 for item in array2)
 
 
-def snake_case(source: str) -> str:
-    """Convert text to underscore-delimited snake_case."""
-    import re
-    if not source:
-        return ""
-    s1 = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", source)
-    s2 = re.sub(r"[-\s]+", "_", s1)
-    return s2.lower().strip("_")
+def intersection(array1: Any, array2: Any) -> List[Any]:
+    """Return items that appear in both arrays."""
+    return [item for item in array1 if item in array2]
 
 
-snakeCase = snake_case
+def difference(array1: Any, array2: Any) -> List[Any]:
+    """Return items from array1 that do not appear in array2."""
+    return [item for item in array1 if item not in array2]
+
+
+def union(array1: Any, array2: Any) -> List[Any]:
+    """Return the set-union of two arrays while preserving first occurrence order."""
+    res = []
+    seen = set()
+    for item in list(array1) + list(array2):
+        try:
+            if item not in seen:
+                seen.add(item)
+                res.append(item)
+        except TypeError:
+            if item not in res:
+                res.append(item)
+    return res
+
+
+def deduplicate(array: Any) -> List[Any]:
+    """Remove duplicate values while preserving first occurrence order."""
+    res = []
+    seen = set()
+    for item in array:
+        try:
+            if item not in seen:
+                seen.add(item)
+                res.append(item)
+        except TypeError:
+            if item not in res:
+                res.append(item)
+    return res
+
+
+def remove(lst: List[Any], item: Any) -> bool:
+    """Remove one item from a list and report whether it was found."""
+    try:
+        lst.remove(item)
+        return True
+    except ValueError:
+        return False
+
+
+def make_array(source: Any) -> List[Any]:
+    """Normalize nullish, scalar, or array input to a list."""
+    if source is None:
+        return []
+    if isinstance(source, list):
+        return source
+    if isinstance(source, (tuple, set)):
+        return list(source)
+    return [source]
+
+
+makeArray = make_array
 
 
 class Time:
@@ -315,40 +450,126 @@ class Time:
     day = hour * 24
     week = day * 7
 
-    @staticmethod
-    def parse_time(source: str) -> float:
-        """Parse time strings like '10s', '5m', '2h', '1d' into milliseconds."""
-        import re
+    _timezone_offset = 0
+
+    @classmethod
+    def set_timezone_offset(cls, offset: int) -> None:
+        cls._timezone_offset = offset
+
+    setTimezoneOffset = set_timezone_offset
+
+    @classmethod
+    def get_timezone_offset(cls) -> int:
+        return cls._timezone_offset
+
+    getTimezoneOffset = get_timezone_offset
+
+    @classmethod
+    def get_date_number(cls, date: Optional[Any] = None, offset: Optional[int] = None) -> int:
+        if date is None:
+            date = datetime.datetime.now()
+        elif isinstance(date, (int, float)):
+            date = datetime.datetime.fromtimestamp(date / 1000.0)
+        if offset is None:
+            offset = cls._timezone_offset
+        ts_ms = date.timestamp() * 1000.0
+        return int(math.floor((ts_ms / cls.minute - offset) / 1440))
+
+    getDateNumber = get_date_number
+
+    @classmethod
+    def from_date_number(cls, value: int, offset: Optional[int] = None) -> datetime.datetime:
+        if offset is None:
+            offset = cls._timezone_offset
+        ts_ms = value * cls.day + offset * cls.minute
+        return datetime.datetime.fromtimestamp(ts_ms / 1000.0)
+
+    fromDateNumber = from_date_number
+
+    _TIME_REGEX = re.compile(
+        r"^(?:(\d+(?:\.\d+)?)w(?:eek(?:s)?)?)?"
+        r"(?:(\d+(?:\.\d+)?)d(?:ay(?:s)?)?)?"
+        r"(?:(\d+(?:\.\d+)?)h(?:our(?:s)?)?)?"
+        r"(?:(\d+(?:\.\d+)?)m(?:in(?:ute)?(?:s)?)?)?"
+        r"(?:(\d+(?:\.\d+)?)s(?:ec(?:ond)?(?:s)?)?)?$"
+    )
+
+    @classmethod
+    def parse_time(cls, source: str) -> float:
+        """Parse time strings matching Cosmokit Time.parseTime."""
         if not source or not isinstance(source, str):
             return 0.0
-        pattern = r"^(?:(\d+(?:\.\d+)?)\s*w)?\s*(?:(\d+(?:\.\d+)?)\s*d)?\s*(?:(\d+(?:\.\d+)?)\s*h)?\s*(?:(\d+(?:\.\d+)?)\s*m)?\s*(?:(\d+(?:\.\d+)?)\s*s)?$"
-        match = re.match(pattern, source.strip())
-        if not match:
+        m = cls._TIME_REGEX.match(source)
+        if not m or not m.group(0):
             return 0.0
-        w, d, h, m, s = match.groups()
         total = 0.0
-        if w: total += float(w) * Time.week
-        if d: total += float(d) * Time.day
-        if h: total += float(h) * Time.hour
-        if m: total += float(m) * Time.minute
-        if s: total += float(s) * Time.second
+        multipliers = [cls.week, cls.day, cls.hour, cls.minute, cls.second]
+        for i, mult in enumerate(multipliers):
+            g = m.group(i + 1)
+            if g:
+                total += float(g) * mult
         return total
 
     parseTime = parse_time
 
-    @staticmethod
-    def format(ms: float) -> str:
-        """Format milliseconds into human-readable shorthand (e.g. '10s', '5m', '2h')."""
+    @classmethod
+    def parse_date(cls, date_str: str) -> datetime.datetime:
+        """Parse date matching Cosmokit Time.parseDate."""
+        parsed = cls.parse_time(date_str)
+        if parsed:
+            return datetime.datetime.now() + datetime.timedelta(milliseconds=parsed)
+        now = datetime.datetime.now()
+        if re.match(r"^\d{1,2}(:\d{1,2}){1,2}$", date_str):
+            parts = [int(p) for p in date_str.split(":")]
+            h = parts[0]
+            m = parts[1] if len(parts) > 1 else 0
+            s = parts[2] if len(parts) > 2 else 0
+            return now.replace(hour=h, minute=m, second=s, microsecond=0)
+        return now
+
+    parseDate = parse_date
+
+    @classmethod
+    def format(cls, ms: float) -> str:
+        """Format milliseconds matching Cosmokit Time.format."""
         abs_ms = abs(ms)
-        if abs_ms >= Time.day - Time.hour / 2:
-            return f"{round(ms / Time.day)}d"
-        elif abs_ms >= Time.hour - Time.minute / 2:
-            return f"{round(ms / Time.hour)}h"
-        elif abs_ms >= Time.minute - Time.second / 2:
-            return f"{round(ms / Time.minute)}m"
-        elif abs_ms >= Time.second:
-            return f"{round(ms / Time.second)}s"
-        return f"{int(ms)}ms"
+        def _round_half_up(val: float) -> int:
+            return int(math.floor(val + 0.5))
+
+        if abs_ms >= cls.day - cls.hour / 2:
+            return f"{_round_half_up(ms / cls.day)}d"
+        elif abs_ms >= cls.hour - cls.minute / 2:
+            return f"{_round_half_up(ms / cls.hour)}h"
+        elif abs_ms >= cls.minute - cls.second / 2:
+            return f"{_round_half_up(ms / cls.minute)}m"
+        elif abs_ms >= cls.second:
+            return f"{_round_half_up(ms / cls.second)}s"
+
+        if isinstance(ms, float) and ms.is_integer():
+            return f"{int(ms)}ms"
+        return f"{ms}ms"
+
+    @classmethod
+    def to_digits(cls, source: int, length: int = 2) -> str:
+        """Format number padded with leading zeros matching Cosmokit Time.toDigits."""
+        return str(source).zfill(length)
+
+    toDigits = to_digits
+
+    @classmethod
+    def template(cls, tmpl: str, time_val: Optional[datetime.datetime] = None) -> str:
+        """Template format date matching Cosmokit Time.template."""
+        if time_val is None:
+            time_val = datetime.datetime.now()
+        res = tmpl.replace("yyyy", str(time_val.year))
+        res = res.replace("yy", str(time_val.year)[2:])
+        res = res.replace("MM", cls.to_digits(time_val.month))
+        res = res.replace("dd", cls.to_digits(time_val.day))
+        res = res.replace("hh", cls.to_digits(time_val.hour))
+        res = res.replace("mm", cls.to_digits(time_val.minute))
+        res = res.replace("ss", cls.to_digits(time_val.second))
+        res = res.replace("SSS", cls.to_digits(int(time_val.microsecond / 1000), 3))
+        return res
 
 
 class TracedProxy:
@@ -519,29 +740,78 @@ def get_traceable(ctx: Any, value: Any) -> Any:
     if tracker and not hasattr(value, "_mock_return_value"):
         return TracedProxy(effective_ctx, value, tracker=tracker if isinstance(tracker, dict) else {})
     if callable(value) and not inspect.isclass(value) and not hasattr(value, "_mock_return_value"):
-        return TracedProxy(effective_ctx, value)
+        try:
+            sig = inspect.signature(value)
+            if "caller_ctx" in sig.parameters:
+                return TracedProxy(effective_ctx, value)
+        except Exception:
+            pass
     return value
 
 
-def with_props(receiver: Any, service: Any) -> Any:
-    """
-    Combine receiver and service context properties matching TS withProps.
-    """
-    if receiver is None:
-        return service
-    return TracedProxy(receiver, service)
+class _WithPropsProxy:
+    def __init__(self, target: Any, props: Any):
+        object.__setattr__(self, "_target", target)
+        object.__setattr__(self, "_props", props)
+
+    def __getattr__(self, name: str) -> Any:
+        props = object.__getattribute__(self, "_props")
+        target = object.__getattribute__(self, "_target")
+        has_prop = False
+        attr = None
+        if isinstance(props, dict):
+            if name in props and name != "constructor":
+                attr = props[name]
+                has_prop = True
+        elif hasattr(props, name) and name != "constructor":
+            attr = getattr(props, name)
+            has_prop = True
+
+        if not has_prop:
+            attr = getattr(target, name)
+
+        if callable(attr) and not inspect.isclass(attr):
+            try:
+                sig = inspect.signature(attr)
+                if "caller_ctx" in sig.parameters:
+                    return TracedProxy(target, attr)
+            except Exception:
+                pass
+        return attr
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        props = object.__getattribute__(self, "_props")
+        target = object.__getattribute__(self, "_target")
+        if isinstance(props, dict):
+            if name in props and name != "constructor":
+                props[name] = value
+                return
+        elif hasattr(props, name) and name != "constructor":
+            setattr(props, name, value)
+            return
+        setattr(target, name, value)
+
+    def __repr__(self) -> str:
+        return f"<WithPropsProxy target={object.__getattribute__(self, '_target')!r} props={object.__getattribute__(self, '_props')!r}>"
 
 
-def build_outer_stack() -> Callable[[], List[str]]:
+def with_props(target: Any, props: Optional[Any] = None) -> Any:
     """
-    Capture the caller stack for effect diagnostics matching TS buildOuterStack().
+    Overlay properties onto a target matching TS withProps.
     """
-    stack_lines = traceback.format_stack()[:-1]
-    filtered = []
-    for line in stack_lines:
-        line_str = line.strip()
-        if line_str:
-            filtered.append(f"    {line_str}")
+    if not props:
+        return target
+    return _WithPropsProxy(target, props)
+
+
+def build_outer_stack(offset: int = 0) -> Callable[[], List[str]]:
+    """
+    Capture a lazy stack-frame supplier matching TS buildOuterStack(offset = 0).
+    """
+    stack_lines = traceback.format_stack()
+    filtered = stack_lines[:-1]
+    if offset > 0 and len(filtered) >= offset:
+        filtered = filtered[:-offset]
 
     def get_stack() -> List[str]:
         return list(filtered)
@@ -551,15 +821,26 @@ def build_outer_stack() -> Callable[[], List[str]]:
 
 def compose_error(action: Callable[..., Any], get_outer_stack: Optional[Callable[[], List[str]]] = None) -> Any:
     """
-    Execute an action and enrich errors with outer diagnostic stack.
+    Run a callback and splice outer call-site frames matching TS composeError.
     """
+    if get_outer_stack is None:
+        get_outer_stack = build_outer_stack()
+    info = {"offset": 1, "error": Exception()}
+
+    takes_info = False
     try:
+        sig = inspect.signature(action)
+        takes_info = len(sig.parameters) > 0
+    except Exception:
+        pass
+
+    try:
+        if takes_info:
+            return action(info)
         return action()
     except Exception as e:
         if get_outer_stack and callable(get_outer_stack):
             outer = get_outer_stack()
             if outer:
-                stack_msg = "\n".join(outer)
-                if not hasattr(e, "_outer_stack"):
-                    e._outer_stack = outer
-        raise e
+                e._outer_stack = outer
+        raise

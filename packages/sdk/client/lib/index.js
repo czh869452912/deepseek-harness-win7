@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { spawn } from "node:child_process";
 import { JsonRpcLineTransport, JsonRpcResponseError, JsonRpcResponseError as JsonRpcResponseError$1 } from "@deepseek-ai/dsh-sdk-protocol";
+import { existsSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 //#region lib/types/dispose.js
 /**
 * Private teardown ladder for the runtime subprocess: stdin EOF (cooperative
@@ -95,6 +97,97 @@ async function disposeRuntimeProcess(child, graces, platform = process.platform)
 		if (await exitsWithin(child, graces.disposeGraceMs)) return;
 	}
 	await forceTerminateWithin(child, graces.disposeGraceMs);
+}
+/** Read a package manifest from one resolved package.json URL. */
+function manifest(url) {
+	return JSON.parse(readFileSync(fileURLToPath(url), "utf8"));
+}
+/**
+* Resolve and version-check a dsh executable from package manifests.
+* @param dshManifestUrl - resolved URL of the dsh package manifest.
+* @param clientManifestUrl - resolved URL of the SDK client manifest.
+* @returns the absolute dsh executable path.
+*/
+function resolveDshBinFromManifests(dshManifestUrl, clientManifestUrl) {
+	const dshManifest = manifest(dshManifestUrl);
+	const clientManifest = manifest(clientManifestUrl);
+	if (typeof dshManifest.version !== "string" || dshManifest.version !== clientManifest.version) throw new Error(`dsh SDK client ${String(clientManifest.version)} requires the same dsh version, got ${String(dshManifest.version)}`);
+	const bin = typeof dshManifest.bin === "object" && dshManifest.bin !== null ? dshManifest.bin.dsh : dshManifest.bin;
+	if (typeof bin !== "string" || bin === "") throw new Error("@deepseek-ai/dsh declares no dsh executable");
+	return resolve(dirname(fileURLToPath(dshManifestUrl)), bin);
+}
+/**
+* Resolve the Node launch for one same-version dsh package.
+* @param dshManifestUrl - resolved URL of the dsh package manifest.
+* @param clientManifestUrl - resolved URL of the SDK client manifest.
+* @param sourceLoaderUrl - optional absolute tsx loader URL for deterministic tests.
+* @returns built output, or the source entry plus its compatibility patch and tsx environment.
+*/
+function resolveDshNodeLaunchFromManifests(dshManifestUrl, clientManifestUrl, sourceLoaderUrl) {
+	const bin = resolveDshBinFromManifests(dshManifestUrl, clientManifestUrl);
+	if (existsSync(bin)) return {
+		nodeArgs: [bin],
+		patches: [],
+		environment: {}
+	};
+	const packageDir = dirname(fileURLToPath(dshManifestUrl));
+	const sourceBin = resolve(packageDir, "src/bin.ts");
+	const sourcePatch = resolve(packageDir, "src/sdk-source.cordis.patch.yml");
+	const sourceTsconfig = resolve(packageDir, "tsconfig.json");
+	if (!existsSync(sourceBin) || !existsSync(sourcePatch) || !existsSync(sourceTsconfig)) throw new Error(`@deepseek-ai/dsh is missing its built executable ${bin} and complete source launch files ${sourceBin}, ${sourcePatch}, ${sourceTsconfig}`);
+	return {
+		nodeArgs: [
+			"--import",
+			sourceLoaderUrl ?? import.meta.resolve("tsx/esm"),
+			sourceBin
+		],
+		patches: [sourcePatch],
+		environment: { TSX_TSCONFIG_PATH: sourceTsconfig }
+	};
+}
+/**
+* Resolve the installed dsh package to a built or source Node launch.
+* @returns the launch descriptor for the current checkout or installed package.
+*/
+function installedDshNodeLaunch() {
+	return resolveDshNodeLaunchFromManifests(import.meta.resolve("@deepseek-ai/dsh/package.json"), new URL("../package.json", import.meta.url).href);
+}
+/**
+* Resolve caller-relative filesystem inputs and construct canonical dsh argv.
+* @param options - public SDK launch options.
+* @param callerCwd - parent-process directory used for lexical resolution.
+* @returns one generic subprocess spec for the JSON-RPC transport.
+*/
+function resolveDshLaunch(options = {}, callerCwd = process.cwd()) {
+	const profile = options.profile ?? "sdk";
+	const dshLaunch = options.dshBin === void 0 ? installedDshNodeLaunch() : {
+		nodeArgs: [resolve(callerCwd, options.dshBin)],
+		patches: [],
+		environment: {}
+	};
+	const patches = [...dshLaunch.patches, ...(options.patches ?? []).map((path) => resolve(callerCwd, path))];
+	const dshHome = options.dshHome === void 0 ? void 0 : resolve(callerCwd, options.dshHome);
+	return {
+		command: process.execPath,
+		args: [
+			...dshLaunch.nodeArgs,
+			"--profile",
+			profile,
+			...patches.flatMap((path) => ["--patch", path])
+		],
+		...options.processCwd === void 0 ? {} : { cwd: resolve(callerCwd, options.processCwd) },
+		environment: () => ({
+			...options.env ?? process.env,
+			...dshLaunch.environment,
+			...dshHome === void 0 ? {} : { DSH_HOME: dshHome }
+		}),
+		description: `dsh profile ${JSON.stringify(profile)}`,
+		initializeTimeoutMs: options.initializeTimeoutMs ?? 1e4,
+		...options.requestTimeoutMs === void 0 ? {} : { requestTimeoutMs: options.requestTimeoutMs },
+		...options.shutdownTimeoutMs === void 0 ? {} : { shutdownTimeoutMs: options.shutdownTimeoutMs },
+		...options.disposeEofGraceMs === void 0 ? {} : { disposeEofGraceMs: options.disposeEofGraceMs },
+		...options.disposeGraceMs === void 0 ? {} : { disposeGraceMs: options.disposeGraceMs }
+	};
 }
 //#endregion
 //#region lib/types/client.js
@@ -197,7 +290,7 @@ var NotificationSubscriptionImpl = class {
 	* Deliver one notification to a waiter or the queue when the filter
 	* matches. A throwing filter fails only THIS subscription (detached, the
 	* throw becomes its terminal error) — it never disturbs sibling
-	* subscriptions or the transport's read loop, mirroring the Python client.
+	* subscriptions or the transport's read loop.
 	* @param notification - the wire notification to deliver.
 	*/
 	push(notification) {
@@ -233,7 +326,9 @@ var NotificationSubscriptionImpl = class {
 * runtime is closed.
 */
 var HarnessClient = class {
+	/** Original public dsh launch and timeout options for this client. */
 	options;
+	runtime;
 	child;
 	transport;
 	stderrTail = [];
@@ -244,9 +339,9 @@ var HarnessClient = class {
 	spawnError;
 	streamsSettled = Promise.resolve();
 	closeTask;
-	/** @param options - launch spec, complete child environment, and timeouts. */
-	constructor(options) {
+	constructor(options = {}, runtime) {
 		this.options = options;
+		this.runtime = runtime ?? resolveDshLaunch(options);
 	}
 	/**
 	* Spawn the runtime subprocess and start reading frames. Idempotent while
@@ -255,9 +350,9 @@ var HarnessClient = class {
 	start() {
 		if (this.closeTask !== void 0) throw new TransportClosedError("DeepSeek Harness runtime client is closed");
 		if (this.child !== void 0) return;
-		const child = spawn(this.options.command, this.options.args ?? [], {
-			cwd: this.options.cwd,
-			env: this.options.env ?? process.env,
+		const child = spawn(this.runtime.command, this.runtime.args, {
+			cwd: this.runtime.cwd,
+			env: this.runtime.environment(),
 			stdio: [
 				"pipe",
 				"pipe",
@@ -323,7 +418,7 @@ var HarnessClient = class {
 	* @returns the runtime's wire identity.
 	*/
 	async initialize(params) {
-		const result = await this.request("initialize", { ...params });
+		const result = await this.request("initialize", { ...params }, this.runtime.initializeTimeoutMs);
 		if (!isRecord(result) || !isRecord(result.serverInfo) || typeof result.serverInfo.name !== "string" || typeof result.serverInfo.version !== "string") throw new SdkProtocolError(`initialize returned no server identity: ${JSON.stringify(result)}`);
 		return { serverInfo: {
 			name: result.serverInfo.name,
@@ -363,12 +458,13 @@ var HarnessClient = class {
 		const transport = this.transport;
 		/* v8 ignore next -- start() either sets the transport or throws */
 		if (transport === void 0) throw new TransportClosedError("DeepSeek Harness runtime is not running");
-		const timeout = timeoutMs ?? this.options.requestTimeoutMs;
+		const timeout = timeoutMs ?? this.runtime.requestTimeoutMs;
 		try {
 			if (timeout === void 0) return await transport.request(method, params ?? {});
 			const abandon = new AbortController();
 			const timer = setTimeout(() => {
-				abandon.abort(new RequestTimeoutError(`${method} timed out after ${timeout}ms waiting for the DeepSeek Harness runtime`));
+				const stderr = this.stderrTail.length === 0 ? "" : `; stderr tail:\n${this.stderrTail.join("\n")}`;
+				abandon.abort(new RequestTimeoutError(`${method} timed out after ${timeout}ms waiting for ${this.runtime.description}${stderr}`));
 			}, timeout);
 			try {
 				return await transport.request(method, params ?? {}, abandon.signal);
@@ -407,8 +503,8 @@ var HarnessClient = class {
 	}
 	/**
 	* Subscribe to one session and the descendants discovered from
-	* `subagent.started` lineage edges (the runtime notifies for every session
-	* in its context; scoping is client-side, mirroring the Python SDK).
+	* `subagent.started` lineage edges. The runtime notifies for every session
+	* in its context, so this client applies the scope.
 	* @param sessionId - the root session id.
 	* @returns the filtered subscription handle.
 	*/
@@ -438,13 +534,13 @@ var HarnessClient = class {
 		const child = this.child;
 		if (child === void 0) return;
 		try {
-			await this.request("shutdown", void 0, this.options.shutdownTimeoutMs ?? 1e3);
+			await this.request("shutdown", void 0, this.runtime.shutdownTimeoutMs ?? 1e3);
 		} catch (error) {
 			this.appendStderr([`shutdown request failed: ${errorMessage(error)}`]);
 		}
 		await disposeRuntimeProcess(child, {
-			disposeEofGraceMs: this.options.disposeEofGraceMs ?? 6e3,
-			disposeGraceMs: this.options.disposeGraceMs ?? 3e3
+			disposeEofGraceMs: this.runtime.disposeEofGraceMs ?? 6e3,
+			disposeGraceMs: this.runtime.disposeGraceMs ?? 3e3
 		});
 		this.transport?.close();
 		this.failSubscriptions(this.closedError("DeepSeek Harness runtime closed"));
@@ -486,7 +582,7 @@ var HarnessClient = class {
 		})]);
 	}
 	closedError(reason) {
-		const parts = [reason];
+		const parts = [`${this.runtime.description}: ${reason}`];
 		if (this.spawnError !== void 0) parts.push(`spawn error: ${this.spawnError.message}`);
 		if (this.exitCode !== void 0) parts.push(`exit code: ${String(this.exitCode)}`);
 		if (this.stderrTail.length > 0) parts.push(`stderr tail:\n${this.stderrTail.join("\n")}`);
@@ -512,7 +608,6 @@ function errorMessage(error) {
 * High-level run API over {@link HarnessClient}: `DeepSeekHarness` owns one
 * runtime subprocess across many sessions; `HarnessSession.run` sends a
 * prompt and settles when the whole agent next becomes idle.
-* Mirrors the Python SDK's `DeepSeekHarness`/`Session` pair.
 *
 * @module @deepseek-ai/dsh-sdk-client/api
 */
@@ -524,26 +619,28 @@ function errorMessage(error) {
 */
 var DeepSeekHarness = class {
 	clientInstance;
-	launch;
+	createClient;
 	cwd;
 	provider;
 	model;
+	reasoningEffort;
 	maxTokens;
 	initialized;
 	closed = false;
-	/** @param options - runtime launch spec plus the session route (cwd/provider/model). */
-	constructor(options) {
-		this.launch = options.launch;
-		this.clientInstance = new HarnessClient(options.launch);
-		this.cwd = resolve(options.cwd ?? options.launch.cwd ?? process.cwd());
+	constructor(options = {}, clientFactory) {
+		this.createClient = clientFactory ?? (() => new HarnessClient(options));
+		this.clientInstance = this.createClient();
+		this.cwd = resolve(options.cwd ?? options.processCwd ?? process.cwd());
 		this.provider = options.provider ?? "deepseek-official";
 		this.model = options.model ?? "deepseek-v4-flash";
+		this.reasoningEffort = options.reasoningEffort;
 		this.maxTokens = options.maxTokens;
 	}
 	/**
 	* The underlying JSON-RPC client (exposed for low-level access). A failed
-	* handshake reaps its runtime and swaps in a fresh instance, so do not
-	* cache this across a failed {@link start}.
+	* handshake swaps in a fresh instance only after cleanup proves the runtime
+	* exited; cleanup failure retains this client, so do not cache it across a
+	* failed {@link start}.
 	* @returns the client currently owning the runtime subprocess.
 	*/
 	get client() {
@@ -551,9 +648,12 @@ var DeepSeekHarness = class {
 	}
 	/**
 	* Start the subprocess and perform the `initialize` handshake once. On
-	* failure the runtime is reaped and a fresh client replaces it
-	* (`HarnessClient.close` is permanent), so a later call retries with a new
-	* subprocess — unless {@link close} already ended this harness.
+	* failure, successful SDK-owned cleanup reaps the runtime and installs a
+	* fresh client (`HarnessClient.close` is permanent), so a later call retries
+	* with a new subprocess unless {@link close} already ended this harness. If
+	* cleanup also fails, rejects with an `AggregateError` whose ordered errors
+	* preserve both causes and retains the failed client rather than spawning
+	* alongside a process whose exit was not proved.
 	* @returns settlement of the (memoized) handshake.
 	*/
 	start() {
@@ -564,12 +664,17 @@ var DeepSeekHarness = class {
 					cwd: this.cwd,
 					provider: this.provider,
 					model: this.model,
+					...this.reasoningEffort === void 0 ? {} : { reasoningEffort: this.reasoningEffort },
 					...this.maxTokens === void 0 ? {} : { maxTokens: this.maxTokens }
 				});
 			} catch (error) {
 				this.initialized = void 0;
-				await this.clientInstance.close();
-				if (!this.closed) this.clientInstance = new HarnessClient(this.launch);
+				try {
+					await this.clientInstance.close();
+				} catch (cleanupError) {
+					throw new AggregateError([error, cleanupError], "DeepSeek Harness initialization and cleanup failed");
+				}
+				if (!this.closed) this.clientInstance = this.createClient();
 				throw error;
 			}
 		})();
@@ -683,6 +788,24 @@ function normalizeInput(input) {
 		text: input
 	}] : input;
 }
+/** Validate the provider-read fields of one wire turn-end reason. */
+function validatedTurnEndReason(value) {
+	if (!isRecord(value) || typeof value.kind !== "string") throw new SdkProtocolError(`turn/end carried no reason envelope: ${JSON.stringify(value)}`);
+	if (value.kind === "aborted") {
+		if (!isRecord(value.reason) || typeof value.reason.kind !== "string") throw new SdkProtocolError(`turn/end carried a malformed aborted reason: ${JSON.stringify(value)}`);
+		switch (value.reason.kind) {
+			case "user":
+			case "parent":
+			case "disposed":
+			case "legacy": break;
+			case "hook":
+				if (typeof value.reason.reason !== "string") throw new SdkProtocolError(`turn/end carried a malformed hook abort reason: ${JSON.stringify(value)}`);
+				break;
+			default: throw new SdkProtocolError(`turn/end carried an unknown abort reason: ${JSON.stringify(value)}`);
+		}
+	}
+	return value;
+}
 /** Validate the fields in a wire `session.event` envelope before returning the typed result. */
 function validatedSessionEvent(value) {
 	if (!isRecord(value) || typeof value.type !== "string") throw new SdkProtocolError(`session.event carried no event envelope: ${JSON.stringify(value)}`);
@@ -690,6 +813,11 @@ function validatedSessionEvent(value) {
 		const message = isRecord(value.data) ? value.data.message : void 0;
 		const content = isRecord(message) ? message.content : void 0;
 		if (!Array.isArray(content) || !content.every((block) => isRecord(block) && typeof block.type === "string")) throw new SdkProtocolError(`assistant/message event carried malformed content: ${JSON.stringify(value)}`);
+	}
+	if (value.type === "turn/end") {
+		const data = isRecord(value.data) ? value.data : void 0;
+		if (data === void 0) throw new SdkProtocolError(`turn/end event carried malformed data: ${JSON.stringify(value)}`);
+		validatedTurnEndReason(data.reason);
 	}
 	return value;
 }

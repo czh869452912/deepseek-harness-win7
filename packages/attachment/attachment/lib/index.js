@@ -55,6 +55,14 @@ function isImageAdmissionError(error) {
 function AttachmentId(value) {
 	return value;
 }
+/**
+* Brand a validated request-image transformation identifier.
+* @param value - attachment-provider-produced opaque identifier.
+* @returns the branded identifier.
+*/
+function ImageVariantId(value) {
+	return value;
+}
 //#endregion
 //#region lib/types/admission.js
 /** Wire-form admission of base64-encoded image uploads. @module @deepseek-ai/dsh-attachment/admission */
@@ -86,6 +94,48 @@ async function admitEncodedImages(attachments, images) {
 	return attachments.saveImages(images.map(saveInput));
 }
 //#endregion
+//#region lib/types/request-projection.js
+/**
+* Pure request-projection geometry shared by attachment providers and
+* provider-side request pricing. @module @deepseek-ai/dsh-attachment/request-projection
+*/
+/**
+* Compute aspect-preserving integer dimensions within a hard total-pixel budget.
+* @param width - positive source width.
+* @param height - positive source height.
+* @param maxPixels - positive width-times-height cap.
+* @returns inward-rounded dimensions; small images are not enlarged.
+*/
+function requestImageDimensions(width, height, maxPixels) {
+	const scale = Math.min(1, Math.sqrt(maxPixels / (width * height)));
+	if (scale === 1) return {
+		width,
+		height
+	};
+	if (width >= height) {
+		let projectedWidth = Math.max(1, Math.floor(width * scale));
+		let projectedHeight = Math.max(1, Math.round(projectedWidth * height / width));
+		while (projectedWidth * projectedHeight > maxPixels && projectedWidth > 1) {
+			projectedWidth -= 1;
+			projectedHeight = Math.max(1, Math.round(projectedWidth * height / width));
+		}
+		return {
+			width: projectedWidth,
+			height: projectedHeight
+		};
+	}
+	let projectedHeight = Math.max(1, Math.floor(height * scale));
+	let projectedWidth = Math.max(1, Math.round(projectedHeight * width / height));
+	while (projectedWidth * projectedHeight > maxPixels && projectedHeight > 1) {
+		projectedHeight -= 1;
+		projectedWidth = Math.max(1, Math.round(projectedHeight * width / height));
+	}
+	return {
+		width: projectedWidth,
+		height: projectedHeight
+	};
+}
+//#endregion
 //#region lib/types/index.js
 /** Durable attachment storage seam (`ctx.attachments`). @module @deepseek-ai/dsh-attachment */
 /** Immutable binary attachment service. Implementations validate bytes before publishing a reference. */
@@ -101,16 +151,42 @@ var AttachmentStore = class extends Service {
 	* @param inputs - encoded images in their owning message order.
 	* @returns durable references in the exact input order.
 	*/
-	async saveImages(inputs) {
+	validateImageBatch(inputs) {
 		const { maxImagesPerMessage, maxMessageImageBytes, mediaTypes } = this.imageLimits;
 		if (inputs.length > maxImagesPerMessage) throw new AttachmentError("Image batch exceeds the configured image-count limit.", "TOO_MANY_IMAGES");
 		if (inputs.reduce((sum, input) => sum + input.data.byteLength, 0) > maxMessageImageBytes) throw new AttachmentError("Image batch exceeds the configured aggregate image-byte limit.", "IMAGES_TOO_LARGE");
 		for (const input of inputs) if (!mediaTypes.includes(input.mediaType)) throw new AttachmentError(`Image type ${input.mediaType} is not accepted by this deployment.`, "UNSUPPORTED_IMAGE_TYPE");
+	}
+	/**
+	* Validate and durably commit one ordered image batch.
+	* @param inputs - encoded images in owning-message order.
+	* @returns durable normalized attachment references in the same order after every member succeeds.
+	*/
+	async saveImages(inputs) {
+		this.validateImageBatch(inputs);
 		for (const input of inputs) await this.validateImage(input);
 		const refs = [];
 		for (const input of inputs) refs.push(await this.saveImage(input));
 		return refs;
 	}
+	/**
+	* Locate the provider-owned normalized object in the harness host filesystem.
+	* @param ref - durable normalized attachment reference.
+	* @returns an absolute host path, or undefined when this backend is not host-file-backed.
+	* @throws an AttachmentError when the durable reference is invalid.
+	*/
+	imageHostPath(ref) {}
+	/**
+	* Generate or read one deterministic model-request version from the stored normalized image.
+	* @param ref - durable provider-independent normalized attachment reference.
+	* @param policy - exact route pixel budget and encoded-byte target; a target no ladder quality meets yields the smallest ladder output.
+	* @param signal - optional cancellation.
+	* @returns request bytes and the cache/upload identity covering every transform input.
+	*/
+	readImageRequest(ref, policy, signal) {
+		signal?.throwIfAborted();
+		return Promise.reject(new AttachmentError("The mounted attachment provider cannot derive model-request images.", "ATTACHMENT_PROJECTION_UNSUPPORTED"));
+	}
 };
 //#endregion
-export { AttachmentError, AttachmentId, AttachmentStore, AttachmentStore as default, admitEncodedImages, isImageAdmissionError };
+export { AttachmentError, AttachmentId, AttachmentStore, AttachmentStore as default, ImageVariantId, admitEncodedImages, isImageAdmissionError, requestImageDimensions };

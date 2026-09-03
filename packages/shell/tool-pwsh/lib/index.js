@@ -2,6 +2,7 @@ import { isAbsolute, resolve } from "node:path";
 import z from "@deepseek-ai/schemastery";
 import { TOOL_ABORTED, defineTool } from "@deepseek-ai/dsh-tools";
 import { HarnessError } from "@deepseek-ai/dsh-llm";
+import { FIRST_PARTY_SECTION_ORDER } from "@deepseek-ai/dsh-system-prompt";
 import { ESCALATION_TARGETS, approveEscalation, escalationHintMarker, sandboxDenialMarker, validateEscalationArgs } from "@deepseek-ai/dsh-sandbox";
 import { parseExitStatus } from "@deepseek-ai/dsh-shell";
 //#region lib/types/background.js
@@ -227,7 +228,7 @@ function apply(ctx, config = {}) {
 	};
 	ctx.systemPrompt.section({
 		name: "tool:pwsh",
-		order: 105,
+		order: FIRST_PARTY_SECTION_ORDER.TOOL_PWSH,
 		text: "Non-zero exits are reported as `[exit code: N]` markers; investigate failures before moving on. On Windows a killed process settles as `[exit code: 1]` without a signal marker; treat a bare exit 1 after an interruption as a termination, not a command failure."
 	});
 	ctx.tools.register(defineTool({

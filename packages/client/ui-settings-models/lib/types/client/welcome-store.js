@@ -4,7 +4,7 @@
  * remote browser's memory-mode scope never answers and the acknowledgement
  * stays process-local here.
  */
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-runtime/client';
+import { createSnapshotStore } from '@deepseek-ai/dsh-client-store';
 import { WELCOME_NOTICE_ACK_FIELD, WELCOME_NOTICE_VERSION, } from "../onboarding-copy.js";
 /**
  * Accept any object section verbatim; a malformed durable value reads as an

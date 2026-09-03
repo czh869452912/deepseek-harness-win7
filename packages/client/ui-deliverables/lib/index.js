@@ -1,3 +1,4 @@
+import { FIRST_PARTY_SECTION_ORDER } from "@deepseek-ai/dsh-system-prompt";
 //#region lib/types/index.js
 /**
 * Deliverables plugin, node half. Registers the response-format guidance that
@@ -16,7 +17,7 @@ const FILE_REFERENCE_PROMPT = "When you successfully create or modify files, men
 function apply(ctx) {
 	ctx.systemPrompt.section({
 		name: "ui:deliverable-file-references",
-		order: 190,
+		order: FIRST_PARTY_SECTION_ORDER.DELIVERABLE_FILE_REFERENCES,
 		text: FILE_REFERENCE_PROMPT
 	});
 }

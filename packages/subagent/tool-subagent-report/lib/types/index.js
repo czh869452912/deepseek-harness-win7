@@ -6,6 +6,7 @@
  * @module @deepseek-ai/dsh-tool-subagent-report
  */
 import z from '@deepseek-ai/schemastery';
+import { FIRST_PARTY_SECTION_ORDER } from '@deepseek-ai/dsh-system-prompt';
 import { defineTool } from '@deepseek-ai/dsh-tools';
 export const name = 'tool-subagent-report';
 // The contribution registers only through childCtx.tools and
@@ -13,7 +14,7 @@ export const name = 'tool-subagent-report';
 // at load instead of at the next child materialization.
 export const inject = ['subagents', 'tools', 'systemPrompt'];
 /** Guidance order after every per-tool section a continuable child can carry. */
-const REPORT_SECTION_ORDER = 117;
+const REPORT_SECTION_ORDER = FIRST_PARTY_SECTION_ORDER.TOOL_REPORT;
 export const Config = z.object({
     reportDelivery: z.union(['quiet', 'next-step']).default('next-step'),
 });

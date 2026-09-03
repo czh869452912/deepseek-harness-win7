@@ -37,6 +37,8 @@ export interface ExampleLaunchOptions {
     readonly mode?: ExampleMode;
     /** Absolute repo tsconfig whose `paths` map resolves unbuilt workspace imports. Required in `src` mode, ignored in `lib`. */
     readonly tsconfigPath?: string;
+    /** Select the ESM-only tsx hook instead of the generic loader. */
+    readonly sourceImport?: 'tsx/esm';
     /** Extra environment entries the mode-specific ones layer over; the caller then merges the result over `process.env`. */
     readonly env?: NodeJS.ProcessEnv;
 }
@@ -69,6 +71,8 @@ export interface LoaderSmokeOptions {
     readonly label: string;
     /** Prefix for the isolated temporary process cwd. */
     readonly tempDirPrefix: string;
+    /** Existing parent for the generated cwd; defaults to the platform temporary directory. */
+    readonly tempDirParent?: string;
     /** Absolute app-bin source path (`<pkg>/src/bin.ts`); the `lib` bin is derived from it. */
     readonly binScript: string;
     /** Explicit plain-Node entry for `lib` mode; intended for test fixtures outside a package `src/` tree. */

@@ -1,6 +1,208 @@
 import z from "@deepseek-ai/schemastery";
 import { WebError } from "@deepseek-ai/dsh-web";
 import { deadline, timeoutOf } from "@deepseek-ai/dsh-timeout";
+import { lookup } from "node:dns/promises";
+import { isIP } from "node:net";
+import ipaddr from "ipaddr.js";
+//#region lib/types/network.js
+/**
+* Public-network resolution and address-pinned HTTP transport for `web-fetch-http`.
+* One DNS answer set is validated before Undici receives it through a custom lookup,
+* so the connection cannot resolve the hostname again to a private address.
+*
+* @module @deepseek-ai/dsh-web-fetch-http/network
+*/
+/** RFC 6052 prefix lengths that may carry an IPv4 destination through NAT64. */
+const RFC6052_PREFIX_LENGTHS = [
+	32,
+	40,
+	48,
+	56,
+	64,
+	96
+];
+const IPV4ONLY_DISCOVERY_HOST = "ipv4only.arpa";
+const IPV4ONLY_SENTINELS = new Set(["192.0.0.170", "192.0.0.171"]);
+/**
+* Return whether an address is globally reachable unicast. IPv4-mapped IPv6 is
+* classified by its embedded IPv4 address; transition and translation prefixes
+* remain blocked because their eventual IPv4 destination cannot be pinned here.
+*
+* @param input - textual IPv4 or IPv6 address.
+* @returns true only for a public unicast destination.
+*/
+function isPublicIpAddress(input) {
+	let parsed;
+	try {
+		parsed = ipaddr.parse(stripIpv6Brackets(input));
+	} catch {
+		return false;
+	}
+	if (parsed instanceof ipaddr.IPv4) return parsed.range() === "unicast";
+	if (parsed.isIPv4MappedAddress()) return parsed.toIPv4Address().range() === "unicast";
+	return parsed.range() === "unicast";
+}
+/**
+* Resolve a hostname once and reject the complete answer set if any destination
+* is not public. The returned addresses are the only ones the transport may use.
+*
+* @param hostname - URL hostname, including brackets when it is an IPv6 literal.
+* @param signal - aborts the wait for system resolution; an in-flight OS lookup may finish unused.
+* @param resolver - lookup implementation, overridden only by focused tests.
+* @returns the validated, non-empty address set.
+*/
+async function resolvePublicAddresses(hostname, signal, resolver = lookup) {
+	const unbracketed = stripIpv6Brackets(hostname);
+	const literalFamily = isIP(unbracketed);
+	const resolved = literalFamily === 0 ? await raceWithSignal(resolver(unbracketed, {
+		all: true,
+		order: "verbatim"
+	}), signal) : [{
+		address: unbracketed,
+		family: literalFamily
+	}];
+	if (resolved.length === 0) throw new WebError(`hostname "${hostname}" resolved to no addresses`, "WEB_PROVIDER_ERROR");
+	const nat64Prefixes = resolved.some((entry) => entry.family === 6 && isIP(entry.address) === 6) ? await discoverNat64Prefixes(signal, resolver) : [];
+	const addresses = [];
+	for (const entry of resolved) {
+		if (entry.family !== 4 && entry.family !== 6 || isIP(entry.address) !== entry.family) throw new WebError(`hostname "${hostname}" resolved to an invalid IP address`, "WEB_PROVIDER_ERROR");
+		if (!isPublicIpAddress(entry.address)) throw new WebError(`URL hostname "${hostname}" resolves to a non-public IP address`, "WEB_BLOCKED_URL");
+		const translatedIpv4 = translatedIpv4Address(entry.address, nat64Prefixes);
+		if (translatedIpv4 !== void 0 && !isPublicIpAddress(translatedIpv4)) throw new WebError(`URL hostname "${hostname}" resolves through NAT64 to a non-public IPv4 address`, "WEB_BLOCKED_URL");
+		addresses.push({
+			address: entry.address,
+			family: entry.family
+		});
+	}
+	return addresses;
+}
+/** Discover the active DNS64 prefix set using RFC 7050's reserved hostname. */
+async function discoverNat64Prefixes(signal, resolver) {
+	const discovered = await raceWithSignal(resolver(IPV4ONLY_DISCOVERY_HOST, {
+		all: true,
+		order: "verbatim"
+	}), signal);
+	const prefixes = [];
+	const seen = /* @__PURE__ */ new Set();
+	for (const entry of discovered) {
+		if (entry.family !== 6 || isIP(entry.address) !== 6) continue;
+		const bytes = ipaddr.parse(entry.address).toByteArray();
+		for (const length of RFC6052_PREFIX_LENGTHS) {
+			const embedded = embeddedIpv4Address(bytes, length);
+			if (embedded === void 0 || !IPV4ONLY_SENTINELS.has(embedded)) continue;
+			const prefixBytes = bytes.slice(0, length / 8);
+			const key = `${String(length)}:${prefixBytes.join(".")}`;
+			if (seen.has(key)) continue;
+			seen.add(key);
+			prefixes.push({
+				bytes: prefixBytes,
+				length
+			});
+		}
+	}
+	return prefixes;
+}
+/** Return the RFC 6052-embedded IPv4 address when an IPv6 address matches a discovered prefix. */
+function translatedIpv4Address(input, prefixes) {
+	if (isIP(input) !== 6) return void 0;
+	const bytes = ipaddr.parse(input).toByteArray();
+	for (const prefix of prefixes) {
+		if (!prefix.bytes.every((byte, index) => bytes[index] === byte)) continue;
+		const embedded = embeddedIpv4Address(bytes, prefix.length);
+		if (embedded !== void 0) return embedded;
+	}
+}
+/** Extract one IPv4 address from an RFC 6052 IPv6 layout. */
+function embeddedIpv4Address(bytes, prefixLength) {
+	if (prefixLength === 96) return bytes.slice(12, 16).join(".");
+	if (bytes[8] !== 0) return void 0;
+	const prefixBytes = prefixLength / 8;
+	const beforeReservedOctet = 8 - prefixBytes;
+	return [...bytes.slice(prefixBytes, prefixBytes + beforeReservedOctet), ...bytes.slice(9, 13 - beforeReservedOctet)].join(".");
+}
+/**
+* Fetch through an Undici agent whose lookup callback returns only the already
+* validated address set. The URL hostname remains intact for HTTP Host and TLS SNI.
+*
+* @param url - validated HTTP(S) URL.
+* @param addresses - public addresses returned by {@link resolvePublicAddresses}.
+* @param headers - request headers.
+* @param signal - request and body-read cancellation signal.
+* @returns a response plus the dispatcher disposer its consumer must call.
+*/
+async function requestPinned(url, addresses, headers, signal) {
+	const { Agent, fetch } = await import("undici");
+	const dispatcher = new Agent({
+		autoSelectFamily: true,
+		connect: { lookup: createPinnedLookup(addresses) }
+	});
+	try {
+		return {
+			response: await fetch(url, {
+				method: "GET",
+				redirect: "manual",
+				headers,
+				signal,
+				dispatcher
+			}),
+			close: async () => {
+				await dispatcher.close();
+			}
+		};
+	} catch (error) {
+		await dispatcher.close();
+		throw error;
+	}
+}
+/** Production network operations kept as an object so provider tests can replace resolution only. */
+const publicHttpNetwork = {
+	resolve: resolvePublicAddresses,
+	request: requestPinned
+};
+/**
+* Build the connector lookup that serves a fixed validated answer set.
+*
+* @param addresses - public addresses retained from the preceding resolution.
+* @returns a Node-compatible lookup callback that performs no network resolution.
+*/
+function createPinnedLookup(addresses) {
+	return (hostname, options, callback) => {
+		const family = typeof options.family === "number" ? options.family : options.family === "IPv4" ? 4 : options.family === "IPv6" ? 6 : 0;
+		const eligible = family === 0 ? addresses : addresses.filter((address) => address.family === family);
+		const selected = eligible[0];
+		if (selected === void 0) {
+			callback(Object.assign(/* @__PURE__ */ new Error(`no validated address for ${hostname} in family ${family}`), {
+				code: "ENOTFOUND",
+				hostname
+			}), options.all === true ? [] : "", family);
+			return;
+		}
+		if (options.all === true) {
+			callback(null, eligible.map((address) => ({ ...address })));
+			return;
+		}
+		callback(null, selected.address, selected.family);
+	};
+}
+/** Race a non-cancellable OS lookup without letting it delay tool cancellation. */
+function raceWithSignal(promise, signal) {
+	const abortError = () => new Error("web fetch aborted during hostname resolution", { cause: signal.reason });
+	if (signal.aborted) return Promise.reject(abortError());
+	return new Promise((resolve, reject) => {
+		const abort = () => {
+			reject(abortError());
+		};
+		signal.addEventListener("abort", abort, { once: true });
+		promise.then(resolve, reject).finally(() => {
+			signal.removeEventListener("abort", abort);
+		});
+	});
+}
+/** WHATWG URL retains brackets around IPv6 hostnames; IP parsers do not. */
+function stripIpv6Brackets(hostname) {
+	return hostname.startsWith("[") && hostname.endsWith("]") ? hostname.slice(1, -1) : hostname;
+}
+//#endregion
 //#region lib/types/policy.js
 /**
 * URL validation and content-type classification for the local HTTP(S) fetch
@@ -9,18 +211,17 @@ import { deadline, timeoutOf } from "@deepseek-ai/dsh-timeout";
 *
 * @module @deepseek-ai/dsh-web-fetch-http/policy
 */
+/** Maximum accepted request URL length enforced by the public fetch provider. */
+const WEB_FETCH_MAX_URL_LENGTH = 2048;
 /**
-* Validate a request URL against the basic transport hygiene the provider
-* enforces before any network access: http(s) only, no embedded credentials,
-* bounded length. Returns the parsed `URL`. Throws {@link WebError} otherwise.
-* (SSRF / private-network blocking is deferred — see the package Agent Note.)
+* Parse a request URL and enforce network-independent transport restrictions:
+* HTTP(S) only and no embedded credentials. The provider applies this before
+* resolving a destination.
 *
 * @param input - the raw URL string from the fetch request.
-* @param maxUrlLength - inclusive upper bound on `input`'s length.
 * @returns the parsed `URL`.
 */
-function validateFetchUrl(input, maxUrlLength) {
-	if (input.length > maxUrlLength) throw new WebError(`URL exceeds the maximum length of ${maxUrlLength}`, "WEB_INVALID_URL");
+function parseFetchUrl(input) {
 	let url;
 	try {
 		url = new URL(input);
@@ -32,9 +233,21 @@ function validateFetchUrl(input, maxUrlLength) {
 	return url;
 }
 /**
+* Validate a request URL against the provider's complete pre-network policy:
+* bounded length plus the restrictions enforced by {@link parseFetchUrl}.
+* Public-address resolution and connection pinning run after this check.
+*
+* @param input - the raw URL string from the fetch request.
+* @returns the parsed `URL`.
+*/
+function validateFetchUrl(input) {
+	if (input.length > 2048) throw new WebError(`URL exceeds the maximum length of ${WEB_FETCH_MAX_URL_LENGTH}`, "WEB_INVALID_URL");
+	return parseFetchUrl(input);
+}
+/**
 * Two URLs are same-origin when scheme, hostname, and port match. A redirect
 * that crosses origins is refused so each new origin requires a fresh tool call
-* (and thus a fresh provider/permission decision).
+* and public-address validation.
 *
 * @param a - one of the two URLs to compare.
 * @param b - the other URL to compare.
@@ -92,12 +305,10 @@ function decoderForCharset(charset) {
 //#endregion
 //#region lib/types/provider.js
 /**
-* Safe HTTP(S) retrieval for `ctx.web`: validates URLs, follows only same-origin redirects,
-* enforces time and size limits, classifies and decodes text, and leaves presentation to
-* `@deepseek-ai/dsh-tool-web`. Requests carry no browser cookies or ambient credentials.
-*
-* Private-network and SSRF protection is not implemented; do not enable this provider where
-* it can reach sensitive internal targets.
+* Safe HTTP(S) retrieval for `ctx.web`: validates and pins public IP destinations, follows
+* only same-origin redirects, enforces time and size limits, classifies and decodes text,
+* and leaves presentation to `@deepseek-ai/dsh-tool-web`. Requests carry no browser cookies
+* or ambient credentials.
 * @module @deepseek-ai/dsh-web-fetch-http/provider
 */
 var __addDisposableResource = function(env, value, async) {
@@ -163,9 +374,15 @@ const LOCAL_FETCH_PROVIDER_ID = "http";
 /** The anonymous public HTTP(S) fetch provider. */
 var HttpFetchProvider = class {
 	limits;
+	resolveAddresses;
 	id = LOCAL_FETCH_PROVIDER_ID;
-	constructor(limits) {
+	/**
+	* @param limits - resolved transport and response limits.
+	* @param resolveAddresses - resolver that rejects non-public destinations before returning.
+	*/
+	constructor(limits, resolveAddresses = publicHttpNetwork.resolve) {
 		this.limits = limits;
+		this.resolveAddresses = resolveAddresses;
 	}
 	/** No credentials to check — an anonymous public fetcher is always usable. */
 	available() {
@@ -190,49 +407,51 @@ var HttpFetchProvider = class {
 	}
 	/** Follow same-origin redirects up to the hop cap, then read the final response. */
 	async followAndRead(initialUrl, signal) {
-		let currentUrl = validateFetchUrl(initialUrl, this.limits.maxUrlLength);
+		let currentUrl = validateFetchUrl(initialUrl);
 		let redirectsFollowed = 0;
 		for (;;) {
-			const response = await this.requestOnce(currentUrl, signal);
-			if (isRedirectStatus(response.status)) {
-				if (redirectsFollowed >= this.limits.maxRedirects) {
+			const request = await this.requestOnce(currentUrl, signal);
+			const { response } = request;
+			try {
+				if (isRedirectStatus(response.status)) {
+					if (redirectsFollowed >= this.limits.maxRedirects) {
+						await response.body?.cancel();
+						throw new WebError(`exceeded the maximum of ${this.limits.maxRedirects} redirects`, "WEB_REDIRECT_BLOCKED");
+					}
+					const location = response.headers.get("location");
+					if (location === null) {
+						await response.body?.cancel();
+						throw new WebError(`redirect response (HTTP ${response.status}) without a Location header`, "WEB_PROVIDER_ERROR");
+					}
+					const target = resolveRedirect(location, currentUrl);
+					let validatedTarget;
+					try {
+						validatedTarget = validateFetchUrl(target.toString());
+						if (!isSameOrigin(validatedTarget, currentUrl)) throw new WebError(`cross-origin redirect to ${validatedTarget.origin} is not followed automatically; retry against that URL directly`, "WEB_REDIRECT_BLOCKED");
+					} catch (error) {
+						await response.body?.cancel();
+						throw error;
+					}
 					await response.body?.cancel();
-					throw new WebError(`exceeded the maximum of ${this.limits.maxRedirects} redirects`, "WEB_REDIRECT_BLOCKED");
+					currentUrl = validatedTarget;
+					redirectsFollowed++;
+					continue;
 				}
-				const location = response.headers.get("location");
-				if (location === null) {
-					await response.body?.cancel();
-					throw new WebError(`redirect response (HTTP ${response.status}) without a Location header`, "WEB_PROVIDER_ERROR");
-				}
-				const target = resolveRedirect(location, currentUrl);
-				let validatedTarget;
-				try {
-					validatedTarget = validateFetchUrl(target.toString(), this.limits.maxUrlLength);
-					if (!isSameOrigin(validatedTarget, currentUrl)) throw new WebError(`cross-origin redirect to ${validatedTarget.origin} is not followed automatically; retry against that URL directly`, "WEB_REDIRECT_BLOCKED");
-				} catch (error) {
-					await response.body?.cancel();
-					throw error;
-				}
-				await response.body?.cancel();
-				currentUrl = validatedTarget;
-				redirectsFollowed++;
-				continue;
+				return await this.readBody(response, currentUrl, signal);
+			} finally {
+				await request.close();
 			}
-			return await this.readBody(response, currentUrl, signal);
 		}
 	}
 	async requestOnce(url, signal) {
 		try {
-			return await fetch(url, {
-				method: "GET",
-				redirect: "manual",
-				headers: {
-					"user-agent": this.limits.userAgent,
-					"accept": "text/html,application/xhtml+xml,text/*;q=0.9,application/json;q=0.8"
-				},
-				signal
-			});
+			const addresses = await this.resolveAddresses(url.hostname, signal);
+			return await publicHttpNetwork.request(url, addresses, {
+				"user-agent": this.limits.userAgent,
+				"accept": "text/html,application/xhtml+xml,text/*;q=0.9,application/json;q=0.8"
+			}, signal);
 		} catch (error) {
+			if (error instanceof WebError) throw error;
 			throw translateAbortOrNetwork(error, signal);
 		}
 	}
@@ -358,10 +577,8 @@ function translateAbortOrNetwork(error, signal) {
 //#endregion
 //#region lib/types/index.js
 /**
-* `@deepseek-ai/dsh-web-fetch-http`: registers an anonymous public HTTP(S)
-* `WebFetchProvider` with `ctx.web`. A function/namespace plugin (NOT a
-* default-export service): it registers INTO the seam's fetch registry, like the
-* search providers register into the search registry.
+* Anonymous public HTTP(S) `WebFetchProvider` plugin. It contributes to the
+* `ctx.web` registry without owning the service.
 *
 * @module @deepseek-ai/dsh-web-fetch-http
 */
@@ -373,7 +590,6 @@ const name = "web-fetch-http";
 /** The web seam this provider registers into. */
 const inject = ["web"];
 const Config = z.object({
-	maxUrlLength: z.number().default(2048),
 	maxResponseBytes: z.number().default(5e6),
 	maxBodyChars: z.number().default(1e5),
 	timeoutMs: z.number().default(3e4),
@@ -396,13 +612,11 @@ function assertNonNegativeInteger(name, value) {
 /** Register the local HTTP(S) fetch provider with `ctx.web`. */
 function apply(ctx, config) {
 	const resolved = config;
-	assertPositiveFinite("maxUrlLength", resolved.maxUrlLength);
 	assertPositiveFinite("maxResponseBytes", resolved.maxResponseBytes);
 	assertPositiveFinite("maxBodyChars", resolved.maxBodyChars);
 	assertTimeoutMs(resolved.timeoutMs);
 	assertNonNegativeInteger("maxRedirects", resolved.maxRedirects);
 	const limits = {
-		maxUrlLength: resolved.maxUrlLength,
 		maxResponseBytes: resolved.maxResponseBytes,
 		maxBodyChars: resolved.maxBodyChars,
 		timeoutMs: resolved.timeoutMs,

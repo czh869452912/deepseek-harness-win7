@@ -14,7 +14,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
  * does not compose the owning plugin should show no trace of it, rather than a
  * disabled card the user cannot act on.
  */
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { IconChevronDownOutline14 } from '@deepseek-ai/dsh-client-ui-primitives';
 import css from './PluginCard.module.css';
@@ -25,7 +25,21 @@ import css from './PluginCard.module.css';
  */
 export function PluginCard(props) {
     const [open, setOpen] = useState(false);
+    const saveStarted = useRef(false);
     const { state } = props;
+    // Collapse only after Host-confirmed settlement; a rejected write keeps its
+    // diagnostics and retained drafts visible for correction.
+    useEffect(() => {
+        if (state.saving) {
+            saveStarted.current = true;
+            return;
+        }
+        if (!saveStarted.current)
+            return;
+        saveStarted.current = false;
+        if (!state.dirty && !state.failed)
+            setOpen(false);
+    }, [state.dirty, state.failed, state.saving]);
     if (!state.available)
         return null;
     const title = props.t(props.titleKey);

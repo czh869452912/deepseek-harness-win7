@@ -414,5 +414,6 @@ export declare class SessionStore extends Service {
     private _forkSeed;
     private _resolveForkSource;
 }
+export { decodeSeqRanges, encodeSeqRanges } from './seq-ranges.ts';
 export default SessionStore;
 //# sourceMappingURL=index.d.ts.map

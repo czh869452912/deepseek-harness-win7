@@ -37,18 +37,19 @@ class Message:
         sn: int,
         ts: int,
         name: str,
-        msg_type: str,
-        level: int,
-        args: List[Any],
+        msg_type: Optional[str] = None,
+        level: int = LoggerLevel.INFO,
+        args: Optional[List[Any]] = None,
         fiber: Optional[Any] = None,
         meta: Optional[Dict[str, Any]] = None,
+        type: Optional[str] = None,
     ):
         self.sn = sn
         self.ts = ts
         self.name = name
-        self.type = msg_type
+        self.type = type or msg_type or "info"
         self.level = level
-        self.args = args
+        self.args = args if args is not None else []
         self.fiber = weakref.ref(fiber) if fiber is not None else None
         self.meta = meta or {}
 
@@ -88,15 +89,17 @@ class Exporter:
 def default_color(exporter: Exporter, code: int, value: Any, decoration: str = "") -> str:
     if not exporter.colors:
         return str(value)
+    deco = decoration if exporter.colors >= 2 else ""
     if code < 8:
-        return f"\033[3{code}{decoration}m{value}\033[0m"
-    return f"\033[38;5;{code}{exporter.colors >= 2 and decoration or ''}m{value}\033[0m"
+        return f"\033[3{code}{deco}m{value}\033[0m"
+    return f"\033[38;5;{code}{deco}m{value}\033[0m"
 
 
 def default_code(name: str, level: Optional[int] = 3) -> int:
     h = 0
     for ch in name:
         h = (((h << 3) - h) + ord(ch) + 13) & 0xFFFFFFFF
+    signed_h = h if h < 0x80000000 else h - 0x100000000
     if not level:
         colors = []
     elif level >= 2:
@@ -105,12 +108,14 @@ def default_code(name: str, level: Optional[int] = 3) -> int:
         colors = c16
     if not colors:
         return 0
-    return colors[abs(h) % len(colors)]
+    return colors[abs(signed_h) % len(colors)]
 
 
 class Logger:
     """Logger facade for one named subsystem matching TS Logger."""
 
+    c16 = c16
+    c256 = c256
     color = staticmethod(default_color)
     code = staticmethod(default_code)
 
@@ -140,23 +145,30 @@ class Logger:
             ch = match.group(1)
             if ch == "%":
                 return "%"
-            if not args:
+            if ch not in exporter.formatters and ch not in ("s", "d", "i", "f", "o", "O", "c", "C"):
                 return match.group(0)
-            val = args.pop(0)
+
+            val = args.pop(0) if args else None
             if ch in exporter.formatters:
                 return str(exporter.formatters[ch](val, exporter, message))
             if ch == "s":
-                return str(val)
+                return "undefined" if val is None else str(val)
             if ch in ("d", "i"):
                 try:
-                    return str(int(val))
+                    f_val = float(val)
+                    if math.isnan(f_val):
+                        return "NaN"
+                    return str(int(math.trunc(f_val)))
                 except (ValueError, TypeError):
-                    return "0"
+                    return "NaN"
             if ch == "f":
                 try:
-                    return str(float(val))
+                    f_val = float(val)
+                    if math.isnan(f_val):
+                        return "NaN"
+                    return str(f_val)
                 except (ValueError, TypeError):
-                    return "0.0"
+                    return "NaN"
             if ch in ("o", "O"):
                 try:
                     return json.dumps(val, default=str, ensure_ascii=False)
@@ -166,13 +178,16 @@ class Logger:
                 return ""
             if ch == "C":
                 c_val = Logger.code(message.name, exporter.colors)
-                return Logger.color(exporter, c_val, val)
+                return Logger.color(exporter, c_val, str(val))
             return str(val)
 
         res = re.sub(r"%([a-zA-Z%])", replace_placeholder, fmt_str)
 
+        o_formatter = exporter.formatters.get("o") if exporter.formatters else None
         for remaining in args:
-            if isinstance(remaining, (dict, list)):
+            if o_formatter is not None and not isinstance(remaining, (str, int, float, bool)):
+                res += " " + str(o_formatter(remaining, exporter, message))
+            elif isinstance(remaining, (dict, list)):
                 try:
                     res += " " + json.dumps(remaining, default=str, ensure_ascii=False)
                 except Exception:
@@ -190,6 +205,15 @@ class Logger:
         return "\n".join(lines)
 
     def _method(self, msg_type: str, level: int, format_str: Any, *args: Any) -> None:
+        if not args and isinstance(format_str, Exception):
+            err = format_str
+            if getattr(err, "__cause__", None) is not None:
+                getattr(self, msg_type)(err.__cause__)
+            elif hasattr(err, "errors") and isinstance(getattr(err, "errors"), (list, tuple)) and err.errors:
+                for sub_err in err.errors:
+                    getattr(self, msg_type)(sub_err)
+                return
+
         all_args = [format_str] + list(args) if format_str is not None else list(args)
         sn = self.service._next_message_sn()
         ts = int(time.time() * 1000)
@@ -212,10 +236,7 @@ class Logger:
             target_level = exporter.levels.get(self.name, exporter.levels.get("default", self.level))
             if target_level < level:
                 continue
-            try:
-                exporter.export(message)
-            except Exception as e:
-                print(f"[Cordis Logger Error] Exporter error: {e}", file=sys.stderr)
+            exporter.export(message)
 
     def error(self, format_str: Any, *args: Any) -> None:
         self._method("error", LoggerLevel.ERROR, format_str, *args)
@@ -262,24 +283,32 @@ class LoggerService:
         """
         Register an exporter and dispose it with the current fiber effect.
         """
-        self._sn_exporter += 1
-        sn = self._sn_exporter
-        self.exporters[sn] = exporter
+        def setup() -> Callable[[], None]:
+            self._sn_exporter += 1
+            sn = self._sn_exporter
+            self.exporters[sn] = exporter
 
-        def teardown() -> None:
-            self.exporters.pop(sn, None)
+            def teardown() -> None:
+                # Upstream TS quirk: deletes the current _sn_exporter
+                self.exporters.pop(self._sn_exporter, None)
+
+            return teardown
 
         if hasattr(self.ctx, "effect"):
-            return self.ctx.effect(teardown, label="ctx.logger.exporter()")
-        return teardown
+            return self.ctx.effect(setup, label="ctx.logger.exporter()")
+        return setup()
 
     def __call__(self, name: Optional[str] = None) -> Logger:
         """Create or get a named Logger instance."""
-        target_name = name
+        from dsh.cordis.utils import hyphenate
+        config = self.resolve_intercept_config() or {} if hasattr(self, "resolve_intercept_config") else {}
+        target_name = name or config.get("name")
         fiber = getattr(self.ctx, "fiber", None)
         if not target_name:
-            target_name = getattr(fiber, "name", "root") if fiber else "root"
-        return Logger(name=target_name, service=self, meta={"fiber": fiber})
+            fname = getattr(fiber, "name", "root") if fiber else "root"
+            target_name = hyphenate(fname) if fname else "root"
+        level = config.get("level", LoggerLevel.INFO)
+        return Logger(name=target_name, service=self, level=level, meta={"fiber": fiber})
 
     def error(self, format_str: Any, *args: Any) -> None:
         self().error(format_str, *args)

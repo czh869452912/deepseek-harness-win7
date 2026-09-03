@@ -48,23 +48,6 @@ export declare function catalogProvider(provider: string): Provider | undefined;
  */
 export declare function catalogProviderIds(): readonly string[];
 /**
- * Whether the installed catalog provider for one route declares an api-key
- * method — the only authentication this adapter obtains on its own.
- *
- * A key is what the harness resolves through its own credential seam and hands
- * pi-ai per request. pi-ai's other method, OAuth, resolves from a *stored*
- * OAuth credential alone: `resolveProviderAuth` has no ambient path for it,
- * this adapter builds its `Models` collection with no credential store, and
- * nothing here runs a login flow. So a provider offering OAuth by itself
- * leaves nothing for this adapter to authenticate with, and the posture such a
- * provider invites — no key configured, credentials discovered by the provider
- * — fails every request with `Provider is not configured`.
- * @param provider - provider route key.
- * @returns whether the catalog provider takes an api key; false for a route
- *   pi-ai does not ship, which the caller answers for separately.
- */
-export declare function catalogProviderTakesApiKey(provider: string): boolean;
-/**
  * The installed catalog models for one route, indexed by model id.
  * @param provider - provider route key.
  * @returns catalog models by id; empty for a route pi-ai does not ship.
@@ -89,6 +72,7 @@ declare const COMPLETIONS_COMPAT_GATE: {
     readonly supportsDeveloperRole: "offer";
     readonly supportsReasoningEffort: "offer";
     readonly supportsUsageInStreaming: "offer";
+    readonly supportsFinishReason: "offer";
     readonly maxTokensField: "offer";
     readonly requiresToolResultName: "offer";
     readonly requiresAssistantAfterToolResult: "offer";
@@ -96,6 +80,8 @@ declare const COMPLETIONS_COMPAT_GATE: {
     readonly requiresReasoningContentOnAssistantMessages: "offer";
     readonly thinkingFormat: "offer";
     readonly chatTemplateKwargs: "offer";
+    readonly chatTemplateArgs: "offer";
+    readonly supportsThinkingTokenBudget: "offer";
     readonly supportsStrictMode: "offer";
     readonly cacheControlFormat: "offer";
     readonly supportsLongCacheRetention: "offer";
@@ -114,6 +100,7 @@ declare const RESPONSES_COMPAT_GATE: {
     readonly supportsLongCacheRetention: "offer";
     readonly sessionAffinityFormat: "withhold";
     readonly supportsOpenAIGrammarTools: "withhold";
+    readonly supportsAdditionalTools: "withhold";
     readonly supportsToolSearch: "withhold";
     readonly supportsExplicitPromptCacheMode: "withhold";
 };
@@ -170,6 +157,11 @@ export interface PiAiCompatProfile {
     supportsReasoningEffort?: boolean;
     /** Whether the endpoint accepts `stream_options: {include_usage: true}`; `openai-completions`. */
     supportsUsageInStreaming?: boolean;
+    /**
+     * Whether streams include `finish_reason`; `false` lets pi-ai infer the
+     * terminal reason when the stream ends; `openai-completions`.
+     */
+    supportsFinishReason?: boolean;
     /** Which output-cap field the endpoint reads; `openai-completions`. */
     maxTokensField?: NonNullable<OpenAICompletionsCompat['maxTokensField']>;
     /** Whether tool results must carry `name`; `openai-completions`. */
@@ -190,6 +182,10 @@ export interface PiAiCompatProfile {
      * can read, so kwargs set beside another format are sent nowhere.
      */
     chatTemplateKwargs?: NonNullable<OpenAICompletionsCompat['chatTemplateKwargs']>;
+    /** Arguments sent as `chat_template_args` under the `baseten` thinking format; `openai-completions`. */
+    chatTemplateArgs?: NonNullable<OpenAICompletionsCompat['chatTemplateArgs']>;
+    /** Whether the endpoint accepts `thinking_token_budget` to cap vLLM reasoning; `openai-completions`. */
+    supportsThinkingTokenBudget?: boolean;
     /**
      * Whether the endpoint accepts `strict` in tool definitions;
      * `openai-completions`, the three Responses protocols, `bedrock-converse-stream`.

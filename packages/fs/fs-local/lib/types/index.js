@@ -67,6 +67,9 @@ export class LocalFileSystem extends FileSystem {
     processPath(target) {
         return String(target.targetKey);
     }
+    processPathFromHostPath(hostPath) {
+        return isAbsolute(hostPath) ? resolve(hostPath) : undefined;
+    }
     fileUrl(target) {
         return pathToFileURL(this.processPath(target)).href;
     }

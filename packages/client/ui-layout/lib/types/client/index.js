@@ -9,7 +9,7 @@ import { ThemePresenter } from "./theme-presenter.js";
 // against; the frame components and the store factory are package-internal.
 export { LayoutController } from "./service.js";
 /** Required services (cordis fiber inject — the loader passes all module exports as an object plugin). */
-export const inject = ['slots', 'theme'];
+export const inject = ['slots', 'theme', 'locale'];
 /**
  * Client plugin body: provide ctx.layout, then one register() call — AppFrame
  * into 'root' with the four child-slot declarations, the layout store seat,
@@ -22,6 +22,7 @@ export function apply(ctx) {
         const disposeService = ctx.reflect.provide('layout', layout);
         const disposeRegistration = ctx.slots.register({
             name: 'root',
+            locale: 'common',
             children: {
                 'sidebar': { kind: 'single', scope: 'root' },
                 'conversation': { kind: 'single', scope: 'session-maybe' },

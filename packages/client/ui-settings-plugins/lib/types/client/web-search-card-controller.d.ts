@@ -8,8 +8,9 @@
  * section names. It is still staged with the rest of the form, so one save
  * covers everything the card shows.
  */
-import type { IApiClient } from '@deepseek-ai/dsh-client-connection/client';
-import type { SettingsScope, SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client';
+import type { ClientRemote } from '@deepseek-ai/dsh-api-remotes/client';
+import type { SnapshotStore } from '@deepseek-ai/dsh-client-store';
+import type { SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client';
 import { type CardActions, type CardFieldState, type CardShell } from './card-form.ts';
 /**
  * Namespace of the DeepSeek search provider. Spelled here rather than
@@ -25,6 +26,8 @@ export interface WebSearchSettings {
     /** Maximum searches served within one request. */
     maxUses?: number;
 }
+/** The credentials Remote methods this card reads and writes through. */
+export type WebSearchCredentials = Pick<ClientRemote['credentials'], 'describe' | 'set'>;
 /** What the web-search card renders. */
 export interface WebSearchCardState extends CardShell {
     /** Provider endpoint. */
@@ -48,15 +51,15 @@ export interface WebSearchCardFace extends CardActions {
 /** Bridges the `web-search-deepseek` scope and the credentials domain onto the card. */
 export declare class WebSearchCardController {
     private readonly scope;
-    private readonly api;
+    private readonly credentials;
     private readonly form;
     private readonly store;
     private credential;
     /**
      * @param scope - the bound settings scope for the `web-search-deepseek` namespace.
-     * @param api - wire face used for the credential the section references.
+     * @param credentials - Remote face used for the credential the section references.
      */
-    constructor(scope: SettingsScope<WebSearchSettings>, api: Pick<IApiClient, 'credentials'>);
+    constructor(scope: SettingsScope<WebSearchSettings>, credentials: WebSearchCredentials);
     private projection;
     /**
      * Ask the credentials domain about the reference the section currently names.

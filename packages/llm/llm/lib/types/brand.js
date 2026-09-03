@@ -18,11 +18,11 @@ export function MessageId(id) {
     return id;
 }
 /**
- * Brand a string as a {@link CallId}.
+ * Brand a string as a {@link ToolCallId}.
  * @param id - the provider-issued (or synthesized) call id.
  * @returns the same string, branded; no validation is performed.
  */
-export function CallId(id) {
+export function ToolCallId(id) {
     return id;
 }
 /**

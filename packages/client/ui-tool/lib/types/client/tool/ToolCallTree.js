@@ -32,8 +32,8 @@ const ToolCallBranch = memo(function ToolCallBranch({ renderSlot, block, selecte
  * @param props - whole-Tool owner data and the Tool-owned child-slot share.
  * @returns the Tool call tree.
  */
-export function ToolCallTree({ renderSlot, node, selectedCallId, cwd, openFile, inspectCall, useHostDescription, t, }) {
-    const home = useHostDescription(description => description?.home);
+export function ToolCallTree({ renderSlot, node, selectedCallId, cwd, openFile, inspectCall, useConnectionGeneration, t, }) {
+    const home = useConnectionGeneration(generation => generation?.host.home);
     const block = node.data.root;
     return (_jsx(ToolCallBranch, { renderSlot: renderSlot, block: block, selectedCallId: selectedCallId, cwd: cwd, home: home, openFile: openFile, inspectCall: inspectCall, t: t }));
 }

@@ -188,7 +188,7 @@ export function apply(ctx, config) {
             return decision;
         const text = renderReading(location, turn);
         return {
-            kind: 'enter',
+            ...decision,
             messages: [
                 createUserMessage({
                     content: [{ type: 'text', text }],

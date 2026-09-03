@@ -98,7 +98,7 @@ export function apply(ctx, config) {
     ctx.inject(['sessionProjections'], (projectionCtx) => {
         projectionCtx.sessionProjections.register({
             key: 'todos',
-            schema: todosProjectionSchema,
+            stateSchema: todosProjectionSchema,
             init: () => null,
             apply: (state, event) => {
                 if (event.type === 'todo/write')
@@ -107,7 +107,7 @@ export function apply(ctx, config) {
                     return null;
                 return state;
             },
-            view: state => state,
+            wire: { viewSchema: todosProjectionSchema, view: state => state },
             stateVersion: 2,
         });
     });

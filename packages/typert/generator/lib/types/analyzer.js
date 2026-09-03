@@ -895,13 +895,15 @@ class FaceAnalyzer {
                 scope = { context: context.key, wire: parameter.wire };
             }
         }
-        const resultType = this.remoteResultType(method);
+        const mode = invocation.kind === 'direct' ? invocation.mode : undefined;
+        const resultType = this.remoteResultType(method, mode);
         return {
             id: `${registration.name}#${binding.namespace}/${exportedMethod}`,
             service: binding.service,
             namespace: binding.namespace,
             method: exportedMethod,
             ...(exportedMethod === methodName ? {} : { implementation: methodName }),
+            ...(mode === undefined ? {} : { mode }),
             invocation: receiver,
             ...(scope === undefined ? {} : { scope }),
             parameters,
@@ -1009,12 +1011,31 @@ class FaceAnalyzer {
             else if (ts.isCallExpression(expression)
                 && this.isTypeMetaSymbol(expression.expression, 'Remote')) {
                 if (expression.arguments.length !== 1)
-                    this.fail(expression, 'Remote() requires one exported method name');
-                const exportName = stringLiteralValue(expression.arguments[0]);
-                if (exportName === undefined || !isRemoteSegment(exportName)) {
-                    this.fail(expression.arguments[0] ?? expression, 'Remote() name must be a string literal containing only RPC endpoint segment characters');
+                    this.fail(expression, 'Remote() requires one name or options object');
+                const argument = expression.arguments[0];
+                if (argument === undefined)
+                    this.fail(expression, 'Remote() requires one name or options object');
+                const exportName = stringLiteralValue(argument);
+                if (exportName !== undefined) {
+                    if (!isRemoteSegment(exportName)) {
+                        this.fail(argument, 'Remote() name must contain only RPC endpoint segment characters');
+                    }
+                    marker = { kind: 'direct', exportName };
                 }
-                marker = { kind: 'direct', exportName };
+                else {
+                    if (!ts.isObjectLiteralExpression(argument) || argument.properties.length !== 1) {
+                        this.fail(argument, 'Remote() options must contain exactly mode: "stream"');
+                    }
+                    const [property] = argument.properties;
+                    if (property === undefined)
+                        this.fail(argument, 'Remote() options must contain exactly mode: "stream"');
+                    if (!ts.isPropertyAssignment(property)
+                        || memberName(property.name) !== 'mode'
+                        || stringLiteralValue(property.initializer) !== 'stream') {
+                        this.fail(property, 'Remote() options must contain exactly mode: "stream"');
+                    }
+                    marker = { kind: 'direct', mode: 'stream' };
+                }
             }
             else if (ts.isCallExpression(expression)
                 && this.isTypeMetaSymbol(expression.expression, 'RemoteScope')) {
@@ -1041,19 +1062,27 @@ class FaceAnalyzer {
         }
         return found;
     }
-    remoteResultType(method) {
+    remoteResultType(method, mode) {
         const authored = this.requiredType(method, method.type, 'return');
-        if (!ts.isTypeReferenceNode(authored))
-            return authored;
-        const symbol = this.checker.getSymbolAtLocation(authored.typeName);
-        const resolved = symbol === undefined ? undefined : this.resolveSymbol(symbol);
-        const resultType = authored.typeArguments?.[0];
-        if (resolved?.name !== 'Promise' || resultType === undefined || authored.typeArguments?.length !== 1)
-            return authored;
-        const declaration = preferredDeclaration(resolved);
-        if (declaration === undefined || !isStandardLibraryFile(declaration.getSourceFile().fileName))
-            return authored;
-        return resultType;
+        if (ts.isTypeReferenceNode(authored)) {
+            const symbol = this.checker.getSymbolAtLocation(authored.typeName);
+            const resolved = symbol === undefined ? undefined : this.resolveSymbol(symbol);
+            const resultType = authored.typeArguments?.[0];
+            const wrappers = mode === 'stream' ? ['Iterable', 'AsyncIterable'] : ['Promise'];
+            const declaration = resolved === undefined ? undefined : preferredDeclaration(resolved);
+            if (resolved !== undefined
+                && wrappers.includes(resolved.name)
+                && resultType !== undefined
+                && authored.typeArguments?.length === 1
+                && declaration !== undefined
+                && isStandardLibraryFile(declaration.getSourceFile().fileName)) {
+                return resultType;
+            }
+        }
+        if (mode === 'stream') {
+            this.fail(method, 'stream Remote methods must return Iterable<T> or AsyncIterable<T>');
+        }
+        return authored;
     }
     isGlobalAbortSignal(type) {
         const symbol = this.symbolAtType(type);

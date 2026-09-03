@@ -8,7 +8,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
  * the provider editor with extra fields: the route id is being *chosen* here,
  * and the settings address does not exist until it is. One `settings.mutate`
  * sets the whole profile at `providers.<route>`; the key travels separately
- * through `credentials.set` under the reference the profile records, exactly as
+ * through `credentials/set` under the reference the profile records, exactly as
  * an existing provider's key does.
  *
  * The three fields a hand-declared route cannot default — endpoint, protocol,
@@ -46,8 +46,7 @@ const ROUTE_PATTERN = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
  */
 export function CustomProviderCard(props) {
     const { taken, protocols, api, t } = props;
-    // Captured at mount, like the editor's: the write must be judged against the
-    // section this card was drafted over, not whatever it grew into meanwhile.
+    // The write is checked against the revision on which this draft was opened.
     const [openedAt] = useState(() => props.revision);
     const [route, setRoute] = useState('');
     const [displayName, setDisplayName] = useState('');
@@ -113,16 +112,12 @@ export function CustomProviderCard(props) {
                 baseURL,
                 models: models.map(model => ({ ...model })),
             };
-            const response = await api.settings.mutate({
-                ns: NS,
-                ops: [{ op: 'set', path: ['providers', route], value: profile }],
-                // `taken` is a snapshot too, so the id check alone cannot see a route
-                // declared after this card opened; the revision makes that race a
-                // `settings-conflict` instead of a write over the other profile.
-                expectedRevision: openedAt,
-            });
-            if (!response.result.ok)
-                return response.result.error.message;
+            // `taken` is a snapshot too, so the id check alone cannot see a route
+            // declared after this card opened; the revision makes that race a
+            // `settings-conflict` instead of a write over the other profile.
+            const response = await api.settings.mutate(NS, [{ op: 'set', path: ['providers', route], value: profile }], openedAt);
+            if (!response.ok)
+                return response.error.message;
             // The provider now exists. A retry after the key write below fails must
             // not re-run this mutate: the revision it holds is the one this write
             // just superseded, so the Host would answer `settings-conflict` and the
@@ -130,11 +125,11 @@ export function CustomProviderCard(props) {
             setCommitted(true);
         }
         if (storesKey) {
-            const stored = await api.credentials.set({ ref: keyRef, value: keyValue });
+            const stored = await api.credentials.set(keyRef, keyValue);
             // The profile landed; saying the key did not is the only honest report,
             // and the retry above now goes straight back to this write.
-            if (!stored.result.ok)
-                return stored.result.error.message;
+            if (!stored.ok)
+                return stored.error.message;
         }
         return undefined;
     };
@@ -160,13 +155,13 @@ export function CustomProviderCard(props) {
     };
     return (_jsxs("div", { className: styles['editor'], children: [_jsx("div", { className: styles['editorHeader'], children: _jsx("span", { className: styles['editorTitle'], children: t('customTitle') }) }), _jsxs("div", { className: styles['field'], children: [_jsx("span", { className: styles['fieldLabel'], children: t('customRoute') }), _jsx("input", { className: styles['input'], type: "text", value: route, placeholder: "acme-gateway", "aria-label": t('customRoute'), disabled: profileDisabled, onChange: (event) => { setRoute(event.target.value); } })] }), routeInvalid || routeTaken
                 ? _jsx("p", { className: styles['error'], children: t(routeInvalid ? 'customRouteInvalid' : 'customRouteTaken') })
-                : _jsx("p", { className: styles['advancedHint'], children: t('customRouteHint') }), _jsxs("div", { className: styles['field'], children: [_jsx("span", { className: styles['fieldLabel'], children: t('customDisplayName') }), _jsx("input", { className: styles['input'], type: "text", value: displayName, placeholder: route.length === 0 ? t('customDisplayName') : route, "aria-label": t('customDisplayName'), disabled: profileDisabled, onChange: (event) => { setDisplayName(event.target.value); } })] }), _jsxs("div", { className: styles['field'], children: [_jsx("span", { className: styles['fieldLabel'], children: t('baseUrl') }), _jsx("input", { className: styles['input'], type: "text", value: baseURL, placeholder: "https://gateway.example/v1", "aria-label": t('baseUrl'), disabled: profileDisabled, onChange: (event) => { setBaseURL(event.target.value); } })] }), _jsxs("div", { className: styles['field'], children: [_jsx("span", { className: styles['fieldLabel'], children: t('customApi') }), _jsx("select", { className: `${styles['input']} ${styles['selectInput']}`, value: protocol, "aria-label": t('customApi'), disabled: profileDisabled, onChange: (event) => { setProtocol(event.target.value); }, children: protocols.map(choice => _jsx("option", { value: choice, children: choice }, choice)) })] }), _jsxs("div", { className: styles['field'], children: [_jsx("span", { className: styles['fieldLabel'], children: t('keyInput') }), _jsx("input", { className: styles['input'], type: "password", autoComplete: "off", value: keyDraft, placeholder: t('keyPlaceholder'), "aria-label": t('keyInput'), disabled: disabled, onChange: (event) => { setKeyDraft(event.target.value); } }), keyFailure === undefined
+                : _jsx("p", { className: styles['advancedHint'], children: t('customRouteHint') }), _jsxs("div", { className: styles['field'], children: [_jsx("span", { className: styles['fieldLabel'], children: t('customDisplayName') }), _jsx("input", { className: styles['input'], type: "text", value: displayName, placeholder: route.length === 0 ? t('customDisplayName') : route, "aria-label": t('customDisplayName'), disabled: profileDisabled, onChange: (event) => { setDisplayName(event.target.value); } })] }), _jsxs("div", { className: styles['field'], children: [_jsx("span", { className: styles['fieldLabel'], children: t('baseUrl') }), _jsx("input", { className: styles['input'], type: "text", value: baseURL, placeholder: t('customBaseUrlPlaceholder'), "aria-label": t('baseUrl'), disabled: profileDisabled, onChange: (event) => { setBaseURL(event.target.value); } })] }), _jsxs("div", { className: styles['field'], children: [_jsx("span", { className: styles['fieldLabel'], children: t('customApi') }), _jsx("select", { className: `${styles['input']} ${styles['selectInput']}`, value: protocol, "aria-label": t('customApi'), disabled: profileDisabled, onChange: (event) => { setProtocol(event.target.value); }, children: protocols.map(choice => _jsx("option", { value: choice, children: choice }, choice)) })] }), _jsxs("div", { className: styles['field'], children: [_jsx("span", { className: styles['fieldLabel'], children: t('keyInput') }), _jsx("input", { className: styles['input'], type: "password", autoComplete: "off", value: keyDraft, placeholder: t('keyPlaceholder'), "aria-label": t('keyInput'), disabled: disabled, onChange: (event) => { setKeyDraft(event.target.value); } }), keyFailure === undefined
                         ? null
                         : _jsx("p", { className: styles['error'], children: t(keyFailure === 'keyBlank' ? 'keyBlankNew' : keyFailure) })] }), _jsx(ModelListEditor, { models: models, onChange: setModels, probe: {
                     settingsNs: NS,
                     baseURL,
                     api: protocol,
                     ...keyValue.length === 0 ? {} : { apiKey: keyValue },
-                }, probeBlocked: keyFailure === 'keyBlank' ? 'keyBlankNew' : keyFailure, api: api, t: t, disabled: profileDisabled }), failure !== undefined ? _jsx("p", { className: styles['error'], children: failure }) : null, hint === undefined ? null : _jsx("p", { className: styles['advancedHint'], children: hint }), _jsx(EditorFooter, { t: t, busy: busy, submitDisabled: disabled || !ready, submitLabel: "create", submitBusyLabel: "creating", onCancel: () => { props.onClose(committed); }, onSubmit: () => { void create(); } })] }));
+                }, probeBlocked: keyFailure === 'keyBlank' ? 'keyBlankNew' : keyFailure, api: api, t: t, disabled: profileDisabled }), failure !== undefined ? _jsx("p", { className: styles['error'], children: failure }) : null, hint === undefined ? null : _jsx("p", { className: styles['advancedHint'], children: hint }), _jsx(EditorFooter, { t: t, busy: busy, submitDisabled: disabled || !ready, submitLabelKey: "create", submitBusyLabelKey: "creating", onCancel: () => { props.onClose(committed); }, onSubmit: () => { void create(); } })] }));
 }
 //# sourceMappingURL=CustomProviderCard.js.map

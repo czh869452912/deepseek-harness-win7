@@ -432,11 +432,14 @@ class SessionQueryService:
     Session Query SQLite FTS Service mounted at `ctx.sessionQuery`.
     """
 
-    def __init__(self, ctx: Any, db_path: str = ":memory:"):
+    def __init__(self, ctx: Any, db_path: str = ":memory:", open_at: str = "immediate"):
         self.ctx = ctx
         self.db_path = db_path
-        self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
-        self._init_db()
+        self.open_at = open_at
+        self._conn = None
+        if self.open_at != "never":
+            self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
+            self._init_db()
 
     def _init_db(self) -> None:
         cur = self._conn.cursor()
@@ -466,6 +469,8 @@ class SessionQueryService:
         self._conn.commit()
 
     def index_event(self, session_id: str, event: Dict[str, Any]) -> None:
+        if self.open_at == "never" or self._conn is None:
+            return
         ev_type = event.get("type", "")
         data = event.get("data", {}) if isinstance(event.get("data"), dict) else {}
         text = sanitize_fts_text(extract_session_event_text(event))
@@ -502,6 +507,8 @@ class SessionQueryService:
     def search_sessions(
         self, query_or_req: Union[str, Dict[str, Any]], limit: int = 10
     ) -> List[Dict[str, Any]]:
+        if self.open_at == "never" or self._conn is None:
+            raise SessionQueryError("Search is disabled (openAt: never)", code="SESSION_QUERY_SEARCH_DISABLED")
         query = query_or_req["query"] if isinstance(query_or_req, dict) else query_or_req
         req_limit = query_or_req.get("limit", limit) if isinstance(query_or_req, dict) else limit
         clean_q = sanitize_fts_text(query.strip())
@@ -553,6 +560,8 @@ class SessionQueryService:
     def search_events(
         self, session_id_or_req: Union[str, Dict[str, Any]], query: str = "", limit: int = 10
     ) -> List[Dict[str, Any]]:
+        if self.open_at == "never" or self._conn is None:
+            raise SessionQueryError("Search is disabled (openAt: never)", code="SESSION_QUERY_SEARCH_DISABLED")
         if isinstance(session_id_or_req, dict):
             session_id = session_id_or_req.get("sessionId", "")
             q = session_id_or_req.get("query", "")
@@ -648,11 +657,12 @@ class SessionQueryPlugin(Plugin):
 
     id = "session-query-sqlite"
     name = "@deepseek-ai/dsh-session-query-sqlite"
-
     def apply(self, ctx: Any) -> None:
         db_path = self.config.get("path", ":memory:")
-        service = SessionQueryService(ctx, db_path=db_path)
+        open_at = self.config.get("open_at") or self.config.get("openAt", "immediate")
+        service = SessionQueryService(ctx, db_path=db_path, open_at=open_at)
         ctx.set_service("sessionQuery", service)
+        ctx.set_service("session_query", service)
 
         def on_session_event(subject: Any, event: Dict[str, Any]) -> None:
             sid = getattr(subject, "id", "default-session") if hasattr(subject, "id") else "default-session"

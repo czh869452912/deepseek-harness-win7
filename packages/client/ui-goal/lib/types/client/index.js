@@ -6,13 +6,13 @@ export { GoalBar, GoalDock } from "./GoalBar.js";
 /** Dictionary namespace owned by this plugin. */
 const NS = 'goal';
 /** Required services for the Goal dock, command-input projection, Remote mutations, and copy. */
-export const inject = ['slots', 'sessions', 'remote', 'remote.goals', 'locale', 'conversationEvents'];
+export const inject = ['slots', 'sessions', 'remote', 'remote.goals', 'locale', 'uiConversation'];
 /**
  * Client plugin body: the GoalBar dock entry with its mutation verbs.
  * @param ctx - client root context.
  */
 export function apply(ctx) {
-    ctx.conversationEvents.register(goalCommandInputDefinition);
+    ctx.uiConversation.events.register(goalCommandInputDefinition);
     ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-goal: dictionaries');
     ctx.slots.inject('conversation.chat.node', () => ctx.slots.register({
         name: 'conversation.chat.node',

@@ -75,6 +75,8 @@ class EventBus:
                     from dsh.cordis.utils import DisposableList
                     fiber._hooks["internal/update"] = DisposableList()
                 hooks = fiber._hooks["internal/update"]
+                if prepend:
+                    return hooks.unshift(listener)
                 return hooks.push(listener)
             return None
 
@@ -86,16 +88,29 @@ class EventBus:
             cbs = list(getattr(fiber, "_hooks", {}).get("internal/update", [])) if fiber else []
 
             next_callback = args[-1] if args and callable(args[-1]) else None
-            user_next = args[-2] if len(args) >= 2 and callable(args[-2]) else (args[0] if args and callable(args[0]) else None)
 
-            def _next(cfg=config):
+            def _next(cfg=config, ns=no_save):
                 if cbs:
                     cb = cbs.pop(0)
-                    return cb(cfg, no_save, _next)
-                elif user_next and callable(user_next):
-                    return user_next(cfg)
+                    return cb(cfg, ns, _next)
                 elif next_callback and callable(next_callback):
-                    return next_callback(cfg)
+                    try:
+                        sig = inspect.signature(next_callback)
+                        params = list(sig.parameters.values())
+                        has_var = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
+                        if has_var or len(params) >= 3:
+                            return next_callback(cfg, ns, _next)
+                        elif len(params) == 2:
+                            return next_callback(cfg, ns)
+                        elif len(params) == 1:
+                            return next_callback(cfg)
+                        else:
+                            return next_callback()
+                    except (ValueError, TypeError):
+                        try:
+                            return next_callback(cfg, ns, _next)
+                        except TypeError:
+                            return next_callback(cfg)
                 return cfg
 
             return _next()
@@ -197,24 +212,24 @@ class EventBus:
         result_callbacks = []
         for hook in hooks:
             cb = hook.callback
-            if hook.global_listener or actual_ctx is None or hook.ctx is None:
+            if hook.global_listener:
                 if actual_ctx is not None:
                     cb = _bind_caller_ctx(cb, actual_ctx)
                 result_callbacks.append(cb)
             else:
-                ctx_filter = getattr(actual_ctx, "filter", None)
+                if actual_ctx is not None and getattr(actual_ctx, "__cordis_context_brand__", None) == "cordis.v1.context":
+                    ctx_filter = getattr(actual_ctx, "_filter_hook", None) or getattr(actual_ctx, "__dict__", {}).get("filter")
+                else:
+                    ctx_filter = getattr(actual_ctx, "filter", None)
                 if ctx_filter is None:
                     if actual_ctx is not None:
                         cb = _bind_caller_ctx(cb, actual_ctx)
                     result_callbacks.append(cb)
                 elif callable(ctx_filter):
-                    try:
-                        if ctx_filter(hook.ctx):
-                            if actual_ctx is not None:
-                                cb = _bind_caller_ctx(cb, actual_ctx)
-                            result_callbacks.append(cb)
-                    except Exception:
-                        pass
+                    if ctx_filter(hook.ctx):
+                        if actual_ctx is not None:
+                            cb = _bind_caller_ctx(cb, actual_ctx)
+                        result_callbacks.append(cb)
         return result_callbacks
 
     def emit(self, event_name: str, *args: Any, **kwargs: Any) -> None:
@@ -224,7 +239,23 @@ class EventBus:
         caller_ctx = kwargs.pop("caller_ctx", None)
         listeners = self._dispatch_hooks("emit", event_name, args, caller_ctx)
         for listener in listeners:
-            res = listener(*args, **kwargs)
+            try:
+                sig = inspect.signature(listener)
+                if len(sig.parameters) == 1 and not any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in sig.parameters.values()):
+                    if event_name == "internal/dispatch":
+                        info = {
+                            "type": args[0] if len(args) > 0 else None,
+                            "name": args[1] if len(args) > 1 else None,
+                            "args": args[2] if len(args) > 2 else [],
+                            "ctx": args[3] if len(args) > 3 else None,
+                        }
+                        res = listener(info)
+                    else:
+                        res = listener(*args, **kwargs)
+                else:
+                    res = listener(*args, **kwargs)
+            except (ValueError, TypeError):
+                res = listener(*args, **kwargs)
             if inspect.isawaitable(res):
                 try:
                     loop = asyncio.get_running_loop()
@@ -245,11 +276,11 @@ class EventBus:
 
     async def parallel(self, event_name: str, *args: Any, **kwargs: Any) -> List[Any]:
         """
-        Parallel dispatch: run all listeners concurrently.
+        Parallel dispatch: run all listeners concurrently matching TS EventBus.parallel.
         Raises AggregateError if any listeners fail.
         """
         caller_ctx = kwargs.pop("caller_ctx", None)
-        listeners = self._dispatch_hooks("parallel", event_name, args, caller_ctx)
+        listeners = self._dispatch_hooks("emit", event_name, args, caller_ctx)
         if not listeners:
             return []
 
@@ -281,48 +312,48 @@ class EventBus:
 
     def bail_sync(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
         """
-        Dispatch an event synchronously, stopping on the first bail value.
+        Dispatch an event synchronously, stopping on the first bail value matching TS EventBus.bail.
         """
-        caller_ctx = kwargs.get("caller_ctx")
+        caller_ctx = kwargs.pop("caller_ctx", None)
         listeners = self._dispatch_hooks("bail", event_name, args, caller_ctx)
         for listener in listeners:
+            sig = None
             try:
+                sig = inspect.signature(listener)
+            except Exception:
+                pass
+            if sig is not None:
+                params = list(sig.parameters.values())
+                has_var = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
+                pos_count = sum(1 for p in params if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD))
+                call_args = args if (has_var or pos_count >= len(args)) else args[:pos_count]
+                res = listener(*call_args, **kwargs)
+            else:
                 res = listener(*args, **kwargs)
-            except TypeError:
-                try:
-                    res = listener(*args)
-                except TypeError:
-                    if len(args) > 1:
-                        try:
-                            res = listener(*args[:-1])
-                        except TypeError:
-                            res = None
-                    else:
-                        res = None
             if is_bailed(res):
                 return res
         return None
 
     async def bail(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
         """
-        Dispatch an event, calling listeners in order until one bails.
+        Dispatch an event, calling listeners in order until one bails matching TS EventBus.bail.
         """
-        caller_ctx = kwargs.get("caller_ctx")
+        caller_ctx = kwargs.pop("caller_ctx", None)
         listeners = self._dispatch_hooks("bail", event_name, args, caller_ctx)
         for listener in listeners:
+            sig = None
             try:
+                sig = inspect.signature(listener)
+            except Exception:
+                pass
+            if sig is not None:
+                params = list(sig.parameters.values())
+                has_var = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
+                pos_count = sum(1 for p in params if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD))
+                call_args = args if (has_var or pos_count >= len(args)) else args[:pos_count]
+                res = listener(*call_args, **kwargs)
+            else:
                 res = listener(*args, **kwargs)
-            except TypeError:
-                try:
-                    res = listener(*args)
-                except TypeError:
-                    if len(args) > 1:
-                        try:
-                            res = listener(*args[:-1])
-                        except TypeError:
-                            res = None
-                    else:
-                        res = None
             if inspect.isawaitable(res):
                 res = await res
             if is_bailed(res):
@@ -332,132 +363,147 @@ class EventBus:
     def waterfall_sync(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
         """
         Synchronous waterfall middleware pipeline matching TS waterfall semantics.
-        Supports both Koa-style (cb(*args, next)) and reducer style (cb(current_data, *args)).
+        Supports onion middleware return-threading and short-circuit veto.
         """
-        caller_ctx = kwargs.get("caller_ctx") or self.ctx
-        kwargs["caller_ctx"] = caller_ctx
+        caller_ctx = kwargs.pop("caller_ctx", None) or self.ctx
         args_list = list(args)
         inner = args_list.pop() if args_list and callable(args_list[-1]) else None
-        data = args_list.pop(0) if args_list else None
 
-        listeners = self._dispatch_hooks("waterfall", event_name, [data] + args_list, caller_ctx)
+        listeners = list(self._dispatch_hooks("waterfall", event_name, args_list, caller_ctx))
 
-        def _call_inner(fn: Any, val: Any) -> Any:
-            if not callable(fn):
-                return fn
-            try:
-                sig = inspect.signature(fn)
-                if len(sig.parameters) == 0:
-                    return fn()
-                return fn(val)
-            except (ValueError, TypeError):
+        idx = 0
+        def next_fn(*override_args: Any) -> Any:
+            nonlocal idx
+            current_args = list(override_args) + list(args_list[len(override_args):]) if override_args else list(args_list)
+            if idx < len(listeners):
+                cb = listeners[idx]
+                idx += 1
+                sig = None
                 try:
-                    return fn(val)
-                except TypeError:
-                    return fn()
-
-        def run_pipeline(index: int, current_data: Any) -> Any:
-            if index >= len(listeners):
-                if inner is not None:
-                    return _call_inner(inner, current_data)
-                return current_data
-
-            cb = listeners[index]
-
-            def next_fn(next_data: Any = None) -> Any:
-                payload = current_data if next_data is None else next_data
-                return run_pipeline(index + 1, payload)
-
-            sig = inspect.signature(cb)
-            params = list(sig.parameters.keys())
-            has_var_pos = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in sig.parameters.values())
-            has_var_kw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
-            kw = kwargs if has_var_kw else {k: v for k, v in kwargs.items() if k in sig.parameters}
-
-            if len(params) == 0:
-                return cb()
-
-            if "next" in params or "next_fn" in params or len(params) >= len(args_list) + 2 or has_var_pos:
-                try:
-                    return cb(current_data, *args_list, next_fn, **kw)
-                except TypeError:
+                    sig = inspect.signature(cb)
+                except Exception:
                     pass
+                takes_next = False
+                pos_count = len(current_args)
+                if sig is not None:
+                    param_names = list(sig.parameters.keys())
+                    params = list(sig.parameters.values())
+                    has_var = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
+                    takes_next = "next" in param_names or "next_fn" in param_names or has_var or len(params) >= len(current_args) + 1
+                    pos_count = sum(1 for p in params if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD))
 
-            res = cb(current_data, *args_list, **kw)
-            if res is not None:
-                return next_fn(res)
-            return next_fn(current_data)
+                if takes_next:
+                    call_args = list(current_args) + [next_fn]
+                    return cb(*call_args, **kwargs)
+                elif pos_count == 0:
+                    res = cb()
+                    if res is not None:
+                        return res
+                    return next_fn(*current_args)
+                else:
+                    call_args = current_args[:pos_count] if pos_count < len(current_args) else current_args
+                    res = cb(*call_args, **kwargs)
+                    if res is not None:
+                        new_args = [res] + list(current_args[1:])
+                        return next_fn(*new_args)
+                    return next_fn(*current_args)
+            elif inner is not None:
+                sig = None
+                try:
+                    sig = inspect.signature(inner)
+                except Exception:
+                    pass
+                takes_next = False
+                pos_count = len(current_args)
+                if sig is not None:
+                    param_names = list(sig.parameters.keys())
+                    params = list(sig.parameters.values())
+                    has_var = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
+                    takes_next = "next" in param_names or "next_fn" in param_names or has_var or len(params) >= len(current_args) + 1
+                    pos_count = sum(1 for p in params if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD))
 
-        return run_pipeline(0, data)
+                call_args = (list(current_args) + [next_fn]) if takes_next else (current_args[:pos_count] if pos_count < len(current_args) else current_args)
+                return inner(*call_args)
+            else:
+                return current_args[0] if current_args else None
+
+        return next_fn()
 
     async def waterfall(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
         """
         Waterfall middleware pipeline matching TS waterfall semantics.
-        Supports both Koa-style (cb(*args, next)) and reducer style (cb(current_data, *args)).
+        Supports onion middleware return-threading and short-circuit veto.
         """
-        caller_ctx = kwargs.get("caller_ctx") or self.ctx
-        kwargs["caller_ctx"] = caller_ctx
+        caller_ctx = kwargs.pop("caller_ctx", None) or self.ctx
         args_list = list(args)
         inner = args_list.pop() if args_list and callable(args_list[-1]) else None
-        data = args_list.pop(0) if args_list else None
 
-        listeners = self._dispatch_hooks("waterfall", event_name, [data] + args_list, caller_ctx)
+        listeners = list(self._dispatch_hooks("waterfall", event_name, args_list, caller_ctx))
 
-        async def _call_inner_async(fn: Any, val: Any) -> Any:
-            if not callable(fn):
-                return fn
-            try:
-                sig = inspect.signature(fn)
-                res = fn() if len(sig.parameters) == 0 else fn(val)
-            except (ValueError, TypeError):
+        idx = 0
+        async def next_fn(*override_args: Any) -> Any:
+            nonlocal idx
+            current_args = list(override_args) + list(args_list[len(override_args):]) if override_args else list(args_list)
+            if idx < len(listeners):
+                cb = listeners[idx]
+                idx += 1
+                sig = None
                 try:
-                    res = fn(val)
-                except TypeError:
-                    res = fn()
-            if inspect.isawaitable(res):
-                return await res
-            return res
+                    sig = inspect.signature(cb)
+                except Exception:
+                    pass
+                takes_next = False
+                pos_count = len(current_args)
+                if sig is not None:
+                    param_names = list(sig.parameters.keys())
+                    params = list(sig.parameters.values())
+                    has_var = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
+                    takes_next = "next" in param_names or "next_fn" in param_names or has_var or len(params) >= len(current_args) + 1
+                    pos_count = sum(1 for p in params if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD))
 
-        async def run_pipeline(index: int, current_data: Any) -> Any:
-            if index >= len(listeners):
-                if inner is not None:
-                    return await _call_inner_async(inner, current_data)
-                return current_data
+                if takes_next:
+                    call_args = list(current_args) + [next_fn]
+                    res = cb(*call_args, **kwargs)
+                    if inspect.isawaitable(res):
+                        res = await res
+                    return res
+                elif pos_count == 0:
+                    res = cb()
+                    if inspect.isawaitable(res):
+                        res = await res
+                    if res is not None:
+                        return res
+                    return await next_fn(*current_args)
+                else:
+                    call_args = current_args[:pos_count] if pos_count < len(current_args) else current_args
+                    res = cb(*call_args, **kwargs)
+                    if inspect.isawaitable(res):
+                        res = await res
+                    if res is not None:
+                        new_args = [res] + list(current_args[1:])
+                        return await next_fn(*new_args)
+                    return await next_fn(*current_args)
+            elif inner is not None:
+                sig = None
+                try:
+                    sig = inspect.signature(inner)
+                except Exception:
+                    pass
+                takes_next = False
+                pos_count = len(current_args)
+                if sig is not None:
+                    param_names = list(sig.parameters.keys())
+                    params = list(sig.parameters.values())
+                    has_var = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
+                    takes_next = "next" in param_names or "next_fn" in param_names or has_var or len(params) >= len(current_args) + 1
+                    pos_count = sum(1 for p in params if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD))
 
-            cb = listeners[index]
-
-            async def next_fn(next_data: Any = None) -> Any:
-                payload = current_data if next_data is None else next_data
-                return await run_pipeline(index + 1, payload)
-
-            sig = inspect.signature(cb)
-            params = list(sig.parameters.keys())
-            has_var_pos = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in sig.parameters.values())
-            has_var_kw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
-            kw = kwargs if has_var_kw else {k: v for k, v in kwargs.items() if k in sig.parameters}
-
-            if len(params) == 0:
-                res = cb()
+                call_args = (list(current_args) + [next_fn]) if takes_next else (current_args[:pos_count] if pos_count < len(current_args) else current_args)
+                res = inner(*call_args)
                 if inspect.isawaitable(res):
                     res = await res
                 return res
-
-            if "next" in params or "next_fn" in params or len(params) >= len(args_list) + 2 or has_var_pos:
-                try:
-                    res = cb(current_data, *args_list, next_fn, **kw)
-                except TypeError:
-                    res = cb(current_data, *args_list, **kw)
             else:
-                res = cb(current_data, *args_list, **kw)
+                return current_args[0] if current_args else None
 
-            if inspect.isawaitable(res):
-                res = await res
-
-            if "next" in params or "next_fn" in params:
-                return res
-
-            if res is not None:
-                return await next_fn(res)
-            return await next_fn(current_data)
-
-        return await run_pipeline(0, data)
+        return await next_fn()

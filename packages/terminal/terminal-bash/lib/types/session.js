@@ -1,7 +1,10 @@
-/** Persistent PTY session over the subprocess seam's terminal primitive. */
+/** Persistent PTY session with bounded output, readiness, and terminal-protocol replies. */
 import { Buffer } from 'node:buffer';
+import { createRequire } from 'node:module';
 import { TerminalError } from '@deepseek-ai/dsh-terminal';
 import { CONTROLLED_PROMPT, TerminalSanitizer } from "./sanitize.js";
+// Node exposes this package's CommonJS main as default-only, so load its named export through require.
+const { Terminal: HeadlessTerminal } = createRequire(import.meta.url)('@xterm/headless');
 function utf8Tail(text, maxBytes) {
     if (Buffer.byteLength(text) <= maxBytes)
         return { text, truncated: false };
@@ -131,6 +134,9 @@ export class LocalPtySession {
     motd = '';
     pid;
     decoder = new TextDecoder();
+    /** Protocol state only; the sanitizer and bounded buffers own returned text. */
+    emulator;
+    emulatorData;
     sanitizer;
     scrollback;
     outputEnded = Promise.withResolvers();
@@ -138,9 +144,8 @@ export class LocalPtySession {
     statusValue = { kind: 'running' };
     // TODO(pty-send-state-consolidation): Fold the per-send fields below
     // (active/activeTimer/activeDeadlineTimer/activeAbort/interrupting/
-    // activeWrite/pollingReady/polling) into one send-lifecycle owner; the
-    // cancellation/readiness interplay now has enough pinned tests to carry
-    // that refactor safely.
+    // activeWrite/pollingReady/polling and terminal-protocol work) into one send-lifecycle
+    // owner; the cancellation/readiness interplay has enough pinned tests to carry that refactor safely.
     active;
     activeTimer;
     activeDeadlineTimer;
@@ -158,10 +163,27 @@ export class LocalPtySession {
     closing = false;
     closePromise;
     transportFailure;
+    emulatorWrites = Promise.resolve();
+    emulatorWriteDone;
+    emulatorBuffer = '';
+    emulatorWriting = false;
+    responseWrites = Promise.resolve();
+    pendingResponseWrites = 0;
+    emulatorClosed = false;
     constructor(terminal, config) {
         this.terminal = terminal;
         this.config = config;
         this.pid = terminal.pid;
+        this.emulator = new HeadlessTerminal({ cols: config.cols, rows: config.rows, scrollback: 0 });
+        this.emulatorData = this.emulator.onData((data) => {
+            this.pendingResponseWrites += 1;
+            const response = this.responseWrites.then(async () => { await this.terminal.write(data); });
+            this.responseWrites = response.then(() => { this.finishResponseWrite(); }, (error) => {
+                this.finishResponseWrite();
+                if (!this.emulatorClosed && !this.closing)
+                    this.onTransportFailure(error);
+            });
+        });
         this.sanitizer = new TerminalSanitizer(config.maxReadBytes);
         this.scrollback = new BoundedTextBuffer(config.scrollbackMaxBytes, config.scrollbackLines);
         terminal.output.on('data', this.onTerminalData);
@@ -218,7 +240,9 @@ export class LocalPtySession {
         }
         this.activeDeadlineTimer = setTimeout(() => {
             if (this.active === operation) {
-                this.settleActive('timeout', this.activeWrite !== undefined || this.interrupting === operation);
+                this.settleActive('timeout', this.activeWrite !== undefined
+                    || this.interrupting === operation
+                    || this.protocolWorkPending());
             }
         }, this.config.timeoutMs);
         void this.beginSend(operation, request);
@@ -227,9 +251,18 @@ export class LocalPtySession {
     async beginSend(operation, request) {
         let foreground;
         try {
+            if (this.protocolWorkPending())
+                await this.drainTerminalProtocol();
+            const emulatorWrites = this.emulatorWrites;
+            const responseWrites = this.responseWrites;
             foreground = await this.terminal.inspectForeground();
+            if (this.protocolStateChanged(emulatorWrites, responseWrites)) {
+                foreground = await this.inspectForegroundAfterProtocol();
+            }
         }
         catch (error) {
+            if (this.protocolWorkPending())
+                await this.drainTerminalProtocol();
             // A pre-write inspection failure while cancellation owns the slot must not
             // release it: interruptOnce's in-flight foreground signal could land on a
             // successor's foreground group. The interrupt path's post-signal tail
@@ -261,7 +294,7 @@ export class LocalPtySession {
             if (operation.cancelRequested)
                 return;
             if (this.active === operation && operation.settled) {
-                this.clearActive();
+                this.releaseSettledActive();
                 return;
             }
             // Closing can race the awaited provider write even though static analysis sees only local assignments.
@@ -274,7 +307,7 @@ export class LocalPtySession {
         catch (error) {
             if (this.active === operation && !this.closing) {
                 if (operation.settled)
-                    this.clearActive();
+                    this.releaseSettledActive();
                 else
                     this.failActive(error);
             }
@@ -335,14 +368,18 @@ export class LocalPtySession {
     }
     onTerminalData = (chunk) => {
         const bytes = typeof chunk === 'string' ? Buffer.from(chunk, 'utf8') : chunk;
-        this.onData(this.decoder.decode(bytes, { stream: true }));
+        const data = this.decoder.decode(bytes, { stream: true });
+        this.queueEmulatorData(data);
+        this.onData(data);
     };
     onTerminalEnd = () => {
         this.onData(this.decoder.decode());
         this.appendOutput(this.sanitizer.flush());
+        this.closeEmulator();
         this.outputEnded.resolve();
     };
     onTerminalError = (error) => {
+        this.closeEmulator();
         this.onTransportFailure(error);
         this.outputEnded.resolve();
     };
@@ -378,6 +415,7 @@ export class LocalPtySession {
         const failure = error instanceof Error ? error : new Error(String(error));
         this.transportFailure ??= failure;
         this.statusValue = { kind: 'exited', exitCode: null, signal: null };
+        this.closeEmulator();
         this.failActive(failure);
         void this.terminal.terminate().catch(() => { });
     }
@@ -407,7 +445,14 @@ export class LocalPtySession {
                 this.settleActive('session_exit');
                 return;
             }
-            const foreground = await this.terminal.inspectForeground();
+            if (this.protocolWorkPending())
+                await this.drainTerminalProtocol();
+            const emulatorWrites = this.emulatorWrites;
+            const responseWrites = this.responseWrites;
+            let foreground = await this.terminal.inspectForeground();
+            if (this.protocolStateChanged(emulatorWrites, responseWrites)) {
+                foreground = await this.inspectForegroundAfterProtocol();
+            }
             if (this.active !== operation || this.closing || this.interrupting === operation)
                 return;
             const idleFor = Date.now() - this.lastOutputAt;
@@ -437,6 +482,8 @@ export class LocalPtySession {
             }
         }
         catch (error) {
+            if (this.protocolWorkPending())
+                await this.drainTerminalProtocol();
             if (this.active === operation && !this.closing && this.interrupting !== operation)
                 this.failActive(error);
         }
@@ -448,6 +495,101 @@ export class LocalPtySession {
             if (active !== undefined && this.pollingReady === active)
                 this.schedulePoll(active);
         }
+    }
+    /** Wait until generated replies reach the provider before another send can publish. */
+    async drainTerminalProtocol() {
+        for (;;) {
+            const emulatorWrites = this.emulatorWrites;
+            await emulatorWrites;
+            const responseWrites = this.responseWrites;
+            await responseWrites;
+            if (emulatorWrites === this.emulatorWrites && responseWrites === this.responseWrites
+                && !this.protocolWorkPending())
+                return;
+        }
+    }
+    /** Sample foreground state only after protocol replies are quiet for the entire inspection. */
+    async inspectForegroundAfterProtocol() {
+        for (;;) {
+            if (this.protocolWorkPending())
+                await this.drainTerminalProtocol();
+            const emulatorWrites = this.emulatorWrites;
+            const responseWrites = this.responseWrites;
+            const foreground = await this.terminal.inspectForeground();
+            if (!this.protocolStateChanged(emulatorWrites, responseWrites))
+                return foreground;
+        }
+    }
+    protocolStateChanged(emulatorWrites, responseWrites) {
+        return emulatorWrites !== this.emulatorWrites || responseWrites !== this.responseWrites
+            || this.protocolWorkPending();
+    }
+    protocolWorkPending() {
+        return this.emulatorWriteDone !== undefined || this.pendingResponseWrites > 0;
+    }
+    queueEmulatorData(data) {
+        if (this.emulatorClosed)
+            return;
+        this.emulatorBuffer += data;
+        if (this.emulatorWriteDone === undefined) {
+            const idle = Promise.withResolvers();
+            this.emulatorWrites = idle.promise;
+            this.emulatorWriteDone = () => { idle.resolve(undefined); };
+        }
+        this.pumpEmulator();
+    }
+    pumpEmulator() {
+        if (this.emulatorWriting || this.emulatorClosed)
+            return;
+        if (this.emulatorBuffer.length === 0) {
+            const done = this.emulatorWriteDone;
+            this.emulatorWriteDone = undefined;
+            done?.();
+            this.releaseSettledActive();
+            return;
+        }
+        const data = this.emulatorBuffer;
+        this.emulatorBuffer = '';
+        this.emulatorWriting = true;
+        try {
+            this.emulator.write(data, () => {
+                this.emulatorWriting = false;
+                this.pumpEmulator();
+            });
+        }
+        catch (error) {
+            this.emulatorWriting = false;
+            this.emulatorBuffer = '';
+            const done = this.emulatorWriteDone;
+            this.emulatorWriteDone = undefined;
+            done?.();
+            this.releaseSettledActive();
+            if (!this.closing)
+                this.onTransportFailure(error);
+        }
+    }
+    finishResponseWrite() {
+        this.pendingResponseWrites -= 1;
+        this.releaseSettledActive();
+    }
+    releaseSettledActive() {
+        const operation = this.active;
+        if (operation === undefined || !operation.settled || this.activeWrite !== undefined
+            || this.interrupting === operation || this.protocolWorkPending())
+            return;
+        this.clearActive();
+    }
+    closeEmulator() {
+        if (this.emulatorClosed)
+            return;
+        this.emulatorClosed = true;
+        this.emulatorBuffer = '';
+        this.emulatorWriting = false;
+        const done = this.emulatorWriteDone;
+        this.emulatorWriteDone = undefined;
+        done?.();
+        this.emulatorData.dispose();
+        this.emulator.dispose();
     }
     settleActive(waitReason, retainOwnership = false) {
         const operation = this.active;
@@ -517,7 +659,7 @@ export class LocalPtySession {
                 this.interrupting = undefined;
         }
         if (this.active === operation && operation.settled) {
-            this.clearActive();
+            this.releaseSettledActive();
         }
         else if (this.active === operation && !this.closing) {
             this.pollingReady = operation;
@@ -529,6 +671,7 @@ export class LocalPtySession {
         // it as session_exit below, so an in-flight send is never mis-settled as
         // stdin_read/inferred_idle/timeout during the grace period.
         this.stopPolling();
+        this.closeEmulator();
         try {
             await this.terminal.terminate();
         }

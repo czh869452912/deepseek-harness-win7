@@ -83,6 +83,9 @@ export interface GoalProjection {
     readonly updatedAt: number;
 }
 declare module '@deepseek-ai/dsh-session-projection/types' {
+    interface SessionProjectionStateMap {
+        goal: GoalProjection | null;
+    }
     interface SessionProjectionMap {
         /**
          * The session's current goal (the latest `goal/change` whole value), or

@@ -6,8 +6,8 @@
  */
 import { Context, Service } from '@deepseek-ai/cordis';
 import type { SessionEvent, SessionId } from '@deepseek-ai/dsh-session';
-import type { TypertContext, TypertLookup } from '@deepseek-ai/dsh-typert-protocol';
-import type { Agent, AgentOptions } from './runtime-types.ts';
+import type { Agent } from './types.ts';
+import type { AgentOptions } from './runtime-types.ts';
 export * from './runtime-types.ts';
 export * from './types.ts';
 export * from './inbox.ts';
@@ -15,14 +15,6 @@ export * from './consumed-work.ts';
 export * from './model-selection.ts';
 export { agentCarrier, agentEvents, assembleContextFor, emitAgentEvent } from './dispatch.ts';
 export type { AgentEventDispatch, AgentSubjectEvent } from './dispatch.ts';
-declare module '@deepseek-ai/dsh-typert-protocol' {
-    interface TypertLookupMap {
-        agent: TypertLookup<Agent, SessionId>;
-    }
-    interface TypertContextMap {
-        agent: TypertContext<SessionId>;
-    }
-}
 declare module '@deepseek-ai/cordis' {
     interface Context {
         agents: AgentRegistry;

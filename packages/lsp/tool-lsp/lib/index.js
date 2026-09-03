@@ -2,6 +2,7 @@ import z from "@deepseek-ai/schemastery";
 import { defineTool } from "@deepseek-ai/dsh-tools";
 import { assertNever } from "@deepseek-ai/dsh-llm";
 import { LspError } from "@deepseek-ai/dsh-lsp";
+import { FIRST_PARTY_SECTION_ORDER } from "@deepseek-ai/dsh-system-prompt";
 import { MAX_TIMER_DELAY_MS } from "@deepseek-ai/dsh-timeout";
 import { posix, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -161,11 +162,9 @@ function presentLspCall(args) {
 //#endregion
 //#region lib/types/session-cwd.js
 /**
-* Derive the workspace root an `lsp` call resolves against: the calling agent's per-session
-* workspace (`exec.agent.session.header.cwd`), mirroring how the filesystem tools resolve paths.
-* Unlike those tools, LSP has NO provider fallback — a missing cwd fails the call as
-* `LSP_WORKSPACE_REQUIRED`, because the local provider must canonicalize a real workspace before it
-* can start a server.
+* Derive the workspace root an `lsp` call resolves against from the calling
+* agent's session. A missing cwd fails as `LSP_WORKSPACE_REQUIRED` because the
+* local provider must canonicalize a real workspace before starting a server.
 * @module @deepseek-ai/dsh-tool-lsp/session-cwd
 */
 /**
@@ -246,7 +245,7 @@ function apply(ctx, config) {
 	assertTimer("timeoutMs", resolved.timeoutMs);
 	ctx.systemPrompt.section({
 		name: "tool:lsp",
-		order: 112,
+		order: FIRST_PARTY_SECTION_ORDER.TOOL_LSP,
 		text: LSP_PROMPT_TEXT
 	});
 	ctx.tools.register(defineTool({

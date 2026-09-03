@@ -2,6 +2,7 @@ import z from "@deepseek-ai/schemastery";
 import { GoalId } from "@deepseek-ai/dsh-goal";
 import { HarnessError, boundContextSummary, createUserMessage } from "@deepseek-ai/dsh-llm";
 import { defineTool } from "@deepseek-ai/dsh-tools";
+import { FIRST_PARTY_SECTION_ORDER } from "@deepseek-ai/dsh-system-prompt";
 //#region lib/types/authority.js
 /** Execution-time authority checks for the model-facing goal tools. */
 /** Throw one structured tool-policy failure. */
@@ -252,7 +253,7 @@ function apply(ctx, config) {
 	const resolved = resolveConfig(config);
 	ctx.systemPrompt.section({
 		name: "tool:goal",
-		order: 114,
+		order: FIRST_PARTY_SECTION_ORDER.TOOL_GOAL,
 		text: guidance(resolved.blockedAfterConsecutiveRounds)
 	});
 	ctx.tools.register(defineTool({

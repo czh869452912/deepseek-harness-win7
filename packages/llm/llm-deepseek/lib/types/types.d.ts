@@ -41,13 +41,20 @@ export interface WireTextContentPart {
     type: 'text';
     text: string;
 }
-/** Base64 data URL part inside a multimodal user message. */
-export interface WireImageContentPart {
+/** Files API reference inside a multimodal user message. */
+export interface WireFileContentPart {
+    type: 'file';
+    file_id: string;
+}
+/** Inline base64 data URL inside a multimodal user message. */
+export interface WireImageUrlContentPart {
     type: 'image_url';
     image_url: {
         url: string;
     };
 }
+/** One image representation accepted by a multimodal user message. */
+export type WireImageContentPart = WireFileContentPart | WireImageUrlContentPart;
 /** Ordered input part accepted by a multimodal user message. */
 export type WireUserContentPart = WireTextContentPart | WireImageContentPart;
 /** User-role message: text-only string or ordered multimodal input. */
@@ -146,6 +153,8 @@ export interface WireToolCallDelta {
 export interface WireUsage {
     prompt_tokens: number;
     completion_tokens: number;
+    /** Provider-reported aggregate across prompt and completion tokens. */
+    total_tokens?: number;
     prompt_cache_hit_tokens?: number;
     prompt_cache_miss_tokens?: number;
     prompt_tokens_details?: {

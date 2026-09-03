@@ -1,6 +1,6 @@
 /**
  * jsdom slot test runtime: a real small runtime — Cordis `Context`, the
- * runtime `SlotRegistry`, and the UI renderer — assembled around
+ * renderer-owned `SlotRegistry`, the `ui-session` adapter, and the UI renderer — assembled around
  * test-owned session/workspace doubles, so feature specs exercise
  * declaration, registration, scope, store, inject, rendering, updates, and
  * disposal without hand-building the machinery per suite.
@@ -17,18 +17,20 @@
 import { Context, Inject } from '@deepseek-ai/cordis';
 import { createElement, Fragment, useSyncExternalStore } from 'react';
 import { act, render, within } from '@testing-library/react';
-import { ConversationEventRegistry, ConversationViewRegistry, SlotRegistry, } from '@deepseek-ai/dsh-client-runtime/client';
+import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client';
 import { bindSnapshotSelector as bindRendererSnapshotSelector } from '@deepseek-ai/dsh-client-ui-renderer/src/client/bind.ts';
 import { createSlotRenderer as createRenderer } from '@deepseek-ai/dsh-client-ui-renderer/src/client/scoped-slots.tsx';
+import { apply as applyUiSession, inject as uiSessionInject, } from '@deepseek-ai/dsh-client-ui-session/client';
 import { registerDomSnapshotSerializer } from "./snapshot.js";
 import { TestSessions } from "./sessions.js";
 import { TestWorkspaces } from "./workspaces.js";
 export { domSnapshotSerializer, registerDomSnapshotSerializer } from "./snapshot.js";
 export { FixtureSession, TestSessions } from "./sessions.js";
 export { stubSettingsScope } from "./settings-scope.js";
+export { scriptedSettingsRemote } from "./settings-remote.js";
 export { TestWorkspaces } from "./workspaces.js";
 export { TestRemote } from "./remote.js";
-export { conversationSnapshot, workspaceListState } from "./fixtures.js";
+export { chatSnapshot, conversationSnapshot, sessionSnapshot, workspaceSnapshot, } from "./fixtures.js";
 export { makeTranslate } from "./translate.js";
 export { usePinnedBrowserLanguages } from "./locale-env.js";
 /**
@@ -128,7 +130,7 @@ export class TestRoot {
  * batching or React act themselves.
  */
 export class SlotTestRuntime {
-    /** The runtime's Cordis root (escape hatch: extra services via `ctx.provide`, raw `ctx.plugin` mounts). */
+    /** The runtime's Cordis root for owner APIs and explicit test-only services. */
     ctx;
     /** The production SlotRegistry mounted on {@link SlotTestRuntime.ctx}. */
     slots;
@@ -149,6 +151,7 @@ export class SlotTestRuntime {
     ownerCell = new OwnerPropsCell();
     autoDeclared = new Set();
     autoRootView;
+    disposeWorkspaceSource;
     constructor(ctx, slots) {
         this.ctx = ctx;
         this.slots = slots;
@@ -157,6 +160,7 @@ export class SlotTestRuntime {
         this.workspaces = new TestWorkspaces(this.stabilizer);
         ctx.provide('sessions', this.sessions);
         ctx.provide('workspaces', this.workspaces);
+        this.disposeWorkspaceSource = slots.provideRoot({ hooks: { workspaces: this.workspaces.list } });
         // Capturing install: the production renderer does the rendering; the
         // wrapper only takes the host face for storeOf (no machinery copied).
         const renderer = createSlotRenderer();
@@ -177,22 +181,9 @@ export class SlotTestRuntime {
         const ctx = new Context();
         const fiber = ctx.plugin(SlotRegistry);
         await fiber.await();
-        await ctx.plugin(ConversationEventRegistry).await();
-        await ctx.plugin(ConversationViewRegistry).await();
-        return new SlotTestRuntime(ctx, ctx.get('slots'));
-    }
-    /**
-     * Provide an extra service the feature under test injects (e.g. a layout
-     * fake). Sugar over `ctx.provide`, typed against the Context declaration
-     * merge: for a declared service name the fake must be a subset of that
-     * service's outward face (Partial — supply only what the feature calls),
-     * so a production face change breaks the fake at compile time. Undeclared
-     * names stay unchecked (ad-hoc test services).
-     * @param name - service name.
-     * @param value - service implementation (test double).
-     */
-    provide(name, value) {
-        this.ctx.provide(name, value);
+        const runtime = new SlotTestRuntime(ctx, ctx.get('slots'));
+        await ctx.plugin({ inject: [...uiSessionInject], apply: applyUiSession }).await();
+        return runtime;
     }
     /**
      * Mount a feature plugin on a real fiber. Required services are prechecked
@@ -223,6 +214,10 @@ export class SlotTestRuntime {
         };
         this.handles.push(handle);
         return handle;
+    }
+    /** Release the default Workspace hook before mounting its production owner. */
+    releaseWorkspaceSource() {
+        this.disposeWorkspaceSource();
     }
     /**
      * Render the root slot tree through the ctx-level entry (the shell's own
@@ -301,7 +296,13 @@ export class SlotTestRuntime {
         const entry = this.host.entriesOf(key)[0];
         if (entry === undefined)
             throw new Error(`storeOf('${key}'): no registration on the ledger`);
-        const instance = this.host.storeOf(entry, scopeKey);
+        const scopeBinding = scopeKey === undefined
+            ? undefined
+            : this.host.scope('session')?.resolve(scopeKey);
+        if (scopeKey !== undefined && scopeBinding === undefined) {
+            throw new Error(`storeOf('${key}'): no live Session binding for '${scopeKey}'`);
+        }
+        const instance = this.host.storeOf(entry, scopeBinding);
         if (instance === undefined)
             throw new Error(`storeOf('${key}'): the entry declares no store`);
         return instance;

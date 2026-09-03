@@ -1,7 +1,4 @@
 import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-runtime";
-// Skill toolview registrant: a domain-owned row over the keyed toolview hole.
-// The compact accent row keeps loaded instructions scannable in the transcript;
-// the exact durable tool output remains available in a bounded disclosure card.
 import { useState } from 'react';
 import { IconChevronDownOutline14, IconInspectOutline12, IconSkillOutline16, StateDot, } from '@deepseek-ai/dsh-client-ui-primitives';
 import css from './SkillRow.module.css';
@@ -112,6 +109,6 @@ export function SkillRow({ block, inspect, t }) {
         onKeyDown: toggleFromKeyboard,
     } : {};
     const leading = disclosureLeading(model.state, open, expandable);
-    return (_jsxs("div", { className: css.card, "data-tool": "skill", "data-state": model.state, children: [_jsxs("div", { className: css.row, "data-expandable": expandable || undefined, ...disclosureProps, children: [_jsx("span", { className: css.leading, children: leading }), status !== null ? _jsx("span", { className: css.visuallyHidden, children: status }) : null, _jsx("span", { className: css.title, children: "Skill" }), _jsx("span", { className: css.separator, "aria-hidden": true }), _jsx("span", { className: model.errorSummary === null ? css.summary : `${css.summary} ${css.errorSummary}`, children: summary })] }), open ? (_jsxs("div", { className: css.bodyWrap, children: [_jsxs("section", { className: css.instructionsCard, "aria-label": t('row.instructions'), children: [_jsx("div", { className: css.instructionsHeader, children: t('row.instructions') }), _jsx("pre", { className: css.instructions, "data-error": model.state === 'error' || undefined, children: model.output })] }), inspect !== undefined ? (_jsxs("button", { type: "button", className: css.inspectButton, onClick: inspect, children: [_jsx(IconInspectOutline12, {}), "Inspect"] })) : null] })) : null] }));
+    return (_jsxs("div", { className: css.card, "data-tool": "skill", "data-state": model.state, children: [_jsxs("div", { className: css.row, "data-expandable": expandable || undefined, ...disclosureProps, children: [_jsx("span", { className: css.leading, children: leading }), status !== null ? _jsx("span", { className: css.visuallyHidden, children: status }) : null, _jsx("span", { className: css.title, children: t('row.title') }), _jsx("span", { className: css.separator, "aria-hidden": true }), _jsx("span", { className: model.errorSummary === null ? css.summary : `${css.summary} ${css.errorSummary}`, children: summary })] }), open ? (_jsxs("div", { className: css.bodyWrap, children: [_jsxs("section", { className: css.instructionsCard, "aria-label": t('row.instructions'), children: [_jsx("div", { className: css.instructionsHeader, children: t('row.instructions') }), _jsx("pre", { className: css.instructions, "data-error": model.state === 'error' || undefined, children: model.output })] }), inspect !== undefined ? (_jsxs("button", { type: "button", className: css.inspectButton, onClick: inspect, children: [_jsx(IconInspectOutline12, {}), t('row.inspect')] })) : null] })) : null] }));
 }
 //# sourceMappingURL=SkillRow.js.map

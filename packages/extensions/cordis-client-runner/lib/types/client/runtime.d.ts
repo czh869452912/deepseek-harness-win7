@@ -18,7 +18,7 @@ import type { Loader } from '@deepseek-ai/cordis-plugin-loader';
 import type { CordisDynamicPackageId, CordisDynamicPluginId, CordisDynamicPluginRunId } from '@deepseek-ai/dsh-api-remotes/client';
 import type { SessionId } from '@deepseek-ai/dsh-client-connection/client';
 import type { ClientModuleSystem } from '@deepseek-ai/dsh-client-modules/client';
-import type { SlotRegistry } from '@deepseek-ai/dsh-client-runtime/client';
+import type { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client';
 /**
  * Snapshot source a surface can subscribe to (the render seam's observable
  * shape). Lives here because both this engine and the run orchestration publish

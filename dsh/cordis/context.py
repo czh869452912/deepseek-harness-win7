@@ -120,11 +120,11 @@ class Context:
 
         self.reflect.provide(self, name, service_instance, check=chk, allow_replace=True)
 
-    def provide(self, name: str, service_instance: Any = None, check: Optional[Callable[[], bool]] = None) -> Callable[[], None]:
+    def provide(self, name: str, service_instance: Any = None, check: Optional[Callable[[], bool]] = None, allow_replace: bool = False) -> Callable[[], None]:
         """
         Register a service implementation owned by the current fiber.
         """
-        return self.reflect.provide(self, name, service_instance, check=check)
+        return self.reflect.provide(self, name, service_instance, check=check, allow_replace=allow_replace)
 
     def get_service(self, name: str, default: Any = None) -> Any:
         """
@@ -152,9 +152,21 @@ class Context:
 
     def has(self, name: str) -> bool:
         """
-        Check whether a service is available in this context scope.
+        Check whether a service or accessor property is declared in this context scope matching TS Reflect.has / handler.has.
         """
-        return self.get(name, strict=False) is not None
+        if hasattr(self, "reflect") and self.reflect:
+            if hasattr(self.reflect, "props") and name in self.reflect.props:
+                return True
+            isolated_map = getattr(self, "_isolated_keys", {})
+            key = isolated_map.get(name, name)
+            if hasattr(self.reflect, "store") and (key in self.reflect.store or name in self.reflect.store):
+                return True
+        curr = self
+        while curr is not None:
+            if hasattr(curr, "_services") and name in curr._services:
+                return True
+            curr = getattr(curr, "_parent", None)
+        return False
 
     def effect(self, setup_or_disposer: Any, label: str = "") -> Callable[[], None]:
         """
@@ -246,7 +258,7 @@ class Context:
         Load a plugin onto context wrapped in a Fiber matching TS ctx.plugin().
         Returns the Fiber instance (which is awaitable and transparently delegates attribute access to plugin).
         """
-        fiber = self.registry.plugin(plugin_cls_or_instance, config=config)
+        fiber = self.registry.plugin(plugin_cls_or_instance, config=config, parent_ctx=self)
         return fiber
 
     def inject(self, deps: Any, callback: Callable[..., Any]) -> Any:
@@ -348,6 +360,8 @@ class Context:
             except Exception:
                 pass
 
+    dispose = teardown
+
     def timeout(self, callback_or_delay: Any, delay_ms: Optional[Union[float, int]] = None) -> Any:
         """Run a callback once or return a Future after delay_ms matching TS ctx.timeout()."""
         if hasattr(self, "timer") and self.timer is not None:
@@ -381,10 +395,9 @@ class Context:
     def __getattr__(self, name: str) -> Any:
         RESERVED_ATTRS = (
             "registry", "reflect", "fiber", "root", "events", "props", "store", "logger", "timer",
-            "filter", "validate", "status", "teardown", "symbols", "base_url", "baseUrl",
-            "strict_inject", "session", "agent", "is_shadow", "_shadow", "_shadow_fiber",
+            "symbols", "base_url", "baseUrl", "strict_inject", "scope", "is_shadow", "_shadow", "_shadow_fiber",
         )
-        if name.startswith("_") or name.startswith("cordis.") or name.startswith("symbols.") or name in RESERVED_ATTRS:
+        if name.startswith("_") or name.startswith("cordis.") or name.startswith("symbols.") or name in RESERVED_ATTRS or name.isdigit():
             raise AttributeError(f"Context object has no attribute '{name}'")
 
         # 1. Accessor check matching TS def?.type === 'accessor'

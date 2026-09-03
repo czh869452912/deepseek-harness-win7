@@ -3,11 +3,7 @@ import { jsxs as _jsxs, jsx as _jsx } from "react/jsx-runtime";
 import { useMemo, useState } from 'react';
 import css from './JsonBlock.module.css';
 const MAX_CHARS = 20_000;
-/** Default truncation footer; the owner passes a localized formatter. */
-function defaultTruncatedLabel(total) {
-    return `… 已截断，共 ${total} 字符`;
-}
-export function JsonBlock({ label, payload, defaultOpen = false, truncatedLabel = defaultTruncatedLabel }) {
+export function JsonBlock({ label, payload, defaultOpen = false, truncatedLabel }) {
     const [open, setOpen] = useState(defaultOpen);
     const body = useMemo(() => {
         if (!open)

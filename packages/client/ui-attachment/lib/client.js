@@ -23,8 +23,8 @@ window.__ModuleLoader__.load({
 			return n;
 		}
 		//#endregion
-		//#region \0dsh-css:D:\Claude-project\deepseek-harness-win7\reference\deepseek-harness\packages\client\ui-attachment\src\AttachmentRail.module.css.mjs
-		const css$4 = "._8L3rda_root{min-width:0;position:relative}._8L3rda_rail{scrollbar-width:none;--dsh-scrollbar-thumb:var(--dsw-alias-scrollbar-bg-l2);--dsh-scrollbar-thumb-hover:var(--dsw-alias-scrollbar-hover-l2);gap:10px;display:flex;overflow:auto hidden}._8L3rda_rail::-webkit-scrollbar{display:none}._8L3rda_item{flex:0 0 64px;width:64px;height:64px;position:relative}._8L3rda_thumbnail{border:1px solid var(--dsw-alias-border-l2-darkmode-thin);background:var(--dsw-alias-interactive-bg-hover);cursor:zoom-in;border-radius:16px;width:64px;height:64px;padding:0;overflow:hidden}._8L3rda_thumbnail img{object-fit:cover;width:100%;height:100%;display:block}._8L3rda_remove{z-index:1;background:var(--dsw-alias-button-contrast-fill);width:18px;height:18px;color:var(--dsw-alias-label-primary-inverted);cursor:pointer;opacity:0;border:none;border-radius:50%;place-items:center;padding:0;transition:opacity .2s ease-in-out;display:grid;position:absolute;top:4px;right:4px}._8L3rda_item:hover ._8L3rda_remove,._8L3rda_remove:focus-visible{opacity:1}@media (pointer:coarse){._8L3rda_remove{opacity:1}}@media (prefers-reduced-motion:reduce){._8L3rda_remove{transition:none}}._8L3rda_arrow{z-index:2;border:1px solid var(--dsw-alias-border-l2-darkmode-thin);background:var(--dsw-specific-input-major);width:24px;height:24px;color:var(--dsw-alias-label-secondary);box-shadow:var(--dsw-shadow-lv2);cursor:pointer;border-radius:999px;place-items:center;padding:0;display:grid;position:absolute;top:50%;transform:translateY(-50%)}._8L3rda_arrow:hover{background:var(--dsw-alias-interactive-bg-hover-solid)}._8L3rda_arrowLeft{left:4px}._8L3rda_arrowRight{right:4px}";
+		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-attachment\src\AttachmentRail.module.css.mjs
+		const css$4 = ".YEipeq_root{min-width:0;position:relative}.YEipeq_rail{scrollbar-width:none;--dsh-scrollbar-thumb:var(--dsw-alias-scrollbar-bg-l2);--dsh-scrollbar-thumb-hover:var(--dsw-alias-scrollbar-hover-l2);gap:10px;display:flex;overflow:auto hidden}.YEipeq_rail::-webkit-scrollbar{display:none}.YEipeq_item{flex:0 0 64px;width:64px;height:64px;position:relative}.YEipeq_thumbnail{border:1px solid var(--dsw-alias-border-l2-darkmode-thin);background:var(--dsw-alias-interactive-bg-hover);cursor:zoom-in;border-radius:16px;width:64px;height:64px;padding:0;overflow:hidden}.YEipeq_thumbnail img{object-fit:cover;width:100%;height:100%;display:block}.YEipeq_remove{z-index:1;background:var(--dsw-alias-button-contrast-fill);width:18px;height:18px;color:var(--dsw-alias-label-primary-inverted);cursor:pointer;opacity:0;border:none;border-radius:50%;place-items:center;padding:0;transition:opacity .2s ease-in-out;display:grid;position:absolute;top:4px;right:4px}.YEipeq_item:hover .YEipeq_remove,.YEipeq_remove:focus-visible{opacity:1}@media (pointer:coarse){.YEipeq_remove{opacity:1}}@media (prefers-reduced-motion:reduce){.YEipeq_remove{transition:none}}.YEipeq_arrow{z-index:2;border:1px solid var(--dsw-alias-border-l2-darkmode-thin);background:var(--dsw-specific-input-major);width:24px;height:24px;color:var(--dsw-alias-label-secondary);box-shadow:var(--dsw-shadow-lv2);cursor:pointer;border-radius:999px;place-items:center;padding:0;display:grid;position:absolute;top:50%;transform:translateY(-50%)}.YEipeq_arrow:hover{background:var(--dsw-alias-interactive-bg-hover-solid)}.YEipeq_arrowLeft{left:4px}.YEipeq_arrowRight{right:4px}";
 		const tagId$4 = "@deepseek-ai/dsh-client-ui-attachment/AttachmentRail.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$4) + "]") === null) {
 			const tag = document.createElement("style");
@@ -34,14 +34,14 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var AttachmentRail_module_css_default = {
-			"arrow": "_8L3rda_arrow",
-			"arrowLeft": "_8L3rda_arrowLeft",
-			"arrowRight": "_8L3rda_arrowRight",
-			"item": "_8L3rda_item",
-			"rail": "_8L3rda_rail",
-			"remove": "_8L3rda_remove",
-			"root": "_8L3rda_root",
-			"thumbnail": "_8L3rda_thumbnail"
+			"arrow": "YEipeq_arrow",
+			"arrowLeft": "YEipeq_arrowLeft",
+			"arrowRight": "YEipeq_arrowRight",
+			"item": "YEipeq_item",
+			"rail": "YEipeq_rail",
+			"remove": "YEipeq_remove",
+			"root": "YEipeq_root",
+			"thumbnail": "YEipeq_thumbnail"
 		};
 		//#endregion
 		//#region lib/types/AttachmentRail.js
@@ -192,8 +192,8 @@ window.__ModuleLoader__.load({
 			});
 		}
 		//#endregion
-		//#region \0dsh-css:D:\Claude-project\deepseek-harness-win7\reference\deepseek-harness\packages\client\ui-attachment\src\DropOverlay.module.css.mjs
-		const css$3 = ".zFS2OG_mask{z-index:1000;pointer-events:none;background-color:var(--dsw-alias-bg-mask-drop);backdrop-filter:blur(10px);justify-content:center;align-items:center;animation:.16s ease-out zFS2OG_fade-in;display:flex;position:fixed;inset:0}@keyframes zFS2OG_fade-in{0%{opacity:0}to{opacity:1}}@media (prefers-reduced-motion:reduce){.zFS2OG_mask{animation:none}}.zFS2OG_wrap{color:var(--dsw-alias-label-primary);text-align:center;flex-direction:column;align-items:center;margin-top:-3%;padding:0 40px;display:flex}.zFS2OG_illustration{width:115px;height:84px}.zFS2OG_title{font:var(--dsw-font-l-20);margin-top:16px}.zFS2OG_desc{font:var(--dsw-font-s-14);color:var(--dsw-alias-label-tertiary);white-space:pre-wrap;margin-top:16px}";
+		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-attachment\src\DropOverlay.module.css.mjs
+		const css$3 = ".j59TYG_mask{z-index:1000;pointer-events:none;background-color:var(--dsw-alias-bg-mask-drop);backdrop-filter:blur(10px);justify-content:center;align-items:center;animation:.16s ease-out j59TYG_fade-in;display:flex;position:fixed;inset:0}@keyframes j59TYG_fade-in{0%{opacity:0}to{opacity:1}}@media (prefers-reduced-motion:reduce){.j59TYG_mask{animation:none}}.j59TYG_wrap{color:var(--dsw-alias-label-primary);text-align:center;flex-direction:column;align-items:center;margin-top:-3%;padding:0 40px;display:flex}.j59TYG_illustration{width:115px;height:84px}.j59TYG_title{font:var(--dsw-font-l-20);margin-top:16px}.j59TYG_desc{font:var(--dsw-font-s-14);color:var(--dsw-alias-label-tertiary);white-space:pre-wrap;margin-top:16px}";
 		const tagId$3 = "@deepseek-ai/dsh-client-ui-attachment/DropOverlay.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
 			const tag = document.createElement("style");
@@ -203,12 +203,12 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var DropOverlay_module_css_default = {
-			"desc": "zFS2OG_desc",
-			"fade-in": "zFS2OG_fade-in",
-			"illustration": "zFS2OG_illustration",
-			"mask": "zFS2OG_mask",
-			"title": "zFS2OG_title",
-			"wrap": "zFS2OG_wrap"
+			"desc": "j59TYG_desc",
+			"fade-in": "j59TYG_fade-in",
+			"illustration": "j59TYG_illustration",
+			"mask": "j59TYG_mask",
+			"title": "j59TYG_title",
+			"wrap": "j59TYG_wrap"
 		};
 		//#endregion
 		//#region lib/types/DropOverlay.js
@@ -378,8 +378,8 @@ window.__ModuleLoader__.load({
 			]
 		});
 		//#endregion
-		//#region \0dsh-css:D:\Claude-project\deepseek-harness-win7\reference\deepseek-harness\packages\client\ui-attachment\src\ImageLightbox.module.css.mjs
-		const css$2 = ".-\\37 Seda_backdrop{z-index:1000;place-items:center;padding:40px;display:grid;position:fixed;inset:0}.-\\37 Seda_mask{background:var(--dsw-alias-bg-mask-1);backdrop-filter:var(--dsw-mask-blur);position:absolute;inset:0}.-\\37 Seda_image{object-fit:contain;background:var(--dsw-specific-input-major);max-width:min(100%,1600px);max-height:calc(100vh - 80px);box-shadow:var(--dsw-shadow-lv3);border-radius:12px;position:relative}.-\\37 Seda_close{z-index:1;border:1px solid var(--dsw-alias-border-l2-darkmode-thin);background:var(--dsw-specific-input-major);width:36px;height:36px;color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;place-items:center;display:grid;position:fixed;top:20px;right:20px}";
+		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-attachment\src\ImageLightbox.module.css.mjs
+		const css$2 = ".-f6uLW_backdrop{z-index:1000;place-items:center;padding:40px;display:grid;position:fixed;inset:0}.-f6uLW_mask{background:var(--dsw-alias-bg-mask-1);backdrop-filter:var(--dsw-mask-blur);position:absolute;inset:0}.-f6uLW_image{object-fit:contain;background:var(--dsw-specific-input-major);max-width:min(100%,1600px);max-height:calc(100vh - 80px);box-shadow:var(--dsw-shadow-lv3);border-radius:12px;position:relative}.-f6uLW_close{z-index:1;border:1px solid var(--dsw-alias-border-l2-darkmode-thin);background:var(--dsw-specific-input-major);width:36px;height:36px;color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;place-items:center;display:grid;position:fixed;top:20px;right:20px}";
 		const tagId$2 = "@deepseek-ai/dsh-client-ui-attachment/ImageLightbox.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
 			const tag = document.createElement("style");
@@ -389,10 +389,10 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var ImageLightbox_module_css_default = {
-			"backdrop": "-7Seda_backdrop",
-			"close": "-7Seda_close",
-			"image": "-7Seda_image",
-			"mask": "-7Seda_mask"
+			"backdrop": "-f6uLW_backdrop",
+			"close": "-f6uLW_close",
+			"image": "-f6uLW_image",
+			"mask": "-f6uLW_mask"
 		};
 		//#endregion
 		//#region lib/types/ImageLightbox.js
@@ -507,8 +507,8 @@ window.__ModuleLoader__.load({
 			};
 		}
 		//#endregion
-		//#region \0dsh-css:D:\Claude-project\deepseek-harness-win7\reference\deepseek-harness\packages\client\ui-attachment\src\client\ComposerAttachments.module.css.mjs
-		const css$1 = ".No0rwa_rail{min-width:0;padding:4px 12px 0}";
+		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-attachment\src\client\ComposerAttachments.module.css.mjs
+		const css$1 = "._9BN-W_rail{min-width:0;padding:4px 12px 0}";
 		const tagId$1 = "@deepseek-ai/dsh-client-ui-attachment/ComposerAttachments.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
@@ -517,7 +517,7 @@ window.__ModuleLoader__.load({
 			tag.textContent = css$1;
 			document.head.appendChild(tag);
 		}
-		var ComposerAttachments_module_css_default = { "rail": "No0rwa_rail" };
+		var ComposerAttachments_module_css_default = { "rail": "_9BN-W_rail" };
 		//#endregion
 		//#region lib/types/client/ComposerAttachments.js
 		/** Draft-image rail, document drop target, and original-image preview slot entry. */
@@ -614,8 +614,8 @@ window.__ModuleLoader__.load({
 			] });
 		}
 		//#endregion
-		//#region \0dsh-css:D:\Claude-project\deepseek-harness-win7\reference\deepseek-harness\packages\client\ui-attachment\src\MessageImage.module.css.mjs
-		const css = ".kq1hya_gallery{flex-wrap:wrap;gap:10px;max-width:100%;display:flex}.kq1hya_gallery[data-align=end]{justify-content:flex-end;align-self:flex-end}.kq1hya_gallery[data-align=start]{justify-content:flex-start;align-self:flex-start}.kq1hya_frame{border:1px solid var(--dsw-alias-border-l2-darkmode-thin);background:var(--dsw-alias-interactive-bg-hover);cursor:zoom-in;border-radius:16px;flex:none;place-items:center;min-width:44px;min-height:44px;padding:0;display:grid;overflow:hidden}.kq1hya_frame[data-variant=tile]{width:64px;min-width:64px;height:64px;min-height:64px}.kq1hya_frame img{object-fit:cover;width:100%;height:100%;display:block}.kq1hya_loading,.kq1hya_error{color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:18px}.kq1hya_error{border:1px solid var(--dsw-alias-border-l2-darkmode-thin);background:var(--dsw-alias-interactive-bg-hover-danger);cursor:pointer;border-radius:10px;max-width:240px;padding:10px 12px}.kq1hya_error[data-variant=tile]{border-radius:16px;width:64px;height:64px;padding:4px;overflow:hidden}";
+		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-attachment\src\MessageImage.module.css.mjs
+		const css = ".HzatIa_gallery{flex-wrap:wrap;gap:10px;max-width:100%;display:flex}.HzatIa_gallery[data-align=end]{justify-content:flex-end;align-self:flex-end}.HzatIa_gallery[data-align=start]{justify-content:flex-start;align-self:flex-start}.HzatIa_frame{border:1px solid var(--dsw-alias-border-l2-darkmode-thin);background:var(--dsw-alias-interactive-bg-hover);cursor:zoom-in;border-radius:16px;flex:none;place-items:center;min-width:44px;min-height:44px;padding:0;display:grid;overflow:hidden}.HzatIa_frame[data-variant=tile]{width:64px;min-width:64px;height:64px;min-height:64px}.HzatIa_frame img{object-fit:cover;width:100%;height:100%;display:block}.HzatIa_loading,.HzatIa_error{color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:18px}.HzatIa_error{border:1px solid var(--dsw-alias-border-l2-darkmode-thin);background:var(--dsw-alias-interactive-bg-hover-danger);cursor:pointer;border-radius:10px;max-width:240px;padding:10px 12px}.HzatIa_error[data-variant=tile]{border-radius:16px;width:64px;height:64px;padding:4px;overflow:hidden}";
 		const tagId = "@deepseek-ai/dsh-client-ui-attachment/MessageImage.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -625,10 +625,10 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var MessageImage_module_css_default = {
-			"error": "kq1hya_error",
-			"frame": "kq1hya_frame",
-			"gallery": "kq1hya_gallery",
-			"loading": "kq1hya_loading"
+			"error": "HzatIa_error",
+			"frame": "HzatIa_frame",
+			"gallery": "HzatIa_gallery",
+			"loading": "HzatIa_loading"
 		};
 		//#endregion
 		//#region lib/types/MessageImage.js
@@ -637,8 +637,8 @@ window.__ModuleLoader__.load({
 		* `object-fit: cover` — and never upscaled past the image's natural size. The
 		* crop anchor keeps the top of very tall images and the left of very wide
 		* ones, where the informative content usually starts. */
-		function singleFit(attachment) {
-			const natural = attachment.width / attachment.height;
+		function singleFit(dimensions) {
+			const natural = dimensions.width / dimensions.height;
 			const ratio = Math.min(4, Math.max(.25, natural));
 			const box = ratio >= 1 ? {
 				width: 240,
@@ -647,26 +647,37 @@ window.__ModuleLoader__.load({
 				width: 240 * ratio,
 				height: 240
 			};
-			const scale = Math.min(1, attachment.width / box.width, attachment.height / box.height);
+			const scale = Math.min(1, dimensions.width / box.width, dimensions.height / box.height);
 			return {
 				width: Math.max(1, Math.round(box.width * scale)),
 				height: Math.max(1, Math.round(box.height * scale)),
 				objectPosition: natural < .25 ? "center top" : natural > 4 ? "left center" : "center"
 			};
 		}
+		/** Intrinsic dimensions of one gallery entry; a preview's stay unknown until its intake probe resolved. */
+		function dimensionsOf(image) {
+			if ("attachment" in image) return image.attachment;
+			return image.preview.width !== void 0 && image.preview.height !== void 0 ? {
+				width: image.preview.width,
+				height: image.preview.height
+			} : void 0;
+		}
 		/**
 		* Compact history renderer with retryable loading and click-to-open original
 		* preview. A lone image renders at its `singleFit` size; an image among
-		* several renders as a fixed 64px square tile.
+		* several renders as a fixed 64px square tile. The preview arm displays its
+		* local URL directly — no loader round-trip, no failure/retry surface.
 		*
-		* @param props.attachment - the durable image reference to load and bound.
-		* @param props.load - session-authorized URL loader.
+		* @param props.image - the durable reference to load, or the local preview to display.
+		* @param props.load - session-authorized URL loader for the durable arm.
 		* @param props.variant - `single` for a message's lone image, `tile` otherwise.
 		* @param props.labels - resolved strings (tooltip, loading, retry, lightbox).
 		* @returns the bounded thumbnail button, or the retry control on failure.
 		*/
-		function MessageImage({ attachment, load, variant, labels }) {
-			const [src, setSrc] = (0, react.useState)(null);
+		function MessageImage({ image, load, variant, labels }) {
+			const preview = "preview" in image ? image.preview : void 0;
+			const attachment = "attachment" in image ? image.attachment : void 0;
+			const [loaded, setLoaded] = (0, react.useState)(() => attachment === void 0 ? null : load.peek?.(attachment) ?? null);
 			const [error, setError] = (0, react.useState)(false);
 			const [open, setOpen] = (0, react.useState)(false);
 			const [attempt, setAttempt] = (0, react.useState)(0);
@@ -676,13 +687,22 @@ window.__ModuleLoader__.load({
 			const close = (0, react.useCallback)(() => {
 				setOpen(false);
 			}, []);
-			const fit = (0, react.useMemo)(() => variant === "single" ? singleFit(attachment) : void 0, [attachment, variant]);
+			const dimensions = (0, react.useMemo)(() => dimensionsOf(image), [image]);
+			const fit = (0, react.useMemo)(() => {
+				if (variant !== "single") return void 0;
+				return dimensions === void 0 ? {
+					width: 240,
+					height: 240,
+					objectPosition: "center"
+				} : singleFit(dimensions);
+			}, [dimensions, variant]);
 			(0, react.useEffect)(() => {
+				if (attachment === void 0) return;
 				let live = true;
 				setError(false);
-				setSrc(null);
+				setLoaded(load.peek?.(attachment) ?? null);
 				load(attachment).then((url) => {
-					if (live) setSrc(url);
+					if (live) setLoaded(url);
 				}).catch(() => {
 					if (live) setError(true);
 				});
@@ -694,7 +714,8 @@ window.__ModuleLoader__.load({
 				load,
 				attempt
 			]);
-			const label = attachment.name ?? labels.image;
+			const src = preview?.url ?? loaded;
+			const label = preview?.name ?? attachment?.name ?? labels.image;
 			if (error) return (0, react_jsx_runtime.jsx)("button", {
 				type: "button",
 				className: MessageImage_module_css_default.error,
@@ -739,11 +760,11 @@ window.__ModuleLoader__.load({
 				className: MessageImage_module_css_default.gallery,
 				"data-align": align,
 				children: images.map((image, index) => (0, react_jsx_runtime.jsx)(MessageImage, {
-					...image,
+					image,
 					load,
 					variant,
 					labels
-				}, `${image.attachment.attachmentId}:${index}`))
+				}, `${"attachment" in image ? image.attachment.attachmentId : image.preview.url}:${index}`))
 			});
 		}
 		//#endregion
@@ -769,6 +790,10 @@ window.__ModuleLoader__.load({
 			}, ComposerAttachments));
 			ctx.slots.inject("conversation.message.images", () => ctx.slots.register({
 				name: "conversation.message.images",
+				locale: "conversation"
+			}, MessageImages));
+			ctx.slots.inject("conversation.trajectory.images", () => ctx.slots.register({
+				name: "conversation.trajectory.images",
 				locale: "conversation"
 			}, MessageImages));
 		}

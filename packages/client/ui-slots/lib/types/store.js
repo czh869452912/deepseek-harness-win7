@@ -1,3 +1,3 @@
-/** Framework-neutral store contracts for slot registrations and the runtime engine. */
+/** Slot-facing re-exports of the React-free store contracts. */
 export {};
 //# sourceMappingURL=store.js.map

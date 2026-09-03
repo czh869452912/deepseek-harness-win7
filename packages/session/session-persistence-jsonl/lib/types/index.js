@@ -107,6 +107,9 @@ export class JsonlSessionPersistence extends SessionPersistence {
     create(meta) {
         return this.coordinator.create(meta);
     }
+    ensureMaterialized(session) {
+        return this.coordinator.ensureMaterialized(session);
+    }
     append(id, events) {
         return this.coordinator.append(id, events);
     }
@@ -118,6 +121,9 @@ export class JsonlSessionPersistence extends SessionPersistence {
     }
     inspect(id, signal) {
         return this.coordinator.inspect(id, signal);
+    }
+    borrowSession(id, signal) {
+        return this.coordinator.borrowSession(id, signal);
     }
     // JSONL is sequential media: no loadStoredFrom hook, so the coordinator
     // parses the stored prefix (both encodings) and skips forward to fromSeq.
@@ -349,6 +355,10 @@ export class JsonlSessionPersistence extends SessionPersistence {
             await this.materialize(meta, events);
         }
     }
+    /** Materialize a header-only JSONL artifact for an explicitly durable empty session. */
+    async materializeHeader(meta) {
+        await this.materialize(meta, []);
+    }
     /**
      * Make a crash repair durable: truncate a torn tail, restore complete events
      * decoded from it, then append synthetic closers. Two fsync'd steps — the seam
@@ -360,6 +370,8 @@ export class JsonlSessionPersistence extends SessionPersistence {
         const repairedEvents = [...(tornMarker?.recoveredEvents ?? []), ...closers];
         if (repairedEvents.length > 0)
             await this.appendLines(meta, repairedEvents);
+        if (tornMarker !== undefined)
+            this.ctx.logger.warn(`${this.name}: session "${meta.id}" recovered from a torn tail; incomplete tail bytes were discarded`);
     }
     /** List valid unique stored sessions' metadata (header line only — no full-log parse). */
     async list(signal) {
@@ -475,7 +487,7 @@ export class JsonlSessionPersistence extends SessionPersistence {
         // parent directory's metadata is synced.
         await this.syncDirPosix(dir);
         // Best-effort temp cleanup: the log is already published and durable, so a
-        // failure to remove the (now-redundant) temp hard link must NOT reject the
+        // failure to remove the redundant temp hard link must NOT reject the
         // append. Swallow only the rm failure; nothing else of consequence runs here.
         try {
             await rm(tmp, { force: true });
@@ -527,6 +539,9 @@ export class JsonlSessionPersistence extends SessionPersistence {
     /** Encode the header and first batch without combining their frame boundaries. */
     async encodeMaterialization(meta, events) {
         const header = JSON.stringify(toHeaderLine(meta)) + '\n';
+        if (events.length === 0) {
+            return this.compression === 'none' ? header : compressZstdFrame(header);
+        }
         const body = eventLines(events, this.packChunks) + '\n';
         if (this.compression === 'none')
             return header + body;

@@ -20,6 +20,13 @@ const defaultLoadBundle = (url) => new Promise((resolve, reject) => {
     }, { once: true });
     document.head.append(el);
 });
+/** Replace the rev query while preserving absolute, protocol-relative, or path-relative form. */
+function atRevision(url, rev) {
+    if (!/[?&]rev=[^&#]*/.test(url)) {
+        throw new Error(`client-modules: bundle URL ${url} has no revision`);
+    }
+    return url.replace(/([?&]rev=)[^&#]*/, `$1${encodeURIComponent(rev)}`);
+}
 /**
  * Claim and inventory the <style> tags a factory injected during
  * materialization: preset-emitted tags arrive pre-tagged with data-plugin;
@@ -51,8 +58,10 @@ export class ClientModuleSystem {
     seed;
     factories = new Map();
     bootstrapIds = new Set();
-    /** In-flight prefetch (script load) per id; concurrent callers share it. */
+    /** In-flight script transport per URL; every row in one batch shares it. */
     pendingArrival = new Map();
+    /** Single-resource combo URL selected by HMR after invalidating one row. */
+    reloadUrls = new Map();
     /** Materialization re-entrancy guard: factory-form CJS cannot deliver partial exports, so a cycle is fatal. */
     materializing = new Set();
     graphRows = new Map();
@@ -100,27 +109,35 @@ export class ClientModuleSystem {
     }
     /** Load one graph row so its factory is registered (idempotent per in-flight arrival). */
     arrive(row) {
-        const { id, url } = row;
-        const pending = this.pendingArrival.get(id);
-        if (pending !== undefined)
-            return pending;
+        const { id } = row;
         if (this.loadCache.has(id) || this.factories.has(id))
             return Promise.resolve();
-        const task = this.loadBundle(url).then(() => {
+        const reloadUrl = this.reloadUrls.get(id);
+        const url = reloadUrl ?? row.initialUrl;
+        let transport = this.pendingArrival.get(url);
+        if (transport === undefined) {
+            transport = this.loadBundle(url).finally(() => { this.pendingArrival.delete(url); });
+            this.pendingArrival.set(url, transport);
+        }
+        return transport.then(() => {
             if (!this.factories.has(id)) {
                 throw new Error(`client-modules: bundle ${url} loaded without registering "${id}" via __ModuleLoader__.load`);
             }
-        }).finally(() => { this.pendingArrival.delete(id); });
-        this.pendingArrival.set(id, task);
-        return task;
+            if (reloadUrl !== undefined && this.reloadUrls.get(id) === reloadUrl) {
+                this.reloadUrls.delete(id);
+            }
+        });
     }
-    /** Register each unresolved dynamic request before registering its consumer. */
-    async arriveGraphRow(row, open = []) {
+    /** Register each injected package and unresolved dynamic request before its consumer. */
+    async arriveGraphRow(row, open = [], visited = new Set()) {
         const cycleStart = open.indexOf(row.id);
         if (cycleStart !== -1) {
             throw new Error(`client-modules: module arrival cycle ${[...open.slice(cycleStart), row.id].join(' -> ')} `
                 + '(the host must reject this graph before serving it)');
         }
+        if (visited.has(row.id))
+            return;
+        visited.add(row.id);
         const next = [...open, row.id];
         for (const request of row.external) {
             const id = stripClientSuffix(request);
@@ -128,7 +145,12 @@ export class ClientModuleSystem {
                 continue;
             const dependency = this.graphRows.get(id);
             if (dependency !== undefined)
-                await this.arriveGraphRow(dependency, next);
+                await this.arriveGraphRow(dependency, next, visited);
+        }
+        for (const packageName of row.inject) {
+            const dependency = this.graphRows.get(packageName);
+            if (dependency !== undefined)
+                await this.arriveGraphRow(dependency, [], visited);
         }
         await this.arrive(row);
     }
@@ -203,10 +225,15 @@ export class ClientModuleSystem {
             throw new Error(`client-modules: prefetch("${id}") — not a graph entry`);
         await this.arriveGraphRow(row);
     }
-    invalidate(id) {
+    invalidate(id, rev) {
         const normalized = stripClientSuffix(id);
         if (this.bootstrapIds.has(normalized))
             return;
+        const row = this.graphRows.get(normalized);
+        if (row !== undefined)
+            this.reloadUrls.set(normalized, atRevision(row.url, rev ?? row.rev));
+        else
+            this.reloadUrls.delete(normalized);
         this.factories.delete(normalized);
         this.loadCache.delete(normalized);
     }

@@ -161,34 +161,46 @@ class ConfigWatcherService(Service):
     async def _poll_loop(self) -> None:
         while self._running:
             try:
-                await asyncio.sleep(max(0.1, self.debounce_ms / 1000.0))
+                await asyncio.sleep(max(0.05, self.debounce_ms / 1000.0))
 
                 # 1. Check registered config files
                 for filename, refresh_fn in list(self._configs.items()):
-                    if not os.path.exists(filename):
-                        continue
-                    try:
-                        mtime = os.path.getmtime(filename)
-                    except OSError:
-                        continue
+                    exists = os.path.exists(filename)
                     last_mtime = self._mtimes.get(filename, 0.0)
-                    if mtime > last_mtime:
-                        self._mtimes[filename] = mtime
-                        if last_mtime > 0:  # Skip initial check
+                    if exists:
+                        try:
+                            mtime = os.path.getmtime(filename)
+                        except OSError:
+                            continue
+                        if last_mtime == 0.0:  # add event
+                            self._mtimes[filename] = mtime
+                            self._trigger_config_refresh(filename, refresh_fn)
+                        elif mtime > last_mtime:  # change event
+                            self._mtimes[filename] = mtime
+                            self._trigger_config_refresh(filename, refresh_fn)
+                    else:
+                        if last_mtime > 0.0:  # unlink event
+                            self._mtimes[filename] = 0.0
                             self._trigger_config_refresh(filename, refresh_fn)
 
                 # 2. Check registered module files
                 for filename, target_plugin in list(self._modules.items()):
-                    if not os.path.exists(filename):
-                        continue
-                    try:
-                        mtime = os.path.getmtime(filename)
-                    except OSError:
-                        continue
+                    exists = os.path.exists(filename)
                     last_mtime = self._mtimes.get(filename, 0.0)
-                    if mtime > last_mtime:
-                        self._mtimes[filename] = mtime
-                        if last_mtime > 0:
+                    if exists:
+                        try:
+                            mtime = os.path.getmtime(filename)
+                        except OSError:
+                            continue
+                        if last_mtime == 0.0:  # add event
+                            self._mtimes[filename] = mtime
+                            self._trigger_module_reload(filename, target_plugin)
+                        elif mtime > last_mtime:  # change event
+                            self._mtimes[filename] = mtime
+                            self._trigger_module_reload(filename, target_plugin)
+                    else:
+                        if last_mtime > 0.0:  # unlink event
+                            self._mtimes[filename] = 0.0
                             self._trigger_module_reload(filename, target_plugin)
 
             except asyncio.CancelledError:
@@ -207,8 +219,6 @@ class ConfigWatcherService(Service):
             while state.dirty:
                 state.dirty = False
                 try:
-                    if hasattr(self.ctx, "emit"):
-                        self.ctx.emit("hmr/change", filename)
                     res = refresh_fn()
                     if inspect.isawaitable(res):
                         await res
@@ -227,8 +237,6 @@ class ConfigWatcherService(Service):
             loop = asyncio.get_running_loop()
             state.running = loop.create_task(_run())
         except RuntimeError:
-            if hasattr(self.ctx, "emit"):
-                self.ctx.emit("hmr/change", filename)
             res = refresh_fn()
             if inspect.isawaitable(res):
                 try:
@@ -335,18 +343,31 @@ class ConfigWatcherService(Service):
         """
         Watch one exact config path and execute refresh_fn on modification matching TS hmr.registerConfig.
         """
+        if not self._running:
+            raise RuntimeError("HMR is not active")
+
         abs_path = os.path.abspath(filename)
+        if abs_path in self._configs:
+            raise ValueError(f"config path already registered: {filename}")
+
         if os.path.exists(abs_path):
-            self._mtimes[abs_path] = os.path.getmtime(abs_path)
+            try:
+                self._mtimes[abs_path] = os.path.getmtime(abs_path)
+            except OSError:
+                self._mtimes[abs_path] = 0.0
+            # Present file at registration: trigger refresh once matching TS ignoreInitial: false
+            self._trigger_config_refresh(abs_path, refresh_fn)
         else:
-            self._mtimes[abs_path] = time.time()
+            self._mtimes[abs_path] = 0.0
 
         self._configs[abs_path] = refresh_fn
 
         def unregister() -> None:
             self._configs.pop(abs_path, None)
             self._mtimes.pop(abs_path, None)
-            self._refreshes.pop(abs_path, None)
+            state = self._refreshes.pop(abs_path, None)
+            if state and state.running and not state.running.done():
+                state.running.cancel()
 
         if hasattr(self.ctx, "effect"):
             return self.ctx.effect(unregister, label=f"hmr.register_config('{abs_path}')")
@@ -356,11 +377,17 @@ class ConfigWatcherService(Service):
         """
         Watch a Python module file and dynamically reload its plugins on modification matching TS Hmr module watch.
         """
+        if not self._running:
+            raise RuntimeError("HMR is not active")
+
         abs_path = os.path.abspath(filename)
         if os.path.exists(abs_path):
-            self._mtimes[abs_path] = os.path.getmtime(abs_path)
+            try:
+                self._mtimes[abs_path] = os.path.getmtime(abs_path)
+            except OSError:
+                self._mtimes[abs_path] = 0.0
         else:
-            self._mtimes[abs_path] = time.time()
+            self._mtimes[abs_path] = 0.0
 
         self._modules[abs_path] = plugin_cls
         self.graph.scan_file(abs_path)
@@ -368,7 +395,9 @@ class ConfigWatcherService(Service):
         def unregister() -> None:
             self._modules.pop(abs_path, None)
             self._mtimes.pop(abs_path, None)
-            self._refreshes.pop(abs_path, None)
+            state = self._refreshes.pop(abs_path, None)
+            if state and state.running and not state.running.done():
+                state.running.cancel()
 
         if hasattr(self.ctx, "effect"):
             return self.ctx.effect(unregister, label=f"hmr.register_module('{abs_path}')")
@@ -378,6 +407,9 @@ class ConfigWatcherService(Service):
         self._running = False
         if self._poll_task and not self._poll_task.done():
             self._poll_task.cancel()
+        for state in self._refreshes.values():
+            if state and state.running and not state.running.done():
+                state.running.cancel()
         self._configs.clear()
         self._modules.clear()
         self._mtimes.clear()

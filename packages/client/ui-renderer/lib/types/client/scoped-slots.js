@@ -4,8 +4,8 @@ import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-run
  * authorization, and entry boundaries contain registrant failures.
  */
 import { Component, useMemo, useState, useSyncExternalStore } from 'react';
-import { SlotOwnershipError, StaleAuthorizationError, } from '@deepseek-ai/dsh-client-ui-slots';
-import { HostContext, SessionMaybeProvider, SessionProvider, SlotAssemblyError, maybeObservableHook, observableHook, projectionHook, useHost, useSessionMaybeProvideInfo, } from "./session-provider.js";
+import { SlotOwnershipError, StaleAuthorizationError, standardHookPropName, } from '@deepseek-ai/dsh-client-ui-slots';
+import { HostContext, RootStandardProvider, ScopeProvider, SlotAssemblyError, keyedObservableHook, maybeObservableHook, observableHook, useHost, useRootBinding, useScopeBinding, } from "./bindings.js";
 /**
  * Per-entry renderSlot bindings. The binding is identity-stable per entry
  * (memoized components must not resubscribe on unrelated re-renders) and dies
@@ -63,7 +63,7 @@ function boundRenderSlotChain(host, entry) {
 }
 /**
  * Inject results cache: root entries per entry, session entries per
- * (entry x provide bundle). WeakMap keys are entry/info objects (both
+ * (entry x scope binding). WeakMap keys are entry/binding objects (both
  * identity-stable per registration/session scope), so cache lifetime rides
  * the same axes as the values it memoizes.
  */
@@ -71,15 +71,15 @@ const rootInjectCache = new WeakMap();
 const sessionInjectCache = new WeakMap();
 const sessionMaybeInjectCache = new WeakMap();
 const EMPTY_INJECTED_PROPS = {};
-function runInject(entry, info, actions) {
+function runInject(entry, binding, actions) {
     const inject = entry.inject;
     if (!inject)
         return EMPTY_INJECTED_PROPS;
     // Declaration-derived positional arguments: sessionId for session scope,
     // baked actions when a store is declared.
     const args = [];
-    if (info !== undefined)
-        args.push(info.sessionId);
+    if (binding !== undefined)
+        args.push(binding.key);
     if (actions !== undefined)
         args.push(actions);
     return bindInjectHooks(inject(...args));
@@ -95,7 +95,7 @@ function bindInjectHooks(face) {
     const { hooks: _hooks, ...rest } = face;
     const bound = rest;
     for (const [name, source] of Object.entries(sources)) {
-        const hookName = `use${name[0]?.toUpperCase() ?? ''}${name.slice(1)}`;
+        const hookName = standardHookPropName(name);
         bound[hookName] = observableHook(source);
     }
     return bound;
@@ -119,7 +119,7 @@ function cachedSlotInject(face) {
     const props = rest;
     let factories;
     for (const [name, definition] of Object.entries(definitions)) {
-        const hookName = `use${name[0]?.toUpperCase() ?? ''}${name.slice(1)}`;
+        const hookName = standardHookPropName(name);
         if (typeof definition === 'function') {
             factories ??= {};
             factories[name] = definition;
@@ -138,7 +138,7 @@ function cachedSlotInject(face) {
 function bindSlotHookFactories(factories, standard, hookContext) {
     const hooks = {};
     for (const [name, factory] of Object.entries(factories)) {
-        const hookName = `use${name[0]?.toUpperCase() ?? ''}${name.slice(1)}`;
+        const hookName = standardHookPropName(name);
         hooks[hookName] = factory(standard, hookContext);
     }
     return hooks;
@@ -151,29 +151,29 @@ function cachedRootInject(entry, actions) {
     }
     return props;
 }
-function cachedSessionInject(entry, info, actions) {
-    let perInfo = sessionInjectCache.get(entry);
-    if (!perInfo) {
-        perInfo = new WeakMap();
-        sessionInjectCache.set(entry, perInfo);
+function cachedSessionInject(entry, binding, actions) {
+    let perBinding = sessionInjectCache.get(entry);
+    if (!perBinding) {
+        perBinding = new WeakMap();
+        sessionInjectCache.set(entry, perBinding);
     }
-    let props = perInfo.get(info);
+    let props = perBinding.get(binding);
     if (!props) {
-        props = runInject(entry, info, actions);
-        perInfo.set(info, props);
+        props = runInject(entry, binding, actions);
+        perBinding.set(binding, props);
     }
     return props;
 }
-function cachedSessionMaybeInject(entry, info, actions) {
-    let perInfo = sessionMaybeInjectCache.get(entry);
-    if (!perInfo) {
-        perInfo = new WeakMap();
-        sessionMaybeInjectCache.set(entry, perInfo);
+function cachedSessionMaybeInject(entry, binding, actions) {
+    let perBinding = sessionMaybeInjectCache.get(entry);
+    if (!perBinding) {
+        perBinding = new WeakMap();
+        sessionMaybeInjectCache.set(entry, perBinding);
     }
-    let props = perInfo.get(info);
+    let props = perBinding.get(binding);
     if (!props) {
-        props = runInject(entry, info, actions);
-        perInfo.set(info, props);
+        props = runInject(entry, binding, actions);
+        perBinding.set(binding, props);
     }
     return props;
 }
@@ -281,46 +281,70 @@ class SlotErrorBoundary extends Component {
         return this.props.children;
     }
 }
-const standardPropsCache = new WeakMap();
+const rootStandardCache = new WeakMap();
+const sessionStandardCache = new WeakMap();
+const sessionMaybeStandardCache = new WeakMap();
+/** Materialize one binding into stable framework Hook and plain-prop seats. */
+function materializeStandardBinding(binding, optional) {
+    const standard = { ...binding.props };
+    for (const [name, source] of Object.entries(binding.hooks)) {
+        if (source === undefined && !optional) {
+            throw new SlotAssemblyError(`strict standard hook '${name}' has no source`);
+        }
+        standard[standardHookPropName(name)] = optional
+            ? maybeObservableHook(source)
+            : observableHook(source);
+    }
+    for (const [name, source] of Object.entries(binding.keyedHooks)) {
+        if (source === undefined && !optional) {
+            throw new SlotAssemblyError(`strict keyed standard hook '${name}' has no source resolver`);
+        }
+        standard[standardHookPropName(name)] = keyedObservableHook(source);
+    }
+    return standard;
+}
 /** Stable official-props object used by contextual Hook factories. */
-function standardProps(host, scope, info) {
-    let cache = standardPropsCache.get(host);
-    if (cache === undefined) {
-        cache = {
-            root: {
-                useSessions: observableHook(host.sessions.list),
-                useWorkspaces: observableHook(host.workspaces.list),
-            },
-            session: new WeakMap(),
-            sessionMaybe: new WeakMap(),
-        };
-        standardPropsCache.set(host, cache);
+function standardProps(scope, rootBinding, scopeBinding) {
+    let root = rootStandardCache.get(rootBinding);
+    if (root === undefined) {
+        root = materializeStandardBinding(rootBinding, false);
+        rootStandardCache.set(rootBinding, root);
     }
     if (scope === 'root')
-        return cache.root;
-    if (info === undefined)
-        throw new SlotAssemblyError(`scope '${scope}' rendered without session provide info`);
-    const byInfo = scope === 'session' ? cache.session : cache.sessionMaybe;
-    let standard = byInfo.get(info);
+        return root;
+    if (scopeBinding === undefined)
+        throw new SlotAssemblyError(`scope '${scope}' rendered without a standard-source binding`);
+    const cache = scope === 'session' ? sessionStandardCache : sessionMaybeStandardCache;
+    let perScope = cache.get(rootBinding);
+    if (perScope === undefined) {
+        perScope = new WeakMap();
+        cache.set(rootBinding, perScope);
+    }
+    let standard = perScope.get(scopeBinding);
     if (standard !== undefined)
         return standard;
-    standard = { ...cache.root };
-    for (const [name, source] of Object.entries(info.hooks)) {
-        const hookName = `use${name[0]?.toUpperCase() ?? ''}${name.slice(1)}`;
-        if (scope === 'session-maybe') {
-            standard[hookName] = maybeObservableHook(source);
-        }
-        else {
-            if (source === undefined)
-                throw new SlotAssemblyError(`strict session hook '${name}' has no source`);
-            standard[hookName] = observableHook(source);
-        }
-    }
-    Object.assign(standard, info.props);
-    standard['sessionId'] = info.sessionId;
-    standard['useProjection'] = projectionHook(info);
-    byInfo.set(info, standard);
+    standard = {
+        ...root,
+        ...materializeStandardBinding(scopeBinding, scope === 'session-maybe'),
+    };
+    perScope.set(scopeBinding, standard);
     return standard;
+}
+const scopeAreaCache = new WeakMap();
+/** Bind one domain-owned scope area renderer to the current scope binding. */
+function scopeAreaProvider(adapter) {
+    let Provider = scopeAreaCache.get(adapter);
+    if (Provider !== undefined)
+        return Provider;
+    if (adapter.renderArea === undefined) {
+        throw new SlotAssemblyError("scope 'session' adapter does not provide its area renderer");
+    }
+    const renderArea = adapter.renderArea.bind(adapter);
+    Provider = function ScopeAreaProvider(props) {
+        return renderArea(useScopeBinding(), props);
+    };
+    scopeAreaCache.set(adapter, Provider);
+    return Provider;
 }
 /**
  * Standard-kit synthesis shared by both scope branches: the global
@@ -334,8 +358,8 @@ function standardProps(host, scope, info) {
  * per source (observableHook), so spreading a fresh kit object per render
  * never churns child subscriptions.
  */
-function standardKit(host, entry, scope, info) {
-    const standard = standardProps(host, scope, info);
+function standardKit(host, entry, scope, rootBinding, scopeBinding) {
+    const standard = standardProps(scope, rootBinding, scopeBinding);
     const kit = { ...standard };
     if (entry.locale !== undefined) {
         const face = host.locale;
@@ -346,9 +370,10 @@ function standardKit(host, entry, scope, info) {
         }
         kit['t'] = localeSeat(face, entry.locale);
     }
-    const store = scope === 'session-maybe' && info?.sessionId === undefined
+    const scopedStoreBinding = scopeBinding?.key === undefined
         ? undefined
-        : host.storeOf(entry, info?.sessionId);
+        : scopeBinding;
+    const store = host.storeOf(entry, scopedStoreBinding);
     if (store !== undefined) {
         // The instance IS an observable snapshot source (contract getSnapshot/
         // subscribe); the useStore hook binds here, cached per instance.
@@ -362,11 +387,14 @@ function standardKit(host, entry, scope, info) {
         if (Object.values(entry.children).some(spec => spec.kind === 'chain')) {
             kit['renderSlotChain'] = boundRenderSlotChain(host, entry);
         }
-        // SessionProvider standard seat: entries declaring a session-scope child
-        // render the session area, so the framework hands them the self-wired
-        // provider (module-level component = stable reference; no value import).
+        // The session owner supplies area semantics; the renderer only binds its
+        // adapter to the current generic scope source.
         if (Object.values(entry.children).some(spec => spec.scope === 'session')) {
-            kit['SessionProvider'] = SessionProvider;
+            const adapter = host.scope('session');
+            if (adapter === undefined) {
+                throw new SlotAssemblyError("entry declares a session child without an installed 'session' scope adapter");
+            }
+            kit['SessionProvider'] = scopeAreaProvider(adapter);
         }
     }
     return { kit, standard, actions: store?.actions };
@@ -391,18 +419,20 @@ function renderEntry(slotKey, Comp, kit, standard, injected, slotInjected, owner
     }
     return (_jsx(ContextualEntry, { slotKey: slotKey, Comp: Comp, kit: kit, standard: standard, injected: injected, slotInjected: slotInjected, ownerProps: ownerProps, hookContext: hookContext, hasHookContext: hasHookContext }));
 }
-function SessionEntry({ entry, ownerProps, info, slotKey, slotInjected, hookContext, hasHookContext }) {
+function SessionEntry({ entry, ownerProps, binding, slotKey, slotInjected, hookContext, hasHookContext }) {
     const host = useHost();
+    const rootBinding = useRootBinding();
     const Comp = entry.component;
-    const { kit, standard, actions } = standardKit(host, entry, 'session', info);
-    const injected = cachedSessionInject(entry, info, actions);
+    const { kit, standard, actions } = standardKit(host, entry, 'session', rootBinding, binding);
+    const injected = cachedSessionInject(entry, binding, actions);
     return renderEntry(slotKey, Comp, kit, standard, injected, slotInjected, ownerProps, hookContext, hasHookContext);
 }
-function SessionMaybeEntryBody({ entry, ownerProps, info, slotKey, slotInjected, hookContext, hasHookContext }) {
+function SessionMaybeEntryBody({ entry, ownerProps, binding, slotKey, slotInjected, hookContext, hasHookContext }) {
     const host = useHost();
+    const rootBinding = useRootBinding();
     const Comp = entry.component;
-    const { kit, standard, actions } = standardKit(host, entry, 'session-maybe', info);
-    const injected = cachedSessionMaybeInject(entry, info, actions);
+    const { kit, standard, actions } = standardKit(host, entry, 'session-maybe', rootBinding, binding);
+    const injected = cachedSessionMaybeInject(entry, binding, actions);
     return renderEntry(slotKey, Comp, kit, standard, injected, slotInjected, ownerProps, hookContext, hasHookContext);
 }
 /**
@@ -419,7 +449,7 @@ function SessionMaybeEntryBody({ entry, ownerProps, info, slotKey, slotInjected,
  * store, hooks) — the existing layering rule, now load-bearing.
  */
 function SessionMaybeEntry({ entry, ownerProps, slotKey, slotInjected, hookContext, hasHookContext }) {
-    const info = useSessionMaybeProvideInfo();
+    const binding = useScopeBinding();
     // The child key is an incarnation counter, NOT the session id: adoption
     // must keep the key constant across undefined → first id. Bookkeeping
     // lives in this stable (unkeyed) wrapper via the render-phase setState
@@ -428,40 +458,42 @@ function SessionMaybeEntry({ entry, ownerProps, slotKey, slotInjected, hookConte
     // guard conditions make it convergent — StrictMode-safe).
     const [state, setState] = useState(FIRST_INCARNATION);
     let { adopted, epoch } = state;
-    if (info.sessionId !== undefined && adopted === undefined) {
+    if (binding.key !== undefined && adopted === undefined) {
         // Adoption: same epoch — no remount.
-        adopted = info.sessionId;
+        adopted = binding.key;
         setState({ adopted, epoch });
     }
-    else if (adopted !== undefined && info.sessionId !== undefined && info.sessionId !== adopted) {
+    else if (adopted !== undefined && binding.key !== undefined && binding.key !== adopted) {
         // Post-adoption session switch: next incarnation, born already adopted.
-        adopted = info.sessionId;
+        adopted = binding.key;
         epoch += 1;
         setState({ adopted, epoch });
     }
-    else if (adopted !== undefined && info.sessionId === undefined) {
+    else if (adopted !== undefined && binding.key === undefined) {
         // Back to no-session: next incarnation, born blank (adopts anew later).
         adopted = undefined;
         epoch += 1;
         setState({ adopted, epoch });
     }
-    return (_jsx(SessionMaybeEntryBody, { entry: entry, ownerProps: ownerProps, info: info, slotKey: slotKey, slotInjected: slotInjected, hookContext: hookContext, hasHookContext: hasHookContext }, epoch));
+    return (_jsx(SessionMaybeEntryBody, { entry: entry, ownerProps: ownerProps, binding: binding, slotKey: slotKey, slotInjected: slotInjected, hookContext: hookContext, hasHookContext: hasHookContext }, epoch));
 }
 const FIRST_INCARNATION = { adopted: undefined, epoch: 0 };
 function RootEntry({ entry, ownerProps, slotKey, slotInjected, hookContext, hasHookContext }) {
     const host = useHost();
+    const rootBinding = useRootBinding();
     const Comp = entry.component;
-    const { kit, standard, actions } = standardKit(host, entry, 'root', undefined);
+    const { kit, standard, actions } = standardKit(host, entry, 'root', rootBinding, undefined);
     const injected = cachedRootInject(entry, actions);
     return renderEntry(slotKey, Comp, kit, standard, injected, slotInjected, ownerProps, hookContext, hasHookContext);
 }
 function StrictSessionEntry({ slotKey, entry, ownerProps, slotInjected, hookContext, hasHookContext, onEntryError }) {
-    const info = useSessionMaybeProvideInfo();
-    if (info.sessionId === undefined)
-        return null;
+    const binding = useScopeBinding();
+    if (binding.key === undefined) {
+        throw new SlotAssemblyError(`strict session slot '${slotKey}' rendered without a scope binding`);
+    }
     // Per-session remount rides this key; per-entry remount rides the outer
     // element's entry-identity key (the outlet's guarded() call).
-    return (_jsx(SlotErrorBoundary, { slotKey: slotKey, onEntryError: onEntryError, children: _jsx(SessionEntry, { entry: entry, ownerProps: ownerProps, info: info, slotKey: slotKey, slotInjected: slotInjected, hookContext: hookContext, hasHookContext: hasHookContext }) }, info.sessionId));
+    return (_jsx(SlotErrorBoundary, { slotKey: slotKey, onEntryError: onEntryError, children: _jsx(SessionEntry, { entry: entry, ownerProps: ownerProps, binding: binding, slotKey: slotKey, slotInjected: slotInjected, hookContext: hookContext, hasHookContext: hasHookContext }) }, binding.key));
 }
 /**
  * Anchor style shared by every outlet wrapper: `display:contents` keeps the
@@ -477,30 +509,30 @@ function SlotOutlet({ slotKey, ownerProps, opts }) {
     // Locale revision tick: a locale switch re-renders every outlet, and entry
     // bodies re-derive their `t` seat at the new revision (fresh identity).
     useLocaleRevision(host.locale);
-    const sessionInfo = useSessionMaybeProvideInfo();
+    const scopeBinding = useScopeBinding();
     // Anchor contract: every slot render site exposes a stable
     // `[data-slot="<key>"]` wrapper — the addressable seam dynamic styles
     // target — and `display:contents` keeps it layout-neutral. The wrapper
     // rides the outlet, not the dispatch outcome: fallback, crash-face, and
     // undeclared-empty states all render inside it, so the anchor's presence
     // never flickers with registration churn.
-    return (_jsx("div", { "data-slot": slotKey, style: ANCHOR_STYLE, children: renderOutletContent(host, slotKey, ownerProps, opts, sessionInfo) }));
+    return (_jsx("div", { "data-slot": slotKey, style: ANCHOR_STYLE, children: renderOutletContent(host, slotKey, ownerProps, opts, scopeBinding) }));
 }
 /** Kind dispatch behind the outlet anchor (single/keyed/list/chain, fallbacks, crash faces). */
-function renderOutletContent(host, slotKey, ownerProps, opts, sessionInfo) {
+function renderOutletContent(host, slotKey, ownerProps, opts, scopeBinding) {
     const spec = host.specOf(slotKey);
     // Undeclared (or no-longer-declared) keys render empty: a declaring entry's
     // unload returns the slot to the undeclared state while retained elements
     // may still be mounted — natural empty, not an ownership failure.
     if (!spec)
         return null;
-    const strictSessionAbsent = spec.scope === 'session' && sessionInfo.sessionId === undefined;
-    if (strictSessionAbsent && (spec.kind !== 'chain' || !opts?.overlay)) {
-        return _jsx(_Fragment, { children: opts?.fallback ?? null });
+    if (spec.kind === 'chain' && opts?.fallbackOnly === true) {
+        return renderChainResult(slotKey, null, opts);
     }
-    // An absent strict overlay chain follows its ordinary empty-election path,
-    // preserving the Fragment/fallback-wrapper shape across session arrival.
-    const entries = strictSessionAbsent ? [] : host.entriesOf(slotKey);
+    if (spec.scope === 'session' && scopeBinding.key === undefined) {
+        throw new SlotAssemblyError(`strict session slot '${slotKey}' rendered without a scope binding`);
+    }
+    const entries = host.entriesOf(slotKey);
     const slotInjected = cachedSlotInject(spec.inject);
     // The boundary must wrap the Entry ELEMENT, not live inside it: inject
     // factories and kit synthesis run in the Entry body and must land in the
@@ -566,15 +598,7 @@ function renderOutletContent(host, slotKey, ownerProps, opts, sessionInfo) {
                 break;
             }
         }
-        if (opts?.overlay) {
-            // Overlay chain (ChainRenderOpts.overlay): the fallback stays mounted
-            // through elections — hidden via inline display:none (decisive over any
-            // author CSS), shown via display:contents so the wrapper never affects
-            // the owner's layout. The wrapper's tree position is constant, so React
-            // reconciles instead of remounting and fallback state survives takeover.
-            return (_jsxs(_Fragment, { children: [_jsx("div", { "data-chain-overlay-fallback": slotKey, style: { display: elected === null ? 'contents' : 'none' }, children: opts.fallback ?? null }), elected] }));
-        }
-        return elected ?? _jsx(_Fragment, { children: opts?.fallback ?? null });
+        return renderChainResult(slotKey, elected, opts);
     }
     // list: one row per id cell — the cell's shadowing winner, or the crash
     // face once every entry of the cell abdicated (a dry cell must not
@@ -605,6 +629,12 @@ function renderOutletContent(host, slotKey, ownerProps, opts, sessionInfo) {
             ? guarded(item.entry, `e${entryKeyOf(item.entry)}`)
             : _jsx("div", { "data-slot-error": slotKey }, `x${item.id ?? i}`)) }));
 }
+/** Render a chain election while preserving the overlay fallback's tree position. */
+function renderChainResult(slotKey, elected, opts) {
+    if (!opts?.overlay)
+        return elected ?? _jsx(_Fragment, { children: opts?.fallback ?? null });
+    return (_jsxs(_Fragment, { children: [_jsx("div", { "data-chain-overlay-fallback": slotKey, style: { display: elected === null ? 'contents' : 'none' }, children: opts.fallback ?? null }), elected] }));
+}
 /** Root outlet: the shell's single ctx-level render entry — an unregistered 'root' is a boot-order failure, never a silent blank. */
 function RootOutlet({ ownerProps }) {
     const host = useHost();
@@ -624,7 +654,7 @@ function RootOutlet({ ownerProps }) {
     return (_jsx("div", { "data-slot": "root", style: ANCHOR_STYLE, children: _jsx(SlotErrorBoundary, { slotKey: "root", onEntryError: (error) => { host.reportEntryError('root', entry, error, { abdicate: true }); }, children: _jsx(RootEntry, { entry: entry, ownerProps: ownerProps, slotKey: "root", slotInjected: EMPTY_SLOT_INJECT, hookContext: undefined, hasHookContext: false }) }, entryKeyOf(entry)) }));
 }
 /**
- * Build the renderer the shell installs into the runtime SlotRegistry
+ * Build the renderer installed into the `ui-renderer` SlotRegistry
  * (ctx.slots.install(createSlotRenderer()) at boot; the service owns the
  * install/renderSlot contract and the double-install/not-installed throws).
  * @returns the renderer.
@@ -632,7 +662,7 @@ function RootOutlet({ ownerProps }) {
 export function createSlotRenderer() {
     return {
         renderRoot(host, ownerProps) {
-            return (_jsx(HostContext.Provider, { value: host, children: _jsx(SessionMaybeProvider, { children: _jsx(RootOutlet, { ownerProps: ownerProps }) }) }));
+            return (_jsx(HostContext.Provider, { value: host, children: _jsx(RootStandardProvider, { children: _jsx(ScopeProvider, { scope: "session-maybe", children: _jsx(RootOutlet, { ownerProps: ownerProps }) }) }) }));
         },
     };
 }

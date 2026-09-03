@@ -9,7 +9,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { SessionId, } from '@deepseek-ai/dsh-session';
 import { sql } from "./sql.js";
 /** Current physical-record schema with packed and compressed event rows. */
-export const SCHEMA_VERSION = 17;
+export const SCHEMA_VERSION = 19;
 /** Application id reserved for DeepSeek Harness SQLite session databases. */
 export const SESSION_PERSISTENCE_SQLITE_APPLICATION_ID = 0x44534850;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
@@ -55,6 +55,7 @@ function configureConnectionSecurity(db, path) {
     }
 }
 function configureDatabase(Database, db, path) {
+    db.exec(sql('page-size'));
     db.exec(sql('foreign-keys-on'));
     let began = false;
     try {
@@ -140,7 +141,7 @@ function initializeDatabase(db) {
     db.exec(sql('schema'));
     db.prepare(sql('insert-persistence-state')).run(randomUUID());
     db.exec(sql('set-application-id'));
-    db.exec(sql('set-user-version-17'));
+    db.exec(sql('set-user-version-19'));
 }
 let canonicalSchema;
 function expectedSchema(Database) {
@@ -234,9 +235,9 @@ export function decodeSessionRow(value) {
  */
 export function decodeEventRow(value) {
     const row = record(value, 'stored event');
-    const ignorable = nullableSafeIntegerField(row, 'ignorable');
-    if (ignorable !== null && ignorable !== 0 && ignorable !== 1) {
-        throw new Error('stored event ignorable must be 0, 1, or null');
+    const isPacked = safeIntegerField(row, 'is_packed');
+    if (isPacked !== 0 && isPacked !== 1) {
+        throw new Error('stored event is_packed must be 0 or 1');
     }
     return {
         seq: nonnegativeSafeIntegerField(row, 'seq'),
@@ -245,7 +246,7 @@ export function decodeEventRow(value) {
         data: stringOrBlobField(row, 'data'),
         source_event_seqs: nullableBlobField(row, 'source_event_seqs'),
         surface_op: nullableStringField(row, 'surface_op'),
-        ignorable,
+        is_packed: isPacked,
     };
 }
 /**

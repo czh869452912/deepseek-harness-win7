@@ -3,7 +3,10 @@ import { accessEn, accessZh, en, zh, } from "./locales.js";
 import { displayPermissionPreset, FULL_ACCESS_PRESET, } from "./presentation.js";
 import { PermissionPresetSettingsController } from "./settings-store.js";
 /** Required services (cordis fiber inject). */
-export const inject = ['commandUi', 'sessions', 'slots', 'locale', 'connection', 'remote', 'settingsScope', 'settingsSchema'];
+export const inject = [
+    'commandUi', 'sessions', 'slots', 'locale', 'remote', 'remote.settings',
+    'settingsScope', 'settingsSchema',
+];
 const ACCESS_NS = 'permission.access';
 /** Read one session's current permissions projection value (undefined = capability absent). */
 function selectOf(session) {
@@ -66,10 +69,8 @@ export function apply(ctx) {
     const t = ctx.locale.bind(ACCESS_NS);
     const sessionFor = (session) => sessions.binding(session.sessionId)?.session;
     ctx.effect(() => ctx.locale.register('settings.permission', { zh, en }), 'ui-permission: settings row dictionaries');
-    const connection = ctx.get('connection');
-    // The row follows the shared describe mirror, whose owning plugin already
-    // refreshes it on document commits and reconnects.
-    const controller = new PermissionPresetSettingsController(ctx.settingsScope.describe(), connection.api, ctx.settingsSchema);
+    // The shared SettingsScope mirror updates after document commits and reconnects.
+    const controller = new PermissionPresetSettingsController(ctx.settingsScope.describe(), { settings: ctx.remote.settings }, ctx.settingsSchema);
     const load = () => controller.load();
     const select = (preset) => controller.select(preset);
     const injected = () => ({

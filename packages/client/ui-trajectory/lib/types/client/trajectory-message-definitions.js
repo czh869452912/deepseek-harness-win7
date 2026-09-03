@@ -1,5 +1,5 @@
-import { contextForm, contextProvenance, } from '@deepseek-ai/dsh-client-runtime/client';
 import { trajectoryNode } from "./trajectory-definition-common.js";
+import { contextForm, contextProvenance } from "./trajectory-event-projection.js";
 function applySplice(previous, splice) {
     const pending = [...(previous?.state.pending ?? [])];
     const claimed = new Set(previous?.state.claimed ?? []);
@@ -80,7 +80,7 @@ const trajectoryMessageDefinition = {
  * @param ctx - Plugin context receiving the Definitions.
  */
 export function registerTrajectoryMessageDefinitions(ctx) {
-    ctx.conversationEvents.register(trajectoryInboxDefinition);
-    ctx.conversationEvents.register(trajectoryMessageDefinition);
+    ctx.uiConversation.events.register(trajectoryInboxDefinition);
+    ctx.uiConversation.events.register(trajectoryMessageDefinition);
 }
 //# sourceMappingURL=trajectory-message-definitions.js.map

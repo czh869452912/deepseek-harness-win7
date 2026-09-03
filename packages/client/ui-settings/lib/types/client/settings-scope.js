@@ -1,14 +1,12 @@
 /**
- * Host transport for the settings-namespace scope contract. The contract types
- * live in `dsh-client-runtime` (the common dependency of every feature that
- * owns a preference); this file owns the per-namespace derivation over the
- * shared {@link SettingsDescribeMirror} and the serialized write path, both of
- * which are Settings-surface concerns. Reads never touch the wire here: the
+ * Host transport for the settings-namespace scope contract. This file owns the
+ * per-namespace derivation over the shared {@link SettingsDescribeMirror} and
+ * the serialized write path. Reads never touch the wire here: the
  * mirror is the one `settings.describe` reader, and every scope is a selector
  * over its snapshot.
  */
 import { Service } from '@deepseek-ai/cordis';
-import { createSnapshotStore, } from '@deepseek-ai/dsh-client-runtime/client';
+import { createSnapshotStore } from '@deepseek-ai/dsh-client-store';
 /**
  * One namespace's derived view over the shared describe mirror, plus that
  * namespace's serialized Host writes. Writes carry the latest known namespace
@@ -36,7 +34,7 @@ export class SettingsScopeController {
      * @param api - settings wire face (writes only; reads ride the mirror).
      * @param spec - namespace identity and optional narrowing decoder.
      * @param mirror - the shared describe mirror this scope derives from.
-     * @param persistence - remote browsers remain process-local because settings RPCs are loopback-only.
+     * @param persistence - client-selected Host persistence; non-loopback pages may remain process-local.
      * @param schema - settings-owned schema operations.
      */
     constructor(api, spec, mirror, persistence, schema) {
@@ -79,7 +77,7 @@ export class SettingsScopeController {
      * @returns settlement after the write and any latest-write recovery read.
      */
     set(field, value) {
-        return this.write({ op: 'set', path: [field], value });
+        return this.mutate([{ op: 'set', path: [field], value: value }]);
     }
     /**
      * Queue one field clear; see {@link SettingsScope.unset} for the ordering,
@@ -88,25 +86,28 @@ export class SettingsScopeController {
      * @returns settlement after the clear and any latest-write recovery read.
      */
     unset(field) {
-        return this.write({ op: 'unset', path: [field] });
+        return this.mutate([{ op: 'unset', path: [field] }]);
     }
-    write(op) {
+    /**
+     * Queue one atomic namespace mutation; see {@link SettingsScope.mutate}.
+     * @param ops - ordered field operations copied when queued.
+     * @param expectedRevision - optional fixed revision read by the domain editor.
+     * @returns settlement after the mutation and any latest-write recovery read.
+     */
+    mutate(ops, expectedRevision) {
+        const ownedOps = structuredClone(ops);
         const generation = ++this.writeGeneration;
         return this.enqueue(async () => {
-            const revision = this.pendingRevision ?? this.getSnapshot().revision;
+            const revision = expectedRevision ?? this.pendingRevision ?? this.getSnapshot().revision;
             let response;
             try {
-                response = await this.api.settings.mutate({
-                    ns: this.spec.namespace,
-                    ops: [op],
-                    ...(revision === undefined ? {} : { expectedRevision: revision }),
-                });
+                response = await this.api.settings.mutate(this.spec.namespace, ownedOps, revision);
             }
             catch (_settingsWriteFailure) {
                 await this.recover(generation);
                 return;
             }
-            if (!response.result.ok) {
+            if (!response.ok) {
                 await this.recover(generation);
                 return;
             }
@@ -114,10 +115,10 @@ export class SettingsScopeController {
                 return;
             if (generation === this.writeGeneration) {
                 this.pendingRevision = undefined;
-                this.mirror.acceptView(response.result.value);
+                this.mirror.acceptView(response.value);
             }
             else {
-                this.pendingRevision = response.result.value.revision;
+                this.pendingRevision = response.value.revision;
             }
         });
     }
@@ -208,15 +209,21 @@ export class SettingsScopeController {
 export class SettingsScopeBinder extends Service {
     mirror;
     schema;
+    wire;
     /**
      * @param ctx - the providing plugin's context.
      * @param config - the shared describe mirror every bound scope derives from,
-     * plus the settings-owned schema operations.
+     * the settings-owned schema operations, and the settings Remote namespace the
+     * bound scopes write through. The namespace is captured here rather than read
+     * inside {@link bind}, because a Service reads `ctx` as its *consumer's*
+     * fiber: reading it there would make every caller declare `remote.settings`
+     * in its own `inject`.
      */
     constructor(ctx, config) {
         super(ctx, 'settingsScope');
         this.mirror = config.mirror;
         this.schema = config.schema;
+        this.wire = config.wire;
     }
     /**
      * The shared mirror's read/fold face for cross-namespace surfaces (schema
@@ -241,7 +248,7 @@ export class SettingsScopeBinder extends Service {
     bind(spec) {
         const ctx = this.ctx;
         const connection = ctx.get('connection');
-        const controller = new SettingsScopeController(connection.api, spec, this.mirror, connection.isLoopback ? 'host' : 'memory', this.schema);
+        const controller = new SettingsScopeController(this.wire, spec, this.mirror, connection.isLoopback ? 'host' : 'memory', this.schema);
         ctx.effect(() => {
             void this.mirror.ensure();
             return async () => {

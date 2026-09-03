@@ -41,6 +41,18 @@ export interface WriteFileAtomicOptions {
  * @param options - permission bits for the replacement inode.
  */
 export declare function writeFileAtomic(filename: string, content: string, options: WriteFileAtomicOptions): Promise<void>;
+/** Options for one {@link withFileLock} acquisition. */
+export interface FileLockOptions {
+    /**
+     * Maximum time to wait for the lock, in milliseconds. State one when the
+     * holder's operation legitimately runs longer than file work — a credential
+     * mutation that refreshes a token performs a network round trip while
+     * holding the lock, and leaving the default in place would fail every other
+     * writer of the same file for the duration. Waiting is productive: a
+     * contender that acquires the lock afterwards re-reads the committed state.
+     */
+    waitMs?: number;
+}
 /**
  * Hold the cross-process writer lock for `filename` around one operation. The
  * lock is a `wx`-created sibling (`<filename>.lock`); paired with the
@@ -54,7 +66,8 @@ export declare function writeFileAtomic(filename: string, content: string, optio
  * action. The parent directory must exist.
  * @param filename - the file whose writers this lock serializes.
  * @param operation - the read-render-commit cycle to run while holding the lock.
+ * @param options - acquisition options; omitted waits {@link DEFAULT_LOCK_WAIT_MS}.
  * @returns the operation's result; the lock releases on both outcomes.
  */
-export declare function withFileLock<T>(filename: string, operation: () => Promise<T>): Promise<T>;
+export declare function withFileLock<T>(filename: string, operation: () => Promise<T>, options?: FileLockOptions): Promise<T>;
 //# sourceMappingURL=index.d.ts.map

@@ -5,7 +5,7 @@
  *
  * @module @deepseek-ai/dsh-llm/assembler
  */
-import { CallId } from "./brand.js";
+import { ToolCallId } from "./brand.js";
 import { assertNever } from "./never.js";
 import { createMessage } from "./message.js";
 /**
@@ -99,7 +99,7 @@ export class BlockAssembler {
             case 'reasoning': return { type: 'reasoning', text: partial.text };
             case 'tool-call': return {
                 type: 'tool-call',
-                id: partial.toolCallId ?? CallId(`call-${index}`),
+                id: partial.toolCallId ?? ToolCallId(`call-${index}`),
                 name: partial.toolCallName ?? '',
                 arguments: partial.toolCallArguments,
             };

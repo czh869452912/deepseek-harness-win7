@@ -28,6 +28,8 @@ export declare function claudeCodeStartupFailure(cause: unknown): Error;
 export interface ClaudeCodeRunSpec {
     /** Parent Session workspace supplied to the SDK and real CLI. */
     readonly cwd: string;
+    /** Profile-selected native model; omitted to preserve Claude settings. */
+    readonly model?: string;
     /** Profile-selected native non-interactive permission mode. */
     readonly permissionMode: ClaudeCodePermissionMode;
     /** Explicit deployment/test environment layered after shared scrubbing. */

@@ -1,5 +1,5 @@
 /** Browser download state shared by the Session Header button and `/export`. */
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-runtime/client';
+import { createSnapshotStore } from '@deepseek-ai/dsh-client-store';
 const INITIAL = { bySession: {} };
 /**
  * Collapse an untrusted Session id into the filename convention owned by the host endpoint.

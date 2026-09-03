@@ -25,6 +25,7 @@
 import { Context, Service } from '@deepseek-ai/cordis';
 import type { Agent } from '@deepseek-ai/dsh-agent';
 import type { SessionEvent } from '@deepseek-ai/dsh-session';
+import type { CommandId } from '@deepseek-ai/dsh-commands';
 export type * from './types.ts';
 declare module '@deepseek-ai/dsh-session/types' {
     interface SessionEventMap {
@@ -70,6 +71,27 @@ export declare function resolveConfig(config: PlanModeConfig): PlanModeConfig;
  * @returns Whether plan mode is active.
  */
 export declare function foldPlanMode(events: readonly SessionEvent[], end?: number): boolean;
+/**
+ * Projection unit state: the logged mode, the latest successful `/plan`
+ * selection not yet resolved by a `plan/mode` commit, and an execution whose
+ * paired `command/done` has not settled. Plain JSON (persisted-cache
+ * precondition).
+ */
+interface PlanUnitState {
+    active: boolean;
+    /** The selection's target mode; null when no selection is outstanding. */
+    wanted: boolean | null;
+    /** The latest plan command awaiting its paired settlement. */
+    running: {
+        commandId: CommandId;
+        wanted: boolean;
+    } | null;
+}
+declare module '@deepseek-ai/dsh-session-projection/types' {
+    interface SessionProjectionStateMap {
+        plan: PlanUnitState;
+    }
+}
 /**
  * `ctx.planMode`: owns logged plan state, applies and narrates selected state at step start,
  * the `plan:policy` section, the `/plan` command, and the stable exit tool.

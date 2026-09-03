@@ -3,8 +3,9 @@
  *
  * @module dsh-llm-pi-ai/context
  */
-import { CallId, contentHasImage, LlmError, offloadRequestImages } from '@deepseek-ai/dsh-llm';
+import { ToolCallId, contentHasImage, LlmError, offloadedImageText, offloadRequestImagesWithPolicy, requestImageHandleText } from '@deepseek-ai/dsh-llm';
 import { toPiAssistant } from "./replay.js";
+import { DEFAULT_REQUEST_IMAGE_MAX_BYTES, DEFAULT_REQUEST_IMAGE_PIXEL_BUDGET } from "./config.js";
 /** Join the text blocks of a harness message. */
 function flattenText(message) {
     return message.content
@@ -26,7 +27,7 @@ function assertSupportedImageRoles(messages) {
         }
     }
 }
-async function userContent(blocks, attachments) {
+async function userContent(blocks, requestImages, resolveImageAccess) {
     const content = [];
     for (const block of blocks) {
         switch (block.type) {
@@ -35,17 +36,21 @@ async function userContent(blocks, attachments) {
                     content.push({ type: 'text', text: block.text });
                 break;
             case 'image': {
-                const stored = await attachments.readImage(block.attachment);
+                const version = requestImages.get(block.attachment.attachmentId);
+                content.push({
+                    type: 'text',
+                    text: requestImageHandleText(block.attachment, version, resolveImageAccess(block.attachment)),
+                });
                 content.push({
                     type: 'image',
-                    data: Buffer.from(stored.data).toString('base64'),
-                    mimeType: stored.ref.mediaType,
+                    data: Buffer.from(version.data).toString('base64'),
+                    mimeType: version.mediaType,
                 });
                 break;
             }
             case 'tool-result':
                 {
-                    const nested = await userContent(block.content, attachments);
+                    const nested = await userContent(block.content, requestImages, resolveImageAccess);
                     if (typeof nested === 'string') {
                         if (nested.length > 0)
                             content.push({ type: 'text', text: nested });
@@ -63,6 +68,26 @@ async function userContent(blocks, attachments) {
     if (content.every(block => block.type === 'text'))
         return content.map(block => block.text).join('');
     return content;
+}
+function collectImageRefs(blocks, refs) {
+    for (const block of blocks) {
+        if (block.type === 'image')
+            refs.set(block.attachment.attachmentId, block.attachment);
+        else if (block.type === 'tool-result')
+            collectImageRefs(block.content, refs);
+    }
+}
+async function prepareRequestImages(messages, attachments, policy, signal) {
+    const refs = new Map();
+    for (const message of messages)
+        collectImageRefs(message.content, refs);
+    const orderedRefs = [...refs.values()];
+    const prepared = await Promise.all(orderedRefs.map(ref => attachments.readImageRequest(ref, policy, signal)));
+    const versions = new Map();
+    for (const [index, ref] of orderedRefs.entries()) {
+        versions.set(ref.attachmentId, prepared[index]);
+    }
+    return versions;
 }
 function toolsOf(options) {
     return options.tools?.map(tool => ({
@@ -97,7 +122,7 @@ function textOnlyContext(options, onReplayDegrade) {
             const assistant = toPiAssistant(message, onReplayDegrade);
             for (const block of assistant.content)
                 if (block.type === 'toolCall')
-                    toolNames.set(CallId(block.id), block.name);
+                    toolNames.set(ToolCallId(block.id), block.name);
             messages.push(assistant);
             continue;
         }
@@ -121,17 +146,36 @@ function textOnlyContext(options, onReplayDegrade) {
     }
     return piContext(options, messages);
 }
-export function toPiContext(options, attachments, onReplayDegrade, maxRequestImageBytes) {
-    return attachments === undefined
+export function toPiContext(options, images, onReplayDegrade) {
+    return images === undefined
         ? textOnlyContext(options, onReplayDegrade)
-        : toPiContextWithImages(options, attachments, onReplayDegrade, maxRequestImageBytes);
+        : toPiContextWithImages(options, images, onReplayDegrade);
 }
-async function toPiContextWithImages(options, attachments, onReplayDegrade, maxRequestImageBytes) {
+async function toPiContextWithImages(options, images, onReplayDegrade) {
+    const { attachments, resolveImageAccess, maxRequestImageBytes } = images;
+    const requestImagePolicy = images.requestImagePolicy ?? {
+        maxPixels: DEFAULT_REQUEST_IMAGE_PIXEL_BUDGET,
+        maxBytes: DEFAULT_REQUEST_IMAGE_MAX_BYTES,
+    };
     assertSupportedImageRoles(options.messages);
-    const requestMessages = offloadRequestImages(options.messages, maxRequestImageBytes);
+    const requestMessages = offloadRequestImagesWithPolicy(options.messages, {
+        representation: 'base64',
+        ...maxRequestImageBytes === undefined ? {} : { maxBytes: maxRequestImageBytes },
+        byteQuantum: 1,
+        byteLength: ref => Math.min(ref.bytes, requestImagePolicy.maxBytes),
+        placeholder: ref => offloadedImageText(ref, resolveImageAccess(ref)),
+    });
+    const requestImages = await prepareRequestImages(requestMessages, attachments, requestImagePolicy, options.signal);
+    const exactMessages = offloadRequestImagesWithPolicy(requestMessages, {
+        representation: 'base64',
+        ...maxRequestImageBytes === undefined ? {} : { maxBytes: maxRequestImageBytes },
+        byteQuantum: 1,
+        byteLength: ref => requestImages.get(ref.attachmentId).bytes,
+        placeholder: ref => offloadedImageText(ref, resolveImageAccess(ref)),
+    });
     const toolNames = new Map();
     const messages = [];
-    for (const message of requestMessages) {
+    for (const message of exactMessages) {
         if (message.role === 'system') {
             // pi-ai has a single systemPrompt slot; in-history system messages are
             // folded into user messages to preserve order (rare in practice — the
@@ -143,20 +187,20 @@ async function toPiContextWithImages(options, attachments, onReplayDegrade, maxR
             const assistant = toPiAssistant(message, onReplayDegrade);
             for (const block of assistant.content) {
                 if (block.type === 'toolCall')
-                    toolNames.set(CallId(block.id), block.name);
+                    toolNames.set(ToolCallId(block.id), block.name);
             }
             messages.push(assistant);
             continue;
         }
         // user role: text + tool results (each result becomes its own message).
         const regular = message.content.filter(block => block.type !== 'tool-result');
-        const content = await userContent(regular, attachments);
+        const content = await userContent(regular, requestImages, resolveImageAccess);
         const results = message.content.filter((block) => (block.type === 'tool-result'));
         if (content.length > 0 || results.length === 0) {
             messages.push({ role: 'user', content, timestamp: 0 });
         }
         for (const result of results) {
-            const resultContent = await userContent(result.content, attachments);
+            const resultContent = await userContent(result.content, requestImages, resolveImageAccess);
             messages.push({
                 role: 'toolResult',
                 toolCallId: result.toolCallId,

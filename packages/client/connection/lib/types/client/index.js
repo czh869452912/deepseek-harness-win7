@@ -1,9 +1,8 @@
-import { ConnectionController } from "./connection.js";
-import { FixtureApiClient } from "./fixture.js";
-import { WebApiClient } from "./web-api-client.js";
+import { ConnectionController, } from "./connection.js";
+import { createFixtureConnectionRpc } from "./fixture.js";
 import { createWebConnectionRpc } from "./rpc.js";
 import { isLoopbackHostname } from "../loopback-hostname.js";
-export { RpcId, AbstractApiClient, transportError, } from "./api.js";
+export { RpcId, transportError, } from "./api.js";
 /** Required services (none — this is the wire root). */
 export const inject = [];
 /**
@@ -13,64 +12,89 @@ export const inject = [];
 export function apply(ctx) {
     const pageLocation = typeof location === 'undefined' ? undefined : location;
     const fixture = pageLocation !== undefined && new URLSearchParams(pageLocation.search).has('fixture');
-    const fixtureClient = fixture ? new FixtureApiClient() : undefined;
-    const api = fixtureClient ?? new WebApiClient();
-    const rpc = fixtureClient?.rpc ?? createWebConnectionRpc();
-    let started = false;
-    let description;
-    const descriptionListeners = new Set();
-    const publishDescription = (next) => {
-        if (Object.is(description, next))
+    const fixtureRpc = fixture ? createFixtureConnectionRpc() : undefined;
+    const transport = globalThis.__DSH_TRANSPORT__;
+    const rpc = fixtureRpc ?? createWebConnectionRpc(transport?.fetch, transport?.openStream);
+    let generationSource;
+    let owner;
+    let generationId = 0;
+    let generation;
+    const generationListeners = new Set();
+    const publishGeneration = (next) => {
+        if (Object.is(generation, next))
             return;
-        description = next;
-        for (const listener of [...descriptionListeners]) {
+        generation = next;
+        for (const listener of [...generationListeners]) {
             try {
                 listener();
             }
             catch (error) {
-                console.error('[web-runtime] host-description listener threw:', error);
+                console.error('[connection] generation listener threw:', error);
             }
         }
     };
+    const releaseOwner = (current) => {
+        if (owner !== current)
+            return;
+        owner = undefined;
+        current.controller.stop();
+        publishGeneration(undefined);
+    };
     const handle = {
-        api,
-        isLoopback: pageLocation === undefined || isLoopbackHostname(pageLocation.hostname),
-        hostDescription: {
-            getSnapshot: () => description,
+        isLoopback: transport?.ownsHost === true || pageLocation === undefined || isLoopbackHostname(pageLocation.hostname),
+        generation: {
+            getSnapshot: () => generation,
             subscribe: (listener) => {
-                descriptionListeners.add(listener);
-                return () => { descriptionListeners.delete(listener); };
+                generationListeners.add(listener);
+                return () => { generationListeners.delete(listener); };
             },
         },
         rpc,
+        registerGenerationSource(source) {
+            if (generationSource !== undefined) {
+                throw new Error('connection: a generation source is already registered');
+            }
+            generationSource = source;
+            return () => {
+                if (generationSource !== source)
+                    return;
+                generationSource = undefined;
+                const current = owner;
+                if (current?.source === source)
+                    releaseOwner(current);
+            };
+        },
         start(sinks, config) {
-            if (started)
+            if (owner !== undefined)
                 throw new Error('connection: the stream loop is already owned by another consumer');
-            started = true;
-            const controller = new ConnectionController(api, {
+            const source = generationSource;
+            if (source === undefined)
+                throw new Error('connection: no generation source is registered');
+            const token = {};
+            const ownsGeneration = () => owner?.token === token;
+            const controller = new ConnectionController(source, {
                 ...sinks,
-                onConnected: (next) => {
-                    publishDescription(next);
-                    // A description subscriber may synchronously stop the loop. In that
-                    // case publishDescription(undefined) has already retracted this
-                    // generation, so do not leak its stale connected notification to
-                    // the consumer sink afterward.
-                    if (!Object.is(description, next))
+                onConnected: (host) => {
+                    const nextGeneration = { id: ++generationId, host };
+                    publishGeneration(nextGeneration);
+                    if (!ownsGeneration() || !Object.is(generation, nextGeneration))
                         return;
-                    sinks.onConnected?.(next);
+                    sinks.onConnected?.(host);
                 },
                 onStateChange: (state) => {
-                    if (state === 'reconnecting')
-                        publishDescription(undefined);
+                    if (state === 'reconnecting') {
+                        publishGeneration(undefined);
+                    }
+                    if (!ownsGeneration())
+                        return;
                     sinks.onStateChange?.(state);
                 },
             }, config ?? {});
+            const current = { token, source, controller };
+            owner = current;
             controller.start();
             return {
-                stop: () => {
-                    controller.stop();
-                    publishDescription(undefined);
-                },
+                stop: () => { releaseOwner(current); },
             };
         },
     };

@@ -8,7 +8,7 @@
  * invalidations its owning plugin subscribes to and folds write answers in
  * through {@link SettingsDescribeMirror.acceptView}.
  */
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-runtime/client';
+import { createSnapshotStore } from '@deepseek-ai/dsh-client-store';
 /**
  * Serializes every Host `settings.describe` read behind one snapshot store.
  * Concurrent {@link load} calls fold into the in-flight read plus one rerun,
@@ -23,7 +23,7 @@ export class SettingsDescribeMirror {
     generation = 0;
     /**
      * @param api - settings wire face.
-     * @param persistence - remote browsers stay process-local because settings RPCs are loopback-only.
+     * @param persistence - client-selected Host persistence; non-loopback pages may remain process-local.
      */
     constructor(api, persistence = 'host') {
         this.api = api;
@@ -123,10 +123,10 @@ export class SettingsDescribeMirror {
                 const generation = ++this.generation;
                 let outcome;
                 try {
-                    const response = await this.api.settings.describe({});
-                    outcome = response.result.ok
-                        ? { view: response.result.value }
-                        : { failure: response.result.error.message };
+                    const response = await this.api.settings.describe();
+                    outcome = response.ok
+                        ? { view: response.value }
+                        : { failure: response.error.message };
                 }
                 catch (error) {
                     outcome = { failure: error instanceof Error ? error.message : String(error) };

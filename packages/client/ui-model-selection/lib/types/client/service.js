@@ -13,11 +13,13 @@
  * per-session singleton with no global layer to merge.
  */
 import { Service } from '@deepseek-ai/cordis';
+import { ModelCatalogDirectory } from "./catalog.js";
 import { ModelDirectory } from "./directory.js";
 /** The `ctx.modelDirectories` session model-selection service. */
 export class ModelDirectoryResolver extends Service {
-    static inject = ['connection', 'sessions', 'remote'];
+    static inject = ['sessions', 'remote', 'remote.session'];
     live = { directories: new Map() };
+    catalog;
     /** Localized composer-block copy; this plugin owns the string it raises. */
     blockReason;
     /**
@@ -27,19 +29,16 @@ export class ModelDirectoryResolver extends Service {
     constructor(ctx, config) {
         super(ctx, 'modelDirectories');
         this.blockReason = config.blockReason;
+        this.catalog = new ModelCatalogDirectory(ctx.remote.session);
+        void this.catalog.load().catch(() => { });
         ctx.on('connection/reset', () => {
+            this.catalog.resetGeneration();
             for (const directory of this.live.directories.values())
                 directory.resetConnected();
         });
-        // Either source can change the directory: registry topology commits and
-        // settings documents that carry provider catalogs or default selection.
-        const refresh = () => {
-            for (const directory of this.live.directories.values()) {
-                directory.load().catch(() => undefined);
-            }
-        };
-        ctx.remote.$on('llm/adapters-updated', refresh);
-        ctx.remote.$on('settings/document-updated', refresh);
+        ctx.remote.$on('llm/adapters-updated', () => { this.catalog.refresh(); });
+        ctx.remote.$on('settings/document-updated', () => { this.catalog.refresh(); });
+        ctx.remote.$on('credentials/reference-updated', () => { this.catalog.refresh(); });
     }
     /**
      * Resolve the per-session shared directory (lazy; the scope disposer
@@ -52,12 +51,14 @@ export class ModelDirectoryResolver extends Service {
         const existing = live.directories.get(sessionId);
         if (existing !== undefined)
             return existing;
-        const sessions = this.ctx.get('sessions');
+        const sessions = this.ctx.sessions;
         const actx = sessions.scope(sessionId);
         if (actx === undefined)
             throw new Error(`ui-model-selection: session "${String(sessionId)}" resolved no scope`);
-        const connection = this.ctx.get('connection');
-        const directory = new ModelDirectory(connection.api.sessions, sessionId, () => sessions.subagentAddress(sessionId) === undefined);
+        const binding = sessions.binding(sessionId);
+        if (binding === undefined)
+            throw new Error(`ui-model-selection: session "${String(sessionId)}" resolved no binding`);
+        const directory = new ModelDirectory(this.ctx.remote.session, sessionId, () => sessions.subagentAddress(sessionId) === undefined, this.catalog, binding.session.projections.faceOf('modelSelection'));
         live.directories.set(sessionId, directory);
         // The composer cannot read this plugin (the dependency runs one way), so
         // the block is pushed: the Host says whether an adapter serves the

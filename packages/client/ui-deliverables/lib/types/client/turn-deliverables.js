@@ -1,34 +1,88 @@
-import { isAppendSurfaceEvent } from '@deepseek-ai/dsh-client-runtime/client';
 /**
- * Paths a call view reports having created or changed, by render intent rather
- * than tool name: a diff card, or a generic card whose kind is `edit` (the
- * shape `str_replace_editor`'s insert presents). Every other card produces
- * nothing to open — a read looked, a delete removed, a terminal ran. Only
- * root call views enter this Turn accumulator; nested Code Mode dispatches
- * preserve the pre-assembly behavior and do not contribute independently.
+ * Turn-scoped produced-file Definition and readers. Client-only and
+ * model-free: the vocabulary comes from successful first-party mutation
+ * calls, never presentation data or the closing prose.
  */
-function producedPaths(view) {
-    if (view === null)
-        return [];
-    if (view.card === 'diff')
-        return (view.locations ?? []).map(location => location.path);
-    if (view.card === 'generic' && view.kind === 'edit') {
-        return (view.locations ?? []).map(location => location.path);
+import { isAppendSurfaceEvent } from '@deepseek-ai/dsh-session/surface';
+/**
+ * Extract the path from a supported first-party mutation call. Session
+ * `tool/call` events are root calls; Code Dispatch children do not enter this
+ * Definition independently.
+ * @param name - wire tool name.
+ * @param argsRaw - model-produced JSON arguments.
+ * @returns the mutation path, or null when the call is not a supported mutation.
+ */
+function mutationPath(name, argsRaw) {
+    let args;
+    try {
+        args = JSON.parse(argsRaw);
     }
-    return [];
+    catch {
+        return null;
+    }
+    if (!isRecord(args))
+        return null;
+    switch (name) {
+        case 'write':
+            return typeof args.content === 'string' ? pathValue(args.file_path) : null;
+        case 'edit':
+            return validEditArgs(args) ? pathValue(args.file_path) : null;
+        case 'str_replace_editor':
+            return editorMutationPath(args);
+        default:
+            return null;
+    }
+}
+/** Validate the fields that an `edit` execution requires. */
+function validEditArgs(args) {
+    return typeof args.old_string === 'string'
+        && args.old_string.length > 0
+        && typeof args.new_string === 'string'
+        && args.old_string !== args.new_string
+        && (args.replace_all === undefined || typeof args.replace_all === 'boolean');
+}
+/** Extract a path only from a complete mutating editor command. */
+function editorMutationPath(args) {
+    const path = pathValue(args.path);
+    if (path === null)
+        return null;
+    switch (args.command) {
+        case 'create':
+            return typeof args.file_text === 'string' ? path : null;
+        case 'str_replace':
+            return typeof args.old_str === 'string'
+                && args.old_str.length > 0
+                && (args.new_str === undefined || typeof args.new_str === 'string')
+                ? path
+                : null;
+        case 'insert':
+            return typeof args.insert_line === 'number'
+                && Number.isInteger(args.insert_line)
+                && args.insert_line >= 0
+                && typeof args.new_str === 'string'
+                ? path
+                : null;
+        default:
+            return null;
+    }
+}
+/** A non-blank path preserves the exact spelling supplied to the tool. */
+function pathValue(value) {
+    return typeof value === 'string' && value.trim().length > 0 ? value : null;
+}
+/** Narrow parsed JSON to an argument object. */
+function isRecord(value) {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 /**
  * Files produced by one Turn data value.
  *
- * The source is the mutation tools' own follow-along `locations`, not the
- * closing prose: a produced file must be listed whether or not the model
- * remembered to name it. A mutation is recognized by render intent, not by
- * tool name — a diff card, or a generic card whose `kind` is `edit` (the shape
- * `str_replace_editor`'s insert presents) — so a new mutation tool joins by
- * declaring what it does. Reads contribute nothing (looking at a file does not
- * produce it), and neither do deletes (there is nothing left to open) or
- * failed calls. Paths keep first-seen order and appear once, so a file written
- * and then edited in the same turn is one entry.
+ * The source is the arguments of successful `write`, `edit`, and mutating
+ * `str_replace_editor` calls, not the closing prose: a produced file must be
+ * listed whether or not the model remembered to name it. Reads, unsupported
+ * tools, malformed calls, and failed results contribute nothing. Paths keep
+ * first-seen order and appear once, so a file written and then edited in the
+ * same turn is one entry.
  *
  * The Conversation Location index owns turn membership before this function
  * runs, so paths cannot spill across turns and this derivation does not infer
@@ -80,7 +134,7 @@ export const deliverablesDefinition = {
     update: (context, match) => {
         if (match.event.type === 'tool/call') {
             const calls = new Map(context.state.calls);
-            calls.set(String(match.event.data.callId), match.view?.for === 'call' ? match.view.view : null);
+            calls.set(String(match.event.data.callId), mutationPath(match.event.data.name, match.event.data.arguments));
             return { ...context.state, calls };
         }
         if (match.event.type !== 'tool/result')
@@ -89,11 +143,10 @@ export const deliverablesDefinition = {
         if (result.isError === true)
             return context.state;
         const callId = String(match.event.data.message.source.callId);
-        const additions = producedPaths(context.state.calls.get(callId) ?? null)
-            .map(path => ({ seq: match.event.seq, path }));
-        return additions.length === 0
+        const path = context.state.calls.get(callId);
+        return path === null || path === undefined
             ? context.state
-            : { ...context.state, produced: [...context.state.produced, ...additions] };
+            : { ...context.state, produced: [...context.state.produced, { seq: match.event.seq, path }] };
     },
     buildLocationData: (context, scope) => scope !== 'turn' || context.state === undefined
         ? null

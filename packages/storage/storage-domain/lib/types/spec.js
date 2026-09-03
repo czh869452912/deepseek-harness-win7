@@ -35,6 +35,14 @@ export function defineDomain(spec) {
     if (!Number.isInteger(spec.version) || spec.version < 0) {
         throw new Error(`domain '${spec.name}' version must be a non-negative integer, got ${spec.version}`);
     }
+    if (spec.layout !== undefined) {
+        // Runtime boundary: the union type is compile-time only — a spec built
+        // from config could carry any value, and a bad one must fail loud here.
+        const layout = spec.layout;
+        if (layout !== 'single' && layout !== 'per-record') {
+            throw new Error(`domain '${spec.name}' layout must be 'single' or 'per-record', got ${layout}`);
+        }
+    }
     for (const table of Object.keys(spec.tables)) {
         if (!UNIT_NAME_RE.test(table)) {
             throw new Error(`domain '${spec.name}' table name '${table}' must match ${UNIT_NAME_RE}`);
@@ -57,6 +65,7 @@ export function descriptorOf(spec) {
         version: spec.version,
         tables: Object.keys(spec.tables),
         hasGlobal: spec.global !== undefined,
+        ...spec.layout === undefined ? {} : { layout: spec.layout },
     };
 }
 //# sourceMappingURL=spec.js.map

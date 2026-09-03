@@ -26,7 +26,7 @@ window.__ModuleLoader__.load({
 			enumerable: true
 		}) : target, mod));
 		//#endregion
-		let _deepseek_ai_dsh_client_runtime_client = require("@deepseek-ai/dsh-client-runtime/client");
+		let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let react = require("react");
 		react = __toESM(react, 1);
@@ -38,31 +38,191 @@ window.__ModuleLoader__.load({
 		* @returns a persisted source shared by every session view in one plugin lifecycle.
 		*/
 		function createTrajectoryDurationStore() {
-			return (0, _deepseek_ai_dsh_client_runtime_client.createSnapshotStore)(false, { persist: { name: "dsh.trajectory.duration" } });
+			return (0, _deepseek_ai_dsh_client_store.createSnapshotStore)(false, { persist: { name: "dsh.trajectory.duration" } });
 		}
 		//#endregion
 		//#region lib/types/client/locales.js
-		/** `trajectory` namespace dictionaries (view tab label + toolbar strings). */
+		/** `trajectory` namespace dictionaries for the complete trajectory surface. */
 		/** Dictionary namespace owned by this plugin. */
 		const NS = "trajectory";
 		/** Simplified Chinese dictionary (the key-set source of truth). */
 		const zh = {
 			"view.trajectory": "轨迹",
 			"toolbar.aria": "轨迹工具栏",
-			"toolbar.duration": "Duration",
-			"toolbar.useActualDuration": "Use actual duration",
-			"toolbar.useEqualWidth": "Use equal-width operations",
+			"toolbar.duration": "时长",
+			"toolbar.useActualDuration": "使用实际时长",
+			"toolbar.useEqualWidth": "使用等宽操作",
 			"toolbar.actualTime": "实际时间",
-			"toolbar.turns": "Turns",
-			"toolbar.expandTurns": "Expand turns",
-			"toolbar.collapseTurns": "Collapse turns",
-			"toolbar.calls": "Calls",
-			"toolbar.expandCalls": "Expand calls",
-			"toolbar.collapseCalls": "Collapse calls",
+			"toolbar.turns": "轮次",
+			"toolbar.expandTurns": "展开所有轮次",
+			"toolbar.collapseTurns": "收起所有轮次",
+			"toolbar.calls": "调用",
+			"toolbar.expandCalls": "展开所有调用",
+			"toolbar.collapseCalls": "收起所有调用",
 			"toolbar.search": "搜索轨迹",
-			"toolbar.searchPlaceholder": "搜索"
+			"toolbar.searchPlaceholder": "搜索",
+			"kind.system": "系统",
+			"kind.user": "用户",
+			"kind.context": "上下文",
+			"kind.compacted": "已压缩",
+			"kind.message": "消息",
+			"kind.assistant": "助手",
+			"kind.tool": "工具",
+			"kind.subtool": "子工具",
+			"kind.sub": "子项",
+			"column.input": "输入",
+			"column.output": "输出",
+			"column.think": "思考",
+			"column.time": "时间",
+			"column.model": "模型",
+			"column.tools": "工具",
+			"turn.label": "第 {turn} 轮",
+			"section.betweenTurns": "轮次之间",
+			"group.message": "消息",
+			"group.step": "步骤 {step}",
+			"group.compaction": "压缩 {seq}",
+			"status.failed": "失败",
+			"status.pending": "等待中",
+			"status.completed": "已完成",
+			"timing.notAvailable": "不可用",
+			"timing.notRecorded": "未记录",
+			"timing.stepStartUnavailable": "步骤开始时间不可用",
+			"timing.firstTokenUnavailable": "首 token 时间不可用",
+			"timing.usageUnavailable": "用量不可用",
+			"timing.outputTokensUnavailable": "输出 token 数不可用",
+			"timing.durationTooShort": "时长过短",
+			"timing.showLocalTime": "显示本地时间",
+			"timing.showUnixTimestamp": "显示 Unix 时间戳",
+			"timing.started": "开始时间",
+			"timing.totalDuration": "总时长",
+			"timing.ttft": "首 token 延迟",
+			"timing.generation": "生成",
+			"timing.throughput": "吞吐量",
+			"timing.duration": "时长",
+			"timing.source": "计时来源",
+			"timing.sessionTimestamps": "会话时间戳",
+			"timing.sessionTimestampsRunning": "会话时间戳（运行中）",
+			"timing.request": "请求计时",
+			"unit.milliseconds": "{value} 毫秒",
+			"unit.seconds": "{value} 秒",
+			"unit.tokens": "{value} tok",
+			"unit.tokensPerSecond": "{value} tok/s",
+			"usage.tokens": "Token",
+			"usage.reasoning": "推理",
+			"usage.content": "内容",
+			"usage.notReported": "未报告用量",
+			"usage.input": "输入",
+			"usage.cached": "缓存读取",
+			"usage.cacheCreated": "缓存写入",
+			"usage.other": "其他",
+			"usage.output": "输出",
+			"usage.thisRequest": "本次请求",
+			"usage.sessionCumulative": "会话累计",
+			"options.notRecorded": "未记录选项",
+			"options.json": "请求选项 JSON",
+			"source.unknown": "未知",
+			"source.user": "用户",
+			"source.plugin": "插件",
+			"source.pluginNamed": "插件 · {plugin}",
+			"source.goal": "目标",
+			"source.goalRound": "目标 · Round {round}",
+			"source.notRecorded": "未记录来源",
+			"source.messageJson": "消息来源 JSON",
+			"tab.summary": "概述",
+			"tab.rawOutput": "原始输出",
+			"tab.preview": "预览",
+			"tab.raw": "原始内容",
+			"tab.source": "来源",
+			"tab.payload": "参数",
+			"tab.result": "结果",
+			"tab.schema": "Schema",
+			"tab.timing": "计时",
+			"tab.diff": "差异",
+			"tab.systemPrompt": "系统提示词",
+			"tab.tools": "工具",
+			"tab.options": "选项",
+			"tab.usage": "用量",
+			"record.toolCallOnly": "（仅工具调用）",
+			"record.noContent": "无内容",
+			"record.noPayload": "未捕获参数",
+			"record.noResult": "未捕获结果",
+			"record.noOutput": "无输出",
+			"record.schemaUnavailable": "Schema 不可用",
+			"record.parameters": "参数",
+			"record.resultJson": "结果 JSON",
+			"record.json": "JSON",
+			"record.parametersJson": "参数 JSON",
+			"record.namedParametersJson": "{name} 参数 JSON",
+			"record.payloadJson": "参数 JSON",
+			"record.outputJson": "结果 JSON",
+			"record.thinking": "思考",
+			"record.systemPromptMissing": "本次请求没有系统提示词",
+			"record.toolsMissing": "本次请求没有工具",
+			"record.systemPrompt": "系统提示词",
+			"record.tools": "工具",
+			"block.openSummary": "打开第 {index} 个块的工具调用概述",
+			"block.openSummaryTitle": "打开工具调用概述",
+			"block.label": "块 #{index} {type}",
+			"history.loadingTrajectory": "正在加载轨迹…",
+			"history.loadingEarlier": "正在加载更早的历史…",
+			"history.loadingEarlierAria": "正在加载更早的历史…",
+			"history.loadEarlier": "加载更早的历史",
+			"history.clickToLoadEarlier": "点击加载更早的历史",
+			"request.label": "请求 #{request}",
+			"request.labelCompaction": "请求 #{request} · 压缩",
+			"request.compaction": "压缩 · {section}",
+			"request.compactionPurpose": "压缩",
+			"request.retryProgress": "{retry}/{maximum}",
+			"request.collapsedSummary": "已收起的{kind}概述，{summary}",
+			"request.collapsedTurn": "轮次",
+			"request.collapsedAssistant": "助手",
+			"request.rowAria": "{request}{kind}，{content}",
+			"request.rowPrefix": "请求 {request}，",
+			"request.rowAriaCompaction": "请求 {request}，压缩",
+			"request.noContent": "无内容",
+			"summary.toolCalls.one": "{count} 个工具调用",
+			"summary.toolCalls.other": "{count} 个工具调用",
+			"summary.steps.one": "{count} 个步骤",
+			"summary.steps.other": "{count} 个步骤",
+			"details.event": "事件详情",
+			"details.resize": "调整事件详情宽度",
+			"details.resizeTitle": "拖动调整大小；双击恢复默认值。",
+			"details.close": "关闭详情",
+			"details.status": "状态",
+			"details.purpose": "用途",
+			"details.provider": "提供方",
+			"details.model": "模型",
+			"details.toolCalls": "工具调用",
+			"details.subtoolCalls": "子工具调用",
+			"details.error": "错误",
+			"details.failure.auth": "API 密钥无效",
+			"details.retry": "重试",
+			"details.scheduled": "已计划",
+			"details.retryDelay": "重试延迟",
+			"details.result": "结果",
+			"details.compacted": "已压缩",
+			"details.assistantMessage": "助手消息",
+			"details.source": "来源",
+			"details.hierarchy": "层级",
+			"details.toolCall": "工具调用",
+			"timeline.aria": "轨迹时间线",
+			"timeline.overviewAria": "时间线概览；水平拖动可聚焦事件",
+			"timeline.noTimingData": "无计时数据",
+			"timeline.total": "总计 {duration}",
+			"timeline.started": "开始于 {time}",
+			"timeline.ttftDecoding": "首 token {ttft} · 解码 {decoding}",
+			"layout.compacting": "正在压缩上下文…",
+			"layout.compactionFailed": "上下文压缩失败",
+			"layout.compacted": "上下文已压缩",
+			"layout.toolCallOnly": "仅工具调用",
+			"layout.imageOnly": "图片 ×{count}",
+			"layout.initialSystemPrompt": "初始系统提示词",
+			"layout.systemPromptUpdated": "系统提示词已更新",
+			"layout.toolsUpdated": "工具已更新",
+			"layout.systemPromptAndToolsUpdated": "系统提示词和工具已更新",
+			"layout.compactionInterrupted": "上下文压缩在完成前被中断。"
 		};
-		/** English dictionary. */
+		/** English dictionary, checked complete against the Chinese source of truth. */
 		const en = {
 			"view.trajectory": "Trajectory",
 			"toolbar.aria": "Trajectory toolbar",
@@ -77,7 +237,167 @@ window.__ModuleLoader__.load({
 			"toolbar.expandCalls": "Expand calls",
 			"toolbar.collapseCalls": "Collapse calls",
 			"toolbar.search": "Search trajectory",
-			"toolbar.searchPlaceholder": "Search"
+			"toolbar.searchPlaceholder": "Search",
+			"kind.system": "SYSTEM",
+			"kind.user": "USER",
+			"kind.context": "CONTEXT",
+			"kind.compacted": "COMPACTED",
+			"kind.message": "Message",
+			"kind.assistant": "ASSISTANT",
+			"kind.tool": "TOOL",
+			"kind.subtool": "SUBTOOL",
+			"kind.sub": "Sub",
+			"column.input": "Input",
+			"column.output": "Output",
+			"column.think": "Think",
+			"column.time": "Time",
+			"column.model": "Model",
+			"column.tools": "Tools",
+			"turn.label": "Turn {turn}",
+			"section.betweenTurns": "Between turns",
+			"group.message": "Message",
+			"group.step": "Step {step}",
+			"group.compaction": "Compaction {seq}",
+			"status.failed": "Failed",
+			"status.pending": "Pending",
+			"status.completed": "Completed",
+			"timing.notAvailable": "Not available",
+			"timing.notRecorded": "Not recorded",
+			"timing.stepStartUnavailable": "Step start unavailable",
+			"timing.firstTokenUnavailable": "First token unavailable",
+			"timing.usageUnavailable": "Usage unavailable",
+			"timing.outputTokensUnavailable": "Output tokens unavailable",
+			"timing.durationTooShort": "Duration too short",
+			"timing.showLocalTime": "Show local time",
+			"timing.showUnixTimestamp": "Show Unix timestamp",
+			"timing.started": "Started",
+			"timing.totalDuration": "Total duration",
+			"timing.ttft": "TTFT",
+			"timing.generation": "Generation",
+			"timing.throughput": "Throughput",
+			"timing.duration": "Duration",
+			"timing.source": "Timing source",
+			"timing.sessionTimestamps": "Session timestamps",
+			"timing.sessionTimestampsRunning": "Session timestamps (running)",
+			"timing.request": "Request Timing",
+			"unit.milliseconds": "{value} ms",
+			"unit.seconds": "{value} s",
+			"unit.tokens": "{value} tok",
+			"unit.tokensPerSecond": "{value} tok/s",
+			"usage.tokens": "Tokens",
+			"usage.reasoning": "Reasoning",
+			"usage.content": "Content",
+			"usage.notReported": "Usage not reported",
+			"usage.input": "Input",
+			"usage.cached": "Cached",
+			"usage.cacheCreated": "Cache created",
+			"usage.other": "Other",
+			"usage.output": "Output",
+			"usage.thisRequest": "This request",
+			"usage.sessionCumulative": "Session cumulative",
+			"options.notRecorded": "Options not recorded",
+			"options.json": "Request options JSON",
+			"source.unknown": "Unknown",
+			"source.user": "User",
+			"source.plugin": "Plugin",
+			"source.pluginNamed": "Plugin · {plugin}",
+			"source.goal": "Goal",
+			"source.goalRound": "Goal · Round {round}",
+			"source.notRecorded": "Source not recorded",
+			"source.messageJson": "Message source JSON",
+			"tab.summary": "Summary",
+			"tab.rawOutput": "Raw Output",
+			"tab.preview": "Preview",
+			"tab.raw": "Raw",
+			"tab.source": "Source",
+			"tab.payload": "Payload",
+			"tab.result": "Result",
+			"tab.schema": "Schema",
+			"tab.timing": "Timing",
+			"tab.diff": "Diff",
+			"tab.systemPrompt": "System Prompt",
+			"tab.tools": "Tools",
+			"tab.options": "Options",
+			"tab.usage": "Usage",
+			"record.toolCallOnly": "(tool call only)",
+			"record.noContent": "No content",
+			"record.noPayload": "No payload captured",
+			"record.noResult": "No result captured",
+			"record.noOutput": "No output",
+			"record.schemaUnavailable": "Schema unavailable",
+			"record.parameters": "Parameters",
+			"record.resultJson": "Result JSON",
+			"record.json": "JSON",
+			"record.parametersJson": "parameters JSON",
+			"record.namedParametersJson": "{name} parameters JSON",
+			"record.payloadJson": "Payload JSON",
+			"record.outputJson": "Result JSON",
+			"record.thinking": "Thinking",
+			"record.systemPromptMissing": "No system prompt in this request",
+			"record.toolsMissing": "No tools in this request",
+			"record.systemPrompt": "System Prompt",
+			"record.tools": "Tools",
+			"block.openSummary": "Open Block #{index} tool call summary",
+			"block.openSummaryTitle": "Open tool call summary",
+			"block.label": "Block #{index} {type}",
+			"history.loadingTrajectory": "Loading trajectory…",
+			"history.loadingEarlier": "Loading earlier history…",
+			"history.loadingEarlierAria": "Loading earlier history…",
+			"history.loadEarlier": "Load earlier history",
+			"history.clickToLoadEarlier": "Click to load earlier history",
+			"request.label": "Request #{request}",
+			"request.labelCompaction": "Request #{request} · Compaction",
+			"request.compaction": "Compaction · {section}",
+			"request.compactionPurpose": "Compaction",
+			"request.retryProgress": "{retry} of {maximum}",
+			"request.collapsedSummary": "Collapsed {kind} summary, {summary}",
+			"request.collapsedTurn": "turn",
+			"request.collapsedAssistant": "assistant",
+			"request.rowAria": "{request}{kind}, {content}",
+			"request.rowPrefix": "Request {request}, ",
+			"request.rowAriaCompaction": "Request {request}, compaction",
+			"request.noContent": "no content",
+			"summary.toolCalls.one": "{count} tool call",
+			"summary.toolCalls.other": "{count} tool calls",
+			"summary.steps.one": "{count} step",
+			"summary.steps.other": "{count} steps",
+			"details.event": "Event details",
+			"details.resize": "Resize event details",
+			"details.resizeTitle": "Drag to resize. Double-click to reset.",
+			"details.close": "Close details",
+			"details.status": "Status",
+			"details.purpose": "Purpose",
+			"details.provider": "Provider",
+			"details.model": "Model",
+			"details.toolCalls": "Tool calls",
+			"details.subtoolCalls": "Subtool calls",
+			"details.error": "Error",
+			"details.failure.auth": "API key is invalid",
+			"details.retry": "Retry",
+			"details.scheduled": "Scheduled",
+			"details.retryDelay": "Retry delay",
+			"details.result": "Result",
+			"details.compacted": "Compacted",
+			"details.assistantMessage": "Assistant Message",
+			"details.source": "Source",
+			"details.hierarchy": "Hierarchy",
+			"details.toolCall": "Tool Call",
+			"timeline.aria": "Trajectory timeline",
+			"timeline.overviewAria": "Timeline overview; drag horizontally to focus events",
+			"timeline.noTimingData": "No timing data",
+			"timeline.total": "Total {duration}",
+			"timeline.started": "Started {time}",
+			"timeline.ttftDecoding": "TTFT {ttft} · Decoding {decoding}",
+			"layout.compacting": "Compacting context…",
+			"layout.compactionFailed": "Compaction failed",
+			"layout.compacted": "Context compacted",
+			"layout.toolCallOnly": "Tool call only",
+			"layout.imageOnly": "Images ×{count}",
+			"layout.initialSystemPrompt": "Initial System Prompt",
+			"layout.systemPromptUpdated": "System Prompt Updated",
+			"layout.toolsUpdated": "Tools Updated",
+			"layout.systemPromptAndToolsUpdated": "System Prompt and Tools Updated",
+			"layout.compactionInterrupted": "Compaction was interrupted before completion."
 		};
 		//#endregion
 		//#region lib/types/client/trajectory-definition-common.js
@@ -101,7 +421,185 @@ window.__ModuleLoader__.load({
 			};
 		}
 		//#endregion
+		//#region lib/types/client/trajectory-event-projection.js
+		/** Trajectory-owned conversion from durable Session events to ledger view data. */
+		function asRecord(value) {
+			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : null;
+		}
+		function readString(record, key) {
+			const value = record[key];
+			return typeof value === "string" && value.length > 0 ? value : null;
+		}
+		function collect(source, member, field) {
+			const list = source[member];
+			if (!Array.isArray(list)) return [];
+			const seen = [];
+			for (const entry of list) {
+				const record = asRecord(entry);
+				const value = record === null ? null : readString(record, field);
+				if (value !== null && !seen.includes(value)) seen.push(value);
+			}
+			return seen;
+		}
+		function joined(names) {
+			return names.length > 0 ? names.join(", ") : null;
+		}
+		/** Forms Trajectory presents structurally; unknown merge-extensible values remain opaque. */
+		const KNOWN_FORMS = [
+			"instructions",
+			"catalog",
+			"snapshot",
+			"notice",
+			"relay",
+			"recall"
+		];
+		/**
+		* Read the target-supported presentation form from a durable message source.
+		* @param source - Logged `user/message` source.
+		* @returns Supported form, or null for the opaque presentation.
+		*/
+		function contextForm(source) {
+			const record = asRecord(source);
+			const form = record === null ? null : readString(record, "form");
+			return form !== null && KNOWN_FORMS.includes(form) ? form : null;
+		}
+		/**
+		* Project a durable message source to the Trajectory row's role and producer label.
+		* @param source - Logged `user/message` source.
+		* @returns Role and label rendered by Trajectory.
+		*/
+		function contextProvenance(source) {
+			const record = asRecord(source);
+			const kind = record === null ? null : readString(record, "kind");
+			if (record === null || kind === null) return {
+				role: "inject",
+				label: null
+			};
+			switch (kind) {
+				case "session-reference": return {
+					role: "recall",
+					label: joined(collect(record, "references", "label")) ?? kind
+				};
+				case "agent-instructions": return {
+					role: "inject",
+					label: joined(collect(record, "changes", "path")) ?? kind
+				};
+				case "plugin": return {
+					role: "inject",
+					label: readString(record, "plugin") ?? kind
+				};
+				case "skill-invocation": return {
+					role: "inject",
+					label: readString(record, "name") ?? kind
+				};
+				default: return {
+					role: "inject",
+					label: kind
+				};
+			}
+		}
+		/**
+		* Classify finalized Assistant content for Trajectory rendering.
+		* @param content - Core content blocks.
+		* @returns Trajectory blocks in source order.
+		*/
+		function toAssistantBlocks(content) {
+			return content.map(toAssistantBlock);
+		}
+		/**
+		* Classify one finalized Assistant block for Trajectory rendering.
+		* @param block - Core content block.
+		* @returns Trajectory block.
+		*/
+		function toAssistantBlock(block) {
+			switch (block.type) {
+				case "text": return {
+					kind: "text",
+					text: block.text
+				};
+				case "reasoning": return {
+					kind: "reasoning",
+					text: block.text
+				};
+				case "image": return {
+					kind: "image",
+					attachment: block.attachment
+				};
+				case "tool-call": return {
+					kind: "tool-call",
+					callId: String(block.id),
+					name: block.name,
+					argsRaw: block.arguments
+				};
+				default: return {
+					kind: "other",
+					block
+				};
+			}
+		}
+		/**
+		* Create the initial Trajectory block for one streamed Assistant block kind.
+		* @param blockType - Wire block kind.
+		* @returns Empty block ready to receive deltas.
+		*/
+		function emptyAssistantBlock(blockType) {
+			switch (blockType) {
+				case "text": return {
+					kind: "text",
+					text: ""
+				};
+				case "reasoning": return {
+					kind: "reasoning",
+					text: ""
+				};
+				case "tool-call": return {
+					kind: "tool-call",
+					callId: "",
+					name: "",
+					argsRaw: ""
+				};
+				default: return {
+					kind: "other",
+					block: null
+				};
+			}
+		}
+		/**
+		* Convert a durable failure to locale-independent fields safe for Trajectory.
+		* @param failure - Failure preserved by a Session event.
+		* @returns Sanitized message and optional stable provider code.
+		*/
+		function displayFailure(failure) {
+			if (failure === null || typeof failure !== "object") return { message: String(failure) };
+			const record = failure;
+			const code = typeof record.code === "string" ? record.code : void 0;
+			if (code === "AUTH") return {
+				code,
+				message: ""
+			};
+			return {
+				...code === void 0 ? {} : { code },
+				message: typeof record.message === "string" ? record.message : JSON.stringify(failure)
+			};
+		}
+		/**
+		* Whether a stream chunk carries visible model output for Trajectory timing.
+		* @param chunk - Stream chunk to inspect.
+		* @returns true for a non-empty text, reasoning, or Tool-call delta.
+		*/
+		function isTokenDelta(chunk) {
+			switch (chunk.type) {
+				case "text-delta":
+				case "reasoning-delta": return chunk.text !== "";
+				case "tool-call-delta": return chunk.argumentsDelta !== "" || chunk.name !== void 0;
+				default: return false;
+			}
+		}
+		//#endregion
 		//#region lib/types/client/trajectory-assistant-definition.js
+		function isChunkRunEvent(event) {
+			return event.type === "chunkrow/text-chunks" || event.type === "chunkrow/reasoning-chunks" || event.type === "chunkrow/tool-call-chunks";
+		}
 		function initialState(turn, step, startSeq, startTime, started) {
 			return {
 				turn,
@@ -111,6 +609,7 @@ window.__ModuleLoader__.load({
 				started,
 				sawChunk: false,
 				blocks: [],
+				visibleBlocks: 0,
 				firstVisibleSeq: void 0,
 				firstVisibleTime: void 0,
 				firstTokenTime: void 0,
@@ -123,12 +622,15 @@ window.__ModuleLoader__.load({
 		function compactBlocks(blocks) {
 			return blocks.filter((block) => block !== void 0);
 		}
-		function hasVisibleContent(blocks) {
-			return blocks.some((block) => {
-				if (block.kind === "tool-call") return false;
-				if (block.kind === "text" || block.kind === "reasoning") return block.text.trim() !== "";
-				return true;
-			});
+		function blockIsVisible(block) {
+			if (block === void 0 || block.kind === "tool-call") return false;
+			if (block.kind === "text" || block.kind === "reasoning") return block.text.trim() !== "";
+			return true;
+		}
+		function countVisibleBlocks(blocks) {
+			let count = 0;
+			for (const block of blocks) if (blockIsVisible(block)) count++;
+			return count;
 		}
 		function hasInterruptionEvidence(blocks) {
 			return blocks.some((block) => {
@@ -154,12 +656,18 @@ window.__ModuleLoader__.load({
 				usage: addUsage$1(state.usage, chunk.usage)
 			};
 			const blocks = [...state.blocks];
+			let changedIndex = -1;
+			let previousVisible = false;
 			switch (chunk.type) {
 				case "block-start":
-					blocks[chunk.index] = (0, _deepseek_ai_dsh_client_runtime_client.emptyAssistantBlock)(chunk.blockType);
+					changedIndex = chunk.index;
+					previousVisible = blockIsVisible(blocks[chunk.index]);
+					blocks[chunk.index] = emptyAssistantBlock(chunk.blockType);
 					break;
 				case "text-delta": {
 					const previous = blocks[chunk.index];
+					changedIndex = chunk.index;
+					previousVisible = blockIsVisible(previous);
 					blocks[chunk.index] = {
 						kind: "text",
 						text: (previous?.kind === "text" ? previous.text : "") + chunk.text
@@ -168,6 +676,8 @@ window.__ModuleLoader__.load({
 				}
 				case "reasoning-delta": {
 					const previous = blocks[chunk.index];
+					changedIndex = chunk.index;
+					previousVisible = blockIsVisible(previous);
 					blocks[chunk.index] = {
 						kind: "reasoning",
 						text: (previous?.kind === "reasoning" ? previous.text : "") + chunk.text
@@ -176,6 +686,8 @@ window.__ModuleLoader__.load({
 				}
 				case "tool-call-delta": {
 					const previous = blocks[chunk.index];
+					changedIndex = chunk.index;
+					previousVisible = blockIsVisible(previous);
 					const base = previous?.kind === "tool-call" ? previous : {
 						kind: "tool-call",
 						callId: "",
@@ -191,23 +703,94 @@ window.__ModuleLoader__.load({
 					break;
 				}
 				case "block-end":
-					blocks[chunk.index] = (0, _deepseek_ai_dsh_client_runtime_client.toAssistantBlock)(chunk.block);
+					changedIndex = chunk.index;
+					previousVisible = blockIsVisible(blocks[chunk.index]);
+					blocks[chunk.index] = toAssistantBlock(chunk.block);
 					break;
 				default: return {
 					...state,
 					sawChunk: true
 				};
 			}
-			const visible = hasVisibleContent(compactBlocks(blocks));
+			const visibleBlocks = state.visibleBlocks - Number(previousVisible) + Number(blockIsVisible(blocks[changedIndex]));
 			return {
 				...state,
 				sawChunk: true,
 				blocks,
-				...visible && state.firstVisibleSeq === void 0 ? {
+				visibleBlocks,
+				...visibleBlocks > 0 && state.firstVisibleSeq === void 0 ? {
 					firstVisibleSeq: match.event.seq,
 					firstVisibleTime: match.event.time
 				} : {},
-				...(0, _deepseek_ai_dsh_client_runtime_client.isTokenDelta)(chunk) && state.firstTokenTime === void 0 ? { firstTokenTime: match.event.time } : {}
+				...isTokenDelta(chunk) && state.firstTokenTime === void 0 ? { firstTokenTime: match.event.time } : {}
+			};
+		}
+		function chunkRunBoundaries(event, needsToken, needsVisible, visibleFromStart) {
+			const fragments = event.type === "chunkrow/tool-call-chunks" ? event.data.args : event.data.texts;
+			const nameStartsToken = event.type === "chunkrow/tool-call-chunks" && Object.hasOwn(event.data, "name");
+			let firstTokenTime;
+			let firstVisible;
+			let time = event.time;
+			for (let index = 0; index < fragments.length; index++) {
+				const fragment = fragments[index];
+				if (needsToken && firstTokenTime === void 0 && (nameStartsToken || fragment !== "")) firstTokenTime = time;
+				if (needsVisible && firstVisible === void 0 && (visibleFromStart || event.type !== "chunkrow/tool-call-chunks" && fragment.trim() !== "")) firstVisible = {
+					seq: event.seq + index,
+					time
+				};
+				if ((!needsToken || firstTokenTime !== void 0) && (!needsVisible || firstVisible !== void 0)) break;
+				time += event.data.dt[index] ?? 0;
+			}
+			return {
+				firstTokenTime,
+				firstVisible
+			};
+		}
+		function updateChunkRun(state, event) {
+			const blocks = [...state.blocks];
+			const previous = blocks[event.data.index];
+			const previousVisible = blockIsVisible(previous);
+			let visibleFromStart = state.visibleBlocks - Number(previousVisible) > 0;
+			if (event.type === "chunkrow/text-chunks") {
+				const text = previous?.kind === "text" ? previous.text : "";
+				visibleFromStart ||= text.trim() !== "";
+				blocks[event.data.index] = {
+					kind: "text",
+					text: text + event.data.texts.join("")
+				};
+			} else if (event.type === "chunkrow/reasoning-chunks") {
+				const text = previous?.kind === "reasoning" ? previous.text : "";
+				visibleFromStart ||= text.trim() !== "";
+				blocks[event.data.index] = {
+					kind: "reasoning",
+					text: text + event.data.texts.join("")
+				};
+			} else {
+				const base = previous?.kind === "tool-call" ? previous : {
+					kind: "tool-call",
+					callId: "",
+					name: "",
+					argsRaw: ""
+				};
+				blocks[event.data.index] = {
+					kind: "tool-call",
+					callId: base.callId || String(event.data.id),
+					name: Object.hasOwn(event.data, "name") ? event.data.name : base.name,
+					argsRaw: base.argsRaw + event.data.args.join("")
+				};
+			}
+			const boundaries = chunkRunBoundaries(event, state.firstTokenTime === void 0, state.firstVisibleSeq === void 0, visibleFromStart);
+			const visibleBlocks = state.visibleBlocks - Number(previousVisible) + Number(blockIsVisible(blocks[event.data.index]));
+			return {
+				...state,
+				sawChunk: true,
+				blocks,
+				visibleBlocks,
+				...boundaries.firstVisible === void 0 ? {} : {
+					firstVisibleSeq: boundaries.firstVisible.seq,
+					firstVisibleTime: boundaries.firstVisible.time
+				},
+				...boundaries.firstTokenTime === void 0 ? {} : { firstTokenTime: boundaries.firstTokenTime }
 			};
 		}
 		function closedBoundary(context) {
@@ -219,15 +802,22 @@ window.__ModuleLoader__.load({
 		function fallbackState$1(context) {
 			let state;
 			for (const match of context.matches) {
+				if (isChunkRunEvent(match.event)) {
+					state ??= initialState(match.event.data.turn, match.event.data.step, match.event.seq, match.event.time, false);
+					state = updateChunkRun(state, match.event);
+					continue;
+				}
 				const event = match.event;
 				if (event.type === "assistant/chunk") {
 					state ??= initialState(event.data.turn, event.data.step, event.seq, event.time, false);
 					state = updateChunk(state, match);
 				} else if (event.type === "assistant/message") {
 					state ??= initialState(event.data.turn, event.data.step, event.seq, event.time, false);
+					const blocks = toAssistantBlocks(event.data.message.content);
 					state = {
 						...state,
-						blocks: (0, _deepseek_ai_dsh_client_runtime_client.toAssistantBlocks)(event.data.message.content),
+						blocks,
+						visibleBlocks: countVisibleBlocks(blocks),
 						final: match,
 						usage: state.usage ?? event.data.usage
 					};
@@ -249,7 +839,7 @@ window.__ModuleLoader__.load({
 					time: event.time,
 					turn: state.turn,
 					step: state.step,
-					blocks: (0, _deepseek_ai_dsh_client_runtime_client.toAssistantBlocks)(event.data.message.content),
+					blocks: toAssistantBlocks(event.data.message.content),
 					usage: event.data.usage,
 					provenance: {
 						provider: event.data.message.source.provider,
@@ -264,8 +854,9 @@ window.__ModuleLoader__.load({
 				};
 			}
 			const boundary = closedBoundary(context);
+			if (boundary === void 0) return void 0;
 			const blocks = compactBlocks(state.blocks);
-			if (boundary === void 0 || !hasInterruptionEvidence(blocks)) return void 0;
+			if (!hasInterruptionEvidence(blocks)) return void 0;
 			return {
 				kind: "assistant",
 				seq: boundary.seq - .9,
@@ -289,6 +880,7 @@ window.__ModuleLoader__.load({
 				status,
 				...state.retry === void 0 ? {} : {
 					error: state.retry.message,
+					...state.retry.code === void 0 ? {} : { errorCode: state.retry.code },
 					retry: state.retry.retry,
 					...state.retry.maxRetries === void 0 ? {} : { maxRetries: state.retry.maxRetries },
 					retryDelayMs: state.retry.delayMs
@@ -313,6 +905,10 @@ window.__ModuleLoader__.load({
 					id: `${event.data.turn}:${event.data.step}`,
 					role: "update"
 				};
+				if (isChunkRunEvent(event)) return {
+					id: `${event.data.turn}:${event.data.step}`,
+					role: "update"
+				};
 				return null;
 			},
 			start: (_context, match) => {
@@ -320,25 +916,32 @@ window.__ModuleLoader__.load({
 				return initialState(match.event.data.turn, match.event.data.step, match.event.seq, match.event.time, true);
 			},
 			update: (context, match) => {
+				if (isChunkRunEvent(match.event)) return updateChunkRun(context.state, match.event);
 				if (match.event.type === "assistant/chunk") return updateChunk(context.state, match);
-				if (match.event.type === "assistant/message") return {
-					...context.state,
-					blocks: (0, _deepseek_ai_dsh_client_runtime_client.toAssistantBlocks)(match.event.data.message.content),
-					final: match,
-					usage: context.state.usage ?? match.event.data.usage
-				};
+				if (match.event.type === "assistant/message") {
+					const blocks = toAssistantBlocks(match.event.data.message.content);
+					return {
+						...context.state,
+						blocks,
+						visibleBlocks: countVisibleBlocks(blocks),
+						final: match,
+						usage: context.state.usage ?? match.event.data.usage
+					};
+				}
 				if (match.event.type === "step/end") return {
 					...context.state,
 					stepEnd: match
 				};
 				if (match.event.type !== "llm/retry") return context.state;
 				const data = match.event.data;
+				const failure = displayFailure(data.failure);
 				return {
 					...initialState(context.state.turn, context.state.step, context.state.startSeq, context.state.startTime, true),
 					firstTokenTime: context.state.firstTokenTime,
 					usage: context.state.usage,
 					retry: {
-						message: (0, _deepseek_ai_dsh_client_runtime_client.displayFailureMessage)(data.failure),
+						message: failure.message,
+						...failure.code === void 0 ? {} : { code: failure.code },
 						retry: data.retry,
 						...data.mode === "normal" ? { maxRetries: data.maxRetries } : {},
 						delayMs: data.delayMs
@@ -347,6 +950,7 @@ window.__ModuleLoader__.load({
 			},
 			publication: (match) => {
 				if (match.event.type === "step/start") return "none";
+				if (isChunkRunEvent(match.event)) return "animation-frame";
 				if (match.event.type !== "assistant/chunk") return "immediate";
 				const type = match.event.data.chunk.type;
 				return type === "usage" || type === "finish" ? "none" : "animation-frame";
@@ -381,11 +985,15 @@ window.__ModuleLoader__.load({
 			start: (_context, match) => {
 				if (match.event.type !== "turn/end") throw new Error("trajectory-turn-end start requires turn/end");
 				const reason = match.event.data.reason;
+				const failure = reason.kind === "error" ? displayFailure(reason.error) : void 0;
 				return {
 					turn: match.event.data.turn,
 					seq: match.event.seq,
 					time: match.event.time,
-					...reason.kind === "error" ? { error: (0, _deepseek_ai_dsh_client_runtime_client.displayFailureMessage)(reason.error) } : {}
+					...failure === void 0 ? {} : {
+						error: failure.message,
+						...failure.code === void 0 ? {} : { errorCode: failure.code }
+					}
 				};
 			},
 			update: (context) => context.state,
@@ -393,7 +1001,8 @@ window.__ModuleLoader__.load({
 				kind: "turn-end",
 				turn: context.state.turn,
 				time: context.state.time,
-				...context.state.error === void 0 ? {} : { error: context.state.error }
+				...context.state.error === void 0 ? {} : { error: context.state.error },
+				...context.state.errorCode === void 0 ? {} : { errorCode: context.state.errorCode }
 			})
 		};
 		/**
@@ -402,8 +1011,8 @@ window.__ModuleLoader__.load({
 		* @param ctx - Plugin context receiving the Definitions.
 		*/
 		function registerTrajectoryAssistantDefinition(ctx) {
-			ctx.conversationEvents.register(trajectoryAssistantDefinition);
-			ctx.conversationEvents.register(trajectoryTurnEndDefinition);
+			ctx.uiConversation.events.register(trajectoryAssistantDefinition);
+			ctx.uiConversation.events.register(trajectoryTurnEndDefinition);
 		}
 		//#endregion
 		//#region lib/types/client/trajectory-compaction-definition.js
@@ -517,8 +1126,8 @@ window.__ModuleLoader__.load({
 		* @param ctx - Plugin context receiving the Definitions.
 		*/
 		function registerTrajectoryCompactionDefinitions(ctx) {
-			ctx.conversationEvents.register(trajectoryCompactionDefinition);
-			ctx.conversationEvents.register(trajectorySessionEndDefinition);
+			ctx.uiConversation.events.register(trajectoryCompactionDefinition);
+			ctx.uiConversation.events.register(trajectorySessionEndDefinition);
 		}
 		//#endregion
 		//#region lib/types/client/trajectory-message-definitions.js
@@ -562,8 +1171,8 @@ window.__ModuleLoader__.load({
 					time: event.time,
 					content: event.data.content,
 					source: event.data.source,
-					provenance: (0, _deepseek_ai_dsh_client_runtime_client.contextProvenance)(event.data.source),
-					form: (0, _deepseek_ai_dsh_client_runtime_client.contextForm)(event.data.source)
+					provenance: contextProvenance(event.data.source),
+					form: contextForm(event.data.source)
 				};
 				return reader.previous("trajectory-inbox-next-step")?.state.claimed.has(String(event.data.id)) === true ? {
 					kind: "steering",
@@ -592,67 +1201,57 @@ window.__ModuleLoader__.load({
 		* @param ctx - Plugin context receiving the Definitions.
 		*/
 		function registerTrajectoryMessageDefinitions(ctx) {
-			ctx.conversationEvents.register(trajectoryInboxDefinition);
-			ctx.conversationEvents.register(trajectoryMessageDefinition);
+			ctx.uiConversation.events.register(trajectoryInboxDefinition);
+			ctx.uiConversation.events.register(trajectoryMessageDefinition);
 		}
 		//#endregion
 		//#region lib/types/client/trajectory-request-header-definition.js
-		function requestPrompt(match) {
-			if (match.event.type !== "request/header") throw new Error("trajectory-request-header start requires request/header");
-			const header = match.event.data.header;
-			const tools = header.tools;
+		/**
+		* Request-header fact Definition for the Trajectory target.
+		* @param inspect - the shared prompt interpretation, supplied by the
+		* uiConversation service (a client bundle cannot value-import it).
+		* @returns the Trajectory request-header Definition.
+		*/
+		function trajectoryRequestHeaderDefinition(inspect) {
 			return {
-				config: header.config,
-				system: header.system ?? "",
-				tools: Array.isArray(tools) ? tools : []
+				kind: "trajectory-request-header",
+				target: "trajectory",
+				match: (event) => event.type === "request/header" ? {
+					id: String(event.seq),
+					role: "start"
+				} : null,
+				start: (_context, match, reader) => {
+					if (match.event.type !== "request/header") throw new Error("trajectory-request-header start requires request/header");
+					const previous = reader.previous("trajectory-request-header")?.state.prompt;
+					const { prompt, change } = inspect(previous, match.event);
+					return {
+						seq: match.event.seq,
+						time: match.event.time,
+						prompt,
+						location: match.location,
+						...change === void 0 ? {} : { change }
+					};
+				},
+				update: (context) => context.state,
+				buildViewNode: (context) => context.state === void 0 ? null : trajectoryNode(context, context.state.seq, {
+					kind: "request-header",
+					header: context.state
+				})
 			};
 		}
-		function promptChange(previous, prompt, match) {
-			if (match.event.type !== "request/header") return void 0;
-			if (previous === void 0 && match.event.data.reason !== "initial") return void 0;
-			const systemChanged = previous !== void 0 && previous.system !== prompt.system;
-			const toolsChanged = previous !== void 0 && JSON.stringify(previous.tools) !== JSON.stringify(prompt.tools);
-			if (previous !== void 0 && !systemChanged && !toolsChanged) return void 0;
-			return {
-				seq: match.event.seq,
-				time: match.event.time,
-				kind: previous === void 0 ? "initial" : systemChanged && toolsChanged ? "system-and-tools" : systemChanged ? "system" : "tools",
-				...previous === void 0 ? {} : { previous }
-			};
-		}
-		const trajectoryRequestHeaderDefinition = {
-			kind: "trajectory-request-header",
-			target: "trajectory",
-			match: (event) => event.type === "request/header" ? {
-				id: String(event.seq),
-				role: "start"
-			} : null,
-			start: (_context, match, reader) => {
-				const prompt = requestPrompt(match);
-				const previous = reader.previous("trajectory-request-header")?.state.prompt;
-				const change = promptChange(previous, prompt, match);
-				return {
-					seq: match.event.seq,
-					time: match.event.time,
-					prompt,
-					location: match.location,
-					...change === void 0 ? {} : { change }
-				};
-			},
-			update: (context) => context.state,
-			buildViewNode: (context) => context.state === void 0 ? null : trajectoryNode(context, context.state.seq, {
-				kind: "request-header",
-				header: context.state
-			})
-		};
 		/**
 		* Register Trajectory request-header facts.
 		*
 		* @param ctx - Plugin context receiving the Definition.
 		*/
 		function registerTrajectoryRequestHeaderDefinition(ctx) {
-			ctx.conversationEvents.register(trajectoryRequestHeaderDefinition);
+			ctx.uiConversation.events.register(trajectoryRequestHeaderDefinition((previous, event) => ctx.uiConversation.inspectRequestPrompt(previous, event)));
 		}
+		//#endregion
+		//#region lib/types/client/copy-codes.js
+		/** Stable non-display markers for client-synthesized trajectory copy. */
+		/** Error marker localized only when the trajectory renders it. */
+		const COMPACTION_INTERRUPTED_ERROR = "trajectory.compaction-interrupted";
 		//#endregion
 		//#region lib/types/client/trajectory-snapshot-builder.js
 		const EMPTY_LIST = [];
@@ -673,13 +1272,16 @@ window.__ModuleLoader__.load({
 			return location.kind === "step" ? stepKey(location.turn.turn, location.step.step) : void 0;
 		}
 		function headerFor(request, headersByStep, previous) {
-			return headersByStep.get(stepKey(request.turn, request.step)) ?? (previous !== void 0 && previous.seq < request.startSeq ? previous : void 0);
+			return headersByStep.get(stepKey(request.turn, request.step)) ?? (previous !== void 0 && previous.seq < request.startSeq ? {
+				latest: previous,
+				...previous.change === void 0 ? {} : { change: previous.change }
+			} : void 0);
 		}
 		function applyHeader(request, header, includeChange) {
 			return header === void 0 ? request : {
 				...request,
-				prompt: header.prompt,
-				requestConfig: header.prompt.config,
+				prompt: header.latest.prompt,
+				requestConfig: header.latest.prompt.config,
 				...includeChange && header.change !== void 0 ? { promptChange: header.change } : {}
 			};
 		}
@@ -717,7 +1319,7 @@ window.__ModuleLoader__.load({
 					...request,
 					completedAt: boundary.time,
 					status: "error",
-					error: "Compaction was interrupted before completion."
+					error: COMPACTION_INTERRUPTED_ERROR
 				};
 			}
 		}
@@ -734,7 +1336,8 @@ window.__ModuleLoader__.load({
 					...request,
 					completedAt: request.completedAt ?? ending.time,
 					status: "error",
-					error: ending.error
+					error: ending.error,
+					...ending.errorCode === void 0 ? {} : { errorCode: ending.errorCode }
 				};
 			}
 		}
@@ -771,7 +1374,12 @@ window.__ModuleLoader__.load({
 				for (const contribution of this.contributions) {
 					if (contribution.data.kind !== "request-header") continue;
 					const key = headerStepKey(contribution.data.header);
-					if (key !== void 0) headersByStep.set(key, contribution.data.header);
+					if (key === void 0) continue;
+					const previous = headersByStep.get(key);
+					headersByStep.set(key, {
+						latest: contribution.data.header,
+						...contribution.data.header.change !== void 0 ? { change: contribution.data.header.change } : previous?.change === void 0 ? {} : { change: previous.change }
+					});
 				}
 				const finalized = [];
 				const eventLocations = /* @__PURE__ */ new Map();
@@ -798,12 +1406,13 @@ window.__ModuleLoader__.load({
 					}
 					if (data.kind === "assistant") {
 						const header = data.request === void 0 ? void 0 : headerFor(data.request, headersByStep, previousHeader);
-						if (data.node !== void 0) finalized.push(withRequestConfig(data.node, header?.prompt));
+						if (data.node !== void 0) finalized.push(withRequestConfig(data.node, header?.latest.prompt));
 						if (data.partial !== null) partial = data.partial;
 						if (data.request !== void 0) {
-							const includeChange = header?.change !== void 0 && !consumedPromptChanges.has(header.seq);
+							const change = header?.change;
+							const includeChange = change !== void 0 && !consumedPromptChanges.has(change.seq);
 							requests.push(applyHeader(data.request, header, includeChange));
-							if (includeChange) consumedPromptChanges.add(header.seq);
+							if (includeChange) consumedPromptChanges.add(change.seq);
 						}
 						continue;
 					}
@@ -827,7 +1436,8 @@ window.__ModuleLoader__.load({
 					turnEndings.push({
 						turn: data.turn,
 						time: data.time,
-						...data.error === void 0 ? {} : { error: data.error }
+						...data.error === void 0 ? {} : { error: data.error },
+						...data.errorCode === void 0 ? {} : { errorCode: data.errorCode }
 					});
 				}
 				requests.sort((left, right) => left.startSeq - right.startSeq);
@@ -860,7 +1470,7 @@ window.__ModuleLoader__.load({
 		* @param ctx - Plugin context receiving the view Definition.
 		*/
 		function registerTrajectoryConversationView(ctx) {
-			ctx.conversationViews.register(trajectoryViewDefinition);
+			ctx.uiConversation.views.register(trajectoryViewDefinition);
 		}
 		//#endregion
 		//#region lib/types/client/trajectory-tool-definition.js
@@ -874,7 +1484,6 @@ window.__ModuleLoader__.load({
 				turn: match.event.data.turn,
 				step: match.event.data.step,
 				time: match.event.time,
-				callView: match.view?.for === "call" ? match.view.view : null,
 				subCalls: []
 			};
 		}
@@ -895,8 +1504,6 @@ window.__ModuleLoader__.load({
 				isError: result.isError === true,
 				...match.event.data.error === void 0 ? {} : { error: match.event.data.error },
 				meta: match.event.data.meta,
-				callView: previous?.callView ?? null,
-				resultView: match.view?.for === "result" ? match.view.view : null,
 				subCalls: []
 			};
 		}
@@ -909,12 +1516,12 @@ window.__ModuleLoader__.load({
 		function childCall(match, data) {
 			return {
 				callId: data.subCallId,
+				parentCallId: data.parentCallId,
 				name: data.name,
 				argsRaw: JSON.stringify(data.arguments),
 				turn: locationTurn(match),
 				step: locationStep(match),
 				time: match.event.time,
-				callView: null,
 				subCalls: []
 			};
 		}
@@ -924,6 +1531,7 @@ window.__ModuleLoader__.load({
 				seq: match.event.seq,
 				time: match.event.time,
 				callId: data.subCallId,
+				parentCallId: data.parentCallId,
 				call: {
 					name: data.name,
 					argsRaw: JSON.stringify(data.arguments)
@@ -931,8 +1539,6 @@ window.__ModuleLoader__.load({
 				callTime: previous === void 0 || "kind" in previous ? null : previous.time,
 				content: data.content ?? [],
 				isError: data.isError === true,
-				callView: null,
-				resultView: null,
 				subCalls: []
 			};
 		}
@@ -1018,6 +1624,7 @@ window.__ModuleLoader__.load({
 				seq: interruptedAt.seq - .8,
 				time: interruptedAt.time,
 				callId: block.callId,
+				...block.parentCallId === void 0 ? {} : { parentCallId: block.parentCallId },
 				call: {
 					name: block.name,
 					argsRaw: block.argsRaw
@@ -1029,8 +1636,6 @@ window.__ModuleLoader__.load({
 					name: "Interrupted",
 					code: "interrupted"
 				},
-				callView: block.callView,
-				resultView: null,
 				subCalls
 			};
 		}
@@ -1107,7 +1712,7 @@ window.__ModuleLoader__.load({
 		* @param ctx - Plugin context receiving the Definition.
 		*/
 		function registerTrajectoryToolDefinition(ctx) {
-			ctx.conversationEvents.register(trajectoryToolDefinition);
+			ctx.uiConversation.events.register(trajectoryToolDefinition);
 		}
 		//#endregion
 		//#region ../../../node_modules/.pnpm/@tanstack+virtual-core@3.17.7/node_modules/@tanstack/virtual-core/dist/esm/lazy-measurements.js
@@ -2910,19 +3515,21 @@ window.__ModuleLoader__.load({
 		/**
 		* Format a duration in milliseconds with thousands separators.
 		* @param milliseconds - Duration in milliseconds, or `null` when absent.
+		* @param t - Trajectory locale translator.
 		* @returns `—` when unknown, otherwise an integer-millisecond label.
 		*/
-		function formatDurationMillis(milliseconds) {
+		function formatDurationMillis(milliseconds, t) {
 			if (milliseconds === null || !Number.isFinite(milliseconds)) return "—";
-			return `${String(Math.round(milliseconds)).replace(/\B(?=(\d{3})+(?!\d))/g, ",")} ms`;
+			return t("unit.milliseconds", { value: String(Math.round(milliseconds)).replace(/\B(?=(\d{3})+(?!\d))/g, ",") });
 		}
 		/**
 		* Format an elapsed duration given in seconds as a millisecond label.
 		* @param seconds - Duration seconds, or `null` when absent.
+		* @param t - Trajectory locale translator.
 		* @returns `—` when unknown, otherwise an integer-millisecond label.
 		*/
-		function formatElapsedSeconds(seconds) {
-			return formatDurationMillis(seconds === null ? null : seconds * 1e3);
+		function formatElapsedSeconds(seconds, t) {
+			return formatDurationMillis(seconds === null ? null : seconds * 1e3, t);
 		}
 		//#endregion
 		//#region lib/types/client/trajectory-virtual-rows.js
@@ -2991,8 +3598,8 @@ window.__ModuleLoader__.load({
 			return source.length < text.length || preview.length < compact.length ? `${preview}…` : preview;
 		}
 		//#endregion
-		//#region \0dsh-css:D:\Claude-project\deepseek-harness-win7\reference\deepseek-harness\packages\client\ui-trajectory\src\client\TrajectoryTable.module.css.mjs
-		const css$3 = ".nEt-Aa_split{--dsh-scrollbar-thumb:var(--dsw-alias-scrollbar-bg-l2);--dsh-scrollbar-thumb-hover:var(--dsw-alias-scrollbar-hover-l2);background:var(--dsw-alias-bg-layer-1);flex:1;width:100%;min-height:0;display:flex;position:relative;overflow:hidden;container-type:inline-size}.nEt-Aa_tablePane{min-width:0;padding-bottom:var(--dsh-trajectory-bottom-clearance,0px);flex:1;position:relative;overflow:hidden auto;container:nEt-Aa_trajectory-table/inline-size}.nEt-Aa_historyLoading{z-index:5;pointer-events:none;height:0;position:sticky;top:0;overflow:visible}.nEt-Aa_historyLoadingBar{box-sizing:border-box;border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);width:100%;height:30px;color:var(--dsw-alias-label-secondary);font:var(--dsw-font-xxs-12);justify-content:center;align-items:center;gap:6px;display:flex}.nEt-Aa_historyLoadingSpinner{box-sizing:border-box;border:1.5px solid var(--dsw-alias-border-l2);border-top-color:var(--dsw-alias-state-business-primary);border-radius:50%;width:10px;height:10px;animation:.7s linear infinite nEt-Aa_history-loading-spin}.nEt-Aa_table tbody .nEt-Aa_historyLoadRow td{height:30px;padding:0}.nEt-Aa_table tbody .nEt-Aa_historyLoadRow+tr[data-turn-start=true] td:before{content:none}.nEt-Aa_historyLoadButton{background:var(--dsw-alias-bg-layer-1);width:100%;height:29px;color:var(--dsw-alias-label-secondary);cursor:pointer;font:var(--dsw-font-xxs-12);border:0;justify-content:center;align-items:center;gap:6px;display:flex}.nEt-Aa_historyLoadButton:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.nEt-Aa_historyLoadButton:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:-2px}.nEt-Aa_historyLoadButton:disabled{cursor:default}.nEt-Aa_visuallyHidden{clip:rect(0 0 0 0);white-space:nowrap;width:1px;height:1px;position:absolute;overflow:hidden}.nEt-Aa_table:not([data-scroll-ready=true]){visibility:hidden}@keyframes nEt-Aa_history-loading-spin{to{transform:rotate(360deg)}}@media (prefers-reduced-motion:reduce){.nEt-Aa_historyLoadingSpinner{animation:none}}.nEt-Aa_table{--trajectory-turn-accent:color-mix(in srgb, var(--dsw-static-blue-500) 22%, var(--dsw-alias-bg-layer-1));border-spacing:0;table-layout:fixed;width:100%;min-width:0;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-1);font:var(--dsw-font-xxs-12)}.nEt-Aa_eventColumn{width:122px}.nEt-Aa_contentColumn{width:auto}.nEt-Aa_table th{z-index:3;box-sizing:border-box;border-bottom:1px solid var(--dsw-alias-border-l2);height:30px;color:var(--dsw-alias-label-tertiary);background:var(--dsw-specific-sidebar-fill);font:var(--dsw-font-xxs-12);text-align:left;text-overflow:ellipsis;user-select:none;white-space:nowrap;padding:0 8px;font-weight:500;position:sticky;top:0;overflow:hidden}.nEt-Aa_eventHeader{text-align:right!important;padding-right:4px!important}.nEt-Aa_table td{box-sizing:border-box;border-bottom:1px solid var(--dsw-alias-border-l1);text-overflow:ellipsis;white-space:nowrap;height:30px;padding:0 8px;overflow:hidden}.nEt-Aa_table tbody .nEt-Aa_virtualSpacer{pointer-events:none}.nEt-Aa_table tbody .nEt-Aa_virtualSpacer td{height:var(--trajectory-virtual-spacer-height);border:0;padding:0}.nEt-Aa_table tbody tr:not([data-collapsed-summary]):not([data-virtual-spacer]):not([data-history-load]){cursor:default;transition:background-color .12s var(--ds-ease-in-out), opacity .12s var(--ds-ease-in-out);outline:none}.nEt-Aa_table tbody tr[data-timeline-focus=outside]{opacity:.24}.nEt-Aa_table tbody tr:not([data-collapsed-summary]):not([data-virtual-spacer]):not([data-history-load]):not([data-selected=true]):hover{background:var(--dsw-alias-interactive-bg-hover)}.nEt-Aa_table tbody tr[data-request-only=true]:hover{background:0 0}.nEt-Aa_table tbody tr[data-request-only=true] td{border-bottom:0;height:0;padding-top:0;padding-bottom:0}.nEt-Aa_table tbody tr[data-terminal-request-boundary=true] td{height:9px}.nEt-Aa_table tbody tr[data-request-only=true] .nEt-Aa_turnRail{top:-15px;bottom:0}.nEt-Aa_table tbody tr:not([data-collapsed-summary]):focus-visible{box-shadow:inset 0 0 0 1px var(--dsw-alias-state-business-primary)}.nEt-Aa_table tbody tr[data-selected=true]{background:var(--dsw-alias-interactive-bg-active)}.nEt-Aa_requestBoundaryControl{--request-boundary-base-left:12px;z-index:6;top:-8px;left:calc(var(--request-boundary-base-left) + var(--request-boundary-offset,0px));cursor:pointer;background:0 0;border:0;width:16px;height:16px;padding:0;position:absolute}.nEt-Aa_requestBoundaryControl:before{background:var(--dsw-alias-label-caption);width:5px;height:5px;box-shadow:0 0 0 2px var(--dsw-alias-bg-layer-1), 0 0 0 3px transparent;content:\"\";transition:background .12s var(--ds-ease-in-out), box-shadow .12s var(--ds-ease-in-out);border-radius:50%;position:absolute;top:5.5px;left:5.5px}.nEt-Aa_requestBoundaryControl:after{border:1px solid var(--dsw-alias-border-l1);width:max-content;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-layer-1);content:attr(data-label);font:9px/12px var(--ds-font-family-code);opacity:0;pointer-events:none;transition:opacity .12s var(--ds-ease-in-out), transform .12s var(--ds-ease-in-out);user-select:none;white-space:nowrap;border-radius:2px;padding:0 4px;position:absolute;top:2px;left:17px;transform:translate(-2px);box-shadow:0 2px 6px #0000001f}.nEt-Aa_requestBoundaryControl:hover:before,.nEt-Aa_requestBoundaryControl:focus-visible:before{background:var(--dsw-alias-brand-primary-new-colorprimary-new-color)}.nEt-Aa_requestBoundaryControlActive:before,.nEt-Aa_requestBoundaryControlActive:hover:before,.nEt-Aa_requestBoundaryControlActive:focus-visible:before{background:color-mix(in srgb, var(--dsw-alias-brand-primary-new-colorprimary-new-color) 18%, var(--dsw-alias-bg-layer-1));box-shadow:0 0 0 1.5px var(--dsw-alias-brand-primary-new-colorprimary-new-color)}.nEt-Aa_requestBoundaryControl[data-request-status=error]:before,.nEt-Aa_requestBoundaryControl[data-request-status=error]:hover:before,.nEt-Aa_requestBoundaryControl[data-request-status=error]:focus-visible:before{background:var(--dsw-alias-state-error-primary)}.nEt-Aa_requestBoundaryControl:hover:after,.nEt-Aa_requestBoundaryControl:focus-visible:after{opacity:1;transform:translate(0)}.nEt-Aa_requestBoundaryControl:focus-visible{outline:none}.nEt-Aa_table tbody tr:has(.nEt-Aa_requestBoundaryControl:hover):not([data-selected=true]){background:0 0}.nEt-Aa_event{position:relative}.nEt-Aa_turnRail,.nEt-Aa_selectionRail{background:var(--dsw-alias-brand-primary-new-colorprimary-new-color);pointer-events:none;position:absolute;left:0}.nEt-Aa_turnRail{z-index:4;background:var(--trajectory-turn-accent);width:2px;top:-1px;bottom:-1px}.nEt-Aa_table tbody tr[data-turn-end=true] .nEt-Aa_turnRail{bottom:0}.nEt-Aa_selectionRail{z-index:5;width:3px;top:0;bottom:0}.nEt-Aa_table tbody tr[data-error=true] .nEt-Aa_turnRail{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 22%, var(--dsw-alias-bg-layer-1))}.nEt-Aa_table tbody tr[data-error=true] .nEt-Aa_selectionRail{background:var(--dsw-alias-state-error-primary)}.nEt-Aa_table tbody tr[data-turn-start=true] td{position:relative;overflow:visible}.nEt-Aa_table tbody tr[data-turn-start=true]:not(:first-child) td:before{z-index:1;background:var(--dsw-alias-border-l1);content:\"\";pointer-events:none;height:2px;position:absolute;top:0;left:0;right:0;transform:translateY(-50%)}.nEt-Aa_event{padding-left:36px!important;padding-right:4px!important;overflow:visible!important}.nEt-Aa_turnLabel{z-index:3;box-sizing:border-box;width:max-content;color:var(--dsw-alias-label-tertiary);background:var(--dsw-alias-bg-module-platform);font:8px/10px var(--ds-font-family-code);font-variant-numeric:tabular-nums;user-select:none;white-space:nowrap;border-radius:0 0 2px;flex:none;align-items:center;padding:1px 5px;display:inline-grid;position:absolute;top:0;left:0}.nEt-Aa_turnLabelFull,.nEt-Aa_turnLabelCompact{opacity:1;white-space:nowrap;grid-area:1/1;max-width:64px;overflow:hidden}.nEt-Aa_turnLabelCompact{opacity:0;max-width:0}.nEt-Aa_turnLabelActive{color:color-mix(in srgb, var(--dsw-static-blue-500) 55%, var(--dsw-alias-label-tertiary));background:var(--trajectory-turn-accent)}.nEt-Aa_eventInner{justify-content:flex-start;align-items:center;min-width:0;height:100%;display:flex}.nEt-Aa_kindSlot{flex:none;justify-content:flex-end;align-items:flex-end;width:76px;display:flex}.nEt-Aa_kindSlot [role=tooltip]{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);box-shadow:var(--dsw-shadow-lv2);color:var(--dsw-alias-label-primary)}.nEt-Aa_content{color:var(--dsw-alias-label-primary);padding-left:4px!important}.nEt-Aa_kindTag{box-sizing:border-box;letter-spacing:.035em;user-select:none;border:1px solid #0000;border-radius:4px;flex:none;align-items:center;height:19px;padding:0 5px;font-size:10px;font-weight:650;line-height:16px;display:inline-flex}.nEt-Aa_kindTagIcon{opacity:0;flex:none;justify-content:center;align-items:center;width:0;height:13px;display:inline-flex;overflow:hidden;transform:scale(.8)}.nEt-Aa_kindTagLabel{opacity:1;white-space:nowrap;max-width:72px;display:inline-block;overflow:hidden}.nEt-Aa_table .nEt-Aa_kindSlot .nEt-Aa_message{justify-content:center;width:100%}@container nEt-Aa_trajectory-table (width<=620px){.nEt-Aa_eventColumn{width:50px}.nEt-Aa_event{padding-left:28px!important;padding-right:3px!important}.nEt-Aa_requestBoundaryControl{--request-boundary-base-left:6px}.nEt-Aa_kindSlot{width:19px}.nEt-Aa_kindTag,.nEt-Aa_table .nEt-Aa_kindSlot .nEt-Aa_message{justify-content:center;width:19px;padding-left:0;padding-right:0}.nEt-Aa_kindTagIcon{opacity:1;width:13px;transform:scale(1)}.nEt-Aa_kindTagLabel,.nEt-Aa_turnLabelFull{opacity:0;max-width:0}.nEt-Aa_turnLabelCompact{opacity:1;max-width:64px}}@media (prefers-reduced-motion:no-preference){.nEt-Aa_eventColumn,.nEt-Aa_event,.nEt-Aa_requestBoundaryControl,.nEt-Aa_kindSlot,.nEt-Aa_kindTag,.nEt-Aa_kindTagIcon,.nEt-Aa_kindTagLabel,.nEt-Aa_turnLabelFull,.nEt-Aa_turnLabelCompact{transition-duration:.18s;transition-timing-function:var(--ds-ease-in-out)}.nEt-Aa_eventColumn,.nEt-Aa_kindSlot{transition-property:width}.nEt-Aa_event{transition-property:padding-right,padding-left}.nEt-Aa_requestBoundaryControl{transition-property:left}.nEt-Aa_kindTag{transition-property:padding-right,padding-left}.nEt-Aa_kindTagIcon{transition-property:width,opacity,transform}.nEt-Aa_kindTagLabel,.nEt-Aa_turnLabelFull,.nEt-Aa_turnLabelCompact{transition-property:max-width,opacity}}.nEt-Aa_user{color:var(--dsw-alias-state-business-primary);background:var(--dsw-alias-state-business-tertiary)}.nEt-Aa_systemNeutral{color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-module-platform)}.nEt-Aa_contextGreen{color:color-mix(in srgb, var(--dsw-alias-state-success-primary) 68%, var(--dsw-alias-label-secondary));background:var(--dsw-alias-state-success-tertiary)}.nEt-Aa_compacted{color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-module-platform)}.nEt-Aa_compactedSummary{font:var(--dsw-font-xs-13);margin-top:12px;padding:0 0 14px}.nEt-Aa_promptDiffSections{flex-direction:column;gap:14px;max-height:100%;padding:10px 14px 14px;display:flex;overflow:auto}.nEt-Aa_promptDiffSection{min-width:0}.nEt-Aa_promptDiffTitle{color:var(--dsw-alias-label-secondary);font:var(--dsw-font-xs-strong-13);user-select:none;margin:0 0 6px}.nEt-Aa_promptDiff{color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-1);font:11px/17px var(--ds-font-family-code);white-space:pre;margin:0;overflow:auto}.nEt-Aa_promptDiff span{min-width:max-content;padding:0 6px;display:block}.nEt-Aa_promptDiffLinemeta{color:var(--dsw-alias-label-caption);background:var(--dsw-alias-bg-module-platform);user-select:none}.nEt-Aa_promptDiffLinecontext{color:var(--dsw-alias-label-secondary)}.nEt-Aa_promptDiffLineadded{color:color-mix(in srgb, var(--dsw-alias-state-success-primary) 72%, var(--dsw-alias-label-primary));background:var(--dsw-alias-state-success-tertiary)}.nEt-Aa_promptDiffLineremoved{color:var(--dsw-alias-state-error-primary);background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 12%, var(--dsw-alias-bg-layer-1))}.nEt-Aa_assistantVioletBright{color:color-mix(in srgb, var(--dsw-alias-brand-primary-new-colorprimary-new-color) 60%, var(--dsw-alias-state-error-secondary));background:color-mix(in srgb, color-mix(in srgb, var(--dsw-alias-brand-primary-new-colorprimary-new-color) 55%, var(--dsw-alias-state-error-secondary)) 15%, var(--dsw-alias-bg-layer-1))}.nEt-Aa_toolAmber{color:var(--dsw-alias-state-warn-label);background:var(--dsw-alias-state-warn-tertiary)}.nEt-Aa_subtoolAmber{color:color-mix(in srgb, var(--dsw-alias-state-warn-label) 62%, var(--dsw-alias-label-tertiary));background:color-mix(in srgb, var(--dsw-alias-state-warn-tertiary) 58%, var(--dsw-alias-bg-layer-1))}.nEt-Aa_contentText{text-overflow:ellipsis;white-space:nowrap;min-width:0;display:block;overflow:hidden}.nEt-Aa_toolCallOnly{color:var(--dsw-alias-label-tertiary)}.nEt-Aa_table tbody tr[data-collapsed-summary=turn] td,.nEt-Aa_table tbody tr[data-collapsed-summary=assistant] td{height:20px}.nEt-Aa_table tbody tr[data-collapsed-summary]{cursor:pointer;transition:background-color .12s var(--ds-ease-in-out);outline:none}.nEt-Aa_table tbody tr[data-collapsed-summary]:hover{background:var(--dsw-alias-interactive-bg-hover)}.nEt-Aa_table tbody tr[data-collapsed-summary]:focus-visible{box-shadow:inset 0 0 0 1px var(--dsw-alias-state-business-primary)}.nEt-Aa_collapsedTurnContent{min-width:0;color:var(--dsw-alias-label-secondary);align-items:center;font-size:12px;line-height:16px;display:flex}.nEt-Aa_collapsedTurnEllipsis{color:var(--dsw-alias-label-tertiary);user-select:none;flex:none;margin-right:6px;font-weight:600}.nEt-Aa_collapsedTurnText{text-overflow:ellipsis;white-space:nowrap;min-width:0;overflow:hidden}.nEt-Aa_resultPreview{grid-template-columns:clamp(180px, var(--trajectory-tool-request-width,calc(36cqw - 56px)), 480px) minmax(0, 1fr);align-items:center;gap:8px;min-width:0;display:grid}.nEt-Aa_resultRequest,.nEt-Aa_inlineResultText{text-overflow:ellipsis;white-space:nowrap;min-width:0;overflow:hidden}.nEt-Aa_toolCallNameTypeface{color:var(--dsw-alias-label-primary);font:400 12px/18px Menlo,Consolas,Liberation Mono,PingFang SC,Microsoft YaHei}.nEt-Aa_toolCallPayload{color:var(--dsw-alias-label-secondary);font:400 12px/18px var(--ds-font-family-code);margin-left:7px}.nEt-Aa_table tbody tr[data-kind=tool] .nEt-Aa_contentText,.nEt-Aa_table tbody tr[data-kind=subtool] .nEt-Aa_contentText,.nEt-Aa_table tbody tr[data-kind=tool] .nEt-Aa_resultPreview,.nEt-Aa_table tbody tr[data-kind=subtool] .nEt-Aa_resultPreview{font-family:var(--ds-font-family-code);font-size:12px}.nEt-Aa_table tbody tr[data-kind=subtool] .nEt-Aa_content{padding-left:26px}.nEt-Aa_inlineResult{min-width:0;color:var(--dsw-alias-label-secondary);align-items:center;display:flex}.nEt-Aa_noOutputText{color:var(--dsw-alias-label-caption)}.nEt-Aa_arrow{color:var(--dsw-alias-label-caption);flex:none;margin-right:8px}.nEt-Aa_error,.nEt-Aa_overview dd.nEt-Aa_error,.nEt-Aa_details .nEt-Aa_errorPayload{color:var(--dsw-alias-state-error-primary)}.nEt-Aa_details .nEt-Aa_errorPayload .nEt-Aa_resultBlockText{color:inherit}.nEt-Aa_details .nEt-Aa_jsonPayload.nEt-Aa_errorPayload,.nEt-Aa_details .nEt-Aa_jsonPreview.nEt-Aa_errorPayload{--json-tree-property:var(--dsw-alias-state-error-primary);--json-tree-string:var(--dsw-alias-state-error-primary);--json-tree-number:var(--dsw-alias-state-error-primary);--json-tree-keyword:var(--dsw-alias-state-error-primary);--json-tree-punctuation:var(--dsw-alias-state-error-primary);--json-tree-icon:var(--dsw-alias-state-error-primary)}.nEt-Aa_details{border-left:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);flex-direction:column;flex:none;width:clamp(320px,38%,440px);min-width:0;max-width:calc(100% - 280px);min-height:0;display:flex;position:relative}.nEt-Aa_detailsResizeHandle{z-index:6;cursor:col-resize;touch-action:none;user-select:none;background:0 0;border:0;width:8px;padding:0;position:absolute;top:0;bottom:0;left:-4px}.nEt-Aa_detailsResizeHandle:focus-visible{outline:none}.nEt-Aa_detailsHeader{box-sizing:border-box;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none;justify-content:space-between;align-items:center;height:42px;padding:0 8px 0 12px;display:flex}.nEt-Aa_detailsTitle{min-width:0;color:var(--dsw-alias-label-primary);align-items:center;gap:8px;display:flex}.nEt-Aa_requestDetailsDot{background:var(--dsw-alias-label-secondary);border-radius:50%;flex:none;width:5px;height:5px}.nEt-Aa_requestDetailsName{font:500 12px/16px var(--ds-font-family-code);flex:none}.nEt-Aa_detailsLocation{min-width:0;color:var(--dsw-alias-label-tertiary);font:11px/16px var(--ds-font-family-code);text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.nEt-Aa_close{width:28px;height:28px;color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border:0;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0;font-size:18px;line-height:18px;display:inline-flex}.nEt-Aa_close:hover{color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover)}.nEt-Aa_detailTabs{box-sizing:border-box;border-bottom:1px solid var(--dsw-alias-border-l2);overscroll-behavior-x:contain;scrollbar-width:none;white-space:nowrap;flex:none;gap:1px;width:100%;min-width:0;max-width:100%;height:34px;padding:0 8px;display:flex;overflow:auto hidden}.nEt-Aa_detailTabs::-webkit-scrollbar{display:none}.nEt-Aa_detailTab{color:var(--dsw-alias-label-tertiary);cursor:pointer;font:var(--dsw-font-xs-13);background:0 0;border:0;flex:none;padding:0 9px;position:relative}.nEt-Aa_detailTab:hover{color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover)}.nEt-Aa_detailTabActive{color:var(--dsw-alias-state-business-primary)}.nEt-Aa_detailTabActive:after{background:var(--dsw-alias-state-business-primary);content:\"\";border-radius:1px 1px 0 0;height:2px;position:absolute;bottom:0;left:9px;right:9px}.nEt-Aa_close:focus-visible,.nEt-Aa_detailTab:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}.nEt-Aa_detailBody{min-height:0;padding-bottom:var(--dsh-trajectory-bottom-clearance,0px);scrollbar-gutter:stable;flex:1;overflow:hidden auto}.nEt-Aa_detailBodySummary{box-sizing:border-box;padding-bottom:calc(12px + var(--dsh-trajectory-bottom-clearance,0px));flex-direction:column;display:flex;overflow:hidden}.nEt-Aa_detailBodySummary>.nEt-Aa_overview{overscroll-behavior:contain;flex:0 auto;min-height:0;overflow:auto}.nEt-Aa_detailBodySummary>.nEt-Aa_compactedSummary{flex:1;min-height:0;overflow:auto}.nEt-Aa_summaryScrollRegion{--dsh-scrollbar-thumb:transparent;--dsh-scrollbar-thumb-hover:transparent}.nEt-Aa_summaryScrollRegion:hover,.nEt-Aa_summaryScrollRegion:focus-within{--dsh-scrollbar-thumb:var(--dsw-alias-scrollbar-bg-l2);--dsh-scrollbar-thumb-hover:var(--dsw-alias-scrollbar-hover-l2)}.nEt-Aa_compactedSummary .nEt-Aa_markdownPayload{padding-right:18px}.nEt-Aa_overview{font:var(--dsw-font-xs-13);margin:0;padding:8px 0}.nEt-Aa_overviewParentLinks{gap:14px;display:flex}.nEt-Aa_overviewHierarchyNavLink{all:unset;color:var(--dsw-alias-label-secondary);cursor:pointer;font:inherit;opacity:1;align-items:center;gap:1px;display:inline-flex}.nEt-Aa_overviewHierarchyNavLink:hover{color:var(--dsw-alias-label-primary)}.nEt-Aa_overviewHierarchyJumpIconTight{color:var(--dsw-alias-label-caption);flex:none}.nEt-Aa_overviewHierarchyNavLink:hover .nEt-Aa_overviewHierarchyJumpIconTight,.nEt-Aa_overviewHierarchyNavLink:focus-visible .nEt-Aa_overviewHierarchyJumpIconTight{color:var(--dsw-alias-label-primary)}.nEt-Aa_overviewHierarchyNavLink:focus-visible{color:var(--dsw-alias-label-primary);outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.nEt-Aa_overview>div{grid-template-columns:94px minmax(0,1fr);align-items:center;min-height:22px;padding:0 14px;display:grid}.nEt-Aa_overview>.nEt-Aa_requestTokenDetail dt{padding-left:12px}.nEt-Aa_usagePanel{padding:4px 0 10px}.nEt-Aa_usageGroup+.nEt-Aa_usageGroup{margin-top:8px}.nEt-Aa_usageHeading{color:var(--dsw-alias-label-secondary);font:var(--dsw-font-xs-strong-13);user-select:none;margin:0;padding:4px 14px 1px}.nEt-Aa_usageGroup .nEt-Aa_overview{padding:0}.nEt-Aa_overview dt{color:var(--dsw-alias-label-tertiary)}.nEt-Aa_overview dd{min-width:0;color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;margin:0;overflow:hidden}.nEt-Aa_timestampToggle{all:unset;color:inherit;cursor:pointer;font:inherit;user-select:text}.nEt-Aa_timestampToggle:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.nEt-Aa_overviewSections{border-top:0;flex-direction:column;flex:1;min-height:min-content;display:flex;overflow:hidden}.nEt-Aa_overviewSection{flex-direction:column;flex:1 1 0;min-height:28px;max-height:max-content;display:flex;overflow:hidden}.nEt-Aa_overviewSection+.nEt-Aa_overviewSection{padding-top:8px}.nEt-Aa_overviewHeading{box-sizing:border-box;width:100%;height:28px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-layer-1);font:var(--dsw-font-xs-strong-13);user-select:none;flex:none;align-items:flex-end;margin:0;padding:0 0 3px 14px;display:flex}.nEt-Aa_overviewTitle{width:max-content;height:auto;color:inherit;cursor:pointer;font:inherit;user-select:none;background:0 0;border:0;flex:none;align-items:center;gap:3px;padding:0;line-height:1;display:inline-flex}.nEt-Aa_overviewTitleIcon{color:var(--dsw-alias-label-caption);flex:none}.nEt-Aa_overviewTitle:hover .nEt-Aa_overviewTitleIcon{color:var(--dsw-alias-label-primary)}.nEt-Aa_overviewTitle:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.nEt-Aa_overviewTitle:focus-visible .nEt-Aa_overviewTitleIcon{color:var(--dsw-alias-state-business-primary)}.nEt-Aa_overviewPreview{overscroll-behavior:contain;background:var(--dsw-alias-bg-layer-1);flex:1;min-height:0;overflow:auto}.nEt-Aa_overviewPreview>:last-child{margin-bottom:0;padding-bottom:0}.nEt-Aa_overviewPreview .nEt-Aa_jsonPreview>:first-child,.nEt-Aa_overviewPreview .nEt-Aa_schemaTree>:first-child{padding-bottom:0}.nEt-Aa_overviewPreview .nEt-Aa_schemaTree{margin-bottom:0}.nEt-Aa_overviewPreview .nEt-Aa_overview{padding:2px 0 0}.nEt-Aa_overviewPreview .nEt-Aa_overview>div{min-height:22px}.nEt-Aa_markdownPreview,.nEt-Aa_markdownPayload{color:var(--dsw-alias-label-primary)}.nEt-Aa_markdownPreview>div,.nEt-Aa_markdownPayload>div{font:var(--dsw-font-xs-13);gap:8px}.nEt-Aa_markdownPreview>div h1,.nEt-Aa_markdownPayload>div h1{font:600 16px/22px var(--dsw-font-family)}.nEt-Aa_markdownPreview>div h2,.nEt-Aa_markdownPayload>div h2{font:600 15px/22px var(--dsw-font-family)}.nEt-Aa_markdownPreview>div :where(h3,h4,h5,h6),.nEt-Aa_markdownPayload>div :where(h3,h4,h5,h6){font:600 14px/20px var(--dsw-font-family)}.nEt-Aa_markdownPreview>div :not(pre)>code,.nEt-Aa_markdownPayload>div :not(pre)>code{font:12px/18px var(--ds-font-family-code)}.nEt-Aa_markdownPreview>div table,.nEt-Aa_markdownPayload>div table{font:var(--dsw-font-xs-13)}.nEt-Aa_markdownPreview>div>:first-child{margin-top:0}.nEt-Aa_markdownPreview>div>:last-child{margin-bottom:0}.nEt-Aa_markdownPreview>div :where(h1,h2,h3){margin:12px 0 6px}.nEt-Aa_markdownPreview>div :where(h4,h5,h6){margin:10px 0 5px}.nEt-Aa_markdownPreview>div :where(p,ul,ol){margin:8px 0}.nEt-Aa_markdownPreview>div li:not(:first-child){margin-top:3px}.nEt-Aa_markdownPreview>div blockquote{margin-top:8px}.nEt-Aa_markdownPreview>div hr{margin:14px 0}.nEt-Aa_markdownPreview>div>.md-code-block{margin:10px 0}.nEt-Aa_assistantContent .nEt-Aa_markdownPayload,.nEt-Aa_assistantContent .nEt-Aa_payload{min-height:0}.nEt-Aa_thinkingQuote{border-left:2px solid var(--dsw-alias-markdown-citation);color:var(--dsw-alias-label-secondary);background:0 0;margin:6px 14px 0 12px;padding-left:6px}.nEt-Aa_thinkingQuoteOnlyPreview{margin-bottom:8px}.nEt-Aa_detailBody>.nEt-Aa_assistantContentRendered .nEt-Aa_thinkingQuote{margin-top:14px}.nEt-Aa_thinkingToggle{width:max-content;height:18px;color:var(--dsw-alias-label-tertiary);cursor:pointer;font:600 12px/18px var(--dsw-font-family);user-select:none;background:0 0;border:0;align-items:center;gap:2px;padding:0;display:flex}.nEt-Aa_thinkingChevron{transition:transform .12s var(--ds-ease-in-out);flex:none}.nEt-Aa_thinkingToggle[aria-expanded=true] .nEt-Aa_thinkingChevron{transform:rotate(90deg)}.nEt-Aa_thinkingToggle:hover{color:var(--dsw-alias-label-secondary)}.nEt-Aa_thinkingToggle:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.nEt-Aa_thinkingQuote .nEt-Aa_markdownPreview,.nEt-Aa_thinkingQuote .nEt-Aa_markdownPayload,.nEt-Aa_thinkingQuote .nEt-Aa_payload{min-height:0;color:var(--dsw-alias-label-secondary);background:0 0;padding:2px 0}.nEt-Aa_assistantOutput{background:var(--dsw-alias-bg-layer-1)}.nEt-Aa_markdownPreview{padding:6px 14px 8px}.nEt-Aa_markdownPayload{min-height:100%;padding:14px}.nEt-Aa_jsonPayload{min-height:100%}.nEt-Aa_jsonPreview{min-height:0}.nEt-Aa_schema{background:var(--dsw-alias-bg-layer-1);min-height:100%}.nEt-Aa_schemaPreview{min-height:0}.nEt-Aa_schemaIntro{padding:12px 14px 6px}.nEt-Aa_schemaPreview .nEt-Aa_schemaIntro{padding-top:6px}.nEt-Aa_schemaName{color:var(--dsw-alias-label-primary);font:600 12px/18px var(--ds-font-family-code);margin:0}.nEt-Aa_schemaDescription{color:var(--dsw-alias-label-secondary);font:var(--dsw-font-xs-13);white-space:pre-wrap;margin:2px 0 0}.nEt-Aa_schemaParameters{min-width:0}.nEt-Aa_schemaParametersTitle{color:var(--dsw-alias-label-tertiary);font:600 11px/16px var(--dsw-font-family);user-select:none;margin:0;padding:4px 14px 2px}.nEt-Aa_schemaTree{margin:0 6px 8px 0}.nEt-Aa_payload{box-sizing:border-box;overflow-wrap:anywhere;min-height:100%;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-markdown-code-block);font:12px/19px var(--ds-font-family-code);tab-size:2;white-space:pre-wrap;margin:0;padding:14px}.nEt-Aa_payloadPreview{min-height:0;padding:6px 14px 8px}.nEt-Aa_sourceBlocks{box-sizing:border-box;min-height:100%;padding:12px 14px}.nEt-Aa_sourceBlock+.nEt-Aa_sourceBlock{margin-top:14px}.nEt-Aa_sourceBlockHeader,.nEt-Aa_sourceBlockJumpTarget{user-select:none;align-items:center;gap:3px;width:max-content;margin-bottom:3px;display:flex}.nEt-Aa_sourceBlockJumpTarget{all:unset;cursor:pointer;user-select:none;align-items:center;gap:3px;width:max-content;margin-bottom:3px;display:flex}.nEt-Aa_sourceBlockLabel{color:var(--dsw-alias-label-tertiary);font:11px/16px var(--ds-font-family-code)}.nEt-Aa_sourceBlockJumpIcon{color:var(--dsw-alias-label-caption);flex:none}.nEt-Aa_sourceBlockJumpTarget:hover .nEt-Aa_sourceBlockJumpIcon{color:var(--dsw-alias-label-primary)}.nEt-Aa_sourceBlockJumpTarget:focus-visible{outline:none}.nEt-Aa_sourceBlockJumpTarget:focus-visible .nEt-Aa_sourceBlockJumpIcon{color:var(--dsw-alias-state-business-primary)}.nEt-Aa_sourceBlockContent{overflow-wrap:anywhere;color:var(--dsw-alias-label-primary);font:12px/19px var(--ds-font-family-code);tab-size:2;white-space:pre-wrap;background:0 0;margin:0}.nEt-Aa_panelImageLink{cursor:zoom-in;border-radius:4px;width:auto;max-width:100%;display:block;overflow:hidden}.nEt-Aa_panelImageLinkPreview{max-height:140px}.nEt-Aa_panelImage{border-radius:inherit;background:var(--dsw-alias-bg-base);object-fit:contain;width:auto;max-width:100%;height:auto;max-height:320px;margin:0;display:block}.nEt-Aa_panelImageLinkPreview .nEt-Aa_panelImage{max-height:140px}.nEt-Aa_messageImages{flex-direction:column;gap:8px;margin:8px 14px 14px;display:flex}.nEt-Aa_messageImagesPreview{gap:6px;margin:6px 14px 8px}.nEt-Aa_assistantToolCalls{box-sizing:border-box;max-width:100%;color:var(--dsw-alias-label-secondary);font:11px/17px var(--ds-font-family-code);margin:2px 14px 12px;padding:0;list-style:none}.nEt-Aa_assistantToolCallsPreview{margin-top:2px;margin-bottom:8px}.nEt-Aa_assistantToolCalls li{min-width:0}.nEt-Aa_assistantToolCallButton{all:unset;box-sizing:border-box;cursor:pointer;border-radius:3px;align-items:center;width:calc(100% + 4px);min-width:0;height:19px;margin-left:-4px;padding:0 4px;display:flex}.nEt-Aa_assistantToolCallButton:hover{background:var(--dsw-alias-interactive-bg-hover)}.nEt-Aa_assistantToolCallButton:focus-visible{background:var(--dsw-alias-interactive-bg-hover);outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}.nEt-Aa_assistantToolCallIcon{color:var(--dsw-alias-label-caption);flex:none;margin-right:5px}.nEt-Aa_assistantToolCallButton:hover .nEt-Aa_assistantToolCallIcon,.nEt-Aa_assistantToolCallButton:focus-visible .nEt-Aa_assistantToolCallIcon{color:var(--dsw-alias-label-secondary)}.nEt-Aa_assistantToolCallText{white-space:nowrap;flex:1;min-width:0;display:flex;overflow:hidden}.nEt-Aa_assistantToolCallName{color:var(--dsw-alias-label-secondary);flex:none;margin-right:5px;font-weight:500}.nEt-Aa_assistantToolCallArgs{min-width:0;color:var(--dsw-alias-label-tertiary);text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.nEt-Aa_systemPrompt{box-sizing:border-box}.nEt-Aa_toolCatalog{min-height:100%;padding:8px 0 16px}.nEt-Aa_toolCatalogItem{border-bottom:1px solid var(--dsw-alias-border-l1)}.nEt-Aa_toolCatalogSummary{box-sizing:border-box;cursor:pointer;user-select:none;grid-template-columns:12px 12px max-content minmax(0,1fr);align-items:center;gap:5px;min-height:30px;padding:4px 12px;list-style:none;display:grid}.nEt-Aa_toolCatalogSummary::-webkit-details-marker{display:none}.nEt-Aa_toolCatalogSummary:hover{background:var(--dsw-alias-interactive-bg-hover)}.nEt-Aa_toolCatalogSummary:focus-visible{background:var(--dsw-alias-interactive-bg-hover);outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}.nEt-Aa_toolCatalogChevron,.nEt-Aa_toolCatalogIcon{color:var(--dsw-alias-label-caption)}.nEt-Aa_toolCatalogChevron{transition:transform .1s var(--ds-ease-in-out)}.nEt-Aa_toolCatalogItem[open] .nEt-Aa_toolCatalogChevron{transform:rotate(90deg)}.nEt-Aa_toolCatalogName{color:var(--dsw-alias-label-primary);font:500 12px/18px var(--ds-font-family-code)}.nEt-Aa_toolCatalogDescription{min-width:0;color:var(--dsw-alias-label-tertiary);font:var(--dsw-font-xs-13);text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.nEt-Aa_toolCatalogDefinition{background:var(--dsw-alias-bg-base);padding:0 0 8px 29px}.nEt-Aa_toolCatalogFullDescription{color:var(--dsw-alias-label-secondary);font:var(--dsw-font-xs-13);white-space:pre-wrap;margin:0;padding:7px 14px 4px 0}.nEt-Aa_toolCatalogTree{margin-left:-14px;margin-right:6px}.nEt-Aa_resultBlocks{box-sizing:border-box;flex-direction:column;gap:10px;min-height:100%;padding:14px;display:flex}.nEt-Aa_resultBlocksPreview{gap:6px;min-height:0;padding:6px 14px 8px}.nEt-Aa_resultBlockText{overflow-wrap:anywhere;color:var(--dsw-alias-label-primary);font:12px/19px var(--ds-font-family-code);tab-size:2;white-space:pre-wrap;background:0 0;margin:0}.nEt-Aa_overviewPreview .nEt-Aa_noPayload{padding:6px 14px 8px}.nEt-Aa_noPayload{color:var(--dsw-alias-label-tertiary);font:var(--dsw-font-xs-13);margin:0;padding:18px 14px}@media (width<=760px){.nEt-Aa_details{z-index:5;border-left-color:var(--dsw-alias-border-l3);width:min(92%,420px);max-width:92%;position:absolute;top:0;bottom:0;right:0;box-shadow:-12px 0 32px #00000024}}";
+		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-trajectory\src\client\TrajectoryTable.module.css.mjs
+		const css$3 = ".tjOUlW_split{--dsh-scrollbar-thumb:var(--dsw-alias-scrollbar-bg-l2);--dsh-scrollbar-thumb-hover:var(--dsw-alias-scrollbar-hover-l2);background:var(--dsw-alias-bg-layer-1);flex:1;width:100%;min-height:0;display:flex;position:relative;overflow:hidden;container-type:inline-size}.tjOUlW_tablePane{min-width:0;padding-bottom:var(--dsh-trajectory-bottom-clearance,0px);flex:1;position:relative;overflow:hidden auto;container:tjOUlW_trajectory-table/inline-size}.tjOUlW_historyLoading{z-index:5;pointer-events:none;height:0;position:sticky;top:0;overflow:visible}.tjOUlW_historyLoadingBar{box-sizing:border-box;border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);width:100%;height:30px;color:var(--dsw-alias-label-secondary);font:var(--dsw-font-xxs-12);justify-content:center;align-items:center;gap:6px;display:flex}.tjOUlW_historyLoadingSpinner{box-sizing:border-box;border:1.5px solid var(--dsw-alias-border-l2);border-top-color:var(--dsw-alias-state-business-primary);border-radius:50%;width:10px;height:10px;animation:.7s linear infinite tjOUlW_history-loading-spin}.tjOUlW_table tbody .tjOUlW_historyLoadRow td{height:30px;padding:0}.tjOUlW_table tbody .tjOUlW_historyLoadRow+tr[data-turn-start=true] td:before{content:none}.tjOUlW_historyLoadButton{background:var(--dsw-alias-bg-layer-1);width:100%;height:29px;color:var(--dsw-alias-label-secondary);cursor:pointer;font:var(--dsw-font-xxs-12);border:0;justify-content:center;align-items:center;gap:6px;display:flex}.tjOUlW_historyLoadButton:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.tjOUlW_historyLoadButton:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:-2px}.tjOUlW_historyLoadButton:disabled{cursor:default}.tjOUlW_visuallyHidden{clip:rect(0 0 0 0);white-space:nowrap;width:1px;height:1px;position:absolute;overflow:hidden}.tjOUlW_table:not([data-scroll-ready=true]){visibility:hidden}@keyframes tjOUlW_history-loading-spin{to{transform:rotate(360deg)}}@media (prefers-reduced-motion:reduce){.tjOUlW_historyLoadingSpinner{animation:none}}.tjOUlW_table{--trajectory-turn-accent:color-mix(in srgb, var(--dsw-static-blue-500) 22%, var(--dsw-alias-bg-layer-1));border-spacing:0;table-layout:fixed;width:100%;min-width:0;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-1);font:var(--dsw-font-xxs-12)}.tjOUlW_eventColumn{width:122px}.tjOUlW_contentColumn{width:auto}.tjOUlW_table th{z-index:3;box-sizing:border-box;border-bottom:1px solid var(--dsw-alias-border-l2);height:30px;color:var(--dsw-alias-label-tertiary);background:var(--dsw-specific-sidebar-fill);font:var(--dsw-font-xxs-12);text-align:left;text-overflow:ellipsis;user-select:none;white-space:nowrap;padding:0 8px;font-weight:500;position:sticky;top:0;overflow:hidden}.tjOUlW_eventHeader{text-align:right!important;padding-right:4px!important}.tjOUlW_table td{box-sizing:border-box;border-bottom:1px solid var(--dsw-alias-border-l1);text-overflow:ellipsis;white-space:nowrap;height:30px;padding:0 8px;overflow:hidden}.tjOUlW_table tbody .tjOUlW_virtualSpacer{pointer-events:none}.tjOUlW_table tbody .tjOUlW_virtualSpacer td{height:var(--trajectory-virtual-spacer-height);border:0;padding:0}.tjOUlW_table tbody tr:not([data-collapsed-summary]):not([data-virtual-spacer]):not([data-history-load]){cursor:default;transition:background-color .12s var(--ds-ease-in-out), opacity .12s var(--ds-ease-in-out);outline:none}.tjOUlW_table tbody tr[data-timeline-focus=outside]{opacity:.24}.tjOUlW_table tbody tr:not([data-collapsed-summary]):not([data-virtual-spacer]):not([data-history-load]):not([data-selected=true]):hover{background:var(--dsw-alias-interactive-bg-hover)}.tjOUlW_table tbody tr[data-request-only=true]:hover{background:0 0}.tjOUlW_table tbody tr[data-request-only=true] td{border-bottom:0;height:0;padding-top:0;padding-bottom:0}.tjOUlW_table tbody tr[data-terminal-request-boundary=true] td{height:9px}.tjOUlW_table tbody tr[data-request-only=true] .tjOUlW_turnRail{top:-15px;bottom:0}.tjOUlW_table tbody tr:not([data-collapsed-summary]):focus-visible{box-shadow:inset 0 0 0 1px var(--dsw-alias-state-business-primary)}.tjOUlW_table tbody tr[data-selected=true]{background:var(--dsw-alias-interactive-bg-active)}.tjOUlW_requestBoundaryControl{--request-boundary-base-left:12px;z-index:6;top:-8px;left:calc(var(--request-boundary-base-left) + var(--request-boundary-offset,0px));cursor:pointer;background:0 0;border:0;width:16px;height:16px;padding:0;position:absolute}.tjOUlW_requestBoundaryControl:before{background:var(--dsw-alias-label-caption);width:5px;height:5px;box-shadow:0 0 0 2px var(--dsw-alias-bg-layer-1), 0 0 0 3px transparent;content:\"\";transition:background .12s var(--ds-ease-in-out), box-shadow .12s var(--ds-ease-in-out);border-radius:50%;position:absolute;top:5.5px;left:5.5px}.tjOUlW_requestBoundaryControl:after{border:1px solid var(--dsw-alias-border-l1);width:max-content;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-layer-1);content:attr(data-label);font:9px/12px var(--ds-font-family-code);opacity:0;pointer-events:none;transition:opacity .12s var(--ds-ease-in-out), transform .12s var(--ds-ease-in-out);user-select:none;white-space:nowrap;border-radius:2px;padding:0 4px;position:absolute;top:2px;left:17px;transform:translate(-2px);box-shadow:0 2px 6px #0000001f}.tjOUlW_requestBoundaryControl:hover:before,.tjOUlW_requestBoundaryControl:focus-visible:before{background:var(--dsw-alias-brand-primary-new-colorprimary-new-color)}.tjOUlW_requestBoundaryControlActive:before,.tjOUlW_requestBoundaryControlActive:hover:before,.tjOUlW_requestBoundaryControlActive:focus-visible:before{background:color-mix(in srgb, var(--dsw-alias-brand-primary-new-colorprimary-new-color) 18%, var(--dsw-alias-bg-layer-1));box-shadow:0 0 0 1.5px var(--dsw-alias-brand-primary-new-colorprimary-new-color)}.tjOUlW_requestBoundaryControl[data-request-status=error]:before,.tjOUlW_requestBoundaryControl[data-request-status=error]:hover:before,.tjOUlW_requestBoundaryControl[data-request-status=error]:focus-visible:before{background:var(--dsw-alias-state-error-primary)}.tjOUlW_requestBoundaryControl:hover:after,.tjOUlW_requestBoundaryControl:focus-visible:after{opacity:1;transform:translate(0)}.tjOUlW_requestBoundaryControl:focus-visible{outline:none}.tjOUlW_table tbody tr:has(.tjOUlW_requestBoundaryControl:hover):not([data-selected=true]){background:0 0}.tjOUlW_event{position:relative}.tjOUlW_turnRail,.tjOUlW_selectionRail{background:var(--dsw-alias-brand-primary-new-colorprimary-new-color);pointer-events:none;position:absolute;left:0}.tjOUlW_turnRail{z-index:4;background:var(--trajectory-turn-accent);width:2px;top:-1px;bottom:-1px}.tjOUlW_table tbody tr[data-turn-end=true] .tjOUlW_turnRail{bottom:0}.tjOUlW_selectionRail{z-index:5;width:3px;top:0;bottom:0}.tjOUlW_table tbody tr[data-error=true] .tjOUlW_turnRail{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 22%, var(--dsw-alias-bg-layer-1))}.tjOUlW_table tbody tr[data-error=true] .tjOUlW_selectionRail{background:var(--dsw-alias-state-error-primary)}.tjOUlW_table tbody tr[data-turn-start=true] td{position:relative;overflow:visible}.tjOUlW_table tbody tr[data-turn-start=true]:not(:first-child) td:before{z-index:1;background:var(--dsw-alias-border-l1);content:\"\";pointer-events:none;height:2px;position:absolute;top:0;left:0;right:0;transform:translateY(-50%)}.tjOUlW_event{padding-left:36px!important;padding-right:4px!important;overflow:visible!important}.tjOUlW_turnLabel{z-index:3;box-sizing:border-box;width:max-content;color:var(--dsw-alias-label-tertiary);background:var(--dsw-alias-bg-module-platform);font:8px/10px var(--ds-font-family-code);font-variant-numeric:tabular-nums;user-select:none;white-space:nowrap;border-radius:0 0 2px;flex:none;align-items:center;padding:1px 5px;display:inline-grid;position:absolute;top:0;left:0}.tjOUlW_turnLabelFull,.tjOUlW_turnLabelCompact{opacity:1;white-space:nowrap;grid-area:1/1;max-width:64px;overflow:hidden}.tjOUlW_turnLabelCompact{opacity:0;max-width:0}.tjOUlW_turnLabelActive{color:color-mix(in srgb, var(--dsw-static-blue-500) 55%, var(--dsw-alias-label-tertiary));background:var(--trajectory-turn-accent)}.tjOUlW_eventInner{justify-content:flex-start;align-items:center;min-width:0;height:100%;display:flex}.tjOUlW_kindSlot{flex:none;justify-content:flex-end;align-items:flex-end;width:76px;display:flex}.tjOUlW_kindSlot [role=tooltip]{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);box-shadow:var(--dsw-shadow-lv2);color:var(--dsw-alias-label-primary)}.tjOUlW_content{color:var(--dsw-alias-label-primary);padding-left:4px!important}.tjOUlW_kindTag{box-sizing:border-box;letter-spacing:.035em;user-select:none;border:1px solid #0000;border-radius:4px;flex:none;align-items:center;height:19px;padding:0 5px;font-size:10px;font-weight:650;line-height:16px;display:inline-flex}.tjOUlW_kindTagIcon{opacity:0;flex:none;justify-content:center;align-items:center;width:0;height:13px;display:inline-flex;overflow:hidden;transform:scale(.8)}.tjOUlW_kindTagLabel{opacity:1;white-space:nowrap;max-width:72px;display:inline-block;overflow:hidden}.tjOUlW_table .tjOUlW_kindSlot .tjOUlW_message{justify-content:center;width:100%}@container tjOUlW_trajectory-table (width<=620px){.tjOUlW_eventColumn{width:50px}.tjOUlW_event{padding-left:28px!important;padding-right:3px!important}.tjOUlW_requestBoundaryControl{--request-boundary-base-left:6px}.tjOUlW_kindSlot{width:19px}.tjOUlW_kindTag,.tjOUlW_table .tjOUlW_kindSlot .tjOUlW_message{justify-content:center;width:19px;padding-left:0;padding-right:0}.tjOUlW_kindTagIcon{opacity:1;width:13px;transform:scale(1)}.tjOUlW_kindTagLabel,.tjOUlW_turnLabelFull{opacity:0;max-width:0}.tjOUlW_turnLabelCompact{opacity:1;max-width:64px}}@media (prefers-reduced-motion:no-preference){.tjOUlW_eventColumn,.tjOUlW_event,.tjOUlW_requestBoundaryControl,.tjOUlW_kindSlot,.tjOUlW_kindTag,.tjOUlW_kindTagIcon,.tjOUlW_kindTagLabel,.tjOUlW_turnLabelFull,.tjOUlW_turnLabelCompact{transition-duration:.18s;transition-timing-function:var(--ds-ease-in-out)}.tjOUlW_eventColumn,.tjOUlW_kindSlot{transition-property:width}.tjOUlW_event{transition-property:padding-right,padding-left}.tjOUlW_requestBoundaryControl{transition-property:left}.tjOUlW_kindTag{transition-property:padding-right,padding-left}.tjOUlW_kindTagIcon{transition-property:width,opacity,transform}.tjOUlW_kindTagLabel,.tjOUlW_turnLabelFull,.tjOUlW_turnLabelCompact{transition-property:max-width,opacity}}.tjOUlW_user{color:var(--dsw-alias-state-business-primary);background:var(--dsw-alias-state-business-tertiary)}.tjOUlW_systemNeutral{color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-module-platform)}.tjOUlW_contextGreen{color:color-mix(in srgb, var(--dsw-alias-state-success-primary) 68%, var(--dsw-alias-label-secondary));background:var(--dsw-alias-state-success-tertiary)}.tjOUlW_compacted{color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-module-platform)}.tjOUlW_compactedSummary{font:var(--dsw-font-xs-13);margin-top:12px;padding:0 0 14px}.tjOUlW_promptDiffSections{flex-direction:column;gap:14px;max-height:100%;padding:10px 14px 14px;display:flex;overflow:auto}.tjOUlW_promptDiffSection{min-width:0}.tjOUlW_promptDiffTitle{color:var(--dsw-alias-label-secondary);font:var(--dsw-font-xs-strong-13);user-select:none;margin:0 0 6px}.tjOUlW_promptDiff{color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-1);font:11px/17px var(--ds-font-family-code);white-space:pre;margin:0;overflow:auto}.tjOUlW_promptDiff span{min-width:max-content;padding:0 6px;display:block}.tjOUlW_promptDiffLinemeta{color:var(--dsw-alias-label-caption);background:var(--dsw-alias-bg-module-platform);user-select:none}.tjOUlW_promptDiffLinecontext{color:var(--dsw-alias-label-secondary)}.tjOUlW_promptDiffLineadded{color:color-mix(in srgb, var(--dsw-alias-state-success-primary) 72%, var(--dsw-alias-label-primary));background:var(--dsw-alias-state-success-tertiary)}.tjOUlW_promptDiffLineremoved{color:var(--dsw-alias-state-error-primary);background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 12%, var(--dsw-alias-bg-layer-1))}.tjOUlW_assistantVioletBright{color:color-mix(in srgb, var(--dsw-alias-brand-primary-new-colorprimary-new-color) 60%, var(--dsw-alias-state-error-secondary));background:color-mix(in srgb, color-mix(in srgb, var(--dsw-alias-brand-primary-new-colorprimary-new-color) 55%, var(--dsw-alias-state-error-secondary)) 15%, var(--dsw-alias-bg-layer-1))}.tjOUlW_toolAmber{color:var(--dsw-alias-state-warn-label);background:var(--dsw-alias-state-warn-tertiary)}.tjOUlW_subtoolAmber{color:color-mix(in srgb, var(--dsw-alias-state-warn-label) 62%, var(--dsw-alias-label-tertiary));background:color-mix(in srgb, var(--dsw-alias-state-warn-tertiary) 58%, var(--dsw-alias-bg-layer-1))}.tjOUlW_contentText{text-overflow:ellipsis;white-space:nowrap;min-width:0;display:block;overflow:hidden}.tjOUlW_toolCallOnly{color:var(--dsw-alias-label-tertiary)}.tjOUlW_table tbody tr[data-collapsed-summary=turn] td,.tjOUlW_table tbody tr[data-collapsed-summary=assistant] td{height:20px}.tjOUlW_table tbody tr[data-collapsed-summary]{cursor:pointer;transition:background-color .12s var(--ds-ease-in-out);outline:none}.tjOUlW_table tbody tr[data-collapsed-summary]:hover{background:var(--dsw-alias-interactive-bg-hover)}.tjOUlW_table tbody tr[data-collapsed-summary]:focus-visible{box-shadow:inset 0 0 0 1px var(--dsw-alias-state-business-primary)}.tjOUlW_collapsedTurnContent{min-width:0;color:var(--dsw-alias-label-secondary);align-items:center;font-size:12px;line-height:16px;display:flex}.tjOUlW_collapsedTurnEllipsis{color:var(--dsw-alias-label-tertiary);user-select:none;flex:none;margin-right:6px;font-weight:600}.tjOUlW_collapsedTurnText{text-overflow:ellipsis;white-space:nowrap;min-width:0;overflow:hidden}.tjOUlW_resultPreview{grid-template-columns:clamp(180px, var(--trajectory-tool-request-width,calc(36cqw - 56px)), 480px) minmax(0, 1fr);align-items:center;gap:8px;min-width:0;display:grid}.tjOUlW_resultRequest,.tjOUlW_inlineResultText{text-overflow:ellipsis;white-space:nowrap;min-width:0;overflow:hidden}.tjOUlW_toolCallNameTypeface{color:var(--dsw-alias-label-primary);font:400 12px/18px Menlo,Consolas,Liberation Mono,PingFang SC,Microsoft YaHei}.tjOUlW_toolCallPayload{color:var(--dsw-alias-label-secondary);font:400 12px/18px var(--ds-font-family-code);margin-left:7px}.tjOUlW_table tbody tr[data-kind=tool] .tjOUlW_contentText,.tjOUlW_table tbody tr[data-kind=subtool] .tjOUlW_contentText,.tjOUlW_table tbody tr[data-kind=tool] .tjOUlW_resultPreview,.tjOUlW_table tbody tr[data-kind=subtool] .tjOUlW_resultPreview{font-family:var(--ds-font-family-code);font-size:12px}.tjOUlW_table tbody tr[data-kind=subtool] .tjOUlW_content{padding-left:26px}.tjOUlW_inlineResult{min-width:0;color:var(--dsw-alias-label-secondary);align-items:center;display:flex}.tjOUlW_noOutputText{color:var(--dsw-alias-label-caption)}.tjOUlW_arrow{color:var(--dsw-alias-label-caption);flex:none;margin-right:8px}.tjOUlW_error,.tjOUlW_overview dd.tjOUlW_error,.tjOUlW_details .tjOUlW_errorPayload{color:var(--dsw-alias-state-error-primary)}.tjOUlW_details .tjOUlW_errorPayload .tjOUlW_resultBlockText{color:inherit}.tjOUlW_details .tjOUlW_jsonPayload.tjOUlW_errorPayload,.tjOUlW_details .tjOUlW_jsonPreview.tjOUlW_errorPayload{--json-tree-property:var(--dsw-alias-state-error-primary);--json-tree-string:var(--dsw-alias-state-error-primary);--json-tree-number:var(--dsw-alias-state-error-primary);--json-tree-keyword:var(--dsw-alias-state-error-primary);--json-tree-punctuation:var(--dsw-alias-state-error-primary);--json-tree-icon:var(--dsw-alias-state-error-primary)}.tjOUlW_details{border-left:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);flex-direction:column;flex:none;width:clamp(320px,38%,440px);min-width:0;max-width:calc(100% - 280px);min-height:0;display:flex;position:relative}.tjOUlW_detailsResizeHandle{z-index:6;cursor:col-resize;touch-action:none;user-select:none;background:0 0;border:0;width:8px;padding:0;position:absolute;top:0;bottom:0;left:-4px}.tjOUlW_detailsResizeHandle:focus-visible{outline:none}.tjOUlW_detailsHeader{box-sizing:border-box;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none;justify-content:space-between;align-items:center;height:42px;padding:0 8px 0 12px;display:flex}.tjOUlW_detailsTitle{min-width:0;color:var(--dsw-alias-label-primary);align-items:center;gap:8px;display:flex}.tjOUlW_requestDetailsDot{background:var(--dsw-alias-label-secondary);border-radius:50%;flex:none;width:5px;height:5px}.tjOUlW_requestDetailsName{font:500 12px/16px var(--ds-font-family-code);flex:none}.tjOUlW_detailsLocation{min-width:0;color:var(--dsw-alias-label-tertiary);font:11px/16px var(--ds-font-family-code);text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.tjOUlW_close{width:28px;height:28px;color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border:0;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0;font-size:18px;line-height:18px;display:inline-flex}.tjOUlW_close:hover{color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover)}.tjOUlW_detailTabs{box-sizing:border-box;border-bottom:1px solid var(--dsw-alias-border-l2);overscroll-behavior-x:contain;scrollbar-width:none;white-space:nowrap;flex:none;gap:1px;width:100%;min-width:0;max-width:100%;height:34px;padding:0 8px;display:flex;overflow:auto hidden}.tjOUlW_detailTabs::-webkit-scrollbar{display:none}.tjOUlW_detailTab{color:var(--dsw-alias-label-tertiary);cursor:pointer;font:var(--dsw-font-xs-13);background:0 0;border:0;flex:none;padding:0 9px;position:relative}.tjOUlW_detailTab:hover{color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover)}.tjOUlW_detailTabActive{color:var(--dsw-alias-state-business-primary)}.tjOUlW_detailTabActive:after{background:var(--dsw-alias-state-business-primary);content:\"\";border-radius:1px 1px 0 0;height:2px;position:absolute;bottom:0;left:9px;right:9px}.tjOUlW_close:focus-visible,.tjOUlW_detailTab:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}.tjOUlW_detailBody{min-height:0;padding-bottom:var(--dsh-trajectory-bottom-clearance,0px);scrollbar-gutter:stable;flex:1;overflow:hidden auto}.tjOUlW_detailBodySummary{box-sizing:border-box;padding-bottom:calc(12px + var(--dsh-trajectory-bottom-clearance,0px));flex-direction:column;display:flex;overflow:hidden}.tjOUlW_detailBodySummary>.tjOUlW_overview{overscroll-behavior:contain;flex:0 auto;min-height:0;overflow:auto}.tjOUlW_detailBodySummary>.tjOUlW_compactedSummary{flex:1;min-height:0;overflow:auto}.tjOUlW_summaryScrollRegion{--dsh-scrollbar-thumb:transparent;--dsh-scrollbar-thumb-hover:transparent}.tjOUlW_summaryScrollRegion:hover,.tjOUlW_summaryScrollRegion:focus-within{--dsh-scrollbar-thumb:var(--dsw-alias-scrollbar-bg-l2);--dsh-scrollbar-thumb-hover:var(--dsw-alias-scrollbar-hover-l2)}.tjOUlW_compactedSummary .tjOUlW_markdownPayload{padding-right:18px}.tjOUlW_overview{font:var(--dsw-font-xs-13);margin:0;padding:8px 0}.tjOUlW_overviewParentLinks{gap:14px;display:flex}.tjOUlW_overviewHierarchyNavLink{all:unset;color:var(--dsw-alias-label-secondary);cursor:pointer;font:inherit;opacity:1;align-items:center;gap:1px;display:inline-flex}.tjOUlW_overviewHierarchyNavLink:hover{color:var(--dsw-alias-label-primary)}.tjOUlW_overviewHierarchyJumpIconTight{color:var(--dsw-alias-label-caption);flex:none}.tjOUlW_overviewHierarchyNavLink:hover .tjOUlW_overviewHierarchyJumpIconTight,.tjOUlW_overviewHierarchyNavLink:focus-visible .tjOUlW_overviewHierarchyJumpIconTight{color:var(--dsw-alias-label-primary)}.tjOUlW_overviewHierarchyNavLink:focus-visible{color:var(--dsw-alias-label-primary);outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.tjOUlW_overview>div{grid-template-columns:94px minmax(0,1fr);align-items:center;min-height:22px;padding:0 14px;display:grid}.tjOUlW_overview>.tjOUlW_requestTokenDetail dt{padding-left:12px}.tjOUlW_usagePanel{padding:4px 0 10px}.tjOUlW_usageGroup+.tjOUlW_usageGroup{margin-top:8px}.tjOUlW_usageHeading{color:var(--dsw-alias-label-secondary);font:var(--dsw-font-xs-strong-13);user-select:none;margin:0;padding:4px 14px 1px}.tjOUlW_usageGroup .tjOUlW_overview{padding:0}.tjOUlW_overview dt{color:var(--dsw-alias-label-tertiary)}.tjOUlW_overview dd{min-width:0;color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;margin:0;overflow:hidden}.tjOUlW_timestampToggle{all:unset;color:inherit;cursor:pointer;font:inherit;user-select:text}.tjOUlW_timestampToggle:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.tjOUlW_overviewSections{border-top:0;flex-direction:column;flex:1;min-height:min-content;display:flex;overflow:hidden}.tjOUlW_overviewSection{flex-direction:column;flex:1 1 0;min-height:28px;max-height:max-content;display:flex;overflow:hidden}.tjOUlW_overviewSection+.tjOUlW_overviewSection{padding-top:8px}.tjOUlW_overviewHeading{box-sizing:border-box;width:100%;height:28px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-layer-1);font:var(--dsw-font-xs-strong-13);user-select:none;flex:none;align-items:flex-end;margin:0;padding:0 0 3px 14px;display:flex}.tjOUlW_overviewTitle{width:max-content;height:auto;color:inherit;cursor:pointer;font:inherit;user-select:none;background:0 0;border:0;flex:none;align-items:center;gap:3px;padding:0;line-height:1;display:inline-flex}.tjOUlW_overviewTitleIcon{color:var(--dsw-alias-label-caption);flex:none}.tjOUlW_overviewTitle:hover .tjOUlW_overviewTitleIcon{color:var(--dsw-alias-label-primary)}.tjOUlW_overviewTitle:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.tjOUlW_overviewTitle:focus-visible .tjOUlW_overviewTitleIcon{color:var(--dsw-alias-state-business-primary)}.tjOUlW_overviewPreview{overscroll-behavior:contain;background:var(--dsw-alias-bg-layer-1);flex:1;min-height:0;overflow:auto}.tjOUlW_overviewPreview>:last-child{margin-bottom:0;padding-bottom:0}.tjOUlW_overviewPreview .tjOUlW_jsonPreview>:first-child,.tjOUlW_overviewPreview .tjOUlW_schemaTree>:first-child{padding-bottom:0}.tjOUlW_overviewPreview .tjOUlW_schemaTree{margin-bottom:0}.tjOUlW_overviewPreview .tjOUlW_overview{padding:2px 0 0}.tjOUlW_overviewPreview .tjOUlW_overview>div{min-height:22px}.tjOUlW_markdownPreview,.tjOUlW_markdownPayload{color:var(--dsw-alias-label-primary)}.tjOUlW_markdownPreview>div,.tjOUlW_markdownPayload>div{font:var(--dsw-font-xs-13);gap:8px}.tjOUlW_markdownPreview>div h1,.tjOUlW_markdownPayload>div h1{font:600 16px/22px var(--dsw-font-family)}.tjOUlW_markdownPreview>div h2,.tjOUlW_markdownPayload>div h2{font:600 15px/22px var(--dsw-font-family)}.tjOUlW_markdownPreview>div :where(h3,h4,h5,h6),.tjOUlW_markdownPayload>div :where(h3,h4,h5,h6){font:600 14px/20px var(--dsw-font-family)}.tjOUlW_markdownPreview>div :not(pre)>code,.tjOUlW_markdownPayload>div :not(pre)>code{font:12px/18px var(--ds-font-family-code)}.tjOUlW_markdownPreview>div table,.tjOUlW_markdownPayload>div table{font:var(--dsw-font-xs-13)}.tjOUlW_markdownPreview>div>:first-child{margin-top:0}.tjOUlW_markdownPreview>div>:last-child{margin-bottom:0}.tjOUlW_markdownPreview>div :where(h1,h2,h3){margin:12px 0 6px}.tjOUlW_markdownPreview>div :where(h4,h5,h6){margin:10px 0 5px}.tjOUlW_markdownPreview>div :where(p,ul,ol){margin:8px 0}.tjOUlW_markdownPreview>div li:not(:first-child){margin-top:3px}.tjOUlW_markdownPreview>div blockquote{margin-top:8px}.tjOUlW_markdownPreview>div hr{margin:14px 0}.tjOUlW_markdownPreview>div>.md-code-block{margin:10px 0}.tjOUlW_assistantContent .tjOUlW_markdownPayload,.tjOUlW_assistantContent .tjOUlW_payload{min-height:0}.tjOUlW_thinkingQuote{border-left:2px solid var(--dsw-alias-markdown-citation);color:var(--dsw-alias-label-secondary);background:0 0;margin:6px 14px 0 12px;padding-left:6px}.tjOUlW_thinkingQuoteOnlyPreview{margin-bottom:8px}.tjOUlW_detailBody>.tjOUlW_assistantContentRendered .tjOUlW_thinkingQuote{margin-top:14px}.tjOUlW_thinkingToggle{width:max-content;height:18px;color:var(--dsw-alias-label-tertiary);cursor:pointer;font:600 12px/18px var(--dsw-font-family);user-select:none;background:0 0;border:0;align-items:center;gap:2px;padding:0;display:flex}.tjOUlW_thinkingChevron{transition:transform .12s var(--ds-ease-in-out);flex:none}.tjOUlW_thinkingToggle[aria-expanded=true] .tjOUlW_thinkingChevron{transform:rotate(90deg)}.tjOUlW_thinkingToggle:hover{color:var(--dsw-alias-label-secondary)}.tjOUlW_thinkingToggle:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.tjOUlW_thinkingQuote .tjOUlW_markdownPreview,.tjOUlW_thinkingQuote .tjOUlW_markdownPayload,.tjOUlW_thinkingQuote .tjOUlW_payload{min-height:0;color:var(--dsw-alias-label-secondary);background:0 0;padding:2px 0}.tjOUlW_assistantOutput{background:var(--dsw-alias-bg-layer-1)}.tjOUlW_markdownPreview{padding:6px 14px 8px}.tjOUlW_markdownPayload{min-height:100%;padding:14px}.tjOUlW_jsonPayload{min-height:100%}.tjOUlW_jsonPreview{min-height:0}.tjOUlW_schema{background:var(--dsw-alias-bg-layer-1);min-height:100%}.tjOUlW_schemaPreview{min-height:0}.tjOUlW_schemaIntro{padding:12px 14px 6px}.tjOUlW_schemaPreview .tjOUlW_schemaIntro{padding-top:6px}.tjOUlW_schemaName{color:var(--dsw-alias-label-primary);font:600 12px/18px var(--ds-font-family-code);margin:0}.tjOUlW_schemaDescription{color:var(--dsw-alias-label-secondary);font:var(--dsw-font-xs-13);white-space:pre-wrap;margin:2px 0 0}.tjOUlW_schemaParameters{min-width:0}.tjOUlW_schemaParametersTitle{color:var(--dsw-alias-label-tertiary);font:600 11px/16px var(--dsw-font-family);user-select:none;margin:0;padding:4px 14px 2px}.tjOUlW_schemaTree{margin:0 6px 8px 0}.tjOUlW_payload{box-sizing:border-box;overflow-wrap:anywhere;min-height:100%;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-markdown-code-block);font:12px/19px var(--ds-font-family-code);tab-size:2;white-space:pre-wrap;margin:0;padding:14px}.tjOUlW_payloadPreview{min-height:0;padding:6px 14px 8px}.tjOUlW_sourceBlocks{box-sizing:border-box;min-height:100%;padding:12px 14px}.tjOUlW_sourceBlock+.tjOUlW_sourceBlock{margin-top:14px}.tjOUlW_sourceBlockHeader,.tjOUlW_sourceBlockJumpTarget{user-select:none;align-items:center;gap:3px;width:max-content;margin-bottom:3px;display:flex}.tjOUlW_sourceBlockJumpTarget{all:unset;cursor:pointer;user-select:none;align-items:center;gap:3px;width:max-content;margin-bottom:3px;display:flex}.tjOUlW_sourceBlockLabel{color:var(--dsw-alias-label-tertiary);font:11px/16px var(--ds-font-family-code)}.tjOUlW_sourceBlockJumpIcon{color:var(--dsw-alias-label-caption);flex:none}.tjOUlW_sourceBlockJumpTarget:hover .tjOUlW_sourceBlockJumpIcon{color:var(--dsw-alias-label-primary)}.tjOUlW_sourceBlockJumpTarget:focus-visible{outline:none}.tjOUlW_sourceBlockJumpTarget:focus-visible .tjOUlW_sourceBlockJumpIcon{color:var(--dsw-alias-state-business-primary)}.tjOUlW_sourceBlockContent{overflow-wrap:anywhere;color:var(--dsw-alias-label-primary);font:12px/19px var(--ds-font-family-code);tab-size:2;white-space:pre-wrap;background:0 0;margin:0}.tjOUlW_messageImages{flex-direction:column;gap:8px;margin:8px 14px 14px;display:flex}.tjOUlW_messageImagesPreview{gap:6px;margin:6px 14px 8px}.tjOUlW_assistantToolCalls{box-sizing:border-box;max-width:100%;color:var(--dsw-alias-label-secondary);font:11px/17px var(--ds-font-family-code);margin:2px 14px 12px;padding:0;list-style:none}.tjOUlW_assistantToolCallsPreview{margin-top:2px;margin-bottom:8px}.tjOUlW_assistantToolCalls li{min-width:0}.tjOUlW_assistantToolCallButton{all:unset;box-sizing:border-box;cursor:pointer;border-radius:3px;align-items:center;width:calc(100% + 4px);min-width:0;height:19px;margin-left:-4px;padding:0 4px;display:flex}.tjOUlW_assistantToolCallButton:hover{background:var(--dsw-alias-interactive-bg-hover)}.tjOUlW_assistantToolCallButton:focus-visible{background:var(--dsw-alias-interactive-bg-hover);outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}.tjOUlW_assistantToolCallIcon{color:var(--dsw-alias-label-caption);flex:none;margin-right:5px}.tjOUlW_assistantToolCallButton:hover .tjOUlW_assistantToolCallIcon,.tjOUlW_assistantToolCallButton:focus-visible .tjOUlW_assistantToolCallIcon{color:var(--dsw-alias-label-secondary)}.tjOUlW_assistantToolCallText{white-space:nowrap;flex:1;min-width:0;display:flex;overflow:hidden}.tjOUlW_assistantToolCallName{color:var(--dsw-alias-label-secondary);flex:none;margin-right:5px;font-weight:500}.tjOUlW_assistantToolCallArgs{min-width:0;color:var(--dsw-alias-label-tertiary);text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.tjOUlW_systemPrompt{box-sizing:border-box}.tjOUlW_toolCatalog{min-height:100%;padding:8px 0 16px}.tjOUlW_toolCatalogItem{border-bottom:1px solid var(--dsw-alias-border-l1)}.tjOUlW_toolCatalogSummary{box-sizing:border-box;cursor:pointer;user-select:none;grid-template-columns:12px 12px max-content minmax(0,1fr);align-items:center;gap:5px;min-height:30px;padding:4px 12px;list-style:none;display:grid}.tjOUlW_toolCatalogSummary::-webkit-details-marker{display:none}.tjOUlW_toolCatalogSummary:hover{background:var(--dsw-alias-interactive-bg-hover)}.tjOUlW_toolCatalogSummary:focus-visible{background:var(--dsw-alias-interactive-bg-hover);outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}.tjOUlW_toolCatalogChevron,.tjOUlW_toolCatalogIcon{color:var(--dsw-alias-label-caption)}.tjOUlW_toolCatalogChevron{transition:transform .1s var(--ds-ease-in-out)}.tjOUlW_toolCatalogItem[open] .tjOUlW_toolCatalogChevron{transform:rotate(90deg)}.tjOUlW_toolCatalogName{color:var(--dsw-alias-label-primary);font:500 12px/18px var(--ds-font-family-code)}.tjOUlW_toolCatalogDescription{min-width:0;color:var(--dsw-alias-label-tertiary);font:var(--dsw-font-xs-13);text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.tjOUlW_toolCatalogDefinition{background:var(--dsw-alias-bg-base);padding:0 0 8px 29px}.tjOUlW_toolCatalogFullDescription{color:var(--dsw-alias-label-secondary);font:var(--dsw-font-xs-13);white-space:pre-wrap;margin:0;padding:7px 14px 4px 0}.tjOUlW_toolCatalogTree{margin-left:-14px;margin-right:6px}.tjOUlW_resultBlocks{box-sizing:border-box;flex-direction:column;gap:10px;min-height:100%;padding:14px;display:flex}.tjOUlW_resultBlocksPreview{gap:6px;min-height:0;padding:6px 14px 8px}.tjOUlW_resultBlockText{overflow-wrap:anywhere;color:var(--dsw-alias-label-primary);font:12px/19px var(--ds-font-family-code);tab-size:2;white-space:pre-wrap;background:0 0;margin:0}.tjOUlW_overviewPreview .tjOUlW_noPayload{padding:6px 14px 8px}.tjOUlW_noPayload{color:var(--dsw-alias-label-tertiary);font:var(--dsw-font-xs-13);margin:0;padding:18px 14px}@media (width<=760px){.tjOUlW_details{z-index:5;border-left-color:var(--dsw-alias-border-l3);width:min(92%,420px);max-width:92%;position:absolute;top:0;bottom:0;right:0;box-shadow:-12px 0 32px #00000024}}";
 		const tagId$3 = "@deepseek-ai/dsh-client-ui-trajectory/TrajectoryTable.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
 			const tag = document.createElement("style");
@@ -3002,152 +3609,149 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var TrajectoryTable_module_css_default = {
-			"arrow": "nEt-Aa_arrow",
-			"assistantContent": "nEt-Aa_assistantContent",
-			"assistantContentRendered": "nEt-Aa_assistantContentRendered",
-			"assistantOutput": "nEt-Aa_assistantOutput",
-			"assistantToolCallArgs": "nEt-Aa_assistantToolCallArgs",
-			"assistantToolCallButton": "nEt-Aa_assistantToolCallButton",
-			"assistantToolCallIcon": "nEt-Aa_assistantToolCallIcon",
-			"assistantToolCallName": "nEt-Aa_assistantToolCallName",
-			"assistantToolCallText": "nEt-Aa_assistantToolCallText",
-			"assistantToolCalls": "nEt-Aa_assistantToolCalls",
-			"assistantToolCallsPreview": "nEt-Aa_assistantToolCallsPreview",
-			"assistantVioletBright": "nEt-Aa_assistantVioletBright",
-			"close": "nEt-Aa_close",
-			"collapsedTurnContent": "nEt-Aa_collapsedTurnContent",
-			"collapsedTurnEllipsis": "nEt-Aa_collapsedTurnEllipsis",
-			"collapsedTurnText": "nEt-Aa_collapsedTurnText",
-			"compacted": "nEt-Aa_compacted",
-			"compactedSummary": "nEt-Aa_compactedSummary",
-			"content": "nEt-Aa_content",
-			"contentColumn": "nEt-Aa_contentColumn",
-			"contentText": "nEt-Aa_contentText",
-			"contextGreen": "nEt-Aa_contextGreen",
-			"detailBody": "nEt-Aa_detailBody",
-			"detailBodySummary": "nEt-Aa_detailBodySummary",
-			"detailTab": "nEt-Aa_detailTab",
-			"detailTabActive": "nEt-Aa_detailTabActive",
-			"detailTabs": "nEt-Aa_detailTabs",
-			"details": "nEt-Aa_details",
-			"detailsHeader": "nEt-Aa_detailsHeader",
-			"detailsLocation": "nEt-Aa_detailsLocation",
-			"detailsResizeHandle": "nEt-Aa_detailsResizeHandle",
-			"detailsTitle": "nEt-Aa_detailsTitle",
-			"error": "nEt-Aa_error",
-			"errorPayload": "nEt-Aa_errorPayload",
-			"event": "nEt-Aa_event",
-			"eventColumn": "nEt-Aa_eventColumn",
-			"eventHeader": "nEt-Aa_eventHeader",
-			"eventInner": "nEt-Aa_eventInner",
-			"history-loading-spin": "nEt-Aa_history-loading-spin",
-			"historyLoadButton": "nEt-Aa_historyLoadButton",
-			"historyLoadRow": "nEt-Aa_historyLoadRow",
-			"historyLoading": "nEt-Aa_historyLoading",
-			"historyLoadingBar": "nEt-Aa_historyLoadingBar",
-			"historyLoadingSpinner": "nEt-Aa_historyLoadingSpinner",
-			"inlineResult": "nEt-Aa_inlineResult",
-			"inlineResultText": "nEt-Aa_inlineResultText",
-			"jsonPayload": "nEt-Aa_jsonPayload",
-			"jsonPreview": "nEt-Aa_jsonPreview",
-			"kindSlot": "nEt-Aa_kindSlot",
-			"kindTag": "nEt-Aa_kindTag",
-			"kindTagIcon": "nEt-Aa_kindTagIcon",
-			"kindTagLabel": "nEt-Aa_kindTagLabel",
-			"markdownPayload": "nEt-Aa_markdownPayload",
-			"markdownPreview": "nEt-Aa_markdownPreview",
-			"message": "nEt-Aa_message",
-			"messageImages": "nEt-Aa_messageImages",
-			"messageImagesPreview": "nEt-Aa_messageImagesPreview",
-			"noOutputText": "nEt-Aa_noOutputText",
-			"noPayload": "nEt-Aa_noPayload",
-			"overview": "nEt-Aa_overview",
-			"overviewHeading": "nEt-Aa_overviewHeading",
-			"overviewHierarchyJumpIconTight": "nEt-Aa_overviewHierarchyJumpIconTight",
-			"overviewHierarchyNavLink": "nEt-Aa_overviewHierarchyNavLink",
-			"overviewParentLinks": "nEt-Aa_overviewParentLinks",
-			"overviewPreview": "nEt-Aa_overviewPreview",
-			"overviewSection": "nEt-Aa_overviewSection",
-			"overviewSections": "nEt-Aa_overviewSections",
-			"overviewTitle": "nEt-Aa_overviewTitle",
-			"overviewTitleIcon": "nEt-Aa_overviewTitleIcon",
-			"panelImage": "nEt-Aa_panelImage",
-			"panelImageLink": "nEt-Aa_panelImageLink",
-			"panelImageLinkPreview": "nEt-Aa_panelImageLinkPreview",
-			"payload": "nEt-Aa_payload",
-			"payloadPreview": "nEt-Aa_payloadPreview",
-			"promptDiff": "nEt-Aa_promptDiff",
-			"promptDiffLineadded": "nEt-Aa_promptDiffLineadded",
-			"promptDiffLinecontext": "nEt-Aa_promptDiffLinecontext",
-			"promptDiffLinemeta": "nEt-Aa_promptDiffLinemeta",
-			"promptDiffLineremoved": "nEt-Aa_promptDiffLineremoved",
-			"promptDiffSection": "nEt-Aa_promptDiffSection",
-			"promptDiffSections": "nEt-Aa_promptDiffSections",
-			"promptDiffTitle": "nEt-Aa_promptDiffTitle",
-			"requestBoundaryControl": "nEt-Aa_requestBoundaryControl",
-			"requestBoundaryControlActive": "nEt-Aa_requestBoundaryControlActive",
-			"requestDetailsDot": "nEt-Aa_requestDetailsDot",
-			"requestDetailsName": "nEt-Aa_requestDetailsName",
-			"requestTokenDetail": "nEt-Aa_requestTokenDetail",
-			"resultBlockText": "nEt-Aa_resultBlockText",
-			"resultBlocks": "nEt-Aa_resultBlocks",
-			"resultBlocksPreview": "nEt-Aa_resultBlocksPreview",
-			"resultPreview": "nEt-Aa_resultPreview",
-			"resultRequest": "nEt-Aa_resultRequest",
-			"schema": "nEt-Aa_schema",
-			"schemaDescription": "nEt-Aa_schemaDescription",
-			"schemaIntro": "nEt-Aa_schemaIntro",
-			"schemaName": "nEt-Aa_schemaName",
-			"schemaParameters": "nEt-Aa_schemaParameters",
-			"schemaParametersTitle": "nEt-Aa_schemaParametersTitle",
-			"schemaPreview": "nEt-Aa_schemaPreview",
-			"schemaTree": "nEt-Aa_schemaTree",
-			"selectionRail": "nEt-Aa_selectionRail",
-			"sourceBlock": "nEt-Aa_sourceBlock",
-			"sourceBlockContent": "nEt-Aa_sourceBlockContent",
-			"sourceBlockHeader": "nEt-Aa_sourceBlockHeader",
-			"sourceBlockJumpIcon": "nEt-Aa_sourceBlockJumpIcon",
-			"sourceBlockJumpTarget": "nEt-Aa_sourceBlockJumpTarget",
-			"sourceBlockLabel": "nEt-Aa_sourceBlockLabel",
-			"sourceBlocks": "nEt-Aa_sourceBlocks",
-			"split": "nEt-Aa_split",
-			"subtoolAmber": "nEt-Aa_subtoolAmber",
-			"summaryScrollRegion": "nEt-Aa_summaryScrollRegion",
-			"systemNeutral": "nEt-Aa_systemNeutral",
-			"systemPrompt": "nEt-Aa_systemPrompt",
-			"table": "nEt-Aa_table",
-			"tablePane": "nEt-Aa_tablePane",
-			"thinkingChevron": "nEt-Aa_thinkingChevron",
-			"thinkingQuote": "nEt-Aa_thinkingQuote",
-			"thinkingQuoteOnlyPreview": "nEt-Aa_thinkingQuoteOnlyPreview",
-			"thinkingToggle": "nEt-Aa_thinkingToggle",
-			"timestampToggle": "nEt-Aa_timestampToggle",
-			"toolAmber": "nEt-Aa_toolAmber",
-			"toolCallNameTypeface": "nEt-Aa_toolCallNameTypeface",
-			"toolCallOnly": "nEt-Aa_toolCallOnly",
-			"toolCallPayload": "nEt-Aa_toolCallPayload",
-			"toolCatalog": "nEt-Aa_toolCatalog",
-			"toolCatalogChevron": "nEt-Aa_toolCatalogChevron",
-			"toolCatalogDefinition": "nEt-Aa_toolCatalogDefinition",
-			"toolCatalogDescription": "nEt-Aa_toolCatalogDescription",
-			"toolCatalogFullDescription": "nEt-Aa_toolCatalogFullDescription",
-			"toolCatalogIcon": "nEt-Aa_toolCatalogIcon",
-			"toolCatalogItem": "nEt-Aa_toolCatalogItem",
-			"toolCatalogName": "nEt-Aa_toolCatalogName",
-			"toolCatalogSummary": "nEt-Aa_toolCatalogSummary",
-			"toolCatalogTree": "nEt-Aa_toolCatalogTree",
-			"trajectory-table": "nEt-Aa_trajectory-table",
-			"turnLabel": "nEt-Aa_turnLabel",
-			"turnLabelActive": "nEt-Aa_turnLabelActive",
-			"turnLabelCompact": "nEt-Aa_turnLabelCompact",
-			"turnLabelFull": "nEt-Aa_turnLabelFull",
-			"turnRail": "nEt-Aa_turnRail",
-			"usageGroup": "nEt-Aa_usageGroup",
-			"usageHeading": "nEt-Aa_usageHeading",
-			"usagePanel": "nEt-Aa_usagePanel",
-			"user": "nEt-Aa_user",
-			"virtualSpacer": "nEt-Aa_virtualSpacer",
-			"visuallyHidden": "nEt-Aa_visuallyHidden"
+			"arrow": "tjOUlW_arrow",
+			"assistantContent": "tjOUlW_assistantContent",
+			"assistantContentRendered": "tjOUlW_assistantContentRendered",
+			"assistantOutput": "tjOUlW_assistantOutput",
+			"assistantToolCallArgs": "tjOUlW_assistantToolCallArgs",
+			"assistantToolCallButton": "tjOUlW_assistantToolCallButton",
+			"assistantToolCallIcon": "tjOUlW_assistantToolCallIcon",
+			"assistantToolCallName": "tjOUlW_assistantToolCallName",
+			"assistantToolCallText": "tjOUlW_assistantToolCallText",
+			"assistantToolCalls": "tjOUlW_assistantToolCalls",
+			"assistantToolCallsPreview": "tjOUlW_assistantToolCallsPreview",
+			"assistantVioletBright": "tjOUlW_assistantVioletBright",
+			"close": "tjOUlW_close",
+			"collapsedTurnContent": "tjOUlW_collapsedTurnContent",
+			"collapsedTurnEllipsis": "tjOUlW_collapsedTurnEllipsis",
+			"collapsedTurnText": "tjOUlW_collapsedTurnText",
+			"compacted": "tjOUlW_compacted",
+			"compactedSummary": "tjOUlW_compactedSummary",
+			"content": "tjOUlW_content",
+			"contentColumn": "tjOUlW_contentColumn",
+			"contentText": "tjOUlW_contentText",
+			"contextGreen": "tjOUlW_contextGreen",
+			"detailBody": "tjOUlW_detailBody",
+			"detailBodySummary": "tjOUlW_detailBodySummary",
+			"detailTab": "tjOUlW_detailTab",
+			"detailTabActive": "tjOUlW_detailTabActive",
+			"detailTabs": "tjOUlW_detailTabs",
+			"details": "tjOUlW_details",
+			"detailsHeader": "tjOUlW_detailsHeader",
+			"detailsLocation": "tjOUlW_detailsLocation",
+			"detailsResizeHandle": "tjOUlW_detailsResizeHandle",
+			"detailsTitle": "tjOUlW_detailsTitle",
+			"error": "tjOUlW_error",
+			"errorPayload": "tjOUlW_errorPayload",
+			"event": "tjOUlW_event",
+			"eventColumn": "tjOUlW_eventColumn",
+			"eventHeader": "tjOUlW_eventHeader",
+			"eventInner": "tjOUlW_eventInner",
+			"history-loading-spin": "tjOUlW_history-loading-spin",
+			"historyLoadButton": "tjOUlW_historyLoadButton",
+			"historyLoadRow": "tjOUlW_historyLoadRow",
+			"historyLoading": "tjOUlW_historyLoading",
+			"historyLoadingBar": "tjOUlW_historyLoadingBar",
+			"historyLoadingSpinner": "tjOUlW_historyLoadingSpinner",
+			"inlineResult": "tjOUlW_inlineResult",
+			"inlineResultText": "tjOUlW_inlineResultText",
+			"jsonPayload": "tjOUlW_jsonPayload",
+			"jsonPreview": "tjOUlW_jsonPreview",
+			"kindSlot": "tjOUlW_kindSlot",
+			"kindTag": "tjOUlW_kindTag",
+			"kindTagIcon": "tjOUlW_kindTagIcon",
+			"kindTagLabel": "tjOUlW_kindTagLabel",
+			"markdownPayload": "tjOUlW_markdownPayload",
+			"markdownPreview": "tjOUlW_markdownPreview",
+			"message": "tjOUlW_message",
+			"messageImages": "tjOUlW_messageImages",
+			"messageImagesPreview": "tjOUlW_messageImagesPreview",
+			"noOutputText": "tjOUlW_noOutputText",
+			"noPayload": "tjOUlW_noPayload",
+			"overview": "tjOUlW_overview",
+			"overviewHeading": "tjOUlW_overviewHeading",
+			"overviewHierarchyJumpIconTight": "tjOUlW_overviewHierarchyJumpIconTight",
+			"overviewHierarchyNavLink": "tjOUlW_overviewHierarchyNavLink",
+			"overviewParentLinks": "tjOUlW_overviewParentLinks",
+			"overviewPreview": "tjOUlW_overviewPreview",
+			"overviewSection": "tjOUlW_overviewSection",
+			"overviewSections": "tjOUlW_overviewSections",
+			"overviewTitle": "tjOUlW_overviewTitle",
+			"overviewTitleIcon": "tjOUlW_overviewTitleIcon",
+			"payload": "tjOUlW_payload",
+			"payloadPreview": "tjOUlW_payloadPreview",
+			"promptDiff": "tjOUlW_promptDiff",
+			"promptDiffLineadded": "tjOUlW_promptDiffLineadded",
+			"promptDiffLinecontext": "tjOUlW_promptDiffLinecontext",
+			"promptDiffLinemeta": "tjOUlW_promptDiffLinemeta",
+			"promptDiffLineremoved": "tjOUlW_promptDiffLineremoved",
+			"promptDiffSection": "tjOUlW_promptDiffSection",
+			"promptDiffSections": "tjOUlW_promptDiffSections",
+			"promptDiffTitle": "tjOUlW_promptDiffTitle",
+			"requestBoundaryControl": "tjOUlW_requestBoundaryControl",
+			"requestBoundaryControlActive": "tjOUlW_requestBoundaryControlActive",
+			"requestDetailsDot": "tjOUlW_requestDetailsDot",
+			"requestDetailsName": "tjOUlW_requestDetailsName",
+			"requestTokenDetail": "tjOUlW_requestTokenDetail",
+			"resultBlockText": "tjOUlW_resultBlockText",
+			"resultBlocks": "tjOUlW_resultBlocks",
+			"resultBlocksPreview": "tjOUlW_resultBlocksPreview",
+			"resultPreview": "tjOUlW_resultPreview",
+			"resultRequest": "tjOUlW_resultRequest",
+			"schema": "tjOUlW_schema",
+			"schemaDescription": "tjOUlW_schemaDescription",
+			"schemaIntro": "tjOUlW_schemaIntro",
+			"schemaName": "tjOUlW_schemaName",
+			"schemaParameters": "tjOUlW_schemaParameters",
+			"schemaParametersTitle": "tjOUlW_schemaParametersTitle",
+			"schemaPreview": "tjOUlW_schemaPreview",
+			"schemaTree": "tjOUlW_schemaTree",
+			"selectionRail": "tjOUlW_selectionRail",
+			"sourceBlock": "tjOUlW_sourceBlock",
+			"sourceBlockContent": "tjOUlW_sourceBlockContent",
+			"sourceBlockHeader": "tjOUlW_sourceBlockHeader",
+			"sourceBlockJumpIcon": "tjOUlW_sourceBlockJumpIcon",
+			"sourceBlockJumpTarget": "tjOUlW_sourceBlockJumpTarget",
+			"sourceBlockLabel": "tjOUlW_sourceBlockLabel",
+			"sourceBlocks": "tjOUlW_sourceBlocks",
+			"split": "tjOUlW_split",
+			"subtoolAmber": "tjOUlW_subtoolAmber",
+			"summaryScrollRegion": "tjOUlW_summaryScrollRegion",
+			"systemNeutral": "tjOUlW_systemNeutral",
+			"systemPrompt": "tjOUlW_systemPrompt",
+			"table": "tjOUlW_table",
+			"tablePane": "tjOUlW_tablePane",
+			"thinkingChevron": "tjOUlW_thinkingChevron",
+			"thinkingQuote": "tjOUlW_thinkingQuote",
+			"thinkingQuoteOnlyPreview": "tjOUlW_thinkingQuoteOnlyPreview",
+			"thinkingToggle": "tjOUlW_thinkingToggle",
+			"timestampToggle": "tjOUlW_timestampToggle",
+			"toolAmber": "tjOUlW_toolAmber",
+			"toolCallNameTypeface": "tjOUlW_toolCallNameTypeface",
+			"toolCallOnly": "tjOUlW_toolCallOnly",
+			"toolCallPayload": "tjOUlW_toolCallPayload",
+			"toolCatalog": "tjOUlW_toolCatalog",
+			"toolCatalogChevron": "tjOUlW_toolCatalogChevron",
+			"toolCatalogDefinition": "tjOUlW_toolCatalogDefinition",
+			"toolCatalogDescription": "tjOUlW_toolCatalogDescription",
+			"toolCatalogFullDescription": "tjOUlW_toolCatalogFullDescription",
+			"toolCatalogIcon": "tjOUlW_toolCatalogIcon",
+			"toolCatalogItem": "tjOUlW_toolCatalogItem",
+			"toolCatalogName": "tjOUlW_toolCatalogName",
+			"toolCatalogSummary": "tjOUlW_toolCatalogSummary",
+			"toolCatalogTree": "tjOUlW_toolCatalogTree",
+			"trajectory-table": "tjOUlW_trajectory-table",
+			"turnLabel": "tjOUlW_turnLabel",
+			"turnLabelActive": "tjOUlW_turnLabelActive",
+			"turnLabelCompact": "tjOUlW_turnLabelCompact",
+			"turnLabelFull": "tjOUlW_turnLabelFull",
+			"turnRail": "tjOUlW_turnRail",
+			"usageGroup": "tjOUlW_usageGroup",
+			"usageHeading": "tjOUlW_usageHeading",
+			"usagePanel": "tjOUlW_usagePanel",
+			"user": "tjOUlW_user",
+			"virtualSpacer": "tjOUlW_virtualSpacer",
+			"visuallyHidden": "tjOUlW_visuallyHidden"
 		};
 		//#endregion
 		//#region lib/types/client/TrajectoryTable.js
@@ -3158,14 +3762,14 @@ window.__ModuleLoader__.load({
 		const VIRTUALIZATION_THRESHOLD = 100;
 		const VIRTUAL_OVERSCAN_ROWS = 12;
 		const VIRTUAL_INITIAL_VIEWPORT_HEIGHT_PX = 600;
-		const KIND_LABEL = {
-			system: "SYSTEM",
-			user: "USER",
-			context: "CONTEXT",
-			compacted: "COMPACTED",
-			message: "ASSISTANT",
-			tool: "TOOL",
-			subtool: "SUBTOOL"
+		const KIND_LABEL_KEY = {
+			system: "kind.system",
+			user: "kind.user",
+			context: "kind.context",
+			compacted: "kind.compacted",
+			message: "kind.assistant",
+			tool: "kind.tool",
+			subtool: "kind.subtool"
 		};
 		function ToolWrenchIcon() {
 			return (0, react_jsx_runtime.jsx)("svg", {
@@ -3272,33 +3876,56 @@ window.__ModuleLoader__.load({
 		const DEFAULT_TOOL_REQUEST_OFFSET = 56;
 		const SYSTEM_PROMPT_TABS = [{
 			id: "system-prompt",
-			label: "System Prompt"
+			labelKey: "tab.systemPrompt"
 		}, {
 			id: "tools",
-			label: "Tools"
+			labelKey: "tab.tools"
 		}];
 		const SYSTEM_UPDATE_TABS = [{
 			id: "diff",
-			label: "Diff"
+			labelKey: "tab.diff"
 		}, ...SYSTEM_PROMPT_TABS];
 		const REQUEST_TABS = [
 			{
 				id: "overview",
-				label: "Summary"
+				labelKey: "tab.summary"
 			},
 			{
 				id: "options",
-				label: "Options"
+				labelKey: "tab.options"
 			},
 			{
 				id: "usage",
-				label: "Usage"
+				labelKey: "tab.usage"
 			},
 			{
 				id: "timing",
-				label: "Timing"
+				labelKey: "tab.timing"
 			}
 		];
+		function jsonTreeLabels(t) {
+			return {
+				copyValue: t("copy.value"),
+				copyJson: t("copy.json"),
+				copyPath: t("copy.path"),
+				copyPrettyJson: t("copy.prettyJson"),
+				copyCompactJson: t("copy.compactJson"),
+				copied: t("copied"),
+				copyFailed: t("copy.failed"),
+				collapseNode: t("json.collapseNode"),
+				expandNode: t("json.expandNode"),
+				copyButtonTitle: (action) => t("copy.optionsHint", { action })
+			};
+		}
+		function markdownLabels(t) {
+			return {
+				code: {
+					copyLabel: t("copy"),
+					copiedLabel: t("copied")
+				},
+				footnotes: t("markdown.footnotes")
+			};
+		}
 		function clampDetailsWidth(width, splitWidth) {
 			const maxWidth = Math.max(DETAILS_MIN_WIDTH, Math.min(DETAILS_MAX_WIDTH, splitWidth - TABLE_MIN_WIDTH));
 			return Math.round(Math.min(Math.max(width, DETAILS_MIN_WIDTH), maxWidth));
@@ -3306,12 +3933,12 @@ window.__ModuleLoader__.load({
 		function defaultToolRequestWidth(splitWidth) {
 			return Math.min(Math.max(splitWidth * DEFAULT_TOOL_REQUEST_SHARE - DEFAULT_TOOL_REQUEST_OFFSET, TOOL_REQUEST_MIN_WIDTH), TOOL_REQUEST_MAX_WIDTH);
 		}
-		function formatDurationMs(milliseconds) {
-			if (milliseconds < 1e3) return `${Math.round(milliseconds)} ms`;
-			return `${(milliseconds / 1e3).toFixed(milliseconds < 1e4 ? 2 : 1)} s`;
+		function formatDurationMs(milliseconds, t) {
+			if (milliseconds < 1e3) return t("unit.milliseconds", { value: Math.round(milliseconds) });
+			return t("unit.seconds", { value: (milliseconds / 1e3).toFixed(milliseconds < 1e4 ? 2 : 1) });
 		}
-		function formatStartedAt(timestamp) {
-			if (timestamp === null || !Number.isFinite(timestamp)) return "Not available";
+		function formatStartedAt(timestamp, t) {
+			if (timestamp === null || !Number.isFinite(timestamp)) return t("timing.notAvailable");
 			const date = new Date(timestamp);
 			const two = (value) => String(value).padStart(2, "0");
 			const three = (value) => String(value).padStart(3, "0");
@@ -3323,55 +3950,58 @@ window.__ModuleLoader__.load({
 			const selection = window.getSelection();
 			return selection !== null && !selection.isCollapsed && selection.rangeCount > 0 && selection.getRangeAt(0).intersectsNode(target);
 		}
-		function StartedAtValue({ timestamp }) {
+		function StartedAtValue({ timestamp, t }) {
 			const [showUnix, setShowUnix] = (0, react.useState)(false);
-			if (timestamp === null || !Number.isFinite(timestamp)) return (0, react_jsx_runtime.jsx)("dd", { children: "Not available" });
+			if (timestamp === null || !Number.isFinite(timestamp)) return (0, react_jsx_runtime.jsx)("dd", { children: t("timing.notAvailable") });
 			return (0, react_jsx_runtime.jsx)("dd", { children: (0, react_jsx_runtime.jsx)("button", {
 				type: "button",
 				className: TrajectoryTable_module_css_default.timestampToggle,
-				title: showUnix ? "Show local time" : "Show Unix timestamp",
+				title: showUnix ? t("timing.showLocalTime") : t("timing.showUnixTimestamp"),
 				onClick: (event) => {
 					if (clickSelectsText(event.currentTarget)) return;
 					setShowUnix((current) => !current);
 				},
-				children: showUnix ? (timestamp / 1e3).toFixed(3) : formatStartedAt(timestamp)
+				children: showUnix ? (timestamp / 1e3).toFixed(3) : formatStartedAt(timestamp, t)
 			}) });
 		}
-		function totalTime(metrics) {
-			if (!metrics.timingRecorded) return "Not recorded";
-			if (metrics.stepStartTime === null) return "Step start unavailable";
-			if (metrics.completedTime === null) return "Pending";
-			return formatDurationMs(Math.max(0, metrics.completedTime - metrics.stepStartTime));
+		function totalTime(metrics, t) {
+			if (!metrics.timingRecorded) return t("timing.notRecorded");
+			if (metrics.stepStartTime === null) return t("timing.stepStartUnavailable");
+			if (metrics.completedTime === null) return t("status.pending");
+			return formatDurationMs(Math.max(0, metrics.completedTime - metrics.stepStartTime), t);
 		}
-		function ttft(metrics) {
-			if (!metrics.timingRecorded) return "Not recorded";
-			if (metrics.stepStartTime === null) return "Step start unavailable";
-			if (metrics.firstTokenTime === null) return "First token unavailable";
-			return formatDurationMs(Math.max(0, metrics.firstTokenTime - metrics.stepStartTime));
+		function ttft(metrics, t) {
+			if (!metrics.timingRecorded) return t("timing.notRecorded");
+			if (metrics.stepStartTime === null) return t("timing.stepStartUnavailable");
+			if (metrics.firstTokenTime === null) return t("timing.firstTokenUnavailable");
+			return formatDurationMs(Math.max(0, metrics.firstTokenTime - metrics.stepStartTime), t);
 		}
-		function generationTime(metrics) {
-			if (!metrics.timingRecorded || metrics.firstTokenTime === null) return "First token unavailable";
-			if (metrics.completedTime === null) return "Pending";
-			return formatDurationMs(Math.max(0, metrics.completedTime - metrics.firstTokenTime));
+		function generationTime(metrics, t) {
+			if (!metrics.timingRecorded || metrics.firstTokenTime === null) return t("timing.firstTokenUnavailable");
+			if (metrics.completedTime === null) return t("status.pending");
+			return formatDurationMs(Math.max(0, metrics.completedTime - metrics.firstTokenTime), t);
 		}
-		function throughput(metrics) {
-			if (!metrics.usageProvided) return "Usage unavailable";
-			if (metrics.outputTokens === null) return "Output tokens unavailable";
-			if (!metrics.timingRecorded || metrics.firstTokenTime === null) return "First token unavailable";
-			if (metrics.completedTime === null) return "Pending";
+		function throughput(metrics, t) {
+			if (!metrics.usageProvided) return t("timing.usageUnavailable");
+			if (metrics.outputTokens === null) return t("timing.outputTokensUnavailable");
+			if (!metrics.timingRecorded || metrics.firstTokenTime === null) return t("timing.firstTokenUnavailable");
+			if (metrics.completedTime === null) return t("status.pending");
 			const generationSeconds = (metrics.completedTime - metrics.firstTokenTime) / 1e3;
-			if (generationSeconds <= 0) return "Duration too short";
-			return `${(metrics.outputTokens / generationSeconds).toFixed(1)} tok/s`;
+			if (generationSeconds <= 0) return t("timing.durationTooShort");
+			return t("unit.tokensPerSecond", { value: (metrics.outputTokens / generationSeconds).toFixed(1) });
 		}
-		function AssistantTimingPanel({ metrics }) {
+		function AssistantTimingPanel({ metrics, t }) {
 			return (0, react_jsx_runtime.jsxs)("dl", {
 				className: TrajectoryTable_module_css_default.overview,
 				children: [
-					(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Started" }), (0, react_jsx_runtime.jsx)(StartedAtValue, { timestamp: metrics.stepStartTime })] }),
-					(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Total duration" }), (0, react_jsx_runtime.jsx)("dd", { children: totalTime(metrics) })] }),
-					(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "TTFT" }), (0, react_jsx_runtime.jsx)("dd", { children: ttft(metrics) })] }),
-					(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Generation" }), (0, react_jsx_runtime.jsx)("dd", { children: generationTime(metrics) })] }),
-					(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Throughput" }), (0, react_jsx_runtime.jsx)("dd", { children: throughput(metrics) })] })
+					(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("timing.started") }), (0, react_jsx_runtime.jsx)(StartedAtValue, {
+						timestamp: metrics.stepStartTime,
+						t
+					})] }),
+					(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("timing.totalDuration") }), (0, react_jsx_runtime.jsx)("dd", { children: totalTime(metrics, t) })] }),
+					(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("timing.ttft") }), (0, react_jsx_runtime.jsx)("dd", { children: ttft(metrics, t) })] }),
+					(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("timing.generation") }), (0, react_jsx_runtime.jsx)("dd", { children: generationTime(metrics, t) })] }),
+					(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("timing.throughput") }), (0, react_jsx_runtime.jsx)("dd", { children: throughput(metrics, t) })] })
 				]
 			});
 		}
@@ -3416,43 +4046,32 @@ window.__ModuleLoader__.load({
 			}
 			return filtered;
 		}
-		function requestStep(group) {
-			if (!group.startsWith("Step ")) return void 0;
-			const value = Number(group.slice(5));
-			return Number.isInteger(value) && value > 0 ? value : void 0;
-		}
 		function requestKey(turn, group) {
 			return `${turn}\u0000${group}`;
 		}
-		function indexRequestBoundaries(records) {
+		function requestIdentity(request) {
+			return request.purpose === "compaction" ? `compaction\u0000${request.seq}` : `assistant\u0000${request.turn}\u0000${request.step}`;
+		}
+		function indexRequestBoundaries(records, requestGroups) {
 			const boundaries = /* @__PURE__ */ new Map();
 			for (const record of records) {
 				const key = requestKey(record.turn, record.group);
+				if (!requestGroups.has(key)) continue;
 				if (boundaries.has(key)) continue;
-				if (requestStep(record.group) === void 0) {
-					if (record.groupStart) boundaries.set(key, record.cell.index);
-					continue;
-				}
 				if (record.cell.kind === "user" || record.cell.kind === "context") continue;
 				boundaries.set(key, record.cell.index);
 			}
 			return boundaries;
 		}
-		function sectionLabel(turn) {
-			return turn === null ? "Between turns" : `Turn ${turn}`;
+		function sectionLabel(turn, t) {
+			return turn === null ? t("section.betweenTurns") : t("turn.label", { turn });
 		}
-		function indexRequestNumbers(records, sessionNumbers, boundaries) {
+		function indexRequestNumbers(sessionNumbers) {
 			const numbers = /* @__PURE__ */ new Map();
 			for (const request of sessionNumbers ?? []) numbers.set(requestKey(request.turn, request.group), request.number);
-			let next = Math.max(0, ...numbers.values()) + 1;
-			const boundaryRecords = records.filter((record) => boundaries.get(requestKey(record.turn, record.group)) === record.cell.index && requestStep(record.group) !== void 0).sort((left, right) => left.cell.index - right.cell.index);
-			for (const record of boundaryRecords) {
-				const key = requestKey(record.turn, record.group);
-				if (!numbers.has(key)) numbers.set(key, next++);
-			}
 			return numbers;
 		}
-		function indexRequestBoundaryRuns(records) {
+		function indexRequestBoundaryRuns(records, requestGroups) {
 			const indexes = /* @__PURE__ */ new Map();
 			let runLength = 0;
 			for (const record of records) {
@@ -3460,17 +4079,17 @@ window.__ModuleLoader__.load({
 					indexes.set(record.cell.index, runLength++);
 					continue;
 				}
-				if (runLength > 0 && record.groupStart && requestStep(record.group) !== void 0) indexes.set(record.cell.index, runLength);
+				if (runLength > 0 && record.groupStart && requestGroups.has(requestKey(record.turn, record.group))) indexes.set(record.cell.index, runLength);
 				runLength = 0;
 			}
 			return indexes;
 		}
-		function summarizeTurn(records) {
-			const steps = new Set(records.map((record) => record.group).filter((group) => group.startsWith("Step "))).size;
+		function summarizeTurn(records, requestGroups, t) {
+			const steps = new Set(records.map((record) => requestKey(record.turn, record.group)).filter((key) => requestGroups.has(key))).size;
 			const toolCalls = records.filter((record) => record.cell.kind === "tool" || record.cell.kind === "subtool").length;
-			return [`${steps} ${steps === 1 ? "step" : "steps"}`, `${toolCalls} tool ${toolCalls === 1 ? "call" : "calls"}`].join(" · ");
+			return [t(steps === 1 ? "summary.steps.one" : "summary.steps.other", { count: steps }), t(toolCalls === 1 ? "summary.toolCalls.one" : "summary.toolCalls.other", { count: toolCalls })].join(" · ");
 		}
-		function collapseTurnRecords(records, collapsedTurns) {
+		function collapseTurnRecords(records, collapsedTurns, requestGroups, t) {
 			const recordsByTurn = /* @__PURE__ */ new Map();
 			for (const record of records) {
 				if (record.turn === null) continue;
@@ -3493,7 +4112,7 @@ window.__ModuleLoader__.load({
 					groupStart: false,
 					turnStart: false,
 					turnEnd: true,
-					collapsedSummary: summarizeTurn(contentRecords.slice(1)),
+					collapsedSummary: summarizeTurn(contentRecords.slice(1), requestGroups, t),
 					collapsedSummaryKind: "turn"
 				}];
 			});
@@ -3510,16 +4129,16 @@ window.__ModuleLoader__.load({
 			}
 			return calls;
 		}
-		function summarizeAssistantTools(records) {
+		function summarizeAssistantTools(records, t) {
 			const names = [...new Set(records.map((record) => {
 				const separator = record.cell.text.indexOf(" · ");
 				return separator === -1 ? record.cell.text : record.cell.text.slice(0, separator);
 			}).filter((name) => name !== ""))];
 			const count = records.length;
-			const summary = `${count} tool ${count === 1 ? "call" : "calls"}`;
+			const summary = t(count === 1 ? "summary.toolCalls.one" : "summary.toolCalls.other", { count });
 			return names.length > 0 ? `${summary} · ${names.join(", ")}` : summary;
 		}
-		function collapseAssistantRecords(records, collapsedAssistants) {
+		function collapseAssistantRecords(records, collapsedAssistants, t) {
 			const out = [];
 			for (let i = 0; i < records.length; i++) {
 				const record = records[i];
@@ -3543,7 +4162,7 @@ window.__ModuleLoader__.load({
 					groupStart: false,
 					turnStart: false,
 					turnEnd: last?.turnEnd ?? false,
-					collapsedSummary: summarizeAssistantTools(calls),
+					collapsedSummary: summarizeAssistantTools(calls, t),
 					collapsedSummaryKind: "assistant"
 				});
 				i += calls.length;
@@ -3556,22 +4175,27 @@ window.__ModuleLoader__.load({
 			if ((record.cell.kind === "tool" || record.cell.kind === "subtool") && record.cell.outputDetail === void 0) return "running";
 			return "complete";
 		}
-		function statusLabel(state) {
-			if (state === "error") return "Failed";
-			if (state === "running") return "Pending";
-			return "Completed";
+		function statusLabel(state, t) {
+			if (state === "error") return t("status.failed");
+			if (state === "running") return t("status.pending");
+			return t("status.completed");
 		}
-		function TokenRows({ cell }) {
+		function requestErrorMessage(request, t) {
+			if (request.errorCode === "AUTH") return t("details.failure.auth");
+			if (request.error === "trajectory.compaction-interrupted") return t("layout.compactionInterrupted");
+			return request.error;
+		}
+		function TokenRows({ cell, t }) {
 			const content = cell.output !== void 0 && cell.think !== void 0 ? Math.max(0, cell.output - cell.think) : void 0;
 			return (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-				(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Tokens" }), (0, react_jsx_runtime.jsx)("dd", { children: cell.output === void 0 ? "—" : `${cell.output} tok` })] }),
+				(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("usage.tokens") }), (0, react_jsx_runtime.jsx)("dd", { children: cell.output === void 0 ? "—" : t("unit.tokens", { value: cell.output }) })] }),
 				cell.think !== void 0 && (0, react_jsx_runtime.jsxs)("div", {
 					className: TrajectoryTable_module_css_default.requestTokenDetail,
-					children: [(0, react_jsx_runtime.jsx)("dt", { children: "Reasoning" }), (0, react_jsx_runtime.jsxs)("dd", { children: [cell.think, " tok"] })]
+					children: [(0, react_jsx_runtime.jsx)("dt", { children: t("usage.reasoning") }), (0, react_jsx_runtime.jsx)("dd", { children: t("unit.tokens", { value: cell.think }) })]
 				}),
 				content !== void 0 && (0, react_jsx_runtime.jsxs)("div", {
 					className: TrajectoryTable_module_css_default.requestTokenDetail,
-					children: [(0, react_jsx_runtime.jsx)("dt", { children: "Content" }), (0, react_jsx_runtime.jsxs)("dd", { children: [content, " tok"] })]
+					children: [(0, react_jsx_runtime.jsx)("dt", { children: t("usage.content") }), (0, react_jsx_runtime.jsx)("dd", { children: t("unit.tokens", { value: content }) })]
 				})
 			] });
 		}
@@ -3579,95 +4203,103 @@ window.__ModuleLoader__.load({
 			if (usage.input === void 0 && usage.cacheRead === void 0 && usage.cacheWrite === void 0) return void 0;
 			return (usage.input ?? 0) + (usage.cacheRead ?? 0) + (usage.cacheWrite ?? 0);
 		}
-		function UsageRows({ usage }) {
+		function UsageRows({ usage, t }) {
 			if (usage === void 0) return (0, react_jsx_runtime.jsx)("p", {
 				className: TrajectoryTable_module_css_default.noPayload,
-				children: "Usage not reported"
+				children: t("usage.notReported")
 			});
 			const totalInput = inputTotal(usage);
 			const otherOutput = usage.output !== void 0 && usage.reasoning !== void 0 ? usage.output - usage.reasoning : void 0;
 			return (0, react_jsx_runtime.jsxs)("dl", {
 				className: TrajectoryTable_module_css_default.overview,
 				children: [
-					totalInput !== void 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Input" }), (0, react_jsx_runtime.jsxs)("dd", { children: [totalInput, " tok"] })] }),
+					totalInput !== void 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("usage.input") }), (0, react_jsx_runtime.jsx)("dd", { children: t("unit.tokens", { value: totalInput }) })] }),
 					usage.cacheRead !== void 0 && (0, react_jsx_runtime.jsxs)("div", {
 						className: TrajectoryTable_module_css_default.requestTokenDetail,
-						children: [(0, react_jsx_runtime.jsx)("dt", { children: "Cached" }), (0, react_jsx_runtime.jsxs)("dd", { children: [usage.cacheRead, " tok"] })]
+						children: [(0, react_jsx_runtime.jsx)("dt", { children: t("usage.cached") }), (0, react_jsx_runtime.jsx)("dd", { children: t("unit.tokens", { value: usage.cacheRead }) })]
 					}),
 					usage.cacheWrite !== void 0 && (0, react_jsx_runtime.jsxs)("div", {
 						className: TrajectoryTable_module_css_default.requestTokenDetail,
-						children: [(0, react_jsx_runtime.jsx)("dt", { children: "Cache created" }), (0, react_jsx_runtime.jsxs)("dd", { children: [usage.cacheWrite, " tok"] })]
+						children: [(0, react_jsx_runtime.jsx)("dt", { children: t("usage.cacheCreated") }), (0, react_jsx_runtime.jsx)("dd", { children: t("unit.tokens", { value: usage.cacheWrite }) })]
 					}),
 					usage.input !== void 0 && (0, react_jsx_runtime.jsxs)("div", {
 						className: TrajectoryTable_module_css_default.requestTokenDetail,
-						children: [(0, react_jsx_runtime.jsx)("dt", { children: "Other" }), (0, react_jsx_runtime.jsxs)("dd", { children: [usage.input, " tok"] })]
+						children: [(0, react_jsx_runtime.jsx)("dt", { children: t("usage.other") }), (0, react_jsx_runtime.jsx)("dd", { children: t("unit.tokens", { value: usage.input }) })]
 					}),
-					usage.output !== void 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Output" }), (0, react_jsx_runtime.jsxs)("dd", { children: [usage.output, " tok"] })] }),
+					usage.output !== void 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("usage.output") }), (0, react_jsx_runtime.jsx)("dd", { children: t("unit.tokens", { value: usage.output }) })] }),
 					usage.reasoning !== void 0 && (0, react_jsx_runtime.jsxs)("div", {
 						className: TrajectoryTable_module_css_default.requestTokenDetail,
-						children: [(0, react_jsx_runtime.jsx)("dt", { children: "Reasoning" }), (0, react_jsx_runtime.jsxs)("dd", { children: [usage.reasoning, " tok"] })]
+						children: [(0, react_jsx_runtime.jsx)("dt", { children: t("usage.reasoning") }), (0, react_jsx_runtime.jsx)("dd", { children: t("unit.tokens", { value: usage.reasoning }) })]
 					}),
 					otherOutput !== void 0 && (0, react_jsx_runtime.jsxs)("div", {
 						className: TrajectoryTable_module_css_default.requestTokenDetail,
-						children: [(0, react_jsx_runtime.jsx)("dt", { children: "Content" }), (0, react_jsx_runtime.jsxs)("dd", { children: [otherOutput, " tok"] })]
+						children: [(0, react_jsx_runtime.jsx)("dt", { children: t("usage.content") }), (0, react_jsx_runtime.jsx)("dd", { children: t("unit.tokens", { value: otherOutput }) })]
 					})
 				]
 			});
 		}
-		function RequestUsagePanel({ usage, cumulative }) {
+		function RequestUsagePanel({ usage, cumulative, t }) {
 			return (0, react_jsx_runtime.jsxs)("div", {
 				className: TrajectoryTable_module_css_default.usagePanel,
 				children: [(0, react_jsx_runtime.jsxs)("section", {
 					className: TrajectoryTable_module_css_default.usageGroup,
 					children: [(0, react_jsx_runtime.jsx)("h4", {
 						className: TrajectoryTable_module_css_default.usageHeading,
-						children: "This request"
-					}), (0, react_jsx_runtime.jsx)(UsageRows, { usage })]
+						children: t("usage.thisRequest")
+					}), (0, react_jsx_runtime.jsx)(UsageRows, {
+						usage,
+						t
+					})]
 				}), (0, react_jsx_runtime.jsxs)("section", {
 					className: TrajectoryTable_module_css_default.usageGroup,
 					children: [(0, react_jsx_runtime.jsx)("h4", {
 						className: TrajectoryTable_module_css_default.usageHeading,
-						children: "Session cumulative"
-					}), (0, react_jsx_runtime.jsx)(UsageRows, { usage: cumulative })]
+						children: t("usage.sessionCumulative")
+					}), (0, react_jsx_runtime.jsx)(UsageRows, {
+						usage: cumulative,
+						t
+					})]
 				})]
 			});
 		}
-		function RequestOptions({ options, preview = false }) {
+		function RequestOptions({ options, preview = false, t }) {
 			if (options === void 0) return (0, react_jsx_runtime.jsx)("p", {
 				className: TrajectoryTable_module_css_default.noPayload,
-				children: "Options not recorded"
+				children: t("options.notRecorded")
 			});
 			return (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.JsonTree, {
 				data: options,
-				label: "Request options JSON",
+				label: t("options.json"),
+				labels: jsonTreeLabels(t),
 				className: preview ? TrajectoryTable_module_css_default.jsonPreview : TrajectoryTable_module_css_default.jsonPayload
 			});
 		}
-		function messageSourceLabel(source) {
-			if (typeof source !== "object" || source === null || Array.isArray(source)) return "Unknown";
+		function messageSourceLabel(source, t) {
+			if (typeof source !== "object" || source === null || Array.isArray(source)) return t("source.unknown");
 			const properties = source;
 			const kind = properties.kind;
-			if (kind === "user") return "User";
+			if (kind === "user") return t("source.user");
 			if (kind === "plugin") {
 				const plugin = properties.plugin;
-				return typeof plugin === "string" && plugin !== "" ? `Plugin · ${plugin}` : "Plugin";
+				return typeof plugin === "string" && plugin !== "" ? t("source.pluginNamed", { plugin }) : t("source.plugin");
 			}
 			if (kind === "goal") {
 				const round = properties.round;
-				return typeof round === "number" && round > 0 ? `Goal · Round ${round}` : "Goal";
+				return typeof round === "number" && round > 0 ? t("source.goalRound", { round }) : t("source.goal");
 			}
-			if (typeof kind !== "string" || kind === "") return "Unknown";
+			if (typeof kind !== "string" || kind === "") return t("source.unknown");
 			return `${kind[0]?.toUpperCase() ?? ""}${kind.slice(1)}`;
 		}
-		function MessageSource({ record }) {
+		function MessageSource({ record, t }) {
 			const source = record.cell.messageSource;
 			if (source === void 0) return (0, react_jsx_runtime.jsx)("p", {
 				className: TrajectoryTable_module_css_default.noPayload,
-				children: "Source not recorded"
+				children: t("source.notRecorded")
 			});
 			return (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.JsonTree, {
 				data: typeof source === "object" && source !== null ? source : { value: source },
-				label: "Message source JSON",
+				label: t("source.messageJson"),
+				labels: jsonTreeLabels(t),
 				className: TrajectoryTable_module_css_default.jsonPayload
 			});
 		}
@@ -3703,54 +4335,54 @@ window.__ModuleLoader__.load({
 			if (record.cell.kind === "system") return record.cell.previousPromptDetail === void 0 ? SYSTEM_PROMPT_TABS : SYSTEM_UPDATE_TABS;
 			if (record.cell.kind === "compacted") return [{
 				id: "overview",
-				label: "Summary"
+				labelKey: "tab.summary"
 			}, {
 				id: "raw",
-				label: "Raw Output"
+				labelKey: "tab.rawOutput"
 			}];
 			if (isMarkdownRecord(record)) return [
 				{
 					id: "overview",
-					label: "Summary"
+					labelKey: "tab.summary"
 				},
 				{
 					id: "rendered",
-					label: "Preview"
+					labelKey: "tab.preview"
 				},
 				{
 					id: "raw",
-					label: "Raw"
+					labelKey: "tab.raw"
 				},
 				...record.cell.messageSource === void 0 ? [] : [{
 					id: "source",
-					label: "Source"
+					labelKey: "tab.source"
 				}]
 			];
 			return [
 				{
 					id: "overview",
-					label: "Summary"
+					labelKey: "tab.summary"
 				},
 				...record.cell.inputDetail ? [{
 					id: "input",
-					label: "Payload"
+					labelKey: "tab.payload"
 				}] : [],
 				...record.cell.outputDetail ? [{
 					id: "output",
-					label: "Result"
+					labelKey: "tab.result"
 				}] : [],
 				{
 					id: "schema",
-					label: "Schema"
+					labelKey: "tab.schema"
 				},
 				{
 					id: "timing",
-					label: "Timing"
+					labelKey: "tab.timing"
 				}
 			];
 		}
-		function recordDisplayText(cell) {
-			if (isToolCallOnly(cell)) return "";
+		function recordDisplayText(cell, t) {
+			if (isToolCallOnly(cell, t)) return "";
 			if (cell.previewMarkdown !== void 0) {
 				const preview = trajectoryPreviewText(cell.previewMarkdown);
 				if (cell.text === "") return preview;
@@ -3772,33 +4404,34 @@ window.__ModuleLoader__.load({
 				args: text.slice(separator + 3)
 			};
 		}
-		function isToolCallOnly(cell) {
-			return cell.kind === "message" && !cell.outputDetail && !cell.thinkingDetail && cell.text === "Tool call only";
+		function isToolCallOnly(cell, t) {
+			return cell.kind === "message" && !cell.outputDetail && !cell.thinkingDetail && cell.text === t("layout.toolCallOnly");
 		}
-		function RecordPresentation({ cell, children }) {
-			const displayText = (0, react.useMemo)(() => recordDisplayText(cell), [
+		function RecordPresentation({ cell, children, t }) {
+			const displayText = (0, react.useMemo)(() => recordDisplayText(cell, t), [
 				cell.kind,
 				cell.text,
 				cell.previewMarkdown,
 				cell.inputDetail,
 				cell.outputDetail,
-				cell.thinkingDetail
+				cell.thinkingDetail,
+				t
 			]);
 			const resultText = (0, react.useMemo)(() => recordResultText(cell), [cell.result, cell.resultPreviewMarkdown]);
-			const toolCallOnly = isToolCallOnly(cell);
+			const toolCallOnly = isToolCallOnly(cell, t);
 			const toolCallText = toolCallTextParts(cell.kind, displayText);
 			return children({
 				displayText,
-				listDisplayText: toolCallOnly ? "(tool call only)" : toolCallText === void 0 ? displayText : [toolCallText.name, toolCallText.args].filter(Boolean).join(" "),
+				listDisplayText: toolCallOnly ? t("record.toolCallOnly") : toolCallText === void 0 ? displayText : [toolCallText.name, toolCallText.args].filter(Boolean).join(" "),
 				resultText,
 				toolCallOnly,
 				toolCallText
 			});
 		}
-		function RecordListText({ displayText, toolCallOnly, toolCallText }) {
+		function RecordListText({ displayText, toolCallOnly, toolCallText, t }) {
 			if (toolCallOnly) return (0, react_jsx_runtime.jsx)("span", {
 				className: TrajectoryTable_module_css_default.toolCallOnly,
-				children: "(tool call only)"
+				children: t("record.toolCallOnly")
 			});
 			if (toolCallText === void 0) return displayText || "—";
 			return (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)("span", {
@@ -3809,17 +4442,21 @@ window.__ModuleLoader__.load({
 				children: toolCallText.args
 			})] });
 		}
-		function MarkdownFragment({ text, rendered, preview }) {
+		function MarkdownFragment({ text, rendered, preview, t }) {
+			const labels = (0, react.useMemo)(() => markdownLabels(t), [t]);
 			if (rendered) return (0, react_jsx_runtime.jsx)("div", {
 				className: preview ? TrajectoryTable_module_css_default.markdownPreview : TrajectoryTable_module_css_default.markdownPayload,
-				children: (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.MarkdownText, { text })
+				children: (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.MarkdownText, {
+					text,
+					labels
+				})
 			});
 			return (0, react_jsx_runtime.jsx)("pre", {
 				className: `${TrajectoryTable_module_css_default.payload} ${preview ? TrajectoryTable_module_css_default.payloadPreview : ""}`,
 				children: text
 			});
 		}
-		function SourceBlocks({ blocks, onOpenCall }) {
+		function SourceBlocks({ blocks, onOpenCall, renderImages, t }) {
 			return (0, react_jsx_runtime.jsx)("div", {
 				className: TrajectoryTable_module_css_default.sourceBlocks,
 				children: blocks.map((block, index) => (0, react_jsx_runtime.jsxs)("section", {
@@ -3827,14 +4464,17 @@ window.__ModuleLoader__.load({
 					children: [block.callId !== void 0 ? (0, react_jsx_runtime.jsxs)("button", {
 						type: "button",
 						className: TrajectoryTable_module_css_default.sourceBlockJumpTarget,
-						"aria-label": `Open Block #${index + 1} tool call summary`,
-						title: "Open tool call summary",
+						"aria-label": t("block.openSummary", { index: index + 1 }),
+						title: t("block.openSummaryTitle"),
 						onClick: () => {
 							if (block.callId !== void 0) onOpenCall(block.callId);
 						},
 						children: [(0, react_jsx_runtime.jsx)("span", {
 							className: TrajectoryTable_module_css_default.sourceBlockLabel,
-							children: `Block #${index + 1} ${block.type}`
+							children: t("block.label", {
+								index: index + 1,
+								type: block.type
+							})
 						}), (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronRightOutline14, {
 							className: TrajectoryTable_module_css_default.sourceBlockJumpIcon,
 							size: 12
@@ -3843,42 +4483,36 @@ window.__ModuleLoader__.load({
 						className: TrajectoryTable_module_css_default.sourceBlockHeader,
 						children: (0, react_jsx_runtime.jsx)("span", {
 							className: TrajectoryTable_module_css_default.sourceBlockLabel,
-							children: `Block #${index + 1} ${block.type}`
+							children: t("block.label", {
+								index: index + 1,
+								type: block.type
+							})
 						})
-					}), block.imageSrc !== void 0 ? (0, react_jsx_runtime.jsx)(PanelImage, { block }) : (0, react_jsx_runtime.jsx)("pre", {
+					}), block.attachment !== void 0 ? renderImages({
+						images: [{ attachment: block.attachment }],
+						align: "start"
+					}) : (0, react_jsx_runtime.jsx)("pre", {
 						className: TrajectoryTable_module_css_default.sourceBlockContent,
 						children: block.content
 					})]
 				}, index))
 			});
 		}
-		function PanelImage({ block, preview = false }) {
-			if (block.imageSrc === void 0) return null;
-			return (0, react_jsx_runtime.jsx)("a", {
-				className: preview ? `${TrajectoryTable_module_css_default.panelImageLink} ${TrajectoryTable_module_css_default.panelImageLinkPreview}` : TrajectoryTable_module_css_default.panelImageLink,
-				href: block.imageSrc,
-				target: "_blank",
-				rel: "noopener noreferrer",
-				title: "Open image",
-				children: (0, react_jsx_runtime.jsx)("img", {
-					className: TrajectoryTable_module_css_default.panelImage,
-					src: block.imageSrc,
-					alt: block.imageAlt ?? ""
-				})
-			});
+		function recordImages(blocks) {
+			return (blocks ?? []).flatMap((block) => block.attachment !== void 0 ? [{ attachment: block.attachment }] : []);
 		}
-		function MessageImages({ blocks, preview }) {
-			const images = blocks?.filter((block) => block.imageSrc !== void 0) ?? [];
+		function MessageImages({ blocks, preview, renderImages }) {
+			const images = recordImages(blocks);
 			if (images.length === 0) return null;
 			return (0, react_jsx_runtime.jsx)("div", {
 				className: preview ? `${TrajectoryTable_module_css_default.messageImages} ${TrajectoryTable_module_css_default.messageImagesPreview}` : TrajectoryTable_module_css_default.messageImages,
-				children: images.map((block, index) => (0, react_jsx_runtime.jsx)(PanelImage, {
-					block,
-					preview
-				}, index))
+				children: renderImages({
+					images,
+					align: "start"
+				})
 			});
 		}
-		function AssistantToolCalls({ blocks, preview, onOpenCall }) {
+		function AssistantToolCalls({ blocks, preview, onOpenCall, t }) {
 			const calls = blocks?.filter((block) => block.type === "tool-call") ?? [];
 			if (calls.length === 0) return null;
 			return (0, react_jsx_runtime.jsx)("ul", {
@@ -3886,7 +4520,7 @@ window.__ModuleLoader__.load({
 				children: calls.map((call, index) => (0, react_jsx_runtime.jsx)("li", { children: (0, react_jsx_runtime.jsxs)("button", {
 					type: "button",
 					className: TrajectoryTable_module_css_default.assistantToolCallButton,
-					title: "Open tool call summary",
+					title: t("block.openSummaryTitle"),
 					onClick: () => {
 						if (call.callId !== void 0) onOpenCall(call.callId);
 					},
@@ -3908,7 +4542,7 @@ window.__ModuleLoader__.load({
 						className: TrajectoryTable_module_css_default.assistantToolCallText,
 						children: [(0, react_jsx_runtime.jsx)("span", {
 							className: TrajectoryTable_module_css_default.assistantToolCallName,
-							children: call.toolName ?? "tool-call"
+							children: call.toolName ?? t("details.toolCall")
 						}), call.content !== "" && (0, react_jsx_runtime.jsx)("span", {
 							className: TrajectoryTable_module_css_default.assistantToolCallArgs,
 							children: call.content
@@ -3934,10 +4568,10 @@ window.__ModuleLoader__.load({
 				})
 			});
 		}
-		function ToolCatalog({ tools }) {
+		function ToolCatalog({ tools, t }) {
 			if (tools.length === 0) return (0, react_jsx_runtime.jsx)("p", {
 				className: TrajectoryTable_module_css_default.noPayload,
-				children: "No tools in this request"
+				children: t("record.toolsMissing")
 			});
 			return (0, react_jsx_runtime.jsx)("div", {
 				className: TrajectoryTable_module_css_default.toolCatalog,
@@ -3967,7 +4601,8 @@ window.__ModuleLoader__.load({
 							children: tool.description
 						}), (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.JsonTree, {
 							data: tool.parameters,
-							label: `${tool.name} parameters JSON`,
+							label: t("record.namedParametersJson", { name: tool.name }),
+							labels: jsonTreeLabels(t),
 							className: TrajectoryTable_module_css_default.toolCatalogTree
 						})]
 					})]
@@ -4018,48 +4653,57 @@ window.__ModuleLoader__.load({
 				})]
 			});
 		}
-		function SystemPromptDiff({ before, after }) {
+		function SystemPromptDiff({ before, after, t }) {
 			const toolsBefore = JSON.stringify(before.tools, null, 2);
 			const toolsAfter = JSON.stringify(after.tools, null, 2);
 			return (0, react_jsx_runtime.jsxs)("div", {
 				className: TrajectoryTable_module_css_default.promptDiffSections,
 				children: [before.system !== after.system && (0, react_jsx_runtime.jsx)(PromptDiffSection, {
-					title: "System Prompt",
+					title: t("record.systemPrompt"),
 					before: before.system,
 					after: after.system
 				}), toolsBefore !== toolsAfter && (0, react_jsx_runtime.jsx)(PromptDiffSection, {
-					title: "Tools",
+					title: t("record.tools"),
 					before: toolsBefore,
 					after: toolsAfter
 				})]
 			});
 		}
-		function ToolOutputBlocks({ blocks, error, preview }) {
-			return (0, react_jsx_runtime.jsx)("div", {
+		function ToolOutputBlocks({ blocks, error, errorDetail, preview, renderImages }) {
+			return (0, react_jsx_runtime.jsxs)("div", {
 				className: [
 					TrajectoryTable_module_css_default.resultBlocks,
 					preview ? TrajectoryTable_module_css_default.resultBlocksPreview : void 0,
 					error ? TrajectoryTable_module_css_default.errorPayload : void 0
 				].filter((value) => value !== void 0).join(" "),
-				children: blocks.map((block, index) => block.imageSrc !== void 0 ? (0, react_jsx_runtime.jsx)(PanelImage, {
-					block,
-					preview
+				children: [error && errorDetail !== void 0 && errorDetail !== "" && (0, react_jsx_runtime.jsx)("pre", {
+					className: TrajectoryTable_module_css_default.resultBlockText,
+					children: errorDetail
+				}), blocks.map((block, index) => block.attachment !== void 0 ? (0, react_jsx_runtime.jsx)("div", {
+					className: TrajectoryTable_module_css_default.messageImages,
+					children: renderImages({
+						images: [{ attachment: block.attachment }],
+						align: "start"
+					})
 				}, index) : block.content !== "" ? (0, react_jsx_runtime.jsx)("pre", {
 					className: TrajectoryTable_module_css_default.resultBlockText,
 					children: block.content
-				}, index) : null)
+				}, index) : null)]
 			});
 		}
-		function MarkdownRecordContent({ record, rendered, preview = false, thinkingExpanded, onThinkingExpandedChange, onOpenCall }) {
+		function MarkdownRecordContent({ record, rendered, preview = false, thinkingExpanded, onThinkingExpandedChange, onOpenCall, renderImages, t }) {
 			if (!rendered && record.cell.sourceBlocks && record.cell.sourceBlocks.length > 0) return (0, react_jsx_runtime.jsx)(SourceBlocks, {
 				blocks: record.cell.sourceBlocks,
-				onOpenCall
+				onOpenCall,
+				renderImages,
+				t
 			});
 			if (record.cell.thinkingDetail) {
 				if (!rendered) return (0, react_jsx_runtime.jsx)(MarkdownFragment, {
 					text: [record.cell.thinkingDetail, record.cell.outputDetail].filter((value) => value !== void 0 && value !== "").join("\n\n"),
 					rendered: false,
-					preview
+					preview,
+					t
 				});
 				return (0, react_jsx_runtime.jsxs)("div", {
 					className: `${TrajectoryTable_module_css_default.assistantContent} ${TrajectoryTable_module_css_default.assistantContentRendered}`,
@@ -4073,14 +4717,15 @@ window.__ModuleLoader__.load({
 								onClick: () => {
 									onThinkingExpandedChange(!thinkingExpanded);
 								},
-								children: ["Thinking", (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronRightOutline14, {
+								children: [t("record.thinking"), (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronRightOutline14, {
 									className: TrajectoryTable_module_css_default.thinkingChevron,
 									size: 12
 								})]
 							}), thinkingExpanded && (0, react_jsx_runtime.jsx)(MarkdownFragment, {
 								text: record.cell.thinkingDetail,
 								rendered,
-								preview
+								preview,
+								t
 							})]
 						}),
 						record.cell.outputDetail && (0, react_jsx_runtime.jsx)("div", {
@@ -4088,26 +4733,29 @@ window.__ModuleLoader__.load({
 							children: (0, react_jsx_runtime.jsx)(MarkdownFragment, {
 								text: record.cell.outputDetail,
 								rendered,
-								preview
+								preview,
+								t
 							})
 						}),
 						(0, react_jsx_runtime.jsx)(AssistantToolCalls, {
 							blocks: record.cell.sourceBlocks,
 							preview,
-							onOpenCall
+							onOpenCall,
+							t
 						}),
 						(0, react_jsx_runtime.jsx)(MessageImages, {
 							blocks: record.cell.sourceBlocks,
-							preview
+							preview,
+							renderImages
 						})
 					]
 				});
 			}
 			const source = markdownSource(record);
-			const hasImages = record.cell.sourceBlocks?.some((block) => block.imageSrc !== void 0) === true;
+			const hasImages = record.cell.sourceBlocks?.some((block) => block.attachment !== void 0) === true;
 			const hasToolCalls = record.cell.kind === "message" && record.cell.sourceBlocks?.some((block) => block.type === "tool-call") === true;
 			if (!source && !hasImages && !hasToolCalls) {
-				const emptyLabel = isToolCallOnly(record.cell) ? "Tool call only" : record.cell.text || "No content";
+				const emptyLabel = isToolCallOnly(record.cell, t) ? t("record.toolCallOnly") : record.cell.text || t("record.noContent");
 				return (0, react_jsx_runtime.jsx)("p", {
 					className: TrajectoryTable_module_css_default.noPayload,
 					children: emptyLabel
@@ -4116,56 +4764,75 @@ window.__ModuleLoader__.load({
 			if (!rendered || !hasImages && !hasToolCalls) return (0, react_jsx_runtime.jsx)(MarkdownFragment, {
 				text: source ?? "",
 				rendered,
-				preview
+				preview,
+				t
 			});
 			return (0, react_jsx_runtime.jsxs)("div", { children: [
 				source && (0, react_jsx_runtime.jsx)(MarkdownFragment, {
 					text: source,
 					rendered: true,
-					preview
+					preview,
+					t
 				}),
 				record.cell.kind === "message" && (0, react_jsx_runtime.jsx)(AssistantToolCalls, {
 					blocks: record.cell.sourceBlocks,
 					preview,
-					onOpenCall
+					onOpenCall,
+					t
 				}),
 				(0, react_jsx_runtime.jsx)(MessageImages, {
 					blocks: record.cell.sourceBlocks,
-					preview
+					preview,
+					renderImages
 				})
 			] });
 		}
-		function RecordTiming({ record }) {
-			return record.cell.kind === "message" && record.cell.assistantMetrics !== void 0 ? (0, react_jsx_runtime.jsx)(AssistantTimingPanel, { metrics: record.cell.assistantMetrics }) : (0, react_jsx_runtime.jsxs)("dl", {
+		function RecordTiming({ record, t }) {
+			return record.cell.kind === "message" && record.cell.assistantMetrics !== void 0 ? (0, react_jsx_runtime.jsx)(AssistantTimingPanel, {
+				metrics: record.cell.assistantMetrics,
+				t
+			}) : (0, react_jsx_runtime.jsxs)("dl", {
 				className: TrajectoryTable_module_css_default.overview,
 				children: [
-					(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Started" }), (0, react_jsx_runtime.jsx)(StartedAtValue, { timestamp: record.cell.startedAt ?? null })] }),
-					(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Duration" }), (0, react_jsx_runtime.jsx)("dd", { children: formatElapsedSeconds(record.cell.timeSeconds) })] }),
-					(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Timing source" }), (0, react_jsx_runtime.jsx)("dd", { children: record.cell.timeSeconds === null ? "Not available" : "Session timestamps" })] })
+					(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("timing.started") }), (0, react_jsx_runtime.jsx)(StartedAtValue, {
+						timestamp: record.cell.startedAt ?? null,
+						t
+					})] }),
+					(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("timing.duration") }), (0, react_jsx_runtime.jsx)("dd", { children: formatElapsedSeconds(record.cell.timeSeconds, t) })] }),
+					(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("timing.source") }), (0, react_jsx_runtime.jsx)("dd", { children: record.cell.timeSeconds === null ? t("timing.notAvailable") : t("timing.sessionTimestamps") })] })
 				]
 			});
 		}
-		function RequestTiming({ assistant, anchor, request }) {
-			if (assistant !== void 0) return (0, react_jsx_runtime.jsx)(RecordTiming, { record: assistant });
+		function RequestTiming({ assistant, anchor, request, t }) {
+			if (assistant !== void 0) return (0, react_jsx_runtime.jsx)(RecordTiming, {
+				record: assistant,
+				t
+			});
 			if (request?.startedAt !== void 0) {
 				const duration = request.completedAt === null || request.completedAt === void 0 ? null : Math.max(0, (request.completedAt - request.startedAt) / 1e3);
 				return (0, react_jsx_runtime.jsxs)("dl", {
 					className: TrajectoryTable_module_css_default.overview,
 					children: [
-						(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Started" }), (0, react_jsx_runtime.jsx)(StartedAtValue, { timestamp: request.startedAt })] }),
-						(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Duration" }), (0, react_jsx_runtime.jsx)("dd", { children: formatElapsedSeconds(duration) })] }),
-						(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Timing source" }), (0, react_jsx_runtime.jsx)("dd", { children: duration === null ? "Session timestamps (running)" : "Session timestamps" })] })
+						(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("timing.started") }), (0, react_jsx_runtime.jsx)(StartedAtValue, {
+							timestamp: request.startedAt,
+							t
+						})] }),
+						(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("timing.duration") }), (0, react_jsx_runtime.jsx)("dd", { children: formatElapsedSeconds(duration, t) })] }),
+						(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("timing.source") }), (0, react_jsx_runtime.jsx)("dd", { children: duration === null ? t("timing.sessionTimestampsRunning") : t("timing.sessionTimestamps") })] })
 					]
 				});
 			}
 			return (0, react_jsx_runtime.jsxs)("dl", {
 				className: TrajectoryTable_module_css_default.overview,
-				children: [(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Started" }), (0, react_jsx_runtime.jsx)(StartedAtValue, { timestamp: anchor?.cell.startedAt ?? null })] }), (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Duration" }), (0, react_jsx_runtime.jsx)("dd", { children: formatElapsedSeconds(null) })] })]
+				children: [(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("timing.started") }), (0, react_jsx_runtime.jsx)(StartedAtValue, {
+					timestamp: anchor?.cell.startedAt ?? null,
+					t
+				})] }), (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("timing.duration") }), (0, react_jsx_runtime.jsx)("dd", { children: formatElapsedSeconds(null, t) })] })]
 			});
 		}
-		function RecordPayload({ record, direction, preview = false }) {
+		function RecordPayload({ record, direction, preview = false, renderImages, t }) {
 			const value = direction === "input" ? record.cell.inputDetail : record.cell.outputDetail;
-			const missing = direction === "input" ? "No payload captured" : "No result captured";
+			const missing = direction === "input" ? t("record.noPayload") : t("record.noResult");
 			if (!value) return (0, react_jsx_runtime.jsx)("p", {
 				className: TrajectoryTable_module_css_default.noPayload,
 				children: missing
@@ -4176,21 +4843,28 @@ window.__ModuleLoader__.load({
 			const json = parseJsonContainer(value);
 			if (direction === "output" && record.cell.outputBlocks?.length === 1 && record.cell.outputBlocks[0]?.type === "text" && json !== void 0) return (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.JsonTree, {
 				data: json,
-				label: "Result JSON",
+				label: t("record.resultJson"),
+				labels: jsonTreeLabels(t),
 				className: payloadClassName
 			});
-			if (direction === "output" && record.cell.outputBlocks?.some((block) => block.imageSrc !== void 0 || block.content !== "") === true) return (0, react_jsx_runtime.jsx)(ToolOutputBlocks, {
+			if (direction === "output" && record.cell.outputBlocks?.some((block) => block.attachment !== void 0 || block.content !== "") === true) return (0, react_jsx_runtime.jsx)(ToolOutputBlocks, {
 				blocks: record.cell.outputBlocks,
 				error,
-				preview
+				errorDetail: error ? value : void 0,
+				preview,
+				renderImages
 			});
 			if (direction === "input" && (record.cell.kind === "user" || record.cell.kind === "context") || direction === "output" && record.cell.kind === "message") return (0, react_jsx_runtime.jsx)("div", {
 				className: [preview ? TrajectoryTable_module_css_default.markdownPreview : TrajectoryTable_module_css_default.markdownPayload, error ? TrajectoryTable_module_css_default.errorPayload : void 0].filter((className) => className !== void 0).join(" "),
-				children: (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.MarkdownText, { text: value })
+				children: (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.MarkdownText, {
+					text: value,
+					labels: markdownLabels(t)
+				})
 			});
 			if (json !== void 0) return (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.JsonTree, {
 				data: json,
-				label: `${direction === "input" ? "Payload" : "Result"} JSON`,
+				label: t(direction === "input" ? "record.payloadJson" : "record.outputJson"),
+				labels: jsonTreeLabels(t),
 				className: payloadClassName
 			});
 			return (0, react_jsx_runtime.jsx)("pre", {
@@ -4198,15 +4872,15 @@ window.__ModuleLoader__.load({
 					TrajectoryTable_module_css_default.payload,
 					preview ? TrajectoryTable_module_css_default.payloadPreview : void 0,
 					error ? TrajectoryTable_module_css_default.errorPayload : void 0,
-					value === "No output" ? TrajectoryTable_module_css_default.noOutputText : void 0
+					value === t("record.noOutput") ? TrajectoryTable_module_css_default.noOutputText : void 0
 				].filter((value) => value !== void 0).join(" "),
 				children: value
 			});
 		}
-		function RecordSchema({ record, preview = false }) {
+		function RecordSchema({ record, preview = false, t }) {
 			if (!record.cell.schemaDetail) return (0, react_jsx_runtime.jsx)("p", {
 				className: TrajectoryTable_module_css_default.noPayload,
-				children: "Schema unavailable"
+				children: t("record.schemaUnavailable")
 			});
 			const schema = parseToolSchema(record.cell.schemaDetail);
 			if (schema !== void 0) return (0, react_jsx_runtime.jsxs)("div", {
@@ -4224,10 +4898,11 @@ window.__ModuleLoader__.load({
 					className: TrajectoryTable_module_css_default.schemaParameters,
 					children: [(0, react_jsx_runtime.jsx)("h4", {
 						className: TrajectoryTable_module_css_default.schemaParametersTitle,
-						children: "Parameters"
+						children: t("record.parameters")
 					}), (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.JsonTree, {
 						data: schema.parameters,
-						label: `${schema.name} parameters JSON`,
+						label: t("record.namedParametersJson", { name: schema.name }),
+						labels: jsonTreeLabels(t),
 						className: TrajectoryTable_module_css_default.schemaTree
 					})]
 				})]
@@ -4287,7 +4962,7 @@ window.__ModuleLoader__.load({
 		* @param props - Grouped trajectory data and whole-ledger fold state.
 		* @returns The ledger and an optional local record inspector.
 		*/
-		function TrajectoryTable({ requestNumbers: sessionRequestNumbers, turns, streamingCells = [], timelineFocusIndexes = null, searchMatchIndexes = null, onSelectedIndexChange, onRecordSelect, recordSelection = null, recordFocus = null, historyLoading = false, olderHistoryLoading = false, historyStartSeq, hasOlderRecords = false, onLoadOlder, onClearSelection, collapsedTurns, onToggleTurn, collapsedAssistants, onToggleAssistant, inspectCallId = null, onInspectApplied }) {
+		function TrajectoryTable({ t, renderImages, requestNumbers: sessionRequestNumbers, turns, streamingCells = [], timelineFocusIndexes = null, searchMatchIndexes = null, onSelectedIndexChange, onRecordSelect, recordSelection = null, recordFocus = null, historyLoading = false, olderHistoryLoading = false, historyStartSeq, hasOlderRecords = false, onLoadOlder, onClearSelection, collapsedTurns, onToggleTurn, collapsedAssistants, onToggleAssistant, inspectCallId = null, onInspectApplied }) {
 			const [selectedRecordId, setSelectedRecordId] = (0, react.useState)(null);
 			const [selectedRequest, setSelectedRequest] = (0, react.useState)(null);
 			const [activeTab, setActiveTab] = (0, react.useState)("overview");
@@ -4322,21 +4997,20 @@ window.__ModuleLoader__.load({
 			(0, react.useEffect)(() => {
 				onSelectedIndexChange?.(selectedIndex);
 			}, [onSelectedIndexChange, selectedIndex]);
-			const requestBoundaries = (0, react.useMemo)(() => indexRequestBoundaries(allRecords), [allRecords]);
-			const requestNumbers = (0, react.useMemo)(() => indexRequestNumbers(allRecords, sessionRequestNumbers, requestBoundaries), [
-				allRecords,
-				requestBoundaries,
-				sessionRequestNumbers
-			]);
+			const requestGroups = (0, react.useMemo)(() => new Set((sessionRequestNumbers ?? []).map((request) => requestKey(request.turn, request.group))), [sessionRequestNumbers]);
+			const requestBoundaries = (0, react.useMemo)(() => indexRequestBoundaries(allRecords, requestGroups), [allRecords, requestGroups]);
+			const requestNumbers = (0, react.useMemo)(() => indexRequestNumbers(sessionRequestNumbers), [sessionRequestNumbers]);
 			const records = (0, react.useMemo)(() => {
 				if (searchMatchIndexes !== null) return filterRecords(allRecords, searchMatchIndexes);
-				const turnRecords = collapsedTurns.size === 0 ? allRecords : collapseTurnRecords(allRecords, collapsedTurns);
-				return collapsedAssistants.size === 0 ? turnRecords : collapseAssistantRecords(turnRecords, collapsedAssistants);
+				const turnRecords = collapsedTurns.size === 0 ? allRecords : collapseTurnRecords(allRecords, collapsedTurns, requestGroups, t);
+				return collapsedAssistants.size === 0 ? turnRecords : collapseAssistantRecords(turnRecords, collapsedAssistants, t);
 			}, [
 				allRecords,
 				collapsedAssistants,
 				collapsedTurns,
-				searchMatchIndexes
+				requestGroups,
+				searchMatchIndexes,
+				t
 			]);
 			const projectedVirtualRows = (0, react.useMemo)(() => groupTrajectoryVirtualRows(records), [records]);
 			const virtualRowStructure = useStableVirtualRowStructure(projectedVirtualRows);
@@ -4381,17 +5055,17 @@ window.__ModuleLoader__.load({
 				position,
 				terminalRequestBoundary: record.cell.requestOnly === true && position === records.length - 1
 			}));
-			const requestBoundaryRuns = (0, react.useMemo)(() => indexRequestBoundaryRuns(records), [records]);
+			const requestBoundaryRuns = (0, react.useMemo)(() => indexRequestBoundaryRuns(records, requestGroups), [records, requestGroups]);
 			const selectedPrompt = selected?.cell.kind === "system" ? selected.cell.promptDetail : void 0;
 			const selectedPreviousPrompt = selected?.cell.kind === "system" ? selected.cell.previousPromptDetail : void 0;
 			const promptSelected = selectedPrompt !== void 0;
 			const selectedState = selected === void 0 ? void 0 : stateOf(selected);
-			const selectedRequestRecords = (0, react.useMemo)(() => selectedRequest === null ? [] : allRecords.filter((record) => record.turn === selectedRequest.turn && record.group === selectedRequest.group), [allRecords, selectedRequest]).map(currentRecord);
+			const selectedRequestInfo = selectedRequest === null ? void 0 : sessionRequestNumbers?.find((request) => requestIdentity(request) === selectedRequest.identity);
+			const selectedRequestRecords = (0, react.useMemo)(() => selectedRequestInfo === void 0 ? [] : allRecords.filter((record) => record.turn === selectedRequestInfo.turn && record.group === selectedRequestInfo.group), [allRecords, selectedRequestInfo]).map(currentRecord);
 			const selectedRequestAssistant = selectedRequestRecords.find((record) => record.cell.kind === "message");
 			const selectedRequestAnchor = selectedRequestAssistant ?? selectedRequestRecords[0];
-			const selectedRequestNumber = selectedRequest === null ? void 0 : requestNumbers.get(requestKey(selectedRequest.turn, selectedRequest.group));
-			const selectedRequestInfo = selectedRequest === null ? void 0 : sessionRequestNumbers?.find((request) => selectedRequest.seq === void 0 ? request.turn === selectedRequest.turn && request.group === selectedRequest.group : request.seq === selectedRequest.seq);
-			const selectedRequestState = selectedRequest === null ? void 0 : selectedRequestInfo?.status ?? (selectedRequestAssistant?.cell.assistantMetrics?.completedTime === null ? "running" : selectedRequestAssistant === void 0 && selectedRequestRecords.some((record) => stateOf(record) === "running") ? "running" : "complete");
+			const selectedRequestNumber = selectedRequestInfo?.number;
+			const selectedRequestState = selectedRequestInfo === void 0 ? void 0 : selectedRequestInfo.status ?? (selectedRequestAssistant?.cell.assistantMetrics?.completedTime === null ? "running" : selectedRequestAssistant === void 0 && selectedRequestRecords.some((record) => stateOf(record) === "running") ? "running" : "complete");
 			const selectedRequestToolCalls = selectedRequestRecords.filter((record) => record.cell.kind === "tool").length;
 			const selectedRequestSubtoolCalls = selectedRequestRecords.filter((record) => record.cell.kind === "subtool").length;
 			const selectedRequestResultTemplate = selectedRequestInfo?.resultSeq === void 0 ? selectedRequestAssistant : allRecords.find((record) => record.cell.sourceSeq === selectedRequestInfo.resultSeq);
@@ -4405,19 +5079,15 @@ window.__ModuleLoader__.load({
 			});
 			const selectedRequestCumulativeUsage = selectedRequestInfo?.cumulativeUsage ?? selectedRequestUsage;
 			const selectedRequestOptions = selectedRequestInfo?.requestConfig;
-			const activeTurn = selectedRequest === null ? selected?.turn : selectedRequest.turn;
-			const activeSection = selectedRequest === null ? selected?.section : selectedRequestRecords[0]?.section;
-			const selectedTabs = selectedRequest !== null ? REQUEST_TABS.filter((tab) => tab.id !== "options" || selectedRequestOptions !== void 0) : selected === void 0 ? [] : detailTabs(selected);
+			const activeTurn = selectedRequestInfo === void 0 ? selected?.turn : selectedRequestInfo.turn;
+			const activeSection = selectedRequestInfo === void 0 ? selected?.section : selectedRequestRecords[0]?.section;
+			const selectedTabs = selectedRequestInfo !== void 0 ? REQUEST_TABS.filter((tab) => tab.id !== "options" || selectedRequestOptions !== void 0) : selected === void 0 ? [] : detailTabs(selected);
 			const selectedParents = selected === void 0 ? {} : parentRecords(allRecords, selected);
 			const selectedParentMessage = selectedParents.message;
 			const selectedParentTool = selectedParents.tool;
 			const selectedAssistantRequest = selected?.cell.kind === "message" ? requestNumbers.get(requestKey(selected.turn, selected.group)) : void 0;
 			const selectedAssistantRequestInfo = selectedAssistantRequest === void 0 ? void 0 : sessionRequestNumbers?.find((request) => request.number === selectedAssistantRequest);
-			const selectedAssistantRequestTarget = selected !== void 0 && selectedAssistantRequest !== void 0 ? {
-				turn: selected.turn,
-				group: selected.group,
-				...selectedAssistantRequestInfo?.seq === void 0 ? {} : { seq: selectedAssistantRequestInfo.seq }
-			} : void 0;
+			const selectedAssistantRequestTarget = selectedAssistantRequestInfo === void 0 ? void 0 : { identity: requestIdentity(selectedAssistantRequestInfo) };
 			const hasSelectedHierarchy = selectedAssistantRequestTarget !== void 0 || selectedParents.message !== void 0 || selectedParents.tool !== void 0;
 			const splitStyle = toolRequestOffset === null ? void 0 : { "--trajectory-tool-request-width": `calc(58cqw - ${toolRequestOffset}px)` };
 			const activateTab = (tab) => {
@@ -4656,7 +5326,7 @@ window.__ModuleLoader__.load({
 							children: [(0, react_jsx_runtime.jsx)("span", {
 								className: TrajectoryTable_module_css_default.historyLoadingSpinner,
 								"aria-hidden": "true"
-							}), "Loading trajectory…"]
+							}), t("history.loadingTrajectory")]
 						})
 					}), (0, react_jsx_runtime.jsxs)("table", {
 						className: TrajectoryTable_module_css_default.table,
@@ -4673,7 +5343,7 @@ window.__ModuleLoader__.load({
 										type: "button",
 										className: TrajectoryTable_module_css_default.historyLoadButton,
 										disabled: olderBusy || onLoadOlder === void 0,
-										"aria-label": olderBusy ? "Loading earlier history…" : "Load earlier history",
+										"aria-label": olderBusy ? t("history.loadingEarlierAria") : t("history.loadEarlier"),
 										onClick: () => {
 											const pane = tablePaneRef.current;
 											if (pane !== null) requestOlder(pane, false);
@@ -4685,13 +5355,13 @@ window.__ModuleLoader__.load({
 											}),
 											(0, react_jsx_runtime.jsx)("span", {
 												"aria-hidden": "true",
-												children: olderBusy ? "Loading earlier history…" : "Load earlier history"
+												children: olderBusy ? t("history.loadingEarlier") : t("history.loadEarlier")
 											}),
 											(0, react_jsx_runtime.jsx)("span", {
 												className: TrajectoryTable_module_css_default.visuallyHidden,
 												role: "status",
 												"aria-live": "polite",
-												children: olderBusy ? "Loading earlier history…" : ""
+												children: olderBusy ? t("history.loadingEarlier") : ""
 											})
 										]
 									})
@@ -4708,6 +5378,7 @@ window.__ModuleLoader__.load({
 							}),
 							renderedRecords.map(({ record, position, terminalRequestBoundary }) => (0, react_jsx_runtime.jsx)(RecordPresentation, {
 								cell: record.cell,
+								t,
 								children: ({ displayText, listDisplayText, resultText, toolCallOnly, toolCallText }) => {
 									const isCollapsedSummary = record.collapsedSummary !== void 0;
 									const isRequestOnly = record.cell.requestOnly === true;
@@ -4718,13 +5389,20 @@ window.__ModuleLoader__.load({
 									const requestStatus = requestInfo?.status ?? (record.cell.isError === true ? "error" : void 0);
 									const requestRunIndex = requestBoundaryRuns.get(record.cell.index) ?? 0;
 									const requestBoundaryStyle = { "--request-boundary-offset": `${requestRunIndex * 8}px` };
-									const requestLabel = request === void 0 ? void 0 : `Request #${request}${requestInfo?.purpose === "compaction" ? " · Compaction" : ""}`;
-									const requestSelected = request !== void 0 && selectedRequest?.turn === record.turn && selectedRequest.group === record.group;
+									const requestLabel = request === void 0 ? void 0 : t(requestInfo?.purpose === "compaction" ? "request.labelCompaction" : "request.label", { request });
+									const requestSelected = requestInfo !== void 0 && selectedRequest?.identity === requestIdentity(requestInfo);
 									const sectionActive = record.turn === null ? activeSection === record.section : activeTurn === record.turn;
 									return (0, react_jsx_runtime.jsxs)("tr", {
 										tabIndex: isRequestOnly ? -1 : 0,
 										"aria-rowindex": position + 1 + historyRowOffset,
-										"aria-label": isCollapsedSummary ? `Collapsed ${record.collapsedSummaryKind} summary, ${record.collapsedSummary}` : isRequestOnly ? `Request ${request ?? ""}, compaction` : `${request === void 0 ? "" : `Request ${request}, `}${KIND_LABEL[record.cell.kind]}, ${listDisplayText || "no content"}`,
+										"aria-label": isCollapsedSummary ? t("request.collapsedSummary", {
+											kind: t(record.collapsedSummaryKind === "turn" ? "request.collapsedTurn" : "request.collapsedAssistant"),
+											summary: record.collapsedSummary
+										}) : isRequestOnly ? t("request.rowAriaCompaction", { request: request ?? "" }) : t("request.rowAria", {
+											request: request === void 0 ? "" : t("request.rowPrefix", { request }),
+											kind: t(KIND_LABEL_KEY[record.cell.kind]),
+											content: listDisplayText || t("request.noContent")
+										}),
 										"aria-selected": !isCollapsedSummary && !isRequestOnly && selectedIndex === record.cell.index,
 										"data-kind": record.cell.kind,
 										"data-trajectory-row-key": trajectoryVirtualRecordKey(record),
@@ -4789,11 +5467,7 @@ window.__ModuleLoader__.load({
 													style: requestBoundaryStyle,
 													onClick: (event) => {
 														event.stopPropagation();
-														selectRequest({
-															turn: record.turn,
-															group: record.group,
-															...requestInfo?.seq === void 0 ? {} : { seq: requestInfo.seq }
-														});
+														if (requestInfo !== void 0) selectRequest({ identity: requestIdentity(requestInfo) });
 													},
 													onDoubleClick: (event) => {
 														event.stopPropagation();
@@ -4809,11 +5483,11 @@ window.__ModuleLoader__.load({
 												}),
 												!isCollapsedSummary && !isRequestOnly && record.turnStart && (0, react_jsx_runtime.jsx)("span", {
 													className: sectionActive ? `${TrajectoryTable_module_css_default.turnLabel} ${TrajectoryTable_module_css_default.turnLabelActive}` : TrajectoryTable_module_css_default.turnLabel,
-													"aria-label": sectionLabel(record.turn),
-													children: record.turn === null ? sectionLabel(record.turn) : (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)("span", {
+													"aria-label": sectionLabel(record.turn, t),
+													children: record.turn === null ? sectionLabel(record.turn, t) : (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)("span", {
 														className: TrajectoryTable_module_css_default.turnLabelFull,
 														"aria-hidden": "true",
-														children: sectionLabel(record.turn)
+														children: sectionLabel(record.turn, t)
 													}), (0, react_jsx_runtime.jsxs)("span", {
 														className: TrajectoryTable_module_css_default.turnLabelCompact,
 														"aria-hidden": "true",
@@ -4828,7 +5502,7 @@ window.__ModuleLoader__.load({
 															className: `${TrajectoryTable_module_css_default.kindTag} ${record.cell.kind === "system" ? TrajectoryTable_module_css_default.systemNeutral : record.cell.kind === "context" ? TrajectoryTable_module_css_default.contextGreen : record.cell.kind === "compacted" ? TrajectoryTable_module_css_default.compacted : record.cell.kind === "tool" ? TrajectoryTable_module_css_default.toolAmber : record.cell.kind === "message" ? TrajectoryTable_module_css_default.assistantVioletBright : record.cell.kind === "subtool" ? TrajectoryTable_module_css_default.subtoolAmber : TrajectoryTable_module_css_default[record.cell.kind]}`,
 															"data-role-kind": record.cell.kind,
 															children: [(0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
-																label: KIND_LABEL[record.cell.kind],
+																label: t(KIND_LABEL_KEY[record.cell.kind]),
 																side: "right",
 																children: (0, react_jsx_runtime.jsx)("span", {
 																	className: TrajectoryTable_module_css_default.kindTagIcon,
@@ -4837,7 +5511,7 @@ window.__ModuleLoader__.load({
 																})
 															}), (0, react_jsx_runtime.jsx)("span", {
 																className: TrajectoryTable_module_css_default.kindTagLabel,
-																children: KIND_LABEL[record.cell.kind]
+																children: t(KIND_LABEL_KEY[record.cell.kind])
 															})]
 														})
 													})
@@ -4863,7 +5537,8 @@ window.__ModuleLoader__.load({
 													children: (0, react_jsx_runtime.jsx)(RecordListText, {
 														displayText,
 														toolCallOnly,
-														toolCallText
+														toolCallText,
+														t
 													})
 												}), resultText !== void 0 && (0, react_jsx_runtime.jsxs)("span", {
 													className: record.cell.isError ? `${TrajectoryTable_module_css_default.inlineResult} ${TrajectoryTable_module_css_default.error}` : TrajectoryTable_module_css_default.inlineResult,
@@ -4871,7 +5546,7 @@ window.__ModuleLoader__.load({
 														className: TrajectoryTable_module_css_default.arrow,
 														children: "→"
 													}), (0, react_jsx_runtime.jsx)("span", {
-														className: resultText === "No output" ? `${TrajectoryTable_module_css_default.inlineResultText} ${TrajectoryTable_module_css_default.noOutputText}` : TrajectoryTable_module_css_default.inlineResultText,
+														className: resultText === t("record.noOutput") ? `${TrajectoryTable_module_css_default.inlineResultText} ${TrajectoryTable_module_css_default.noOutputText}` : TrajectoryTable_module_css_default.inlineResultText,
 														children: resultText
 													})]
 												})]
@@ -4891,19 +5566,19 @@ window.__ModuleLoader__.load({
 							})
 						] })]
 					})]
-				}), (selectedRequest !== null || promptSelected || selected !== void 0 && selectedState !== void 0) && (0, react_jsx_runtime.jsxs)("aside", {
+				}), (selectedRequestInfo !== void 0 || promptSelected || selected !== void 0 && selectedState !== void 0) && (0, react_jsx_runtime.jsxs)("aside", {
 					className: TrajectoryTable_module_css_default.details,
-					"aria-label": "Event details",
+					"aria-label": t("details.event"),
 					style: detailsWidth === null ? void 0 : { width: detailsWidth },
 					children: [
 						(0, react_jsx_runtime.jsx)("div", {
 							className: TrajectoryTable_module_css_default.detailsResizeHandle,
 							role: "separator",
-							"aria-label": "Resize event details",
+							"aria-label": t("details.resize"),
 							"aria-controls": "trajectory-detail-panel",
 							"aria-orientation": "vertical",
 							tabIndex: 0,
-							title: "Drag to resize. Double-click to reset.",
+							title: t("details.resizeTitle"),
 							onDoubleClick: () => {
 								setDetailsWidth(null);
 								setToolRequestOffset(null);
@@ -4960,36 +5635,36 @@ window.__ModuleLoader__.load({
 							className: TrajectoryTable_module_css_default.detailsHeader,
 							children: [(0, react_jsx_runtime.jsx)("div", {
 								className: TrajectoryTable_module_css_default.detailsTitle,
-								children: selectedRequest !== null ? (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+								children: selectedRequestInfo !== void 0 ? (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 									(0, react_jsx_runtime.jsx)("span", {
 										className: TrajectoryTable_module_css_default.requestDetailsDot,
 										"aria-hidden": "true"
 									}),
-									(0, react_jsx_runtime.jsxs)("span", {
+									(0, react_jsx_runtime.jsx)("span", {
 										className: TrajectoryTable_module_css_default.requestDetailsName,
-										children: ["Request #", selectedRequestNumber ?? "—"]
+										children: t("request.label", { request: selectedRequestNumber ?? "—" })
 									}),
 									(0, react_jsx_runtime.jsx)("span", {
 										className: TrajectoryTable_module_css_default.detailsLocation,
-										children: selectedRequestInfo?.purpose === "compaction" ? `Compaction · ${sectionLabel(selectedRequest.turn)}` : sectionLabel(selectedRequest.turn)
+										children: selectedRequestInfo.purpose === "compaction" ? t("request.compaction", { section: sectionLabel(selectedRequestInfo.turn, t) }) : sectionLabel(selectedRequestInfo.turn, t)
 									})
 								] }) : promptSelected ? (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)("span", {
 									className: `${TrajectoryTable_module_css_default.kindTag} ${TrajectoryTable_module_css_default.systemNeutral}`,
-									children: "SYSTEM"
+									children: t("kind.system")
 								}), (0, react_jsx_runtime.jsx)("span", {
 									className: TrajectoryTable_module_css_default.detailsLocation,
 									children: selected?.cell.text
 								})] }) : selected !== void 0 && (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)("span", {
 									className: `${TrajectoryTable_module_css_default.kindTag} ${selected.cell.kind === "context" ? TrajectoryTable_module_css_default.contextGreen : selected.cell.kind === "compacted" ? TrajectoryTable_module_css_default.compacted : selected.cell.kind === "tool" ? TrajectoryTable_module_css_default.toolAmber : selected.cell.kind === "message" ? TrajectoryTable_module_css_default.assistantVioletBright : selected.cell.kind === "subtool" ? TrajectoryTable_module_css_default.subtoolAmber : TrajectoryTable_module_css_default[selected.cell.kind]}`,
-									children: KIND_LABEL[selected.cell.kind]
+									children: t(KIND_LABEL_KEY[selected.cell.kind])
 								}), (0, react_jsx_runtime.jsx)("span", {
 									className: TrajectoryTable_module_css_default.detailsLocation,
-									children: selected.cell.kind === "compacted" ? sectionLabel(selected.turn) : `${sectionLabel(selected.turn)} · ${selected.group}`
+									children: selected.cell.kind === "compacted" ? sectionLabel(selected.turn, t) : `${sectionLabel(selected.turn, t)} · ${selected.group}`
 								})] })
 							}), (0, react_jsx_runtime.jsx)("button", {
 								type: "button",
 								className: TrajectoryTable_module_css_default.close,
-								"aria-label": "Close details",
+								"aria-label": t("details.close"),
 								onClick: clearInspectorSelection,
 								children: (0, react_jsx_runtime.jsx)("span", {
 									"aria-hidden": "true",
@@ -5000,7 +5675,7 @@ window.__ModuleLoader__.load({
 						(0, react_jsx_runtime.jsx)("div", {
 							className: TrajectoryTable_module_css_default.detailTabs,
 							role: "tablist",
-							"aria-label": "Event details",
+							"aria-label": t("details.event"),
 							children: selectedTabs.map((tab) => (0, react_jsx_runtime.jsx)("button", {
 								id: `trajectory-detail-${tab.id}`,
 								type: "button",
@@ -5011,7 +5686,7 @@ window.__ModuleLoader__.load({
 								onClick: () => {
 									activateTab(tab.id);
 								},
-								children: tab.label
+								children: t(tab.labelKey)
 							}, tab.id))
 						}),
 						(0, react_jsx_runtime.jsxs)("div", {
@@ -5020,30 +5695,33 @@ window.__ModuleLoader__.load({
 							role: "tabpanel",
 							"aria-labelledby": `trajectory-detail-${activeTab}`,
 							children: [
-								selectedRequest !== null && selectedRequestState !== void 0 && activeTab === "overview" && (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsxs)("dl", {
+								selectedRequestInfo !== void 0 && selectedRequestState !== void 0 && activeTab === "overview" && (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsxs)("dl", {
 									className: `${TrajectoryTable_module_css_default.overview} ${TrajectoryTable_module_css_default.summaryScrollRegion}`,
 									"data-summary-scroll-region": "",
 									children: [
-										(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Status" }), (0, react_jsx_runtime.jsx)("dd", {
+										(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("details.status") }), (0, react_jsx_runtime.jsx)("dd", {
 											className: selectedRequestState === "error" ? TrajectoryTable_module_css_default.error : void 0,
-											children: statusLabel(selectedRequestState)
+											children: statusLabel(selectedRequestState, t)
 										})] }),
-										selectedRequestInfo?.purpose === "compaction" && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Purpose" }), (0, react_jsx_runtime.jsx)("dd", { children: "Compaction" })] }),
-										(selectedRequestInfo?.provider ?? selectedRequestInfo?.requestConfig?.provider) !== void 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Provider" }), (0, react_jsx_runtime.jsx)("dd", { children: selectedRequestInfo?.provider ?? selectedRequestInfo?.requestConfig?.provider })] }),
-										(selectedRequestInfo?.model ?? selectedRequestInfo?.requestConfig?.model) !== void 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Model" }), (0, react_jsx_runtime.jsx)("dd", { children: selectedRequestInfo?.model ?? selectedRequestInfo?.requestConfig?.model })] }),
-										(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Tool calls" }), (0, react_jsx_runtime.jsx)("dd", { children: selectedRequestToolCalls })] }),
-										selectedRequestSubtoolCalls > 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Subtool calls" }), (0, react_jsx_runtime.jsx)("dd", { children: selectedRequestSubtoolCalls })] }),
-										selectedRequestInfo?.error !== void 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Error" }), (0, react_jsx_runtime.jsx)("dd", {
+										selectedRequestInfo.purpose === "compaction" && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("details.purpose") }), (0, react_jsx_runtime.jsx)("dd", { children: t("request.compactionPurpose") })] }),
+										(selectedRequestInfo.provider ?? selectedRequestInfo.requestConfig?.provider) !== void 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("details.provider") }), (0, react_jsx_runtime.jsx)("dd", { children: selectedRequestInfo.provider ?? selectedRequestInfo.requestConfig?.provider })] }),
+										(selectedRequestInfo.model ?? selectedRequestInfo.requestConfig?.model) !== void 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("details.model") }), (0, react_jsx_runtime.jsx)("dd", { children: selectedRequestInfo.model ?? selectedRequestInfo.requestConfig?.model })] }),
+										(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("details.toolCalls") }), (0, react_jsx_runtime.jsx)("dd", { children: selectedRequestToolCalls })] }),
+										selectedRequestSubtoolCalls > 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("details.subtoolCalls") }), (0, react_jsx_runtime.jsx)("dd", { children: selectedRequestSubtoolCalls })] }),
+										selectedRequestInfo.error !== void 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("details.error") }), (0, react_jsx_runtime.jsx)("dd", {
 											className: TrajectoryTable_module_css_default.error,
-											children: selectedRequestInfo.error
+											children: requestErrorMessage(selectedRequestInfo, t)
 										})] }),
-										selectedRequestInfo?.retry !== void 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Retry" }), (0, react_jsx_runtime.jsxs)("dd", { children: [
-											"Scheduled ",
-											selectedRequestInfo.retry,
-											selectedRequestInfo.maxRetries === void 0 ? "" : ` of ${selectedRequestInfo.maxRetries}`
+										selectedRequestInfo.retry !== void 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("details.retry") }), (0, react_jsx_runtime.jsxs)("dd", { children: [
+											t("details.scheduled"),
+											" ",
+											selectedRequestInfo.maxRetries === void 0 ? selectedRequestInfo.retry : t("request.retryProgress", {
+												retry: selectedRequestInfo.retry,
+												maximum: selectedRequestInfo.maxRetries
+											})
 										] })] }),
-										selectedRequestInfo?.retryDelayMs !== void 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Retry delay" }), (0, react_jsx_runtime.jsx)("dd", { children: formatDurationMs(selectedRequestInfo.retryDelayMs) })] }),
-										selectedRequestResult !== void 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Result" }), (0, react_jsx_runtime.jsx)("dd", {
+										selectedRequestInfo.retryDelayMs !== void 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("details.retryDelay") }), (0, react_jsx_runtime.jsx)("dd", { children: formatDurationMs(selectedRequestInfo.retryDelayMs, t) })] }),
+										selectedRequestResult !== void 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("details.result") }), (0, react_jsx_runtime.jsx)("dd", {
 											className: TrajectoryTable_module_css_default.overviewParentLinks,
 											children: (0, react_jsx_runtime.jsxs)("button", {
 												type: "button",
@@ -5051,7 +5729,7 @@ window.__ModuleLoader__.load({
 												onClick: () => {
 													openRecordSummary(selectedRequestResult);
 												},
-												children: [(0, react_jsx_runtime.jsx)("span", { children: selectedRequestInfo?.purpose === "compaction" ? "Compacted" : "Assistant Message" }), (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronRightOutline14, {
+												children: [(0, react_jsx_runtime.jsx)("span", { children: selectedRequestInfo.purpose === "compaction" ? t("details.compacted") : t("details.assistantMessage") }), (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronRightOutline14, {
 													className: TrajectoryTable_module_css_default.overviewHierarchyJumpIconTight,
 													size: 11
 												})]
@@ -5062,84 +5740,103 @@ window.__ModuleLoader__.load({
 									className: TrajectoryTable_module_css_default.overviewSections,
 									children: [
 										selectedRequestOptions !== void 0 && (0, react_jsx_runtime.jsx)(OverviewSection, {
-											label: "Options",
+											label: t("tab.options"),
 											onOpen: () => {
 												activateTab("options");
 											},
 											children: (0, react_jsx_runtime.jsx)(RequestOptions, {
 												options: selectedRequestOptions,
-												preview: true
+												preview: true,
+												t
 											})
 										}),
 										(0, react_jsx_runtime.jsx)(OverviewSection, {
-											label: "Usage",
+											label: t("tab.usage"),
 											onOpen: () => {
 												activateTab("usage");
 											},
-											children: (0, react_jsx_runtime.jsx)(UsageRows, { usage: selectedRequestUsage })
+											children: (0, react_jsx_runtime.jsx)(UsageRows, {
+												usage: selectedRequestUsage,
+												t
+											})
 										}),
 										(0, react_jsx_runtime.jsx)(OverviewSection, {
-											label: "Timing",
+											label: t("tab.timing"),
 											onOpen: () => {
 												activateTab("timing");
 											},
 											children: (0, react_jsx_runtime.jsx)(RequestTiming, {
 												assistant: selectedRequestAssistant,
 												anchor: selectedRequestAnchor,
-												request: selectedRequestInfo
+												request: selectedRequestInfo,
+												t
 											})
 										})
 									]
 								})] }),
-								selectedRequest !== null && activeTab === "options" && (0, react_jsx_runtime.jsx)(RequestOptions, { options: selectedRequestOptions }),
-								selectedRequest !== null && activeTab === "usage" && (0, react_jsx_runtime.jsx)(RequestUsagePanel, {
-									usage: selectedRequestUsage,
-									cumulative: selectedRequestCumulativeUsage
+								selectedRequestInfo !== void 0 && activeTab === "options" && (0, react_jsx_runtime.jsx)(RequestOptions, {
+									options: selectedRequestOptions,
+									t
 								}),
-								selectedRequest !== null && activeTab === "timing" && (0, react_jsx_runtime.jsx)(RequestTiming, {
+								selectedRequestInfo !== void 0 && activeTab === "usage" && (0, react_jsx_runtime.jsx)(RequestUsagePanel, {
+									usage: selectedRequestUsage,
+									cumulative: selectedRequestCumulativeUsage,
+									t
+								}),
+								selectedRequestInfo !== void 0 && activeTab === "timing" && (0, react_jsx_runtime.jsx)(RequestTiming, {
 									assistant: selectedRequestAssistant,
 									anchor: selectedRequestAnchor,
-									request: selectedRequestInfo
+									request: selectedRequestInfo,
+									t
 								}),
 								promptSelected && selectedPreviousPrompt !== void 0 && activeTab === "diff" && (0, react_jsx_runtime.jsx)(SystemPromptDiff, {
 									before: selectedPreviousPrompt,
-									after: selectedPrompt
+									after: selectedPrompt,
+									t
 								}),
 								promptSelected && activeTab === "system-prompt" && (selectedPrompt.system === "" ? (0, react_jsx_runtime.jsx)("p", {
 									className: TrajectoryTable_module_css_default.noPayload,
-									children: "No system prompt in this request"
+									children: t("record.systemPromptMissing")
 								}) : (0, react_jsx_runtime.jsx)("div", {
 									className: `${TrajectoryTable_module_css_default.markdownPayload} ${TrajectoryTable_module_css_default.systemPrompt}`,
-									children: (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.MarkdownText, { text: selectedPrompt.system })
+									children: (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.MarkdownText, {
+										text: selectedPrompt.system,
+										labels: markdownLabels(t)
+									})
 								})),
-								promptSelected && activeTab === "tools" && (0, react_jsx_runtime.jsx)(ToolCatalog, { tools: selectedPrompt.tools }),
+								promptSelected && activeTab === "tools" && (0, react_jsx_runtime.jsx)(ToolCatalog, {
+									tools: selectedPrompt.tools,
+									t
+								}),
 								!promptSelected && selected?.cell.kind === "compacted" && selectedState !== void 0 && activeTab === "overview" && (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsxs)("dl", {
 									className: `${TrajectoryTable_module_css_default.overview} ${TrajectoryTable_module_css_default.summaryScrollRegion}`,
 									"data-summary-scroll-region": "",
 									children: [
-										(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Status" }), (0, react_jsx_runtime.jsx)("dd", {
+										(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("details.status") }), (0, react_jsx_runtime.jsx)("dd", {
 											className: selectedState === "error" ? TrajectoryTable_module_css_default.error : void 0,
-											children: statusLabel(selectedState)
+											children: statusLabel(selectedState, t)
 										})] }),
-										(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Duration" }), (0, react_jsx_runtime.jsx)("dd", { children: formatElapsedSeconds(selected.cell.timeSeconds) })] }),
-										(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Tokens" }), (0, react_jsx_runtime.jsx)("dd", { children: "—" })] })
+										(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("timing.duration") }), (0, react_jsx_runtime.jsx)("dd", { children: formatElapsedSeconds(selected.cell.timeSeconds, t) })] }),
+										(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("usage.tokens") }), (0, react_jsx_runtime.jsx)("dd", { children: "—" })] })
 									]
 								}), selected.cell.outputDetail !== void 0 && (0, react_jsx_runtime.jsx)("div", {
 									className: `${TrajectoryTable_module_css_default.compactedSummary} ${TrajectoryTable_module_css_default.summaryScrollRegion}`,
 									"data-summary-scroll-region": "",
 									children: (0, react_jsx_runtime.jsx)(MarkdownRecordContent, {
 										record: selected,
+										renderImages,
 										rendered: true,
 										thinkingExpanded,
 										onThinkingExpandedChange: setThinkingExpanded,
-										onOpenCall: openCallSummary
+										onOpenCall: openCallSummary,
+										t
 									})
 								})] }),
 								!promptSelected && selected !== void 0 && selected.cell.kind !== "compacted" && selectedState !== void 0 && activeTab === "overview" && (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsxs)("dl", {
 									className: `${TrajectoryTable_module_css_default.overview} ${TrajectoryTable_module_css_default.summaryScrollRegion}`,
 									"data-summary-scroll-region": "",
 									children: [
-										selected.cell.messageSource !== void 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Source" }), (0, react_jsx_runtime.jsx)("dd", {
+										selected.cell.messageSource !== void 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("details.source") }), (0, react_jsx_runtime.jsx)("dd", {
 											className: TrajectoryTable_module_css_default.overviewParentLinks,
 											children: (0, react_jsx_runtime.jsxs)("button", {
 												type: "button",
@@ -5147,13 +5844,13 @@ window.__ModuleLoader__.load({
 												onClick: () => {
 													activateTab("source");
 												},
-												children: [(0, react_jsx_runtime.jsx)("span", { children: messageSourceLabel(selected.cell.messageSource) }), (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronRightOutline14, {
+												children: [(0, react_jsx_runtime.jsx)("span", { children: messageSourceLabel(selected.cell.messageSource, t) }), (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronRightOutline14, {
 													className: TrajectoryTable_module_css_default.overviewHierarchyJumpIconTight,
 													size: 11
 												})]
 											})
 										})] }),
-										hasSelectedHierarchy && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: selectedAssistantRequestTarget !== void 0 ? "Source" : "Hierarchy" }), (0, react_jsx_runtime.jsxs)("dd", {
+										hasSelectedHierarchy && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: selectedAssistantRequestTarget !== void 0 ? t("details.source") : t("details.hierarchy") }), (0, react_jsx_runtime.jsxs)("dd", {
 											className: TrajectoryTable_module_css_default.overviewParentLinks,
 											children: [
 												selectedAssistantRequestTarget !== void 0 && (0, react_jsx_runtime.jsxs)("button", {
@@ -5162,7 +5859,7 @@ window.__ModuleLoader__.load({
 													onClick: () => {
 														selectRequest(selectedAssistantRequestTarget);
 													},
-													children: [(0, react_jsx_runtime.jsxs)("span", { children: ["Request #", selectedAssistantRequest ?? "—"] }), (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronRightOutline14, {
+													children: [(0, react_jsx_runtime.jsx)("span", { children: t("request.label", { request: selectedAssistantRequest ?? "—" }) }), (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronRightOutline14, {
 														className: TrajectoryTable_module_css_default.overviewHierarchyJumpIconTight,
 														size: 11
 													})]
@@ -5173,7 +5870,7 @@ window.__ModuleLoader__.load({
 													onClick: () => {
 														openRecordSummary(selectedParentMessage);
 													},
-													children: [(0, react_jsx_runtime.jsx)("span", { children: "Assistant Message" }), (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronRightOutline14, {
+													children: [(0, react_jsx_runtime.jsx)("span", { children: t("details.assistantMessage") }), (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronRightOutline14, {
 														className: TrajectoryTable_module_css_default.overviewHierarchyJumpIconTight,
 														size: 11
 													})]
@@ -5184,111 +5881,144 @@ window.__ModuleLoader__.load({
 													onClick: () => {
 														openRecordSummary(selectedParentTool);
 													},
-													children: [(0, react_jsx_runtime.jsx)("span", { children: "Tool Call" }), (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronRightOutline14, {
+													children: [(0, react_jsx_runtime.jsx)("span", { children: t("details.toolCall") }), (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronRightOutline14, {
 														className: TrajectoryTable_module_css_default.overviewHierarchyJumpIconTight,
 														size: 11
 													})]
 												})
 											]
 										})] }),
-										(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Status" }), (0, react_jsx_runtime.jsx)("dd", {
+										(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("details.status") }), (0, react_jsx_runtime.jsx)("dd", {
 											className: selectedState === "error" ? TrajectoryTable_module_css_default.error : void 0,
-											children: statusLabel(selectedState)
+											children: statusLabel(selectedState, t)
 										})] }),
-										selected.cell.kind === "message" && (0, react_jsx_runtime.jsx)(TokenRows, { cell: selected.cell }),
-										(selected.cell.kind === "user" || selected.cell.kind === "context") && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: "Duration" }), (0, react_jsx_runtime.jsx)("dd", { children: formatElapsedSeconds(selected.cell.timeSeconds) })] })
+										selected.cell.kind === "message" && (0, react_jsx_runtime.jsx)(TokenRows, {
+											cell: selected.cell,
+											t
+										}),
+										(selected.cell.kind === "user" || selected.cell.kind === "context") && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("timing.duration") }), (0, react_jsx_runtime.jsx)("dd", { children: formatElapsedSeconds(selected.cell.timeSeconds, t) })] })
 									]
 								}), (0, react_jsx_runtime.jsxs)("div", {
 									className: TrajectoryTable_module_css_default.overviewSections,
 									children: [
 										isMarkdownRecord(selected) ? (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: (0, react_jsx_runtime.jsx)(OverviewSection, {
-											label: "Preview",
+											label: t("tab.preview"),
 											onOpen: () => {
 												activateTab("rendered");
 											},
 											children: (0, react_jsx_runtime.jsx)(MarkdownRecordContent, {
 												record: selected,
+												renderImages,
 												rendered: true,
 												preview: true,
 												thinkingExpanded,
 												onThinkingExpandedChange: setThinkingExpanded,
-												onOpenCall: openCallSummary
+												onOpenCall: openCallSummary,
+												t
 											})
 										}) }) : (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 											selected.cell.inputDetail && (0, react_jsx_runtime.jsx)(OverviewSection, {
-												label: "Payload",
+												label: t("tab.payload"),
 												onOpen: () => {
 													activateTab("input");
 												},
 												children: (0, react_jsx_runtime.jsx)(RecordPayload, {
 													record: selected,
 													direction: "input",
-													preview: true
+													preview: true,
+													renderImages,
+													t
 												})
 											}),
 											selected.cell.outputDetail && (0, react_jsx_runtime.jsx)(OverviewSection, {
-												label: "Result",
+												label: t("tab.result"),
 												onOpen: () => {
 													activateTab("output");
 												},
 												children: (0, react_jsx_runtime.jsx)(RecordPayload, {
 													record: selected,
 													direction: "output",
-													preview: true
+													preview: true,
+													renderImages,
+													t
 												})
 											}),
 											(0, react_jsx_runtime.jsx)(OverviewSection, {
-												label: "Schema",
+												label: t("tab.schema"),
 												onOpen: () => {
 													activateTab("schema");
 												},
 												children: (0, react_jsx_runtime.jsx)(RecordSchema, {
 													record: selected,
-													preview: true
+													preview: true,
+													t
 												})
 											})
 										] }),
 										selectedAssistantRequestTarget !== void 0 && (0, react_jsx_runtime.jsx)(OverviewSection, {
-											label: "Request Timing",
+											label: t("timing.request"),
 											onOpen: () => {
 												selectRequest(selectedAssistantRequestTarget, "timing");
 											},
-											children: (0, react_jsx_runtime.jsx)(RecordTiming, { record: selected })
+											children: (0, react_jsx_runtime.jsx)(RecordTiming, {
+												record: selected,
+												t
+											})
 										}),
 										(selected.cell.kind === "tool" || selected.cell.kind === "subtool") && (0, react_jsx_runtime.jsx)(OverviewSection, {
-											label: "Timing",
+											label: t("tab.timing"),
 											onOpen: () => {
 												activateTab("timing");
 											},
-											children: (0, react_jsx_runtime.jsx)(RecordTiming, { record: selected })
+											children: (0, react_jsx_runtime.jsx)(RecordTiming, {
+												record: selected,
+												t
+											})
 										})
 									]
 								})] }),
 								!promptSelected && selected !== void 0 && activeTab === "rendered" && (0, react_jsx_runtime.jsx)(MarkdownRecordContent, {
 									record: selected,
+									renderImages,
 									rendered: true,
 									thinkingExpanded,
 									onThinkingExpandedChange: setThinkingExpanded,
-									onOpenCall: openCallSummary
+									onOpenCall: openCallSummary,
+									t
 								}),
 								!promptSelected && selected !== void 0 && activeTab === "raw" && (0, react_jsx_runtime.jsx)(MarkdownRecordContent, {
 									record: selected,
+									renderImages,
 									rendered: false,
 									thinkingExpanded,
 									onThinkingExpandedChange: setThinkingExpanded,
-									onOpenCall: openCallSummary
+									onOpenCall: openCallSummary,
+									t
 								}),
-								!promptSelected && selected !== void 0 && activeTab === "source" && (0, react_jsx_runtime.jsx)(MessageSource, { record: selected }),
+								!promptSelected && selected !== void 0 && activeTab === "source" && (0, react_jsx_runtime.jsx)(MessageSource, {
+									record: selected,
+									t
+								}),
 								!promptSelected && selected !== void 0 && activeTab === "input" && (0, react_jsx_runtime.jsx)(RecordPayload, {
 									record: selected,
-									direction: "input"
+									direction: "input",
+									renderImages,
+									t
 								}),
 								!promptSelected && selected !== void 0 && activeTab === "output" && (0, react_jsx_runtime.jsx)(RecordPayload, {
 									record: selected,
-									direction: "output"
+									direction: "output",
+									renderImages,
+									t
 								}),
-								!promptSelected && selected !== void 0 && activeTab === "schema" && (0, react_jsx_runtime.jsx)(RecordSchema, { record: selected }),
-								!promptSelected && selected !== void 0 && activeTab === "timing" && (0, react_jsx_runtime.jsx)(RecordTiming, { record: selected })
+								!promptSelected && selected !== void 0 && activeTab === "schema" && (0, react_jsx_runtime.jsx)(RecordSchema, {
+									record: selected,
+									t
+								}),
+								!promptSelected && selected !== void 0 && activeTab === "timing" && (0, react_jsx_runtime.jsx)(RecordTiming, {
+									record: selected,
+									t
+								})
 							]
 						})
 					]
@@ -5296,8 +6026,8 @@ window.__ModuleLoader__.load({
 			});
 		}
 		//#endregion
-		//#region \0dsh-css:D:\Claude-project\deepseek-harness-win7\reference\deepseek-harness\packages\client\ui-trajectory\src\client\TrajectoryToolbar.module.css.mjs
-		const css$2 = "._7btfDG_root{z-index:4;box-sizing:border-box;width:100%;height:var(--dsh-trajectory-toolbar-height);border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);position:sticky;top:0}._7btfDG_inner{box-sizing:border-box;align-items:center;gap:8px;width:100%;height:100%;padding:0 6px;display:flex}._7btfDG_actions{flex:none;align-items:center;gap:2px;display:flex}._7btfDG_toggle{height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;font:var(--dsw-font-xxs-12);background:0 0;border:0;border-radius:3px;flex:none;align-items:center;gap:4px;padding:0 7px;display:inline-flex}._7btfDG_toggle:hover,._7btfDG_toggle[aria-pressed=true]{color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover)}._7btfDG_toggle:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:1px}._7btfDG_toggleIcon{stroke:currentColor;stroke-width:1.25px;stroke-linecap:round;stroke-linejoin:round;flex:none;width:12px;height:12px}._7btfDG_control{box-sizing:border-box;width:88px;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;font:var(--dsw-font-xxs-12);background:0 0;border:0;border-radius:0;flex:none;justify-content:center;align-items:center;gap:4px;padding:0 5px;display:inline-flex}._7btfDG_control[hidden]{display:none}._7btfDG_control:hover:not(:disabled),._7btfDG_control[aria-checked=true],._7btfDG_control[aria-pressed=true]{color:var(--dsw-alias-label-primary)}._7btfDG_control:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:1px}._7btfDG_control:disabled{color:var(--dsw-alias-label-dimmed);cursor:not-allowed}._7btfDG_controlTrack{background:var(--dsw-alias-border-l2);width:20px;height:10px;transition:background-color .12s var(--ds-ease-in-out);border-radius:5px;flex:none;display:inline-block;position:relative}._7btfDG_controlThumb{background:var(--dsw-alias-bg-layer-1);width:6px;height:6px;transition:transform .12s var(--ds-ease-in-out);border-radius:50%;position:absolute;top:2px;left:2px}._7btfDG_controlTrack[data-on=true]{background:var(--dsw-alias-state-business-primary)}._7btfDG_controlTrack[data-on=true] ._7btfDG_controlThumb{transform:translate(10px)}._7btfDG_action{height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;font:var(--dsw-font-xxs-12);background:0 0;border:0;border-radius:3px;flex:none;align-items:center;gap:4px;padding:0 5px;display:inline-flex}._7btfDG_action:hover{color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover)}._7btfDG_action:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:1px}._7btfDG_actionIcon{color:var(--dsw-alias-label-tertiary);font:14px/14px var(--ds-font-family-code)}._7btfDG_search{border:1px solid var(--dsw-alias-border-l2);min-width:84px;height:22px;color:var(--dsw-alias-label-caption);background:var(--dsw-alias-bg-layer-2);border-radius:4px;flex:0 164px;align-items:center;gap:4px;margin-left:auto;padding:0 6px;display:flex}._7btfDG_search:hover{border-color:var(--dsw-alias-label-caption)}._7btfDG_search:focus-within{border-color:var(--dsw-alias-state-business-primary);background:var(--dsw-alias-bg-layer-1)}._7btfDG_searchIcon{flex:none}._7btfDG_searchInput{width:100%;min-width:0;color:var(--dsw-alias-label-primary);font:var(--dsw-font-xxs-12);background:0 0;border:0;outline:0;padding:0}._7btfDG_searchInput::placeholder{color:var(--dsw-alias-label-caption)}._7btfDG_searchInput::-webkit-search-cancel-button{cursor:pointer;width:12px;height:12px}";
+		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-trajectory\src\client\TrajectoryToolbar.module.css.mjs
+		const css$2 = "._4ZiATW_root{z-index:4;box-sizing:border-box;width:100%;height:var(--dsh-trajectory-toolbar-height);border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);position:sticky;top:0}._4ZiATW_inner{box-sizing:border-box;align-items:center;gap:8px;width:100%;height:100%;padding:0 6px;display:flex}._4ZiATW_actions{flex:none;align-items:center;gap:2px;display:flex}._4ZiATW_toggle{height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;font:var(--dsw-font-xxs-12);background:0 0;border:0;border-radius:3px;flex:none;align-items:center;gap:4px;padding:0 7px;display:inline-flex}._4ZiATW_toggle:hover,._4ZiATW_toggle[aria-pressed=true]{color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover)}._4ZiATW_toggle:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:1px}._4ZiATW_toggleIcon{stroke:currentColor;stroke-width:1.25px;stroke-linecap:round;stroke-linejoin:round;flex:none;width:12px;height:12px}._4ZiATW_control{box-sizing:border-box;width:88px;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;font:var(--dsw-font-xxs-12);background:0 0;border:0;border-radius:0;flex:none;justify-content:center;align-items:center;gap:4px;padding:0 5px;display:inline-flex}._4ZiATW_control[hidden]{display:none}._4ZiATW_control:hover:not(:disabled),._4ZiATW_control[aria-checked=true],._4ZiATW_control[aria-pressed=true]{color:var(--dsw-alias-label-primary)}._4ZiATW_control:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:1px}._4ZiATW_control:disabled{color:var(--dsw-alias-label-dimmed);cursor:not-allowed}._4ZiATW_controlTrack{background:var(--dsw-alias-border-l2);width:20px;height:10px;transition:background-color .12s var(--ds-ease-in-out);border-radius:5px;flex:none;display:inline-block;position:relative}._4ZiATW_controlThumb{background:var(--dsw-alias-bg-layer-1);width:6px;height:6px;transition:transform .12s var(--ds-ease-in-out);border-radius:50%;position:absolute;top:2px;left:2px}._4ZiATW_controlTrack[data-on=true]{background:var(--dsw-alias-state-business-primary)}._4ZiATW_controlTrack[data-on=true] ._4ZiATW_controlThumb{transform:translate(10px)}._4ZiATW_action{height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;font:var(--dsw-font-xxs-12);background:0 0;border:0;border-radius:3px;flex:none;align-items:center;gap:4px;padding:0 5px;display:inline-flex}._4ZiATW_action:hover{color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover)}._4ZiATW_action:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:1px}._4ZiATW_actionIcon{color:var(--dsw-alias-label-tertiary);font:14px/14px var(--ds-font-family-code)}._4ZiATW_search{border:1px solid var(--dsw-alias-border-l2);min-width:84px;height:22px;color:var(--dsw-alias-label-caption);background:var(--dsw-alias-bg-layer-2);border-radius:4px;flex:0 164px;align-items:center;gap:4px;margin-left:auto;padding:0 6px;display:flex}._4ZiATW_search:hover{border-color:var(--dsw-alias-label-caption)}._4ZiATW_search:focus-within{border-color:var(--dsw-alias-state-business-primary);background:var(--dsw-alias-bg-layer-1)}._4ZiATW_searchIcon{flex:none}._4ZiATW_searchInput{width:100%;min-width:0;color:var(--dsw-alias-label-primary);font:var(--dsw-font-xxs-12);background:0 0;border:0;outline:0;padding:0}._4ZiATW_searchInput::placeholder{color:var(--dsw-alias-label-caption)}._4ZiATW_searchInput::-webkit-search-cancel-button{cursor:pointer;width:12px;height:12px}";
 		const tagId$2 = "@deepseek-ai/dsh-client-ui-trajectory/TrajectoryToolbar.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
 			const tag = document.createElement("style");
@@ -5307,19 +6037,19 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var TrajectoryToolbar_module_css_default = {
-			"action": "_7btfDG_action",
-			"actionIcon": "_7btfDG_actionIcon",
-			"actions": "_7btfDG_actions",
-			"control": "_7btfDG_control",
-			"controlThumb": "_7btfDG_controlThumb",
-			"controlTrack": "_7btfDG_controlTrack",
-			"inner": "_7btfDG_inner",
-			"root": "_7btfDG_root",
-			"search": "_7btfDG_search",
-			"searchIcon": "_7btfDG_searchIcon",
-			"searchInput": "_7btfDG_searchInput",
-			"toggle": "_7btfDG_toggle",
-			"toggleIcon": "_7btfDG_toggleIcon"
+			"action": "_4ZiATW_action",
+			"actionIcon": "_4ZiATW_actionIcon",
+			"actions": "_4ZiATW_actions",
+			"control": "_4ZiATW_control",
+			"controlThumb": "_4ZiATW_controlThumb",
+			"controlTrack": "_4ZiATW_controlTrack",
+			"inner": "_4ZiATW_inner",
+			"root": "_4ZiATW_root",
+			"search": "_4ZiATW_search",
+			"searchIcon": "_4ZiATW_searchIcon",
+			"searchInput": "_4ZiATW_searchInput",
+			"toggle": "_4ZiATW_toggle",
+			"toggleIcon": "_4ZiATW_toggleIcon"
 		};
 		//#endregion
 		//#region lib/types/client/TrajectoryToolbar.js
@@ -5427,10 +6157,11 @@ window.__ModuleLoader__.load({
 		/**
 		* Format a timeline duration as an integer-millisecond label.
 		* @param milliseconds - Non-negative duration in milliseconds.
+		* @param t - Trajectory locale translator.
 		* @returns Millisecond label with thousands separators.
 		*/
-		function formatTimelineOffset(milliseconds) {
-			return formatDurationMillis(milliseconds);
+		function formatTimelineOffset(milliseconds, t) {
+			return formatDurationMillis(milliseconds, t);
 		}
 		function laneFor(kind) {
 			if (kind === "tool" || kind === "subtool") return 2;
@@ -5548,8 +6279,8 @@ window.__ModuleLoader__.load({
 			return new Set(model?.spans.filter((span) => span.start <= range.end && span.end >= range.start).map((span) => span.index));
 		}
 		//#endregion
-		//#region \0dsh-css:D:\Claude-project\deepseek-harness-win7\reference\deepseek-harness\packages\client\ui-trajectory\src\client\TrajectoryTimeline.module.css.mjs
-		const css$1 = "._3I3KVq_root{z-index:1;isolation:isolate;border-bottom:1px solid var(--dsw-alias-border-l2);user-select:none;flex:none;position:relative}._3I3KVq_root [role=tooltip]{font:var(--dsw-font-xxxs-11)}._3I3KVq_plot{background:var(--dsw-alias-bg-layer-2);grid-template-columns:44px minmax(0,1fr);height:50px;display:grid;overflow:hidden}._3I3KVq_labels{border-right:1px solid var(--dsw-alias-border-l1);color:var(--dsw-alias-label-caption);font:var(--dsw-font-xs-13);font-size:10px;line-height:1;position:relative}._3I3KVq_labels span{text-align:right;justify-content:flex-end;align-items:center;height:8px;display:flex;position:absolute;right:3px}._3I3KVq_labels span:first-child{top:7px}._3I3KVq_labels span:nth-child(2){top:21px}._3I3KVq_labels span:nth-child(3){top:35px}._3I3KVq_track{cursor:crosshair;touch-action:none;position:relative;overflow:hidden}._3I3KVq_track[data-panning=true]{cursor:grabbing}._3I3KVq_earlierHistory{z-index:5;appearance:none;box-sizing:border-box;background:linear-gradient(to right, var(--dsw-alias-bg-layer-2) 0, var(--dsw-alias-bg-layer-2) 38%, transparent 100%);width:28px;color:var(--dsw-alias-label-secondary);font:var(--dsw-font-xs-13);opacity:.72;cursor:pointer;border:0;outline:none;justify-content:flex-start;align-items:center;padding-left:3px;line-height:1;display:flex;position:absolute;top:0;bottom:0;left:0}._3I3KVq_earlierHistory:hover{opacity:1}._3I3KVq_earlierHistory[aria-disabled=true]{cursor:default}._3I3KVq_earlierHistory:focus-visible{box-shadow:inset 0 0 0 1px var(--dsw-alias-border-l2)}._3I3KVq_empty{color:var(--dsw-alias-label-caption);font:var(--dsw-font-xs-13);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}._3I3KVq_track:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}._3I3KVq_lanes{z-index:2;top:7px;bottom:7px;left:var(--trajectory-domain-left);width:var(--trajectory-domain-width);position:absolute}._3I3KVq_turnBoundaries{z-index:3;top:0;bottom:0;left:var(--trajectory-domain-left);width:var(--trajectory-domain-width);pointer-events:none;position:absolute}@media (prefers-reduced-motion:no-preference){._3I3KVq_lanes[data-animate-viewport=true],._3I3KVq_turnBoundaries[data-animate-viewport=true]{transition:left .18s ease-out}}._3I3KVq_turnBoundary{top:0;bottom:0;left:var(--trajectory-turn-left);background:var(--dsw-alias-border-l2);width:1px;position:absolute}._3I3KVq_span{top:calc(var(--trajectory-span-lane) * 14px);left:calc(var(--trajectory-span-left) + var(--trajectory-span-gap));width:max(2px, calc(var(--trajectory-span-width) - var(--trajectory-span-gap) - var(--trajectory-span-gap)));background:var(--dsw-alias-label-secondary);opacity:.78;border-radius:1px;min-width:2px;height:8px;position:absolute}._3I3KVq_span[data-timeline-span=user]{background:var(--dsw-alias-state-business-primary)}._3I3KVq_span[data-timeline-span=context]{background:color-mix(in srgb, var(--dsw-alias-state-success-primary) 68%, var(--dsw-alias-label-secondary))}._3I3KVq_span[data-timeline-span=message]{--trajectory-assistant-decoding-color:color-mix(in srgb, var(--dsw-alias-brand-primary-new-colorprimary-new-color) 60%, var(--dsw-alias-state-error-secondary));--trajectory-assistant-ttft-color:color-mix(in srgb, var(--trajectory-assistant-decoding-color) 54%, var(--dsw-alias-bg-layer-2));background:var(--trajectory-assistant-decoding-color);opacity:1}._3I3KVq_span[data-timeline-span=message][data-assistant-timing=true]{background:linear-gradient(to right, var(--trajectory-assistant-ttft-color) 0, var(--trajectory-assistant-ttft-color) var(--trajectory-assistant-ttft), var(--trajectory-assistant-decoding-color) var(--trajectory-assistant-ttft), var(--trajectory-assistant-decoding-color) 100%)}._3I3KVq_span[data-timeline-span=tool],._3I3KVq_span[data-timeline-span=subtool]{background:var(--dsw-alias-state-warn-label);opacity:1}._3I3KVq_span[data-error=true]{background:var(--dsw-alias-state-error-primary)}._3I3KVq_span[data-equal-duration=true]{width:8px;min-width:8px}._3I3KVq_span[data-selected=false]{opacity:.2}._3I3KVq_span[data-hovered=true]:not([data-current=true]){z-index:1;opacity:1;box-shadow:0 0 0 1px var(--dsw-alias-bg-layer-2), 0 0 0 2px color-mix(in srgb, var(--dsw-alias-state-business-primary) 80%, transparent)}._3I3KVq_span[data-current=true]{z-index:1;opacity:1;box-shadow:0 0 0 1px var(--dsw-alias-bg-layer-2), 0 0 0 2px var(--dsw-alias-state-business-primary)}._3I3KVq_span[data-search-match=false]{opacity:.14}._3I3KVq_selection{z-index:1;top:0;bottom:0;left:var(--trajectory-selection-left);width:var(--trajectory-selection-width);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent);min-width:1px;box-shadow:-100vw 0 0 100vw color-mix(in srgb, var(--dsw-alias-bg-layer-1) 58%, transparent), 100vw 0 0 100vw color-mix(in srgb, var(--dsw-alias-bg-layer-1) 58%, transparent);pointer-events:none;position:absolute}._3I3KVq_selectionEdges{z-index:4;top:0;bottom:0;left:var(--trajectory-selection-left);width:var(--trajectory-selection-width);pointer-events:none;min-width:1px;position:absolute}._3I3KVq_hoverLine{z-index:4;top:0;bottom:0;left:clamp(0px, calc(var(--trajectory-hover-left) - 1px), calc(100% - 2px));background:var(--dsw-alias-state-business-primary);pointer-events:none;width:2px;position:absolute}._3I3KVq_selectionEdges:before,._3I3KVq_selectionEdges:after{background:var(--dsw-alias-state-business-primary);content:\"\";width:3px;position:absolute;top:0;bottom:0}._3I3KVq_selectionEdges:before{left:0}._3I3KVq_selectionEdges:after{right:0}._3I3KVq_selectionEdges[data-dragging=true]:before,._3I3KVq_selectionEdges[data-dragging=true]:after{width:2px}._3I3KVq_selection[data-dragging=true]{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 18%, transparent)}";
+		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-trajectory\src\client\TrajectoryTimeline.module.css.mjs
+		const css$1 = ".p6z3lW_root{z-index:1;isolation:isolate;border-bottom:1px solid var(--dsw-alias-border-l2);user-select:none;flex:none;position:relative}.p6z3lW_root [role=tooltip]{font:var(--dsw-font-xxxs-11)}.p6z3lW_plot{background:var(--dsw-alias-bg-layer-2);grid-template-columns:44px minmax(0,1fr);height:50px;display:grid;overflow:hidden}.p6z3lW_labels{border-right:1px solid var(--dsw-alias-border-l1);color:var(--dsw-alias-label-caption);font:var(--dsw-font-xs-13);font-size:10px;line-height:1;position:relative}.p6z3lW_labels span{text-align:right;justify-content:flex-end;align-items:center;height:8px;display:flex;position:absolute;right:3px}.p6z3lW_labels span:first-child{top:7px}.p6z3lW_labels span:nth-child(2){top:21px}.p6z3lW_labels span:nth-child(3){top:35px}.p6z3lW_track{cursor:crosshair;touch-action:none;position:relative;overflow:hidden}.p6z3lW_track[data-panning=true]{cursor:grabbing}.p6z3lW_earlierHistory{z-index:5;appearance:none;box-sizing:border-box;background:linear-gradient(to right, var(--dsw-alias-bg-layer-2) 0, var(--dsw-alias-bg-layer-2) 38%, transparent 100%);width:28px;color:var(--dsw-alias-label-secondary);font:var(--dsw-font-xs-13);opacity:.72;cursor:pointer;border:0;outline:none;justify-content:flex-start;align-items:center;padding-left:3px;line-height:1;display:flex;position:absolute;top:0;bottom:0;left:0}.p6z3lW_earlierHistory:hover{opacity:1}.p6z3lW_earlierHistory[aria-disabled=true]{cursor:default}.p6z3lW_earlierHistory:focus-visible{box-shadow:inset 0 0 0 1px var(--dsw-alias-border-l2)}.p6z3lW_empty{color:var(--dsw-alias-label-caption);font:var(--dsw-font-xs-13);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.p6z3lW_track:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}.p6z3lW_lanes{z-index:2;top:7px;bottom:7px;left:var(--trajectory-domain-left);width:var(--trajectory-domain-width);position:absolute}.p6z3lW_turnBoundaries{z-index:3;top:0;bottom:0;left:var(--trajectory-domain-left);width:var(--trajectory-domain-width);pointer-events:none;position:absolute}@media (prefers-reduced-motion:no-preference){.p6z3lW_lanes[data-animate-viewport=true],.p6z3lW_turnBoundaries[data-animate-viewport=true]{transition:left .18s ease-out}}.p6z3lW_turnBoundary{top:0;bottom:0;left:var(--trajectory-turn-left);background:var(--dsw-alias-border-l2);width:1px;position:absolute}.p6z3lW_span{top:calc(var(--trajectory-span-lane) * 14px);left:calc(var(--trajectory-span-left) + var(--trajectory-span-gap));width:max(2px, calc(var(--trajectory-span-width) - var(--trajectory-span-gap) - var(--trajectory-span-gap)));background:var(--dsw-alias-label-secondary);opacity:.78;border-radius:1px;min-width:2px;height:8px;position:absolute}.p6z3lW_span[data-timeline-span=user]{background:var(--dsw-alias-state-business-primary)}.p6z3lW_span[data-timeline-span=context]{background:color-mix(in srgb, var(--dsw-alias-state-success-primary) 68%, var(--dsw-alias-label-secondary))}.p6z3lW_span[data-timeline-span=message]{--trajectory-assistant-decoding-color:color-mix(in srgb, var(--dsw-alias-brand-primary-new-colorprimary-new-color) 60%, var(--dsw-alias-state-error-secondary));--trajectory-assistant-ttft-color:color-mix(in srgb, var(--trajectory-assistant-decoding-color) 54%, var(--dsw-alias-bg-layer-2));background:var(--trajectory-assistant-decoding-color);opacity:1}.p6z3lW_span[data-timeline-span=message][data-assistant-timing=true]{background:linear-gradient(to right, var(--trajectory-assistant-ttft-color) 0, var(--trajectory-assistant-ttft-color) var(--trajectory-assistant-ttft), var(--trajectory-assistant-decoding-color) var(--trajectory-assistant-ttft), var(--trajectory-assistant-decoding-color) 100%)}.p6z3lW_span[data-timeline-span=tool],.p6z3lW_span[data-timeline-span=subtool]{background:var(--dsw-alias-state-warn-label);opacity:1}.p6z3lW_span[data-error=true]{background:var(--dsw-alias-state-error-primary)}.p6z3lW_span[data-equal-duration=true]{width:8px;min-width:8px}.p6z3lW_span[data-selected=false]{opacity:.2}.p6z3lW_span[data-hovered=true]:not([data-current=true]){z-index:1;opacity:1;box-shadow:0 0 0 1px var(--dsw-alias-bg-layer-2), 0 0 0 2px color-mix(in srgb, var(--dsw-alias-state-business-primary) 80%, transparent)}.p6z3lW_span[data-current=true]{z-index:1;opacity:1;box-shadow:0 0 0 1px var(--dsw-alias-bg-layer-2), 0 0 0 2px var(--dsw-alias-state-business-primary)}.p6z3lW_span[data-search-match=false]{opacity:.14}.p6z3lW_selection{z-index:1;top:0;bottom:0;left:var(--trajectory-selection-left);width:var(--trajectory-selection-width);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent);min-width:1px;box-shadow:-100vw 0 0 100vw color-mix(in srgb, var(--dsw-alias-bg-layer-1) 58%, transparent), 100vw 0 0 100vw color-mix(in srgb, var(--dsw-alias-bg-layer-1) 58%, transparent);pointer-events:none;position:absolute}.p6z3lW_selectionEdges{z-index:4;top:0;bottom:0;left:var(--trajectory-selection-left);width:var(--trajectory-selection-width);pointer-events:none;min-width:1px;position:absolute}.p6z3lW_hoverLine{z-index:4;top:0;bottom:0;left:clamp(0px, calc(var(--trajectory-hover-left) - 1px), calc(100% - 2px));background:var(--dsw-alias-state-business-primary);pointer-events:none;width:2px;position:absolute}.p6z3lW_selectionEdges:before,.p6z3lW_selectionEdges:after{background:var(--dsw-alias-state-business-primary);content:\"\";width:3px;position:absolute;top:0;bottom:0}.p6z3lW_selectionEdges:before{left:0}.p6z3lW_selectionEdges:after{right:0}.p6z3lW_selectionEdges[data-dragging=true]:before,.p6z3lW_selectionEdges[data-dragging=true]:after{width:2px}.p6z3lW_selection[data-dragging=true]{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 18%, transparent)}";
 		const tagId$1 = "@deepseek-ai/dsh-client-ui-trajectory/TrajectoryTimeline.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
@@ -5559,19 +6290,19 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var TrajectoryTimeline_module_css_default = {
-			"earlierHistory": "_3I3KVq_earlierHistory",
-			"empty": "_3I3KVq_empty",
-			"hoverLine": "_3I3KVq_hoverLine",
-			"labels": "_3I3KVq_labels",
-			"lanes": "_3I3KVq_lanes",
-			"plot": "_3I3KVq_plot",
-			"root": "_3I3KVq_root",
-			"selection": "_3I3KVq_selection",
-			"selectionEdges": "_3I3KVq_selectionEdges",
-			"span": "_3I3KVq_span",
-			"track": "_3I3KVq_track",
-			"turnBoundaries": "_3I3KVq_turnBoundaries",
-			"turnBoundary": "_3I3KVq_turnBoundary"
+			"earlierHistory": "p6z3lW_earlierHistory",
+			"empty": "p6z3lW_empty",
+			"hoverLine": "p6z3lW_hoverLine",
+			"labels": "p6z3lW_labels",
+			"lanes": "p6z3lW_lanes",
+			"plot": "p6z3lW_plot",
+			"root": "p6z3lW_root",
+			"selection": "p6z3lW_selection",
+			"selectionEdges": "p6z3lW_selectionEdges",
+			"span": "p6z3lW_span",
+			"track": "p6z3lW_track",
+			"turnBoundaries": "p6z3lW_turnBoundaries",
+			"turnBoundary": "p6z3lW_turnBoundary"
 		};
 		//#endregion
 		//#region lib/types/client/TrajectoryTimeline.js
@@ -5601,15 +6332,15 @@ window.__ModuleLoader__.load({
 				...assistantTimingDetail(cell.assistantMetrics)
 			};
 		}
-		function timelineKindLabel(kind) {
+		function timelineKindLabel(kind, t) {
 			switch (kind) {
-				case "system": return "SYSTEM";
-				case "user": return "USER";
-				case "context": return "CONTEXT";
-				case "compacted": return "COMPACTED";
-				case "message": return "ASSISTANT";
-				case "tool": return "TOOL";
-				case "subtool": return "SUBTOOL";
+				case "system": return t("kind.system");
+				case "user": return t("kind.user");
+				case "context": return t("kind.context");
+				case "compacted": return t("kind.compacted");
+				case "message": return t("kind.assistant");
+				case "tool": return t("kind.tool");
+				case "subtool": return t("kind.subtool");
 			}
 		}
 		function formatRecordedTime(timestamp) {
@@ -5620,14 +6351,17 @@ window.__ModuleLoader__.load({
 				fractionalSecondDigits: 3
 			});
 		}
-		function timelineTooltipLabel(kind, detail) {
-			const heading = timelineKindLabel(kind);
+		function timelineTooltipLabel(kind, detail, t) {
+			const heading = timelineKindLabel(kind, t);
 			if (detail === void 0) return heading;
-			const duration = detail.durationMs === void 0 ? null : `Total ${formatTimelineOffset(detail.durationMs)}`;
+			const duration = detail.durationMs === void 0 ? null : t("timeline.total", { duration: formatTimelineOffset(detail.durationMs, t) });
 			return [
 				heading,
-				detail.startedAt === void 0 ? null : detail.durationMs === void 0 ? `Started ${formatRecordedTime(detail.startedAt)}` : `${formatRecordedTime(detail.startedAt)} → ${formatRecordedTime(detail.startedAt + detail.durationMs)}`,
-				[duration, detail.ttftMs === void 0 || detail.decodingMs === void 0 ? null : `TTFT ${formatTimelineOffset(detail.ttftMs)} · Decoding ${formatTimelineOffset(detail.decodingMs)}`].filter((value) => value !== null).join(" · ")
+				detail.startedAt === void 0 ? null : detail.durationMs === void 0 ? t("timeline.started", { time: formatRecordedTime(detail.startedAt) }) : `${formatRecordedTime(detail.startedAt)} → ${formatRecordedTime(detail.startedAt + detail.durationMs)}`,
+				[duration, detail.ttftMs === void 0 || detail.decodingMs === void 0 ? null : t("timeline.ttftDecoding", {
+					ttft: formatTimelineOffset(detail.ttftMs, t),
+					decoding: formatTimelineOffset(detail.decodingMs, t)
+				})].filter((value) => value !== null).join(" · ")
 			].filter((value) => value !== null && value !== "").join("\n");
 		}
 		function orderedRange(left, right) {
@@ -5657,20 +6391,20 @@ window.__ModuleLoader__.load({
 				end: (bounded.end - start) / duration
 			};
 		}
-		function LaneLabels() {
+		function LaneLabels({ t }) {
 			return (0, react_jsx_runtime.jsxs)("div", {
 				className: TrajectoryTimeline_module_css_default.labels,
 				"aria-hidden": "true",
 				children: [
-					(0, react_jsx_runtime.jsx)("span", { children: "Input" }),
-					(0, react_jsx_runtime.jsx)("span", { children: "Model" }),
-					(0, react_jsx_runtime.jsx)("span", { children: "Tools" })
+					(0, react_jsx_runtime.jsx)("span", { children: t("column.input") }),
+					(0, react_jsx_runtime.jsx)("span", { children: t("column.model") }),
+					(0, react_jsx_runtime.jsx)("span", { children: t("column.tools") })
 				]
 			});
 		}
-		function EarlierHistoryBoundary({ loading, onHover, onLoad }) {
+		function EarlierHistoryBoundary({ loading, onHover, onLoad, t }) {
 			return (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
-				label: loading ? "Loading earlier history…" : "Click to load earlier history",
+				label: loading ? t("history.loadingEarlier") : t("history.clickToLoadEarlier"),
 				side: "right",
 				delayMs: TIMELINE_TOOLTIP_DELAY_MS,
 				children: (0, react_jsx_runtime.jsx)("button", {
@@ -5678,7 +6412,7 @@ window.__ModuleLoader__.load({
 					className: TrajectoryTimeline_module_css_default.earlierHistory,
 					"data-earlier-history": true,
 					"data-loading": loading || void 0,
-					"aria-label": loading ? "Loading earlier history" : "Load earlier history",
+					"aria-label": loading ? t("history.loadingEarlierAria") : t("history.loadEarlier"),
 					"aria-disabled": loading || onLoad === void 0,
 					onClick: onLoad,
 					onPointerEnter: (event) => {
@@ -5696,7 +6430,7 @@ window.__ModuleLoader__.load({
 			});
 		}
 		/** Overview renderer with drag ranges, click-sized focus, and Escape reset. */
-		const TrajectoryTimeline = (0, react.memo)(function TrajectoryTimeline({ turns, mode, range, hasEarlierRecords = false, onLoadEarlier, selectedIndex = null, searchMatchIndexes = null, onRangeChange, onRecordSelect, onRecordFocus }) {
+		const TrajectoryTimeline = (0, react.memo)(function TrajectoryTimeline({ t, turns, mode, range, hasEarlierRecords = false, onLoadEarlier, selectedIndex = null, searchMatchIndexes = null, onRangeChange, onRecordSelect, onRecordFocus }) {
 			const model = (0, react.useMemo)(() => deriveTrajectoryTimeline(turns, mode), [mode, turns]);
 			const detailByIndex = (0, react.useMemo)(() => new Map(turns.flatMap((turn) => turn.groups.flatMap((group) => group.cells.map((cell) => [cell.index, timelineRecordDetail(cell)])))), [turns]);
 			const dragRef = (0, react.useRef)(null);
@@ -5794,20 +6528,21 @@ window.__ModuleLoader__.load({
 			if (model === null) return (0, react_jsx_runtime.jsx)("section", {
 				ref: rootRef,
 				className: TrajectoryTimeline_module_css_default.root,
-				"aria-label": "Trajectory timeline",
+				"aria-label": t("timeline.aria"),
 				children: (0, react_jsx_runtime.jsxs)("div", {
 					className: TrajectoryTimeline_module_css_default.plot,
-					children: [(0, react_jsx_runtime.jsx)(LaneLabels, {}), (0, react_jsx_runtime.jsxs)("div", {
+					children: [(0, react_jsx_runtime.jsx)(LaneLabels, { t }), (0, react_jsx_runtime.jsxs)("div", {
 						className: TrajectoryTimeline_module_css_default.track,
 						children: [(0, react_jsx_runtime.jsx)("span", {
 							className: TrajectoryTimeline_module_css_default.empty,
-							children: "No timing data"
+							children: t("timeline.noTimingData")
 						}), hasEarlierRecords && (0, react_jsx_runtime.jsx)(EarlierHistoryBoundary, {
 							loading: loadingEarlier,
 							onHover: () => {
 								setHover(null);
 							},
-							onLoad: loadEarlier
+							onLoad: loadEarlier,
+							t
 						})]
 					})]
 				})
@@ -5954,14 +6689,14 @@ window.__ModuleLoader__.load({
 			return (0, react_jsx_runtime.jsx)("section", {
 				ref: rootRef,
 				className: TrajectoryTimeline_module_css_default.root,
-				"aria-label": "Trajectory timeline",
+				"aria-label": t("timeline.aria"),
 				children: (0, react_jsx_runtime.jsxs)("div", {
 					className: TrajectoryTimeline_module_css_default.plot,
-					children: [(0, react_jsx_runtime.jsx)(LaneLabels, {}), (0, react_jsx_runtime.jsxs)("div", {
+					children: [(0, react_jsx_runtime.jsx)(LaneLabels, { t }), (0, react_jsx_runtime.jsxs)("div", {
 						ref: trackRef,
 						className: TrajectoryTimeline_module_css_default.track,
 						"data-panning": panning || void 0,
-						"aria-label": "Timeline overview; drag horizontally to focus events",
+						"aria-label": t("timeline.overviewAria"),
 						tabIndex: 0,
 						onKeyDown,
 						onPointerDown,
@@ -5984,7 +6719,8 @@ window.__ModuleLoader__.load({
 								onHover: () => {
 									setHover(null);
 								},
-								onLoad: loadEarlier
+								onLoad: loadEarlier,
+								t
 							}),
 							hover !== null && hover.recordIndex === null && draft === null && (0, react_jsx_runtime.jsx)("div", {
 								className: TrajectoryTimeline_module_css_default.hoverLine,
@@ -6033,7 +6769,7 @@ window.__ModuleLoader__.load({
 									const decodingMs = detail?.decodingMs;
 									const ttftFraction = ttftMs === void 0 || decodingMs === void 0 || ttftMs + decodingMs <= 0 ? null : ttftMs / (ttftMs + decodingMs);
 									return (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
-										label: () => timelineTooltipLabel(span.kind, detail),
+										label: () => timelineTooltipLabel(span.kind, detail, t),
 										side: "bottom",
 										delayMs: TIMELINE_TOOLTIP_DELAY_MS,
 										children: (0, react_jsx_runtime.jsx)("span", {
@@ -6069,10 +6805,12 @@ window.__ModuleLoader__.load({
 		function layoutEntryOrder(entry) {
 			return entry.kind === "system" && entry.change.kind === "initial" ? Number.NEGATIVE_INFINITY : entry.seq;
 		}
-		function inputCellDetail(node) {
-			const previewMarkdown = previewContent(node.content);
+		function inputCellDetail(node, t) {
+			const preview = previewContent(node.content);
+			const previewMarkdown = preview === "" ? void 0 : preview;
+			const images = imageBlockCount(node.content);
 			return {
-				text: "",
+				text: previewMarkdown === void 0 && images > 0 ? t("layout.imageOnly", { count: images }) : "",
 				...previewMarkdown === void 0 ? {} : { previewMarkdown },
 				sourceSeq: node.seq,
 				messageSource: node.source,
@@ -6085,9 +6823,10 @@ window.__ModuleLoader__.load({
 		/**
 		* Fold a snapshot into turn → Message/Step groups with expanded cells.
 		* @param input - nodes plus in-flight partial/runningCalls.
+		* @param t - Trajectory locale translator.
 		* @returns turns ordered by first appearance.
 		*/
-		function deriveTrajectoryLayout(input) {
+		function deriveTrajectoryLayout(input, t) {
 			const { nodes, eventLocations, partial, runningCalls, requests = [], callSchemas } = input;
 			const resultByCall = indexResults(nodes);
 			const callById = new Map(resultByCall);
@@ -6119,19 +6858,19 @@ window.__ModuleLoader__.load({
 			const pushMessage = (turn, laid) => {
 				const groups = bucket(turn).groups;
 				const last = groups.at(-1);
-				if (last?.title === "Message") {
+				if (last?.title === t("group.message")) {
 					last.laid.push(laid);
 					return;
 				}
 				groups.push({
-					title: "Message",
+					title: t("group.message"),
 					laid: [laid]
 				});
 			};
 			const pushStep = (turn, step, laid) => {
 				if (laid.length === 0) return;
 				const groups = bucket(turn).groups;
-				const title = `Step ${step}`;
+				const title = t("group.step", { step });
 				const existing = groups.find((group) => group.title === title);
 				if (existing !== void 0) {
 					existing.laid.push(...laid);
@@ -6145,7 +6884,7 @@ window.__ModuleLoader__.load({
 			const pushStepInput = (turn, step, laid) => {
 				if (laid.length === 0) return;
 				const groups = bucket(turn).groups;
-				const title = `Step ${step}`;
+				const title = t("group.step", { step });
 				const existing = groups.find((group) => group.title === title);
 				if (existing === void 0) {
 					groups.push({
@@ -6212,7 +6951,7 @@ window.__ModuleLoader__.load({
 						cell: {
 							index: ++index,
 							kind: "system",
-							text: promptChangeLabel(change),
+							text: promptChangeLabel(change, t),
 							sourceSeq: change.seq,
 							...request.prompt === void 0 ? {} : { promptDetail: request.prompt },
 							...change.previous === void 0 ? {} : { previousPromptDetail: change.previous },
@@ -6230,7 +6969,7 @@ window.__ModuleLoader__.load({
 					const cell = {
 						index: ++index,
 						kind: "compacted",
-						text: request.status === "running" ? "Compacting context…" : request.status === "error" ? request.error ?? "Compaction failed" : request.summary === void 0 ? "Context compacted" : "",
+						text: request.status === "running" ? t("layout.compacting") : request.status === "error" ? request.error === "trajectory.compaction-interrupted" ? t("layout.compactionInterrupted") : request.error ?? t("layout.compactionFailed") : request.summary === void 0 ? t("layout.compacted") : "",
 						...request.status === "complete" && request.summary !== void 0 ? previewContentProperty(request.summary) : {},
 						sourceSeq: request.startSeq,
 						...request.summary === void 0 ? {} : {
@@ -6245,7 +6984,7 @@ window.__ModuleLoader__.load({
 					};
 					attachUsage(cell, request.usage);
 					const compaction = { groups: [{
-						title: `Compaction ${request.startSeq}`,
+						title: t("group.compaction", { seq: request.startSeq }),
 						laid: [{
 							absTime: finiteTime(request.startedAt),
 							cell
@@ -6263,7 +7002,7 @@ window.__ModuleLoader__.load({
 						cell: {
 							index: ++index,
 							kind: "user",
-							...inputCellDetail(node),
+							...inputCellDetail(node, t),
 							opensTurn: true
 						}
 					});
@@ -6277,7 +7016,7 @@ window.__ModuleLoader__.load({
 						cell: {
 							index: ++index,
 							kind: "user",
-							...inputCellDetail(node)
+							...inputCellDetail(node, t)
 						}
 					};
 					if (placement.step === void 0) pushMessage(placement.turn, laid);
@@ -6286,7 +7025,7 @@ window.__ModuleLoader__.load({
 					continue;
 				}
 				if (node.kind === "assistant") {
-					const laidList = withSubCalls(expandAssistant(node, index + 1, prevAbsTime, resultByCall, callStartById, callById));
+					const laidList = withSubCalls(expandAssistant(node, index + 1, prevAbsTime, resultByCall, callStartById, callById, t), t);
 					if (node.step > 0) pushStep(node.turn, node.step, laidList);
 					else for (const laid of laidList) pushMessage(node.turn, laid);
 					const last = laidList[laidList.length - 1];
@@ -6301,7 +7040,7 @@ window.__ModuleLoader__.load({
 						cell: {
 							index: ++index,
 							kind: "context",
-							...inputCellDetail(node)
+							...inputCellDetail(node, t)
 						}
 					});
 					prevAbsTime = finiteTime(node.time) ?? prevAbsTime;
@@ -6314,7 +7053,7 @@ window.__ModuleLoader__.load({
 				if (node.kind === "tool-result") {
 					if (!emittedCallIds.has(node.callId)) {
 						const toolName = node.call?.name;
-						const resultPreview = summarizeResult(node);
+						const resultPreview = summarizeResult(node, t);
 						const laidList = [{
 							absTime: finiteTime(node.callTime ?? node.time),
 							...toolName !== void 0 ? { toolName } : {},
@@ -6326,7 +7065,7 @@ window.__ModuleLoader__.load({
 								sourceSeq: node.seq,
 								...node.call !== null ? summarizeCall(node.call.name, node.call.argsRaw) : resultAsText(resultPreview),
 								...node.call !== null ? { inputDetail: node.call.argsRaw } : {},
-								outputDetail: detailResult(node),
+								outputDetail: detailResult(node, t),
 								outputBlocks: node.content.map((block) => sourceBlock(block)),
 								...resultPreview,
 								callId: node.callId,
@@ -6335,7 +7074,7 @@ window.__ModuleLoader__.load({
 								startedAt: finiteTime(node.callTime)
 							}
 						}];
-						for (const laid of expandSubCalls(node.subCalls, index)) {
+						for (const laid of expandSubCalls(node.subCalls, index, t)) {
 							laidList.push(laid);
 							index = laid.cell.index;
 						}
@@ -6352,7 +7091,7 @@ window.__ModuleLoader__.load({
 					turn: partial.turn,
 					step: partial.step,
 					blocks: partial.blocks
-				}, index + 1, prevAbsTime, resultByCall, callStartById, callById, { streaming: true }));
+				}, index + 1, prevAbsTime, resultByCall, callStartById, callById, t, { streaming: true }), t);
 				if (partial.step > 0) pushStep(partial.turn, partial.step, laidList);
 				else for (const laid of laidList) pushMessage(partial.turn, laid);
 				const last = laidList[laidList.length - 1];
@@ -6376,7 +7115,7 @@ window.__ModuleLoader__.load({
 						startedAt: finiteTime(call.time)
 					}
 				}];
-				for (const laid of expandSubCalls(call.subCalls, index)) {
+				for (const laid of expandSubCalls(call.subCalls, index, t)) {
 					laidList.push(laid);
 					index = laid.cell.index;
 				}
@@ -6392,22 +7131,23 @@ window.__ModuleLoader__.load({
 				turns.set(1, first);
 			}
 			for (const entry of [...turns.values(), ...standaloneCompactions]) for (const group of entry.groups) for (const laid of group.laid) attachToolSchema(laid, callSchemas);
-			return [...[...turns.entries()].map(([turn, entry]) => toTurnModel(turn, entry)), ...standaloneCompactions.map((entry) => toTurnModel(null, entry))].sort((left, right) => firstCellIndex(left) - firstCellIndex(right));
+			return [...[...turns.entries()].map(([turn, entry]) => toTurnModel(turn, entry, t)), ...standaloneCompactions.map((entry) => toTurnModel(null, entry, t))].sort((left, right) => firstCellIndex(left) - firstCellIndex(right));
 		}
 		/**
 		* Append the changing in-flight assistant cells to a stable finalized layout.
 		* @param turns - Finalized layout derived with an empty-block partial anchor.
 		* @param partial - Current in-flight assistant projection.
 		* @param lastIndex - Highest cell index in the finalized layout.
+		* @param t - Trajectory locale translator.
 		* @returns The original layout without a partial, otherwise a layout sharing every unaffected turn.
 		*/
-		function appendTrajectoryPartialLayout(turns, partial, lastIndex) {
+		function appendTrajectoryPartialLayout(turns, partial, lastIndex, t) {
 			if (partial === null) return turns;
 			const partialTurn = deriveTrajectoryLayout({
 				nodes: [],
 				partial,
 				runningCalls: []
-			}).at(0);
+			}, t).at(0);
 			if (partialTurn === void 0) return turns;
 			const streamed = {
 				...partialTurn,
@@ -6453,11 +7193,11 @@ window.__ModuleLoader__.load({
 			if (schema === void 0) return;
 			laid.cell.schemaDetail = JSON.stringify(schema, null, 2);
 		}
-		function toTurnModel(turn, entry) {
+		function toTurnModel(turn, entry, t) {
 			return {
 				turn,
 				groups: entry.groups.map(({ title, laid }) => {
-					const description = groupDescription(laid);
+					const description = groupDescription(laid, t);
 					return {
 						title,
 						...description !== void 0 ? { description } : {},
@@ -6471,7 +7211,7 @@ window.__ModuleLoader__.load({
 			return Math.min(...turn.groups.flatMap((group) => group.cells.map((cell) => cell.index)), Number.POSITIVE_INFINITY);
 		}
 		/** Wall-span duration + tool histogram, e.g. `1.5 s bash×6`. */
-		function groupDescription(laid) {
+		function groupDescription(laid, t) {
 			const parts = [];
 			const times = [];
 			for (const l of laid) {
@@ -6480,11 +7220,11 @@ window.__ModuleLoader__.load({
 				if (l.cell.kind === "tool" && l.cell.timeSeconds !== null && Number.isFinite(l.cell.timeSeconds)) times.push(l.absTime + l.cell.timeSeconds * 1e3);
 			}
 			if (times.length >= 2) {
-				const span = formatGroupDuration((Math.max(...times) - Math.min(...times)) / 1e3);
+				const span = formatGroupDuration((Math.max(...times) - Math.min(...times)) / 1e3, t);
 				if (span !== void 0) parts.push(span);
 			} else if (times.length === 1) {
 				const own = laid.find((l) => l.absTime === times[0])?.cell.timeSeconds;
-				const span = own !== null && own !== void 0 ? formatGroupDuration(own) : void 0;
+				const span = own !== null && own !== void 0 ? formatGroupDuration(own, t) : void 0;
 				if (span !== void 0) parts.push(span);
 			}
 			const tools = /* @__PURE__ */ new Map();
@@ -6495,9 +7235,9 @@ window.__ModuleLoader__.load({
 			for (const [name, count] of tools) parts.push(count > 1 ? `${name}×${count}` : name);
 			return parts.length === 0 ? void 0 : parts.join(" ");
 		}
-		function formatGroupDuration(seconds) {
+		function formatGroupDuration(seconds, t) {
 			if (!Number.isFinite(seconds)) return void 0;
-			return formatElapsedSeconds(seconds);
+			return formatElapsedSeconds(seconds, t);
 		}
 		/** Own-duration seconds from two epoch-ms stamps; null when either is unusable. */
 		function durationSeconds(later, earlier) {
@@ -6508,7 +7248,7 @@ window.__ModuleLoader__.load({
 		function finiteTime(time) {
 			return typeof time === "number" && Number.isFinite(time) ? time : null;
 		}
-		function expandAssistant(node, startIndex, prevAbsTime, results, callStarts, calls, opts) {
+		function expandAssistant(node, startIndex, prevAbsTime, results, callStarts, calls, t, opts) {
 			if (opts?.streaming === true && node.blocks.length === 0) return [];
 			const out = [];
 			let index = startIndex - 1;
@@ -6524,7 +7264,7 @@ window.__ModuleLoader__.load({
 				recordId: `assistant\u0000${node.turn}\u0000${node.step}`,
 				kind: "message",
 				sourceSeq: node.seq,
-				text: messageText !== "" || thinkingText !== "" ? "" : summarizeAssistantActivity(node.blocks),
+				text: messageText !== "" || thinkingText !== "" ? "" : summarizeAssistantActivity(node.blocks, t),
 				...messageText !== "" ? { previewMarkdown: messageText } : thinkingText !== "" ? { previewMarkdown: thinkingText } : {},
 				...messageText !== "" ? { outputDetail: messageText } : {},
 				...thinkingText !== "" ? { thinkingDetail: thinkingText } : {},
@@ -6551,7 +7291,7 @@ window.__ModuleLoader__.load({
 				const toolDuration = streaming || result === void 0 ? null : durationSeconds(result.time, result.callTime);
 				const callAbs = finiteTime(callStarts.get(block.callId));
 				const call = calls.get(block.callId);
-				const resultPreview = result === void 0 ? void 0 : summarizeResult(result);
+				const resultPreview = result === void 0 ? void 0 : summarizeResult(result, t);
 				out.push({
 					absTime: callAbs,
 					toolName: block.name,
@@ -6564,7 +7304,7 @@ window.__ModuleLoader__.load({
 						inputDetail: block.argsRaw,
 						callId: block.callId,
 						...result !== void 0 ? {
-							outputDetail: detailResult(result),
+							outputDetail: detailResult(result, t),
 							outputBlocks: result.content.map((block) => sourceBlock(block)),
 							...resultPreview,
 							isError: result.isError
@@ -6576,20 +7316,22 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
-		function summarizeAssistantActivity(blocks) {
+		function summarizeAssistantActivity(blocks, t) {
 			const tools = /* @__PURE__ */ new Map();
 			for (const block of blocks) {
 				if (block.kind !== "tool-call") continue;
 				tools.set(block.name, (tools.get(block.name) ?? 0) + 1);
 			}
-			if (tools.size > 0) return "Tool call only";
+			if (tools.size > 0) return t("layout.toolCallOnly");
+			const images = blocks.filter((block) => block.kind === "image").length;
+			if (images > 0) return t("layout.imageOnly", { count: images });
 			return "";
 		}
-		function promptChangeLabel(change) {
-			if (change.kind === "initial") return "Initial System Prompt";
-			if (change.kind === "system") return "System Prompt Updated";
-			if (change.kind === "tools") return "Tools Updated";
-			return "System Prompt and Tools Updated";
+		function promptChangeLabel(change, t) {
+			if (change.kind === "initial") return t("layout.initialSystemPrompt");
+			if (change.kind === "system") return t("layout.systemPromptUpdated");
+			if (change.kind === "tools") return t("layout.toolsUpdated");
+			return t("layout.systemPromptAndToolsUpdated");
 		}
 		function assistantSourceBlock(block) {
 			switch (block.kind) {
@@ -6609,7 +7351,8 @@ window.__ModuleLoader__.load({
 				};
 				case "image": return {
 					type: "image",
-					content: stringifySourceValue(block.attachment)
+					content: "",
+					attachment: block.attachment
 				};
 				case "other": return sourceBlock(block.block);
 			}
@@ -6625,40 +7368,18 @@ window.__ModuleLoader__.load({
 				type: type === "reasoning" ? "thinking" : type,
 				content: block.text
 			};
-			const imageSrc = sourceImage(block);
-			const imageAlt = typeof block.alt === "string" ? block.alt : void 0;
+			if (type === "image" && typeof block.attachment === "object" && block.attachment !== null && typeof block.attachment.attachmentId === "string") return {
+				type,
+				content: "",
+				attachment: block.attachment
+			};
 			return {
 				type,
-				content: imageSrc === void 0 ? stringifySourceValue(value) : "",
-				...imageSrc !== void 0 ? { imageSrc } : {},
-				...imageAlt !== void 0 ? { imageAlt } : {}
+				content: stringifySourceValue(value)
 			};
 		}
-		function sourceImage(block) {
-			if (typeof block.type !== "string" || !block.type.toLowerCase().includes("image")) return void 0;
-			for (const candidate of [block.url, block.image_url]) if (typeof candidate === "string") return safeImageSource(candidate);
-			if (typeof block.data === "string") {
-				const mediaType = [
-					block.mimeType,
-					block.mediaType,
-					block.media_type
-				].find((candidate) => typeof candidate === "string") ?? "image/png";
-				return safeImageSource(block.data.startsWith("data:") ? block.data : `data:${mediaType};base64,${block.data}`);
-			}
-			if (typeof block.source !== "object" || block.source === null) return void 0;
-			const source = block.source;
-			if (typeof source.url === "string") return safeImageSource(source.url);
-			if (typeof source.data !== "string") return void 0;
-			return safeImageSource(`data:${typeof source.media_type === "string" ? source.media_type : "image/png"};base64,${source.data}`);
-		}
-		function safeImageSource(value) {
-			if (value.startsWith("data:image/") || value.startsWith("blob:")) return value;
-			try {
-				const protocol = new URL(value).protocol;
-				return protocol === "http:" || protocol === "https:" ? value : void 0;
-			} catch {
-				return;
-			}
+		function imageBlockCount(content) {
+			return content.filter((block) => block.type === "image").length;
 		}
 		function stringifySourceValue(value) {
 			return JSON.stringify(value, null, 2) || String(value);
@@ -6739,7 +7460,7 @@ window.__ModuleLoader__.load({
 			return ids;
 		}
 		/** Interleave each tool cell's nested child calls right after it, reindexing followers. */
-		function withSubCalls(laidList) {
+		function withSubCalls(laidList, t) {
 			if (!laidList.some((laid) => laid.subCalls !== void 0 && laid.subCalls.length > 0)) return laidList;
 			const out = [];
 			let index = laidList[0] !== void 0 ? laidList[0].cell.index - 1 : 0;
@@ -6751,7 +7472,7 @@ window.__ModuleLoader__.load({
 						index: ++index
 					}
 				});
-				for (const sub of expandSubCalls(laid.subCalls, index)) {
+				for (const sub of expandSubCalls(laid.subCalls, index, t)) {
 					out.push(sub);
 					index = sub.cell.index;
 				}
@@ -6759,13 +7480,13 @@ window.__ModuleLoader__.load({
 			return out;
 		}
 		/** Sub-dispatch cells for one run_code parent, in start order (running = null duration). */
-		function expandSubCalls(subs, startIndex) {
+		function expandSubCalls(subs, startIndex, t) {
 			if (subs === void 0 || subs.length === 0) return [];
 			const out = [];
 			let index = startIndex;
 			for (const sub of subs) {
 				const settled = "kind" in sub;
-				const resultPreview = settled ? summarizeResult(sub) : void 0;
+				const resultPreview = settled ? summarizeResult(sub, t) : void 0;
 				const laid = {
 					absTime: settled ? finiteTime(sub.callTime ?? sub.time) : finiteTime(sub.time),
 					toolName: settled ? sub.call?.name ?? sub.callId : sub.name,
@@ -6777,7 +7498,7 @@ window.__ModuleLoader__.load({
 						...settled ? sub.call !== null ? summarizeCall(sub.call.name, sub.call.argsRaw) : resultAsText(resultPreview) : summarizeCall(sub.name, sub.argsRaw),
 						...settled ? sub.call !== null ? { inputDetail: sub.call.argsRaw } : {} : { inputDetail: sub.argsRaw },
 						...settled ? {
-							outputDetail: detailResult(sub),
+							outputDetail: detailResult(sub, t),
 							outputBlocks: sub.content.map((block) => sourceBlock(block)),
 							...resultPreview,
 							isError: sub.isError
@@ -6787,7 +7508,7 @@ window.__ModuleLoader__.load({
 					}
 				};
 				out.push(laid);
-				for (const child of expandSubCalls(sub.subCalls, index)) {
+				for (const child of expandSubCalls(sub.subCalls, index, t)) {
 					out.push(child);
 					index = child.cell.index;
 				}
@@ -6800,13 +7521,15 @@ window.__ModuleLoader__.load({
 				...argsRaw === "" ? {} : { previewMarkdown: argsRaw }
 			};
 		}
-		function summarizeResult(node) {
+		function summarizeResult(node, t) {
 			if (node.isError) return { result: node.error?.code ?? "error" };
 			for (const block of node.content) if (block.type === "text" && typeof block.text === "string" && block.text !== "") return {
 				result: "",
 				resultPreviewMarkdown: block.text
 			};
-			return { result: "No output" };
+			const images = imageBlockCount(node.content);
+			if (images > 0) return { result: t("layout.imageOnly", { count: images }) };
+			return { result: t("record.noOutput") };
 		}
 		function resultAsText(result) {
 			return {
@@ -6814,11 +7537,13 @@ window.__ModuleLoader__.load({
 				...result?.resultPreviewMarkdown === void 0 ? {} : { previewMarkdown: result.resultPreviewMarkdown }
 			};
 		}
-		function detailResult(node) {
+		function detailResult(node, t) {
 			if (node.isError) return node.error === void 0 ? "error" : `${node.error.name}: ${node.error.code}`;
 			const text = node.content.filter((block) => block.type === "text" && typeof block.text === "string").map((block) => block.type === "text" ? block.text : "").join("\n");
 			if (text !== "") return text;
-			if (node.content.length === 0 || node.content.every((block) => block.type === "text" && (typeof block.text !== "string" || block.text === ""))) return "No output";
+			const images = imageBlockCount(node.content);
+			if (images > 0) return t("layout.imageOnly", { count: images });
+			if (node.content.length === 0 || node.content.every((block) => block.type === "text" && (typeof block.text !== "string" || block.text === ""))) return t("record.noOutput");
 			return JSON.stringify(node.content, null, 2);
 		}
 		function detailContent(content) {
@@ -6878,7 +7603,7 @@ window.__ModuleLoader__.load({
 					block.content,
 					block.callId ?? "",
 					block.toolName ?? "",
-					block.imageAlt ?? ""
+					block.attachment?.name ?? ""
 				]),
 				searchableJson(cell.messageSource),
 				searchableJson(cell.promptDetail),
@@ -6931,8 +7656,8 @@ window.__ModuleLoader__.load({
 			}
 		};
 		//#endregion
-		//#region \0dsh-css:D:\Claude-project\deepseek-harness-win7\reference\deepseek-harness\packages\client\ui-trajectory\src\client\views.module.css.mjs
-		const css = ".iKf_uW_root{--dsh-trajectory-toolbar-height:32px;box-sizing:border-box;width:100%;height:100%;min-height:0;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-1);flex-direction:column;display:flex;overflow:hidden}.iKf_uW_ledger{z-index:0;isolation:isolate;--dsh-trajectory-bottom-clearance:calc(var(--dsh-composer-height,152px) + 16px);flex:1;min-width:0;min-height:0;display:flex;position:relative;overflow:hidden}";
+		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-trajectory\src\client\views.module.css.mjs
+		const css = ".i2iRxW_root{--dsh-trajectory-toolbar-height:32px;box-sizing:border-box;width:100%;height:100%;min-height:0;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-1);flex-direction:column;display:flex;overflow:hidden}.i2iRxW_ledger{z-index:0;isolation:isolate;--dsh-trajectory-bottom-clearance:calc(var(--dsh-composer-height,152px) + 16px);flex:1;min-width:0;min-height:0;display:flex;position:relative;overflow:hidden}";
 		const tagId = "@deepseek-ai/dsh-client-ui-trajectory/views.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -6942,8 +7667,8 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var views_module_css_default = {
-			"ledger": "iKf_uW_ledger",
-			"root": "iKf_uW_root"
+			"ledger": "i2iRxW_ledger",
+			"root": "i2iRxW_root"
 		};
 		//#endregion
 		//#region lib/types/client/TrajectoryView.js
@@ -7004,8 +7729,12 @@ window.__ModuleLoader__.load({
 				...total?.reasoning === void 0 && usage.reasoning === void 0 ? {} : { reasoning: (total?.reasoning ?? 0) + (usage.reasoning ?? 0) }
 			};
 		}
-		function TrajectoryView({ useSession, useDuration, loadOlder, setActualDuration, inspect, onInspectDone, t }) {
+		function TrajectoryView({ useSession, useTrajectory, useDuration, loadOlder, loadImage, setActualDuration, viewRequest, completeViewRequest, renderSlot, t }) {
 			const [collapsedTurns, setCollapsedTurns] = (0, react.useState)(EMPTY_TURN_IDS);
+			const renderImages = (0, react.useCallback)((owner) => renderSlot("conversation.trajectory.images", {
+				...owner,
+				loadImage
+			}), [loadImage, renderSlot]);
 			const [collapsedAssistants, setCollapsedAssistants] = (0, react.useState)(EMPTY_RECORD_IDS);
 			const [timelineSelection, setTimelineSelection] = (0, react.useState)(null);
 			const actualDuration = useDuration((value) => value);
@@ -7018,7 +7747,7 @@ window.__ModuleLoader__.load({
 			const [selectedTimelineIndex, setSelectedTimelineIndex] = (0, react.useState)(null);
 			const [timelineRecordSelection, setTimelineRecordSelection] = (0, react.useState)(null);
 			const [timelineRecordFocus, setTimelineRecordFocus] = (0, react.useState)(null);
-			const inspection = useSession((snapshot) => snapshot.views.get("trajectory") ?? EMPTY_TRAJECTORY_SNAPSHOT);
+			const inspection = useTrajectory((snapshot) => snapshot);
 			const historyLoading = useSession((snapshot) => snapshot.openState === "loading");
 			const olderHistoryLoading = useSession((snapshot) => snapshot.loadingOlder);
 			const hasOlderHistory = useSession((snapshot) => snapshot.hasMore);
@@ -7029,6 +7758,7 @@ window.__ModuleLoader__.load({
 			const runningCalls = inspection.runningCalls;
 			const requests = inspection.requests;
 			const callSchemas = inspection.callSchemas;
+			const inspectCallId = viewRequest?.view === "trajectory" ? viewRequest.focus : null;
 			const requestNumbers = (0, react.useMemo)(() => {
 				const assistantsByStep = /* @__PURE__ */ new Map();
 				for (const node of nodes) {
@@ -7063,12 +7793,13 @@ window.__ModuleLoader__.load({
 							seq: entry.seq,
 							turn,
 							step,
-							group: `Step ${step}`,
+							group: t("group.step", { step }),
 							number: index + 1,
 							...request?.status === void 0 ? {} : { status: request.status },
 							...request?.startedAt === void 0 ? {} : { startedAt: request.startedAt },
 							...request?.completedAt === void 0 ? {} : { completedAt: request.completedAt },
 							...request?.error === void 0 ? {} : { error: request.error },
+							...request?.errorCode === void 0 ? {} : { errorCode: request.errorCode },
 							...request?.resultSeq === void 0 ? {} : { resultSeq: request.resultSeq },
 							...request?.retry === void 0 ? {} : { retry: request.retry },
 							...request?.maxRetries === void 0 ? {} : { maxRetries: request.maxRetries },
@@ -7086,13 +7817,14 @@ window.__ModuleLoader__.load({
 						seq: request.startSeq,
 						turn: request.turn,
 						step: 0,
-						group: `Compaction ${request.startSeq}`,
+						group: t("group.compaction", { seq: request.startSeq }),
 						number: index + 1,
 						purpose: "compaction",
 						status: request.status,
 						startedAt: request.startedAt,
 						completedAt: request.completedAt,
 						...request.error === void 0 ? {} : { error: request.error },
+						...request.errorCode === void 0 ? {} : { errorCode: request.errorCode },
 						resultSeq: request.startSeq,
 						...request.provenance?.provider === void 0 ? {} : { provider: request.provenance.provider },
 						...request.provenance?.model === void 0 ? {} : { model: request.provenance.model },
@@ -7102,7 +7834,11 @@ window.__ModuleLoader__.load({
 					});
 				}
 				return numbered;
-			}, [nodes, requests]);
+			}, [
+				nodes,
+				requests,
+				t
+			]);
 			const partialTurn = partial?.turn ?? null;
 			const partialStep = partial?.step ?? null;
 			const finalized = (0, react.useMemo)(() => {
@@ -7117,7 +7853,7 @@ window.__ModuleLoader__.load({
 					runningCalls,
 					requests,
 					callSchemas
-				});
+				}, t);
 				return {
 					turns,
 					lastIndex: lastCellIndex(turns)
@@ -7129,7 +7865,8 @@ window.__ModuleLoader__.load({
 				partialStep,
 				runningCalls,
 				requests,
-				callSchemas
+				callSchemas,
+				t
 			]);
 			const timelinePartial = (0, react.useMemo)(() => partial === null ? null : {
 				turn: partial.turn,
@@ -7140,9 +7877,17 @@ window.__ModuleLoader__.load({
 				partialTurn,
 				partialStructureSignature(partial)
 			]);
-			const timelineTurns = (0, react.useMemo)(() => appendTrajectoryPartialLayout(finalized.turns, timelinePartial, finalized.lastIndex), [finalized, timelinePartial]);
+			const timelineTurns = (0, react.useMemo)(() => appendTrajectoryPartialLayout(finalized.turns, timelinePartial, finalized.lastIndex, t), [
+				finalized,
+				timelinePartial,
+				t
+			]);
 			const timelineMode = actualDuration ? actualTime ? "actual" : "duration" : actualTime ? "time" : "sequence";
-			const partialSearchTurns = (0, react.useMemo)(() => appendTrajectoryPartialLayout([], partial, finalized.lastIndex), [finalized.lastIndex, partial]);
+			const partialSearchTurns = (0, react.useMemo)(() => appendTrajectoryPartialLayout([], partial, finalized.lastIndex, t), [
+				finalized.lastIndex,
+				partial,
+				t
+			]);
 			const searchLayouts = (0, react.useMemo)(() => [finalized.turns, partialSearchTurns], [finalized, partialSearchTurns]);
 			const latestSearchLayouts = (0, react.useRef)(searchLayouts);
 			latestSearchLayouts.current = searchLayouts;
@@ -7268,6 +8013,7 @@ window.__ModuleLoader__.load({
 						t
 					}),
 					(0, react_jsx_runtime.jsx)(TrajectoryTimeline, {
+						t,
 						turns: timelineTurns,
 						mode: timelineMode,
 						range: timelineRange,
@@ -7282,6 +8028,8 @@ window.__ModuleLoader__.load({
 					(0, react_jsx_runtime.jsx)("div", {
 						className: views_module_css_default.ledger,
 						children: (0, react_jsx_runtime.jsx)(TrajectoryTable, {
+							t,
+							renderImages,
 							requestNumbers,
 							turns: timelineTurns,
 							streamingCells,
@@ -7303,8 +8051,8 @@ window.__ModuleLoader__.load({
 							onToggleTurn: toggleTurn,
 							collapsedAssistants,
 							onToggleAssistant: toggleAssistant,
-							inspectCallId: inspect?.callId ?? null,
-							onInspectApplied: onInspectDone
+							inspectCallId,
+							onInspectApplied: completeViewRequest
 						})
 					})
 				]
@@ -7315,9 +8063,9 @@ window.__ModuleLoader__.load({
 		/** Required services: the conversation slot, registries, ordinary Session paging, and the locale service. */
 		const inject = [
 			"slots",
-			"conversationEvents",
-			"conversationViews",
 			"sessions",
+			"uiSession",
+			"uiConversation",
 			"locale"
 		];
 		/**
@@ -7326,6 +8074,19 @@ window.__ModuleLoader__.load({
 		* @param ctx - client root context.
 		*/
 		function apply(ctx) {
+			const trajectorySources = /* @__PURE__ */ new WeakMap();
+			const trajectorySource = (binding) => {
+				let source = trajectorySources.get(binding);
+				if (source === void 0) {
+					const target = ctx.uiConversation.binding(binding).target("trajectory");
+					source = {
+						getSnapshot: () => target.getSnapshot() ?? EMPTY_TRAJECTORY_SNAPSHOT,
+						subscribe: (listener) => target.subscribe(listener)
+					};
+					trajectorySources.set(binding, source);
+				}
+				return source;
+			};
 			ctx.effect(() => ctx.locale.register(NS, {
 				zh,
 				en
@@ -7338,22 +8099,32 @@ window.__ModuleLoader__.load({
 			registerTrajectoryToolDefinition(ctx);
 			registerTrajectoryCompactionDefinitions(ctx);
 			registerTrajectoryConversationView(ctx);
+			ctx.uiSession.provide({
+				hooks: ["trajectory"],
+				resolve: (binding) => ({ hooks: { trajectory: trajectorySource(binding) } })
+			});
 			ctx.slots.inject("conversation.view", () => ctx.slots.register({
 				name: "conversation.view",
 				id: "trajectory",
 				order: 10,
 				locale: NS,
 				label: () => t("view.trajectory"),
+				children: { "conversation.trajectory.images": {
+					kind: "single",
+					scope: "session"
+				} },
 				inject: (sessionId) => {
 					const session = ctx.sessions.binding(sessionId)?.session;
 					if (session === void 0) throw new Error(`ui-trajectory: session "${sessionId}" is unavailable`);
+					const trajectory = ctx.uiConversation.binding(sessionId).target("trajectory");
 					return {
 						hooks: { duration },
 						loadOlder: async () => {
-							const before = session.getSnapshot().views.get("trajectory");
+							const before = trajectory.getSnapshot();
 							await session.loadOlder();
-							return session.getSnapshot().views.get("trajectory") !== before;
+							return trajectory.getSnapshot() !== before;
 						},
+						loadImage: Object.assign((attachment) => ctx.uiConversation.imageUrl(sessionId, attachment), { peek: (attachment) => ctx.uiConversation.peekImageUrl(sessionId, attachment) }),
 						setActualDuration: (value) => {
 							duration.set(value);
 						}

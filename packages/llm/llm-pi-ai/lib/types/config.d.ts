@@ -24,12 +24,16 @@ export declare const DEFAULT_STREAM_IDLE_TIMEOUT_MS = 300000;
  * Default request-level bound on base64-encoded image payload. Every image in
  * history is re-encoded into every request body, so an unbounded conversation
  * eventually exceeds a provider or gateway request-size cap and the session
- * can never complete another request. The 20MiB default admits four images at
- * the attachment store's 3.5MiB raw-image default after base64 expansion and
- * reserves request capacity for system prompts, history, tools, and JSON.
+ * can never complete another request. The 20MiB default admits fifteen 1MiB
+ * request versions after base64 expansion and reserves request capacity for
+ * system prompts, history, tools, and JSON.
  * Deployments behind stricter gateways lower it per route.
  */
 export declare const DEFAULT_MAX_REQUEST_IMAGE_BYTES: number;
+/** Default total-pixel budget preserves the complete 2048px normalized attachment. */
+export declare const DEFAULT_REQUEST_IMAGE_PIXEL_BUDGET: number;
+/** Default raw encoded-byte target before inline base64 expansion; the smallest quality-ladder output is used when no quality fits. */
+export declare const DEFAULT_REQUEST_IMAGE_MAX_BYTES: number;
 /** Context capacity assumed for a model neither configuration nor the catalog sizes. */
 export declare const DEFAULT_CONTEXT_WINDOW = 262144;
 /** Output capability assumed for a model neither configuration nor the catalog sizes. */
@@ -129,6 +133,13 @@ export interface PiAiProviderProfile {
      * requests instead of being rejected by a request-size cap.
      */
     maxRequestImageBytes?: number;
+    /** Total-pixel budget for each deterministic inline request version. */
+    requestImagePixelBudget?: number;
+    /**
+     * Raw encoded-byte target for each deterministic inline request version;
+     * the smallest quality-ladder output is used when no quality fits.
+     */
+    requestImageMaxBytes?: number;
     /** Provider-owned model-request retry policy; omission uses normal mode with five retries. */
     retryPolicy?: RetryPolicyConfig;
 }
@@ -144,6 +155,10 @@ export interface ResolvedPiAiProviderProfile extends Omit<PiAiProviderProfile, '
     streamIdleTimeoutMs: number;
     /** Positive request-level base64 image payload bound after defaulting. */
     maxRequestImageBytes: number;
+    /** Positive total-pixel request-version budget after defaulting. */
+    requestImagePixelBudget: number;
+    /** Positive raw request-version byte target after defaulting; the smallest quality-ladder output is used when no quality fits. */
+    requestImageMaxBytes: number;
     /** Immutable retry policy captured with this provider route. */
     retryPolicy: ResolvedRetryPolicy;
     /**

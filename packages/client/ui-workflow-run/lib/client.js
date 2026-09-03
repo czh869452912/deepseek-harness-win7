@@ -7,9 +7,9 @@ window.__ModuleLoader__.load({
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let react = require("react");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
-		let _deepseek_ai_dsh_client_runtime_client = require("@deepseek-ai/dsh-client-runtime/client");
-		//#region \0dsh-css:D:\Claude-project\deepseek-harness-win7\reference\deepseek-harness\packages\client\ui-workflow-run\src\client\WorkflowRunPanel.module.css.mjs
-		const css = "._2-Yijq_root{width:100%;min-width:0}._2-Yijq_runHeader{box-sizing:border-box;background:var(--dsw-alias-bg-module-platform);border-radius:8px;align-items:center;gap:6px;width:100%;min-width:0;height:32px;padding:0 8px;display:flex}._2-Yijq_runHeader:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:-2px}._2-Yijq_runLeading{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);flex:none;justify-content:center;align-items:center;margin-right:0;display:inline-flex}._2-Yijq_runTitle{max-width:42%;color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;flex:none;font-size:14px;font-weight:510;line-height:24px;overflow:hidden}._2-Yijq_runSummary{min-width:0;color:var(--dsw-alias-label-tertiary);text-overflow:ellipsis;white-space:nowrap;flex:1;font-size:12px;line-height:18px;overflow:hidden}._2-Yijq_statusTail{height:20px;color:var(--dsw-alias-label-secondary);white-space:nowrap;flex:none;align-items:center;gap:4px;font-size:11px;font-weight:510;line-height:16px;display:inline-flex;overflow:hidden}._2-Yijq_phaseHeader{box-sizing:border-box;align-items:center;gap:6px;width:100%;min-width:0;height:32px;display:flex}._2-Yijq_phaseHeader:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:-2px;border-radius:4px}._2-Yijq_phaseLeading{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);flex:none;justify-content:center;align-items:center;margin-right:0;display:inline-flex}._2-Yijq_phaseTitle{min-width:0;max-width:42%;color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;flex:0 auto;font-size:14px;line-height:24px;overflow:hidden}._2-Yijq_phaseCount{min-width:0;color:var(--dsw-alias-label-tertiary);text-overflow:ellipsis;white-space:nowrap;flex:1;font-size:13px;line-height:20px;overflow:hidden}._2-Yijq_phaseStatus{width:132px;color:var(--dsw-alias-label-secondary);text-align:right;text-overflow:ellipsis;white-space:nowrap;flex:none;font-size:13px;line-height:20px;overflow:hidden}._2-Yijq_separator{background:var(--dsw-alias-label-tertiary);border-radius:50%;flex:none;width:2px;height:2px}._2-Yijq_phaseList{flex-direction:column;gap:4px;min-width:0;padding:4px 0 0 16px;display:flex}._2-Yijq_phase{min-width:0}._2-Yijq_members{flex-direction:column;gap:2px;min-width:0;padding:0 0 0 16px;display:flex}._2-Yijq_memberRow,._2-Yijq_memberButton{width:100%;min-width:0;min-height:24px;color:var(--dsw-alias-label-secondary);font:inherit;text-align:left;background:0 0;border:0;border-radius:4px;align-items:center;gap:12px;padding:0;display:flex}._2-Yijq_memberButton{cursor:pointer}._2-Yijq_memberButton ._2-Yijq_memberLabel{color:var(--dsw-alias-state-business-primary);text-underline-position:from-font;text-decoration:underline}._2-Yijq_dotSlot{flex:none;justify-content:center;align-items:center;width:16px;height:24px;display:inline-flex;overflow:hidden}._2-Yijq_memberButton:focus-visible{outline:none}._2-Yijq_memberButton:focus-visible ._2-Yijq_memberLabelWrap{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}._2-Yijq_memberLabelWrap{border-radius:4px;flex:1;align-items:center;min-width:0;height:24px;padding:0 2px;display:flex;overflow:hidden}._2-Yijq_memberLabel{min-width:0;color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;flex:1;font-size:14px;line-height:24px;overflow:hidden}._2-Yijq_memberStatus{width:64px;color:var(--dsw-alias-label-secondary);text-align:right;text-overflow:ellipsis;white-space:nowrap;flex:none;font-size:13px;line-height:20px;overflow:hidden}._2-Yijq_empty{color:var(--dsw-alias-label-tertiary);padding:0;font-size:13px;line-height:20px}@media (width<=560px){._2-Yijq_phaseList,._2-Yijq_members{padding-left:12px}}";
+		let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
+		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-workflow-run\src\client\WorkflowRunPanel.module.css.mjs
+		const css = ".ojcf6a_root{width:100%;min-width:0}.ojcf6a_runHeader{box-sizing:border-box;background:var(--dsw-alias-bg-module-platform);border-radius:8px;align-items:center;gap:6px;width:100%;min-width:0;height:32px;padding:0 8px;display:flex}.ojcf6a_runHeader:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:-2px}.ojcf6a_runLeading{width:calc(16px + var(--dsh-content-font-delta,0px));height:calc(16px + var(--dsh-content-font-delta,0px));color:var(--dsw-alias-label-tertiary);flex:none;justify-content:center;align-items:center;margin-right:0;display:inline-flex}.ojcf6a_runTitle{max-width:42%;color:var(--dsw-alias-label-secondary);font-size:var(--dsh-content-font-size-secondary,13px);font-weight:510;line-height:calc(24px + var(--dsh-content-font-delta,0px));text-overflow:ellipsis;white-space:nowrap;flex:none;overflow:hidden}.ojcf6a_runSummary{min-width:0;color:var(--dsw-alias-label-tertiary);font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(18px + var(--dsh-content-font-delta-secondary,0px));text-overflow:ellipsis;white-space:nowrap;flex:1;overflow:hidden}.ojcf6a_statusTail{height:20px;color:var(--dsw-alias-label-secondary);white-space:nowrap;flex:none;align-items:center;gap:4px;font-size:11px;font-weight:510;line-height:16px;display:inline-flex;overflow:hidden}.ojcf6a_phaseHeader{box-sizing:border-box;align-items:center;gap:6px;width:100%;min-width:0;height:32px;display:flex}.ojcf6a_phaseHeader:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:-2px;border-radius:4px}.ojcf6a_phaseLeading{width:calc(16px + var(--dsh-content-font-delta,0px));height:calc(16px + var(--dsh-content-font-delta,0px));color:var(--dsw-alias-label-tertiary);flex:none;justify-content:center;align-items:center;margin-right:0;display:inline-flex}.ojcf6a_phaseTitle{min-width:0;max-width:42%;color:var(--dsw-alias-label-secondary);font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(24px + var(--dsh-content-font-delta,0px));text-overflow:ellipsis;white-space:nowrap;flex:0 auto;overflow:hidden}.ojcf6a_phaseCount{min-width:0;color:var(--dsw-alias-label-tertiary);font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(20px + var(--dsh-content-font-delta-secondary,0px));text-overflow:ellipsis;white-space:nowrap;flex:1;overflow:hidden}.ojcf6a_phaseStatus{width:calc(132px + var(--dsh-content-font-delta-secondary,0px) * 10);color:var(--dsw-alias-label-secondary);font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(20px + var(--dsh-content-font-delta-secondary,0px));text-align:right;text-overflow:ellipsis;white-space:nowrap;flex:none;overflow:hidden}.ojcf6a_separator{background:var(--dsw-alias-label-tertiary);border-radius:50%;flex:none;width:2px;height:2px}.ojcf6a_phaseList{flex-direction:column;gap:4px;min-width:0;padding:4px 0 0 16px;display:flex}.ojcf6a_phase{min-width:0}.ojcf6a_members{flex-direction:column;gap:2px;min-width:0;padding:0 0 0 16px;display:flex}.ojcf6a_memberRow,.ojcf6a_memberButton{width:100%;min-width:0;min-height:calc(24px + var(--dsh-content-font-delta,0px));color:var(--dsw-alias-label-secondary);font:inherit;text-align:left;background:0 0;border:0;border-radius:4px;align-items:center;gap:12px;padding:0;display:flex}.ojcf6a_memberButton{cursor:pointer}.ojcf6a_memberButton .ojcf6a_memberLabel{color:var(--dsw-alias-state-business-primary);text-underline-position:from-font;text-decoration:underline}.ojcf6a_dotSlot{width:16px;height:calc(24px + var(--dsh-content-font-delta,0px));flex:none;justify-content:center;align-items:center;display:inline-flex;overflow:hidden}.ojcf6a_memberButton:focus-visible{outline:none}.ojcf6a_memberButton:focus-visible .ojcf6a_memberLabelWrap{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}.ojcf6a_memberLabelWrap{min-width:0;height:calc(24px + var(--dsh-content-font-delta,0px));border-radius:4px;flex:1;align-items:center;padding:0 2px;display:flex;overflow:hidden}.ojcf6a_memberLabel{min-width:0;color:var(--dsw-alias-label-secondary);font-size:var(--dsh-content-font-size,14px);line-height:calc(24px + var(--dsh-content-font-delta,0px));text-overflow:ellipsis;white-space:nowrap;flex:1;overflow:hidden}.ojcf6a_memberStatus{width:64px;color:var(--dsw-alias-label-secondary);font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(20px + var(--dsh-content-font-delta-secondary,0px));text-align:right;text-overflow:ellipsis;white-space:nowrap;flex:none;overflow:hidden}.ojcf6a_empty{color:var(--dsw-alias-label-tertiary);font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(20px + var(--dsh-content-font-delta-secondary,0px));padding:0}@media (width<=560px){.ojcf6a_phaseList,.ojcf6a_members{padding-left:12px}}";
 		const tagId = "@deepseek-ai/dsh-client-ui-workflow-run/WorkflowRunPanel.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -19,28 +19,28 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var WorkflowRunPanel_module_css_default = {
-			"dotSlot": "_2-Yijq_dotSlot",
-			"empty": "_2-Yijq_empty",
-			"memberButton": "_2-Yijq_memberButton",
-			"memberLabel": "_2-Yijq_memberLabel",
-			"memberLabelWrap": "_2-Yijq_memberLabelWrap",
-			"memberRow": "_2-Yijq_memberRow",
-			"memberStatus": "_2-Yijq_memberStatus",
-			"members": "_2-Yijq_members",
-			"phase": "_2-Yijq_phase",
-			"phaseCount": "_2-Yijq_phaseCount",
-			"phaseHeader": "_2-Yijq_phaseHeader",
-			"phaseLeading": "_2-Yijq_phaseLeading",
-			"phaseList": "_2-Yijq_phaseList",
-			"phaseStatus": "_2-Yijq_phaseStatus",
-			"phaseTitle": "_2-Yijq_phaseTitle",
-			"root": "_2-Yijq_root",
-			"runHeader": "_2-Yijq_runHeader",
-			"runLeading": "_2-Yijq_runLeading",
-			"runSummary": "_2-Yijq_runSummary",
-			"runTitle": "_2-Yijq_runTitle",
-			"separator": "_2-Yijq_separator",
-			"statusTail": "_2-Yijq_statusTail"
+			"dotSlot": "ojcf6a_dotSlot",
+			"empty": "ojcf6a_empty",
+			"memberButton": "ojcf6a_memberButton",
+			"memberLabel": "ojcf6a_memberLabel",
+			"memberLabelWrap": "ojcf6a_memberLabelWrap",
+			"memberRow": "ojcf6a_memberRow",
+			"memberStatus": "ojcf6a_memberStatus",
+			"members": "ojcf6a_members",
+			"phase": "ojcf6a_phase",
+			"phaseCount": "ojcf6a_phaseCount",
+			"phaseHeader": "ojcf6a_phaseHeader",
+			"phaseLeading": "ojcf6a_phaseLeading",
+			"phaseList": "ojcf6a_phaseList",
+			"phaseStatus": "ojcf6a_phaseStatus",
+			"phaseTitle": "ojcf6a_phaseTitle",
+			"root": "ojcf6a_root",
+			"runHeader": "ojcf6a_runHeader",
+			"runLeading": "ojcf6a_runLeading",
+			"runSummary": "ojcf6a_runSummary",
+			"runTitle": "ojcf6a_runTitle",
+			"separator": "ojcf6a_separator",
+			"statusTail": "ojcf6a_statusTail"
 		};
 		//#endregion
 		//#region lib/types/client/WorkflowRunPanel.js
@@ -311,7 +311,7 @@ window.__ModuleLoader__.load({
 			}));
 			const runContentRef = (0, react.useRef)(null);
 			const phaseContentRefs = (0, react.useRef)(/* @__PURE__ */ new Map());
-			const navigable = useSessions((sessions) => navigableMembers(sessions, node.data.phases, sessionId), _deepseek_ai_dsh_client_runtime_client.shallowEqual);
+			const navigable = useSessions((sessions) => navigableMembers(sessions, node.data.phases, sessionId), _deepseek_ai_dsh_client_store.shallowEqual);
 			(0, react.useLayoutEffect)(() => {
 				setDisclosures((current) => {
 					const phases = /* @__PURE__ */ new Map();
@@ -618,14 +618,14 @@ window.__ModuleLoader__.load({
 		/** Browser plugin for durable workflow-run Conversation Nodes. */
 		/** Required services for Definition, keyed renderer, navigation, and copy. */
 		const inject = [
-			"conversationEvents",
+			"uiConversation",
 			"slots",
 			"sessions",
 			"locale"
 		];
 		/** Register the workflow Definition, dictionary, and keyed Chat renderer. */
 		function apply(ctx) {
-			ctx.conversationEvents.register(workflowRunDefinition);
+			ctx.uiConversation.events.register(workflowRunDefinition);
 			ctx.effect(() => ctx.locale.register(NS, {
 				zh,
 				en

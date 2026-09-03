@@ -48,9 +48,9 @@ export interface PromptSection {
     /** Unique name — a duplicate registration throws (see {@link SystemPrompt.section}). */
     readonly name: string;
     /**
-     * Sections are concatenated in ascending order. Convention: `-100` is the
-     * harness identity, `0` the deployment persona, tool guidance uses 100–199;
-     * other negative orders also render before the persona.
+     * Sections are concatenated in ascending order. Equal orders use code-unit
+     * name order. Repository-owned placements use
+     * {@link FIRST_PARTY_SECTION_ORDER}.
      */
     readonly order: number;
     /**
@@ -108,14 +108,54 @@ export interface PromptAssembly {
     variables: Record<string, string | undefined>;
 }
 /**
+ * Sparse integer placements for repository-owned prompt sections.
+ *
+ * Adjacent values differ by at least ten to keep the first-party groups sparse
+ * and make accidental collisions mechanically detectable.
+ * External plugins may use any finite order; equal orders are deterministic by
+ * section name.
+ */
+export declare const FIRST_PARTY_SECTION_ORDER: {
+    readonly HARNESS_IDENTITY: -1000;
+    readonly HARNESS_SOURCE: -900;
+    readonly WEB_SURFACE: -800;
+    readonly DEPLOYMENT_PERSONA: 0;
+    readonly PLAN_POLICY: 500;
+    readonly TEAM_POLICY: 600;
+    readonly PTC_ONLY: 800;
+    readonly FILE_REFERENCE: 900;
+    readonly TOOL_BASH: 1000;
+    readonly TOOL_PWSH: 1010;
+    readonly TOOL_READ: 1100;
+    readonly TOOL_WRITE: 1200;
+    readonly TOOL_EDIT: 1300;
+    readonly TOOL_GLOB: 1400;
+    readonly TOOL_GREP: 1500;
+    readonly TOOL_JOBS: 1600;
+    readonly TOOL_PTY: 1700;
+    readonly TOOL_WEB_SEARCH: 2000;
+    readonly TOOL_WEB_FETCH: 2100;
+    readonly TOOL_LSP: 2200;
+    readonly TOOL_SESSION_QUERY: 2300;
+    readonly TOOL_GOAL: 2400;
+    readonly TOOL_CORDIS: 2500;
+    readonly TOOL_WORKFLOW: 2600;
+    readonly TOOL_RALPH: 2700;
+    readonly TOOL_SUBAGENT: 2800;
+    readonly TOOL_REPORT: 2900;
+    readonly TOOLS_SDK: 5000;
+    readonly DELIVERABLE_FILE_REFERENCES: 9000;
+    readonly STRUCTURED_OUTPUT: 9900;
+};
+/**
  * The deployment persona's section name and order. Exported because a
  * composition can replace this slot — an agent preset shadows the
  * deployment's persona with its own — and both sides naming the same section
  * is what makes the replacement work rather than duplicate.
  */
 export declare const PERSONA_SECTION = "deployment:persona";
-/** Prompt order of the persona slot; the first section a model reads. */
-export declare const PERSONA_ORDER = 0;
+/** Prompt order of the persona slot. */
+export declare const PERSONA_ORDER: 0;
 /** Reserved {@link Config.toolOrder} marker for unlisted tools. */
 export declare const TOOL_ORDER_REST = "<unlisted-tools>";
 /** Plugin config: the deployment-authored fragment of the system prompt (see {@link Config.persona} for its contract). */

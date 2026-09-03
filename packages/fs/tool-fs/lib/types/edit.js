@@ -5,6 +5,7 @@
  * @module @deepseek-ai/dsh-tool-fs/src/edit
  */
 import { defineTool } from '@deepseek-ai/dsh-tools';
+import { FIRST_PARTY_SECTION_ORDER } from '@deepseek-ai/dsh-system-prompt';
 import { computeHunkDiffs, diffsFromMeta } from "./diff.js";
 import { remediateFsError } from "./error.js";
 import { sessionResolveOptions } from "./session-cwd.js";
@@ -48,7 +49,7 @@ export function formatEditOutput(displayPath, replaceAll) {
 export function applyEditTool(ctx, sandbox) {
     ctx.systemPrompt.section({
         name: 'tool:edit',
-        order: 102,
+        order: FIRST_PARTY_SECTION_ORDER.TOOL_EDIT,
         text: 'Use the edit tool for targeted changes to existing UTF-8 text files. It replaces literal old_string with new_string; by default old_string must appear exactly once. If old_string appears multiple times, provide a more specific old_string or set replace_all to true. Read the file first (the default fs-observation-policy requires it), unless you just created or edited it in this session.',
     });
     ctx.tools.register(defineTool({
@@ -103,7 +104,6 @@ export function applyEditTool(ctx, sandbox) {
                 // model-facing remedy; anything else passes through.
                 throw remediateFsError(sandbox.mapError(error, sandboxPolicy));
             }
-            // Record the present observation (a no-op when no policy plugin listens).
             ctx.emit('fs/observed', target, { kind: 'present', version: outcome.version }, exec);
             return {
                 path: target.displayPath,

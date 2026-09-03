@@ -22,13 +22,13 @@ export declare function MessageId(id: string): MessageId;
  * Correlates a model-issued tool call with its result. Provider-issued for
  * real adapters; synthesized by mocks/assembler fallbacks.
  */
-export type CallId = Branded<'CallId'>;
+export type ToolCallId = Branded<'ToolCallId'>;
 /**
- * Brand a string as a {@link CallId}.
+ * Brand a string as a {@link ToolCallId}.
  * @param id - the provider-issued (or synthesized) call id.
  * @returns the same string, branded; no validation is performed.
  */
-export declare function CallId(id: string): CallId;
+export declare function ToolCallId(id: string): ToolCallId;
 /** Provider-issued request identifier retained for diagnostics across package boundaries. */
 export type ProviderRequestId = Branded<'ProviderRequestId'>;
 /**

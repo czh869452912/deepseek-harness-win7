@@ -5,7 +5,7 @@
 import type { DatabaseSync } from 'node:sqlite';
 import { type SessionHeader } from '@deepseek-ai/dsh-session';
 /** Current physical-record schema with packed and compressed event rows. */
-export declare const SCHEMA_VERSION = 17;
+export declare const SCHEMA_VERSION = 19;
 /** Application id reserved for DeepSeek Harness SQLite session databases. */
 export declare const SESSION_PERSISTENCE_SQLITE_APPLICATION_ID = 1146308688;
 /** A materialized session's metadata and monotonic revision. */
@@ -30,7 +30,7 @@ export interface EventRow {
     readonly data: string | Uint8Array;
     readonly source_event_seqs: Uint8Array | null;
     readonly surface_op: string | null;
-    readonly ignorable: number | null;
+    readonly is_packed: 0 | 1;
 }
 /** Durable journal modes accepted by the backend. */
 export type JournalMode = 'wal' | 'delete' | 'truncate' | 'persist';

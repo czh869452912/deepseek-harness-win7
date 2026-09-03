@@ -1,7 +1,7 @@
 /** ACP wire-content admission and projection owned by the ACP adapter. @module */
 import type { ContentBlock as AcpContentBlock } from '@agentclientprotocol/sdk';
 import type { Context } from '@deepseek-ai/cordis';
-import type { Agent } from '@deepseek-ai/dsh-agent';
+import type { ModelSelection } from '@deepseek-ai/dsh-agent';
 import type { ContentBlock } from '@deepseek-ai/dsh-llm';
 /** Content-admission failure category used by the protocol handler. */
 export type AcpContentFailureKind = 'invalid' | 'internal';
@@ -31,13 +31,13 @@ export declare function supportsAcpImagePrompts(ctx: Context, provider: string |
  * writing; cancellation after a successful content-addressed write may leave an
  * unreachable object but never queues a late user message.
  * @param ctx - bridge context carrying attachment and model services.
- * @param agent - destination agent whose latest exact route controls admission.
+ * @param route - selection pinned to the accepted prompt.
  * @param prompt - untrusted ACP prompt blocks in wire order.
  * @param imageEnabled - capability result advertised during initialization.
  * @param signal - admission cancellation signal.
  * @returns core content with durable image references in wire order.
  */
-export declare function admitAcpPrompt(ctx: Context, agent: Agent, prompt: readonly AcpContentBlock[], imageEnabled: boolean, signal: AbortSignal): Promise<ContentBlock[]>;
+export declare function admitAcpPrompt(ctx: Context, route: ModelSelection | undefined, prompt: readonly AcpContentBlock[], imageEnabled: boolean, signal: AbortSignal): Promise<ContentBlock[]>;
 /**
  * Translate one committed assistant block to ACP wire content.
  * Images are re-read and integrity-verified before inline base64 delivery;

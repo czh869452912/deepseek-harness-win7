@@ -17,6 +17,7 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
  * may add node types this renderer has no mapping for.
  */
 import { Fragment, createElement } from 'react';
+import clsx from 'clsx';
 import { normalizeUri } from 'micromark-util-sanitize-uri';
 import { CodeBlock } from "./CodeBlock.js";
 import { renderTexToReact } from "./katex.js";
@@ -137,7 +138,7 @@ function renderNode(node, key, context) {
         case 'heading':
             return createElement(`h${node.depth}`, { key }, ...renderChildren(node.children, context));
         case 'blockquote':
-            return (_jsx("blockquote", { children: wrapBlockChildren(renderChildren(node.children, context).filter(child => child !== null), true) }, key));
+            return (_jsx("blockquote", { children: wrapBlockChildren(renderChildren(node.children, { ...context, inBlockquote: true }).filter(child => child !== null), true) }, key));
         case 'thematicBreak':
             return _jsx("hr", {}, key);
         case 'break':
@@ -225,7 +226,13 @@ function renderCode(node, key, context) {
         // The replaced hast pipeline appended one synthetic newline that
         // CodeBlock's display trim removes; feeding the bare value would make
         // that trim eat a REAL trailing blank line inside the fence instead.
-        code: `${node.value}\n`, lang: context.streaming ? undefined : lang, copyLabel: context.codeLabels?.copyLabel, copiedLabel: context.codeLabels?.copiedLabel }, key));
+        code: `${node.value}\n`, lang: lang, 
+        // Streaming keys are source offsets, stable while the fence grows, so
+        // the CodeBlock instance (and its incremental highlight session)
+        // survives every chunk. A fence whose info string is still mid-chunk
+        // has no content yet and took the empty-fence arm above, so `lang`
+        // here is final: it can never re-resolve to a different grammar.
+        streaming: context.streaming, copyLabel: context.labels.code.copyLabel, copiedLabel: context.labels.code.copiedLabel }, key));
 }
 /** A list is loose when it or any of its items is spread; every item then keeps its paragraphs. */
 function listLoose(list) {
@@ -281,7 +288,14 @@ function renderListItem(item, loose, key, context) {
 function renderTable(node, key, context) {
     const align = node.align ?? null;
     const [headRow, ...bodyRows] = node.children;
-    return (_jsx("div", { className: css.tableScroll, children: _jsxs("table", { children: [headRow !== undefined && _jsx("thead", { children: renderTableRow(headRow, 'th', align, 0, context) }), bodyRows.length > 0 && (_jsx("tbody", { children: bodyRows.map((row, index) => renderTableRow(row, 'td', align, index + 1, context)) }))] }) }, key));
+    const columns = align === null ? headRow?.children.length ?? 0 : align.length;
+    // Four or more columns read as a comparison matrix: the block keeps the
+    // table at natural width and exposes the stable `md-table-wide` hook so a
+    // hosting layout (the chat transcript) can widen it past the message
+    // column. Narrower tables — and any table inside a blockquote — fill the
+    // column and wrap instead (deepsuite chat TableWrapper parity).
+    const wide = columns >= 4 && context.inBlockquote !== true;
+    return (_jsx("div", { className: clsx(css.tableScroll, wide ? 'md-table-wide' : css.tableFill), tabIndex: wide ? 0 : undefined, children: _jsxs("table", { children: [headRow !== undefined && _jsx("thead", { children: renderTableRow(headRow, 'th', align, 0, context) }), bodyRows.length > 0 && (_jsx("tbody", { children: bodyRows.map((row, index) => renderTableRow(row, 'td', align, index + 1, context)) }))] }) }, key));
 }
 function renderTableRow(row, cellTag, align, key, context) {
     // With column alignment present, every row renders exactly one cell per
@@ -403,6 +417,6 @@ export function renderFootnoteSection(context) {
     }
     if (items.length === 0)
         return null;
-    return (_jsxs("section", { "data-footnotes": true, className: "footnotes", children: [_jsx("h2", { id: "footnote-label", className: "sr-only", children: "Footnotes" }), _jsx("ol", { children: items })] }, "footnotes"));
+    return (_jsxs("section", { "data-footnotes": true, className: "footnotes", children: [_jsx("h2", { id: "footnote-label", className: "sr-only", children: context.labels.footnotes }), _jsx("ol", { children: items })] }, "footnotes"));
 }
 //# sourceMappingURL=render.js.map

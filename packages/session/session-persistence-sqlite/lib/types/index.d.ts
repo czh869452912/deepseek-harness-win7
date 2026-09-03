@@ -1,12 +1,12 @@
 /**
  * Opt-in SQLite persistence provider. Logical sessions remain unchanged;
- * the physical backend packs eligible chunk runs into schema-17 rows.
+ * the physical backend packs eligible chunk runs into schema-19 rows.
  * @module @deepseek-ai/dsh-session-persistence-sqlite
  */
 import { Context, Service } from '@deepseek-ai/cordis';
 import z from '@deepseek-ai/schemastery';
-import type { SessionEvent, SessionHeader, SessionId, SessionPreparation } from '@deepseek-ai/dsh-session';
-import { SessionPersistence, type SessionInspection, type SessionLocation, type SessionPersistenceSnapshot } from '@deepseek-ai/dsh-session-persistence';
+import type { Session, SessionEvent, SessionHeader, SessionId, SessionPreparation } from '@deepseek-ai/dsh-session';
+import { type BorrowedSessionSource, SessionPersistence, type SessionInspection, type SessionLocation, type SessionPersistenceSnapshot } from '@deepseek-ai/dsh-session-persistence';
 import type { JournalMode } from './schema.ts';
 export { SCHEMA_VERSION } from './schema.ts';
 /** Default wait for another SQLite connection's write reservation. */
@@ -43,10 +43,12 @@ export declare class SqliteSessionPersistence extends SessionPersistence {
     /** SQLite has one database, not an independent per-session artifact. */
     locate(_meta: SessionHeader): SessionLocation | undefined;
     create(meta: SessionHeader): Promise<void>;
+    ensureMaterialized(session: Session): Promise<void>;
     append(id: SessionId, events: readonly SessionEvent[]): Promise<void>;
     prepare(id: SessionId, signal?: AbortSignal): Promise<SessionPreparation>;
     load(id: SessionId): Promise<SessionInspection>;
     inspect(id: SessionId, signal?: AbortSignal): Promise<SessionInspection>;
+    borrowSession(id: SessionId, signal?: AbortSignal): Promise<BorrowedSessionSource>;
     readFrom(id: SessionId, fromSeq: number, signal?: AbortSignal): Promise<{
         meta: SessionHeader;
         events: SessionEvent[];

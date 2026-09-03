@@ -1,24 +1,12 @@
 import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-runtime";
 import clsx from 'clsx';
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { IconCheckOutline16, IconCopyOutline16 } from "./icons/index.js";
 import { Menu } from "./Menu.js";
 import css from './JsonTree.module.css';
 const OBJECT_PREVIEW_LIMIT = 4;
 const ARRAY_PREVIEW_LIMIT = 5;
 const PREVIEW_DEPTH_LIMIT = 2;
-const DEFAULT_LABELS = {
-    copyValue: 'Copy value',
-    copyJson: 'Copy JSON',
-    copyPath: 'Copy property path',
-    copyPrettyJson: 'Copy pretty JSON',
-    copyCompactJson: 'Copy compact JSON',
-    copied: 'Copied',
-    copyFailed: 'Copy failed',
-    collapseNode: 'Collapse JSON node',
-    expandNode: 'Expand JSON node',
-    copyButtonTitle: action => `${action}; right-click for copy options`,
-};
 function valueCopyMenuItems(labels) {
     return [
         { id: 'value', label: labels.copyValue },
@@ -211,8 +199,7 @@ function copyText(target, mode) {
  * @param props - Parsed data, accessible label, and display options.
  * @returns A read-only JSON tree with an optionally fixed-open top level.
  */
-export function JsonTree({ data, label = 'JSON', className, copyable = true, expandTopLevel = true, labels, }) {
-    const copyLabels = useMemo(() => (labels === undefined ? DEFAULT_LABELS : { ...DEFAULT_LABELS, ...labels }), [labels]);
+export function JsonTree({ data, label, className, copyable = true, expandTopLevel = true, labels, }) {
     const rootEntries = entriesOf(data);
     const firstExpandableIndex = rootEntries.findIndex(([, value]) => (isExpandableValue(value) && entriesOf(value).length > 0));
     const firstExpandableEntry = rootEntries[firstExpandableIndex];
@@ -339,10 +326,10 @@ export function JsonTree({ data, label = 'JSON', className, copyable = true, exp
     const copyTargetIsObject = typeof copyTarget?.value === 'object' && copyTarget.value !== null;
     const defaultCopyMode = copyTargetIsObject ? 'prettyJson' : 'value';
     const copyTitle = copyState === 'copied'
-        ? copyLabels.copied
+        ? labels.copied
         : copyState === 'failed'
-            ? copyLabels.copyFailed
-            : copyTargetIsObject ? copyLabels.copyPrettyJson : copyLabels.copyValue;
+            ? labels.copyFailed
+            : copyTargetIsObject ? labels.copyPrettyJson : labels.copyValue;
     return (_jsxs("div", { ref: rootRef, className: clsx(css.root, className), onMouseOver: handleRootMouseOver, onMouseLeave: () => {
             if (!copyMenuOpenRef.current)
                 clearCopyTarget();
@@ -350,15 +337,15 @@ export function JsonTree({ data, label = 'JSON', className, copyable = true, exp
                 ? (_jsxs("div", { className: css.expandedTopLevel, children: [_jsx("div", { className: clsx(css.row, css.topLevelBracket), "data-json-root-row": true, onMouseOver: (event) => {
                                 event.stopPropagation();
                                 handleRowHover(event.currentTarget, { path: [], value: data });
-                            }, children: _jsx("span", { className: css.punctuation, children: rootOpen }) }), _jsx("div", { "aria-label": label, className: clsx(css.container, css.expandedTopLevelContainer), role: "tree", children: rootEntries.map(([key, value], index) => (_jsx(JsonTreeNode, { field: key, value: value, path: [Array.isArray(data) ? index : key], labels: copyLabels, lastElement: index === rootEntries.length - 1, initialExpanded: false, tabStopId: tabStopId, onClaimTabStop: setTabStopId, onRowHover: handleRowHover }, key))) }), _jsx("div", { className: clsx(css.row, css.topLevelBracket), children: _jsx("span", { className: css.punctuation, children: rootClose }) })] }))
-                : (_jsx("div", { "aria-label": label, className: css.container, role: "tree", children: _jsx(JsonTreeNode, { value: data, path: [], labels: copyLabels, lastElement: true, initialExpanded: true, tabStopId: tabStopId, onClaimTabStop: setTabStopId, onRowHover: handleRowHover }) })), copyTarget !== undefined && (_jsx("span", { className: css.copyAnchor, style: { left: copyTarget.left, top: copyTarget.top }, children: _jsx(Menu, { open: copyMenuOpen, compact: true, portal: true, align: "end", side: copyTarget.side, anchor: (_jsx("button", { ref: copyButtonRef, type: "button", className: css.copyButton, "data-json-copy-button": true, "data-state": copyState, "aria-label": copyTitle, title: copyLabels.copyButtonTitle(copyTitle), onClick: () => void copy(defaultCopyMode), onContextMenu: (event) => {
+                            }, children: _jsx("span", { className: css.punctuation, children: rootOpen }) }), _jsx("div", { "aria-label": label, className: clsx(css.container, css.expandedTopLevelContainer), role: "tree", children: rootEntries.map(([key, value], index) => (_jsx(JsonTreeNode, { field: key, value: value, path: [Array.isArray(data) ? index : key], labels: labels, lastElement: index === rootEntries.length - 1, initialExpanded: false, tabStopId: tabStopId, onClaimTabStop: setTabStopId, onRowHover: handleRowHover }, key))) }), _jsx("div", { className: clsx(css.row, css.topLevelBracket), children: _jsx("span", { className: css.punctuation, children: rootClose }) })] }))
+                : (_jsx("div", { "aria-label": label, className: css.container, role: "tree", children: _jsx(JsonTreeNode, { value: data, path: [], labels: labels, lastElement: true, initialExpanded: true, tabStopId: tabStopId, onClaimTabStop: setTabStopId, onRowHover: handleRowHover }) })), copyTarget !== undefined && (_jsx("span", { className: css.copyAnchor, style: { left: copyTarget.left, top: copyTarget.top }, children: _jsx(Menu, { open: copyMenuOpen, compact: true, portal: true, align: "end", side: copyTarget.side, anchor: (_jsx("button", { ref: copyButtonRef, type: "button", className: css.copyButton, "data-json-copy-button": true, "data-state": copyState, "aria-label": copyTitle, title: labels.copyButtonTitle(copyTitle), onClick: () => void copy(defaultCopyMode), onContextMenu: (event) => {
                             event.preventDefault();
                             event.stopPropagation();
                             copyMenuOpenRef.current = true;
                             setCopyMenuOpen(true);
                         }, children: copyState === 'copied'
                             ? _jsx(IconCheckOutline16, { size: 12 })
-                            : _jsx(IconCopyOutline16, { size: 12 }) })), items: copyTargetIsObject ? objectCopyMenuItems(copyLabels) : valueCopyMenuItems(copyLabels), onSelect: (id) => {
+                            : _jsx(IconCopyOutline16, { size: 12 }) })), items: copyTargetIsObject ? objectCopyMenuItems(labels) : valueCopyMenuItems(labels), onSelect: (id) => {
                         void copy(id);
                         copyMenuOpenRef.current = false;
                         setCopyMenuOpen(false);

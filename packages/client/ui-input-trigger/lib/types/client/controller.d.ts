@@ -7,9 +7,12 @@
  * only the source roster. One controller per session scope; the service
  * disposes it with the scope fiber.
  */
-import type { ClientContext, SessionId, SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client';
+import type { Context as ClientContext } from '@deepseek-ai/cordis';
+import { type SnapshotStore } from '@deepseek-ai/dsh-client-store';
+import type { ArbitrateKey, ArbitrateOutcome, PickOutcome } from '@deepseek-ai/dsh-client-ui-conversation/client';
+import type { SessionId } from '@deepseek-ai/dsh-session/types';
 import type { MenuState, TriggerHit } from '../core/contract.ts';
-import type { ArbitrateKey, ArbitrateOutcome, PickOutcome, InputTriggerSource, SubmitEnvelope, TriggerChar, TriggerGuard } from '../types.ts';
+import type { InputTriggerCrumb, InputTriggerSource, PickAction, SubmitEnvelope, TriggerChar, TriggerGuard } from '../types.ts';
 /** Roster access the controller borrows from the root service (registration order preserved). */
 export interface SourceRoster {
     sources(trigger: string): readonly InputTriggerSource[];
@@ -40,6 +43,13 @@ export declare class InputTriggerController {
      */
     readonly launcher: SnapshotStore<string | null>;
     /**
+     * Crumbs published by each header-bearing source for the open menu, keyed
+     * by source name. A snapshot store like {@link InputTriggerController.launcher}:
+     * the answer changes with every hit, and render-side consumers subscribe
+     * instead of re-polling sources during a render.
+     */
+    readonly headers: SnapshotStore<ReadonlyMap<string, readonly InputTriggerCrumb[]>>;
+    /**
      * Aggregated hot reference lexicon, grouped by trigger (plain-text-reference decision;
      * see .agents/notes/implemented/architecture/2026-07-25-web-input-machine-and-slash-pipeline.md):
      * sources implementing the lexicon hook are polled with the session
@@ -52,6 +62,8 @@ export declare class InputTriggerController {
     readonly lexicon: SnapshotStore<ReadonlyMap<TriggerChar, readonly string[]>>;
     /** The authoritative hit: single truth for span CAS material (menu snapshot never carries it alone). */
     private hit;
+    /** Whether the open menu was reached by a drill pick; cleared with the menu. */
+    private drilled;
     private fetch;
     private disposed;
     /** Per-source lexicon unsubscribers (sources without the hook never enter). */
@@ -80,8 +92,25 @@ export declare class InputTriggerController {
      * and execute claim/insert outcomes via the scoped input events.
      * @param source - source (group) name.
      * @param index - candidate index within the group.
+     * @param action - settling pick (default) or the candidate's drill action.
      */
-    pick(source: string, index: number): void;
+    pick(source: string, index: number, action?: PickAction): void;
+    /**
+     * Pointer pick on one crumb of a source's menu header: route it through the
+     * same drill path a folder row takes, so returning to a step and descending
+     * into one share one outcome.
+     * @param source - source (group) name.
+     * @param index - crumb index within that source's published header.
+     */
+    pickCrumb(source: string, index: number): void;
+    /**
+     * Pointer hover from MenuView: park the shared highlight on the hovered
+     * candidate (keyboard `move` and pointer hover drive one highlight —
+     * last input wins).
+     * @param source - source (group) name.
+     * @param index - candidate index within the group.
+     */
+    hover(source: string, index: number): void;
     /**
      * Keyboard arbitration while the menu is open.
      * @param key - intercepted key.
@@ -147,6 +176,21 @@ export declare class InputTriggerController {
     /** Launch the candidate fetch for one hit generation, superseding the previous one. */
     private fetchCandidates;
     private stopFetch;
+    /**
+     * Run one candidate (or crumb) through its source and apply the outcome.
+     *
+     * A drill is the one pick that leaves the menu open, so it is also the one
+     * that records how the next query was reached; every other pick closes the
+     * menu, which clears that record.
+     * @param src - the owning source.
+     * @param candidate - the picked candidate, or a crumb projected as one.
+     * @param hit - the authoritative hit supplying position and span CAS.
+     * @param action - settling pick or drill.
+     */
+    private settle;
+    /** Re-poll every header-bearing source in the hit roster and publish their crumbs. */
+    private refreshHeaders;
+    private setHeaders;
     private clearLauncher;
     private reduce;
 }

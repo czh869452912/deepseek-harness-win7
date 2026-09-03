@@ -11,6 +11,7 @@ import { boundContextSummary, createUserMessage } from '@deepseek-ai/dsh-llm';
 import { TextRetainer } from '@deepseek-ai/dsh-output-retention';
 import { defineTool } from '@deepseek-ai/dsh-tools';
 import { JobId } from '@deepseek-ai/dsh-jobs';
+import { FIRST_PARTY_SECTION_ORDER } from '@deepseek-ai/dsh-system-prompt';
 export const name = 'tool-jobs';
 export const inject = ['tools', 'jobs', 'systemPrompt'];
 export const Config = z.object({
@@ -205,10 +206,10 @@ export function apply(ctx, config) {
     };
     // Producers may start work only while a controller is attached.
     ctx.jobs.attachController('tool-jobs');
-    // Cross-call guidance follows the bash section and precedes product sections.
+    // Cross-call guidance follows the filesystem sections and precedes product sections.
     ctx.systemPrompt.section({
         name: 'tool:jobs',
-        order: 106,
+        order: FIRST_PARTY_SECTION_ORDER.TOOL_JOBS,
         text: 'Track every background job id you start. You are notified in-session when a job finishes — do not busy-poll or sleep on one; keep working on independent steps and do not duplicate a running job\'s work. Before giving a final answer, collect every still-relevant job with job_output (set wait: true only when you are genuinely blocked on it), and job_kill jobs that stopped mattering.',
     });
     // Use the exact lifecycle owner; reusable ids could resolve to a replacement.

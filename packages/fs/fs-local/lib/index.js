@@ -713,6 +713,9 @@ var LocalFileSystem = class extends FileSystem {
 	processPath(target) {
 		return String(target.targetKey);
 	}
+	processPathFromHostPath(hostPath) {
+		return isAbsolute(hostPath) ? resolve(hostPath) : void 0;
+	}
 	fileUrl(target) {
 		return pathToFileURL(this.processPath(target)).href;
 	}

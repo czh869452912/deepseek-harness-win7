@@ -16,6 +16,16 @@ const CHARS_PER_TOKEN = 4;
 /** Per-block structural overhead for JSON framing and type tags. */
 const BLOCK_OVERHEAD = 4;
 /**
+* Structural JSON price of one block outside the typed pricing arms: the
+* fixed heuristic for merge-extended blocks and for image references, whose
+* request price is route-owned rather than fixed.
+* @param block - block to price without mutation.
+* @returns heuristic tokens for the block's JSON structure.
+*/
+function estimateStructuralBlock(block) {
+	return BLOCK_OVERHEAD + Math.ceil(JSON.stringify(block).length / CHARS_PER_TOKEN);
+}
+/**
 * Price content blocks recursively under the fixed density heuristic.
 * @param blocks - content blocks to price without mutation.
 * @returns heuristic tokens including per-block structural overhead.
@@ -33,7 +43,7 @@ function estimateContent(blocks) {
 		case "tool-result":
 			tokens += estimateContent(block.content) + BLOCK_OVERHEAD;
 			break;
-		default: tokens += BLOCK_OVERHEAD + Math.ceil(JSON.stringify(block).length / CHARS_PER_TOKEN);
+		default: tokens += estimateStructuralBlock(block);
 	}
 	return tokens;
 }
@@ -142,23 +152,41 @@ function foldSurfaceProjection(claim, event) {
 		claim: void 0
 	};
 }
+//#endregion
+//#region lib/types/breakdown-projection.js
+/**
+* Pure fold for the heuristic context-composition projection: system prompt
+* and tool schemas from the newest request envelope, conversation from the
+* live surface. Prices with the same shared estimator as the meter service,
+* so the three figures match `measure()`'s heuristic vocabulary exactly.
+*/
+/** Non-negative integer token count (the shared figure shape). */
+const tokenCount = z$1.number().int().nonnegative();
 /**
 * Token-meter's context-composition projection unit.
 *
 * Envelope figures are last-wins per `request/header`; the message figure
 * rides {@link foldSurfaceProjection} — the same O(1) fold the occupancy
-* projection uses — so fully metered logs equal `measure().surfaceTokens` at
-* every event boundary and compaction shrinks the figure by its logged shadow
-* price. A replacement without a claim preserves the previous total. The
+* projection uses — so fully metered logs equal the sum of
+* `measure().nodes[].heuristicTokens` at every event boundary and compaction
+* shrinks the figure by its logged shadow price; the route-priced
+* `measure().surfaceTokens` deliberately diverges by the routed model's image
+* repricing. A replacement without a claim preserves the previous total. The
 * state is a fixed handful of numbers, so the persisted checkpoint stays
 * O(1) over the session's life.
 */
 const contextBreakdownProjectionDefinition = {
 	key: "contextBreakdown",
-	schema: z$1.object({
-		systemTokens: z$1.number().int().nonnegative(),
-		toolsTokens: z$1.number().int().nonnegative(),
-		messageTokens: z$1.number().int().nonnegative()
+	stateVersion: 2,
+	stateSchema: z$1.object({
+		systemTokens: tokenCount,
+		toolsTokens: tokenCount,
+		messageTokens: tokenCount,
+		claim: z$1.object({
+			start: tokenCount,
+			end: tokenCount,
+			tokens: tokenCount
+		}).optional()
 	}).strict(),
 	init: () => ({
 		systemTokens: 0,
@@ -182,12 +210,18 @@ const contextBreakdownProjectionDefinition = {
 			...fold.claim === void 0 ? {} : { claim: fold.claim }
 		};
 	},
-	view: ({ systemTokens, toolsTokens, messageTokens }) => ({
-		systemTokens,
-		toolsTokens,
-		messageTokens
-	}),
-	stateVersion: 2
+	wire: {
+		viewSchema: z$1.object({
+			systemTokens: tokenCount,
+			toolsTokens: tokenCount,
+			messageTokens: tokenCount
+		}).strict(),
+		view: ({ systemTokens, toolsTokens, messageTokens }) => ({
+			systemTokens,
+			toolsTokens,
+			messageTokens
+		})
+	}
 };
 //#endregion
 //#region lib/types/usage-projection.js
@@ -219,33 +253,66 @@ const projectionSchema = z$1.object({
 	cacheReadTokens: z$1.number().int().nonnegative(),
 	cacheWriteTokens: z$1.number().int().nonnegative()
 }).strict();
+/**
+* The token-usage unit's state schema — the one definition of the state
+* shape; the state type is inferred from it.
+*/
+const tokenUsageStateSchema = z$1.object({
+	totals: projectionSchema,
+	last: z$1.object({
+		turn: z$1.number().int().nonnegative(),
+		step: z$1.number().int().nonnegative(),
+		buckets: projectionSchema
+	}).nullable()
+}).strict();
 const pressureSchema = z$1.object({
 	pressureTokens: z$1.number().int().nonnegative().optional(),
 	projectedTokens: z$1.number().int().nonnegative().optional(),
 	contextWindow: z$1.number().int().positive().optional()
-}).strict();
+}).strict().transform(({ pressureTokens, projectedTokens, contextWindow }) => ({
+	...pressureTokens === void 0 ? {} : { pressureTokens },
+	...projectedTokens === void 0 ? {} : { projectedTokens },
+	...contextWindow === void 0 ? {} : { contextWindow }
+}));
 /** Prompt-side pressure of one request: input plus cache traffic, no output. */
 const pressureFrom = (usage) => usage.inputTokens + (usage.cacheReadTokens ?? 0) + (usage.cacheWriteTokens ?? 0);
 /** The usage a chunk or finalized message reports for its step, if any. */
 const usageOf = (event) => event.type === "assistant/chunk" && event.data.chunk.type === "usage" ? event.data.chunk.usage : event.type === "assistant/message" ? event.data.usage : void 0;
+/** The context-pressure state schema and source of its inferred type. */
+const contextPressureStateSchema = z$1.object({
+	contextWindow: z$1.number().int().positive().optional(),
+	pressureTokens: z$1.number().int().nonnegative().optional(),
+	surfaceTokens: z$1.number().int().nonnegative(),
+	sampledSurfaceTokens: z$1.number().int().nonnegative().optional(),
+	claim: z$1.object({
+		start: z$1.number().int().nonnegative(),
+		end: z$1.number().int().nonnegative(),
+		tokens: z$1.number().int().nonnegative()
+	}).optional()
+}).strict();
 /**
 * Token-meter's session projection unit.
 *
 * Usage chunks provide an early sample that survives a later request failure;
-* an assistant message provides the final sample for the same turn/step. A
-* repeated sample replaces that step's earlier value instead of double
-* counting it. The single `last` slot relies on the session-log invariant
-* that usage reports for one turn/step are adjacent: once a later step begins,
-* a legal log never reports usage for an earlier step again.
+* an assistant message provides the final sample for the same attempt. A
+* repeated sample replaces that attempt's earlier value instead of double
+* counting it, while `llm/retry-started` closes the replacement slot so the
+* retried attempt adds to the total. The single `last` slot relies on the
+* session-log invariant that usage reports for one attempt are adjacent.
 */
 const tokenUsageProjectionDefinition = {
 	key: "tokenUsage",
-	schema: projectionSchema,
+	stateVersion: 2,
+	stateSchema: tokenUsageStateSchema,
 	init: () => ({
 		totals: zeroBuckets(),
 		last: null
 	}),
 	apply: (state, event) => {
+		if (event.type === "llm/retry-started") return state.last?.turn === event.data.turn && state.last.step === event.data.step ? {
+			...state,
+			last: null
+		} : state;
 		let turn;
 		let step;
 		let usage;
@@ -266,8 +333,10 @@ const tokenUsageProjectionDefinition = {
 			}
 		};
 	},
-	view: (state) => state.totals,
-	stateVersion: 1
+	wire: {
+		viewSchema: projectionSchema,
+		view: (state) => state.totals
+	}
 };
 /**
 * Token-meter's context-occupancy projection unit.
@@ -292,7 +361,8 @@ const tokenUsageProjectionDefinition = {
 */
 const contextPressureProjectionDefinition = {
 	key: "contextPressure",
-	schema: pressureSchema,
+	stateVersion: 4,
+	stateSchema: contextPressureStateSchema,
 	init: () => ({ surfaceTokens: 0 }),
 	apply: (state, event) => {
 		const fold = foldSurfaceProjection(state.claim, event);
@@ -328,65 +398,166 @@ const contextPressureProjectionDefinition = {
 			claim: fold.claim
 		};
 	},
-	view: ({ contextWindow, pressureTokens, surfaceTokens, sampledSurfaceTokens }) => ({
-		...contextWindow === void 0 ? {} : { contextWindow },
-		...pressureTokens === void 0 ? {} : { pressureTokens },
-		...pressureTokens === void 0 || sampledSurfaceTokens === void 0 ? {} : { projectedTokens: Math.max(0, pressureTokens + surfaceTokens - sampledSurfaceTokens) }
-	}),
-	stateVersion: 4
+	wire: {
+		viewSchema: pressureSchema,
+		view: ({ contextWindow, pressureTokens, surfaceTokens, sampledSurfaceTokens }) => ({
+			...contextWindow === void 0 ? {} : { contextWindow },
+			...pressureTokens === void 0 ? {} : { pressureTokens },
+			...pressureTokens === void 0 || sampledSurfaceTokens === void 0 ? {} : { projectedTokens: Math.max(0, pressureTokens + surfaceTokens - sampledSurfaceTokens) }
+		})
+	}
 };
 //#endregion
 //#region lib/types/surface-fold.js
 /**
 * The measurement service's positional surface fold: the per-node priced
 * surface `measure()` serves and compaction plans against. The projection
-* units deliberately do NOT share this fold — their state must stay O(1)
-* for the persisted checkpoint, so they ride `surface-projection.ts`'s
-* shadow-price protocol instead. Fully metered logs stay in agreement by
-* construction: both price through `estimate.ts`, and every logged shadow
-* price is derived from THIS fold's nodes by the replace producer. A
-* projection replacement without a claim deliberately folds with zero delta.
+* units do NOT share this fold — their state must stay O(1) for the
+* persisted checkpoint, so they ride `surface-projection.ts`'s shadow-price
+* protocol; the two agree because both price through `estimate.ts` and every
+* logged shadow price derives from this fold's fixed-heuristic node prices.
+*
+* The fold is a plan/commit pair: {@link planSurfaceTokens} runs every
+* fallible step read-only and {@link commitSurfaceTokens} mutates in place,
+* so a throw leaves the caller's state untouched and the same malformed
+* event fails identically on every retry.
+* Nodes also carry their durable image occurrences and image-free heuristic
+* price, so `measure()` can reprice image content for the routed model.
 *
 * @module @deepseek-ai/dsh-token-meter/surface-fold
 */
+/** Collect image occurrences recursively and total their structural prices. */
+function collectImages(blocks, images) {
+	let structuralTokens = 0;
+	for (const block of blocks) if (block.type === "image") {
+		images.push(block.attachment);
+		structuralTokens += estimateStructuralBlock(block);
+	} else if (block.type === "tool-result") structuralTokens += collectImages(block.content, images);
+	return structuralTokens;
+}
+/** Build one priced node from a surface event's derived message. */
+function analyzeNode(seq, message) {
+	if (message === null) return {
+		seq,
+		heuristicTokens: 0,
+		imageFreeTokens: 0,
+		images: []
+	};
+	const heuristicTokens = estimateMessage(message);
+	const images = [];
+	return {
+		seq,
+		heuristicTokens,
+		imageFreeTokens: heuristicTokens - collectImages(message.content, images),
+		images
+	};
+}
 /**
-* Fold one surface event onto a priced surface.
-*
-* Total and allocation-fresh: the caller assigns the result rather than
-* mutating in place, so a throw here leaves the caller's state untouched and
-* the same malformed event fails identically on every retry.
+* Validate and price one surface event without mutating the surface.
 * @param nodes - the priced surface preceding this event, in model-visible order.
 * @param event - the surface event to place.
-* @returns the event's price, the next surface, and the signed total delta.
+* @returns the plan for {@link commitSurfaceTokens}.
 * @throws when a replacement names a range absent from `nodes` — committed
 *   logs are surface-validated at append time, so an unresolvable range is log
 *   corruption and must fail loud rather than skip the event.
 */
-function foldSurfaceTokens(nodes, event) {
-	const message = deriveEventMessage(event);
-	const tokens = message === null ? 0 : estimateMessage(message);
+function planSurfaceTokens(nodes, event) {
+	const node = analyzeNode(event.seq, deriveEventMessage(event));
+	const tokens = node.heuristicTokens;
 	const op = event.surfaceOp;
 	if (op === "append") return {
 		tokens,
-		nodes: [...nodes, {
-			seq: event.seq,
-			tokens
-		}],
-		deltaTokens: tokens
+		deltaTokens: tokens,
+		node,
+		target: "append"
 	};
-	const startIdx = nodes.findIndex((node) => node.seq === op.start);
-	const endIdx = nodes.findIndex((node) => node.seq === op.end);
+	const startIdx = nodes.findIndex((candidate) => candidate.seq === op.start);
+	const endIdx = nodes.findIndex((candidate) => candidate.seq === op.end);
 	if (startIdx === -1 || endIdx === -1 || startIdx > endIdx) throw new Error(`token surface: replace at seq ${event.seq} has invalid current range ${op.start}-${op.end}`);
-	const removed = nodes.slice(startIdx, endIdx + 1).reduce((total, node) => total + node.tokens, 0);
-	const next = [...nodes];
-	next.splice(startIdx, endIdx - startIdx + 1, {
-		seq: event.seq,
-		tokens
-	});
 	return {
 		tokens,
-		nodes: next,
-		deltaTokens: tokens - removed
+		deltaTokens: tokens - nodes.slice(startIdx, endIdx + 1).reduce((total, candidate) => total + candidate.heuristicTokens, 0),
+		node,
+		target: {
+			startIdx,
+			endIdx
+		}
+	};
+}
+/**
+* Apply one validated plan to the priced surface in place; infallible, so it
+* cannot leave a half-applied surface behind.
+* @param nodes - the exact priced surface the plan was built against.
+* @param plan - the transition returned by {@link planSurfaceTokens}.
+*/
+function commitSurfaceTokens(nodes, plan) {
+	if (plan.target === "append") {
+		nodes.push(plan.node);
+		return;
+	}
+	nodes.splice(plan.target.startIdx, plan.target.endIdx - plan.target.startIdx + 1, plan.node);
+}
+//#endregion
+//#region lib/types/route-pricing.js
+/**
+* Route-aware surface pricing: projects the fold's fixed-heuristic nodes onto
+* the routed model's request, replacing every image occurrence's structural
+* price with the route's declared visual tokens plus the model-visible text it
+* actually sends. Without declared pricing every node keeps its fixed
+* heuristic price, so provider-neutral behavior is unchanged.
+*
+* @module @deepseek-ai/dsh-token-meter/route-pricing
+*/
+/**
+* Price one ordered surface under a route's request-image pricing.
+* @param nodes - the fold's current or snapshotted surface, in model-visible order.
+* @param pricing - the routed model's image pricing, or undefined to keep the fixed heuristic.
+* @returns detached public nodes and their route-priced total.
+* @throws when the pricing answers a different occurrence count than it was
+*   asked — misalignment would silently misprice nodes, so it must fail loud.
+*/
+function priceSurface(nodes, pricing) {
+	const images = pricing === void 0 ? [] : nodes.flatMap((node) => node.images);
+	if (pricing === void 0 || images.length === 0) {
+		let surfaceTokens = 0;
+		return {
+			nodes: nodes.map((node) => {
+				surfaceTokens += node.heuristicTokens;
+				return {
+					seq: node.seq,
+					tokens: node.heuristicTokens,
+					heuristicTokens: node.heuristicTokens
+				};
+			}),
+			surfaceTokens
+		};
+	}
+	const prices = pricing.priceImages(images);
+	if (prices.length !== images.length) throw new Error(`token meter: route image pricing answered ${prices.length} prices for ${images.length} occurrences`);
+	let cursor = 0;
+	let surfaceTokens = 0;
+	return {
+		nodes: nodes.map((node) => {
+			let tokens = node.heuristicTokens;
+			if (node.images.length > 0) {
+				tokens = node.imageFreeTokens;
+				for (let occurrence = 0; occurrence < node.images.length; occurrence += 1) {
+					const price = prices[cursor];
+					cursor += 1;
+					tokens += price.visualTokens + estimateContent([{
+						type: "text",
+						text: price.text
+					}]);
+				}
+			}
+			surfaceTokens += tokens;
+			return {
+				seq: node.seq,
+				tokens,
+				heuristicTokens: node.heuristicTokens
+			};
+		}),
+		surfaceTokens
 	};
 }
 //#endregion
@@ -428,14 +599,18 @@ var TokenMeter = class extends Service {
 	/**
 	* Measure current request pressure and surface through the durable tail.
 	*
-	* Provider usage is reused only when the latest successful call's canonical
-	* request envelope matches `requestHeader` and its total is no lower than
-	* that call's full heuristic anchor; otherwise the complete envelope and
-	* surface are heuristically repriced.
+	* The effective envelope's routed provider/model selects the request-image
+	* pricing every node is priced under: a route whose adapter declares image
+	* pricing charges each retained image its visual tokens plus its
+	* model-visible text, while other routes keep the fixed heuristic. Provider
+	* usage is reused only when the latest successful call's canonical request
+	* envelope matches `requestHeader` and its total is no lower than that
+	* call's full route-priced anchor; otherwise the complete envelope and
+	* surface are repriced.
 	*
-	* `requestHeader` affects request pressure only; surface fields always
-	* describe the current session surface. Every call clones those positional
-	* nodes, so measurement is O(surface).
+	* `requestHeader` replaces the latest logged envelope for pressure and node
+	* pricing; the node set always describes the current session surface. Every
+	* call clones those positional nodes, so measurement is O(surface).
 	*
 	* @param session - session to replay through its current durable tail.
 	* @param requestHeader - optional effective request envelope replacing the latest logged header.
@@ -444,13 +619,25 @@ var TokenMeter = class extends Service {
 	measure(session, requestHeader) {
 		const state = this._sync(session);
 		const header = requestHeader === void 0 ? state.header : canonicalHeader(requestHeader);
+		const pricing = this._routeImagePricing(header);
+		const surface = priceSurface(state.surface, pricing);
 		const anchor = state.anchor;
 		let baseline;
 		let surfaceDeltaTokens;
 		if (anchor !== void 0 && optionalHeaderEquals(anchor.header, header)) {
-			baseline = anchor.baseline;
-			surfaceDeltaTokens = state.surfaceTokens - anchor.surfaceTokens;
-		} else if (header === void 0 && state.surfaceTokens === 0) {
+			const anchorSurfaceTokens = priceSurface(anchor.nodes, pricing).surfaceTokens + anchor.assistantTokens;
+			const estimatedAnchorTokens = estimateHeader(header) + anchorSurfaceTokens;
+			const usage = anchor.usage;
+			baseline = usage !== void 0 && usageTokens(usage) >= estimatedAnchorTokens ? {
+				kind: "usage",
+				tokens: usageTokens(usage),
+				usage
+			} : {
+				kind: "estimated",
+				tokens: estimatedAnchorTokens
+			};
+			surfaceDeltaTokens = surface.surfaceTokens - anchorSurfaceTokens;
+		} else if (header === void 0 && surface.surfaceTokens === 0) {
 			baseline = {
 				kind: "none",
 				tokens: 0
@@ -459,7 +646,7 @@ var TokenMeter = class extends Service {
 		} else {
 			baseline = {
 				kind: "estimated",
-				tokens: estimateHeader(header) + state.surfaceTokens
+				tokens: estimateHeader(header) + surface.surfaceTokens
 			};
 			surfaceDeltaTokens = 0;
 		}
@@ -468,9 +655,15 @@ var TokenMeter = class extends Service {
 			baseline,
 			surfaceDeltaTokens,
 			totalTokens: Math.max(0, baseline.tokens + surfaceDeltaTokens),
-			surfaceTokens: state.surfaceTokens,
-			nodes: state.surface
+			surfaceTokens: surface.surfaceTokens,
+			nodes: surface.nodes
 		}));
+	}
+	/** Resolve the routed model's image pricing, when the llm service and route declare one. */
+	_routeImagePricing(header) {
+		const config = header?.config;
+		if (config === void 0) return void 0;
+		return this.ctx.get("llm")?.imageRequestPricing(config.provider, config.model);
 	}
 	/**
 	* Heuristically price one model-visible message (instance face of the pure
@@ -489,7 +682,6 @@ var TokenMeter = class extends Service {
 				consumedEvents: 0,
 				header: void 0,
 				surface: [],
-				surfaceTokens: 0,
 				stepStart: void 0,
 				anchor: void 0
 			};
@@ -503,9 +695,9 @@ var TokenMeter = class extends Service {
 		return state;
 	}
 	/**
-	* Validate and prepare every fallible part before mutating replay state.
-	* A malformed event remains unread on every retry instead of partially
-	* applying the same mutation more than once.
+	* Run every fallible step — surface plan and anchor validation — before
+	* mutating replay state, so a malformed event remains unread on every
+	* retry instead of half-applying.
 	*/
 	_foldEvent(session, state, event) {
 		let nextHeader = state.header;
@@ -519,7 +711,7 @@ var TokenMeter = class extends Service {
 				if (state.stepStart !== void 0) throw new Error(`token meter: step/start at seq ${event.seq} arrived before turn ${state.stepStart.turn}/step ${state.stepStart.step} ended`);
 				nextStepStart = {
 					...event.data,
-					surfaceTokens: state.surfaceTokens
+					nodes: [...state.surface]
 				};
 				break;
 			case "step/end":
@@ -528,46 +720,27 @@ var TokenMeter = class extends Service {
 				break;
 			default: break;
 		}
-		const surface = isSurfaceEvent(event) ? foldSurfaceTokens(state.surface, event) : void 0;
+		const plan = isSurfaceEvent(event) ? planSurfaceTokens(state.surface, event) : void 0;
 		if (event.type === "assistant/message") {
 			const stepStart = state.stepStart;
 			if (stepStart === void 0 || stepStart.turn !== event.data.turn || stepStart.step !== event.data.step) throw new Error(`token meter: assistant/message at seq ${event.seq} has no matching step/start event`);
-			const eventTokens = surface.tokens;
-			if (event.data.usage !== void 0 && nextHeader !== void 0) {
-				const providerAssistantTokens = this._estimateProviderAssistant(session, event, eventTokens);
-				const anchorSurfaceTokens = stepStart.surfaceTokens + providerAssistantTokens;
-				const providerTokens = usageTokens(event.data.usage);
-				const estimatedAnchorTokens = estimateHeader(nextHeader) + anchorSurfaceTokens;
-				nextAnchor = {
-					header: nextHeader,
-					surfaceTokens: anchorSurfaceTokens,
-					baseline: providerTokens >= estimatedAnchorTokens ? {
-						kind: "usage",
-						tokens: providerTokens,
-						usage: event.data.usage
-					} : {
-						kind: "estimated",
-						tokens: estimatedAnchorTokens
-					}
-				};
-			} else {
-				const anchorSurfaceTokens = stepStart.surfaceTokens + eventTokens;
-				nextAnchor = {
-					header: nextHeader,
-					surfaceTokens: anchorSurfaceTokens,
-					baseline: {
-						kind: "estimated",
-						tokens: estimateHeader(nextHeader) + anchorSurfaceTokens
-					}
-				};
-			}
+			const eventTokens = plan.tokens;
+			if (event.data.usage !== void 0 && nextHeader !== void 0) nextAnchor = {
+				header: nextHeader,
+				nodes: stepStart.nodes,
+				assistantTokens: this._estimateProviderAssistant(session, event, eventTokens),
+				usage: event.data.usage
+			};
+			else nextAnchor = {
+				header: nextHeader,
+				nodes: stepStart.nodes,
+				assistantTokens: eventTokens,
+				usage: void 0
+			};
 		}
 		state.header = nextHeader;
 		state.stepStart = nextStepStart;
-		if (surface !== void 0) {
-			state.surface = surface.nodes;
-			state.surfaceTokens += surface.deltaTokens;
-		}
+		if (plan !== void 0) commitSurfaceTokens(state.surface, plan);
 		state.anchor = nextAnchor;
 	}
 	/**

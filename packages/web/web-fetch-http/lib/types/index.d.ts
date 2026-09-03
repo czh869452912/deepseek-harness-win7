@@ -1,15 +1,13 @@
 /**
- * `@deepseek-ai/dsh-web-fetch-http`: registers an anonymous public HTTP(S)
- * `WebFetchProvider` with `ctx.web`. A function/namespace plugin (NOT a
- * default-export service): it registers INTO the seam's fetch registry, like the
- * search providers register into the search registry.
+ * Anonymous public HTTP(S) `WebFetchProvider` plugin. It contributes to the
+ * `ctx.web` registry without owning the service.
  *
  * @module @deepseek-ai/dsh-web-fetch-http
  */
 import type { Context } from '@deepseek-ai/cordis';
 import z from '@deepseek-ai/schemastery';
 export { LOCAL_FETCH_PROVIDER_ID, HttpFetchProvider, } from './provider.ts';
-export type { HttpFetchLimits } from './provider.ts';
+export type { HttpFetchLimits, HttpFetchResolver } from './provider.ts';
 /** Default `User-Agent`: an explicit product agent, never a browser disguise. */
 export declare const DEFAULT_USER_AGENT = "deepseek-harness/0.0.1 (+https://github.com/deepseek-ai)";
 /** Cordis plugin name used by loader diagnostics. */
@@ -18,8 +16,6 @@ export declare const name = "web-fetch-http";
 export declare const inject: string[];
 /** Plugin config: the provider's transport and size limits plus its `User-Agent` (all defaulted). */
 export interface Config {
-    /** Maximum accepted request URL length. */
-    maxUrlLength?: number;
     /** Maximum response body size in bytes. */
     maxResponseBytes?: number;
     /** Maximum decoded body length in characters. */

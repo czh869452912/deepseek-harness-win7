@@ -541,7 +541,8 @@ function prepareCompaction(dependencies, session, selection) {
 		...selection,
 		measurement,
 		selectedNodes,
-		shadowedTokenCount: selectedNodes.reduce((total, node) => total + node.tokens, 0),
+		shadowedTokenCount: selectedNodes.reduce((total, node) => total + node.heuristicTokens, 0),
+		shadowedRouteTokenCount: selectedNodes.reduce((total, node) => total + node.tokens, 0),
 		input: buildSummarizationInput(session, selection.shadowedSeqs)
 	};
 }
@@ -553,7 +554,7 @@ async function summarizeCompaction(dependencies, prepared, agent, compactionId, 
 		source: compactCheckpointSource(compactionId, sourceCommandId)
 	});
 	const framedSummaryTokenCount = dependencies.meter.estimateMessage(checkpointMessage);
-	if (framedSummaryTokenCount >= prepared.shadowedTokenCount) throw new Error(`summary is not smaller than the shadowed content (${framedSummaryTokenCount} estimated framed tokens >= ${prepared.shadowedTokenCount})`);
+	if (framedSummaryTokenCount >= prepared.shadowedRouteTokenCount) throw new Error(`summary is not smaller than the shadowed content (${framedSummaryTokenCount} estimated framed tokens >= ${prepared.shadowedRouteTokenCount})`);
 	return {
 		...prepared,
 		...summaryResult,

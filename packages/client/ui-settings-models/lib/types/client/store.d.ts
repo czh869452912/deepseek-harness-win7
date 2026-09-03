@@ -1,18 +1,50 @@
 /**
  * Models settings page store: one snapshot joining the configurable-provider
- * directory (`llm.providers`), the settings namespaces (shared settings mirror),
- * and the referenced credentials (`credentials.describe`). The host stays the
+ * directory (`llm/listProviders` joined with `llm/listConfigurableProviders`),
+ * the settings namespaces (shared settings mirror),
+ * and the referenced credentials (`credentials/describe`). The host stays the
  * single fact source — every mutation writes through the wire and the page
  * re-renders from the next describe, pushed or refetched.
  */
-import type { ConfigurableProviderView, CredentialView, IApiClient, SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client';
-import type { SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client';
-import type { SettingsDescribeFace } from '@deepseek-ai/dsh-client-ui-settings/client';
+import type { ClientRemote, CredentialInfo, LlmConfigurableProvider, LlmProviderInfo, SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client';
+import type { SnapshotStore } from '@deepseek-ai/dsh-client-store';
+import type { SettingsDescribeFace, SettingsRemote } from '@deepseek-ai/dsh-client-ui-settings/client';
 import type { SettingsSchemaOperations } from './schema-operations.ts';
+/** The credentials Remote methods the Models page reads and writes through. */
+export type ModelsCredentials = Pick<ClientRemote['credentials'], 'describe' | 'set' | 'unset'>;
+/** LLM Remote methods used by the Models page. */
+export type ModelsLlm = Pick<ClientRemote['llm'], 'discoverModels' | 'listConfigurableProviders' | 'listProviders'>;
+/** One provider row after joining the configurable directory with live routes. */
+export interface ProviderDirectoryEntry {
+    readonly provider: string;
+    readonly displayName: string;
+    readonly settingsNs: string;
+    readonly settingsPath: readonly string[];
+    readonly active: boolean;
+    readonly declared?: boolean;
+}
+/**
+ * Join declared configurable providers with the currently registered routes.
+ * @param registered - live provider routes in registration order.
+ * @param directory - declared configurable providers in declaration order.
+ * @returns declared rows followed by live routes with no declaration.
+ */
+export declare function joinProviderDirectory(registered: readonly LlmProviderInfo[], directory: readonly LlmConfigurableProvider[]): ProviderDirectoryEntry[];
+/**
+ * Every Remote wire face the Models page reaches.
+ */
+export interface ModelsWire {
+    /** The settings Remote namespace: the redacted read and the profile writes. */
+    settings: SettingsRemote;
+    /** Credential state and writes for the references provider profiles name. */
+    credentials: ModelsCredentials;
+    /** Provider directory reads and draft endpoint discovery. */
+    llm: ModelsLlm;
+}
 /** One provider row the page renders. */
 export interface ProviderRow {
     /** The directory entry (route id, display name, settings address, live state). */
-    entry: ConfigurableProviderView;
+    entry: ProviderDirectoryEntry;
     /** Whether any layer configures this provider (its profile resolves). */
     configured: boolean;
     /** Whether the user layer alone carries the profile (removal restores the base). */
@@ -20,7 +52,14 @@ export interface ProviderRow {
     /** The credential reference the resolved profile names, when one does. */
     apiKeyEnv: string | undefined;
     /** Credential state for {@link apiKeyEnv}, once described. */
-    credential: CredentialView | undefined;
+    credential: CredentialInfo | undefined;
+    /**
+     * Credential state for the page's derived `<ROUTE>_API_KEY`, described only
+     * while the profile names no reference — the provider-card seat's
+     * `keyConfigured` fact for dormant and keyless rows, matching the editor's
+     * own derivation rule.
+     */
+    derivedCredential?: CredentialInfo;
 }
 /** Page snapshot. */
 export interface ModelsSettingsState {
@@ -72,10 +111,10 @@ export declare class ModelsSettingsStore {
     /** Latest load wins; an older response never overwrites a newer one. */
     private generation;
     /**
-     * @param api - the wire face (credentials/llm domains, and settings writes).
+     * @param api - the page's credentials Remote and LLM wire faces.
      * @param describeFace - the shared mirror's describe face (namespace views and writability).
      */
-    constructor(api: Pick<IApiClient, 'settings' | 'credentials' | 'llm'>, schema: SettingsSchemaOperations, describeFace: SettingsDescribeFace);
+    constructor(api: Pick<ModelsWire, 'credentials' | 'llm'>, schema: SettingsSchemaOperations, describeFace: SettingsDescribeFace);
     /**
      * Refresh the whole page snapshot: the provider directory and the mirror's
      * settings answer in parallel, then one batched credential describe over

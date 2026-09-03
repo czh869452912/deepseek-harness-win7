@@ -1,10 +1,4 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-// TerminalBlock: the terminal surface for a shell command and its output —
-// prompt line (run-state dot + shortened cwd + command), ANSI-colored output,
-// settled exit status, and a copy control for the raw output. Output never soft-wraps:
-// column-aligned output (ls, tables, box drawing) keeps its alignment and
-// scrolls horizontally instead of folding. Colors resolve through --dsw-*
-// tokens; ANSI parsing lives in ansi.ts.
 import { useCallback, useMemo, useState } from 'react';
 import clsx from 'clsx';
 import { parseAnsiLines } from "./ansi.js";
@@ -13,26 +7,8 @@ import { useCopyFeedback } from "./use-copy-feedback.js";
 import { Pill } from "./Pill.js";
 import { StateDot } from "./StateDot.js";
 import css from './TerminalBlock.module.css';
-/**
- * Output lines shown before the height cap collapses the middle. Matches the
- * TUI transcript's default tool-output budget so both front ends cut a long
- * command's output at the same place.
- */
+/** Output lines shown before the height cap collapses the middle. */
 export const DEFAULT_TERMINAL_MAX_LINES = 16;
-const DEFAULT_LABELS = {
-    signal: signal => `信号 ${signal}`,
-    exitCode: exitCode => `退出码 ${exitCode}`,
-    running: '运行中',
-    failed: '失败',
-    done: '已完成',
-    copy: '复制',
-    copied: '复制成功',
-    noOutput: '无输出',
-    collapseAria: '收起输出',
-    collapse: '收起',
-    expandAria: hidden => `展开其余 ${hidden} 行输出`,
-    expand: hidden => `… 其余 ${hidden} 行`,
-};
 /**
  * Prompt label for a working directory: `~` for the home directory itself,
  * otherwise the path's last segment (both separators accepted, trailing
@@ -105,7 +81,7 @@ function renderLine(line) {
  * @returns the terminal block element.
  */
 export function TerminalBlock({ command, cwd, home, output, exitCode, signal, running = false, maxLines = DEFAULT_TERMINAL_MAX_LINES, className, labels, }) {
-    const copy = useMemo(() => (labels === undefined ? DEFAULT_LABELS : { ...DEFAULT_LABELS, ...labels }), [labels]);
+    const copy = labels;
     const text = output ?? '';
     // A command's output ends with a newline; that terminator is not an extra
     // blank line to draw or to count against the height cap. The check runs on the

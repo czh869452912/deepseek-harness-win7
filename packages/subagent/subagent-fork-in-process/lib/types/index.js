@@ -35,12 +35,19 @@ function completedTurnPrefix(parent) {
 }
 /**
  * The fork provider. Supports `depthLimit` and `outputSchema` (via the shared
- * in-process structured runtime), plus `toolFilter`/`persona` (scoped
- * restrict() and a scoped shadowing persona section).
+ * in-process structured runtime), `agentOptions` (merged over the parent
+ * route), and `toolFilter`/`persona` (scoped restrict() and a scoped shadowing
+ * persona section).
  */
 class ForkInProcessProvider {
     name;
-    capabilities = { outputSchema: true, depthLimit: true, toolFilter: true, persona: true };
+    capabilities = {
+        agentOptions: true,
+        outputSchema: true,
+        depthLimit: true,
+        toolFilter: true,
+        persona: true,
+    };
     // Context contract: a forked child IS seeded with the parent's completed-turn prefix.
     inheritsParentContext = true;
     constructor(name) {
@@ -54,11 +61,11 @@ class ForkInProcessProvider {
             ...seed.length > 0 ? { seed } : {},
         });
     }
-    // TODO(fork-continuable-prefix-reuse): no shipped composition calls this —
-    // they bind fork to `backgroundMode: one-shot` because a continuable child's
-    // `report` tool and prompt section precede the inherited history, defeating
-    // the prefix reuse a fork exists for. Reopening needs a byte-identical child
-    // system prompt and tool schemas; see issue #2124 and
+    // TODO(fork-continuable-prefix-reuse): CLI presets call this and accept that
+    // a continuable child's `report` tool and prompt section precede the inherited
+    // history, defeating the prefix reuse a fork exists for. Cache-preserving
+    // continuable fork needs byte-identical child system prompt and tool schemas;
+    // see issue #2124 and
     // .agents/notes/implemented/architecture/2026-08-10-fork-children-stay-one-shot.md.
     prepareContinuable(request) {
         // The fork prefix is captured ONCE, at creation: it becomes part of the

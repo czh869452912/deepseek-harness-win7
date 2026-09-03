@@ -10,7 +10,7 @@ import { accessSync, constants, statSync } from 'node:fs';
 import { isAbsolute, resolve } from 'node:path';
 import z from '@deepseek-ai/schemastery';
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout';
-import { DEFAULT_DISPOSE_EOF_GRACE_MS, DEFAULT_DISPOSE_GRACE_MS, startAcpRun } from "./run.js";
+import { acpConfigurationFailure, DEFAULT_DISPOSE_EOF_GRACE_MS, DEFAULT_DISPOSE_GRACE_MS, startAcpRun } from "./run.js";
 export const name = 'subagent-acp';
 export const inject = ['subagents', 'subprocess'];
 export const Config = z.object({
@@ -23,7 +23,7 @@ export const Config = z.object({
     disposeEofGraceMs: z.number().default(DEFAULT_DISPOSE_EOF_GRACE_MS),
     disposeGraceMs: z.number().default(DEFAULT_DISPOSE_GRACE_MS),
 });
-/** A dispose grace must fit the single Node timer that owns its teardown tier. */
+/** A process grace must fit every Node timer that observes or terminates the child. */
 function assertPositiveFinite(name, value) {
     if (!Number.isFinite(value) || value <= 0 || value > MAX_TIMER_DELAY_MS) {
         throw new Error(`subagent-acp: ${name} must be a positive finite number no greater than ${MAX_TIMER_DELAY_MS}`);
@@ -85,14 +85,20 @@ function resolveCwd(configured, request) {
 }
 /**
  * The ACP provider. Advertises NO start-time capabilities: an out-of-process
- * child cannot honor `outputSchema`/`maxDepth`/`toolFilter` (the service rejects
- * a request needing any of them before `start` runs).
+ * child cannot honor `agentOptions`/`outputSchema`/`maxDepth`/`toolFilter`/
+ * `persona` (the service rejects a request needing any before `start` runs).
  */
 class AcpProvider {
     name;
     ctx;
     config;
-    capabilities = { outputSchema: false, depthLimit: false, toolFilter: false, persona: false };
+    capabilities = {
+        agentOptions: false,
+        outputSchema: false,
+        depthLimit: false,
+        toolFilter: false,
+        persona: false,
+    };
     // Context contract: an out-of-process ACP child starts fresh — no parent conversation crosses the process boundary.
     inheritsParentContext = false;
     constructor(name, ctx, config) {
@@ -101,10 +107,22 @@ class AcpProvider {
         this.config = config;
     }
     start(request) {
+        if (request.signal.aborted) {
+            throw new Error('subagent request was aborted before the ACP child started');
+        }
+        let cwd;
+        try {
+            cwd = resolveCwd(this.config.cwd, request);
+        }
+        catch (error) {
+            const failure = acpConfigurationFailure(error);
+            this.ctx.logger.warn(`subagent-acp "${this.name}": child start failed: %o`, error);
+            throw failure;
+        }
         const spec = {
             command: this.config.command,
             args: this.config.args,
-            cwd: resolveCwd(this.config.cwd, request),
+            cwd,
             permission: this.config.permission,
             env: this.config.env,
             disposeEofGraceMs: this.config.disposeEofGraceMs,

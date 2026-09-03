@@ -19,7 +19,7 @@
  * @module @deepseek-ai/dsh-tool-fs-search/search-core
  */
 import { existsSync } from 'node:fs';
-import { isAbsolute, relative, sep } from 'node:path';
+import { isAbsolute, join, parse, relative, sep } from 'node:path';
 import { HarnessError } from '@deepseek-ai/dsh-llm';
 import { ItemRetainer, TextRetainer } from '@deepseek-ai/dsh-output-retention';
 /**
@@ -120,7 +120,10 @@ let rgPathPromise;
  */
 export function resolveRgPath() {
     rgPathPromise ??= Promise.resolve().then(async () => {
-        const executableSidecar = `${process.execPath}-rg`;
+        const executable = parse(process.execPath);
+        const executableSidecar = process.platform === 'win32'
+            ? join(executable.dir, `${executable.name}-rg.exe`)
+            : `${process.execPath}-rg`;
         if ('pkg' in process && existsSync(executableSidecar))
             return executableSidecar;
         return (await import('@vscode/ripgrep')).rgPath;

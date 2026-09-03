@@ -1,11 +1,15 @@
 import { Context, Inject } from "@deepseek-ai/cordis";
 import { Fragment, createElement, useSyncExternalStore } from "react";
 import { act, render, within } from "@testing-library/react";
-import { ConversationEventRegistry, ConversationViewRegistry, EMPTY_CHAT_SNAPSHOT, EMPTY_CONVERSATION_VIEWS, SessionProvideChannel, SlotRegistry, createScope, createSnapshotStore, scopeOf } from "@deepseek-ai/dsh-client-runtime/client";
+import { SlotRegistry } from "@deepseek-ai/dsh-client-ui-renderer/client";
 import { bindSnapshotSelector as bindSnapshotSelector$1 } from "@deepseek-ai/dsh-client-ui-renderer/src/client/bind.ts";
 import { createSlotRenderer as createSlotRenderer$1 } from "@deepseek-ai/dsh-client-ui-renderer/src/client/scoped-slots.tsx";
+import { apply, inject } from "@deepseek-ai/dsh-client-ui-session/client";
 import { afterEach, beforeEach, expect, vi } from "vitest";
-import { SESSION_SEARCH_RESULT_LIMIT } from "@deepseek-ai/dsh-host-apiproxy/api";
+import { MutableSessionEventSource, SESSION_SEARCH_RESULT_LIMIT, createScope, scopeOf } from "@deepseek-ai/dsh-api-session-controller/client";
+import { createSnapshotStore } from "@deepseek-ai/dsh-client-store";
+import { EMPTY_CONVERSATION_SNAPSHOT } from "@deepseek-ai/dsh-client-ui-conversation/client";
+import { EMPTY_CHAT_SNAPSHOT } from "@deepseek-ai/dsh-client-ui-chat/client";
 //#region lib/types/snapshot.js
 /**
 * DOM snapshot hygiene: a vitest snapshot serializer that keeps `.snap`
@@ -84,25 +88,17 @@ function registerDomSnapshotSerializer() {
 //#endregion
 //#region lib/types/fixtures.js
 /**
-* A complete quiescent conversation snapshot (open window, no traffic).
+* A complete quiescent Session Controller snapshot.
 * @param sessionId - owning session id.
 * @returns the snapshot; spread fixture overrides on top.
 */
-function conversationSnapshot(sessionId) {
+function sessionSnapshot(sessionId) {
 	return {
 		sessionId,
-		views: EMPTY_CONVERSATION_VIEWS,
-		chat: EMPTY_CHAT_SNAPSHOT,
-		nodes: [],
-		turnTimings: /* @__PURE__ */ new Map(),
-		turnEnds: /* @__PURE__ */ new Map(),
-		partial: null,
-		runningCalls: [],
-		pending: [],
 		queue: [],
+		pendingSubmissions: [],
 		running: false,
 		subagent: null,
-		composerPhase: "active",
 		removed: false,
 		openState: "open",
 		openError: null,
@@ -110,30 +106,51 @@ function conversationSnapshot(sessionId) {
 		loadingOlder: false,
 		promptError: null,
 		blank: false,
-		lastAgentError: null
+		lastAgentError: null,
+		promptAttempted: false,
+		awaitingFirstTurn: false
 	};
 }
 /**
-* A ready workspace list with no workspaces (the shape WorkspaceRuntime
-* projects after both baselines land).
-* @returns the initial state of the test workspaces store.
+* A target-neutral Conversation snapshot.
+* @param overrides - target roster or activity overrides.
+* @returns an immutable fixture value.
 */
-function workspaceListState() {
+function conversationSnapshot(overrides = {}) {
+	return {
+		...EMPTY_CONVERSATION_SNAPSHOT,
+		...overrides
+	};
+}
+/**
+* A Chat target snapshot.
+* @param overrides - Chat target overrides.
+* @returns an immutable fixture value.
+*/
+function chatSnapshot(overrides = {}) {
+	return {
+		...EMPTY_CHAT_SNAPSHOT,
+		...overrides
+	};
+}
+/**
+* A ready Workspace Controller snapshot with no Workspace rows.
+* @returns the initial state of the test Workspace source.
+*/
+function workspaceSnapshot() {
 	return {
 		items: [],
 		archivedSessionIds: [],
 		state: "idle",
 		phase: "ready",
-		error: null,
-		baselinesReady: true,
-		recentWorkspaceId: void 0
+		error: null
 	};
 }
 //#endregion
 //#region lib/types/sessions.js
 /**
-* The fixture-backed session face: conversation reads delegate to the
-* fixture's snapshot store; ISession verbs are fail-loud stubs unless the
+* The fixture-backed session face: lifecycle reads delegate to the fixture's
+* snapshot store; Session verbs are fail-loud stubs unless the
 * fixture supplies them (the runtime never fakes behavior a test did not
 * declare — an unstubbed call names itself instead of half-working). Extra
 * fixture methods are grafted verbatim for feature-side casts.
@@ -141,14 +158,15 @@ function workspaceListState() {
 var FixtureSession = class {
 	sessionId;
 	store;
+	/** Mutable event source consumed only by Conversation assembly. */
+	eventSource = new MutableSessionEventSource();
 	/**
-	* The useProjection seat: identity-stable per-key faces over the fixture's
-	* projection values (set via {@link TestSessions.setProjection}).
+	* Identity-stable per-key faces over fixture-controlled projection values.
 	*/
 	projections;
 	/**
 	* @param sessionId - host identity (branded view of the fixture id).
-	* @param store - conversation snapshot store (updateSnapshot writes it).
+	* @param store - Session Controller snapshot store.
 	* @param overrides - fixture-declared behavior face, grafted over the stubs.
 	*/
 	constructor(sessionId, store, overrides) {
@@ -183,7 +201,7 @@ var FixtureSession = class {
 		};
 		Object.assign(this, overrides);
 	}
-	/** @returns the fixture conversation snapshot (useSession read side). */
+	/** @returns the fixture Session Controller snapshot (useSession read side). */
 	getSnapshot() {
 		return this.store.getSnapshot();
 	}
@@ -202,6 +220,20 @@ var FixtureSession = class {
 	prompt() {
 		throw new Error(`test session "${this.sessionId}": prompt is not stubbed — supply it on the fixture's session face`);
 	}
+	/**
+	* Minimal local-echo registration: mints an identity without touching the
+	* fixture snapshot (submission echoes are client-only presentation state).
+	* Supply `beginSubmission` on the fixture's session face to observe echoes.
+	* @returns a handle whose abandon is a no-op.
+	*/
+	beginSubmission() {
+		this.submissionSeq += 1;
+		return {
+			requestId: `test-submission-${this.submissionSeq}`,
+			abandon: () => {}
+		};
+	}
+	submissionSeq = 0;
 	/**
 	* Fail-loud stub; supply `readAttachment` on the fixture's session face to exercise it.
 	* @param _attachmentId - opaque durable attachment id.
@@ -248,36 +280,28 @@ var FixtureSession = class {
 };
 /**
 * Sessions test double behind the renderer host and feature injects: owns the
-* list/current observable, the standard-props provide channel (the runtime's
-* `useSession` contribution included), scope minting through the production
-* `createScope`, and the session behavior face supplied per fixture.
+* list/current observable, scope minting through the production `createScope`,
+* stable Controller bindings, and the session behavior face supplied per
+* fixture. `ui-session` owns standard-source materialization.
 *
 * Implements the same ISessions face features receive as `ctx.sessions`, so
 * a production face change breaks this double at compile time; the extra
-* members (add/updateSnapshot/setCurrent/remove/behavior/calls/stubSearch and
-* the legacy provideInfo/maybeProvideInfo lookups) are bench-only surface.
+* members (add/updateSessionSnapshot/event-window drivers/setCurrent/remove/
+* behavior/calls/stubs) are bench-only surface.
 */
 var TestSessions = class {
 	stabilize;
 	rootCtx;
 	/** The useSessions standard feed (list rows + current selection). */
 	list;
-	/**
-	* Atomic current-session provide projection (production SessionRuntime
-	* mirror): selection changes and provider-roster changes publish through
-	* this one source — the member the SlotRegistry host face hands the
-	* renderer's SessionProvider.
-	*/
-	currentProvideInfo;
 	records = /* @__PURE__ */ new Map();
-	/** The production provide channel (roster, materialization rules, current projection) — no test-side mirror. */
-	channel;
 	/** Calls observed on the service-level face, newest last. */
 	calls = [];
 	/** The wire schema's `session.search` result bound (production parity). */
 	searchResultLimit = SESSION_SEARCH_RESULT_LIMIT;
 	/** Replaceable search behavior (see {@link TestSessions.stubSearch}). */
 	searchStub;
+	createStub;
 	/**
 	* @param stabilize - the owning runtime's act wrapper.
 	* @param rootCtx - the runtime's Cordis root; scope fibers mount under it.
@@ -293,16 +317,6 @@ var TestSessions = class {
 			subagentsByParent: {},
 			jobsBySession: {},
 			currentAddress: void 0
-		});
-		this.channel = new SessionProvideChannel({
-			rebuildBundles: () => {
-				for (const record of this.records.values()) if (record.provideInfo !== void 0) record.provideInfo = this.channel.materializeInfo(this.bindingOf(record.session.sessionId, record));
-			},
-			resolveCurrent: () => this.maybeProvideInfo(this.list.getSnapshot().current)
-		});
-		this.currentProvideInfo = this.channel.currentProvideInfo;
-		this.list.subscribe(() => {
-			this.channel.publishCurrent();
 		});
 	}
 	/**
@@ -323,16 +337,18 @@ var TestSessions = class {
 			...fixture.summary
 		};
 		const snapshot = createSnapshotStore({
-			...conversationSnapshot(id),
+			...sessionSnapshot(id),
 			...fixture.snapshot
 		});
+		const session = new FixtureSession(id, snapshot, fixture.session ?? {});
+		if (fixture.events !== void 0 || fixture.hasMore === true) session.eventSource.replace(fixture.events ?? [], fixture.hasMore ?? false);
 		this.records.set(id, {
 			summary,
 			snapshot,
-			session: new FixtureSession(id, snapshot, fixture.session ?? {}),
+			session,
 			scope: void 0,
 			scopeFiber: void 0,
-			provideInfo: void 0
+			binding: void 0
 		});
 		await this.stabilize(() => {
 			this.list.update((draft) => {
@@ -344,15 +360,46 @@ var TestSessions = class {
 		return id;
 	}
 	/**
-	* Update a session's conversation snapshot through an immer draft (the
-	* live-stream stand-in: components subscribed via useSession re-render).
+	* Update Session Controller lifecycle state through an immer draft.
 	* @param id - session id.
 	* @param mutate - draft mutator.
 	*/
-	async updateSnapshot(id, mutate) {
+	async updateSessionSnapshot(id, mutate) {
 		const record = this.require(id);
 		await this.stabilize(() => {
 			record.snapshot.update(mutate);
+		});
+	}
+	/**
+	* Replace a Session's complete contiguous event window.
+	* @param id - Session identity.
+	* @param entries - complete event window.
+	* @param hasMore - whether older history remains.
+	*/
+	async replaceEvents(id, entries, hasMore = false) {
+		await this.stabilize(() => {
+			this.require(id).session.eventSource.replace(entries, hasMore);
+		});
+	}
+	/**
+	* Prepend one older contiguous event page.
+	* @param id - Session identity.
+	* @param entries - older entries.
+	* @param hasMore - whether another older page remains.
+	*/
+	async prependEvents(id, entries, hasMore = false) {
+		await this.stabilize(() => {
+			this.require(id).session.eventSource.prepend(entries, hasMore);
+		});
+	}
+	/**
+	* Append one live event to a Session's contiguous window.
+	* @param id - Session identity.
+	* @param entry - live event entry.
+	*/
+	async appendEvent(id, entry) {
+		await this.stabilize(() => {
+			this.require(id).session.eventSource.append(entry);
 		});
 	}
 	/**
@@ -388,7 +435,7 @@ var TestSessions = class {
 	/**
 	* Remove a session: list row, scope fiber, and per-session store instances
 	* (with persisted state) die together — the same single lifecycle axis the
-	* production SessionRuntime drives on session death, minus staging.
+	* production Client Sessions service drives on session death, minus staging.
 	* @param id - session id.
 	*/
 	async remove(id) {
@@ -402,38 +449,7 @@ var TestSessions = class {
 				if (draft.current === id) draft.current = void 0;
 			});
 			if (record.scopeFiber !== void 0) await record.scopeFiber.dispose();
-			this.rootCtx.get("slots")?.pruneStoreScope(id);
 		});
-	}
-	/**
-	* Register a per-session standard-props provider (production `provide`
-	* contract: hooks become `use<Name>` selector hooks on the render side,
-	* props spread verbatim; duplicate names fail loud at materialization).
-	* @param descriptor - static member roster plus per-session resolver.
-	* @returns disposer removing the provider.
-	*/
-	provide(descriptor) {
-		return this.channel.provide(descriptor);
-	}
-	/**
-	* Resolve the definite per-session standard-props bundle (host face member).
-	* @param id - session id.
-	* @returns the identity-stable bundle, or undefined for unknown sessions.
-	*/
-	provideInfo(id) {
-		const record = this.records.get(id);
-		if (record === void 0) return void 0;
-		record.provideInfo ??= this.channel.materializeInfo(this.bindingOf(id, record));
-		return record.provideInfo;
-	}
-	/**
-	* Resolve the current-session-optional standard kit (host face member):
-	* unknown or absent ids return the static no-session projection.
-	* @param id - current session id, when selected.
-	* @returns a definite or no-session provide bundle.
-	*/
-	maybeProvideInfo(id) {
-		return (id === void 0 ? void 0 : this.provideInfo(id)) ?? this.channel.maybeInfo;
 	}
 	/**
 	* Resolve (mint on first touch) the session-scoped Cordis context through
@@ -460,7 +476,8 @@ var TestSessions = class {
 	binding(id) {
 		const record = this.records.get(id);
 		if (record === void 0) return void 0;
-		return this.bindingOf(id, record);
+		record.binding ??= this.bindingOf(id, record);
+		return record.binding;
 	}
 	/**
 	* Read the session scope tag off a context (service-method boundary mirror).
@@ -480,6 +497,24 @@ var TestSessions = class {
 		const id = scopeOf(ctx);
 		if (id === void 0) return void 0;
 		return this.records.get(id)?.session;
+	}
+	/**
+	* Install Session creation behavior for navigation tests.
+	* @param impl - implementation that must return an already-added fixture id.
+	*/
+	stubCreate(impl) {
+		this.createStub = impl;
+	}
+	/** Create through the installed test behavior and require an addressable binding. */
+	async create(opts) {
+		this.calls.push({
+			method: "create",
+			args: [opts]
+		});
+		if (this.createStub === void 0) throw new Error("test sessions: create is not stubbed — call stubCreate() first");
+		const id = await this.createStub(opts);
+		this.require(id);
+		return id;
 	}
 	/**
 	* Service-level selection call (recorded, then applied to the list store
@@ -530,16 +565,6 @@ var TestSessions = class {
 		});
 		return Promise.resolve();
 	}
-	/** Apply a confirmed preset switch into the fixture list, as production does. */
-	noteAgentPreset(sessionId, agentPreset) {
-		this.list.update((draft) => {
-			const summary = draft.byId[sessionId];
-			if (summary !== void 0) draft.byId[sessionId] = {
-				...summary,
-				agentPreset
-			};
-		});
-	}
 	/** Clear the current selection (recorded; the production no-session flow). */
 	clear() {
 		this.calls.push({
@@ -550,6 +575,14 @@ var TestSessions = class {
 			draft.current = void 0;
 			draft.currentAddress = void 0;
 		});
+	}
+	/** Record a list refresh; fixture callers publish list state explicitly. */
+	refresh() {
+		this.calls.push({
+			method: "refresh",
+			args: []
+		});
+		return Promise.resolve();
 	}
 	/**
 	* Replace the sidebar-search result page (the call is still recorded).
@@ -596,7 +629,7 @@ var TestSessions = class {
 	* The session face of a fixture (typed view for assertions; fixture
 	* behavior methods are grafted onto it).
 	* @param id - session id.
-	* @returns the FixtureSession the binding and provide channel carry.
+	* @returns the FixtureSession carried by the Controller binding.
 	*/
 	behavior(id) {
 		return this.require(id).session;
@@ -607,6 +640,7 @@ var TestSessions = class {
 			await record.scopeFiber.dispose();
 			record.scope = void 0;
 			record.scopeFiber = void 0;
+			record.binding = void 0;
 		}
 	}
 	bindingOf(id, record) {
@@ -617,6 +651,7 @@ var TestSessions = class {
 		return {
 			sessionId: id,
 			session: record.session,
+			eventSource: record.session.eventSource,
 			ctx
 		};
 	}
@@ -649,7 +684,7 @@ var TestWorkspaces = class {
 	*/
 	constructor(stabilize) {
 		this.stabilize = stabilize;
-		this.list = createSnapshotStore(workspaceListState());
+		this.list = createSnapshotStore({ ...workspaceSnapshot() });
 	}
 	/**
 	* Update the workspace list state through an immer draft.
@@ -662,38 +697,11 @@ var TestWorkspaces = class {
 	}
 	/**
 	* Replace an action's behavior (the recorded call is still appended first).
-	* @param method - action name (e.g. 'connectWorkspace').
+	* @param method - Controller action name (e.g. 'create').
 	* @param impl - replacement behavior.
 	*/
 	stub(method, impl) {
 		this.stubs.set(method, impl);
-	}
-	/**
-	* Connect a workspace to its reusable/new blank session (recorded). The
-	* default resolves the workspace id back as the session id; stub for
-	* cross-session flows.
-	* @param workspaceId - target workspace.
-	* @returns the connected session id.
-	*/
-	async connectWorkspace(workspaceId) {
-		this.calls.push({
-			method: "connectWorkspace",
-			args: [workspaceId]
-		});
-		const stub = this.stubs.get("connectWorkspace");
-		if (stub !== void 0) return await stub(workspaceId);
-		return `session-of-${workspaceId}`;
-	}
-	/**
-	* New-session flow (recorded; stubbed behavior runs when installed).
-	* @param workspaceId - optional explicit workspace target.
-	*/
-	startSession(workspaceId) {
-		this.calls.push({
-			method: "startSession",
-			args: [workspaceId]
-		});
-		this.stubs.get("startSession")?.(workspaceId);
 	}
 	/**
 	* Create a Workspace (recorded). The default echoes a view derived from
@@ -714,82 +722,6 @@ var TestWorkspaces = class {
 			path: input.path,
 			sessionIds: []
 		};
-	}
-	/**
-	* Open a path with the host OS default application (recorded; default no-op).
-	* @param path - host-resolvable path.
-	*/
-	async openPath(path) {
-		this.calls.push({
-			method: "openPath",
-			args: [path]
-		});
-		await this.stubs.get("openPath")?.(path);
-	}
-	/**
-	* Directory picker (recorded). The default cancels (null); stub to select.
-	* @returns the picked path, or null.
-	*/
-	async pickDirectory() {
-		this.calls.push({
-			method: "pickDirectory",
-			args: []
-		});
-		const stub = this.stubs.get("pickDirectory");
-		if (stub !== void 0) return await stub();
-		return null;
-	}
-	/**
-	* Browse listing (recorded). The default serves an empty home level; stub
-	* to shape a tree.
-	* @param path - absolute directory to list; absent lists the home level.
-	* @returns the level's listing.
-	*/
-	async listDirectory(path, signal) {
-		this.calls.push({
-			method: "listDirectory",
-			args: [path, signal]
-		});
-		const stub = this.stubs.get("listDirectory");
-		if (stub !== void 0) return await stub(path, signal);
-		return {
-			path: "/home/test",
-			home: "/home/test",
-			crumbs: [
-				{
-					name: "/",
-					path: "/",
-					hidden: false
-				},
-				{
-					name: "home",
-					path: "/home",
-					hidden: false
-				},
-				{
-					name: "test",
-					path: "/home/test",
-					hidden: false
-				}
-			],
-			entries: [],
-			truncated: false
-		};
-	}
-	/**
-	* Browse child creation (recorded). The default joins parent and name.
-	* @param path - absolute existing parent directory.
-	* @param name - single path segment.
-	* @returns the created directory's absolute path.
-	*/
-	async createDirectory(path, name) {
-		this.calls.push({
-			method: "createDirectory",
-			args: [path, name]
-		});
-		const stub = this.stubs.get("createDirectory");
-		if (stub !== void 0) return await stub(path, name);
-		return `${path}/${name}`;
 	}
 	/**
 	* Rename a Workspace (recorded). The default echoes a minimal view.
@@ -899,6 +831,7 @@ function stubSettingsScope() {
 	};
 	const listeners = /* @__PURE__ */ new Set();
 	const set = vi.fn(() => Promise.resolve());
+	const mutate = vi.fn(() => Promise.resolve());
 	const unset = vi.fn(() => Promise.resolve());
 	return {
 		scope: {
@@ -909,10 +842,12 @@ function stubSettingsScope() {
 					listeners.delete(listener);
 				};
 			},
+			mutate,
 			set,
 			unset
 		},
 		set,
+		mutate,
 		unset,
 		listenerCount: () => listeners.size,
 		publish: (next) => {
@@ -925,34 +860,92 @@ function stubSettingsScope() {
 	};
 }
 //#endregion
+//#region lib/types/settings-remote.js
+/** Test double for the `settings` Remote namespace a bench's plugins inject. */
+/**
+* Build a scripted `settings` Remote namespace for a bench. Each write answers
+* with the addressed namespace unchanged, so a bench that only needs its
+* plugins to activate scripts nothing; one asserting a write reads the
+* corresponding spy or replaces the face.
+* @param namespaces - namespace views the first describe answers with.
+* @param options - deployment facts the describe answer reports.
+* @returns the face and its controls.
+*/
+function scriptedSettingsRemote(namespaces = [], options = {}) {
+	let served = namespaces;
+	const writable = options.writable ?? true;
+	const hasDocument = options.hasDocument ?? false;
+	const answer = (ns) => {
+		const view = served.find((candidate) => candidate.ns === ns);
+		return Promise.resolve(view === void 0 ? {
+			ok: false,
+			error: {
+				code: "settings-rejected",
+				message: `no scripted namespace "${ns}"`,
+				details: { ns }
+			}
+		} : {
+			ok: true,
+			value: view
+		});
+	};
+	const update = vi.fn((ns, _patch, _expectedRevision) => answer(ns));
+	const replace = vi.fn((ns, _section, _expectedRevision) => answer(ns));
+	const mutate = vi.fn((ns, _ops, _expectedRevision) => answer(ns));
+	return {
+		settings: {
+			describe: () => Promise.resolve({
+				ok: true,
+				value: {
+					writable,
+					hasDocument,
+					namespaces: served
+				}
+			}),
+			update: (ns, patch, expectedRevision) => update(ns, patch, expectedRevision),
+			replace: (ns, section, expectedRevision) => replace(ns, section, expectedRevision),
+			mutate: (ns, ops, expectedRevision) => mutate(ns, ops, expectedRevision)
+		},
+		update,
+		replace,
+		mutate,
+		publish(next) {
+			served = next;
+		}
+	};
+}
+//#endregion
 //#region lib/types/remote.js
 /**
 * Remote service test double for the forwarded-event path. Feature specs need
 * `ctx.remote.$on` to exist (their plugins inject `remote`) and need forwarded
-* host events to reach those subscribers, but not the generated namespaces or
-* the wire — so this double implements subscription and dispatch only.
+* Host events to reach those subscribers, but not the wire — so this double
+* implements subscription plus an explicit `emit` driver available only on the
+* concrete test object. A spec that also calls one namespace scripts it through
+* the constructor rather than reaching the real Client Remote service.
 *
-* Dispatch is driven the same way production drives it: `client/runtime` owns the
-* host frame sink and hands each decoded `host/remote-event` frame to
-* `$dispatch`. A spec therefore exercises its refresh chains by calling
-* `$dispatch(name, args)` on this double.
-*
-* `$mount` rejects: a spec that reaches a generated namespace through this
-* double has outgrown it and needs the real Client Remote service.
+* `$mount` rejects: a spec that needs a real generated contribution installed —
+* codecs, descriptors, and the wire — has outgrown this double and needs the
+* real Client Remote service.
 *
 * One deliberate asymmetry with production: a throwing listener propagates out
 * of the emit instead of being contained and logged, so a spec cannot lean on
 * this double for the containment guarantee `$on` documents — assert that
 * against the real service.
 */
-var TestRemote = class {
+var TestRemote = class TestRemote {
 	subscriptions = /* @__PURE__ */ new Map();
 	/**
-	* Register the double as `ctx.remote`.
+	* Register the double as `ctx.remote`, plus one service per scripted
+	* namespace so a plugin injecting `remote.<name>` also unparks.
 	* @param ctx - the spec's root Context.
+	* @param namespaces - scripted namespace faces reached as `ctx.remote.<name>`.
 	*/
-	constructor(ctx) {
+	constructor(ctx, namespaces = {}) {
+		for (const name of Object.keys(namespaces)) if (name in TestRemote.prototype || name === "subscriptions") throw new TypeError(`TestRemote: scripted namespace "${name}" would shadow the double's own member`);
+		Object.assign(this, namespaces);
 		ctx.provide("remote", this);
+		for (const [name, face] of Object.entries(namespaces)) ctx.provide(`remote.${name}`, face);
 	}
 	/**
 	* Deliver one forwarded host event to its subscribers, standing in for the
@@ -960,7 +953,7 @@ var TestRemote = class {
 	* @param event - forwarded host event name.
 	* @param args - the Host argument list, verbatim.
 	*/
-	$dispatch(event, args) {
+	emit(event, args) {
 		const listeners = this.subscriptions.get(event);
 		if (listeners === void 0) return;
 		for (const listener of [...listeners]) listener(...args);
@@ -1054,7 +1047,7 @@ function usePinnedBrowserLanguages(primary, ...rest) {
 //#region lib/types/index.js
 /**
 * jsdom slot test runtime: a real small runtime — Cordis `Context`, the
-* runtime `SlotRegistry`, and the UI renderer — assembled around
+* renderer-owned `SlotRegistry`, the `ui-session` adapter, and the UI renderer — assembled around
 * test-owned session/workspace doubles, so feature specs exercise
 * declaration, registration, scope, store, inject, rendering, updates, and
 * disposal without hand-building the machinery per suite.
@@ -1163,7 +1156,7 @@ var TestRoot = class {
 * batching or React act themselves.
 */
 var SlotTestRuntime = class SlotTestRuntime {
-	/** The runtime's Cordis root (escape hatch: extra services via `ctx.provide`, raw `ctx.plugin` mounts). */
+	/** The runtime's Cordis root for owner APIs and explicit test-only services. */
 	ctx;
 	/** The production SlotRegistry mounted on {@link SlotTestRuntime.ctx}. */
 	slots;
@@ -1186,6 +1179,7 @@ var SlotTestRuntime = class SlotTestRuntime {
 	ownerCell = new OwnerPropsCell();
 	autoDeclared = /* @__PURE__ */ new Set();
 	autoRootView;
+	disposeWorkspaceSource;
 	constructor(ctx, slots) {
 		this.ctx = ctx;
 		this.slots = slots;
@@ -1194,6 +1188,7 @@ var SlotTestRuntime = class SlotTestRuntime {
 		this.workspaces = new TestWorkspaces(this.stabilizer);
 		ctx.provide("sessions", this.sessions);
 		ctx.provide("workspaces", this.workspaces);
+		this.disposeWorkspaceSource = slots.provideRoot({ hooks: { workspaces: this.workspaces.list } });
 		const renderer = createSlotRenderer();
 		slots.install({ renderRoot: (host, ownerProps) => {
 			this.host = host;
@@ -1209,22 +1204,12 @@ var SlotTestRuntime = class SlotTestRuntime {
 		registerDomSnapshotSerializer();
 		const ctx = new Context();
 		await ctx.plugin(SlotRegistry).await();
-		await ctx.plugin(ConversationEventRegistry).await();
-		await ctx.plugin(ConversationViewRegistry).await();
-		return new SlotTestRuntime(ctx, ctx.get("slots"));
-	}
-	/**
-	* Provide an extra service the feature under test injects (e.g. a layout
-	* fake). Sugar over `ctx.provide`, typed against the Context declaration
-	* merge: for a declared service name the fake must be a subset of that
-	* service's outward face (Partial — supply only what the feature calls),
-	* so a production face change breaks the fake at compile time. Undeclared
-	* names stay unchecked (ad-hoc test services).
-	* @param name - service name.
-	* @param value - service implementation (test double).
-	*/
-	provide(name, value) {
-		this.ctx.provide(name, value);
+		const runtime = new SlotTestRuntime(ctx, ctx.get("slots"));
+		await ctx.plugin({
+			inject: [...inject],
+			apply
+		}).await();
+		return runtime;
 	}
 	/**
 	* Mount a feature plugin on a real fiber. Required services are prechecked
@@ -1251,6 +1236,10 @@ var SlotTestRuntime = class SlotTestRuntime {
 		};
 		this.handles.push(handle);
 		return handle;
+	}
+	/** Release the default Workspace hook before mounting its production owner. */
+	releaseWorkspaceSource() {
+		this.disposeWorkspaceSource();
 	}
 	/**
 	* Render the root slot tree through the ctx-level entry (the shell's own
@@ -1321,7 +1310,9 @@ var SlotTestRuntime = class SlotTestRuntime {
 		if (this.host === void 0) throw new Error("storeOf before renderRoot() — the host face exists only inside the installed renderer");
 		const entry = this.host.entriesOf(key)[0];
 		if (entry === void 0) throw new Error(`storeOf('${key}'): no registration on the ledger`);
-		const instance = this.host.storeOf(entry, scopeKey);
+		const scopeBinding = scopeKey === void 0 ? void 0 : this.host.scope("session")?.resolve(scopeKey);
+		if (scopeKey !== void 0 && scopeBinding === void 0) throw new Error(`storeOf('${key}'): no live Session binding for '${scopeKey}'`);
+		const instance = this.host.storeOf(entry, scopeBinding);
 		if (instance === void 0) throw new Error(`storeOf('${key}'): the entry declares no store`);
 		return instance;
 	}
@@ -1351,4 +1342,4 @@ var SlotTestRuntime = class SlotTestRuntime {
 	}
 };
 //#endregion
-export { FixtureSession, SlotTestRuntime, TestRemote, TestRoot, TestSessions, TestWorkspaces, bindSnapshotSelector, conversationSnapshot, createSlotRenderer, domSnapshotSerializer, makeTranslate, registerDomSnapshotSerializer, stubSettingsScope, usePinnedBrowserLanguages, workspaceListState };
+export { FixtureSession, SlotTestRuntime, TestRemote, TestRoot, TestSessions, TestWorkspaces, bindSnapshotSelector, chatSnapshot, conversationSnapshot, createSlotRenderer, domSnapshotSerializer, makeTranslate, registerDomSnapshotSerializer, scriptedSettingsRemote, sessionSnapshot, stubSettingsScope, usePinnedBrowserLanguages, workspaceSnapshot };

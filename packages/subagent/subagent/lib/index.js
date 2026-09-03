@@ -1,11 +1,12 @@
-import { Service } from "@deepseek-ai/cordis";
 import { scopeTarget } from "@deepseek-ai/dsh-scope";
 import { assertObjectJsonSchema } from "@deepseek-ai/dsh-tools";
-import { HarnessError, boundContextSummary, createUserMessage, errorChain } from "@deepseek-ai/dsh-llm";
+import { Remote, TypertRemoteFailure, TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
+import { z } from "zod";
+import { HarnessError, ReasoningEffortId, boundContextSummary, createUserMessage, errorChain } from "@deepseek-ai/dsh-llm";
 import { randomUUID } from "node:crypto";
 import { foldConsumedWork } from "@deepseek-ai/dsh-agent";
 import { Session, SessionId, snapshotJsonValue } from "@deepseek-ai/dsh-session";
-import { z } from "zod";
+import { PERSONA_ORDER } from "@deepseek-ai/dsh-system-prompt";
 import { accessSync, constants, statSync } from "node:fs";
 import { isAbsolute, resolve } from "node:path";
 //#region lib/types/error.js
@@ -21,6 +22,132 @@ var SubagentError = class extends HarnessError {
 		this.name = "SubagentError";
 	}
 };
+//#endregion
+//#region lib/types/control.js
+/**
+* Browser-facing subagent control assembly: the catalog view sampled against
+* the live Agent registry, one browser zone's validation, and the stable
+* failure codes the Remote surface answers with.
+*
+* @module @deepseek-ai/dsh-subagent
+*/
+/** Strict browser-zone profile: UTC or an IANA Area/Location-style identifier. */
+const IANA_TIME_ZONE = /^[A-Za-z][A-Za-z0-9_+.-]*(?:\/[A-Za-z0-9_+.-]+)+$/;
+const SESSION_ID_SCHEMA = z.string().min(1);
+const CONTROL_ID_SCHEMAS = {
+	"subagent.list": z.object({ parentSessionId: SESSION_ID_SCHEMA }),
+	"subagent.prompt": z.object({
+		parentSessionId: SESSION_ID_SCHEMA,
+		childSessionId: SESSION_ID_SCHEMA,
+		mode: z.literal("continuable")
+	}),
+	"subagent.interrupt": z.object({
+		parentSessionId: SESSION_ID_SCHEMA,
+		childSessionId: SESSION_ID_SCHEMA,
+		mode: z.literal("continuable")
+	})
+};
+/**
+* Validate and canonicalize one browser-supplied IANA zone at the wire boundary.
+* @param value - the browser's reported zone name.
+* @returns the canonical zone, or `undefined` when the name is unusable.
+*/
+function canonicalClientTimeZone(value) {
+	if (value.length === 0 || value.trim() !== value || value !== "UTC" && !IANA_TIME_ZONE.test(value)) return void 0;
+	try {
+		const canonical = new Intl.DateTimeFormat("en-US", { timeZone: value }).resolvedOptions().timeZone;
+		/* v8 ignore next -- Intl returns UTC or a canonical IANA Area/Location for accepted input. */
+		if (canonical !== "UTC" && !IANA_TIME_ZONE.test(canonical)) return void 0;
+		return canonical;
+	} catch {
+		return;
+	}
+}
+/**
+* Refuse one Remote call with a stable business failure the carrier preserves.
+* @param code - declared caller-facing code.
+* @param message - human-readable refusal.
+* @param details - that code's declared detail payload.
+* @returns Never — the failure is thrown.
+* @throws {TypertRemoteFailure} always.
+*/
+function rejectControl(code, message, details) {
+	throw new TypertRemoteFailure({
+		code,
+		message,
+		details
+	});
+}
+/**
+* Apply the subagent payload checks that are stricter than generated
+* branded-string codecs.
+* @param method - method name carried in the failure message.
+* @param payload - decoded control fields to validate.
+* @throws {TypertRemoteFailure} `bad-request` with the original Zod issues.
+*/
+function validateControlRequest(method, payload) {
+	const parsed = CONTROL_ID_SCHEMAS[method].safeParse(payload);
+	if (!parsed.success) return rejectControl("bad-request", `invalid payload for ${method}`, { issues: parsed.error.issues });
+}
+/**
+* Project one durable listing onto the catalog view, replacing each row's
+* store-derived activity with the live Agent driver's status and reporting
+* whether the exact parent Agent is live. Without an Agent registry no driver
+* runs at all, so every row is inactive and the parent is unavailable.
+* @param ctx - Host context that may carry the Agent registry.
+* @param parentSessionId - the listed parent.
+* @param entries - the durable direct-child listing.
+* @returns the catalog view answered to one browser.
+*/
+function catalogView(ctx, parentSessionId, entries) {
+	const agents = ctx.get("agents");
+	return {
+		entries: entries.map((entry) => entry.kind === "child" ? {
+			...entry,
+			activity: agents?.get(entry.id)?.status === "running" ? "running" : "inactive"
+		} : entry),
+		parentAvailable: agents?.get(parentSessionId) !== void 0
+	};
+}
+/**
+* Refuse one catalog read while preserving cancellation and a missing
+* projections registry as distinct failures.
+* @param error - the thrown value.
+* @param signal - the caller's cancellation.
+* @returns Never — the refusal is thrown.
+* @throws {TypertRemoteFailure} always.
+*/
+function rejectCatalogRead(error, signal) {
+	if (isCancellation(error, signal)) return rejectControl("cancelled", "subagent catalog read was cancelled", {});
+	if (error instanceof SubagentError && error.code === "SUBAGENT_CONTROL_PROJECTIONS_UNAVAILABLE") return rejectControl("subagent-projections-unavailable", "subagent catalog is unavailable: this deployment does not mount the sessionProjections registry (load @deepseek-ai/dsh-session-projection)", {});
+	return rejectControl("internal", "subagent catalog read failed", {});
+}
+/**
+* Refuse one continuation prompt without exposing provider detail: admission
+* failures the caller can act on keep their own code, everything else is
+* internal.
+* @param error - the thrown value.
+* @param childSessionId - the addressed child.
+* @param signal - the caller's cancellation.
+* @returns Never — the refusal is thrown.
+* @throws {TypertRemoteFailure} always.
+*/
+function rejectPrompt(error, childSessionId, signal) {
+	if (isCancellation(error, signal)) return rejectControl("cancelled", "subagent prompt was cancelled", {});
+	if (error instanceof SubagentError) switch (error.code) {
+		case "NOT_RESUMABLE": return rejectControl("subagent-not-resumable", "subagent cannot be resumed", { childSessionId });
+		case "UNAUTHORIZED": return rejectControl("subagent-unauthorized", "subagent does not belong to this parent", { childSessionId });
+		case "DRAINING":
+		case "ACTIVATION_CLOSING":
+		case "CONTINUATION_UNAVAILABLE":
+		case "PERSISTENCE_UNAVAILABLE": return rejectControl("subagent-delivery-unavailable", "subagent follow-up is temporarily unavailable", { childSessionId });
+		default: break;
+	}
+	return rejectControl("internal", "subagent prompt failed", {});
+}
+function isCancellation(error, signal) {
+	return signal.aborted || error instanceof SubagentError && error.code === "CANCELLED";
+}
 //#endregion
 //#region lib/types/depth.js
 /**
@@ -325,7 +452,7 @@ function renderThrown(value) {
 * Supporting another composition input is a deliberate version change, never
 * an implicit extra field.
 */
-const SUBAGENT_DESCRIPTOR_VERSION = 2;
+const SUBAGENT_DESCRIPTOR_VERSION = 3;
 const DESCRIPTOR_BASE_KEYS = [
 	"version",
 	"mode",
@@ -337,6 +464,7 @@ const CONTINUABLE_DESCRIPTOR_KEYS = new Set([
 	...DESCRIPTOR_BASE_KEYS,
 	"agentProvider",
 	"agentModel",
+	"agentReasoningEffort",
 	"persona",
 	"toolFilter"
 ]);
@@ -383,7 +511,7 @@ function parseSubagentDescriptor(value) {
 	if (!isRecord(value)) throw new Error("persisted subagent descriptor payload must be an object");
 	const version = value["version"];
 	if (typeof version !== "number") throw new Error("persisted subagent descriptor version must be a number");
-	if (version !== 2) return void 0;
+	if (version !== 3) return void 0;
 	const mode = value["mode"];
 	if (mode !== "one-shot" && mode !== "continuable") throw new Error("persisted subagent descriptor mode must be \"one-shot\" or \"continuable\"");
 	assertKnownKeys(value, mode === "one-shot" ? ONE_SHOT_DESCRIPTOR_KEYS : CONTINUABLE_DESCRIPTOR_KEYS, "payload");
@@ -392,7 +520,7 @@ function parseSubagentDescriptor(value) {
 	if (mode === "one-shot") {
 		const label = optionalString(value, "label");
 		return {
-			version: 2,
+			version: 3,
 			mode,
 			provider,
 			...label !== void 0 ? { label } : {}
@@ -402,32 +530,35 @@ function parseSubagentDescriptor(value) {
 	if (typeof label !== "string") throw new Error("persisted subagent descriptor label must be a string");
 	const agentProvider = optionalString(value, "agentProvider");
 	const agentModel = optionalString(value, "agentModel");
+	const agentReasoningEffort = optionalString(value, "agentReasoningEffort");
 	const persona = optionalString(value, "persona");
 	const toolFilter = Object.hasOwn(value, "toolFilter") ? parseToolFilter(value["toolFilter"]) : void 0;
 	return {
-		version: 2,
+		version: 3,
 		mode,
 		provider,
 		label,
 		...agentProvider !== void 0 ? { agentProvider } : {},
 		...agentModel !== void 0 ? { agentModel } : {},
+		...agentReasoningEffort !== void 0 ? { agentReasoningEffort } : {},
 		...persona !== void 0 ? { persona } : {},
 		...toolFilter !== void 0 ? { toolFilter } : {}
 	};
 }
 function snapshotSubagentDescriptor(input) {
 	const snapshot = snapshotJsonValue(input.mode === "one-shot" ? {
-		version: 2,
+		version: 3,
 		mode: input.mode,
 		provider: input.provider,
 		...input.label !== void 0 ? { label: input.label } : {}
 	} : {
-		version: 2,
+		version: 3,
 		mode: input.mode,
 		provider: input.provider,
 		label: input.label,
 		...input.agentProvider !== void 0 ? { agentProvider: input.agentProvider } : {},
 		...input.agentModel !== void 0 ? { agentModel: input.agentModel } : {},
+		...input.agentReasoningEffort !== void 0 ? { agentReasoningEffort: input.agentReasoningEffort } : {},
 		...input.persona !== void 0 ? { persona: input.persona } : {},
 		...input.toolFilter !== void 0 ? { toolFilter: input.toolFilter } : {}
 	});
@@ -490,25 +621,51 @@ function resolveChildDepth(parent, maxDepth) {
 	return childDepth;
 }
 /**
-* Resolve the child's `AgentOptions`: the parent's provider/model/maxTokens
-* route unless the request overrides it, stamped with the child's own
-* delegation depth.
+* Resolve the parent values inherited by a child. The latest request header
+* owns provider, model, and reasoning effort after request-time selection;
+* creation options remain the fallback before the first request and retain
+* the configured output-token limit.
+* @param parent - delegating parent Agent.
+* @returns detached Agent options for child-option merging.
+*/
+function parentAgentOptionsForDelegation(parent) {
+	const requestConfig = parent.session.requestHeader()?.config;
+	if (requestConfig === void 0) return { ...parent.options };
+	const { provider: _createdProvider, model: _createdModel, reasoningEffort: _createdReasoningEffort, ...createdOptions } = parent.options;
+	return {
+		...createdOptions,
+		provider: requestConfig.provider,
+		model: requestConfig.model,
+		...requestConfig.reasoningEffort === void 0 ? {} : { reasoningEffort: requestConfig.reasoningEffort }
+	};
+}
+/**
+* Resolve the child's `AgentOptions`: the parent's provider/model,
+* reasoning-effort, and maxTokens values unless the request overrides them,
+* stamped with the child's own delegation depth. Changing the route without
+* naming an effort clears the parent's route-owned effort so the selected
+* model resolves its own default.
 * @param parent - the delegating parent whose route the child inherits.
 * @param requested - per-child overrides, if any.
 * @param childDepth - the resolved delegation depth to stamp.
 * @returns the resolved options for `ctx.agents.create()`.
 */
 function resolveChildAgentOptions(parent, requested, childDepth) {
-	const parentProvider = parent.options.provider;
-	const parentModel = parent.options.model;
-	const parentMaxTokens = parent.options.maxTokens;
-	return {
+	const parentOptions = parentAgentOptionsForDelegation(parent);
+	const parentProvider = parentOptions.provider;
+	const parentModel = parentOptions.model;
+	const parentReasoningEffort = parentOptions.reasoningEffort;
+	const parentMaxTokens = parentOptions.maxTokens;
+	const resolved = {
 		...parentProvider !== void 0 ? { provider: parentProvider } : {},
 		...parentModel !== void 0 ? { model: parentModel } : {},
+		...parentReasoningEffort !== void 0 ? { reasoningEffort: parentReasoningEffort } : {},
 		...parentMaxTokens !== void 0 ? { maxTokens: parentMaxTokens } : {},
 		...requested,
 		subagentDepth: childDepth
 	};
+	if ((resolved.provider !== parentProvider || resolved.model !== parentModel) && requested?.reasoningEffort === void 0) delete resolved.reasoningEffort;
+	return resolved;
 }
 /**
 * Build the child session's durable creation metadata: the parent's workspace,
@@ -576,7 +733,7 @@ function applyChildComposition(childCtx, parent, composition) {
 	});
 	if (composition.persona !== void 0) childCtx.systemPrompt.section({
 		name: "deployment:persona",
-		order: 0,
+		order: PERSONA_ORDER,
 		text: composition.persona
 	});
 	if (composition.toolFilter !== void 0) childCtx.tools.restrict(composition.toolFilter);
@@ -664,6 +821,64 @@ function seedDescriptorTurn(childId, seed, descriptor) {
 *
 * @module @deepseek-ai/dsh-subagent
 */
+var __addDisposableResource$1 = function(env, value, async) {
+	if (value !== null && value !== void 0) {
+		if (typeof value !== "object" && typeof value !== "function") throw new TypeError("Object expected.");
+		var dispose, inner;
+		if (async) {
+			if (!Symbol.asyncDispose) throw new TypeError("Symbol.asyncDispose is not defined.");
+			dispose = value[Symbol.asyncDispose];
+		}
+		if (dispose === void 0) {
+			if (!Symbol.dispose) throw new TypeError("Symbol.dispose is not defined.");
+			dispose = value[Symbol.dispose];
+			if (async) inner = dispose;
+		}
+		if (typeof dispose !== "function") throw new TypeError("Object not disposable.");
+		if (inner) dispose = function() {
+			try {
+				inner.call(this);
+			} catch (e) {
+				return Promise.reject(e);
+			}
+		};
+		env.stack.push({
+			value,
+			dispose,
+			async
+		});
+	} else if (async) env.stack.push({ async: true });
+	return value;
+};
+var __disposeResources$1 = (function(SuppressedError) {
+	return function(env) {
+		function fail(e) {
+			env.error = env.hasError ? new SuppressedError(e, env.error, "An error was suppressed during disposal.") : e;
+			env.hasError = true;
+		}
+		var r, s = 0;
+		function next() {
+			while (r = env.stack.pop()) try {
+				if (!r.async && s === 1) return s = 0, env.stack.push(r), Promise.resolve().then(next);
+				if (r.dispose) {
+					var result = r.dispose.call(r.value);
+					if (r.async) return s |= 2, Promise.resolve(result).then(next, function(e) {
+						fail(e);
+						return next();
+					});
+				} else s |= 1;
+			} catch (e) {
+				fail(e);
+			}
+			if (s === 1) return env.hasError ? Promise.reject(env.error) : Promise.resolve();
+			if (env.hasError) throw env.error;
+		}
+		return next();
+	};
+})(typeof SuppressedError === "function" ? SuppressedError : function(error, suppressed, message) {
+	var e = new Error(message);
+	return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+});
 /**
 * Read one Activation's current disposal transaction. This indirection exists
 * because TypeScript would otherwise narrow repeated reads of the mutable field
@@ -777,14 +992,17 @@ var SubagentContinuationManager = class {
 		const childId = spec.childId ?? SessionId(randomUUID());
 		this.assertChildIdAvailable(childId);
 		const childDepth = resolveChildDepth(parent, request.maxDepth);
-		const agentProvider = request.agentOptions?.provider ?? parent.options.provider;
-		const agentModel = request.agentOptions?.model ?? parent.options.model;
+		const agentOptions = resolveChildAgentOptions(parent, request.agentOptions, childDepth);
+		const agentProvider = agentOptions.provider;
+		const agentModel = agentOptions.model;
+		const agentReasoningEffort = agentOptions.reasoningEffort;
 		const descriptor = snapshotSubagentDescriptor({
 			mode: "continuable",
 			provider: spec.provider,
 			label: spec.label,
 			...agentProvider !== void 0 ? { agentProvider } : {},
 			...agentModel !== void 0 ? { agentModel } : {},
+			...agentReasoningEffort !== void 0 ? { agentReasoningEffort } : {},
 			...request.persona !== void 0 ? { persona: request.persona } : {},
 			...request.toolFilter !== void 0 ? { toolFilter: request.toolFilter } : {}
 		});
@@ -820,7 +1038,7 @@ var SubagentContinuationManager = class {
 						meta: childSessionMeta(parent, childDepth, lineageSeedLength),
 						delegatedPolicies
 					},
-					agentOptions: resolveChildAgentOptions(parent, request.agentOptions, childDepth),
+					agentOptions,
 					composition: {
 						persona: request.persona,
 						toolFilter: request.toolFilter
@@ -1135,48 +1353,61 @@ var SubagentContinuationManager = class {
 		return "settled";
 	}
 	/**
-	* Cold-resume a persisted child: inspect and authorize its Session, fold the
+	* Cold-resume a persisted child: retain and authorize its prepared Session, fold the
 	* generic descriptor, create the Activation through `ctx.agents.resume()`,
 	* and submit the waiting turn. This never dispatches through a subagent
 	* provider — the persisted Session already holds the initial prefix and the
 	* descriptor is the whole reconstruction input.
 	*/
 	async coldResume(parent, childId, content, options) {
-		const persistence = this.requirePersistence();
-		let loaded;
+		const env_1 = {
+			stack: [],
+			error: void 0,
+			hasError: false
+		};
 		try {
-			loaded = await persistence.inspect(childId, options.signal);
-		} catch (error) {
-			options.signal.throwIfAborted();
-			throw new SubagentError(`subagent "${childId}" is unavailable`, "NOT_RESUMABLE", { cause: error });
+			const query = this.requireSessionQuery();
+			let observation;
+			try {
+				observation = await query.observeSession(childId, { signal: options.signal });
+			} catch (error) {
+				options.signal.throwIfAborted();
+				throw new SubagentError(`subagent "${childId}" is unavailable`, "NOT_RESUMABLE", { cause: error });
+			}
+			const source = __addDisposableResource$1(env_1, observation, false);
+			this.assertAdmitting(parent);
+			this.authorizeLineage(parent, childId, source.header.parentSession);
+			const descriptor = foldSubagentDescriptor(source.events.slice(source.header.seedLength ?? 0));
+			if (descriptor === void 0 || descriptor.mode !== "continuable") throw new SubagentError(`subagent "${childId}" has no supported continuation state and cannot be resumed; do not retry send_message with this id`, "NOT_RESUMABLE");
+			let activation;
+			try {
+				activation = await this.materialize({
+					childId,
+					provider: descriptor.provider,
+					parent,
+					agentOptions: {
+						...descriptor.agentProvider !== void 0 ? { provider: descriptor.agentProvider } : {},
+						...descriptor.agentModel !== void 0 ? { model: descriptor.agentModel } : {},
+						...descriptor.agentReasoningEffort !== void 0 ? { reasoningEffort: ReasoningEffortId(descriptor.agentReasoningEffort) } : {}
+					},
+					composition: {
+						persona: descriptor.persona,
+						toolFilter: descriptor.toolFilter
+					},
+					signal: options.signal
+				});
+			} catch (error) {
+				options.signal.throwIfAborted();
+				if (error instanceof SubagentError) throw error;
+				throw new SubagentError(`subagent "${childId}" is unavailable`, "NOT_RESUMABLE", { cause: error });
+			}
+			return await this.submitMaterialized(activation, content, options.source, parent, options.signal);
+		} catch (e_1) {
+			env_1.error = e_1;
+			env_1.hasError = true;
+		} finally {
+			__disposeResources$1(env_1);
 		}
-		options.signal.throwIfAborted();
-		this.assertAdmitting(parent);
-		this.authorizeLineage(parent, childId, loaded.meta.parentSession);
-		const descriptor = foldSubagentDescriptor(loaded.events.slice(loaded.meta.seedLength ?? 0));
-		if (descriptor === void 0 || descriptor.mode !== "continuable") throw new SubagentError(`subagent "${childId}" has no supported continuation state and cannot be resumed; do not retry send_message with this id`, "NOT_RESUMABLE");
-		let activation;
-		try {
-			activation = await this.materialize({
-				childId,
-				provider: descriptor.provider,
-				parent,
-				agentOptions: {
-					...descriptor.agentProvider !== void 0 ? { provider: descriptor.agentProvider } : {},
-					...descriptor.agentModel !== void 0 ? { model: descriptor.agentModel } : {}
-				},
-				composition: {
-					persona: descriptor.persona,
-					toolFilter: descriptor.toolFilter
-				},
-				signal: options.signal
-			});
-		} catch (error) {
-			options.signal.throwIfAborted();
-			if (error instanceof SubagentError) throw error;
-			throw new SubagentError(`subagent "${childId}" is unavailable`, "NOT_RESUMABLE", { cause: error });
-		}
-		return this.submitMaterialized(activation, content, options.source, parent, options.signal);
 	}
 	/**
 	* Submit to a freshly materialized Activation or roll it back completely.
@@ -1541,6 +1772,12 @@ var SubagentContinuationManager = class {
 		if (persistence === void 0) throw new SubagentError("continuable subagents require session persistence (load a dsh-session-persistence backend)", "PERSISTENCE_UNAVAILABLE");
 		return persistence;
 	}
+	/** Resolve the Session query service used for cold child observations. */
+	requireSessionQuery() {
+		const query = this.ctx.get("sessionQuery");
+		if (query === void 0) throw new SubagentError("continuable subagents require session query (load @deepseek-ai/dsh-session-query)", "CONTINUATION_UNAVAILABLE");
+		return query;
+	}
 };
 //#endregion
 //#region lib/types/activation-setup-registry.js
@@ -1674,14 +1911,14 @@ var SubagentActivationSetupRegistry = class {
 //#region lib/types/list-children.js
 /**
 * Read-only enumeration of durable subagent children and descendant trees
-* straight from the live session store and optional session persistence — no
-* query service. Candidates come from one live-preferred corpus; each child's
-* mode/label is the registered `subagent` projection unit's value, resolved
+* through the Session query service. Candidates come from one live-preferred
+* corpus; each child's mode/label is the registered `subagent` projection
+* unit's value, resolved
 * down a three-rung ladder: the registry's watermark cache for a live child,
 * a durable projection-cache row when it serves an own-suffix identity (the
-* seq gate), and one persistence inspection folded through the registry
-* otherwise, validated against the enumerated lifecycle. The projection fold
-* is the single classification authority — this module parses no descriptor
+* seq gate), and one shared Session observation otherwise, validated against
+* the enumerated lifecycle. The projection fold is the single classification
+* authority — this module parses no descriptor
 * itself. Absent persistence, enumeration is live-only: a cold child is
 * unreachable for resume anyway, so its absence is capability absence, not an
 * error. The module owns no catalog state and does not consult Activation,
@@ -1689,10 +1926,68 @@ var SubagentActivationSetupRegistry = class {
 *
 * @module @deepseek-ai/dsh-subagent
 */
+var __addDisposableResource = function(env, value, async) {
+	if (value !== null && value !== void 0) {
+		if (typeof value !== "object" && typeof value !== "function") throw new TypeError("Object expected.");
+		var dispose, inner;
+		if (async) {
+			if (!Symbol.asyncDispose) throw new TypeError("Symbol.asyncDispose is not defined.");
+			dispose = value[Symbol.asyncDispose];
+		}
+		if (dispose === void 0) {
+			if (!Symbol.dispose) throw new TypeError("Symbol.dispose is not defined.");
+			dispose = value[Symbol.dispose];
+			if (async) inner = dispose;
+		}
+		if (typeof dispose !== "function") throw new TypeError("Object not disposable.");
+		if (inner) dispose = function() {
+			try {
+				inner.call(this);
+			} catch (e) {
+				return Promise.reject(e);
+			}
+		};
+		env.stack.push({
+			value,
+			dispose,
+			async
+		});
+	} else if (async) env.stack.push({ async: true });
+	return value;
+};
+var __disposeResources = (function(SuppressedError) {
+	return function(env) {
+		function fail(e) {
+			env.error = env.hasError ? new SuppressedError(e, env.error, "An error was suppressed during disposal.") : e;
+			env.hasError = true;
+		}
+		var r, s = 0;
+		function next() {
+			while (r = env.stack.pop()) try {
+				if (!r.async && s === 1) return s = 0, env.stack.push(r), Promise.resolve().then(next);
+				if (r.dispose) {
+					var result = r.dispose.call(r.value);
+					if (r.async) return s |= 2, Promise.resolve(result).then(next, function(e) {
+						fail(e);
+						return next();
+					});
+				} else s |= 1;
+			} catch (e) {
+				fail(e);
+			}
+			if (s === 1) return env.hasError ? Promise.reject(env.error) : Promise.resolve();
+			if (env.hasError) throw env.error;
+		}
+		return next();
+	};
+})(typeof SuppressedError === "function" ? SuppressedError : function(error, suppressed, message) {
+	var e = new Error(message);
+	return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+});
 /**
-* Concurrent cold inspections per listing; a constant because it bounds one
-* read-only scan of local media, not deployment behavior. Should a networked
-* persistence backend appear, promote it to a validated `Config` field.
+* Concurrent cold observations per explicit catalog listing. Current Session
+* persistence providers are local; a networked provider must promote this to
+* a validated deployment setting.
 */
 const COLD_READ_CONCURRENCY = 4;
 /**
@@ -1701,8 +1996,7 @@ const COLD_READ_CONCURRENCY = 4;
 * serving each identity from the `subagent` projection unit: the registry's
 * watermark snapshot for a live child; for a cold one, a durable
 * projection-cache row when it serves an own-suffix identity (the seq gate),
-* else one bounded-concurrency persistence inspection folded through the
-* registry.
+* else one bounded-concurrency shared Session observation.
 * @see SubagentRuntime.listChildren for the public cancellation and failure contract.
 * @param ctx - context carrying the session store, the projection registry,
 *   optional persistence, and the optional projection cache.
@@ -1751,32 +2045,30 @@ async function prepareListing(ctx, signal) {
 	const sessions = ctx.get("sessions");
 	if (sessions === void 0) throw new SubagentError("listing subagents requires the session store (load @deepseek-ai/dsh-session)", "SUBAGENT_CONTROL_SESSION_STORE_UNAVAILABLE");
 	assertListingNotCancelled(signal);
-	const persistence = ctx.get("sessionPersistence");
+	const query = ctx.get("sessionQuery");
+	if (query === void 0) throw new SubagentError("listing subagents requires the sessionQuery service (load @deepseek-ai/dsh-session-query)", "SUBAGENT_CONTROL_QUERY_UNAVAILABLE");
 	const cache = ctx.get("sessionProjectionCache");
-	let persistedHeaders = [];
-	if (persistence !== void 0) {
-		try {
-			persistedHeaders = await persistence.list(signal);
-		} catch (error) {
-			assertListingNotCancelled(signal);
-			throw error;
-		}
+	let records;
+	try {
+		records = await query.listSessions(signal);
+	} catch (error) {
 		assertListingNotCancelled(signal);
+		throw error;
 	}
+	assertListingNotCancelled(signal);
 	const corpus = /* @__PURE__ */ new Map();
-	for (const header of persistedHeaders) corpus.set(header.id, {
-		header,
-		live: void 0
-	});
-	for (const session of sessions.list()) corpus.set(session.header.id, {
-		header: session.header,
-		live: session
-	});
+	for (const record of records) {
+		const live = sessions.get(record.header.id);
+		corpus.set(record.header.id, {
+			header: live?.header ?? record.header,
+			live
+		});
+	}
 	const subagentParents = /* @__PURE__ */ new Set();
 	for (const record of corpus.values()) if (record.header.origin === "subagent" && record.header.parentSession !== void 0) subagentParents.add(record.header.parentSession);
 	return {
 		projections,
-		persistence,
+		query,
 		cache,
 		corpus,
 		subagentParents
@@ -1784,7 +2076,7 @@ async function prepareListing(ctx, signal) {
 }
 /** Resolve projection-backed rows for aligned candidates with bounded cold reads. */
 async function resolveCandidateRows(candidates, listing, signal) {
-	const { projections, persistence, cache, subagentParents } = listing;
+	const { projections, query, cache, subagentParents } = listing;
 	const rows = Array.from({ length: candidates.length });
 	const coldReads = [];
 	candidates.forEach((candidate, index) => {
@@ -1798,7 +2090,7 @@ async function resolveCandidateRows(candidates, listing, signal) {
 		}
 		let identity;
 		try {
-			identity = projections.snapshot(candidate.live).values.subagent;
+			identity = projections.snapshot(candidate.live, ["subagent"]).values.subagent;
 		} catch {
 			rows[index] = {
 				kind: "diagnostic",
@@ -1807,13 +2099,13 @@ async function resolveCandidateRows(candidates, listing, signal) {
 			};
 			return;
 		}
-		if (identity === void 0 || identity === null) return;
+		if (identity === void 0 || identity === null || identity.seq < (candidate.header.seedLength ?? 0)) return;
 		rows[index] = childRow(childId, identity, "running", subagentParents.has(childId));
 	});
-	if (persistence !== void 0 && coldReads.length > 0) {
+	if (coldReads.length > 0) {
 		const queue = [...coldReads];
 		await Promise.all(Array.from({ length: Math.min(COLD_READ_CONCURRENCY, queue.length) }, async () => {
-			for (let job = queue.shift(); job !== void 0; job = queue.shift()) rows[job.index] = await resolveColdIdentity(persistence, projections, cache, job.header, subagentParents.has(job.header.id), signal);
+			for (let job = queue.shift(); job !== void 0; job = queue.shift()) rows[job.index] = await resolveColdIdentity(query, cache, job.header, subagentParents.has(job.header.id), signal);
 		}));
 	}
 	assertListingNotCancelled(signal);
@@ -1859,58 +2151,61 @@ function compareCorpusRecords(a, b) {
 /**
 * Resolve one cold candidate down the remaining ladder: a durable
 * projection-cache row when it serves an own-suffix identity (the seq gate),
-* otherwise one persistence inspection folded through the projection
-* registry (the same detached recipe the API proxy uses for detached session
-* projections). A failed inspection is one transient `unavailable` row
-* retried on the next listing; an inspection naming another lifecycle, and a
+* otherwise one shared Session observation. An absent or transiently failed
+* observation is one `unavailable` row retried on the next listing; an observation
+* source naming another lifecycle, and a
 * settled log the fold cannot identify — or that makes any registered unit
 * throw — are final, so they report `corrupt`.
 */
-async function resolveColdIdentity(persistence, projections, cache, header, hasChildren, signal) {
-	const childId = header.id;
-	if (cache !== void 0) {
-		let cached;
-		try {
-			cached = cache.cachedSnapshot(header)?.values.subagent;
-		} catch {
-			cached = void 0;
-		}
-		if (cached !== void 0 && cached !== null && cached.seq >= (header.seedLength ?? 0)) return childRow(childId, cached, "inactive", hasChildren);
-	}
-	assertListingNotCancelled(signal);
-	let inspected;
-	try {
-		inspected = await persistence.inspect(childId, signal);
-	} catch {
-		assertListingNotCancelled(signal);
-		return {
-			kind: "diagnostic",
-			id: childId,
-			reason: "unavailable"
-		};
-	}
-	assertListingNotCancelled(signal);
-	if (!sameLifecycle(inspected.meta, header)) return {
-		kind: "diagnostic",
-		id: childId,
-		reason: "corrupt"
+async function resolveColdIdentity(query, cache, header, hasChildren, signal) {
+	const env_1 = {
+		stack: [],
+		error: void 0,
+		hasError: false
 	};
-	let identity;
 	try {
-		identity = projections.restore({}, inspected.events, 0).snapshot.values.subagent;
-	} catch {
-		return {
+		const childId = header.id;
+		if (cache !== void 0) {
+			let cached;
+			try {
+				cached = cache.cachedSnapshot(header, ["subagent"])?.values.subagent;
+			} catch {
+				cached = void 0;
+			}
+			if (cached !== void 0 && cached !== null && cached.seq >= (header.seedLength ?? 0)) return childRow(childId, cached, "inactive", hasChildren);
+		}
+		assertListingNotCancelled(signal);
+		let observation;
+		try {
+			observation = await query.observeSession(childId, { ...signal === void 0 ? {} : { signal } });
+		} catch (error) {
+			assertListingNotCancelled(signal);
+			return {
+				kind: "diagnostic",
+				id: childId,
+				reason: sessionQueryCode(error) === "SESSION_QUERY_CORRUPT_SESSION" || sessionQueryCode(error) === "SESSION_QUERY_SOURCE_CONFLICT" ? "corrupt" : "unavailable"
+			};
+		}
+		const ownedObservation = __addDisposableResource(env_1, observation, false);
+		assertListingNotCancelled(signal);
+		if (!sameLifecycle(ownedObservation.header, header)) return {
 			kind: "diagnostic",
 			id: childId,
 			reason: "corrupt"
 		};
+		const identity = ownedObservation.projections?.values.subagent;
+		if (identity === void 0 || identity === null || identity.seq < (header.seedLength ?? 0)) return {
+			kind: "diagnostic",
+			id: childId,
+			reason: "corrupt"
+		};
+		return childRow(childId, identity, "inactive", hasChildren);
+	} catch (e_1) {
+		env_1.error = e_1;
+		env_1.hasError = true;
+	} finally {
+		__disposeResources(env_1);
 	}
-	if (identity === void 0 || identity === null) return {
-		kind: "diagnostic",
-		id: childId,
-		reason: "corrupt"
-	};
-	return childRow(childId, identity, "inactive", hasChildren);
 }
 /** Materialize one served identity as its child row. */
 function childRow(id, identity, activity, hasChildren) {
@@ -1938,7 +2233,9 @@ const LIFECYCLE_WITNESS_KEYS = [
 	"cwd",
 	"parentSession",
 	"seedLength",
-	"delegationDepth"
+	"delegationDepth",
+	"origin",
+	"agentPreset"
 ];
 /** Whether an inspected log still belongs to the enumerated lifecycle. */
 function sameLifecycle(meta, expected) {
@@ -1948,6 +2245,28 @@ function sameLifecycle(meta, expected) {
 function assertListingNotCancelled(signal) {
 	if (signal?.aborted) throw new SubagentError("subagent listing was cancelled", "CANCELLED");
 }
+function sessionQueryCode(error) {
+	return error instanceof Error && "code" in error ? error.code : void 0;
+}
+//#endregion
+//#region lib/types/projection.js
+/**
+* Pure session projections for subagent identity (mode/label) and active-turn
+* duration.
+*
+* @module @deepseek-ai/dsh-subagent/projection
+*/
+const activeIntervalSchema = z.object({
+	since: z.number().int().nonnegative(),
+	through: z.number().int().nonnegative()
+}).strict();
+const projectionSchema = z.object({
+	settledMs: z.number().int().nonnegative(),
+	active: activeIntervalSchema.optional()
+}).strict().transform(({ settledMs, active }) => ({
+	settledMs,
+	...active === void 0 ? {} : { active }
+}));
 /**
 * Fold turn boundaries around the child's own durable descriptor.
 *
@@ -1958,12 +2277,11 @@ function assertListingNotCancelled(signal) {
 */
 const subagentTimingProjectionDefinition = {
 	key: "subagentTiming",
-	schema: z.object({
+	stateSchema: z.object({
 		settledMs: z.number().int().nonnegative(),
-		active: z.object({
-			since: z.number().int().nonnegative(),
-			through: z.number().int().nonnegative()
-		}).strict().optional()
+		active: activeIntervalSchema.optional(),
+		pendingTurnStart: z.number().int().nonnegative().optional(),
+		descriptorSeen: z.boolean()
 	}).strict(),
 	init: () => ({
 		descriptorSeen: false,
@@ -2013,13 +2331,16 @@ const subagentTimingProjectionDefinition = {
 			}
 		};
 	},
-	view: (state) => ({
-		settledMs: state.settledMs,
-		...state.active === void 0 ? {} : { active: state.active }
-	}),
+	wire: {
+		viewSchema: projectionSchema,
+		view: (state) => ({
+			settledMs: state.settledMs,
+			...state.active === void 0 ? {} : { active: state.active }
+		})
+	},
 	stateVersion: 2
 };
-const identitySchema = z.discriminatedUnion("mode", [z.object({
+const identityValueSchema = z.discriminatedUnion("mode", [z.object({
 	mode: z.literal("one-shot"),
 	label: z.string().optional(),
 	seq: z.number().int().nonnegative()
@@ -2027,7 +2348,9 @@ const identitySchema = z.discriminatedUnion("mode", [z.object({
 	mode: z.literal("continuable"),
 	label: z.string(),
 	seq: z.number().int().nonnegative()
-}).strict()]).nullable();
+}).strict()]);
+const identitySchema = identityValueSchema.nullable();
+const identityStateSchema = z.object({ identity: identityValueSchema.optional() }).strict();
 /** Interpret one `subagent/descriptor` event's identity; no value when the payload cannot be trusted. */
 function descriptorIdentity(event) {
 	let descriptor;
@@ -2060,14 +2383,17 @@ function descriptorIdentity(event) {
 */
 const subagentIdentityProjectionDefinition = {
 	key: "subagent",
-	schema: identitySchema,
+	stateSchema: identityStateSchema,
 	init: () => ({}),
 	apply: (state, event) => {
 		if (event.type !== "subagent/descriptor") return state;
 		const identity = descriptorIdentity(event);
 		return identity === void 0 ? {} : { identity };
 	},
-	view: (state) => state.identity ?? null,
+	wire: {
+		viewSchema: identitySchema,
+		view: (state) => state.identity ?? null
+	},
 	stateVersion: 2
 };
 //#endregion
@@ -2101,13 +2427,21 @@ function limitSubagentDiagnostic(diagnostic) {
 	while ((bytes[prefixBytes] & 192) === 128) prefixBytes -= 1;
 	return utf8Decoder.decode(bytes.subarray(0, prefixBytes)) + DIAGNOSTIC_TRUNCATION_SUFFIX;
 }
+/** Enforce the byte limit on a provider-returned diagnostic. */
+function normalizeSubagentDiagnostic(result) {
+	return result.diagnostic === void 0 ? result : {
+		...result,
+		diagnostic: limitSubagentDiagnostic(result.diagnostic)
+	};
+}
 /**
 * The capability advertisement of an out-of-process backend: NONE. A child in
 * another process cannot honor parent-enforced start features
-* (`outputSchema`/`maxDepth`/`toolFilter`/`persona`), so the service rejects a
+* (`agentOptions`/`outputSchema`/`maxDepth`/`toolFilter`/`persona`), so the service rejects a
 * request needing any of them before `start` runs — never accepted-then-ignored.
 */
 const NO_START_CAPABILITIES = Object.freeze({
+	agentOptions: false,
 	outputSchema: false,
 	depthLimit: false,
 	toolFilter: false,
@@ -2195,7 +2529,8 @@ function toError(value) {
 * rejects after publication. A normally completed or rejected attempt resolves
 * as `aborted` when cancellation already settled locally; another rejection is
 * flattened to `stopReason: 'error'` through the contained diagnostic sink.
-* The abort listener is removed on every path.
+* Provider-returned diagnostics use the same byte limit. The abort listener is
+* removed on every path.
 * @param parts - the attempt, output snapshot, cancellation state, sink, and signal wiring.
 * @returns the terminal result (never a rejection).
 */
@@ -2205,7 +2540,7 @@ async function settleRunResult(parts) {
 		return parts.cancelled() ? {
 			output: parts.collectOutput(),
 			stopReason: "aborted"
-		} : result;
+		} : normalizeSubagentDiagnostic(result);
 	} catch (error) {
 		if (parts.cancelled()) return {
 			output: parts.collectOutput(),
@@ -2267,8 +2602,10 @@ function failureDetail(result) {
 	return result.diagnostic === void 0 ? stopReason : `${stopReason}; diagnostic: ${result.diagnostic}`;
 }
 /**
-* Map a child result to the task outcome: completed carries final text,
-* aborted is killed, and every other reason is failed without partial output.
+* Map a child result to the task outcome: completed carries final text, local
+* cancellation (`aborted` without a diagnostic) is killed, and provider-
+* diagnosed remote aborts plus every other reason are failed without partial
+* output.
 * @param result - child terminal result.
 * @returns outcome for the `ctx.jobs` registration.
 */
@@ -2278,7 +2615,10 @@ function runOutcome(result) {
 			status: "completed",
 			output: finalText(result.output)
 		};
-		case "aborted": return { status: "killed" };
+		case "aborted": return result.diagnostic === void 0 ? { status: "killed" } : {
+			status: "failed",
+			detail: failureDetail(result)
+		};
 		case "error":
 		case "max-tokens":
 		case "refusal": return {
@@ -2325,10 +2665,8 @@ async function settleRun(run) {
 * child before returning its run, so fulfillment is the single publication and
 * ownership-transfer boundary.
 *
-* Unlike the bash seam (one executor per context, second load throws), MULTIPLE
-* providers coexist here: each registers under a unique name and a caller picks
-* one by name. The shape mirrors the LLM adapter registry
-* (`LlmRuntime.registerAdapter`), not the single-service bash executor.
+* Multiple providers coexist: each registers under a unique name and callers
+* select one by name.
 *
 * This package owns the Service Definition role of the capability seam. Service Providers
 * (`@deepseek-ai/dsh-subagent-spawn-in-process`, `-fork`, `-acp`) and the model-facing
@@ -2351,299 +2689,470 @@ async function settleRun(run) {
 *
 * @module @deepseek-ai/dsh-subagent
 */
-/** Named provider registry with one-shot runs, durable discovery, and continuable-child operations. */
-var SubagentRuntime = class extends Service {
-	providers = /* @__PURE__ */ new Map();
-	continuations;
-	/** Deployment contributions composed into unpublished continuable children. */
-	setupRegistry = new SubagentActivationSetupRegistry();
-	/**
-	* The contained lifecycle-edge publisher. Built here because scoped dispatch
-	* keys its carrier by this exact service instance, whose own context filter
-	* composes into the carrier.
-	*/
-	emitLifecycle;
-	constructor(ctx) {
-		super(ctx, "subagents");
-		this.emitLifecycle = createLifecycleEmitter(this.ctx, (parent) => scopeTarget(this, parent));
-		ctx.inject(["agents"], (childCtx) => {
-			const manager = new SubagentContinuationManager(childCtx, {
-				prepareContinuable: (name, request) => this.prepareContinuable(name, request),
-				observeActivation: (provider, childId, parent) => this.observeActivation(provider, childId, parent)
-			}, this.setupRegistry);
-			this.continuations = manager;
-			childCtx.effect(() => () => {
-				/* v8 ignore else -- one injected binding owns the slot until its fiber disposes. */
-				if (this.continuations === manager) this.continuations = void 0;
-			}, "subagents.continuationBinding()");
-		});
-		ctx.inject(["sessionProjections"], (projectionCtx) => {
-			projectionCtx.sessionProjections.register(subagentTimingProjectionDefinition);
-			projectionCtx.sessionProjections.register(subagentIdentityProjectionDefinition);
-		});
-	}
-	/**
-	* Establish one durable continuable child and deliver its initial prompt.
-	* Resolves when the child's inbox accepts that prompt, without waiting for the
-	* turn to start or for the message to reach the Session log; any earlier
-	* failure rejects with no ids and rolls back the child entirely.
-	* @param spec - provider, delegation request, and caller cancellation.
-	* @returns the durable child id and the accepted prompt's message id.
-	* @throws when continuation services are unavailable or materialization fails.
-	*/
-	async startContinuable(spec) {
-		return this.requireContinuations().startContinuable(spec);
-	}
-	/**
-	* Deliver one later message to a continuable child as its next FIFO turn. A
-	* resident child's Agent inbox accepts it directly (waking a `waiting`
-	* Activation), while an absent one is cold-resumed from its persisted
-	* Session. The Agent inbox is the only queue, so every accepted message has
-	* one observable order.
-	* @param parent - the exact live direct parent authorizing this delivery.
-	* @param childId - durable child session id.
-	* @param content - user-role content to deliver.
-	* @param options - the message source fields and caller cancellation, which stops the
-	*   operation only before inbox acceptance.
-	* @returns the accepted message's inbox id.
-	* @throws when continuation services are unavailable, parent authority is
-	*   rejected, or the message was not admitted.
-	*/
-	async followup(parent, childId, content, options) {
-		return this.requireContinuations().followup(parent, childId, content, options);
-	}
-	/**
-	* Interrupt one live continuable child's current turn under a human parent
-	* address or an exact live ancestor Agent. Fire-and-return: the cancel
-	* signal is issued before this returns, but the target may keep running
-	* until it observes the signal. Unclaimed pending inbox work, the Activation,
-	* and published descendants are preserved; claimed work is not requeued.
-	* Once the interrupted driver is idle, a waking send resumes the parked FIFO
-	* queue. An absent target — including a one-shot or unknown id —
-	* is an accepted no-op, as is a manager-less composition, which cannot own a
-	* live Activation.
-	* @param targetSessionId - the durable child session id to interrupt.
-	* @param authority - the human parent address or exact live ancestor Agent.
-	* @throws {SubagentError} `UNAUTHORIZED` when the authority does not own the
-	*   live target.
-	*/
-	interrupt(targetSessionId, authority) {
-		this.continuations?.interrupt(targetSessionId, authority);
-	}
-	/**
-	* Deliver selected content from one live continuable child to its durable
-	* direct parent. The child is the authority credential; callers cannot name a
-	* recipient. Reporting does not conclude the child's turn or Activation.
-	* @param child - exact live reporting child.
-	* @param content - selected model-facing content.
-	* @param options - parent scheduling and pre-acceptance cancellation.
-	* @returns the stable identity of the parent-accepted message.
-	* @throws when continuation services are unavailable, sender authorization
-	*   fails, or the direct parent is not live.
-	*/
-	async reportFrom(child, content, options) {
-		return this.requireContinuations().reportFrom(child, content, options);
-	}
-	/**
-	* Compose one deployment capability into every continuable child's
-	* unpublished creation context on fresh creation and cold resume. Grants wait
-	* for the next Activation; removing the contribution revokes every resident
-	* installation immediately.
-	* @param contribution - synchronous child-scope installer.
-	* @returns the exact Cordis effect disposer.
-	*/
-	registerContinuableSetup(contribution) {
-		return this.ctx.effect(() => this.setupRegistry.register(contribution), "subagents.registerContinuableSetup()");
-	}
-	/**
-	* Close continuable admission below exact live parent Agents, stop only their
-	* visible descendant Activations synchronously, then await admitted scoped
-	* materializations and release those forests child-first. The scoped cutoff
-	* lasts until each exact parent leaves the registry; unrelated parent trees
-	* remain live.
-	* @param parents - exact host-owned parent Agents entering teardown.
-	* @returns once every retained descendant Activation released its `AgentHandle`.
-	* @throws an aggregate error after all branches settle when any failed.
-	*/
-	async drainContinuableDescendants(parents) {
-		const manager = this.continuations;
-		if (manager === void 0) return;
-		await manager.drainDescendants(parents);
-	}
-	/**
-	* Release selected resident continuable direct children of one exact live
-	* parent. Other children of the same parent remain admitted and resident.
-	* Absent targets and a manager-less composition are accepted no-ops.
-	* @param parent - exact live direct parent authorizing the selected release.
-	* @param childIds - durable direct-child ids to release when resident.
-	* @returns once every selected Activation released its `AgentHandle`.
-	* @throws {SubagentError} `UNAUTHORIZED` when a resident target belongs to a
-	*   different parent or the supplied parent identity is stale.
-	*/
-	async drainContinuableChildren(parent, childIds) {
-		const manager = this.continuations;
-		if (manager === void 0) return;
-		await manager.drainChildren(parent, childIds);
-	}
-	/**
-	* Enumerate the parent's direct session-backed subagents without loading or
-	* resuming an Agent and without any query service: the listing merges the live
-	* session store with optional session persistence (live-preferred) and
-	* serves each child's durable mode/label from the registered `subagent`
-	* projection unit down a three-rung ladder — the registry's watermark
-	* snapshot for a live child; for a cold one, a durable projection-cache
-	* row when the optional cache serves an own-suffix identity (its `seq`
-	* gate proves the value postdates the fork seed, where a child's own
-	* descriptor is immutable once appended), else one persistence inspection
-	* folded through the registry. The
-	* projection fold is the single classification authority; per-child
-	* diagnostics relay a fold that served no identity or a failed inspection,
-	* never a list-time descriptor parse. Absent persistence, enumeration is
-	* live-only (a cold child cannot be resumed then either, so its absence is
-	* capability absence, not an error). This service consults no Agent
-	* registrations, Activations, or providers.
-	*
-	* Every persistence read receives `signal`, and the listing rechecks
-	* cancellation around each of those awaits. Read rejections that settle
-	* after an abort become a stable `SubagentError` with code `CANCELLED`.
-	* @param parentSessionId - parent session whose direct children are listed.
-	* @param signal - caller-owned cancellation forwarded to persistence reads
-	*   and observed around every read await.
-	* @returns children and per-child diagnostics ordered by `createdAt`, then id.
-	* @throws {@link SubagentError} when the projection registry or the session
-	*   store is not mounted, or the caller cancels the listing.
-	*/
-	listChildren(parentSessionId, signal) {
-		return listChildren(this.ctx, parentSessionId, signal);
-	}
-	/**
-	* Enumerate the root's complete session-backed subagent tree in stable
-	* pre-order from one live-preferred corpus, without loading or resuming an
-	* Agent. Ordinary sessions and one-shot children remain traversal nodes so
-	* continuable descendants below them are discovered; each returned entry
-	* adds its durable `parentId` and root-relative `depth`. Identity resolution,
-	* diagnostics, optional persistence, and cancellation follow the same
-	* projection-backed contract as {@link listChildren}.
-	* @param rootSessionId - session whose complete descendant tree is listed.
-	* @param signal - caller-owned cancellation forwarded to persistence reads
-	*   and observed around every read await.
-	* @returns children and per-candidate diagnostics with tree position, in
-	*   stable pre-order.
-	* @throws {@link SubagentError} under the same conditions as {@link listChildren}.
-	*/
-	listDescendants(rootSessionId, signal) {
-		return listDescendants(this.ctx, rootSessionId, signal);
-	}
-	/**
-	* Register a provider under its name. Registration is effect-scoped and HMR
-	* safe; removing a provider blocks new starts but does not revoke runs that
-	* were already returned to their holders.
-	* @param provider - the trusted provider implementation.
-	* @returns the exact Cordis effect disposer.
-	*/
-	registerProvider(provider) {
-		const name = provider.name;
-		return this.ctx.effect(function* () {
-			if (this.providers.has(name)) throw new SubagentError(`a subagent provider named "${name}" is already registered`, "DUPLICATE_PROVIDER");
-			this.providers.set(name, provider);
-			yield () => {
-				this.providers.delete(name);
-				this.emitLifecycle("subagent/provider-removed", name);
-			};
-			this.ctx.emit("subagent/provider-added", provider);
-		}.bind(this), "subagents.registerProvider()");
-	}
-	/**
-	* Look up a provider by name.
-	* @param name - the provider name.
-	* @returns the provider, or undefined when absent.
-	*/
-	getProvider(name) {
-		return this.providers.get(name);
-	}
-	/**
-	* List registered provider names in insertion order.
-	* @returns the registered names.
-	*/
-	list() {
-		return [...this.providers.keys()];
-	}
-	/**
-	* Establish a published child on the named provider. Capability and semantic
-	* checks run before delegation. Provider ownership lasts until its promise
-	* fulfills; a rejection therefore has no run for the caller to dispose and
-	* emits no run lifecycle events. Post-publication turn and infrastructure
-	* failures settle through the returned run.
-	* @param name - the provider to use.
-	* @param request - child label, prompt, parent, signal, and optional capabilities.
-	* @returns the published holder-owned run.
-	*/
-	async start(name, request) {
-		const provider = this.expectProvider(name);
-		this.assertCapabilities(provider, request);
-		assertSubagentMaxDepth(request.maxDepth);
-		if (request.outputSchema !== void 0) assertObjectJsonSchema(request.outputSchema);
-		const descriptor = snapshotSubagentDescriptor({
-			mode: "one-shot",
-			provider: name,
-			...request.label !== void 0 ? { label: request.label } : {}
-		});
-		const resolved = {
-			...request,
-			descriptor
-		};
-		return observeRun(this.emitLifecycle, name, request.parent, await provider.start(resolved));
-	}
-	/**
-	* Resolve one provider's detached continuable-creation contribution. Method
-	* presence on the provider IS the capability, so a provider without it is
-	* rejected before the manager reserves any child resources.
-	*/
-	async prepareContinuable(name, request) {
-		const provider = this.expectProvider(name);
-		if (provider.prepareContinuable === void 0) throw new SubagentError(`subagent provider "${provider.name}" does not support continuable children (no prepareContinuable capability)`, "UNSUPPORTED_CAPABILITY");
-		return provider.prepareContinuable(request);
-	}
-	/** Look up a provider for dispatch or fail loud. */
-	expectProvider(name) {
-		const provider = this.providers.get(name);
-		if (provider === void 0) throw new SubagentError(`no subagent provider registered for "${name}"`, "NO_PROVIDER");
-		return provider;
-	}
-	/** Resolve the optional continuable-subagent manager or fail loud. */
-	requireContinuations() {
-		if (this.continuations === void 0) throw new SubagentError("continuable subagents require the agents service", "CONTINUATION_UNAVAILABLE");
-		return this.continuations;
-	}
-	/**
-	* Build the lifecycle observer for one continuable Activation's residency
-	* epoch, so the manager publishes its edges without owning event dispatch.
-	*/
-	observeActivation(provider, childId, parent) {
-		return createActivationObserver(this.emitLifecycle, provider, childId, parent);
-	}
-	/** Reject the first requested capability that the provider lacks. */
-	assertCapabilities(provider, request) {
-		const needs = [
-			{
-				when: request.outputSchema !== void 0,
-				cap: "outputSchema"
-			},
-			{
-				when: request.maxDepth !== void 0,
-				cap: "depthLimit"
-			},
-			{
-				when: request.toolFilter !== void 0,
-				cap: "toolFilter"
-			},
-			{
-				when: request.persona !== void 0,
-				cap: "persona"
-			}
-		];
-		for (const { when, cap } of needs) if (when && !provider.capabilities[cap]) throw new SubagentError(`subagent provider "${provider.name}" does not support the "${cap}" capability`, "UNSUPPORTED_CAPABILITY");
-	}
+var __runInitializers = function(thisArg, initializers, value) {
+	var useValue = arguments.length > 2;
+	for (var i = 0; i < initializers.length; i++) value = useValue ? initializers[i].call(thisArg, value) : initializers[i].call(thisArg);
+	return useValue ? value : void 0;
 };
+var __esDecorate = function(ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
+	function accept(f) {
+		if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected");
+		return f;
+	}
+	var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
+	var target = !descriptorIn && ctor ? contextIn["static"] ? ctor : ctor.prototype : null;
+	var descriptor = descriptorIn || (target ? Object.getOwnPropertyDescriptor(target, contextIn.name) : {});
+	var _, done = false;
+	for (var i = decorators.length - 1; i >= 0; i--) {
+		var context = {};
+		for (var p in contextIn) context[p] = p === "access" ? {} : contextIn[p];
+		for (var p in contextIn.access) context.access[p] = contextIn.access[p];
+		context.addInitializer = function(f) {
+			if (done) throw new TypeError("Cannot add initializers after decoration has completed");
+			extraInitializers.push(accept(f || null));
+		};
+		var result = (0, decorators[i])(kind === "accessor" ? {
+			get: descriptor.get,
+			set: descriptor.set
+		} : descriptor[key], context);
+		if (kind === "accessor") {
+			if (result === void 0) continue;
+			if (result === null || typeof result !== "object") throw new TypeError("Object expected");
+			if (_ = accept(result.get)) descriptor.get = _;
+			if (_ = accept(result.set)) descriptor.set = _;
+			if (_ = accept(result.init)) initializers.unshift(_);
+		} else if (_ = accept(result)) if (kind === "field") initializers.unshift(_);
+		else descriptor[key] = _;
+	}
+	if (target) Object.defineProperty(target, contextIn.name, descriptor);
+	done = true;
+};
+/** Named provider registry with one-shot runs, durable discovery, and continuable-child operations. */
+let SubagentRuntime = (() => {
+	let _classSuper = TypertRemoteService;
+	let _instanceExtraInitializers = [];
+	let _remoteExportList_decorators;
+	let _prompt_decorators;
+	let _interruptByParent_decorators;
+	return class SubagentRuntime extends _classSuper {
+		static {
+			const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+			_remoteExportList_decorators = [Remote("list")];
+			_prompt_decorators = [Remote("prompt")];
+			_interruptByParent_decorators = [Remote("interruptByParent")];
+			__esDecorate(this, null, _remoteExportList_decorators, {
+				kind: "method",
+				name: "remoteExportList",
+				static: false,
+				private: false,
+				access: {
+					has: (obj) => "remoteExportList" in obj,
+					get: (obj) => obj.remoteExportList
+				},
+				metadata: _metadata
+			}, null, _instanceExtraInitializers);
+			__esDecorate(this, null, _prompt_decorators, {
+				kind: "method",
+				name: "prompt",
+				static: false,
+				private: false,
+				access: {
+					has: (obj) => "prompt" in obj,
+					get: (obj) => obj.prompt
+				},
+				metadata: _metadata
+			}, null, _instanceExtraInitializers);
+			__esDecorate(this, null, _interruptByParent_decorators, {
+				kind: "method",
+				name: "interruptByParent",
+				static: false,
+				private: false,
+				access: {
+					has: (obj) => "interruptByParent" in obj,
+					get: (obj) => obj.interruptByParent
+				},
+				metadata: _metadata
+			}, null, _instanceExtraInitializers);
+			if (_metadata) Object.defineProperty(this, Symbol.metadata, {
+				enumerable: true,
+				configurable: true,
+				writable: true,
+				value: _metadata
+			});
+		}
+		providers = (__runInitializers(this, _instanceExtraInitializers), /* @__PURE__ */ new Map());
+		continuations;
+		/** Deployment contributions composed into unpublished continuable children. */
+		setupRegistry = new SubagentActivationSetupRegistry();
+		/**
+		* The contained lifecycle-edge publisher. Built here because scoped dispatch
+		* keys its carrier by this exact service instance, whose own context filter
+		* composes into the carrier.
+		*/
+		emitLifecycle;
+		constructor(ctx) {
+			super(ctx, "subagents");
+			this.emitLifecycle = createLifecycleEmitter(this.ctx, (parent) => scopeTarget(this, parent));
+			ctx.inject(["agents"], (childCtx) => {
+				const manager = new SubagentContinuationManager(childCtx, {
+					prepareContinuable: (name, request) => this.prepareContinuable(name, request),
+					observeActivation: (provider, childId, parent) => this.observeActivation(provider, childId, parent)
+				}, this.setupRegistry);
+				this.continuations = manager;
+				childCtx.effect(() => () => {
+					/* v8 ignore else -- one injected binding owns the slot until its fiber disposes. */
+					if (this.continuations === manager) this.continuations = void 0;
+				}, "subagents.continuationBinding()");
+			});
+			ctx.inject(["sessionProjections"], (projectionCtx) => {
+				projectionCtx.sessionProjections.register(subagentTimingProjectionDefinition);
+				projectionCtx.sessionProjections.register(subagentIdentityProjectionDefinition);
+			});
+		}
+		/**
+		* Establish one durable continuable child and deliver its initial prompt.
+		* Resolves when the child's inbox accepts that prompt, without waiting for the
+		* turn to start or for the message to reach the Session log; any earlier
+		* failure rejects with no ids and rolls back the child entirely.
+		* @param spec - provider, delegation request, and caller cancellation.
+		* @returns the durable child id and the accepted prompt's message id.
+		* @throws when continuation services are unavailable or materialization fails.
+		*/
+		async startContinuable(spec) {
+			return this.requireContinuations().startContinuable(spec);
+		}
+		/**
+		* Deliver one later message to a continuable child as its next FIFO turn. A
+		* resident child's Agent inbox accepts it directly (waking a `waiting`
+		* Activation), while an absent one is cold-resumed from its persisted
+		* Session. The Agent inbox is the only queue, so every accepted message has
+		* one observable order.
+		* @param parent - the exact live direct parent authorizing this delivery.
+		* @param childId - durable child session id.
+		* @param content - user-role content to deliver.
+		* @param options - the message source fields and caller cancellation, which stops the
+		*   operation only before inbox acceptance.
+		* @returns the accepted message's inbox id.
+		* @throws when continuation services are unavailable, parent authority is
+		*   rejected, or the message was not admitted.
+		*/
+		async followup(parent, childId, content, options) {
+			return this.requireContinuations().followup(parent, childId, content, options);
+		}
+		/**
+		* Interrupt one live continuable child's current turn under a human parent
+		* address or an exact live ancestor Agent. Fire-and-return: the cancel
+		* signal is issued before this returns, but the target may keep running
+		* until it observes the signal. Unclaimed pending inbox work, the Activation,
+		* and published descendants are preserved; claimed work is not requeued.
+		* Once the interrupted driver is idle, a waking send resumes the parked FIFO
+		* queue. An absent target — including a one-shot or unknown id —
+		* is an accepted no-op, as is a manager-less composition, which cannot own a
+		* live Activation.
+		* @param targetSessionId - the durable child session id to interrupt.
+		* @param authority - the human parent address or exact live ancestor Agent.
+		* @throws {SubagentError} `UNAUTHORIZED` when the authority does not own the
+		*   live target.
+		*/
+		interrupt(targetSessionId, authority) {
+			this.continuations?.interrupt(targetSessionId, authority);
+		}
+		/**
+		* Deliver selected content from one live continuable child to its durable
+		* direct parent. The child is the authority credential; callers cannot name a
+		* recipient. Reporting does not conclude the child's turn or Activation.
+		* @param child - exact live reporting child.
+		* @param content - selected model-facing content.
+		* @param options - parent scheduling and pre-acceptance cancellation.
+		* @returns the stable identity of the parent-accepted message.
+		* @throws when continuation services are unavailable, sender authorization
+		*   fails, or the direct parent is not live.
+		*/
+		async reportFrom(child, content, options) {
+			return this.requireContinuations().reportFrom(child, content, options);
+		}
+		/**
+		* Compose one deployment capability into every continuable child's
+		* unpublished creation context on fresh creation and cold resume. Grants wait
+		* for the next Activation; removing the contribution revokes every resident
+		* installation immediately.
+		* @param contribution - synchronous child-scope installer.
+		* @returns the exact Cordis effect disposer.
+		*/
+		registerContinuableSetup(contribution) {
+			return this.ctx.effect(() => this.setupRegistry.register(contribution), "subagents.registerContinuableSetup()");
+		}
+		/**
+		* Close continuable admission below exact live parent Agents, stop only their
+		* visible descendant Activations synchronously, then await admitted scoped
+		* materializations and release those forests child-first. The scoped cutoff
+		* lasts until each exact parent leaves the registry; unrelated parent trees
+		* remain live.
+		* @param parents - exact host-owned parent Agents entering teardown.
+		* @returns once every retained descendant Activation released its `AgentHandle`.
+		* @throws an aggregate error after all branches settle when any failed.
+		*/
+		async drainContinuableDescendants(parents) {
+			const manager = this.continuations;
+			if (manager === void 0) return;
+			await manager.drainDescendants(parents);
+		}
+		/**
+		* Release selected resident continuable direct children of one exact live
+		* parent. Other children of the same parent remain admitted and resident.
+		* Absent targets and a manager-less composition are accepted no-ops.
+		* @param parent - exact live direct parent authorizing the selected release.
+		* @param childIds - durable direct-child ids to release when resident.
+		* @returns once every selected Activation released its `AgentHandle`.
+		* @throws {SubagentError} `UNAUTHORIZED` when a resident target belongs to a
+		*   different parent or the supplied parent identity is stale.
+		*/
+		async drainContinuableChildren(parent, childIds) {
+			const manager = this.continuations;
+			if (manager === void 0) return;
+			await manager.drainChildren(parent, childIds);
+		}
+		/**
+		* Enumerate the parent's direct session-backed subagents without loading or
+		* resuming an Agent. The Session query service supplies one live-preferred
+		* corpus and shared point observations; the projection cache supplies
+		* immutable descriptor hits without opening cold logs. The registered
+		* `subagent` projection remains the sole mode/label classifier.
+		*
+		* Every query receives `signal`, and the listing rechecks cancellation
+		* around each await. Read rejections that settle
+		* after an abort become a stable `SubagentError` with code `CANCELLED`.
+		* @param parentSessionId - parent session whose direct children are listed.
+		* @param signal - caller-owned cancellation forwarded to Session queries
+		*   and observed around every read await.
+		* @returns children and per-child diagnostics ordered by `createdAt`, then id.
+		* @throws {@link SubagentError} when the projection registry or the session
+		*   store is not mounted, or the caller cancels the listing.
+		*/
+		listChildren(parentSessionId, signal) {
+			return listChildren(this.ctx, parentSessionId, signal);
+		}
+		/**
+		* Enumerate the root's complete session-backed subagent tree in stable
+		* pre-order from one live-preferred corpus, without loading or resuming an
+		* Agent. Ordinary sessions and one-shot children remain traversal nodes so
+		* continuable descendants below them are discovered; each returned entry
+		* adds its durable `parentId` and root-relative `depth`. Identity resolution,
+		* diagnostics, optional persistence, and cancellation follow the same
+		* projection-backed contract as {@link listChildren}.
+		* @param rootSessionId - session whose complete descendant tree is listed.
+		* @param signal - caller-owned cancellation forwarded to persistence reads
+		*   and observed around every read await.
+		* @returns children and per-candidate diagnostics with tree position, in
+		*   stable pre-order.
+		* @throws {@link SubagentError} under the same conditions as {@link listChildren}.
+		*/
+		listDescendants(rootSessionId, signal) {
+			return listDescendants(this.ctx, rootSessionId, signal);
+		}
+		/**
+		* Remote face of {@link listChildren} for one browser: the durable listing
+		* plus live Agent activity and the delivery-time parent availability hint.
+		* Parent availability is a hint; {@link prompt} performs the authoritative
+		* check. Named apart from the provider-name {@link list}, which owns the
+		* member.
+		* @param parentSessionId - parent session whose direct children are listed.
+		* @param signal - carrier cancellation forwarded to Session queries.
+		* @returns the catalog view for that parent.
+		* @throws {TypertRemoteFailure} `bad-request` for an empty parent id,
+		*   `cancelled` for an aborted read, `subagent-projections-unavailable` when
+		*   the deployment has no projection registry, otherwise `internal`.
+		*/
+		async remoteExportList(parentSessionId, signal) {
+			validateControlRequest("subagent.list", { parentSessionId });
+			try {
+				return catalogView(this.ctx, parentSessionId, await this.listChildren(parentSessionId, signal));
+			} catch (error) {
+				return rejectCatalogRead(error, signal);
+			}
+		}
+		/**
+		* Deliver one browser-authored message to a continuable child through the
+		* exact live direct parent, retaining the caller-minted request identity and
+		* validated browser zone on the accepted message. Success identifies the
+		* message the child's FIFO inbox accepted; later execution is independent of
+		* this call.
+		* @param request - durable address, minted identity, content, and optional browser zone.
+		* @param signal - carrier cancellation, owning the call until inbox acceptance.
+		* @returns the accepted message's inbox identity.
+		* @throws {TypertRemoteFailure} `bad-request`, `invalid-time-zone`,
+		*   `subagent-parent-unavailable`, `subagent-not-resumable`,
+		*   `subagent-unauthorized`, `subagent-delivery-unavailable`, `cancelled`, or
+		*   `internal`.
+		*/
+		async prompt(request, signal) {
+			const { parentSessionId, childSessionId, clientTimeZone } = request;
+			validateControlRequest("subagent.prompt", request);
+			const canonicalTimeZone = clientTimeZone === void 0 ? void 0 : canonicalClientTimeZone(clientTimeZone);
+			if (clientTimeZone !== void 0 && canonicalTimeZone === void 0) return rejectControl("invalid-time-zone", "clientTimeZone must be UTC or a valid IANA Area/Location name", { value: clientTimeZone });
+			const parent = this.ctx.get("agents")?.get(parentSessionId);
+			if (parent === void 0) return rejectControl("subagent-parent-unavailable", `parent session "${parentSessionId}" is not live`, { parentSessionId });
+			const source = {
+				kind: "user",
+				rpcId: request.requestId,
+				...canonicalTimeZone === void 0 ? {} : { clientTimeZone: canonicalTimeZone }
+			};
+			const content = [...request.content];
+			try {
+				return { messageId: await this.followup(parent, childSessionId, content, {
+					source,
+					signal
+				}) };
+			} catch (error) {
+				return rejectPrompt(error, childSessionId, signal);
+			}
+		}
+		/**
+		* Remote face of {@link interrupt} under one durable parent address. No
+		* catalog, history, persistence, or parent Agent lookup runs: the core
+		* primitive alone authorizes the address against the live Activation, which
+		* is what keeps a live child interruptible while its parent Agent is offline.
+		* Absent, idle, and already-completed targets are accepted no-ops there.
+		* @param childSessionId - durable child session id to interrupt.
+		* @param parentSessionId - durable direct parent whose authority is claimed.
+		* @param mode - required continuable-address discriminator.
+		* @returns acknowledgement that the cancel signal was admitted, not that the target is quiescent.
+		* @throws {TypertRemoteFailure} `bad-request` for an empty id,
+		*   `subagent-unauthorized` when the address does not own the live target,
+		*   otherwise `internal`.
+		*/
+		interruptByParent(childSessionId, parentSessionId, mode) {
+			validateControlRequest("subagent.interrupt", {
+				childSessionId,
+				parentSessionId,
+				mode
+			});
+			try {
+				this.interrupt(childSessionId, {
+					kind: "user",
+					parentSessionId
+				});
+			} catch (error) {
+				if (error instanceof SubagentError && error.code === "UNAUTHORIZED") return rejectControl("subagent-unauthorized", "subagent does not belong to this parent", { childSessionId });
+				return rejectControl("internal", "subagent interrupt failed", {});
+			}
+			return { accepted: true };
+		}
+		/**
+		* Register a provider under its name. Registration is effect-scoped and HMR
+		* safe; removing a provider blocks new starts but does not revoke runs that
+		* were already returned to their holders.
+		* @param provider - the trusted provider implementation.
+		* @returns the exact Cordis effect disposer.
+		*/
+		registerProvider(provider) {
+			const name = provider.name;
+			return this.ctx.effect(function* () {
+				if (this.providers.has(name)) throw new SubagentError(`a subagent provider named "${name}" is already registered`, "DUPLICATE_PROVIDER");
+				this.providers.set(name, provider);
+				yield () => {
+					this.providers.delete(name);
+					this.emitLifecycle("subagent/provider-removed", name);
+				};
+				this.ctx.emit("subagent/provider-added", provider);
+			}.bind(this), "subagents.registerProvider()");
+		}
+		/**
+		* Look up a provider by name.
+		* @param name - the provider name.
+		* @returns the provider, or undefined when absent.
+		*/
+		getProvider(name) {
+			return this.providers.get(name);
+		}
+		/**
+		* List registered provider names in insertion order.
+		* @returns the registered names.
+		*/
+		list() {
+			return [...this.providers.keys()];
+		}
+		/**
+		* Establish a published child on the named provider. Capability and semantic
+		* checks run before delegation. Provider ownership lasts until its promise
+		* fulfills; a rejection therefore has no run for the caller to dispose and
+		* emits no run lifecycle events. Post-publication turn and infrastructure
+		* failures settle through the returned run.
+		* @param name - the provider to use.
+		* @param request - child label, prompt, parent, signal, and optional capabilities.
+		* @returns the published holder-owned run.
+		*/
+		async start(name, request) {
+			const provider = this.expectProvider(name);
+			this.assertCapabilities(provider, request);
+			assertSubagentMaxDepth(request.maxDepth);
+			if (request.outputSchema !== void 0) assertObjectJsonSchema(request.outputSchema);
+			const descriptor = snapshotSubagentDescriptor({
+				mode: "one-shot",
+				provider: name,
+				...request.label !== void 0 ? { label: request.label } : {}
+			});
+			const resolved = {
+				...request,
+				descriptor
+			};
+			return observeRun(this.emitLifecycle, name, request.parent, await provider.start(resolved));
+		}
+		/**
+		* Resolve one provider's detached continuable-creation contribution. Method
+		* presence on the provider IS the capability, so a provider without it is
+		* rejected before the manager reserves any child resources.
+		*/
+		async prepareContinuable(name, request) {
+			const provider = this.expectProvider(name);
+			if (provider.prepareContinuable === void 0) throw new SubagentError(`subagent provider "${provider.name}" does not support continuable children (no prepareContinuable capability)`, "UNSUPPORTED_CAPABILITY");
+			return provider.prepareContinuable(request);
+		}
+		/** Look up a provider for dispatch or fail loud. */
+		expectProvider(name) {
+			const provider = this.providers.get(name);
+			if (provider === void 0) throw new SubagentError(`no subagent provider registered for "${name}"`, "NO_PROVIDER");
+			return provider;
+		}
+		/** Resolve the optional continuable-subagent manager or fail loud. */
+		requireContinuations() {
+			if (this.continuations === void 0) throw new SubagentError("continuable subagents require the agents service", "CONTINUATION_UNAVAILABLE");
+			return this.continuations;
+		}
+		/**
+		* Build the lifecycle observer for one continuable Activation's residency
+		* epoch, so the manager publishes its edges without owning event dispatch.
+		*/
+		observeActivation(provider, childId, parent) {
+			return createActivationObserver(this.emitLifecycle, provider, childId, parent);
+		}
+		/** Reject the first requested capability that the provider lacks. */
+		assertCapabilities(provider, request) {
+			const needs = [
+				{
+					when: request.agentOptions !== void 0,
+					cap: "agentOptions"
+				},
+				{
+					when: request.outputSchema !== void 0,
+					cap: "outputSchema"
+				},
+				{
+					when: request.maxDepth !== void 0,
+					cap: "depthLimit"
+				},
+				{
+					when: request.toolFilter !== void 0,
+					cap: "toolFilter"
+				},
+				{
+					when: request.persona !== void 0,
+					cap: "persona"
+				}
+			];
+			for (const { when, cap } of needs) if (when && !provider.capabilities[cap]) throw new SubagentError(`subagent provider "${provider.name}" does not support the "${cap}" capability`, "UNSUPPORTED_CAPABILITY");
+		}
+	};
+})();
 //#endregion
-export { AssistantOutputFold, NO_START_CAPABILITIES, SUBAGENT_DESCRIPTOR_VERSION, SubagentDepthError, SubagentError, SubagentRunId, SubagentRuntime, SubagentRuntime as default, appendDelegatedPolicyOverrides, applyChildComposition, assertPositiveFinite, assertSubagentMaxDepth, assertUsableCwd, captureDelegatedPolicyOverrides, childSessionMeta, delegationDepthOf, finalAssistantOutput, foldSubagentDescriptor, resolveChildAgentOptions, resolveChildCwd, resolveChildDepth, seedDescriptorTurn, settleRun, settleRunResult, snapshotSubagentDescriptor, subprocessRunHandle, validateConfiguredCwd };
+export { AssistantOutputFold, NO_START_CAPABILITIES, SUBAGENT_DESCRIPTOR_VERSION, SubagentDepthError, SubagentError, SubagentRunId, SubagentRuntime, SubagentRuntime as default, appendDelegatedPolicyOverrides, applyChildComposition, assertPositiveFinite, assertSubagentMaxDepth, assertUsableCwd, captureDelegatedPolicyOverrides, childSessionMeta, delegationDepthOf, finalAssistantOutput, foldSubagentDescriptor, parentAgentOptionsForDelegation, resolveChildAgentOptions, resolveChildCwd, resolveChildDepth, seedDescriptorTurn, settleRun, settleRunResult, snapshotSubagentDescriptor, subprocessRunHandle, validateConfiguredCwd };

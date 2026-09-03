@@ -1,4 +1,5 @@
-import type { AssistantMessageNode, ConversationLocation, ConversationNode, ConversationPromptSnapshot, ConversationViewNode, PartialAssistant, RequestPromptChange, RequestView, RunningToolCall, ToolCallBlock } from '@deepseek-ai/dsh-client-runtime/client';
+import type { AssistantMessageNode, ConversationLocation, ConversationNode, ConversationPromptSnapshot, ConversationViewNode, MessageImagesOwnerProps, PartialAssistant, RequestPromptChange, RequestView, RunningToolCall, ToolCallBlock } from '@deepseek-ai/dsh-client-ui-conversation/client';
+import type { SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots';
 /** Request-header facts retained by the Trajectory target. */
 export interface TrajectoryRequestHeaderState {
     readonly seq: number;
@@ -38,6 +39,7 @@ export type TrajectoryContribution = {
     readonly turn: number;
     readonly time: number;
     readonly error?: string;
+    readonly errorCode?: string;
 };
 /** Target envelope consumed by the Trajectory snapshot builder. */
 export interface TrajectoryConversationViewNode extends ConversationViewNode {
@@ -55,10 +57,31 @@ export interface TrajectorySnapshot {
     readonly partial: PartialAssistant | null;
     readonly runningCalls: readonly RunningToolCall[];
 }
-declare module '@deepseek-ai/dsh-client-runtime/client' {
+/** Selector hook over the current Conversation binding's Trajectory target. */
+export type UseTrajectory = SnapshotSelectorHook<TrajectorySnapshot>;
+declare module '@deepseek-ai/dsh-client-ui-conversation/client' {
     interface ConversationViewSnapshotMap {
         /** Independently assembled data consumed by the Trajectory view. */
         trajectory: TrajectorySnapshot;
+    }
+}
+declare module '@deepseek-ai/dsh-client-ui-slots' {
+    interface SessionStandardProps {
+        /** Selector hook over the current Conversation binding's Trajectory target. */
+        useTrajectory: UseTrajectory;
+    }
+    interface SlotMap {
+        /**
+         * Renderer for one group of durable record images in the Trajectory
+         * ledger. The owner supplies image references, an authorized loader, and
+         * alignment. A registration replaces the shipped gallery; without one,
+         * images are omitted.
+         */
+        'conversation.trajectory.images': {
+            kind: 'single';
+            scope: 'session';
+            owner: MessageImagesOwnerProps;
+        };
     }
 }
 //# sourceMappingURL=trajectory-contract.d.ts.map

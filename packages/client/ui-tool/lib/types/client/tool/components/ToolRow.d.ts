@@ -1,18 +1,17 @@
 import { type ReactNode } from 'react';
-import type { WebBlockProps } from '@deepseek-ai/dsh-client-ui-primitives';
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots';
 import { type DiffCardModel } from '../models/diff-card-model.ts';
 import { type ReadCardModel } from '../models/read-card-model.ts';
 import { type SearchCardModel } from '../models/search-card-model.ts';
 import { type TerminalCardModel } from '../models/terminal-card-model.ts';
+import type { AskQuestionCardModel } from '../models/ask-question-card-model.ts';
 import type { ToolRowState, ToolRowVariant } from '../models/tool-call-model.ts';
+import type { WebCardModelProps } from '../models/web-card-model.ts';
 export interface ToolRowProps {
-    /** The render site's conversation locale seat (terminal/code body copy). */
     t: TranslateNS<'conversation'>;
     variant: ToolRowVariant;
     /** Wire tool name for tool-owned styling layered over the generic variant. */
     toolName?: string | undefined;
-    /** Leading 16px tool icon, shown while collapsed and not running/failed. */
     icon: ReactNode;
     title: string;
     summary: string;
@@ -28,39 +27,16 @@ export interface ToolRowProps {
     body: string | null;
     /** Flattened result text for the expanded Output section; null/absent = no output section. */
     output?: string | null | undefined;
+    /** Ask-user transcript card; card fields are mutually exclusive and replace text sections. */
+    askQuestion?: AskQuestionCardModel | null | undefined;
     /** Error first line shown as the collapsed summary on an error row; null/absent = keep `summary`. */
     errorSummary?: string | null | undefined;
-    /**
-     * Terminal-card material for a call whose render intent is a terminal card
-     * (derived by `terminalCardModel`); it replaces the text sections when
-     * present. A call carries at most one card kind, so the card props below are
-     * mutually exclusive.
-     */
+    /** Terminal card; card fields are mutually exclusive and replace text sections. */
     terminal?: TerminalCardModel | null | undefined;
-    /**
-     * Diff-card material for a call whose render intent is a diff card (derived by
-     * `diffCardModel`); it replaces the text body when present, the same way
-     * `terminal` does.
-     */
     diff?: DiffCardModel | null | undefined;
-    /**
-     * Read-card material for a call whose render intent is a read card (derived by
-     * `readCardModel`); it replaces the text body with the file's line-numbered,
-     * syntax-highlighted window when present.
-     */
     read?: ReadCardModel | null | undefined;
-    /**
-     * Search-card material for a call whose render intent is a search card
-     * (derived by `searchCardModel`); it replaces the text body with grouped
-     * matches or a path list when present.
-     */
     search?: SearchCardModel | null | undefined;
-    /**
-     * Web-card material for a call whose render intent is a web card (derived by
-     * `webCardModel`); it replaces the text body with the retrieval's citation
-     * list or fetched-source card when present.
-     */
-    web?: WebBlockProps | null | undefined;
+    web?: WebCardModelProps | null | undefined;
     state: ToolRowState;
     /**
      * Filesystem path from tool args; when set with onOpenFile, the summary
@@ -75,5 +51,5 @@ export interface ToolRowProps {
      */
     inspect?: (() => void) | undefined;
 }
-export declare function ToolRow({ t, variant, toolName, icon, title, summary, summarySuffix, body, output, errorSummary, terminal, diff, read, search, web, state, filePath, onOpenFile, inspect, }: ToolRowProps): import("react").JSX.Element;
+export declare function ToolRow({ t, variant, toolName, icon, title, summary, summarySuffix, body, output, askQuestion, errorSummary, terminal, diff, read, search, web, state, filePath, onOpenFile, inspect, }: ToolRowProps): import("react").JSX.Element;
 //# sourceMappingURL=ToolRow.d.ts.map

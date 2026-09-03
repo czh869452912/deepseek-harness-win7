@@ -3,7 +3,7 @@ declare const IMAGE_ADMISSION_ERROR_CODES: readonly ["TOO_MANY_IMAGES", "IMAGES_
 /** Caller-correctable attachment failure codes raised while admitting image input. */
 export type ImageAdmissionErrorCode = typeof IMAGE_ADMISSION_ERROR_CODES[number];
 /** Stable attachment failure codes used for protocol error routing. */
-export type AttachmentErrorCode = ImageAdmissionErrorCode | 'INVALID_ATTACHMENT_REF' | 'ATTACHMENT_CORRUPT' | 'ATTACHMENT_WRITE_FAILED' | 'ATTACHMENT_NOT_FOUND' | 'ATTACHMENT_READ_FAILED';
+export type AttachmentErrorCode = ImageAdmissionErrorCode | 'INVALID_ATTACHMENT_REF' | 'ATTACHMENT_CORRUPT' | 'ATTACHMENT_WRITE_FAILED' | 'ATTACHMENT_NOT_FOUND' | 'ATTACHMENT_READ_FAILED' | 'ATTACHMENT_PROJECTION_UNSUPPORTED';
 /**
  * Stable failures suitable for host RPC error mapping.
  *

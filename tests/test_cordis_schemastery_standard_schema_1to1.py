@@ -20,7 +20,7 @@ def test_standard_schema_v1_protocol():
     standard = s["~standard"]
     assert standard is not None
     assert standard["version"] == 1
-    assert standard["vendor"] == "cordis"
+    assert standard["vendor"] == "schemastery"
     assert callable(standard["validate"])
 
     # Test valid validation result

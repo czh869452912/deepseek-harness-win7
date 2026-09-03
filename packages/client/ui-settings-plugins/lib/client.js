@@ -8,29 +8,29 @@ window.__ModuleLoader__.load({
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let react = require("react");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
-		let _deepseek_ai_dsh_client_runtime_client = require("@deepseek-ai/dsh-client-runtime/client");
-		//#region \0dsh-css:D:\Claude-project\deepseek-harness-win7\reference\deepseek-harness\packages\client\ui-settings-plugins\src\client\fields.module.css.mjs
-		const css$2 = ".Ingbuq_field{flex-direction:column;gap:6px;padding:12px 0;display:flex}.Ingbuq_field+.Ingbuq_field{border-top:1px solid var(--dsw-alias-border-l2)}.Ingbuq_head{align-items:center;gap:8px;display:flex}.Ingbuq_label{min-width:0;color:var(--dsw-alias-label-primary);flex:1;font-size:13px;font-weight:500;line-height:1.5}.Ingbuq_badges{align-items:center;gap:8px;display:inline-flex}.Ingbuq_badge{white-space:nowrap;background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-secondary);border-radius:999px;padding:1px 8px;font-size:11px;font-weight:500;line-height:17px}.Ingbuq_badgeMuted{white-space:nowrap;color:var(--dsw-alias-label-tertiary);border-radius:999px;padding:1px 8px;font-size:11px;line-height:17px}.Ingbuq_reset{font:inherit;color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border:none;padding:0;font-size:12px;line-height:1.5}.Ingbuq_reset:hover:not(:disabled){color:var(--dsw-alias-label-primary)}.Ingbuq_reset:disabled{cursor:default}.Ingbuq_input{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-3);height:34px;font:inherit;color:var(--dsw-alias-label-primary);border-radius:8px;padding:0 12px;font-size:13px;line-height:1.5}.Ingbuq_input:focus-visible{border-color:var(--dsw-alias-brand-primary);outline:none}.Ingbuq_input:disabled{color:var(--dsw-alias-label-tertiary);cursor:default}.Ingbuq_inputInvalid{border-color:var(--dsw-alias-label-error);}.Ingbuq_invalid{color:var(--dsw-alias-label-error);margin:0;font-size:12px;line-height:1.5}.Ingbuq_hint{color:var(--dsw-alias-label-tertiary);margin:0;font-size:12px;line-height:1.5}";
-		const tagId$2 = "@deepseek-ai/dsh-client-ui-settings-plugins/fields.module.css";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
+		let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
+		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-settings-plugins\src\client\fields.module.css.mjs
+		const css$3 = ".sDbhmG_field{flex-direction:column;gap:6px;padding:12px 0;display:flex}.sDbhmG_field+.sDbhmG_field{border-top:1px solid var(--dsw-alias-border-l2)}.sDbhmG_head{align-items:center;gap:8px;display:flex}.sDbhmG_label{min-width:0;color:var(--dsw-alias-label-primary);flex:1;font-size:13px;font-weight:500;line-height:1.5}.sDbhmG_badges{align-items:center;gap:8px;display:inline-flex}.sDbhmG_badge{white-space:nowrap;background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-secondary);border-radius:999px;padding:1px 8px;font-size:11px;font-weight:500;line-height:17px}.sDbhmG_badgeMuted{white-space:nowrap;color:var(--dsw-alias-label-tertiary);border-radius:999px;padding:1px 8px;font-size:11px;line-height:17px}.sDbhmG_reset{font:inherit;color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border:none;padding:0;font-size:12px;line-height:1.5}.sDbhmG_reset:hover:not(:disabled){color:var(--dsw-alias-label-primary)}.sDbhmG_reset:disabled{cursor:default}.sDbhmG_input{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-3);height:34px;font:inherit;color:var(--dsw-alias-label-primary);border-radius:8px;padding:0 12px;font-size:13px;line-height:1.5}.sDbhmG_input:focus-visible{border-color:var(--dsw-alias-brand-primary);outline:none}.sDbhmG_input:disabled{color:var(--dsw-alias-label-tertiary);cursor:default}.sDbhmG_inputInvalid{border-color:var(--dsw-alias-label-error);}.sDbhmG_invalid{color:var(--dsw-alias-label-error);margin:0;font-size:12px;line-height:1.5}.sDbhmG_hint{color:var(--dsw-alias-label-tertiary);margin:0;font-size:12px;line-height:1.5}";
+		const tagId$3 = "@deepseek-ai/dsh-client-ui-settings-plugins/fields.module.css";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@deepseek-ai/dsh-client-ui-settings-plugins";
-			tag.dataset.pluginCss = tagId$2;
-			tag.textContent = css$2;
+			tag.dataset.pluginCss = tagId$3;
+			tag.textContent = css$3;
 			document.head.appendChild(tag);
 		}
 		var fields_module_css_default = {
-			"badge": "Ingbuq_badge",
-			"badgeMuted": "Ingbuq_badgeMuted",
-			"badges": "Ingbuq_badges",
-			"field": "Ingbuq_field",
-			"head": "Ingbuq_head",
-			"hint": "Ingbuq_hint",
-			"input": "Ingbuq_input",
-			"inputInvalid": "Ingbuq_inputInvalid",
-			"invalid": "Ingbuq_invalid",
-			"label": "Ingbuq_label",
-			"reset": "Ingbuq_reset"
+			"badge": "sDbhmG_badge",
+			"badgeMuted": "sDbhmG_badgeMuted",
+			"badges": "sDbhmG_badges",
+			"field": "sDbhmG_field",
+			"head": "sDbhmG_head",
+			"hint": "sDbhmG_hint",
+			"input": "sDbhmG_input",
+			"inputInvalid": "sDbhmG_inputInvalid",
+			"invalid": "sDbhmG_invalid",
+			"label": "sDbhmG_label",
+			"reset": "sDbhmG_reset"
 		};
 		//#endregion
 		//#region lib/types/client/fields.js
@@ -151,32 +151,32 @@ window.__ModuleLoader__.load({
 			return n;
 		}
 		//#endregion
-		//#region \0dsh-css:D:\Claude-project\deepseek-harness-win7\reference\deepseek-harness\packages\client\ui-settings-plugins\src\client\PluginCard.module.css.mjs
-		const css$1 = ".aaauTa_card{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-3);border-radius:12px;list-style:none;transition:border-color .16s,background .16s}.aaauTa_card:hover{border-color:var(--dsw-alias-label-dimmed)}.aaauTa_cardOpen{background:var(--dsw-alias-bg-layer-2);border-color:var(--dsw-alias-label-dimmed)}.aaauTa_header{appearance:none;width:100%;font:inherit;color:inherit;text-align:left;cursor:pointer;background:0 0;border:0;border-radius:12px;align-items:center;gap:12px;padding:14px 16px;display:flex}.aaauTa_header:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:-2px}.aaauTa_headText{flex-direction:column;flex:1;gap:4px;min-width:0;display:flex}.aaauTa_name{color:var(--dsw-alias-label-primary);font-size:15px;font-weight:600;line-height:1.4}.aaauTa_description{color:var(--dsw-alias-label-tertiary);font-size:13px;line-height:1.5}.aaauTa_chevron{color:var(--dsw-alias-label-tertiary);flex:none;transition:transform .16s}.aaauTa_chevronOpen{transform:rotate(180deg)}.aaauTa_body{border-top:1px solid var(--dsw-alias-border-l2);margin:0 16px;padding-bottom:8px}.aaauTa_readOnly{color:var(--dsw-alias-label-tertiary);margin:12px 0 0;font-size:12px;line-height:1.5}.aaauTa_pending{white-space:nowrap;background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-secondary);border-radius:999px;flex:none;padding:1px 8px;font-size:11px;font-weight:500;line-height:17px}.aaauTa_footer{border-top:1px solid var(--dsw-alias-border-l2);justify-content:flex-end;align-items:center;gap:8px;padding:12px 0 4px;display:flex}.aaauTa_failed{min-width:0;color:var(--dsw-alias-label-error);flex:1;margin:0;font-size:12px;line-height:1.5}.aaauTa_discard,.aaauTa_save{appearance:none;font:inherit;cursor:pointer;border:1px solid #0000;border-radius:8px;padding:5px 14px;font-size:13px;line-height:1.5}.aaauTa_discard{border-color:var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);background:0 0}.aaauTa_discard:hover:not(:disabled){color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-label-dimmed)}.aaauTa_save{background:var(--dsw-alias-label-primary);color:var(--dsw-alias-bg-layer-3)}.aaauTa_discard:disabled,.aaauTa_save:disabled{opacity:.4;cursor:default}.aaauTa_discard:focus-visible,.aaauTa_save:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}";
-		const tagId$1 = "@deepseek-ai/dsh-client-ui-settings-plugins/PluginCard.module.css";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
+		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-settings-plugins\src\client\PluginCard.module.css.mjs
+		const css$2 = ".JvU0_G_card{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-3);border-radius:12px;list-style:none;transition:border-color .16s,background .16s}.JvU0_G_card:hover{border-color:var(--dsw-alias-label-dimmed)}.JvU0_G_cardOpen{background:var(--dsw-alias-bg-layer-2);border-color:var(--dsw-alias-label-dimmed)}.JvU0_G_header{appearance:none;width:100%;font:inherit;color:inherit;text-align:left;cursor:pointer;background:0 0;border:0;border-radius:12px;align-items:center;gap:12px;padding:14px 16px;display:flex}.JvU0_G_header:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:-2px}.JvU0_G_headText{flex-direction:column;flex:1;gap:4px;min-width:0;display:flex}.JvU0_G_name{color:var(--dsw-alias-label-primary);font-size:15px;font-weight:600;line-height:1.4}.JvU0_G_description{color:var(--dsw-alias-label-tertiary);font-size:13px;line-height:1.5}.JvU0_G_chevron{color:var(--dsw-alias-label-tertiary);flex:none;transition:transform .16s}.JvU0_G_chevronOpen{transform:rotate(180deg)}.JvU0_G_body{border-top:1px solid var(--dsw-alias-border-l2);margin:0 16px;padding-bottom:8px}.JvU0_G_readOnly{color:var(--dsw-alias-label-tertiary);margin:12px 0 0;font-size:12px;line-height:1.5}.JvU0_G_pending{white-space:nowrap;background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-secondary);border-radius:999px;flex:none;padding:1px 8px;font-size:11px;font-weight:500;line-height:17px}.JvU0_G_footer{border-top:1px solid var(--dsw-alias-border-l2);justify-content:flex-end;align-items:center;gap:8px;padding:12px 0 4px;display:flex}.JvU0_G_failed{min-width:0;color:var(--dsw-alias-label-error);flex:1;margin:0;font-size:12px;line-height:1.5}.JvU0_G_discard,.JvU0_G_save{appearance:none;font:inherit;cursor:pointer;border:1px solid #0000;border-radius:8px;padding:5px 14px;font-size:13px;line-height:1.5}.JvU0_G_discard{border-color:var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);background:0 0}.JvU0_G_discard:hover:not(:disabled){color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-label-dimmed)}.JvU0_G_save{background:var(--dsw-alias-label-primary);color:var(--dsw-alias-bg-layer-3)}.JvU0_G_discard:disabled,.JvU0_G_save:disabled{opacity:.4;cursor:default}.JvU0_G_discard:focus-visible,.JvU0_G_save:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}";
+		const tagId$2 = "@deepseek-ai/dsh-client-ui-settings-plugins/PluginCard.module.css";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@deepseek-ai/dsh-client-ui-settings-plugins";
-			tag.dataset.pluginCss = tagId$1;
-			tag.textContent = css$1;
+			tag.dataset.pluginCss = tagId$2;
+			tag.textContent = css$2;
 			document.head.appendChild(tag);
 		}
 		var PluginCard_module_css_default = {
-			"body": "aaauTa_body",
-			"card": "aaauTa_card",
-			"cardOpen": "aaauTa_cardOpen",
-			"chevron": "aaauTa_chevron",
-			"chevronOpen": "aaauTa_chevronOpen",
-			"description": "aaauTa_description",
-			"discard": "aaauTa_discard",
-			"failed": "aaauTa_failed",
-			"footer": "aaauTa_footer",
-			"headText": "aaauTa_headText",
-			"header": "aaauTa_header",
-			"name": "aaauTa_name",
-			"pending": "aaauTa_pending",
-			"readOnly": "aaauTa_readOnly",
-			"save": "aaauTa_save"
+			"body": "JvU0_G_body",
+			"card": "JvU0_G_card",
+			"cardOpen": "JvU0_G_cardOpen",
+			"chevron": "JvU0_G_chevron",
+			"chevronOpen": "JvU0_G_chevronOpen",
+			"description": "JvU0_G_description",
+			"discard": "JvU0_G_discard",
+			"failed": "JvU0_G_failed",
+			"footer": "JvU0_G_footer",
+			"headText": "JvU0_G_headText",
+			"header": "JvU0_G_header",
+			"name": "JvU0_G_name",
+			"pending": "JvU0_G_pending",
+			"readOnly": "JvU0_G_readOnly",
+			"save": "JvU0_G_save"
 		};
 		//#endregion
 		//#region lib/types/client/PluginCard.js
@@ -202,7 +202,21 @@ window.__ModuleLoader__.load({
 		*/
 		function PluginCard(props) {
 			const [open, setOpen] = (0, react.useState)(false);
+			const saveStarted = (0, react.useRef)(false);
 			const { state } = props;
+			(0, react.useEffect)(() => {
+				if (state.saving) {
+					saveStarted.current = true;
+					return;
+				}
+				if (!saveStarted.current) return;
+				saveStarted.current = false;
+				if (!state.dirty && !state.failed) setOpen(false);
+			}, [
+				state.dirty,
+				state.failed,
+				state.saving
+			]);
 			if (!state.available) return null;
 			const title = props.t(props.titleKey);
 			const blocked = !state.dirty || state.invalid || state.saving;
@@ -360,25 +374,25 @@ window.__ModuleLoader__.load({
 			});
 		}
 		//#endregion
-		//#region \0dsh-css:D:\Claude-project\deepseek-harness-win7\reference\deepseek-harness\packages\client\ui-settings-plugins\src\client\PluginsSettingsSection.module.css.mjs
-		const css = ".Etbd6G_section{max-width:760px;color:var(--dsw-alias-label-primary);flex-direction:column;gap:12px;display:flex}.Etbd6G_heading{margin:0;font-size:18px;font-weight:600}.Etbd6G_intro{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.Etbd6G_tabs{border-bottom:1px solid var(--dsw-alias-border-l2);align-items:flex-end;gap:22px;margin-top:2px;display:flex}.Etbd6G_tab{color:var(--dsw-alias-label-tertiary);font:inherit;cursor:pointer;background:0 0;border:0;padding:7px 1px 9px;font-size:13px;line-height:20px;position:relative}.Etbd6G_tab:hover,.Etbd6G_tab[data-active=true]{color:var(--dsw-alias-label-primary)}.Etbd6G_tab[data-active=true]:after,.Etbd6G_tab:focus-visible:after{background:var(--dsw-alias-label-primary);content:\"\";border-radius:2px 2px 0 0;height:2px;position:absolute;bottom:-1px;left:0;right:0}.Etbd6G_tab:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px;color:var(--dsw-alias-label-primary);border-radius:2px}.Etbd6G_panel{min-width:0;padding-top:2px}.Etbd6G_cards{flex-direction:column;gap:10px;margin:0;padding:0;list-style:none;display:flex}.Etbd6G_empty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}";
-		const tagId = "@deepseek-ai/dsh-client-ui-settings-plugins/PluginsSettingsSection.module.css";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
+		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-settings-plugins\src\client\PluginsSettingsSection.module.css.mjs
+		const css$1 = ".F3FFZW_section{max-width:760px;color:var(--dsw-alias-label-primary);flex-direction:column;gap:12px;display:flex}.F3FFZW_heading{margin:0;font-size:18px;font-weight:600}.F3FFZW_intro{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.F3FFZW_tabs{border-bottom:1px solid var(--dsw-alias-border-l2);align-items:flex-end;gap:22px;margin-top:2px;display:flex}.F3FFZW_tab{color:var(--dsw-alias-label-tertiary);font:inherit;cursor:pointer;background:0 0;border:0;padding:7px 1px 9px;font-size:13px;line-height:20px;position:relative}.F3FFZW_tab:hover,.F3FFZW_tab[data-active=true]{color:var(--dsw-alias-label-primary)}.F3FFZW_tab[data-active=true]:after,.F3FFZW_tab:focus-visible:after{background:var(--dsw-alias-label-primary);content:\"\";border-radius:2px 2px 0 0;height:2px;position:absolute;bottom:-1px;left:0;right:0}.F3FFZW_tab:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px;color:var(--dsw-alias-label-primary);border-radius:2px}.F3FFZW_panel{min-width:0;padding-top:2px}.F3FFZW_cards{flex-direction:column;gap:10px;margin:0;padding:0;list-style:none;display:flex}.F3FFZW_empty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}";
+		const tagId$1 = "@deepseek-ai/dsh-client-ui-settings-plugins/PluginsSettingsSection.module.css";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@deepseek-ai/dsh-client-ui-settings-plugins";
-			tag.dataset.pluginCss = tagId;
-			tag.textContent = css;
+			tag.dataset.pluginCss = tagId$1;
+			tag.textContent = css$1;
 			document.head.appendChild(tag);
 		}
 		var PluginsSettingsSection_module_css_default = {
-			"cards": "Etbd6G_cards",
-			"empty": "Etbd6G_empty",
-			"heading": "Etbd6G_heading",
-			"intro": "Etbd6G_intro",
-			"panel": "Etbd6G_panel",
-			"section": "Etbd6G_section",
-			"tab": "Etbd6G_tab",
-			"tabs": "Etbd6G_tabs"
+			"cards": "F3FFZW_cards",
+			"empty": "F3FFZW_empty",
+			"heading": "F3FFZW_heading",
+			"intro": "F3FFZW_intro",
+			"panel": "F3FFZW_panel",
+			"section": "F3FFZW_section",
+			"tab": "F3FFZW_tab",
+			"tabs": "F3FFZW_tabs"
 		};
 		//#endregion
 		//#region lib/types/client/ConfigurablePluginsTab.js
@@ -497,6 +511,176 @@ window.__ModuleLoader__.load({
 							children: renderSlot("settings.plugins.tab", {}, { only: row.id })
 						}, row.id);
 					})] })
+				]
+			});
+		}
+		//#endregion
+		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-settings-plugins\src\client\SubagentModelSelectionCard.module.css.mjs
+		const css = ".r9_p5G_permission{gap:6px;padding:12px 0;display:grid}.r9_p5G_toggleRow{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:flex-start;gap:16px;font-size:13px;line-height:1.5;display:flex}.r9_p5G_toggleLabel{flex:1;min-width:0}.r9_p5G_switch{box-sizing:border-box;background:var(--dsw-alias-border-l3);cursor:pointer;border:0;border-radius:10px;flex:none;width:36px;height:20px;padding:2px;position:relative}.r9_p5G_switchOn{background:var(--dsw-alias-brand-primary)}.r9_p5G_switch:disabled{cursor:default;opacity:.5}.r9_p5G_switch:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:2px}.r9_p5G_thumb{background:var(--dsw-alias-label-primary-foreground);border-radius:50%;width:16px;height:16px;transition:transform .12s;display:block}.r9_p5G_switchOn .r9_p5G_thumb{transform:translate(16px)}.r9_p5G_selection{gap:10px;display:grid}.r9_p5G_hint,.r9_p5G_notice,.r9_p5G_invalid,.r9_p5G_conflict{margin:0;font-size:12px;line-height:1.5}.r9_p5G_hint,.r9_p5G_notice{color:var(--dsw-alias-label-tertiary)}.r9_p5G_invalid,.r9_p5G_conflict{color:var(--dsw-alias-label-error)}.r9_p5G_catalogError{color:var(--dsw-alias-label-error);justify-content:space-between;align-items:center;gap:12px;font-size:12px;display:flex}.r9_p5G_catalogError button{color:var(--dsw-alias-brand-primary);cursor:pointer;background:0 0;border:0;padding:0}.r9_p5G_models{border:1px solid var(--dsw-alias-border-l2);border-radius:8px;gap:6px;min-width:0;max-height:280px;margin:0;padding:10px;display:grid;overflow:auto}.r9_p5G_models legend{color:var(--dsw-alias-label-secondary);padding:0 4px;font-size:12px}.r9_p5G_modelGroup{gap:6px;display:grid}.r9_p5G_modelGroup+.r9_p5G_modelGroup{border-top:1px solid var(--dsw-alias-border-l3);margin-top:4px;padding-top:10px}.r9_p5G_providerName{color:var(--dsw-alias-label-tertiary);padding:0 6px;font-size:11px;font-weight:500}.r9_p5G_model{cursor:pointer;border-radius:6px;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px;min-width:0;padding:6px;display:grid}.r9_p5G_model:hover{background:var(--dsw-alias-bg-layer-4)}.r9_p5G_modelName,.r9_p5G_route{text-overflow:ellipsis;white-space:nowrap;display:block;overflow:hidden}.r9_p5G_modelName{color:var(--dsw-alias-label-primary);font-size:13px}.r9_p5G_route{color:var(--dsw-alias-label-tertiary);margin-top:2px;font-size:11px}.r9_p5G_unavailable{color:var(--dsw-alias-label-tertiary);font-size:11px}";
+		const tagId = "@deepseek-ai/dsh-client-ui-settings-plugins/SubagentModelSelectionCard.module.css";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@deepseek-ai/dsh-client-ui-settings-plugins";
+			tag.dataset.pluginCss = tagId;
+			tag.textContent = css;
+			document.head.appendChild(tag);
+		}
+		var SubagentModelSelectionCard_module_css_default = {
+			"catalogError": "r9_p5G_catalogError",
+			"conflict": "r9_p5G_conflict",
+			"hint": "r9_p5G_hint",
+			"invalid": "r9_p5G_invalid",
+			"model": "r9_p5G_model",
+			"modelGroup": "r9_p5G_modelGroup",
+			"modelName": "r9_p5G_modelName",
+			"models": "r9_p5G_models",
+			"notice": "r9_p5G_notice",
+			"permission": "r9_p5G_permission",
+			"providerName": "r9_p5G_providerName",
+			"route": "r9_p5G_route",
+			"selection": "r9_p5G_selection",
+			"switch": "r9_p5G_switch",
+			"switchOn": "r9_p5G_switchOn",
+			"thumb": "r9_p5G_thumb",
+			"toggleLabel": "r9_p5G_toggleLabel",
+			"toggleRow": "r9_p5G_toggleRow",
+			"unavailable": "r9_p5G_unavailable"
+		};
+		//#endregion
+		//#region lib/types/client/SubagentModelSelectionCard.js
+		/** User control for model-selectable subagent delegation in new sessions. */
+		/**
+		* Render the default-off preference and its exact adapter-route choices.
+		* @param props - locale copy, the card snapshot, and its toggle action.
+		* @returns the preference card, or nothing when the namespace is unavailable.
+		*/
+		function SubagentModelSelectionCard(props) {
+			const { t } = props;
+			const state = props.useSubagentModelSelectionCard((snapshot) => snapshot);
+			const availableGroups = /* @__PURE__ */ new Map();
+			const unavailable = [];
+			for (const candidate of state.candidates) {
+				if (!candidate.available) {
+					unavailable.push(candidate);
+					continue;
+				}
+				const group = availableGroups.get(candidate.provider);
+				if (group === void 0) availableGroups.set(candidate.provider, {
+					providerName: candidate.providerName,
+					candidates: [candidate]
+				});
+				else group.candidates.push(candidate);
+			}
+			const renderCandidate = (candidate) => (0, react_jsx_runtime.jsxs)("label", {
+				className: SubagentModelSelectionCard_module_css_default.model,
+				children: [
+					(0, react_jsx_runtime.jsx)("input", {
+						type: "checkbox",
+						checked: candidate.selected,
+						disabled: !state.writable || state.saving,
+						onChange: () => {
+							props.toggleModel(candidate.key);
+						}
+					}),
+					(0, react_jsx_runtime.jsxs)("span", { children: [(0, react_jsx_runtime.jsx)("span", {
+						className: SubagentModelSelectionCard_module_css_default.modelName,
+						children: candidate.modelName
+					}), (0, react_jsx_runtime.jsx)("span", {
+						className: SubagentModelSelectionCard_module_css_default.route,
+						children: `${candidate.providerName} · ${candidate.provider}/${candidate.model}`
+					})] }),
+					!candidate.available ? (0, react_jsx_runtime.jsx)("span", {
+						className: SubagentModelSelectionCard_module_css_default.unavailable,
+						children: t("subagentModelSelectionUnavailable")
+					}) : null
+				]
+			}, candidate.key);
+			return (0, react_jsx_runtime.jsxs)(PluginCard, {
+				t,
+				titleKey: "subagentModelSelectionTitle",
+				descriptionKey: "subagentModelSelectionDescription",
+				state,
+				onSave: props.save,
+				onDiscard: props.discard,
+				children: [
+					(0, react_jsx_runtime.jsxs)("div", {
+						className: SubagentModelSelectionCard_module_css_default.permission,
+						children: [(0, react_jsx_runtime.jsxs)("div", {
+							className: SubagentModelSelectionCard_module_css_default.toggleRow,
+							children: [(0, react_jsx_runtime.jsx)("span", {
+								className: SubagentModelSelectionCard_module_css_default.toggleLabel,
+								children: t("subagentModelSelectionToggle")
+							}), (0, react_jsx_runtime.jsx)("button", {
+								type: "button",
+								role: "switch",
+								"aria-checked": state.enabled,
+								"aria-label": t("subagentModelSelectionToggle"),
+								className: clsx(SubagentModelSelectionCard_module_css_default.switch, state.enabled && SubagentModelSelectionCard_module_css_default.switchOn),
+								disabled: !state.writable || state.saving,
+								onClick: props.toggleEnabled,
+								children: (0, react_jsx_runtime.jsx)("span", { className: SubagentModelSelectionCard_module_css_default.thumb })
+							})]
+						}), (0, react_jsx_runtime.jsx)("p", {
+							className: SubagentModelSelectionCard_module_css_default.hint,
+							children: t(state.enabled ? "subagentModelSelectionChoose" : "subagentModelSelectionOff")
+						})]
+					}),
+					state.enabled ? (0, react_jsx_runtime.jsxs)("div", {
+						className: SubagentModelSelectionCard_module_css_default.selection,
+						children: [
+							state.catalogStatus === "loading" ? (0, react_jsx_runtime.jsx)("p", {
+								className: SubagentModelSelectionCard_module_css_default.notice,
+								role: "status",
+								children: t("subagentModelSelectionLoading")
+							}) : null,
+							state.catalogStatus === "error" ? (0, react_jsx_runtime.jsxs)("div", {
+								className: SubagentModelSelectionCard_module_css_default.catalogError,
+								role: "alert",
+								children: [(0, react_jsx_runtime.jsx)("span", { children: t("subagentModelSelectionLoadFailed") }), (0, react_jsx_runtime.jsx)("button", {
+									type: "button",
+									disabled: state.saving,
+									onClick: props.retryCatalog,
+									children: t("subagentModelSelectionRetry")
+								})]
+							}) : null,
+							state.catalogPartial ? (0, react_jsx_runtime.jsx)("p", {
+								className: SubagentModelSelectionCard_module_css_default.notice,
+								children: t("subagentModelSelectionPartial")
+							}) : null,
+							state.candidates.length > 0 ? (0, react_jsx_runtime.jsxs)("fieldset", {
+								className: SubagentModelSelectionCard_module_css_default.models,
+								children: [
+									(0, react_jsx_runtime.jsx)("legend", { children: t("subagentModelSelectionAllowed") }),
+									[...availableGroups].map(([provider, group]) => (0, react_jsx_runtime.jsxs)("div", {
+										className: SubagentModelSelectionCard_module_css_default.modelGroup,
+										children: [(0, react_jsx_runtime.jsx)("div", {
+											className: SubagentModelSelectionCard_module_css_default.providerName,
+											children: group.providerName
+										}), group.candidates.map(renderCandidate)]
+									}, provider)),
+									unavailable.length > 0 ? (0, react_jsx_runtime.jsxs)("div", {
+										className: SubagentModelSelectionCard_module_css_default.modelGroup,
+										children: [(0, react_jsx_runtime.jsx)("div", {
+											className: SubagentModelSelectionCard_module_css_default.providerName,
+											children: t("subagentModelSelectionUnavailableGroup")
+										}), unavailable.map(renderCandidate)]
+									}) : null
+								]
+							}) : state.catalogStatus === "ready" ? (0, react_jsx_runtime.jsx)("p", {
+								className: SubagentModelSelectionCard_module_css_default.notice,
+								children: t("subagentModelSelectionEmpty")
+							}) : null,
+							state.invalid ? (0, react_jsx_runtime.jsx)("p", {
+								className: SubagentModelSelectionCard_module_css_default.invalid,
+								children: t("subagentModelSelectionRequired")
+							}) : null
+						]
+					}) : null,
+					state.conflicted ? (0, react_jsx_runtime.jsx)("p", {
+						className: SubagentModelSelectionCard_module_css_default.conflict,
+						role: "status",
+						children: t("subagentModelSelectionConflict")
+					}) : null
 				]
 			});
 		}
@@ -657,7 +841,7 @@ window.__ModuleLoader__.load({
 			* @returns the store the card's component reads through its bound selector.
 			*/
 			bind(project) {
-				const store = (0, _deepseek_ai_dsh_client_runtime_client.createSnapshotStore)(project());
+				const store = (0, _deepseek_ai_dsh_client_store.createSnapshotStore)(project());
 				this.listeners.add(() => {
 					store.set(project());
 				});
@@ -924,7 +1108,7 @@ window.__ModuleLoader__.load({
 		var ConfigurablePluginsTabController = class {
 			describeFace;
 			entries;
-			store = (0, _deepseek_ai_dsh_client_runtime_client.createSnapshotStore)({
+			store = (0, _deepseek_ai_dsh_client_store.createSnapshotStore)({
 				loaded: false,
 				namespaces: []
 			});
@@ -976,6 +1160,284 @@ window.__ModuleLoader__.load({
 			}
 		};
 		//#endregion
+		//#region lib/types/client/subagent-model-selection-card-controller.js
+		/** Staged editor for the Host-owned subagent model allowlist. */
+		/** Namespace of the Host-owned subagent model-selection preference. */
+		const SUBAGENT_MODEL_SELECTION_NS = "subagent-model-selection";
+		/**
+		* Stable identity for one exact route; callers resolve it by lookup and never parse it.
+		* @param route - Provider/model route to identify.
+		* @returns Opaque key for lookup within the card.
+		*/
+		function subagentModelKey(route) {
+			return `${route.provider}\0${route.model}`;
+		}
+		/**
+		* Join live adapter metadata with stored routes that remain removable after disappearance.
+		* @param groups - Current model directory grouped by provider.
+		* @param stored - Routes in the effective settings value.
+		* @param selected - Opaque route keys selected in the current draft.
+		* @returns Candidate rows for the card.
+		*/
+		function subagentModelCandidates(groups, stored, selected) {
+			const storedByKey = new Map(stored.map((route) => [subagentModelKey(route), route]));
+			const candidates = groups.flatMap((group) => group.models.map((model) => {
+				const route = {
+					provider: group.id,
+					model: model.id
+				};
+				const key = subagentModelKey(route);
+				storedByKey.delete(key);
+				return {
+					...route,
+					key,
+					providerName: group.name,
+					modelName: model.name,
+					available: true,
+					selected: selected.has(key)
+				};
+			}));
+			for (const route of storedByKey.values()) {
+				const key = subagentModelKey(route);
+				candidates.push({
+					...route,
+					key,
+					providerName: route.provider,
+					modelName: route.model,
+					available: false,
+					selected: selected.has(key)
+				});
+			}
+			return candidates;
+		}
+		function sameRoutes(left, right) {
+			if (left.length !== right.length) return false;
+			const rightKeys = new Set(right.map(subagentModelKey));
+			return left.every((route) => rightKeys.has(subagentModelKey(route)));
+		}
+		/** Bridges one settings scope and the live adapter directory onto a staged card. */
+		var SubagentModelSelectionCardController = class {
+			scope;
+			session;
+			catalogGroups = [];
+			catalogPartial = false;
+			catalogStatus = "idle";
+			draftEnabled;
+			draftRoutes;
+			draftRevision;
+			saving = false;
+			failed = false;
+			conflicted = false;
+			disposed = false;
+			saveGeneration = 0;
+			catalogGeneration = 0;
+			store;
+			unsubscribe;
+			/**
+			* @param scope - bound `subagent-model-selection` settings scope.
+			* @param session - Host Session model-catalog face.
+			*/
+			constructor(scope, session) {
+				this.scope = scope;
+				this.session = session;
+				this.store = (0, _deepseek_ai_dsh_client_store.createSnapshotStore)(this.projection());
+				this.unsubscribe = scope.subscribe(() => {
+					if (!this.saving && this.draftRoutes !== void 0 && this.scope.getSnapshot().revision !== this.draftRevision) if (this.currentEnabled() === this.enabled() && sameRoutes(this.currentRoutes(), this.desiredRoutes())) this.clearDraft();
+					else this.conflicted = true;
+					if (this.enabled() && this.catalogStatus === "idle") this.loadCatalog();
+					this.publish();
+				});
+				if (this.enabled() && this.catalogStatus === "idle") this.loadCatalog();
+			}
+			/** Stop observing settings and suppress late directory/write settlements. */
+			dispose() {
+				this.disposed = true;
+				this.saveGeneration += 1;
+				this.catalogGeneration += 1;
+				this.unsubscribe();
+			}
+			/**
+			* Build the renderer face for this card.
+			* @returns The snapshot and staged card actions injected into the renderer.
+			*/
+			inject() {
+				return {
+					hooks: { subagentModelSelectionCard: this.store },
+					toggleEnabled: () => {
+						this.toggleEnabled();
+					},
+					toggleModel: (key) => {
+						this.toggleModel(key);
+					},
+					retryCatalog: () => {
+						this.loadCatalog();
+					},
+					save: () => {
+						this.save();
+					},
+					discard: () => {
+						this.discard();
+					}
+				};
+			}
+			currentRoutes() {
+				return this.scope.getSnapshot().value?.allowedModels.map((route) => ({ ...route })) ?? [];
+			}
+			currentEnabled() {
+				return this.scope.getSnapshot().value?.enabled ?? false;
+			}
+			selected() {
+				return new Set(this.draftRoutes?.keys() ?? this.currentRoutes().map(subagentModelKey));
+			}
+			enabled() {
+				return this.draftEnabled ?? this.currentEnabled();
+			}
+			beginDraft() {
+				if (this.draftRoutes === void 0) {
+					const snapshot = this.scope.getSnapshot();
+					this.draftEnabled = snapshot.value?.enabled ?? false;
+					this.draftRoutes = new Map(snapshot.value?.allowedModels.map((route) => [subagentModelKey(route), { ...route }]) ?? []);
+					this.draftRevision = snapshot.revision;
+				}
+				return this.draftRoutes;
+			}
+			toggleEnabled() {
+				const snapshot = this.scope.getSnapshot();
+				if (this.disposed || snapshot.status !== "ready" || !snapshot.writable || this.saving) return;
+				this.beginDraft();
+				this.draftEnabled = !this.draftEnabled;
+				this.failed = false;
+				if (this.draftEnabled && this.catalogStatus === "idle") this.loadCatalog();
+				this.publish();
+			}
+			toggleModel(key) {
+				if (!this.enabled() || this.saving || !this.scope.getSnapshot().writable) return;
+				const candidate = this.candidates().find((candidate) => candidate.key === key);
+				if (candidate === void 0) return;
+				const routes = this.beginDraft();
+				if (routes.has(key)) routes.delete(key);
+				else routes.set(key, {
+					provider: candidate.provider,
+					model: candidate.model
+				});
+				this.failed = false;
+				this.publish();
+			}
+			clearDraft() {
+				this.draftEnabled = void 0;
+				this.draftRoutes = void 0;
+				this.draftRevision = void 0;
+				this.failed = false;
+				this.conflicted = false;
+			}
+			discard() {
+				if (this.saving) return;
+				this.clearDraft();
+				this.publish();
+			}
+			candidates() {
+				const retained = new Map(this.currentRoutes().map((route) => [subagentModelKey(route), route]));
+				for (const [key, route] of this.draftRoutes ?? []) retained.set(key, route);
+				return subagentModelCandidates(this.catalogGroups, [...retained.values()], this.selected());
+			}
+			desiredRoutes() {
+				return [...this.draftRoutes?.values() ?? this.currentRoutes()].map((route) => ({ ...route }));
+			}
+			async save() {
+				const snapshot = this.scope.getSnapshot();
+				const desiredEnabled = this.enabled();
+				const desired = this.desiredRoutes();
+				if (this.disposed || snapshot.status !== "ready" || !snapshot.writable || this.saving || this.currentEnabled() === desiredEnabled && sameRoutes(this.currentRoutes(), desired) || desiredEnabled && desired.length === 0) return;
+				if (this.draftRoutes !== void 0 && snapshot.revision !== this.draftRevision) {
+					this.conflicted = true;
+					this.publish();
+					return;
+				}
+				const generation = this.saveGeneration;
+				this.saving = true;
+				this.failed = false;
+				this.conflicted = false;
+				this.publish();
+				await this.scope.mutate([{
+					op: "set",
+					path: ["enabled"],
+					value: desiredEnabled
+				}, {
+					op: "set",
+					path: ["allowedModels"],
+					value: desired.map((route) => ({
+						provider: route.provider,
+						model: route.model
+					}))
+				}], this.draftRevision);
+				if (generation !== this.saveGeneration) return;
+				const landed = this.currentEnabled() === desiredEnabled && sameRoutes(this.currentRoutes(), desired);
+				this.saving = false;
+				this.failed = !landed;
+				if (landed) this.clearDraft();
+				this.publish();
+			}
+			/** Invalidate and reload model candidates after a Host model input changes. */
+			refreshCatalog() {
+				if (this.disposed) return;
+				this.catalogGeneration += 1;
+				this.catalogStatus = "idle";
+				this.catalogPartial = false;
+				if (this.enabled()) this.loadCatalog();
+				else this.publish();
+			}
+			/** Drop Host-specific candidates and drafts, then reload after reconnecting. */
+			resetConnection() {
+				if (this.disposed) return;
+				this.saveGeneration += 1;
+				this.saving = false;
+				this.clearDraft();
+				this.catalogGroups = [];
+				this.refreshCatalog();
+			}
+			async loadCatalog() {
+				if (this.disposed || this.catalogStatus === "loading") return;
+				const generation = this.catalogGeneration;
+				this.catalogStatus = "loading";
+				this.catalogPartial = false;
+				this.publish();
+				try {
+					const response = await this.session.modelCatalog();
+					if (generation !== this.catalogGeneration) return;
+					if (!response.ok) throw new Error(response.error.message);
+					this.catalogGroups = response.value.groups;
+					this.catalogPartial = response.value.failures.length > 0;
+					this.catalogStatus = "ready";
+				} catch {
+					if (generation !== this.catalogGeneration) return;
+					this.catalogStatus = "error";
+				}
+				this.publish();
+			}
+			projection() {
+				const snapshot = this.scope.getSnapshot();
+				const current = this.currentRoutes();
+				const desired = this.desiredRoutes();
+				const enabled = this.enabled();
+				return {
+					available: snapshot.status === "ready",
+					writable: snapshot.writable,
+					dirty: this.currentEnabled() !== enabled || !sameRoutes(current, desired),
+					invalid: enabled && desired.length === 0,
+					saving: this.saving,
+					failed: this.failed,
+					enabled,
+					candidates: this.candidates(),
+					catalogStatus: this.catalogStatus,
+					catalogPartial: this.catalogPartial,
+					conflicted: this.conflicted
+				};
+			}
+			publish() {
+				this.store.set(this.projection());
+			}
+		};
+		//#endregion
 		//#region lib/types/client/web-search-card-controller.js
 		/**
 		* The web-search card's staged form over the `web-search-deepseek` settings
@@ -999,7 +1461,7 @@ window.__ModuleLoader__.load({
 		/** Bridges the `web-search-deepseek` scope and the credentials domain onto the card. */
 		var WebSearchCardController = class {
 			scope;
-			api;
+			credentials;
 			form;
 			store;
 			credential = {
@@ -1009,11 +1471,11 @@ window.__ModuleLoader__.load({
 			};
 			/**
 			* @param scope - the bound settings scope for the `web-search-deepseek` namespace.
-			* @param api - wire face used for the credential the section references.
+			* @param credentials - Remote face used for the credential the section references.
 			*/
-			constructor(scope, api) {
+			constructor(scope, credentials) {
 				this.scope = scope;
-				this.api = api;
+				this.credentials = credentials;
 				this.form = new CardForm(scope, [textField("baseURL"), numberField("maxUses")], [{
 					field: API_KEY_FIELD,
 					write: (text) => this.writeKey(text)
@@ -1054,12 +1516,12 @@ window.__ModuleLoader__.load({
 				}
 				let response;
 				try {
-					response = await this.api.credentials.describe({ refs: [ref] });
+					response = await this.credentials.describe([ref]);
 				} catch (_credentialReadFailure) {
 					return;
 				}
-				if (!response.result.ok || ref !== refOf(this.scope.getSnapshot())) return;
-				const view = response.result.value.credentials[ref];
+				if (!response.ok || ref !== refOf(this.scope.getSnapshot())) return;
+				const view = response.value[ref];
 				const next = {
 					ref,
 					configured: view?.configured ?? false,
@@ -1098,10 +1560,7 @@ window.__ModuleLoader__.load({
 			*/
 			async writeKey(value) {
 				try {
-					await this.api.credentials.set({
-						ref: refOf(this.scope.getSnapshot()),
-						value
-					});
+					await this.credentials.set(refOf(this.scope.getSnapshot()), value);
 				} catch (_credentialWriteFailure) {}
 				await this.readCredential();
 				return this.credential.configured;
@@ -1157,7 +1616,22 @@ window.__ModuleLoader__.load({
 			webSearchBaseUrl: "Endpoint",
 			webSearchBaseUrlHint: "Leave blank to use the provider default.",
 			webSearchMaxUses: "Max searches per request",
-			webSearchMaxUsesHint: "How many times one request may search before it must answer."
+			webSearchMaxUsesHint: "How many times one request may search before it must answer.",
+			subagentModelSelectionTitle: "Subagent",
+			subagentModelSelectionDescription: "Control which models agents may choose for subagents.",
+			subagentModelSelectionToggle: "Allow agents to choose models for subagents",
+			subagentModelSelectionChoose: "When enabled, agents can choose a provider, model, and reasoning effort for each subagent from the authorized models below. Applies only to new sessions.",
+			subagentModelSelectionAllowed: "Models agents may choose",
+			subagentModelSelectionLoading: "Loading models…",
+			subagentModelSelectionLoadFailed: "Models could not be loaded.",
+			subagentModelSelectionRetry: "Retry",
+			subagentModelSelectionPartial: "Some model providers could not be loaded; saved choices remain removable.",
+			subagentModelSelectionUnavailable: "Currently unavailable",
+			subagentModelSelectionUnavailableGroup: "Saved but currently unavailable",
+			subagentModelSelectionEmpty: "No model provider currently advertises a model.",
+			subagentModelSelectionRequired: "Select at least one model before saving.",
+			subagentModelSelectionConflict: "Settings changed elsewhere. Discard your draft and try again.",
+			subagentModelSelectionOff: "Subagents use configured defaults or inherit the parent agent's model. Saved model choices are retained."
 		};
 		/** Simplified Chinese copy. */
 		const zh = {
@@ -1197,7 +1671,22 @@ window.__ModuleLoader__.load({
 			webSearchBaseUrl: "接口地址",
 			webSearchBaseUrlHint: "留空则使用提供方默认地址。",
 			webSearchMaxUses: "单次请求最多搜索次数",
-			webSearchMaxUsesHint: "一次请求在必须作答前最多可以搜索多少次。"
+			webSearchMaxUsesHint: "一次请求在必须作答前最多可以搜索多少次。",
+			subagentModelSelectionTitle: "Subagent",
+			subagentModelSelectionDescription: "控制 Agent 为 Subagent 选择模型的权限。",
+			subagentModelSelectionToggle: "允许 Agent 为 Subagent 选择模型",
+			subagentModelSelectionChoose: "开启后，Agent 可以从下方授权模型中，为每个 Subagent 选择提供方、模型和推理强度。仅影响新会话。",
+			subagentModelSelectionAllowed: "Agent 可选择的模型",
+			subagentModelSelectionLoading: "正在加载模型…",
+			subagentModelSelectionLoadFailed: "无法加载模型。",
+			subagentModelSelectionRetry: "重试",
+			subagentModelSelectionPartial: "部分模型提供方暂时无法加载；已保存的选择仍可移除。",
+			subagentModelSelectionUnavailable: "当前不可用",
+			subagentModelSelectionUnavailableGroup: "已保存但当前不可用",
+			subagentModelSelectionEmpty: "当前没有模型提供方公布模型。",
+			subagentModelSelectionRequired: "保存前请至少选择一个模型。",
+			subagentModelSelectionConflict: "设置已在其他位置更新。请放弃修改后重试。",
+			subagentModelSelectionOff: "关闭后，Subagent 使用配置的默认模型或继承父 Agent 的模型；已选模型会保留。"
 		};
 		//#endregion
 		//#region lib/types/client/index.js
@@ -1207,7 +1696,7 @@ window.__ModuleLoader__.load({
 		*
 		* The section declares `settings.plugins.tab`; its own `configurable` tab then
 		* declares `settings.plugin.item` and renders whatever cards were registered
-		* into it. The three cards this package ships are the host-plane sections the
+		* into it. The cards this package ships are the host-plane sections the
 		* deployment already exposes; each binds its namespace through the client
 		* settings scope, which keeps them unaware of one another and of other tabs.
 		*/
@@ -1219,6 +1708,8 @@ window.__ModuleLoader__.load({
 			"locale",
 			"connection",
 			"remote",
+			"remote.credentials",
+			"remote.session",
 			"settingsScope"
 		];
 		/**
@@ -1226,7 +1717,6 @@ window.__ModuleLoader__.load({
 		* @param ctx - the browser plugin context.
 		*/
 		function apply(ctx) {
-			const { api } = ctx.get("connection");
 			const t = ctx.locale.bind(NS);
 			ctx.effect(() => ctx.locale.register(NS, {
 				zh,
@@ -1234,10 +1724,23 @@ window.__ModuleLoader__.load({
 			}), "ui-settings-plugins: section dictionaries");
 			const bash = new BashCardController(ctx.settingsScope.bind({ namespace: SHELL_NS }));
 			const agentLoop = new AgentLoopCardController(ctx.settingsScope.bind({ namespace: AGENT_LOOP_NS }));
-			const webSearch = new WebSearchCardController(ctx.settingsScope.bind({ namespace: WEB_SEARCH_NS }), api);
-			ctx.effect(() => ctx.remote.$on("credentials/updated", (ref) => {
+			const webSearch = new WebSearchCardController(ctx.settingsScope.bind({ namespace: WEB_SEARCH_NS }), ctx.remote.credentials);
+			const subagentModelSelection = new SubagentModelSelectionCardController(ctx.settingsScope.bind({ namespace: SUBAGENT_MODEL_SELECTION_NS }), ctx.remote.session);
+			ctx.effect(() => ctx.remote.$on("credentials/reference-updated", (ref) => {
 				webSearch.refreshCredential(ref);
 			}), "ui-settings-plugins: credential invalidations");
+			ctx.effect(() => ctx.remote.$on("llm/adapters-updated", () => {
+				subagentModelSelection.refreshCatalog();
+			}), "ui-settings-plugins: subagent adapter invalidations");
+			ctx.effect(() => ctx.remote.$on("settings/document-updated", () => {
+				subagentModelSelection.refreshCatalog();
+			}), "ui-settings-plugins: subagent settings invalidations");
+			ctx.effect(() => ctx.on("connection/reset", () => {
+				subagentModelSelection.resetConnection();
+			}), "ui-settings-plugins: subagent connection generation");
+			ctx.effect(() => () => {
+				subagentModelSelection.dispose();
+			}, "ui-settings-plugins: subagent preference");
 			const configurable = new ConfigurablePluginsTabController(ctx.settingsScope.describe(), () => ctx.slots.entries("settings.plugin.item"));
 			ctx.effect(() => () => {
 				configurable.dispose();
@@ -1310,6 +1813,12 @@ window.__ModuleLoader__.load({
 					locale: NS,
 					inject: () => agentLoop.inject()
 				}, AgentLoopCard);
+				yield ctx.slots.register({
+					name: "settings.plugin.item",
+					key: SUBAGENT_MODEL_SELECTION_NS,
+					locale: NS,
+					inject: () => subagentModelSelection.inject()
+				}, SubagentModelSelectionCard);
 				yield ctx.slots.register({
 					name: "settings.plugin.item",
 					key: WEB_SEARCH_NS,

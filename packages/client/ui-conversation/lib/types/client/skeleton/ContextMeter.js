@@ -6,7 +6,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
  * capacity. */
 import { useEffect, useRef, useState } from 'react';
 import { Tooltip } from '@deepseek-ai/dsh-client-ui-primitives';
-import { contextOccupancy, formatTokens } from "../chat/StatsLine.js";
+import { contextOccupancy } from "../context-occupancy.js";
 import css from './ContextMeter.module.css';
 /** Ring geometry: 14px viewBox, 2px stroke. */
 const RADIUS = 5.5;
@@ -23,6 +23,22 @@ const ROWS = [
     { key: 'toolsTokens', label: 'context.tools', color: css.colorTools },
     { key: 'messageTokens', label: 'context.messages', color: css.colorMessages },
 ];
+/**
+ * Format a token count for the compact context panel.
+ * @param value - token count.
+ * @param t - Conversation locale seat with shared compact-number templates.
+ * @returns Compact localized count using K or M when needed.
+ */
+function formatTokens(value, t) {
+    const scaled = (candidate) => candidate >= 100
+        ? String(Math.round(candidate))
+        : String(Math.round(candidate * 10) / 10);
+    if (value < 1_000)
+        return String(value);
+    if (value < 1_000_000)
+        return t('number.thousand', { value: scaled(value / 1_000) });
+    return t('number.million', { value: scaled(value / 1_000_000) });
+}
 export function ContextMeter({ useProjection, t }) {
     const pressure = useProjection('contextPressure');
     const breakdown = useProjection('contextBreakdown');
@@ -74,6 +90,6 @@ export function ContextMeter({ useProjection, t }) {
         ? [{ key: 'total', color: undefined, width: percent }]
         : ROWS.map(row => ({ key: row.key, color: row.color, width: percent * breakdown[row.key] / breakdownTotal }));
     const segments = parts.filter(part => part.width > 0);
-    return (_jsxs("span", { ref: rootRef, className: css.root, children: [_jsx(Tooltip, { label: t('context.aria', { percent: reading }), side: "top", delayMs: 200, disabled: open, children: _jsx("button", { type: "button", className: css.trigger, "aria-label": t('context.aria', { percent: reading }), "aria-haspopup": "dialog", "aria-expanded": open, onClick: () => { setOpen(!open); }, children: _jsxs("svg", { viewBox: "0 0 14 14", width: "14", height: "14", "aria-hidden": true, children: [_jsx("circle", { className: css.track, cx: "7", cy: "7", r: RADIUS }), _jsx("circle", { className: css.fill, cx: "7", cy: "7", r: RADIUS, strokeDasharray: `${CIRCUMFERENCE * percent / 100} ${CIRCUMFERENCE}`, transform: "rotate(-90 7 7)" })] }) }) }), open && (_jsxs("div", { className: css.panel, role: "dialog", "aria-label": t('context.used'), children: [_jsxs("div", { className: css.header, children: [_jsx("span", { className: css.headline, children: headBefore }), _jsx("span", { className: css.percent, children: reading }), _jsx("span", { className: css.headline, children: headAfter }), _jsx("span", { className: css.figures, children: `~${formatTokens(context.usedTokens)} / ${formatTokens(context.contextWindow)}` })] }), _jsx("div", { className: css.bar, children: segments.map(segment => (_jsx("div", { className: segment.color === undefined ? css.segment : `${css.segment} ${segment.color}`, style: { width: `${segment.width}%` } }, segment.key))) }), breakdown !== undefined && (_jsx("dl", { className: css.rows, children: ROWS.map(row => (_jsxs("div", { className: css.row, children: [_jsxs("dt", { children: [_jsx("span", { className: `${css.swatch} ${row.color}`, "aria-hidden": true }), t(row.label)] }), _jsx("dd", { children: `~${formatTokens(breakdown[row.key])}` })] }, row.key))) }))] }))] }));
+    return (_jsxs("span", { ref: rootRef, className: css.root, children: [_jsx(Tooltip, { label: t('context.aria', { percent: reading }), side: "top", delayMs: 200, disabled: open, children: _jsx("button", { type: "button", className: css.trigger, "aria-label": t('context.aria', { percent: reading }), "aria-haspopup": "dialog", "aria-expanded": open, onClick: () => { setOpen(!open); }, children: _jsxs("svg", { viewBox: "0 0 14 14", width: "14", height: "14", "aria-hidden": true, children: [_jsx("circle", { className: css.track, cx: "7", cy: "7", r: RADIUS }), _jsx("circle", { className: css.fill, cx: "7", cy: "7", r: RADIUS, strokeDasharray: `${CIRCUMFERENCE * percent / 100} ${CIRCUMFERENCE}`, transform: "rotate(-90 7 7)" })] }) }) }), open && (_jsxs("div", { className: css.panel, role: "dialog", "aria-label": t('context.used'), children: [_jsxs("div", { className: css.header, children: [_jsx("span", { className: css.headline, children: headBefore }), _jsx("span", { className: css.percent, children: reading }), _jsx("span", { className: css.headline, children: headAfter }), _jsx("span", { className: css.figures, children: `~${formatTokens(context.usedTokens, t)} / ${formatTokens(context.contextWindow, t)}` })] }), _jsx("div", { className: css.bar, children: segments.map(segment => (_jsx("div", { className: segment.color === undefined ? css.segment : `${css.segment} ${segment.color}`, style: { width: `${segment.width}%` } }, segment.key))) }), breakdown !== undefined && (_jsx("dl", { className: css.rows, children: ROWS.map(row => (_jsxs("div", { className: css.row, children: [_jsxs("dt", { children: [_jsx("span", { className: `${css.swatch} ${row.color}`, "aria-hidden": true }), t(row.label)] }), _jsx("dd", { children: `~${formatTokens(breakdown[row.key], t)}` })] }, row.key))) }))] }))] }));
 }
 //# sourceMappingURL=ContextMeter.js.map

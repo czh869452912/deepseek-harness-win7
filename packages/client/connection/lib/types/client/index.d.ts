@@ -1,44 +1,89 @@
 /**
  * Browser wire client. The plugin selects fixture or HTTP transport, provides
- * the shared API client, and lets the runtime object layer start the stream
- * controller with its sinks.
+ * the shared API client, and lets API Gateway own the connection loop.
  */
 import type { Context } from '@deepseek-ai/cordis';
-import type { HostDescription, IApiClient } from './api.ts';
-import { type ConnectionConfig, type ConnectionSinks, type ConnectionState } from './connection.ts';
+import { type ConnectionConfig, type ConnectionGeneration, type ConnectionGenerationSource, type ConnectionSinks } from './connection.ts';
+import { type RpcFetch, type RpcStreamOpen } from './rpc.ts';
 import type { ClientConnectionRpc } from '../rpc.ts';
-export type { ApiProxy, SessionsApi, SessionSearchItem, SessionSummary, PromptContentPart, HostApi, EventsApi, MuxFrame, HostFrame, ApprovalResponsePayload, QuestionResponsePayload, HistoryEntry, ToolEventView, DirectoryEntry, DirectoryListing, ToolCallView, ToolResultView, WorkspaceApi, WorkspaceId, WorkspaceView, SkillsApi, SkillEntry, ModelCatalogFailure, ModelCatalogModel, ModelProviderGroup, ModelReasoning, MessageId, ModelReasoningEffort, ModelSelection, QueueAction, QueuedInboxItem, SessionModels, SubagentsApi, SubagentAddress, SubagentCatalog, SubagentListEntry, SubagentPromptReceipt, JobView, RpcRequest, RpcResponse, RpcResult, RpcError, RpcErrorCode, ClientRequest, ServerResponse, ServerRequest, ClientResponse, RpcMessage, RpcReceipt, HostDescription, IApiClient, SessionId, SessionEvent, ContentBlock, StreamChunk, GoalsApi, GoalRef, SettingsApi, SettingsNamespaceView, SettingsPathOpView, SettingsSecretView, CredentialsApi, CredentialView, ConfigurableProviderView, DiscoveredModelView, LlmApi, } from './api.ts';
-export { RpcId, AbstractApiClient, transportError, } from './api.ts';
-export type { ConnectionConfig, ConnectionSinks, ConnectionState };
-export type { ClientConnectionRpc } from '../rpc.ts';
-/** Observable Host description published by each completed connection handshake. */
-export interface HostDescriptionSource {
-    /** Latest connected-generation description; absent before connect and while reconnecting. */
-    getSnapshot(): HostDescription | undefined;
-    /** Subscribe to description replacement and connection loss. */
+declare module '@deepseek-ai/cordis' {
+    interface Events {
+        /**
+         * A connection generation was established. Wire-derived caches must
+         * repull; long-lived streams own their own resume and baseline lifecycle.
+         * @mode emit
+         */
+        'connection/reset'(): void;
+    }
+}
+export type { MessageId, RpcRequest, RpcResponse, RpcResult, RpcError, RpcErrorCode, ClientRequest, ServerResponse, RpcMessage, SessionId, SessionEvent, ContentBlock, StreamChunk, } from './api.ts';
+export { RpcId, transportError, } from './api.ts';
+export type { ConnectionConfig, ConnectionGeneration, ConnectionGenerationSource, ConnectionHostInfo, ConnectionSinks, ConnectionState, } from './connection.ts';
+export type { ClientConnectionRpc, ConnectionRpcFailure, ConnectionRpcResult, } from '../rpc.ts';
+export type { RpcFetch } from './rpc.ts';
+/** Observable identity and Host facts for the active connection generation. */
+export interface ConnectionGenerationState {
+    /** Active generation, or undefined before readiness and while reconnecting. */
+    getSnapshot(): ConnectionGeneration | undefined;
+    /** Subscribe to generation establishment, replacement, and loss. */
     subscribe(listener: () => void): () => void;
 }
 /** Required services (none — this is the wire root). */
 export declare const inject: string[];
 /**
- * The ctx.connection service API: the API client plus a one-shot
- * controller starter (the runtime plugin supplies sinks when its object layer
- * is ready — connection stays consumer-agnostic).
+ * Carrier override installed on the page global before plugin boot. The served
+ * web app leaves it unset and gets HTTP + WebSocket; a shell that owns a
+ * different physical transport (the worker preview's postMessage tunnel)
+ * provides both halves here instead of forking this plugin.
+ */
+export interface ClientTransportHooks {
+    /** Transport for generic unary RPC channels (the Typert gateway). */
+    fetch: RpcFetch;
+    /** Worker-local Gateway stream carrier; absent when the page uses the Gateway WebSocket. */
+    openStream?: RpcStreamOpen;
+    /**
+     * Bundle transport for the module system, present when the carrier also owns
+     * bundle bytes (the worker tunnel). Absent in the served web app, whose
+     * bundles load over HTTP.
+     */
+    loadBundle?(url: string): Promise<void>;
+    /**
+     * The transport owner declares the page owns the Host outright: the Host
+     * runs inside a worker this page spawned, so no other party can reach it and
+     * the loopback stand-in for "the operator's own machine" is vacuous.
+     * `ctx.connection.isLoopback` then reports the privileged surface reachable
+     * regardless of the page authority. Only a shell that assembles its own
+     * transport can set this; served pages never carry the global at all.
+     */
+    ownsHost?: boolean;
+}
+/**
+ * The ctx.connection service API: the API client plus a one-shot controller
+ * starter. API Gateway supplies generation readiness and reset callbacks;
+ * Connection stays independent of downstream domain state.
  */
 export interface ConnectionHandle {
-    /** Shared api client (fixture or real, decided at boot from the page URL). */
-    readonly api: IApiClient;
-    /** Whether the current page authority is loopback; non-browser contexts default to true. */
+    /**
+     * Whether the privileged surface is reachable: the page authority is
+     * loopback, the transport declares the page owns the Host
+     * ({@link ClientTransportHooks.ownsHost}), or the context is not a browser.
+     */
     readonly isLoopback: boolean;
-    /** Generation-scoped Host facts, including the account home and native path-open capability. */
-    readonly hostDescription: HostDescriptionSource;
+    /** Current Remote event generation and the Host facts carried by its opening frame. */
+    readonly generation: ConnectionGenerationState;
     /** Generic logical RPC channels over the same Connection transport. */
     readonly rpc: ClientConnectionRpc;
     /**
-     * Start the connect/pump/reconnect loop with the consumer's frame sinks.
-     * One consumer owns the streams (the runtime object layer); a second call
-     * throws.
-     * @param sinks - frame/state callbacks.
+     * Register the sole source defining Host generations. The source reports
+     * ready only after its incremental listeners are attached.
+     * @param source - long-lived generation source owned by the push carrier.
+     * @returns disposer withdrawing the source and stopping an active loop.
+     */
+    registerGenerationSource(source: ConnectionGenerationSource): () => void;
+    /**
+     * Start the connect/reconnect loop with the consumer's state callbacks.
+     * API Gateway owns the loop; a second call throws.
+     * @param sinks - connection-state callbacks.
      * @param config - reconnect/backoff tunables.
      * @returns stop handle for the loop.
      */

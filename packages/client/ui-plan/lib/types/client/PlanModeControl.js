@@ -39,6 +39,6 @@ export function PlanChip({ useProjection, locked, exitPlanMode, t }) {
             setError(reason instanceof Error ? reason.message : String(reason));
         });
     };
-    return (_jsxs("span", { className: css.wrap, children: [_jsxs("button", { type: "button", className: css.chip, "aria-label": t('chip.on.aria'), title: t('chip.on.title'), disabled: locked || leaving, onClick: off, children: ["Plan", _jsx("span", { className: css.close, "aria-hidden": true, children: _jsx(IconCloseFill14, { size: 12 }) })] }), error !== null && _jsx("span", { className: css.error, role: "status", title: error, children: "failed to exit plan mode" })] }));
+    return (_jsxs("span", { className: css.wrap, children: [_jsxs("button", { type: "button", className: css.chip, "aria-label": t('chip.on.aria'), title: t('chip.on.title'), disabled: locked || leaving, onClick: off, children: [t('chip.label'), _jsx("span", { className: css.close, "aria-hidden": true, children: _jsx(IconCloseFill14, { size: 12 }) })] }), error !== null && _jsx("span", { className: css.error, role: "status", title: error, children: t('chip.exitFailed') })] }));
 }
 //# sourceMappingURL=PlanModeControl.js.map

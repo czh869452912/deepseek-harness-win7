@@ -17,6 +17,9 @@ export declare const zh: {
     readonly 'duration.yearsMonths': "约{years}年{months}个月";
     readonly 'duration.exactDays': "{days}天{hours}小时{minutes}分{seconds}秒";
     readonly 'duration.exactTitle': "总活跃耗时：{duration}";
+    readonly 'tokens.thousand': "{value}K";
+    readonly 'tokens.million': "{value}M";
+    readonly 'tokens.total': "{value} tok";
     readonly 'loading.label': "正在加载子代理…";
     readonly 'loading.aria': "正在加载子代理";
     readonly 'load.error': "无法加载子代理";
@@ -31,6 +34,7 @@ export declare const zh: {
     readonly 'count.total.other': "{count} 个子代理";
     readonly 'count.running.one': "{count} 个子代理，正在运行";
     readonly 'count.running.other': "{count} 个子代理，正在运行";
+    readonly 'switcher.aria': "切换子代理：{title}";
     readonly 'tree.aria': "子代理会话";
     readonly 'readonly.oneShot.title': "一次性子代理记录";
     readonly 'readonly.title': "此子代理暂时只读";

@@ -1,12 +1,15 @@
-/** Test-owned sessions face: the SlotRegistry host contract over declarative fixtures. */
+/** Test-owned Session Controller faces over declarative fixtures. */
 import type { Context } from '@deepseek-ai/cordis';
 import type { AttachmentIdType } from '@deepseek-ai/dsh-attachment';
-import type { AgentContext, ConversationSnapshot, ISessions, ProjectionsFace, SessionFace, SessionId, SessionListState, SessionProvideDescriptor, SessionSearchResultItem, SessionSummary, SnapshotStore, SubagentAddress } from '@deepseek-ai/dsh-client-runtime/client';
-import type { HostObservable, SessionMaybeProvideInfo, SessionProvideInfo } from '@deepseek-ai/dsh-client-ui-slots';
-import type { SessionFixture, Stabilizer } from './fixtures.ts';
+import { MutableSessionEventSource } from '@deepseek-ai/dsh-api-session-controller/client';
+import type { AgentContext, ISessions, ProjectionsFace, SessionBinding, SessionFace, SessionListState, SessionEventLikeEntry, SessionLiveEventEntry, SessionSearchResultItem, SessionSnapshot, SessionSummary, SubmissionHandle } from '@deepseek-ai/dsh-api-session-controller/client';
+import type { SubagentAddress } from '@deepseek-ai/dsh-subagent/client';
+import type { SnapshotStore } from '@deepseek-ai/dsh-client-store';
+import type { SessionId } from '@deepseek-ai/dsh-session/types';
+import type { SessionFixture, SessionFixtureSnapshot, Stabilizer } from './fixtures.ts';
 /**
- * The fixture-backed session face: conversation reads delegate to the
- * fixture's snapshot store; ISession verbs are fail-loud stubs unless the
+ * The fixture-backed session face: lifecycle reads delegate to the fixture's
+ * snapshot store; Session verbs are fail-loud stubs unless the
  * fixture supplies them (the runtime never fakes behavior a test did not
  * declare — an unstubbed call names itself instead of half-working). Extra
  * fixture methods are grafted verbatim for feature-side casts.
@@ -14,21 +17,22 @@ import type { SessionFixture, Stabilizer } from './fixtures.ts';
 export declare class FixtureSession implements SessionFace {
     readonly sessionId: SessionId;
     private readonly store;
+    /** Mutable event source consumed only by Conversation assembly. */
+    readonly eventSource: MutableSessionEventSource;
     /**
-     * The useProjection seat: identity-stable per-key faces over the fixture's
-     * projection values (set via {@link TestSessions.setProjection}).
+     * Identity-stable per-key faces over fixture-controlled projection values.
      */
     readonly projections: ProjectionsFace & {
         set(key: string, value: unknown): void;
     };
     /**
      * @param sessionId - host identity (branded view of the fixture id).
-     * @param store - conversation snapshot store (updateSnapshot writes it).
+     * @param store - Session Controller snapshot store.
      * @param overrides - fixture-declared behavior face, grafted over the stubs.
      */
-    constructor(sessionId: SessionId, store: SnapshotStore<ConversationSnapshot>, overrides: Record<string, unknown>);
-    /** @returns the fixture conversation snapshot (useSession read side). */
-    getSnapshot(): ConversationSnapshot;
+    constructor(sessionId: SessionId, store: SnapshotStore<SessionFixtureSnapshot>, overrides: Record<string, unknown>);
+    /** @returns the fixture Session Controller snapshot (useSession read side). */
+    getSnapshot(): SessionSnapshot;
     /**
      * Subscribe to fixture snapshot changes.
      * @param fn - change callback.
@@ -40,6 +44,14 @@ export declare class FixtureSession implements SessionFace {
      * @returns never — always throws.
      */
     prompt(): never;
+    /**
+     * Minimal local-echo registration: mints an identity without touching the
+     * fixture snapshot (submission echoes are client-only presentation state).
+     * Supply `beginSubmission` on the fixture's session face to observe echoes.
+     * @returns a handle whose abandon is a no-op.
+     */
+    beginSubmission(): SubmissionHandle;
+    private submissionSeq;
     /**
      * Fail-loud stub; supply `readAttachment` on the fixture's session face to exercise it.
      * @param _attachmentId - opaque durable attachment id.
@@ -72,47 +84,33 @@ export declare class FixtureSession implements SessionFace {
      */
     rename(): never;
 }
-/** Test binding shape handed to provider resolvers and feature injects (a SessionBinding whose session is the fixture face). */
-export interface TestSessionBinding {
-    readonly sessionId: SessionId;
-    readonly session: FixtureSession;
-    readonly ctx: AgentContext;
-}
 /**
  * Sessions test double behind the renderer host and feature injects: owns the
- * list/current observable, the standard-props provide channel (the runtime's
- * `useSession` contribution included), scope minting through the production
- * `createScope`, and the session behavior face supplied per fixture.
+ * list/current observable, scope minting through the production `createScope`,
+ * stable Controller bindings, and the session behavior face supplied per
+ * fixture. `ui-session` owns standard-source materialization.
  *
  * Implements the same ISessions face features receive as `ctx.sessions`, so
  * a production face change breaks this double at compile time; the extra
- * members (add/updateSnapshot/setCurrent/remove/behavior/calls/stubSearch and
- * the legacy provideInfo/maybeProvideInfo lookups) are bench-only surface.
+ * members (add/updateSessionSnapshot/event-window drivers/setCurrent/remove/
+ * behavior/calls/stubs) are bench-only surface.
  */
 export declare class TestSessions implements ISessions {
     private readonly stabilize;
     private readonly rootCtx;
     /** The useSessions standard feed (list rows + current selection). */
     readonly list: SnapshotStore<SessionListState>;
-    /**
-     * Atomic current-session provide projection (production SessionRuntime
-     * mirror): selection changes and provider-roster changes publish through
-     * this one source — the member the SlotRegistry host face hands the
-     * renderer's SessionProvider.
-     */
-    readonly currentProvideInfo: HostObservable<SessionMaybeProvideInfo>;
     private readonly records;
-    /** The production provide channel (roster, materialization rules, current projection) — no test-side mirror. */
-    private readonly channel;
     /** Calls observed on the service-level face, newest last. */
     readonly calls: {
-        method: 'open' | 'openSubagent' | 'setSubagentCatalogOpen' | 'refreshSubagents' | 'clear' | 'search' | 'fork';
+        method: 'create' | 'open' | 'openSubagent' | 'setSubagentCatalogOpen' | 'refreshSubagents' | 'clear' | 'refresh' | 'search' | 'fork';
         args: unknown[];
     }[];
     /** The wire schema's `session.search` result bound (production parity). */
     readonly searchResultLimit = 20;
     /** Replaceable search behavior (see {@link TestSessions.stubSearch}). */
     private searchStub;
+    private createStub;
     /**
      * @param stabilize - the owning runtime's act wrapper.
      * @param rootCtx - the runtime's Cordis root; scope fibers mount under it.
@@ -128,12 +126,31 @@ export declare class TestSessions implements ISessions {
         current?: boolean;
     }): Promise<SessionId>;
     /**
-     * Update a session's conversation snapshot through an immer draft (the
-     * live-stream stand-in: components subscribed via useSession re-render).
+     * Update Session Controller lifecycle state through an immer draft.
      * @param id - session id.
      * @param mutate - draft mutator.
      */
-    updateSnapshot(id: string, mutate: (draft: ConversationSnapshot) => void): Promise<void>;
+    updateSessionSnapshot(id: string, mutate: (draft: SessionFixtureSnapshot) => void): Promise<void>;
+    /**
+     * Replace a Session's complete contiguous event window.
+     * @param id - Session identity.
+     * @param entries - complete event window.
+     * @param hasMore - whether older history remains.
+     */
+    replaceEvents(id: string, entries: readonly SessionEventLikeEntry[], hasMore?: boolean): Promise<void>;
+    /**
+     * Prepend one older contiguous event page.
+     * @param id - Session identity.
+     * @param entries - older entries.
+     * @param hasMore - whether another older page remains.
+     */
+    prependEvents(id: string, entries: readonly SessionEventLikeEntry[], hasMore?: boolean): Promise<void>;
+    /**
+     * Append one live event to a Session's contiguous window.
+     * @param id - Session identity.
+     * @param entry - live event entry.
+     */
+    appendEvent(id: string, entry: SessionLiveEventEntry): Promise<void>;
     /**
      * Update a session's list row (the wire-echo stand-in: title settles,
      * running flips — components subscribed via useSessions re-render).
@@ -149,31 +166,10 @@ export declare class TestSessions implements ISessions {
     /**
      * Remove a session: list row, scope fiber, and per-session store instances
      * (with persisted state) die together — the same single lifecycle axis the
-     * production SessionRuntime drives on session death, minus staging.
+     * production Client Sessions service drives on session death, minus staging.
      * @param id - session id.
      */
     remove(id: string): Promise<void>;
-    /**
-     * Register a per-session standard-props provider (production `provide`
-     * contract: hooks become `use<Name>` selector hooks on the render side,
-     * props spread verbatim; duplicate names fail loud at materialization).
-     * @param descriptor - static member roster plus per-session resolver.
-     * @returns disposer removing the provider.
-     */
-    provide(descriptor: SessionProvideDescriptor): () => void;
-    /**
-     * Resolve the definite per-session standard-props bundle (host face member).
-     * @param id - session id.
-     * @returns the identity-stable bundle, or undefined for unknown sessions.
-     */
-    provideInfo(id: string): SessionProvideInfo | undefined;
-    /**
-     * Resolve the current-session-optional standard kit (host face member):
-     * unknown or absent ids return the static no-session projection.
-     * @param id - current session id, when selected.
-     * @returns a definite or no-session provide bundle.
-     */
-    maybeProvideInfo(id: string | undefined): SessionMaybeProvideInfo;
     /**
      * Resolve (mint on first touch) the session-scoped Cordis context through
      * the production `createScope`, so real `scopeOf`/scope-addressed services
@@ -187,7 +183,7 @@ export declare class TestSessions implements ISessions {
      * @param id - session id.
      * @returns sessionId + behavior face + scoped ctx, or undefined when unknown.
      */
-    binding(id: string): TestSessionBinding | undefined;
+    binding(id: string): SessionBinding | undefined;
     /**
      * Read the session scope tag off a context (service-method boundary mirror).
      * @param ctx - any client context.
@@ -201,6 +197,13 @@ export declare class TestSessions implements ISessions {
      * @returns the fixture session face, or undefined off-scope.
      */
     sessionOf(ctx: Context): SessionFace | undefined;
+    /**
+     * Install Session creation behavior for navigation tests.
+     * @param impl - implementation that must return an already-added fixture id.
+     */
+    stubCreate(impl: (opts: Parameters<ISessions['create']>[0]) => Promise<SessionId>): void;
+    /** Create through the installed test behavior and require an addressable binding. */
+    create(opts?: Parameters<ISessions['create']>[0]): Promise<SessionId>;
     /**
      * Service-level selection call (recorded, then applied to the list store
      * synchronously — inject callbacks call this outside any act window; the
@@ -216,10 +219,10 @@ export declare class TestSessions implements ISessions {
     setSubagentCatalogOpen(parentSessionId: SessionId, open: boolean): void;
     /** Record a catalog refresh; fixture callers drive snapshots explicitly. */
     refreshSubagents(parentSessionId: SessionId): Promise<void>;
-    /** Apply a confirmed preset switch into the fixture list, as production does. */
-    noteAgentPreset(sessionId: SessionId, agentPreset: string): void;
     /** Clear the current selection (recorded; the production no-session flow). */
     clear(): void;
+    /** Record a list refresh; fixture callers publish list state explicitly. */
+    refresh(): Promise<void>;
     /**
      * Replace the sidebar-search result page (the call is still recorded).
      * @param impl - hits for a query, as the Host would rank them.
@@ -252,7 +255,7 @@ export declare class TestSessions implements ISessions {
      * The session face of a fixture (typed view for assertions; fixture
      * behavior methods are grafted onto it).
      * @param id - session id.
-     * @returns the FixtureSession the binding and provide channel carry.
+     * @returns the FixtureSession carried by the Controller binding.
      */
     behavior(id: string): FixtureSession;
     /** Dispose minted scope fibers (runtime dispose path). */

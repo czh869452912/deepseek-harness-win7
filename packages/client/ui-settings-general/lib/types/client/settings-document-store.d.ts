@@ -1,6 +1,6 @@
 /** State owner for the optional local settings-document action. */
-import type { IApiClient } from '@deepseek-ai/dsh-api-remotes/client';
-import { type SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client';
+import type { ClientRemote } from '@deepseek-ai/dsh-api-remotes/client';
+import { type SnapshotStore } from '@deepseek-ai/dsh-client-store';
 import type { SettingsDescribeFace } from '@deepseek-ai/dsh-client-ui-settings/client';
 /** Browser state of the Host-owned settings document. */
 export interface SettingsDocumentState {
@@ -13,7 +13,7 @@ export interface SettingsDocumentState {
 }
 /** Derives local-document availability from the shared mirror and invokes the pathless Host-owned open operation. */
 export declare class SettingsDocumentStore {
-    private readonly api;
+    private readonly remote;
     private readonly describeFace;
     /** uSES-safe state source shared by the registered header action. */
     readonly store: SnapshotStore<SettingsDocumentState>;
@@ -22,7 +22,7 @@ export declare class SettingsDocumentStore {
      * @param api - loopback settings wire face that opens the provider document.
      * @param describeFace - the shared mirror's describe face (`hasDocument` source).
      */
-    constructor(api: Pick<IApiClient, 'settings'>, describeFace: SettingsDescribeFace);
+    constructor(remote: Pick<ClientRemote, 'settings'>, describeFace: SettingsDescribeFace);
     /**
      * Begin following the mirror (idempotent) and reflect whether the current
      * provider owns a local document.

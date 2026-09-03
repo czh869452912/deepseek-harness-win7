@@ -256,7 +256,7 @@ class SettingsProvider(Service):
     """
 
     def __init__(self, ctx: Optional[Any] = None):
-        super().__init__(ctx, "settings")
+        super().__init__(ctx, "settings", allow_replace=True)
         self._registrations: Dict[str, SettingsRegistration] = {}
         self._document: Dict[str, Any] = {}
         self._stopped: bool = False

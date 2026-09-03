@@ -21,18 +21,20 @@ import { AGENT_PRESET_SETTINGS_NS, AgentPresetSettingsController } from "./setti
 export { draftBlocker, } from "./section-store.js";
 export { AGENT_PRESET_SETTINGS_NS, writeDefaultPreset } from "./settings-store.js";
 /** Required services (cordis fiber inject). */
-export const inject = ['slots', 'locale', 'connection', 'remote', 'settingsScope'];
+export const inject = [
+    'slots', 'locale', 'remote', 'remote.agentPresets', 'remote.settings', 'settingsScope',
+];
 /**
  * Mount the General-settings row.
  * @param ctx - the browser plugin context.
  */
 export function apply(ctx) {
-    const { api } = ctx.get('connection');
-    const controller = new AgentPresetSettingsController(api, ctx.settingsScope.describe());
+    const settingsWire = { settings: ctx.remote.settings };
+    const controller = new AgentPresetSettingsController(settingsWire, ctx.remote, ctx.settingsScope.describe());
     // One roster, four surfaces. The chip is registered in a later scope, so it
     // subscribes here rather than being reached from this one.
     const rosterReaders = new Set();
-    const section = new AgentPresetSectionController(api, () => {
+    const section = new AgentPresetSectionController(ctx.remote, () => {
         void controller.load();
         for (const read of rosterReaders)
             read();
@@ -72,20 +74,10 @@ export function apply(ctx) {
     let creatorDraft;
     // The new-session chip and the header label: one controller, because the
     // staged choice belongs to the flow rather than to any one session.
-    ctx.inject(['slots', 'conversation', 'sessions', 'workspaces'], (scope) => {
-        const api = scope.get('connection').api;
-        const seat = new AgentPresetSeatController(api, () => {
+    ctx.inject(['slots', 'conversation', 'sessions', 'uiWorkspace'], (scope) => {
+        const seat = new AgentPresetSeatController(scope.remote, () => {
             const state = scope.sessions.list.getSnapshot();
-            const summary = state.current === undefined ? undefined : state.byId[state.current];
-            return summary === undefined
-                ? undefined
-                : {
-                    id: summary.id,
-                    blank: summary.blank,
-                    ...summary.agentPreset === undefined ? {} : { agentPreset: summary.agentPreset },
-                };
-        }, (sessionId, agentPreset) => {
-            scope.sessions.noteAgentPreset(sessionId, agentPreset);
+            return state.current === undefined ? undefined : state.byId[state.current];
         });
         const seatInjected = () => ({
             hooks: { agentPresetSeat: seat.store },
@@ -112,11 +104,6 @@ export function apply(ctx) {
                     return;
                 void seat.load();
             });
-            // Every tab folds the committed preset into the shared session row; the
-            // initiating tab may already have applied the RPC echo, which is idempotent.
-            const presetSelected = scope.remote.$on('agent-preset/selected', (sessionId, agentPreset) => {
-                scope.sessions.noteAgentPreset(sessionId, agentPreset);
-            });
             // Authoring writes a FILE, not a setting, so nothing on the wire
             // announces it — without this the screen that starts the next session
             // keeps offering the roster as it stood when the chip first loaded, and
@@ -131,7 +118,7 @@ export function apply(ctx) {
                 // The introduce cue makes the chip announce the pick the user never
                 // made on this screen — the stage happened back in settings.
                 seat.stage('cordis', true);
-                scope.workspaces.startSession();
+                scope.uiWorkspace.startSession();
             };
             const chip = scope.slots.register({
                 name: 'conversation.hero.agentPreset',
@@ -149,7 +136,6 @@ export function apply(ctx) {
             return () => {
                 stop();
                 settingsMoved();
-                presetSelected();
                 rosterReaders.delete(readRoster);
                 creatorDraft = undefined;
                 chip();

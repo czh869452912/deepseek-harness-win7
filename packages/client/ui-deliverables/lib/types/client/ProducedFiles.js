@@ -1,10 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-// ProducedFiles: the produced-file row a finished turn ends with. The paths
-// come pre-matched by the turn-tail chain from the mutation tools'
-// follow-along locations, never from the closing prose. Clicking one goes
-// through the same openFile the tool rows use — the Host's own opener, on the
-// Host machine.
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { basename } from "./turn-deliverables.js";
 import css from './ProducedFiles.module.css';
 /** At most six chips compete for the one-line summary; every other path stays counted. */
@@ -44,8 +39,9 @@ function moreLabel(t, count) {
  * @param props - selector-matched paths, the chat view's file opener, and the locale seat.
  * @returns The produced-files row.
  */
-export function ProducedFiles({ matched: paths, openFile, isLoopback, useHostDescription, t, }) {
-    const hostCanOpenPath = useHostDescription(description => description?.canOpenPath === true);
+export function ProducedFiles({ matched: paths, openFile, isLoopback, ensureWorkspacePathOpen, useWorkspacePathOpen, t, }) {
+    useEffect(() => { ensureWorkspacePathOpen(); }, [ensureWorkspacePathOpen]);
+    const hostCanOpenPath = useWorkspacePathOpen(available => available === true);
     const canOpenPath = isLoopback && hostCanOpenPath;
     const limit = Math.min(paths.length, SHOWN_LIMIT);
     const [shownCount, setShownCount] = useState(limit);

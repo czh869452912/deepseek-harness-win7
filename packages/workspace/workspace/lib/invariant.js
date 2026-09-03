@@ -9,8 +9,8 @@ import { defineDomain, domainTable } from "@deepseek-ai/dsh-storage-domain";
 //#region src/spec.ts
 /**
 * The workspace domain declaration: record schema and the `defineDomain` spec
-* the registry opens. The zod schema is the durable-boundary validator today
-* and the direct source of the RPC wire projection in a later phase.
+* the registry opens. The zod schema validates the shipped format at the
+* durability boundary and is the direct source of a future RPC wire projection.
 * @module @deepseek-ai/dsh-workspace/src/spec
 */
 /** Workspace id schema at the durable boundary; branding has no runtime representation. */

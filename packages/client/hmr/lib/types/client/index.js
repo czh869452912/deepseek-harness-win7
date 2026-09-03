@@ -1,4 +1,4 @@
-import { EVENTS_ENDPOINT } from "../events.js";
+import { EVENTS_ENDPOINT, parsePluginsEventFrame } from "../events.js";
 export { EVENTS_ENDPOINT } from "../events.js";
 /** Cordis plugin name. */
 export const name = 'client-hmr';
@@ -29,7 +29,7 @@ export function apply(ctx) {
     // client module loader package, `loader` from the vendored Loader).
     const modLoader = ctx.modules;
     const loader = ctx.loader;
-    async function reload(id) {
+    async function reload(id, rev) {
         const entry = findEntry(loader, id);
         if (entry === undefined) {
             ctx.logger.warn(`client-hmr: rebuilt frame for unknown entry "${id}" (not in the loader tree)`);
@@ -40,7 +40,7 @@ export function apply(ctx) {
         // async half while the old fiber still serves: script loading registers
         // the fresh factory with zero side effects (lazy CJS — module bodies run
         // at materialization, not execution).
-        modLoader.invalidate(id);
+        modLoader.invalidate(id, rev);
         await modLoader.prefetch(id);
         const oldFiber = entry.fiber;
         if (oldFiber !== undefined) {
@@ -73,16 +73,15 @@ export function apply(ctx) {
     const handle = (frame) => {
         switch (frame.type) {
             case 'rebuilt':
-                queue = queue.then(() => reload(frame.id)).catch((error) => {
+                queue = queue.then(() => reload(frame.id, frame.rev)).catch((error) => {
                     ctx.logger.error(`client-hmr: reload of "${frame.id}" failed`);
                     ctx.logger.error(error);
                 });
                 break;
             case 'graph':
-                // Connect-time snapshot, unused. The loader's cached graph rev
-                // goes stale after rebuilds — harmless, since prefetch hits the
-                // network anyway (host serves bundles no-cache); graph rev refresh
-                // lands with the reconnect-handshake mechanism.
+                // Connect-time snapshot, unused. Each rebuilt frame carries the
+                // revision that selects the immutable single-resource combo script; the boot
+                // graph remains the initial-load record until a page reload.
                 break;
             default:
                 // Merge-extensible frame union: unknown frame types from newer hosts
@@ -93,16 +92,22 @@ export function apply(ctx) {
     ctx.effect(() => {
         const source = new EventSource(EVENTS_ENDPOINT);
         source.addEventListener('message', (event) => {
-            let frame;
+            let value;
             try {
-                frame = JSON.parse(event.data);
+                value = JSON.parse(event.data);
             }
             catch {
                 // Wire boundary: a malformed dev-channel frame is dropped loudly.
                 ctx.logger.warn(`client-hmr: unparseable event frame: ${event.data}`);
                 return;
             }
-            handle(frame);
+            const parsed = parsePluginsEventFrame(value);
+            if (parsed.kind === 'invalid') {
+                ctx.logger.warn(`client-hmr: invalid event frame: ${event.data}`);
+            }
+            else if (parsed.kind === 'frame') {
+                handle(parsed.frame);
+            }
         });
         return () => { source.close(); };
     }, 'client-hmr: event source');

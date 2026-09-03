@@ -11,6 +11,7 @@
  * @module @deepseek-ai/dsh-tool-fs-search/grep
  */
 import { defineTool } from '@deepseek-ai/dsh-tools';
+import { FIRST_PARTY_SECTION_ORDER } from '@deepseek-ai/dsh-system-prompt';
 import { SearchError, previewLine, retainGrepMatches, runRipgrep, toWorkdirRelative, trySaveFormattedResult } from "./search-core.js";
 import { grepSearchMeta, searchViewFromMeta } from "./presentation.js";
 import { acceptedDirectCallValue } from "./direct-call.js";
@@ -249,7 +250,7 @@ export function presentGrepResult(_args, result) {
 export function applyGrepTool(ctx, caps) {
     ctx.systemPrompt.section({
         name: 'tool:grep',
-        order: 104,
+        order: FIRST_PARTY_SECTION_ORDER.TOOL_GREP,
         text: 'Use the grep tool — not shell grep or rg — to search file contents. Use read on a matched file when you need surrounding context.',
     });
     const tool = defineTool({

@@ -8,9 +8,9 @@ import css from './HeaderAction.module.css';
  * @returns the persistent Header action and Session-scoped dialog.
  */
 export function SessionLogDownloadHeaderAction(props) {
-    const { sessionId, useSessionLogDownload, request } = props;
+    const { sessionId, useSessionLogDownload, request, t } = props;
     const entry = useSessionLogDownload(state => state.bySession[String(sessionId)]);
     const busy = entry?.status === 'downloading';
-    return (_jsxs(_Fragment, { children: [_jsxs("button", { type: "button", className: css.sessionLogButton, disabled: busy, "aria-busy": busy, onClick: () => { void request(sessionId); }, children: [_jsx("span", { children: "Session log" }), _jsx(IconDownloadOutline16, { size: 12 })] }), _jsx(SessionLogDownloadDialog, { ...props })] }));
+    return (_jsxs(_Fragment, { children: [_jsxs("button", { type: "button", className: css.sessionLogButton, disabled: busy, "aria-busy": busy, onClick: () => { void request(sessionId); }, children: [_jsx("span", { children: t('header.action') }), _jsx(IconDownloadOutline16, { size: 12 })] }), _jsx(SessionLogDownloadDialog, { ...props })] }));
 }
 //# sourceMappingURL=HeaderAction.js.map

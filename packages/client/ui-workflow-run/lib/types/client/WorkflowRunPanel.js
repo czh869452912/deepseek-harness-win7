@@ -1,7 +1,7 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useLayoutEffect, useMemo, useRef, useState, } from 'react';
 import { DisclosureRow, IconChevronRightOutline14, StateDot, } from '@deepseek-ai/dsh-client-ui-primitives';
-import { shallowEqual } from '@deepseek-ai/dsh-client-runtime/client';
+import { shallowEqual } from '@deepseek-ai/dsh-client-store';
 import css from './WorkflowRunPanel.module.css';
 const STATUS_KEYS = {
     running: 'status.running',

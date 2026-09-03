@@ -7,4 +7,12 @@
 export function AttachmentId(value) {
     return value;
 }
+/**
+ * Brand a validated request-image transformation identifier.
+ * @param value - attachment-provider-produced opaque identifier.
+ * @returns the branded identifier.
+ */
+export function ImageVariantId(value) {
+    return value;
+}
 //# sourceMappingURL=brand.js.map

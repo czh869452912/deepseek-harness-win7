@@ -1,1 +1,1 @@
-{"version":3,"file":"scoped-slots.d.ts","sourceRoot":"","sources":["../../../src/client/scoped-slots.tsx"],"names":[],"mappings":"AAKA,OAAO,EAGkD,KAAK,YAAY,EAEzE,MAAM,kCAAkC,CAAA;AAg3BzC;;;;;GAKG;AACH,wBAAgB,kBAAkB,IAAI,YAAY,CAYjD"}
+{"version":3,"file":"scoped-slots.d.ts","sourceRoot":"","sources":["../../../src/client/scoped-slots.tsx"],"names":[],"mappings":"AAKA,OAAO,EAGmF,KAAK,YAAY,EAG1G,MAAM,kCAAkC,CAAA;AAm5BzC;;;;;GAKG;AACH,wBAAgB,kBAAkB,IAAI,YAAY,CAcjD"}

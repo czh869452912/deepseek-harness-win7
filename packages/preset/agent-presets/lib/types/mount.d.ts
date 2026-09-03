@@ -23,6 +23,8 @@ export interface PresetMount {
     readonly presetId: string;
     /** The mounted subtree's fiber. */
     readonly fiber: Fiber;
+    /** Loader entry tree whose active rows form this standing composition. */
+    readonly tree: EntryTree;
     /** The standing scope key agents are parented to (undefined only in torn-down records). */
     readonly key: ScopeKey | undefined;
 }

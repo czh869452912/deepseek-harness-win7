@@ -61,6 +61,6 @@ export function DeepSeekOnboardingDialog(props) {
         }
         void controller.load();
     };
-    return (_jsxs(OnboardingModal, { title: t('onboardingTitle'), children: [_jsx("p", { className: styles.description, children: t('onboardingDescription') }), _jsx("div", { className: styles.editor, children: _jsx(ProviderEditor, { provider: row.entry.provider, displayName: row.entry.displayName, namespace: namespace, schema: schema, settingsPath: row.entry.settingsPath, api: api, t: t, readOnly: false, hideTitle: true, credentialOnly: true, credentialRequired: true, autoFocusCredential: true, cancelLabel: "onboardingLater", submitLabel: "onboardingSave", submitBusyLabel: "onboardingSaving", onClose: finishCredential }) })] }));
+    return (_jsxs(OnboardingModal, { title: t('onboardingTitle'), children: [_jsx("p", { className: styles.description, children: t('onboardingDescription') }), _jsx("div", { className: styles.editor, children: _jsx(ProviderEditor, { provider: row.entry.provider, displayName: row.entry.displayName, namespace: namespace, schema: schema, settingsPath: row.entry.settingsPath, api: api, t: t, readOnly: false, hideTitle: true, credentialOnly: true, credentialRequired: true, autoFocusCredential: true, cancelLabelKey: "onboardingLater", submitLabelKey: "onboardingSave", submitBusyLabelKey: "onboardingSaving", onClose: finishCredential }) })] }));
 }
 //# sourceMappingURL=DeepSeekOnboardingDialog.js.map

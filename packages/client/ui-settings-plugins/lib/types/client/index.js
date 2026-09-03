@@ -4,7 +4,7 @@
  *
  * The section declares `settings.plugins.tab`; its own `configurable` tab then
  * declares `settings.plugin.item` and renders whatever cards were registered
- * into it. The three cards this package ships are the host-plane sections the
+ * into it. The cards this package ships are the host-plane sections the
  * deployment already exposes; each binds its namespace through the client
  * settings scope, which keeps them unaware of one another and of other tabs.
  */
@@ -13,34 +13,40 @@ import { AgentLoopCard } from "./AgentLoopCard.js";
 import { BashCard } from "./BashCard.js";
 import { ConfigurablePluginsTab } from "./ConfigurablePluginsTab.js";
 import { PluginsSettingsSection } from "./PluginsSettingsSection.js";
+import { SubagentModelSelectionCard } from "./SubagentModelSelectionCard.js";
 import { WebSearchCard } from "./WebSearchCard.js";
 import { AGENT_LOOP_NS, AgentLoopCardController } from "./agent-loop-card-controller.js";
 import { SHELL_NS, BashCardController } from "./bash-card-controller.js";
 import { ConfigurablePluginsTabController } from "./tab-store.js";
+import { SUBAGENT_MODEL_SELECTION_NS, SubagentModelSelectionCardController, } from "./subagent-model-selection-card-controller.js";
 import { WEB_SEARCH_NS, WebSearchCardController } from "./web-search-card-controller.js";
 import { en, zh } from "./locales.js";
 /** Dictionary namespace owned by this plugin. */
 const NS = 'settings.plugins';
 /** Required services (cordis fiber inject). */
-export const inject = ['slots', 'locale', 'connection', 'remote', 'settingsScope'];
+export const inject = [
+    'slots', 'locale', 'connection', 'remote', 'remote.credentials', 'remote.session', 'settingsScope',
+];
 /**
  * Mount the plugin configuration section and the cards this package ships.
  * @param ctx - the browser plugin context.
  */
 export function apply(ctx) {
-    const { api } = ctx.get('connection');
     const t = ctx.locale.bind(NS);
     ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-settings-plugins: section dictionaries');
     const bash = new BashCardController(ctx.settingsScope.bind({ namespace: SHELL_NS }));
     const agentLoop = new AgentLoopCardController(ctx.settingsScope.bind({ namespace: AGENT_LOOP_NS }));
-    const webSearch = new WebSearchCardController(ctx.settingsScope.bind({ namespace: WEB_SEARCH_NS }), api);
+    const webSearch = new WebSearchCardController(ctx.settingsScope.bind({ namespace: WEB_SEARCH_NS }), ctx.remote.credentials);
+    const subagentModelSelection = new SubagentModelSelectionCardController(ctx.settingsScope.bind({ namespace: SUBAGENT_MODEL_SELECTION_NS }), ctx.remote.session);
     // The credential a card reports is not part of any settings section, so its
     // scope publishes nothing when one is written. This is the only signal that
     // a key written on another surface reached the Host.
-    ctx.effect(() => ctx.remote.$on('credentials/updated', (ref) => { webSearch.refreshCredential(ref); }), 'ui-settings-plugins: credential invalidations');
-    // Which namespaces the Host serves comes from the shared describe mirror,
-    // whose owning plugin already refreshes it on document commits and
-    // reconnects — the tab only derives.
+    ctx.effect(() => ctx.remote.$on('credentials/reference-updated', (ref) => { webSearch.refreshCredential(ref); }), 'ui-settings-plugins: credential invalidations');
+    ctx.effect(() => ctx.remote.$on('llm/adapters-updated', () => { subagentModelSelection.refreshCatalog(); }), 'ui-settings-plugins: subagent adapter invalidations');
+    ctx.effect(() => ctx.remote.$on('settings/document-updated', () => { subagentModelSelection.refreshCatalog(); }), 'ui-settings-plugins: subagent settings invalidations');
+    ctx.effect(() => ctx.on('connection/reset', () => { subagentModelSelection.resetConnection(); }), 'ui-settings-plugins: subagent connection generation');
+    ctx.effect(() => () => { subagentModelSelection.dispose(); }, 'ui-settings-plugins: subagent preference');
+    // The shared SettingsScope mirror updates after document commits and reconnects.
     const configurable = new ConfigurablePluginsTabController(ctx.settingsScope.describe(), () => ctx.slots.entries('settings.plugin.item'));
     ctx.effect(() => () => { configurable.dispose(); }, 'ui-settings-plugins: tab directory');
     // A card registered after the first read joins the list without a wire call.
@@ -91,7 +97,7 @@ export function apply(ctx) {
         children: { 'settings.plugins.tab': { kind: 'list', scope: 'root' } },
     }, PluginsSettingsSection));
     // The existing configuration page is one ordinary tab. It keeps ownership
-    // of the card slot and the three shipped card contributions below.
+    // of the card slot and the shipped card contributions below.
     ctx.slots.inject('settings.plugins.tab', () => ctx.slots.register({
         name: 'settings.plugins.tab',
         id: 'configurable',
@@ -114,6 +120,12 @@ export function apply(ctx) {
             locale: NS,
             inject: () => agentLoop.inject(),
         }, AgentLoopCard);
+        yield ctx.slots.register({
+            name: 'settings.plugin.item',
+            key: SUBAGENT_MODEL_SELECTION_NS,
+            locale: NS,
+            inject: () => subagentModelSelection.inject(),
+        }, SubagentModelSelectionCard);
         yield ctx.slots.register({
             name: 'settings.plugin.item',
             key: WEB_SEARCH_NS,

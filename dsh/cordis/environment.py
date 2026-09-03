@@ -5,21 +5,34 @@ with security tripwires against bootstrap variable injection.
 """
 
 import os
+import re
 import sys
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
+def expand_home_path(path: str) -> str:
+    """Expand '~' or '~/' or '~\\' to the user home directory matching TS expandHomePath."""
+    if path == "~":
+        return os.path.expanduser("~")
+    if path.startswith("~/") or path.startswith("~\\"):
+        return os.path.join(os.path.expanduser("~"), path[2:])
+    return path
+
+
 def resolve_dsh_home(custom_home: Optional[str] = None, env: Optional[Dict[str, str]] = None) -> str:
     """
-    Resolve the Harness home directory ($DSH_HOME or ~/.dsh).
+    Resolve the Harness home directory ($DSH_HOME or ~/.dsh), expanding ~ if present.
     """
     if custom_home and isinstance(custom_home, str) and custom_home.strip():
-        return os.path.abspath(custom_home)
-    env_dict = env if isinstance(env, dict) else os.environ
-    env_home = env_dict.get("DSH_HOME")
-    if env_home and isinstance(env_home, str) and env_home.strip():
-        return os.path.abspath(env_home)
-    return os.path.abspath(os.path.join(os.path.expanduser("~"), ".dsh"))
+        selected = custom_home.strip()
+    else:
+        env_dict = env if isinstance(env, dict) else os.environ
+        env_home = env_dict.get("DSH_HOME")
+        if env_home and isinstance(env_home, str) and env_home.strip():
+            selected = env_home.strip()
+        else:
+            selected = os.path.join(os.path.expanduser("~"), ".dsh")
+    return os.path.abspath(expand_home_path(selected))
 
 
 # Exact variable names that cannot be set by discovered .env files
@@ -65,10 +78,17 @@ def is_bootstrap_only(name: str) -> bool:
 def parse_dotenv(content: str) -> Dict[str, str]:
     """
     Parse dotenv formatted text safely into key-value pairs.
+    Supports multiline quoted values, inline comments, and single-pass double-quote unescaping.
     """
     entries: Dict[str, str] = {}
-    for raw_line in content.splitlines():
+    lines = content.splitlines()
+    i = 0
+    n = len(lines)
+
+    while i < n:
+        raw_line = lines[i]
         line = raw_line.strip()
+        i += 1
         if not line or line.startswith("#"):
             continue
         if line.startswith("export ") and len(line) > 7:
@@ -80,18 +100,50 @@ def parse_dotenv(content: str) -> Dict[str, str]:
         key, val = line.split("=", 1)
         key = key.strip()
         val = val.strip()
-
         if not key:
             continue
 
-        # Strip matching quotes if wrapped
-        if len(val) >= 2 and ((val[0] == '"' and val[-1] == '"') or (val[0] == "'" and val[-1] == "'")):
-            quote_char = val[0]
-            val = val[1:-1]
-            if quote_char == '"':
-                val = val.replace('\\"', '"').replace('\\n', '\n').replace('\\t', '\t').replace('\\\\', '\\')
+        if val.startswith('"'):
+            # Double-quoted (may be multiline)
+            collected = [val[1:]]
+            closed = False
+            cur = collected[0]
+            if len(cur) >= 1 and cur.endswith('"') and not cur.endswith('\\"'):
+                collected[0] = cur[:-1]
+                closed = True
+            while not closed and i < n:
+                next_line = lines[i]
+                i += 1
+                if next_line.endswith('"') and not next_line.endswith('\\"'):
+                    collected.append(next_line[:-1])
+                    closed = True
+                else:
+                    collected.append(next_line)
+            combined = "\n".join(collected)
+            esc_map = {'n': '\n', 't': '\t', 'r': '\r', '"': '"', '\\': '\\'}
+            entries[key] = re.sub(r'\\([\\ntr"])', lambda m: esc_map.get(m.group(1), m.group(0)), combined)
+        elif val.startswith("'"):
+            # Single-quoted (literal, may be multiline)
+            collected = [val[1:]]
+            closed = False
+            cur = collected[0]
+            if len(cur) >= 1 and cur.endswith("'"):
+                collected[0] = cur[:-1]
+                closed = True
+            while not closed and i < n:
+                next_line = lines[i]
+                i += 1
+                if next_line.endswith("'"):
+                    collected.append(next_line[:-1])
+                    closed = True
+                else:
+                    collected.append(next_line)
+            entries[key] = "\n".join(collected)
+        else:
+            # Unquoted: strip inline comment after whitespace
+            val_clean = re.split(r'\s+#', val, maxsplit=1)[0].strip()
+            entries[key] = val_clean
 
-        entries[key] = val
     return entries
 
 
@@ -124,7 +176,7 @@ class LaunchEnvironmentSnapshot:
 
         for layer in layers:
             src = layer["source"]
-            vals = layer["values"]
+            vals = dict(layer.get("values", {}))
             folded: Dict[str, str] = {}
             for k, v in vals.items():
                 lookup_key = k.upper() if sys.platform == "win32" else k
@@ -151,6 +203,20 @@ class LaunchEnvironmentSnapshot:
     def get_value(self, name: str, default: Optional[str] = None) -> Optional[str]:
         entry = self.get(name)
         return entry.value if entry else default
+
+
+LAUNCH_ENVIRONMENT_KEY: str = "launch_environment"
+
+
+def launch_environment_of(ctx: Any) -> LaunchEnvironmentSnapshot:
+    """
+    Get the launch environment snapshot from context, falling back to process-only snapshot matching TS launchEnvironmentOf.
+    """
+    if hasattr(ctx, "get"):
+        res = ctx.get(LAUNCH_ENVIRONMENT_KEY)
+        if isinstance(res, LaunchEnvironmentSnapshot):
+            return res
+    return LaunchEnvironmentSnapshot([{"source": "process", "values": dict(os.environ)}])
 
 
 def read_env_layer(bin_name: str, dir_path: str) -> Optional[Dict[str, Any]]:

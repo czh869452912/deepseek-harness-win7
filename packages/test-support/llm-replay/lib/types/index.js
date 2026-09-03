@@ -8,23 +8,65 @@
  */
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { delimiter as pathDelimiter } from 'node:path';
-import { decodeStorageRecord } from '@deepseek-ai/dsh-session';
-import { LlmAdapter, LlmError, ReasoningEffortId, assertNever, resolveRetryPolicy } from '@deepseek-ai/dsh-llm';
+import { decodeSeqRanges, decodeStorageRecord } from '@deepseek-ai/dsh-session';
+import { LlmAdapter, LlmError, ReasoningEffortId, assertNever, requestImageHandleText, resolveRetryPolicy } from '@deepseek-ai/dsh-llm';
+const PACKED_CHUNK_ROW_TYPES = new Set(['text-chunks', 'reasoning-chunks', 'tool-call-chunks']);
 /**
  * Parse a session `.jsonl` buffer into its event list. Line 0 is the session
  * header (a `{type:'session',…}` record), every subsequent non-empty line is a
- * {@link SessionEvent} or a packed chunk row (expanded back into its events, so
- * a fixture recorded with `packChunks` on derives the same script). The header
- * is skipped; malformed lines fail loud.
+ * {@link SessionEvent} or a packed chunk row. Packed rows expand back into
+ * events, and JSONL storage-form provenance ranges expand back into
+ * `number[]`, so physical fixture encodings derive the same script. The
+ * header is skipped; malformed lines fail loud.
  * @param text - the raw `.jsonl` file contents.
  * @returns every event after the header, in log order.
  */
 export function parseSessionLog(text) {
-    const lines = text.split('\n').filter(line => line.trim().length > 0);
     const events = [];
-    // The JSONL backend guarantees line 0 is the session header.
-    for (let i = 1; i < lines.length; i++) {
-        events.push(...decodeStorageRecord(JSON.parse(lines[i])));
+    let nextSeq = 0;
+    let headerSkipped = false;
+    // The JSONL backend guarantees line 0 is the session header. Projected
+    // fixtures omit event envelopes; synthesize them while decoding so callers
+    // still receive complete SessionEvent values.
+    for (const [index, line] of text.split(/\r?\n/).entries()) {
+        if (line.trim().length === 0)
+            continue;
+        if (!headerSkipped) {
+            headerSkipped = true;
+            continue;
+        }
+        let value;
+        try {
+            value = JSON.parse(line);
+        }
+        catch (error) {
+            throw new Error(`session snapshot line ${index + 1} contains invalid JSON`, { cause: error });
+        }
+        if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+            throw new Error(`session snapshot line ${index + 1} must be a JSON object`);
+        }
+        const record = value;
+        const packed = PACKED_CHUNK_ROW_TYPES.has(record.type);
+        const seqKey = packed ? 'seq0' : 'seq';
+        const timeKey = packed ? 'time0' : 'time';
+        if (!Object.hasOwn(record, seqKey))
+            record[seqKey] = nextSeq;
+        if (!Object.hasOwn(record, timeKey))
+            record[timeKey] = 0;
+        let decoded;
+        try {
+            if (Object.hasOwn(record, 'sourceEventSeqs')) {
+                record.sourceEventSeqs = decodeSeqRanges(record.sourceEventSeqs);
+            }
+            decoded = decodeStorageRecord(record);
+        }
+        catch (error) {
+            /* v8 ignore next -- decodeStorageRecord only throws Error instances; the String arm satisfies unknown narrowing. */
+            const detail = error instanceof Error ? error.message : String(error);
+            throw new Error(`session snapshot line ${index + 1}: ${detail}`, { cause: error });
+        }
+        events.push(...decoded);
+        nextSeq += decoded.length;
     }
     return events;
 }
@@ -213,6 +255,46 @@ export function resolveScriptedEntry(entry, messages) {
     collectStrings(messages, leaves);
     return substituteValue(entry, leaves.join('\n'));
 }
+/** Replace typed recorded-session tokens with the live sessions bound at the same corpus indexes. */
+function materializeSessionTokens(entry, liveSessionIds) {
+    if (!JSON.stringify(entry).includes('{{session:'))
+        return entry;
+    const replace = (value) => {
+        if (typeof value === 'string') {
+            return value.replace(/\{\{session:([1-9]\d*)\}\}/g, (_token, ordinal) => {
+                const live = liveSessionIds[Number(ordinal) - 1];
+                if (live === undefined) {
+                    throw new Error(`llm-replay: session token {{session:${ordinal}}} was used before that recorded session bound`);
+                }
+                return live;
+            });
+        }
+        if (Array.isArray(value))
+            return value.map(replace);
+        if (value !== null && typeof value === 'object') {
+            return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, replace(item)]));
+        }
+        return value;
+    };
+    return replace(entry);
+}
+/** Learn a background child id from the stable tool-result text before that child reaches its first model call. */
+function inferStartedSubagents(messages, liveSessionIds) {
+    const leaves = [];
+    collectStrings(messages, leaves);
+    for (const leaf of leaves) {
+        for (const match of leaf.matchAll(/started subagent ([^\s"'<>]+)/g)) {
+            const id = match[1];
+            /* v8 ignore next -- the fixed regular expression always has capture group 1. */
+            if (id === undefined || liveSessionIds.includes(id))
+                continue;
+            const index = liveSessionIds.findIndex((value, candidate) => candidate > 0 && value === undefined);
+            if (index < 0)
+                return;
+            liveSessionIds[index] = id;
+        }
+    }
+}
 function isRecord(value) {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -244,7 +326,11 @@ function readReplayEntry(value, file, location) {
             return { kind: 'chunks', chunks: readChunks(value['chunks'], file, location) };
         }
         case 'throw': {
-            if (!hasExactKeys(value, ['kind', 'chunks', 'message', 'code'])) {
+            const accepted = value['accepted'];
+            const keys = accepted === undefined
+                ? ['kind', 'chunks', 'message', 'code']
+                : ['kind', 'chunks', 'message', 'code', 'accepted'];
+            if (!hasExactKeys(value, keys)) {
                 invalidOverride(file, location, 'has invalid throw-entry fields');
             }
             if (typeof value['message'] !== 'string' || value['message'].length === 0) {
@@ -253,11 +339,15 @@ function readReplayEntry(value, file, location) {
             if (typeof value['code'] !== 'string' || value['code'].length === 0) {
                 invalidOverride(file, location, 'code must be a non-empty string');
             }
+            if (accepted !== undefined && typeof accepted !== 'boolean') {
+                invalidOverride(file, location, 'accepted must be a boolean');
+            }
             return {
                 kind: 'throw',
                 chunks: readChunks(value['chunks'], file, location),
                 message: value['message'],
                 code: value['code'],
+                ...(accepted === undefined ? {} : { accepted }),
             };
         }
         case 'hang': {
@@ -397,6 +487,18 @@ class ReplayAdapter extends LlmAdapter {
             ? undefined
             : resolveRetryPolicy(configured.retryPolicy, `llm-replay: provider "${provider}" retryPolicy`);
     }
+    imageRequestPricing(provider, model) {
+        const configured = this.providers.get(provider);
+        const visualTokens = configured?.models?.find(candidate => candidate.id === model)?.imageRequestTokens;
+        if (visualTokens === undefined)
+            return undefined;
+        return {
+            priceImages: images => images.map(ref => ({
+                visualTokens,
+                text: requestImageHandleText(ref, { width: ref.width, height: ref.height }),
+            })),
+        };
+    }
     listModels(provider) {
         const configured = this.providers.get(provider);
         /* v8 ignore next -- LlmRuntime only asks about routes registered from this same map. */
@@ -510,6 +612,19 @@ async function* replayEntry(entry, signal, paceMs) {
             return assertNever(entry, 'llm-replay replay entry');
     }
 }
+/** Whether the scripted provider call reached the live adapter's post-2xx commit point. */
+function providerAccepted(entry) {
+    switch (entry.kind) {
+        case 'chunks':
+        case 'hang':
+            return true;
+        case 'throw':
+            return entry.accepted ?? entry.chunks.length > 0;
+        /* v8 ignore next -- override parsing and derived entries close the local union before replay. */
+        default:
+            return assertNever(entry, 'llm-replay acceptance entry');
+    }
+}
 /**
  * Install per-session positional replay. A newly seen live session takes the
  * next ordered recorded script, then advances its own cursor synchronously at
@@ -531,6 +646,7 @@ export function installLlmReplay(ctx, config) {
     // next not-yet-bound script (scripts are in bind order); `nextScript` is the
     // index of the next unclaimed one.
     const bound = new Map();
+    const liveSessionIds = Array.from({ length: scripts.length });
     let nextScript = 0;
     const ANON = '\0anon\0'; // the key for a call that carries no sessionId
     const replay = (options) => {
@@ -547,9 +663,12 @@ export function installLlmReplay(ctx, config) {
                 state = { entries: [], cursor: 0 };
             }
             else {
+                const scriptIndex = nextScript;
                 nextScript++;
                 state = { entries: script.entries, cursor: 0 };
                 bound.set(key, state);
+                if (key !== ANON)
+                    liveSessionIds[scriptIndex] = key;
             }
         }
         const boundState = state;
@@ -566,7 +685,23 @@ export function installLlmReplay(ctx, config) {
                 throw new Error(`llm-replay: script exhausted — session requested model call #${index + 1} `
                     + `but its script has only ${boundState.entries.length}; re-record the scenario`);
             }
-            yield* replayEntry(resolveScriptedEntry(entry, options.messages), options.signal, paceMs);
+            inferStartedSubagents(options.messages, liveSessionIds);
+            const resolved = resolveScriptedEntry(materializeSessionTokens(entry, liveSessionIds), options.messages);
+            if (options.provider === 'deepseek-official' && providerAccepted(resolved)) {
+                const extensions = ctx.get('deepseekLlmApiExtensions');
+                if (extensions !== undefined) {
+                    const signal = options.signal ?? new AbortController().signal;
+                    const prepared = await extensions.prepare({
+                        // Replay reproduces post-2xx side effects, not the provider wire body.
+                        body: { messages: [] },
+                        signal,
+                        ...options.sessionId === undefined ? {} : { sessionId: String(options.sessionId) },
+                        ...options.purpose === undefined ? {} : { purpose: options.purpose },
+                    });
+                    await prepared.accept();
+                }
+            }
+            yield* replayEntry(resolved, options.signal, paceMs);
         })();
     };
     const providers = config.providers ?? [];
@@ -594,16 +729,27 @@ export function installLlmReplay(ctx, config) {
 }
 export const name = 'llm-replay';
 export const inject = ['llm'];
-function validateConfiguredModalities(providers) {
+function validateConfiguredModels(providers) {
     for (const provider of providers ?? []) {
         for (const model of provider.models ?? []) {
             const modalities = model.inputModalities;
-            if (modalities === undefined)
-                continue;
-            if (!Array.isArray(modalities)
-                || !modalities.every((modality) => modality === 'text' || modality === 'image')) {
+            if (modalities !== undefined && (!Array.isArray(modalities)
+                || !modalities.every((modality) => modality === 'text' || modality === 'image'))) {
                 throw new Error(`llm-replay: provider "${provider.id}" model "${model.id}" inputModalities `
                     + 'must be an array containing only "text" and "image"');
+            }
+            const imageRequestTokens = model.imageRequestTokens;
+            if (imageRequestTokens !== undefined
+                && (!Number.isSafeInteger(imageRequestTokens) || imageRequestTokens <= 0)) {
+                throw new Error(`llm-replay: provider "${provider.id}" model "${model.id}" imageRequestTokens `
+                    + 'must be a positive safe integer');
+            }
+            // A text-only route never sends visual tokens: LlmRuntime substitutes
+            // its images with deterministic text before dispatch, so declared
+            // visual pricing would contradict the actual request projection.
+            if (imageRequestTokens !== undefined && model.inputModalities?.includes('image') !== true) {
+                throw new Error(`llm-replay: provider "${provider.id}" model "${model.id}" imageRequestTokens `
+                    + 'requires inputModalities to include "image"');
             }
         }
     }
@@ -613,7 +759,7 @@ export function apply(ctx, config = {}) {
     if (file === undefined || file.length === 0) {
         throw new Error('llm-replay: a fixture path is required (Config.file or $DSH_SNAPSHOT_FILE)');
     }
-    validateConfiguredModalities(config.providers);
+    validateConfiguredModels(config.providers);
     const overrideFile = config.overrideFile ?? process.env.DSH_SNAPSHOT_OVERRIDE;
     const childEnv = process.env.DSH_SNAPSHOT_CHILD_FILES;
     const childFiles = config.childFiles

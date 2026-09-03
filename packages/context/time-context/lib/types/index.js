@@ -150,7 +150,7 @@ export function apply(ctx, config) {
         const selectedTimeZone = browser.kind === 'resolved' ? browser.timeZone : fallbackTimeZone;
         const text = renderText(now, turn, step, previous, formatterFor(selectedTimeZone), selectedTimeZone, browser);
         return {
-            kind: 'enter',
+            ...decision,
             messages: [
                 ...decision.messages,
                 createUserMessage({

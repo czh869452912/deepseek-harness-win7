@@ -1,5 +1,5 @@
 import type { Branded } from '@deepseek-ai/dsh-brand';
-import type { AssistantMessage, CallId, LlmCallConfig, LlmCallConfigAdapterDefaults, LlmFailure, StreamChunk, TokenUsage, ToolResultMessage, ToolSchema, UserMessage } from '@deepseek-ai/dsh-llm';
+import type { AssistantMessage, ToolCallId, LlmCallConfig, LlmCallConfigAdapterDefaults, LlmFailure, StreamChunk, TokenUsage, ToolResultMessage, ToolSchema, UserMessage } from '@deepseek-ai/dsh-llm';
 import type { JsonValue } from './json.ts';
 export type { JsonValue } from './json.ts';
 /** Identifies one session in the store (and its persistence artifacts). */
@@ -25,13 +25,13 @@ export declare function SessionId(id: string): SessionId;
  * wrong read). Only structural changes reach that bar: the header shape, the
  * {@link SessionEvent} envelope, core event semantics, or the surface
  * mechanism (the {@link SurfaceEventType} set and {@link SurfaceOp} variants).
- * Adding an ordinary event type does not bump — the per-event
- * {@link SessionEvent.ignorable} guard covers vocabulary growth instead. When
- * in doubt, bump: a near-identity upgrade step is almost free, a missed bump
- * makes older runtimes read new logs wrong silently. The full mechanism
+ * Adding an ordinary event type does not bump: the generated known-event guard
+ * makes older runtimes refuse logs containing a type they do not understand.
+ * When in doubt, bump: a near-identity upgrade step is almost free, a missed
+ * bump makes older runtimes read new logs wrong silently. The full mechanism
  * (upgrade-step chain, in-memory view conversion, migrate-on-continue) is
- * recorded in the session-log-version-mechanism Agent Note
- * (`.agents/notes/implemented/architecture/2026-08-10-session-log-version-mechanism.md`).
+ * recorded in the fail-closed-session-event-vocabulary Agent Note
+ * (`.agents/notes/implemented/simplification/2026-08-25-fail-closed-session-event-vocabulary.md`).
  */
 export declare const SESSION_FORMAT_VERSION = 0;
 /**
@@ -168,22 +168,6 @@ export interface TurnEndReasonMap {
 /** The union over {@link TurnEndReasonMap} — why a turn ended; plugins extend it by merging variants into the map. */
 export type TurnEndReason = TurnEndReasonMap[keyof TurnEndReasonMap];
 /**
- * One entry in an agent's todo list — the unit of the `todo/write`
- * {@link SessionEventMap} event's whole-list snapshot.
- *
- * Deliberately minimal: a human-readable `content` line and a three-state
- * `status`. No id, priority, or `activeForm` — the list is replaced wholesale
- * on every write (last-write-wins), so entries need no stable identity. The
- * three statuses describe the complete portable lifecycle needed by model and
- * UI consumers.
- */
-export interface TodoItem {
-    /** What this task is — a short imperative line shown in the UI. */
-    content: string;
-    /** Lifecycle state. `in_progress` marks a task being worked now; parallel work may mark several. */
-    status: 'pending' | 'in_progress' | 'completed';
-}
-/**
  * Logged request state outside derived history: call config, system prompt, and
  * tools. The latest full `request/header` snapshot reconstructs it; canonical
  * empty optional fields are absent.
@@ -211,9 +195,11 @@ export interface RequestContext {
  * Why a `request/header` snapshot was appended: `'initial'` — the log's first
  * header (a new conversation); `'resume'` — a loop instance's first request
  * over a log that already has header events (process restart, fork seed);
- * `'change'` — a later request used a different header.
+ * `'change'` — a later request used a different header, with `startsSeries`
+ * preserving a coincident series boundary; `'series'` — an unchanged header
+ * began an explicitly distinct message series or followed a surface replacement.
  */
-export type RequestHeaderReason = 'initial' | 'resume' | 'change';
+export type RequestHeaderReason = 'initial' | 'resume' | 'change' | 'series';
 /**
  * The merge-extensible, append-only source of truth for an agent interaction.
  * Message history is derived from this log. Every event is lossless JSON and
@@ -291,7 +277,7 @@ export interface SessionEventMap {
     'tool/call': {
         turn: number;
         step: number;
-        callId: CallId;
+        callId: ToolCallId;
         name: string;
         arguments: string;
     };
@@ -316,10 +302,6 @@ export interface SessionEventMap {
         };
         meta?: JsonValue;
     };
-    /** Whole-list snapshot; latest write wins on replay. Log-only UI state; never derived history. */
-    'todo/write': {
-        todos: TodoItem[];
-    };
     /**
      * Full header for the next request, appended inside its step before dispatch.
      * It is log-only; the latest snapshot reconstructs the request header.
@@ -327,6 +309,8 @@ export interface SessionEventMap {
     'request/header': {
         header: EpochHeader;
         reason: RequestHeaderReason;
+        /** A changed header also begins a distinct model-message series. */
+        startsSeries?: true;
     };
     /**
      * Route metadata for the next request, logged only when the route or capacity
@@ -430,17 +414,6 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
         /** Unix epoch milliseconds. */
         time: number;
         data: SessionEventMap[K];
-        /**
-         * Marks an event a reader may safely skip when it does not recognize
-         * `type`. Absent means required: a reader meeting an unrecognized type
-         * without this marker MUST refuse to reconstruct the session instead of
-         * silently dropping the event, because an unrecognized required event may
-         * change how the rest of the log is interpreted. A writer sets `true` only
-         * on purely informational records whose loss cannot affect reconstruction;
-         * defaulting to required means a forgotten marker over-refuses (an
-         * inconvenience) rather than silently resuming a gutted session.
-         */
-        ignorable?: true;
     } & (K extends SurfaceEventType ? {
         /**
          * Seq numbers of earlier events that this event cites as sources

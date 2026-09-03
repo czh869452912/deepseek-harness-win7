@@ -1,23 +1,24 @@
 /**
- * Lossless storage packing for `assistant/chunk` delta runs. Providers stream
+ * Lossless row packing for `assistant/chunk` delta runs. Providers stream
  * token-sized deltas, so a log stores hundreds of near-identical event lines
  * whose JSON envelopes dwarf their payloads (~56× measured on a real DeepSeek
  * session). This module packs each run of consecutive same-block delta chunks
  * into ONE storage row — `text-chunks`, `reasoning-chunks`, or
  * `tool-call-chunks` — and expands rows back to the exact original events.
  *
- * Storage rows are a durable-encoding vocabulary, NOT session events: they
- * never enter `Session.events`, have no `SessionEventMap` entry, and use bare
- * (slash-less) type tags so a reader cannot confuse them with the event
- * taxonomy (precedent: the JSONL header line's `session` tag). The encoder
- * whitelists exact shapes — anything it does not fully recognize is stored
- * verbatim, so unknown fields or future chunk variants lose compression, never
- * data. The decoder validates before expanding and fails loud on a malformed
- * row-tagged value instead of silently dropping a whole run.
+ * Packed rows are an encoding vocabulary, NOT session events: they never enter
+ * `Session.events`, have no `SessionEventMap` entry, and use bare (slash-less)
+ * type tags so a reader cannot confuse them with the event taxonomy
+ * (precedent: the JSONL header line's `session` tag). Persistence and bounded
+ * history transport both use the codec. The encoder whitelists exact shapes —
+ * anything it does not fully recognize stays verbatim, so unknown fields or
+ * future chunk variants lose compression, never data. The decoder validates
+ * before expanding and fails loud on a malformed row-tagged value instead of
+ * silently dropping a whole run.
  *
  * @module @deepseek-ai/dsh-session/chunk-rows
  */
-import { CallId } from '@deepseek-ai/dsh-llm';
+import { ToolCallId } from '@deepseek-ai/dsh-llm/brand';
 import type { SessionEvent } from './types.ts';
 /**
  * Fields shared by every packed run: placement, block correlation, and member
@@ -39,7 +40,7 @@ interface TextRunData extends RunDataBase {
 }
 /** Payload of a `tool-call-chunks` row: the run-constant call identity plus each member's raw arguments fragment. */
 interface ToolCallRunData extends RunDataBase {
-    id: CallId;
+    id: ToolCallId;
     /** Present iff every member carried it, with one uniform value (a mixed run never packs). */
     name?: string;
     args: string[];
@@ -67,6 +68,18 @@ export type ChunkRow = {
 };
 /** One durable log line's JSON value: a session event verbatim, or a packed chunk row. */
 export type StorageRecord = SessionEvent | ChunkRow;
+/**
+ * Test whether an encoded record is a packed chunk row rather than a Session event.
+ * @param record - one persistence or bounded-history encoding record.
+ * @returns Whether the record is a packed chunk row.
+ */
+export declare function isChunkRow(record: StorageRecord): record is ChunkRow;
+/**
+ * Number of logical Session events represented by one packed row.
+ * @param row - validated or encoder-produced packed row.
+ * @returns Count of consecutive chunk events in the row.
+ */
+export declare function chunkRowLength(row: ChunkRow): number;
 /**
  * Pack an event batch for storage: each run of at least {@link MIN_RUN}
  * consecutive whitelisted same-kind, same-block delta chunk events becomes one

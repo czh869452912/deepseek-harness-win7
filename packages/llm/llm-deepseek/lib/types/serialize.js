@@ -1,12 +1,11 @@
 /**
  * Serialize harness messages into DeepSeek chat completions. Text-only
  * requests retain string user content; the image path resolves durable
- * attachments into ordered data-URL parts. Tool-result images follow their
+ * attachments into ordered file-id or inline parts. Tool-result images follow their
  * string-only tool messages in a separate user message.
  * @module dsh-llm-deepseek/serialize
  */
-import { contentHasImage, LlmError, offloadRequestImages } from '@deepseek-ai/dsh-llm';
-import { AttachmentError } from '@deepseek-ai/dsh-attachment';
+import { contentHasImage, LlmError, offloadedImageText, offloadRequestImagesWithPolicy, requestImageHandleText } from '@deepseek-ai/dsh-llm';
 const TOOL_RESULT_IMAGE_TEXT = 'Attached image(s) from tool result:';
 /** Validate the adapter-owned effort before resolving its DeepSeek wire fields. */
 function reasoningEffort(effort) {
@@ -53,26 +52,29 @@ function assertSupportedImageRoles(messages) {
         }
     }
 }
-/** Resolve one durable image into its transient DeepSeek data-URL part. */
-async function imagePart(block, attachments, signal) {
-    try {
-        const stored = await attachments.readImage(block.attachment, signal);
-        return {
+/** Describe the exact request preview and its model-callable coordinate system. */
+function imageHandle(ref, version, resolveAccess, precededByContent) {
+    return {
+        type: 'text',
+        text: `${precededByContent ? '\n' : ''}${requestImageHandleText(ref, version, resolveAccess?.(ref))}`,
+    };
+}
+/** Resolve one durable image into its descriptor and transient DeepSeek image part. */
+async function imageParts(block, images, location, precededByContent) {
+    const version = images.requestImages.get(block.attachment.attachmentId);
+    if (version === undefined) {
+        throw new LlmError(`DeepSeek request image ${block.attachment.attachmentId} was not prepared.`, 'INVALID_REQUEST');
+    }
+    const image = images.representation.kind === 'file'
+        ? { type: 'file', file_id: await images.representation.resolveFileId(version, block, location) }
+        : {
             type: 'image_url',
-            image_url: {
-                url: `data:${stored.ref.mediaType};base64,${Buffer.from(stored.data).toString('base64')}`,
-            },
+            image_url: { url: `data:${version.mediaType};base64,${Buffer.from(version.data).toString('base64')}` },
         };
-    }
-    catch (error) {
-        if (error instanceof AttachmentError) {
-            throw new LlmError(error.message, error.code, { cause: error });
-        }
-        throw error;
-    }
+    return [imageHandle(block.attachment, version, images.resolveImageAccess, precededByContent), image];
 }
 /** Convert user or nested tool-result blocks into ordered wire parts. */
-async function contentParts(blocks, attachments, signal) {
+async function contentParts(blocks, images, message, nextImage) {
     const parts = [];
     for (const block of blocks) {
         switch (block.type) {
@@ -81,10 +83,11 @@ async function contentParts(blocks, attachments, signal) {
                     parts.push({ type: 'text', text: block.text });
                 break;
             case 'image':
-                parts.push(await imagePart(block, attachments, signal));
+                nextImage.value += 1;
+                parts.push(...await imageParts(block, images, { message, image: nextImage.value }, parts.length > 0));
                 break;
             case 'tool-result':
-                parts.push(...await contentParts(block.content, attachments, signal));
+                parts.push(...await contentParts(block.content, images, message, nextImage));
                 break;
             default:
                 // Other merge-extensible blocks are not DeepSeek user-input vocabulary.
@@ -97,7 +100,7 @@ async function contentParts(blocks, attachments, signal) {
 function userContent(parts) {
     const text = [];
     for (const part of parts) {
-        if (part.type === 'image_url')
+        if (part.type !== 'text')
             return [...parts];
         text.push(part.text);
     }
@@ -180,11 +183,10 @@ export function serializeMessages(messages) {
  * Consecutive tool results keep string `tool` messages and share one following
  * user message containing their images.
  * @param messages - transient request history after request-size offloading.
- * @param attachments - durable image resolver.
- * @param signal - cancellation for attachment reads.
+ * @param images - prepared request versions, one provider representation, and its budget.
  * @returns ordered DeepSeek wire messages.
  */
-export async function serializeMessagesWithImages(messages, attachments, signal) {
+export async function serializeMessagesWithImages(messages, images) {
     assertSupportedImageRoles(messages);
     const wire = [];
     let pendingToolImages = [];
@@ -197,7 +199,8 @@ export async function serializeMessagesWithImages(messages, attachments, signal)
         });
         pendingToolImages = [];
     };
-    for (const message of messages) {
+    for (const [messageIndex, message] of messages.entries()) {
+        const nextImage = { value: 0 };
         if (message.role === 'system') {
             flushToolImages();
             wire.push({ role: 'system', content: flattenText(message.content) });
@@ -210,7 +213,7 @@ export async function serializeMessagesWithImages(messages, attachments, signal)
         }
         const regular = message.content.filter(block => block.type !== 'tool-result');
         const toolResults = message.content.filter((block) => (block.type === 'tool-result'));
-        const content = userContent(await contentParts(regular, attachments, signal));
+        const content = userContent(await contentParts(regular, images, messageIndex + 1, nextImage));
         if (content.length > 0 || toolResults.length === 0) {
             flushToolImages();
             wire.push({
@@ -219,15 +222,15 @@ export async function serializeMessagesWithImages(messages, attachments, signal)
             });
         }
         for (const result of toolResults) {
-            const parts = await contentParts(result.content, attachments, signal);
-            const images = parts.filter((part) => part.type === 'image_url');
+            const parts = await contentParts(result.content, images, messageIndex + 1, nextImage);
+            const imageParts = parts.filter((part) => part.type !== 'text');
             const text = parts.filter(part => part.type === 'text').map(part => part.text).join('');
             wire.push({
                 role: 'tool',
                 tool_call_id: result.toolCallId,
-                content: text || (images.length > 0 ? '(see attached image)' : '(no output)'),
+                content: text || '(no output)',
             });
-            pendingToolImages.push(...images);
+            pendingToolImages.push(...imageParts);
         }
     }
     flushToolImages();
@@ -277,21 +280,35 @@ export function serializeRequest(options, defaults = {}) {
 }
 /**
  * Build one image-capable request while keeping durable bytes out of session
- * messages. Oversized oldest images become deterministic text before any
- * attachment read.
+ * messages. Oversized oldest images become per-image text after their
+ * exact request-version byte lengths are known and before provider serialization.
  * @param options - harness request containing image-capable user content.
- * @param images - attachment resolver, request bound, and cancellation.
+ * @param images - request versions, optional current access resolver, and request bounds.
  * @param defaults - adapter-level thinking defaults.
  * @returns the fully materialized DeepSeek request body.
  */
 export async function serializeRequestWithImages(options, images, defaults = {}) {
     assertSupportedImageRoles(options.messages);
-    const requestMessages = offloadRequestImages(options.messages, images.maxRequestImageBytes);
+    const requestMessages = offloadRequestImagesWithPolicy(options.messages, {
+        representation: images.representation.kind === 'file' ? 'raw' : 'base64',
+        byteLength: (ref) => {
+            const version = images.requestImages.get(ref.attachmentId);
+            if (version === undefined) {
+                throw new LlmError(`DeepSeek request image ${ref.attachmentId} was not prepared.`, 'INVALID_REQUEST');
+            }
+            return version.bytes;
+        },
+        maxBytes: images.maxRequestImageBytes,
+        ...images.maxImagesPerRequest === undefined ? {} : { maxImages: images.maxImagesPerRequest },
+        ...images.byteQuantum === undefined ? {} : { byteQuantum: images.byteQuantum },
+        ...images.countQuantum === undefined ? {} : { countQuantum: images.countQuantum },
+        placeholder: ref => offloadedImageText(ref, images.resolveImageAccess?.(ref)),
+    });
     const messages = [];
     if (options.system !== undefined) {
         messages.push({ role: 'system', content: options.system });
     }
-    messages.push(...await serializeMessagesWithImages(requestMessages, images.attachments, images.signal));
+    messages.push(...await serializeMessagesWithImages(requestMessages, images));
     return requestWithMessages(options, messages, defaults);
 }
 //# sourceMappingURL=serialize.js.map

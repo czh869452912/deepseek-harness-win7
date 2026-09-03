@@ -11,6 +11,7 @@ import z from '@deepseek-ai/schemastery';
 import { isAbsolute, resolve as resolvePath } from 'node:path';
 import { defineTool, TOOL_ABORTED } from '@deepseek-ai/dsh-tools';
 import { HarnessError } from '@deepseek-ai/dsh-llm';
+import { FIRST_PARTY_SECTION_ORDER } from '@deepseek-ai/dsh-system-prompt';
 import { ESCALATION_TARGETS, approveEscalation, canonicalPath, validateEscalationArgs } from '@deepseek-ai/dsh-sandbox';
 import { DSH_ENV_PREFIX } from '@deepseek-ai/dsh-shell';
 import { processOutcome } from "./background.js";
@@ -178,7 +179,7 @@ export function apply(ctx, config = {}) {
     // Cross-call guidance belongs in the prompt rather than one-call schema prose.
     ctx.systemPrompt.section({
         name: 'tool:bash',
-        order: 105,
+        order: FIRST_PARTY_SECTION_ORDER.TOOL_BASH,
         text: 'Check the [exit code: N] marker on every bash result; investigate failures before moving on.',
     });
     ctx.tools.register(defineTool({

@@ -137,18 +137,17 @@ export function ModelListEditor(props) {
         setBusy(true);
         setFailure(undefined);
         try {
-            const response = await api.llm.discoverModels({
-                settingsNs: probe.settingsNs,
+            const response = await api.llm.discoverModels(probe.settingsNs, {
                 ...probe.provider === undefined ? {} : { provider: probe.provider },
                 ...probe.baseURL === undefined || probe.baseURL.length === 0 ? {} : { baseURL: probe.baseURL },
                 ...probe.api === undefined ? {} : { api: probe.api },
                 ...probe.apiKey === undefined ? {} : { apiKey: probe.apiKey },
             });
-            if (!response.result.ok) {
-                setFailure(response.result.error.message);
+            if (!response.ok) {
+                setFailure(response.error.message);
                 return;
             }
-            const found = response.result.value.models;
+            const found = response.value;
             if (found.length === 0) {
                 setFailure(t('fetchEmpty'));
                 return;

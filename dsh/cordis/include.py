@@ -6,6 +6,7 @@ writeQueue atomic persistence with Win7 retry logic, and ConfigFileError.
 
 import asyncio
 import copy
+import inspect
 import json
 import os
 import sys
@@ -51,7 +52,7 @@ class Include(EntryTree, Service):
     def __init__(self, ctx: Context, config: Optional[Dict[str, Any]] = None):
         cfg = config or {}
         self.config: Dict[str, Any] = dict(cfg)
-        Service.__init__(self, ctx, name="include")
+        Service.__init__(self, ctx, name="include", allow_replace=True)
         EntryTree.__init__(self, ctx)
 
         parent_tree = None
@@ -80,24 +81,26 @@ class Include(EntryTree, Service):
         self.pending_write: Optional[List[Dict[str, Any]]] = None
         self._write_task: Optional[asyncio.TimerHandle] = None
 
-        def _on_update(new_config: Any, no_save: bool = False, next_fn: Callable[[], Any] = None) -> Any:
+        async def _on_update(new_config: Any, *args: Any, **kwargs: Any) -> Any:
+            next_fn = args[-1] if args and callable(args[-1]) else kwargs.get("next_fn")
             if isinstance(new_config, dict) and new_config.get("path") != self.config.get("path"):
-                return next_fn() if next_fn and callable(next_fn) else None
+                if next_fn and callable(next_fn):
+                    res = next_fn()
+                    if inspect.isawaitable(res):
+                        return await res
+                    return res
+                return None
 
-            async def _do_update():
-                async with self._apply_lock:
-                    if self.data is not None:
-                        patches = new_config.get("patches") if isinstance(new_config, dict) else None
-                        patched_data = self.apply_patches(self.data, patches)
-                        self.root.update(patched_data)
-                        self.config = dict(new_config)
-
-            try:
-                loop = asyncio.get_running_loop()
-                loop.create_task(_do_update())
-            except RuntimeError:
-                pass
-            return next_fn() if next_fn and callable(next_fn) else None
+            async with self._apply_lock:
+                if self.data is not None:
+                    patches = new_config.get("patches") if isinstance(new_config, dict) else None
+                    patched_data = self.apply_patches(self.data, patches)
+                    res = self.root.update(patched_data)
+                    if inspect.isawaitable(res):
+                        await res
+                    self.config = dict(new_config)
+            # Short-circuit waterfall matching TS behavior
+            return None
 
         ctx.on("internal/update", _on_update, global_listener=True)
 
@@ -110,8 +113,13 @@ class Include(EntryTree, Service):
 
         return apply_entry_patches(data, patches, warn=_warn)
 
-    async def read(self, forced: bool = False) -> Optional[Dict[str, Any]]:
-        """Read and parse the backing config file with stage-specific error classification."""
+    def check_access(self) -> None:
+        if not self.type:
+            return
+        if os.path.exists(self.filename) and not os.access(self.filename, os.W_OK):
+            self.readonly = True
+
+    def _read_file(self, forced: bool = False) -> Optional[Dict[str, Any]]:
         try:
             with open(self.filename, "r", encoding="utf-8") as f:
                 content = f.read()
@@ -134,6 +142,10 @@ class Include(EntryTree, Service):
 
         return {"content": content, "data": data}
 
+    async def read(self, forced: bool = False) -> Optional[Dict[str, Any]]:
+        """Read and parse the backing config file with stage-specific error classification."""
+        return self._read_file(forced=forced)
+
     def init(self) -> Any:
         """
         Service.init lifecycle hook matching TS async* [Service.init]().
@@ -141,28 +153,23 @@ class Include(EntryTree, Service):
         """
         candidate = None
         try:
-            try:
-                with open(self.filename, "r", encoding="utf-8") as f:
-                    raw_content = f.read()
-                if self.type == "application/yaml":
-                    raw_data = yaml.safe_load(raw_content)
-                else:
-                    raw_data = json.loads(raw_content)
-                if isinstance(raw_data, list):
-                    candidate = {"content": raw_content, "data": raw_data}
-            except FileNotFoundError:
+            candidate = self._read_file(forced=True)
+        except ConfigFileError as error:
+            if error.stage == "read" and isinstance(error.cause, FileNotFoundError):
                 if "initial" in self.config and isinstance(self.config["initial"], list):
                     self._write_file_sync(self.config["initial"])
-                    with open(self.filename, "r", encoding="utf-8") as f:
-                        raw_content = f.read()
-                    raw_data = yaml.safe_load(raw_content) if self.type == "application/yaml" else json.loads(raw_content)
-                    candidate = {"content": raw_content, "data": raw_data}
+                    candidate = self._read_file(forced=True)
                 else:
                     raise ConfigFileError("read", self.filename, FileNotFoundError(f"config file not found: {self.filename}"))
-        except Exception as e:
-            if not isinstance(e, ConfigFileError):
-                raise ConfigFileError("read", self.filename, e)
-            raise e
+            else:
+                raise error
+
+        if candidate:
+            patched = self.apply_patches(candidate["data"], self.config.get("patches"))
+            self.root.update(patched)
+            self.content = candidate["content"]
+            self.data = candidate["data"]
+            self.check_access()
 
         # Register teardown disposer
         def _teardown():
@@ -173,12 +180,6 @@ class Include(EntryTree, Service):
                 asyncio.run(self.stop())
 
         yield _teardown
-
-        if candidate:
-            patched = self.apply_patches(candidate["data"], self.config.get("patches"))
-            self.root.update(patched)
-            self.content = candidate["content"]
-            self.data = candidate["data"]
 
     async def stop(self) -> None:
         """Stop child entries and flush pending writes."""
@@ -195,15 +196,18 @@ class Include(EntryTree, Service):
             self.root.update(patched)
             self.content = candidate["content"]
             self.data = candidate["data"]
+            self.check_access()
 
     def _write_file_sync(self, config_data: List[Dict[str, Any]]) -> None:
-        """Synchronously write config data with sorted keys."""
-        sorted_data = [sort_keys(dict(opt)) for opt in config_data]
+        """Synchronously write config data."""
+        if self.readonly:
+            raise PermissionError(f"cannot overwrite readonly config: {self.filename}")
+
         tmp_filename = self.filename + ".tmp"
         if self.type == "application/yaml":
-            self.content = yaml.safe_dump(sorted_data, sort_keys=False, allow_unicode=True)
+            self.content = yaml.safe_dump(config_data, sort_keys=False, allow_unicode=True)
         else:
-            self.content = json.dumps(sorted_data, indent=2, ensure_ascii=False)
+            self.content = json.dumps(config_data, indent=2, ensure_ascii=False)
 
         with open(tmp_filename, "w", encoding="utf-8") as f:
             f.write(self.content)
@@ -222,12 +226,14 @@ class Include(EntryTree, Service):
 
     async def _write_file_async(self, config_data: List[Dict[str, Any]]) -> None:
         """Asynchronously write config data with retry on Win7 lock contention."""
-        sorted_data = [sort_keys(dict(opt)) for opt in config_data]
+        if self.readonly:
+            raise PermissionError(f"cannot overwrite readonly config: {self.filename}")
+
         tmp_filename = self.filename + ".tmp"
         if self.type == "application/yaml":
-            self.content = yaml.safe_dump(sorted_data, sort_keys=False, allow_unicode=True)
+            self.content = yaml.safe_dump(config_data, sort_keys=False, allow_unicode=True)
         else:
-            self.content = json.dumps(sorted_data, indent=2, ensure_ascii=False)
+            self.content = json.dumps(config_data, indent=2, ensure_ascii=False)
 
         with open(tmp_filename, "w", encoding="utf-8") as f:
             f.write(self.content)
@@ -273,3 +279,6 @@ class Include(EntryTree, Service):
                     self.ctx.logger("include").warn("Failed to write config file %s: %s", self.filename, e)
                 else:
                     sys.stderr.write(f"[Cordis Include Error] Failed to write {self.filename}: {e}\n")
+
+
+IncludeService = Include

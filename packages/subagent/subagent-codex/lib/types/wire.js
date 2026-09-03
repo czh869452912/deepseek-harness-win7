@@ -1,5 +1,5 @@
 /**
- * Minimal Codex app-server 0.147.0 protocol adapter. The shared JSON-RPC
+ * Minimal Codex app-server 0.149.1 protocol adapter. The shared JSON-RPC
  * transport owns framing and request correlation; this module owns only the
  * product methods, current thread/turn association, unattended approval
  * responses, and terminal-answer selection.
@@ -19,30 +19,6 @@ const THREAD_PERMISSION_PARAMS = {
         sandbox: 'danger-full-access',
     },
 };
-const STDERR_PERMISSION_SIGNATURES = [
-    {
-        text: 'approval policy is Never; reject command',
-        request: 'command execution',
-        decision: 'denied',
-        reason: 'Codex rejected an escalation because the selected policy never asks for approval',
-    },
-    {
-        text: 'recorded sandbox violation:',
-        request: 'sandbox execution',
-        decision: 'failed',
-        reason: 'Codex reported a sandbox violation',
-    },
-];
-const STDERR_SIGNATURE_TAIL_CHARS = Math.max(...STDERR_PERMISSION_SIGNATURES.map(signature => signature.text.length)) - 1;
-function stderrSignatureTail(value) {
-    for (let length = Math.min(STDERR_SIGNATURE_TAIL_CHARS, value.length); length > 0; length -= 1) {
-        const tail = value.slice(-length);
-        if (STDERR_PERMISSION_SIGNATURES.some(signature => tail.length < signature.text.length && signature.text.startsWith(tail))) {
-            return tail;
-        }
-    }
-    return '';
-}
 function object(value, label) {
     if (value === null || typeof value !== 'object' || Array.isArray(value)) {
         throw new Error(`subagent-codex: app-server returned invalid ${label}`);
@@ -94,11 +70,11 @@ function objectFailureInfo(value) {
             {
                 const httpStatus = numericHttpStatus(fields.httpStatusCode);
                 return httpStatus === undefined
-                    ? { category }
-                    : { category, httpStatus };
+                    ? { category: 'transport' }
+                    : { category: 'transport', httpStatus };
             }
         case 'activeTurnNotSteerable':
-            return { category };
+            return { category: 'product-error' };
         default:
             return { category: 'unknown' };
     }
@@ -114,17 +90,23 @@ function failureInfo(turn) {
     if (typeof info === 'string') {
         switch (info) {
             case 'contextWindowExceeded':
+                return { category: 'limit', maxTokens: true };
             case 'sessionBudgetExceeded':
             case 'usageLimitExceeded':
+                return { category: 'limit' };
             case 'serverOverloaded':
-            case 'cyberPolicy':
             case 'internalServerError':
+                return { category: 'service' };
+            case 'cyberPolicy':
+            case 'misalignmentPolicyViolation':
             case 'unauthorized':
+                return { category: 'access-policy' };
             case 'badRequest':
             case 'threadRollbackFailed':
-            case 'sandboxError':
             case 'other':
-                return { category: info };
+                return { category: 'product-error' };
+            case 'sandboxError':
+                return { category: 'access-policy', sandboxFailure: true };
             default:
                 return { category: 'unknown' };
         }
@@ -170,6 +152,7 @@ async function raceAbort(pending, signal) {
 export class CodexAppServerWire {
     input;
     permissionMode;
+    model;
     transport;
     fatal = Promise.withResolvers();
     threadId;
@@ -184,13 +167,13 @@ export class CodexAppServerWire {
     diagnosticOrder = 0;
     observationOrder = 0;
     pendingDiagnostic;
-    stderrTail = '';
     inputEnded = false;
     terminalObserved = false;
     closed = false;
-    constructor(input, output, permissionMode) {
+    constructor(input, output, permissionMode, model) {
         this.input = input;
         this.permissionMode = permissionMode;
+        this.model = model;
         this.transport = new JsonRpcLineTransport(input, output);
         // Fatal protocol state can arrive after the current guarded operation has
         // already settled. Keep the shared rejection observed without inserting
@@ -251,6 +234,7 @@ export class CodexAppServerWire {
         const response = object(await this.guarded(this.transport.request('thread/start', {
             cwd,
             ephemeral: true,
+            ...this.model === undefined ? {} : { model: this.model },
             ...THREAD_PERMISSION_PARAMS[this.permissionMode],
         }, signal), signal), 'thread/start response');
         const thread = object(response.thread, 'thread/start thread');
@@ -303,10 +287,10 @@ export class CodexAppServerWire {
                     category: parsed.category,
                     httpStatus: parsed.httpStatus,
                 });
-            if (parsed.category === 'sandboxError') {
+            if (parsed.sandboxFailure) {
                 this.recordDiagnostic('sandbox execution', 'failed', 'Codex reported a sandbox failure', completed.order);
             }
-            if (parsed.category === 'contextWindowExceeded') {
+            if (parsed.maxTokens) {
                 return { output: this.collectOutput(), stopReason: 'max-tokens' };
             }
             const detail = status === 'failed' ? `: ${parsed.category}` : '';
@@ -314,7 +298,7 @@ export class CodexAppServerWire {
         }
         const output = this.collectOutput();
         if (output.length === 0) {
-            this.recordFailure({ stage: 'turn', category: 'unknown' });
+            this.recordFailure({ stage: 'turn', category: 'invalid-result' });
             throw new Error('subagent-codex: Codex completed without a final answer');
         }
         return { output, stopReason: 'completed' };
@@ -355,27 +339,6 @@ export class CodexAppServerWire {
      */
     collectFailure() {
         return this.failure;
-    }
-    /**
-     * Observe product stderr while retaining only enough tail to recognize fixed
-     * permission signatures. The raw text is never copied into the diagnostic.
-     * @param chunk - one decoded stderr chunk already forwarded to the host.
-     */
-    observeStderr(chunk) {
-        const observed = `${this.stderrTail}${chunk}`;
-        let latestIndex = -1;
-        let latest;
-        for (const signature of STDERR_PERMISSION_SIGNATURES) {
-            const index = observed.lastIndexOf(signature.text);
-            if (index > latestIndex) {
-                latestIndex = index;
-                latest = signature;
-            }
-        }
-        if (latest !== undefined) {
-            this.recordDiagnostic(latest.request, latest.decision, latest.reason);
-        }
-        this.stderrTail = stderrSignatureTail(observed);
     }
     /** Detach JSON-RPC listeners and reject outstanding requests. Idempotent. */
     close() {

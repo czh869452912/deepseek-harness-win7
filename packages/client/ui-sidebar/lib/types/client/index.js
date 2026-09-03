@@ -3,16 +3,17 @@ import { en, zh } from "./locales.js";
 /** Dictionary namespace owned by this plugin (shell controls copy). */
 const NS = 'sidebar';
 /** Services required by the sidebar plugin. */
-export const inject = ['slots', 'layout', 'sessions', 'workspaces', 'locale'];
+export const inject = ['slots', 'layout', 'uiWorkspace', 'locale'];
 /** Registers the sidebar shell and its service callbacks.
  * @param ctx - Client root context.
  */
 export function apply(ctx) {
+    const workspaceNavigation = ctx.get('uiWorkspace');
     ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-sidebar: dictionaries');
     const injectProps = () => ({
-        // The shell's New Session button rides the runtime's shared action
+        // The shell's New Session button rides the Workspace UI's shared action
         // (current Session Workspace, then recent Workspace).
-        startSession: (workspaceId) => { ctx.workspaces.startSession(workspaceId); },
+        startSession: (workspaceId) => { workspaceNavigation.startSession(workspaceId); },
         toggleSidebar: () => { ctx.layout.toggleSidebar(); },
     });
     ctx.effect(() => ctx.slots.register({

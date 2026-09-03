@@ -1,5 +1,5 @@
 /**
- * Schema-17 physical chunk-row codec. This package owns the durable tags,
+ * Schema-19 physical chunk-row codec. This package owns the durable tags,
  * validation, and row-size limits independently from other persistence formats.
  * @module @deepseek-ai/dsh-session-persistence-sqlite/codec
  */
@@ -140,7 +140,7 @@ function emitBoundedRun(out, kind, completeRun) {
     out.push(...completeRun.slice(offset));
 }
 /**
- * Pack eligible logical chunk runs into bounded schema-17 records.
+ * Pack eligible logical chunk runs into bounded schema-19 records.
  * @param events - logical events in sequence order.
  * @returns scalar and packed physical records in equivalent order.
  */
@@ -272,7 +272,7 @@ function expandRow(row) {
     return events;
 }
 /**
- * Decode one scalar or packed schema-17 record.
+ * Decode one scalar or packed schema-19 record.
  * @param value - parsed physical-record value.
  * @returns the represented logical events.
  */

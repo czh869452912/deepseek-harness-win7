@@ -2,6 +2,7 @@ import z from "@deepseek-ai/schemastery";
 import { isAbsolute, resolve } from "node:path";
 import { TOOL_ABORTED, defineTool } from "@deepseek-ai/dsh-tools";
 import { HarnessError } from "@deepseek-ai/dsh-llm";
+import { FIRST_PARTY_SECTION_ORDER } from "@deepseek-ai/dsh-system-prompt";
 import { ESCALATION_TARGETS, approveEscalation, canonicalPath, escalationHintMarker, sandboxDenialMarker, validateEscalationArgs } from "@deepseek-ai/dsh-sandbox";
 import { DSH_ENV_PREFIX, parseExitStatus } from "@deepseek-ai/dsh-shell";
 //#region lib/types/background.js
@@ -253,7 +254,7 @@ function apply(ctx, config = {}) {
 	};
 	ctx.systemPrompt.section({
 		name: "tool:bash",
-		order: 105,
+		order: FIRST_PARTY_SECTION_ORDER.TOOL_BASH,
 		text: "Check the [exit code: N] marker on every bash result; investigate failures before moving on."
 	});
 	ctx.tools.register(defineTool({

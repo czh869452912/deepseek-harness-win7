@@ -1,5 +1,5 @@
 /** Official DeepSeek Harness occupants for the generic browser-brand slots. */
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client';
+import type { Context as ClientContext } from '@deepseek-ai/cordis';
 /** Required service: the UI slot registry. */
 export declare const inject: string[];
 /**

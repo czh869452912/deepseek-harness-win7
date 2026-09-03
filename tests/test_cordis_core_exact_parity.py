@@ -59,7 +59,7 @@ async def test_reflect_internal_set_waterfall_signature_1to1():
             super().__init__(ctx, 'cfg')
             self.data = 'initial'
 
-    ctx.plugin(ConfigService)
+    ConfigService(ctx)
 
     set_log = []
 

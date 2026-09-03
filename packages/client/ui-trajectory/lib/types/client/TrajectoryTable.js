@@ -7,6 +7,7 @@ import { structuredPatch } from 'diff';
 import { formatElapsedSeconds, trajectoryRecordId } from "./trajectory-record.js";
 import { groupTrajectoryVirtualRows, trajectoryVirtualRecordKey, } from "./trajectory-virtual-rows.js";
 import { trajectoryPreviewText } from "./trajectory-preview.js";
+import { COMPACTION_INTERRUPTED_ERROR } from "./copy-codes.js";
 import css from './TrajectoryTable.module.css';
 const BOTTOM_FOLLOW_THRESHOLD_PX = 2;
 const OLDER_LOAD_THRESHOLD_PX = 48;
@@ -14,14 +15,14 @@ const HISTORY_LOAD_ROW_HEIGHT_PX = 30;
 const VIRTUALIZATION_THRESHOLD = 100;
 const VIRTUAL_OVERSCAN_ROWS = 12;
 const VIRTUAL_INITIAL_VIEWPORT_HEIGHT_PX = 600;
-const KIND_LABEL = {
-    system: 'SYSTEM',
-    user: 'USER',
-    context: 'CONTEXT',
-    compacted: 'COMPACTED',
-    message: 'ASSISTANT',
-    tool: 'TOOL',
-    subtool: 'SUBTOOL',
+const KIND_LABEL_KEY = {
+    system: 'kind.system',
+    user: 'kind.user',
+    context: 'kind.context',
+    compacted: 'kind.compacted',
+    message: 'kind.assistant',
+    tool: 'kind.tool',
+    subtool: 'kind.subtool',
 };
 function ToolWrenchIcon() {
     return (_jsx("svg", { width: "13", height: "13", viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round", "data-role-icon": "wrench", "aria-hidden": "true", children: _jsx("path", { d: "M14 3.3a3.8 3.8 0 0 1-4.8 4.8l-5.1 5.1a1.6 1.6 0 1 1-2.3-2.3l5.1-5.1A3.8 3.8 0 0 1 11.7 1l-2.3 2.3 2.3 2.3L14 3.3Z" }) }));
@@ -65,19 +66,39 @@ const TOOL_REQUEST_MAX_WIDTH = 480;
 const DEFAULT_TOOL_REQUEST_SHARE = 0.36;
 const DEFAULT_TOOL_REQUEST_OFFSET = 56;
 const SYSTEM_PROMPT_TABS = [
-    { id: 'system-prompt', label: 'System Prompt' },
-    { id: 'tools', label: 'Tools' },
+    { id: 'system-prompt', labelKey: 'tab.systemPrompt' },
+    { id: 'tools', labelKey: 'tab.tools' },
 ];
 const SYSTEM_UPDATE_TABS = [
-    { id: 'diff', label: 'Diff' },
+    { id: 'diff', labelKey: 'tab.diff' },
     ...SYSTEM_PROMPT_TABS,
 ];
 const REQUEST_TABS = [
-    { id: 'overview', label: 'Summary' },
-    { id: 'options', label: 'Options' },
-    { id: 'usage', label: 'Usage' },
-    { id: 'timing', label: 'Timing' },
+    { id: 'overview', labelKey: 'tab.summary' },
+    { id: 'options', labelKey: 'tab.options' },
+    { id: 'usage', labelKey: 'tab.usage' },
+    { id: 'timing', labelKey: 'tab.timing' },
 ];
+function jsonTreeLabels(t) {
+    return {
+        copyValue: t('copy.value'),
+        copyJson: t('copy.json'),
+        copyPath: t('copy.path'),
+        copyPrettyJson: t('copy.prettyJson'),
+        copyCompactJson: t('copy.compactJson'),
+        copied: t('copied'),
+        copyFailed: t('copy.failed'),
+        collapseNode: t('json.collapseNode'),
+        expandNode: t('json.expandNode'),
+        copyButtonTitle: action => t('copy.optionsHint', { action }),
+    };
+}
+function markdownLabels(t) {
+    return {
+        code: { copyLabel: t('copy'), copiedLabel: t('copied') },
+        footnotes: t('markdown.footnotes'),
+    };
+}
 function clampDetailsWidth(width, splitWidth) {
     const maxWidth = Math.max(DETAILS_MIN_WIDTH, Math.min(DETAILS_MAX_WIDTH, splitWidth - TABLE_MIN_WIDTH));
     return Math.round(Math.min(Math.max(width, DETAILS_MIN_WIDTH), maxWidth));
@@ -85,14 +106,16 @@ function clampDetailsWidth(width, splitWidth) {
 function defaultToolRequestWidth(splitWidth) {
     return Math.min(Math.max(splitWidth * DEFAULT_TOOL_REQUEST_SHARE - DEFAULT_TOOL_REQUEST_OFFSET, TOOL_REQUEST_MIN_WIDTH), TOOL_REQUEST_MAX_WIDTH);
 }
-function formatDurationMs(milliseconds) {
+function formatDurationMs(milliseconds, t) {
     if (milliseconds < 1_000)
-        return `${Math.round(milliseconds)} ms`;
-    return `${(milliseconds / 1_000).toFixed(milliseconds < 10_000 ? 2 : 1)} s`;
+        return t('unit.milliseconds', { value: Math.round(milliseconds) });
+    return t('unit.seconds', {
+        value: (milliseconds / 1_000).toFixed(milliseconds < 10_000 ? 2 : 1),
+    });
 }
-function formatStartedAt(timestamp) {
+function formatStartedAt(timestamp, t) {
     if (timestamp === null || !Number.isFinite(timestamp))
-        return 'Not available';
+        return t('timing.notAvailable');
     const date = new Date(timestamp);
     const two = (value) => String(value).padStart(2, '0');
     const three = (value) => String(value).padStart(3, '0');
@@ -108,57 +131,59 @@ function clickSelectsText(target) {
         && selection.rangeCount > 0
         && selection.getRangeAt(0).intersectsNode(target);
 }
-function StartedAtValue({ timestamp }) {
+function StartedAtValue({ timestamp, t }) {
     const [showUnix, setShowUnix] = useState(false);
     if (timestamp === null || !Number.isFinite(timestamp))
-        return _jsx("dd", { children: "Not available" });
-    return (_jsx("dd", { children: _jsx("button", { type: "button", className: css.timestampToggle, title: showUnix ? 'Show local time' : 'Show Unix timestamp', onClick: (event) => {
+        return _jsx("dd", { children: t('timing.notAvailable') });
+    return (_jsx("dd", { children: _jsx("button", { type: "button", className: css.timestampToggle, title: showUnix ? t('timing.showLocalTime') : t('timing.showUnixTimestamp'), onClick: (event) => {
                 if (clickSelectsText(event.currentTarget))
                     return;
                 setShowUnix(current => !current);
-            }, children: showUnix ? (timestamp / 1_000).toFixed(3) : formatStartedAt(timestamp) }) }));
+            }, children: showUnix ? (timestamp / 1_000).toFixed(3) : formatStartedAt(timestamp, t) }) }));
 }
-function totalTime(metrics) {
+function totalTime(metrics, t) {
     if (!metrics.timingRecorded)
-        return 'Not recorded';
+        return t('timing.notRecorded');
     if (metrics.stepStartTime === null)
-        return 'Step start unavailable';
+        return t('timing.stepStartUnavailable');
     if (metrics.completedTime === null)
-        return 'Pending';
-    return formatDurationMs(Math.max(0, metrics.completedTime - metrics.stepStartTime));
+        return t('status.pending');
+    return formatDurationMs(Math.max(0, metrics.completedTime - metrics.stepStartTime), t);
 }
-function ttft(metrics) {
+function ttft(metrics, t) {
     if (!metrics.timingRecorded)
-        return 'Not recorded';
+        return t('timing.notRecorded');
     if (metrics.stepStartTime === null)
-        return 'Step start unavailable';
+        return t('timing.stepStartUnavailable');
     if (metrics.firstTokenTime === null)
-        return 'First token unavailable';
-    return formatDurationMs(Math.max(0, metrics.firstTokenTime - metrics.stepStartTime));
+        return t('timing.firstTokenUnavailable');
+    return formatDurationMs(Math.max(0, metrics.firstTokenTime - metrics.stepStartTime), t);
 }
-function generationTime(metrics) {
+function generationTime(metrics, t) {
     if (!metrics.timingRecorded || metrics.firstTokenTime === null)
-        return 'First token unavailable';
+        return t('timing.firstTokenUnavailable');
     if (metrics.completedTime === null)
-        return 'Pending';
-    return formatDurationMs(Math.max(0, metrics.completedTime - metrics.firstTokenTime));
+        return t('status.pending');
+    return formatDurationMs(Math.max(0, metrics.completedTime - metrics.firstTokenTime), t);
 }
-function throughput(metrics) {
+function throughput(metrics, t) {
     if (!metrics.usageProvided)
-        return 'Usage unavailable';
+        return t('timing.usageUnavailable');
     if (metrics.outputTokens === null)
-        return 'Output tokens unavailable';
+        return t('timing.outputTokensUnavailable');
     if (!metrics.timingRecorded || metrics.firstTokenTime === null)
-        return 'First token unavailable';
+        return t('timing.firstTokenUnavailable');
     if (metrics.completedTime === null)
-        return 'Pending';
+        return t('status.pending');
     const generationSeconds = (metrics.completedTime - metrics.firstTokenTime) / 1_000;
     if (generationSeconds <= 0)
-        return 'Duration too short';
-    return `${(metrics.outputTokens / generationSeconds).toFixed(1)} tok/s`;
+        return t('timing.durationTooShort');
+    return t('unit.tokensPerSecond', {
+        value: (metrics.outputTokens / generationSeconds).toFixed(1),
+    });
 }
-function AssistantTimingPanel({ metrics }) {
-    return (_jsxs("dl", { className: css.overview, children: [_jsxs("div", { children: [_jsx("dt", { children: "Started" }), _jsx(StartedAtValue, { timestamp: metrics.stepStartTime })] }), _jsxs("div", { children: [_jsx("dt", { children: "Total duration" }), _jsx("dd", { children: totalTime(metrics) })] }), _jsxs("div", { children: [_jsx("dt", { children: "TTFT" }), _jsx("dd", { children: ttft(metrics) })] }), _jsxs("div", { children: [_jsx("dt", { children: "Generation" }), _jsx("dd", { children: generationTime(metrics) })] }), _jsxs("div", { children: [_jsx("dt", { children: "Throughput" }), _jsx("dd", { children: throughput(metrics) })] })] }));
+function AssistantTimingPanel({ metrics, t, }) {
+    return (_jsxs("dl", { className: css.overview, children: [_jsxs("div", { children: [_jsx("dt", { children: t('timing.started') }), _jsx(StartedAtValue, { timestamp: metrics.stepStartTime, t: t })] }), _jsxs("div", { children: [_jsx("dt", { children: t('timing.totalDuration') }), _jsx("dd", { children: totalTime(metrics, t) })] }), _jsxs("div", { children: [_jsx("dt", { children: t('timing.ttft') }), _jsx("dd", { children: ttft(metrics, t) })] }), _jsxs("div", { children: [_jsx("dt", { children: t('timing.generation') }), _jsx("dd", { children: generationTime(metrics, t) })] }), _jsxs("div", { children: [_jsx("dt", { children: t('timing.throughput') }), _jsx("dd", { children: throughput(metrics, t) })] })] }));
 }
 function flattenRecords(turns) {
     return turns.flatMap((turn, section) => {
@@ -208,53 +233,39 @@ function filterRecords(records, matches) {
     }
     return filtered;
 }
-function requestStep(group) {
-    if (!group.startsWith('Step '))
-        return undefined;
-    const value = Number(group.slice('Step '.length));
-    return Number.isInteger(value) && value > 0 ? value : undefined;
-}
 function requestKey(turn, group) {
     return `${turn}\u0000${group}`;
 }
-function indexRequestBoundaries(records) {
+function requestIdentity(request) {
+    return request.purpose === 'compaction'
+        ? `compaction\u0000${request.seq}`
+        : `assistant\u0000${request.turn}\u0000${request.step}`;
+}
+function indexRequestBoundaries(records, requestGroups) {
     const boundaries = new Map();
     for (const record of records) {
         const key = requestKey(record.turn, record.group);
+        if (!requestGroups.has(key))
+            continue;
         if (boundaries.has(key))
             continue;
-        if (requestStep(record.group) === undefined) {
-            if (record.groupStart)
-                boundaries.set(key, record.cell.index);
-            continue;
-        }
         if (record.cell.kind === 'user' || record.cell.kind === 'context')
             continue;
         boundaries.set(key, record.cell.index);
     }
     return boundaries;
 }
-function sectionLabel(turn) {
-    return turn === null ? 'Between turns' : `Turn ${turn}`;
+function sectionLabel(turn, t) {
+    return turn === null ? t('section.betweenTurns') : t('turn.label', { turn });
 }
-function indexRequestNumbers(records, sessionNumbers, boundaries) {
+function indexRequestNumbers(sessionNumbers) {
     const numbers = new Map();
     for (const request of sessionNumbers ?? []) {
         numbers.set(requestKey(request.turn, request.group), request.number);
     }
-    let next = Math.max(0, ...numbers.values()) + 1;
-    const boundaryRecords = records
-        .filter(record => boundaries.get(requestKey(record.turn, record.group)) === record.cell.index
-        && requestStep(record.group) !== undefined)
-        .sort((left, right) => left.cell.index - right.cell.index);
-    for (const record of boundaryRecords) {
-        const key = requestKey(record.turn, record.group);
-        if (!numbers.has(key))
-            numbers.set(key, next++);
-    }
     return numbers;
 }
-function indexRequestBoundaryRuns(records) {
+function indexRequestBoundaryRuns(records, requestGroups) {
     const indexes = new Map();
     let runLength = 0;
     for (const record of records) {
@@ -262,24 +273,28 @@ function indexRequestBoundaryRuns(records) {
             indexes.set(record.cell.index, runLength++);
             continue;
         }
-        if (runLength > 0 && record.groupStart && requestStep(record.group) !== undefined) {
+        if (runLength > 0
+            && record.groupStart
+            && requestGroups.has(requestKey(record.turn, record.group))) {
             indexes.set(record.cell.index, runLength);
         }
         runLength = 0;
     }
     return indexes;
 }
-function summarizeTurn(records) {
+function summarizeTurn(records, requestGroups, t) {
     const steps = new Set(records
-        .map(record => record.group)
-        .filter(group => group.startsWith('Step '))).size;
+        .map(record => requestKey(record.turn, record.group))
+        .filter(key => requestGroups.has(key))).size;
     const toolCalls = records.filter(record => record.cell.kind === 'tool' || record.cell.kind === 'subtool').length;
     return [
-        `${steps} ${steps === 1 ? 'step' : 'steps'}`,
-        `${toolCalls} tool ${toolCalls === 1 ? 'call' : 'calls'}`,
+        t(steps === 1 ? 'summary.steps.one' : 'summary.steps.other', { count: steps }),
+        t(toolCalls === 1 ? 'summary.toolCalls.one' : 'summary.toolCalls.other', {
+            count: toolCalls,
+        }),
     ].join(' · ');
 }
-function collapseTurnRecords(records, collapsedTurns) {
+function collapseTurnRecords(records, collapsedTurns, requestGroups, t) {
     const recordsByTurn = new Map();
     for (const record of records) {
         if (record.turn === null)
@@ -306,7 +321,7 @@ function collapseTurnRecords(records, collapsedTurns) {
                 groupStart: false,
                 turnStart: false,
                 turnEnd: true,
-                collapsedSummary: summarizeTurn(contentRecords.slice(1)),
+                collapsedSummary: summarizeTurn(contentRecords.slice(1), requestGroups, t),
                 collapsedSummaryKind: 'turn',
             },
         ];
@@ -327,16 +342,16 @@ function assistantToolCalls(records, assistantIndex) {
     }
     return calls;
 }
-function summarizeAssistantTools(records) {
+function summarizeAssistantTools(records, t) {
     const names = [...new Set(records.map((record) => {
             const separator = record.cell.text.indexOf(' · ');
             return separator === -1 ? record.cell.text : record.cell.text.slice(0, separator);
         }).filter(name => name !== ''))];
     const count = records.length;
-    const summary = `${count} tool ${count === 1 ? 'call' : 'calls'}`;
+    const summary = t(count === 1 ? 'summary.toolCalls.one' : 'summary.toolCalls.other', { count });
     return names.length > 0 ? `${summary} · ${names.join(', ')}` : summary;
 }
-function collapseAssistantRecords(records, collapsedAssistants) {
+function collapseAssistantRecords(records, collapsedAssistants, t) {
     const out = [];
     for (let i = 0; i < records.length; i++) {
         const record = records[i];
@@ -364,7 +379,7 @@ function collapseAssistantRecords(records, collapsedAssistants) {
             groupStart: false,
             turnStart: false,
             turnEnd: last?.turnEnd ?? false,
-            collapsedSummary: summarizeAssistantTools(calls),
+            collapsedSummary: summarizeAssistantTools(calls, t),
             collapsedSummaryKind: 'assistant',
         });
         i += calls.length;
@@ -381,18 +396,25 @@ function stateOf(record) {
         return 'running';
     return 'complete';
 }
-function statusLabel(state) {
+function statusLabel(state, t) {
     if (state === 'error')
-        return 'Failed';
+        return t('status.failed');
     if (state === 'running')
-        return 'Pending';
-    return 'Completed';
+        return t('status.pending');
+    return t('status.completed');
 }
-function TokenRows({ cell }) {
+function requestErrorMessage(request, t) {
+    if (request.errorCode === 'AUTH')
+        return t('details.failure.auth');
+    if (request.error === COMPACTION_INTERRUPTED_ERROR)
+        return t('layout.compactionInterrupted');
+    return request.error;
+}
+function TokenRows({ cell, t }) {
     const content = cell.output !== undefined && cell.think !== undefined
         ? Math.max(0, cell.output - cell.think)
         : undefined;
-    return (_jsxs(_Fragment, { children: [_jsxs("div", { children: [_jsx("dt", { children: "Tokens" }), _jsx("dd", { children: cell.output === undefined ? '—' : `${cell.output} tok` })] }), cell.think !== undefined && (_jsxs("div", { className: css.requestTokenDetail, children: [_jsx("dt", { children: "Reasoning" }), _jsxs("dd", { children: [cell.think, " tok"] })] })), content !== undefined && (_jsxs("div", { className: css.requestTokenDetail, children: [_jsx("dt", { children: "Content" }), _jsxs("dd", { children: [content, " tok"] })] }))] }));
+    return (_jsxs(_Fragment, { children: [_jsxs("div", { children: [_jsx("dt", { children: t('usage.tokens') }), _jsx("dd", { children: cell.output === undefined ? '—' : t('unit.tokens', { value: cell.output }) })] }), cell.think !== undefined && (_jsxs("div", { className: css.requestTokenDetail, children: [_jsx("dt", { children: t('usage.reasoning') }), _jsx("dd", { children: t('unit.tokens', { value: cell.think }) })] })), content !== undefined && (_jsxs("div", { className: css.requestTokenDetail, children: [_jsx("dt", { children: t('usage.content') }), _jsx("dd", { children: t('unit.tokens', { value: content }) })] }))] }));
 }
 function inputTotal(usage) {
     if (usage.input === undefined
@@ -401,56 +423,56 @@ function inputTotal(usage) {
         return undefined;
     return (usage.input ?? 0) + (usage.cacheRead ?? 0) + (usage.cacheWrite ?? 0);
 }
-function UsageRows({ usage }) {
+function UsageRows({ usage, t }) {
     if (usage === undefined)
-        return _jsx("p", { className: css.noPayload, children: "Usage not reported" });
+        return _jsx("p", { className: css.noPayload, children: t('usage.notReported') });
     const totalInput = inputTotal(usage);
     const otherOutput = usage.output !== undefined && usage.reasoning !== undefined
         ? usage.output - usage.reasoning
         : undefined;
-    return (_jsxs("dl", { className: css.overview, children: [totalInput !== undefined && (_jsxs("div", { children: [_jsx("dt", { children: "Input" }), _jsxs("dd", { children: [totalInput, " tok"] })] })), usage.cacheRead !== undefined && (_jsxs("div", { className: css.requestTokenDetail, children: [_jsx("dt", { children: "Cached" }), _jsxs("dd", { children: [usage.cacheRead, " tok"] })] })), usage.cacheWrite !== undefined && (_jsxs("div", { className: css.requestTokenDetail, children: [_jsx("dt", { children: "Cache created" }), _jsxs("dd", { children: [usage.cacheWrite, " tok"] })] })), usage.input !== undefined && (_jsxs("div", { className: css.requestTokenDetail, children: [_jsx("dt", { children: "Other" }), _jsxs("dd", { children: [usage.input, " tok"] })] })), usage.output !== undefined && (_jsxs("div", { children: [_jsx("dt", { children: "Output" }), _jsxs("dd", { children: [usage.output, " tok"] })] })), usage.reasoning !== undefined && (_jsxs("div", { className: css.requestTokenDetail, children: [_jsx("dt", { children: "Reasoning" }), _jsxs("dd", { children: [usage.reasoning, " tok"] })] })), otherOutput !== undefined && (_jsxs("div", { className: css.requestTokenDetail, children: [_jsx("dt", { children: "Content" }), _jsxs("dd", { children: [otherOutput, " tok"] })] }))] }));
+    return (_jsxs("dl", { className: css.overview, children: [totalInput !== undefined && (_jsxs("div", { children: [_jsx("dt", { children: t('usage.input') }), _jsx("dd", { children: t('unit.tokens', { value: totalInput }) })] })), usage.cacheRead !== undefined && (_jsxs("div", { className: css.requestTokenDetail, children: [_jsx("dt", { children: t('usage.cached') }), _jsx("dd", { children: t('unit.tokens', { value: usage.cacheRead }) })] })), usage.cacheWrite !== undefined && (_jsxs("div", { className: css.requestTokenDetail, children: [_jsx("dt", { children: t('usage.cacheCreated') }), _jsx("dd", { children: t('unit.tokens', { value: usage.cacheWrite }) })] })), usage.input !== undefined && (_jsxs("div", { className: css.requestTokenDetail, children: [_jsx("dt", { children: t('usage.other') }), _jsx("dd", { children: t('unit.tokens', { value: usage.input }) })] })), usage.output !== undefined && (_jsxs("div", { children: [_jsx("dt", { children: t('usage.output') }), _jsx("dd", { children: t('unit.tokens', { value: usage.output }) })] })), usage.reasoning !== undefined && (_jsxs("div", { className: css.requestTokenDetail, children: [_jsx("dt", { children: t('usage.reasoning') }), _jsx("dd", { children: t('unit.tokens', { value: usage.reasoning }) })] })), otherOutput !== undefined && (_jsxs("div", { className: css.requestTokenDetail, children: [_jsx("dt", { children: t('usage.content') }), _jsx("dd", { children: t('unit.tokens', { value: otherOutput }) })] }))] }));
 }
-function RequestUsagePanel({ usage, cumulative, }) {
-    return (_jsxs("div", { className: css.usagePanel, children: [_jsxs("section", { className: css.usageGroup, children: [_jsx("h4", { className: css.usageHeading, children: "This request" }), _jsx(UsageRows, { usage: usage })] }), _jsxs("section", { className: css.usageGroup, children: [_jsx("h4", { className: css.usageHeading, children: "Session cumulative" }), _jsx(UsageRows, { usage: cumulative })] })] }));
+function RequestUsagePanel({ usage, cumulative, t, }) {
+    return (_jsxs("div", { className: css.usagePanel, children: [_jsxs("section", { className: css.usageGroup, children: [_jsx("h4", { className: css.usageHeading, children: t('usage.thisRequest') }), _jsx(UsageRows, { usage: usage, t: t })] }), _jsxs("section", { className: css.usageGroup, children: [_jsx("h4", { className: css.usageHeading, children: t('usage.sessionCumulative') }), _jsx(UsageRows, { usage: cumulative, t: t })] })] }));
 }
-function RequestOptions({ options, preview = false, }) {
+function RequestOptions({ options, preview = false, t, }) {
     if (options === undefined) {
-        return _jsx("p", { className: css.noPayload, children: "Options not recorded" });
+        return _jsx("p", { className: css.noPayload, children: t('options.notRecorded') });
     }
-    return (_jsx(JsonTree, { data: options, label: "Request options JSON", className: preview ? css.jsonPreview : css.jsonPayload }));
+    return (_jsx(JsonTree, { data: options, label: t('options.json'), labels: jsonTreeLabels(t), className: preview ? css.jsonPreview : css.jsonPayload }));
 }
-function messageSourceLabel(source) {
+function messageSourceLabel(source, t) {
     if (typeof source !== 'object' || source === null || Array.isArray(source)) {
-        return 'Unknown';
+        return t('source.unknown');
     }
     const properties = source;
     const kind = properties.kind;
     if (kind === 'user')
-        return 'User';
+        return t('source.user');
     if (kind === 'plugin') {
         const plugin = properties.plugin;
         return typeof plugin === 'string' && plugin !== ''
-            ? `Plugin · ${plugin}`
-            : 'Plugin';
+            ? t('source.pluginNamed', { plugin })
+            : t('source.plugin');
     }
     if (kind === 'goal') {
         const round = properties.round;
         return typeof round === 'number' && round > 0
-            ? `Goal · Round ${round}`
-            : 'Goal';
+            ? t('source.goalRound', { round })
+            : t('source.goal');
     }
     if (typeof kind !== 'string' || kind === '')
-        return 'Unknown';
+        return t('source.unknown');
     return `${kind[0]?.toUpperCase() ?? ''}${kind.slice(1)}`;
 }
-function MessageSource({ record }) {
+function MessageSource({ record, t }) {
     const source = record.cell.messageSource;
     if (source === undefined)
-        return _jsx("p", { className: css.noPayload, children: "Source not recorded" });
+        return _jsx("p", { className: css.noPayload, children: t('source.notRecorded') });
     const data = typeof source === 'object' && source !== null
         ? source
         : { value: source };
-    return (_jsx(JsonTree, { data: data, label: "Message source JSON", className: css.jsonPayload }));
+    return (_jsx(JsonTree, { data: data, label: t('source.messageJson'), labels: jsonTreeLabels(t), className: css.jsonPayload }));
 }
 function isMarkdownRecord(record) {
     return record.cell.kind === 'user'
@@ -503,30 +525,30 @@ function detailTabs(record) {
     }
     if (record.cell.kind === 'compacted') {
         return [
-            { id: 'overview', label: 'Summary' },
-            { id: 'raw', label: 'Raw Output' },
+            { id: 'overview', labelKey: 'tab.summary' },
+            { id: 'raw', labelKey: 'tab.rawOutput' },
         ];
     }
     if (isMarkdownRecord(record)) {
         return [
-            { id: 'overview', label: 'Summary' },
-            { id: 'rendered', label: 'Preview' },
-            { id: 'raw', label: 'Raw' },
+            { id: 'overview', labelKey: 'tab.summary' },
+            { id: 'rendered', labelKey: 'tab.preview' },
+            { id: 'raw', labelKey: 'tab.raw' },
             ...(record.cell.messageSource === undefined
                 ? []
-                : [{ id: 'source', label: 'Source' }]),
+                : [{ id: 'source', labelKey: 'tab.source' }]),
         ];
     }
     return [
-        { id: 'overview', label: 'Summary' },
-        ...(record.cell.inputDetail ? [{ id: 'input', label: 'Payload' }] : []),
-        ...(record.cell.outputDetail ? [{ id: 'output', label: 'Result' }] : []),
-        { id: 'schema', label: 'Schema' },
-        { id: 'timing', label: 'Timing' },
+        { id: 'overview', labelKey: 'tab.summary' },
+        ...(record.cell.inputDetail ? [{ id: 'input', labelKey: 'tab.payload' }] : []),
+        ...(record.cell.outputDetail ? [{ id: 'output', labelKey: 'tab.result' }] : []),
+        { id: 'schema', labelKey: 'tab.schema' },
+        { id: 'timing', labelKey: 'tab.timing' },
     ];
 }
-function recordDisplayText(cell) {
-    if (isToolCallOnly(cell))
+function recordDisplayText(cell, t) {
+    if (isToolCallOnly(cell, t))
         return '';
     if (cell.previewMarkdown !== undefined) {
         const preview = trajectoryPreviewText(cell.previewMarkdown);
@@ -559,22 +581,22 @@ function toolCallTextParts(kind, text) {
         args: text.slice(separator + 3),
     };
 }
-function isToolCallOnly(cell) {
+function isToolCallOnly(cell, t) {
     return cell.kind === 'message'
         && !cell.outputDetail
         && !cell.thinkingDetail
-        && cell.text === 'Tool call only';
+        && cell.text === t('layout.toolCallOnly');
 }
-function RecordPresentation({ cell, children, }) {
-    const displayText = useMemo(() => recordDisplayText(cell), [
+function RecordPresentation({ cell, children, t, }) {
+    const displayText = useMemo(() => recordDisplayText(cell, t), [
         cell.kind, cell.text, cell.previewMarkdown,
-        cell.inputDetail, cell.outputDetail, cell.thinkingDetail,
+        cell.inputDetail, cell.outputDetail, cell.thinkingDetail, t,
     ]);
     const resultText = useMemo(() => recordResultText(cell), [cell.result, cell.resultPreviewMarkdown]);
-    const toolCallOnly = isToolCallOnly(cell);
+    const toolCallOnly = isToolCallOnly(cell, t);
     const toolCallText = toolCallTextParts(cell.kind, displayText);
     const listDisplayText = toolCallOnly
-        ? '(tool call only)'
+        ? t('record.toolCallOnly')
         : toolCallText === undefined
             ? displayText
             : [toolCallText.name, toolCallText.args].filter(Boolean).join(' ');
@@ -586,59 +608,58 @@ function RecordPresentation({ cell, children, }) {
         toolCallText,
     });
 }
-function RecordListText({ displayText, toolCallOnly, toolCallText, }) {
+function RecordListText({ displayText, toolCallOnly, toolCallText, t, }) {
     if (toolCallOnly) {
-        return _jsx("span", { className: css.toolCallOnly, children: "(tool call only)" });
+        return _jsx("span", { className: css.toolCallOnly, children: t('record.toolCallOnly') });
     }
     if (toolCallText === undefined)
         return displayText || '—';
     return (_jsxs(_Fragment, { children: [_jsx("span", { className: css.toolCallNameTypeface, children: toolCallText.name || '—' }), toolCallText.args !== undefined && (_jsx("span", { className: css.toolCallPayload, children: toolCallText.args }))] }));
 }
-function MarkdownFragment({ text, rendered, preview, }) {
+function MarkdownFragment({ text, rendered, preview, t, }) {
+    const labels = useMemo(() => markdownLabels(t), [t]);
     if (rendered) {
-        return (_jsx("div", { className: preview ? css.markdownPreview : css.markdownPayload, children: _jsx(MarkdownText, { text: text }) }));
+        return (_jsx("div", { className: preview ? css.markdownPreview : css.markdownPayload, children: _jsx(MarkdownText, { text: text, labels: labels }) }));
     }
     return (_jsx("pre", { className: `${css.payload} ${preview ? css.payloadPreview : ''}`, children: text }));
 }
-function SourceBlocks({ blocks, onOpenCall, }) {
+function SourceBlocks({ blocks, onOpenCall, renderImages, t, }) {
     return (_jsx("div", { className: css.sourceBlocks, children: blocks.map((block, index) => (_jsxs("section", { className: css.sourceBlock, children: [block.callId !== undefined
-                    ? (_jsxs("button", { type: "button", className: css.sourceBlockJumpTarget, "aria-label": `Open Block #${index + 1} tool call summary`, title: "Open tool call summary", onClick: () => {
+                    ? (_jsxs("button", { type: "button", className: css.sourceBlockJumpTarget, "aria-label": t('block.openSummary', { index: index + 1 }), title: t('block.openSummaryTitle'), onClick: () => {
                             if (block.callId !== undefined)
                                 onOpenCall(block.callId);
-                        }, children: [_jsx("span", { className: css.sourceBlockLabel, children: `Block #${index + 1} ${block.type}` }), _jsx(IconChevronRightOutline14, { className: css.sourceBlockJumpIcon, size: 12 })] }))
-                    : (_jsx("div", { className: css.sourceBlockHeader, children: _jsx("span", { className: css.sourceBlockLabel, children: `Block #${index + 1} ${block.type}` }) })), block.imageSrc !== undefined
-                    ? _jsx(PanelImage, { block: block })
+                        }, children: [_jsx("span", { className: css.sourceBlockLabel, children: t('block.label', { index: index + 1, type: block.type }) }), _jsx(IconChevronRightOutline14, { className: css.sourceBlockJumpIcon, size: 12 })] }))
+                    : (_jsx("div", { className: css.sourceBlockHeader, children: _jsx("span", { className: css.sourceBlockLabel, children: t('block.label', { index: index + 1, type: block.type }) }) })), block.attachment !== undefined
+                    ? renderImages({ images: [{ attachment: block.attachment }], align: 'start' })
                     : _jsx("pre", { className: css.sourceBlockContent, children: block.content })] }, index))) }));
 }
-function PanelImage({ block, preview = false, }) {
-    if (block.imageSrc === undefined)
-        return null;
-    return (_jsx("a", { className: preview ? `${css.panelImageLink} ${css.panelImageLinkPreview}` : css.panelImageLink, href: block.imageSrc, target: "_blank", rel: "noopener noreferrer", title: "Open image", children: _jsx("img", { className: css.panelImage, src: block.imageSrc, alt: block.imageAlt ?? '' }) }));
+function recordImages(blocks) {
+    return (blocks ?? []).flatMap(block => block.attachment !== undefined ? [{ attachment: block.attachment }] : []);
 }
-function MessageImages({ blocks, preview, }) {
-    const images = blocks?.filter(block => block.imageSrc !== undefined) ?? [];
+function MessageImages({ blocks, preview, renderImages, }) {
+    const images = recordImages(blocks);
     if (images.length === 0)
         return null;
-    return (_jsx("div", { className: preview ? `${css.messageImages} ${css.messageImagesPreview}` : css.messageImages, children: images.map((block, index) => _jsx(PanelImage, { block: block, preview: preview }, index)) }));
+    return (_jsx("div", { className: preview ? `${css.messageImages} ${css.messageImagesPreview}` : css.messageImages, children: renderImages({ images, align: 'start' }) }));
 }
-function AssistantToolCalls({ blocks, preview, onOpenCall, }) {
+function AssistantToolCalls({ blocks, preview, onOpenCall, t, }) {
     const calls = blocks?.filter(block => block.type === 'tool-call') ?? [];
     if (calls.length === 0)
         return null;
     return (_jsx("ul", { className: preview
             ? `${css.assistantToolCalls} ${css.assistantToolCallsPreview}`
-            : css.assistantToolCalls, children: calls.map((call, index) => (_jsx("li", { children: _jsxs("button", { type: "button", className: css.assistantToolCallButton, title: "Open tool call summary", onClick: () => {
+            : css.assistantToolCalls, children: calls.map((call, index) => (_jsx("li", { children: _jsxs("button", { type: "button", className: css.assistantToolCallButton, title: t('block.openSummaryTitle'), onClick: () => {
                     if (call.callId !== undefined)
                         onOpenCall(call.callId);
-                }, children: [_jsx("svg", { className: css.assistantToolCallIcon, width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", children: _jsx("path", { d: "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round" }) }), _jsxs("span", { className: css.assistantToolCallText, children: [_jsx("span", { className: css.assistantToolCallName, children: call.toolName ?? 'tool-call' }), call.content !== '' && (_jsx("span", { className: css.assistantToolCallArgs, children: call.content }))] })] }) }, call.callId ?? index))) }));
+                }, children: [_jsx("svg", { className: css.assistantToolCallIcon, width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", children: _jsx("path", { d: "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round" }) }), _jsxs("span", { className: css.assistantToolCallText, children: [_jsx("span", { className: css.assistantToolCallName, children: call.toolName ?? t('details.toolCall') }), call.content !== '' && (_jsx("span", { className: css.assistantToolCallArgs, children: call.content }))] })] }) }, call.callId ?? index))) }));
 }
 function ToolGlyph() {
     return (_jsx("svg", { className: css.toolCatalogIcon, width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", children: _jsx("path", { d: "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round" }) }));
 }
-function ToolCatalog({ tools }) {
+function ToolCatalog({ tools, t, }) {
     if (tools.length === 0)
-        return _jsx("p", { className: css.noPayload, children: "No tools in this request" });
-    return (_jsx("div", { className: css.toolCatalog, children: tools.map((tool, index) => (_jsxs("details", { className: css.toolCatalogItem, children: [_jsxs("summary", { className: css.toolCatalogSummary, children: [_jsx(IconChevronRightOutline14, { className: css.toolCatalogChevron, size: 12 }), _jsx(ToolGlyph, {}), _jsx("span", { className: css.toolCatalogName, children: tool.name }), _jsx("span", { className: css.toolCatalogDescription, children: tool.description })] }), _jsxs("div", { className: css.toolCatalogDefinition, children: [tool.description !== '' && (_jsx("p", { className: css.toolCatalogFullDescription, children: tool.description })), _jsx(JsonTree, { data: tool.parameters, label: `${tool.name} parameters JSON`, className: css.toolCatalogTree })] })] }, `${tool.name}:${index}`))) }));
+        return _jsx("p", { className: css.noPayload, children: t('record.toolsMissing') });
+    return (_jsx("div", { className: css.toolCatalog, children: tools.map((tool, index) => (_jsxs("details", { className: css.toolCatalogItem, children: [_jsxs("summary", { className: css.toolCatalogSummary, children: [_jsx(IconChevronRightOutline14, { className: css.toolCatalogChevron, size: 12 }), _jsx(ToolGlyph, {}), _jsx("span", { className: css.toolCatalogName, children: tool.name }), _jsx("span", { className: css.toolCatalogDescription, children: tool.description })] }), _jsxs("div", { className: css.toolCatalogDefinition, children: [tool.description !== '' && (_jsx("p", { className: css.toolCatalogFullDescription, children: tool.description })), _jsx(JsonTree, { data: tool.parameters, label: t('record.namedParametersJson', { name: tool.name }), labels: jsonTreeLabels(t), className: css.toolCatalogTree })] })] }, `${tool.name}:${index}`))) }));
 }
 function promptDiffLines(before, after) {
     const patch = structuredPatch('', '', before, after, undefined, undefined, { context: 3 });
@@ -665,25 +686,26 @@ function PromptDiffSection({ title, before, after, }) {
         return null;
     return (_jsxs("section", { className: css.promptDiffSection, children: [_jsx("h3", { className: css.promptDiffTitle, children: title }), _jsx("pre", { className: css.promptDiff, children: lines.map((line, index) => (_jsxs("span", { className: css[`promptDiffLine${line.kind}`], children: [line.text || ' ', '\n'] }, index))) })] }));
 }
-function SystemPromptDiff({ before, after, }) {
+function SystemPromptDiff({ before, after, t, }) {
     const toolsBefore = JSON.stringify(before.tools, null, 2);
     const toolsAfter = JSON.stringify(after.tools, null, 2);
-    return (_jsxs("div", { className: css.promptDiffSections, children: [before.system !== after.system && (_jsx(PromptDiffSection, { title: "System Prompt", before: before.system, after: after.system })), toolsBefore !== toolsAfter && (_jsx(PromptDiffSection, { title: "Tools", before: toolsBefore, after: toolsAfter }))] }));
+    return (_jsxs("div", { className: css.promptDiffSections, children: [before.system !== after.system && (_jsx(PromptDiffSection, { title: t('record.systemPrompt'), before: before.system, after: after.system })), toolsBefore !== toolsAfter && (_jsx(PromptDiffSection, { title: t('record.tools'), before: toolsBefore, after: toolsAfter }))] }));
 }
-function ToolOutputBlocks({ blocks, error, preview, }) {
-    return (_jsx("div", { className: [
+function ToolOutputBlocks({ blocks, error, errorDetail, preview, renderImages, }) {
+    return (_jsxs("div", { className: [
             css.resultBlocks,
             preview ? css.resultBlocksPreview : undefined,
             error ? css.errorPayload : undefined,
-        ].filter((value) => value !== undefined).join(' '), children: blocks.map((block, index) => (block.imageSrc !== undefined
-            ? _jsx(PanelImage, { block: block, preview: preview }, index)
-            : block.content !== ''
-                ? _jsx("pre", { className: css.resultBlockText, children: block.content }, index)
-                : null)) }));
+        ].filter((value) => value !== undefined).join(' '), children: [error && errorDetail !== undefined && errorDetail !== ''
+                && _jsx("pre", { className: css.resultBlockText, children: errorDetail }), blocks.map((block, index) => (block.attachment !== undefined
+                ? (_jsx("div", { className: css.messageImages, children: renderImages({ images: [{ attachment: block.attachment }], align: 'start' }) }, index))
+                : block.content !== ''
+                    ? _jsx("pre", { className: css.resultBlockText, children: block.content }, index)
+                    : null))] }));
 }
-function MarkdownRecordContent({ record, rendered, preview = false, thinkingExpanded, onThinkingExpandedChange, onOpenCall, }) {
+function MarkdownRecordContent({ record, rendered, preview = false, thinkingExpanded, onThinkingExpandedChange, onOpenCall, renderImages, t, }) {
     if (!rendered && record.cell.sourceBlocks && record.cell.sourceBlocks.length > 0) {
-        return _jsx(SourceBlocks, { blocks: record.cell.sourceBlocks, onOpenCall: onOpenCall });
+        return (_jsx(SourceBlocks, { blocks: record.cell.sourceBlocks, onOpenCall: onOpenCall, renderImages: renderImages, t: t }));
     }
     if (record.cell.thinkingDetail) {
         if (!rendered) {
@@ -691,48 +713,48 @@ function MarkdownRecordContent({ record, rendered, preview = false, thinkingExpa
                 record.cell.thinkingDetail,
                 record.cell.outputDetail,
             ].filter((value) => value !== undefined && value !== '').join('\n\n');
-            return _jsx(MarkdownFragment, { text: source, rendered: false, preview: preview });
+            return _jsx(MarkdownFragment, { text: source, rendered: false, preview: preview, t: t });
         }
         return (_jsxs("div", { className: `${css.assistantContent} ${css.assistantContentRendered}`, children: [_jsxs("div", { className: preview && !record.cell.outputDetail
                         ? `${css.thinkingQuote} ${css.thinkingQuoteOnlyPreview}`
-                        : css.thinkingQuote, children: [_jsxs("button", { type: "button", className: css.thinkingToggle, "aria-expanded": thinkingExpanded, onClick: () => { onThinkingExpandedChange(!thinkingExpanded); }, children: ["Thinking", _jsx(IconChevronRightOutline14, { className: css.thinkingChevron, size: 12 })] }), thinkingExpanded && (_jsx(MarkdownFragment, { text: record.cell.thinkingDetail, rendered: rendered, preview: preview }))] }), record.cell.outputDetail && (_jsx("div", { className: css.assistantOutput, children: _jsx(MarkdownFragment, { text: record.cell.outputDetail, rendered: rendered, preview: preview }) })), _jsx(AssistantToolCalls, { blocks: record.cell.sourceBlocks, preview: preview, onOpenCall: onOpenCall }), _jsx(MessageImages, { blocks: record.cell.sourceBlocks, preview: preview })] }));
+                        : css.thinkingQuote, children: [_jsxs("button", { type: "button", className: css.thinkingToggle, "aria-expanded": thinkingExpanded, onClick: () => { onThinkingExpandedChange(!thinkingExpanded); }, children: [t('record.thinking'), _jsx(IconChevronRightOutline14, { className: css.thinkingChevron, size: 12 })] }), thinkingExpanded && (_jsx(MarkdownFragment, { text: record.cell.thinkingDetail, rendered: rendered, preview: preview, t: t }))] }), record.cell.outputDetail && (_jsx("div", { className: css.assistantOutput, children: _jsx(MarkdownFragment, { text: record.cell.outputDetail, rendered: rendered, preview: preview, t: t }) })), _jsx(AssistantToolCalls, { blocks: record.cell.sourceBlocks, preview: preview, onOpenCall: onOpenCall, t: t }), _jsx(MessageImages, { blocks: record.cell.sourceBlocks, preview: preview, renderImages: renderImages })] }));
     }
     const source = markdownSource(record);
-    const hasImages = record.cell.sourceBlocks?.some(block => block.imageSrc !== undefined) === true;
+    const hasImages = record.cell.sourceBlocks?.some(block => block.attachment !== undefined) === true;
     const hasToolCalls = record.cell.kind === 'message'
         && record.cell.sourceBlocks?.some(block => block.type === 'tool-call') === true;
     if (!source && !hasImages && !hasToolCalls) {
-        const emptyLabel = isToolCallOnly(record.cell)
-            ? 'Tool call only'
-            : record.cell.text || 'No content';
+        const emptyLabel = isToolCallOnly(record.cell, t)
+            ? t('record.toolCallOnly')
+            : record.cell.text || t('record.noContent');
         return _jsx("p", { className: css.noPayload, children: emptyLabel });
     }
     if (!rendered || (!hasImages && !hasToolCalls)) {
-        return _jsx(MarkdownFragment, { text: source ?? '', rendered: rendered, preview: preview });
+        return _jsx(MarkdownFragment, { text: source ?? '', rendered: rendered, preview: preview, t: t });
     }
-    return (_jsxs("div", { children: [source && _jsx(MarkdownFragment, { text: source, rendered: true, preview: preview }), record.cell.kind === 'message' && (_jsx(AssistantToolCalls, { blocks: record.cell.sourceBlocks, preview: preview, onOpenCall: onOpenCall })), _jsx(MessageImages, { blocks: record.cell.sourceBlocks, preview: preview })] }));
+    return (_jsxs("div", { children: [source && _jsx(MarkdownFragment, { text: source, rendered: true, preview: preview, t: t }), record.cell.kind === 'message' && (_jsx(AssistantToolCalls, { blocks: record.cell.sourceBlocks, preview: preview, onOpenCall: onOpenCall, t: t })), _jsx(MessageImages, { blocks: record.cell.sourceBlocks, preview: preview, renderImages: renderImages })] }));
 }
-function RecordTiming({ record }) {
+function RecordTiming({ record, t }) {
     return record.cell.kind === 'message' && record.cell.assistantMetrics !== undefined
-        ? _jsx(AssistantTimingPanel, { metrics: record.cell.assistantMetrics })
-        : (_jsxs("dl", { className: css.overview, children: [_jsxs("div", { children: [_jsx("dt", { children: "Started" }), _jsx(StartedAtValue, { timestamp: record.cell.startedAt ?? null })] }), _jsxs("div", { children: [_jsx("dt", { children: "Duration" }), _jsx("dd", { children: formatElapsedSeconds(record.cell.timeSeconds) })] }), _jsxs("div", { children: [_jsx("dt", { children: "Timing source" }), _jsx("dd", { children: record.cell.timeSeconds === null ? 'Not available' : 'Session timestamps' })] })] }));
+        ? _jsx(AssistantTimingPanel, { metrics: record.cell.assistantMetrics, t: t })
+        : (_jsxs("dl", { className: css.overview, children: [_jsxs("div", { children: [_jsx("dt", { children: t('timing.started') }), _jsx(StartedAtValue, { timestamp: record.cell.startedAt ?? null, t: t })] }), _jsxs("div", { children: [_jsx("dt", { children: t('timing.duration') }), _jsx("dd", { children: formatElapsedSeconds(record.cell.timeSeconds, t) })] }), _jsxs("div", { children: [_jsx("dt", { children: t('timing.source') }), _jsx("dd", { children: record.cell.timeSeconds === null ? t('timing.notAvailable') : t('timing.sessionTimestamps') })] })] }));
 }
-function RequestTiming({ assistant, anchor, request, }) {
+function RequestTiming({ assistant, anchor, request, t, }) {
     if (assistant !== undefined)
-        return _jsx(RecordTiming, { record: assistant });
+        return _jsx(RecordTiming, { record: assistant, t: t });
     if (request?.startedAt !== undefined) {
         const duration = request.completedAt === null || request.completedAt === undefined
             ? null
             : Math.max(0, (request.completedAt - request.startedAt) / 1000);
-        return (_jsxs("dl", { className: css.overview, children: [_jsxs("div", { children: [_jsx("dt", { children: "Started" }), _jsx(StartedAtValue, { timestamp: request.startedAt })] }), _jsxs("div", { children: [_jsx("dt", { children: "Duration" }), _jsx("dd", { children: formatElapsedSeconds(duration) })] }), _jsxs("div", { children: [_jsx("dt", { children: "Timing source" }), _jsx("dd", { children: duration === null ? 'Session timestamps (running)' : 'Session timestamps' })] })] }));
+        return (_jsxs("dl", { className: css.overview, children: [_jsxs("div", { children: [_jsx("dt", { children: t('timing.started') }), _jsx(StartedAtValue, { timestamp: request.startedAt, t: t })] }), _jsxs("div", { children: [_jsx("dt", { children: t('timing.duration') }), _jsx("dd", { children: formatElapsedSeconds(duration, t) })] }), _jsxs("div", { children: [_jsx("dt", { children: t('timing.source') }), _jsx("dd", { children: duration === null ? t('timing.sessionTimestampsRunning') : t('timing.sessionTimestamps') })] })] }));
     }
-    return (_jsxs("dl", { className: css.overview, children: [_jsxs("div", { children: [_jsx("dt", { children: "Started" }), _jsx(StartedAtValue, { timestamp: anchor?.cell.startedAt ?? null })] }), _jsxs("div", { children: [_jsx("dt", { children: "Duration" }), _jsx("dd", { children: formatElapsedSeconds(null) })] })] }));
+    return (_jsxs("dl", { className: css.overview, children: [_jsxs("div", { children: [_jsx("dt", { children: t('timing.started') }), _jsx(StartedAtValue, { timestamp: anchor?.cell.startedAt ?? null, t: t })] }), _jsxs("div", { children: [_jsx("dt", { children: t('timing.duration') }), _jsx("dd", { children: formatElapsedSeconds(null, t) })] })] }));
 }
-function RecordPayload({ record, direction, preview = false, }) {
+function RecordPayload({ record, direction, preview = false, renderImages, t, }) {
     const value = direction === 'input' ? record.cell.inputDetail : record.cell.outputDetail;
     const missing = direction === 'input'
-        ? 'No payload captured'
-        : 'No result captured';
+        ? t('record.noPayload')
+        : t('record.noResult');
     if (!value)
         return _jsx("p", { className: css.noPayload, children: missing });
     const error = direction === 'output' && record.cell.isError === true;
@@ -743,11 +765,11 @@ function RecordPayload({ record, direction, preview = false, }) {
         && record.cell.outputBlocks?.length === 1
         && record.cell.outputBlocks[0]?.type === 'text';
     if (singleTextResult && json !== undefined) {
-        return (_jsx(JsonTree, { data: json, label: "Result JSON", className: payloadClassName }));
+        return (_jsx(JsonTree, { data: json, label: t('record.resultJson'), labels: jsonTreeLabels(t), className: payloadClassName }));
     }
     if (direction === 'output'
-        && record.cell.outputBlocks?.some(block => block.imageSrc !== undefined || block.content !== '') === true) {
-        return (_jsx(ToolOutputBlocks, { blocks: record.cell.outputBlocks, error: error, preview: preview }));
+        && record.cell.outputBlocks?.some(block => block.attachment !== undefined || block.content !== '') === true) {
+        return (_jsx(ToolOutputBlocks, { blocks: record.cell.outputBlocks, error: error, errorDetail: error ? value : undefined, preview: preview, renderImages: renderImages }));
     }
     const markdown = (direction === 'input'
         && (record.cell.kind === 'user' || record.cell.kind === 'context')) || (direction === 'output' && record.cell.kind === 'message');
@@ -755,25 +777,25 @@ function RecordPayload({ record, direction, preview = false, }) {
         return (_jsx("div", { className: [
                 preview ? css.markdownPreview : css.markdownPayload,
                 error ? css.errorPayload : undefined,
-            ].filter((className) => className !== undefined).join(' '), children: _jsx(MarkdownText, { text: value }) }));
+            ].filter((className) => className !== undefined).join(' '), children: _jsx(MarkdownText, { text: value, labels: markdownLabels(t) }) }));
     }
     if (json !== undefined) {
-        return (_jsx(JsonTree, { data: json, label: `${direction === 'input' ? 'Payload' : 'Result'} JSON`, className: payloadClassName }));
+        return (_jsx(JsonTree, { data: json, label: t(direction === 'input' ? 'record.payloadJson' : 'record.outputJson'), labels: jsonTreeLabels(t), className: payloadClassName }));
     }
     return (_jsx("pre", { className: [
             css.payload,
             preview ? css.payloadPreview : undefined,
             error ? css.errorPayload : undefined,
-            value === 'No output' ? css.noOutputText : undefined,
+            value === t('record.noOutput') ? css.noOutputText : undefined,
         ].filter((value) => value !== undefined).join(' '), children: value }));
 }
-function RecordSchema({ record, preview = false, }) {
+function RecordSchema({ record, preview = false, t, }) {
     if (!record.cell.schemaDetail) {
-        return _jsx("p", { className: css.noPayload, children: "Schema unavailable" });
+        return _jsx("p", { className: css.noPayload, children: t('record.schemaUnavailable') });
     }
     const schema = parseToolSchema(record.cell.schemaDetail);
     if (schema !== undefined) {
-        return (_jsxs("div", { className: preview ? `${css.schema} ${css.schemaPreview}` : css.schema, children: [_jsxs("header", { className: css.schemaIntro, children: [_jsx("h3", { className: css.schemaName, children: schema.name }), _jsx("p", { className: css.schemaDescription, children: schema.description })] }), _jsxs("section", { className: css.schemaParameters, children: [_jsx("h4", { className: css.schemaParametersTitle, children: "Parameters" }), _jsx(JsonTree, { data: schema.parameters, label: `${schema.name} parameters JSON`, className: css.schemaTree })] })] }));
+        return (_jsxs("div", { className: preview ? `${css.schema} ${css.schemaPreview}` : css.schema, children: [_jsxs("header", { className: css.schemaIntro, children: [_jsx("h3", { className: css.schemaName, children: schema.name }), _jsx("p", { className: css.schemaDescription, children: schema.description })] }), _jsxs("section", { className: css.schemaParameters, children: [_jsx("h4", { className: css.schemaParametersTitle, children: t('record.parameters') }), _jsx(JsonTree, { data: schema.parameters, label: t('record.namedParametersJson', { name: schema.name }), labels: jsonTreeLabels(t), className: css.schemaTree })] })] }));
     }
     return (_jsx("pre", { className: `${css.payload} ${preview ? css.payloadPreview : ''}`, children: record.cell.schemaDetail }));
 }
@@ -817,7 +839,7 @@ function OverviewSection({ label, onOpen, children, }) {
  * @param props - Grouped trajectory data and whole-ledger fold state.
  * @returns The ledger and an optional local record inspector.
  */
-export function TrajectoryTable({ requestNumbers: sessionRequestNumbers, turns, streamingCells = [], timelineFocusIndexes = null, searchMatchIndexes = null, onSelectedIndexChange, onRecordSelect, recordSelection = null, recordFocus = null, historyLoading = false, olderHistoryLoading = false, historyStartSeq, hasOlderRecords = false, onLoadOlder, onClearSelection, collapsedTurns, onToggleTurn, collapsedAssistants, onToggleAssistant, inspectCallId = null, onInspectApplied, }) {
+export function TrajectoryTable({ t, renderImages, requestNumbers: sessionRequestNumbers, turns, streamingCells = [], timelineFocusIndexes = null, searchMatchIndexes = null, onSelectedIndexChange, onRecordSelect, recordSelection = null, recordFocus = null, historyLoading = false, olderHistoryLoading = false, historyStartSeq, hasOlderRecords = false, onLoadOlder, onClearSelection, collapsedTurns, onToggleTurn, collapsedAssistants, onToggleAssistant, inspectCallId = null, onInspectApplied, }) {
     const [selectedRecordId, setSelectedRecordId] = useState(null);
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [activeTab, setActiveTab] = useState('overview');
@@ -853,18 +875,19 @@ export function TrajectoryTable({ requestNumbers: sessionRequestNumbers, turns, 
     useEffect(() => {
         onSelectedIndexChange?.(selectedIndex);
     }, [onSelectedIndexChange, selectedIndex]);
-    const requestBoundaries = useMemo(() => indexRequestBoundaries(allRecords), [allRecords]);
-    const requestNumbers = useMemo(() => indexRequestNumbers(allRecords, sessionRequestNumbers, requestBoundaries), [allRecords, requestBoundaries, sessionRequestNumbers]);
+    const requestGroups = useMemo(() => new Set((sessionRequestNumbers ?? []).map(request => requestKey(request.turn, request.group))), [sessionRequestNumbers]);
+    const requestBoundaries = useMemo(() => indexRequestBoundaries(allRecords, requestGroups), [allRecords, requestGroups]);
+    const requestNumbers = useMemo(() => indexRequestNumbers(sessionRequestNumbers), [sessionRequestNumbers]);
     const records = useMemo(() => {
         if (searchMatchIndexes !== null)
             return filterRecords(allRecords, searchMatchIndexes);
         const turnRecords = collapsedTurns.size === 0
             ? allRecords
-            : collapseTurnRecords(allRecords, collapsedTurns);
+            : collapseTurnRecords(allRecords, collapsedTurns, requestGroups, t);
         return collapsedAssistants.size === 0
             ? turnRecords
-            : collapseAssistantRecords(turnRecords, collapsedAssistants);
-    }, [allRecords, collapsedAssistants, collapsedTurns, searchMatchIndexes]);
+            : collapseAssistantRecords(turnRecords, collapsedAssistants, t);
+    }, [allRecords, collapsedAssistants, collapsedTurns, requestGroups, searchMatchIndexes, t]);
     const projectedVirtualRows = useMemo(() => groupTrajectoryVirtualRows(records), [records]);
     const virtualRowStructure = useStableVirtualRowStructure(projectedVirtualRows);
     const virtualizationEnabled = hasOlderRecords
@@ -921,7 +944,7 @@ export function TrajectoryTable({ requestNumbers: sessionRequestNumbers, turns, 
             position,
             terminalRequestBoundary: record.cell.requestOnly === true && position === records.length - 1,
         }));
-    const requestBoundaryRuns = useMemo(() => indexRequestBoundaryRuns(records), [records]);
+    const requestBoundaryRuns = useMemo(() => indexRequestBoundaryRuns(records, requestGroups), [records, requestGroups]);
     const selectedPrompt = selected?.cell.kind === 'system'
         ? selected.cell.promptDetail
         : undefined;
@@ -930,24 +953,20 @@ export function TrajectoryTable({ requestNumbers: sessionRequestNumbers, turns, 
         : undefined;
     const promptSelected = selectedPrompt !== undefined;
     const selectedState = selected === undefined ? undefined : stateOf(selected);
-    const selectedRequestRecordTemplates = useMemo(() => selectedRequest === null
+    const selectedRequestInfo = selectedRequest === null
+        ? undefined
+        : sessionRequestNumbers?.find(request => requestIdentity(request) === selectedRequest.identity);
+    const selectedRequestRecordTemplates = useMemo(() => selectedRequestInfo === undefined
         ? []
-        : allRecords.filter(record => record.turn === selectedRequest.turn
-            && record.group === selectedRequest.group), [allRecords, selectedRequest]);
+        : allRecords.filter(record => record.turn === selectedRequestInfo.turn
+            && record.group === selectedRequestInfo.group), [allRecords, selectedRequestInfo]);
     const selectedRequestRecords = selectedRequestRecordTemplates.map(currentRecord);
     const selectedRequestAssistant = selectedRequestRecords.find(record => record.cell.kind === 'message');
     const selectedRequestAnchor = selectedRequestAssistant ?? selectedRequestRecords[0];
-    const selectedRequestNumber = selectedRequest === null
+    const selectedRequestNumber = selectedRequestInfo?.number;
+    const selectedRequestState = selectedRequestInfo === undefined
         ? undefined
-        : requestNumbers.get(requestKey(selectedRequest.turn, selectedRequest.group));
-    const selectedRequestInfo = selectedRequest === null
-        ? undefined
-        : sessionRequestNumbers?.find(request => selectedRequest.seq === undefined
-            ? request.turn === selectedRequest.turn && request.group === selectedRequest.group
-            : request.seq === selectedRequest.seq);
-    const selectedRequestState = selectedRequest === null
-        ? undefined
-        : selectedRequestInfo?.status
+        : selectedRequestInfo.status
             ?? (selectedRequestAssistant?.cell.assistantMetrics?.completedTime === null
                 ? 'running'
                 : selectedRequestAssistant === undefined
@@ -983,11 +1002,11 @@ export function TrajectoryTable({ requestNumbers: sessionRequestNumbers, turns, 
         });
     const selectedRequestCumulativeUsage = selectedRequestInfo?.cumulativeUsage ?? selectedRequestUsage;
     const selectedRequestOptions = selectedRequestInfo?.requestConfig;
-    const activeTurn = selectedRequest === null ? selected?.turn : selectedRequest.turn;
-    const activeSection = selectedRequest === null
+    const activeTurn = selectedRequestInfo === undefined ? selected?.turn : selectedRequestInfo.turn;
+    const activeSection = selectedRequestInfo === undefined
         ? selected?.section
         : selectedRequestRecords[0]?.section;
-    const selectedTabs = selectedRequest !== null
+    const selectedTabs = selectedRequestInfo !== undefined
         ? REQUEST_TABS.filter(tab => tab.id !== 'options' || selectedRequestOptions !== undefined)
         : selected === undefined ? [] : detailTabs(selected);
     const selectedParents = selected === undefined
@@ -1001,15 +1020,9 @@ export function TrajectoryTable({ requestNumbers: sessionRequestNumbers, turns, 
     const selectedAssistantRequestInfo = selectedAssistantRequest === undefined
         ? undefined
         : sessionRequestNumbers?.find(request => request.number === selectedAssistantRequest);
-    const selectedAssistantRequestTarget = selected !== undefined && selectedAssistantRequest !== undefined
-        ? {
-            turn: selected.turn,
-            group: selected.group,
-            ...(selectedAssistantRequestInfo?.seq === undefined
-                ? {}
-                : { seq: selectedAssistantRequestInfo.seq }),
-        }
-        : undefined;
+    const selectedAssistantRequestTarget = selectedAssistantRequestInfo === undefined
+        ? undefined
+        : { identity: requestIdentity(selectedAssistantRequestInfo) };
     const hasSelectedHierarchy = selectedAssistantRequestTarget !== undefined
         || selectedParents.message !== undefined
         || selectedParents.tool !== undefined;
@@ -1277,15 +1290,15 @@ export function TrajectoryTable({ requestNumbers: sessionRequestNumbers, turns, 
                 }, onClick: (event) => {
                     if (event.target === event.currentTarget)
                         clearAllSelections();
-                }, children: [showInitialLoading && (_jsx("div", { className: css.historyLoading, role: "status", "aria-live": "polite", children: _jsxs("span", { className: css.historyLoadingBar, children: [_jsx("span", { className: css.historyLoadingSpinner, "aria-hidden": "true" }), "Loading trajectory\u2026"] }) })), _jsxs("table", { className: css.table, "data-scroll-ready": tableScrollReady || undefined, "aria-rowcount": records.length + historyRowOffset, children: [_jsxs("colgroup", { children: [_jsx("col", { className: css.eventColumn }), _jsx("col", { className: css.contentColumn })] }), _jsxs("tbody", { children: [hasOlderRecords && (_jsx("tr", { className: css.historyLoadRow, "data-history-load": "", "aria-rowindex": 1, children: _jsx("td", { colSpan: 2, children: _jsxs("button", { type: "button", className: css.historyLoadButton, disabled: olderBusy || onLoadOlder === undefined, "aria-label": olderBusy
-                                                    ? 'Loading earlier history…'
-                                                    : 'Load earlier history', onClick: () => {
+                }, children: [showInitialLoading && (_jsx("div", { className: css.historyLoading, role: "status", "aria-live": "polite", children: _jsxs("span", { className: css.historyLoadingBar, children: [_jsx("span", { className: css.historyLoadingSpinner, "aria-hidden": "true" }), t('history.loadingTrajectory')] }) })), _jsxs("table", { className: css.table, "data-scroll-ready": tableScrollReady || undefined, "aria-rowcount": records.length + historyRowOffset, children: [_jsxs("colgroup", { children: [_jsx("col", { className: css.eventColumn }), _jsx("col", { className: css.contentColumn })] }), _jsxs("tbody", { children: [hasOlderRecords && (_jsx("tr", { className: css.historyLoadRow, "data-history-load": "", "aria-rowindex": 1, children: _jsx("td", { colSpan: 2, children: _jsxs("button", { type: "button", className: css.historyLoadButton, disabled: olderBusy || onLoadOlder === undefined, "aria-label": olderBusy
+                                                    ? t('history.loadingEarlierAria')
+                                                    : t('history.loadEarlier'), onClick: () => {
                                                     const pane = tablePaneRef.current;
                                                     if (pane !== null)
                                                         requestOlder(pane, false);
-                                                }, children: [olderBusy && (_jsx("span", { className: css.historyLoadingSpinner, "aria-hidden": "true" })), _jsx("span", { "aria-hidden": "true", children: olderBusy ? 'Loading earlier history…' : 'Load earlier history' }), _jsx("span", { className: css.visuallyHidden, role: "status", "aria-live": "polite", children: olderBusy ? 'Loading earlier history…' : '' })] }) }) })), virtualTop > 0 && (_jsx("tr", { className: css.virtualSpacer, "data-virtual-spacer": "top", "aria-hidden": "true", children: _jsx("td", { colSpan: 2, style: {
+                                                }, children: [olderBusy && (_jsx("span", { className: css.historyLoadingSpinner, "aria-hidden": "true" })), _jsx("span", { "aria-hidden": "true", children: olderBusy ? t('history.loadingEarlier') : t('history.loadEarlier') }), _jsx("span", { className: css.visuallyHidden, role: "status", "aria-live": "polite", children: olderBusy ? t('history.loadingEarlier') : '' })] }) }) })), virtualTop > 0 && (_jsx("tr", { className: css.virtualSpacer, "data-virtual-spacer": "top", "aria-hidden": "true", children: _jsx("td", { colSpan: 2, style: {
                                                 '--trajectory-virtual-spacer-height': `${virtualTop}px`,
-                                            } }) })), renderedRecords.map(({ record, position, terminalRequestBoundary }) => (_jsx(RecordPresentation, { cell: record.cell, children: ({ displayText, listDisplayText, resultText, toolCallOnly, toolCallText }) => {
+                                            } }) })), renderedRecords.map(({ record, position, terminalRequestBoundary }) => (_jsx(RecordPresentation, { cell: record.cell, t: t, children: ({ displayText, listDisplayText, resultText, toolCallOnly, toolCallText }) => {
                                             const isCollapsedSummary = record.collapsedSummary !== undefined;
                                             const isRequestOnly = record.cell.requestOnly === true;
                                             const isInitialSystem = record.cell.kind === 'system'
@@ -1307,18 +1320,28 @@ export function TrajectoryTable({ requestNumbers: sessionRequestNumbers, turns, 
                                             };
                                             const requestLabel = request === undefined
                                                 ? undefined
-                                                : `Request #${request}${requestInfo?.purpose === 'compaction' ? ' · Compaction' : ''}`;
-                                            const requestSelected = request !== undefined
-                                                && selectedRequest?.turn === record.turn
-                                                && selectedRequest.group === record.group;
+                                                : t(requestInfo?.purpose === 'compaction'
+                                                    ? 'request.labelCompaction'
+                                                    : 'request.label', { request });
+                                            const requestSelected = requestInfo !== undefined
+                                                && selectedRequest?.identity === requestIdentity(requestInfo);
                                             const sectionActive = record.turn === null
                                                 ? activeSection === record.section
                                                 : activeTurn === record.turn;
                                             return (_jsxs("tr", { tabIndex: isRequestOnly ? -1 : 0, "aria-rowindex": position + 1 + historyRowOffset, "aria-label": isCollapsedSummary
-                                                    ? `Collapsed ${record.collapsedSummaryKind} summary, ${record.collapsedSummary}`
+                                                    ? t('request.collapsedSummary', {
+                                                        kind: t(record.collapsedSummaryKind === 'turn'
+                                                            ? 'request.collapsedTurn'
+                                                            : 'request.collapsedAssistant'),
+                                                        summary: record.collapsedSummary,
+                                                    })
                                                     : isRequestOnly
-                                                        ? `Request ${request ?? ''}, compaction`
-                                                        : `${request === undefined ? '' : `Request ${request}, `}${KIND_LABEL[record.cell.kind]}, ${listDisplayText || 'no content'}`, "aria-selected": !isCollapsedSummary && !isRequestOnly && selectedIndex === record.cell.index, "data-kind": record.cell.kind, "data-trajectory-row-key": trajectoryVirtualRecordKey(record), "data-virtual-position": virtualizationEnabled ? position : undefined, "data-record-index": !isCollapsedSummary && !isRequestOnly
+                                                        ? t('request.rowAriaCompaction', { request: request ?? '' })
+                                                        : t('request.rowAria', {
+                                                            request: request === undefined ? '' : t('request.rowPrefix', { request }),
+                                                            kind: t(KIND_LABEL_KEY[record.cell.kind]),
+                                                            content: listDisplayText || t('request.noContent'),
+                                                        }), "aria-selected": !isCollapsedSummary && !isRequestOnly && selectedIndex === record.cell.index, "data-kind": record.cell.kind, "data-trajectory-row-key": trajectoryVirtualRecordKey(record), "data-virtual-position": virtualizationEnabled ? position : undefined, "data-record-index": !isCollapsedSummary && !isRequestOnly
                                                     ? record.cell.index
                                                     : undefined, "data-request-only": isRequestOnly || undefined, "data-terminal-request-boundary": terminalRequestBoundary || undefined, "data-group-start": record.groupStart || undefined, "data-turn-start": record.turnStart || undefined, "data-error": record.cell.isError || undefined, "data-running": stateOf(record) === 'running' || undefined, "data-turn-end": record.turnEnd || undefined, "data-collapsed-summary": record.collapsedSummaryKind, "data-selected": !isCollapsedSummary && selectedIndex === record.cell.index || undefined, "data-timeline-focus": isCollapsedSummary || timelineFocusIndexes === null
                                                     ? undefined
@@ -1375,20 +1398,18 @@ export function TrajectoryTable({ requestNumbers: sessionRequestNumbers, turns, 
                                                                     ? `${css.requestBoundaryControl} ${css.requestBoundaryControlActive}`
                                                                     : css.requestBoundaryControl, "aria-label": requestLabel, "aria-pressed": requestSelected, "data-label": requestLabel, "data-request-run-index": requestRunIndex, "data-request-status": requestStatus, style: requestBoundaryStyle, onClick: (event) => {
                                                                     event.stopPropagation();
-                                                                    selectRequest({
-                                                                        turn: record.turn,
-                                                                        group: record.group,
-                                                                        ...(requestInfo?.seq === undefined ? {} : { seq: requestInfo.seq }),
-                                                                    });
+                                                                    if (requestInfo !== undefined) {
+                                                                        selectRequest({ identity: requestIdentity(requestInfo) });
+                                                                    }
                                                                 }, onDoubleClick: (event) => { event.stopPropagation(); } })), record.turn !== null
                                                                 && activeTurn === record.turn
                                                                 && !isInitialSystem && (_jsx("span", { className: css.turnRail, "aria-hidden": "true" })), !isCollapsedSummary && selectedIndex === record.cell.index && (_jsx("span", { className: css.selectionRail, "aria-hidden": "true" })), !isCollapsedSummary
                                                                 && !isRequestOnly
                                                                 && record.turnStart && (_jsx("span", { className: sectionActive
                                                                     ? `${css.turnLabel} ${css.turnLabelActive}`
-                                                                    : css.turnLabel, "aria-label": sectionLabel(record.turn), children: record.turn === null
-                                                                    ? sectionLabel(record.turn)
-                                                                    : (_jsxs(_Fragment, { children: [_jsx("span", { className: css.turnLabelFull, "aria-hidden": "true", children: sectionLabel(record.turn) }), _jsxs("span", { className: css.turnLabelCompact, "aria-hidden": "true", children: ["#", record.turn] })] })) })), _jsx("div", { className: css.eventInner, children: !isCollapsedSummary && !isRequestOnly && (_jsx("span", { className: css.kindSlot, children: _jsxs("span", { className: `${css.kindTag} ${record.cell.kind === 'system'
+                                                                    : css.turnLabel, "aria-label": sectionLabel(record.turn, t), children: record.turn === null
+                                                                    ? sectionLabel(record.turn, t)
+                                                                    : (_jsxs(_Fragment, { children: [_jsx("span", { className: css.turnLabelFull, "aria-hidden": "true", children: sectionLabel(record.turn, t) }), _jsxs("span", { className: css.turnLabelCompact, "aria-hidden": "true", children: ["#", record.turn] })] })) })), _jsx("div", { className: css.eventInner, children: !isCollapsedSummary && !isRequestOnly && (_jsx("span", { className: css.kindSlot, children: _jsxs("span", { className: `${css.kindTag} ${record.cell.kind === 'system'
                                                                             ? css.systemNeutral
                                                                             : record.cell.kind === 'context'
                                                                                 ? css.contextGreen
@@ -1400,20 +1421,20 @@ export function TrajectoryTable({ requestNumbers: sessionRequestNumbers, turns, 
                                                                                             ? css.assistantVioletBright
                                                                                             : record.cell.kind === 'subtool'
                                                                                                 ? css.subtoolAmber
-                                                                                                : css[record.cell.kind]}`, "data-role-kind": record.cell.kind, children: [_jsx(Tooltip, { label: KIND_LABEL[record.cell.kind], side: "right", children: _jsx("span", { className: css.kindTagIcon, "aria-hidden": "true", children: KIND_ICON[record.cell.kind] }) }), _jsx("span", { className: css.kindTagLabel, children: KIND_LABEL[record.cell.kind] })] }) })) })] }), _jsx("td", { className: css.content, children: isRequestOnly
+                                                                                                : css[record.cell.kind]}`, "data-role-kind": record.cell.kind, children: [_jsx(Tooltip, { label: t(KIND_LABEL_KEY[record.cell.kind]), side: "right", children: _jsx("span", { className: css.kindTagIcon, "aria-hidden": "true", children: KIND_ICON[record.cell.kind] }) }), _jsx("span", { className: css.kindTagLabel, children: t(KIND_LABEL_KEY[record.cell.kind]) })] }) })) })] }), _jsx("td", { className: css.content, children: isRequestOnly
                                                             ? null
                                                             : record.collapsedSummary !== undefined
                                                                 ? (_jsxs("span", { className: css.collapsedTurnContent, title: record.collapsedSummary, children: [_jsx("span", { className: css.collapsedTurnEllipsis, children: "\u2026" }), _jsx("span", { className: css.collapsedTurnText, children: record.collapsedSummary })] }))
                                                                 : (_jsxs("span", { className: resultText === undefined ? css.contentText : css.resultPreview, title: resultText === undefined
                                                                         ? listDisplayText
-                                                                        : `${listDisplayText} → ${resultText}`, children: [_jsx("span", { className: resultText === undefined ? undefined : css.resultRequest, children: _jsx(RecordListText, { displayText: displayText, toolCallOnly: toolCallOnly, toolCallText: toolCallText }) }), resultText !== undefined && (_jsxs("span", { className: record.cell.isError ? `${css.inlineResult} ${css.error}` : css.inlineResult, children: [_jsx("span", { className: css.arrow, children: "\u2192" }), _jsx("span", { className: resultText === 'No output'
+                                                                        : `${listDisplayText} → ${resultText}`, children: [_jsx("span", { className: resultText === undefined ? undefined : css.resultRequest, children: _jsx(RecordListText, { displayText: displayText, toolCallOnly: toolCallOnly, toolCallText: toolCallText, t: t }) }), resultText !== undefined && (_jsxs("span", { className: record.cell.isError ? `${css.inlineResult} ${css.error}` : css.inlineResult, children: [_jsx("span", { className: css.arrow, children: "\u2192" }), _jsx("span", { className: resultText === t('record.noOutput')
                                                                                         ? `${css.inlineResultText} ${css.noOutputText}`
                                                                                         : css.inlineResultText, children: resultText })] }))] })) })] }));
                                         } }, trajectoryVirtualRecordKey(record)))), virtualBottom > 0 && (_jsx("tr", { className: css.virtualSpacer, "data-virtual-spacer": "bottom", "aria-hidden": "true", children: _jsx("td", { colSpan: 2, style: {
                                                 '--trajectory-virtual-spacer-height': `${virtualBottom}px`,
-                                            } }) }))] })] })] }), (selectedRequest !== null
+                                            } }) }))] })] })] }), (selectedRequestInfo !== undefined
                 || promptSelected
-                || (selected !== undefined && selectedState !== undefined)) && (_jsxs("aside", { className: css.details, "aria-label": "Event details", style: detailsWidth === null ? undefined : { width: detailsWidth }, children: [_jsx("div", { className: css.detailsResizeHandle, role: "separator", "aria-label": "Resize event details", "aria-controls": "trajectory-detail-panel", "aria-orientation": "vertical", tabIndex: 0, title: "Drag to resize. Double-click to reset.", onDoubleClick: () => {
+                || (selected !== undefined && selectedState !== undefined)) && (_jsxs("aside", { className: css.details, "aria-label": t('details.event'), style: detailsWidth === null ? undefined : { width: detailsWidth }, children: [_jsx("div", { className: css.detailsResizeHandle, role: "separator", "aria-label": t('details.resize'), "aria-controls": "trajectory-detail-panel", "aria-orientation": "vertical", tabIndex: 0, title: t('details.resizeTitle'), onDoubleClick: () => {
                             setDetailsWidth(null);
                             setToolRequestOffset(null);
                         }, onPointerDown: (event) => {
@@ -1468,12 +1489,12 @@ export function TrajectoryTable({ requestNumbers: sessionRequestNumbers, turns, 
                             setToolRequestOffset(currentToolRequestOffset
                                 + (nextDetailsWidth - currentDetailsWidth) * TOOL_REQUEST_SHARE);
                             event.preventDefault();
-                        } }), _jsxs("div", { className: css.detailsHeader, children: [_jsx("div", { className: css.detailsTitle, children: selectedRequest !== null
-                                    ? (_jsxs(_Fragment, { children: [_jsx("span", { className: css.requestDetailsDot, "aria-hidden": "true" }), _jsxs("span", { className: css.requestDetailsName, children: ["Request #", selectedRequestNumber ?? '—'] }), _jsx("span", { className: css.detailsLocation, children: selectedRequestInfo?.purpose === 'compaction'
-                                                    ? `Compaction · ${sectionLabel(selectedRequest.turn)}`
-                                                    : sectionLabel(selectedRequest.turn) })] }))
+                        } }), _jsxs("div", { className: css.detailsHeader, children: [_jsx("div", { className: css.detailsTitle, children: selectedRequestInfo !== undefined
+                                    ? (_jsxs(_Fragment, { children: [_jsx("span", { className: css.requestDetailsDot, "aria-hidden": "true" }), _jsx("span", { className: css.requestDetailsName, children: t('request.label', { request: selectedRequestNumber ?? '—' }) }), _jsx("span", { className: css.detailsLocation, children: selectedRequestInfo.purpose === 'compaction'
+                                                    ? t('request.compaction', { section: sectionLabel(selectedRequestInfo.turn, t) })
+                                                    : sectionLabel(selectedRequestInfo.turn, t) })] }))
                                     : promptSelected
-                                        ? (_jsxs(_Fragment, { children: [_jsx("span", { className: `${css.kindTag} ${css.systemNeutral}`, children: "SYSTEM" }), _jsx("span", { className: css.detailsLocation, children: selected?.cell.text })] }))
+                                        ? (_jsxs(_Fragment, { children: [_jsx("span", { className: `${css.kindTag} ${css.systemNeutral}`, children: t('kind.system') }), _jsx("span", { className: css.detailsLocation, children: selected?.cell.text })] }))
                                         : selected !== undefined && (_jsxs(_Fragment, { children: [_jsx("span", { className: `${css.kindTag} ${selected.cell.kind === 'context'
                                                         ? css.contextGreen
                                                         : selected.cell.kind === 'compacted'
@@ -1484,41 +1505,44 @@ export function TrajectoryTable({ requestNumbers: sessionRequestNumbers, turns, 
                                                                     ? css.assistantVioletBright
                                                                     : selected.cell.kind === 'subtool'
                                                                         ? css.subtoolAmber
-                                                                        : css[selected.cell.kind]}`, children: KIND_LABEL[selected.cell.kind] }), _jsx("span", { className: css.detailsLocation, children: selected.cell.kind === 'compacted'
-                                                        ? sectionLabel(selected.turn)
-                                                        : `${sectionLabel(selected.turn)} · ${selected.group}` })] })) }), _jsx("button", { type: "button", className: css.close, "aria-label": "Close details", onClick: clearInspectorSelection, children: _jsx("span", { "aria-hidden": "true", children: "\u00D7" }) })] }), _jsx("div", { className: css.detailTabs, role: "tablist", "aria-label": "Event details", children: selectedTabs.map(tab => (_jsx("button", { id: `trajectory-detail-${tab.id}`, type: "button", role: "tab", "aria-controls": "trajectory-detail-panel", "aria-selected": activeTab === tab.id, className: activeTab === tab.id ? `${css.detailTab} ${css.detailTabActive}` : css.detailTab, onClick: () => { activateTab(tab.id); }, children: tab.label }, tab.id))) }), _jsxs("div", { id: "trajectory-detail-panel", className: activeTab === 'overview'
+                                                                        : css[selected.cell.kind]}`, children: t(KIND_LABEL_KEY[selected.cell.kind]) }), _jsx("span", { className: css.detailsLocation, children: selected.cell.kind === 'compacted'
+                                                        ? sectionLabel(selected.turn, t)
+                                                        : `${sectionLabel(selected.turn, t)} · ${selected.group}` })] })) }), _jsx("button", { type: "button", className: css.close, "aria-label": t('details.close'), onClick: clearInspectorSelection, children: _jsx("span", { "aria-hidden": "true", children: "\u00D7" }) })] }), _jsx("div", { className: css.detailTabs, role: "tablist", "aria-label": t('details.event'), children: selectedTabs.map(tab => (_jsx("button", { id: `trajectory-detail-${tab.id}`, type: "button", role: "tab", "aria-controls": "trajectory-detail-panel", "aria-selected": activeTab === tab.id, className: activeTab === tab.id ? `${css.detailTab} ${css.detailTabActive}` : css.detailTab, onClick: () => { activateTab(tab.id); }, children: t(tab.labelKey) }, tab.id))) }), _jsxs("div", { id: "trajectory-detail-panel", className: activeTab === 'overview'
                             ? `${css.detailBody} ${css.detailBodySummary}`
-                            : css.detailBody, role: "tabpanel", "aria-labelledby": `trajectory-detail-${activeTab}`, children: [selectedRequest !== null
+                            : css.detailBody, role: "tabpanel", "aria-labelledby": `trajectory-detail-${activeTab}`, children: [selectedRequestInfo !== undefined
                                 && selectedRequestState !== undefined
-                                && activeTab === 'overview' && (_jsxs(_Fragment, { children: [_jsxs("dl", { className: `${css.overview} ${css.summaryScrollRegion}`, "data-summary-scroll-region": "", children: [_jsxs("div", { children: [_jsx("dt", { children: "Status" }), _jsx("dd", { className: selectedRequestState === 'error' ? css.error : undefined, children: statusLabel(selectedRequestState) })] }), selectedRequestInfo?.purpose === 'compaction' && (_jsxs("div", { children: [_jsx("dt", { children: "Purpose" }), _jsx("dd", { children: "Compaction" })] })), (selectedRequestInfo?.provider
-                                                ?? selectedRequestInfo?.requestConfig?.provider) !== undefined && (_jsxs("div", { children: [_jsx("dt", { children: "Provider" }), _jsx("dd", { children: selectedRequestInfo?.provider
-                                                            ?? selectedRequestInfo?.requestConfig?.provider })] })), (selectedRequestInfo?.model
-                                                ?? selectedRequestInfo?.requestConfig?.model) !== undefined && (_jsxs("div", { children: [_jsx("dt", { children: "Model" }), _jsx("dd", { children: selectedRequestInfo?.model
-                                                            ?? selectedRequestInfo?.requestConfig?.model })] })), _jsxs("div", { children: [_jsx("dt", { children: "Tool calls" }), _jsx("dd", { children: selectedRequestToolCalls })] }), selectedRequestSubtoolCalls > 0 && (_jsxs("div", { children: [_jsx("dt", { children: "Subtool calls" }), _jsx("dd", { children: selectedRequestSubtoolCalls })] })), selectedRequestInfo?.error !== undefined && (_jsxs("div", { children: [_jsx("dt", { children: "Error" }), _jsx("dd", { className: css.error, children: selectedRequestInfo.error })] })), selectedRequestInfo?.retry !== undefined && (_jsxs("div", { children: [_jsx("dt", { children: "Retry" }), _jsxs("dd", { children: ["Scheduled ", selectedRequestInfo.retry, selectedRequestInfo.maxRetries === undefined
-                                                                ? ''
-                                                                : ` of ${selectedRequestInfo.maxRetries}`] })] })), selectedRequestInfo?.retryDelayMs !== undefined && (_jsxs("div", { children: [_jsx("dt", { children: "Retry delay" }), _jsx("dd", { children: formatDurationMs(selectedRequestInfo.retryDelayMs) })] })), selectedRequestResult !== undefined && (_jsxs("div", { children: [_jsx("dt", { children: "Result" }), _jsx("dd", { className: css.overviewParentLinks, children: _jsxs("button", { type: "button", className: css.overviewHierarchyNavLink, onClick: () => {
+                                && activeTab === 'overview' && (_jsxs(_Fragment, { children: [_jsxs("dl", { className: `${css.overview} ${css.summaryScrollRegion}`, "data-summary-scroll-region": "", children: [_jsxs("div", { children: [_jsx("dt", { children: t('details.status') }), _jsx("dd", { className: selectedRequestState === 'error' ? css.error : undefined, children: statusLabel(selectedRequestState, t) })] }), selectedRequestInfo.purpose === 'compaction' && (_jsxs("div", { children: [_jsx("dt", { children: t('details.purpose') }), _jsx("dd", { children: t('request.compactionPurpose') })] })), (selectedRequestInfo.provider
+                                                ?? selectedRequestInfo.requestConfig?.provider) !== undefined && (_jsxs("div", { children: [_jsx("dt", { children: t('details.provider') }), _jsx("dd", { children: selectedRequestInfo.provider
+                                                            ?? selectedRequestInfo.requestConfig?.provider })] })), (selectedRequestInfo.model
+                                                ?? selectedRequestInfo.requestConfig?.model) !== undefined && (_jsxs("div", { children: [_jsx("dt", { children: t('details.model') }), _jsx("dd", { children: selectedRequestInfo.model
+                                                            ?? selectedRequestInfo.requestConfig?.model })] })), _jsxs("div", { children: [_jsx("dt", { children: t('details.toolCalls') }), _jsx("dd", { children: selectedRequestToolCalls })] }), selectedRequestSubtoolCalls > 0 && (_jsxs("div", { children: [_jsx("dt", { children: t('details.subtoolCalls') }), _jsx("dd", { children: selectedRequestSubtoolCalls })] })), selectedRequestInfo.error !== undefined && (_jsxs("div", { children: [_jsx("dt", { children: t('details.error') }), _jsx("dd", { className: css.error, children: requestErrorMessage(selectedRequestInfo, t) })] })), selectedRequestInfo.retry !== undefined && (_jsxs("div", { children: [_jsx("dt", { children: t('details.retry') }), _jsxs("dd", { children: [t('details.scheduled'), " ", selectedRequestInfo.maxRetries === undefined
+                                                                ? selectedRequestInfo.retry
+                                                                : t('request.retryProgress', {
+                                                                    retry: selectedRequestInfo.retry,
+                                                                    maximum: selectedRequestInfo.maxRetries,
+                                                                })] })] })), selectedRequestInfo.retryDelayMs !== undefined && (_jsxs("div", { children: [_jsx("dt", { children: t('details.retryDelay') }), _jsx("dd", { children: formatDurationMs(selectedRequestInfo.retryDelayMs, t) })] })), selectedRequestResult !== undefined && (_jsxs("div", { children: [_jsx("dt", { children: t('details.result') }), _jsx("dd", { className: css.overviewParentLinks, children: _jsxs("button", { type: "button", className: css.overviewHierarchyNavLink, onClick: () => {
                                                                 openRecordSummary(selectedRequestResult);
-                                                            }, children: [_jsx("span", { children: selectedRequestInfo?.purpose === 'compaction'
-                                                                        ? 'Compacted'
-                                                                        : 'Assistant Message' }), _jsx(IconChevronRightOutline14, { className: css.overviewHierarchyJumpIconTight, size: 11 })] }) })] }))] }), _jsxs("div", { className: css.overviewSections, children: [selectedRequestOptions !== undefined && (_jsx(OverviewSection, { label: "Options", onOpen: () => { activateTab('options'); }, children: _jsx(RequestOptions, { options: selectedRequestOptions, preview: true }) })), _jsx(OverviewSection, { label: "Usage", onOpen: () => { activateTab('usage'); }, children: _jsx(UsageRows, { usage: selectedRequestUsage }) }), _jsx(OverviewSection, { label: "Timing", onOpen: () => { activateTab('timing'); }, children: _jsx(RequestTiming, { assistant: selectedRequestAssistant, anchor: selectedRequestAnchor, request: selectedRequestInfo }) })] })] })), selectedRequest !== null && activeTab === 'options' && (_jsx(RequestOptions, { options: selectedRequestOptions })), selectedRequest !== null && activeTab === 'usage' && (_jsx(RequestUsagePanel, { usage: selectedRequestUsage, cumulative: selectedRequestCumulativeUsage })), selectedRequest !== null && activeTab === 'timing' && (_jsx(RequestTiming, { assistant: selectedRequestAssistant, anchor: selectedRequestAnchor, request: selectedRequestInfo })), promptSelected
+                                                            }, children: [_jsx("span", { children: selectedRequestInfo.purpose === 'compaction'
+                                                                        ? t('details.compacted')
+                                                                        : t('details.assistantMessage') }), _jsx(IconChevronRightOutline14, { className: css.overviewHierarchyJumpIconTight, size: 11 })] }) })] }))] }), _jsxs("div", { className: css.overviewSections, children: [selectedRequestOptions !== undefined && (_jsx(OverviewSection, { label: t('tab.options'), onOpen: () => { activateTab('options'); }, children: _jsx(RequestOptions, { options: selectedRequestOptions, preview: true, t: t }) })), _jsx(OverviewSection, { label: t('tab.usage'), onOpen: () => { activateTab('usage'); }, children: _jsx(UsageRows, { usage: selectedRequestUsage, t: t }) }), _jsx(OverviewSection, { label: t('tab.timing'), onOpen: () => { activateTab('timing'); }, children: _jsx(RequestTiming, { assistant: selectedRequestAssistant, anchor: selectedRequestAnchor, request: selectedRequestInfo, t: t }) })] })] })), selectedRequestInfo !== undefined && activeTab === 'options' && (_jsx(RequestOptions, { options: selectedRequestOptions, t: t })), selectedRequestInfo !== undefined && activeTab === 'usage' && (_jsx(RequestUsagePanel, { usage: selectedRequestUsage, cumulative: selectedRequestCumulativeUsage, t: t })), selectedRequestInfo !== undefined && activeTab === 'timing' && (_jsx(RequestTiming, { assistant: selectedRequestAssistant, anchor: selectedRequestAnchor, request: selectedRequestInfo, t: t })), promptSelected
                                 && selectedPreviousPrompt !== undefined
-                                && activeTab === 'diff' && (_jsx(SystemPromptDiff, { before: selectedPreviousPrompt, after: selectedPrompt })), promptSelected && activeTab === 'system-prompt' && (selectedPrompt.system === ''
-                                ? _jsx("p", { className: css.noPayload, children: "No system prompt in this request" })
-                                : (_jsx("div", { className: `${css.markdownPayload} ${css.systemPrompt}`, children: _jsx(MarkdownText, { text: selectedPrompt.system }) }))), promptSelected && activeTab === 'tools' && (_jsx(ToolCatalog, { tools: selectedPrompt.tools })), !promptSelected
+                                && activeTab === 'diff' && (_jsx(SystemPromptDiff, { before: selectedPreviousPrompt, after: selectedPrompt, t: t })), promptSelected && activeTab === 'system-prompt' && (selectedPrompt.system === ''
+                                ? _jsx("p", { className: css.noPayload, children: t('record.systemPromptMissing') })
+                                : (_jsx("div", { className: `${css.markdownPayload} ${css.systemPrompt}`, children: _jsx(MarkdownText, { text: selectedPrompt.system, labels: markdownLabels(t) }) }))), promptSelected && activeTab === 'tools' && (_jsx(ToolCatalog, { tools: selectedPrompt.tools, t: t })), !promptSelected
                                 && selected?.cell.kind === 'compacted'
                                 && selectedState !== undefined
-                                && activeTab === 'overview' && (_jsxs(_Fragment, { children: [_jsxs("dl", { className: `${css.overview} ${css.summaryScrollRegion}`, "data-summary-scroll-region": "", children: [_jsxs("div", { children: [_jsx("dt", { children: "Status" }), _jsx("dd", { className: selectedState === 'error' ? css.error : undefined, children: statusLabel(selectedState) })] }), _jsxs("div", { children: [_jsx("dt", { children: "Duration" }), _jsx("dd", { children: formatElapsedSeconds(selected.cell.timeSeconds) })] }), _jsxs("div", { children: [_jsx("dt", { children: "Tokens" }), _jsx("dd", { children: "\u2014" })] })] }), selected.cell.outputDetail !== undefined && (_jsx("div", { className: `${css.compactedSummary} ${css.summaryScrollRegion}`, "data-summary-scroll-region": "", children: _jsx(MarkdownRecordContent, { record: selected, rendered: true, thinkingExpanded: thinkingExpanded, onThinkingExpandedChange: setThinkingExpanded, onOpenCall: openCallSummary }) }))] })), !promptSelected
+                                && activeTab === 'overview' && (_jsxs(_Fragment, { children: [_jsxs("dl", { className: `${css.overview} ${css.summaryScrollRegion}`, "data-summary-scroll-region": "", children: [_jsxs("div", { children: [_jsx("dt", { children: t('details.status') }), _jsx("dd", { className: selectedState === 'error' ? css.error : undefined, children: statusLabel(selectedState, t) })] }), _jsxs("div", { children: [_jsx("dt", { children: t('timing.duration') }), _jsx("dd", { children: formatElapsedSeconds(selected.cell.timeSeconds, t) })] }), _jsxs("div", { children: [_jsx("dt", { children: t('usage.tokens') }), _jsx("dd", { children: "\u2014" })] })] }), selected.cell.outputDetail !== undefined && (_jsx("div", { className: `${css.compactedSummary} ${css.summaryScrollRegion}`, "data-summary-scroll-region": "", children: _jsx(MarkdownRecordContent, { record: selected, renderImages: renderImages, rendered: true, thinkingExpanded: thinkingExpanded, onThinkingExpandedChange: setThinkingExpanded, onOpenCall: openCallSummary, t: t }) }))] })), !promptSelected
                                 && selected !== undefined
                                 && selected.cell.kind !== 'compacted'
                                 && selectedState !== undefined
-                                && activeTab === 'overview' && (_jsxs(_Fragment, { children: [_jsxs("dl", { className: `${css.overview} ${css.summaryScrollRegion}`, "data-summary-scroll-region": "", children: [selected.cell.messageSource !== undefined && (_jsxs("div", { children: [_jsx("dt", { children: "Source" }), _jsx("dd", { className: css.overviewParentLinks, children: _jsxs("button", { type: "button", className: css.overviewHierarchyNavLink, onClick: () => { activateTab('source'); }, children: [_jsx("span", { children: messageSourceLabel(selected.cell.messageSource) }), _jsx(IconChevronRightOutline14, { className: css.overviewHierarchyJumpIconTight, size: 11 })] }) })] })), hasSelectedHierarchy && (_jsxs("div", { children: [_jsx("dt", { children: selectedAssistantRequestTarget !== undefined
-                                                            ? 'Source'
-                                                            : 'Hierarchy' }), _jsxs("dd", { className: css.overviewParentLinks, children: [selectedAssistantRequestTarget !== undefined && (_jsxs("button", { type: "button", className: css.overviewHierarchyNavLink, onClick: () => {
+                                && activeTab === 'overview' && (_jsxs(_Fragment, { children: [_jsxs("dl", { className: `${css.overview} ${css.summaryScrollRegion}`, "data-summary-scroll-region": "", children: [selected.cell.messageSource !== undefined && (_jsxs("div", { children: [_jsx("dt", { children: t('details.source') }), _jsx("dd", { className: css.overviewParentLinks, children: _jsxs("button", { type: "button", className: css.overviewHierarchyNavLink, onClick: () => { activateTab('source'); }, children: [_jsx("span", { children: messageSourceLabel(selected.cell.messageSource, t) }), _jsx(IconChevronRightOutline14, { className: css.overviewHierarchyJumpIconTight, size: 11 })] }) })] })), hasSelectedHierarchy && (_jsxs("div", { children: [_jsx("dt", { children: selectedAssistantRequestTarget !== undefined
+                                                            ? t('details.source')
+                                                            : t('details.hierarchy') }), _jsxs("dd", { className: css.overviewParentLinks, children: [selectedAssistantRequestTarget !== undefined && (_jsxs("button", { type: "button", className: css.overviewHierarchyNavLink, onClick: () => {
                                                                     selectRequest(selectedAssistantRequestTarget);
-                                                                }, children: [_jsxs("span", { children: ["Request #", selectedAssistantRequest ?? '—'] }), _jsx(IconChevronRightOutline14, { className: css.overviewHierarchyJumpIconTight, size: 11 })] })), selectedParentMessage !== undefined && (_jsxs("button", { type: "button", className: css.overviewHierarchyNavLink, onClick: () => { openRecordSummary(selectedParentMessage); }, children: [_jsx("span", { children: "Assistant Message" }), _jsx(IconChevronRightOutline14, { className: css.overviewHierarchyJumpIconTight, size: 11 })] })), selectedParentTool !== undefined && (_jsxs("button", { type: "button", className: css.overviewHierarchyNavLink, onClick: () => { openRecordSummary(selectedParentTool); }, children: [_jsx("span", { children: "Tool Call" }), _jsx(IconChevronRightOutline14, { className: css.overviewHierarchyJumpIconTight, size: 11 })] }))] })] })), _jsxs("div", { children: [_jsx("dt", { children: "Status" }), _jsx("dd", { className: selectedState === 'error' ? css.error : undefined, children: statusLabel(selectedState) })] }), selected.cell.kind === 'message' && (_jsx(TokenRows, { cell: selected.cell })), (selected.cell.kind === 'user' || selected.cell.kind === 'context') && (_jsxs("div", { children: [_jsx("dt", { children: "Duration" }), _jsx("dd", { children: formatElapsedSeconds(selected.cell.timeSeconds) })] }))] }), _jsxs("div", { className: css.overviewSections, children: [isMarkdownRecord(selected)
-                                                ? (_jsx(_Fragment, { children: _jsx(OverviewSection, { label: "Preview", onOpen: () => { activateTab('rendered'); }, children: _jsx(MarkdownRecordContent, { record: selected, rendered: true, preview: true, thinkingExpanded: thinkingExpanded, onThinkingExpandedChange: setThinkingExpanded, onOpenCall: openCallSummary }) }) }))
-                                                : (_jsxs(_Fragment, { children: [selected.cell.inputDetail && (_jsx(OverviewSection, { label: "Payload", onOpen: () => { activateTab('input'); }, children: _jsx(RecordPayload, { record: selected, direction: "input", preview: true }) })), selected.cell.outputDetail && (_jsx(OverviewSection, { label: "Result", onOpen: () => { activateTab('output'); }, children: _jsx(RecordPayload, { record: selected, direction: "output", preview: true }) })), _jsx(OverviewSection, { label: "Schema", onOpen: () => { activateTab('schema'); }, children: _jsx(RecordSchema, { record: selected, preview: true }) })] })), selectedAssistantRequestTarget !== undefined && (_jsx(OverviewSection, { label: "Request Timing", onOpen: () => {
+                                                                }, children: [_jsx("span", { children: t('request.label', { request: selectedAssistantRequest ?? '—' }) }), _jsx(IconChevronRightOutline14, { className: css.overviewHierarchyJumpIconTight, size: 11 })] })), selectedParentMessage !== undefined && (_jsxs("button", { type: "button", className: css.overviewHierarchyNavLink, onClick: () => { openRecordSummary(selectedParentMessage); }, children: [_jsx("span", { children: t('details.assistantMessage') }), _jsx(IconChevronRightOutline14, { className: css.overviewHierarchyJumpIconTight, size: 11 })] })), selectedParentTool !== undefined && (_jsxs("button", { type: "button", className: css.overviewHierarchyNavLink, onClick: () => { openRecordSummary(selectedParentTool); }, children: [_jsx("span", { children: t('details.toolCall') }), _jsx(IconChevronRightOutline14, { className: css.overviewHierarchyJumpIconTight, size: 11 })] }))] })] })), _jsxs("div", { children: [_jsx("dt", { children: t('details.status') }), _jsx("dd", { className: selectedState === 'error' ? css.error : undefined, children: statusLabel(selectedState, t) })] }), selected.cell.kind === 'message' && (_jsx(TokenRows, { cell: selected.cell, t: t })), (selected.cell.kind === 'user' || selected.cell.kind === 'context') && (_jsxs("div", { children: [_jsx("dt", { children: t('timing.duration') }), _jsx("dd", { children: formatElapsedSeconds(selected.cell.timeSeconds, t) })] }))] }), _jsxs("div", { className: css.overviewSections, children: [isMarkdownRecord(selected)
+                                                ? (_jsx(_Fragment, { children: _jsx(OverviewSection, { label: t('tab.preview'), onOpen: () => { activateTab('rendered'); }, children: _jsx(MarkdownRecordContent, { record: selected, renderImages: renderImages, rendered: true, preview: true, thinkingExpanded: thinkingExpanded, onThinkingExpandedChange: setThinkingExpanded, onOpenCall: openCallSummary, t: t }) }) }))
+                                                : (_jsxs(_Fragment, { children: [selected.cell.inputDetail && (_jsx(OverviewSection, { label: t('tab.payload'), onOpen: () => { activateTab('input'); }, children: _jsx(RecordPayload, { record: selected, direction: "input", preview: true, renderImages: renderImages, t: t }) })), selected.cell.outputDetail && (_jsx(OverviewSection, { label: t('tab.result'), onOpen: () => { activateTab('output'); }, children: _jsx(RecordPayload, { record: selected, direction: "output", preview: true, renderImages: renderImages, t: t }) })), _jsx(OverviewSection, { label: t('tab.schema'), onOpen: () => { activateTab('schema'); }, children: _jsx(RecordSchema, { record: selected, preview: true, t: t }) })] })), selectedAssistantRequestTarget !== undefined && (_jsx(OverviewSection, { label: t('timing.request'), onOpen: () => {
                                                     selectRequest(selectedAssistantRequestTarget, 'timing');
-                                                }, children: _jsx(RecordTiming, { record: selected }) })), (selected.cell.kind === 'tool' || selected.cell.kind === 'subtool') && (_jsx(OverviewSection, { label: "Timing", onOpen: () => { activateTab('timing'); }, children: _jsx(RecordTiming, { record: selected }) }))] })] })), !promptSelected && selected !== undefined && activeTab === 'rendered' && (_jsx(MarkdownRecordContent, { record: selected, rendered: true, thinkingExpanded: thinkingExpanded, onThinkingExpandedChange: setThinkingExpanded, onOpenCall: openCallSummary })), !promptSelected && selected !== undefined && activeTab === 'raw' && (_jsx(MarkdownRecordContent, { record: selected, rendered: false, thinkingExpanded: thinkingExpanded, onThinkingExpandedChange: setThinkingExpanded, onOpenCall: openCallSummary })), !promptSelected && selected !== undefined && activeTab === 'source' && (_jsx(MessageSource, { record: selected })), !promptSelected && selected !== undefined && activeTab === 'input' && (_jsx(RecordPayload, { record: selected, direction: "input" })), !promptSelected && selected !== undefined && activeTab === 'output' && (_jsx(RecordPayload, { record: selected, direction: "output" })), !promptSelected && selected !== undefined && activeTab === 'schema' && (_jsx(RecordSchema, { record: selected })), !promptSelected && selected !== undefined && activeTab === 'timing' && (_jsx(RecordTiming, { record: selected }))] })] }))] }));
+                                                }, children: _jsx(RecordTiming, { record: selected, t: t }) })), (selected.cell.kind === 'tool' || selected.cell.kind === 'subtool') && (_jsx(OverviewSection, { label: t('tab.timing'), onOpen: () => { activateTab('timing'); }, children: _jsx(RecordTiming, { record: selected, t: t }) }))] })] })), !promptSelected && selected !== undefined && activeTab === 'rendered' && (_jsx(MarkdownRecordContent, { record: selected, renderImages: renderImages, rendered: true, thinkingExpanded: thinkingExpanded, onThinkingExpandedChange: setThinkingExpanded, onOpenCall: openCallSummary, t: t })), !promptSelected && selected !== undefined && activeTab === 'raw' && (_jsx(MarkdownRecordContent, { record: selected, renderImages: renderImages, rendered: false, thinkingExpanded: thinkingExpanded, onThinkingExpandedChange: setThinkingExpanded, onOpenCall: openCallSummary, t: t })), !promptSelected && selected !== undefined && activeTab === 'source' && (_jsx(MessageSource, { record: selected, t: t })), !promptSelected && selected !== undefined && activeTab === 'input' && (_jsx(RecordPayload, { record: selected, direction: "input", renderImages: renderImages, t: t })), !promptSelected && selected !== undefined && activeTab === 'output' && (_jsx(RecordPayload, { record: selected, direction: "output", renderImages: renderImages, t: t })), !promptSelected && selected !== undefined && activeTab === 'schema' && (_jsx(RecordSchema, { record: selected, t: t })), !promptSelected && selected !== undefined && activeTab === 'timing' && (_jsx(RecordTiming, { record: selected, t: t }))] })] }))] }));
 }
 //# sourceMappingURL=TrajectoryTable.js.map

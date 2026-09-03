@@ -10,7 +10,8 @@
 import { Service } from '@deepseek-ai/cordis';
 import type { Context } from '@deepseek-ai/cordis';
 import type { CommandResult } from '@deepseek-ai/dsh-commands/types';
-import type { ClientContext, SessionId } from '@deepseek-ai/dsh-client-runtime/client';
+import type { Context as ClientContext } from '@deepseek-ai/cordis';
+import type { SessionId } from '@deepseek-ai/dsh-session/types';
 import type { ClientSessionContext } from '@deepseek-ai/dsh-client-ui-input-trigger/client';
 import type { CommandContribution, CommandDecoration, CommandUiContract } from './contract.ts';
 import { PopupSelectController } from './popup.ts';

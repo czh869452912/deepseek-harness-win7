@@ -1,24 +1,21 @@
+/** Per-session Conversation store shared by the shell body and header. */
+import { defineStore } from '@deepseek-ai/dsh-client-store';
 /**
- * Per-session chat store shared by conversation and details registrations.
- * The plugin creates its handle at apply time so identity follows the fiber.
- */
-import { defineStore } from '@deepseek-ai/dsh-client-runtime/client';
-/**
- * Declares the per-session chat state and write surface.
+ * Declare per-session draft persistence and View selection.
  * @returns the store handle.
  */
-export function createChatStore() {
+export function createConversationStore() {
     return defineStore({
-        // Anchored to the contract shape: consumers read the store through
-        // PropsStore<ChatStore>'s SnapshotSelectorHook<ChatStoreState>, so init
-        // and the contract cannot drift.
-        init: () => ({ selection: null, draft: '', view: null, inspect: null }),
-        persist: 'dsh.conversation.chat',
+        init: () => ({ draft: '', view: null, viewRequest: null }),
+        persist: 'dsh.conversation',
         actions: {
-            select: (d, target) => { d.selection = target; },
             setDraft: (d, text) => { d.draft = text; },
             setView: (d, view) => { d.view = view; },
-            setInspect: (d, target) => { d.inspect = target; },
+            openView: (d, view, focus) => {
+                d.view = view;
+                d.viewRequest = { view, focus };
+            },
+            completeViewRequest: (d) => { d.viewRequest = null; },
         },
     });
 }

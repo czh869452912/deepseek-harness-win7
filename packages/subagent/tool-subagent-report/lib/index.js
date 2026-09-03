@@ -1,4 +1,5 @@
 import z from "@deepseek-ai/schemastery";
+import { FIRST_PARTY_SECTION_ORDER } from "@deepseek-ai/dsh-system-prompt";
 import { defineTool } from "@deepseek-ai/dsh-tools";
 //#region lib/types/index.js
 /**
@@ -15,7 +16,7 @@ const inject = [
 	"systemPrompt"
 ];
 /** Guidance order after every per-tool section a continuable child can carry. */
-const REPORT_SECTION_ORDER = 117;
+const REPORT_SECTION_ORDER = FIRST_PARTY_SECTION_ORDER.TOOL_REPORT;
 const Config = z.object({ reportDelivery: z.union(["quiet", "next-step"]).default("next-step") });
 /**
 * Install `report` and its usage guidance into one continuable child's scope.

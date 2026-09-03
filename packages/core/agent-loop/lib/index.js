@@ -347,6 +347,8 @@ var ReactLoopAgent = class {
 	dispatch;
 	/** Whether this loop instance has appended its initial/resume request anchor. */
 	requestHeaderLogged = false;
+	/** Surface generation of the preceding built request. */
+	requestSurfaceGeneration;
 	runtimeContext;
 	constructor(loopCtx, id, options, session) {
 		this.loopCtx = loopCtx;
@@ -552,7 +554,7 @@ var ReactLoopAgent = class {
 				phase.step = step;
 				try {
 					for (const message of decision.messages) this.session.append("user/message", message, { surfaceOp: "append" });
-					const stepEnd = await this.step(decision.assembly);
+					const stepEnd = await this.step(decision.assembly, decision.startsRequestSeries === true);
 					if (turnEnds === null || turnEnds.kind !== "max-tokens") turnEnds = stepEnd;
 				} finally {
 					this.session.append("step/end", {
@@ -603,14 +605,16 @@ var ReactLoopAgent = class {
 		phase.step = 0;
 		return true;
 	}
-	async step(assembly) {
+	async step(assembly, startsRequestSeries) {
 		/* v8 ignore next -- private callers establish the running phase before executing a step */
 		if (this.phase.kind !== "running") throw new Error(`agent "${this.id}": step outside running phase`);
 		const { turn, step, abort: { signal } } = this.phase;
 		signal.throwIfAborted();
 		const system = renderPrompt(assembly);
 		while (true) {
-			const { request, preparedCall } = await this.buildRequest(turn, step, assembly.tools, system, this.session.deriveMessages(), signal);
+			const surfaceGeneration = this.session.surface.replaceGeneration;
+			const { request, preparedCall } = await this.buildRequest(turn, step, assembly.tools, system, this.session.deriveMessages(), startsRequestSeries, surfaceGeneration, signal);
+			startsRequestSeries = false;
 			const assembler = new BlockAssembler();
 			const chunkSeqs = [];
 			try {
@@ -690,7 +694,7 @@ var ReactLoopAgent = class {
 	* Compose one frozen request and bind it to the adapter registration that
 	* resolved its exact-model defaults.
 	*/
-	async buildRequest(turn, step, tools, system, boundaryMessages, signal) {
+	async buildRequest(turn, step, tools, system, boundaryMessages, startsRequestSeries, surfaceGeneration, signal) {
 		const { session } = this;
 		const persistedHeader = session.requestHeader();
 		const persistedConfig = persistedHeader?.config;
@@ -698,7 +702,8 @@ var ReactLoopAgent = class {
 			provider: this.options.provider ?? "",
 			model: this.options.model ?? ""
 		};
-		const reasoningEffort = persistedConfig?.provider === route.provider && persistedConfig.model === route.model && persistedHeader?.adapterDefaults?.reasoningEffort !== true ? persistedConfig.reasoningEffort : void 0;
+		const persistedReasoningEffort = persistedConfig?.provider === route.provider && persistedConfig.model === route.model && persistedHeader?.adapterDefaults?.reasoningEffort !== true ? persistedConfig.reasoningEffort : void 0;
+		const reasoningEffort = this.options.reasoningEffort ?? persistedReasoningEffort;
 		const maxTokens = this.options.maxTokens;
 		const seedConfig = deepFreeze(structuredClone(this.requestHeaderLogged ? requestProposal(persistedHeader) : {
 			...route,
@@ -729,6 +734,7 @@ var ReactLoopAgent = class {
 			...tools.length > 0 ? { tools } : {}
 		});
 		const baseline = this.session.requestHeader();
+		const startsSeries = startsRequestSeries || this.requestSurfaceGeneration !== surfaceGeneration;
 		if (!this.requestHeaderLogged) {
 			this.session.append("request/header", {
 				header,
@@ -737,8 +743,14 @@ var ReactLoopAgent = class {
 			this.requestHeaderLogged = true;
 		} else if (baseline === void 0 || !headerEquals(baseline, header)) this.session.append("request/header", {
 			header,
-			reason: "change"
+			reason: "change",
+			...startsSeries ? { startsSeries: true } : {}
 		});
+		else if (startsSeries) this.session.append("request/header", {
+			header,
+			reason: "series"
+		});
+		this.requestSurfaceGeneration = surfaceGeneration;
 		const contextWindow = preparedCall?.context?.contextWindow;
 		const requestContext = {
 			provider: config.provider,
@@ -988,6 +1000,7 @@ var AgentLoop = class extends Service {
 			sessionId: z.string().min(1),
 			provider: z.string(),
 			model: z.string(),
+			reasoningEffort: z.string().min(1),
 			maxTokens: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER),
 			cwd: z.string(),
 			resumeSessionId: z.string()

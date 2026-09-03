@@ -7,6 +7,7 @@ import z from '@deepseek-ai/schemastery';
 import { GoalId } from '@deepseek-ai/dsh-goal';
 import { boundContextSummary, createUserMessage, HarnessError } from '@deepseek-ai/dsh-llm';
 import { defineTool } from '@deepseek-ai/dsh-tools';
+import { FIRST_PARTY_SECTION_ORDER } from '@deepseek-ai/dsh-system-prompt';
 import { completionAuthority, goalToolExecution, requireDirectHuman, } from "./authority.js";
 import { renderWrapupContext } from "./wrapup.js";
 export const name = 'tool-goal';
@@ -131,7 +132,7 @@ export function apply(ctx, config) {
     const resolved = resolveConfig(config);
     ctx.systemPrompt.section({
         name: 'tool:goal',
-        order: 114,
+        order: FIRST_PARTY_SECTION_ORDER.TOOL_GOAL,
         text: guidance(resolved.blockedAfterConsecutiveRounds),
     });
     ctx.tools.register(defineTool({

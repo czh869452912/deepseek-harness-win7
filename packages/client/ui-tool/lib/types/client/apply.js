@@ -16,7 +16,7 @@ export const inject = ['slots', 'connection'];
  */
 export function apply(ctx) {
     const connection = ctx.get('connection');
-    const toolInject = () => ({ hooks: { hostDescription: connection.hostDescription } });
+    const toolInject = () => ({ hooks: { connectionGeneration: connection.generation } });
     ctx.slots.inject('conversation.chat.node', () => ctx.slots.register({
         name: 'conversation.chat.node',
         key: 'tool-call',

@@ -1,33 +1,38 @@
-import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 /** The default composer body: the 'conversation.composer.bar' slot entry.
  * Machine state arrives through the standard provide channel
  * (useInput + inputActions); the keyboard/DOM command face and stop arrive
  * through this entry's own inject, whose hooks compartment binds
  * useNotices/useLexicon; layout-phase inputs (variant, placeholder,
  * region-slot content) ride the owner props. Session facts
- * (running/removed/promptError) are self-selected via useSession. */
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+ * (running/removed/promptError) are self-selected via useSession.
+ *
+ * The text surface is the shell-owned Lexical editor bound here through
+ * ComposerContentEditable; chips render as decorator portals, and the
+ * keymap registers submit/menu/paste gestures on the editor command layer.
+ * The no-session state renders the SAME div inert as the Workspace-picker
+ * trigger instead of a parallel tree.
+ */
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { IconPlusOutline16, IconWarningOutline16, Toast, Tooltip, } from '@deepseek-ai/dsh-client-ui-primitives';
-import { deriveDecorations } from "../input/decorations.js";
+import { ComposerContentEditable } from "../input/editor/ComposerContentEditable.js";
+import { DecoratorPortals } from "../input/editor/DecoratorPortals.js";
+import { registerComposerKeymap } from "../input/editor/keymap.js";
 import { attachmentErrorText, imageSizeText } from "../image-labels.js";
-import { ReferenceIcon } from "../reference/ReferenceIcon.js";
 import { ContextMeter } from "./ContextMeter.js";
 import { PermissionSelect } from "./PermissionSelect.js";
-import { isSafariBrowser, repairSafariTextareaLayout } from "./safari.js";
 import css from './InputBar.module.css';
-/** Decoration product of the no-session state (no machine, empty draft). */
-const INERT_DECORATIONS = { token: null, chips: [], textRefs: [], hint: null };
 export function InputBar({ useSession, useInput, inputActions, keyboard, addImages, removeImage, draftImages, resolveSubmitMode, toggleCommandMenu, stop, command, t, renderSlot, useNotices, useLexicon, useMenuLauncher, useProjection, sessionId, variant, disabled: inert = false, blocked, workspacePickerOpen = false, onRequestWorkspace, placeholder, accessory, overlay, leftItems, rightItems, footer, }) {
     const input = useInput(s => s);
     const notice = useNotices(s => s);
-    const lexicon = useLexicon(s => s);
+    void useLexicon; // hook seat stays bound by the inject compartment; text-ref decoration rides the shell's editor transforms
     const commandMenuOpen = useMenuLauncher(source => source === 'command');
     const promptError = useSession(s => s.promptError) ?? null;
     const running = useSession(s => s.running) ?? false;
     const subagent = useSession(s => s.subagent) ?? null;
     const removed = useSession(s => s.removed) ?? false;
-    // Plan mode swaps the textarea placeholder (the projection is the folded
+    // Plan mode swaps the composer placeholder (the projection is the folded
     // host value; owner-prop placeholders — hero, session-unavailable — win).
     const planActive = useProjection('plan', plan => plan !== undefined && (plan.pending ? !plan.active : plan.active));
     // Absent (undefined: no frame yet) and cleared (null) both mean no goal.
@@ -36,6 +41,7 @@ export function InputBar({ useSession, useInput, inputActions, keyboard, addImag
     // current; the bar renders the same DOM inert instead of a parallel tree.
     const live = input !== undefined && keyboard !== undefined && inputActions !== undefined;
     const draft = input?.draft ?? '';
+    const editor = keyboard?.editor ?? null;
     const attachments = useMemo(() => input === undefined || draftImages === undefined ? [] : draftImages(input.imageIds), [draftImages, input?.imageIds]);
     const empty = draft.trim() === '' && attachments.length === 0;
     // Transient error banner (machine notices, image-intake rejections, and
@@ -69,30 +75,15 @@ export function InputBar({ useSession, useInput, inputActions, keyboard, addImag
         if (notice?.level === 'error')
             showToast(notice.text);
     }, [notice, showToast]);
-    const inputRef = useRef(null);
     const cardRef = useRef(null);
     const scrollRef = useRef(null);
-    const mirrorRef = useRef(null);
-    const safari = useMemo(() => isSafariBrowser(navigator), []);
-    const safariNativeShrinkRef = useRef(false);
-    // IME guard: composition Enter picks a candidate, it must not send. The ref outlives renders;
-    // clearing is deferred one tick because Safari delivers the closing keydown AFTER compositionend.
-    const composingRef = useRef(false);
-    const onCompositionStart = () => {
-        composingRef.current = true;
-    };
-    const onCompositionEnd = () => {
-        setTimeout(() => {
-            composingRef.current = false;
-        }, 10);
-    };
     // The Access seat's data: the host-computed permissions projection
     // (undefined = capability absent → the chip renders nothing).
     const permissions = useProjection('permissions');
     // A continuable child without its live parent cannot accept human input,
     // but its independent Stop below stays available while it runs.
     const continuable = subagent?.address.mode === 'continuable';
-    const parentOffline = continuable && !subagent.parentAvailable;
+    const parentOffline = continuable && subagent.parentAvailable !== true;
     // Running input stays free; locked = session removed, the
     // inert no-workspace state, the machine faces absent (no session), or a
     // parent-offline continuable child. An owner block also disables input;
@@ -105,12 +96,13 @@ export function InputBar({ useSession, useInput, inputActions, keyboard, addImag
     // be disabled do lock it — there is no session to choose a model for.
     const modelSeatLocked = removed || inert || !live;
     const machineBusy = input?.phase === 'adjudicating' || input?.phase === 'submitting';
-    // The no-workspace textarea remains the resident DOM node but acts as the
+    // The no-workspace surface remains the resident DOM node but acts as the
     // existing picker trigger. Message controls stay locked until a Session
     // exists; the trigger itself is read-only rather than disabled so pointer
     // and keyboard users can reach the recovery action.
     const workspaceTrigger = inert && !removed && onRequestWorkspace !== undefined;
-    const textareaDisabled = removed || (locked && !workspaceTrigger);
+    const editorDisabled = removed || (locked && !workspaceTrigger);
+    const editable = live && !locked && !machineBusy;
     const canSteerQueue = !locked && !machineBusy && !commandMenuOpen && empty && running && subagent === null
         && input.queue.some(row => row.placement === 'queued');
     useEffect(() => {
@@ -120,83 +112,48 @@ export function InputBar({ useSession, useInput, inputActions, keyboard, addImag
             inputActions.pruneImages(attachments.map(attachment => attachment.id));
         }
     }, [attachments, input?.imageIds, inputActions]);
-    // A native Safari edit that shortens the draft may leave the previous
-    // soft-wrap layout behind after the mirror shrinks. The native-change signal
-    // keeps ordinary typing and programmatic draft updates from reading layout;
-    // the helper then repairs only measured overflow before paint while
-    // preserving native editing state. See
-    // .agents/notes/implemented/bug-fix/2026-08-13-safari-textarea-soft-wrap-reflow.md.
-    useLayoutEffect(() => {
-        const nativeShrink = safariNativeShrinkRef.current;
-        safariNativeShrinkRef.current = false;
-        if (safari && nativeShrink)
-            repairSafariTextareaLayout(inputRef.current);
-    }, [draft, safari]);
-    // Scroll the draft scrollport the minimum that brings `caret` into view — the
-    // browser's own behavior for typing, performed for the paths where it does
-    // not act.
-    //
-    // The mirror is the caret's ruler: it renders the same draft at the same
-    // metrics and the same wrap width in the same stack (that is what makes it
-    // the height authority), so a Range collapsed at the caret's index reports
-    // where the caret is without a caret API.
-    const revealCaret = (caret) => {
+    // Scroll the draft scrollport the minimum that brings the selection focus
+    // into view — the browser's own behavior for typing, performed for the
+    // paths where it does not act (programmatic focus with preventScroll, and
+    // session switches that land the caret off screen). The live DOM selection
+    // is the ruler; no mirror layer exists to consult.
+    const revealSelection = () => {
         const scrollEl = scrollRef.current;
-        const mirrorEl = mirrorRef.current;
-        const text = mirrorEl?.firstChild;
-        if (scrollEl === null || mirrorEl === null || !(text instanceof Text))
+        if (scrollEl === null || scrollEl.scrollHeight <= scrollEl.clientHeight)
             return;
-        // A box that cannot scroll has nothing to reveal: the draft fits, so every
-        // caret is already in view and the assignment below would clamp to itself.
-        if (scrollEl.scrollHeight <= scrollEl.clientHeight)
+        const selection = window.getSelection();
+        if (selection === null || selection.rangeCount === 0)
             return;
-        const at = Math.min(caret, text.data.length);
-        // A caret straight after a newline sits on a line with nothing on it to
-        // measure — the shape a trailing-newline draft ends in — and the engines
-        // disagree there: chromium returns NO client rects at all (an all-zero box,
-        // which would scroll the wrong way), firefox reports the line above, WebKit
-        // the right one. Measure the newline itself instead, which is the line the
-        // caret just left, and step one line down; that they all agree on.
-        const afterNewline = at > 0 && text.data[at - 1] === '\n';
-        const range = document.createRange();
-        range.setStart(text, afterNewline ? at - 1 : at);
-        if (afterNewline)
-            range.setEnd(text, at);
-        else
-            range.collapse(true);
-        const line = afterNewline ? Number.parseFloat(getComputedStyle(mirrorEl).lineHeight) : 0;
-        const rect = range.getBoundingClientRect();
+        const range = selection.getRangeAt(0);
+        let rect = range.getBoundingClientRect();
+        if (rect.height === 0 && rect.width === 0) {
+            // A collapsed caret at an empty line reports a zero rect in some
+            // engines; the anchor's element box is the line the caret sits on.
+            const anchor = selection.anchorNode;
+            const el = anchor instanceof HTMLElement ? anchor : anchor?.parentElement;
+            if (el === undefined || el === null)
+                return;
+            rect = el.getBoundingClientRect();
+        }
         const box = scrollEl.getBoundingClientRect();
-        if (rect.bottom + line > box.bottom)
-            scrollEl.scrollTop += rect.bottom + line - box.bottom;
-        else if (rect.top + line < box.top)
-            scrollEl.scrollTop -= box.top - rect.top - line;
-    };
-    // Reveal the focus end of the current selection. Today's entry paths leave a
-    // collapsed selection, but honoring direction keeps a future range-preserving
-    // path from revealing its anchor instead of its focus.
-    const revealSelectionFocus = (el) => {
-        // selectionStart/End are number|null in lib.dom; the type-aware lint program narrows them.
-        const caret = el.selectionDirection === 'backward' ? el.selectionStart : el.selectionEnd;
-        // oxlint-disable-next-line typescript/no-unnecessary-condition
-        revealCaret(caret ?? el.value.length);
+        if (rect.bottom > box.bottom)
+            scrollEl.scrollTop += rect.bottom - box.bottom;
+        else if (rect.top < box.top)
+            scrollEl.scrollTop -= box.top - rect.top;
     };
     // Unlock (mount / session switch) returns focus to the box, and owns the
-    // reveal that comes with it. `preventScroll` because this focus is ours, not
-    // a gesture: the textarea is as tall as the draft, so the browser's reveal
-    // would walk up to the conversation scrollport and move the transcript under
-    // a user who only switched session. That leaves the caret to us — the DOM is
-    // reused across sessions, so switching to a longer draft keeps the previous
-    // offset while the value swap puts the caret at the new draft's end, which is
-    // off screen (measured on all three engines: offset 0 with the caret 940px
-    // down). Suppress the walk, then reveal in our own box.
+    // reveal that comes with it. Lexical's focus() suppresses the browser's
+    // scroll walk (preventScroll inside), so the reveal in our own scrollport
+    // is ours to perform — switching to a longer draft otherwise leaves the
+    // caret (restored at the draft's end) off screen.
     useEffect(() => {
-        const el = inputRef.current;
-        if (locked || el === null)
+        if (locked || editor === null)
             return;
-        el.focus({ preventScroll: true });
-        revealSelectionFocus(el);
-    }, [locked, sessionId]);
+        // Lexical's focus() restores the editor selection but never calls the DOM
+        // focus itself; preventScroll keeps the conversation scrollport still.
+        editor.getRootElement()?.focus({ preventScroll: true });
+        editor.focus(() => { revealSelection(); });
+    }, [locked, sessionId, editor]);
     // A persisted draft arrives AFTER the unlock effect: ConversationSession
     // adopts it in its own mount effect, and a parent's mount effect runs after
     // its children's. Reveal when the draft becomes non-empty so a restored long
@@ -204,24 +161,10 @@ export function InputBar({ useSession, useInput, inputActions, keyboard, addImag
     // not focus: send-clear, failed-send restore, and first-character transitions
     // must not steal focus from another control the user moved to.
     useEffect(() => {
-        const el = inputRef.current;
-        if (locked || draft === '' || el === null)
+        if (locked || draft === '')
             return;
-        revealSelectionFocus(el);
+        revealSelection();
     }, [draft !== '']);
-    // Caret restore after an edit the composer performs itself. The machine owns
-    // the draft and the undo log, so paste and cut suppress the native edit and
-    // write the value through the machine — and a
-    // programmatic selection change reveals nothing: measured in chromium and
-    // WebKit, pasting a long block leaves the view where it was while the caret
-    // sits at the end of the draft. Native typing gets its reveal from the
-    // browser; these two have to ask for it, so they share one restore.
-    const restoreCaret = (el, caret) => {
-        requestAnimationFrame(() => {
-            el.setSelectionRange(caret, caret);
-            revealCaret(caret);
-        });
-    };
     // Wheel chaining on the draft scrollport, one lifetime (it is never
     // unmounted — the inert state renders the same element disabled). While the
     // capped box can still move in this direction, keep the native scroll; only
@@ -246,180 +189,7 @@ export function InputBar({ useSession, useInput, inputActions, keyboard, addImag
         el.addEventListener('wheel', onWheel, { passive: false });
         return () => { el.removeEventListener('wheel', onWheel); };
     }, []);
-    // selectionStart/End are number|null in lib.dom; the type-aware lint program narrows them.
-    /* oxlint-disable typescript/no-unnecessary-condition */
-    const selectionOf = (el) => ({
-        start: el.selectionStart ?? 0,
-        end: el.selectionEnd ?? el.selectionStart ?? 0,
-    });
-    /* oxlint-enable typescript/no-unnecessary-condition */
-    const onKeyDown = (e) => {
-        if (workspaceTrigger) {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                onRequestWorkspace();
-            }
-            return;
-        }
-        // Absent machine without a Workspace recovery action stays disabled; the
-        // guard narrows the faces for the paths below.
-        if (input === undefined || keyboard === undefined || inputActions === undefined)
-            return;
-        // Shift+Enter is the native newline UNCONDITIONALLY — decided before the
-        // IME guard so a composition-closing Shift+Enter still breaks the line.
-        if (e.key === 'Enter' && e.shiftKey)
-            return;
-        // keyCode 229 is the legacy IME-composition signal engines emit without isComposing.
-        // oxlint-disable-next-line typescript/no-deprecated
-        const composing = composingRef.current || e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229;
-        if (!composing && !machineBusy && !locked
-            && (e.key === 'Backspace' || e.key === 'Delete')) {
-            const selection = selectionOf(e.currentTarget);
-            if (selection.start === selection.end) {
-                const occurrence = input.occurrences.find(o => e.key === 'Backspace'
-                    ? o.offset + o.length === selection.start
-                    : o.offset === selection.start);
-                if (occurrence !== undefined) {
-                    e.preventDefault();
-                    const start = occurrence.offset;
-                    const end = occurrence.offset + occurrence.length;
-                    keyboard.setDraft(draft.slice(0, start) + draft.slice(end), { start, end, insertedLength: 0 });
-                    restoreCaret(e.currentTarget, start);
-                    keyboard.track(keyboard.snapshot.draft, start);
-                    return;
-                }
-            }
-        }
-        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-            if (keyboard.arbitrate(e.key === 'ArrowUp' ? 'up' : 'down', composing) === 'consumed')
-                e.preventDefault();
-            return;
-        }
-        if (e.key === 'Escape') {
-            // Escape layering: an open overlay closes; claimed without an overlay
-            // does NOT release (backspacing the token is the only exit gesture).
-            keyboard.dismissPopup();
-            if (keyboard.arbitrate('escape', composing) === 'consumed')
-                e.preventDefault();
-            return;
-        }
-        if ((e.metaKey || e.ctrlKey) && (e.key === 'z' || e.key === 'Z' || e.key === 'y')) {
-            // The machine owns the undo/redo log (chip transactions have semantics
-            // the browser stack cannot represent); never let the native stack run.
-            e.preventDefault();
-            if (machineBusy || locked)
-                return;
-            const redo = e.key === 'y' || e.shiftKey;
-            if (redo)
-                keyboard.redo();
-            else
-                keyboard.undo();
-            return;
-        }
-        if (e.key === ' ') {
-            if (composing)
-                return;
-            if (keyboard.space())
-                e.preventDefault(); // claim token already carries the trailing separator
-            return;
-        }
-        if (e.key !== 'Enter')
-            return;
-        if (composing)
-            return;
-        // Menu-open Enter picks the highlight through arbitration; a no-highlight
-        // menu passes down to the machine's own adjudication.
-        const arbitrated = keyboard.arbitrate('enter', composing);
-        if (arbitrated !== 'pass') {
-            e.preventDefault();
-            return;
-        }
-        e.preventDefault();
-        if (e.repeat)
-            return; // held-down Enter must not machine-gun sends
-        if (locked || machineBusy)
-            return;
-        const accelerated = e.ctrlKey || e.metaKey;
-        // Empty-draft accelerated Enter acts on the queue instead of the (empty)
-        // draft: the machine rejects empty drafts, so the gesture steers every
-        // still-pending queued message into the running turn (the dock's per-row
-        // steer button applied to the whole queue). Steering needs the same
-        // window as the per-row button: a running ordinary session.
-        if (accelerated && canSteerQueue) {
-            keyboard.steerQueue();
-            return;
-        }
-        keyboard.submit(resolveSubmitMode(running, accelerated ? 'accelerated' : 'enter', subagent === null));
-    };
-    const onChange = (e) => {
-        if (keyboard === undefined || locked)
-            return; // disabled/read-only states cannot edit the draft
-        if (machineBusy)
-            return; // submitting is the read-only span; adjudicating holds the pending lock
-        const next = e.target.value;
-        safariNativeShrinkRef.current = safari && next.length < draft.length;
-        keyboard.setDraft(next);
-        // selectionStart is number|null in lib.dom; the type-aware lint program narrows it.
-        // oxlint-disable-next-line typescript/no-unnecessary-condition
-        keyboard.track(next, e.target.selectionStart ?? next.length);
-    };
-    const onCopyOrCut = (e, cut) => {
-        if (input === undefined || keyboard === undefined)
-            return; // absent machine: no draft can be copied or cut
-        const el = e.currentTarget;
-        const { start, end } = selectionOf(el);
-        if (start === end)
-            return;
-        const touched = input.occurrences.filter(o => o.offset < end && o.offset + o.length > start);
-        if (touched.length === 0 && !cut)
-            return; // plain copy of plain text: native path is fine
-        e.preventDefault();
-        const copyStart = touched.reduce((value, o) => Math.min(value, o.offset), start);
-        const copyEnd = touched.reduce((value, o) => Math.max(value, o.offset + o.length), end);
-        // Expand structured ranges to their owner clipboard projections.
-        let text = '';
-        let cursor = copyStart;
-        for (const o of touched) {
-            text += draft.slice(cursor, o.offset) + o.clipboardText;
-            cursor = o.offset + o.length;
-        }
-        text += draft.slice(cursor, copyEnd);
-        e.clipboardData.setData('text/plain', text);
-        if (cut && !machineBusy && !locked) {
-            keyboard.setDraft(draft.slice(0, copyStart) + draft.slice(copyEnd), { start: copyStart, end: copyEnd, insertedLength: 0 });
-            restoreCaret(el, copyStart);
-        }
-    };
-    const onPaste = (e) => {
-        if (keyboard === undefined)
-            return; // absent machine: no draft can accept a paste
-        if (machineBusy || locked)
-            return;
-        const files = Array.from(e.clipboardData.items)
-            .filter(item => item.kind === 'file')
-            .map(item => item.getAsFile())
-            .filter((file) => file !== null);
-        if (files.length > 0)
-            intakeImages(files);
-        const text = e.clipboardData.getData('text/plain');
-        if (text === '') {
-            if (files.length > 0)
-                e.preventDefault();
-            return;
-        }
-        e.preventDefault();
-        const el = e.currentTarget;
-        const sel = selectionOf(el);
-        // Sync components stay empty at this layer: hot-snapshot matching needs
-        // the Slash roster, which lives behind keyboard.track — the paste attempt
-        // opens in the machine and the controller upgrades tokens as matches
-        // land (paste-upgrade). The DOM layer only starts the transaction.
-        keyboard.pasteBegin(text, sel);
-        const caret = sel.start + text.length;
-        restoreCaret(el, caret);
-        keyboard.track(keyboard.snapshot.draft, caret);
-    };
-    // Intake pre-check (DeepSeek Chat semantics): an addition that would break
+    // Intake pre-check: an addition that would break
     // a projected limit is refused as a whole batch, announced immediately, and
     // never enters the rail — no more submit-time failure rolling the rail
     // back. The host enforces the same limits at submit for callers that bypass
@@ -429,7 +199,7 @@ export function InputBar({ useSession, useInput, inputActions, keyboard, addImag
             return;
         const rejected = (() => {
             if (imageLimits !== undefined) {
-                // Format precedes limits (DeepSeek Chat's filter order): a batch with
+                // Format precedes limits: a batch with
                 // a non-image must announce the format problem, not a count or size
                 // it could never pass anyway — addImages rejects it authoritatively.
                 if (files.some(file => !imageLimits.mediaTypes.includes(file.type))) {
@@ -453,30 +223,69 @@ export function InputBar({ useSession, useInput, inputActions, keyboard, addImag
             showToast(rejected);
     }, [addImages, attachments, imageLimits, showToast, t]);
     const canAcceptDrop = !locked && !machineBusy && addImages !== undefined;
-    const onSelect = (e) => {
-        // Any caret/selection gesture ends a live paste attempt (the machine
-        // cannot observe DOM selection). Cheap no-op when none is live.
-        if (keyboard !== undefined && keyboard.snapshot.paste !== undefined)
-            keyboard.invalidatePaste();
-        void e;
-    };
-    // Button presses steal focus from the textarea; suppress at mousedown so
-    // typing continues seamlessly. `preventScroll` for the same reason as the
-    // unlock effect, and with no reveal of its own: the caret has not moved, and
-    // the next keystroke gets the browser's native one.
+    // The keymap handlers read live bar state through this ref so the editor
+    // registration survives re-renders without re-arming per keystroke.
+    const gate = useRef({
+        locked, machineBusy, canSteerQueue, running, subagent, resolveSubmitMode, intakeImages,
+    });
+    gate.current = { locked, machineBusy, canSteerQueue, running, subagent, resolveSubmitMode, intakeImages };
+    useEffect(() => {
+        if (editor === null || keyboard === undefined)
+            return;
+        return registerComposerKeymap(editor, {
+            arbitrate: (key, composing) => keyboard.arbitrate(key, composing),
+            space: () => {
+                if (gate.current.machineBusy || gate.current.locked)
+                    return false;
+                return keyboard.space();
+            },
+            dismissPopup: () => { keyboard.dismissPopup(); },
+            canSubmit: () => !gate.current.locked && !gate.current.machineBusy,
+            submit: (accelerated) => {
+                const g = gate.current;
+                // Empty-draft accelerated Enter acts on the queue instead of the
+                // (empty) draft: the machine rejects empty drafts, so the gesture
+                // steers every still-pending queued message into the running turn.
+                if (accelerated && g.canSteerQueue) {
+                    keyboard.steerQueue();
+                    return;
+                }
+                keyboard.submit(g.resolveSubmitMode(g.running, accelerated ? 'accelerated' : 'enter', g.subagent === null));
+            },
+            intakeFiles: (files) => { gate.current.intakeImages(files); },
+            pasteText: (text) => {
+                if (gate.current.machineBusy || gate.current.locked)
+                    return;
+                keyboard.paste(text);
+            },
+        });
+    }, [editor, keyboard]);
+    // Button presses steal focus from the editor; suppress at mousedown so
+    // typing continues seamlessly. Lexical's focus() carries preventScroll and
+    // restores the previous selection, so no reveal is needed: the caret has
+    // not moved, and the next keystroke gets the browser's native one.
     const keepFocus = (e) => {
         e.preventDefault();
-        inputRef.current?.focus({ preventScroll: true });
+        editor?.getRootElement()?.focus({ preventScroll: true });
     };
     const onToggleCommandMenu = () => {
-        const el = inputRef.current;
-        if (el !== null)
-            toggleCommandMenu?.(selectionOf(el));
+        if (keyboard !== undefined)
+            toggleCommandMenu?.(keyboard.caretSpan());
     };
-    // Ordinary sessions retain their primary Send/Stop toggle. A continuable
-    // child keeps Send as the primary action and exposes Stop independently so
-    // pointer users can queue follow-ups while its current turn is running.
-    const primaryStops = running && subagent === null;
+    // The no-session Workspace trigger: the resident editable div acts as the
+    // picker trigger for keyboard users (no editor is bound in this state).
+    const onWorkspaceKeyDown = (e) => {
+        if (!workspaceTrigger)
+            return;
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onRequestWorkspace();
+        }
+    };
+    // An ordinary running session keeps Stop while the composer is empty or
+    // owner-blocked; an actionable draft gets the existing Queue action. A
+    // continuable child keeps Send primary and exposes Stop independently.
+    const primaryStops = running && subagent === null && (empty || blocked !== undefined);
     const interruptible = running && continuable;
     const primaryLabel = primaryStops ? t('input.stop') : t('input.send');
     const onPrimary = () => {
@@ -496,63 +305,36 @@ export function InputBar({ useSession, useInput, inputActions, keyboard, addImag
     const accessSelect = command === undefined
         ? null
         : _jsx(PermissionSelect, { value: permissions, locked: locked, command: command, t: t }, sessionId);
-    // Mirror-layer decorations: a visible backdrop with transparent textarea
-    // text. Claim tokens and references retain the draft's own glyph metrics,
-    // so their decoration cannot drift from wrapping, selection, or the caret.
-    const deco = input === undefined ? INERT_DECORATIONS : deriveDecorations(input, lexicon);
-    const backdrop = [];
-    {
-        // Segment boundaries: the token range end, every structured-reference
-        // offset, and every text-ref range — merged in draft order (the sources never
-        // overlap: structured references own their ranges, text-refs own plain tokens, the
-        // claim token only leads).
-        let cursor = 0;
-        const pushPlain = (upTo) => {
-            if (upTo > cursor)
-                backdrop.push(draft.slice(cursor, upTo));
-            cursor = upTo;
-        };
-        if (deco.token !== null) {
-            backdrop.push(_jsx("mark", { className: css.hlToken, "data-decoration": "token", children: draft.slice(deco.token.start, deco.token.end) }, "token"));
-            cursor = deco.token.end;
-        }
-        const boundaries = [
-            ...deco.chips.map(chip => ({ at: chip.offset, kind: 'chip', chip })),
-            ...deco.textRefs.map(ref => ({ at: ref.start, kind: 'text-ref', ref })),
-        ].sort((a, b) => a.at - b.at);
-        for (const b of boundaries) {
-            if (b.at < cursor)
-                continue; // claim-token overlap: the leading mark wins
-            pushPlain(b.at);
-            if (b.kind === 'chip') {
-                const chip = b.chip;
-                backdrop.push(_jsxs("span", { className: clsx(css.chip, chip.invalid && css.chipInvalid), "data-decoration": "chip", "data-reference-appearance": chip.appearance, "data-occurrence": chip.occurrenceId, "data-invalid": chip.invalid || undefined, title: chip.label, children: [chip.appearance === undefined
-                            ? chip.text[0]
-                            : (_jsxs("span", { className: css.chipTrigger, children: [_jsx("span", { className: css.chipTriggerGlyph, children: chip.text[0] }), _jsx(ReferenceIcon, { kind: chip.appearance, size: 16, className: css.chipIcon })] })), _jsx("span", { children: chip.text.slice(1) })] }, `chip-${chip.occurrenceId}`));
-                cursor = chip.offset + chip.length;
-            }
-            else {
-                // Plain-range highlight: the glyphs stay the
-                // textarea's (advance untouched); the mark paints the chip look.
-                const text = draft.slice(b.ref.start, b.ref.end);
-                backdrop.push(_jsx("mark", { className: css.textRef, "data-decoration": "text-ref", children: b.ref.appearance === 'folder'
-                        ? (_jsxs(_Fragment, { children: [_jsxs("span", { className: css.textRefTrigger, children: [_jsx("span", { className: css.textRefTriggerGlyph, children: text[0] }), _jsx(ReferenceIcon, { kind: "folder", size: 16, className: css.textRefIcon })] }), text.slice(1)] }))
-                        : text }, `ref-${b.ref.start}`));
-                cursor = b.ref.end;
-            }
-        }
-        pushPlain(draft.length);
-        if (deco.hint !== null) {
-            // Claim tokens have the `/name ` format (trailing space); trim to the bare name.
-            const commandName = input?.claim?.token.slice(1).trim() ?? '';
-            const hintKey = `hint.${commandName === 'goal' && hasGoal ? 'goal.active' : commandName}`;
-            // Dynamic lookup by claimed command name: unknown commands miss the
-            // dictionary and keep the machine's own hint, so the call is wide.
-            const translated = t(hintKey);
-            const displayHint = translated !== hintKey ? translated : deco.hint;
-            backdrop.push(_jsx("span", { className: css.hint, "data-decoration": "hint", children: displayHint }, "hint"));
-        }
-    }
+    // Claim ghost hint: rendered by CSS as generated content after the last
+    // paragraph while the claim's args are blank (a hint implies a single-line
+    // token draft). The translated per-command hint wins over the claim's own.
+    const claimActive = (input?.phase === 'claimed' || input?.phase === 'submitting')
+        && input.claim !== undefined && draft.startsWith(input.claim.token);
+    const rawHint = claimActive && input.claim.hint !== undefined
+        && draft.slice(input.claim.token.length).trim() === ''
+        ? input.claim.hint
+        : null;
+    const hint = (() => {
+        if (rawHint === null)
+            return null;
+        // Claim tokens have the `/name ` format (trailing space); trim to the bare name.
+        const commandName = input?.claim?.token.slice(1).trim() ?? '';
+        const hintKey = `hint.${commandName === 'goal' && hasGoal ? 'goal.active' : commandName}`;
+        // Dynamic lookup by claimed command name: unknown commands miss the
+        // dictionary and keep the machine's own hint, so the call is wide.
+        const translated = t(hintKey);
+        return translated !== hintKey ? translated : rawHint;
+    })();
+    const placeholderText = placeholder ?? (parentOffline
+        ? t('placeholder.parentOffline')
+        : disabled
+            ? t('placeholder.unavailable')
+            // The steer hint deliberately outranks the plan placeholder:
+            // while it shows, the whole-queue gesture is genuinely available
+            // (the gate never consults plan mode), so the actionable hint wins.
+            : canSteerQueue
+                ? t('placeholder.steerQueue')
+                : planActive ? t('placeholder.plan') : t('placeholder.default'));
     return (_jsxs("div", { className: clsx(css.root, variant === 'hero' && css.hero), children: [toast !== null && (_jsx(Toast, { text: toast.text, icon: _jsx(IconWarningOutline16, {}), anchor: cardRef.current, onDone: dismissToast }, toast.seq)), notice?.level === 'info' && (_jsx("div", { className: css.notice, role: "status", children: notice.text })), _jsxs("div", { ref: cardRef, className: clsx(css.card, workspaceTrigger && css.cardWorkspaceTrigger), "data-composer-card": true, onClick: workspaceTrigger ? onRequestWorkspace : undefined, onPointerDown: workspaceTrigger ? (e) => { e.stopPropagation(); } : undefined, children: [overlay !== undefined && _jsx("div", { className: css.overlayAnchor, children: overlay }), accessory !== undefined && _jsx("div", { className: css.accessory, children: accessory }), renderSlot('conversation.input.attachments', {
                         attachments,
                         canAcceptDrop,
@@ -562,15 +344,6 @@ export function InputBar({ useSession, useInput, inputActions, keyboard, addImag
                             count: imageLimits.maxImagesPerMessage,
                             size: imageSizeText(imageLimits.maxImageBytes),
                         },
-                    }), _jsx("div", { ref: scrollRef, className: css.scroll, "data-input-scroll": true, children: _jsxs("div", { className: css.grow, children: [_jsx("div", { "aria-hidden": true, className: clsx(css.backdrop, textareaDisabled && css.backdropDisabled), "data-input-backdrop": true, "data-disabled": textareaDisabled || undefined, children: backdrop }), _jsx("textarea", { ref: inputRef, className: css.input, value: draft, disabled: textareaDisabled, readOnly: machineBusy || workspaceTrigger, "aria-label": workspaceTrigger ? t('hero.chooseWorkspace') : undefined, "aria-haspopup": workspaceTrigger ? 'menu' : undefined, "aria-expanded": workspaceTrigger ? workspacePickerOpen : undefined, "data-phase": input?.phase ?? 'inert', placeholder: placeholder ?? (parentOffline
-                                        ? t('placeholder.parentOffline')
-                                        : disabled
-                                            ? t('placeholder.unavailable')
-                                            // The steer hint deliberately outranks the plan placeholder:
-                                            // while it shows, the whole-queue gesture is genuinely available
-                                            // (the gate never consults plan mode), so the actionable hint wins.
-                                            : canSteerQueue
-                                                ? t('placeholder.steerQueue')
-                                                : planActive ? t('placeholder.plan') : t('placeholder.default')), rows: 2, onChange: onChange, onKeyDown: onKeyDown, onSelect: onSelect, onCopy: (e) => { onCopyOrCut(e, false); }, onCut: (e) => { onCopyOrCut(e, true); }, onPaste: onPaste, onCompositionStart: onCompositionStart, onCompositionEnd: onCompositionEnd }), _jsx("div", { ref: mirrorRef, "aria-hidden": true, className: css.mirror, "data-input-mirror": true, children: `${draft}\n` })] }) }), _jsxs("div", { className: css.row, children: [_jsxs("div", { className: css.tools, children: [_jsx(Tooltip, { label: t('input.commands'), side: "top", delayMs: 500, children: _jsx("button", { type: "button", className: css.add, "aria-label": t('input.commands'), "aria-haspopup": "listbox", "aria-expanded": commandMenuOpen, disabled: locked || toggleCommandMenu === undefined, onMouseDown: keepFocus, onClick: onToggleCommandMenu, children: _jsx(IconPlusOutline16, { size: 14 }) }) }), _jsxs("div", { className: css.modes, children: [accessSelect, renderSlot('conversation.input.plan', { locked })] }), leftItems] }), _jsxs("div", { className: css.trailing, children: [rightItems, renderSlot('conversation.input.model', { locked: modelSeatLocked }), _jsx(ContextMeter, { useProjection: useProjection, t: t }), interruptible && (_jsx(Tooltip, { label: t('input.stop'), side: "top", delayMs: 500, children: _jsx("button", { type: "button", className: css.primary, "aria-label": t('input.stop'), disabled: stop === undefined, onMouseDown: keepFocus, onClick: stop, children: _jsx("svg", { viewBox: "0 0 16 16", width: "16", height: "16", "aria-hidden": true, children: _jsx("rect", { x: "3", y: "3", width: "10", height: "10", rx: "3", fill: "currentColor" }) }) }) })), _jsx(Tooltip, { label: primaryLabel, side: "top", delayMs: 500, children: _jsx("button", { type: "button", className: css.primary, "aria-label": primaryLabel, disabled: primaryStops ? stop === undefined : empty || disabled || machineBusy, onMouseDown: keepFocus, onClick: onPrimary, children: primaryStops ? (_jsx("svg", { viewBox: "0 0 16 16", width: "16", height: "16", "aria-hidden": true, children: _jsx("rect", { x: "3", y: "3", width: "10", height: "10", rx: "3", fill: "currentColor" }) })) : (_jsx("svg", { viewBox: "0 0 16 16", width: "16", height: "16", "aria-hidden": true, children: _jsx("path", { d: "M8.3125 0.980183C8.66767 1.0531 8.97902 1.20418 9.2627 1.43233C9.48724 1.61297 9.73029 1.85793 9.97949 2.10714L14.707 6.83468L13.293 8.24874L9 3.95577V15.0417H7V3.95577L2.70703 8.24874L1.29297 6.83468L6.02051 2.10714C6.26971 1.85793 6.51277 1.61297 6.7373 1.43233C6.97662 1.23986 7.28445 1.04402 7.6875 0.980183C7.8973 0.947006 8.1031 0.95516 8.3125 0.980183Z", fill: "currentColor" }) })) }) })] })] })] }), footer] }));
+                    }), _jsx("div", { ref: scrollRef, className: css.scroll, "data-input-scroll": true, children: _jsxs("div", { className: css.grow, children: [_jsx(ComposerContentEditable, { editor: workspaceTrigger ? null : editor, editable: editable, className: clsx(css.input, editorDisabled && css.inputDisabled), "data-phase": input?.phase ?? 'inert', "aria-disabled": editorDisabled || undefined, "data-placeholder": placeholderText, "aria-label": workspaceTrigger ? t('hero.chooseWorkspace') : placeholderText, "aria-haspopup": workspaceTrigger ? 'menu' : undefined, "aria-expanded": workspaceTrigger ? workspacePickerOpen : undefined, tabIndex: workspaceTrigger ? 0 : undefined, onKeyDown: workspaceTrigger ? onWorkspaceKeyDown : undefined, style: hint === null ? undefined : { '--dsh-composer-hint': JSON.stringify(hint) } }), empty && !claimActive && (_jsx("div", { "aria-hidden": true, className: css.placeholder, "data-composer-placeholder": true, children: placeholderText })), _jsx(DecoratorPortals, { editor: workspaceTrigger ? null : editor })] }) }), _jsxs("div", { className: css.row, children: [_jsxs("div", { className: css.tools, children: [_jsx(Tooltip, { label: t('input.commands'), side: "top", delayMs: 500, children: _jsx("button", { type: "button", className: css.add, "aria-label": t('input.commands'), "aria-haspopup": "listbox", "aria-expanded": commandMenuOpen, disabled: locked || toggleCommandMenu === undefined, onMouseDown: keepFocus, onClick: onToggleCommandMenu, children: _jsx(IconPlusOutline16, { size: 14 }) }) }), _jsxs("div", { className: css.modes, children: [accessSelect, sessionId === undefined ? null : renderSlot('conversation.input.plan', { locked })] }), leftItems] }), _jsxs("div", { className: css.trailing, children: [rightItems, sessionId === undefined ? null : renderSlot('conversation.input.model', { locked: modelSeatLocked }), _jsx(ContextMeter, { useProjection: useProjection, t: t }), interruptible && (_jsx(Tooltip, { label: t('input.stop'), side: "top", delayMs: 500, children: _jsx("button", { type: "button", className: css.primary, "aria-label": t('input.stop'), disabled: stop === undefined, onMouseDown: keepFocus, onClick: stop, children: _jsx("svg", { viewBox: "0 0 16 16", width: "16", height: "16", "aria-hidden": true, children: _jsx("rect", { x: "3", y: "3", width: "10", height: "10", rx: "3", fill: "currentColor" }) }) }) })), _jsx(Tooltip, { label: primaryLabel, side: "top", delayMs: 500, children: _jsx("button", { type: "button", className: css.primary, "aria-label": primaryLabel, disabled: primaryStops ? stop === undefined : empty || disabled || machineBusy, onMouseDown: keepFocus, onClick: onPrimary, children: primaryStops ? (_jsx("svg", { viewBox: "0 0 16 16", width: "16", height: "16", "aria-hidden": true, children: _jsx("rect", { x: "3", y: "3", width: "10", height: "10", rx: "3", fill: "currentColor" }) })) : (_jsx("svg", { viewBox: "0 0 16 16", width: "16", height: "16", "aria-hidden": true, children: _jsx("path", { d: "M8.3125 0.980183C8.66767 1.0531 8.97902 1.20418 9.2627 1.43233C9.48724 1.61297 9.73029 1.85793 9.97949 2.10714L14.707 6.83468L13.293 8.24874L9 3.95577V15.0417H7V3.95577L2.70703 8.24874L1.29297 6.83468L6.02051 2.10714C6.26971 1.85793 6.51277 1.61297 6.7373 1.43233C6.97662 1.23986 7.28445 1.04402 7.6875 0.980183C7.8973 0.947006 8.1031 0.95516 8.3125 0.980183Z", fill: "currentColor" }) })) }) })] })] })] }), footer] }));
 }
 //# sourceMappingURL=InputBar.js.map

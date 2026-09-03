@@ -5,8 +5,23 @@
  */
 import type { Context } from '@deepseek-ai/cordis';
 import type { TypertClientRemote } from '@deepseek-ai/dsh-typert-protocol';
-/** Typed Remote service augmented by generated direct namespaces. */
-export type ClientRemote = TypertClientRemote;
+import { RemoteStream, type RemoteStreamOptions } from './remote-stream.ts';
+export { RemoteStreamCarrierError, RemoteStreamError } from './stream-client.ts';
+export { RemoteJournalStream } from './journal-stream.ts';
+export type { RemoteJournalChange, RemoteJournalFrame, RemoteJournalStreamOptions, RemoteStreamFactory, } from './journal-stream.ts';
+export { RemoteStream } from './remote-stream.ts';
+export type { RemoteStreamItem, RemoteStreamOptions } from './remote-stream.ts';
+export { RemoteSnapshotStream } from './snapshot-stream.ts';
+export type { RemoteSnapshotStreamOptions } from './snapshot-stream.ts';
+/** Typed Remote service augmented by generated direct namespaces and Gateway stream supervision. */
+export interface ClientRemote extends TypertClientRemote {
+    /**
+     * Create one independently cancellable, reconnecting logical stream.
+     * @param options - domain-owned opener and generation-end classification.
+     * @returns a single-consumer stream annotated with physical generation ids.
+     */
+    $stream<Item>(options: RemoteStreamOptions<Item>): RemoteStream<Item>;
+}
 declare module '@deepseek-ai/cordis' {
     interface Context {
         /** Generated Remote namespaces selected by the Client assembly. */

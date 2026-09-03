@@ -37,7 +37,7 @@
 import { Context, Service } from '@deepseek-ai/cordis';
 import z from '@deepseek-ai/schemastery';
 import { CredentialProvider } from '@deepseek-ai/dsh-credentials';
-import type { CredentialInfo, CredentialRef, ResolvedCredential } from '@deepseek-ai/dsh-credentials';
+import type { CredentialInfo, CredentialKey, CredentialRecord, CredentialRecordEntry, CredentialRecordInfo, CredentialRef, ResolvedCredential } from '@deepseek-ai/dsh-credentials';
 /** Basename of the credentials document inside the harness home. */
 export declare const CREDENTIALS_FILENAME = ".credentials.yaml";
 /** Plugin config: file location and hot-reload behavior. */
@@ -64,19 +64,41 @@ interface ResolvedSpec {
  * @returns the resolved file location and watch behavior.
  */
 export declare function resolveSpec(config: Config): ResolvedSpec;
+/** The document layout this build reads and writes. */
+export declare const DOCUMENT_VERSION = 1;
+/** One parsed credentials document: the two key spaces it stores, keyed as written. */
+export interface CredentialsDocument {
+    /** Reference entries, keyed by {@link CredentialRef}. */
+    refs: Map<string, string>;
+    /** Stored records, keyed by {@link CredentialKey}. */
+    records: Map<string, CredentialRecord>;
+}
 /**
- * Parse one credentials document into its entries. The document is a strict
- * mapping of {@link CredentialRef} to non-empty string: a non-mapping root, a
- * key that is not a POSIX identifier, a non-string value, and an empty string
- * are all rejected rather than skipped, because this file holds nothing but
- * credentials and a silently ignored entry reads as "the key I stored has no
- * effect". Duplicate keys surface as parser errors. An empty document is an
- * empty store.
+ * Parse one credentials document. Everything is rejected rather than skipped —
+ * an unversioned root, an unknown top-level key, a key that is not addressable,
+ * a wrong-typed value, an unknown record tag or field — because this file holds
+ * nothing but credentials and a silently ignored entry reads as "the credential
+ * I stored has no effect". Duplicate keys surface as parser errors. An empty
+ * document is an empty store and needs no version.
  * @param text - the document's text.
  * @param filename - absolute path, quoted in errors.
- * @returns the parsed entries, keyed by reference.
+ * @returns the parsed references and records.
  */
-export declare function parseCredentialsDocument(text: string, filename: string): Map<string, string>;
+export declare function parseCredentialsDocument(text: string, filename: string): CredentialsDocument;
+/**
+ * Render the version-1 layout for a pre-release flat document, or `undefined`
+ * for anything else. The flat layout is recognized exactly — a non-empty
+ * top-level mapping of addressable reference names to non-empty string
+ * scalars, with no `version` key and no document directives — and the rewrite
+ * nests the original lines verbatim under `refs:` at two spaces' indent, so
+ * comments, blank lines, and each value's spelling survive byte for byte.
+ * Anything the recognizer declines keeps {@link parseCredentialsDocument}'s
+ * loud rejection: a document this build cannot prove it understands is never
+ * rewritten. Remove with the pre-release stance at the first tagged release.
+ * @param text - the document's text.
+ * @returns the migrated text, or `undefined` when the text is not the recognized flat layout.
+ */
+export declare function renderFlatLayoutMigration(text: string): string | undefined;
 /** File-backed credentials provider (`$DSH_HOME/.credentials.yaml`). */
 export declare class LocalCredentialProvider extends CredentialProvider {
     config: Config;
@@ -88,8 +110,10 @@ export declare class LocalCredentialProvider extends CredentialProvider {
      * which is also the self-write suppression.
      */
     private text;
-    /** Parsed document snapshot; replaced wholesale on every reload. */
+    /** Parsed reference snapshot; replaced wholesale on every reload. */
     private values;
+    /** Parsed record snapshot; replaced wholesale on every reload. */
+    private records;
     /**
      * Single exclusive operation chain: watcher reloads and line edits run one
      * at a time in queue order (settled tail), so an edit can never render from
@@ -114,6 +138,11 @@ export declare class LocalCredentialProvider extends CredentialProvider {
     describe(ref: CredentialRef): Promise<CredentialInfo>;
     set(ref: CredentialRef, value: string): Promise<void>;
     unset(ref: CredentialRef): Promise<void>;
+    readRecord(key: CredentialKey): Promise<CredentialRecord | undefined>;
+    describeRecord(key: CredentialKey): Promise<CredentialRecordInfo>;
+    listRecords(): Promise<readonly CredentialRecordEntry[]>;
+    modifyRecord(key: CredentialKey, mutate: (current: CredentialRecord | undefined) => Promise<CredentialRecord | undefined>): Promise<CredentialRecord | undefined>;
+    deleteRecord(key: CredentialKey): Promise<void>;
     /** Queue one exclusive document operation behind every earlier one. */
     private enqueue;
     /** Queue a reload; only an invariant violation escaping the fan-out can reject it. */
@@ -129,9 +158,23 @@ export declare class LocalCredentialProvider extends CredentialProvider {
     /**
      * Boot read: an absent file is an empty store; an invalid one fails the
      * plugin's activation, because a credentials document that exists but
-     * cannot be trusted must never be treated as "no credentials stored".
+     * cannot be trusted must never be treated as "no credentials stored". The
+     * one exception is the recognized pre-release flat layout, which is
+     * upgraded in place first — a key stored by an earlier build must survive
+     * the layout change without a hand edit.
      */
     private loadInitial;
+    /**
+     * One-shot upgrade of the recognized pre-release flat layout, before the
+     * watcher exists. The rewrite runs under the document's writer lock and
+     * re-reads first — a concurrent boot may have migrated already — and
+     * whatever the re-read finds that is not the flat layout is returned
+     * untouched for the ordinary parse. Values are carried verbatim; only the
+     * enclosing layout changes. Remove with the pre-release stance at the
+     * first tagged release.
+     * @returns the document text this boot should parse.
+     */
+    private migrateFlatDocument;
     /**
      * Re-read the document after a watcher event. Unchanged content (including
      * this provider's own writes) is a no-op; an unreadable document keeps the
@@ -150,6 +193,8 @@ export declare class LocalCredentialProvider extends CredentialProvider {
     private reconcileFromDisk;
     /** Entries whose stored value changed; the parser has already proven every key addressable. */
     private changedRefs;
+    /** Records whose stored value changed; the parser has already proven every key addressable. */
+    private changedRecords;
 }
 export default LocalCredentialProvider;
 //# sourceMappingURL=index.d.ts.map

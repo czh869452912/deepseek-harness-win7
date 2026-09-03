@@ -434,6 +434,7 @@ var AgentRegistry = class extends Service {
 			typeCtx.typert.contexts.registerHost("agent", {
 				wire: "agentId",
 				wireTypeSymbol: "@deepseek-ai/dsh-session/types#SessionId",
+				identity: (candidate) => candidate.agent?.id,
 				resolve: (sessionId) => this.get(sessionId)?.ctx
 			});
 		});

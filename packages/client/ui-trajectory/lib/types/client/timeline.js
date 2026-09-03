@@ -3,10 +3,11 @@ import { formatDurationMillis } from "./trajectory-record.js";
 /**
  * Format a timeline duration as an integer-millisecond label.
  * @param milliseconds - Non-negative duration in milliseconds.
+ * @param t - Trajectory locale translator.
  * @returns Millisecond label with thousands separators.
  */
-export function formatTimelineOffset(milliseconds) {
-    return formatDurationMillis(milliseconds);
+export function formatTimelineOffset(milliseconds, t) {
+    return formatDurationMillis(milliseconds, t);
 }
 function laneFor(kind) {
     if (kind === 'tool' || kind === 'subtool')

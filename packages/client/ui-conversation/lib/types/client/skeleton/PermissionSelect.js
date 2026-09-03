@@ -29,8 +29,8 @@ function displayName(name) {
         return name;
     return name.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 }
-function optionLabel(option) {
-    return option.value === FULL_ACCESS ? 'Full access' : displayName(option.name);
+function optionLabel(option, t) {
+    return option.value === FULL_ACCESS ? t('access.fullLabel') : displayName(option.name);
 }
 export function PermissionSelect({ value, locked, command, t }) {
     const [pick, setPick] = useState(null);
@@ -53,7 +53,7 @@ export function PermissionSelect({ value, locked, command, t }) {
         .filter(o => o.value !== 'custom')
         .map((option) => {
         const icon = permissionGlyph(option.value);
-        return { id: option.value, label: optionLabel(option), ...icon === undefined ? {} : { icon } };
+        return { id: option.value, label: optionLabel(option, t), ...icon === undefined ? {} : { icon } };
     });
     const submit = (id) => {
         setPick(id);
@@ -83,6 +83,6 @@ export function PermissionSelect({ value, locked, command, t }) {
         closeConfirmation();
         submit(id);
     };
-    return (_jsxs(_Fragment, { children: [_jsx(Menu, { open: open, items: items, selectedId: currentValue, onSelect: choose, onClose: () => { setOpen(false); }, side: "top", anchor: _jsxs("button", { type: "button", className: css.trigger, "aria-label": t('input.accessMode', { name: current === undefined ? displayName(currentValue) : optionLabel(current) }), title: current?.description, disabled: locked || busy, onClick: () => { setOpen(!open); }, children: [permissionGlyph(currentValue) !== undefined && (_jsx("span", { className: css.triggerIcon, "aria-hidden": true, children: permissionGlyph(currentValue) })), _jsx("span", { className: css.triggerLabel, children: current === undefined ? displayName(currentValue) : optionLabel(current) }), _jsx("span", { className: clsx(css.chevron, open && css.chevronOpen), "aria-hidden": true, children: _jsx(IconChevronDownOutline14, {}) })] }) }), _jsx(RiskConfirmation, { open: confirmation !== null, title: t('access.confirm.title'), description: t('access.confirm.description'), acknowledgeLabel: t('access.confirm.acknowledge'), cancelLabel: t('access.confirm.cancel'), confirmLabel: t('access.confirm.enable'), acknowledged: acknowledged, disabled: locked, onAcknowledgedChange: setAcknowledged, onCancel: closeConfirmation, onConfirm: confirmFullAccess })] }));
+    return (_jsxs(_Fragment, { children: [_jsx(Menu, { open: open, items: items, selectedId: currentValue, onSelect: choose, onClose: () => { setOpen(false); }, side: "top", anchor: _jsxs("button", { type: "button", className: css.trigger, "aria-label": t('input.accessMode', { name: current === undefined ? displayName(currentValue) : optionLabel(current, t) }), title: current?.description, disabled: locked || busy, onClick: () => { setOpen(!open); }, children: [permissionGlyph(currentValue) !== undefined && (_jsx("span", { className: css.triggerIcon, "aria-hidden": true, children: permissionGlyph(currentValue) })), _jsx("span", { className: css.triggerLabel, children: current === undefined ? displayName(currentValue) : optionLabel(current, t) }), _jsx("span", { className: clsx(css.chevron, open && css.chevronOpen), "aria-hidden": true, children: _jsx(IconChevronDownOutline14, {}) })] }) }), _jsx(RiskConfirmation, { open: confirmation !== null, title: t('access.confirm.title'), description: t('access.confirm.description'), acknowledgeLabel: t('access.confirm.acknowledge'), cancelLabel: t('access.confirm.cancel'), closeLabel: t('close'), confirmLabel: t('access.confirm.enable'), acknowledged: acknowledged, disabled: locked, onAcknowledgedChange: setAcknowledged, onCancel: closeConfirmation, onConfirm: confirmFullAccess })] }));
 }
 //# sourceMappingURL=PermissionSelect.js.map

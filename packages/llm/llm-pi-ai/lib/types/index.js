@@ -55,14 +55,17 @@
  * @module @deepseek-ai/dsh-llm-pi-ai
  */
 import { launchEnvironmentOf } from '@deepseek-ai/dsh-launch-environment';
-import { assertUsableApiKey, LlmError } from '@deepseek-ai/dsh-llm';
+import { assertUsableApiKey, LlmError, resolveImageAttachmentAccess } from '@deepseek-ai/dsh-llm';
 import { deepEqualJson, installSettingsSection, settingsNamespace } from '@deepseek-ai/dsh-settings';
 import { PiAiAdapter } from "./adapter.js";
-import { catalogProviderIds, catalogProviderTakesApiKey } from "./catalog.js";
+import { authContextFrom, credentialStoreFrom } from "./auth.js";
+import { catalogProviderIds } from "./catalog.js";
 import { assertServiceable, Config, resolveProfiles } from "./config.js";
 import { discoverModels } from "./discovery.js";
+import { registerPiAiFlows } from "./login.js";
 export { PiAiAdapter } from "./adapter.js";
 export { Config } from "./config.js";
+export { recordKeyFor } from "./auth.js";
 export { supportedProtocols } from "./provider.js";
 export const name = 'llm-pi-ai';
 export const inject = ['llm'];
@@ -85,15 +88,10 @@ function registrationFacts(profiles) {
         .sort((left, right) => left.provider.localeCompare(right.provider));
 }
 /**
- * The configurable-provider directory: every installed catalog route this
- * adapter can authenticate, plus every route the current profiles declare. A
- * hand-declared route has no catalog entry, so without this union it would
- * have no settings address and configuration surfaces could neither show nor
- * edit it.
- *
- * The profile half is unconditional, which is what keeps a route already
- * stored against a withheld provider editable and deletable rather than
- * stranded in the settings document with nothing on the page to remove it.
+ * The configurable-provider directory: every installed catalog route, plus
+ * every route the current profiles declare. A hand-declared route has no
+ * catalog entry, so without this union it would have no settings address and
+ * configuration surfaces could neither show nor edit it.
  * @param profiles - the currently resolved provider profiles.
  * @returns the directory entries in catalog order, declared routes last.
  */
@@ -112,15 +110,8 @@ function directoryEntries(profiles) {
             declared: !catalog.has(provider),
         });
     };
-    // A provider whose only native method is OAuth leaves this adapter nothing
-    // to authenticate with, so offering it would put a card on the settings page
-    // whose own posture — no key, credentials discovered by the provider — fails
-    // every request. Catalog *membership* is unaffected, so `declare` above still
-    // answers what pi-ai ships.
-    for (const provider of catalog) {
-        if (catalogProviderTakesApiKey(provider))
-            declare(provider, provider);
-    }
+    for (const provider of catalog)
+        declare(provider, provider);
     for (const [provider, profile] of profiles)
         declare(provider, profile.displayName);
     return [...entries.values()];
@@ -171,15 +162,27 @@ export function apply(ctx, config) {
             + ` set — store ${ref} through the credentials service (the web Models page writes it) or export it,`
             + ' and remove apiKeyEnv only if this provider should authenticate from pi-ai\'s own environment discovery', 'MISSING_CREDENTIAL');
     };
+    // One store and one ambient context for the whole plugin instance: both read
+    // through `ctx` per call, so they stay correct across the collection rebuilds
+    // a configuration change causes, and a sign-in survives one.
+    const auth = { credentials: credentialStoreFrom(ctx), authContext: authContextFrom(ctx) };
     const adapter = new PiAiAdapter({
         profiles,
         resolveApiKey,
+        auth,
         resolveAttachments: () => ctx.get('attachments'),
+        resolveImageAccess: (attachments, ref) => resolveImageAttachmentAccess(attachments, hostPath => ctx.get('fs')?.processPathFromHostPath(hostPath), ref),
         onReplayDegrade: ({ provider, model, reason }) => {
             ctx.logger.warn(`llm-pi-ai: unusable replay state on assistant history for route "${provider}/${model}";`
                 + ` sending that message as provider-neutral content (${reason})`);
         },
     });
+    // Independent of the route set: signing in is what makes a route worth
+    // adding, so the flows are offered before any profile names their provider.
+    // Scoped to the authorization seam rather than injected outright, because a
+    // composition without it (headless, ACP) simply has no surface to sign in
+    // from, while everything else this plugin does still works.
+    ctx.inject(['authorization'], (authorized) => { registerPiAiFlows(authorized, auth); });
     // The full installed catalog is configurable from the moment the plugin
     // mounts — dormant or not — so configuration surfaces can offer every
     // pi-ai provider before any route exists. Hand-declared routes join it as
@@ -225,7 +228,7 @@ export function apply(ctx, config) {
     // except the credential: a configuration surface edits a redacted descriptor
     // and never holds a stored secret, so an already-configured route supplies
     // its own here rather than being interrogated unauthenticated.
-    ctx.llm.registerModelDiscovery(NS, request => discoverModels(request, () => storedApiKey(request.provider)));
+    ctx.llm.registerModelDiscovery(NS, (request, signal) => discoverModels({ ...request, ...signal === undefined ? {} : { signal } }, () => storedApiKey(request.provider)));
     // Route effects bind to this apply fiber via the stable `ctx` reference,
     // even when a swap runs inside the scoped settings callback below. A bare
     // mount (zero routes) is the dormant posture: nothing registers until a

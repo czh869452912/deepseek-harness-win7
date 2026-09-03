@@ -57,7 +57,7 @@ def test_schemastery_intersect_merging():
 
 def test_schemastery_tuple_validation():
     """Test z.tuple fixed-length array validation matching TS Schemastery."""
-    tuple_schema = z.tuple([z.string(), z.number(), z.boolean()])
+    tuple_schema = z.tuple([z.string().required(), z.number().required(), z.boolean().required()])
 
     res = tuple_schema(["test", 123, True])
     assert res == ["test", 123, True]

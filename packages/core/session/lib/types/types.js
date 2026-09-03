@@ -21,13 +21,13 @@ export function SessionId(id) {
  * wrong read). Only structural changes reach that bar: the header shape, the
  * {@link SessionEvent} envelope, core event semantics, or the surface
  * mechanism (the {@link SurfaceEventType} set and {@link SurfaceOp} variants).
- * Adding an ordinary event type does not bump — the per-event
- * {@link SessionEvent.ignorable} guard covers vocabulary growth instead. When
- * in doubt, bump: a near-identity upgrade step is almost free, a missed bump
- * makes older runtimes read new logs wrong silently. The full mechanism
+ * Adding an ordinary event type does not bump: the generated known-event guard
+ * makes older runtimes refuse logs containing a type they do not understand.
+ * When in doubt, bump: a near-identity upgrade step is almost free, a missed
+ * bump makes older runtimes read new logs wrong silently. The full mechanism
  * (upgrade-step chain, in-memory view conversion, migrate-on-continue) is
- * recorded in the session-log-version-mechanism Agent Note
- * (`.agents/notes/implemented/architecture/2026-08-10-session-log-version-mechanism.md`).
+ * recorded in the fail-closed-session-event-vocabulary Agent Note
+ * (`.agents/notes/implemented/simplification/2026-08-25-fail-closed-session-event-vocabulary.md`).
  */
 export const SESSION_FORMAT_VERSION = 0;
 //# sourceMappingURL=types.js.map

@@ -7,8 +7,8 @@ window.__ModuleLoader__.load({
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let react = require("react");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
-		//#region \0dsh-css:D:\Claude-project\deepseek-harness-win7\reference\deepseek-harness\packages\client\ui-goal\src\client\GoalBar.module.css.mjs
-		const css$1 = ".qeoXIq_dock{box-sizing:border-box;width:calc(100% - var(--dsh-composer-side-clearance) - var(--dsh-composer-side-clearance) - var(--dsh-composer-dock-inset) - var(--dsh-composer-dock-inset) - var(--dsh-composer-dock-inset) - var(--dsh-composer-dock-inset));margin:0 auto}.qeoXIq_bar{box-sizing:border-box;width:100%;max-width:calc(var(--dsh-composer-card-max-width) - 4 * var(--dsh-composer-dock-inset));border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-specific-tip);border-radius:12px;align-items:center;gap:10px;height:36px;margin:0 auto;padding:4px 5px 4px 12px;display:flex}.qeoXIq_goalGlyph{color:var(--dsw-alias-label-tertiary);flex:none;display:inline-flex}.qeoXIq_label{color:var(--dsw-alias-label-primary);flex:none;font-size:13px;font-weight:500;line-height:24px}.qeoXIq_objective{min-width:0;color:var(--dsw-alias-label-primary-dimmed);text-overflow:ellipsis;white-space:nowrap;flex:1;font-size:13px;line-height:20px;overflow:hidden}.qeoXIq_error{min-width:0;color:var(--dsw-alias-state-error-primary);text-overflow:ellipsis;white-space:nowrap;flex:1;font-size:12px;line-height:20px;overflow:hidden}.qeoXIq_objectiveInput{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);min-width:0;height:26px;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;flex:1;padding:0 8px;font-size:13px;line-height:20px}.qeoXIq_objectiveInput:focus{border-color:var(--dsw-alias-state-business-primary)}.qeoXIq_objectiveInput::placeholder{color:var(--dsw-alias-label-caption)}.qeoXIq_actions{flex:none;align-items:center;gap:10px;display:flex}.qeoXIq_iconBtn{width:28px;height:28px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:999px;justify-content:center;align-items:center;padding:0;display:inline-flex}.qeoXIq_iconBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary)}.qeoXIq_iconBtn:disabled{opacity:.4;cursor:default}";
+		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-goal\src\client\GoalBar.module.css.mjs
+		const css$1 = ".meKWqa_dock{box-sizing:border-box;width:calc(100% - var(--dsh-composer-side-clearance) - var(--dsh-composer-side-clearance) - var(--dsh-composer-dock-inset) - var(--dsh-composer-dock-inset) - var(--dsh-composer-dock-inset) - var(--dsh-composer-dock-inset));margin:0 auto}.meKWqa_bar{box-sizing:border-box;width:100%;max-width:calc(var(--dsh-composer-card-max-width) - 4 * var(--dsh-composer-dock-inset));border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-specific-tip);border-radius:12px;align-items:center;gap:10px;height:36px;margin:0 auto;padding:4px 5px 4px 12px;display:flex}.meKWqa_goalGlyph{color:var(--dsw-alias-label-tertiary);flex:none;display:inline-flex}.meKWqa_label{color:var(--dsw-alias-label-primary);flex:none;font-size:13px;font-weight:500;line-height:24px}.meKWqa_objective{min-width:0;color:var(--dsw-alias-label-primary-dimmed);text-overflow:ellipsis;white-space:nowrap;flex:1;font-size:13px;line-height:20px;overflow:hidden}.meKWqa_error{min-width:0;color:var(--dsw-alias-state-error-primary);text-overflow:ellipsis;white-space:nowrap;flex:1;font-size:12px;line-height:20px;overflow:hidden}.meKWqa_objectiveInput{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);min-width:0;height:26px;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;flex:1;padding:0 8px;font-size:13px;line-height:20px}.meKWqa_objectiveInput:focus{border-color:var(--dsw-alias-state-business-primary)}.meKWqa_objectiveInput::placeholder{color:var(--dsw-alias-label-caption)}.meKWqa_actions{flex:none;align-items:center;gap:10px;display:flex}.meKWqa_iconBtn{width:28px;height:28px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:999px;justify-content:center;align-items:center;padding:0;display:inline-flex}.meKWqa_iconBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary)}.meKWqa_iconBtn:disabled{opacity:.4;cursor:default}";
 		const tagId$1 = "@deepseek-ai/dsh-client-ui-goal/GoalBar.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
@@ -18,15 +18,15 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var GoalBar_module_css_default = {
-			"actions": "qeoXIq_actions",
-			"bar": "qeoXIq_bar",
-			"dock": "qeoXIq_dock",
-			"error": "qeoXIq_error",
-			"goalGlyph": "qeoXIq_goalGlyph",
-			"iconBtn": "qeoXIq_iconBtn",
-			"label": "qeoXIq_label",
-			"objective": "qeoXIq_objective",
-			"objectiveInput": "qeoXIq_objectiveInput"
+			"actions": "meKWqa_actions",
+			"bar": "meKWqa_bar",
+			"dock": "meKWqa_dock",
+			"error": "meKWqa_error",
+			"goalGlyph": "meKWqa_goalGlyph",
+			"iconBtn": "meKWqa_iconBtn",
+			"label": "meKWqa_label",
+			"objective": "meKWqa_objective",
+			"objectiveInput": "meKWqa_objectiveInput"
 		};
 		//#endregion
 		//#region lib/types/client/GoalBar.js
@@ -250,8 +250,8 @@ window.__ModuleLoader__.load({
 			});
 		}
 		//#endregion
-		//#region \0dsh-css:D:\Claude-project\deepseek-harness-win7\reference\deepseek-harness\packages\client\ui-goal\src\client\GoalCommandInputView.module.css.mjs
-		const css = ".wTzMta_row{flex-direction:column;align-items:flex-end;gap:6px;display:flex}.wTzMta_stack{flex-direction:column;align-items:flex-end;min-width:0;max-width:min(525px,82%);display:flex}.wTzMta_bubble{overflow-wrap:anywhere;background:var(--dsw-specific-bubble);max-width:100%;color:var(--dsw-alias-label-primary);font:var(--dsw-font-markdown-code);white-space:pre-wrap;border-radius:22px;padding:10px 16px}";
+		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-goal\src\client\GoalCommandInputView.module.css.mjs
+		const css = ".wp-ipW_row{flex-direction:column;align-items:flex-end;gap:6px;display:flex}.wp-ipW_stack{min-width:0;max-width:min(calc(var(--dsh-chat-content-width,748px) * .702), 82%);flex-direction:column;align-items:flex-end;display:flex}.wp-ipW_bubble{overflow-wrap:anywhere;background:var(--dsw-specific-bubble);max-width:100%;color:var(--dsw-alias-label-primary);font:var(--dsw-font-markdown-code);font-size:var(--dsh-content-font-size,14px);line-height:calc(22px + var(--dsh-content-font-delta,0px));white-space:pre-wrap;border-radius:22px;padding:10px 16px}";
 		const tagId = "@deepseek-ai/dsh-client-ui-goal/GoalCommandInputView.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -261,9 +261,9 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var GoalCommandInputView_module_css_default = {
-			"bubble": "wTzMta_bubble",
-			"row": "wTzMta_row",
-			"stack": "wTzMta_stack"
+			"bubble": "wp-ipW_bubble",
+			"row": "wp-ipW_row",
+			"stack": "wp-ipW_stack"
 		};
 		//#endregion
 		//#region lib/types/client/GoalCommandInputView.js
@@ -339,7 +339,7 @@ window.__ModuleLoader__.load({
 			"phase.paused": "已暂停的目标",
 			"phase.blocked": "受阻的目标",
 			"objective.aria": "目标内容",
-			"commandInput.aria": "命令输入",
+			"commandInput.aria": "指令输入",
 			"action.save": "保存目标",
 			"action.cancel": "取消编辑",
 			"action.pause": "暂停目标",
@@ -372,14 +372,14 @@ window.__ModuleLoader__.load({
 			"remote",
 			"remote.goals",
 			"locale",
-			"conversationEvents"
+			"uiConversation"
 		];
 		/**
 		* Client plugin body: the GoalBar dock entry with its mutation verbs.
 		* @param ctx - client root context.
 		*/
 		function apply(ctx) {
-			ctx.conversationEvents.register(goalCommandInputDefinition);
+			ctx.uiConversation.events.register(goalCommandInputDefinition);
 			ctx.effect(() => ctx.locale.register(NS, {
 				zh,
 				en

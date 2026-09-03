@@ -98,8 +98,21 @@ export function AgentPresetSection(props) {
                     return null;
                 return (_jsxs("section", { className: css.group, children: [_jsx("h3", { className: css.groupHead, children: heading }), group.length === 0 ? null : (_jsx("ul", { className: css.cards, children: group.map(({ row, text }) => (_jsxs("li", { className: row.broken !== undefined
                                     ? `${css.card} ${css.cardBroken}`
-                                    : row.isDefault ? `${css.card} ${css.cardActive}` : css.card, children: [_jsxs("button", { type: "button", className: css.cardMain, "aria-pressed": row.isDefault, disabled: row.isDefault || row.broken !== undefined, "aria-label": `${row.broken !== undefined ? t('brokenBadge') : row.isDefault ? t('inUse') : t('setDefault')}: ${text.name}`, title: row.broken ?? (row.isDefault ? t('inUse') : t('setDefault')), onClick: () => { void props.makeDefault(row.id); }, children: [_jsxs("span", { className: css.cardHead, children: [_jsx("span", { className: css.cardName, children: text.name }), row.broken !== undefined
-                                                        ? _jsx("span", { className: css.brokenBadge, children: t('brokenBadge') })
+                                    : row.isDefault ? `${css.card} ${css.cardActive}` : css.card, children: [_jsxs("button", { type: "button", className: css.cardMain, "aria-pressed": row.isDefault, 
+                                        // Broken says so through `aria-disabled` rather than
+                                        // `disabled`, which would take the card out of the tab
+                                        // order. With the reason moved onto the badge, that is
+                                        // the only way anyone without a pointer reaches it.
+                                        disabled: row.isDefault, "aria-disabled": row.broken !== undefined, "aria-label": `${row.broken !== undefined ? t('brokenBadge') : row.isDefault ? t('inUse') : t('setDefault')}: ${text.name}`, 
+                                        // The reason rides the badge, not the whole card: two
+                                        // tooltips over one target would race, and the card's
+                                        // own label answers what clicking it would do.
+                                        title: row.broken !== undefined ? t('brokenBadge') : row.isDefault ? t('inUse') : t('setDefault'), onClick: () => {
+                                            if (row.broken !== undefined)
+                                                return;
+                                            void props.makeDefault(row.id);
+                                        }, children: [_jsxs("span", { className: css.cardHead, children: [_jsx("span", { className: css.cardName, children: text.name }), row.broken !== undefined
+                                                        ? (_jsxs("span", { className: css.brokenBadge, children: [t('brokenBadge'), _jsx("span", { className: css.brokenTip, "aria-hidden": "true", children: row.broken })] }))
                                                         : null, _jsx("span", { className: css.badge, children: row.trust === 'user' ? t('userTrust') : t('builtIn') }), row.isDefault ? _jsx("span", { className: css.inUse, children: t('inUse') }) : null] }), _jsx(CardDescription, { text: text.description ?? t('noDescription') }), row.broken === undefined
                                                 ? null
                                                 : _jsx("span", { className: css.cardBrokenReason, role: "alert", children: row.broken }), _jsx("code", { className: css.cardId, children: row.id })] }), _jsxs("div", { className: css.cardFoot, children: [row.trust === 'system'

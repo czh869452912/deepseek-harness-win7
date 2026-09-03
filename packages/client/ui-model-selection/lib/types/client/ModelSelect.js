@@ -69,7 +69,6 @@ export function ModelSelect({ locked, available, directory, load, select, t }) {
                 key: `effort:${effort.id}`,
                 effort: effort.id,
                 label: effort.name,
-                ...effort.description === undefined ? {} : { description: effort.description },
             })),
         ], [reasoning, t]);
     const busy = state.status === 'selecting';
@@ -77,13 +76,6 @@ export function ModelSelect({ locked, available, directory, load, select, t }) {
         lastActionRef.current = 'load';
         load();
     };
-    // Mount-time load resolves the trigger label; every open refreshes.
-    useEffect(() => {
-        if (available) {
-            lastActionRef.current = 'load';
-            load();
-        }
-    }, [available, load]);
     useEffect(() => {
         if (!open)
             return;
@@ -172,13 +164,19 @@ export function ModelSelect({ locked, available, directory, load, select, t }) {
         lastActionRef.current = 'select';
         void select(selection).then(settleSelection);
     };
-    const modelLabel = currentChoice?.model.name ?? t('trigger.fallback');
+    const waiting = state.current === null && state.status === 'loading';
+    const modelLabel = waiting
+        ? t('trigger.loading')
+        : currentChoice?.model.name
+            ?? (state.current === null ? t('trigger.fallback') : `${state.current.provider}/${state.current.model}`);
     const triggerLabel = effortLabel === undefined ? modelLabel : `${modelLabel} · ${effortLabel}`;
-    const triggerAria = currentChoice === undefined
-        ? t('trigger.selectAria')
-        : effortLabel === undefined
-            ? t('trigger.aria', { model: modelLabel })
-            : t('trigger.ariaEffort', { model: modelLabel, effort: effortLabel });
+    const triggerAria = waiting
+        ? t('trigger.loading')
+        : state.current === null
+            ? t('trigger.selectAria')
+            : effortLabel === undefined
+                ? t('trigger.aria', { model: modelLabel })
+                : t('trigger.ariaEffort', { model: modelLabel, effort: effortLabel });
     itemRefs.current = [];
     let itemIndex = 0;
     const itemRef = () => {
@@ -196,10 +194,10 @@ export function ModelSelect({ locked, available, directory, load, select, t }) {
                                     const headingId = `${id}-${group.id}`;
                                     return (_jsxs("section", { role: "group", "aria-labelledby": headingId, className: css.group, children: [_jsx("div", { className: css.groupTitle, id: headingId, children: group.name }), group.models.map((model) => {
                                                 const selected = state.current?.provider === group.id && state.current.model === model.id;
-                                                return (_jsxs("button", { ref: itemRef(), type: "button", role: "menuitemradio", "aria-checked": selected, className: clsx(css.option, selected && css.selected), title: model.name, disabled: busy, onClick: () => { choose({ provider: group.id, model: model.id }); }, children: [_jsxs("span", { className: css.optionCopy, children: [_jsx("span", { className: css.modelName, children: model.name }), model.description !== undefined && (_jsx("span", { className: css.description, children: model.description }))] }), _jsx("span", { className: css.check, children: selected ? _jsx(IconCheckOutline16, {}) : null })] }, model.id));
+                                                return (_jsxs("button", { ref: itemRef(), type: "button", role: "menuitemradio", "aria-checked": selected, className: clsx(css.option, selected && css.selected), title: model.name, disabled: busy, onClick: () => { choose({ provider: group.id, model: model.id }); }, children: [_jsx("span", { className: css.optionCopy, children: _jsx("span", { className: css.modelName, children: model.name }) }), _jsx("span", { className: css.check, children: selected ? _jsx(IconCheckOutline16, {}) : null })] }, model.id));
                                             })] }, group.id));
                                 }) }), state.status === 'ready' && choices.length === 0 && (_jsx("div", { className: css.empty, children: t('empty.models') }))] })), pane === 'effort' && (_jsxs(_Fragment, { children: [state.error !== null && lastActionRef.current === 'load' && (_jsxs("div", { className: css.error, children: [_jsx("span", { children: t('error.action', { message: state.error }) }), _jsx("button", { type: "button", className: css.retry, onClick: reload, children: t('action.reload') })] })), effortChoices.length === 0
                                 ? _jsx("div", { className: css.empty, children: t('empty.efforts') })
-                                : effortChoices.map(level => (_jsxs("button", { ref: itemRef(), type: "button", role: "menuitemradio", "aria-checked": effectiveEffort === level.effort, className: clsx(css.option, effectiveEffort === level.effort && css.selected), disabled: busy, onClick: () => { chooseEffort(level.effort); }, children: [_jsxs("span", { className: css.optionCopy, children: [_jsx("span", { className: css.modelName, children: level.label }), level.description !== undefined && (_jsx("span", { className: css.description, children: level.description }))] }), _jsx("span", { className: css.check, children: effectiveEffort === level.effort ? _jsx(IconCheckOutline16, {}) : null })] }, level.key)))] }))] })), toast !== null && (_jsx(Toast, { text: toast.text, icon: _jsx(IconWarningOutline16, {}), anchor: rootRef.current?.closest('[data-composer-card]') ?? null, onDone: () => { setToast(null); } }, toast.seq))] }));
+                                : effortChoices.map(level => (_jsxs("button", { ref: itemRef(), type: "button", role: "menuitemradio", "aria-checked": effectiveEffort === level.effort, className: clsx(css.option, effectiveEffort === level.effort && css.selected), disabled: busy, onClick: () => { chooseEffort(level.effort); }, children: [_jsx("span", { className: css.optionCopy, children: _jsx("span", { className: css.modelName, children: level.label }) }), _jsx("span", { className: css.check, children: effectiveEffort === level.effort ? _jsx(IconCheckOutline16, {}) : null })] }, level.key)))] }))] })), toast !== null && (_jsx(Toast, { text: toast.text, icon: _jsx(IconWarningOutline16, {}), anchor: rootRef.current?.closest('[data-composer-card]') ?? null, onDone: () => { setToast(null); } }, toast.seq))] }));
 }
 //# sourceMappingURL=ModelSelect.js.map

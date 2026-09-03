@@ -70,9 +70,15 @@ export declare function parseErrorMessage(half: 'code.host' | 'code.client', con
 /**
  * Parse one half's source without running it: the define-time precheck that
  * keeps unparseable code out of the registry, so a model fixes it and defines
- * again instead of discovering the failure at run time. Compiling through `vm`
- * rather than `new Function` is what makes the two agree — same wrapper, same
- * compiler, and the same source-line-and-caret prelude in the failure.
+ * again instead of discovering the failure at run time. `new Function` is the
+ * gate — hosts without a real `node:vm` (the browser worker) still refuse
+ * unparseable code — and `vm.Script` is only the best-effort prettifier: on a
+ * Node host its failure carries the source-line-and-caret prelude the
+ * teaching text builds on, and where the vm is a stub the message stays bare.
+ * The two parsers' syntax faces differ at the margin (`new.target` parses in
+ * a function body but not at the vm wrapper's top level), an accepted cost of
+ * a vm-free gate; and under a page CSP without `'unsafe-eval'`, `new Function`
+ * throws `EvalError`, which propagates unwrapped.
  * @param code - the model-written function body.
  * @param half - which define argument carried it, for the error text.
  * @throws when the body does not parse, with the offending line and a teaching hint.

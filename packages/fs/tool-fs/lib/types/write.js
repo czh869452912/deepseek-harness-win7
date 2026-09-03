@@ -5,6 +5,7 @@
  * @module @deepseek-ai/dsh-tool-fs/src/write
  */
 import { defineTool } from '@deepseek-ai/dsh-tools';
+import { FIRST_PARTY_SECTION_ORDER } from '@deepseek-ai/dsh-system-prompt';
 import { computeHunkDiffs, diffsFromMeta } from "./diff.js";
 import { remediateFsError } from "./error.js";
 import { sessionResolveOptions } from "./session-cwd.js";
@@ -41,7 +42,7 @@ ${verb} file
 export function applyWriteTool(ctx, sandbox) {
     ctx.systemPrompt.section({
         name: 'tool:write',
-        order: 101,
+        order: FIRST_PARTY_SECTION_ORDER.TOOL_WRITE,
         text: 'Use the write tool to create files or completely replace file contents. Existing files are overwritten, so read an existing file first (the default fs-observation-policy requires it) and prefer edit for targeted changes.',
     });
     ctx.tools.register(defineTool({
@@ -97,7 +98,6 @@ export function applyWriteTool(ctx, sandbox) {
                 // model-facing remedy; anything else passes through.
                 throw remediateFsError(sandbox.mapError(error, sandboxPolicy));
             }
-            // Record the present observation (a no-op when no policy plugin listens).
             ctx.emit('fs/observed', target, { kind: 'present', version: outcome.version }, exec);
             return {
                 path: target.displayPath,

@@ -4,17 +4,18 @@
  * scope, so concurrent runs do not interact and disposal leaves no global residue. The prompt
  * contribution is ordinary reconstructed request state.
  *
- * Capture commits only after the authoritative `tools/result` succeeds; Code Mode capture also
+ * Capture commits only after the authoritative `tools/result` succeeds; PTC mode capture also
  * waits for the enclosing `run_code` result. The terminal result marker and monotonic tool
  * guard prevent later calls from reopening a completed structured run.
  * @module @deepseek-ai/dsh-subagent-in-process-driver/structured
  */
+import { FIRST_PARTY_SECTION_ORDER } from '@deepseek-ai/dsh-system-prompt';
 import { ToolArgsError, validateJsonSchemaValue } from '@deepseek-ai/dsh-tools';
 /** The model-facing tool name a structured child must call to finish. */
 export const STRUCTURED_OUTPUT_TOOL = 'structured_output';
 /**
- * The instruction registered as the child's trailing (order-190, the end of
- * the tool-guidance band) scoped prompt section: the demand travels with the
+ * The instruction registered as the child's trailing scoped prompt section:
+ * the demand travels with the
  * tool, as ordinary prompt state of exactly one agent.
  */
 export const STRUCTURED_OUTPUT_INSTRUCTION = 'When you have your final answer, you MUST report it by calling the '
@@ -77,7 +78,7 @@ export function attachStructuredRuntime(childCtx, schema) {
     });
     childCtx.systemPrompt.section({
         name: `tool:${STRUCTURED_OUTPUT_TOOL}`,
-        order: 190,
+        order: FIRST_PARTY_SECTION_ORDER.STRUCTURED_OUTPUT,
         text: STRUCTURED_OUTPUT_INSTRUCTION,
     });
     // Terminal WITHIN the step. Guards run after the whole pre-execute
@@ -104,7 +105,7 @@ export function attachStructuredRuntime(childCtx, schema) {
                     captured = { value: entry.value };
             }
             else {
-                /* v8 ignore else -- Code Mode serializes sub-dispatches, so the guard blocks every later supported call */
+                /* v8 ignore else -- PTC mode serializes sub-dispatches, so the guard blocks every later supported call */
                 if (captured === undefined && pending === undefined) {
                     pending = { parent: exec.parent, value: entry.value };
                 }
@@ -117,7 +118,7 @@ export function attachStructuredRuntime(childCtx, schema) {
         pending = undefined;
         if (result.isError)
             return;
-        /* v8 ignore else -- Code Mode serializes outer executions, so the guard blocks every later supported call */
+        /* v8 ignore else -- PTC mode serializes outer executions, so the guard blocks every later supported call */
         if (captured === undefined)
             captured = { value: entry.value };
     });

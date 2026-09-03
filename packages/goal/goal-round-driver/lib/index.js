@@ -335,7 +335,10 @@ function apply(ctx) {
 				requestDrive(state);
 				return { kind: "reject" };
 			}
-			return decision;
+			return {
+				...decision,
+				startsRequestSeries: true
+			};
 		});
 		for (const agent of ctx.agents.list()) disarm(stateFor(agent));
 		yield async () => {

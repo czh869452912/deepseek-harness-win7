@@ -60,17 +60,19 @@ const THINKING_LEVEL_GATE = {
 export const THINKING_LEVELS = Object.keys(THINKING_LEVEL_GATE);
 /**
  * The nameable reasoning-dispatch formats, most-reached first. The `Record`
- * key type is a drift gate: a pi-ai upgrade that adds a format (0.84 added
- * `baseten`) fails compilation here until the new format is named, so the
- * offer never silently lags the upstream set. The two `chat-template` variants
- * are nameable because {@link PiAiCompatProfile.chatTemplateKwargs} carries
- * the kwargs they dispatch through.
+ * key type is a drift gate: an upstream format addition fails compilation
+ * here until it is named, so the offer never silently lags the upstream set.
+ * The two `chat-template` variants are nameable because
+ * {@link PiAiCompatProfile.chatTemplateKwargs} carries their kwargs;
+ * `baseten` is nameable because {@link PiAiCompatProfile.chatTemplateArgs}
+ * carries its arguments.
  */
 const THINKING_FORMAT_GATE = {
     'openai': true,
     'deepseek': true,
     'openrouter': true,
     'together': true,
+    'baseten': true,
     'zai': true,
     'qwen': true,
     'chat-template': true,
@@ -127,25 +129,6 @@ export function catalogProviderIds() {
     return getBuiltinProviders();
 }
 /**
- * Whether the installed catalog provider for one route declares an api-key
- * method — the only authentication this adapter obtains on its own.
- *
- * A key is what the harness resolves through its own credential seam and hands
- * pi-ai per request. pi-ai's other method, OAuth, resolves from a *stored*
- * OAuth credential alone: `resolveProviderAuth` has no ambient path for it,
- * this adapter builds its `Models` collection with no credential store, and
- * nothing here runs a login flow. So a provider offering OAuth by itself
- * leaves nothing for this adapter to authenticate with, and the posture such a
- * provider invites — no key configured, credentials discovered by the provider
- * — fails every request with `Provider is not configured`.
- * @param provider - provider route key.
- * @returns whether the catalog provider takes an api key; false for a route
- *   pi-ai does not ship, which the caller answers for separately.
- */
-export function catalogProviderTakesApiKey(provider) {
-    return catalogProvider(provider)?.auth.apiKey !== undefined;
-}
-/**
  * The installed catalog models for one route, indexed by model id.
  * @param provider - provider route key.
  * @returns catalog models by id; empty for a route pi-ai does not ship.
@@ -166,6 +149,7 @@ const COMPLETIONS_COMPAT_GATE = {
     supportsDeveloperRole: 'offer',
     supportsReasoningEffort: 'offer',
     supportsUsageInStreaming: 'offer',
+    supportsFinishReason: 'offer',
     maxTokensField: 'offer',
     requiresToolResultName: 'offer',
     requiresAssistantAfterToolResult: 'offer',
@@ -173,6 +157,8 @@ const COMPLETIONS_COMPAT_GATE = {
     requiresReasoningContentOnAssistantMessages: 'offer',
     thinkingFormat: 'offer',
     chatTemplateKwargs: 'offer',
+    chatTemplateArgs: 'offer',
+    supportsThinkingTokenBudget: 'offer',
     supportsStrictMode: 'offer',
     cacheControlFormat: 'offer',
     supportsLongCacheRetention: 'offer',
@@ -191,6 +177,7 @@ const RESPONSES_COMPAT_GATE = {
     supportsLongCacheRetention: 'offer',
     sessionAffinityFormat: 'withhold',
     supportsOpenAIGrammarTools: 'withhold',
+    supportsAdditionalTools: 'withhold',
     supportsToolSearch: 'withhold',
     supportsExplicitPromptCacheMode: 'withhold',
 };
@@ -242,10 +229,10 @@ function compatGate(api) {
  *
  * schemastery materializes an absent dict as `{}` — the behavior
  * `reasoningEfforts` works around with a union — so every parsed profile
- * carries a `chatTemplateKwargs` key whether or not anyone wrote one. An empty
- * one states nothing here: it would send no kwargs, which is exactly what
- * leaving the field out does, so absent and empty are the same request and
- * neither may make a route look like it configured a switch. A valueless
+ * carries both template-argument keys whether or not anyone wrote them. An
+ * empty one states nothing here: it would send no arguments, which is exactly
+ * what leaving the field out does, so absent and empty are the same request
+ * and neither may make a route look like it configured a switch. A valueless
  * scalar is the other thing schemastery lets through, and it is refused by
  * {@link assertOfferedCompatFields} before this runs rather than filtered.
  * @param compat - the configured switches, when any.

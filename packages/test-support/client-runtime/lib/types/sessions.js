@@ -1,12 +1,9 @@
-import { createScope, scopeOf, SessionProvideChannel } from '@deepseek-ai/dsh-client-runtime/client';
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-runtime/client';
-// The double reports the wire schema's own search bound, like the production
-// service — a transport-varying limit would be a fiction no client can see.
-import { SESSION_SEARCH_RESULT_LIMIT } from '@deepseek-ai/dsh-host-apiproxy/api';
-import { conversationSnapshot } from "./fixtures.js";
+import { createScope, MutableSessionEventSource, scopeOf, SESSION_SEARCH_RESULT_LIMIT, } from '@deepseek-ai/dsh-api-session-controller/client';
+import { createSnapshotStore } from '@deepseek-ai/dsh-client-store';
+import { sessionSnapshot } from "./fixtures.js";
 /**
- * The fixture-backed session face: conversation reads delegate to the
- * fixture's snapshot store; ISession verbs are fail-loud stubs unless the
+ * The fixture-backed session face: lifecycle reads delegate to the fixture's
+ * snapshot store; Session verbs are fail-loud stubs unless the
  * fixture supplies them (the runtime never fakes behavior a test did not
  * declare — an unstubbed call names itself instead of half-working). Extra
  * fixture methods are grafted verbatim for feature-side casts.
@@ -14,14 +11,15 @@ import { conversationSnapshot } from "./fixtures.js";
 export class FixtureSession {
     sessionId;
     store;
+    /** Mutable event source consumed only by Conversation assembly. */
+    eventSource = new MutableSessionEventSource();
     /**
-     * The useProjection seat: identity-stable per-key faces over the fixture's
-     * projection values (set via {@link TestSessions.setProjection}).
+     * Identity-stable per-key faces over fixture-controlled projection values.
      */
     projections;
     /**
      * @param sessionId - host identity (branded view of the fixture id).
-     * @param store - conversation snapshot store (updateSnapshot writes it).
+     * @param store - Session Controller snapshot store.
      * @param overrides - fixture-declared behavior face, grafted over the stubs.
      */
     constructor(sessionId, store, overrides) {
@@ -55,7 +53,7 @@ export class FixtureSession {
         };
         Object.assign(this, overrides);
     }
-    /** @returns the fixture conversation snapshot (useSession read side). */
+    /** @returns the fixture Session Controller snapshot (useSession read side). */
     getSnapshot() {
         return this.store.getSnapshot();
     }
@@ -74,6 +72,20 @@ export class FixtureSession {
     prompt() {
         throw new Error(`test session "${this.sessionId}": prompt is not stubbed — supply it on the fixture's session face`);
     }
+    /**
+     * Minimal local-echo registration: mints an identity without touching the
+     * fixture snapshot (submission echoes are client-only presentation state).
+     * Supply `beginSubmission` on the fixture's session face to observe echoes.
+     * @returns a handle whose abandon is a no-op.
+     */
+    beginSubmission() {
+        this.submissionSeq += 1;
+        return {
+            requestId: `test-submission-${this.submissionSeq}`,
+            abandon: () => { },
+        };
+    }
+    submissionSeq = 0;
     /**
      * Fail-loud stub; supply `readAttachment` on the fixture's session face to exercise it.
      * @param _attachmentId - opaque durable attachment id.
@@ -120,36 +132,28 @@ export class FixtureSession {
 }
 /**
  * Sessions test double behind the renderer host and feature injects: owns the
- * list/current observable, the standard-props provide channel (the runtime's
- * `useSession` contribution included), scope minting through the production
- * `createScope`, and the session behavior face supplied per fixture.
+ * list/current observable, scope minting through the production `createScope`,
+ * stable Controller bindings, and the session behavior face supplied per
+ * fixture. `ui-session` owns standard-source materialization.
  *
  * Implements the same ISessions face features receive as `ctx.sessions`, so
  * a production face change breaks this double at compile time; the extra
- * members (add/updateSnapshot/setCurrent/remove/behavior/calls/stubSearch and
- * the legacy provideInfo/maybeProvideInfo lookups) are bench-only surface.
+ * members (add/updateSessionSnapshot/event-window drivers/setCurrent/remove/
+ * behavior/calls/stubs) are bench-only surface.
  */
 export class TestSessions {
     stabilize;
     rootCtx;
     /** The useSessions standard feed (list rows + current selection). */
     list;
-    /**
-     * Atomic current-session provide projection (production SessionRuntime
-     * mirror): selection changes and provider-roster changes publish through
-     * this one source — the member the SlotRegistry host face hands the
-     * renderer's SessionProvider.
-     */
-    currentProvideInfo;
     records = new Map();
-    /** The production provide channel (roster, materialization rules, current projection) — no test-side mirror. */
-    channel;
     /** Calls observed on the service-level face, newest last. */
     calls = [];
     /** The wire schema's `session.search` result bound (production parity). */
     searchResultLimit = SESSION_SEARCH_RESULT_LIMIT;
     /** Replaceable search behavior (see {@link TestSessions.stubSearch}). */
     searchStub;
+    createStub;
     /**
      * @param stabilize - the owning runtime's act wrapper.
      * @param rootCtx - the runtime's Cordis root; scope fibers mount under it.
@@ -161,19 +165,6 @@ export class TestSessions {
             ids: [], byId: {}, current: undefined, phase: 'ready',
             subagentsByParent: {}, jobsBySession: {}, currentAddress: undefined,
         });
-        this.channel = new SessionProvideChannel({
-            rebuildBundles: () => {
-                for (const record of this.records.values()) {
-                    if (record.provideInfo !== undefined) {
-                        record.provideInfo = this.channel.materializeInfo(this.bindingOf(record.session.sessionId, record));
-                    }
-                }
-            },
-            resolveCurrent: () => this.maybeProvideInfo(this.list.getSnapshot().current),
-        });
-        this.currentProvideInfo = this.channel.currentProvideInfo;
-        // The projection follows every current write, as in production.
-        this.list.subscribe(() => { this.channel.publishCurrent(); });
     }
     /**
      * Add a session from a fixture and (by default) make it current.
@@ -194,16 +185,20 @@ export class TestSessions {
             ...fixture.summary,
         };
         const snapshot = createSnapshotStore({
-            ...conversationSnapshot(id),
+            ...sessionSnapshot(id),
             ...fixture.snapshot,
         });
+        const session = new FixtureSession(id, snapshot, fixture.session ?? {});
+        if (fixture.events !== undefined || fixture.hasMore === true) {
+            session.eventSource.replace(fixture.events ?? [], fixture.hasMore ?? false);
+        }
         this.records.set(id, {
             summary,
             snapshot,
-            session: new FixtureSession(id, snapshot, fixture.session ?? {}),
+            session,
             scope: undefined,
             scopeFiber: undefined,
-            provideInfo: undefined,
+            binding: undefined,
         });
         await this.stabilize(() => {
             this.list.update((draft) => {
@@ -216,14 +211,39 @@ export class TestSessions {
         return id;
     }
     /**
-     * Update a session's conversation snapshot through an immer draft (the
-     * live-stream stand-in: components subscribed via useSession re-render).
+     * Update Session Controller lifecycle state through an immer draft.
      * @param id - session id.
      * @param mutate - draft mutator.
      */
-    async updateSnapshot(id, mutate) {
+    async updateSessionSnapshot(id, mutate) {
         const record = this.require(id);
         await this.stabilize(() => { record.snapshot.update(mutate); });
+    }
+    /**
+     * Replace a Session's complete contiguous event window.
+     * @param id - Session identity.
+     * @param entries - complete event window.
+     * @param hasMore - whether older history remains.
+     */
+    async replaceEvents(id, entries, hasMore = false) {
+        await this.stabilize(() => { this.require(id).session.eventSource.replace(entries, hasMore); });
+    }
+    /**
+     * Prepend one older contiguous event page.
+     * @param id - Session identity.
+     * @param entries - older entries.
+     * @param hasMore - whether another older page remains.
+     */
+    async prependEvents(id, entries, hasMore = false) {
+        await this.stabilize(() => { this.require(id).session.eventSource.prepend(entries, hasMore); });
+    }
+    /**
+     * Append one live event to a Session's contiguous window.
+     * @param id - Session identity.
+     * @param entry - live event entry.
+     */
+    async appendEvent(id, entry) {
+        await this.stabilize(() => { this.require(id).session.eventSource.append(entry); });
     }
     /**
      * Update a session's list row (the wire-echo stand-in: title settles,
@@ -252,7 +272,7 @@ export class TestSessions {
     /**
      * Remove a session: list row, scope fiber, and per-session store instances
      * (with persisted state) die together — the same single lifecycle axis the
-     * production SessionRuntime drives on session death, minus staging.
+     * production Client Sessions service drives on session death, minus staging.
      * @param id - session id.
      */
     async remove(id) {
@@ -268,39 +288,7 @@ export class TestSessions {
             });
             if (record.scopeFiber !== undefined)
                 await record.scopeFiber.dispose();
-            this.rootCtx.get('slots')?.pruneStoreScope(id);
         });
-    }
-    /**
-     * Register a per-session standard-props provider (production `provide`
-     * contract: hooks become `use<Name>` selector hooks on the render side,
-     * props spread verbatim; duplicate names fail loud at materialization).
-     * @param descriptor - static member roster plus per-session resolver.
-     * @returns disposer removing the provider.
-     */
-    provide(descriptor) {
-        return this.channel.provide(descriptor);
-    }
-    /**
-     * Resolve the definite per-session standard-props bundle (host face member).
-     * @param id - session id.
-     * @returns the identity-stable bundle, or undefined for unknown sessions.
-     */
-    provideInfo(id) {
-        const record = this.records.get(id);
-        if (record === undefined)
-            return undefined;
-        record.provideInfo ??= this.channel.materializeInfo(this.bindingOf(id, record));
-        return record.provideInfo;
-    }
-    /**
-     * Resolve the current-session-optional standard kit (host face member):
-     * unknown or absent ids return the static no-session projection.
-     * @param id - current session id, when selected.
-     * @returns a definite or no-session provide bundle.
-     */
-    maybeProvideInfo(id) {
-        return (id === undefined ? undefined : this.provideInfo(id)) ?? this.channel.maybeInfo;
     }
     /**
      * Resolve (mint on first touch) the session-scoped Cordis context through
@@ -329,7 +317,8 @@ export class TestSessions {
         const record = this.records.get(id);
         if (record === undefined)
             return undefined;
-        return this.bindingOf(id, record);
+        record.binding ??= this.bindingOf(id, record);
+        return record.binding;
     }
     /**
      * Read the session scope tag off a context (service-method boundary mirror).
@@ -350,6 +339,23 @@ export class TestSessions {
         if (id === undefined)
             return undefined;
         return this.records.get(id)?.session;
+    }
+    /**
+     * Install Session creation behavior for navigation tests.
+     * @param impl - implementation that must return an already-added fixture id.
+     */
+    stubCreate(impl) {
+        this.createStub = impl;
+    }
+    /** Create through the installed test behavior and require an addressable binding. */
+    async create(opts) {
+        this.calls.push({ method: 'create', args: [opts] });
+        if (this.createStub === undefined) {
+            throw new Error('test sessions: create is not stubbed — call stubCreate() first');
+        }
+        const id = await this.createStub(opts);
+        this.require(id);
+        return id;
     }
     /**
      * Service-level selection call (recorded, then applied to the list store
@@ -388,14 +394,6 @@ export class TestSessions {
         this.calls.push({ method: 'refreshSubagents', args: [parentSessionId] });
         return Promise.resolve();
     }
-    /** Apply a confirmed preset switch into the fixture list, as production does. */
-    noteAgentPreset(sessionId, agentPreset) {
-        this.list.update((draft) => {
-            const summary = draft.byId[sessionId];
-            if (summary !== undefined)
-                draft.byId[sessionId] = { ...summary, agentPreset };
-        });
-    }
     /** Clear the current selection (recorded; the production no-session flow). */
     clear() {
         this.calls.push({ method: 'clear', args: [] });
@@ -403,6 +401,11 @@ export class TestSessions {
             draft.current = undefined;
             draft.currentAddress = undefined;
         });
+    }
+    /** Record a list refresh; fixture callers publish list state explicitly. */
+    refresh() {
+        this.calls.push({ method: 'refresh', args: [] });
+        return Promise.resolve();
     }
     /**
      * Replace the sidebar-search result page (the call is still recorded).
@@ -437,7 +440,7 @@ export class TestSessions {
      * The session face of a fixture (typed view for assertions; fixture
      * behavior methods are grafted onto it).
      * @param id - session id.
-     * @returns the FixtureSession the binding and provide channel carry.
+     * @returns the FixtureSession carried by the Controller binding.
      */
     behavior(id) {
         return this.require(id).session;
@@ -449,6 +452,7 @@ export class TestSessions {
                 await record.scopeFiber.dispose();
                 record.scope = undefined;
                 record.scopeFiber = undefined;
+                record.binding = undefined;
             }
         }
     }
@@ -458,7 +462,12 @@ export class TestSessions {
          * always resolves; kept so a future caller cannot mint a ctx-less binding. */
         if (ctx === undefined)
             throw new Error(`test session "${id}" resolved no scope`);
-        return { sessionId: id, session: record.session, ctx };
+        return {
+            sessionId: id,
+            session: record.session,
+            eventSource: record.session.eventSource,
+            ctx,
+        };
     }
     require(id) {
         const record = this.records.get(id);

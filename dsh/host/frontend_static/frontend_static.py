@@ -38,8 +38,8 @@ class FrontendStaticPlugin(Plugin):
         cfg = config or {}
         repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
         candidates = [
-            os.path.join(repo_root, "reference", "deepseek-harness", "apps", "web", "dist", "index.html"),
             os.path.join(repo_root, "apps", "web", "dist", "index.html"),
+            os.path.join(repo_root, "reference", "apps", "web", "dist", "index.html"),
             os.path.join(repo_root, "apps", "web", "index.html"),
         ]
         chosen = cfg.get("distIndex")

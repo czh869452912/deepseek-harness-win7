@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { isTokenDelta } from "@deepseek-ai/dsh-llm/message";
 //#region lib/types/projection.js
 /**
 * The `sessionStats` projection unit: a pure fold of step boundaries, stream
@@ -25,6 +24,15 @@ import { isTokenDelta } from "@deepseek-ai/dsh-llm/message";
 *
 * @module @deepseek-ai/dsh-session-stats/projection
 */
+/** Whether a stream chunk carries a non-empty first-token delta. */
+function isTokenDelta(chunk) {
+	switch (chunk.type) {
+		case "text-delta":
+		case "reasoning-delta": return chunk.text !== "";
+		case "tool-call-delta": return chunk.argumentsDelta !== "" || chunk.name !== void 0;
+		default: return false;
+	}
+}
 const sessionStatsSchema = z.object({
 	turns: z.number().int().nonnegative(),
 	steps: z.number().int().nonnegative(),
@@ -35,6 +43,22 @@ const sessionStatsSchema = z.object({
 	decodeMs: z.number().nonnegative(),
 	decodeTokens: z.number().nonnegative()
 }).strict();
+/**
+* The fold state's shape (totals plus in-flight boundaries), validated on
+* persisted-cache rows after their `ver` gate — the unit's input boundary.
+* The view is a strict subset of the state, so this schema extends
+* `sessionStatsSchema` (the wire output boundary) with the boundary fields.
+*/
+const sessionStatsStateSchema = sessionStatsSchema.extend({
+	lastTurn: z.number().int().nonnegative().nullable(),
+	openStep: z.object({
+		turn: z.number().int().nonnegative(),
+		step: z.number().int().nonnegative(),
+		startTime: z.number().nonnegative(),
+		firstTokenTime: z.number().nonnegative().nullable()
+	}).nullable(),
+	pendingCalls: z.record(z.string(), z.number().nonnegative())
+});
 /**
 * Provider-reported completion tokens, guarded the way the window fold guards
 * node usage.
@@ -49,7 +73,8 @@ function usageOutputTokens(usage) {
 /** The `sessionStats` unit registered on `ctx.sessionProjections` (exported for the unit spec). */
 const sessionStatsProjectionDefinition = {
 	key: "sessionStats",
-	schema: sessionStatsSchema,
+	stateVersion: 1,
+	stateSchema: sessionStatsStateSchema,
 	init: () => ({
 		turns: 0,
 		steps: 0,
@@ -137,17 +162,19 @@ const sessionStatsProjectionDefinition = {
 			default: return state;
 		}
 	},
-	view: (state) => ({
-		turns: state.turns,
-		steps: state.steps,
-		llmMs: state.llmMs,
-		toolMs: state.toolMs,
-		ttftMs: state.ttftMs,
-		ttftSteps: state.ttftSteps,
-		decodeMs: state.decodeMs,
-		decodeTokens: state.decodeTokens
-	}),
-	stateVersion: 1
+	wire: {
+		viewSchema: sessionStatsSchema,
+		view: (state) => ({
+			turns: state.turns,
+			steps: state.steps,
+			llmMs: state.llmMs,
+			toolMs: state.toolMs,
+			ttftMs: state.ttftMs,
+			ttftSteps: state.ttftSteps,
+			decodeMs: state.decodeMs,
+			decodeTokens: state.decodeTokens
+		})
+	}
 };
 //#endregion
 //#region lib/types/index.js

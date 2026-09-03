@@ -72,6 +72,11 @@ export interface KnobState {
     /** Last `approval/policy` payload, or null. */
     approval: ApprovalPolicy | null;
 }
+declare module '@deepseek-ai/dsh-session-projection/types' {
+    interface SessionProjectionStateMap {
+        permissions: KnobState;
+    }
+}
 /**
  * One-event knob transition (the projection unit's `apply`). Uninterested
  * events return the same reference — the registry's change gate.

@@ -11,6 +11,7 @@
  */
 import z from '@deepseek-ai/schemastery';
 import { defineTool } from '@deepseek-ai/dsh-tools';
+import { FIRST_PARTY_SECTION_ORDER } from '@deepseek-ai/dsh-system-prompt';
 export const name = 'tool-workflow';
 export const inject = ['tools', 'workflowEngine', 'systemPrompt'];
 export const Config = z.object({
@@ -151,7 +152,7 @@ export function apply(ctx, config) {
     // lives in tool plugins as prompt sections, not in the deployment persona).
     ctx.systemPrompt.section({
         name: `tool:${toolName}`,
-        order: 115,
+        order: FIRST_PARTY_SECTION_ORDER.TOOL_WORKFLOW,
         text: `Use the ${toolName} tool ONLY when the user explicitly asks for a workflow or for large multi-agent orchestration: you write a JavaScript script (the tool description documents the exact format) that fans work out across many subagents with phases and structured results. For one or two delegations, prefer plain subagent calls.`,
     });
     ctx.tools.register(defineTool({

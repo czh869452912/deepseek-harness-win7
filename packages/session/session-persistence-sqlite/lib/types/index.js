@@ -1,6 +1,6 @@
 /**
  * Opt-in SQLite persistence provider. Logical sessions remain unchanged;
- * the physical backend packs eligible chunk runs into schema-17 rows.
+ * the physical backend packs eligible chunk runs into schema-19 rows.
  * @module @deepseek-ai/dsh-session-persistence-sqlite
  */
 import { Service } from '@deepseek-ai/cordis';
@@ -58,6 +58,9 @@ export class SqliteSessionPersistence extends SessionPersistence {
     create(meta) {
         return this.coordinator.create(meta);
     }
+    ensureMaterialized(session) {
+        return this.coordinator.ensureMaterialized(session);
+    }
     append(id, events) {
         return this.coordinator.append(id, events);
     }
@@ -69,6 +72,9 @@ export class SqliteSessionPersistence extends SessionPersistence {
     }
     inspect(id, signal) {
         return this.coordinator.inspect(id, signal);
+    }
+    borrowSession(id, signal) {
+        return this.coordinator.borrowSession(id, signal);
     }
     readFrom(id, fromSeq, signal) {
         return this.coordinator.readFrom(id, fromSeq, signal);

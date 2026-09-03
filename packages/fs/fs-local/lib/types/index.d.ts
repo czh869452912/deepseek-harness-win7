@@ -43,6 +43,7 @@ export declare class LocalFileSystem extends FileSystem {
         signal?: AbortSignal;
     }): Promise<FsTarget>;
     processPath(target: FsTarget): string;
+    processPathFromHostPath(hostPath: string): string | undefined;
     fileUrl(target: FsTarget): string;
     contains(parent: FsTarget, child: FsTarget): boolean;
     stat(target: FsTarget, signal?: AbortSignal): Promise<FsInfo | undefined>;

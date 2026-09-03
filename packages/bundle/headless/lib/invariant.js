@@ -9,10 +9,10 @@ const name = "headless-invariant";
 /** Service required before the companion can register. */
 const inject = ["invariants"];
 /**
-* No runtime invariant: the runner is a one-shot driver over the API carrier
-* whose observable contract (final text on stdout, exit code by turn-end
-* reason) is process-level and owned by the launcher e2e; it registers
-* nothing and holds no mutable relation to audit inside the tree.
+* No runtime invariant: the runner's observable contract (provider reasoning
+* on stderr, final text on stdout, exit code by turn-end reason) is
+* process-level and owned by the launcher e2e; it registers nothing and holds
+* no mutable relation to audit inside the tree.
 */
 const install = () => {};
 /**

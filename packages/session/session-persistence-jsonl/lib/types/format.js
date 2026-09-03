@@ -8,7 +8,7 @@
  * @module dsh-session-persistence-jsonl/format
  */
 import { join } from 'node:path';
-import { decodeStorageRecord, packChunkRuns, SESSION_FORMAT_VERSION } from '@deepseek-ai/dsh-session';
+import { decodeSeqRanges, decodeStorageRecord, encodeSeqRanges, packChunkRuns, SESSION_FORMAT_VERSION, } from '@deepseek-ai/dsh-session';
 import { SessionFormatUnsupportedError, sessionFormatVersionRefusal } from '@deepseek-ai/dsh-session-persistence';
 /**
  * Return the artifact suffix for one physical encoding.
@@ -180,23 +180,54 @@ export function logPath(root, cwd, id, compression) {
  * Serialize an event batch as JSONL lines (no trailing newline). With
  * `packChunks` on, delta-chunk runs pack into `text-chunks` /
  * `reasoning-chunks` / `tool-call-chunks` storage rows; off writes one event
- * per line, byte-identical to the pre-packing layout. Reading is layout-blind
- * either way ({@link scanLog} always decodes rows), so the switch changes only
- * newly written bytes.
+ * per line. Both modes range-encode provenance at the storage boundary.
+ * Reading is layout-blind either way ({@link scanLog} always decodes rows),
+ * so the switch changes only newly written bytes.
  * @param events - the batch to serialize, in log order.
  * @param packChunks - whether to pack delta runs into storage rows.
  * @returns the batch's JSONL text; the writer adds the final newline.
  */
 export function eventLines(events, packChunks) {
     const records = packChunks ? packChunkRuns(events) : events;
-    return records.map(record => JSON.stringify(record)).join('\n');
+    return records.map(record => JSON.stringify(encodeProvenanceForStorage(record))).join('\n');
+}
+/**
+ * Losslessly shrink a record's `sourceEventSeqs` for the log: consecutive
+ * runs of at least three seqs become `[start, end]` pairs, and any other list
+ * stays verbatim.
+ * @param record - one stored record (event or packed row).
+ * @returns the record with its provenance in storage form (widened from the
+ *   in-memory `number[]`; {@link expandProvenanceFromStorage} restores it).
+ */
+function encodeProvenanceForStorage(record) {
+    if (!('sourceEventSeqs' in record))
+        return record;
+    return { ...record, sourceEventSeqs: encodeSeqRanges(record.sourceEventSeqs) };
+}
+/**
+ * Expand a parsed line's storage-form provenance back to `number[]`.
+ * @param parsed - the JSON-parsed value of one stored line.
+ * @returns the value with provenance expanded.
+ * @throws when the record or its storage-form provenance is malformed.
+ */
+function expandProvenanceFromStorage(parsed) {
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+        throw new TypeError('stored session records must be objects');
+    }
+    const record = parsed;
+    if (record.sourceEventSeqs === undefined)
+        return parsed;
+    if (!Number.isSafeInteger(record.seq) || record.seq < 0) {
+        throw new TypeError('stored session event seq must be a non-negative safe integer');
+    }
+    return { ...record, sourceEventSeqs: decodeSeqRanges(record.sourceEventSeqs, record.seq) };
 }
 /** Parse one complete header record supplied independently from event rows. */
 /**
  * Refuse a header carrying a format version this build does not read BEFORE
  * validating the current header shape or decoding any event row: a future
- * format need not satisfy today's structural checks at all, and its user must
- * see "upgrade the harness", never "corrupt session log".
+ * format need not satisfy this build's structural checks at all, and its user
+ * must see "upgrade the harness", never "corrupt session log".
  * @param parsed - the JSON-parsed first line of a session artifact.
  */
 function refuseForeignFormatVersion(parsed) {
@@ -302,7 +333,7 @@ export class SessionLogScanner {
         this.eventLine += 1;
         let decoded;
         try {
-            decoded = decodeStorageRecord(JSON.parse(line.toString('utf8')));
+            decoded = decodeStorageRecord(expandProvenanceFromStorage(JSON.parse(line.toString('utf8'))));
         }
         catch {
             this.issue ??= new Error(`corrupt session log: unparsable committed event at line ${this.eventLine}`);

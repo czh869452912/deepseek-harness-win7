@@ -15,10 +15,8 @@ export interface BoundRecord {
     readonly data: string | Uint8Array;
     readonly sourceEventSeqs: Uint8Array | null;
     readonly surfaceOp: string | null;
-    readonly ignorable: number | null;
+    readonly isPacked: 0 | 1;
 }
-/** Small values stay as SQLite text to avoid per-frame CPU and byte overhead. */
-export declare const ZSTD_DATA_THRESHOLD_BYTES = 4096;
 /**
  * Decode one physical SQLite row into its complete logical event span.
  * @param row - detached SQLite event row.

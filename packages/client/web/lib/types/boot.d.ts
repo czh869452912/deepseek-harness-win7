@@ -26,7 +26,7 @@ export declare class AppWebEntry {
     dispose(): Promise<void>;
     /** Mount through a dependency fiber so replacing uiRenderer remounts the application. */
     private mountApp;
-    /** Prefetch stage-one bundles; their import path owns any eventual failure. */
+    /** Prefetch stage-one bundles and their dynamic requests before concurrent plugin imports. */
     private prefetchImmediateTier;
     /** Mount the Loader, create all graph entries, await quiescence, and audit activation. */
     private runPluginBoot;

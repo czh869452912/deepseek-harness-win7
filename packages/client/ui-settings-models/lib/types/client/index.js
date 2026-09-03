@@ -23,7 +23,10 @@ export function refreshIfLoaded(controller) {
  * ui-settings' apply, whose activation order relative to this one is NOT
  * constrained; registration depends on each slot through `slots.inject()`.
  */
-export const inject = ['slots', 'locale', 'connection', 'remote', 'settingsScope', 'settingsSchema'];
+export const inject = [
+    'slots', 'locale', 'remote', 'remote.credentials', 'remote.llm', 'remote.settings',
+    'settingsScope', 'settingsSchema',
+];
 /**
  * Register the Models section once the `settings.section` declaration is on
  * the ledger, wire its store to the connection, and keep it fresh on every
@@ -32,23 +35,28 @@ export const inject = ['slots', 'locale', 'connection', 'remote', 'settingsScope
  */
 export function apply(ctx) {
     ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-settings-models: copy dictionaries');
-    const connection = ctx.get('connection');
     const schema = createSettingsSchemaOperations(ctx.settingsSchema);
-    const controller = new ModelsSettingsStore(connection.api, schema, ctx.settingsScope.describe());
+    // Every configuration operation rides its owning Remote namespace.
+    const wire = {
+        credentials: ctx.remote.credentials,
+        llm: ctx.remote.llm,
+        settings: ctx.remote.settings,
+    };
+    const controller = new ModelsSettingsStore(wire, schema, ctx.settingsScope.describe());
     // Registration-time text (the nav label thunk) and the inject faces share
     // one bound translate; copy freshness rides the locale revision.
     const t = ctx.locale.bind(NS);
     const injected = () => ({
         controller,
         hooks: { snapshot: controller.store },
-        api: connection.api,
+        api: wire,
         schema,
         t,
     });
     const deepSeekOnboardingInjected = () => ({
         controller,
         hooks: { models: controller.store },
-        api: connection.api,
+        api: wire,
         schema,
         t,
     });
@@ -72,7 +80,7 @@ export function apply(ctx) {
         const refreshModels = () => { refreshIfLoaded(controller); };
         const disposers = [
             ctx.remote.$on('settings/document-updated', () => { refreshModels(); }),
-            ctx.remote.$on('credentials/updated', refreshModels),
+            ctx.remote.$on('credentials/reference-updated', refreshModels),
             ctx.remote.$on('llm/adapters-updated', refreshModels),
             ctx.on('connection/reset', refreshModels),
         ];
@@ -88,6 +96,10 @@ export function apply(ctx) {
         order: 10,
         label: () => t('nav'),
         inject: injected,
+        children: {
+            'settings.models.provider-card': { kind: 'keyed', scope: 'root' },
+            'settings.models.footer': { kind: 'list', scope: 'root' },
+        },
     }, ModelsSection));
     ctx.slots.inject('settings.onboarding', () => ctx.slots.register({
         name: 'settings.onboarding',

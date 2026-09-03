@@ -323,7 +323,7 @@ export declare class SubagentContinuationManager {
      */
     private stateOf;
     /**
-     * Cold-resume a persisted child: inspect and authorize its Session, fold the
+     * Cold-resume a persisted child: retain and authorize its prepared Session, fold the
      * generic descriptor, create the Activation through `ctx.agents.resume()`,
      * and submit the waiting turn. This never dispatches through a subagent
      * provider — the persisted Session already holds the initial prefix and the
@@ -449,6 +449,8 @@ export declare class SubagentContinuationManager {
     private flushFinalState;
     /** Resolve the persistence service continuable children require, or fail loud. */
     private requirePersistence;
+    /** Resolve the Session query service used for cold child observations. */
+    private requireSessionQuery;
 }
 export type { SubagentDescriptorData };
 export default SubagentContinuationManager;

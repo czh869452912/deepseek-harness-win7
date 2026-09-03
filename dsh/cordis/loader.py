@@ -97,7 +97,7 @@ except Exception:
 
 def is_js_expr(value: Any) -> bool:
     """Return whether a value is a JS expression node matching TS isJsExpr."""
-    return isinstance(value, dict) and "__jsExpr" in value and isinstance(value["__jsExpr"], str)
+    return isinstance(value, dict) and "__jsExpr" in value
 
 
 import ast
@@ -326,31 +326,12 @@ def evaluate_expr(ctx: Any, expr: str) -> Any:
 
 def interpolate(ctx: Any, config: Any) -> Any:
     """
-    Recursively interpolate JS expression nodes and ${...} string templates
-    against the target context matching TS interpolate(ctx, config).
+    Recursively interpolate JS expression nodes against the target context matching TS interpolate.
+    Plain strings remain literal without template expansion.
     """
     if is_js_expr(config):
         return evaluate_expr(ctx, config["__jsExpr"])
-    elif isinstance(config, str):
-        if config.startswith("!!js "):
-            return evaluate_expr(ctx, config[5:])
-        # Support ${VAR} and ${VAR:-default} template expansion
-        if "${" in config:
-            def _sub(match):
-                inner = match.group(1).strip()
-                if ":-" in inner:
-                    var_name, default_val = inner.split(":-", 1)
-                    val = os.environ.get(var_name.strip())
-                    return val if val is not None else default_val
-                elif inner.startswith("process.env.") or inner.startswith("env."):
-                    var_name = inner.split(".", 1)[1]
-                    return os.environ.get(var_name, "")
-                elif inner in os.environ:
-                    return os.environ[inner]
-                res = evaluate_expr(ctx, inner)
-                return str(res) if res is not None else ""
-            expanded = re.sub(r'\$\{([^}]+)\}', _sub, config)
-            return expanded
+    elif not config or not isinstance(config, (dict, list)):
         return config
     elif isinstance(config, list):
         return [interpolate(ctx, item) for item in config]
@@ -362,21 +343,19 @@ def interpolate(ctx: Any, config: Any) -> Any:
 def eval_condition(condition: Any, ctx: Optional[Any] = None) -> bool:
     """
     Safely evaluate boolean expression for 'disabled' or 'enabled' fields in plugin configs.
-    Example: sys.platform == 'win32' or platform.system() == 'Windows'
     """
     if not condition:
         return False
     if isinstance(condition, bool):
         return condition
-
     if is_js_expr(condition):
         return bool(evaluate_expr(ctx, condition["__jsExpr"]))
-
     cond_str = str(condition).strip()
     if cond_str.startswith("!!js"):
         return bool(evaluate_expr(ctx, cond_str[4:].strip()))
-
-    return bool(evaluate_expr(ctx, cond_str))
+    if any(tok in cond_str for tok in ("===", "!==", "==", "!=", "process.", "sys.")):
+        return bool(evaluate_expr(ctx, cond_str))
+    return bool(condition)
 
 
 def apply_entry_patches(
@@ -525,7 +504,7 @@ class EntryTree:
 
     def __init__(self, ctx: Context, filepath: Optional[str] = None):
         self.ctx = ctx.extend()
-        self.enable_logs = True
+        self.enable_logs: Optional[bool] = None
         self.filepath = filepath
         self.store: Dict[str, "Entry"] = {}
         self.root = EntryGroup(self.ctx, self)
@@ -715,6 +694,8 @@ class EntryGroup:
         if not is_dispose:
             self.unlink(entry.options)
         self.tree.store.pop(entry_id, None)
+        if hasattr(self.ctx, "emit"):
+            self.ctx.emit("loader/partial-dispose", entry, entry.options, False)
 
     def update(self, config_list: List[Dict[str, Any]]) -> None:
         old_config = list(self.data)
@@ -787,25 +768,41 @@ class Entry:
     def __init__(
         self,
         loader: Any,
-        name: str = "",
+        name: Any = "",
         config: Optional[Dict[str, Any]] = None,
-        disabled: bool = False,
+        disabled: Any = False,
         entry_id: Optional[str] = None,
         group: bool = False,
     ):
-        self.loader = loader
-        self.name = name
-        self.config = config or {}
-        self.id = entry_id or name or hex(random.randint(0x10000000, 0xFFFFFFFF))[2:]
-        self.options: Dict[str, Any] = {
-            "id": self.id,
-            "name": self.name,
-            "config": self.config,
-            "group": group,
-            "disabled": disabled,
-        }
+        if isinstance(name, dict):
+            options = dict(name)
+            self.parent = loader if isinstance(loader, EntryGroup) else getattr(loader, "root", None)
+            self.loader = getattr(self.parent, "tree", loader) if self.parent else loader
+            self.name = str(options.get("name", ""))
+            self.config = options.get("config", {})
+            self.id = str(options.get("id") or self.name or hex(random.randint(0x10000000, 0xFFFFFFFF))[2:])
+            group = bool(options.get("group", False))
+            disabled = options.get("disabled", False)
+            self.options = options
+            self.options.setdefault("id", self.id)
+            self.options.setdefault("name", self.name)
+            self.options.setdefault("config", self.config)
+            self.options.setdefault("group", group)
+            self.options.setdefault("disabled", disabled)
+        else:
+            self.loader = loader
+            self.parent = loader if isinstance(loader, EntryGroup) else getattr(loader, "root", None)
+            self.name = name
+            self.config = config or {}
+            self.id = entry_id or name or hex(random.randint(0x10000000, 0xFFFFFFFF))[2:]
+            self.options = {
+                "id": self.id,
+                "name": self.name,
+                "config": self.config,
+                "group": group,
+                "disabled": disabled,
+            }
         self.fiber: Optional[Fiber] = None
-        self.parent: Optional[EntryGroup] = None
         self.subgroup: Optional[EntryGroup] = None
         self.subtree: Optional[EntryTree] = None
         self._init_task: Optional[asyncio.Future] = None
@@ -825,7 +822,24 @@ class Entry:
 
     @property
     def disabled(self) -> bool:
-        dis = self.options.get("disabled", False)
+        return self._disabled(self.options)
+
+    def _disabled(self, options: Dict[str, Any]) -> bool:
+        if options.get("group"):
+            return False
+        if self._disabled_of(options):
+            return True
+        parent_ctx = getattr(self.parent, "ctx", None) if self.parent else None
+        entry = getattr(getattr(parent_ctx, "fiber", None), "entry", None) if parent_ctx else None
+        while entry:
+            if self._disabled_of(entry.options):
+                return True
+            p_ctx = getattr(entry.parent, "ctx", None) if entry.parent else None
+            entry = getattr(getattr(p_ctx, "fiber", None), "entry", None) if p_ctx else None
+        return False
+
+    def _disabled_of(self, options: Dict[str, Any]) -> bool:
+        dis = options.get("disabled")
         return eval_condition(dis, self.ctx)
 
     @disabled.setter
@@ -934,10 +948,12 @@ class Loader(EntryTree, Service):
             Service.__init__(self, ctx, name="loader")
             EntryTree.__init__(self, ctx)
             self.ctx = ctx
+            self.tree = self
         else:
             self.ctx = None
             self.store = {}
             self.root = None
+            self.tree = self
         self.config = config or {}
         self.registry_map: Dict[str, Any] = {}
         from dsh.cordis.include import Include
@@ -1141,11 +1157,34 @@ class Loader(EntryTree, Service):
 
     def show_log(self, entry: Any, action_type: str) -> None:
         """Log loader plugin lifecycle events matching TS Loader.showLog."""
-        if getattr(entry, "group", False):
+        if not entry:
             return
-        entry_name = getattr(entry, "name", str(entry))
+        opts = getattr(entry, "options", {})
+        if opts.get("group"):
+            return
+        parent_tree = getattr(getattr(entry, "parent", None), "tree", None)
+        if not getattr(parent_tree, "enable_logs", False):
+            return
+        entry_name = opts.get("name", getattr(entry, "name", str(entry)))
         if hasattr(self.ctx, "logger"):
             self.ctx.logger("loader").info("%s plugin %s", action_type, entry_name)
+
+    def locate(self, fiber: Any = None) -> Optional[str]:
+        """Return the loader entry id owning the given fiber matching TS Loader.locate."""
+        current = fiber or getattr(self.ctx, "fiber", None)
+        while current:
+            if getattr(current, "entry", None):
+                return current.entry.id
+            parent_ctx = getattr(current, "parent", None)
+            nxt = getattr(parent_ctx, "fiber", None) if parent_ctx else None
+            if not nxt or nxt is current:
+                return None
+            current = nxt
+        return None
+
+    def exit(self) -> None:
+        """Host hook for whole-process reload matching TS loader.exit."""
+        pass
 
     @property
     def entries(self) -> List[Entry]:

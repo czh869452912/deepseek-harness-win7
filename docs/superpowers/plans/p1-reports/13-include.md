@@ -52,7 +52,7 @@
   ```
   `!!js expr` 写回时保持 `!!js expr` 标量形式，可被重新加载并再次求值。
 - 移植版现状: `yaml.safe_dump(sorted_data, sort_keys=False, allow_unicode=True)` 把 `{"__jsExpr": "expr"}` 写成普通映射，重载后 `is_js_expr` 虽仍能识别，但文件方言偏离（人写 `!!js` 的文件一次写回后变成 `__jsExpr:` 映射，且 safe_dump 对未标注 tag 的数据走默认样式，`dsh --dump-config` 与 include 写出的形态不一致）。
-- 修复方案: 注册 PyYAML represent：为 `{'__jsExpr': str}` 形状注册隐式 resolver（或显式在 dump 前把 `__jsExpr` 节点包装为带 `tag:yaml.org,2002:js` 的节点，`yaml.Dumper.add_representer`），使写回保持 `!!js expr`。
+- 修复方案: 注册 PyYAML 专属 Dumper representer：为形如 `{'__jsExpr': str}` 的字典或专用包装类注册 representer（`yaml.Dumper.add_representer` 或 `yaml.SafeDumper.add_representer`），将其序列化为带有 `tag:yaml.org,2002:js` 标签（或标准 `!js` 标量）的 YAML 节点，确保写回文件时维持 `!!js <expr>` 语法规范，支持无损循环重载。
 
 ### D4 [MUST-FIX] 写回排序：include 写路径做了 sort_keys，TS 不排序
 - 位置: py:dsh/cordis/include.py:201, 225 (`[sort_keys(dict(opt)) for opt in config_data]`) vs ts:vendor/include/src/index.ts:323-331
@@ -65,7 +65,7 @@
   ```
   原样写回（键序保持树内现状），sortKeys 只在 Entry.update 提交 candidate 时发生。
 - 移植版现状: include 的每次写回都强制 `id,name` 前置、`config` 末尾、中间字典序排序，用户文件中的键序在每次热更新后被重排。
-- 修复方案: `_write_file_sync/_write_file_async` 移除 `sort_keys` 调用，直接序列化 `config_data`（保持与 TS 相同的"写回所见即树内数据"语义）。
+- 修复方案: `_write_file_sync` 与 `_write_file_async` 彻底移除 `sort_keys` 调用，直接按树内数据字典序序列化 `config_data`，严格保持与 TS 一致的"写回数据所见即树内数据"契约，避免每次写回无端重排用户文件中的原有键顺序。
 
 ### D5 [MUST-FIX] init 的错误阶段（stage）分类被压扁成 'read'
 - 位置: py:dsh/cordis/include.py:137-165 (`init`) vs ts:vendor/include/src/index.ts:273-289

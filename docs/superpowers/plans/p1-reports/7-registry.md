@@ -24,7 +24,7 @@
   ...
   fiber = Fiber(self.ctx, plugin_inst, config=config, runtime=runtime, inject=inject_deps, ...)
   ```
-- 修复方案: 把类/函数插件的实例化移入 `Fiber._reload`（或 `_runner` 等价物），构造参数用 `self.ctx`（fiber ctx）与解析后的 config；`registry.plugin()` 只保留形状解析、runtime 记录与 Fiber 创建。连带影响见 D2/D3 与 8-service.md D1：`Service.__init__` 里 `ctx.set_service(...)` 的 impl.fiber 将正确落在插件 fiber 上，随插件卸载而注销（当前落在 root fiber，插件卸载后服务泄漏、冲突检测也被绕过）。
+- 修复方案: 把类插件的实例化移入 `Fiber._reload`（构造参数为 `(self.ctx, self.config)`），但在 `registry.plugin()` 阶段必须支持先静态解析类元数据（从类对象及 `@inject` 提取 `inject`, `provide`, `Config`），在未实例化时即可建立依赖拓扑；依赖就绪触发 `_reload` 时再执行 `cls(self.ctx, self.config)`。连带影响见 D2/D3 与 8-service.md D1：`Service.__init__` 里 `ctx.provide(...)` 的 impl.fiber 将正确落在插件 fiber 上，随插件卸载而注销。
 
 ### D2 [MUST-FIX] reload 复用旧实例；TS 每次激活都 new 一个新实例
 - 位置: py:fiber.py:528-570（`_reload` 直接用 `self.plugin`） vs ts:fiber.ts:250-257（每次 `_execute` 都 `new runtime.callback(...)`）
@@ -84,7 +84,7 @@
       target.inject = cur_inject
   Inject.resolve(name_or_deps, target.inject)     # 若 inject 继承自基类，target.inject 就是基类的同一个 dict
   ```
-- 修复方案: 判定改为“own attribute”（`"inject" in target.__dict__`）；不是 own 时先 `target.inject = dict(getattr(target, "inject", {}))` 拷贝一份再合并（Python 无原型链，用浅拷贝 + 显式合并等价 TS 的 prototype shadow）。
+- 修复方案: 判定改为 own attribute 检查（`"inject" in target.__dict__`）；若非 own attribute，先执行 `target.inject = dict(getattr(target, "inject", {}))` 浅拷贝断开对基类引用的共享，再写入当前类的依赖项（等价 TS 的 prototype shadow 隔离）；同时支持 `List[str]`, `Tuple[str, ...]`, `Dict[str, Any]` 等多种输入形状的规范化解析。
 
 ### D5 [MUST-FIX] inject 声明携带的 intercept config 从未写入 fiber ctx 的 intercept 表
 - 位置: py:fiber.py:130（仅 `parent_ctx.extend({"fiber": self})`） vs ts:fiber.ts:238-245

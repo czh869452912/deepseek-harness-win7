@@ -32,7 +32,7 @@
           raise item
   ```
   cleanup 向队列塞 `RuntimeError("Context has been disposed")` 只命中挂起者;后续 `__anext__` 变成 StopAsyncIteration,`async for` 静默退出,与 TS 的 reject 语义不同,吞掉了"上下文已销毁"的信号。
-- 修复方案:引入 TS 式 `done` 状态(`{'kind': 'throw'|'return'}`):dispose → 挂起等待者收到 RuntimeError,且后续 `__anext__` 持续抛 `RuntimeError("Context has been disposed")`;`aclose()`(对应 TS `return()`)→ 挂起等待者以 StopAsyncIteration 结束,后续 `__anext__` 也抛 StopAsyncIteration。
+- 修复方案: 遵循 TS `done` 状态映射并严守 Python PEP 525 异步迭代器规范：引入 `_done: Optional[Dict[str, Any]] = None`：① 若由外部上下文释放（dispose）触发，置 `_done = {'kind': 'throw', 'reason': RuntimeError('Context has been disposed')}`，当前挂起等待者收到该异常，且后续所有 `__anext__` 调用均持续抛出该 RuntimeError；② 若由消费者主动退出或调用 `aclose()` 触发（对应 TS `return()`），置 `_done = {'kind': 'return'}`，挂起等待者与后续 `__anext__` 均抛出标准的 `StopAsyncIteration` 正常关闭。
 
 ### D2 [MUST-FIX] `interval(delay)` 慢消费者时 tick 处理:TS 丢弃无等待者的 tick(单槽 nextTask);Python 无界 Queue 缓存 tick 造成迟到爆发
 - 位置: py:dsh/cordis/timer.py:23、30-34、65-71 vs ts:reference/vendor/timer/src/index.ts:69-83
@@ -55,7 +55,7 @@
       await self._queue.put(None)        # 无界累积
   ```
   消费暂停(如 awaited 回调耗时、event loop 阻塞)期间产生的每个 tick 都入队,恢复后被连发重放。
-- 修复方案:以单槽 pending 事件替代 Queue(有等待者才交付,否则丢弃该 tick),与 TS 合并语义一致。
+- 修复方案: 采用单槽通知模型替代无界 `asyncio.Queue`：使用 `asyncio.Event` 或持有单槽 pending Future。每次定时周期触发时，仅当存在正在挂起等待的 `__anext__` 消费者时才通知其放行；若当前无等待消费者，直接丢弃该 tick，杜绝在慢消费或阻塞恢复后的迟到连发爆发。
 
 ### D3 [MUST-FIX] `interval(callback)` 对异步回调 `await`,把固定速率变成"delay+回调时长"串行;TS setInterval 从不 await
 - 位置: py:dsh/cordis/timer.py:243-251 vs ts:reference/vendor/timer/src/index.ts:63-66

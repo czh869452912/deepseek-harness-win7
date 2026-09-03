@@ -21,7 +21,7 @@
   return colors[abs(h) % len(colors)]
   ```
   Python 侧始终按无符号解释。每轮中间运算 mod 2^32 同余,但最终值高位置 1 时 TS 得 `-(2^32 - h)`、Python 得 `h`,`abs` 后取模结果不同(例:h=0xFFFFFFFF → TS 1,Python 3),导致 logger 名字颜色与 TS 不一致。
-- 修复方案:循环内保持 `& 0xFFFFFFFF` 掩码;循环结束后补一步有符号重解释:`if h >= 2**31: h -= 2**32`,再 `colors[abs(h) % len(colors)]`。
+- 修复方案: 循环内保持 `& 0xFFFFFFFF` 掩码；循环结束后补一步 32 位有符号重解释：`signed_h = h if h < 0x80000000 else h - 0x100000000`；随后按 `colors[abs(signed_h) % len(colors)]` 取色（在 Python 中对 `-2147483648` 取 abs 会得到 `2147483648` 并正确求模，完全对齐 TS `Math.abs(hash) % colors.length` 语义）。
 
 ### D2 [MUST-FIX] `Logger.color()` 在 code < 8 分支无条件拼接 decoration;TS 以 `colors >= 2` 门控
 - 位置: py:dsh/cordis/logger.py:88-93 vs ts:reference/vendor/cordis/src/logger.ts:84-87
@@ -82,7 +82,7 @@
       except (ValueError, TypeError): return "0"
   ```
   `"%d", "3.7"` → `"0"`(int 解析失败);`"%d", "abc"` → `"0"` 而非 `NaN`。
-- 修复方案:改为 `float(val)` 后 `math.trunc` 取整(`d`/`i`),`f` 直接 `float(val)`;转换失败输出 `"NaN"`(与 JS `NaN` 字面一致),替代 `"0"`/`"0.0"`。
+- 修复方案: 统一数值解析规则：① 对 `d`/`i`，先转 `float(val)` 再 `math.trunc()` 取整；② 对 `f`，直接转 `float(val)` 并格式化为有效数值；③ 若值无法转为浮点数（抛 ValueError/TypeError），统一输出 `"NaN"` 字面量（与 JS `NaN` 输出一致），彻底废除原有的 `"0"`/`"0.0"` 吞错逻辑。
 
 ### D5 [MUST-FIX] 尾随参数处理:TS 统一经 `exporter.formatters.o ?? defaultFormatters.o` 处理一切真值对象;Python 仅处理 dict/list 且写死 json.dumps
 - 位置: py:dsh/cordis/logger.py:174-181 vs ts:reference/vendor/cordis/src/logger.ts:119-125

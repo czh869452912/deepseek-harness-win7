@@ -181,8 +181,7 @@
   elif res is None or isinstance(res, (bool, int, float, str)): ...  # 原始值静默接受
   # dict/其它对象返回值: 落空所有分支, 静默忽略
   ```
-  名为 `cleanup`/`teardown`/含 "disposer" 的效果体在 Python 中被当作现成 disposer 而从不执行 (TS 会执行并收集其返回值); 反之非法返回形状 (数字/字符串/dict) TS 抛 `TypeError('Invalid effect')`, Python 静默吞掉; 非可调用入参 Python 静默 no-op。
-- 修复方案: 对齐 TS: `effect(execute)` 无条件调用 `execute()`; 返回值按 TS 分支解释 (函数→collect; None→ok; awaitable→then-collect; generator/asyncgen→消费; 其它→`raise TypeError("Invalid effect")`)。现有把现成 disposer 直传 `effect()` 的调用点需逐一改为 `effect(lambda: disposer)`; 若为兼容保留启发式, 必须收敛为显式参数 (如 `effect(fn, is_disposer=True)`) 并全库审计。
+- 修复方案: 消除脆弱的字符串启发式并建立安全分流：① 为 `Fiber.effect` 引入 `is_disposer: bool = False` 形参，并在 `Context` 增加 `ctx.disposable(fn)` 语义入口。当 `is_disposer=True` 时，直接收集入 `_disposables`，绝不重复执行；② 默认（`is_disposer=False`）下严格对齐 TS：无条件调用 `execute()` 并按 TS 语义收集其返回值（可调用 disposer、awaitable、生成器等，非法类型抛 `TypeError("Invalid effect")`）；③ 对现有遗留的裸传 disposer 调用点，向后兼容允许识别标记为 `_is_disposer` 或已知由 `ctx.on` 返回的 Disposer 对象，杜绝直接移除启发式导致全仓监听器在注册时被误调销毁。
 
 ### D8 [MUST-FIX] effect 内部清理顺序: TS 严格串行 await 链 (含 async), Python 同步先清完 + 异步延后顺序 await
 - 位置: py:dsh/cordis/fiber.py:196-213 (rollback_sync), 266-278, 296-301 (cancel_effect 非执行路径) vs ts:reference/vendor/cordis/src/fiber.ts:427-442
@@ -310,7 +309,7 @@
       res = self.plugin.apply(self.ctx)      # 同一实例反复 apply
   ```
   TS restart/update 后插件 `__init__`/实例字段重置; Python 保留旧实例状态 (计数器、缓存、监听器残留), 重载行为可见偏离。
-- 修复方案: registry 在 runtime 上保存插件类而非单实例, `_reload` 时按 TS 形态实例化 `plugin_cls(self.ctx, self.config)` (Service/Plugin 构造签名差异沿用 registry.py:243-265 的探测), 再执行 initHooks/init; `self.plugin` 指向当前实例。若决定保留"实例复用"为移植模型, 须在报告/文档中显式声明为许可偏差并回归 HMR/重启用例。
+- 修复方案: 区分类插件与对象插件的生命周期：① 对于类插件（构造形态，`isclass(runtime.callback)`），`_reload` 每次重载时重新执行 `new_inst = plugin_cls(self.ctx, self.config)`，重新执行 initHooks 与 init，彻底清除上一轮生命周期的脏状态（与 TS 一致）；② 对于直接传入实例的对象插件（`Plugin.Object` 形态），保持复用该实例并调用其 `apply(self.ctx, self.config)`；③ 在 `runtime` 上明确区分类引用与用户预置实例，`self.plugin` 始终指向当前激活的实例。
 
 ### D13 [MUST-FIX] 异步 _reload 完成后缺少 epoch 复查链 (同步路径有, 异步路径没有)
 - 位置: py:dsh/cordis/fiber.py:572-587 vs ts:reference/vendor/cordis/src/fiber.ts:665-672

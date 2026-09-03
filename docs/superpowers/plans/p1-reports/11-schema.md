@@ -116,7 +116,7 @@
   ...
   return (res if res is not None else data), None
   ```
-- 修复方案: ①合并改为 TS `merge` 语义：`for k, v in val.items(): if k not in res: res[k] = v`（先到先得、无递归）；②类型冲突判定用宽松类型桶对齐 JS `typeof`（数值类 int/float 同桶、dict/类实例同 'object' 桶），而不是 `type(a) != type(b)`（`1.0` 与 `1` TS 视为相等通过，Python 现在报错）；③所有成员 nullable 时返回 `(None, None)`，而不是回退返回原 data。
+- 修复方案: ① 对齐 TS `merge` 合并语义：同级字段遵循先到先得（`for k, v in val.items(): if k not in res: res[k] = v`，第一子项值覆盖后续子项）；② 类型相容性判定对齐 JS `typeof` 宽松类型桶（如 `(int, float)` 归入数值桶、`dict` 与普通对象归入 object 桶），禁止使用过于严苛的 `type(a) != type(b)`；③ 全员 nullable 场景返回 `(None, None)`；④ 严格遵循 Python 3.8.10 语法（类型注解使用 `typing.Dict`, `typing.Union`，严禁 `type[X]` 或 `dict | list` 联合语法）。
 
 ### D8 [MUST-FIX] transform：TS 对 result 与 adapted 各调用一次 callback（副作用×2、adapted 被转换），Python 只调用一次且 adapted 原样返回
 - 位置: py:dsh/cordis/schema.py:989-995 vs ts:reference/vendor/schemastery/src/index.ts:797-813

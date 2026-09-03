@@ -70,7 +70,7 @@
       val = impl.value if impl else getattr(self.ctx, name, None)
       self.ctx.emit("internal/service", self.ctx, name, val)   # caller_ctx 无 filter 属性 → 全量广播
   ```
-- 修复方案: 构造合成子 ctx（`child = self.ctx.extend()`，并挂一个可被 `EventBus._dispatch_hooks` 消费的过滤属性，如 `child.filter = lambda hook_ctx: <isolate label 比较>`），用 `child.emit(...)` 派发；事件参数与 TS 对齐为 `(name, value)` 或明确固化 Python 的 `(ctx, name, value)` 三参约定并同步到文档。同时 value 的取值改为 `_get_impl(self.ctx, name, strict=False)` 口径。
+- 修复方案: 构造合成作用域过滤上下文：通过 `child = self.ctx.extend()` 创建合成子 ctx，并定义 `child._scope_filter = lambda target_ctx: (target_ctx._isolated_keys.get(name) == self.ctx._isolated_keys.get(name))`；`EventBus._dispatch_hooks` 识别 caller_ctx 的作用域过滤函数，使隔离作用域外的监听器被正确过滤；value 的取值统一为 `_get_impl(self.ctx, name, strict=False)` 的 value，保持 1:1 作用域感知。
 
 ### D5 [ADAPT] `provide()` 的 teardown 为同步：不等待依赖方 settle，也不清理提供方 fiber.store 快照
 - 位置: py:reflect.py:226-238 vs ts:reflect.ts:297-303
@@ -91,7 +91,7 @@
           del target_store._services[name] ...
       self.notify([name])          # 同步触发；依赖方的异步 reload 不等待
   ```
-- 修复方案: 让 teardown 返回协程（fiber.effect 已支持可等待 disposer，py:fiber.py:266-313）：删 store → notify 收集受影响 fibers → `await asyncio.gather(*(f.await_settled() for f in fibers), return_exceptions=True)` → 最后 `fiber.store.pop(name)`。Python 的 `_services`/`delattr` 镜像清理是 attr 直读路径所需，保留（ADAPT）。
+- 修复方案: teardown 转换为异步协程：先从 `self.store` 移除目标 key；调用 `self.notify([name])` 收集全部受影响的依赖方 fibers；通过 `await asyncio.gather(*(f.await_settled() for f in fibers), return_exceptions=True)` 严格等待所有依赖方完成卸载或重新适配；最后清理 `self.ctx.fiber.store` 中的快照记录；同时保留 Python attr 直读所需的 `_services` / `delattr` 镜像清理。
 
 ### D6 [ADAPT] store 键策略：名字回落 vs root 自动 Symbol 标签
 - 位置: py:reflect.py:196-197, 213 vs ts:reflect.ts:286-292

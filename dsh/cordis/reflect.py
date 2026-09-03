@@ -43,7 +43,7 @@ class Impl:
 
 RESERVED_PROPERTIES = {
     "prototype", "then", "_services", "_parent", "_event_bus", "registry",
-    "reflect", "fiber", "root", "_isolated_keys", "_intercept_map", "_effects", "logger", "timer"
+    "reflect", "fiber", "root", "_isolated_keys", "_intercept_map", "_effects"
 }
 
 
@@ -71,8 +71,8 @@ class ReflectService:
         """
         Read a service or accessor property from context.
         """
-        if name in RESERVED_PROPERTIES or name.startswith("_"):
-            return getattr(ctx, name, default)
+        if name in RESERVED_PROPERTIES or name.startswith("_") or (isinstance(name, str) and name.isdigit()):
+            return default
 
         # 1. Accessor check
         def_prop = self.props.get(name)
@@ -148,7 +148,7 @@ class ReflectService:
                 raise RuntimeError(f"cannot set property '{name}' without provide")
 
             fiber = getattr(ctx, "fiber", None)
-            if fiber is not None and impl.fiber is not None and impl.fiber is not fiber and getattr(fiber, "uid", None) not in (0, None):
+            if fiber is not None and impl.fiber is not None and impl.fiber is not fiber:
                 raise RuntimeError(f"cannot set property '{name}' in multiple fibers")
 
             impl.value = value
@@ -197,15 +197,11 @@ class ReflectService:
             key = isolated_map.get(name, name)
 
             fiber = getattr(target_ctx, "fiber", None)
-            if not allow_replace and key in self.store and self.store[key].fiber is not None and self.store[key].fiber is not fiber:
-                prev_fiber = self.store[key].fiber
-                from dsh.cordis.fiber import FiberState
-                if (
-                    getattr(prev_fiber, "state", None) not in (FiberState.DISPOSED, FiberState.FAILED)
-                    and getattr(fiber, "runtime", None) is not None
-                    and getattr(prev_fiber, "runtime", None) is not None
-                ):
-                    prev_name = getattr(prev_fiber, "name", "unknown")
+            if not allow_replace and key in self.store:
+                prev = self.store[key]
+                if getattr(prev, "value", None) is not val:
+                    prev_fiber = getattr(prev, "fiber", None)
+                    prev_name = getattr(prev_fiber, "name", "root") if prev_fiber else "root"
                     raise RuntimeError(f"service '{name}' has been registered at <{prev_name}>")
 
             impl = Impl(name=name, fiber=fiber, value=val, check=chk)
@@ -220,7 +216,7 @@ class ReflectService:
                 fiber.store[name] = impl
 
             from dsh.cordis.fiber import FiberState
-            if fiber is None or fiber.state in (FiberState.ACTIVE, FiberState.LOADING):
+            if fiber is None or fiber.state == FiberState.ACTIVE:
                 self.notify([name])
 
             def teardown() -> None:
@@ -274,9 +270,14 @@ class ReflectService:
 
         if hasattr(self.ctx, "emit"):
             for name in names:
-                impl = self.store.get(name)
+                impl = self._get_impl(self.ctx, name, strict=False)
                 val = impl.value if impl else getattr(self.ctx, name, None)
-                self.ctx.emit("internal/service", self.ctx, name, val)
+                child = self.ctx.extend() if hasattr(self.ctx, "extend") else self.ctx
+                child_iso = getattr(self.ctx, "_isolated_keys", {}).get(name)
+                child.filter = lambda target_ctx, n=name, iso=child_iso: (
+                    getattr(target_ctx, "_isolated_keys", {}).get(n) == iso
+                )
+                self.ctx.emit("internal/service", name, val, caller_ctx=child)
         return affected_fibers
 
     def accessor(self, name: str, options: Dict[str, Any]) -> Callable[[], None]:

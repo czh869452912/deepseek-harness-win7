@@ -10,12 +10,15 @@ class Plugin:
     id: str = ""
     name: str = ""
     inject: List[str] = []
+    provide: Optional[Union[str, List[str]]] = None
+    intercept: Optional[Dict[str, bool]] = None
+    Config: Any = None
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         self.config: Dict[str, Any] = config or {}
         self.ctx: Optional[Any] = None
 
-    def apply(self, ctx: Any) -> None:
+    def apply(self, ctx: Any, config: Any = None) -> Any:
         """
         Plugin mounting logic. Overridden by subclass.
         """

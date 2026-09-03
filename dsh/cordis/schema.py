@@ -27,7 +27,7 @@ class ValidationError(TypeError):
             lines = []
             for issue in message_or_issues:
                 if isinstance(issue, dict):
-                    msg = issue.get("message", str(issue))
+                    msg = issue.get("raw_message") or issue.get("message", str(issue))
                     path = issue.get("path")
                     if path:
                         path_str = ".".join(str(p) for p in path) if isinstance(path, (list, tuple)) else str(path)
@@ -65,25 +65,37 @@ class ValidationError(TypeError):
 
 
 def deep_equal(a: Any, b: Any, is_dict: bool = False) -> bool:
-    if a == b:
+    if a is b:
         return True
-    if type(a) != type(b):
+    if not is_dict and is_nullable(a) and is_nullable(b):
+        return True
+    if isinstance(a, bool) != isinstance(b, bool):
         return False
-    if isinstance(a, dict):
-        if len(a) != len(b):
-            return False
-        for k in a:
-            if k not in b or not deep_equal(a[k], b[k]):
+    if isinstance(a, re.Pattern) and isinstance(b, re.Pattern):
+        return a.pattern == b.pattern and a.flags == b.flags
+    if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+        return a == b
+    if isinstance(a, dict) and isinstance(b, dict):
+        if is_dict:
+            if len(a) != len(b):
+                return False
+            for k in a:
+                if k not in b or not deep_equal(a[k], b[k], is_dict=True):
+                    return False
+            return True
+        keys = set(a.keys()) | set(b.keys())
+        for k in keys:
+            if not deep_equal(a.get(k), b.get(k), is_dict=False):
                 return False
         return True
-    if isinstance(a, (list, tuple)):
+    if isinstance(a, (list, tuple)) and isinstance(b, (list, tuple)):
         if len(a) != len(b):
             return False
         for x, y in zip(a, b):
-            if not deep_equal(x, y):
+            if not deep_equal(x, y, is_dict=is_dict):
                 return False
         return True
-    return False
+    return a == b
 
 
 def is_nullable(val: Any) -> bool:
@@ -130,7 +142,7 @@ class Schema:
     def standard(self) -> Dict[str, Any]:
         return {
             "version": 1,
-            "vendor": "cordis",
+            "vendor": "schemastery",
             "validate": self.validate,
         }
 
@@ -147,17 +159,9 @@ class Schema:
             return {
                 "issues": [
                     {
-                        "message": getattr(err, "raw_message", str(err)),
-                        "path": getattr(err, "path", []),
-                    }
-                ]
-            }
-        except Exception as e:
-            return {
-                "issues": [
-                    {
-                        "message": str(e),
-                        "path": [],
+                        "message": str(err),
+                        "raw_message": getattr(err, "raw_message", str(err)),
+                        "path": err.options.get("path", []) if hasattr(err, "options") and isinstance(err.options, dict) else getattr(err, "path", []),
                     }
                 ]
             }
@@ -265,7 +269,14 @@ class Schema:
         if isinstance(regex, str):
             s.meta["pattern"] = {"source": regex, "flags": ""}
         else:
-            s.meta["pattern"] = {"source": regex.pattern, "flags": str(regex.flags)}
+            flags_str = ""
+            if regex.flags & re.IGNORECASE:
+                flags_str += "i"
+            if regex.flags & re.MULTILINE:
+                flags_str += "m"
+            if regex.flags & re.DOTALL:
+                flags_str += "s"
+            s.meta["pattern"] = {"source": regex.pattern, "flags": flags_str}
         return s
 
     def max(self, value: Union[int, float]) -> "Schema":
@@ -290,13 +301,13 @@ class Schema:
 
     def set(self, key: str, value: "Schema") -> "Schema":
         if self.dict is None:
-            self.dict = {}
+            raise TypeError(f"Cannot set property '{key}' on schema without dict container")
         self.dict[key] = value
         return self
 
     def push(self, value: "Schema") -> "Schema":
         if self.list is None:
-            self.list = []
+            raise TypeError("Cannot push item to schema without list container")
         self.list.append(value)
         return self
 
@@ -378,12 +389,12 @@ class Schema:
             res: Dict[str, Any] = {}
             for k, v in value.items():
                 schema = self.dict.get(k) if self.type == "object" and self.dict else self.inner
+                if self.type == "object" and schema is None:
+                    continue
                 item = schema.simplify(v) if schema else v
                 if self.type == "dict" or not is_nullable(item):
                     res[k] = item
             if default_val is not None and deep_equal(res, default_val, self.type == "dict"):
-                return None
-            if not res and not self.meta.get("default"):
                 return None
             return res
         elif self.type in ("array", "tuple"):
@@ -394,8 +405,6 @@ class Schema:
                 schema = self.inner if self.type == "array" else (self.list[idx] if self.list and idx < len(self.list) else None)
                 item = schema.simplify(v) if schema else v
                 arr.append(item)
-            if default_val is not None and deep_equal(arr, default_val):
-                return None
             return arr
         elif self.type == "intersect" and self.list:
             res = {}
@@ -419,6 +428,11 @@ class Schema:
         Returns { "uid": self.uid, "refs": { ... } } at root level, or node uid when called recursively.
         """
         is_root = refs_collector is None
+        if self.type == "lazy" and self.inner is None and callable(getattr(self, "builder", None)):
+            built = self.builder()
+            built.meta = {**self.meta, **built.meta}
+            self.inner = built
+
         if is_root:
             refs: Dict[int, Dict[str, Any]] = {}
         else:
@@ -453,6 +467,11 @@ class Schema:
 
     def to_json(self) -> Dict[str, Any]:
         """Serialize schema definition matching TS toJSON()."""
+        if self.type == "lazy" and self.inner is None and callable(getattr(self, "builder", None)):
+            built = self.builder()
+            built.meta = {**self.meta, **built.meta}
+            self.inner = built
+
         res: Dict[str, Any] = {
             "uid": self.uid,
             "type": self.type,
@@ -595,10 +614,13 @@ class Schema:
             if isinstance(val, (datetime.datetime, datetime.date)):
                 return val
             if isinstance(val, str):
+                iso_str = val
+                if iso_str.endswith("Z"):
+                    iso_str = iso_str[:-1] + "+00:00"
                 try:
-                    return datetime.datetime.fromisoformat(val)
+                    return datetime.datetime.fromisoformat(iso_str)
                 except Exception:
-                    raise ValidationError(f"invalid date '{val}'", opt)
+                    raise ValidationError(f'invalid date "{val}"', opt)
             raise ValidationError(f"expected Date or date string but got {val}", opt)
 
         return cls.union([
@@ -656,7 +678,10 @@ class Schema:
 
     @classmethod
     def bitset(cls, bits: Dict[str, int]) -> "Schema":
-        return cls({"type": "bitset", "bits": bits})
+        clean_bits = {k: v for k, v in bits.items() if isinstance(v, int) and not isinstance(v, bool)}
+        s = cls({"type": "bitset", "bits": clean_bits})
+        s.meta["default"] = 0
+        return s
 
     @classmethod
     def function(cls) -> "Schema":
@@ -668,24 +693,32 @@ class Schema:
 
     @classmethod
     def array(cls, inner: Any) -> "Schema":
-        return cls({"type": "array", "inner": cls.from_(inner)})
+        s = cls({"type": "array", "inner": cls.from_(inner)})
+        s.meta["default"] = []
+        return s
 
     @classmethod
     def dict(cls, inner: Any, s_key: Any = None) -> "Schema":
-        return cls({
+        s = cls({
             "type": "dict",
             "inner": cls.from_(inner),
-            "s_key": cls.from_(s_key) if s_key else None
+            "s_key": cls.from_(s_key) if s_key is not None else cls.string(),
         })
+        s.meta["default"] = {}
+        return s
 
     @classmethod
     def tuple(cls, *args: Any) -> "Schema":
         list_types = args[0] if len(args) == 1 and isinstance(args[0], (list, tuple)) else list(args)
-        return cls({"type": "tuple", "list": [cls.from_(x) for x in list_types]})
+        s = cls({"type": "tuple", "list": [cls.from_(x) for x in list_types]})
+        s.meta["default"] = []
+        return s
 
     @classmethod
     def object(cls, dict_types: Dict[str, Any]) -> "Schema":
-        return cls({"type": "object", "dict": {k: cls.from_(v) for k, v in dict_types.items()}})
+        s = cls({"type": "object", "dict": {k: cls.from_(v) for k, v in dict_types.items()}})
+        s.meta["default"] = {}
+        return s
 
     @classmethod
     def union(cls, *args: Any) -> "Schema":
@@ -708,7 +741,7 @@ class Schema:
     @classmethod
     def dynamic(cls, builder: Callable[..., "Schema"]) -> "Schema":
         """Dynamic schema factory matching TS Schemastery.dynamic."""
-        return cls({"type": "lazy", "builder": builder})
+        return cls({"type": "lazy", "builder": builder, "_dynamic": True})
 
     @classmethod
     def computed(cls, callback: Callable[..., Any]) -> "Schema":
@@ -752,10 +785,18 @@ class Schema:
         if not schema:
             return data, None
 
+        ignore_fn = opt.get("ignore")
+        if callable(ignore_fn) and ignore_fn(data, schema):
+            return data, None
+
         if is_nullable(data) and schema.type != "lazy":
             if schema.meta.get("required"):
                 raise ValidationError("missing required value", opt)
             fallback = schema.meta.get("default")
+            curr = schema
+            while curr and getattr(curr, "type", None) == "intersect" and is_nullable(fallback):
+                curr = curr.list[0] if getattr(curr, "list", None) else None
+                fallback = curr.meta.get("default") if curr and hasattr(curr, "meta") else None
             if is_nullable(fallback):
                 return data, None
             data = copy.deepcopy(fallback)
@@ -774,20 +815,26 @@ class Schema:
 
 # --- Built-in Type Resolvers matching TS schemastery resolvers ---
 
-def _check_range(data: Union[int, float], meta: Dict[str, Any], description: str, opt: Dict[str, Any]) -> None:
+def _check_range(data: Union[int, float], meta: Dict[str, Any], description: str, opt: Dict[str, Any], skip_min: bool = False) -> None:
     max_val = meta.get("max", math.inf)
     min_val = meta.get("min", -math.inf)
     if data > max_val:
         raise ValidationError(f"expected {description} <= {max_val} but got {data}", opt)
-    if data < min_val:
+    if not skip_min and data < min_val:
         raise ValidationError(f"expected {description} >= {min_val} but got {data}", opt)
 
 
 def _resolve_lazy(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) -> Tuple[Any, Any]:
-    inner = schema.builder() if schema.builder else schema.inner
-    if inner is not None:
-        inner.meta = {**schema.meta, **inner.meta}
-    return Schema.resolve(data, inner, opt, strict)
+    if getattr(schema, "_dynamic", False) and callable(getattr(schema, "builder", None)):
+        built = schema.builder()
+        built.meta = {**schema.meta, **built.meta}
+        return Schema.resolve(data, built, opt, strict)
+
+    if schema.inner is None and callable(getattr(schema, "builder", None)):
+        built = schema.builder()
+        built.meta = {**schema.meta, **built.meta}
+        schema.inner = built
+    return Schema.resolve(data, schema.inner, opt, strict)
 
 
 
@@ -811,8 +858,16 @@ def _resolve_string(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool
     pat = schema.meta.get("pattern")
     if pat:
         src = pat.get("source", "")
-        if not re.search(src, data):
-            raise ValidationError(f"expect string to match regexp {src}", opt)
+        flags_str = pat.get("flags", "")
+        re_flags = 0
+        if "i" in flags_str:
+            re_flags |= re.IGNORECASE
+        if "m" in flags_str:
+            re_flags |= re.MULTILINE
+        if "s" in flags_str:
+            re_flags |= re.DOTALL
+        if not re.search(src, data, flags=re_flags):
+            raise ValidationError(f"expect string to match regexp /{src}/{flags_str}", opt)
     _check_range(len(data), schema.meta, "string length", opt)
     return data, None
 
@@ -854,6 +909,9 @@ def _resolve_bitset(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool
                 val |= bits[k]
     else:
         raise ValidationError(f"expected number or array but got {data}", opt)
+    default_val = schema.meta.get("default", 0)
+    if val == default_val:
+        return val, None
     return val, keys
 
 
@@ -872,8 +930,9 @@ def _resolve_is(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) ->
     if isinstance(ctor, str):
         if is_nullable(data):
             raise ValidationError(f"expected {ctor} but got {data}", opt)
-        if type(data).__name__ == ctor:
-            return data, None
+        for base in type(data).__mro__:
+            if base.__name__ == ctor:
+                return data, None
         raise ValidationError(f"expected {ctor} but got {data}", opt)
     return data, None
 
@@ -883,14 +942,23 @@ def _property(data: Any, key: Any, schema: Schema, opt: Dict[str, Any]) -> Any:
     cur_path.append(key)
     sub_opt = {**opt, "path": cur_path}
     val = data.get(key) if isinstance(data, dict) else (data[key] if isinstance(data, (list, tuple)) and 0 <= key < len(data) else None)
-    res, adapted = Schema.resolve(val, schema, sub_opt)
-    return res
+    try:
+        res, adapted = Schema.resolve(val, schema, sub_opt)
+        if adapted is not None and isinstance(data, (dict, list)):
+            data[key] = adapted
+        return res
+    except Exception as e:
+        if opt.get("autofix") and isinstance(data, dict) and key in data:
+            del data[key]
+            return schema.meta.get("default")
+        raise e
 
 
 def _resolve_array(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) -> Tuple[Any, Any]:
     if not isinstance(data, (list, tuple)):
         raise ValidationError(f"expected array but got {data}", opt)
-    _check_range(len(data), schema.meta, "array length", opt)
+    skip_min = schema.inner is not None and schema.inner.meta.get("default") is not None
+    _check_range(len(data), schema.meta, "array length", opt, skip_min=skip_min)
     inner = schema.inner or Schema.any()
     res = [_property(data, i, inner, opt) for i in range(len(data))]
     return res, None
@@ -902,7 +970,8 @@ def _resolve_dict(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) 
     inner = schema.inner or Schema.any()
     s_key = schema.s_key
     res = {}
-    for k, v in data.items():
+    renamed = {}
+    for k, v in list(data.items()):
         rk = k
         if s_key:
             try:
@@ -911,7 +980,15 @@ def _resolve_dict(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) 
                 if strict:
                     continue
                 raise e
+        if rk != k:
+            renamed[k] = rk
         res[rk] = _property(data, k, inner, opt)
+
+    for old_k, new_k in renamed.items():
+        data[new_k] = data[old_k]
+        if old_k != new_k and old_k in data:
+            del data[old_k]
+
     return res, None
 
 
@@ -919,8 +996,6 @@ def _resolve_tuple(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool)
     if not isinstance(data, (list, tuple)):
         raise ValidationError(f"expected array but got {data}", opt)
     items = schema.list or []
-    if len(data) < len(items):
-        raise ValidationError(f"expected tuple of length {len(items)} but got {len(data)}", opt)
     res = [_property(data, i, items[i], opt) for i in range(len(items))]
     if not strict and len(data) > len(items):
         res.extend(data[len(items):])
@@ -959,39 +1034,53 @@ def _resolve_intersect(data: Any, schema: Schema, opt: Dict[str, Any], strict: b
     if not items:
         return data, None
     res = None
+    all_nullable = True
     for inner in items:
         val = Schema.resolve(data, inner, opt, True)[0]
+        if not is_nullable(val):
+            all_nullable = False
         if is_nullable(val):
             continue
         if is_nullable(res):
             res = val
-        elif type(res) != type(val):
+        elif isinstance(res, (int, float)) and isinstance(val, (int, float)):
+            if res != val:
+                raise ValidationError(f"expected {schema} but got {json.dumps(data, default=str)}", opt)
+        elif type(res) != type(val) and not (isinstance(res, dict) and isinstance(val, dict)):
             raise ValidationError(f"expected {schema} but got {json.dumps(data, default=str)}", opt)
         elif isinstance(val, dict):
             if res is None:
                 res = {}
             for k, v in val.items():
-                if k in res and isinstance(res[k], dict) and isinstance(v, dict):
-                    res[k].update(v)
-                else:
+                if k not in res:
                     res[k] = v
+                elif isinstance(res[k], dict) and isinstance(v, dict):
+                    sub = dict(v)
+                    sub.update(res[k])
+                    res[k] = sub
         elif res != val:
             raise ValidationError(f"expected {schema} but got {json.dumps(data, default=str)}", opt)
+    if all_nullable:
+        return None, None
     if not strict and isinstance(data, dict):
         if res is None:
             res = {}
         for k, v in data.items():
             if k not in res:
                 res[k] = v
-    return (res if res is not None else data), None
+    return res, None
 
 
 def _resolve_transform(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) -> Tuple[Any, Any]:
     inner = schema.inner or Schema.any()
     res, adapted = Schema.resolve(data, inner, opt, True)
     if schema.callback:
-        transformed = schema.callback(res, opt) if len(inspect_params(schema.callback)) >= 2 else schema.callback(res)
-        return transformed, (data if schema.preserve else adapted)
+        p_count = len(inspect_params(schema.callback))
+        transformed = schema.callback(res, opt) if p_count >= 2 else schema.callback(res)
+        if schema.preserve:
+            return transformed, None
+        t_adapted = schema.callback(adapted if adapted is not None else data, opt) if p_count >= 2 else schema.callback(adapted if adapted is not None else data)
+        return transformed, t_adapted
     return res, None
 
 

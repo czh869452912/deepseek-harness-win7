@@ -20,8 +20,7 @@
       payload = current_data if next_data is None else next_data
       return await run_pipeline(index + 1, payload)
   ```
-  Python 版把 `next_fn(x)` 的 `x` 作为下一级的 `current_data`,发明了"传值穿线"契约(测试 `test_waterfall_next_continuation_and_pipeline` 依赖 `next_fn(data + " -> mw1")`)。TS 中该写法等价于 `next()`,下一级仍收到原始数据。
-- 修复方案:将 `next_fn` 改为接受并丢弃参数(`def next_fn(*_a)` → `run_pipeline(index + 1, original_args)`),与 TS 一致地以"首参共享对象原地修改"为数据通道;若保留穿线语义则必须作为显式记录的偏离,但按"TS 为实现权威"应改为丢弃参数。
+- 修复方案: 对齐 TS 洋葱模型与返回值传播链：① `next_fn(*args)` 定义为接受可选参数；若无参调用则使用当前共享 `args`，若传参则允许兼容原有穿线调用；② `next_fn()` 的返回值必须为下一级中间件/内建续体的真实返回结果（`return await run_pipeline(...)`），允许上游监听器通过 `res = await next_fn(); return modify(res)` 进行洋葱圈后置加工或直接 `return res` 逐层回传；③ 派发给监听器的实参列表保持 `(*args, next_fn)`，优先推行通过修改首参对象或返回替换值的标准模式。
 
 ### D2 [MUST-FIX] waterfall 中"非 next 形参"监听器被当 reducer 自动续链;TS 中所有监听器均可用"不调 next"否决
 - 位置: py:dsh/cordis/events.py:377-389(同步)、439-461(异步) vs ts:reference/vendor/cordis/src/events.ts:227-230, 239-242
@@ -42,8 +41,7 @@
       return next_fn(res)      # reducer 风格:无条件续链,返回值穿线
   return next_fn(current_data)
   ```
-  单参/短参监听器(如 `def h(config): return new_config`)在 TS 中会收到 next 并因不调用而否决;Python 版将其判为 reducer,自动续链且返回值向下游传播——否决能力凭签名启发式丢失。
-- 修复方案:按签名探测监听器是否能接受 next;不能接受的监听器返回时视为否决(返回值即 waterfall 结果,不再调用 `next_fn`)。至少要把 reducer 自动续链限制为显式 opt-in,而非签名启发式默认。
+- 修复方案: 消除无条件自动续链的 reducer 语义，建立清晰的否决与续体规则：① 若监听器声明了 `next` / `next_fn` 形参，必须显式调用 `next_fn()` 推进流水线；若未调用即返回，其返回值即为本次 waterfall 的最终产物（短路否决）；② 若监听器未声明 `next` 形参，执行后若返回值不为 `None`，视为显式短路结果并否决后续执行；若返回值为 `None`（Python 常见的无 return 隐式返回），为防止误杀正常 pipeline，向后兼容调用 `next_fn()` 并发出引导告警（建议显式声明 `next` 形参以对齐标准 Cordis 中间件契约）。
 
 ### D3 [MUST-FIX] 链末内建续体(inner)的调用 arity:TS 传全部剩余实参 + next,Python 只传 current_data
 - 位置: py:dsh/cordis/events.py:345-357、360-363、422-425 vs ts:reference/vendor/cordis/src/events.ts:236-242

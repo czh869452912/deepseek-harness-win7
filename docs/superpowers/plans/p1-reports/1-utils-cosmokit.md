@@ -123,7 +123,7 @@ export function filterKeys(object: {}, filter: (key: string, value: any) => bool
 def filter_keys(obj, predicate: Callable[[str], bool]) -> Dict[str, Any]:
     return {k: v for k, v in obj.items() if predicate(k)}
 ```
-- 修复方案: 谓词签名改为 `(key, value)` 并传值；同步更新现网唯一调用方测试 tests/test_cordis_full_specs_parity.py:201（`lambda k: ...` → `lambda k, v: ...`）。
+- 修复方案: 谓词支持 `(key, value)` 双参契约：使用 `inspect.signature` 探测谓词形参；若仅接受 1 个位置参数，调用 `predicate(k)`（保持向后兼容）；若接受 ≥2 个参数或 `*args`，调用 `predicate(k, v)`（满足 TS 规范）。tests/test_cordis_full_specs_parity.py:201 可继续兼容，并新增双参谓词测试锁定 TS 契约。
 
 ### D8 [MUST-FIX] pick/omit 缺少无 keys 时整体浅拷贝默认行为与 forced 参数
 - 位置: py:dsh/cordis/utils.py:44-52 vs ts:reference/vendor/cosmokit/src/misc.ts:52-69
@@ -186,7 +186,7 @@ except TypeError: pass
 for sn, v in list(self._map.items()):        # 线性扫描 v == value 兜底
     if v == value or v is value: return self.delete_by_sn(sn)
 ```
-- 修复方案: 删除 `_val_to_sn` 与线性扫描，仅按 `id(value)` 恒等查找（WeakKey 语义）；`delete_by_sn` 中同步清理 id 映射（现有逻辑保留）。差异实例：push 两个相等的 tuple 后 delete 第一个，TS 删 sn1、移植版删 sn2；delete 一个从未 push 但相等的值，TS 返回 False、移植版误删并返回 True。
+- 修复方案: 摒弃不可靠的 `_val_to_sn` 全等散列与线性裸 `==` 扫描。采用以对象同一性优先、绑定方法相等性兜底的映射：① 优先通过 `id(value)` 查找 sn；② 针对 Python 中动态生成绑定方法（`inspect.ismethod`）导致 `id` 瞬态变化的情况，按 `(m.__self__ is value.__self__ and m.__func__ is value.__func__)` 兜底匹配；③ 杜绝纯值相等（如相等的两个不同 tuple）的误匹配；`delete_by_sn` 同步清理映射。差异实例：push 两个相等的 tuple 后 delete 第一个，TS 删 sn1、移植版删 sn2；delete 一个从未 push 但相等的值，TS 返回 False、移植版误删并返回 True。
 
 ### D11 [MUST-FIX] get_traceable 对无 tracker 的 callable/_extend 对象也包一层（TS 无 tracker 原样返回）
 - 位置: py:dsh/cordis/utils.py:514-523 vs ts:reference/vendor/cordis/src/utils.ts:117-125

@@ -27,7 +27,7 @@
   return os.path.abspath(os.path.join(os.path.expanduser("~"), ".dsh"))
   ```
   默认 home 走 `expanduser`，但 `DSH_HOME=~/dsh-alt` 或 `configured="~/dsh-alt"` 在 py 得到 `<cwd>\~\dsh-alt`（字面 `~` 目录），TS 得到 `<home>\dsh-alt`。profile.py:22-31 的同名函数同样受影响（15-profile 报告 D11）。
-- 修复方案: `resolve_dsh_home` 对 selected 值先做等价 `expandHomePath`：`~` → `os.path.expanduser("~")`；`~/`、`~\` 前缀 → `os.path.join(homedir(), path[2:])`；再 `os.path.abspath`。
+- 修复方案: `resolve_dsh_home` 对所有来源（配置值、环境变量 `DSH_HOME`、默认值）统一执行 `expand_home_path`：`~` 展开为 `os.path.expanduser("~")`；`~/` 与 `~\` 前缀拼接用户主目录；展开后通过 `os.path.abspath` 解析为绝对路径。
 
 ### D2 [MUST-FIX] .env 语法是 node:util parseEnv 的子集：行内注释与多行值处理缺失
 - 位置: py:dsh/cordis/environment.py:65-95 (`parse_dotenv`) vs ts:reference/packages/boot/app-boot/src/index.ts:157 (`parseEnv(content)`)
@@ -43,7 +43,7 @@
   if len(val) >= 2 and ((val[0] == '"' and val[-1] == '"') or (val[0] == "'" and val[-1] == "'")):
   ```
   (a) 无行内注释剥离：`DEEPSEEK_API_KEY=sk-xxx # rotated` 在 TS 值为 `sk-xxx`，py 值含 ` # rotated`——这是安全 tripwire 文件里最常见的写法；(b) 多行引号值在第 1 行截断，静默产出错误值；(c) 双引号转义替换顺序（`\\n` 在 `\\` 之前处理链中无保护，`\\n`（字面反斜杠+n）会被错误展开）。
-- 修复方案: `parse_dotenv` 增加非引号值的行内 ` #` 注释剥离；实现多行值聚合（遇未闭合引号继续吞行直到闭引号）；用单遍扫描处理双引号转义（避免顺序敏感的多重 replace）；单引号保持纯字面量（当前正确）。
+- 修复方案: 采用单遍状态机重构 `parse_dotenv`：① 遇到未闭合引号时持续跨行聚合；② 对未被引号包裹的值，剥离首个空白后跟随 `#` 的行内注释；③ 对双引号内部的值，单遍扫描处理标准转义字符（`\n`, `\r`, `\t`, `\"`, `\\`），严防链式替换导致的双反斜杠误展开；④ 单引号值严格作为纯字面量保留。
 
 ### D3 [MUST-FIX] 缺少 `launchEnvironmentOf` 等价读取入口，服务名约定未固定
 - 位置: py:dsh/cordis/environment.py:113-154（仅快照类） vs ts:reference/packages/util/launch-environment/src/index.ts:105-117
@@ -74,7 +74,7 @@
   `inherited` 拷贝本身正确；但 `parse_dotenv`/`read_env_layer` 返回的 `values` dict 未在快照构造时再拷贝（py:121-134 直接引用 layer["values"]），且 `LaunchEnvironmentSnapshot` 无任何防突变约束——当前 `load_layered_env` 调用链内无害，属契约缺口：任何消费方拿到 layer dict 引用即可改写"不可变"快照。
 - 修复方案: `LaunchEnvironmentSnapshot.__init__` 对每层 `dict(vals)` 浅拷贝并私有化（不暴露 `_layers`）；文档注明只经 `get_from/get/get_value` 读取。
 
-### D5 [MUST-FIX] user 层跳过条件：大小写折叠行为与 TS 不同
+### D5 [ADAPT] user 层跳过条件：Windows 路径规范化比较
 - 位置: py:dsh/cordis/environment.py:203-204 vs ts:reference/packages/boot/app-boot/src/index.ts:188
 - 原版行为:
   ```ts
@@ -86,7 +86,7 @@
   if os.path.normcase(home_dir) != os.path.normcase(work_dir):
   ```
   `normcase` 在 Windows 折叠大小写与斜杠——`DSH_HOME=c:\Users\x\.dsh` 与 cwd=`C:\Users\x\.DSH` 之类输入下两边判定相反（py 跳过 user 层，TS 重复加载）。
-- 修复方案: 保持 normcase（py 侧更安全，避免同一文件被当作两层重复加载），但在报告中记录为有意偏差；或对齐 TS 用 `os.path.abspath` 字符串比较。二选一后加测试固定行为。
+- 修复方案: 保持 `os.path.normcase` 比较作为 Win7 平台的安全适配（ADAPT）：Windows 文件系统不区分大小写，使用 `normcase` 能准确识别 `c:\users\x\.dsh` 与 `C:\Users\X\.dsh` 为同一路径，避免同一环境层被重复加载；将此条从 MUST-FIX 调整为有意 ADAPT 并补充跨平台路径测试。
 
 ### D6 [ADAPT] os.environ 的 Windows 大小写不敏感键 vs process.env
 - 位置: py:dsh/cordis/environment.py:206-211 vs ts:reference/packages/boot/app-boot/src/index.ts:190-195

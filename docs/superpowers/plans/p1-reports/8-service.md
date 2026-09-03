@@ -19,7 +19,7 @@
   elif hasattr(self.ctx, "provide"):
       self.ctx.provide(self.name, self, check=check_fn)
   ```
-- 修复方案: 统一改为 `self.ctx.provide(self.name, self, check=check_fn)`（或给 set_service 增加 conflict 检查并默认关闭 allow_replace）。两点必须对齐：① 同名重复提供要像 TS 一样抛 `service 'x' has been registered at <fiber>`（tests/test_cordis_1to1_final_completeness.py:263 已覆盖 ctx.provide 路径，Service 路径当前静默替换）；② impl.fiber 必须是构造时传入的 ctx 所属 fiber——配合 7-registry.md D1（实例化移入 `_reload` 并传 fiber ctx）后，插件类 Service 的生命周期才与插件一致；当前经 `set_service` 写到 root，插件卸载后服务泄漏。
+- 修复方案: 统一改为 `self.ctx.provide(self.name, self, check=check_fn)`：① 对齐冲突检测：同名重复提供抛 `RuntimeError(f"service '{name}' has been registered at <{prev_fiber.name}>")`（与 TS `reflect.provide` 一致）；② 核心基础设施豁免：根上下文在启动引导期注册自身内置服务（events, timer, logger 等）时放行初始声明；③ 生命周期对齐：`impl.fiber` 正确指向当前插件的 fiber，当插件卸载时其提供的服务随之自动注销，杜绝常驻内存泄漏。
 
 ### D2 [MUST-FIX] `__call__` 的 invoke 查找永远失败（查字面量属性 "cordis.invoke"）
 - 位置: py:service.py:117-124 vs ts:service.ts:50-52（构造时 `createCallable` 包装 `[symbols.invoke]`）与 ts:utils.ts:220-223
@@ -38,7 +38,7 @@
           return invoke_fn(*args, **kwargs)
       raise TypeError(f"Service '{self.name}' is not callable")
   ```
-- 修复方案: `Service.__getattr__`/约定层把 `symbols.invoke`（"cordis.invoke"）映射到惯例方法名：`invoke_fn = getattr(self, "invoke", None) or getattr(self, "_invoke", None)`（或让声明了 `def invoke(self, ...)` 的子类自动可调用）；`__call__` 失败时保留 TypeError 但文案对齐。当前任何 Service 子类实例被直接调用必然抛 TypeError——可调用服务（如 TS 的 `ctx.logger()`）在 Python 侧只能靠子类自带 `__call__`。
+- 修复方案: 将 `Service.__call__` 的派发逻辑映射为：优先获取 `getattr(self, "invoke", None) or getattr(self, "_invoke", None)`；若存在且可调用，直接将实参转发执行并返回结果；若未定义可调用的 invoke 方法，则抛出语义对齐的 `TypeError(f"Service '{self.name}' is not callable")`。
 
 ### D3 [ADAPT] 名称派生：provide_name/类名回退 + 去除 "service" 后缀；TS 仅 `constructor['provide']`
 - 位置: py:service.py:44-49 vs ts:service.ts:42-43

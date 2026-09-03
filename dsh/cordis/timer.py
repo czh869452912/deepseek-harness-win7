@@ -20,25 +20,22 @@ class _AsyncIntervalIterator:
         self.service = service
         self.ctx = target_ctx or service.ctx
         self.delay_sec = max(0.001, delay_ms / 1000.0)
-        self._queue: asyncio.Queue = asyncio.Queue()
-        self._disposed = False
+        self._done: Optional[Dict[str, Any]] = None
+        self._next_future: Optional[asyncio.Future] = None
         self._task: Optional[asyncio.Task] = None
 
         def _setup():
             async def _tick_loop():
                 try:
-                    while not self._disposed:
+                    while not self._done:
                         await asyncio.sleep(self.delay_sec)
-                        if self._disposed:
+                        if self._done:
                             break
-                        await self._queue.put(None)
+                        if self._next_future is not None and not self._next_future.done():
+                            self._next_future.set_result(None)
+                            self._next_future = None
                 except asyncio.CancelledError:
                     pass
-                except Exception as e:
-                    try:
-                        await self._queue.put(e)
-                    except Exception:
-                        pass
 
             try:
                 loop = asyncio.get_running_loop()
@@ -47,13 +44,15 @@ class _AsyncIntervalIterator:
                 self._task = None
 
             def _cleanup():
-                self._disposed = True
                 if self._task and not self._task.done():
                     self._task.cancel()
-                try:
-                    self._queue.put_nowait(RuntimeError("Context has been disposed"))
-                except Exception:
-                    pass
+                if self._done is not None:
+                    return
+                err = RuntimeError("Context has been disposed")
+                self._done = {"kind": "throw", "reason": err}
+                if self._next_future is not None and not self._next_future.done():
+                    self._next_future.set_exception(err)
+                    self._next_future = None
 
             return _cleanup
 
@@ -62,23 +61,37 @@ class _AsyncIntervalIterator:
     def __aiter__(self) -> AsyncIterator[None]:
         return self
 
+    @property
+    def _disposed(self) -> bool:
+        return self._done is not None
+
     async def __anext__(self) -> None:
-        if self._disposed:
-            raise StopAsyncIteration
-        item = await self._queue.get()
-        if isinstance(item, Exception):
-            raise item
-        return item
+        if self._done is not None:
+            if self._done["kind"] == "return":
+                raise StopAsyncIteration
+            raise self._done["reason"]
+
+        loop = asyncio.get_running_loop()
+        fut = loop.create_future()
+        self._next_future = fut
+        try:
+            await fut
+        finally:
+            if self._next_future is fut:
+                self._next_future = None
 
     async def aclose(self) -> None:
-        if not self._disposed:
-            self._disposed = True
+        if not self._done:
+            self._done = {"kind": "return", "value": None}
+            if self._next_future is not None and not self._next_future.done():
+                self._next_future.set_exception(StopAsyncIteration())
+                self._next_future = None
             if callable(self._dispose):
                 self._dispose()
 
     def __del__(self) -> None:
-        if not self._disposed:
-            self._disposed = True
+        if not self._done:
+            self._done = {"kind": "return", "value": None}
             try:
                 if self._task and not self._task.done():
                     self._task.cancel()
@@ -248,7 +261,11 @@ class TimerService(Service):
                         try:
                             res = callback()
                             if inspect.isawaitable(res):
-                                await res
+                                try:
+                                    loop = asyncio.get_running_loop()
+                                    loop.create_task(res)
+                                except RuntimeError:
+                                    pass
                         except Exception as e:
                             if hasattr(target_ctx, "logger"):
                                 target_ctx.logger("timer").error("Exception in interval callback: %s", e)

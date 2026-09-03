@@ -21,11 +21,16 @@ class FiberState:
     UNLOADING = 5
 
 
+CODE_MESSAGES = {
+    "INACTIVE_EFFECT": "cannot create effect on inactive context"
+}
+
+
 class CordisError(Exception):
     """Framework error with a stable error code."""
     def __init__(self, code: str, message: Optional[str] = None):
         self.code = code
-        super().__init__(message or code)
+        super().__init__(message or CODE_MESSAGES.get(code, code))
 
 
 def resolve_config(plugin: Any, config: Any) -> Any:
@@ -129,6 +134,21 @@ class Fiber:
                 self.uid = Fiber._uid_counter
             self.ctx = parent_ctx.extend({"fiber": self}) if parent_ctx else None
             self.state = FiberState.PENDING
+            if self.inject and self.ctx:
+                parent_intercept = getattr(parent_ctx, "_intercept_map", {}) if parent_ctx else {}
+                self.ctx._intercept_map = dict(parent_intercept)
+                for name, config in self.inject.items():
+                    if config is not None:
+                        if isinstance(config, dict):
+                            clean_cfg = {k: v for k, v in config.items() if k != "required"}
+                            if clean_cfg:
+                                self.ctx._intercept_map[name] = clean_cfg
+                        else:
+                            self.ctx._intercept_map[name] = config
+
+            parent_fiber = getattr(parent_ctx, "fiber", None) if parent_ctx else None
+            if parent_fiber is not None and parent_fiber is not self:
+                parent_fiber.effect(lambda: (lambda: self.dispose()), label=f"child_fiber({self.uid})")
         else:
             # Root Fiber (runtime is None)
             self.uid = 0
@@ -138,14 +158,23 @@ class Fiber:
 
     @property
     def name(self) -> str:
-        if self.plugin:
-            if hasattr(self.plugin, "name") and self.plugin.name:
-                return self.plugin.name
-            if hasattr(self.plugin, "id") and self.plugin.id:
-                return self.plugin.id
-            if isinstance(self.plugin, type):
-                return self.plugin.__name__
-            return self.plugin.__class__.__name__
+        fiber = self
+        while fiber is not None:
+            if getattr(fiber, "runtime", None) and getattr(fiber.runtime, "name", None):
+                return fiber.runtime.name
+            plugin = getattr(fiber, "plugin", None)
+            if plugin:
+                if hasattr(plugin, "name") and plugin.name:
+                    return plugin.name
+                if hasattr(plugin, "id") and plugin.id:
+                    return plugin.id
+            parent_ctx = getattr(fiber, "parent", None)
+            if not parent_ctx:
+                break
+            parent_fiber = getattr(parent_ctx, "fiber", None)
+            if parent_fiber is fiber or parent_fiber is None:
+                break
+            fiber = parent_fiber
         return "root"
 
     def __getattr__(self, name: str) -> Any:
@@ -158,11 +187,11 @@ class Fiber:
     def __await__(self):
         return self.await_settled().__await__()
 
-    def assert_active(self) -> None:
-        if self.uid is None or self.state in (FiberState.DISPOSED, FiberState.UNLOADING, FiberState.FAILED):
-            if self._error is not None:
-                raise self._error
-            raise CordisError("INACTIVE_EFFECT", "cannot create effect on inactive context")
+    def assert_active(self, check_error: bool = True) -> None:
+        if self.uid is None:
+            raise CordisError("INACTIVE_EFFECT")
+        if check_error and self._error is not None:
+            raise self._error
 
     def _resolve_config(self, config: Any) -> Any:
         """Resolve raw plugin config through internal/config waterfall matching TS."""
@@ -176,7 +205,7 @@ class Fiber:
         Supports functions, generators, async generators, and coroutines.
         Handles setup rollback on failure and barrier synchronization.
         """
-        self.assert_active()
+        self.assert_active(check_error=False)
         if self.state == FiberState.UNLOADING:
             raise CordisError("INACTIVE_EFFECT", "cannot create effect on inactive context")
 
@@ -566,6 +595,8 @@ class Fiber:
             from dsh.cordis.service import Service
             if hasattr(self.plugin, "apply") and callable(self.plugin.apply):
                 res = self.plugin.apply(self.ctx)
+            elif isinstance(self.plugin, dict) and callable(self.plugin.get("apply")):
+                res = self.plugin["apply"](self.ctx)
             elif not isinstance(self.plugin, Service) and callable(self.plugin):
                 res = self.plugin(self.ctx, self.config)
 
@@ -597,6 +628,15 @@ class Fiber:
             self.set_state(FiberState.UNLOADING)
             self._unload()
 
+    def _get_state(self) -> FiberState:
+        if self.uid is None:
+            return FiberState.DISPOSED
+        if self._error is not None:
+            return FiberState.FAILED
+        if self.epoch != INACTIVE_EPOCH:
+            return FiberState.ACTIVE
+        return FiberState.PENDING
+
     def _unload(self) -> None:
         """Execute all disposers in reverse order and transition state."""
         disposers = self._disposables.clear()
@@ -622,8 +662,7 @@ class Fiber:
                             self.ctx.logger("fiber").warn("Exception during async unload for '%s': %s", self.name, e)
                 self.store = None
                 if self.epoch == INACTIVE_EPOCH:
-                    final_state = FiberState.FAILED if self._error is not None else (FiberState.PENDING if self.uid is not None else FiberState.DISPOSED)
-                    self.set_state(final_state)
+                    self.set_state(self._get_state())
                     self.inertia = None
                 else:
                     self.set_state(FiberState.LOADING)
@@ -642,17 +681,71 @@ class Fiber:
 
         self.store = None
         if self.epoch == INACTIVE_EPOCH:
-            final_state = FiberState.FAILED if self._error is not None else (FiberState.PENDING if self.uid is not None else FiberState.DISPOSED)
-            self.set_state(final_state)
+            self.set_state(self._get_state())
         else:
             self.set_state(FiberState.LOADING)
             self._reload()
 
+    def _emit_plugin_disposed(self) -> None:
+        if not self.ctx:
+            return
+        bus = getattr(self.ctx, "_event_bus", None)
+        if not bus:
+            return
+        try:
+            callbacks = bus._dispatch_hooks("emit", "internal/plugin", self, caller_ctx=self.ctx)
+        except Exception as e:
+            if hasattr(self.ctx, "logger"):
+                try:
+                    self.ctx.logger.error(e)
+                except Exception:
+                    pass
+            return
+        for cb in callbacks:
+            try:
+                res = cb(self)
+                if inspect.isawaitable(res):
+                    def _catch_err(f):
+                        try:
+                            f.result()
+                        except Exception as err:
+                            if hasattr(self.ctx, "logger"):
+                                try:
+                                    self.ctx.logger.error(err)
+                                except Exception:
+                                    pass
+                    task = asyncio.ensure_future(res)
+                    task.add_done_callback(_catch_err)
+            except Exception as e:
+                if hasattr(self.ctx, "logger"):
+                    try:
+                        self.ctx.logger.error(e)
+                    except Exception:
+                        pass
+
     async def dispose(self) -> None:
         """Dispose this fiber and execute disposers in strict reverse order matching TS fiber.dispose."""
+        if self.runtime is None:
+            # Root fiber dispose restarts instead of destroying
+            return await self.restart()
+
         if self.state in (FiberState.UNLOADING, FiberState.DISPOSED):
             return
+
         self.uid = None
+        self._emit_plugin_disposed()
+
+        # Remove from runtime.fibers and registry if empty
+        if self.runtime is not None:
+            try:
+                self.runtime.remove_fiber(self)
+            except Exception:
+                pass
+            if not self.runtime.fibers:
+                registry = getattr(self.ctx, "registry", None)
+                if registry is not None and hasattr(registry, "_runtimes"):
+                    registry._runtimes.pop(self.runtime.callback, None)
+
         self.set_epoch(INACTIVE_EPOCH)
         if hasattr(self, "_in_flight_effects"):
             for t in list(self._in_flight_effects):
@@ -668,15 +761,13 @@ class Fiber:
             await self.inertia
 
         self.set_state(FiberState.DISPOSED)
-        if self.ctx and hasattr(self.ctx, "emit"):
-            self.ctx.emit("internal/plugin", self)
 
     def update(self, config: Any, no_save: bool = False) -> Any:
         """
         Validate and apply new config, then restart the plugin via internal/update waterfall.
         Matching TS Fiber.update(config, noSave).
         """
-        self.assert_active()
+        self.assert_active(check_error=False)
         self._config = config
         if self.state != FiberState.ACTIVE:
             self._error = None
@@ -697,7 +788,7 @@ class Fiber:
 
     def restart(self, new_config: Optional[Any] = None) -> Any:
         """Dispose and immediately reload this plugin with current or new config matching TS fiber.restart()."""
-        self.assert_active()
+        self.assert_active(check_error=False)
         if new_config is not None:
             self._config = new_config
         self.set_epoch(INACTIVE_EPOCH)

@@ -170,7 +170,7 @@
       return config
   ```
   含 `${FOO}` 的配置值（如提示词模板、命令串 `run: "${HOME}/x"`）在 TS 挂载时保持字面量，在 py 被替换成环境变量值/空串——对模型可见的配置面产生可见差异；`!!js ` 前缀字符串求值同样是 TS 不存在的扩展（TS 只认 `__jsExpr` 节点）。
-- 修复方案: `interpolate` 移除字符串分支的全部处理（仅保留 `is_js_expr` → `evaluate_expr` 与递归）；`${}`/前缀字符串支持如确属 Win7 移植需要，必须收窄为仅在 `internal/config` 边界外的显式调用点（如 preset 加载）并记录于差异文档，不得影响 include/loader 挂载路径。
+- 修复方案: 分层收敛环境变量替换与表达式求值：① 在 Cordis Loader 运行时底层，`interpolate(ctx, value)` 对齐 TS 规范，仅对 `is_js_expr(value)` 节点求值，普通字符串保持字面量不篡改；② 同时严密保留对 `${ENV_VAR}` / `${ENV_VAR:-default}` 的环境变量预处理能力（现有 preset 如 standard.yaml 强依赖环境变量替换），将其提升为配置读入/Preset 加载阶段的显式预处理步骤（如 `expand_env_vars(raw_config)`），绝不在未接线预处理层前直接删除字符串插值，确保现有预设中 API Key 与路径变量正常注入。
 
 ### D8 [MUST-FIX] is_js_expr 检查过严 + dict 键不参与插值的边界差异
 - 位置: py:dsh/cordis/loader.py:98-100, 357-358 vs ts:vendor/loader/src/config/utils.ts:20, 25-27

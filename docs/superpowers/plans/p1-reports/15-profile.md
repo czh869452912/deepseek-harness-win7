@@ -26,7 +26,7 @@
   return prepare_profile("standard", dsh_home=home, user_layer=user_layer)
   ```
   `dsh --profile typo-name` 在 TS 启动失败（明确指引），在 py 变成静默以 standard 配置运行——用户数据（会话、工作区）挂到意料之外的组合上。
-- 修复方案: `prepare_profile` 中非内置名且 `profile_dir` 不存在时抛 `ValueError(f"profile {name!r} does not exist")`（保留 `standard` 作为显式内置名）；入口处拒绝空名、`.`、`..`、含 `/` `\`、`node_modules` 的名字。
+- 修复方案: 严格对齐未知名 fail-loud 与参数校验：① 入口立即校验 `name`：若为空串、包含 `/` 或 `\`、为 `.` 或 `..`、或等于 `node_modules`，抛出 `ValueError(f"dsh: invalid profile name {name!r}")`；② 若 `name` 既非内置预设（minimal / standard / creative 等），对应的 profile 目录又不存在，抛出 `ValueError(f"dsh: profile {name!r} does not exist")`，彻底杜绝静默 fallback 到 standard 的不可控行为。
 
 ### D2 [MUST-FIX] patch 层解析宽松且失败静默：非顶层数组被接受、解析错误吞成 []；TS 全部 fail loud
 - 位置: py:dsh/cordis/profile.py:41-62 (`load_optional_patches`) vs ts:reference/packages/boot/app-boot/src/index.ts:280-353 (`loadOptionalPatches`/`loadOverlayPatches`/`parsePatchList`)

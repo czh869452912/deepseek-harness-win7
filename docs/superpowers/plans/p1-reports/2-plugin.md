@@ -60,7 +60,7 @@ if hasattr(self.plugin, "apply") and callable(self.plugin.apply):
 elif not isinstance(self.plugin, Service) and callable(self.plugin):
     res = self.plugin(self.ctx, self.config)       # 函数插件路径正确
 ```
-- 修复方案: apply 路径按 `inspect.signature` 判定后传 `(self.ctx, self.config)`；基类 `Plugin.apply(self, ctx)` 签名更新为 `apply(self, ctx, config=None)` 保持向后兼容。差异实例：TS 形状的对象插件 `apply(ctx, config)` 在移植版下 TypeError → fiber FAILED。
+- 修复方案: 采用安全动态签名探测：`sig = inspect.signature(self.plugin.apply)`；若其接受的形参（排除 self 后）≥ 2 或包含 `*args`，传入 `(self.ctx, self.config)`；若仅接受 1 个位置参数，传入 `(self.ctx)`（绝不能向仅声明 `def apply(self, ctx)` 的现有插件硬传 2 参导致崩溃）；基类 `Plugin.apply(self, ctx)` 签名更新为 `apply(self, ctx, config=None)`。差异实例：TS 形状的对象插件 `apply(ctx, config)` 在移植版下 TypeError → fiber FAILED。
 
 ### D4 [MUST-FIX] 非法插件错误类型/文案不一致，且 resolve() 缺少 apply 访问的 try/catch、callable 判定顺序不同
 - 位置: py:dsh/cordis/registry.py:165-175, 231-232 vs ts:reference/vendor/cordis/src/registry.ts:222-228, 319

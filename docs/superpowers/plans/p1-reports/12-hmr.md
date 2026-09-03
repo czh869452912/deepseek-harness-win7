@@ -20,7 +20,7 @@
           self._trigger_config_refresh(filename, refresh_fn)
   ```
   `register_config` 只记录 mtime（py:338-344），首个 poll 周期只建立基线（`last_mtime == 0`），已存在的文件在注册时永远不会触发 refresh。
-- 修复方案: `register_config` 在注册时若 `os.path.exists(abs_path)` 则同步（或调度）调用一次 `_trigger_config_refresh`，与 TS `'add'` 初始触发等价；同时为"注册时不存在、之后创建"的文件保留 mtime 基线为 0（不要用 `time.time()` 预填，见 D2），使创建事件也能触发。
+- 修复方案: `register_config` 注册时若 `os.path.isfile(abs_path)`，则在当前事件循环调度执行一次 `_trigger_config_refresh(filename, refresh_fn)`，与 TS `ignoreInitial: false` 下 chokidar 对已存在文件发射的 'add' 初始事件等价；同时记录当前的初始 `mtime` 基准。
 
 ### D2 [MUST-FIX] 文件不存在时用 time.time() 预填 mtime，吞掉创建事件
 - 位置: py:dsh/cordis/hmr.py:339-342 与 359-363 vs ts:vendor/hmr/src/index.ts:151-158 (`onChange` 覆盖 add/change/unlink 三事件)
@@ -39,7 +39,7 @@
       self._mtimes[abs_path] = time.time()
   ```
   之后 poll 只比较 `mtime > last_mtime`。注册后才创建、但 mtime ≤ 注册时刻 `time.time()` 的文件永远不会触发；unlink 事件完全没有建模（poll 对不存在的文件直接 `continue`）。
-- 修复方案: 不存在时基线存 `0.0`；poll 中区分三种迁移：`不存在→存在`(add)、`mtime 变化`(change)、`存在→不存在`(unlink)，三者都触发 refresh（TS 三事件同路径）。
+- 修复方案: 对注册时不存在的文件，基准 mtime 存 `0.0`（严禁用 `time.time()` 预填）；轮询器中显式建模三态迁移：① `0.0 -> >0`（add 事件）：触发 refresh；② `mtime1 -> mtime2`（change 事件）：触发 refresh；③ `>0 -> 0.0`（unlink 事件，即文件被删除）：同样触发 refresh 并将 mtime 重置为 0.0。
 
 ### D3 [MUST-FIX] full-vs-partial 语义：externals → 全量重载（loader.exit()）完全缺失
 - 位置: py:dsh/cordis/hmr.py:239-332 (`_trigger_module_reload` 只有 per-module 路径) vs ts:vendor/hmr/src/index.ts:220-226 + 259-268

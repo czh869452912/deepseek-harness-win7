@@ -38,9 +38,7 @@ Notes on the TS side used below:
   plugins only — no persona, no fs, no tools — and the CLI REPL then crashes later on
   `ctx.get("agent_loop")` or runs a tool-less agent. `load_preset_file` itself already raises
   `FileNotFoundError` (dsh/cordis/loader.py:1289-1290); the `exists` guard discards that signal.
-- 修复方案: Remove the `os.path.exists` guard (or raise a labelled error like
-  `dsh: failed to read preset dsh/presets/<mode>.yaml`), letting `load_preset_file`'s
-  `FileNotFoundError` propagate so a bad mode name fails at boot, matching TS fail-loud semantics.
+- 修复方案: 消除对工作区 CWD 的相对路径依赖，并严格 fail-loud：① 使用基于 `__file__` 的包内相对定位：`preset_dir = os.path.join(os.path.dirname(__file__), "presets")`，`preset_file = os.path.join(preset_dir, f"{mode}.yaml")`，彻底杜绝从非根目录执行时误判文件不存在；② 若 `preset_file` 不存在，立即抛出带标签的异常 `FileNotFoundError(f"dsh: failed to read preset at {preset_file}")`，匹配 TS 模式失败立即中断的 fail-loud 规范。
 
 ### D2 [MUST-FIX] `patch_file` parameter is accepted but never applied (user patch layers dead in live boot)
 - 位置: py:dsh/harness.py:69 (param), whole body has no reference; caller apps/cli/main.py:107 vs ts:packages/boot/app-boot/src/index.ts:501-544 (mountRootInclude applies `patches`), 300-308 (loadOverlayPatches throws when the named overlay is missing)
@@ -74,11 +72,7 @@ Notes on the TS side used below:
   `FileNotFoundError`) and `load_preset_file(..., patches=...)` (dsh/cordis/loader.py:1280-1296)
   both exist but are not wired into the live path; `$DSH_HOME/cordis.patch.yml` (the user layer) is
   likewise only consulted by `--dump-config`, never by boot.
-- 修复方案: In `build_harness`, when `patch_file` is set, load it via
-  `dsh.cordis.profile.load_overlay_patches(patch_file)` (fail loud on missing) and pass the list as
-  `patches=` to `loader.load_preset_file(preset_file, ctx)`; optionally also apply the
-  `$DSH_HOME/cordis.patch.yml` user layer via `load_optional_patches` before the overlay, mirroring
-  the TS bundle→user→overlay composition order.
+- 修复方案: 在 `build_harness` 中接线用户覆盖层：当 `patch_file` 不为空时，调用 `dsh.cordis.profile.load_overlay_patches(patch_file)` 加载补丁列表（文件缺失时直接抛错 fail loud），并作为 `patches=` 实参传递给 `loader.load_preset_file(preset_file, ctx, patches=...)`；同时在 overlay 之前可选合并 `$DSH_HOME/cordis.patch.yml` 用户层，对齐 TS 的 bundle -> user -> overlay 组合顺序。
 
 ### D3 [MUST-FIX] No fail-loud boot audit: unresolved preset plugins only warn, partial context is not disposed, no stage labels
 - 位置: py:dsh/harness.py:172 (returns ctx without audit) + dsh/cordis/loader.py:1273-1277 vs ts:packages/boot/app-boot/src/index.ts:673-679 (assertEntriesLoaded), 707-740 (assertEntriesActivated), 801-818 (dispose + labelled stage)

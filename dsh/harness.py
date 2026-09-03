@@ -79,6 +79,14 @@ def build_harness(
     launch_env = load_layered_env(cwd=os.getcwd())
     ctx.set_service("launch_environment", launch_env)
 
+    # Provide dshHomePath on ctx matching TS ctx.provide('dshHomePath', dshHomePath)
+    from dsh.cordis.environment import resolve_dsh_home
+    def dsh_home_path(subpath: str = "") -> str:
+        home = resolve_dsh_home()
+        return os.path.join(home, subpath) if subpath else home
+    ctx.dshHomePath = dsh_home_path
+    ctx.dsh_home_path = dsh_home_path
+
     # Mount base infrastructure plugins
     ctx.plugin(ToolsPlugin)
     ctx.plugin(CredentialsLocalPlugin)
@@ -91,7 +99,7 @@ def build_harness(
     ctx.plugin(TokenMeterPlugin)
     ctx.plugin(LLMRetryPlugin)
     if mode != "minimal":
-        ctx.plugin(SessionQueryPlugin)
+        ctx.plugin(SessionQueryPlugin, config={"path": ":memory:", "open_at": "never"})
     ctx.plugin(AgentLoopPlugin)
 
     if verbose:
@@ -167,8 +175,21 @@ def build_harness(
         ctx.plugin(ApiProxyPlugin)
         ctx.plugin(FrontendStaticPlugin)
 
-    preset_file = os.path.join("dsh", "presets", f"{mode}.yaml")
-    if os.path.exists(preset_file):
-        loader.load_preset_file(preset_file, ctx)
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    preset_file = os.path.join(base_dir, "presets", f"{mode}.yaml")
+    if not os.path.isfile(preset_file):
+        raise FileNotFoundError(f"dsh: failed to read preset at {preset_file}")
+
+    # Load and apply patches (user home layer + CLI overlay layer)
+    from dsh.cordis.profile import load_optional_patches, load_overlay_patches, home_patch_path
+    combined_patches = []
+    user_patch_file = home_patch_path()
+    if os.path.isfile(user_patch_file):
+        combined_patches.extend(load_optional_patches(user_patch_file))
+
+    if patch_file:
+        combined_patches.extend(load_overlay_patches(patch_file))
+
+    loader.load_preset_file(preset_file, ctx, patches=combined_patches if combined_patches else None)
 
     return ctx

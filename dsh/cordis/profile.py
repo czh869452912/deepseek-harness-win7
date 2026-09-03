@@ -41,25 +41,24 @@ def home_patch_path(dsh_home: Optional[str] = None) -> str:
 def load_optional_patches(filepath: str) -> List[Dict[str, Any]]:
     """
     Load a list of patches from a YAML file if it exists, otherwise return [].
-    Handles !!js and standard YAML entries safely.
+    Throws if file exists but is malformed, unreadable, or not a top-level array of mappings.
     """
-    if not os.path.isfile(filepath):
+    if not os.path.exists(filepath):
         return []
     try:
         with open(filepath, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
-        if isinstance(data, list):
-            return data
-        elif isinstance(data, dict):
-            if "patches" in data and isinstance(data["patches"], list):
-                return data["patches"]
-            elif "plugins" in data and isinstance(data["plugins"], list):
-                return data["plugins"]
-            return [data]
-        return []
     except Exception as e:
-        sys.stderr.write(f"[Cordis Profile Warning] Failed to parse patch file {filepath}: {e}\n")
+        raise ValueError(f"failed to read patches {filepath}: {e}")
+
+    if data is None:
         return []
+    if not isinstance(data, list):
+        raise ValueError(f"patches in {filepath} must be a top-level YAML array of loader patch entries")
+    for idx, entry in enumerate(data):
+        if not isinstance(entry, dict):
+            raise ValueError(f"patch entry {idx + 1} in {filepath} must be a mapping")
+    return data
 
 
 def load_overlay_patches(filepath: str) -> List[Dict[str, Any]]:
@@ -202,6 +201,9 @@ def prepare_profile(name: str, dsh_home: Optional[str] = None, user_layer: bool 
     """
     Load a resolved profile for `name` from $DSH_HOME/profiles/<name> or built-ins.
     """
+    if not name or "/" in name or "\\" in name or name in (".", "..", "node_modules"):
+        raise ValueError(f"dsh: invalid profile name {name!r}")
+
     home = dsh_home or resolve_dsh_home()
     profile_dir = os.path.join(home, "profiles", name)
     patch_file = os.path.join(profile_dir, PROFILE_PATCH_FILENAME)
@@ -233,8 +235,7 @@ def prepare_profile(name: str, dsh_home: Optional[str] = None, user_layer: bool 
             bundles=["dsh-base"],
         )
 
-    # Fallback to standard
-    return prepare_profile("standard", dsh_home=home, user_layer=user_layer)
+    raise ValueError(f"dsh: profile {name!r} does not exist; create it with 'dsh plugin --profile {name} add <package>'")
 
 
 class ComposedProfile:
@@ -300,9 +301,9 @@ def compose_profile(
         for pf in patch_files:
             overlays.extend(load_overlay_patches(pf))
 
-    # 4. Check Telemetry
-    all_raw = [*bundle_patches, *profile.patches, *home_patches, *overlays]
-    has_telemetry = any(entry.get("id") == TELEMETRY_ROW_ID for entry in all_raw if isinstance(entry, dict))
+    # 4. Check Telemetry on composed rows matching TS
+    composed_entries = apply_entry_patches(bundle_patches, [*profile.patches, *home_patches, *overlays])
+    has_telemetry = any(entry.get("id") == TELEMETRY_ROW_ID for entry in composed_entries if isinstance(entry, dict))
     tel_patch = resolve_telemetry_patch(os.environ.get("DSH_TELEMETRY_DISABLED"), has_telemetry)
     if tel_patch:
         overlays.append(tel_patch)

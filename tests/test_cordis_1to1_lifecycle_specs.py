@@ -18,7 +18,7 @@ class AlphaService(Service):
     name = "alpha"
 
     def __init__(self, ctx: Context, version: int = 1):
-        super().__init__(ctx, "alpha")
+        super().__init__(ctx, "alpha", allow_replace=True)
         self.version = version
 
 

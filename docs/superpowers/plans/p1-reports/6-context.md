@@ -40,7 +40,7 @@
   if ... or name in RESERVED_ATTRS:
       raise AttributeError(...)
   ```
-- 修复方案: 在 strict/fallback 解析失败后再对这些名字抛 AttributeError（即把 RESERVED 检查移到解析链末尾作为兜底），或在命中 RESERVED 前先查 `reflect.props`/fiber store——已提供的服务名（如 `session`、`agent`、`status`、`filter`）应可解析；仅真正内部字段（`registry`/`reflect`/`fiber`/`root`/`events`/`logger`/`timer`/`base_url`/`strict_inject` 等）保持保留。特别注意 `filter`：events.py:205 用 `getattr(actual_ctx, "filter", None)` 当过滤钩子，若同名服务被 `set_service` setattr 到 ctx 上会被误当过滤器。
+- 修复方案: 重构 `__getattr__` 解析流水线并精简保留属性：① 从 `RESERVED_ATTRS` 中彻底剔除业务服务名（`session`, `agent`, `status`, `filter` 等），仅保留不可通过动态服务覆盖的真正内部核心基础设施字段（如 `registry`, `reflect`, `fiber`, `root`, `events`, `logger`, `timer`, `_services`, `_parent`）；② 查找顺序调整为：原生属性/类属性优先 -> accessor 属性（`reflect.props`）-> 动态服务解析（`_resolve_strict` / fiber store）-> 仅当上述全未命中时对保留内部字段抛 `AttributeError` 兜底；③ 针对 `filter` 钩子，统一使用内部私有属性 `_filter_hook` 或通过 `reflect` 隔离查找，避免服务同名属性冲突。
 
 ### D3 [MUST-FIX] `has()` 语义是“解析值非 None”，TS `in` 是“属性已声明”
 - 位置: py:context.py:153-157 vs ts:reflect.ts:199-205（handler.has）

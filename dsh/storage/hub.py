@@ -36,7 +36,9 @@ class Storage:
         self._facility = DomainFacility(self.ctx, {"backend": "json", "routes": {}}, root_dir=self.root_dir)
         self.mount("domain", self._facility)
 
-        if self.ctx and hasattr(self.ctx, "provide"):
+        if self.ctx and hasattr(self.ctx, "set_service"):
+            self.ctx.set_service("storageDomain", self._facility)
+        elif self.ctx and hasattr(self.ctx, "provide"):
             self.ctx.provide("storageDomain", self._facility)
 
     def mount(self, form_name: str, facility: Any) -> Callable[[], None]:
@@ -94,4 +96,3 @@ class StoragePlugin(Plugin):
         root_dir = self.config.get("root") if self.config else None
         svc = Storage(ctx, root_dir=root_dir)
         ctx.set_service("storage", svc)
-        ctx.provide("storageDomain", svc.domain)

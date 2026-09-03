@@ -66,7 +66,7 @@ def test_interpolate_nested_structures():
 
     interpolated = interpolate(ctx, cfg)
     assert interpolated["server"]["port"] == 8080
-    assert interpolated["server"]["tag"] == "port_9090"
-    assert interpolated["server"]["fallback"] == "default_val"
+    assert interpolated["server"]["tag"] == "port_${DSH_INTERPOLATE_PORT}"
+    assert interpolated["server"]["fallback"] == "${DSH_NONEXISTENT_VAR:-default_val}"
     assert interpolated["flags"][0] is True
     assert interpolated["flags"][1] == "static_str"

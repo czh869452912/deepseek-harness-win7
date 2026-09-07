@@ -7,7 +7,7 @@ with security tripwires against bootstrap variable injection.
 import os
 import re
 import sys
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 
 def expand_home_path(path: str) -> str:
@@ -171,6 +171,7 @@ class LaunchEnvironmentSnapshot:
     """
 
     def __init__(self, layers: List[Dict[str, Any]]):
+        self._raw_layers = layers
         self._layers: Dict[str, Dict[str, str]] = {}
         self._paths: Dict[str, str] = {}
 
@@ -184,6 +185,10 @@ class LaunchEnvironmentSnapshot:
             self._layers[src] = folded
             if "path" in layer and layer["path"]:
                 self._paths[src] = layer["path"]
+
+    @property
+    def layers(self) -> List[Dict[str, Any]]:
+        return self._raw_layers
 
     def get_from(self, name: str, sources: Optional[List[str]] = None) -> Optional[LaunchEnvironmentEntry]:
         lookup = name.upper() if sys.platform == "win32" else name
@@ -222,67 +227,25 @@ def launch_environment_of(ctx: Any) -> LaunchEnvironmentSnapshot:
 def read_env_layer(bin_name: str, dir_path: str) -> Optional[Dict[str, Any]]:
     """
     Read and validate a single directory's .env file.
-    Rejects any file declaring bootstrap-only variable names.
+    Delegates to dsh.boot.app_boot._read_env_layer.
     """
-    env_file = os.path.join(dir_path, ".env")
-    if not os.path.isfile(env_file):
-        return None
-
-    try:
-        with open(env_file, "r", encoding="utf-8", errors="replace") as f:
-            content = f.read()
-    except Exception as e:
-        sys.stderr.write(f"[{bin_name} Warning] Failed to read {env_file}: {e}\n")
-        return None
-
-    values = parse_dotenv(content)
-    for name in values.keys():
-        if is_bootstrap_only(name):
-            raise ValueError(
-                f"{bin_name}: {env_file} sets \"{name}\", which only the launching environment may set "
-                f"(it decides how this process starts, where its code and instructions load from, or how it "
-                f"reaches the network); export {name} instead of putting it in a .env file"
-            )
-
-    return {"path": env_file, "values": values}
+    from dsh.boot.app_boot import _read_env_layer
+    return _read_env_layer(bin_name, dir_path)
 
 
 def load_layered_env(
     bin_name: str = "dsh",
     cwd: Optional[str] = None,
     custom_home: Optional[str] = None,
+    warn: Optional[Callable[[str], None]] = None,
 ) -> LaunchEnvironmentSnapshot:
     """
-    Discover and load layered environment snapshot:
-    1. Process environment (os.environ)
-    2. Project directory (.env)
-    3. User home ($DSH_HOME/.env)
+    Discover and load layered environment snapshot.
+    Delegates to canonical implementation in dsh.boot.app_boot.load_layered_env.
     """
-    work_dir = os.path.abspath(cwd or os.getcwd())
-    home_dir = resolve_dsh_home(custom_home)
-
-    inherited = dict(os.environ)
-
-    # 1. Parse both project and user .env files first
-    project_layer = read_env_layer(bin_name, work_dir)
-    user_layer = None
-    if os.path.normcase(home_dir) != os.path.normcase(work_dir):
-        user_layer = read_env_layer(bin_name, home_dir)
-
-    # 2. Materialize non-bootstrap entries into os.environ if unset
-    for layer in (project_layer, user_layer):
-        if layer and "values" in layer:
-            for k, v in layer["values"].items():
-                if k not in os.environ:
-                    os.environ[k] = v
-
-    layers: List[Dict[str, Any]] = [{"source": "process", "values": inherited}]
-    if project_layer:
-        layers.append({"source": "project-env", "path": project_layer["path"], "values": project_layer["values"]})
-    if user_layer:
-        layers.append({"source": "user-env", "path": user_layer["path"], "values": user_layer["values"]})
-
-    return LaunchEnvironmentSnapshot(layers)
+    from dsh.boot.app_boot import load_layered_env as _boot_load_layered_env
+    boot_snapshot = _boot_load_layered_env(bin_name=bin_name, cwd=cwd, warn=warn, home=custom_home)
+    return LaunchEnvironmentSnapshot(boot_snapshot.layers)
 
 
 def resolve_layered_config(

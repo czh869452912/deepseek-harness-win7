@@ -90,20 +90,49 @@ def test_t6_ctx_effect_delegates_to_fiber_effect():
 
 
 def test_t7_strict_resolve_order_root_store_accessible():
-    """T7: Plugin child context can resolve root-provided services via strict resolve."""
+    """T7: Plugin child context and grandchild context can resolve root-provided services without inject."""
     root = Context(strict_inject=True)
     root.provide("my_service", "hello_root")
 
-    received = []
+    received_child = []
+    received_grandchild = []
 
-    class ConsumerPlugin(Plugin):
-        name = "consumer"
-        inject = ["my_service"]
+    class GrandchildPlugin(Plugin):
+        name = "grandchild"
+        inject = []
+
+        def apply(self, gc: Context) -> None:
+            received_grandchild.append(gc.my_service)
+
+    class ChildPlugin(Plugin):
+        name = "child"
+        inject = []
 
         def apply(self, c: Context) -> None:
-            received.append(c.my_service)
+            received_child.append(c.my_service)
+            c.plugin(GrandchildPlugin)
 
-    fiber = root.plugin(ConsumerPlugin)
+    fiber = root.plugin(ChildPlugin)
     assert fiber.state == FiberState.ACTIVE
-    assert received == ["hello_root"]
+    assert received_child == ["hello_root"]
+    assert received_grandchild == ["hello_root"]
+
+    # Negative case: Accessing an undeclared service not present in root store raises RuntimeError
+    caught_negative = []
+
+    class NegativePlugin(Plugin):
+        name = "negative"
+        inject = []
+
+        def apply(self, neg_ctx: Context) -> None:
+            try:
+                _ = neg_ctx.nonexistent_service
+            except RuntimeError as e:
+                caught_negative.append(str(e))
+
+    neg_fiber = root.plugin(NegativePlugin)
+    assert neg_fiber.state == FiberState.ACTIVE
+    assert len(caught_negative) == 1
+    assert "cannot get property 'nonexistent_service' without inject" in caught_negative[0]
+
 

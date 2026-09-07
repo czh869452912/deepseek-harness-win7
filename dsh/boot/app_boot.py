@@ -148,6 +148,30 @@ class LaunchEnvironmentSnapshot:
     # camelCase alias
     getFrom = get_from
 
+    @property
+    def layers(self) -> List[Dict[str, Any]]:
+        return self._layers
+
+
+class OverlayNotFoundError(RuntimeError, FileNotFoundError):
+    """Raised when an overlay patch file does not exist."""
+    pass
+
+
+class ConfigFileNotFoundError(RuntimeError, FileNotFoundError):
+    """Raised when a base configuration file does not exist."""
+    pass
+
+
+class PatchParseError(RuntimeError, ValueError):
+    """Raised when patch parsing fails due to syntax error or invalid top-level shape."""
+    pass
+
+
+class BootstrapEnvError(RuntimeError, ValueError):
+    """Raised when an env file attempts to set a bootstrap-only variable."""
+    pass
+
 
 def _read_env_layer(
     bin_name: str,
@@ -178,7 +202,7 @@ def _read_env_layer(
     values = parse_dotenv(content)
     for name in values.keys():
         if is_bootstrap_only(name):
-            raise RuntimeError(
+            raise BootstrapEnvError(
                 f'{bin_name}: {path} sets "{name}", which only the launching environment may set '
                 f"(it decides how this process starts, where its code and instructions load from, or how it reaches the network); "
                 f"export {name} instead of putting it in a .env file"
@@ -190,14 +214,15 @@ def load_layered_env(
     bin_name: str,
     cwd: Optional[str] = None,
     warn: Optional[Callable[[str], None]] = None,
+    home: Optional[str] = None,
 ) -> LaunchEnvironmentSnapshot:
     """Load inherited > cwd/.env > $DSH_HOME/.env environment snapshot."""
-    home = resolve_dsh_home()
+    home_dir = home or resolve_dsh_home()
     base_cwd = os.path.abspath(cwd or os.getcwd())
     inherited = dict(os.environ)
 
     project_layer = _read_env_layer(bin_name, base_cwd, warn)
-    user_layer = None if home == base_cwd else _read_env_layer(bin_name, home, warn)
+    user_layer = None if os.path.normcase(home_dir) == os.path.normcase(base_cwd) else _read_env_layer(bin_name, home_dir, warn)
 
     for layer in (project_layer, user_layer):
         if layer is not None:
@@ -240,14 +265,14 @@ def _parse_patch_list(bin_name: str, filepath: str, content: str, label: str) ->
     try:
         parsed = yaml.safe_load(content)
     except Exception as e:
-        raise RuntimeError(f"{bin_name}: failed to parse {label} {filepath}: {e}")
+        raise PatchParseError(f"{bin_name}: failed to parse {label} {filepath}: {e}")
     if parsed is None:
         return []
     if not isinstance(parsed, list):
-        raise RuntimeError(f"{bin_name}: {label} {filepath} must be a top-level YAML array of loader patch entries")
+        raise PatchParseError(f"{bin_name}: {label} {filepath} must be a top-level YAML array of loader patch entries")
     for index, entry in enumerate(parsed):
         if not isinstance(entry, dict):
-            raise RuntimeError(f"{bin_name}: {label} entry {index + 1} in {filepath} must be a mapping (a loader patch entry)")
+            raise PatchParseError(f"{bin_name}: {label} entry {index + 1} in {filepath} must be a mapping (a loader patch entry)")
     return _anchor_inserted_plugin_names(parsed, filepath)
 
 
@@ -256,24 +281,24 @@ def load_optional_patches(bin_name: str, filepath: str) -> Optional[List[Dict[st
     if not os.path.exists(filepath):
         return None
     if os.path.isdir(filepath):
-        raise RuntimeError(f"{bin_name}: failed to read patches {filepath}: Is a directory")
+        raise PatchParseError(f"{bin_name}: failed to read patches {filepath}: Is a directory")
     try:
         with open(filepath, "r", encoding="utf-8") as f:
             content = f.read()
     except Exception as e:
-        raise RuntimeError(f"{bin_name}: failed to read patches {filepath}: {e}")
+        raise PatchParseError(f"{bin_name}: failed to read patches {filepath}: {e}")
     return _parse_patch_list(bin_name, filepath, content, "patches")
 
 
 def load_overlay_patches(bin_name: str, filepath: str) -> List[Dict[str, Any]]:
     """Load a required overlay patch list; throws if file does not exist."""
     if not os.path.exists(filepath) or os.path.isdir(filepath):
-        raise RuntimeError(f"{bin_name}: failed to read overlay {filepath}: file not found or is a directory")
+        raise OverlayNotFoundError(f"{bin_name}: failed to read overlay {filepath}: file not found or is a directory")
     try:
         with open(filepath, "r", encoding="utf-8") as f:
             content = f.read()
     except Exception as e:
-        raise RuntimeError(f"{bin_name}: failed to read overlay {filepath}: {e}")
+        raise OverlayNotFoundError(f"{bin_name}: failed to read overlay {filepath}: {e}")
     return _parse_patch_list(bin_name, filepath, content, "overlay")
 
 
@@ -285,20 +310,20 @@ def render_config_dump(
 ) -> str:
     """Render offline configuration composition with layer provenance comments matching TS renderConfigDump."""
     if not os.path.exists(absolute_config_path):
-        raise RuntimeError(f"{bin_name}: failed to read config {absolute_config_path}: file not found")
+        raise ConfigFileNotFoundError(f"{bin_name}: failed to read config {absolute_config_path}: file not found")
     try:
         with open(absolute_config_path, "r", encoding="utf-8") as f:
             content = f.read()
     except Exception as e:
-        raise RuntimeError(f"{bin_name}: failed to read config {absolute_config_path}: {e}")
+        raise ConfigFileNotFoundError(f"{bin_name}: failed to read config {absolute_config_path}: {e}")
 
     try:
         parsed = yaml.safe_load(content)
     except Exception as e:
-        raise RuntimeError(f"{bin_name}: failed to parse config {absolute_config_path}: {e}")
+        raise PatchParseError(f"{bin_name}: failed to parse config {absolute_config_path}: {e}")
 
     if not isinstance(parsed, list):
-        raise RuntimeError(f"{bin_name}: config {absolute_config_path} must be a top-level YAML array of entries")
+        raise PatchParseError(f"{bin_name}: config {absolute_config_path} must be a top-level YAML array of entries")
 
     base_label = os.path.basename(absolute_config_path)
     base = parsed
@@ -425,25 +450,95 @@ async def mount_root_include(
         "config": include_config,
     }
     include_id = await loader.create(root_include)
+    loader = ctx.get("loader")
+    if loader is None:
+        return None
     entry = loader.resolve(include_id)
     if entry is not None:
         _bootstrap_includes[ctx] = entry
     return entry
 
 
-_assembled_activation_rejections: Dict[Any, int] = {}
+class AssembledRejectionTracker:
+    """Weakref-backed tracker for activation rejection reasons to prevent memory leaks."""
+    def __init__(self) -> None:
+        self._weak_counts: Any = weakref.WeakKeyDictionary()
+        self._strong_counts: Dict[Any, int] = {}
+
+    def retain(self, reason: Any) -> None:
+        try:
+            count = self._weak_counts.get(reason, 0)
+            self._weak_counts[reason] = count + 1
+        except TypeError:
+            count = self._strong_counts.get(reason, 0)
+            self._strong_counts[reason] = count + 1
+
+    def release(self, reason: Any) -> None:
+        try:
+            count = self._weak_counts.get(reason)
+            if count is not None:
+                if count <= 1:
+                    self._weak_counts.pop(reason, None)
+                else:
+                    self._weak_counts[reason] = count - 1
+                return
+        except TypeError:
+            pass
+        count = self._strong_counts.get(reason)
+        if count is not None:
+            if count <= 1:
+                self._strong_counts.pop(reason, None)
+            else:
+                self._strong_counts[reason] = count - 1
+
+    def __contains__(self, reason: Any) -> bool:
+        try:
+            if reason in self._weak_counts:
+                return True
+        except TypeError:
+            pass
+        return reason in self._strong_counts
+
+    def get(self, reason: Any, default: Any = None) -> Any:
+        try:
+            if reason in self._weak_counts:
+                return self._weak_counts[reason]
+        except TypeError:
+            pass
+        return self._strong_counts.get(reason, default)
+
+    def pop(self, reason: Any, default: Any = None) -> Any:
+        try:
+            if reason in self._weak_counts:
+                return self._weak_counts.pop(reason)
+        except TypeError:
+            pass
+        return self._strong_counts.pop(reason, default)
+
+    def __getitem__(self, reason: Any) -> int:
+        try:
+            if reason in self._weak_counts:
+                return self._weak_counts[reason]
+        except TypeError:
+            pass
+        return self._strong_counts[reason]
+
+    def __setitem__(self, reason: Any, value: int) -> None:
+        try:
+            self._weak_counts[reason] = value
+        except TypeError:
+            self._strong_counts[reason] = value
+
+
+_assembled_activation_rejections: AssembledRejectionTracker = AssembledRejectionTracker()
 
 
 def retain_assembled_rejection(reason: Any) -> None:
-    _assembled_activation_rejections[reason] = _assembled_activation_rejections.get(reason, 0) + 1
+    _assembled_activation_rejections.retain(reason)
 
 
 def release_assembled_rejection(reason: Any) -> None:
-    count = _assembled_activation_rejections.get(reason)
-    if count is None or count <= 1:
-        _assembled_activation_rejections.pop(reason, None)
-    else:
-        _assembled_activation_rejections[reason] = count - 1
+    _assembled_activation_rejections.release(reason)
 
 
 def install_fail_loud(

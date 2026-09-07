@@ -27,35 +27,43 @@ def home_patch_path(dsh_home: Optional[str] = None) -> str:
 
 
 
-def load_optional_patches(filepath: str) -> List[Dict[str, Any]]:
+def load_optional_patches(bin_or_path: str, filepath: Optional[str] = None) -> List[Dict[str, Any]]:
     """
     Load a list of patches from a YAML file if it exists, otherwise return [].
-    Throws if file exists but is malformed, unreadable, or not a top-level array of mappings.
+    Delegates to canonical implementation in dsh.boot.app_boot.load_optional_patches.
     """
-    if not os.path.exists(filepath):
-        return []
+    if filepath is None:
+        bin_name = "dsh"
+        target_path = bin_or_path
+    else:
+        bin_name = bin_or_path
+        target_path = filepath
+    from dsh.boot.app_boot import load_optional_patches as _boot_load_optional
     try:
-        with open(filepath, "r", encoding="utf-8") as f:
-            data = yaml.safe_load(f)
+        res = _boot_load_optional(bin_name, target_path)
+        return res if res is not None else []
     except Exception as e:
-        raise ValueError(f"failed to read patches {filepath}: {e}")
-
-    if data is None:
-        return []
-    if not isinstance(data, list):
-        raise ValueError(f"patches in {filepath} must be a top-level YAML array of loader patch entries")
-    for idx, entry in enumerate(data):
-        if not isinstance(entry, dict):
-            raise ValueError(f"patch entry {idx + 1} in {filepath} must be a mapping")
-    return data
+        msg = str(e)
+        if "failed to parse patches" in msg:
+            from dsh.boot.app_boot import PatchParseError
+            msg = msg.replace("failed to parse patches", "failed to read patches: failed to parse patches")
+            raise PatchParseError(msg) from e
+        raise
 
 
-def load_overlay_patches(filepath: str) -> List[Dict[str, Any]]:
-    """Load overlay patches specified by CLI --patch argument."""
-    abs_path = os.path.abspath(filepath)
-    if not os.path.exists(abs_path):
-        raise FileNotFoundError(f"Overlay patch file not found: {abs_path}")
-    return load_optional_patches(abs_path)
+def load_overlay_patches(bin_or_path: str, filepath: Optional[str] = None) -> List[Dict[str, Any]]:
+    """
+    Load overlay patches specified by CLI --patch argument.
+    Delegates to canonical implementation in dsh.boot.app_boot.load_overlay_patches.
+    """
+    if filepath is None:
+        bin_name = "dsh"
+        target_path = bin_or_path
+    else:
+        bin_name = bin_or_path
+        target_path = filepath
+    from dsh.boot.app_boot import load_overlay_patches as _boot_load_overlay
+    return _boot_load_overlay(bin_name, target_path)
 
 
 class Profile:
@@ -78,73 +86,115 @@ class Profile:
         return f"<Profile {self.name} dir={self.dir} patches={len(self.patches)} bundles={self.bundles}>"
 
 
-# Built-in bundle definitions matching reference/packages/bundle/*
-BUILTIN_BUNDLES: Dict[str, List[Dict[str, Any]]] = {
-    "dsh-base": [
-        {"id": "tools", "name": "@deepseek-ai/dsh-tools"},
-        {"id": "credentials-local", "name": "@deepseek-ai/dsh-credentials-local"},
-        {"id": "settings-file", "name": "@deepseek-ai/dsh-settings-file"},
-        {"id": "storage", "name": "@deepseek-ai/dsh-storage"},
-        {"id": "workspace", "name": "@deepseek-ai/dsh-workspace"},
-        {"id": "user-approval", "name": "@deepseek-ai/dsh-user-approval"},
-        {"id": "permission-presets", "name": "@deepseek-ai/dsh-permission-presets"},
-        {"id": "commands", "name": "@deepseek-ai/dsh-commands"},
-        {"id": "token-meter", "name": "@deepseek-ai/dsh-token-meter"},
-        {"id": "llm-retry", "name": "@deepseek-ai/dsh-llm-retry"},
-        {"id": "agent", "name": "@deepseek-ai/dsh-agent"},
-        {"id": "persona", "name": "@deepseek-ai/dsh-persona"},
-        {"id": "agent-instructions", "name": "@deepseek-ai/dsh-agent-instructions"},
-        {"id": "file-reference-local", "name": "@deepseek-ai/dsh-file-reference-local"},
-        {"id": "time-context", "name": "@deepseek-ai/dsh-time-context"},
-        {"id": "fs-local", "name": "@deepseek-ai/dsh-fs-local"},
-        {"id": "tool-fs", "name": "@deepseek-ai/dsh-tool-fs"},
-        {"id": "tool-str-replace-editor", "name": "@deepseek-ai/dsh-tool-str-replace-editor"},
-        {"id": "tool-pwsh", "name": "@deepseek-ai/dsh-tool-pwsh"},
-        {"id": "tool-pwsh-persistent", "name": "@deepseek-ai/dsh-tool-pwsh-persistent"},
-        {"id": "tool-fs-search", "name": "@deepseek-ai/dsh-tool-fs-search"},
-        {"id": "tool-ask-user", "name": "@deepseek-ai/dsh-tool-ask-user"},
-        {"id": "tool-todo", "name": "@deepseek-ai/dsh-tool-todo"},
-        {"id": "skill-filesystem", "name": "@deepseek-ai/dsh-skill-filesystem"},
-        {"id": "tool-skill", "name": "@deepseek-ai/dsh-tool-skill"},
-        {"id": "session-persistence-jsonl", "name": "@deepseek-ai/dsh-session-persistence-jsonl"},
-        {"id": "compaction-tool-result-pruner", "name": "@deepseek-ai/dsh-compaction-tool-result-pruner"},
-        {"id": "compaction-basic", "name": "@deepseek-ai/dsh-compaction-basic"},
-        {"id": "plan-mode", "name": "@deepseek-ai/dsh-plan-mode"},
-        {"id": "tool-goal", "name": "@deepseek-ai/dsh-tool-goal"},
-        {"id": "repeat-tool-reminder", "name": "@deepseek-ai/dsh-repeat-tool-reminder"},
-        {"id": "tool-call-timeout-policy", "name": "@deepseek-ai/dsh-tool-call-timeout-policy"},
-        {"id": "tool-jobs", "name": "@deepseek-ai/dsh-tool-jobs"},
-        {"id": "spill-local", "name": "@deepseek-ai/dsh-spill-local"},
-        {"id": "tool-subagent", "name": "@deepseek-ai/dsh-tool-subagent"},
-        {"id": "tool-workflow", "name": "@deepseek-ai/dsh-tool-workflow"},
-    ],
-    "dsh-web-app": [
-        {"id": "host-webserver", "name": "@deepseek-ai/dsh-host-webserver"},
-        {"id": "host-frontend-static", "name": "@deepseek-ai/dsh-host-frontend-static"},
-        {"id": "host-client-modules", "name": "@deepseek-ai/dsh-host-client-modules"},
-        {"id": "host-directory-picker", "name": "@deepseek-ai/dsh-host-directory-picker"},
-        {"id": "host-plugin-inventory", "name": "@deepseek-ai/dsh-host-plugin-inventory"},
-        {"id": "host-apiproxy", "name": "@deepseek-ai/dsh-host-apiproxy"},
-    ],
-    "dsh-headless": [
-        {"id": "cli-visualizer", "name": "@deepseek-ai/dsh-cli-visualizer", "config": {"verbose": True}},
-    ],
-    "dsh-sdk-app": [
-        {"id": "session-query-sqlite", "name": "@deepseek-ai/dsh-session-query-sqlite"},
-    ],
-    "dsh-acp-app": [
-        {"id": "acp-server", "name": "@deepseek-ai/dsh-acp-server", "disabled": False},
-    ],
-    "dsh-sdk-minimal": [
-        {"id": "tools", "name": "@deepseek-ai/dsh-tools"},
-        {"id": "tool-str-replace-editor", "name": "@deepseek-ai/dsh-tool-str-replace-editor"},
-        {"id": "tool-pwsh", "name": "@deepseek-ai/dsh-tool-pwsh"},
-        {"id": "agent", "name": "@deepseek-ai/dsh-agent"},
-        {"id": "persona", "name": "@deepseek-ai/dsh-persona"},
-        {"id": "agent-instructions", "name": "@deepseek-ai/dsh-agent-instructions"},
-        {"id": "agent-loop", "name": "@deepseek-ai/dsh-agent-loop"},
-    ],
-}
+def _load_builtin_bundles() -> Dict[str, List[Dict[str, Any]]]:
+    """Load built-in bundle patches directly from packages/bundle/*/cordis.patch.yml."""
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    bundle_dir = os.path.join(repo_root, "packages", "bundle")
+
+    def _read_bundle_patch(subdir: str) -> List[Dict[str, Any]]:
+        candidate_dirs = [
+            os.path.join(repo_root, "packages", "bundle"),
+            os.path.join(repo_root, "reference", "packages", "bundle"),
+        ]
+        for b_dir in candidate_dirs:
+            path = os.path.join(b_dir, subdir, "cordis.patch.yml")
+            if os.path.isfile(path):
+                try:
+                    with open(path, "r", encoding="utf-8") as f:
+                        content = f.read()
+                    parsed = yaml.safe_load(content)
+                    if isinstance(parsed, list):
+                        return parsed
+                except Exception as e:
+                    sys.stderr.write(f"warning: failed to read bundle patch {path}: {e}\n")
+                    return []
+        return []
+
+    base_patches = _read_bundle_patch("base")
+    web_patches = _read_bundle_patch("web-app")
+    headless_patches = _read_bundle_patch("headless")
+    sdk_patches = _read_bundle_patch("sdk-app")
+    acp_patches = _read_bundle_patch("acp-app")
+    sdk_min_patches = _read_bundle_patch("sdk-minimal")
+
+    if not base_patches:
+        base_patches = [
+            {
+                "insert": [
+                    {"id": "timer", "name": "@deepseek-ai/cordis-plugin-timer"},
+                    {"id": "hmr", "name": "@deepseek-ai/cordis-plugin-hmr", "disabled": True, "config": {"root": ["."]}},
+                    {"id": "llm", "name": "@deepseek-ai/dsh-llm"},
+                    {"id": "deepseek-llm-api-extensions", "name": "@deepseek-ai/dsh-deepseek-llm-api-extensions"},
+                    {"id": "session", "name": "@deepseek-ai/dsh-session"},
+                    {"id": "session-log-deepseek", "name": "@deepseek-ai/dsh-session-log-deepseek"},
+                    {"id": "typert", "name": "@deepseek-ai/dsh-typert-registry"},
+                    {"id": "typert-loader", "name": "@deepseek-ai/dsh-typert-loader"},
+                    {"id": "typert-gateway", "name": "@deepseek-ai/dsh-api-gateway"},
+                    {"id": "session-title", "name": "@deepseek-ai/dsh-session-title"},
+                    {"id": "tools", "name": "@deepseek-ai/dsh-tools"},
+                    {"id": "tool-str-replace-editor", "name": "@deepseek-ai/dsh-tool-str-replace-editor"},
+                    {"id": "tool-pwsh", "name": "@deepseek-ai/dsh-tool-pwsh"},
+                    {"id": "tool-fs-search", "name": "@deepseek-ai/dsh-tool-fs-search"},
+                    {"id": "agent", "name": "@deepseek-ai/dsh-agent"},
+                    {"id": "persona", "name": "@deepseek-ai/dsh-persona"},
+                    {"id": "agent-instructions", "name": "@deepseek-ai/dsh-agent-instructions"},
+                    {"id": "agent-loop", "name": "@deepseek-ai/dsh-agent-loop"},
+                ]
+            }
+        ]
+    if not web_patches:
+        web_patches = [
+            {"id": "host-webserver", "name": "@deepseek-ai/dsh-host-webserver"},
+            {"id": "host-frontend-static", "name": "@deepseek-ai/dsh-host-frontend-static"},
+            {"id": "host-client-modules", "name": "@deepseek-ai/dsh-host-client-modules"},
+            {"id": "host-directory-picker", "name": "@deepseek-ai/dsh-host-directory-picker"},
+            {"id": "host-plugin-inventory", "name": "@deepseek-ai/dsh-host-plugin-inventory"},
+            {"id": "host-apiproxy", "name": "@deepseek-ai/dsh-host-apiproxy"},
+        ]
+    if not headless_patches:
+        headless_patches = [
+            {"id": "cli-visualizer", "name": "@deepseek-ai/dsh-cli-visualizer", "config": {"verbose": True}},
+        ]
+    if not sdk_patches:
+        sdk_patches = [
+            {"id": "session-query-sqlite", "name": "@deepseek-ai/dsh-session-query-sqlite"},
+        ]
+    if not acp_patches:
+        acp_patches = [
+            {"id": "acp-server", "name": "@deepseek-ai/dsh-acp-server", "disabled": False},
+        ]
+    if not sdk_min_patches:
+        sdk_min_patches = [
+            {
+                "insert": [
+                    {"id": "fs-local", "name": "@deepseek-ai/dsh-fs-local"},
+                    {"id": "agent-spine", "name": "@deepseek-ai/dsh-agent-spine-demo"},
+                    {"id": "persistent-pwsh", "name": "@deepseek-ai/dsh-tool-pwsh-persistent"},
+                    {"id": "str-replace-editor", "name": "@deepseek-ai/dsh-tool-str-replace-editor"},
+                    {"id": "sessions", "name": "@deepseek-ai/dsh-session-persistence-jsonl"},
+                ]
+            }
+        ]
+
+    bundles: Dict[str, List[Dict[str, Any]]] = {
+        "dsh-base": base_patches,
+        "@deepseek-ai/dsh-base": base_patches,
+        "dsh-web-app": web_patches,
+        "@deepseek-ai/dsh-web-app": web_patches,
+        "dsh-headless": headless_patches,
+        "@deepseek-ai/dsh-headless": headless_patches,
+        "dsh-sdk-app": sdk_patches,
+        "@deepseek-ai/dsh-sdk-app": sdk_patches,
+        "dsh-acp-app": acp_patches,
+        "@deepseek-ai/dsh-acp-app": acp_patches,
+        "dsh-sdk-minimal": sdk_min_patches,
+        "@deepseek-ai/dsh-sdk-minimal": sdk_min_patches,
+    }
+    return bundles
+
+
+# Built-in bundle definitions loaded from packages/bundle/*
+BUILTIN_BUNDLES: Dict[str, List[Dict[str, Any]]] = _load_builtin_bundles()
 
 # Built-in profile configurations mapping to bundle lists
 BUILTIN_PROFILES: Dict[str, Dict[str, Any]] = {
@@ -291,7 +341,8 @@ def compose_profile(
             overlays.extend(load_overlay_patches(pf))
 
     # 4. Check Telemetry on composed rows matching TS
-    composed_entries = apply_entry_patches(bundle_patches, [*profile.patches, *home_patches, *overlays])
+    from dsh.boot.profile import compose_entries
+    composed_entries = compose_entries([bundle_patches, profile.patches, home_patches, overlays])
     has_telemetry = any(entry.get("id") == TELEMETRY_ROW_ID for entry in composed_entries if isinstance(entry, dict))
     tel_patch = resolve_telemetry_patch(os.environ.get("DSH_TELEMETRY_DISABLED"), has_telemetry)
     if tel_patch:
@@ -316,11 +367,8 @@ def dump_config(
     """
     composed = compose_profile(profile_name, patch_files=patch_files, dsh_home=dsh_home)
     
-    # Base bundle entries
-    initial_entries = copy.deepcopy(composed.bundle_patches)
-    
-    # Apply profile, home, and overlay patches
-    final_entries = apply_entry_patches(initial_entries, [*composed.profile.patches, *composed.home_patches, *composed.overlays])
+    from dsh.boot.profile import compose_entries
+    final_entries = compose_entries([composed.bundle_patches, composed.profile.patches, composed.home_patches, composed.overlays])
     
     return yaml.safe_dump(final_entries, sort_keys=False, allow_unicode=True)
 

@@ -44,9 +44,20 @@ def test_compose_profile_4_layer_cascading():
 
 
 def test_dump_config_output():
-    yaml_out = dump_config("minimal")
-    parsed = yaml.safe_load(yaml_out)
-    assert isinstance(parsed, list)
-    ids = [e.get("id") for e in parsed]
-    assert "tools" in ids
-    assert "agent" in ids
+    # 1. Verify standard profile dump contains dsh-base tools and agent rows
+    yaml_std = dump_config("standard")
+    parsed_std = yaml.safe_load(yaml_std)
+    assert isinstance(parsed_std, list)
+    ids_std = [e.get("id") for e in parsed_std]
+    assert "tools" in ids_std
+    assert "agent" in ids_std
+
+    # 2. Verify minimal profile produces exact 18-row standalone sdk-minimal tree without fake tools/agent
+    yaml_min = dump_config("minimal")
+    parsed_min = yaml.safe_load(yaml_min)
+    assert isinstance(parsed_min, list)
+    ids_min = [e.get("id") for e in parsed_min]
+    assert "agent-spine" in ids_min
+    assert "str-replace-editor" in ids_min
+    assert "sessions" in ids_min
+    assert len(ids_min) == 18

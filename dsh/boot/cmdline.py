@@ -165,8 +165,8 @@ class Command:
         self._name = val
         return self
 
-    def exit_override(self) -> "Command":
-        self._exit_override = True
+    def exit_override(self, fn: Optional[Callable[[Any], None]] = None) -> "Command":
+        self._exit_override = fn if fn is not None else True
         return self
 
     exitOverride = exit_override
@@ -228,7 +228,12 @@ class Command:
         if not message.endswith("\n"):
             message += "\n"
         self._write_err(message)
-        raise CommanderError("commander.error", exit_code, message)
+        err = CommanderError("commander.error", exit_code, message)
+        if callable(self._exit_override):
+            self._exit_override(err)
+        elif not self._exit_override:
+            sys.exit(exit_code)
+        raise err
 
     def output_help(self) -> None:
         lines = [f"Usage: {self._name or 'program'} [options]"]
@@ -258,10 +263,16 @@ class Command:
 
         if "-h" in argv or "--help" in argv:
             self.output_help()
-            raise CommanderError("commander.help", 0, "help")
+            err = CommanderError("commander.help", 0, "help")
+            if callable(self._exit_override):
+                self._exit_override(err)
+            elif not self._exit_override:
+                sys.exit(0)
+            raise err
 
         idx = 0
         parsed: Dict[str, Any] = {}
+        operands: List[str] = []
         while idx < len(argv):
             arg = argv[idx]
             if arg.startswith("--"):
@@ -303,12 +314,27 @@ class Command:
                         return
                     self.error(f"error: unknown command '{arg}'")
                 else:
-                    pass
+                    operands.append(arg)
             idx += 1
 
         self._parsed_opts = parsed
+        self.args = operands
         if self._action_handler is not None:
-            self._action_handler()
+            import inspect
+            try:
+                sig = inspect.signature(self._action_handler)
+                param_count = len(sig.parameters)
+            except Exception:
+                param_count = 0
+            if param_count == 0:
+                self._action_handler()
+            elif param_count == 1:
+                if self._arguments and operands:
+                    self._action_handler(operands[0])
+                else:
+                    self._action_handler(parsed)
+            else:
+                self._action_handler(*operands, parsed, self)
 
 
 def is_commander_error(error: Any) -> bool:

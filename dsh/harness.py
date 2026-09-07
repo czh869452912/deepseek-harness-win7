@@ -102,6 +102,9 @@ def build_harness(
         ctx.plugin(SessionQueryPlugin, config={"path": ":memory:", "open_at": "never"})
     ctx.plugin(AgentLoopPlugin)
 
+    # Note: WebService is provided unconditionally on the root context so that plugins
+    # with strict inject requirements (e.g. tool-web declaring inject=["web"]) can cleanly
+    # resolve the service across both CLI and Web execution modes.
     from dsh.web.web_service import WebService
     ctx.set_service("web", WebService())
 

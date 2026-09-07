@@ -185,41 +185,13 @@ class Context:
         """
         if self.fiber:
             return self.fiber.effect(setup_or_disposer, label=label)
-
-        if not callable(setup_or_disposer):
-            return lambda: None
-
-        self._effects.append(setup_or_disposer)
-        disposed = False
-
-        def cancel_effect() -> None:
-            nonlocal disposed
-            if disposed:
-                return
-            disposed = True
-            if setup_or_disposer in self._effects:
-                self._effects.remove(setup_or_disposer)
-            try:
-                res = setup_or_disposer()
-                if inspect.isawaitable(res):
-                    try:
-                        loop = asyncio.get_running_loop()
-                        loop.create_task(res)
-                    except RuntimeError:
-                        pass
-            except Exception as e:
-                if hasattr(self, "logger"):
-                    self.logger("context").warn("Exception in cancel_effect '%s': %s", label, e)
-                else:
-                    sys.stderr.write(f"[Cordis Context Error] Exception in cancel_effect '{label}': {e}\n")
-
-        return cancel_effect
+        raise RuntimeError("cannot register effect on context without fiber")
 
     def disposable(self, disposer: Callable[[], Any], label: str = "") -> Callable[[], None]:
         """Register a pre-existing teardown/disposer function directly as a fiber effect."""
         if self.fiber:
             return self.fiber.effect(disposer, label=label, is_disposer=True)
-        return self.effect(disposer, label=label)
+        raise RuntimeError("cannot register disposable on context without fiber")
 
     def on(self, event_name: str, handler: Callable[..., Any], prepend: bool = False, global_listener: bool = False) -> Callable[[], None]:
         """
@@ -390,18 +362,8 @@ class Context:
             except RuntimeError:
                 asyncio.run(self.fiber.dispose())
 
-        while self._effects:
-            effect_func = self._effects.pop()
-            try:
-                res = effect_func()
-                if inspect.isawaitable(res):
-                    try:
-                        loop = asyncio.get_running_loop()
-                        loop.create_task(res)
-                    except RuntimeError:
-                        pass
-            except Exception:
-                pass
+        if self._effects:
+            self._effects.clear()
 
     dispose = teardown
 
@@ -459,7 +421,7 @@ class Context:
             def _resolve_strict():
                 curr_fiber = getattr(self, "_shadow_fiber", None) or self.fiber
                 key = getattr(self, "_isolated_keys", {}).get(name, name)
-                while curr_fiber is not None and getattr(curr_fiber, "runtime", None) is not None:
+                while curr_fiber is not None:
                     impl = getattr(curr_fiber, "store", {}).get(name) if getattr(curr_fiber, "store", None) else None
                     if impl is not None:
                         from dsh.cordis.utils import get_traceable
@@ -467,12 +429,14 @@ class Context:
                         return get_traceable(self, val)
                     if name in getattr(curr_fiber, "inject", {}):
                         raise RuntimeError(f"cannot get required service '{name}' in inactive context")
+                    if not getattr(curr_fiber, "runtime", None):
+                        raise err
                     parent_ctx = getattr(curr_fiber, "parent", None)
                     if not parent_ctx:
-                        break
+                        raise err
                     parent_key = getattr(parent_ctx, "_isolated_keys", {}).get(name, name)
                     if parent_key != key:
-                        break
+                        raise err
                     curr_fiber = getattr(parent_ctx, "fiber", None)
                 raise err
 

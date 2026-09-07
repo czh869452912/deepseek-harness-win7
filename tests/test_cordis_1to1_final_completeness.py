@@ -98,13 +98,19 @@ def test_strict_inject_default_and_plugin_context_enforcement():
         def __init__(self, val="hello"):
             self.val = val
 
-    root_ctx.set_service("serviceA", ServiceA())
+    from dsh.cordis.plugin import Plugin
+
+    class ServiceAProvider(Plugin):
+        name = "service-a-provider"
+        def apply(self, c: Context):
+            c.provide("serviceA", ServiceA())
+
+    root_ctx.plugin(ServiceAProvider)
 
     # Root context allows access
     assert root_ctx.serviceA.val == "hello"
 
     # Plugin without inject cannot access undeclared serviceA via ctx.serviceA
-    from dsh.cordis.plugin import Plugin
     plugin_errors = []
 
     class NoInjectPlugin(Plugin):

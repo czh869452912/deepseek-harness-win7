@@ -109,6 +109,22 @@ def test_load_layered_env_success():
         assert user_entry.source == "user-env"
 
 
+def test_layered_env_case_fold_same_directory():
+    """Verify on Windows that case-differing paths for cwd and home are treated as the same directory."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with open(os.path.join(tmpdir, ".env"), "w", encoding="utf-8") as f:
+            f.write("SAME_DIR_VAR=hello\n")
+
+        cwd_path = os.path.abspath(tmpdir).lower()
+        home_path = os.path.abspath(tmpdir).upper()
+
+        snapshot = load_layered_env(bin_name="dsh", cwd=cwd_path, custom_home=home_path)
+        sources = [layer["source"] for layer in snapshot.layers]
+        assert "user-env" not in sources
+        assert sources == ["process", "project-env"]
+        assert snapshot.get("SAME_DIR_VAR").value == "hello"
+
+
 def test_credentials_precedence_and_shadowing(monkeypatch):
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)

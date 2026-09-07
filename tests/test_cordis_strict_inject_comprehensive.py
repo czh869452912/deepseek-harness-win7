@@ -76,8 +76,14 @@ def test_strict_inject_multiple_dependencies():
 def test_strict_inject_partial_declaration_blocks_undeclared():
     """Plugin declaring alpha but not beta can access alpha but fails on beta."""
     ctx = Context(strict_inject=True)
+
+    class BetaProvider(Plugin):
+        name = "beta-provider"
+        def apply(self, c: Context) -> None:
+            c.provide("beta", BetaService(c))
+
     ctx.set_service("alpha", AlphaService(ctx))
-    ctx.set_service("beta", BetaService(ctx))
+    ctx.plugin(BetaProvider)
 
     class PartialPlugin(Plugin):
         name = "partial-plugin"

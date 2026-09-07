@@ -38,7 +38,13 @@ def test_strict_inject_disabled_allows_undeclared_service():
 def test_strict_inject_enabled_blocks_undeclared_service():
     """When strict_inject=True, accessing undeclared service raises RuntimeError and fails the fiber."""
     ctx = Context(strict_inject=True)
-    ctx.set_service("dummy", DummyService(ctx))
+
+    class DummyServiceProvider(Plugin):
+        name = "dummy-provider"
+        def apply(self, c: Context) -> None:
+            c.provide("dummy", DummyService(c))
+
+    ctx.plugin(DummyServiceProvider)
 
     class StrictUndeclaredPlugin(Plugin):
         name = "strict-undeclared-plugin"
@@ -60,7 +66,13 @@ def test_strict_inject_enabled_blocks_undeclared_service():
 def test_strict_inject_enabled_allows_declared_service():
     """When strict_inject=True, declaring inject allows accessing the service."""
     ctx = Context(strict_inject=True)
-    ctx.set_service("dummy", DummyService(ctx))
+
+    class DummyServiceProvider(Plugin):
+        name = "dummy-provider"
+        def apply(self, c: Context) -> None:
+            c.provide("dummy", DummyService(c))
+
+    ctx.plugin(DummyServiceProvider)
 
     accessed_val = []
 
@@ -78,7 +90,13 @@ def test_strict_inject_enabled_allows_declared_service():
 def test_strict_inject_enabled_ctx_get_bypasses_for_optional():
     """When strict_inject=True, ctx.get('...', strict=False) safely retrieves optional service."""
     ctx = Context(strict_inject=True)
-    ctx.set_service("dummy", DummyService(ctx))
+
+    class DummyServiceProvider(Plugin):
+        name = "dummy-provider"
+        def apply(self, c: Context) -> None:
+            c.provide("dummy", DummyService(c))
+
+    ctx.plugin(DummyServiceProvider)
 
     accessed_val = []
 

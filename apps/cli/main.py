@@ -13,6 +13,7 @@ if hasattr(sys.stdout, 'reconfigure'):
 
 from dsh.harness import build_harness
 from dsh.cordis.profile import dump_config
+from dsh.boot.app_boot import install_fail_loud
 
 
 def parse_args():
@@ -83,6 +84,8 @@ def parse_args():
 
 
 async def main_async():
+    # Install fail-loud error handler on the active running loop created by asyncio.run
+    install_fail_loud("dsh")
     args = parse_args()
     selected_profile = args.profile or ("web" if args.web else args.mode)
     if selected_profile in ("极简模式",):
@@ -175,6 +178,7 @@ async def main_async():
 
 
 def main():
+    install_fail_loud("dsh")
     try:
         asyncio.run(main_async())
     except KeyboardInterrupt:

@@ -66,3 +66,17 @@ def test_t9_session_query_mounted_dormant():
     sq = ctx.get("session_query")
     assert sq is not None
     assert getattr(sq, "open_at", None) == "never"
+
+
+def test_t10_build_harness_fails_on_plugin_activation_failure(monkeypatch):
+    """T10: build_harness raises RuntimeError if a plugin fails to activate (FAILED state)."""
+    from dsh.fs.tool_str_replace_editor import StrReplaceEditorPlugin
+
+    def bad_apply(self, ctx, config=None):
+        raise RuntimeError("boom during apply")
+
+    monkeypatch.setattr(StrReplaceEditorPlugin, "apply", bad_apply)
+    with pytest.raises(RuntimeError) as exc_info:
+        build_harness(mode="minimal")
+    assert "plugin(s) failed to activate" in str(exc_info.value)
+

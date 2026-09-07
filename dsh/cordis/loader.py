@@ -115,7 +115,15 @@ _orig_choose_scalar_style = yaml.emitter.Emitter.choose_scalar_style
 
 def _dsh_choose_scalar_style(self):
     if getattr(self.event, "tag", None) in ("tag:yaml.org,2002:js", "!!js") and not getattr(self.event, "style", None):
-        return ""
+        if self.analysis is None:
+            self.analysis = self.analyze_scalar(self.event.value)
+        if (not (self.simple_key_context and (self.analysis.empty or self.analysis.multiline))
+            and (self.flow_level and self.analysis.allow_flow_plain
+                or (not self.flow_level and self.analysis.allow_block_plain))):
+            return ""
+        if self.analysis.allow_single_quoted and not (self.simple_key_context and self.analysis.multiline):
+            return "'"
+        return '"'
     return _orig_choose_scalar_style(self)
 
 yaml.emitter.Emitter.choose_scalar_style = _dsh_choose_scalar_style
@@ -356,10 +364,18 @@ def evaluate_expr(ctx: Any, expr: str) -> Any:
     expr_py = expr_py.replace("process.env", "env")
     expr_py = re.sub(r'\(\(\)\s*=>\s*\{\s*throw\s+(?:new\s+)?Error\((.*?)\);?\s*\}\)\(\)', r'(_throw(\1))', expr_py)
 
-    # 2. Handle JS ternary expressions `cond ? val1 : val2` -> `(val1 if cond else val2)`
+    # 2. Handle JS nullish coalescing `a ?? b` -> `_coalesce(a, b)` (must precede ternary)
+    coalesce_re = re.compile(r'([^?]+)\?\?([^?]+)')
+    while coalesce_re.search(expr_py):
+        expr_py = coalesce_re.sub(r'(_coalesce(\1, \2))', expr_py)
+
+    # 3. Handle JS ternary expressions `cond ? val1 : val2` -> `(val1 if cond else val2)`
     ternary_re = re.compile(r'([^\?:]+)\?([^\?:]+):([^\?:]+)')
     while ternary_re.search(expr_py):
         expr_py = ternary_re.sub(r'(\2 if \1 else \3)', expr_py)
+
+    def _coalesce(a: Any, b: Any) -> Any:
+        return b if a is None else a
 
     def _throw(msg: Any) -> Any:
         raise RuntimeError(str(msg))
@@ -374,6 +390,7 @@ def evaluate_expr(ctx: Any, expr: str) -> Any:
         stringify = staticmethod(json.dumps)
 
     scope = {
+        "_coalesce": _coalesce,
         "process": _Process,
         "JSON": _JSON,
         "_throw": _throw,

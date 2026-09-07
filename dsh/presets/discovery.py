@@ -16,13 +16,14 @@ COMPOSITION_FILE = "agent.cordis.yml"
 USER_PRESET_DIR = ".agent-presets"
 
 
+from dsh.cordis.environment import expand_home_path, resolve_dsh_home
+
+
 def _expand_home_path(path: str) -> str:
-    if path.startswith("~"):
-        return os.path.expanduser(path)
     if "$DSH_HOME" in path or "%DSH_HOME%" in path:
-        dsh_home = os.environ.get("DSH_HOME") or os.path.join(os.path.expanduser("~"), ".dsh")
+        dsh_home = resolve_dsh_home()
         path = path.replace("$DSH_HOME", dsh_home).replace("%DSH_HOME%", dsh_home)
-    return os.path.abspath(path)
+    return os.path.abspath(expand_home_path(path))
 
 
 def entry_list_problem(rows: Any, at: str = "") -> Optional[str]:

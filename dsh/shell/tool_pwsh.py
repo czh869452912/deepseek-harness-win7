@@ -24,8 +24,7 @@ MAX_TIMEOUT_MS = 600000
 MAX_OUTPUT_BYTES = 64000
 
 
-def resolve_dsh_home() -> str:
-    return os.environ.get("DSH_HOME") or os.path.join(os.path.expanduser("~"), ".dsh")
+from dsh.cordis.environment import resolve_dsh_home
 
 
 def build_shell_env() -> Dict[str, str]:

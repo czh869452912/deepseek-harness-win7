@@ -333,74 +333,12 @@ def render_config_dump(
 ) -> str:
     """
     Render offline configuration composition with layer provenance comments matching TS renderConfigDump.
-    layers: list of dicts with 'label' and 'patches'.
+    Delegates to canonical implementation in dsh.boot.app_boot.
     """
+    from dsh.boot.app_boot import render_config_dump as _boot_render
     if not os.path.exists(base_config_path):
-        raise FileNotFoundError(f"{bin_name}: failed to read config {base_config_path}")
-
-    with open(base_config_path, "r", encoding="utf-8") as f:
-        content = f.read()
-
-    base_entries = yaml.safe_load(content) or []
-    if not isinstance(base_entries, list):
-        raise ValueError(f"{bin_name}: config {base_config_path} must be a top-level YAML array of entries")
-
-    base_label = os.path.basename(base_config_path)
-    provenance: List[Dict[str, Any]] = [{"origin": base_label, "patchedBy": []} for _ in base_entries]
-
-    composed = copy.deepcopy(base_entries)
-    previous = copy.deepcopy(base_entries)
-
-    for layer in layers:
-        label = layer.get("label", "overlay")
-        raw_patches = layer.get("patches", [])
-        patches = copy.deepcopy(raw_patches)
-
-        # Apply layer patches
-        composed = apply_entry_patches(composed, patches)
-
-        # Track provenance
-        before_len = len(previous)
-        for idx, entry in enumerate(composed):
-            if idx >= before_len:
-                provenance.append({"origin": label, "patchedBy": []})
-            elif idx < len(provenance) and entry != previous[idx]:
-                if label not in provenance[idx]["patchedBy"]:
-                    provenance[idx]["patchedBy"].append(label)
-
-        previous = copy.deepcopy(composed)
-
-    # Group dump by contiguous provenance
-    lines = []
-    current_label = None
-    group: List[Any] = []
-
-    def flush():
-        nonlocal current_label, group
-        if current_label and group:
-            lines.append(f"# == {current_label}")
-            dumped = yaml.safe_dump(group, sort_keys=False, allow_unicode=True).rstrip()
-            lines.append(dumped)
-            group = []
-
-    for entry, prov in zip(composed, provenance):
-        origin = prov["origin"]
-        patched = prov["patchedBy"]
-        if patched:
-            entry_label = f"{origin}, patched by {', '.join(patched)}"
-        else:
-            entry_label = origin
-
-        if current_label is None or entry_label == current_label:
-            current_label = entry_label
-            group.append(entry)
-        else:
-            flush()
-            current_label = entry_label
-            group.append(entry)
-
-    flush()
-    return "\n".join(lines) + "\n"
+        raise FileNotFoundError(f"{bin_name}: failed to read config {base_config_path}: file not found")
+    return _boot_render(bin_name, base_config_path, layers, warn=warn_fn)
 
 
 def resolve_lan_trust(bind_host: str, extra: Optional[List[str]] = None) -> Dict[str, List[str]]:

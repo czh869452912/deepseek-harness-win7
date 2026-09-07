@@ -54,6 +54,19 @@ from dsh.boot.app_boot import (
     heal_profiles_module_fallback,
     healProfilesModuleFallback,
 )
+from dsh.boot.cmdline import (
+    CmdlineArgs,
+    AppReady,
+    Command,
+    CommanderError,
+    internals,
+    provide_cmdline,
+    provideCmdline,
+    parse_cmdline,
+    parseCmdline,
+    exit_on_stdin_end,
+    exitOnStdinEnd,
+)
 
 __all__ = [
     "PROFILES_DIR",
@@ -106,4 +119,15 @@ __all__ = [
     "composeEntries",
     "heal_profiles_module_fallback",
     "healProfilesModuleFallback",
+    "CmdlineArgs",
+    "AppReady",
+    "Command",
+    "CommanderError",
+    "internals",
+    "provide_cmdline",
+    "provideCmdline",
+    "parse_cmdline",
+    "parseCmdline",
+    "exit_on_stdin_end",
+    "exitOnStdinEnd",
 ]

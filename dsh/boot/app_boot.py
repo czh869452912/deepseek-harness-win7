@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 from urllib.parse import urlparse
 from urllib.request import url2pathname
+import weakref
 import yaml
 
 from dsh.cordis.context import Context
@@ -375,7 +376,7 @@ def render_config_dump(
     return "\n".join(lines) + "\n"
 
 
-_bootstrap_includes: Dict[Any, Entry] = {}
+_bootstrap_includes: Any = weakref.WeakKeyDictionary()
 
 
 async def mount_root_include(
@@ -425,7 +426,8 @@ async def mount_root_include(
     }
     include_id = await loader.create(root_include)
     entry = loader.resolve(include_id)
-    _bootstrap_includes[ctx] = entry
+    if entry is not None:
+        _bootstrap_includes[ctx] = entry
     return entry
 
 
@@ -496,8 +498,32 @@ def install_fail_loud(
 
     process_target.on("unhandledRejection", handler)
 
+    loop = None
+    orig_loop_handler = None
+    if proc is None:
+        try:
+            loop = asyncio.get_event_loop()
+            orig_loop_handler = loop.get_exception_handler()
+
+            def _loop_exc_handler(l: Any, context: Dict[str, Any]) -> None:
+                exc = context.get("exception") or context.get("message")
+                handler(exc)
+                if orig_loop_handler:
+                    orig_loop_handler(l, context)
+                else:
+                    l.default_exception_handler(context)
+
+            loop.set_exception_handler(_loop_exc_handler)
+        except Exception:
+            pass
+
     def uninstall():
         process_target.off("unhandledRejection", handler)
+        if loop and not loop.is_closed():
+            try:
+                loop.set_exception_handler(orig_loop_handler)
+            except Exception:
+                pass
 
     return uninstall
 

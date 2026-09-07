@@ -12,13 +12,7 @@ RESERVED_PATH_SEGMENTS = {"", ".", ".."}
 DEFAULT_INSTRUCTION_CANDIDATES = DEFAULT_INSTRUCTION_FILE_CANDIDATES
 
 
-def resolve_dsh_home(dsh_home: Optional[str] = None) -> str:
-    if dsh_home:
-        return os.path.abspath(os.path.expanduser(dsh_home))
-    env_home = os.environ.get("DSH_HOME")
-    if env_home:
-        return os.path.abspath(os.path.expanduser(env_home))
-    return os.path.abspath(os.path.expanduser("~/.dsh"))
+from dsh.cordis.environment import resolve_dsh_home
 
 
 def resolve_instruction_file_candidates(candidates: Optional[List[str]], fallback: List[str]) -> List[str]:

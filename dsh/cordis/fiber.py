@@ -727,27 +727,33 @@ class Fiber:
             res = None
             from dsh.cordis.service import Service
             if hasattr(self.plugin, "apply") and callable(self.plugin.apply):
+                take_two = False
                 try:
                     sig = inspect.signature(self.plugin.apply)
                     params = [p for name, p in sig.parameters.items() if name != "self" and p.kind not in (inspect.Parameter.VAR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)]
                     has_varargs = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
                     if len(params) >= 2 or has_varargs:
-                        res = self.plugin.apply(self.ctx, self.config)
-                    else:
-                        res = self.plugin.apply(self.ctx)
+                        take_two = True
                 except (ValueError, TypeError):
+                    take_two = False
+                if take_two:
+                    res = self.plugin.apply(self.ctx, self.config)
+                else:
                     res = self.plugin.apply(self.ctx)
             elif isinstance(self.plugin, dict) and callable(self.plugin.get("apply")):
                 apply_fn = self.plugin["apply"]
+                take_two = False
                 try:
                     sig = inspect.signature(apply_fn)
                     params = [p for name, p in sig.parameters.items() if name != "self" and p.kind not in (inspect.Parameter.VAR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)]
                     has_varargs = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
                     if len(params) >= 2 or has_varargs:
-                        res = apply_fn(self.ctx, self.config)
-                    else:
-                        res = apply_fn(self.ctx)
+                        take_two = True
                 except (ValueError, TypeError):
+                    take_two = False
+                if take_two:
+                    res = apply_fn(self.ctx, self.config)
+                else:
                     res = apply_fn(self.ctx)
             elif not isinstance(self.plugin, Service) and callable(self.plugin):
                 res = self.plugin(self.ctx, self.config)

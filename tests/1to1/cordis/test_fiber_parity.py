@@ -202,3 +202,21 @@ async def test_t18_root_fiber_dispose_restarts_instead_of_destroying():
     await root_fiber.dispose()
     assert root_fiber.uid == 0
     assert root_fiber.state in (FiberState.ACTIVE, FiberState.LOADING)
+
+
+def test_t19_apply_raising_typeerror_not_retried():
+    """T19: A plugin whose apply raises TypeError executes only once and does not get retried."""
+    ctx = Context()
+    execution_count = [0]
+
+    class BadApplyPlugin(Plugin):
+        name = "bad_apply_plugin"
+
+        def apply(self, c: Context, config: Any = None) -> None:
+            execution_count[0] += 1
+            raise TypeError("internal type error")
+
+    fiber = ctx.plugin(BadApplyPlugin)
+    assert fiber.state == FiberState.FAILED
+    assert execution_count[0] == 1
+

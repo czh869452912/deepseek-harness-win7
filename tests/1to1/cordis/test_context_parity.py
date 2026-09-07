@@ -87,3 +87,23 @@ def test_t6_ctx_effect_delegates_to_fiber_effect():
 
     disposer()
     assert "disposed" in events
+
+
+def test_t7_strict_resolve_order_root_store_accessible():
+    """T7: Plugin child context can resolve root-provided services via strict resolve."""
+    root = Context(strict_inject=True)
+    root.provide("my_service", "hello_root")
+
+    received = []
+
+    class ConsumerPlugin(Plugin):
+        name = "consumer"
+        inject = ["my_service"]
+
+        def apply(self, c: Context) -> None:
+            received.append(c.my_service)
+
+    fiber = root.plugin(ConsumerPlugin)
+    assert fiber.state == FiberState.ACTIVE
+    assert received == ["hello_root"]
+

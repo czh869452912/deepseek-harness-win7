@@ -377,14 +377,17 @@ class RegistryService:
             inject = inject_dict
 
             def apply(self, c: Any, config: Any = None) -> Any:
+                take_two = False
                 try:
                     sig = inspect.signature(callback)
                     params = [p for p in sig.parameters.values() if p.kind not in (inspect.Parameter.VAR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)]
                     has_varargs = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
                     if len(params) >= 2 or has_varargs:
-                        return callback(c, config)
+                        take_two = True
                 except (ValueError, TypeError):
-                    pass
+                    take_two = False
+                if take_two:
+                    return callback(c, config)
                 return callback(c)
 
         return self.plugin(InjectPlugin())

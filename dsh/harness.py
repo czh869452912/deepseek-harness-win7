@@ -102,6 +102,9 @@ def build_harness(
         ctx.plugin(SessionQueryPlugin, config={"path": ":memory:", "open_at": "never"})
     ctx.plugin(AgentLoopPlugin)
 
+    from dsh.web.web_service import WebService
+    ctx.set_service("web", WebService())
+
     if verbose:
         ctx.plugin(CliVisualizerPlugin, config={"verbose": True})
 
@@ -181,29 +184,46 @@ def build_harness(
         raise FileNotFoundError(f"dsh: failed to read preset at {preset_file}")
 
     # Load and apply patches (user home layer + CLI overlay layer)
-    from dsh.cordis.profile import load_optional_patches, load_overlay_patches, home_patch_path
+    from dsh.boot.app_boot import load_optional_patches, load_overlay_patches
+    from dsh.cordis.profile import home_patch_path
     combined_patches = []
     user_patch_file = home_patch_path()
     if os.path.isfile(user_patch_file):
-        combined_patches.extend(load_optional_patches(user_patch_file))
+        opt = load_optional_patches("dsh", user_patch_file)
+        if opt:
+            combined_patches.extend(opt)
 
     if patch_file:
-        combined_patches.extend(load_overlay_patches(patch_file))
+        if not os.path.exists(patch_file):
+            raise FileNotFoundError(f"dsh: failed to read overlay {patch_file}: file not found")
+        combined_patches.extend(load_overlay_patches("dsh", patch_file))
 
     try:
         loader.load_preset_file(preset_file, ctx, patches=combined_patches if combined_patches else None)
         entries = loader.entries if isinstance(loader.entries, list) else (list(loader.entries()) if callable(loader.entries) else list(loader.store.values()))
-        failed = [
-            entry for entry in entries
-            if getattr(entry, "fiber", None) is None
-            and not getattr(entry, "disabled", False)
-            and not getattr(entry, "options", {}).get("group", False)
-            and getattr(entry, "name", "") not in ("cordis:group", "group")
-            and type(entry).__name__ not in ("EntryGroup",)
-        ]
+        from dsh.cordis.fiber import FiberState
+        failed = []
+        for entry in entries:
+            if getattr(entry, "disabled", False):
+                continue
+            if getattr(entry, "options", {}).get("group", False) or getattr(entry, "name", "") in ("cordis:group", "group") or type(entry).__name__ in ("EntryGroup",):
+                continue
+            fiber = getattr(entry, "fiber", None)
+            name = getattr(entry, "name", getattr(entry, "id", str(entry)))
+            if fiber is None:
+                failed.append(f"{name} (not loaded)")
+            elif fiber.state == FiberState.FAILED:
+                err = getattr(fiber, "error", None)
+                failed.append(f"{name} (activation failed: {err})" if err else f"{name} (activation failed)")
+            elif fiber.state == FiberState.PENDING:
+                missing = [s for s in getattr(fiber, "inject", {}) if getattr(fiber.ctx, "get", lambda _: None)(s) is None]
+                subj = "service" if len(missing) == 1 else "services"
+                missing_str = ", ".join(missing) if missing else "unknown"
+                failed.append(f"{name} (pending waiting for {subj}: {missing_str})")
+            elif fiber.state != FiberState.ACTIVE:
+                failed.append(f"{name} (state {fiber.state})")
         if failed:
-            names = [getattr(e, "name", getattr(e, "id", str(e))) for e in failed]
-            raise RuntimeError(f"plugin(s) failed to activate: {', '.join(names)}")
+            raise RuntimeError(f"plugin(s) failed to activate: {', '.join(failed)}")
     except Exception as exc:
         try:
             if hasattr(ctx, "teardown"):

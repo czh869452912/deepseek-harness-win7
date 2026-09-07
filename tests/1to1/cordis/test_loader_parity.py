@@ -156,3 +156,22 @@ def test_t15_loader_locate_and_exit():
 
     # exit hook callable
     loader.exit()
+
+
+def test_t16_js_expr_scalar_style_quoted_fallback():
+    """T16: !!js scalar style falls back to quotes when plain style contains illegal tokens (e.g. ': ')."""
+    import yaml
+
+    # Plain expression dumps without quotes
+    plain_data = {"key": {"__jsExpr": "a + b"}}
+    dumped_plain = yaml.safe_dump(plain_data)
+    assert "!!js a + b" in dumped_plain
+    assert yaml.safe_load(dumped_plain) == plain_data
+
+    # Ternary expression containing ': ' must fallback to quotes so PyYAML does not fail on scanner error
+    ternary_data = {"key": {"__jsExpr": "a ? b : c"}}
+    dumped_ternary = yaml.safe_dump(ternary_data)
+    assert "!!js 'a ? b : c'" in dumped_ternary or '!!js "a ? b : c"' in dumped_ternary
+    reloaded = yaml.safe_load(dumped_ternary)
+    assert reloaded == ternary_data
+

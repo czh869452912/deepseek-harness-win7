@@ -204,15 +204,22 @@ def test_d13_d14_compose_error_and_build_outer_stack():
         received_info.append(info)
         raise ValueError("test error")
 
-    with pytest.raises(ValueError):
-        compose_error(action)
+    getter_0 = build_outer_stack(offset=0)
+    getter_1 = build_outer_stack(offset=1)
+    stack_0 = getter_0()
+    stack_1 = getter_1()
+    assert isinstance(stack_0, list)
+    assert isinstance(stack_1, list)
+    assert len(stack_0) - len(stack_1) == 1
+    assert stack_0[:-1] == stack_1
+
+    with pytest.raises(ValueError) as exc:
+        compose_error(action, get_outer_stack=getter_1)
 
     assert len(received_info) == 1
     assert "offset" in received_info[0]
-
-    getter = build_outer_stack(offset=1)
-    stack = getter()
-    assert isinstance(stack, list)
+    assert hasattr(exc.value, "_outer_stack")
+    assert exc.value._outer_stack == stack_1
 
 
 def test_d15_is_object_slots_instance():
@@ -261,9 +268,16 @@ def test_d17_cosmokit_misc_helpers():
     assert is_plain_object([1, 2]) is False
     assert is_plain_object(None) is False
 
-    assert trim_slash("/foo/bar/") == "foo/bar"
-    assert trim_slash("///foo///") == "foo"
-    assert sanitize("foo/../bar") == "bar"
+    from dsh.cordis.utils import format_property
+    assert trim_slash("/foo/bar/") == "/foo/bar"
+    assert trim_slash("///foo///") == "///foo//"
+    assert trim_slash("foo/bar") == "foo/bar"
+    assert sanitize("foo/bar/") == "/foo/bar"
+    assert sanitize("/foo/bar") == "/foo/bar"
+
+    assert format_property("foo") == ".foo"
+    assert format_property("foo-bar") == '["foo-bar"]'
+    assert format_property(0) == "[0]"
 
 
 def test_plugin_metadata_and_apply_signature():

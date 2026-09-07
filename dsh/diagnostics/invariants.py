@@ -83,6 +83,8 @@ class InvariantRegistry(Service):
                     pass
             self.registrations.discard(package_name)
 
-        if hasattr(ctx, "effect"):
-            return ctx.effect(disposer, label=f'invariants.register("{package_name}")')
+        if hasattr(ctx, "disposable"):
+            return ctx.disposable(disposer, label=f'invariants.register("{package_name}")')
+        elif hasattr(ctx, "effect"):
+            return ctx.effect(lambda: disposer, label=f'invariants.register("{package_name}")')
         return disposer

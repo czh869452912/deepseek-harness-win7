@@ -991,7 +991,7 @@ class SessionStore:
         session = prep.session
         detach = self.enter(session)
         if self.ctx:
-            self.ctx.effect(detach)
+            self.ctx.disposable(detach, label="session.detach")
 
         try:
             self.announce(session)

@@ -30,8 +30,10 @@ class CommandRegistry:
             if cmd_name in self._commands and self._commands[cmd_name] == cmd:
                 del self._commands[cmd_name]
 
-        if hasattr(self.ctx, "effect"):
-            self.ctx.effect(disposer)
+        if hasattr(self.ctx, "disposable"):
+            self.ctx.disposable(disposer, label="commands.register")
+        elif hasattr(self.ctx, "effect"):
+            self.ctx.effect(lambda: disposer)
         return disposer
 
     def has(self, name: str) -> bool:

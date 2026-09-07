@@ -96,3 +96,19 @@ def test_t2_load_optional_patches_fail_loud():
     finally:
         if os.path.exists(valid_file):
             os.remove(valid_file)
+
+
+def test_t7_resolve_telemetry_patch():
+    """T7: resolve_telemetry_patch checks composed rows, returning patch only when env is set and row exists."""
+    from dsh.cordis.profile import resolve_telemetry_patch, TELEMETRY_ROW_ID
+
+    # 1. No env var set -> returns None
+    assert resolve_telemetry_patch(None, True) is None
+    assert resolve_telemetry_patch("", True) is None
+
+    # 2. Env var set, but telemetry row not present -> returns None
+    assert resolve_telemetry_patch("1", False) is None
+
+    # 3. Env var set and telemetry row present -> returns disabling patch
+    patch = resolve_telemetry_patch("1", True)
+    assert patch == {"id": TELEMETRY_ROW_ID, "disabled": True}

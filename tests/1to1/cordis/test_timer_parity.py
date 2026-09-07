@@ -93,3 +93,79 @@ async def test_d3_interval_callback_non_blocking_coroutine():
     disposer()
 
     assert len(tick_times) >= 3
+
+
+@pytest.mark.asyncio
+async def test_d4_throttle_immediate_fires_after_dispose():
+    """T5 (D4): Immediate execution path (remaining <= 0) still fires after dispose, trailing suppressed."""
+    ctx = Context()
+    calls = []
+
+    def cb(val):
+        calls.append(val)
+
+    fn = ctx.throttle(cb, 30)
+    fn("first")
+    assert calls == ["first"]
+
+    await asyncio.sleep(0.06)
+    # Dispose fiber / throttled function
+    fn.dispose()
+
+    # Immediate call (remaining <= 0 since 60ms > 30ms) still runs
+    fn("after_dispose_immediate")
+    assert calls == ["first", "after_dispose_immediate"]
+
+    # Trailing call within delay is suppressed after dispose
+    fn("trailing_suppressed")
+    await asyncio.sleep(0.06)
+    assert calls == ["first", "after_dispose_immediate"]
+
+
+@pytest.mark.asyncio
+async def test_d5_timeout_future_rejects_on_dispose():
+    """T6 (D5): ctx.timeout(delay) future rejects with RuntimeError on fiber dispose."""
+    ctx = Context()
+    fut = ctx.timeout(200)
+
+    # Dispose fiber while timeout future is pending
+    await ctx.fiber.dispose()
+
+    with pytest.raises(RuntimeError) as exc_info:
+        await fut
+    assert "Context has been disposed" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_d5_no_loop_timeout_effect_cancellation():
+    """T7 (D5): No-loop timeout fallback registers cancellable effect."""
+    ctx = Context()
+    # Simulate no running loop by invoking with loop=None logic directly
+    timer_svc = ctx.get("timer")
+    coro = timer_svc.timeout(50, ctx=ctx)
+
+    # Dispose context before running coroutine
+    await ctx.fiber.dispose()
+
+    with pytest.raises(RuntimeError) as exc_info:
+        await coro
+    assert "Context has been disposed" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_d4_throttle_no_trailing():
+    """T8: throttle with no_trailing=True suppresses trailing invocation."""
+    ctx = Context()
+    calls = []
+
+    def cb(val):
+        calls.append(val)
+
+    fn = ctx.throttle(cb, 50, no_trailing=True)
+    fn(1)
+    fn(2)  # within 50ms window
+    assert calls == [1]
+
+    await asyncio.sleep(0.08)
+    # Trailing call was not scheduled
+    assert calls == [1]

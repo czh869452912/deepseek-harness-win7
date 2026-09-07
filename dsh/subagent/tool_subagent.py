@@ -186,4 +186,7 @@ class ToolSubagentPlugin(Plugin):
             if callable(disposer4): disposer4()
             if callable(disposer5): disposer5()
 
-        ctx.effect(cleanup)
+        if hasattr(ctx, "disposable"):
+            ctx.disposable(cleanup, label="tool_subagent.cleanup")
+        elif hasattr(ctx, "effect"):
+            ctx.effect(lambda: cleanup)

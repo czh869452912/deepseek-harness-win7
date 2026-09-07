@@ -39,11 +39,14 @@ class Service:
     original = ServiceSymbols.original
     shadow = ServiceSymbols.shadow
 
+    provide: Optional[Any] = None
     provide_name: Optional[str] = None
 
     def __init__(self, ctx: Any, name: Optional[str] = None, allow_replace: bool = False):
         self.ctx = ctx
-        resolved_name = name or getattr(self, "provide_name", None) or getattr(self, "name", None)
+        resolved_name = name or getattr(self, "provide", None) or getattr(self, "provide_name", None) or getattr(self, "name", None)
+        if isinstance(resolved_name, (list, tuple)) and resolved_name:
+            resolved_name = resolved_name[0]
         if not resolved_name:
             cls_name = self.__class__.__name__.lower()
             if cls_name.endswith("service"):
@@ -104,9 +107,8 @@ class Service:
         Service isolation filter matching TS Service[symbols.filter].
         Checks whether target context has the same isolation label for this service.
         """
-        target_isolate = getattr(ctx, "_isolated_keys", {}) if ctx else {}
-        self_isolate = getattr(self.ctx, "_isolated_keys", {}) if self.ctx else {}
-        return target_isolate.get(self.name) == self_isolate.get(self.name)
+        from dsh.cordis.utils import get_isolate_symbol
+        return get_isolate_symbol(ctx, self.name) == get_isolate_symbol(self.ctx, self.name)
 
     def _extend(self, props: Optional[Dict[str, Any]] = None) -> Any:
         """

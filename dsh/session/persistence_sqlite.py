@@ -257,4 +257,7 @@ class SqliteSessionPersistencePlugin(Plugin):
             asyncio.create_task(persistence.append(sid, [event]))
 
         ctx.on("session/event", on_session_event)
-        ctx.effect(persistence.close)
+        if hasattr(ctx, "disposable"):
+            ctx.disposable(persistence.close, label="persistence_sqlite.close")
+        elif hasattr(ctx, "effect"):
+            ctx.effect(lambda: persistence.close)

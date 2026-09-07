@@ -98,20 +98,51 @@ async def test_d3_waterfall_inner_receives_all_args():
     assert captured["next_callable"] is True
 
 
+def test_d2_permitted_deviation_reducer():
+    """D2 Permitted Deviation: Non-next listeners returning non-None act as reducers in waterfall."""
+    ctx = Context()
+
+    def step1(data):
+        return f"{data}_step1"
+
+    def step2(data):
+        return f"{data}_step2"
+
+    ctx.on("test.reduce", step1)
+    ctx.on("test.reduce", step2)
+
+    res = ctx.waterfall_sync("test.reduce", "init")
+    assert res == "init_step1_step2"
+
+
 def test_d5_internal_listener_prepend_unshift():
     """ts:cordis/events.ts:140-146 - prepend option in internal/update uses unshift."""
     ctx = Context()
     order = []
 
-    ctx.on("internal/update", lambda cfg, no_save, n=None: order.append("first"), prepend=False)
-    ctx.on("internal/update", lambda cfg, no_save, n=None: order.append("prepended"), prepend=True)
+    def first_listener(cfg, no_save, n=None):
+        order.append("first")
+        if n and callable(n):
+            return n(cfg, no_save)
+
+    def prepended_listener(cfg, no_save, n=None):
+        order.append("prepended")
+        if n and callable(n):
+            return n(cfg, no_save)
+
+    ctx.on("internal/update", first_listener, prepend=False)
+    ctx.on("internal/update", prepended_listener, prepend=True)
 
     fiber_hooks = ctx.fiber._hooks.get("internal/update")
     assert fiber_hooks is not None
-    # Verify prepended listener is first in DisposableList
+    # Verify prepended listener is strictly first in DisposableList by function identity
     items = list(fiber_hooks)
-    # The last unshifted item should be first
-    assert items[0].__name__ == "<lambda>"
+    assert getattr(items[0], "__wrapped__", items[0]) is prepended_listener
+    assert getattr(items[1], "__wrapped__", items[1]) is first_listener
+
+    # Verify execution order: prepended listener executes first
+    ctx.emit("internal/update", {}, False)
+    assert order == ["prepended", "first"]
 
 
 def test_d7_bail_error_propagation_not_swallowed():

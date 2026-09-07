@@ -12,23 +12,12 @@ import yaml
 
 from dsh.cordis.context import Context
 from dsh.cordis.loader import apply_entry_patches, sort_keys, js_constructor
+from dsh.cordis.environment import resolve_dsh_home
 
 
 PROFILE_ROOT_FILENAME = "cordis.yml"
 PROFILE_PATCH_FILENAME = "cordis.patch.yml"
 TELEMETRY_ROW_ID = "session-telemetry-otel"
-
-
-def resolve_dsh_home() -> str:
-    """
-    Resolve the DeepSeek Harness home directory.
-    Respects $DSH_HOME environment variable, fallback to ~/.dsh.
-    """
-    env_home = os.environ.get("DSH_HOME")
-    if env_home and env_home.strip():
-        return os.path.abspath(env_home.strip())
-    user_home = os.path.expanduser("~")
-    return os.path.abspath(os.path.join(user_home, ".dsh"))
 
 
 def home_patch_path(dsh_home: Optional[str] = None) -> str:
@@ -333,8 +322,7 @@ def dump_config(
     # Apply profile, home, and overlay patches
     final_entries = apply_entry_patches(initial_entries, [*composed.profile.patches, *composed.home_patches, *composed.overlays])
     
-    sorted_entries = [sort_keys(dict(e)) for e in final_entries]
-    return yaml.safe_dump(sorted_entries, sort_keys=False, allow_unicode=True)
+    return yaml.safe_dump(final_entries, sort_keys=False, allow_unicode=True)
 
 
 def render_config_dump(

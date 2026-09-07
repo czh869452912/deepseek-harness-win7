@@ -35,9 +35,10 @@ def test_entry_update_failure_restores_previous_state():
     # Attempt to update with invalid config that raises in apply()
     with pytest.raises(ValueError, match="Candidate config failed"):
         entry.update({"config": {"val": 2, "fail": True}})
-    # Fiber transitions to FAILED state upon error, error is captured
-    assert entry.fiber.state == FiberState.FAILED
-    assert entry.fiber.error is not None
+    # Transaction rolls back: previous config and active state are restored
+    assert entry.options.get("config") == {"val": 1, "fail": False}
+    assert ctx.get_service("observed_cfg") == {"val": 1, "fail": False}
+    assert entry.fiber.state == FiberState.ACTIVE
 
 
 def test_ancestor_group_disabled_cascades_to_children():

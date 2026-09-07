@@ -62,8 +62,21 @@ class Include(EntryTree, Service):
 
         self.enable_logs = self.config.get("enableLogs", getattr(parent_tree, "enable_logs", False))
         raw_path = self.config.get("path", "")
-        base_dir = self.ctx.base_url or os.getcwd()
-        self.filename = os.path.abspath(os.path.join(base_dir, raw_path))
+        if raw_path.startswith("file://"):
+            import urllib.parse
+            p = urllib.parse.unquote(urllib.parse.urlparse(raw_path).path)
+            if sys.platform == "win32" and p.startswith("/"):
+                p = p[1:]
+            self.filename = os.path.abspath(os.path.normpath(p))
+        else:
+            base_dir = self.ctx.base_url or getattr(self.ctx, "baseUrl", None) or os.getcwd()
+            if base_dir.startswith("file://"):
+                import urllib.parse
+                p = urllib.parse.unquote(urllib.parse.urlparse(base_dir).path)
+                if sys.platform == "win32" and p.startswith("/"):
+                    p = p[1:]
+                base_dir = os.path.normpath(p)
+            self.filename = os.path.abspath(os.path.join(base_dir, raw_path))
 
         ext = os.path.splitext(self.filename)[1].lower()
         if ext not in SUPPORTED_EXTENSIONS:
@@ -74,16 +87,29 @@ class Include(EntryTree, Service):
         self.content: Optional[str] = None
         self.data: Optional[List[Dict[str, Any]]] = None
 
-        self.ctx.base_url = os.path.dirname(self.filename)
+        self.base_url = os.path.dirname(self.filename)
+        self.baseUrl = self.base_url
+        self.ctx.base_url = self.base_url
+        self.ctx.baseUrl = self.base_url
 
-        self._apply_lock = asyncio.Lock()
-        self._write_lock = asyncio.Lock()
+        try:
+            self._apply_lock = asyncio.Lock()
+            self._write_lock = asyncio.Lock()
+        except RuntimeError:
+            try:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                self._apply_lock = asyncio.Lock()
+                self._write_lock = asyncio.Lock()
+            except Exception:
+                self._apply_lock = None
+                self._write_lock = None
         self.pending_write: Optional[List[Dict[str, Any]]] = None
         self._write_task: Optional[asyncio.TimerHandle] = None
 
         async def _on_update(new_config: Any, *args: Any, **kwargs: Any) -> Any:
             next_fn = args[-1] if args and callable(args[-1]) else kwargs.get("next_fn")
-            if isinstance(new_config, dict) and new_config.get("path") != self.config.get("path"):
+            if not isinstance(new_config, dict) or new_config.get("path") != self.config.get("path"):
                 if next_fn and callable(next_fn):
                     res = next_fn()
                     if inspect.isawaitable(res):
@@ -102,7 +128,7 @@ class Include(EntryTree, Service):
             # Short-circuit waterfall matching TS behavior
             return None
 
-        ctx.on("internal/update", _on_update, global_listener=True)
+        ctx.on("internal/update", _on_update)
 
     def apply_patches(self, data: List[Dict[str, Any]], patches: Optional[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
         def _warn(msg: str, *args: Any):
@@ -165,21 +191,19 @@ class Include(EntryTree, Service):
                 raise error
 
         if candidate:
-            patched = self.apply_patches(candidate["data"], self.config.get("patches"))
-            self.root.update(patched)
             self.content = candidate["content"]
             self.data = candidate["data"]
             self.check_access()
+            patched = self.apply_patches(candidate["data"], self.config.get("patches"))
+            res = self.root.update(patched)
+            if inspect.iscoroutine(res):
+                try:
+                    loop = asyncio.get_running_loop()
+                    self._update_task = loop.create_task(res)
+                except RuntimeError:
+                    pass
 
-        # Register teardown disposer
-        def _teardown():
-            try:
-                loop = asyncio.get_running_loop()
-                loop.create_task(self.stop())
-            except RuntimeError:
-                asyncio.run(self.stop())
-
-        yield _teardown
+        yield self.stop
 
     async def stop(self) -> None:
         """Stop child entries and flush pending writes."""
@@ -193,7 +217,9 @@ class Include(EntryTree, Service):
             if not candidate:
                 return
             patched = self.apply_patches(candidate["data"], self.config.get("patches"))
-            self.root.update(patched)
+            res = self.root.update(patched)
+            if inspect.isawaitable(res):
+                await res
             self.content = candidate["content"]
             self.data = candidate["data"]
             self.check_access()

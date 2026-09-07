@@ -190,6 +190,32 @@ def build_harness(
     if patch_file:
         combined_patches.extend(load_overlay_patches(patch_file))
 
-    loader.load_preset_file(preset_file, ctx, patches=combined_patches if combined_patches else None)
+    try:
+        loader.load_preset_file(preset_file, ctx, patches=combined_patches if combined_patches else None)
+        entries = loader.entries if isinstance(loader.entries, list) else (list(loader.entries()) if callable(loader.entries) else list(loader.store.values()))
+        failed = [
+            entry for entry in entries
+            if getattr(entry, "fiber", None) is None
+            and not getattr(entry, "disabled", False)
+            and not getattr(entry, "options", {}).get("group", False)
+            and getattr(entry, "name", "") not in ("cordis:group", "group")
+            and type(entry).__name__ not in ("EntryGroup",)
+        ]
+        if failed:
+            names = [getattr(e, "name", getattr(e, "id", str(e))) for e in failed]
+            raise RuntimeError(f"plugin(s) failed to activate: {', '.join(names)}")
+    except Exception as exc:
+        try:
+            if hasattr(ctx, "teardown"):
+                ctx.teardown()
+            elif hasattr(ctx, "dispose"):
+                ctx.dispose()
+        except Exception:
+            pass
+        if isinstance(exc, (FileNotFoundError, ValueError)) and not str(exc).startswith("dsh:"):
+            raise
+        if str(exc).startswith("dsh:"):
+            raise
+        raise RuntimeError(f"dsh: plugin tree failed to load: {exc}") from exc
 
     return ctx

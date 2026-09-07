@@ -24,7 +24,12 @@ def test_t1_service_duplicate_registration_raises():
     assert ctx.get("my_svc") is not None
 
     with pytest.raises(RuntimeError, match="has been registered"):
-        ctx.plugin(SvcB)
+        ctx.provide("my_svc", object())
+
+    fiber = ctx.plugin(SvcB)
+    assert fiber.state == FiberState.FAILED
+    assert fiber.error is not None
+    assert "has been registered" in str(fiber.error)
 
 
 def test_t2_callable_service_invokes_invoke_method():

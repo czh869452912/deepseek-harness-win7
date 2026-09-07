@@ -1034,34 +1034,28 @@ def _resolve_intersect(data: Any, schema: Schema, opt: Dict[str, Any], strict: b
     if not items:
         return data, None
     res = None
-    all_nullable = True
     for inner in items:
         val = Schema.resolve(data, inner, opt, True)[0]
-        if not is_nullable(val):
-            all_nullable = False
         if is_nullable(val):
             continue
         if is_nullable(res):
-            res = val
+            res = dict(val) if isinstance(val, dict) else val
+        elif isinstance(res, bool) != isinstance(val, bool):
+            raise ValidationError(f"expected {schema} but got {json.dumps(data, default=str)}", opt)
         elif isinstance(res, (int, float)) and isinstance(val, (int, float)):
             if res != val:
                 raise ValidationError(f"expected {schema} but got {json.dumps(data, default=str)}", opt)
-        elif type(res) != type(val) and not (isinstance(res, dict) and isinstance(val, dict)):
+        elif isinstance(res, dict) and isinstance(val, dict):
+            def _merge_dict(target, source):
+                for k, v in source.items():
+                    if k not in target:
+                        target[k] = v
+                    elif isinstance(target[k], dict) and isinstance(v, dict):
+                        _merge_dict(target[k], v)
+            _merge_dict(res, val)
+        elif type(res) != type(val) or res != val:
             raise ValidationError(f"expected {schema} but got {json.dumps(data, default=str)}", opt)
-        elif isinstance(val, dict):
-            if res is None:
-                res = {}
-            for k, v in val.items():
-                if k not in res:
-                    res[k] = v
-                elif isinstance(res[k], dict) and isinstance(v, dict):
-                    sub = dict(v)
-                    sub.update(res[k])
-                    res[k] = sub
-        elif res != val:
-            raise ValidationError(f"expected {schema} but got {json.dumps(data, default=str)}", opt)
-    if all_nullable:
-        return None, None
+
     if not strict and isinstance(data, dict):
         if res is None:
             res = {}

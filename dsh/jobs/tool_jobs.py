@@ -136,5 +136,8 @@ class ToolJobsPlugin(Plugin):
             disposer2()
             disposer3()
 
-        ctx.effect(cleanup)
+        if hasattr(ctx, "disposable"):
+            ctx.disposable(cleanup, label="tool_jobs.cleanup")
+        else:
+            ctx.effect(lambda: cleanup)
 

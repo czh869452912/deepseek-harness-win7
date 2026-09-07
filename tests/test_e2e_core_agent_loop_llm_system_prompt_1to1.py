@@ -215,7 +215,9 @@ async def create_test_context(
     if tool_order is not None:
         prompt_config["toolOrder"] = tool_order
 
-    ctx.plugin(SystemPrompt, config=prompt_config)
+    f_sp = ctx.plugin(SystemPrompt, config=prompt_config)
+    if f_sp.error is not None:
+        raise f_sp.error
     ctx.plugin(AgentPlugin)
     ctx.plugin(AgentLoopPlugin)
 

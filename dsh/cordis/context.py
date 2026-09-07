@@ -28,6 +28,8 @@ class Context:
     filter_symbol: str = "symbols.filter"
     isolate_symbol: str = "symbols.isolate"
     intercept_symbol: str = "symbols.intercept"
+    isolate: str = "symbols.isolate"
+    intercept: str = "symbols.intercept"
 
     @classmethod
     def is_(cls, value: Any) -> bool:
@@ -62,8 +64,8 @@ class Context:
         self._isolated_keys: Dict[str, Any] = {}
         self._intercept_map: Dict[str, Any] = {}
         self._effects: List[Callable[[], Any]] = []
-        self.base_url: Optional[str] = base_url or (parent.base_url if parent else None)
-        self.baseUrl: Optional[str] = self.base_url
+        self._baseUrl: Optional[str] = base_url or (getattr(parent, "baseUrl", None) if parent else None)
+        self.base_url: Optional[str] = self._baseUrl
 
         if strict_inject is not None:
             self.strict_inject: bool = strict_inject
@@ -75,10 +77,10 @@ class Context:
 
         if parent is not None:
             self._event_bus: EventBus = parent._event_bus
-            self.registry: RegistryService = parent.registry
-            self.reflect: ReflectService = parent.reflect
+            self.registry: RegistryService = parent.registry._bind(self) if hasattr(parent.registry, "_bind") else parent.registry
+            self.reflect: ReflectService = parent.reflect._bind(self) if hasattr(parent.reflect, "_bind") else parent.reflect
             self.fiber: Fiber = parent.fiber
-            self.logger: LoggerService = parent.logger
+            self.logger: LoggerService = parent.logger._bind(self) if hasattr(parent.logger, "_bind") else parent.logger
             self.timer: Any = getattr(parent, "timer", None)
         else:
             self._event_bus = EventBus(ctx=self)
@@ -91,6 +93,14 @@ class Context:
             self.reflect.setup_mixins()
             self.fiber._disposables.clear()
             self.fiber._effect_metas.clear()
+
+    @property
+    def parent(self) -> Optional["Context"]:
+        return self._parent
+
+    @parent.setter
+    def parent(self, val: Optional["Context"]) -> None:
+        self._parent = val
 
     @property
     def root(self) -> "Context":
@@ -205,20 +215,38 @@ class Context:
 
         return cancel_effect
 
+    def disposable(self, disposer: Callable[[], Any], label: str = "") -> Callable[[], None]:
+        """Register a pre-existing teardown/disposer function directly as a fiber effect."""
+        if self.fiber:
+            return self.fiber.effect(disposer, label=label, is_disposer=True)
+        return self.effect(disposer, label=label)
+
     def on(self, event_name: str, handler: Callable[..., Any], prepend: bool = False, global_listener: bool = False) -> Callable[[], None]:
         """
         Register an event handler and track its disposer as a fiber effect.
         """
+        if self.fiber:
+            self.fiber.assert_active()
         disposer = self._event_bus.on(event_name, handler, prepend=prepend, global_listener=global_listener, ctx=self)
-        self.effect(disposer, label=f"ctx.on({event_name})")
+        try:
+            self.disposable(disposer, label=f"ctx.on({event_name})")
+        except Exception:
+            disposer()
+            raise
         return disposer
 
     def once(self, event_name: str, handler: Callable[..., Any], prepend: bool = False, global_listener: bool = False) -> Callable[[], None]:
         """
         Register a single-shot event handler and track its disposer as a fiber effect.
         """
+        if self.fiber:
+            self.fiber.assert_active()
         disposer = self._event_bus.once(event_name, handler, prepend=prepend, global_listener=global_listener, ctx=self)
-        self.effect(disposer, label=f"ctx.once({event_name})")
+        try:
+            self.disposable(disposer, label=f"ctx.once({event_name})")
+        except Exception:
+            disposer()
+            raise
         return disposer
 
     def emit(self, event_name: str, *args: Any, **kwargs: Any) -> None:
@@ -297,11 +325,26 @@ class Context:
             })
         return result
 
+    @property
+    def baseUrl(self) -> Optional[str]:
+        if getattr(self, "_baseUrl", None) is not None:
+            return self._baseUrl
+        if getattr(self, "base_url", None) is not None:
+            return self.base_url
+        if getattr(self, "_parent", None) is not None:
+            return getattr(self._parent, "baseUrl", None)
+        return None
+
+    @baseUrl.setter
+    def baseUrl(self, value: Optional[str]) -> None:
+        self._baseUrl = value
+        self.base_url = value
+
     def extend(self, meta: Optional[Dict[str, Any]] = None) -> "Context":
         """
         Create a child context inheriting services and event bus.
         """
-        child = Context(parent=self, is_extension=True, strict_inject=self.strict_inject, base_url=self.base_url)
+        child = Context(parent=self, is_extension=True, strict_inject=self.strict_inject, base_url=self.baseUrl)
         child._isolated_keys = dict(self._isolated_keys)
         child._intercept_map = dict(self._intercept_map)
         if meta:
@@ -394,7 +437,7 @@ class Context:
 
     def __getattr__(self, name: str) -> Any:
         RESERVED_ATTRS = (
-            "registry", "reflect", "fiber", "root", "events", "props", "store", "logger", "timer",
+            "registry", "reflect", "fiber", "entry", "root", "events", "props", "store", "logger", "timer",
             "symbols", "base_url", "baseUrl", "strict_inject", "scope", "is_shadow", "_shadow", "_shadow_fiber",
         )
         if name.startswith("_") or name.startswith("cordis.") or name.startswith("symbols.") or name in RESERVED_ATTRS or name.isdigit():
@@ -448,3 +491,16 @@ class Context:
         if self._parent and name not in self._isolated_keys and hasattr(self._parent, name):
             return getattr(self._parent, name)
         raise AttributeError(f"Context object has no attribute or service '{name}'")
+
+    def __getitem__(self, item: Any) -> Any:
+        if item is Context.isolate or item == getattr(Context, "isolate_symbol", "symbols.isolate") or item == "symbols.isolate":
+            return IsolatedKeysView(self._isolated_keys)
+        if item == getattr(Context, "intercept_symbol", "symbols.intercept") or item == "symbols.intercept":
+            return getattr(self, "_intercept_map", {})
+        raise KeyError(item)
+
+
+class IsolatedKeysView(dict):
+    """Dictionary supporting attribute access matching JS isolate object."""
+    def __getattr__(self, name: str) -> Any:
+        return self.get(name)

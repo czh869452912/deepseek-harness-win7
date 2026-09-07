@@ -316,4 +316,7 @@ class ToolFsSearchPlugin(Plugin):
             disposer1()
             disposer2()
 
-        ctx.effect(cleanup)
+        if hasattr(ctx, "disposable"):
+            ctx.disposable(cleanup, label="tool_fs_search.cleanup")
+        else:
+            ctx.effect(lambda: cleanup)

@@ -68,14 +68,15 @@ def composition_problem(path: str) -> Optional[str]:
         return f"the composition file {COMPOSITION_FILE} cannot be read"
 
     try:
-        # Ignore !!js tags in YAML parse
-        loader = yaml.SafeLoader
+        # Ignore !!js tags in YAML parse using isolated loader
+        class DiscoverySafeLoader(yaml.SafeLoader):
+            pass
         try:
-            loader.add_constructor("tag:yaml.org,2002:js", lambda l, n: l.construct_scalar(n))
-            loader.add_constructor("!!js", lambda l, n: l.construct_scalar(n))
+            DiscoverySafeLoader.add_constructor("tag:yaml.org,2002:js", lambda l, n: l.construct_scalar(n))
+            DiscoverySafeLoader.add_constructor("!!js", lambda l, n: l.construct_scalar(n))
         except Exception:
             pass
-        rows = yaml.load(content, Loader=loader)
+        rows = yaml.load(content, Loader=DiscoverySafeLoader)
     except Exception as e:
         first_line = str(e).split("\n")[0]
         return f"the composition is not valid YAML: {first_line}"

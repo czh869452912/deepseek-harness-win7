@@ -47,6 +47,12 @@ RESERVED_PROPERTIES = {
 }
 
 
+class StoreDict(dict):
+    """Dictionary that returns None for missing keys matching JS object property semantics."""
+    def __getitem__(self, key: Any) -> Any:
+        return self.get(key, None)
+
+
 class ReflectService:
     """
     Reflection layer backing Context service resolution, proxy lookups, accessors, and mixins.
@@ -55,8 +61,14 @@ class ReflectService:
 
     def __init__(self, ctx: Any):
         self.ctx = ctx
-        self.store: Dict[Any, Impl] = {}
+        self.store: Dict[Any, Impl] = StoreDict()
         self.props: Dict[str, Any] = {}
+
+    def _bind(self, ctx: Any) -> "ReflectService":
+        import copy
+        bound = copy.copy(self)
+        bound.ctx = ctx
+        return bound
 
     def setup_mixins(self) -> None:
         """Mixin core service APIs onto context."""
@@ -115,12 +127,9 @@ class ReflectService:
         return _resolve_default()
 
     def _get_impl(self, ctx: Any, name: str, strict: bool = True) -> Optional[Impl]:
-        isolated_map = getattr(ctx, "_isolated_keys", {})
-        if name in isolated_map:
-            key = isolated_map[name]
-            impl = self.store.get(key)
-        else:
-            impl = self.store.get(name)
+        from dsh.cordis.utils import get_isolate_symbol
+        key = get_isolate_symbol(ctx, name) or name
+        impl = self.store.get(key) or self.store.get(name)
         if not impl:
             return None
         if strict and impl.fiber is not None and getattr(impl.fiber, "plugin", None) is not None:
@@ -141,8 +150,8 @@ class ReflectService:
             return def_prop.set(ctx, value, err)
 
         def _do_set():
-            isolated_map = getattr(ctx, "_isolated_keys", {})
-            key = isolated_map.get(name, name)
+            from dsh.cordis.utils import get_isolate_symbol
+            key = get_isolate_symbol(ctx, name) or name
             impl = self.store.get(key) or self.store.get(name)
             if not impl:
                 raise RuntimeError(f"cannot set property '{name}' without provide")
@@ -193,8 +202,12 @@ class ReflectService:
             elif getattr(self.props[name], "type", None) != PropertyType.SERVICE:
                 raise RuntimeError(f"property '{name}' is already declared as {self.props[name].type}")
 
-            isolated_map = getattr(target_ctx, "_isolated_keys", {})
-            key = isolated_map.get(name, name)
+            if hasattr(target_ctx, "root") and hasattr(target_ctx.root, "_isolated_keys"):
+                root_sym = target_ctx.root._isolated_keys.setdefault(name, f"sym:{name}#{id(object())}")
+            else:
+                root_sym = name
+            from dsh.cordis.utils import get_isolate_symbol
+            key = get_isolate_symbol(target_ctx, name) or root_sym
 
             fiber = getattr(target_ctx, "fiber", None)
             if not allow_replace and key in self.store:
@@ -207,7 +220,7 @@ class ReflectService:
             impl = Impl(name=name, fiber=fiber, value=val, check=chk)
 
             self.store[key] = impl
-            target_store = target_ctx if name in isolated_map else (target_ctx.root if hasattr(target_ctx, "root") else target_ctx)
+            target_store = target_ctx if (hasattr(target_ctx, "_isolated_keys") and name in target_ctx._isolated_keys) else (target_ctx.root if hasattr(target_ctx, "root") else target_ctx)
             if hasattr(target_store, "_services"):
                 target_store._services[name] = val
                 setattr(target_store, name, val)
@@ -244,6 +257,7 @@ class ReflectService:
         1:1 Dependency notification matching TS Cordis ReflectService.notify.
         Re-evaluates every registered fiber that requires one of the changed services.
         """
+        from dsh.cordis.utils import get_isolate_symbol
         affected_fibers: List[Any] = []
         if hasattr(self.ctx, "registry"):
             for fiber in self.ctx.registry.list_fibers():
@@ -256,8 +270,8 @@ class ReflectService:
                                 continue
                         else:
                             if fiber_ctx is not None:
-                                target_iso = getattr(fiber_ctx, "_isolated_keys", {}).get(name)
-                                self_iso = getattr(self.ctx, "_isolated_keys", {}).get(name)
+                                target_iso = get_isolate_symbol(fiber_ctx, name)
+                                self_iso = get_isolate_symbol(self.ctx, name)
                                 if target_iso != self_iso:
                                     continue
                         has_update = True
@@ -271,14 +285,15 @@ class ReflectService:
         if hasattr(self.ctx, "emit"):
             for name in names:
                 impl = self._get_impl(self.ctx, name, strict=False)
-                val = impl.value if impl else getattr(self.ctx, name, None)
+                val = impl.value if impl else None
                 child = self.ctx.extend() if hasattr(self.ctx, "extend") else self.ctx
-                child_iso = getattr(self.ctx, "_isolated_keys", {}).get(name)
+                child_iso = get_isolate_symbol(self.ctx, name)
                 child.filter = lambda target_ctx, n=name, iso=child_iso: (
-                    getattr(target_ctx, "_isolated_keys", {}).get(n) == iso
+                    get_isolate_symbol(target_ctx, n) == iso
                 )
                 self.ctx.emit("internal/service", name, val, caller_ctx=child)
         return affected_fibers
+
 
     def accessor(self, name: str, options: Dict[str, Any]) -> Callable[[], None]:
         """
@@ -286,7 +301,9 @@ class ReflectService:
         """
         def setup() -> Callable[[], None]:
             if name in self.props:
-                raise RuntimeError(f"property '{name}' is already declared as {self.props[name].type}")
+                prop_type = getattr(self.props[name], "type", "accessor")
+                type_str = prop_type.value if hasattr(prop_type, "value") else str(prop_type)
+                raise RuntimeError(f"property '{name}' is already declared as {type_str}")
             get_fn = options.get("get")
             set_fn = options.get("set")
             self.props[name] = PropertyAccessor(get_fn, set_fn)
@@ -310,6 +327,9 @@ class ReflectService:
         disposers: List[Callable[[], None]] = []
 
         for src_key, target_key in entries:
+            if target_key in self.props and getattr(self.props[target_key], "type", None) == PropertyType.ACCESSOR:
+                continue
+
             def make_get(s_key: str):
                 def get_fn(ctx_self: Any, err: Exception) -> Any:
                     target_obj = getattr(ctx_self, source) if isinstance(source, str) and hasattr(ctx_self, source) else source

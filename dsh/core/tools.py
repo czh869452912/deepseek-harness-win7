@@ -312,8 +312,10 @@ class ToolsService:
         def disposer():
             self._presentation_mode = "native"
 
-        if hasattr(self.ctx, "effect"):
-            self.ctx.effect(disposer)
+        if hasattr(self.ctx, "disposable"):
+            self.ctx.disposable(disposer, label="tools.presentAs")
+        elif hasattr(self.ctx, "effect"):
+            self.ctx.effect(lambda: disposer)
         return disposer
 
     presentAs = present_as

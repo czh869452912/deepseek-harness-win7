@@ -48,4 +48,7 @@ class ToolRalphPlugin(Plugin):
             "execute": exec_ralph,
         })
 
-        ctx.effect(disposer)
+        if hasattr(ctx, "disposable"):
+            ctx.disposable(disposer, label="tool_ralph.disposer")
+        elif hasattr(ctx, "effect"):
+            ctx.effect(lambda: disposer)

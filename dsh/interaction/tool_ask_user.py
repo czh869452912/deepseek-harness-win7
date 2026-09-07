@@ -129,5 +129,7 @@ class ToolAskUserPlugin(Plugin):
             "execute": exec_ask,
         })
 
-        if hasattr(ctx, "effect"):
-            ctx.effect(disposer)
+        if hasattr(ctx, "disposable"):
+            ctx.disposable(disposer, label="tool_ask_user.disposer")
+        elif hasattr(ctx, "effect"):
+            ctx.effect(lambda: disposer)

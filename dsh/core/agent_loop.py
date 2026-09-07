@@ -1048,4 +1048,7 @@ class AgentLoopPlugin(Plugin):
         if registry:
             registry.set_factory(agent_loop)
 
-        ctx.effect(agent_loop.teardown)
+        if hasattr(ctx, "disposable"):
+            ctx.disposable(agent_loop.teardown, label="agent_loop.teardown")
+        elif hasattr(ctx, "effect"):
+            ctx.effect(lambda: agent_loop.teardown)

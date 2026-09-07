@@ -33,7 +33,7 @@ class CordisError(Exception):
         super().__init__(message or CODE_MESSAGES.get(code, code))
 
 
-def resolve_config(plugin: Any, config: Any) -> Any:
+def resolve_config(plugin: Any, config: Any, runtime: Any = None) -> Any:
     """
     Validate and normalize config for a plugin runtime before it starts matching TS resolveConfig.
     """
@@ -43,6 +43,8 @@ def resolve_config(plugin: Any, config: Any) -> Any:
         config = {}
 
     schema = getattr(plugin, "schema", None) or getattr(plugin, "Config", None)
+    if not schema and runtime is not None:
+        schema = getattr(runtime, "schema", None) or getattr(runtime, "Config", None)
     if not schema:
         return config
 
@@ -99,6 +101,10 @@ class Fiber:
         self._config = config
         self.config = config
         self.entry: Optional[Any] = None
+        if parent_ctx:
+            self.entry = getattr(parent_ctx, "entry", None) or (parent_ctx.get("entry") if hasattr(parent_ctx, "get") else None)
+        if self.entry is not None:
+            self.entry.fiber = self
         self.store: Optional[Dict[str, Any]] = {}
         self._store: Dict[str, Any] = {}
         self.inertia: Optional[asyncio.Future] = None
@@ -124,6 +130,7 @@ class Fiber:
         self._effect_metas: Dict[Any, EffectMeta] = {}
         self._hooks: Dict[str, DisposableList[Any]] = {}
         self._in_flight_effects: Set[asyncio.Task] = set()
+        self._plugin_cls: Optional[Any] = None
 
         if runtime is not None:
             # Plugin Fiber
@@ -132,7 +139,10 @@ class Fiber:
             else:
                 Fiber._uid_counter += 1
                 self.uid = Fiber._uid_counter
-            self.ctx = parent_ctx.extend({"fiber": self}) if parent_ctx else None
+            ext_dict = {"fiber": self}
+            if self.entry is not None:
+                ext_dict["entry"] = self.entry
+            self.ctx = parent_ctx.extend(ext_dict) if parent_ctx else None
             self.state = FiberState.PENDING
             if self.inject and self.ctx:
                 parent_intercept = getattr(parent_ctx, "_intercept_map", {}) if parent_ctx else {}
@@ -197,9 +207,10 @@ class Fiber:
         """Resolve raw plugin config through internal/config waterfall matching TS."""
         if self.ctx and hasattr(self.ctx, "waterfall_sync"):
             config = self.ctx.waterfall_sync("internal/config", config, caller_ctx=self.ctx)
-        return resolve_config(self.plugin, config)
+        target = self.plugin or getattr(self, "_plugin_cls", None) or (self.runtime.callback if self.runtime else None)
+        return resolve_config(target, config, runtime=self.runtime)
 
-    def effect(self, execute_or_disposer: Any, label: str = "anonymous") -> Callable[[], Any]:
+    def effect(self, execute_or_disposer: Any, label: str = "anonymous", is_disposer: bool = False) -> Callable[[], Any]:
         """
         Register a cleanup-aware effect on this fiber.
         Supports functions, generators, async generators, and coroutines.
@@ -332,6 +343,9 @@ class Fiber:
                 try:
                     loop = asyncio.get_running_loop()
                     in_flight_cleanup = loop.create_task(_run_cleanup())
+                    if hasattr(self, "_in_flight_effects"):
+                        self._in_flight_effects.add(in_flight_cleanup)
+                        in_flight_cleanup.add_done_callback(lambda t: self._in_flight_effects.discard(t))
                     return in_flight_cleanup
                 except RuntimeError:
                     for r in async_disposers:
@@ -345,57 +359,74 @@ class Fiber:
         self._effect_metas[cancel_effect] = meta
         self._disposables.push(cancel_effect)
 
-        if callable(execute_or_disposer):
-            fn_name = getattr(execute_or_disposer, "__name__", "")
-            if (
-                fn_name in ("disposer", "_disposer", "cancel_effect", "_cancel_effect", "teardown", "_teardown", "cleanup", "_cleanup", "unregister", "_unregister", "remove", "_remove", "detach", "_detach")
-                or "disposer" in fn_name
-                or "on(" in label
-                or "once(" in label
-                or "systemPrompt." in label
-            ):
+        if is_disposer:
+            if callable(execute_or_disposer):
                 collect_disposer(execute_or_disposer)
-            else:
-                try:
-                    res = execute_or_disposer()
-                    if callable(res):
-                        collect_disposer(res)
-                        if setup_barrier_future and not setup_barrier_future.done():
-                            setup_barrier_future.set_result(res)
-                    elif inspect.isawaitable(res):
-                        async def _await_async_setup(res=res):
-                            try:
-                                cleanup = await res
-                                if callable(cleanup):
-                                    collect_disposer(cleanup)
-                                if setup_barrier_future and not setup_barrier_future.done():
-                                    setup_barrier_future.set_result(cleanup)
-                                return cleanup
-                            except Exception as async_err:
-                                rollback_sync()
-                                if setup_barrier_future and not setup_barrier_future.done():
-                                    setup_barrier_future.set_exception(async_err)
-                                if self.ctx and hasattr(self.ctx, "logger"):
-                                    self.ctx.logger("fiber").error("Exception in async effect '%s': %s", label, async_err)
-                                raise async_err
+            elif execute_or_disposer is not None:
+                raise TypeError("Invalid effect")
+            if setup_barrier_future and not setup_barrier_future.done():
+                setup_barrier_future.set_result(None)
+        elif callable(execute_or_disposer):
+            try:
+                res = execute_or_disposer()
+                if callable(res):
+                    collect_disposer(res)
+                    if setup_barrier_future and not setup_barrier_future.done():
+                        setup_barrier_future.set_result(res)
+                elif inspect.isawaitable(res):
+                    async def _await_async_setup(res=res):
                         try:
-                            loop = asyncio.get_running_loop()
-                            setup_task = loop.create_task(_await_async_setup())
-                            if hasattr(self, "_in_flight_effects"):
-                                self._in_flight_effects.add(setup_task)
-                                setup_task.add_done_callback(lambda t: self._in_flight_effects.discard(t))
-                        except RuntimeError:
-                            pass
-                    elif res is None or isinstance(res, (bool, int, float, str)):
+                            cleanup = await res
+                            if callable(cleanup):
+                                collect_disposer(cleanup)
+                            if setup_barrier_future and not setup_barrier_future.done():
+                                setup_barrier_future.set_result(cleanup)
+                            return cleanup
+                        except Exception as async_err:
+                            rollback_sync()
+                            if setup_barrier_future and not setup_barrier_future.done():
+                                setup_barrier_future.set_exception(async_err)
+                            if self.ctx and hasattr(self.ctx, "logger"):
+                                self.ctx.logger("fiber").error("Exception in async effect '%s': %s", label, async_err)
+                            raise async_err
+                    try:
+                        loop = asyncio.get_running_loop()
+                        setup_task = loop.create_task(_await_async_setup())
+                        if hasattr(self, "_in_flight_effects"):
+                            self._in_flight_effects.add(setup_task)
+                            setup_task.add_done_callback(lambda t: self._in_flight_effects.discard(t))
+                    except RuntimeError:
+                        pass
+                elif res is None:
+                    if setup_barrier_future and not setup_barrier_future.done():
+                        setup_barrier_future.set_result(None)
+                elif inspect.isgenerator(res):
+                    old_epoch = self.epoch
+                    try:
+                        for item in res:
+                            if self.epoch != old_epoch:
+                                try:
+                                    res.close()
+                                except Exception:
+                                    pass
+                                break
+                            if callable(item):
+                                collect_disposer(item)
                         if setup_barrier_future and not setup_barrier_future.done():
                             setup_barrier_future.set_result(None)
-                    elif inspect.isgenerator(res):
-                        old_epoch = self.epoch
+                    except Exception as gen_err:
+                        rollback_sync()
+                        if setup_barrier_future and not setup_barrier_future.done():
+                            setup_barrier_future.set_exception(gen_err)
+                        raise gen_err
+                elif inspect.isasyncgen(res):
+                    old_epoch = self.epoch
+                    async def _consume_async_gen():
                         try:
-                            for item in res:
+                            async for item in res:
                                 if self.epoch != old_epoch:
                                     try:
-                                        res.close()
+                                        await res.aclose()
                                     except Exception:
                                         pass
                                     break
@@ -403,54 +434,42 @@ class Fiber:
                                     collect_disposer(item)
                             if setup_barrier_future and not setup_barrier_future.done():
                                 setup_barrier_future.set_result(None)
-                        except Exception as gen_err:
+                        except Exception as asyncgen_err:
                             rollback_sync()
                             if setup_barrier_future and not setup_barrier_future.done():
-                                setup_barrier_future.set_exception(gen_err)
-                            raise gen_err
-                    elif inspect.isasyncgen(res):
-                        old_epoch = self.epoch
-                        async def _consume_async_gen():
-                            try:
-                                async for item in res:
-                                    if self.epoch != old_epoch:
-                                        try:
-                                            await res.aclose()
-                                        except Exception:
-                                            pass
-                                        break
-                                    if callable(item):
-                                        collect_disposer(item)
-                                if setup_barrier_future and not setup_barrier_future.done():
-                                    setup_barrier_future.set_result(None)
-                            except Exception as asyncgen_err:
-                                rollback_sync()
-                                if setup_barrier_future and not setup_barrier_future.done():
-                                    setup_barrier_future.set_exception(asyncgen_err)
-                                if self.ctx and hasattr(self.ctx, "logger"):
-                                    self.ctx.logger("fiber").error("Exception consuming async generator '%s': %s", label, asyncgen_err)
-                        try:
-                            loop = asyncio.get_running_loop()
-                            setup_task = loop.create_task(_consume_async_gen())
-                            if hasattr(self, "_in_flight_effects"):
-                                self._in_flight_effects.add(setup_task)
-                                setup_task.add_done_callback(lambda t: self._in_flight_effects.discard(t))
-                        except RuntimeError:
-                            pass
-                except Exception as e:
-                    executing = False
-                    setup_failed = True
-                    self._effect_metas.pop(cancel_effect, None)
-                    self._disposables.delete(cancel_effect)
-                    if setup_barrier_future and not setup_barrier_future.done():
-                        setup_barrier_future.set_exception(e)
-                    rollback_sync()
-                    if self.ctx and hasattr(self.ctx, "logger"):
-                        self.ctx.logger("fiber").error("Exception in effect execution '%s': %s", label, e)
-                    raise e
+                                setup_barrier_future.set_exception(asyncgen_err)
+                            if self.ctx and hasattr(self.ctx, "logger"):
+                                self.ctx.logger("fiber").error("Exception consuming async generator '%s': %s", label, asyncgen_err)
+                    try:
+                        loop = asyncio.get_running_loop()
+                        setup_task = loop.create_task(_consume_async_gen())
+                        if hasattr(self, "_in_flight_effects"):
+                            self._in_flight_effects.add(setup_task)
+                            setup_task.add_done_callback(lambda t: self._in_flight_effects.discard(t))
+                    except RuntimeError:
+                        pass
+                else:
+                    raise TypeError("Invalid effect")
+            except Exception as e:
+                executing = False
+                setup_failed = True
+                self._effect_metas.pop(cancel_effect, None)
+                self._disposables.delete(cancel_effect)
+                if setup_barrier_future and not setup_barrier_future.done():
+                    setup_barrier_future.set_exception(e)
+                rollback_sync()
+                if self.ctx and hasattr(self.ctx, "logger"):
+                    self.ctx.logger("fiber").error("Exception in effect execution '%s': %s", label, e)
+                raise e
+        else:
+            raise TypeError("Invalid effect")
         executing = False
 
         return cancel_effect
+
+    def disposable(self, disposer: Callable[[], Any], label: str = "") -> Callable[[], None]:
+        """Register a pure cleanup/teardown disposer on this fiber without executing it at setup."""
+        return self.effect(disposer, label=label, is_disposer=True)
 
     def get_effects(self) -> List[Dict[str, Any]]:
         """Return metadata for currently registered effects."""
@@ -554,16 +573,78 @@ class Fiber:
             self.set_state(FiberState.UNLOADING)
             self._unload()
 
+    def _instantiate_plugin(self) -> Any:
+        cls = getattr(self, "_plugin_cls", None)
+        if cls is None:
+            return self.plugin
+        from dsh.cordis.service import Service
+        from dsh.cordis.plugin import Plugin
+
+        init_fn = getattr(cls, "__init__", None)
+        if init_fn is object.__init__ or init_fn is None:
+            inst = cls()
+            if hasattr(inst, "ctx") and getattr(inst, "ctx", None) is None:
+                inst.ctx = self.ctx
+            return inst
+
+        try:
+            sig = inspect.signature(init_fn)
+            params = [p for name, p in sig.parameters.items() if name != "self" and p.kind not in (inspect.Parameter.VAR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)]
+            param_names = [name for name in sig.parameters.keys() if name != "self"]
+            has_varargs = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
+            has_varkw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
+        except (ValueError, TypeError):
+            params = []
+            param_names = []
+            has_varargs = False
+            has_varkw = False
+
+        if issubclass(cls, Service):
+            if "config" in param_names or ("cfg" in param_names) or has_varkw:
+                return cls(self.ctx, config=self.config)
+            elif len(params) >= 1 or "ctx" in param_names or has_varargs:
+                return cls(self.ctx)
+            else:
+                return cls()
+        elif issubclass(cls, Plugin):
+            if len(params) >= 1 or "config" in param_names or has_varargs or has_varkw:
+                inst = cls(config=self.config)
+            else:
+                inst = cls()
+            inst.ctx = self.ctx
+            return inst
+        else:
+            if len(params) >= 2 or has_varargs or ("ctx" in param_names and "config" in param_names):
+                inst = cls(self.ctx, config=self.config)
+            elif len(params) == 1:
+                p_name = params[0].name
+                if p_name in ("config", "cfg"):
+                    inst = cls(config=self.config)
+                else:
+                    inst = cls(self.ctx)
+            elif has_varkw:
+                inst = cls(self.ctx, config=self.config)
+            else:
+                inst = cls()
+            if hasattr(inst, "ctx") and getattr(inst, "ctx", None) is None:
+                inst.ctx = self.ctx
+            return inst
+
     def _reload(self) -> None:
         """Execute plugin apply and transition to ACTIVE on success."""
         epoch = self.epoch
         try:
             self.store = dict(self._store)
+            if getattr(self, "_plugin_cls", None) is not None:
+                self.plugin = self._instantiate_plugin()
             self.config = self._resolve_config(self._config)
+
             if hasattr(self.plugin, "config"):
                 self.plugin.config = self.config
             if hasattr(self.plugin, "ctx"):
-                self.plugin.ctx = self.ctx
+                from dsh.cordis.loader import EntryTree
+                if not isinstance(self.plugin, EntryTree):
+                    self.plugin.ctx = self.ctx
 
             # 1:1 Execute init hooks and symbols.init matching TS Fiber execute
             init_hooks = getattr(self.plugin, symbols.initHooks, None) or getattr(self.plugin, "_init_hooks", [])
@@ -579,43 +660,137 @@ class Fiber:
 
             if init_fn and callable(init_fn):
                 init_res = init_fn()
-                if inspect.isgenerator(init_res) or inspect.isasyncgen(init_res):
-                    self.effect(lambda r=init_res: r, label=f"init({self.name})")
-                elif inspect.isawaitable(init_res):
+                if inspect.isasyncgen(init_res):
+                    async def _run_async_init(gen=init_res):
+                        try:
+                            async for item in gen:
+                                if callable(item):
+                                    self.disposable(item)
+                            if self.epoch != epoch or self.state in (FiberState.UNLOADING, FiberState.DISPOSED):
+                                self.set_state(FiberState.UNLOADING)
+                                self._unload()
+                                return
+                            self._error = None
+                            self.set_state(FiberState.ACTIVE)
+                        except Exception as e:
+                            self._error = e
+                            self.epoch = INACTIVE_EPOCH
+                            self.set_state(FiberState.FAILED)
+                            if self.ctx and hasattr(self.ctx, "logger"):
+                                self.ctx.logger("fiber").error("Exception during async init in fiber '%s': %s", self.name, e)
+                            self.set_state(FiberState.UNLOADING)
+                            self._unload()
+                            raise e
+
                     try:
                         loop = asyncio.get_running_loop()
-                        loop.create_task(init_res)
+                        self.inertia = loop.create_task(_run_async_init())
+                        return
+                    except RuntimeError:
+                        pass
+                elif inspect.isgenerator(init_res):
+                    for item in init_res:
+                        if callable(item):
+                            self.disposable(item)
+                elif inspect.iscoroutine(init_res):
+                    async def _run_coro_init(coro=init_res):
+                        try:
+                            ret = await coro
+                            if callable(ret):
+                                self.disposable(ret)
+                            if self.epoch != epoch or self.state in (FiberState.UNLOADING, FiberState.DISPOSED):
+                                self.set_state(FiberState.UNLOADING)
+                                self._unload()
+                                return
+                            self._error = None
+                            self.set_state(FiberState.ACTIVE)
+                        except Exception as e:
+                            self._error = e
+                            self.epoch = INACTIVE_EPOCH
+                            self.set_state(FiberState.FAILED)
+                            if self.ctx and hasattr(self.ctx, "logger"):
+                                self.ctx.logger("fiber").error("Exception during coro init in fiber '%s': %s", self.name, e)
+                            self.set_state(FiberState.UNLOADING)
+                            self._unload()
+                            raise e
+
+                    try:
+                        loop = asyncio.get_running_loop()
+                        self.inertia = loop.create_task(_run_coro_init())
+                        return
                     except RuntimeError:
                         pass
 
             if hasattr(self.plugin, "teardown") and callable(self.plugin.teardown):
-                self.effect(self.plugin.teardown, label=f"teardown({self.name})")
+                self.effect(self.plugin.teardown, label=f"teardown({self.name})", is_disposer=True)
 
             res = None
             from dsh.cordis.service import Service
             if hasattr(self.plugin, "apply") and callable(self.plugin.apply):
-                res = self.plugin.apply(self.ctx)
+                try:
+                    sig = inspect.signature(self.plugin.apply)
+                    params = [p for name, p in sig.parameters.items() if name != "self" and p.kind not in (inspect.Parameter.VAR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)]
+                    has_varargs = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
+                    if len(params) >= 2 or has_varargs:
+                        res = self.plugin.apply(self.ctx, self.config)
+                    else:
+                        res = self.plugin.apply(self.ctx)
+                except (ValueError, TypeError):
+                    res = self.plugin.apply(self.ctx)
             elif isinstance(self.plugin, dict) and callable(self.plugin.get("apply")):
-                res = self.plugin["apply"](self.ctx)
+                apply_fn = self.plugin["apply"]
+                try:
+                    sig = inspect.signature(apply_fn)
+                    params = [p for name, p in sig.parameters.items() if name != "self" and p.kind not in (inspect.Parameter.VAR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)]
+                    has_varargs = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
+                    if len(params) >= 2 or has_varargs:
+                        res = apply_fn(self.ctx, self.config)
+                    else:
+                        res = apply_fn(self.ctx)
+                except (ValueError, TypeError):
+                    res = apply_fn(self.ctx)
             elif not isinstance(self.plugin, Service) and callable(self.plugin):
                 res = self.plugin(self.ctx, self.config)
 
-            if inspect.isawaitable(res):
-                async def _async_wait_res():
+            if res is not None:
+                if inspect.isawaitable(res):
+                    async def _async_wait_res():
+                        try:
+                            ret = await res
+                            if callable(ret):
+                                self.disposable(ret)
+                            elif inspect.isgenerator(ret) or inspect.isasyncgen(ret):
+                                self.effect(lambda r=ret: r, label=f"apply({self.name})")
+                            if self.epoch != epoch or self.state in (FiberState.UNLOADING, FiberState.DISPOSED):
+                                self.set_state(FiberState.UNLOADING)
+                                self._unload()
+                                return
+                            self._error = None
+                            self.set_state(FiberState.ACTIVE)
+                        except Exception as e:
+                            self._error = e
+                            self.epoch = INACTIVE_EPOCH
+                            self.set_state(FiberState.FAILED)
+                            if self.ctx and hasattr(self.ctx, "logger"):
+                                self.ctx.logger("fiber").error("Exception during async apply in fiber '%s': %s", self.name, e)
+                            else:
+                                sys.stderr.write(f"[Cordis Fiber Error] Exception during async apply in fiber '{self.name}': {e}\n")
+                            self.set_state(FiberState.UNLOADING)
+                            self._unload()
                     try:
-                        await res
-                        self._error = None
-                        self.set_state(FiberState.ACTIVE)
-                    except Exception as e:
-                        self._error = e
-                        self.epoch = INACTIVE_EPOCH
-                        self.set_state(FiberState.FAILED)
-                try:
-                    loop = asyncio.get_running_loop()
-                    self.inertia = loop.create_task(_async_wait_res())
-                    return
-                except RuntimeError:
-                    asyncio.run(res)
+                        loop = asyncio.get_running_loop()
+                        self.inertia = loop.create_task(_async_wait_res())
+                        return
+                    except RuntimeError:
+                        ret = asyncio.run(res)
+                        if callable(ret):
+                            self.disposable(ret)
+                        elif inspect.isgenerator(ret) or inspect.isasyncgen(ret):
+                            self.effect(lambda r=ret: r, label=f"apply({self.name})")
+                elif inspect.isgenerator(res) or inspect.isasyncgen(res):
+                    self.effect(lambda r=res: r, label=f"apply({self.name})")
+                elif callable(res):
+                    self.disposable(res)
 
             self._error = None
             self.set_state(FiberState.ACTIVE)
@@ -623,6 +798,10 @@ class Fiber:
             self._error = e
             self.epoch = INACTIVE_EPOCH
             self.set_state(FiberState.FAILED)
+            if self.ctx and hasattr(self.ctx, "logger"):
+                self.ctx.logger("fiber").error("Exception during apply in fiber '%s': %s", self.name, e)
+            else:
+                sys.stderr.write(f"[Cordis Fiber Error] Exception during apply in fiber '{self.name}': {e}\n")
 
         if self.epoch != epoch:
             self.set_state(FiberState.UNLOADING)
@@ -726,8 +905,12 @@ class Fiber:
     async def dispose(self) -> None:
         """Dispose this fiber and execute disposers in strict reverse order matching TS fiber.dispose."""
         if self.runtime is None:
-            # Root fiber dispose restarts instead of destroying
-            return await self.restart()
+            self.set_state(FiberState.UNLOADING)
+            self._unload()
+            while self.inertia is not None and not self.inertia.done():
+                await self.inertia
+            self.set_state(FiberState.ACTIVE)
+            return
 
         if self.state in (FiberState.UNLOADING, FiberState.DISPOSED):
             return
@@ -782,8 +965,12 @@ class Fiber:
             self._error = None
             return self.restart()
 
-        if hasattr(self.ctx, "waterfall_sync"):
-            return self.ctx.waterfall_sync("internal/update", resolved_config, no_save, _do_update)
+        if hasattr(self.ctx, "waterfall"):
+            try:
+                loop = asyncio.get_running_loop()
+                return self.ctx.waterfall("internal/update", resolved_config, no_save, _do_update, caller_ctx=self.ctx)
+            except RuntimeError:
+                return self.ctx.waterfall_sync("internal/update", resolved_config, no_save, _do_update, caller_ctx=self.ctx)
         return _do_update()
 
     def restart(self, new_config: Optional[Any] = None) -> Any:
@@ -819,7 +1006,10 @@ class Fiber:
     async def await_settled(self) -> "Fiber":
         """Wait for current lifecycle transitions to settle."""
         while self.inertia is not None and not self.inertia.done():
-            await self.inertia
+            try:
+                await self.inertia
+            except Exception:
+                pass
         if hasattr(self, "_in_flight_effects"):
             for t in list(self._in_flight_effects):
                 if not t.done():
@@ -830,6 +1020,8 @@ class Fiber:
         if self._error:
             raise self._error
         return self
+
+    await_ = await_settled
 
     def __repr__(self) -> str:
         return f"<Fiber {self.name} uid={self.uid} state={self.state} epoch={self.epoch}>"

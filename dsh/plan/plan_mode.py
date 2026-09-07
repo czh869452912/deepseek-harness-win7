@@ -352,8 +352,10 @@ class PlanModePlugin(Plugin):
         # Hook /plan command in agent pre-step if user types /plan in natural input
         ctx.on("agent/pre-step", self._hook_plan_slash_command)
 
-        if hasattr(ctx, "effect"):
-            ctx.effect(disposer)
+        if hasattr(ctx, "disposable"):
+            ctx.disposable(disposer, label="plan_mode.disposer")
+        elif hasattr(ctx, "effect"):
+            ctx.effect(lambda: disposer)
 
     async def _hook_plan_slash_command(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         messages = payload.get("messages", [])

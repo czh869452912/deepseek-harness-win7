@@ -56,5 +56,7 @@ class CommandCompactPlugin(Plugin):
             handler=exec_compact,
         )
 
-        if hasattr(ctx, "effect"):
-            ctx.effect(disposer)
+        if hasattr(ctx, "disposable"):
+            ctx.disposable(disposer, label="command_compact.disposer")
+        elif hasattr(ctx, "effect"):
+            ctx.effect(lambda: disposer)

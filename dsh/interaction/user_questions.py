@@ -51,8 +51,10 @@ class UserQuestionService:
                 self.provider = None
             disposer()
 
-        if self.ctx and hasattr(self.ctx, "effect"):
-            self.ctx.effect(unregister)
+        if self.ctx and hasattr(self.ctx, "disposable"):
+            self.ctx.disposable(unregister, label="user_questions.unregister")
+        elif self.ctx and hasattr(self.ctx, "effect"):
+            self.ctx.effect(lambda: unregister)
         return unregister
 
     def register_provider(self, provider: Any) -> Callable[[], None]:

@@ -193,6 +193,8 @@ class ToolTodoPlugin(Plugin):
             "present_call": present_todo_call,
         })
 
-        if hasattr(ctx, "effect"):
-            ctx.effect(disposer)
+        if hasattr(ctx, "disposable"):
+            ctx.disposable(disposer, label="tool_todo.disposer")
+        elif hasattr(ctx, "effect"):
+            ctx.effect(lambda: disposer)
 

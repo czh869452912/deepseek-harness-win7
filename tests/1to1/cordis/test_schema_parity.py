@@ -282,3 +282,19 @@ def test_t34_set_push_without_container_raises_typeerror():
 
     with pytest.raises(TypeError):
         num_s.push(Schema.string())
+
+
+def test_t35_intersect_bool_vs_int_type_separation():
+    """T35 (I10): Intersect of boolean and integer fails type compatibility check."""
+    s = Schema.intersect([Schema.any(), Schema.number()])
+    # True should fail when intersected with number (typeof boolean !== typeof number)
+    with pytest.raises(ValidationError):
+        s(True)
+
+
+def test_t36_intersect_all_nullable_non_strict_leftover_merge():
+    """T36 (I10): When intersect members are all nullable, non-strict leftover dict merges."""
+    s = Schema.intersect([Schema.object({"a": Schema.string()})])
+    # Pass dict without "a" in non-strict mode: "a" is nullable/absent, leftover "b" is retained
+    res = Schema.resolve({"b": 123}, s, {}, strict=False)[0]
+    assert res == {"b": 123}

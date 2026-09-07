@@ -149,4 +149,7 @@ class ToolWebPlugin(Plugin):
                 if callable(d):
                     d()
 
-        ctx.effect(cleanup)
+        if hasattr(ctx, "disposable"):
+            ctx.disposable(cleanup, label="tool_web.cleanup")
+        elif hasattr(ctx, "effect"):
+            ctx.effect(lambda: cleanup)

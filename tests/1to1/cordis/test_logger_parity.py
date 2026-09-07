@@ -25,18 +25,16 @@ def test_t1_logger_code_signed_hash_parity():
     # When level is 0, should return 0
     assert Logger.code("test", 0) == 0
 
-    # In TS:
-    # "core": hash calculation has specific color in c256 / c16
-    # Check that code returns valid integer in c256
-    c256_code = Logger.code("core", 2)
-    assert c256_code in Logger.c256
+    # TS constant parity: "core" -> 166 in c256, 4 in c16
+    assert Logger.code("core", 2) == 166
+    assert Logger.code("core", 1) == 4
+    assert Logger.code("app", 2) == 57
+    assert Logger.code("server", 2) == 57
 
-    # Test names that produce negative 32-bit signed values
-    # For a string where signed_h < 0, abs(signed_h) should be used
-    for name in ["app", "server", "router", "plugin_manager_extended"]:
-        code = Logger.code(name, 2)
-        assert isinstance(code, int)
-        assert code in Logger.c256
+    # "test_str_10" produces signed 32-bit integer -1050706601
+    # abs(-1050706601) % len(c256) == 80, whereas unsigned modulo would yield 92
+    assert Logger.code("test_str_10", 2) == 80
+    assert Logger.code("test_str_10", 1) == 1
 
 
 def test_t2_logger_color_decoration_requires_colors_2():
@@ -174,3 +172,9 @@ def test_t8_logger_name_hyphenate_and_intercept_config():
             assert logger.name == "my-camel-case-plugin"
 
     ctx.plugin(CamelCasePlugin)
+
+    # Test intercept config on child context
+    child_ctx = ctx.intercept("logger", {"level": LoggerLevel.DEBUG, "name": "custom-intercepted"})
+    intercepted_logger = child_ctx.logger()
+    assert intercepted_logger.level == LoggerLevel.DEBUG
+    assert intercepted_logger.name == "custom-intercepted"

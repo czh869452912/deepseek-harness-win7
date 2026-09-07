@@ -239,22 +239,21 @@ class EventBus:
         caller_ctx = kwargs.pop("caller_ctx", None)
         listeners = self._dispatch_hooks("emit", event_name, args, caller_ctx)
         for listener in listeners:
+            sig = None
             try:
                 sig = inspect.signature(listener)
-                if len(sig.parameters) == 1 and not any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in sig.parameters.values()):
-                    if event_name == "internal/dispatch":
-                        info = {
-                            "type": args[0] if len(args) > 0 else None,
-                            "name": args[1] if len(args) > 1 else None,
-                            "args": args[2] if len(args) > 2 else [],
-                            "ctx": args[3] if len(args) > 3 else None,
-                        }
-                        res = listener(info)
-                    else:
-                        res = listener(*args, **kwargs)
-                else:
-                    res = listener(*args, **kwargs)
-            except (ValueError, TypeError):
+            except Exception:
+                pass
+
+            if sig is not None and len(sig.parameters) == 1 and not any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in sig.parameters.values()) and event_name == "internal/dispatch":
+                info = {
+                    "type": args[0] if len(args) > 0 else None,
+                    "name": args[1] if len(args) > 1 else None,
+                    "args": args[2] if len(args) > 2 else [],
+                    "ctx": args[3] if len(args) > 3 else None,
+                }
+                res = listener(info)
+            else:
                 res = listener(*args, **kwargs)
             if inspect.isawaitable(res):
                 try:
@@ -366,10 +365,9 @@ class EventBus:
         Supports onion middleware return-threading and short-circuit veto.
         """
         caller_ctx = kwargs.pop("caller_ctx", None) or self.ctx
+        listeners = list(self._dispatch_hooks("waterfall", event_name, list(args), caller_ctx))
         args_list = list(args)
         inner = args_list.pop() if args_list and callable(args_list[-1]) else None
-
-        listeners = list(self._dispatch_hooks("waterfall", event_name, args_list, caller_ctx))
 
         idx = 0
         def next_fn(*override_args: Any) -> Any:
@@ -435,10 +433,9 @@ class EventBus:
         Supports onion middleware return-threading and short-circuit veto.
         """
         caller_ctx = kwargs.pop("caller_ctx", None) or self.ctx
+        listeners = list(self._dispatch_hooks("waterfall", event_name, list(args), caller_ctx))
         args_list = list(args)
         inner = args_list.pop() if args_list and callable(args_list[-1]) else None
-
-        listeners = list(self._dispatch_hooks("waterfall", event_name, args_list, caller_ctx))
 
         idx = 0
         async def next_fn(*override_args: Any) -> Any:

@@ -6,7 +6,6 @@ Covers:
 - T7: EntryGroup.remove emits 'loader/partial-dispose' and cleans up isolate realms
 - T8: interpolate keeps plain strings literal without env var expansion, evaluates __jsExpr
 - T11: show_log suppresses logs for group entries and trees with enable_logs disabled
-- T12: isolate patch context warns when service is not implemented
 - T15: Loader.locate returns owner entry id from child fiber
 """
 

@@ -315,4 +315,7 @@ class ToolPwshPlugin(Plugin):
             "execute": execute_pwsh,
         })
 
-        ctx.effect(d)
+        if hasattr(ctx, "disposable"):
+            ctx.disposable(d, label="tool_pwsh.disposer")
+        else:
+            ctx.effect(lambda: d)

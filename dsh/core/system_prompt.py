@@ -289,8 +289,10 @@ class SystemPrompt(Service):
             layer.sections.pop(name, None)
             self.ctx.emit("system-prompt/change")
 
+        if hasattr(self.ctx, "disposable"):
+            return self.ctx.disposable(_disposer, label="systemPrompt.section()")
         if hasattr(self.ctx, "effect"):
-            return self.ctx.effect(_disposer, label="systemPrompt.section()")
+            return self.ctx.effect(lambda: _disposer, label="systemPrompt.section()")
         return _disposer
 
     def context(self, context_dict: Dict[str, Any]) -> Callable[[], None]:
@@ -314,8 +316,10 @@ class SystemPrompt(Service):
             layer.contexts.pop(name, None)
             self.ctx.emit("system-prompt/change")
 
+        if hasattr(self.ctx, "disposable"):
+            return self.ctx.disposable(_disposer, label="systemPrompt.context()")
         if hasattr(self.ctx, "effect"):
-            return self.ctx.effect(_disposer, label="systemPrompt.context()")
+            return self.ctx.effect(lambda: _disposer, label="systemPrompt.context()")
         return _disposer
 
     def suppress_runtime_context(self) -> Callable[[], None]:
@@ -327,8 +331,10 @@ class SystemPrompt(Service):
             if layer.runtime_context_suppressors:
                 layer.runtime_context_suppressors.pop()
 
+        if hasattr(self.ctx, "disposable"):
+            return self.ctx.disposable(_disposer, label="systemPrompt.suppressRuntimeContext()")
         if hasattr(self.ctx, "effect"):
-            return self.ctx.effect(_disposer, label="systemPrompt.suppressRuntimeContext()")
+            return self.ctx.effect(lambda: _disposer, label="systemPrompt.suppressRuntimeContext()")
         return _disposer
 
     def tools(self, provider: Callable[..., Any]) -> Callable[[], None]:
@@ -340,8 +346,10 @@ class SystemPrompt(Service):
             if provider in layer.tool_providers:
                 layer.tool_providers.remove(provider)
 
+        if hasattr(self.ctx, "disposable"):
+            return self.ctx.disposable(_disposer, label="systemPrompt.tools()")
         if hasattr(self.ctx, "effect"):
-            return self.ctx.effect(_disposer, label="systemPrompt.tools()")
+            return self.ctx.effect(lambda: _disposer, label="systemPrompt.tools()")
         return _disposer
 
     def variable(self, name: str, provider: Union[str, Callable[..., Optional[str]]]) -> Callable[[], None]:
@@ -362,8 +370,10 @@ class SystemPrompt(Service):
             layer.variables.pop(name, None)
             self.ctx.emit("system-prompt/change")
 
+        if hasattr(self.ctx, "disposable"):
+            return self.ctx.disposable(_disposer, label="systemPrompt.variable()")
         if hasattr(self.ctx, "effect"):
-            return self.ctx.effect(_disposer, label="systemPrompt.variable()")
+            return self.ctx.effect(lambda: _disposer, label="systemPrompt.variable()")
         return _disposer
 
     async def assemble(self, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:

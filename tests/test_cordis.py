@@ -113,7 +113,7 @@ def test_disposer_effects():
     def cleanup():
         cleared.append("ok")
 
-    ctx.effect(cleanup)
+    ctx.disposable(cleanup)
     assert cleared == []
     ctx.teardown()
     assert cleared == ["ok"]

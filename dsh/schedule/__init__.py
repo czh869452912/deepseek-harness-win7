@@ -99,8 +99,10 @@ def apply(ctx: Any) -> Callable[[], None]:
             except Exception:
                 pass
 
-    if hasattr(ctx, "effect"):
-        ctx.effect(unapply)
+    if hasattr(ctx, "disposable"):
+        ctx.disposable(unapply, label="schedule.unapply")
+    elif hasattr(ctx, "effect"):
+        ctx.effect(lambda: unapply, label="schedule.unapply")
 
     return unapply
 

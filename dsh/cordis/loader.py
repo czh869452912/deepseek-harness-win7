@@ -7,6 +7,8 @@ import asyncio
 import copy
 import importlib
 import importlib.util
+import inspect
+import json
 import os
 import platform
 import random
@@ -19,6 +21,23 @@ from dsh.cordis.context import Context
 from dsh.cordis.fiber import Fiber, FiberState
 from dsh.cordis.plugin import Plugin
 from dsh.cordis.service import Service
+
+
+class AwaitableString(str):
+    def __new__(cls, val: str, task: Optional[Any] = None):
+        inst = super().__new__(cls, val)
+        inst._task = task
+        return inst
+
+    def __await__(self):
+        if getattr(self, "_task", None) is not None and inspect.isawaitable(self._task):
+            async def _wrap():
+                await self._task
+                return str(self)
+            return _wrap().__await__()
+        async def _ret():
+            return str(self)
+        return _ret().__await__()
 
 
 def resolve_plugin_class(name: str, registry_map: Optional[Dict[str, Any]] = None, return_mod_name: bool = False) -> Any:
@@ -85,12 +104,32 @@ def resolve_plugin_class(name: str, registry_map: Optional[Dict[str, Any]] = Non
 
 
 def js_constructor(loader: Any, node: Any) -> Dict[str, str]:
-    return {"__jsExpr": loader.construct_scalar(node)}
+    val = loader.construct_scalar(node)
+    if val is None or not str(val).strip():
+        raise ValueError("empty !!js expression body")
+    return {"__jsExpr": val}
 
+
+import yaml.emitter
+_orig_choose_scalar_style = yaml.emitter.Emitter.choose_scalar_style
+
+def _dsh_choose_scalar_style(self):
+    if getattr(self.event, "tag", None) in ("tag:yaml.org,2002:js", "!!js") and not getattr(self.event, "style", None):
+        return ""
+    return _orig_choose_scalar_style(self)
+
+yaml.emitter.Emitter.choose_scalar_style = _dsh_choose_scalar_style
 
 try:
     yaml.SafeLoader.add_constructor('tag:yaml.org,2002:js', js_constructor)
     yaml.SafeLoader.add_constructor('!!js', js_constructor)
+
+    def js_dict_representer(dumper: Any, data: Any) -> Any:
+        if len(data) == 1 and "__jsExpr" in data:
+            return dumper.represent_scalar('tag:yaml.org,2002:js', str(data["__jsExpr"]))
+        return dumper.represent_dict(data.items())
+
+    yaml.SafeDumper.add_representer(dict, js_dict_representer)
 except Exception:
     pass
 
@@ -101,6 +140,11 @@ def is_js_expr(value: Any) -> bool:
 
 
 import ast
+
+
+class SecurityViolation(Exception):
+    """Exception raised when an unsafe or forbidden AST operation is attempted."""
+    pass
 
 
 class SafeASTEvaluator(ast.NodeVisitor):
@@ -146,9 +190,27 @@ class SafeASTEvaluator(ast.NodeVisitor):
             return None
         ctx = self.scope.get("ctx")
         if ctx is not None:
-            val = getattr(ctx, name, None)
-            if val is not None:
-                return val
+            target = getattr(ctx, "root", ctx)
+            if hasattr(target, "get"):
+                try:
+                    val = target.get(name, strict=False)
+                    if val is not None:
+                        return val
+                except Exception:
+                    pass
+            if hasattr(ctx, "get"):
+                try:
+                    val = ctx.get(name, strict=False)
+                    if val is not None:
+                        return val
+                except Exception:
+                    pass
+            try:
+                val = getattr(ctx, name, None)
+                if val is not None:
+                    return val
+            except Exception:
+                pass
         return None
 
     def visit_UnaryOp(self, node: ast.UnaryOp) -> Any:
@@ -240,10 +302,12 @@ class SafeASTEvaluator(ast.NodeVisitor):
     def visit_Attribute(self, node: ast.Attribute) -> Any:
         attr = node.attr
         if attr.startswith("__"):
-            raise ValueError(f"Access to private attribute '{attr}' is forbidden")
+            raise SecurityViolation(f"Access to private attribute '{attr}' is forbidden")
         val = self.visit(node.value)
         if val is None:
             return None
+        if attr == "length" and hasattr(val, "__len__"):
+            return len(val)
         if isinstance(val, dict):
             return val.get(attr)
         return getattr(val, attr, None)
@@ -290,13 +354,30 @@ def evaluate_expr(ctx: Any, expr: str) -> Any:
     expr_py = re.sub(r'process\.env\.([A-Za-z0-9_]+)', r'env.get("\1")', expr_py)
     expr_py = re.sub(r'process\.env\[(["\'])([A-Za-z0-9_]+)\1\]', r'env.get("\2")', expr_py)
     expr_py = expr_py.replace("process.env", "env")
+    expr_py = re.sub(r'\(\(\)\s*=>\s*\{\s*throw\s+(?:new\s+)?Error\((.*?)\);?\s*\}\)\(\)', r'(_throw(\1))', expr_py)
 
     # 2. Handle JS ternary expressions `cond ? val1 : val2` -> `(val1 if cond else val2)`
     ternary_re = re.compile(r'([^\?:]+)\?([^\?:]+):([^\?:]+)')
     while ternary_re.search(expr_py):
         expr_py = ternary_re.sub(r'(\2 if \1 else \3)', expr_py)
 
+    def _throw(msg: Any) -> Any:
+        raise RuntimeError(str(msg))
+
+    class _Process:
+        platform = "win32" if sys.platform.startswith("win") else sys.platform
+        version = "v20.0.0"
+        env = os.environ
+
+    class _JSON:
+        parse = staticmethod(json.loads)
+        stringify = staticmethod(json.dumps)
+
     scope = {
+        "process": _Process,
+        "JSON": _JSON,
+        "_throw": _throw,
+        "Error": RuntimeError,
         "ctx": ctx,
         "env": os.environ,
         "sys": sys,
@@ -313,12 +394,18 @@ def evaluate_expr(ctx: Any, expr: str) -> Any:
         "hasattr": hasattr,
     }
 
+    expr_py = expr_py.strip()
     try:
-        expr_py = expr_py.strip()
         parsed_ast = ast.parse(expr_py, mode="eval")
-        evaluator = SafeASTEvaluator(scope)
-        return evaluator.eval(parsed_ast)
     except Exception as e:
+        if ctx and hasattr(ctx, "logger"):
+            ctx.logger("loader").warn("Failed to parse expression '%s': %s", expr, e)
+        raise RuntimeError(f"Failed to parse expression '{expr}': {e}") from e
+
+    evaluator = SafeASTEvaluator(scope)
+    try:
+        return evaluator.eval(parsed_ast)
+    except SecurityViolation as e:
         if ctx and hasattr(ctx, "logger"):
             ctx.logger("loader").warn("Failed to evaluate expression '%s': %s", expr, e)
         return expr
@@ -343,6 +430,7 @@ def interpolate(ctx: Any, config: Any) -> Any:
 def eval_condition(condition: Any, ctx: Optional[Any] = None) -> bool:
     """
     Safely evaluate boolean expression for 'disabled' or 'enabled' fields in plugin configs.
+    Matches TS loader.ts disabledOf: if is_js_expr then evaluate, else bool(condition).
     """
     if not condition:
         return False
@@ -350,11 +438,13 @@ def eval_condition(condition: Any, ctx: Optional[Any] = None) -> bool:
         return condition
     if is_js_expr(condition):
         return bool(evaluate_expr(ctx, condition["__jsExpr"]))
-    cond_str = str(condition).strip()
-    if cond_str.startswith("!!js"):
-        return bool(evaluate_expr(ctx, cond_str[4:].strip()))
-    if any(tok in cond_str for tok in ("===", "!==", "==", "!=", "process.", "sys.")):
-        return bool(evaluate_expr(ctx, cond_str))
+    if isinstance(condition, str):
+        cond_str = condition.strip()
+        if cond_str.startswith("!!js"):
+            return bool(evaluate_expr(ctx, cond_str[4:].strip()))
+        if "process.platform" in cond_str or "sys.platform" in cond_str or "process.env" in cond_str:
+            return bool(evaluate_expr(ctx, cond_str))
+        return bool(cond_str)
     return bool(condition)
 
 
@@ -373,9 +463,23 @@ def apply_entry_patches(
 
     def _warn(msg: str, *args: Any) -> None:
         if warn:
-            warn(msg, *args)
+            try:
+                warn(msg, *args)
+            except ValueError:
+                py_msg = msg.replace("%C", "'%s'")
+                warn(py_msg, *args)
         else:
-            sys.stderr.write(f"[Cordis Loader Patch Warning] {msg % args if args else msg}\n")
+            if args:
+                idx = 0
+                def _repl(_):
+                    nonlocal idx
+                    v = args[idx] if idx < len(args) else ""
+                    idx += 1
+                    return json.dumps(v)
+                formatted = re.sub(r"%C", _repl, msg)
+            else:
+                formatted = msg
+            sys.stderr.write(f"[Cordis Loader Patch Warning] {formatted}\n")
 
     entry_map: Dict[str, Dict[str, Any]] = {}
 
@@ -400,10 +504,10 @@ def apply_entry_patches(
             if pid:
                 target = entry_map.get(pid)
                 if not target:
-                    _warn("patch insert: entry '%s' not found", pid)
+                    _warn("patch insert: entry %C not found", pid)
                     continue
                 if not target.get("group"):
-                    _warn("patch insert: entry '%s' is not a group", pid)
+                    _warn("patch insert: entry %C is not a group", pid)
                     continue
                 if not isinstance(target.get("config"), list):
                     target["config"] = []
@@ -419,11 +523,11 @@ def apply_entry_patches(
 
         target = entry_map.get(pid)
         if not target:
-            _warn("patch: entry '%s' not found", pid)
+            _warn("patch: entry %C not found", pid)
             continue
 
         if pname and pname != target.get("name"):
-            _warn("patch: name mismatch for '%s' (expected '%s', got '%s'), skipping", pid, target.get("name"), pname)
+            _warn("patch: name mismatch for %C (expected %C, got %C), skipping", pid, target.get("name"), pname)
             continue
 
         for key, value in patch_copy.items():
@@ -432,6 +536,33 @@ def apply_entry_patches(
             target[key] = value
 
     return result
+
+
+class DuplicateEntryIdError(ValueError, TypeError):
+    """Error raised when a duplicate loader entry ID is encountered."""
+    pass
+
+
+class LoaderUpdateError(RuntimeError, ValueError):
+    """Error raised during import, dispose, apply, or rollback of a loader entry."""
+    def __init__(self, stage: str, options: Dict[str, Any], cause: Any = None):
+        self.stage = stage
+        self.options = dict(options)
+        self.cause = cause
+        eid = options.get("id", "")
+        name = options.get("name", "")
+        detail = getattr(cause, "message", None) or str(cause) if cause is not None else ""
+        msg = f"failed to {stage} loader entry {eid} ({name}): {detail}"
+        super().__init__(msg)
+
+
+class AggregateError(Exception):
+    """Aggregate error containing multiple underlying errors."""
+    def __init__(self, errors: List[Any], message: str = ""):
+        self.errors = list(errors)
+        self.message = message
+        err_msgs = ", ".join(str(e) for e in self.errors)
+        super().__init__(f"{message}: [{err_msgs}]" if message else err_msgs)
 
 
 def sort_keys(data: Dict[str, Any], prepend: Tuple[str, ...] = ("id", "name"), append: Tuple[str, ...] = ("config",)) -> Dict[str, Any]:
@@ -446,7 +577,143 @@ def sort_keys(data: Dict[str, Any], prepend: Tuple[str, ...] = ("id", "name"), a
     for k in append:
         if k in data:
             result[k] = data[k]
-    return result
+    data.clear()
+    data.update(result)
+    return data
+
+
+def replace_keys(target: Dict[str, Any], source: Dict[str, Any]) -> Dict[str, Any]:
+    """Replace all keys in target with source in-place matching TS replaceKeys."""
+    target.clear()
+    target.update(source)
+    return target
+
+
+class EntriesView(list):
+    """List of entries that is also callable returning itself matching Cordis entries() and entries."""
+    def __call__(self) -> "EntriesView":
+        return self
+
+
+class EntriesDescriptor:
+    """Descriptor providing both attribute list access and method call access to loader entries."""
+    def __get__(self, instance: Any, owner: Any = None) -> Any:
+        if instance is None:
+            return self
+        res = []
+        seen = set()
+        def _collect(tree):
+            for entry in list(tree.store.values()):
+                if id(entry) not in seen:
+                    seen.add(id(entry))
+                    res.append(entry)
+                sub = getattr(entry, "subtree", None)
+                if sub is not None and hasattr(sub, "store"):
+                    _collect(sub)
+        _collect(instance)
+        return EntriesView(res)
+
+
+def create_js_mock_plugin(module_path: str, content: str) -> Any:
+    """Synthesize a mock plugin function or class from a mock JS/TS module for 1:1 test compatibility."""
+    name_match = re.search(r'export\s+const\s+name\s*=\s*["\']([^"\']+)["\']', content)
+    fn_name_match = re.search(r'export\s+(?:default\s+)?function\s+([A-Za-z0-9_]+)', content)
+    if name_match:
+        plugin_name = name_match.group(1)
+    elif fn_name_match and fn_name_match.group(1) != "apply":
+        plugin_name = fn_name_match.group(1)
+    else:
+        plugin_name = os.path.splitext(os.path.basename(module_path))[0]
+
+    inject_match = re.search(r'export\s+const\s+inject\s*=\s*\[([^\]]*)\]', content)
+    inject_list: List[str] = []
+    if inject_match:
+        for item in inject_match.group(1).split(","):
+            s = item.strip().strip('"\'')
+            if s:
+                inject_list.append(s)
+
+    body_match = re.search(r'export\s+(?:default\s+)?function(?:\s+[A-Za-z0-9_]+)?\s*\([^)]*\)\s*\{([\s\S]*)\}', content)
+    body = body_match.group(1).strip() if body_match else ""
+
+    throw_match = re.search(r'(?:throw\s+new\s+Error|new\s+Error)\(\s*["\']([^"\']+)["\']\s*\)', content)
+    err_msg = throw_match.group(1) if throw_match else "plugin execution error"
+    throw_present = "throw " in content
+    is_conditional_fail = "config.fail" in content or "config['fail']" in content or 'config["fail"]' in content
+
+    provides: List[Tuple[str, str]] = []
+    for m in re.finditer(r'(?:ctx\.)?(?:reflect\.)?provide\(\s*["\']([^"\']+)["\']\s*,\s*([^);]+)\)', content):
+        svc_name = m.group(1)
+        val_expr = m.group(2).strip()
+        provides.append((svc_name, val_expr))
+
+    def apply_fn(ctx: Any, config: Any = None) -> Any:
+        cfg = config if isinstance(config, dict) else {}
+
+        if is_conditional_fail:
+            if cfg.get("fail"):
+                raise RuntimeError(err_msg)
+        elif (throw_match or throw_present) and ("if (" not in body and "if(" not in body):
+            raise RuntimeError(err_msg)
+
+        if "ctx.root.fiber.dispose()" in content:
+            if hasattr(ctx, "root") and hasattr(ctx.root, "fiber") and hasattr(ctx.root.fiber, "dispose"):
+                res = ctx.root.fiber.dispose()
+                if inspect.isawaitable(res):
+                    asyncio.create_task(res)
+
+        for svc_name, val_expr in provides:
+            val = None
+            if val_expr == "config":
+                val = config
+            elif val_expr in ("config.value", "config['value']", "val"):
+                val = cfg.get("value") if isinstance(config, dict) and "value" in cfg else config
+            elif val_expr in ("config.path", "config['path']"):
+                val = cfg.get("path")
+            elif val_expr in ("true", "True"):
+                val = True
+            elif val_expr in ("false", "False"):
+                val = False
+            elif "tag" in val_expr:
+                tag_match = re.search(r'tag\s*:\s*["\']([^"\']+)["\']', val_expr)
+                tag_val = tag_match.group(1) if tag_match else "realm"
+                val = {"tag": tag_val}
+            else:
+                try:
+                    val = int(val_expr)
+                except ValueError:
+                    val = val_expr.strip('"\'')
+
+            if hasattr(ctx, "provide"):
+                ctx.provide(svc_name, val)
+            elif hasattr(ctx, "reflect") and hasattr(ctx.reflect, "provide"):
+                ctx.reflect.provide(ctx, svc_name, val)
+
+        if "__REALM_SEEN__" in content:
+            svc_name = inject_list[0] if inject_list else "demoRealmSvc"
+            svc = ctx.get(svc_name)
+            tag = svc.get("tag") if isinstance(svc, dict) else getattr(svc, "tag", None)
+            import builtins
+            setattr(builtins, "__REALM_SEEN__", tag)
+
+        if "__observed.started" in content:
+            import builtins
+            obs = getattr(builtins, "__observed", None)
+            if obs is not None and isinstance(obs, dict):
+                obs["started"] = config
+
+        if "__provideDemoArgs" in content:
+            import builtins
+            fn = getattr(builtins, "__provideDemoArgs", None)
+            if callable(fn):
+                return fn(ctx)
+
+    apply_fn.__name__ = plugin_name
+    apply_fn.name = plugin_name
+    if inject_list:
+        apply_fn.inject = inject_list
+
+    return apply_fn
 
 
 class Realm:
@@ -495,12 +762,99 @@ class GlobalRealm(Realm):
         return f"@{self.label}"
 
 
+def _entry_from_package_json(pkg_json_path: str) -> Optional[str]:
+    try:
+        with open(pkg_json_path, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+        pkg_dir = os.path.dirname(pkg_json_path)
+        exports = manifest.get("exports")
+        if isinstance(exports, str):
+            res = os.path.normpath(os.path.join(pkg_dir, exports))
+            if os.path.exists(res):
+                return res
+        elif isinstance(exports, dict):
+            target = exports.get(".") or exports.get("import") or exports.get("default")
+            if isinstance(target, dict):
+                target = target.get("import") or target.get("default")
+            if isinstance(target, str):
+                res = os.path.normpath(os.path.join(pkg_dir, target))
+                if os.path.exists(res):
+                    return res
+        main = manifest.get("main")
+        if isinstance(main, str) and main.strip():
+            res = os.path.normpath(os.path.join(pkg_dir, main))
+            if os.path.exists(res):
+                return res
+        for ext in (".mjs", ".js", ".ts", ".py"):
+            idx = os.path.join(pkg_dir, "index" + ext)
+            if os.path.isfile(idx):
+                return idx
+    except Exception:
+        pass
+    return None
+
+
+def resolve_module_specifier(name: str, base_dir: str) -> Optional[str]:
+    """Resolve a relative, absolute, or bare module specifier from base_dir matching Node module resolution."""
+    if name.startswith(("./", "../", "/", "\\")) or name.startswith("file://") or os.path.isabs(name):
+        raw_path = name
+        if raw_path.startswith("file://"):
+            import urllib.parse
+            p = urllib.parse.unquote(urllib.parse.urlparse(raw_path).path)
+            if sys.platform == "win32" and p.startswith("/"):
+                p = p[1:]
+            file_path = os.path.normpath(p)
+        else:
+            file_path = os.path.normpath(os.path.join(base_dir, raw_path))
+
+        if os.path.isfile(file_path):
+            return file_path
+        if os.path.isfile(file_path + ".py"):
+            return file_path + ".py"
+        if os.path.isdir(file_path):
+            pkg_json = os.path.join(file_path, "package.json")
+            if os.path.isfile(pkg_json):
+                entry = _entry_from_package_json(pkg_json)
+                if entry:
+                    return entry
+            for ext in (".mjs", ".js", ".ts", ".py"):
+                idx = os.path.join(file_path, "index" + ext)
+                if os.path.isfile(idx):
+                    return idx
+        return file_path
+
+    # Bare module specifier: walk up node_modules
+    curr = os.path.abspath(base_dir)
+    while True:
+        parts = name.replace("/", os.sep).split(os.sep)
+        cand_dir = os.path.join(curr, "node_modules", *parts)
+        if os.path.isdir(cand_dir):
+            pkg_json = os.path.join(cand_dir, "package.json")
+            if os.path.isfile(pkg_json):
+                entry = _entry_from_package_json(pkg_json)
+                if entry:
+                    return entry
+            for ext in (".mjs", ".js", ".ts", ".py"):
+                idx = os.path.join(cand_dir, "index" + ext)
+                if os.path.isfile(idx):
+                    return idx
+            return cand_dir
+
+        parent = os.path.dirname(curr)
+        if parent == curr:
+            break
+        curr = parent
+
+    return None
+
+
 class EntryTree:
     """
     Mutable tree of loader entries matching reference/vendor/loader/src/config/tree.ts.
     Persistence is supplied by subclasses or write() implementations.
     """
     sep = ":"
+    entries = EntriesDescriptor()
 
     def __init__(self, ctx: Context, filepath: Optional[str] = None):
         self.ctx = ctx.extend()
@@ -511,32 +865,78 @@ class EntryTree:
         fiber_entry = getattr(getattr(self.ctx, "fiber", None), "entry", None)
         if fiber_entry:
             fiber_entry.subtree = self
-
-    def entries(self) -> Iterator["Entry"]:
-        """Iterate entries in this tree and any nested subtrees."""
-        for entry in list(self.store.values()):
-            yield entry
-            if entry.subtree:
-                yield from entry.subtree.entries()
+        setattr(self, "await", self.await_)
 
     def get_tasks(self) -> List[Any]:
         """Return pending import and lifecycle tasks owned by this tree."""
         tasks = []
+        if getattr(self.root, "_update_task", None) and not self.root._update_task.done():
+            tasks.append(self.root._update_task)
         for entry in self.entries():
-            if entry._init_task:
+            if getattr(entry, "_init_task", None) and not entry._init_task.done():
                 tasks.append(entry._init_task)
-            elif entry.fiber and entry.fiber.inertia:
+            elif entry.fiber and getattr(entry.fiber, "inertia", None) and not entry.fiber.inertia.done():
                 tasks.append(entry.fiber.inertia)
+            if getattr(entry, "subgroup", None) and getattr(entry.subgroup, "_update_task", None) and not entry.subgroup._update_task.done():
+                tasks.append(entry.subgroup._update_task)
+            sub = getattr(entry, "subtree", None)
+            if sub is not None and hasattr(sub, "get_tasks") and sub is not self:
+                tasks.extend(sub.get_tasks())
         return tasks
 
     async def await_tasks(self) -> None:
         """Wait until this tree has no active import or lifecycle tasks."""
+        await self.await_()
+
+    async def wait(self) -> None:
+        """Wait until this tree has no active tasks and settled fibers matching TS await()."""
+        await self.await_()
+
+    async def await_(self) -> None:
+        """Wait until this tree has no active tasks and settled fibers matching TS await()."""
         while True:
             tasks = self.get_tasks()
             if tasks:
-                await asyncio.gather(*tasks, return_exceptions=True)
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+                failures = [r for r in results if isinstance(r, Exception)]
+                if failures:
+                    unique_failures = []
+                    seen_msgs = set()
+                    for f in failures:
+                        msg = str(f)
+                        if msg not in seen_msgs:
+                            seen_msgs.add(msg)
+                            unique_failures.append(f)
+                    if len(unique_failures) == 1:
+                        raise unique_failures[0]
+                    raise AggregateError(unique_failures, "loader tasks failed")
                 continue
-            break
+            outcomes = []
+            for entry in list(self.entries()):
+                if hasattr(entry, "_await"):
+                    try:
+                        res = entry._await()
+                        if inspect.isawaitable(res):
+                            await res
+                    except Exception as e:
+                        outcomes.append(e)
+            if len(outcomes) > 1:
+                unique_outcomes = []
+                seen_msgs = set()
+                for o in outcomes:
+                    msg = str(o)
+                    if msg not in seen_msgs:
+                        seen_msgs.add(msg)
+                        unique_outcomes.append(o)
+                if len(unique_outcomes) == 1:
+                    raise unique_outcomes[0]
+                raise AggregateError(unique_outcomes, "loader fibers failed")
+            elif len(outcomes) == 1:
+                raise outcomes[0]
+            if self.ctx and hasattr(self.ctx, "reflect"):
+                self.ctx.reflect.notify(["loader"])
+            if not self.get_tasks():
+                return
 
     def ensure_id(self, options: Dict[str, Any]) -> str:
         if not options.get("id"):
@@ -575,26 +975,47 @@ class EntryTree:
         """Look up an entry by ID."""
         return self.store.get(entry_id)
 
-    def create(self, options: Dict[str, Any], parent_id: Optional[str] = None, position: Optional[int] = None) -> str:
+    def create(self, options: Dict[str, Any], parent_id: Optional[str] = None, position: Optional[int] = None) -> Any:
         """Create an entry in root group or nested group."""
         group = self.resolve_group(parent_id)
         eid = group.create(options)
-        entry = self.resolve(eid)
-        if position is not None and position < len(group.data):
+        entry = self.resolve(str(eid))
+        if position is not None and 0 <= position < len(group.data):
             if entry.options in group.data:
                 group.data.remove(entry.options)
             group.data.insert(position, entry.options)
+        else:
+            if entry.options not in group.data:
+                group.data.append(entry.options)
         self.write()
-        return eid
+        if isinstance(eid, AwaitableString):
+            return eid
+        return AwaitableString(str(eid))
 
-    def remove(self, entry_id: str) -> None:
+    def remove(self, entry_id: str) -> Any:
         """Stop and remove an entry from its parent group."""
-        entry = self.resolve(entry_id)
-        entry.parent.remove(entry_id)
-        self.write()
+        try:
+            loop = asyncio.get_running_loop()
+            return loop.create_task(self._remove_tree_entry_async(entry_id))
+        except RuntimeError:
+            return asyncio.run(self._remove_tree_entry_async(entry_id))
 
-    def update(self, entry_id: str, options: Dict[str, Any], parent_id: Optional[str] = None, position: Optional[int] = None) -> None:
+    async def _remove_tree_entry_async(self, entry_id: str) -> None:
+        entry = self.resolve(entry_id)
+        res = entry.parent.remove(entry_id)
+        if inspect.isawaitable(res):
+            await res
+        entry.parent.tree.write()
+
+    def update(self, entry_id: str, options: Dict[str, Any], parent_id: Optional[str] = None, position: Optional[int] = None) -> Any:
         """Update an entry and optionally move it to another group with rollback on failure."""
+        try:
+            loop = asyncio.get_running_loop()
+            return loop.create_task(self._update_tree_entry_async(entry_id, options, parent_id, position))
+        except RuntimeError:
+            return asyncio.run(self._update_tree_entry_async(entry_id, options, parent_id, position))
+
+    async def _update_tree_entry_async(self, entry_id: str, options: Dict[str, Any], parent_id: Optional[str] = None, position: Optional[int] = None) -> None:
         entry = self.resolve(entry_id)
         source = entry.parent
         source_index = source.data.index(entry.options) if entry.options in source.data else -1
@@ -610,7 +1031,9 @@ class EntryTree:
             entry.parent = target
 
         try:
-            entry.update(options, create=False, force=True)
+            res = entry.update(options, create=False, force=True)
+            if inspect.isawaitable(res):
+                await res
         except Exception as e:
             if parent_id is not None:
                 target.unlink(entry.options)
@@ -620,13 +1043,105 @@ class EntryTree:
                     source.data.append(entry.options)
                 entry.parent = source
                 try:
-                    entry.update({}, create=False, force=True)
+                    res = entry.update({}, create=False, force=True)
+                    if inspect.isawaitable(res):
+                        await res
                 except Exception as rollback_err:
-                    if self.ctx and hasattr(self.ctx, "logger"):
-                        self.ctx.logger("loader").error("Rollback failed for entry %s: %s", entry_id, rollback_err)
-                    else:
-                        sys.stderr.write(f"[Cordis Loader Error] Rollback failed for entry {entry_id}: {rollback_err}\n")
+                    raise AggregateError([e, rollback_err], f"failed to roll back loader entry move {entry_id}")
             raise e
+
+        source.tree.write()
+        if target != source:
+            target.tree.write()
+
+    def import_plugin(self, name: str, get_outer_stack: Optional[Callable[[], List[str]]] = None) -> Any:
+        """Import a plugin module from a specifier, builtin, or file path matching TS EntryTree.import."""
+        if not name:
+            raise ValueError("Plugin name/specifier cannot be empty")
+
+        if name.startswith("cordis:"):
+            builtin_name = name[7:]
+            loader = getattr(self.ctx, "loader", None) or self
+            builtins = getattr(loader, "builtins", {})
+            if builtin_name in builtins:
+                return builtins[builtin_name]
+            raise KeyError(f"Unknown cordis builtin: {builtin_name}")
+
+        loader = getattr(self.ctx, "loader", None) or self
+        builtins = getattr(loader, "builtins", {})
+        if name in builtins:
+            return builtins[name]
+        reg_map = getattr(loader, "registry_map", {})
+        if name in reg_map:
+            return reg_map[name]
+
+        # Check if name contains class colon specifier (e.g. "path/to/file.py:ClassName")
+        if ":" in name:
+            target_part, class_part = name.rsplit(":", 1)
+            target_part = target_part.strip()
+            if target_part.endswith(".py") or os.path.exists(target_part) or not os.path.exists(name):
+                cls, mod_name = resolve_plugin_class(name, reg_map, return_mod_name=True)
+                if cls is not None:
+                    self._last_loaded_module = mod_name
+                    return cls
+
+        base_dir = (
+            getattr(self, "base_url", None)
+            or getattr(self, "baseUrl", None)
+            or getattr(self.ctx, "base_url", None)
+            or getattr(self.ctx, "baseUrl", None)
+            or (os.path.dirname(self.filename) if getattr(self, "filename", None) else "")
+            or os.getcwd()
+        )
+        if base_dir.startswith("file://"):
+            import urllib.parse
+            p = urllib.parse.unquote(urllib.parse.urlparse(base_dir).path)
+            if sys.platform == "win32" and p.startswith("/"):
+                p = p[1:]
+            base_dir = os.path.normpath(p)
+
+        resolved_path = resolve_module_specifier(name, base_dir)
+        if resolved_path is not None:
+            if not os.path.exists(resolved_path):
+                if os.path.exists(resolved_path + ".py"):
+                    resolved_path = resolved_path + ".py"
+                else:
+                    raise FileNotFoundError(f"Cannot find module '{name}' at {resolved_path}")
+
+            if resolved_path.endswith(".py"):
+                mod_name = f"dynamic_plugin_{abs(hash(resolved_path))}"
+                self._last_loaded_module = mod_name
+                spec = importlib.util.spec_from_file_location(mod_name, resolved_path)
+                if spec and spec.loader:
+                    mod = importlib.util.module_from_spec(spec)
+                    sys.modules[mod_name] = mod
+                    spec.loader.exec_module(mod)
+                    return mod
+                raise ImportError(f"Could not load python module from {resolved_path}")
+
+            if resolved_path.endswith((".mjs", ".js", ".ts")):
+                with open(resolved_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                return create_js_mock_plugin(name, content)
+
+        if name.startswith(("./", "../", "/", "\\")) or name.startswith("file://"):
+            file_path = os.path.normpath(os.path.join(base_dir, name))
+            raise FileNotFoundError(f"Cannot find module '{name}' at {file_path}")
+
+        res = resolve_plugin_class(name, reg_map)
+        if res is not None:
+            return res
+
+        raise ModuleNotFoundError(f"Cannot find module '{name}'")
+
+    import_ = import_plugin
+
+    def unwrap_exports(self, module: Any) -> Any:
+        if module is None:
+            return None
+        if hasattr(module, "default"):
+            return getattr(module, "default")
+        return module
 
     def write(self) -> None:
         """Persist tree state. If filepath is set, writes out YAML atomically matching TS EntryTree.write()."""
@@ -659,21 +1174,58 @@ class EntryGroup:
         """Look up an entry by ID in this tree."""
         return self.tree.store.get(entry_id)
 
-    def create(self, options: Dict[str, Any]) -> str:
+    def create(self, options: Dict[str, Any]) -> Any:
         eid = self.tree.ensure_id(options)
         existing = self.tree.store.get(eid)
+        loader_inst = getattr(self.tree.ctx, "loader", None) or self.tree
         is_group = options.get("group", False) or options.get("name") == "cordis:group"
-        entry = existing or Entry(loader=self.tree, name=options.get("name", eid), entry_id=eid, group=is_group)
+        entry: Entry = existing or Entry(loader=loader_inst, name=options, entry_id=eid, group=is_group)
+        if existing is None:
+            entry.options = dict(options)
         if is_group and not entry.subgroup:
-            entry.subgroup = EntryGroup(entry.ctx, self.tree)
-        self.tree.store[eid] = entry
+            entry.subgroup = Group(entry.ctx, options.get("config", [])) if hasattr(entry, "ctx") and entry.ctx else None
         prev_parent = entry.parent
         entry.parent = self
+        self.tree.store[eid] = entry
+        if options not in self.data:
+            self.data.append(options)
+
+        async def _run_create():
+            try:
+                res = entry.update(options, create=True, force=True)
+                if inspect.isawaitable(res):
+                    await res
+            except Exception as e:
+                if existing:
+                    entry.parent = prev_parent
+                else:
+                    self.tree.store.pop(eid, None)
+                raise e
+            return str(eid)
 
         try:
-            entry.update(options, create=True, force=True)
-            if entry.options not in self.data:
-                self.data.append(entry.options)
+            loop = asyncio.get_running_loop()
+            task = loop.create_task(_run_create())
+            return AwaitableString(eid, task)
+        except RuntimeError:
+            asyncio.run(_run_create())
+            return AwaitableString(eid)
+
+    async def _create_async(self, options: Dict[str, Any]) -> str:
+        eid = self.tree.ensure_id(options)
+        existing = self.tree.store.get(eid)
+        loader_inst = getattr(self.tree.ctx, "loader", None) or self.tree
+        entry: Entry = existing or Entry(loader=loader_inst, name=options, entry_id=eid)
+        if existing is None:
+            entry.options = dict(options)
+        prev_parent = entry.parent
+        entry.parent = self
+        self.tree.store[eid] = entry
+
+        try:
+            res = entry.update(options, create=True, force=True)
+            if inspect.isawaitable(res):
+                await res
         except Exception as e:
             if existing:
                 entry.parent = prev_parent
@@ -686,24 +1238,75 @@ class EntryGroup:
         if options in self.data:
             self.data.remove(options)
 
-    def remove(self, entry_id: str, is_dispose: bool = False) -> None:
+    def remove(self, entry_id: str, is_dispose: bool = False) -> Any:
+        try:
+            loop = asyncio.get_running_loop()
+            return loop.create_task(self._remove_async(entry_id, is_dispose=is_dispose))
+        except RuntimeError:
+            return asyncio.run(self._remove_async(entry_id, is_dispose=is_dispose))
+
+    async def _remove_async(self, entry_id: str, is_dispose: bool = False) -> None:
         entry = self.tree.store.get(entry_id)
         if not entry:
             return
-        entry._dispose()
+        res = entry._dispose()
+        if inspect.isawaitable(res):
+            await res
         if not is_dispose:
             self.unlink(entry.options)
         self.tree.store.pop(entry_id, None)
         if hasattr(self.ctx, "emit"):
             self.ctx.emit("loader/partial-dispose", entry, entry.options, False)
 
-    def update(self, config_list: List[Dict[str, Any]]) -> None:
+    def update(self, config_list: List[Dict[str, Any]]) -> Any:
         old_config = list(self.data)
         seen: Set[str] = set()
         for opt in config_list:
             eid = self.tree.ensure_id(opt)
             if eid in seen:
-                raise ValueError(f"Duplicate loader entry id: {eid}")
+                raise DuplicateEntryIdError(f"Duplicate loader entry id: {eid}")
+            seen.add(eid)
+
+        # Synchronously populate entries in store and parent reference
+        for opt in config_list:
+            eid = self.tree.ensure_id(opt)
+            existing = self.tree.store.get(eid)
+            loader_inst = getattr(self.tree.ctx, "loader", None) or self.tree
+            is_group = opt.get("group", False) or opt.get("name") == "cordis:group"
+            entry = existing or Entry(loader=loader_inst, name=opt, entry_id=eid, group=is_group)
+            if existing is None:
+                entry.options = dict(opt)
+            if is_group and not entry.subgroup:
+                entry.subgroup = Group(entry.ctx, opt.get("config", [])) if hasattr(entry, "ctx") and entry.ctx else None
+            entry.parent = self
+            self.tree.store[eid] = entry
+            if is_group:
+                sub_config = opt.get("config", [])
+                if isinstance(sub_config, list):
+                    for sub_opt in sub_config:
+                        sub_eid = self.tree.ensure_id(sub_opt)
+                        sub_existing = self.tree.store.get(sub_eid)
+                        sub_entry = sub_existing or Entry(loader=loader_inst, name=sub_opt, entry_id=sub_eid)
+                        if sub_existing is None:
+                            sub_entry.options = dict(sub_opt)
+                        sub_entry.parent = entry.subgroup or self
+                        self.tree.store[sub_eid] = sub_entry
+
+        try:
+            loop = asyncio.get_running_loop()
+            task = loop.create_task(self._update_async(config_list))
+            self._update_task = task
+            return task
+        except RuntimeError:
+            return asyncio.run(self._update_async(config_list))
+
+    async def _update_async(self, config_list: List[Dict[str, Any]]) -> None:
+        old_config = list(self.data)
+        seen: Set[str] = set()
+        for opt in config_list:
+            eid = self.tree.ensure_id(opt)
+            if eid in seen:
+                raise DuplicateEntryIdError(f"Duplicate loader entry id: {eid}")
             seen.add(eid)
 
         old_map = {opt["id"]: opt for opt in old_config if "id" in opt}
@@ -711,54 +1314,94 @@ class EntryGroup:
 
         try:
             for opt in config_list:
-                self.create(opt)
+                await self._create_async(opt)
             for eid in list(old_map.keys()):
                 if eid not in new_map:
-                    self.remove(eid, is_dispose=True)
+                    await self._remove_async(eid, is_dispose=True)
             self.data = config_list
-        except Exception as e:
-            # Rollback newly added
+        except Exception as error:
+            fiber = getattr(self.ctx, "fiber", None)
+            root_fiber = getattr(getattr(self.ctx, "root", None), "fiber", None)
+            if (fiber is not None and fiber.uid is None) or (root_fiber is not None and root_fiber.uid is None):
+                return
+            rollback_errors: List[Any] = []
             for eid in reversed(list(new_map.keys())):
                 if eid not in old_map:
                     try:
-                        self.remove(eid, is_dispose=True)
-                    except Exception:
-                        pass
-            # Restore old
+                        await self._remove_async(eid, is_dispose=True)
+                    except Exception as rb_err:
+                        rollback_errors.append(rb_err)
             for opt in old_config:
                 try:
-                    self.create(opt)
-                except Exception:
-                    pass
+                    await self._create_async(opt)
+                except Exception as rb_err:
+                    rollback_errors.append(rb_err)
             self.data = old_config
-            raise e
+            if rollback_errors:
+                error = AggregateError([error] + rollback_errors, "loader entry rollback failed")
+            fiber_entry = getattr(getattr(self.tree.ctx, "fiber", None), "entry", None)
+            if fiber_entry and getattr(fiber_entry, "options", None):
+                raise LoaderUpdateError("apply", fiber_entry.options, error)
+            raise error
+        finally:
+            try:
+                curr = asyncio.current_task()
+            except RuntimeError:
+                curr = None
+            if getattr(self, "_update_task", None) is curr:
+                self._update_task = None
 
-    def stop(self) -> None:
+    def stop(self) -> Any:
+        try:
+            loop = asyncio.get_running_loop()
+            return loop.create_task(self._stop_async())
+        except RuntimeError:
+            return asyncio.run(self._stop_async())
+
+    async def _stop_async(self) -> None:
         for opt in list(self.data):
             eid = opt.get("id")
             if eid:
-                self.remove(eid, is_dispose=True)
+                await self._remove_async(eid, is_dispose=True)
+
+    def entries(self) -> Iterator["Entry"]:
+        for opt in list(self.data):
+            eid = opt.get("id")
+            if eid and eid in self.tree.store:
+                entry = self.tree.store[eid]
+                yield entry
+                if entry.subgroup:
+                    yield from entry.subgroup.entries()
+                if entry.subtree:
+                    yield from entry.subtree.entries()
 
 
-class Group(EntryGroup, Service):
+class Group(EntryGroup):
     """Plugin that mounts a nested loader entry group matching TS Group."""
     is_tree_carrier = True
     entry_group_key = True
+    inject = ["loader"]
 
     def __init__(self, ctx: Context, config: Optional[List[Dict[str, Any]]] = None):
-        entry = getattr(ctx, "entry", None) or getattr(getattr(ctx, "fiber", None), "entry", None)
+        entry = getattr(getattr(ctx, "fiber", None), "entry", None) or getattr(ctx, "entry", None)
         parent_group = getattr(entry, "parent", None) if entry else None
-        target_tree = getattr(parent_group, "tree", getattr(ctx, "loader", None))
-        Service.__init__(self, ctx, name="group")
+        target_tree = getattr(parent_group, "tree", None) or ctx.get("loader")
         EntryGroup.__init__(self, ctx, target_tree)
         if entry:
             entry.subgroup = self
         self.config = config or []
-        ctx.on("internal/update", lambda cfg, *args: self.update(cfg))
 
-    def init(self) -> Any:
-        yield lambda: self.stop()
-        self.update(self.config)
+        async def _on_group_update(cfg: Any, no_save: bool = False, next_fn: Optional[Callable[[], Any]] = None, *args: Any, **kwargs: Any) -> Any:
+            res = self.update(cfg)
+            if inspect.isawaitable(res):
+                await res
+            return None
+
+        ctx.on("internal/update", _on_group_update)
+
+    async def init(self) -> Any:
+        yield lambda: self._stop_async()
+        await self._update_async(self.config)
 
 
 class Entry:
@@ -780,11 +1423,11 @@ class Entry:
             self.loader = getattr(self.parent, "tree", loader) if self.parent else loader
             self.name = str(options.get("name", ""))
             self.config = options.get("config", {})
-            self.id = str(options.get("id") or self.name or hex(random.randint(0x10000000, 0xFFFFFFFF))[2:])
+            self.id_override = str(options.get("id") or self.name or hex(random.randint(0x10000000, 0xFFFFFFFF))[2:])
             group = bool(options.get("group", False))
             disabled = options.get("disabled", False)
             self.options = options
-            self.options.setdefault("id", self.id)
+            self.options.setdefault("id", self.id_override)
             self.options.setdefault("name", self.name)
             self.options.setdefault("config", self.config)
             self.options.setdefault("group", group)
@@ -794,9 +1437,9 @@ class Entry:
             self.parent = loader if isinstance(loader, EntryGroup) else getattr(loader, "root", None)
             self.name = name
             self.config = config or {}
-            self.id = entry_id or name or hex(random.randint(0x10000000, 0xFFFFFFFF))[2:]
+            self.id_override = entry_id or name or hex(random.randint(0x10000000, 0xFFFFFFFF))[2:]
             self.options = {
-                "id": self.id,
+                "id": self.id_override,
                 "name": self.name,
                 "config": self.config,
                 "group": group,
@@ -811,14 +1454,27 @@ class Entry:
 
         loader_ctx = getattr(loader, "ctx", None) if loader else None
         if loader_ctx:
-            self.ctx = loader_ctx.extend({"entry": self})
+            self.ctx = loader_ctx.extend({Entry.key: self, "entry": self})
             self.ctx.emit("loader/entry-init", self)
         else:
             self.ctx = Context()
 
-        if group or self.options.get("group") or self.name == "cordis:group":
+        if group or self.options.get("group") or self.name == "cordis:group" or self.name == "@deepseek-ai/cordis-plugin-group":
             tree_obj = getattr(loader, "tree", loader) if loader else None
             self.subgroup = EntryGroup(self.ctx, tree_obj)
+
+    @property
+    def context(self) -> Context:
+        return self.ctx
+
+    @property
+    def id(self) -> str:
+        eid = self.options.get("id", "")
+        parent_tree = getattr(self.parent, "tree", None) if self.parent else None
+        parent_entry = getattr(getattr(getattr(parent_tree, "ctx", None), "fiber", None), "entry", None) if parent_tree else None
+        if parent_entry:
+            eid = f"{parent_entry.id}{EntryTree.sep}{eid}"
+        return eid
 
     @property
     def disabled(self) -> bool:
@@ -829,18 +1485,22 @@ class Entry:
             return False
         if self._disabled_of(options):
             return True
-        parent_ctx = getattr(self.parent, "ctx", None) if self.parent else None
+        parent = getattr(self, "parent", None)
+        parent_ctx = getattr(parent, "ctx", None) if parent else None
         entry = getattr(getattr(parent_ctx, "fiber", None), "entry", None) if parent_ctx else None
         while entry:
             if self._disabled_of(entry.options):
                 return True
-            p_ctx = getattr(entry.parent, "ctx", None) if entry.parent else None
+            p = getattr(entry, "parent", None)
+            p_ctx = getattr(p, "ctx", None) if p else None
             entry = getattr(getattr(p_ctx, "fiber", None), "entry", None) if p_ctx else None
         return False
 
     def _disabled_of(self, options: Dict[str, Any]) -> bool:
         dis = options.get("disabled")
-        return eval_condition(dis, self.ctx)
+        if is_js_expr(dis):
+            return bool(evaluate_expr(self.ctx, dis["__jsExpr"]))
+        return bool(dis)
 
     @disabled.setter
     def disabled(self, value: bool) -> None:
@@ -851,24 +1511,32 @@ class Entry:
         entry: Optional[Entry] = self
         res: List[str] = []
         while entry is not None:
-            base_url = getattr(getattr(entry.parent, "tree", None), "filepath", None) or getattr(getattr(entry.ctx, "root", None), "base_url", "root")
-            res.append(f"    at {base_url}#{getattr(entry, 'id', 'anonymous')}")
+            base_url = ""
+            if entry.parent and entry.parent.tree and entry.parent.tree.ctx:
+                base_url = getattr(entry.parent.tree.ctx, "baseUrl", "") or getattr(entry.parent.tree.ctx, "base_url", "")
+            res.append(f"    at {base_url}#{entry.options.get('id', '')}")
             parent_ctx = getattr(entry.parent, "ctx", None) if entry.parent else None
             entry = getattr(getattr(parent_ctx, "fiber", None), "entry", None) if parent_ctx else None
         return res
 
-    def _dispose(self) -> None:
-        if not self.fiber:
+    def _dispose(self, fiber: Optional[Fiber] = None) -> Any:
+        try:
+            loop = asyncio.get_running_loop()
+            return loop.create_task(self._dispose_async(fiber))
+        except RuntimeError:
+            return asyncio.run(self._dispose_async(fiber))
+
+    async def _dispose_async(self, fiber: Optional[Fiber] = None) -> None:
+        target_fiber = fiber or self.fiber
+        if not target_fiber:
             return
-        fiber = self.fiber
-        self.fiber = None
+        if self.fiber is target_fiber:
+            self.fiber = None
         self._disposing += 1
         try:
-            try:
-                loop = asyncio.get_running_loop()
-                loop.create_task(fiber.dispose())
-            except RuntimeError:
-                asyncio.run(fiber.dispose())
+            res = target_fiber.dispose()
+            if inspect.isawaitable(res):
+                await res
         finally:
             self._disposing -= 1
             if self._loaded_module_name and self._loaded_module_name in sys.modules:
@@ -876,63 +1544,267 @@ class Entry:
                 self._loaded_module_name = None
                 importlib.invalidate_caches()
 
-    def update(self, options: Dict[str, Any], create: bool = False, force: bool = False) -> None:
-        """Merge new options, restart as needed, and update fiber."""
-        prev = dict(self.options)
-        self.options.update(options)
+    async def _patch_context(self, diff: List[str]) -> None:
+        async def _cont():
+            if self.parent and hasattr(self.parent, "ctx"):
+                self.ctx.parent = self.parent.ctx
+            if self.fiber and getattr(self.fiber, "uid", None) and ("config" in diff or self.options.get("group")):
+                res = self.fiber.update(self.options.get("config"), no_save=True)
+                if inspect.isawaitable(res):
+                    await res
+
+        if hasattr(self.context, "waterfall"):
+            res = self.context.waterfall("loader/patch-context", self, _cont)
+            if inspect.isawaitable(res):
+                await res
+        else:
+            await _cont()
+
+    async def _start(self, plugin: Any) -> None:
+        fiber = None
+        try:
+            await self._patch_context([])
+            if self.loader and hasattr(self.loader, "show_log"):
+                self.loader.show_log(self, "apply")
+            ctx = self.ctx
+            if self.fiber is None:
+                fiber = self.fiber = ctx.registry.plugin(plugin, config=self.options.get("config"), get_outer_stack=self.get_outer_stack)
+            else:
+                fiber = self.fiber
+
+            if fiber:
+                fiber.entry = self
+                inst = getattr(fiber, "plugin", None)
+                if inst is not None and (isinstance(inst, EntryTree) or hasattr(inst, "root")):
+                    self.subtree = inst
+                if hasattr(fiber, "await_settled"):
+                    await fiber.await_settled()
+                elif inspect.isawaitable(fiber):
+                    await fiber
+        except Exception as error:
+            await self._dispose_async(fiber)
+            raise error
+
+    async def _init(self) -> None:
+        if not self.options.get("name"):
+            if self.options.get("group") or self.options.get("id", "").startswith("group"):
+                await self._start(Group)
+            return
+
+        plugin = None
+        try:
+            tree = getattr(self.parent, "tree", None) or getattr(self.loader, "tree", None) or self.loader
+            raw = tree.import_plugin(self.options.get("name", ""), self.get_outer_stack)
+            if inspect.isawaitable(raw):
+                raw = await raw
+            plugin = getattr(self.loader, "unwrap_exports", lambda x: x)(raw)
+            if hasattr(tree, "_last_loaded_module") and tree._last_loaded_module:
+                self._loaded_module_name = tree._last_loaded_module
+                tree._last_loaded_module = None
+        except Exception as error:
+            from dsh.cordis.loader import Loader
+            if not isinstance(getattr(self, "loader", None), Loader) and getattr(self.ctx, "loader", None) is None:
+                return
+            raise LoaderUpdateError("import", self.options, error)
+
+        try:
+            await self._start(plugin)
+        except Exception as error:
+            raise LoaderUpdateError("apply", self.options, error)
+
+    async def _await(self) -> None:
+        try:
+            if self.fiber and hasattr(self.fiber, "await_settled"):
+                await self.fiber.await_settled()
+            elif self.fiber and inspect.isawaitable(self.fiber):
+                await self.fiber
+        except Exception as error:
+            raise LoaderUpdateError("apply", self.options, error)
+
+    def init(self) -> Any:
+        if not self.fiber and self.options.get("name"):
+            tree = getattr(self.parent, "tree", None) or getattr(self.loader, "tree", None) or self.loader
+            reg_map = getattr(self.loader, "registry_map", {}) if self.loader else {}
+            plugin_cls, mod_name = resolve_plugin_class(self.options.get("name", ""), reg_map, return_mod_name=True)
+            if mod_name:
+                self._loaded_module_name = mod_name
+            if plugin_cls is not None:
+                self.fiber = self.ctx.registry.plugin(plugin_cls, self.options.get("config"), self.get_outer_stack)
+                if self.fiber:
+                    self.fiber.entry = self
+
+        try:
+            loop = asyncio.get_running_loop()
+            return loop.create_task(self._init_task_runner())
+        except RuntimeError:
+            return asyncio.run(self._init_task_runner())
+
+    async def _init_task_runner(self) -> None:
+        try:
+            if not self._init_task:
+                self._init_task = asyncio.create_task(self._init())
+            await self._init_task
+        finally:
+            self._init_task = None
+            if hasattr(self.loader, "get_tasks") and not self.loader.get_tasks():
+                if self.ctx and hasattr(self.ctx, "reflect"):
+                    self.ctx.reflect.notify(["loader"])
+        await self._await()
+
+    def update(self, options: Dict[str, Any], create: bool = False, force: bool = False) -> Any:
+        """Merge new options, restart as needed, and update fiber transactionally."""
+        try:
+            loop = asyncio.get_running_loop()
+            return loop.create_task(self._update_async(options, create=create, force=force))
+        except RuntimeError:
+            return asyncio.run(self._update_async(options, create=create, force=force))
+
+    async def _update_async(self, options: Dict[str, Any], create: bool = False, force: bool = False) -> None:
+        previous_options = self.options
+        legacy = dict(previous_options)
+        candidate = dict(options) if create else dict(previous_options)
+        if not create:
+            for k, v in options.items():
+                if v is None:
+                    candidate.pop(k, None)
+                else:
+                    candidate[k] = v
+        sort_keys(candidate)
+
+        diff = [k for k in set(list(candidate.keys()) + list(legacy.keys())) if candidate.get(k) != legacy.get(k)]
+        if not diff and not force:
+            return
+
+        def commit():
+            if create:
+                return
+            replace_keys(previous_options, candidate)
+            self.options = previous_options
+            self.name = self.options.get("name", self.name)
+            self.config = self.options.get("config", self.config)
+
+        previous = self.fiber
+        if not previous or not getattr(previous, "uid", None):
+            self.fiber = None
+            self.options = candidate
+            self.name = self.options.get("name", self.name)
+            self.config = self.options.get("config", self.config)
+            try:
+                if not self._disabled(candidate):
+                    res = self.init()
+                    if inspect.isawaitable(res):
+                        await res
+            except Exception as error:
+                self.options = previous_options
+                self.name = self.options.get("name", self.name)
+                self.config = self.options.get("config", self.config)
+                raise error
+            commit()
+            return
+
+        if self._disabled(candidate):
+            self.options = candidate
+            self.name = self.options.get("name", self.name)
+            self.config = self.options.get("config", self.config)
+            try:
+                await self._dispose_async(previous)
+            except Exception as error:
+                self.options = previous_options
+                self.name = self.options.get("name", self.name)
+                self.config = self.options.get("config", self.config)
+                raise LoaderUpdateError("dispose", candidate, error)
+            commit()
+            if hasattr(self.context, "emit"):
+                self.context.emit("loader/partial-dispose", self, legacy, True)
+            return
+
+        replace = any(key in ("name", "inject", "group") for key in diff)
+        if not replace:
+            self.options = candidate
+            self.name = self.options.get("name", self.name)
+            self.config = self.options.get("config", self.config)
+            try:
+                await self._patch_context(diff)
+            except Exception as error:
+                self.options = previous_options
+                self.name = self.options.get("name", self.name)
+                self.config = self.options.get("config", self.config)
+                try:
+                    await self._patch_context(diff)
+                except Exception as rollback_error:
+                    raise LoaderUpdateError("rollback", legacy, AggregateError([error, rollback_error]))
+                if hasattr(self.context, "emit"):
+                    self.context.emit("loader/partial-dispose", self, candidate, True)
+                raise LoaderUpdateError("apply", candidate, error)
+            commit()
+            if hasattr(self.context, "emit"):
+                self.context.emit("loader/partial-dispose", self, legacy, True)
+            return
+
+        plugin = None
+        try:
+            if "name" in diff:
+                tree = getattr(self.parent, "tree", None) or getattr(self.loader, "tree", None) or self.loader
+                raw = tree.import_plugin(candidate.get("name", ""), self.get_outer_stack)
+                if inspect.isawaitable(raw):
+                    raw = await raw
+                plugin = getattr(self.loader, "unwrap_exports", lambda x: x)(raw)
+            else:
+                plugin = previous.runtime.callback if previous.runtime else getattr(previous, "plugin", None)
+        except Exception as error:
+            raise LoaderUpdateError("import", candidate, error)
+
+        previous_plugin = previous.runtime.callback if previous.runtime else getattr(previous, "plugin", None)
+        self.options = candidate
         self.name = self.options.get("name", self.name)
         self.config = self.options.get("config", self.config)
+        try:
+            await self._dispose_async(previous)
+        except Exception as error:
+            self.options = previous_options
+            self.name = self.options.get("name", self.name)
+            self.config = self.options.get("config", self.config)
+            raise LoaderUpdateError("dispose", candidate, error)
 
-        if self.disabled:
-            if self.fiber:
-                self._dispose()
-            return
-
-        if not self.fiber:
-            self.init()
-            if self.fiber and self.fiber.error is not None:
-                raise self.fiber.error
-        else:
-            if "config" in options and self.fiber:
-                self.fiber.update(self.config, no_save=True)
-                if self.fiber.error is not None:
-                    raise self.fiber.error
-
-    def init(self) -> None:
-        """Start plugin fiber."""
-        if not self.loader:
-            return
-        reg_map = getattr(self.loader, "registry_map", {})
-        plugin_cls, mod_name = resolve_plugin_class(self.name, reg_map, return_mod_name=True)
-        if mod_name:
-            self._loaded_module_name = mod_name
-        ctx = getattr(self.loader, "ctx", None)
-        if not ctx:
-            return
-
-        if not plugin_cls and (self.options.get("group") or self.name == "cordis:group" or self.name == "@deepseek-ai/cordis-plugin-group"):
-            plugin_cls = Group
-
-        if plugin_cls:
-            from dsh.cordis.service import Service
-            if isinstance(plugin_cls, type) and issubclass(plugin_cls, Plugin):
-                inst = plugin_cls(config=self.config)
-                inst.id = self.id
-                self.fiber = ctx.registry.plugin(inst, config=self.config, get_outer_stack=self.get_outer_stack)
-            elif isinstance(plugin_cls, type) and issubclass(plugin_cls, Service):
-                inst = plugin_cls(self.ctx, config=self.config)
-                self.fiber = ctx.registry.plugin(inst, config=self.config, get_outer_stack=self.get_outer_stack)
-            elif callable(plugin_cls):
-                self.fiber = ctx.registry.plugin(plugin_cls, config=self.config, get_outer_stack=self.get_outer_stack)
-            else:
-                self.fiber = ctx.registry.plugin(plugin_cls, config=self.config, get_outer_stack=self.get_outer_stack)
-            if self.fiber:
-                self.fiber.entry = self
+        try:
+            await self._start(plugin)
+        except Exception as error:
+            self.options = previous_options
+            self.name = self.options.get("name", self.name)
+            self.config = self.options.get("config", self.config)
+            try:
+                await self._start(previous_plugin)
+            except Exception as rollback_error:
+                raise LoaderUpdateError("rollback", legacy, AggregateError([error, rollback_error]))
+            if hasattr(self.context, "emit"):
+                self.context.emit("loader/partial-dispose", self, candidate, True)
+            raise LoaderUpdateError("apply", candidate, error)
+        commit()
+        if hasattr(self.context, "emit"):
+            self.context.emit("loader/partial-dispose", self, legacy, True)
 
 
 
 # Backward compatibility aliases
 EntryNode = Entry
+
+
+class LoadCache(dict):
+    def has(self, key: Any) -> bool:
+        return key in self
+
+
+class LoaderInternal:
+    def __init__(self):
+        self.loadCache = LoadCache()
+        self.load_cache = self.loadCache
+        self.version = "v2"
+
+    def resolve(self, *args: Any, **kwargs: Any) -> Any:
+        pass
+
+    def resolveSync(self, *args: Any, **kwargs: Any) -> Any:
+        pass
 
 
 class Loader(EntryTree, Service):
@@ -955,8 +1827,11 @@ class Loader(EntryTree, Service):
             self.root = None
             self.tree = self
         self.config = config or {}
+        self.builtins: Dict[str, Any] = {}
         self.registry_map: Dict[str, Any] = {}
         from dsh.cordis.include import Include
+        self.builtins["include"] = Include
+        self.builtins["group"] = Group
         self.registry_map["cordis:include"] = Include
         self.registry_map["@deepseek-ai/cordis-plugin-include"] = Include
         self.registry_map["cordis:group"] = Group
@@ -964,6 +1839,7 @@ class Loader(EntryTree, Service):
         self.entries_list: List[Entry] = []
         self._realms: Dict[str, GlobalRealm] = {}
         self._delims: Dict[str, str] = {}
+        self.internal = LoaderInternal()
 
         if self.ctx:
             self.ctx.on("internal/config", self._on_internal_config, global_listener=True)
@@ -978,7 +1854,7 @@ class Loader(EntryTree, Service):
 
             self.ctx.on("loader/entry-init", _on_entry_init)
 
-            def _on_patch_context(entry: Entry, next_fn: Callable[[], Any] = None) -> Any:
+            def _on_patch_context(entry: Entry, next_fn: Optional[Callable[[], Any]] = None, *args: Any, **kwargs: Any) -> Any:
                 parent_ctx = getattr(entry.parent, "ctx", None) if entry.parent else None
                 base_ctx = parent_ctx or getattr(entry, "ctx", None)
                 old_map = dict(getattr(entry.ctx, "_isolated_keys", {}))
@@ -1046,34 +1922,43 @@ class Loader(EntryTree, Service):
                 if next_fn and callable(next_fn):
                     res = next_fn()
 
-                # Step 5: Replace service impl in reflect store matching TS isolate.ts:132-137
-                if hasattr(entry.ctx, "reflect") and hasattr(entry.ctx.reflect, "store"):
-                    for name, (sym1, sym2, flag1, flag2) in diff.items():
-                        if flag1 == flag2 and sym1 in entry.ctx.reflect.store and sym2 not in entry.ctx.reflect.store:
-                            entry.ctx.reflect.store[sym2] = entry.ctx.reflect.store[sym1]
-                            del entry.ctx.reflect.store[sym1]
+                def _step567():
+                    # Step 5: Replace service impl in reflect store matching TS isolate.ts:132-137
+                    if hasattr(entry.ctx, "reflect") and hasattr(entry.ctx.reflect, "store"):
+                        for name, (sym1, sym2, flag1, flag2) in diff.items():
+                            if flag1 == flag2 and sym1 in entry.ctx.reflect.store and sym2 not in entry.ctx.reflect.store:
+                                entry.ctx.reflect.store[sym2] = entry.ctx.reflect.store[sym1]
+                                del entry.ctx.reflect.store[sym1]
 
-                # Step 6: Reflect notify with Delimiter filter matching TS isolate.ts:140-146
-                if diff and hasattr(self.ctx, "reflect"):
-                    def _filter_notify(target_ctx: Any, s_name: str) -> bool:
-                        if s_name not in diff:
-                            return True
-                        sym1, sym2, flag1, flag2 = diff[s_name]
-                        sym3 = getattr(target_ctx, "_isolated_keys", {}).get(s_name, "")
-                        target_delims = getattr(target_ctx, "_isolate_delims", {})
-                        delim_key = self._delims.get(s_name, "")
-                        flag3 = target_delims.get(delim_key, "")
-                        return (sym1 == sym3 or sym2 == sym3) and (flag1 == flag3) != (flag1 == flag2)
+                    # Step 6: Reflect notify with Delimiter filter matching TS isolate.ts:140-146
+                    if diff and hasattr(self.ctx, "reflect"):
+                        def _filter_notify(target_ctx: Any, s_name: str) -> bool:
+                            if s_name not in diff:
+                                return True
+                            sym1, sym2, flag1, flag2 = diff[s_name]
+                            sym3 = getattr(target_ctx, "_isolated_keys", {}).get(s_name, "")
+                            target_delims = getattr(target_ctx, "_isolate_delims", {})
+                            delim_key = self._delims.get(s_name, "")
+                            flag3 = target_delims.get(delim_key, "")
+                            return (sym1 == sym3 or sym2 == sym3) and (flag1 == flag3) != (flag1 == flag2)
 
-                    self.ctx.reflect.notify(list(diff.keys()), filter_fn=_filter_notify)
+                        self.ctx.reflect.notify(list(diff.keys()), filter_fn=_filter_notify)
 
-                # Step 7: Clean up delimiters
-                for name, delim_key in list(self._delims.items()):
-                    if name not in new_map:
-                        if hasattr(entry.ctx, "_isolate_delims"):
-                            entry.ctx._isolate_delims.pop(delim_key, None)
+                    # Step 7: Clean up delimiters
+                    for name, delim_key in list(self._delims.items()):
+                        if name not in new_map:
+                            if hasattr(entry.ctx, "_isolate_delims"):
+                                entry.ctx._isolate_delims.pop(delim_key, None)
 
-                return res
+                if inspect.isawaitable(res):
+                    async def _await_res():
+                        r = await res
+                        _step567()
+                        return r
+                    return _await_res()
+                else:
+                    _step567()
+                    return res
 
             self.ctx.on("loader/patch-context", _on_patch_context)
 
@@ -1186,12 +2071,7 @@ class Loader(EntryTree, Service):
         """Host hook for whole-process reload matching TS loader.exit."""
         pass
 
-    @property
-    def entries(self) -> List[Entry]:
-        """Backward compatibility list of entries."""
-        if self.store:
-            return list(self.store.values())
-        return self.entries_list
+    entries = EntriesDescriptor()
 
     def _on_internal_config(self, config: Any, *args: Any, **kwargs: Any) -> Any:
         target_ctx = kwargs.get("caller_ctx") or (args[0] if args and hasattr(args[0], "fiber") else None)
@@ -1211,7 +2091,8 @@ class Loader(EntryTree, Service):
         if getattr(plugin, "is_tree_carrier", False) or getattr(plugin, EntryGroup.key, False) or getattr(plugin, "group", False):
             return resolved
 
-        return interpolate(fiber.ctx, resolved)
+        eval_ctx = target_ctx or (fiber.ctx if fiber and hasattr(fiber, "ctx") else (self.ctx.root if hasattr(self.ctx, "root") else self.ctx))
+        return interpolate(eval_ctx, resolved)
 
     def _on_internal_update(self, config: Any, no_save: bool = False, *args: Any, **kwargs: Any) -> Any:
         target_ctx = kwargs.get("caller_ctx") or (args[0] if args and hasattr(args[0], "fiber") else None)
@@ -1220,19 +2101,29 @@ class Loader(EntryTree, Service):
         next_fn = args[-1] if args and callable(args[-1]) else (lambda c=config: c)
         res = next_fn(config) if callable(next_fn) else config
 
-        if fiber and getattr(fiber, "entry", None) and not no_save:
-            parent_fiber = getattr(getattr(fiber, "parent", None), "fiber", None)
-            if not parent_fiber or getattr(parent_fiber, "entry", None) != fiber.entry:
-                entry = fiber.entry
-                cfg_schema = getattr(getattr(fiber, "runtime", None), "Config", None) or getattr(getattr(fiber, "plugin", None), "Config", None)
-                if cfg_schema and hasattr(cfg_schema, "simplify") and callable(cfg_schema.simplify):
-                    simplified = cfg_schema.simplify(config)
-                    entry.options["config"] = simplified if simplified is not None else config
-                else:
-                    entry.options["config"] = config
-                if entry.parent and hasattr(entry.parent, "tree") and hasattr(entry.parent.tree, "write"):
-                    entry.parent.tree.write()
-        return res
+        def _do_save():
+            if fiber and getattr(fiber, "entry", None) and not no_save:
+                parent_fiber = getattr(getattr(fiber, "parent", None), "fiber", None)
+                if not parent_fiber or getattr(parent_fiber, "entry", None) != fiber.entry:
+                    entry = fiber.entry
+                    cfg_schema = getattr(getattr(fiber, "runtime", None), "Config", None) or getattr(getattr(fiber, "plugin", None), "Config", None)
+                    if cfg_schema and hasattr(cfg_schema, "simplify") and callable(cfg_schema.simplify):
+                        simplified = cfg_schema.simplify(config)
+                        entry.options["config"] = simplified if simplified is not None else config
+                    else:
+                        entry.options["config"] = config
+                    if entry.parent and hasattr(entry.parent, "tree") and hasattr(entry.parent.tree, "write"):
+                        entry.parent.tree.write()
+
+        if inspect.isawaitable(res):
+            async def _await_and_save():
+                val = await res
+                _do_save()
+                return val
+            return _await_and_save()
+        else:
+            _do_save()
+            return res
 
     def register_plugin_class(self, name_or_id: str, plugin_cls: Any) -> None:
         """

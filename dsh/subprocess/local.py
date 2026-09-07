@@ -336,7 +336,10 @@ class LocalSubprocessRuntime(SubprocessRuntime):
         if hasattr(ctx, "effect"):
             def teardown():
                 self._terminate_all()
-            ctx.effect(teardown)
+            if hasattr(ctx, "disposable"):
+                ctx.disposable(teardown, label="local_subprocess.teardown")
+            else:
+                ctx.effect(lambda: teardown)
 
     def _terminate_all(self) -> None:
         for h in list(self.live):

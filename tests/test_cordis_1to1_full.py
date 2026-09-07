@@ -95,12 +95,10 @@ def test_composite_epoch_and_cascade_reloading():
         name = "downstream"
         inject = ["database"]
 
-        def __init__(self, config=None):
-            super().__init__(config)
-            self.reload_count = 0
+        reload_count = 0
 
         def apply(self, c):
-            self.reload_count += 1
+            DownstreamPlugin.reload_count += 1
             db = c.get("database")
             c.set_service("downstream_val", f"ready_v{db['version']}")
 

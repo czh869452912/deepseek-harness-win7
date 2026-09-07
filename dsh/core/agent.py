@@ -390,7 +390,7 @@ class AgentRegistry:
             self._factory = None
 
         if self.ctx:
-            self.ctx.effect(disposer)
+            self.ctx.disposable(disposer, label="agentRegistry.setFactory")
         return disposer
 
     setFactory = set_factory
@@ -464,7 +464,7 @@ class AgentRegistry:
             detach()
 
         if self.ctx:
-            self.ctx.effect(disposer)
+            self.ctx.disposable(disposer, label="agentRegistry.register")
         return disposer
 
     def get(self, session_id: str) -> Optional[Agent]:

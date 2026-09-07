@@ -18,17 +18,22 @@ class Plugin:
         self.config: Dict[str, Any] = config or {}
         self.ctx: Optional[Any] = None
 
-    def apply(self, ctx: Any, config: Any = None) -> Any:
+    def apply(self, ctx: Any, config: Optional[Any] = None) -> Any:
         """
-        Plugin mounting logic. Overridden by subclass.
+        Plugin mounting logic matching TS Cordis apply(ctx, config).
+        Overridden by subclass. May return a disposer callable or generator.
         """
         pass
 
     def teardown(self) -> None:
         """
-        Plugin cleanup logic when unmounted.
+        Plugin cleanup logic when unmounted (portable release extension).
         """
         pass
 
 
-PluginType = Union[Plugin, Callable[[Any], None]]
+# PluginType union covering all 3 TS Cordis shapes:
+# 1. Class/Constructor (subclass of Plugin or callable constructing plugin)
+# 2. Function plugin (callable accepting ctx or ctx, config)
+# 3. Object plugin (dict or instance with an apply method)
+PluginType = Union[Plugin, Callable[..., Any], Dict[str, Any], Any]

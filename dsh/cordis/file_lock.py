@@ -4,9 +4,12 @@ Falls back to stdlib `msvcrt` (Windows) / `fcntl` (POSIX) + `threading.RLock`
 when third-party `filelock` module is not installed.
 """
 
+import asyncio
 import os
 import sys
 import threading
+import time
+from typing import Any
 
 try:
     from filelock import FileLock
@@ -88,3 +91,64 @@ except ImportError:
 
         def __exit__(self, exc_type, exc_val, exc_tb):
             self.release()
+
+
+_async_locks = {}
+_async_guard = threading.Lock()
+
+
+def _get_async_lock(key: str) -> asyncio.Lock:
+    with _async_guard:
+        if key not in _async_locks:
+            _async_locks[key] = asyncio.Lock()
+        return _async_locks[key]
+
+
+async def with_file_lock(lock_path: str, fn: Any, *args: Any, **kwargs: Any) -> Any:
+    """Acquire file lock around an async or sync callable matching reference withFileLock."""
+    wait_ms = kwargs.pop("waitMs", kwargs.pop("wait_ms", 2000))
+    lock_file = lock_path if lock_path.endswith(".lock") else f"{lock_path}.lock"
+    norm_key = os.path.normcase(os.path.abspath(lock_file))
+    alock = _get_async_lock(norm_key)
+
+    await alock.acquire()
+    try:
+        deadline = time.time() + (wait_ms / 1000.0)
+        delay = 0.02
+        acquired_os_lock = False
+        fd = -1
+        while True:
+            try:
+                parent = os.path.dirname(os.path.abspath(lock_file))
+                if parent:
+                    os.makedirs(parent, exist_ok=True)
+                fd = os.open(lock_file, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                os.write(fd, f"{os.getpid()}\n".encode("utf-8"))
+                acquired_os_lock = True
+                break
+            except (FileExistsError, PermissionError):
+                if time.time() >= deadline:
+                    raise RuntimeError(f"atomic-write: timed out waiting for the writer lock at {lock_file}")
+                await asyncio.sleep(delay)
+                delay = min(delay * 2, 0.2)
+            except Exception:
+                raise
+
+        try:
+            res = fn(*args, **kwargs)
+            if asyncio.iscoroutine(res):
+                return await res
+            return res
+        finally:
+            if acquired_os_lock:
+                if fd != -1:
+                    try:
+                        os.close(fd)
+                    except Exception:
+                        pass
+                try:
+                    os.unlink(lock_file)
+                except Exception:
+                    pass
+    finally:
+        alock.release()

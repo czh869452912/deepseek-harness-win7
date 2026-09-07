@@ -362,15 +362,34 @@ def is_plain_object(data: Any) -> bool:
     return bool(data and isinstance(data, dict))
 
 
+def format_property(key: Any) -> str:
+    """Format a property key as a JavaScript member access suffix matching Cosmokit formatProperty."""
+    import json
+    if not isinstance(key, str):
+        return f"[{key}]"
+    if re.match(r"^[a-zA-Z_$][\w$]*$", key):
+        return f".{key}"
+    return f"[{json.dumps(key)}]"
+
+
+formatProperty = format_property
+
+
 def trim_slash(source: str) -> str:
-    """Trim leading and trailing slashes."""
-    return source.strip("/")
+    """Remove one trailing slash from a path string matching Cosmokit trimSlash."""
+    if source.endswith("/"):
+        return source[:-1]
+    return source
 
 
-def sanitize(path: str) -> str:
-    """Normalize path."""
-    import posixpath
-    return posixpath.normpath(path)
+trimSlash = trim_slash
+
+
+def sanitize(source: str) -> str:
+    """Ensure a path starts with '/' and has no trailing slash matching Cosmokit sanitize."""
+    if not source.startswith("/"):
+        source = "/" + source
+    return trim_slash(source)
 
 
 def contain(array1: Any, array2: Any) -> bool:
@@ -844,3 +863,18 @@ def compose_error(action: Callable[..., Any], get_outer_stack: Optional[Callable
             if outer:
                 e._outer_stack = outer
         raise
+
+
+def get_isolate_symbol(ctx: Any, name: str) -> Any:
+    """
+    Look up isolation symbol for a service name traversing the context prototype/parent chain matching TS ctx[symbols.isolate][name].
+    """
+    curr = ctx
+    while curr is not None:
+        iso_map = getattr(curr, "_isolated_keys", None)
+        if iso_map is not None and name in iso_map:
+            return iso_map[name]
+        curr = getattr(curr, "_parent", None)
+    if hasattr(ctx, "root") and hasattr(ctx.root, "_isolated_keys"):
+        return ctx.root._isolated_keys.get(name)
+    return None

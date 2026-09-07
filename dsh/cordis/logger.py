@@ -298,12 +298,33 @@ class LoggerService:
             return self.ctx.effect(setup, label="ctx.logger.exporter()")
         return setup()
 
+    def _bind(self, ctx: Any) -> "LoggerService":
+        bound = LoggerService.__new__(LoggerService)
+        bound.__dict__.update(self.__dict__)
+        bound.ctx = ctx
+        return bound
+
+    def resolve_intercept_config(self) -> Dict[str, Any]:
+        configs: List[Dict[str, Any]] = []
+        curr = self.ctx
+        while curr is not None:
+            intercept_map = getattr(curr, "_intercept_map", {})
+            if "logger" in intercept_map and isinstance(intercept_map["logger"], dict):
+                configs.insert(0, intercept_map["logger"])
+            curr = getattr(curr, "_parent", None) or getattr(curr, "parent", None)
+            if curr is getattr(curr, "root", None) and curr is self.ctx:
+                break
+        res: Dict[str, Any] = {}
+        for cfg in configs:
+            res.update(cfg)
+        return res
+
     def __call__(self, name: Optional[str] = None) -> Logger:
         """Create or get a named Logger instance."""
         from dsh.cordis.utils import hyphenate
-        config = self.resolve_intercept_config() or {} if hasattr(self, "resolve_intercept_config") else {}
-        target_name = name or config.get("name")
+        config = self.resolve_intercept_config()
         fiber = getattr(self.ctx, "fiber", None)
+        target_name = name or config.get("name")
         if not target_name:
             fname = getattr(fiber, "name", "root") if fiber else "root"
             target_name = hyphenate(fname) if fname else "root"

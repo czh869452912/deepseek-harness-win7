@@ -122,12 +122,13 @@ class PluginRuntime:
     Mutable registry record shared by all fibers of one plugin callback.
     """
 
-    def __init__(self, callback: Any, name: Optional[str] = None):
+    def __init__(self, callback: Any, name: Optional[str] = None, Config: Any = None):
         self.callback = callback
         cb_name = getattr(callback, "name", None) or getattr(callback, "__name__", None)
         if cb_name and (cb_name in ("<lambda>", "anonymous", "apply") or cb_name.startswith("anonymous")):
             cb_name = None
         self.name = name or cb_name
+        self.Config = Config
         self.fibers: List[Fiber] = []
 
     def add_fiber(self, fiber: Fiber) -> None:
@@ -156,6 +157,12 @@ class RegistryService:
         self._pending_fibers: Set[Fiber] = set()
         self._updating = False
 
+    def _bind(self, ctx: Any) -> "RegistryService":
+        import copy
+        bound = copy.copy(self)
+        bound.ctx = ctx
+        return bound
+
     @property
     def counter(self) -> int:
         self._counter += 1
@@ -171,12 +178,17 @@ class RegistryService:
         """
         if not plugin:
             return None
-        if callable(plugin):
-            return plugin
-        if hasattr(plugin, "apply") and callable(plugin.apply):
-            return plugin.apply
-        if isinstance(plugin, dict) and callable(plugin.get("apply")):
-            return plugin["apply"]
+        try:
+            if inspect.isclass(plugin) or inspect.isfunction(plugin) or inspect.isbuiltin(plugin):
+                return plugin
+            if hasattr(plugin, "apply") and callable(getattr(plugin, "apply", None)):
+                return plugin.apply
+            if isinstance(plugin, dict) and callable(plugin.get("apply")):
+                return plugin["apply"]
+            if callable(plugin):
+                return plugin
+        except Exception:
+            return None
         return None
 
     def get(self, plugin: Any) -> Optional[PluginRuntime]:
@@ -236,7 +248,8 @@ class RegistryService:
             callback = plugin_cls_or_instance
 
         if not callback:
-            raise ValueError(f"Invalid plugin, expected function, class, or object with 'apply' method: {plugin_cls_or_instance}")
+            type_str = type(plugin_cls_or_instance).__name__
+            raise ValueError(f'invalid plugin, expect function or object with an "apply" method, received {type_str}')
 
         if target_parent and getattr(target_parent, "fiber", None):
             target_parent.fiber.assert_active(check_error=False)
@@ -250,7 +263,10 @@ class RegistryService:
                 name = plugin_cls_or_instance.get("name") or plugin_cls_or_instance.get("id")
             if name == "apply":
                 name = None
-            runtime = PluginRuntime(callback=callback, name=name)
+            cfg_schema = getattr(plugin_cls_or_instance, "Config", None) or getattr(plugin_cls_or_instance, "schema", None)
+            if isinstance(plugin_cls_or_instance, dict):
+                cfg_schema = cfg_schema or plugin_cls_or_instance.get("Config") or plugin_cls_or_instance.get("schema")
+            runtime = PluginRuntime(callback=callback, name=name, Config=cfg_schema)
             self._runtimes[callback] = runtime
 
         # Extract declared dependencies via Inject.resolve
@@ -260,40 +276,24 @@ class RegistryService:
         fiber = Fiber(target_parent, None, config=config, runtime=runtime, inject=inject_deps, get_outer_stack=get_outer_stack)
         target_ctx = fiber.ctx
 
-        # Plugin instantiation
+        # Plugin instantiation deferred to fiber._reload for class plugins
         if inspect.isclass(plugin_cls_or_instance):
-            from dsh.cordis.service import Service
-            if issubclass(plugin_cls_or_instance, Service):
-                try:
-                    plugin_inst = plugin_cls_or_instance(target_ctx, config=config)
-                except TypeError:
-                    try:
-                        plugin_inst = plugin_cls_or_instance(target_ctx)
-                    except TypeError:
-                        plugin_inst = plugin_cls_or_instance()
-            elif issubclass(plugin_cls_or_instance, Plugin):
-                plugin_inst = plugin_cls_or_instance(config=config)
-            else:
-                try:
-                    plugin_inst = plugin_cls_or_instance(target_ctx, config=config)
-                except TypeError:
-                    try:
-                        plugin_inst = plugin_cls_or_instance(config=config)
-                    except TypeError:
-                        try:
-                            plugin_inst = plugin_cls_or_instance(target_ctx)
-                        except TypeError:
-                            plugin_inst = plugin_cls_or_instance()
+            fiber._plugin_cls = plugin_cls_or_instance
+            plugin_inst = None
+            if hasattr(plugin_cls_or_instance, "inject") and not raw_inject:
+                fiber.inject = Inject.resolve(getattr(plugin_cls_or_instance, "inject", None))
         elif isinstance(plugin_cls_or_instance, Plugin):
             plugin_inst = plugin_cls_or_instance
             if config:
                 plugin_inst.config.update(config)
+            fiber.plugin = plugin_inst
+            if hasattr(plugin_inst, "inject") and not raw_inject:
+                fiber.inject = Inject.resolve(getattr(plugin_inst, "inject", None))
         else:
             plugin_inst = plugin_cls_or_instance
-
-        fiber.plugin = plugin_inst
-        if hasattr(plugin_inst, "inject") and not raw_inject:
-            fiber.inject = Inject.resolve(getattr(plugin_inst, "inject", None))
+            fiber.plugin = plugin_inst
+            if hasattr(plugin_inst, "inject") and not raw_inject:
+                fiber.inject = Inject.resolve(getattr(plugin_inst, "inject", None))
 
         # Collect method-level @inject hooks matching TS @Inject method decorator
         if plugin_inst is not None and not isinstance(plugin_inst, (dict, list, tuple)):
@@ -376,7 +376,15 @@ class RegistryService:
             name = getattr(callback, "__name__", "inject_callback")
             inject = inject_dict
 
-            def apply(self, c: Any) -> Any:
+            def apply(self, c: Any, config: Any = None) -> Any:
+                try:
+                    sig = inspect.signature(callback)
+                    params = [p for p in sig.parameters.values() if p.kind not in (inspect.Parameter.VAR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)]
+                    has_varargs = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
+                    if len(params) >= 2 or has_varargs:
+                        return callback(c, config)
+                except (ValueError, TypeError):
+                    pass
                 return callback(c)
 
         return self.plugin(InjectPlugin())

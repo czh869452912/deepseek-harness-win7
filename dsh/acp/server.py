@@ -47,8 +47,10 @@ class AcpPlugin(Plugin):
                         pass
             self.sessions.clear()
 
-        if hasattr(ctx, "effect"):
-            ctx.effect(disposer)
+        if hasattr(ctx, "disposable"):
+            ctx.disposable(disposer, label="acp.disposer")
+        elif hasattr(ctx, "effect"):
+            ctx.effect(lambda: disposer)
 
     async def initialize(self, ctx: Any, params: Dict[str, Any]) -> Dict[str, Any]:
         p = self.config.get("provider")

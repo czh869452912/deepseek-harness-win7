@@ -14,6 +14,7 @@ import platform
 import random
 import re
 import sys
+import time
 from typing import Any, Callable, Dict, Iterator, List, Optional, Set, Tuple, Union
 import yaml
 
@@ -516,7 +517,7 @@ def apply_entry_patches(
         insert = patch_copy.pop("insert", None)
         pname = patch_copy.pop("name", None)
 
-        if insert is not None:
+        if insert is not None and (insert or isinstance(insert, list)):
             cloned_insert = copy.deepcopy(insert)
             if pid:
                 target = entry_map.get(pid)
@@ -566,6 +567,8 @@ class LoaderUpdateError(RuntimeError, ValueError):
         self.stage = stage
         self.options = dict(options)
         self.cause = cause
+        if isinstance(cause, BaseException):
+            self.__cause__ = cause
         eid = options.get("id", "")
         name = options.get("name", "")
         detail = getattr(cause, "message", None) or str(cause) if cause is not None else ""
@@ -765,7 +768,11 @@ class LocalRealm(Realm):
 
     @property
     def suffix(self) -> str:
-        return f"#{getattr(self.entry, 'id', 'local')}"
+        opts = getattr(self.entry, "options", {})
+        eid = opts.get("id") if isinstance(opts, dict) else None
+        if not eid:
+            eid = getattr(self.entry, "id", "local")
+        return f"#{eid}"
 
 
 class GlobalRealm(Realm):
@@ -896,9 +903,6 @@ class EntryTree:
                 tasks.append(entry.fiber.inertia)
             if getattr(entry, "subgroup", None) and getattr(entry.subgroup, "_update_task", None) and not entry.subgroup._update_task.done():
                 tasks.append(entry.subgroup._update_task)
-            sub = getattr(entry, "subtree", None)
-            if sub is not None and hasattr(sub, "get_tasks") and sub is not self:
-                tasks.extend(sub.get_tasks())
         return tasks
 
     async def await_tasks(self) -> None:
@@ -914,19 +918,7 @@ class EntryTree:
         while True:
             tasks = self.get_tasks()
             if tasks:
-                results = await asyncio.gather(*tasks, return_exceptions=True)
-                failures = [r for r in results if isinstance(r, Exception)]
-                if failures:
-                    unique_failures = []
-                    seen_msgs = set()
-                    for f in failures:
-                        msg = str(f)
-                        if msg not in seen_msgs:
-                            seen_msgs.add(msg)
-                            unique_failures.append(f)
-                    if len(unique_failures) == 1:
-                        raise unique_failures[0]
-                    raise AggregateError(unique_failures, "loader tasks failed")
+                await asyncio.gather(*tasks, return_exceptions=True)
                 continue
             outcomes = []
             for entry in list(self.entries()):
@@ -937,19 +929,10 @@ class EntryTree:
                             await res
                     except Exception as e:
                         outcomes.append(e)
-            if len(outcomes) > 1:
-                unique_outcomes = []
-                seen_msgs = set()
-                for o in outcomes:
-                    msg = str(o)
-                    if msg not in seen_msgs:
-                        seen_msgs.add(msg)
-                        unique_outcomes.append(o)
-                if len(unique_outcomes) == 1:
-                    raise unique_outcomes[0]
-                raise AggregateError(unique_outcomes, "loader fibers failed")
-            elif len(outcomes) == 1:
+            if len(outcomes) == 1:
                 raise outcomes[0]
+            elif len(outcomes) > 1:
+                raise AggregateError(outcomes, "loader fibers failed")
             if self.ctx and hasattr(self.ctx, "reflect"):
                 self.ctx.reflect.notify(["loader"])
             if not self.get_tasks():
@@ -1133,6 +1116,14 @@ class EntryTree:
                     mod = importlib.util.module_from_spec(spec)
                     sys.modules[mod_name] = mod
                     spec.loader.exec_module(mod)
+                    try:
+                        import pathlib
+                        url = pathlib.Path(os.path.realpath(resolved_path)).as_uri()
+                        loader_inst = getattr(self.ctx, "loader", None) or self
+                        if hasattr(loader_inst, "internal") and hasattr(loader_inst.internal, "loadCache"):
+                            loader_inst.internal.loadCache[url] = mod
+                    except Exception:
+                        pass
                     return mod
                 raise ImportError(f"Could not load python module from {resolved_path}")
 
@@ -1156,9 +1147,8 @@ class EntryTree:
     def unwrap_exports(self, module: Any) -> Any:
         if module is None:
             return None
-        if hasattr(module, "default"):
-            return getattr(module, "default")
-        return module
+        d = getattr(module, "default", module)
+        return d if d is not None else module
 
     def write(self) -> None:
         """Persist tree state. If filepath is set, writes out YAML atomically matching TS EntryTree.write()."""
@@ -1177,7 +1167,7 @@ class EntryTree:
 
 class EntryGroup:
     """Runtime owner for a list of child loader entries matching TS EntryGroup."""
-    key = "cordis.entryGroup"
+    key = "cordis.group"
 
     def __init__(self, ctx: Context, tree: EntryTree):
         self.ctx = ctx
@@ -1330,16 +1320,23 @@ class EntryGroup:
         new_map = {opt["id"]: opt for opt in config_list if "id" in opt}
 
         try:
-            for opt in config_list:
-                await self._create_async(opt)
+            outcomes = await asyncio.gather(*(self._create_async(opt) for opt in config_list), return_exceptions=True)
+            fiber = getattr(self.ctx, "fiber", None)
+            if fiber is not None and fiber.uid is None:
+                return
+            failures = [o for o in outcomes if isinstance(o, Exception)]
+            if len(failures) == 1:
+                raise failures[0]
+            elif len(failures) > 1:
+                raise AggregateError(failures, "loader entries failed to apply")
+
             for eid in list(old_map.keys()):
                 if eid not in new_map:
                     await self._remove_async(eid, is_dispose=True)
             self.data = config_list
         except Exception as error:
             fiber = getattr(self.ctx, "fiber", None)
-            root_fiber = getattr(getattr(self.ctx, "root", None), "fiber", None)
-            if (fiber is not None and fiber.uid is None) or (root_fiber is not None and root_fiber.uid is None):
+            if fiber is not None and fiber.uid is None:
                 return
             rollback_errors: List[Any] = []
             for eid in reversed(list(new_map.keys())):
@@ -1356,9 +1353,6 @@ class EntryGroup:
             self.data = old_config
             if rollback_errors:
                 error = AggregateError([error] + rollback_errors, "loader entry rollback failed")
-            fiber_entry = getattr(getattr(self.tree.ctx, "fiber", None), "entry", None)
-            if fiber_entry and getattr(fiber_entry, "options", None):
-                raise LoaderUpdateError("apply", fiber_entry.options, error)
             raise error
         finally:
             try:
@@ -1396,7 +1390,6 @@ class EntryGroup:
 class Group(EntryGroup):
     """Plugin that mounts a nested loader entry group matching TS Group."""
     is_tree_carrier = True
-    entry_group_key = True
     inject = ["loader"]
 
     def __init__(self, ctx: Context, config: Optional[List[Dict[str, Any]]] = None):
@@ -1419,6 +1412,9 @@ class Group(EntryGroup):
     async def init(self) -> Any:
         yield lambda: self._stop_async()
         await self._update_async(self.config)
+
+
+setattr(Group, EntryGroup.key, True)
 
 
 class Entry:
@@ -1584,10 +1580,7 @@ class Entry:
             if self.loader and hasattr(self.loader, "show_log"):
                 self.loader.show_log(self, "apply")
             ctx = self.ctx
-            if self.fiber is None:
-                fiber = self.fiber = ctx.registry.plugin(plugin, config=self.options.get("config"), get_outer_stack=self.get_outer_stack)
-            else:
-                fiber = self.fiber
+            fiber = self.fiber = ctx.registry.plugin(plugin, config=self.options.get("config"), get_outer_stack=self.get_outer_stack)
 
             if fiber:
                 fiber.entry = self
@@ -1638,18 +1631,17 @@ class Entry:
         except Exception as error:
             raise LoaderUpdateError("apply", self.options, error)
 
-    def init(self) -> Any:
-        if not self.fiber and self.options.get("name"):
-            tree = getattr(self.parent, "tree", None) or getattr(self.loader, "tree", None) or self.loader
-            reg_map = getattr(self.loader, "registry_map", {}) if self.loader else {}
-            plugin_cls, mod_name = resolve_plugin_class(self.options.get("name", ""), reg_map, return_mod_name=True)
-            if mod_name:
-                self._loaded_module_name = mod_name
-            if plugin_cls is not None:
-                self.fiber = self.ctx.registry.plugin(plugin_cls, self.options.get("config"), self.get_outer_stack)
-                if self.fiber:
-                    self.fiber.entry = self
+    async def refresh(self) -> None:
+        """Lazily initialize entry if not currently active and not disabled matching TS Entry.refresh."""
+        if self.fiber:
+            return
+        if self.disabled:
+            return
+        res = self.init()
+        if inspect.isawaitable(res):
+            await res
 
+    def init(self) -> Any:
         try:
             loop = asyncio.get_running_loop()
             return loop.create_task(self._init_task_runner())
@@ -1844,6 +1836,21 @@ class Loader(EntryTree, Service):
             self.root = None
             self.tree = self
         self.config = config or {}
+
+        # D1: envData and CORDIS_SHARED
+        cordis_shared = os.environ.get("CORDIS_SHARED")
+        if cordis_shared:
+            try:
+                self.envData = json.loads(cordis_shared)
+            except Exception:
+                self.envData = {"startTime": int(time.time() * 1000)}
+        else:
+            self.envData = {"startTime": int(time.time() * 1000)}
+
+        # D2: baseUrl
+        if self.ctx is not None and self.config.get("baseUrl"):
+            self.ctx.baseUrl = self.config["baseUrl"]
+
         self.builtins: Dict[str, Any] = {}
         self.registry_map: Dict[str, Any] = {}
         from dsh.cordis.include import Include
@@ -1861,6 +1868,7 @@ class Loader(EntryTree, Service):
         if self.ctx:
             self.ctx.on("internal/config", self._on_internal_config, global_listener=True)
             self.ctx.on("internal/update", self._on_internal_update, global_listener=True, prepend=True)
+            self.ctx.on("internal/update", self._on_internal_update_log, global_listener=True)
 
             def _on_entry_init(entry: Entry) -> None:
                 if entry.ctx:
@@ -1920,6 +1928,9 @@ class Loader(EntryTree, Service):
                             continue
                         impl_fiber = getattr(impl, "fiber", None)
                         if not impl_fiber:
+                            logger = getattr(entry.ctx, "logger", None)
+                            if logger:
+                                logger("loader").warn("expected service %s to be implemented", name)
                             continue
                         impl_ctx = getattr(impl_fiber, "ctx", None)
                         impl_delims = getattr(impl_ctx, "_isolate_delims", {}) if impl_ctx else {}
@@ -1931,8 +1942,7 @@ class Loader(EntryTree, Service):
                 # Step 3: Update isolate & intercept maps
                 entry.ctx._isolated_keys = new_map
                 intercept_opt = entry.options.get("intercept", {})
-                if isinstance(intercept_opt, dict):
-                    entry.ctx._intercept_map.update(intercept_opt)
+                entry.ctx._intercept_map = dict(intercept_opt) if isinstance(intercept_opt, dict) else {}
 
                 # Step 4: Reload fiber
                 res = None
@@ -2057,6 +2067,13 @@ class Loader(EntryTree, Service):
 
             self.ctx.on("internal/plugin", _on_internal_plugin, global_listener=True)
 
+    def check(self) -> bool:
+        """Service check hook matching TS Loader[Service.check]."""
+        intercept = self.resolve_intercept_config()
+        if isinstance(intercept, dict) and intercept.get("await") and len(self.get_tasks()) > 0:
+            return False
+        return True
+
     def show_log(self, entry: Any, action_type: str) -> None:
         """Log loader plugin lifecycle events matching TS Loader.showLog."""
         if not entry:
@@ -2065,11 +2082,25 @@ class Loader(EntryTree, Service):
         if opts.get("group"):
             return
         parent_tree = getattr(getattr(entry, "parent", None), "tree", None)
-        if not getattr(parent_tree, "enable_logs", False):
+        enable_logs = getattr(parent_tree, "enable_logs", None)
+        if enable_logs is None:
+            enable_logs = getattr(parent_tree, "enableLogs", False)
+        if not enable_logs:
             return
-        entry_name = opts.get("name", getattr(entry, "name", str(entry)))
-        if hasattr(self.ctx, "logger"):
-            self.ctx.logger("loader").info("%s plugin %s", action_type, entry_name)
+        entry_name = opts.get("name") or getattr(entry, "name", str(entry))
+        logger_ctx = getattr(self.ctx, "root", self.ctx)
+        if logger_ctx and hasattr(logger_ctx, "logger"):
+            logger_ctx.logger("loader").info("%s plugin %s", action_type, entry_name)
+
+    def _on_internal_update_log(self, config: Any, no_save: bool = False, *args: Any, **kwargs: Any) -> Any:
+        target_ctx = kwargs.get("caller_ctx") or (args[0] if args and hasattr(args[0], "fiber") else None)
+        fiber = getattr(target_ctx, "fiber", None) if target_ctx else None
+        next_fn = args[-1] if args and callable(args[-1]) else (lambda c=config: c)
+        if fiber and getattr(fiber, "entry", None):
+            parent_fiber = getattr(getattr(fiber, "parent", None), "fiber", None)
+            if not parent_fiber or getattr(parent_fiber, "entry", None) != fiber.entry:
+                self.show_log(fiber.entry, "reload")
+        return next_fn(config) if callable(next_fn) else config
 
     def locate(self, fiber: Any = None) -> Optional[str]:
         """Return the loader entry id owning the given fiber matching TS Loader.locate."""
@@ -2105,7 +2136,7 @@ class Loader(EntryTree, Service):
             return resolved
 
         plugin = getattr(fiber, "plugin", None) or getattr(getattr(fiber, "runtime", None), "callback", None)
-        if getattr(plugin, "is_tree_carrier", False) or getattr(plugin, EntryGroup.key, False) or getattr(plugin, "group", False):
+        if getattr(plugin, EntryGroup.key, False):
             return resolved
 
         eval_ctx = target_ctx or (fiber.ctx if fiber and hasattr(fiber, "ctx") else (self.ctx.root if hasattr(self.ctx, "root") else self.ctx))

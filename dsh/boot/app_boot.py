@@ -128,7 +128,7 @@ class LaunchEnvironmentSnapshot:
         self._layers = layers
 
     def get(self, name: str) -> Optional[Dict[str, Any]]:
-        for layer in reversed(self._layers):
+        for layer in self._layers:
             if name in layer["values"]:
                 res = {"value": layer["values"][name], "source": layer["source"]}
                 if "path" in layer:
@@ -137,7 +137,7 @@ class LaunchEnvironmentSnapshot:
         return None
 
     def get_from(self, name: str, sources: List[str]) -> Optional[Dict[str, Any]]:
-        for layer in reversed(self._layers):
+        for layer in self._layers:
             if layer["source"] in sources and name in layer["values"]:
                 res = {"value": layer["values"][name], "source": layer["source"]}
                 if "path" in layer:
@@ -266,8 +266,6 @@ def _parse_patch_list(bin_name: str, filepath: str, content: str, label: str) ->
         parsed = yaml.safe_load(content)
     except Exception as e:
         raise PatchParseError(f"{bin_name}: failed to parse {label} {filepath}: {e}")
-    if parsed is None:
-        return []
     if not isinstance(parsed, list):
         raise PatchParseError(f"{bin_name}: {label} {filepath} must be a top-level YAML array of loader patch entries")
     for index, entry in enumerate(parsed):
@@ -413,7 +411,7 @@ async def mount_root_include(
     """Mount the exact root Include entry used by app boot."""
     loader = ctx.get("loader")
     if loader is None:
-        return None
+        raise AttributeError("context has no loader service")
 
     if bare_module_base_url is None:
         loader.builtins["include"] = Include
@@ -593,32 +591,8 @@ def install_fail_loud(
 
     process_target.on("unhandledRejection", handler)
 
-    loop = None
-    orig_loop_handler = None
-    if proc is None:
-        try:
-            loop = asyncio.get_event_loop()
-            orig_loop_handler = loop.get_exception_handler()
-
-            def _loop_exc_handler(l: Any, context: Dict[str, Any]) -> None:
-                exc = context.get("exception") or context.get("message")
-                handler(exc)
-                if orig_loop_handler:
-                    orig_loop_handler(l, context)
-                else:
-                    l.default_exception_handler(context)
-
-            loop.set_exception_handler(_loop_exc_handler)
-        except Exception:
-            pass
-
-    def uninstall():
+    def uninstall() -> None:
         process_target.off("unhandledRejection", handler)
-        if loop and not loop.is_closed():
-            try:
-                loop.set_exception_handler(orig_loop_handler)
-            except Exception:
-                pass
 
     return uninstall
 
@@ -627,7 +601,7 @@ def assert_entries_loaded(ctx: Context, bin_name: str) -> None:
     """Ensure all non-disabled entries have fibers."""
     loader = ctx.get("loader")
     if not loader:
-        return
+        raise AttributeError(f"{bin_name}: context has no loader service")
     failed = [entry for entry in loader.entries() if entry.fiber is None and not getattr(entry, "disabled", False)]
     if failed:
         names = ", ".join(entry.options.get("name", getattr(entry, "name", "unknown")) for entry in failed)

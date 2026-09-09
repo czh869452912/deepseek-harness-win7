@@ -130,6 +130,10 @@ class EventBus:
         """
         caller_ctx = ctx or self.ctx
 
+        # 1:1 Assert Active matching TS events.ts:293
+        if caller_ctx is not None and hasattr(caller_ctx, "fiber") and caller_ctx.fiber is not None:
+            caller_ctx.fiber.assert_active()
+
         # 1:1 Reflect Bind matching TS events.ts:295
         if caller_ctx is not None and hasattr(caller_ctx, "reflect") and hasattr(caller_ctx.reflect, "bind"):
             handler = caller_ctx.reflect.bind(handler)
@@ -142,14 +146,16 @@ class EventBus:
                     return intercepted
                 return lambda: True
 
-        if event_name not in self._hooks:
-            self._hooks[event_name] = []
-
         hook = Hook(handler, prepend=prepend, global_listener=global_listener, ctx=caller_ctx)
-        if prepend:
-            self._hooks[event_name].insert(0, hook)
-        else:
-            self._hooks[event_name].append(hook)
+
+        def setup():
+            if event_name not in self._hooks:
+                self._hooks[event_name] = []
+            if prepend:
+                self._hooks[event_name].insert(0, hook)
+            else:
+                self._hooks[event_name].append(hook)
+            return disposer
 
         def disposer() -> bool:
             if event_name in self._hooks and hook in self._hooks[event_name]:
@@ -157,7 +163,12 @@ class EventBus:
                 return True
             return False
 
-        return disposer
+        label = f'ctx.on("{event_name}")'
+        if caller_ctx is not None and hasattr(caller_ctx, "fiber") and caller_ctx.fiber is not None:
+            return caller_ctx.fiber.effect(setup, label=label)
+        else:
+            setup()
+            return disposer
 
     def once(
         self,
@@ -394,17 +405,10 @@ class EventBus:
                     call_args = list(current_args) + [next_fn]
                     return cb(*call_args, **kwargs)
                 elif pos_count == 0:
-                    res = cb()
-                    if res is not None:
-                        return res
-                    return next_fn(*current_args)
+                    return cb()
                 else:
                     call_args = current_args[:pos_count] if pos_count < len(current_args) else current_args
-                    res = cb(*call_args, **kwargs)
-                    if res is not None:
-                        new_args = [res] + list(current_args[1:])
-                        return next_fn(*new_args)
-                    return next_fn(*current_args)
+                    return cb(*call_args, **kwargs)
             elif inner is not None:
                 sig = None
                 try:
@@ -468,18 +472,13 @@ class EventBus:
                     res = cb()
                     if inspect.isawaitable(res):
                         res = await res
-                    if res is not None:
-                        return res
-                    return await next_fn(*current_args)
+                    return res
                 else:
                     call_args = current_args[:pos_count] if pos_count < len(current_args) else current_args
                     res = cb(*call_args, **kwargs)
                     if inspect.isawaitable(res):
                         res = await res
-                    if res is not None:
-                        new_args = [res] + list(current_args[1:])
-                        return await next_fn(*new_args)
-                    return await next_fn(*current_args)
+                    return res
             elif inner is not None:
                 sig = None
                 try:

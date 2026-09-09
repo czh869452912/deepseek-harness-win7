@@ -61,12 +61,12 @@ async def test_d2_waterfall_short_circuit_veto():
 
 
 def test_d2_waterfall_sync_onion_and_none_continuation():
-    """ts:cordis/events.ts:225-243 - sync waterfall onion model and None-return continuation."""
+    """ts:cordis/events.ts:225-243 - sync waterfall onion model."""
     bus = EventBus()
 
-    def mw_observer(data):
-        # Returns None (observer)
-        pass
+    def mw_observer(data, next_fn):
+        # Calls next_fn and returns result
+        return next_fn()
 
     def mw_modify(data, next_fn):
         res = next_fn()
@@ -77,6 +77,25 @@ def test_d2_waterfall_sync_onion_and_none_continuation():
 
     res = bus.waterfall_sync("sync.test", "hello", lambda d, n=None: d.upper())
     assert res == "HELLO!"
+
+
+def test_d2_waterfall_sync_veto_without_next():
+    """ts:cordis/events.ts:225-243 - sync waterfall listener returning without calling next() vetoes."""
+    bus = EventBus()
+
+    def mw_veto(data):
+        # Does not call next_fn, returns None (veto)
+        return None
+
+    def mw_modify(data, next_fn):
+        res = next_fn()
+        return f"{res}!"
+
+    bus.on("sync.test", mw_veto)
+    bus.on("sync.test", mw_modify)
+
+    res = bus.waterfall_sync("sync.test", "hello", lambda d, n=None: d.upper())
+    assert res is None
 
 
 @pytest.mark.asyncio
@@ -98,15 +117,16 @@ async def test_d3_waterfall_inner_receives_all_args():
     assert captured["next_callable"] is True
 
 
-def test_d2_permitted_deviation_reducer():
-    """D2 Permitted Deviation: Non-next listeners returning non-None act as reducers in waterfall."""
+def test_d2_waterfall_reducer_via_next():
+    """Waterfall middleware reducer pattern passing modified value via next."""
     ctx = Context()
 
-    def step1(data):
-        return f"{data}_step1"
+    def step1(data, next_fn):
+        return next_fn(f"{data}_step1")
 
-    def step2(data):
-        return f"{data}_step2"
+    def step2(data, next_fn=None):
+        val = f"{data}_step2"
+        return next_fn(val) if next_fn else val
 
     ctx.on("test.reduce", step1)
     ctx.on("test.reduce", step2)

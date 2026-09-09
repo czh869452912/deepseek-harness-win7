@@ -150,7 +150,7 @@ def test_ast_module_dependency_graph():
 # ---------------------------------------------------------------------------
 
 def test_schema_intersect_composite_dictionaries():
-    """Verify Schema.intersect correctly validates and deep merges dictionaries."""
+    """Verify Schema.intersect correctly validates with first-wins semantics for existing keys matching TS schemastery."""
     schema_a = Schema.object({"name": Schema.string().required(), "meta": Schema.object({"tag": Schema.string()})})
     schema_b = Schema.object({"age": Schema.number().default(18), "meta": Schema.object({"version": Schema.number().default(1)})})
     intersect_schema = Schema.intersect([schema_a, schema_b])
@@ -160,8 +160,7 @@ def test_schema_intersect_composite_dictionaries():
     res = intersect_schema.validate(data)
     assert res["value"]["name"] == "Alice"
     assert res["value"]["age"] == 18
-    assert res["value"]["meta"]["tag"] == "admin"
-    assert res["value"]["meta"]["version"] == 1
+    assert res["value"]["meta"] == {"tag": "admin"}
 
     # Invalid input missing required field via standard schema and direct call
     inv_res = intersect_schema.validate({"age": 20})

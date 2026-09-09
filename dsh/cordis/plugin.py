@@ -14,9 +14,12 @@ class Plugin:
     intercept: Optional[Dict[str, bool]] = None
     Config: Any = None
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, ctx: Optional[Any] = None, config: Optional[Dict[str, Any]] = None):
+        if ctx is not None and not hasattr(ctx, "fiber") and not hasattr(ctx, "inject") and isinstance(ctx, dict) and config is None:
+            config = ctx
+            ctx = None
+        self.ctx: Optional[Any] = ctx
         self.config: Dict[str, Any] = config or {}
-        self.ctx: Optional[Any] = None
 
     def apply(self, ctx: Any, config: Optional[Any] = None) -> Any:
         """

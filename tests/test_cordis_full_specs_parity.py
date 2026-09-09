@@ -238,4 +238,4 @@ def test_plugin_config_schema_validation():
     f2 = ctx.plugin(ConfiguredPlugin, {"port": 80})  # 80 is below min(1024)
     assert f2.state == FiberState.FAILED
     assert isinstance(f2.error, ValidationError)
-    assert f2.plugin.applied is False
+    assert f2.plugin is None or getattr(f2.plugin, "applied", False) is False

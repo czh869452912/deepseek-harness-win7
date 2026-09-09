@@ -80,11 +80,22 @@ class _AsyncIntervalIterator:
             if self._next_future is fut:
                 self._next_future = None
 
-    async def aclose(self) -> None:
+    async def aclose(self, value: Any = None) -> None:
         if not self._done:
-            self._done = {"kind": "return", "value": None}
+            self._done = {"kind": "return", "value": value}
             if self._next_future is not None and not self._next_future.done():
                 self._next_future.set_exception(StopAsyncIteration())
+                self._next_future = None
+            if callable(self._dispose):
+                self._dispose()
+
+    async def athrow(self, reason: Any) -> None:
+        """Explicit iterator throw matching TS throw(reason)."""
+        if not self._done:
+            self._done = {"kind": "throw", "reason": reason}
+            if self._next_future is not None and not self._next_future.done():
+                exc = reason if isinstance(reason, Exception) else RuntimeError(str(reason))
+                self._next_future.set_exception(exc)
                 self._next_future = None
             if callable(self._dispose):
                 self._dispose()
@@ -240,6 +251,7 @@ class TimerService(Service):
                 return _cleanup
 
             dispose = target_ctx.effect(_setup, "ctx.timeout()")
+            future.add_done_callback(lambda _f: dispose())
 
             async def _wait_future():
                 try:

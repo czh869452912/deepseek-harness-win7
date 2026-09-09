@@ -59,7 +59,7 @@ def test_strict_inject_enabled_blocks_undeclared_service():
     assert "cannot get property 'dummy' without inject" in str(fiber.error)
 
     with pytest.raises(RuntimeError) as excinfo:
-        fiber.assert_active()
+        fiber.assert_active(check_error=True)
     assert "cannot get property 'dummy' without inject" in str(excinfo.value)
 
 

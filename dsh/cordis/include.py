@@ -60,7 +60,8 @@ class Include(EntryTree, Service):
         if fiber_entry and getattr(fiber_entry, "parent", None):
             parent_tree = getattr(fiber_entry.parent, "tree", None)
 
-        self.enable_logs = self.config.get("enableLogs", getattr(parent_tree, "enable_logs", False))
+        enable_logs_val = self.config.get("enableLogs")
+        self.enable_logs = enable_logs_val if enable_logs_val is not None else getattr(parent_tree, "enable_logs", False)
         raw_path = self.config.get("path", "")
         if raw_path.startswith("file://"):
             import urllib.parse
@@ -78,7 +79,7 @@ class Include(EntryTree, Service):
                 base_dir = os.path.normpath(p)
             self.filename = os.path.abspath(os.path.join(base_dir, raw_path))
 
-        ext = os.path.splitext(self.filename)[1].lower()
+        ext = os.path.splitext(self.filename)[1]
         if ext not in SUPPORTED_EXTENSIONS:
             raise ValueError(f'extension "{ext}" not supported')
 
@@ -105,7 +106,7 @@ class Include(EntryTree, Service):
                 self._apply_lock = None
                 self._write_lock = None
         self.pending_write: Optional[List[Dict[str, Any]]] = None
-        self._write_task: Optional[asyncio.TimerHandle] = None
+        self._write_task: Optional[Any] = None
 
         async def _on_update(new_config: Any, *args: Any, **kwargs: Any) -> Any:
             next_fn = args[-1] if args and callable(args[-1]) else kwargs.get("next_fn")
@@ -132,17 +133,19 @@ class Include(EntryTree, Service):
 
     def apply_patches(self, data: List[Dict[str, Any]], patches: Optional[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
         def _warn(msg: str, *args: Any):
-            if hasattr(self.ctx, "logger"):
-                self.ctx.logger("include").warn(msg, *args)
+            logger_ctx = getattr(self.ctx, "root", self.ctx)
+            if hasattr(logger_ctx, "logger"):
+                logger_ctx.logger("loader").warn(msg, *args)
             else:
-                sys.stderr.write(f"[Cordis Include Warning] {msg % args if args else msg}\n")
+                sys.stderr.write(f"[Cordis Loader Warning] {msg % args if args else msg}\n")
 
         return apply_entry_patches(data, patches, warn=_warn)
 
     def check_access(self) -> None:
         if not self.type:
             return
-        if os.path.exists(self.filename) and not os.access(self.filename, os.W_OK):
+        if not os.access(self.filename, os.W_OK):
+            self.readonly = True
             self.readonly = True
 
     def _read_file(self, forced: bool = False) -> Optional[Dict[str, Any]]:
@@ -175,39 +178,16 @@ class Include(EntryTree, Service):
     def init(self) -> Any:
         """
         Service.init lifecycle hook matching TS async* [Service.init]().
-        Yields a cleanup disposer to register with Fiber effect, then applies initial config.
+        Returns dual generator supporting both synchronous (list/iter) and async iteration.
         """
-        candidate = None
-        try:
-            candidate = self._read_file(forced=True)
-        except ConfigFileError as error:
-            if error.stage == "read" and isinstance(error.cause, FileNotFoundError):
-                if "initial" in self.config and isinstance(self.config["initial"], list):
-                    self._write_file_sync(self.config["initial"])
-                    candidate = self._read_file(forced=True)
-                else:
-                    raise ConfigFileError("read", self.filename, FileNotFoundError(f"config file not found: {self.filename}"))
-            else:
-                raise error
+        return _IncludeInitDual(self)
 
-        if candidate:
-            self.content = candidate["content"]
-            self.data = candidate["data"]
-            self.check_access()
-            patched = self.apply_patches(candidate["data"], self.config.get("patches"))
-            res = self.root.update(patched)
-            if inspect.iscoroutine(res):
-                try:
-                    loop = asyncio.get_running_loop()
-                    self._update_task = loop.create_task(res)
-                except RuntimeError:
-                    pass
-
-        yield self.stop
 
     async def stop(self) -> None:
-        """Stop child entries and flush pending writes."""
-        self.root.stop()
+        """Stop child entries and flush pending writes matching TS stop()."""
+        res = self.root.stop()
+        if inspect.isawaitable(res):
+            await res
         await self.flush_write()
 
     async def refresh(self) -> None:
@@ -224,6 +204,17 @@ class Include(EntryTree, Service):
             self.data = candidate["data"]
             self.check_access()
 
+    @staticmethod
+    def _retryable_write_error(error: Exception) -> bool:
+        import errno
+        err = getattr(error, "errno", None)
+        winerr = getattr(error, "winerror", None)
+        if err in (errno.EACCES, errno.EBUSY, getattr(errno, "EPERM", None)):
+            return True
+        if winerr in (5, 32, 33):  # Access denied, sharing violation, lock violation on Windows
+            return True
+        return isinstance(error, PermissionError)
+
     def _write_file_sync(self, config_data: List[Dict[str, Any]]) -> None:
         """Synchronously write config data."""
         if self.readonly:
@@ -238,15 +229,15 @@ class Include(EntryTree, Service):
         with open(tmp_filename, "w", encoding="utf-8") as f:
             f.write(self.content)
 
-        for retry in range(WRITE_RETRY_LIMIT):
+        for retry in range(WRITE_RETRY_LIMIT + 1):
             try:
                 if os.path.exists(self.filename):
                     os.replace(tmp_filename, self.filename)
                 else:
                     os.rename(tmp_filename, self.filename)
                 return
-            except (OSError, PermissionError):
-                if retry >= WRITE_RETRY_LIMIT - 1:
+            except Exception as e:
+                if not self._retryable_write_error(e) or retry >= WRITE_RETRY_LIMIT:
                     raise
                 time.sleep(WRITE_RETRY_DELAY_SEC * (retry + 1))
 
@@ -264,15 +255,15 @@ class Include(EntryTree, Service):
         with open(tmp_filename, "w", encoding="utf-8") as f:
             f.write(self.content)
 
-        for retry in range(WRITE_RETRY_LIMIT):
+        for retry in range(WRITE_RETRY_LIMIT + 1):
             try:
                 if os.path.exists(self.filename):
                     os.replace(tmp_filename, self.filename)
                 else:
                     os.rename(tmp_filename, self.filename)
                 return
-            except (OSError, PermissionError):
-                if retry >= WRITE_RETRY_LIMIT - 1:
+            except Exception as e:
+                if not self._retryable_write_error(e) or retry >= WRITE_RETRY_LIMIT:
                     raise
                 await asyncio.sleep(WRITE_RETRY_DELAY_SEC * (retry + 1))
 
@@ -286,9 +277,18 @@ class Include(EntryTree, Service):
         self.pending_write = config_data
         try:
             loop = asyncio.get_running_loop()
-            if self._write_task:
+            if getattr(self, "_write_task", None) and not self._write_task.done():
                 self._write_task.cancel()
-            self._write_task = loop.call_soon(lambda: asyncio.create_task(self.flush_write()))
+            async def _run_flush():
+                try:
+                    await self.flush_write()
+                except Exception as e:
+                    logger_ctx = getattr(self.ctx, "root", self.ctx)
+                    if hasattr(logger_ctx, "logger"):
+                        logger_ctx.logger("loader").warn("Failed to write config file %s: %s", self.filename, e)
+                    else:
+                        sys.stderr.write(f"[Cordis Include Error] Failed to write {self.filename}: {e}\n")
+            self._write_task = loop.create_task(_run_flush())
         except RuntimeError:
             self._write_file_sync(config_data)
 
@@ -296,15 +296,63 @@ class Include(EntryTree, Service):
         config_data = self.pending_write
         self.pending_write = None
         if config_data is None:
+            if getattr(self, "_write_task", None) and not self._write_task.done():
+                await self._write_task
             return
         async with self._write_lock:
-            try:
-                await self._write_file_async(config_data)
-            except Exception as e:
-                if hasattr(self.ctx, "logger"):
-                    self.ctx.logger("include").warn("Failed to write config file %s: %s", self.filename, e)
-                else:
-                    sys.stderr.write(f"[Cordis Include Error] Failed to write {self.filename}: {e}\n")
+            await self._write_file_async(config_data)
 
+
+setattr(Include, EntryGroup.key, True)
 
 IncludeService = Include
+
+
+class _IncludeInitDual:
+    def __init__(self, include: "Include"):
+        self.include = include
+        self.candidate = self._prepare_candidate()
+        if self.candidate:
+            patched = self.include.apply_patches(self.candidate["data"], self.include.config.get("patches"))
+            res = self.include.root.update(patched)
+            if inspect.iscoroutine(res):
+                try:
+                    loop = asyncio.get_running_loop()
+                    self.include._update_task = loop.create_task(res)
+                    self._update_res = self.include._update_task
+                except RuntimeError:
+                    self._update_res = res
+            elif inspect.isawaitable(res):
+                self.include._update_task = res
+                self._update_res = res
+            else:
+                self._update_res = None
+        else:
+            self._update_res = None
+
+    def _prepare_candidate(self) -> Optional[Dict[str, Any]]:
+        try:
+            candidate = self.include._read_file(forced=True)
+        except ConfigFileError as error:
+            if error.stage == "read" and isinstance(error.cause, FileNotFoundError):
+                if "initial" in self.include.config and isinstance(self.include.config["initial"], list):
+                    self.include._write_file_sync(self.include.config["initial"])
+                    candidate = self.include._read_file(forced=True)
+                else:
+                    raise ConfigFileError("read", self.include.filename, FileNotFoundError(f"config file not found: {self.include.filename}"))
+            else:
+                raise error
+        if candidate:
+            self.include.content = candidate["content"]
+            self.include.data = candidate["data"]
+            self.include.check_access()
+        return candidate
+
+    def __iter__(self):
+        yield self.include.stop
+
+    async def __aiter__(self):
+        yield self.include.stop
+        if self._update_res is not None and inspect.isawaitable(self._update_res):
+            await self._update_res
+

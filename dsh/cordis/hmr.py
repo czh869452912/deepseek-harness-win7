@@ -166,6 +166,12 @@ class ConfigWatcherService(Service):
     def __init__(self, ctx: Context, config: Optional[Dict[str, Any]] = None):
         super().__init__(ctx, name="hmr")
         self.config = config or {}
+
+        # D8: Verify loader and internal
+        loader = self.ctx.get("loader")
+        if loader is not None and not getattr(loader, "internal", None):
+            raise RuntimeError("--expose-internals is required for HMR service")
+
         self.debounce_ms: float = float(self.config.get("debounce", 100))
         self._configs: Dict[str, Callable[[], Any]] = {}
         self._modules: Dict[str, Optional[Any]] = {}
@@ -198,7 +204,26 @@ class ConfigWatcherService(Service):
                 self.base_dir = "."
         self.base_dir = os.path.abspath(self.base_dir)
         self.watch_base_dir = os.path.realpath(self.base_dir)
-        self.root = list(self.config.get("root", []))
+
+        # D7: Root & ignored defaults matching TS Hmr.Config
+        self.root = list(self.config.get("root", ["."]))
+        default_ignored = ["**/node_modules/**", "**/.*", "cache", "data", "**/.venv/**", "**/__pycache__/**", "**/.git/**", "**/dist/**", "**/.pytest_cache/**"]
+        user_ignored = list(self.config.get("ignored", []))
+        self.ignored = list(set(default_ignored + user_ignored))
+
+        # D1: Externals matching TS index.ts:220-226
+        self.externals: Set[str] = set()
+        try:
+            if sys.argv and sys.argv[0]:
+                main_f = os.path.realpath(sys.argv[0])
+                if os.path.isfile(main_f):
+                    import pathlib
+                    self.externals.add(pathlib.Path(main_f).as_uri())
+        except Exception:
+            pass
+
+        self._stashed: Set[str] = set()
+        self._debounce_handle: Optional[asyncio.TimerHandle] = None
         self._root_mtimes: Dict[str, float] = {}
         self._initial_scanned = False
 
@@ -208,6 +233,37 @@ class ConfigWatcherService(Service):
             self._poll_task = loop.create_task(self._poll_loop())
         except RuntimeError:
             pass
+
+    def is_ignored(self, filepath: str, base_dir: str) -> bool:
+        import fnmatch
+        try:
+            rel = os.path.relpath(filepath, base_dir).replace("\\", "/")
+        except ValueError:
+            rel = filepath.replace("\\", "/")
+        name = os.path.basename(filepath)
+        for pat in self.ignored:
+            if fnmatch.fnmatch(rel, pat) or fnmatch.fnmatch(name, pat) or fnmatch.fnmatch(f"**/{name}", pat) or fnmatch.fnmatch(f"**/{rel}", pat):
+                return True
+        return False
+
+    def _schedule_partial_reload(self) -> None:
+        if self._debounce_handle is not None:
+            self._debounce_handle.cancel()
+            self._debounce_handle = None
+
+        def _on_timeout():
+            self._debounce_handle = None
+            if self._stashed:
+                stashed_files = list(self._stashed)
+                self._stashed.clear()
+                for f in stashed_files:
+                    self._trigger_module_reload(f, self._modules.get(f))
+
+        try:
+            loop = asyncio.get_running_loop()
+            self._debounce_handle = loop.call_later(max(0.01, self.debounce_ms / 1000.0), _on_timeout)
+        except RuntimeError:
+            _on_timeout()
 
     async def _poll_loop(self) -> None:
         while self._running:
@@ -265,16 +321,14 @@ class ConfigWatcherService(Service):
                             mtime, size = stat.st_mtime, stat.st_size
                         except OSError:
                             continue
-                        if last_mtime == 0.0:  # add event
+                        if last_mtime != 0.0 and (mtime != last_mtime or size != last_size):  # change event only
                             self._mtimes[filename] = (mtime, size)
                             self._trigger_module_reload(filename, target_plugin)
-                        elif mtime != last_mtime or size != last_size:  # change event
+                        elif last_mtime == 0.0:
                             self._mtimes[filename] = (mtime, size)
-                            self._trigger_module_reload(filename, target_plugin)
                     else:
-                        if last_mtime > 0.0:  # unlink event
+                        if last_mtime > 0.0:
                             self._mtimes[filename] = (0.0, -1)
-                            self._trigger_module_reload(filename, target_plugin)
 
                 # 3. Check roots
                 if self.root:
@@ -285,9 +339,11 @@ class ConfigWatcherService(Service):
                             continue
                         if os.path.isdir(scan_dir):
                             for root_path, dirs, files in os.walk(scan_dir):
-                                dirs[:] = [d for d in dirs if d not in (".venv", "node_modules", ".git", "__pycache__", "dist", ".pytest_cache")]
+                                dirs[:] = [d for d in dirs if not self.is_ignored(os.path.join(root_path, d), scan_dir)]
                                 for f in files:
                                     full_path = os.path.join(root_path, f)
+                                    if self.is_ignored(full_path, scan_dir):
+                                        continue
                                     try:
                                         mtime = os.path.getmtime(full_path)
                                         size = os.path.getsize(full_path)
@@ -302,14 +358,39 @@ class ConfigWatcherService(Service):
                                         if mtime > last_m or size != last_sz:
                                             self._root_mtimes[full_path] = (mtime, size)
                                             url = pathlib.Path(os.path.realpath(full_path)).as_uri()
+
+                                            # D17: Match include subtree
                                             loader = getattr(self.ctx, "loader", None)
-                                            internal = getattr(loader, "internal", None)
-                                            load_cache = getattr(internal, "loadCache", None)
+                                            matched_include = False
+                                            if loader and hasattr(loader, "entries"):
+                                                for entry in list(loader.entries()):
+                                                    include = getattr(entry, "subtree", None)
+                                                    inc_fn = getattr(include, "filename", None)
+                                                    if inc_fn and os.path.realpath(full_path) == os.path.realpath(inc_fn):
+                                                        self._trigger_config_refresh(inc_fn, lambda inc=include: inc.refresh())
+                                                        matched_include = True
+                                                        break
+                                            if matched_include:
+                                                continue
+
+                                            # D1: Match externals -> loader.exit()
+                                            if url in self.externals:
+                                                if loader and hasattr(loader, "exit"):
+                                                    loader.exit()
+                                                    return
+                                                continue
+
+                                            # D2: Match loadCache -> stashed partial reload
+                                            internal = getattr(loader, "internal", None) if loader else None
+                                            load_cache = getattr(internal, "loadCache", None) if internal else None
+                                            in_cache = False
                                             if load_cache is not None and hasattr(load_cache, "has"):
                                                 in_cache = load_cache.has(url)
-                                            else:
-                                                in_cache = False
-                                            if not in_cache and hasattr(self.ctx, "emit"):
+
+                                            if in_cache:
+                                                self._stashed.add(full_path)
+                                                self._schedule_partial_reload()
+                                            elif hasattr(self.ctx, "emit"):
                                                 self.ctx.emit("hmr/change", url)
                                     elif last_info is None:
                                         self._root_mtimes[full_path] = (mtime, size)
@@ -336,8 +417,10 @@ class ConfigWatcherService(Service):
                         await res
                     if hasattr(self.ctx, "logger"):
                         self.ctx.logger("hmr").info("Reloaded config file %s", filename)
-                except BaseException as reason:
-                    error = reason if isinstance(reason, Exception) else Exception(str(reason))
+                except asyncio.CancelledError:
+                    raise
+                except Exception as reason:
+                    error = reason
                     if hasattr(self.ctx, "logger"):
                         self.ctx.logger("hmr").warn("config reload at %s failed", filename)
                         self.ctx.logger("hmr").warn("%s", error)
@@ -355,17 +438,15 @@ class ConfigWatcherService(Service):
             self._refresh_tasks.add(task)
             task.add_done_callback(lambda t: self._refresh_tasks.discard(t))
         except RuntimeError:
-            res = refresh_fn()
-            if inspect.isawaitable(res):
-                try:
+            try:
+                res = refresh_fn()
+                if inspect.isawaitable(res):
                     asyncio.run(res)
-                except Exception:
-                    pass
-            if inspect.isawaitable(res):
-                try:
-                    asyncio.run(res)
-                except Exception:
-                    pass
+                if hasattr(self.ctx, "logger"):
+                    self.ctx.logger("hmr").info("Reloaded config file %s", filename)
+            except Exception as reason:
+                if hasattr(self.ctx, "logger"):
+                    self.ctx.logger("hmr").warn("config reload at %s failed: %s", filename, reason)
 
     def _trigger_module_reload(self, filename: str, target_plugin: Optional[Any]) -> None:
         state = self._refreshes.setdefault(filename, ConfigRefreshState())
@@ -390,59 +471,69 @@ class ConfigWatcherService(Service):
                     files_to_reload = [abs_changed] + [f for f in dependents if f != abs_changed]
 
                     registry = getattr(self.ctx, "registry", None)
+                    prev_runtimes = dict(registry._runtimes) if registry else {}
+                    new_modules_created: List[str] = []
 
-                    for file_path in files_to_reload:
-                        if not os.path.isfile(file_path):
-                            continue
+                    try:
+                        for file_path in files_to_reload:
+                            if not os.path.isfile(file_path):
+                                continue
 
-                        # Dynamic reload Python module
-                        importlib.invalidate_caches()
-                        mod_name = f"hmr_reloaded_{abs(hash(file_path))}_{int(time.time() * 1000)}"
-                        mod = types.ModuleType(mod_name)
-                        mod.__file__ = file_path
-                        sys.modules[mod_name] = mod
-                        with open(file_path, "r", encoding="utf-8") as fp:
-                            source_code = fp.read()
-                        code_obj = compile(source_code, file_path, "exec")
-                        exec(code_obj, mod.__dict__)
+                            # Dynamic reload Python module
+                            importlib.invalidate_caches()
+                            mod_name = f"hmr_reloaded_{abs(hash(file_path))}_{int(time.time() * 1000)}"
+                            mod = types.ModuleType(mod_name)
+                            mod.__file__ = file_path
+                            sys.modules[mod_name] = mod
+                            new_modules_created.append(mod_name)
+                            with open(file_path, "r", encoding="utf-8") as fp:
+                                source_code = fp.read()
+                            code_obj = compile(source_code, file_path, "exec")
+                            exec(code_obj, mod.__dict__)
 
-                        if not registry:
-                            continue
+                            if not registry:
+                                continue
 
-                        # Find all plugin classes in module
-                        found_classes: List[Tuple[Any, Any]] = []
-                        tgt = target_plugin if file_path == abs_changed else self._modules.get(file_path)
-                        if tgt and isinstance(tgt, type):
-                            new_cls = getattr(mod, tgt.__name__, None)
-                            if new_cls:
-                                found_classes.append((tgt, new_cls))
-                        else:
-                            for attr_name in dir(mod):
-                                obj = getattr(mod, attr_name)
-                                if isinstance(obj, type) and (issubclass(obj, Plugin) or hasattr(obj, "apply")):
-                                    for reg_key in list(registry._runtimes.keys()):
-                                        if getattr(reg_key, "__name__", "") == attr_name:
-                                            found_classes.append((reg_key, obj))
+                            # Find all plugin classes in module
+                            found_classes: List[Tuple[Any, Any]] = []
+                            tgt = target_plugin if file_path == abs_changed else self._modules.get(file_path)
+                            if tgt and isinstance(tgt, type):
+                                new_cls = getattr(mod, tgt.__name__, None)
+                                if new_cls:
+                                    found_classes.append((tgt, new_cls))
+                            else:
+                                for attr_name in dir(mod):
+                                    obj = getattr(mod, attr_name)
+                                    if isinstance(obj, type) and (issubclass(obj, Plugin) or hasattr(obj, "apply")):
+                                        for reg_key in list(registry._runtimes.keys()):
+                                            if getattr(reg_key, "__name__", "") == attr_name:
+                                                found_classes.append((reg_key, obj))
 
-                        for old_key, new_cls in found_classes:
-                            runtime = registry.get(old_key)
-                            if runtime:
-                                runtime.callback = new_cls
-                                registry._runtimes.pop(old_key, None)
-                                registry._runtimes[new_cls] = runtime
+                            for old_key, new_cls in found_classes:
+                                runtime = registry.get(old_key)
+                                if runtime:
+                                    runtime.callback = new_cls
+                                    registry._runtimes.pop(old_key, None)
+                                    registry._runtimes[new_cls] = runtime
 
-                                for fiber in list(runtime.fibers):
-                                    fiber._plugin_cls = new_cls
-                                    if isinstance(fiber.plugin, Plugin):
-                                        new_inst = new_cls(config=fiber.config)
-                                        new_inst.id = getattr(fiber.plugin, "id", None)
-                                        new_inst.ctx = fiber.ctx
-                                        fiber.plugin = new_inst
-                                    else:
-                                        fiber.plugin = new_cls
-                                    await fiber.restart()
+                                    for fiber in list(runtime.fibers):
+                                        fiber._plugin_cls = new_cls
+                                        if isinstance(fiber.plugin, Plugin):
+                                            new_inst = new_cls(config=fiber.config)
+                                            new_inst.id = getattr(fiber.plugin, "id", None)
+                                            new_inst.ctx = fiber.ctx
+                                            fiber.plugin = new_inst
+                                        else:
+                                            fiber.plugin = new_cls
+                                        await fiber.restart()
 
-                                reloads[old_key] = {"filename": file_path, "runtime": runtime}
+                                    reloads[old_key] = {"filename": file_path, "runtime": runtime}
+                    except Exception as step_err:
+                        for m_name in new_modules_created:
+                            sys.modules.pop(m_name, None)
+                        if registry:
+                            registry._runtimes = prev_runtimes
+                        raise step_err
 
                     if reloads and hasattr(self.ctx, "emit"):
                         self.ctx.emit("hmr/reload", reloads)
@@ -453,15 +544,13 @@ class ConfigWatcherService(Service):
                 except Exception as reason:
                     if hasattr(self.ctx, "logger"):
                         self.ctx.logger("hmr").warn("Module reload at %s failed: %s", filename, reason)
-                    if hasattr(self.ctx, "parallel"):
-                        try:
-                            await self.ctx.parallel("hmr/config-update-failed", filename, reason)
-                        except Exception:
-                            pass
 
         try:
             loop = asyncio.get_running_loop()
-            state.running = loop.create_task(_run())
+            task = loop.create_task(_run())
+            state.running = task
+            self._refresh_tasks.add(task)
+            task.add_done_callback(lambda t: self._refresh_tasks.discard(t))
         except RuntimeError:
             pass
 
@@ -581,18 +670,16 @@ class ConfigWatcherService(Service):
             self._mtimes.pop(abs_path, None)
             state = self._refreshes.pop(abs_path, None)
             if state and state.running and not state.running.done():
-                async def _wait_or_cancel():
+                async def _wait():
                     try:
-                        await asyncio.wait_for(asyncio.shield(state.running), timeout=2.0)
-                    except (asyncio.TimeoutError, Exception):
-                        if not state.running.done():
-                            state.running.cancel()
+                        await state.running
+                    except Exception:
+                        pass
                 try:
                     loop = asyncio.get_running_loop()
-                    loop.create_task(_wait_or_cancel())
+                    loop.create_task(_wait())
                 except RuntimeError:
-                    if not state.running.done():
-                        state.running.cancel()
+                    pass
 
         if hasattr(self.ctx, "disposable"):
             return self.ctx.disposable(unregister, label=f"hmr.register_module('{abs_path}')")
@@ -610,11 +697,9 @@ class ConfigWatcherService(Service):
         running_tasks.extend([t for t in self._refresh_tasks if not t.done()])
         if running_tasks:
             try:
-                await asyncio.wait_for(asyncio.shield(asyncio.gather(*running_tasks, return_exceptions=True)), timeout=2.0)
-            except (asyncio.TimeoutError, Exception):
-                for t in running_tasks:
-                    if not t.done():
-                        t.cancel()
+                await asyncio.gather(*running_tasks, return_exceptions=True)
+            except Exception:
+                pass
         self._configs.clear()
         self._modules.clear()
         self._mtimes.clear()

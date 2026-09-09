@@ -95,7 +95,7 @@ async def test_loader_internal_plugin_7_cases_and_tree_write():
         assert entry is not None
         assert entry.disabled is False
 
-        entry.init()
+        await entry.init()
         assert entry.fiber is not None
 
         # Disposing fiber manually should trigger Case 7 and mark entry disabled and call write()

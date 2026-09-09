@@ -23,7 +23,7 @@ class ProviderPlugin(Plugin):
 
 class DependentPlugin(Plugin):
     id = "dependent-plugin"
-    inject = ["my_service", "optional_service?"]
+    inject = ["my_service"]
 
     def __init__(self):
         self.loaded = False
@@ -32,11 +32,11 @@ class DependentPlugin(Plugin):
     def apply(self, ctx: Context):
         self.loaded = True
         self.service = ctx.my_service
-        self.had_optional = ctx.has("optional_service")
+        self.had_optional = ctx.get("optional_service", strict=False) is not None
 
 
 def test_optional_dependency_resolution():
-    """Test that missing optional dependency ('?') does not block fiber activation."""
+    """Test that missing optional dependency accessed via ctx.get does not block fiber activation."""
     ctx = Context()
     dep_plugin = DependentPlugin()
 
@@ -48,7 +48,7 @@ def test_optional_dependency_resolution():
     # Now load provider plugin
     ctx.plugin(ProviderPlugin)
 
-    # After provider is loaded, dependent should become ACTIVE even though 'optional_service' is absent
+    # After provider is loaded, dependent should become ACTIVE
     assert fiber.state == FiberState.ACTIVE
     assert dep_plugin.loaded is True
     assert dep_plugin.service.val == "hello_world"
@@ -56,17 +56,17 @@ def test_optional_dependency_resolution():
 
 
 def test_inject_helper_normalization():
-    """Test Inject.resolve handles lists with '?', dicts, and booleans."""
-    res1 = Inject.resolve(["a", "b?"])
+    """Test Inject.resolve handles lists, dicts, and intercept configs 1:1 with TS Cordis."""
+    res1 = Inject.resolve(["a", "b"])
     assert res1["a"] is None
-    assert res1["b"] == {"required": False}
+    assert res1["b"] is None
 
     res2 = Inject.resolve({"a": True, "b": False})
-    assert res2["a"] == {"required": True}
-    assert res2["b"] == {"required": False}
+    assert res2["a"] is True
+    assert res2["b"] is False
 
-    res3 = Inject.resolve({"a": {"required": False}})
-    assert res3["a"] == {"required": False}
+    res3 = Inject.resolve({"a": {"pool": 5}})
+    assert res3["a"] == {"pool": 5}
 
 
 def test_strict_inject_violation_in_fiber():

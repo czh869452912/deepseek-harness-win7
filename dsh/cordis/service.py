@@ -5,20 +5,57 @@ Cordis Service base class matching reference/vendor/cordis/src/service.ts
 import sys
 from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar
 
+from dsh.cordis.utils import symbols
+
 T = TypeVar("T")
 
 
 class ServiceSymbols:
     """Symbol constants for Service lifecycle and metadata."""
-    init = "symbols.init"
-    check = "symbols.check"
-    config = "symbols.config"
-    invoke = "symbols.invoke"
-    extend = "symbols.extend"
-    tracker = "symbols.tracker"
-    resolve_config = "symbols.resolveConfig"
-    original = "cordis.original"
-    shadow = "cordis.shadow"
+    init = symbols.init
+    check = symbols.check
+    config = symbols.config
+    invoke = symbols.invoke
+    extend = symbols.extend
+    tracker = symbols.tracker
+    resolve_config = symbols.resolve_config
+    original = symbols.original
+    shadow = symbols.shadow
+    filter = symbols.filter
+
+
+class _ServiceExtendedProxy:
+    """
+    Lightweight prototype proxy delegating to original service instance matching TS Object.create(this).
+    """
+    def __init__(self, target: Any, props: Optional[Dict[str, Any]] = None):
+        self.__dict__["_target"] = target
+        self.__dict__["_props"] = dict(props or {})
+        self.__dict__["_original"] = getattr(target, "_original", target)
+        self.__dict__["ctx"] = self.__dict__["_props"].get("ctx", getattr(target, "ctx", None))
+        self.__dict__["name"] = getattr(target, "name", "")
+
+    def __getattr__(self, name: str) -> Any:
+        if name in self.__dict__["_props"]:
+            return self.__dict__["_props"][name]
+        target = self.__dict__["_target"]
+        attr = getattr(target, name)
+        import inspect, types
+        if inspect.ismethod(attr) and getattr(attr, "__self__", None) is target:
+            return types.MethodType(attr.__func__, self)
+        return attr
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name in self.__dict__["_props"]:
+            self.__dict__["_props"][name] = value
+        else:
+            setattr(self.__dict__["_target"], name, value)
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        return self.__dict__["_target"](*args, **kwargs)
+
+    def __repr__(self) -> str:
+        return f"<Extended {repr(self.__dict__['_target'])}>"
 
 
 class Service:
@@ -29,20 +66,21 @@ class Service:
     The service is registered immediately on context and automatically removed with the owning fiber.
     """
 
-    init = ServiceSymbols.init
-    check = ServiceSymbols.check
-    config = ServiceSymbols.config
-    invoke = ServiceSymbols.invoke
-    extend = ServiceSymbols.extend
-    tracker = ServiceSymbols.tracker
-    resolve_config = ServiceSymbols.resolve_config
-    original = ServiceSymbols.original
-    shadow = ServiceSymbols.shadow
+    init = symbols.init
+    check = symbols.check
+    config = symbols.config
+    invoke = symbols.invoke
+    extend = symbols.extend
+    tracker = symbols.tracker
+    resolve_config = symbols.resolve_config
+    original = symbols.original
+    shadow = symbols.shadow
+    filter = symbols.filter
 
     provide: Optional[Any] = None
     provide_name: Optional[str] = None
 
-    def __init__(self, ctx: Any, name: Optional[str] = None, allow_replace: bool = False):
+    def __init__(self, ctx: Any, name: Optional[str] = None, allow_replace: bool = False, **kwargs: Any):
         self.ctx = ctx
         resolved_name = name or getattr(self, "provide", None) or getattr(self, "provide_name", None) or getattr(self, "name", None)
         if isinstance(resolved_name, (list, tuple)) and resolved_name:
@@ -55,22 +93,25 @@ class Service:
         self.name = resolved_name
 
         check_fn = None
-        if hasattr(self, ServiceSymbols.check) and callable(getattr(self, ServiceSymbols.check)):
-            check_fn = getattr(self, ServiceSymbols.check)
+        if hasattr(self, symbols.check) and callable(getattr(self, symbols.check)):
+            check_fn = getattr(self, symbols.check)
         elif hasattr(self, "_check_availability") and callable(getattr(self, "_check_availability")):
             check_fn = getattr(self, "_check_availability")
-        elif hasattr(self, "check") and callable(getattr(self, "check")):
+        elif "check" in self.__class__.__dict__ and callable(getattr(self, "check")):
             check_fn = getattr(self, "check")
 
-        if hasattr(self.ctx, "provide"):
-            self.ctx.provide(self.name, self, check=check_fn, allow_replace=allow_replace)
-        elif hasattr(self.ctx, "set_service"):
-            self.ctx.set_service(self.name, self, check=check_fn, allow_replace=allow_replace)
+        if self.ctx is not None:
+            if hasattr(self.ctx, "provide"):
+                self.ctx.provide(self.name, self, check=check_fn, allow_replace=allow_replace)
+            elif hasattr(self.ctx, "reflect") and hasattr(self.ctx.reflect, "provide"):
+                self.ctx.reflect.provide(self.ctx, self.name, self, check=check_fn, allow_replace=allow_replace)
+            else:
+                raise RuntimeError(f"Context {self.ctx} does not support provide")
 
     def __getattr__(self, name: str) -> Any:
-        if name in (ServiceSymbols.original, "cordis.original", "original", "symbols.original"):
+        if name in (symbols.original, "cordis.original", "original", "symbols.original"):
             return getattr(self, "_original", self)
-        if name in (ServiceSymbols.shadow, "cordis.shadow", "shadow", "symbols.shadow"):
+        if name in (symbols.shadow, "cordis.shadow", "shadow", "symbols.shadow"):
             return getattr(self.ctx, "cordis.shadow", getattr(self.ctx, "_parent", None))
         raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
 
@@ -114,18 +155,7 @@ class Service:
         """
         Derive extended service instance bound to child context matching TS Service[symbols.extend] (Object.create(this)).
         """
-        target_ctx = props.get("ctx", self.ctx) if props else self.ctx
-        if (target_ctx is self.ctx or target_ctx is None) and not props:
-            return self
-        import copy
-        extended = copy.copy(self)
-        if props:
-            for k, v in props.items():
-                setattr(extended, k, v)
-        else:
-            extended.ctx = target_ctx
-        extended._original = getattr(self, "_original", self)
-        return extended
+        return _ServiceExtendedProxy(self, props)
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """

@@ -7,21 +7,14 @@ import copy
 import functools
 import inspect
 import sys
+import math
+import re
+import datetime
+import time
 import traceback
 from typing import Any, Callable, Dict, Generic, Iterator, List, Optional, Set, Tuple, TypeVar
 
 T = TypeVar("T")
-
-
-def clone(value: Any) -> Any:
-    """Deep clone a value matching Cosmokit clone."""
-    return copy.deepcopy(value)
-
-
-import math
-import re
-import datetime
-from collections import OrderedDict
 
 
 def clone(value: Any) -> Any:
@@ -48,10 +41,15 @@ def deep_equal(a: Any, b: Any, strict: bool = False) -> bool:
         else:
             return False
     if isinstance(a, dict):
-        if len(a) != len(b):
+        if not isinstance(b, dict):
             return False
-        for k in a:
-            if k not in b or not deep_equal(a[k], b[k], strict=strict):
+        keys = set(a.keys()) | set(b.keys())
+        if strict and len(a) != len(b):
+            return False
+        for k in keys:
+            if strict and (k not in a or k not in b):
+                return False
+            if not deep_equal(a.get(k), b.get(k), strict=strict):
                 return False
         return True
     if isinstance(a, (list, tuple)):
@@ -76,8 +74,6 @@ def pick(obj: Dict[str, Any], keys: Optional[Any] = None, forced: bool = False) 
     for k in keys:
         if forced or (k in obj and obj[k] is not None):
             res[k] = obj.get(k)
-        elif k in obj:
-            res[k] = obj[k]
     return res
 
 
@@ -325,6 +321,8 @@ class Symbols:
     extend = "cordis.extend"
     tracker = "cordis.tracker"
     resolveConfig = "cordis.resolveConfig"
+    resolve_config = "cordis.resolveConfig"
+    init_hooks = "cordis.initHooks"
 
 
 symbols = Symbols()
@@ -469,7 +467,7 @@ class Time:
     day = hour * 24
     week = day * 7
 
-    _timezone_offset = 0
+    _timezone_offset = -int(time.localtime().tm_gmtoff / 60) if hasattr(time, "localtime") and hasattr(time.localtime(), "tm_gmtoff") else 0
 
     @classmethod
     def set_timezone_offset(cls, offset: int) -> None:
@@ -580,14 +578,14 @@ class Time:
         """Template format date matching Cosmokit Time.template."""
         if time_val is None:
             time_val = datetime.datetime.now()
-        res = tmpl.replace("yyyy", str(time_val.year))
-        res = res.replace("yy", str(time_val.year)[2:])
-        res = res.replace("MM", cls.to_digits(time_val.month))
-        res = res.replace("dd", cls.to_digits(time_val.day))
-        res = res.replace("hh", cls.to_digits(time_val.hour))
-        res = res.replace("mm", cls.to_digits(time_val.minute))
-        res = res.replace("ss", cls.to_digits(time_val.second))
-        res = res.replace("SSS", cls.to_digits(int(time_val.microsecond / 1000), 3))
+        res = tmpl.replace("yyyy", str(time_val.year), 1)
+        res = res.replace("yy", str(time_val.year)[2:], 1)
+        res = res.replace("MM", cls.to_digits(time_val.month), 1)
+        res = res.replace("dd", cls.to_digits(time_val.day), 1)
+        res = res.replace("hh", cls.to_digits(time_val.hour), 1)
+        res = res.replace("mm", cls.to_digits(time_val.minute), 1)
+        res = res.replace("ss", cls.to_digits(time_val.second), 1)
+        res = res.replace("SSS", cls.to_digits(int(time_val.microsecond / 1000), 3), 1)
         return res
 
 

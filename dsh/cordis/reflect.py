@@ -121,18 +121,23 @@ class ReflectService:
 
             return default
 
-        err = RuntimeError(f"cannot get property '{name}'")
+        err = RuntimeError(f'cannot get property "{name}" without inject')
         if hasattr(ctx, "waterfall_sync"):
             return ctx.waterfall_sync("internal/get", ctx, name, err, _resolve_default)
         return _resolve_default()
 
     def _get_impl(self, ctx: Any, name: str, strict: bool = True) -> Optional[Impl]:
         from dsh.cordis.utils import get_isolate_symbol
-        key = get_isolate_symbol(ctx, name) or name
-        impl = self.store.get(key) or self.store.get(name)
+        key = get_isolate_symbol(ctx, name)
+        if not key:
+            if hasattr(ctx, "root") and hasattr(ctx.root, "_isolated_keys"):
+                key = ctx.root._isolated_keys.get(name) or name
+            else:
+                key = name
+        impl = self.store.get(key)
         if not impl:
             return None
-        if strict and impl.fiber is not None and getattr(impl.fiber, "plugin", None) is not None:
+        if strict and impl.fiber is not None:
             from dsh.cordis.fiber import FiberState
             if impl.fiber.state != FiberState.ACTIVE:
                 return None
@@ -149,10 +154,11 @@ class ReflectService:
             err = RuntimeError(f"cannot set property '{name}'")
             return def_prop.set(ctx, value, err)
 
+
         def _do_set():
             from dsh.cordis.utils import get_isolate_symbol
             key = get_isolate_symbol(ctx, name) or name
-            impl = self.store.get(key) or self.store.get(name)
+            impl = self.store.get(key)
             if not impl:
                 raise RuntimeError(f"cannot set property '{name}' without provide")
 
@@ -212,10 +218,12 @@ class ReflectService:
             fiber = getattr(target_ctx, "fiber", None)
             if not allow_replace and key in self.store:
                 prev = self.store[key]
-                if getattr(prev, "value", None) is not val:
+                if prev.value is not val:
                     prev_fiber = getattr(prev, "fiber", None)
                     prev_name = getattr(prev_fiber, "name", "root") if prev_fiber else "root"
                     raise RuntimeError(f"service '{name}' has been registered at <{prev_name}>")
+                else:
+                    return lambda: None
 
             impl = Impl(name=name, fiber=fiber, value=val, check=chk)
 
@@ -252,15 +260,24 @@ class ReflectService:
             teardown_fn = setup()
             return teardown_fn
 
-    def notify(self, names: List[str], filter_fn: Optional[Callable[[Any, str], bool]] = None) -> List[Any]:
+    def notify(self, names: Union[str, List[str]], filter_fn: Optional[Callable[[Any, str], bool]] = None) -> List[Any]:
         """
         1:1 Dependency notification matching TS Cordis ReflectService.notify.
         Re-evaluates every registered fiber that requires one of the changed services.
         """
         from dsh.cordis.utils import get_isolate_symbol
+        if isinstance(names, str):
+            names = [names]
         affected_fibers: List[Any] = []
         if hasattr(self.ctx, "registry"):
-            for fiber in self.ctx.registry.list_fibers():
+            runtimes = list(self.ctx.registry.values()) if hasattr(self.ctx.registry, "values") else []
+            all_fibers: List[Any] = []
+            for r in runtimes:
+                all_fibers.extend(r.fibers)
+            if not all_fibers and hasattr(self.ctx.registry, "list_fibers"):
+                all_fibers = self.ctx.registry.list_fibers()
+
+            for fiber in all_fibers:
                 has_update = False
                 fiber_ctx = getattr(fiber, "ctx", None)
                 for name in names:

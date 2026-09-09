@@ -18,7 +18,8 @@ from dsh.cordis.context import Context
 from dsh.cordis.include import IncludeService, ConfigFileError
 
 
-def test_t1_include_init_missing_file_with_initial_writes_and_applies():
+@pytest.mark.asyncio
+async def test_t1_include_init_missing_file_with_initial_writes_and_applies():
     """T1: init with missing file writes initial config; missing file without initial raises."""
     ctx = Context()
     tmp_dir = tempfile.mkdtemp()
@@ -30,8 +31,8 @@ def test_t1_include_init_missing_file_with_initial_writes_and_applies():
             "path": missing_path,
             "initial": [{"id": "sub1", "name": "plugin-a"}]
         })
-        gen = inc.init()
-        next(gen)  # Yields teardown
+        async for _ in inc.init():
+            pass
 
         assert os.path.exists(missing_path)
         assert inc.data == [{"id": "sub1", "name": "plugin-a"}]
@@ -40,8 +41,8 @@ def test_t1_include_init_missing_file_with_initial_writes_and_applies():
         missing_path2 = os.path.join(tmp_dir, "no_init.yaml")
         inc2 = IncludeService(ctx, {"path": missing_path2})
         with pytest.raises(ConfigFileError) as exc_info:
-            gen2 = inc2.init()
-            next(gen2)
+            async for _ in inc2.init():
+                pass
         assert exc_info.value.stage == "read"
         assert "not found" in str(exc_info.value)
     finally:
@@ -61,8 +62,8 @@ async def test_t2_include_internal_update_short_circuits_and_awaits():
 
     try:
         inc = IncludeService(ctx, {"path": tmp_file.name})
-        gen = inc.init()
-        next(gen)
+        async for _ in inc.init():
+            pass
 
         next_called = [False]
 
@@ -115,7 +116,8 @@ def test_t4_include_write_back_does_not_reorder_keys():
             os.remove(tmp_file.name)
 
 
-def test_t5_include_readonly_write_raises():
+@pytest.mark.asyncio
+async def test_t5_include_readonly_write_raises():
     """T5: Writing to readonly config raises PermissionError."""
     ctx = Context()
     tmp_file = tempfile.NamedTemporaryFile(suffix=".yaml", delete=False)
@@ -124,8 +126,8 @@ def test_t5_include_readonly_write_raises():
 
     try:
         inc = IncludeService(ctx, {"path": tmp_file.name})
-        gen = inc.init()
-        next(gen)
+        async for _ in inc.init():
+            pass
 
         inc.readonly = True
         with pytest.raises(PermissionError) as exc_info:

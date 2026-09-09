@@ -12,10 +12,11 @@ class LLMOpenAIPlugin(Plugin):
     name = "@deepseek-ai/dsh-llm-openai"
 
     def apply(self, ctx: Any) -> None:
-        api_key = self.config.get("api_key")
-        base_url = self.config.get("base_url")
-        model = self.config.get("model")
-        api_key_env = self.config.get("apiKeyEnv", "DEEPSEEK_API_KEY")
+        cfg = self.config or {}
+        api_key = cfg.get("api_key")
+        base_url = cfg.get("base_url")
+        model = cfg.get("model")
+        api_key_env = cfg.get("apiKeyEnv", "DEEPSEEK_API_KEY")
 
         llm_service = LLMService(
             ctx=ctx,

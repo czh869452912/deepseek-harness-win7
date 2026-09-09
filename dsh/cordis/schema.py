@@ -129,7 +129,9 @@ class Schema:
         self.preserve: bool = False
 
         if options:
-            for k, v in options.items():
+            opts = dict(options)
+            opts.pop("uid", None)
+            for k, v in opts.items():
                 setattr(self, k, v)
         if not isinstance(self.meta, dict):
             self.meta = {}
@@ -460,6 +462,18 @@ class Schema:
             node["dict"] = {k: v.toJSON(refs) for k, v in self.dict.items()}
         if self.bits:
             node["bits"] = dict(self.bits)
+        if self.preserve:
+            node["preserve"] = self.preserve
+        if self.constructor is not None:
+            if isinstance(self.constructor, type):
+                node["constructor"] = self.constructor.__name__
+            else:
+                node["constructor"] = str(self.constructor)
+        if self.callback is not None:
+            if hasattr(self.callback, "__name__"):
+                node["callback"] = self.callback.__name__
+            else:
+                node["callback"] = str(self.callback)
 
         if is_root:
             return {"uid": self.uid, "refs": refs}
@@ -489,6 +503,18 @@ class Schema:
             res["dict"] = {k: v.to_json() for k, v in self.dict.items()}
         if self.bits:
             res["bits"] = self.bits
+        if self.preserve:
+            res["preserve"] = self.preserve
+        if self.constructor is not None:
+            if isinstance(self.constructor, type):
+                res["constructor"] = self.constructor.__name__
+            else:
+                res["constructor"] = str(self.constructor)
+        if self.callback is not None:
+            if hasattr(self.callback, "__name__"):
+                res["callback"] = self.callback.__name__
+            else:
+                res["callback"] = str(self.callback)
         return res
 
     def to_json_schema(self) -> Dict[str, Any]:
@@ -568,8 +594,98 @@ class Schema:
 
         return json_schema
 
+    def to_string(self, inline: bool = False) -> str:
+        """Format Schema type string matching TS Schema.prototype.toString."""
+        if self.type == "string":
+            return "string"
+        elif self.type == "number":
+            return "number"
+        elif self.type == "boolean":
+            return "boolean"
+        elif self.type == "any":
+            return "any"
+        elif self.type == "never":
+            return "never"
+        elif self.type == "const":
+            return json.dumps(self.value, default=str)
+        elif self.type == "array":
+            return f"{self.inner.to_string(True)}[]" if self.inner else "array"
+        elif self.type == "dict":
+            return f"Record<string, {self.inner.to_string()}>" if self.inner else "dict"
+        elif self.type == "tuple":
+            items = [s.to_string() for s in (self.list or [])]
+            return f"[{', '.join(items)}]"
+        elif self.type == "object":
+            if not self.dict:
+                return "{}"
+            props = [f"{k}: {v.to_string()}" for k, v in self.dict.items()]
+            return f"{{ {', '.join(props)} }}"
+        elif self.type == "union":
+            res = " | ".join(s.to_string(True) for s in (self.list or []))
+            return f"({res})" if inline and len(self.list or []) > 1 else res
+        elif self.type == "intersect":
+            res = " & ".join(s.to_string(True) for s in (self.list or []))
+            return f"({res})" if inline and len(self.list or []) > 1 else res
+        elif self.type == "is":
+            if isinstance(self.constructor, type):
+                return self.constructor.__name__
+            return str(self.constructor) if self.constructor is not None else "is"
+        return f"Schema<{self.type}>"
+
+    def __str__(self) -> str:
+        return self.to_string()
+
     def __repr__(self) -> str:
         return f"Schema<{self.type}>"
+
+    @classmethod
+    def from_json(cls, payload: Dict[str, Any]) -> "Schema":
+        """Deserialize Schema tree from flat refs dictionary matching TS Schema(options.refs)."""
+        if not isinstance(payload, dict):
+            return cls.any()
+        if "refs" in payload and isinstance(payload["refs"], dict):
+            refs_dict = payload["refs"]
+            schema_map: Dict[int, "Schema"] = {}
+            for uid_str, raw_node in refs_dict.items():
+                try:
+                    uid_int = int(uid_str)
+                except (ValueError, TypeError):
+                    continue
+                s = cls(raw_node)
+                s.uid = uid_int
+                schema_map[uid_int] = s
+
+            def _get_ref(target_uid: Any) -> Any:
+                if target_uid is None:
+                    return None
+                try:
+                    return schema_map.get(int(target_uid))
+                except (ValueError, TypeError):
+                    return None
+
+            for uid_int, s in schema_map.items():
+                raw_node = refs_dict[str(uid_int)]
+                if "inner" in raw_node:
+                    s.inner = _get_ref(raw_node["inner"])
+                if "sKey" in raw_node or "s_key" in raw_node:
+                    s.s_key = _get_ref(raw_node.get("sKey") if "sKey" in raw_node else raw_node.get("s_key"))
+                if "list" in raw_node and isinstance(raw_node["list"], list):
+                    s.list = [_get_ref(item) for item in raw_node["list"]]
+                if "dict" in raw_node and isinstance(raw_node["dict"], dict):
+                    s.dict = {k: _get_ref(v) for k, v in raw_node["dict"].items()}
+
+            target_uid = payload.get("uid")
+            if target_uid is not None:
+                try:
+                    target_int = int(target_uid)
+                    if target_int in schema_map:
+                        return schema_map[target_int]
+                except (ValueError, TypeError):
+                    pass
+            return cls.any()
+        return cls(payload)
+
+    fromJSON = from_json
 
     # --- Factory Classmethods matching TS Schemastery.Static ---
     @classmethod
@@ -934,7 +1050,7 @@ def _resolve_is(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) ->
             if base.__name__ == ctor:
                 return data, None
         raise ValidationError(f"expected {ctor} but got {data}", opt)
-    return data, None
+    raise ValidationError(f"expected {ctor} but got {data}", opt)
 
 
 def _property(data: Any, key: Any, schema: Schema, opt: Dict[str, Any]) -> Any:
@@ -1026,7 +1142,7 @@ def _resolve_union(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool)
             return Schema.resolve(data, inner, opt, strict)
         except Exception as e:
             issues.append(str(e))
-    raise ValidationError(f"expected union but got {json.dumps(data, default=str)}", opt)
+    raise ValidationError(f"expected {schema.to_string()} but got {json.dumps(data, default=str)}", opt)
 
 
 def _resolve_intersect(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) -> Tuple[Any, Any]:
@@ -1041,20 +1157,16 @@ def _resolve_intersect(data: Any, schema: Schema, opt: Dict[str, Any], strict: b
         if is_nullable(res):
             res = dict(val) if isinstance(val, dict) else val
         elif isinstance(res, bool) != isinstance(val, bool):
-            raise ValidationError(f"expected {schema} but got {json.dumps(data, default=str)}", opt)
+            raise ValidationError(f"expected {schema.to_string()} but got {json.dumps(data, default=str)}", opt)
         elif isinstance(res, (int, float)) and isinstance(val, (int, float)):
             if res != val:
-                raise ValidationError(f"expected {schema} but got {json.dumps(data, default=str)}", opt)
+                raise ValidationError(f"expected {schema.to_string()} but got {json.dumps(data, default=str)}", opt)
         elif isinstance(res, dict) and isinstance(val, dict):
-            def _merge_dict(target, source):
-                for k, v in source.items():
-                    if k not in target:
-                        target[k] = v
-                    elif isinstance(target[k], dict) and isinstance(v, dict):
-                        _merge_dict(target[k], v)
-            _merge_dict(res, val)
+            for k, v in val.items():
+                if k not in res:
+                    res[k] = v
         elif type(res) != type(val) or res != val:
-            raise ValidationError(f"expected {schema} but got {json.dumps(data, default=str)}", opt)
+            raise ValidationError(f"expected {schema.to_string()} but got {json.dumps(data, default=str)}", opt)
 
     if not strict and isinstance(data, dict):
         if res is None:

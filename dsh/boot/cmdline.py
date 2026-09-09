@@ -148,6 +148,7 @@ class Command:
     def __init__(self, name: str = "") -> None:
         self._name = name
         self._options: List[Dict[str, Any]] = []
+        self._arguments: List[Dict[str, Any]] = []
         self._commands: List[Command] = []
         self._action_handler: Optional[Callable[..., Any]] = None
         self._parsed_opts: Dict[str, Any] = {}
@@ -163,6 +164,10 @@ class Command:
         if val is None:
             return self._name
         self._name = val
+        return self
+
+    def argument(self, name: str, description: str = "") -> "Command":
+        self._arguments.append({"name": name, "description": description})
         return self
 
     def exit_override(self, fn: Optional[Callable[[Any], None]] = None) -> "Command":

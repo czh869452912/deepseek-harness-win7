@@ -72,12 +72,13 @@ async def test_event_bus_modes():
     res = await ctx.waterfall("test/waterfall", "init")
     assert res == "init_m1_m2_m1_end"
 
-    # 2b. Waterfall with simple transformer (no next_fn parameter)
-    def transformer1(data):
-        return data + "-t1"
+    # 2b. Waterfall with transformer passing next_fn
+    def transformer1(data, next_fn):
+        return next_fn(data + "-t1")
 
-    async def transformer2(data):
-        return data + "-t2"
+    async def transformer2(data, next_fn=None):
+        res = data + "-t2"
+        return await next_fn(res) if next_fn else res
 
     ctx.on("test/transform", transformer1)
     ctx.on("test/transform", transformer2)

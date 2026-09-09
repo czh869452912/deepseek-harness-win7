@@ -71,7 +71,8 @@ class ToolPwshPersistentPlugin(Plugin):
                 ctx.logger("persistent-pwsh").warn("tools service unavailable")
             return
 
-        tool_name = self.config.get("tool_name", "pwsh")
+        cfg = self.config or {}
+        tool_name = cfg.get("tool_name", "pwsh")
         shell_type = "bash" if tool_name == "bash" else "pwsh"
 
         if not ctx.has("terminals"):

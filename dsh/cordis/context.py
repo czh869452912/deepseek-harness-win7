@@ -52,6 +52,10 @@ class Context:
         """Alias for Context.is_ matching TS Context.is."""
         return cls.is_(value)
 
+    def __repr__(self) -> str:
+        name = getattr(self, "name", None) or (getattr(getattr(self, "fiber", None), "name", None)) or "root"
+        return f"Context <{name}>"
+
     def __init__(
         self,
         parent: Optional["Context"] = None,

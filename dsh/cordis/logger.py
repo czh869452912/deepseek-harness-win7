@@ -158,14 +158,18 @@ class Logger:
                     f_val = float(val)
                     if math.isnan(f_val):
                         return "NaN"
+                    if math.isinf(f_val):
+                        return "-Infinity" if f_val < 0 else "Infinity"
                     return str(int(math.trunc(f_val)))
-                except (ValueError, TypeError):
+                except (ValueError, TypeError, OverflowError):
                     return "NaN"
             if ch == "f":
                 try:
                     f_val = float(val)
                     if math.isnan(f_val):
                         return "NaN"
+                    if math.isinf(f_val):
+                        return "-Infinity" if f_val < 0 else "Infinity"
                     return str(f_val)
                 except (ValueError, TypeError):
                     return "NaN"

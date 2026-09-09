@@ -23,7 +23,7 @@ class Inject:
         Supports:
           - ["tools", "fs?"]  # '?' suffix declares optional dependency
           - {"tools": True, "fs": False}
-          - {"tools": {"required": False}}
+          - {"tools": {"intercept": True}}
         """
         if result is None:
             result = {}
@@ -32,32 +32,13 @@ class Inject:
         if isinstance(inject_meta, (list, tuple, set)):
             for name in inject_meta:
                 name_str = str(name)
-                if name_str.endswith("?"):
-                    result[name_str[:-1]] = {"required": False}
-                else:
-                    if name_str not in result:
-                        result[name_str] = None
+                result[name_str] = None
         elif isinstance(inject_meta, dict):
             for k, v in inject_meta.items():
                 k_str = str(k)
-                if isinstance(v, bool):
-                    result[k_str] = {"required": v}
-                elif isinstance(v, dict):
-                    cfg = dict(v)
-                    cfg.setdefault("required", True)
-                    result[k_str] = cfg
-                elif v is None:
-                    if k_str.endswith("?"):
-                        result[k_str[:-1]] = {"required": False}
-                    else:
-                        result[k_str] = None
-                else:
-                    result[k_str] = v
+                result[k_str] = None if v is None else v
         elif isinstance(inject_meta, str):
-            if inject_meta.endswith("?"):
-                result[inject_meta[:-1]] = {"required": False}
-            else:
-                result[inject_meta] = None
+            result[inject_meta] = None
         return result
 
 
@@ -97,16 +78,17 @@ def inject(name_or_deps: Any = None, config: Optional[Any] = None) -> Callable[[
 
             @functools.wraps(target)
             def wrapper(self_or_ctx: Any, *args: Any, **kwargs: Any) -> Any:
-                ctx = getattr(self_or_ctx, "ctx", None) or (self_or_ctx if hasattr(self_or_ctx, "has") else None)
+                ctx = getattr(self_or_ctx, "ctx", self_or_ctx)
                 if ctx and hasattr(ctx, "has"):
                     for dep in target._cordis_inject.keys():
                         if not ctx.has(dep):
-                            raise RuntimeError(f"Cannot call method '{target.__name__}' without injected service '{dep}' in active context")
+                            raise RuntimeError(f"Cannot call method '{target.__name__}' without injected service '{dep}'")
                 return target(self_or_ctx, *args, **kwargs)
 
             wrapper._cordis_inject = target._cordis_inject
             return wrapper
-        return target
+        else:
+            raise TypeError("@Inject() can only be used on class or class methods")
 
     if name_or_deps is not None and (inspect.isclass(name_or_deps) or callable(name_or_deps)):
         # Bare @inject without args
@@ -219,8 +201,36 @@ class RegistryService:
                     loop = asyncio.get_running_loop()
                     loop.create_task(fiber.dispose())
                 except RuntimeError:
-                    asyncio.run(fiber.dispose())
+                    try:
+                        loop = asyncio.new_event_loop()
+                        loop.run_until_complete(fiber.dispose())
+                        loop.close()
+                    except Exception:
+                        pass
         return runtime
+
+    async def delete_async(self, plugin: Any) -> Optional[PluginRuntime]:
+        key = self.resolve(plugin)
+        runtime = self._runtimes.pop(key, None) if key else None
+        if runtime:
+            for fiber in list(runtime.fibers):
+                if fiber in self._pending_fibers:
+                    self._pending_fibers.remove(fiber)
+                await fiber.dispose()
+        return runtime
+
+    def keys(self) -> Any:
+        return self._runtimes.keys()
+
+    def values(self) -> Any:
+        return self._runtimes.values()
+
+    def entries(self) -> Any:
+        return self._runtimes.items()
+
+    def forEach(self, callback: Callable[[PluginRuntime, Any, Any], None]) -> None:
+        for k, v in list(self._runtimes.items()):
+            callback(v, k, self)
 
     def list_fibers(self) -> List[Fiber]:
         fibers: List[Fiber] = []
@@ -248,13 +258,26 @@ class RegistryService:
             callback = plugin_cls_or_instance
 
         if not callback:
-            type_str = type(plugin_cls_or_instance).__name__
-            raise ValueError(f'invalid plugin, expect function or object with an "apply" method, received {type_str}')
+            p = plugin_cls_or_instance
+            if p is None:
+                type_str = "undefined"
+            elif isinstance(p, bool):
+                type_str = "boolean"
+            elif isinstance(p, (int, float)):
+                type_str = "number"
+            elif isinstance(p, str):
+                type_str = "string"
+            elif callable(p):
+                type_str = "function"
+            else:
+                type_str = "object"
+            py_type = type(p).__name__
+            raise ValueError(f'invalid plugin, expect function or object with an "apply" method, received {type_str} ({py_type})')
 
         if target_parent and getattr(target_parent, "fiber", None):
-            target_parent.fiber.assert_active(check_error=False)
+            target_parent.fiber.assert_active()
         elif self.ctx and getattr(self.ctx, "fiber", None):
-            self.ctx.fiber.assert_active(check_error=False)
+            self.ctx.fiber.assert_active()
 
         runtime = self._runtimes.get(callback)
         if not runtime:
@@ -270,10 +293,19 @@ class RegistryService:
             self._runtimes[callback] = runtime
 
         # Extract declared dependencies via Inject.resolve
-        raw_inject = getattr(plugin_cls_or_instance, "inject", None)
+        if isinstance(plugin_cls_or_instance, dict):
+            raw_inject = plugin_cls_or_instance.get("inject")
+        else:
+            raw_inject = getattr(plugin_cls_or_instance, "inject", None)
         inject_deps = Inject.resolve(raw_inject)
 
-        fiber = Fiber(target_parent, None, config=config, runtime=runtime, inject=inject_deps, get_outer_stack=get_outer_stack)
+        fiber_config = config
+        if fiber_config is None and not inspect.isclass(plugin_cls_or_instance) and hasattr(plugin_cls_or_instance, "config"):
+            inst_cfg = getattr(plugin_cls_or_instance, "config", None)
+            if inst_cfg is not None:
+                fiber_config = inst_cfg
+
+        fiber = Fiber(target_parent, None, config=fiber_config, runtime=runtime, inject=inject_deps, get_outer_stack=get_outer_stack)
         target_ctx = fiber.ctx
 
         # Plugin instantiation deferred to fiber._reload for class plugins
@@ -284,8 +316,6 @@ class RegistryService:
                 fiber.inject = Inject.resolve(getattr(plugin_cls_or_instance, "inject", None))
         elif isinstance(plugin_cls_or_instance, Plugin):
             plugin_inst = plugin_cls_or_instance
-            if config:
-                plugin_inst.config.update(config)
             fiber.plugin = plugin_inst
             if hasattr(plugin_inst, "inject") and not raw_inject:
                 fiber.inject = Inject.resolve(getattr(plugin_inst, "inject", None))
@@ -394,21 +424,14 @@ class RegistryService:
 
     def update_dependencies(self) -> None:
         """
-        Re-evaluate all PENDING fibers whenever services are added or modified.
+        Re-evaluate dependencies via reflect.notify to maintain single notification channel.
         """
-        if self._updating:
-            return
-        self._updating = True
-        try:
-            pending_list = list(self._pending_fibers)
-            for fiber in pending_list:
-                for name in list(fiber.inject.keys()):
-                    fiber._checkImpl(name)
-                fiber._refresh()
-                if fiber.state == FiberState.ACTIVE and fiber in self._pending_fibers:
-                    self._pending_fibers.remove(fiber)
-        finally:
-            self._updating = False
+        if hasattr(self.ctx, "reflect") and hasattr(self.ctx.reflect, "notify"):
+            names = set()
+            for fiber in list(self._pending_fibers):
+                names.update(fiber.inject.keys())
+            if names:
+                self.ctx.reflect.notify(list(names))
 
     async def unload_plugin(self, plugin_id: str) -> bool:
         """

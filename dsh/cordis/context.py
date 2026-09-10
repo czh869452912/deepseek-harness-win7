@@ -53,8 +53,9 @@ class Context:
         return cls.is_(value)
 
     def __repr__(self) -> str:
-        name = getattr(self, "name", None) or (getattr(getattr(self, "fiber", None), "name", None)) or "root"
-        return f"Context <{name}>"
+        fiber = self.__dict__.get("fiber") or getattr(self, "_fiber", None)
+        name = getattr(fiber, "name", None) if fiber else "root"
+        return f"Context <{name or 'root'}>"
 
     def __init__(
         self,

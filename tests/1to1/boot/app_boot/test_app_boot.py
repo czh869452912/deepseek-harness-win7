@@ -335,9 +335,10 @@ def test_install_fail_loud_writes_one_labelled_line_with_stack_and_exits_1():
     proc = FakeProc()
     installFailLoud(NAME, proc)
     error = RuntimeError("boom")
+    error.stack = "RuntimeError: boom\n    at spec_frame"
     proc.handlers[0](error)
     assert f"{NAME}: fatal load failure: " in proc.written[0]
-    assert "boom" in proc.written[0]
+    assert "RuntimeError: boom\n    at spec_frame" in proc.written[0]
     assert proc.exits == [1]
 
 
@@ -365,6 +366,20 @@ def test_install_fail_loud_returns_uninstaller_that_removes_handler():
     # Default proc doesn't throw
     uninstall_real = installFailLoud(NAME)
     uninstall_real()
+
+
+@pytest.mark.asyncio
+async def test_install_fail_loud_default_proc_restores_loop_handler():
+    loop = asyncio.get_running_loop()
+    dummy_handler = lambda l, c: None
+    loop.set_exception_handler(dummy_handler)
+    try:
+        uninstall_real = installFailLoud(NAME)
+        assert loop.get_exception_handler() is not dummy_handler
+        uninstall_real()
+        assert loop.get_exception_handler() is dummy_handler
+    finally:
+        loop.set_exception_handler(None)
 
 
 @pytest.mark.asyncio

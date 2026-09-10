@@ -5,6 +5,7 @@ Implements Logger, LoggerService, Exporters, ANSI color hashing, and formatting.
 
 import json
 import math
+import os
 import re
 import sys
 import time
@@ -346,3 +347,105 @@ class LoggerService:
 
     def debug(self, format_str: Any, *args: Any) -> None:
         self().debug(format_str, *args)
+
+
+class ConsoleExporter(Exporter):
+    """
+    Shared console log exporter matching reference/vendor/logger-console.
+    Formats structured log messages and outputs to sys.stdout.
+    """
+    name = "logger-console"
+
+    def __init__(self, ctx: Any = None, config: Optional[Dict[str, Any]] = None):
+        if ctx is not None and not hasattr(ctx, "logger") and isinstance(ctx, dict) and config is None:
+            config = ctx
+            ctx = None
+
+        cfg = dict(config or {})
+        defaults = self.get_defaults()
+        merged = {**defaults, **cfg}
+
+        super().__init__(
+            colors=merged.get("colors", 0),
+            max_length=merged.get("maxLength", merged.get("max_length", 10240)),
+            levels=merged.get("levels", {}),
+            formatters=merged.get("formatters", {}),
+        )
+        self.ctx = ctx
+        self.show_diff: bool = merged.get("showDiff", merged.get("show_diff", False))
+        self.show_time: str = merged.get("showTime", merged.get("show_time", "yyyy-MM-dd hh:mm:ss "))
+        self.label: Dict[str, Any] = merged.get("label") or {}
+        self.timestamp: int = int(time.time() * 1000)
+
+        def _inspect_formatter(val: Any, target: Any, msg: Any = None) -> str:
+            try:
+                return json.dumps(val, default=str, ensure_ascii=False)
+            except Exception:
+                return str(val)
+
+        if "o" not in self.formatters:
+            self.formatters["o"] = _inspect_formatter
+        if "O" not in self.formatters:
+            self.formatters["O"] = _inspect_formatter
+
+        if ctx and hasattr(ctx, "logger"):
+            ctx.logger.exporter(self)
+
+    @classmethod
+    def get_defaults(cls) -> Dict[str, Any]:
+        has_colors = 0
+        if hasattr(sys.stdout, "isatty") and sys.stdout.isatty():
+            has_colors = 2 if "256color" in os.environ.get("TERM", "") else 1
+        return {
+            "colors": has_colors,
+            "showTime": "yyyy-MM-dd hh:mm:ss ",
+            "showDiff": False,
+            "maxLength": 10240,
+        }
+
+    getDefaults = get_defaults
+
+    def export(self, message: Message) -> None:
+        try:
+            line = self.render(message)
+            sys.stdout.write(line + "\n")
+            sys.stdout.flush()
+        except Exception:
+            pass
+
+    def render(self, message: Message) -> str:
+        prefix = f"[{message.type[0].upper()}]" if message.type else "[I]"
+        margin = self.label.get("margin", 1) if isinstance(self.label, dict) else 1
+        space = " " * margin
+        indent = 3 + len(space)
+        output = ""
+
+        if self.show_time:
+            indent += len(self.show_time)
+            now = time.localtime(message.ts / 1000.0) if message.ts else time.localtime()
+            formatted_time = time.strftime("%Y-%m-%d %H:%M:%S ", now)
+            output += Logger.color(self, 8, formatted_time)
+
+        colors_val = self.colors if self.colors else 0
+        code = Logger.code(message.name, colors_val)
+        label = Logger.color(self, code, message.name, ";1")
+        target_width = self.label.get("width", 0) if isinstance(self.label, dict) else 0
+        pad_length = max(0, target_width + len(label) - len(message.name))
+
+        if isinstance(self.label, dict) and self.label.get("align") == "right":
+            output += label.rjust(pad_length) + space + prefix + space
+            indent += target_width + len(space)
+        else:
+            output += prefix + space + label.ljust(pad_length) + space
+
+        formatted_msg = Logger.format(self, message)
+        indent_str = " " * indent
+        output += formatted_msg.replace("\n", "\n" + indent_str)
+
+        if self.show_diff and self.timestamp:
+            diff = message.ts - self.timestamp
+            output += Logger.color(self, code, f" +{diff}ms")
+
+        self.timestamp = message.ts
+        return output
+

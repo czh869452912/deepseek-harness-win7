@@ -124,6 +124,7 @@ class Schema:
         self.dict: Optional[Dict[str, "Schema"]] = None
         self.bits: Optional[Dict[str, int]] = None
         self.callback: Optional[Callable[..., Any]] = None
+        self.callback_source: Optional[str] = None
         self.constructor: Optional[Any] = None
         self.builder: Optional[Callable[[], "Schema"]] = None
         self.preserve: bool = False
@@ -131,6 +132,10 @@ class Schema:
         if options:
             opts = dict(options)
             opts.pop("uid", None)
+            cb = opts.get("callback")
+            if cb is not None and not callable(cb):
+                opts.pop("callback")
+                self.callback_source = str(cb)
             for k, v in opts.items():
                 setattr(self, k, v)
         if not isinstance(self.meta, dict):
@@ -180,6 +185,7 @@ class Schema:
         s.dict = dict(self.dict) if self.dict is not None else None
         s.bits = dict(self.bits) if self.bits is not None else None
         s.callback = self.callback
+        s.callback_source = getattr(self, "callback_source", None)
         s.constructor = self.constructor
         s.builder = self.builder
         s.preserve = self.preserve
@@ -470,10 +476,17 @@ class Schema:
             else:
                 node["constructor"] = str(self.constructor)
         if self.callback is not None:
-            if hasattr(self.callback, "__name__"):
-                node["callback"] = self.callback.__name__
-            else:
-                node["callback"] = str(self.callback)
+            source = None
+            try:
+                import inspect
+                source = inspect.getsource(self.callback).strip()
+            except Exception:
+                pass
+            if not source:
+                source = getattr(self.callback, "__name__", str(self.callback))
+            node["callback"] = source
+        elif getattr(self, "callback_source", None):
+            node["callback"] = self.callback_source
 
         if is_root:
             return {"uid": self.uid, "refs": refs}
@@ -511,10 +524,17 @@ class Schema:
             else:
                 res["constructor"] = str(self.constructor)
         if self.callback is not None:
-            if hasattr(self.callback, "__name__"):
-                res["callback"] = self.callback.__name__
-            else:
-                res["callback"] = str(self.callback)
+            source = None
+            try:
+                import inspect
+                source = inspect.getsource(self.callback).strip()
+            except Exception:
+                pass
+            if not source:
+                source = getattr(self.callback, "__name__", str(self.callback))
+            res["callback"] = source
+        elif getattr(self, "callback_source", None):
+            res["callback"] = self.callback_source
         return res
 
     def to_json_schema(self) -> Dict[str, Any]:
@@ -621,11 +641,12 @@ class Schema:
             props = [f"{k}: {v.to_string()}" for k, v in self.dict.items()]
             return f"{{ {', '.join(props)} }}"
         elif self.type == "union":
-            res = " | ".join(s.to_string(True) for s in (self.list or []))
+            res = " | ".join(s.to_string() for s in (self.list or []))
             return f"({res})" if inline and len(self.list or []) > 1 else res
         elif self.type == "intersect":
-            res = " & ".join(s.to_string(True) for s in (self.list or []))
-            return f"({res})" if inline and len(self.list or []) > 1 else res
+            return " & ".join(s.to_string(True) for s in (self.list or []))
+        elif self.type == "transform":
+            return self.inner.to_string(inline) if self.inner else "transform"
         elif self.type == "is":
             if isinstance(self.constructor, type):
                 return self.constructor.__name__
@@ -664,7 +685,9 @@ class Schema:
                     return None
 
             for uid_int, s in schema_map.items():
-                raw_node = refs_dict[str(uid_int)]
+                raw_node = refs_dict.get(str(uid_int), refs_dict.get(uid_int))
+                if raw_node is None:
+                    continue
                 if "inner" in raw_node:
                     s.inner = _get_ref(raw_node["inner"])
                 if "sKey" in raw_node or "s_key" in raw_node:
@@ -1180,14 +1203,14 @@ def _resolve_intersect(data: Any, schema: Schema, opt: Dict[str, Any], strict: b
 def _resolve_transform(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) -> Tuple[Any, Any]:
     inner = schema.inner or Schema.any()
     res, adapted = Schema.resolve(data, inner, opt, True)
-    if schema.callback:
-        p_count = len(inspect_params(schema.callback))
-        transformed = schema.callback(res, opt) if p_count >= 2 else schema.callback(res)
-        if schema.preserve:
-            return transformed, None
-        t_adapted = schema.callback(adapted if adapted is not None else data, opt) if p_count >= 2 else schema.callback(adapted if adapted is not None else data)
-        return transformed, t_adapted
-    return res, None
+    if not callable(schema.callback):
+        raise TypeError(f"Schema(transform) callback is not callable (got {type(schema.callback).__name__}: {schema.callback!r})")
+    p_count = len(inspect_params(schema.callback))
+    transformed = schema.callback(res, opt) if p_count >= 2 else schema.callback(res)
+    if schema.preserve:
+        return transformed, None
+    t_adapted = schema.callback(adapted if adapted is not None else data, opt) if p_count >= 2 else schema.callback(adapted if adapted is not None else data)
+    return transformed, t_adapted
 
 
 def inspect_params(fn: Callable[..., Any]) -> List[str]:

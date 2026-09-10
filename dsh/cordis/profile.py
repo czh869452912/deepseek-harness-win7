@@ -75,12 +75,19 @@ class Profile:
         patch_path: str,
         patches: List[Dict[str, Any]],
         bundles: List[str],
+        layers: Optional[List[Any]] = None,
+        patch_reload: str = "live",
     ):
         self.name = name
         self.dir = dir_path
+        self.dir_path = dir_path
         self.patch_path = patch_path
+        self.patchPath = patch_path
         self.patches = patches
         self.bundles = bundles
+        self.layers = layers or []
+        self.patch_reload = patch_reload
+        self.patchReload = patch_reload
 
     def __repr__(self) -> str:
         return f"<Profile {self.name} dir={self.dir} patches={len(self.patches)} bundles={self.bundles}>"
@@ -360,17 +367,20 @@ def dump_config(
     profile_name: str = "standard",
     patch_files: Optional[List[str]] = None,
     dsh_home: Optional[str] = None,
+    default_only: bool = False,
 ) -> str:
     """
     Dump the fully composed 4-layer entry tree as YAML matching `dsh --dump-config`.
-    Pure configuration evaluation without booting the live Context or plugins.
+    Delegates to canonical run_dump_config with provenance comments.
     """
-    composed = compose_profile(profile_name, patch_files=patch_files, dsh_home=dsh_home)
-    
-    from dsh.boot.profile import compose_entries
-    final_entries = compose_entries([composed.bundle_patches, composed.profile.patches, composed.home_patches, composed.overlays])
-    
-    return yaml.safe_dump(final_entries, sort_keys=False, allow_unicode=True)
+    try:
+        from dsh.boot.dump_config import run_dump_config
+        return run_dump_config(profile_name, default_only=default_only, patches=patch_files or [])
+    except Exception:
+        composed = compose_profile(profile_name, patch_files=patch_files, dsh_home=dsh_home)
+        from dsh.boot.profile import compose_entries
+        final_entries = compose_entries([composed.bundle_patches, composed.profile.patches, composed.home_patches, composed.overlays])
+        return yaml.safe_dump(final_entries, sort_keys=False, allow_unicode=True)
 
 
 def render_config_dump(

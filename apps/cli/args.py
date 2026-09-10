@@ -3,6 +3,7 @@ Command line argument parser for dsh matching reference/apps/cli/src/args.ts.
 Compatible with Python 3.8.10 and Windows 7 SP1.
 """
 
+import json
 import sys
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -154,7 +155,7 @@ def parse_dsh_args(argv: List[str], version: str = "1.2.3") -> Dict[str, Any]:
         _error("--dump-config and --dump-default-config are mutually exclusive")
 
     if leftover:
-        _error(f"config dumps take no app arguments, got {' '.join(repr(a) for a in leftover)}")
+        _error(f"config dumps take no app arguments, got {' '.join(json.dumps(a) for a in leftover)}")
 
     default_only = bool(dump_default_config)
     if default_only and patches:

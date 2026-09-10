@@ -36,7 +36,9 @@ class _ServiceExtendedProxy:
         self.__dict__["name"] = getattr(target, "name", "")
 
     def __getattr__(self, name: str) -> Any:
-        if name in self.__dict__["_props"]:
+        if name in self.__dict__:
+            return self.__dict__[name]
+        if "_props" in self.__dict__ and name in self.__dict__["_props"]:
             return self.__dict__["_props"][name]
         target = self.__dict__["_target"]
         attr = getattr(target, name)
@@ -46,10 +48,10 @@ class _ServiceExtendedProxy:
         return attr
 
     def __setattr__(self, name: str, value: Any) -> None:
-        if name in self.__dict__["_props"]:
+        if "_props" in self.__dict__ and name in self.__dict__["_props"]:
             self.__dict__["_props"][name] = value
         else:
-            setattr(self.__dict__["_target"], name, value)
+            self.__dict__[name] = value
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return self.__dict__["_target"](*args, **kwargs)

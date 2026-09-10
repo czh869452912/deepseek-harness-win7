@@ -887,7 +887,13 @@ class Fiber:
         if loop is not None and loop.is_running():
             async def _run_gather():
                 try:
-                    await asyncio.gather(*async_disposers, return_exceptions=True)
+                    results = await asyncio.gather(*async_disposers, return_exceptions=True)
+                    for r in results:
+                        if isinstance(r, Exception):
+                            if self.ctx and hasattr(self.ctx, "logger"):
+                                self.ctx.logger("fiber").error("Exception during async unload for '%s': %s", self.name, r)
+                            else:
+                                sys.stderr.write(f"[Cordis Fiber Error] Exception during async unload for '{self.name}': {r}\n")
                 finally:
                     self.store = None
                     if self.epoch == INACTIVE_EPOCH:

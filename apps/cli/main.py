@@ -13,7 +13,10 @@ if hasattr(sys.stdout, 'reconfigure'):
 
 from dsh.harness import build_harness
 from dsh.cordis.profile import dump_config
-from dsh.boot.app_boot import install_fail_loud
+from dsh.boot.app_boot import install_fail_loud, load_layered_env
+from dsh.boot.profile_boot import run_profile
+from dsh.boot.dump_config import run_dump_config
+from apps.cli.args import parse_dsh_args
 
 
 def parse_args():
@@ -180,6 +183,27 @@ async def main_async():
 def main():
     install_fail_loud("dsh")
     try:
+        argv = sys.argv[1:]
+        has_legacy = any(
+            arg in ("-m", "--mode", "-p", "--prompt", "--api-key", "--base-url", "--model", "--port", "--host", "--no-open")
+            or arg.startswith(("-m=", "--mode=", "-p=", "--prompt=", "--api-key=", "--base-url=", "--model=", "--port=", "--host="))
+            for arg in argv
+        )
+        if not has_legacy and argv:
+            invocation = parse_dsh_args(argv)
+            if invocation["mode"] == "dump-config":
+                dump_text = run_dump_config(invocation["profile"], invocation["defaultOnly"], invocation["patches"])
+                sys.stdout.write(dump_text)
+                return
+            elif invocation["mode"] == "profile":
+                asyncio.run(run_profile({
+                    "environment": load_layered_env("dsh"),
+                    "profile": invocation["profile"],
+                    "patchFiles": invocation["patches"],
+                    "args": invocation["args"],
+                }))
+                return
+
         asyncio.run(main_async())
     except KeyboardInterrupt:
         pass

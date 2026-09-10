@@ -124,7 +124,7 @@ async def test_hmr_dynamic_module_reload_and_fiber_restart():
             )
 
         ctx = Context()
-        hmr = HmrService(ctx, config={'debounce': 10})
+        hmr = HmrService(ctx, config={'debounce': 10, 'root': []})
         ctx.set_service('hmr', hmr)
 
         import importlib.util

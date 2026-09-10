@@ -241,8 +241,13 @@ class ConfigWatcherService(Service):
         except ValueError:
             rel = filepath.replace("\\", "/")
         name = os.path.basename(filepath)
+        if name.startswith(".") or name in ("node_modules", "__pycache__", "dist", "build", ".venv", "venv", "cache", "data"):
+            return True
         for pat in self.ignored:
             if fnmatch.fnmatch(rel, pat) or fnmatch.fnmatch(name, pat) or fnmatch.fnmatch(f"**/{name}", pat) or fnmatch.fnmatch(f"**/{rel}", pat):
+                return True
+            pat_stripped = pat.strip("*/")
+            if pat_stripped and (pat_stripped in rel.split("/") or pat_stripped == name):
                 return True
         return False
 
@@ -449,14 +454,14 @@ class ConfigWatcherService(Service):
                     self.ctx.logger("hmr").warn("config reload at %s failed: %s", filename, reason)
 
     def _trigger_module_reload(self, filename: str, target_plugin: Optional[Any]) -> None:
-        state = self._refreshes.setdefault(filename, ConfigRefreshState())
-        state.dirty = True
-        if state.running and not state.running.done():
+        refresh_state = self._refreshes.setdefault(filename, ConfigRefreshState())
+        refresh_state.dirty = True
+        if refresh_state.running and not refresh_state.running.done():
             return
 
         async def _run() -> None:
-            while state.dirty:
-                state.dirty = False
+            while refresh_state.dirty:
+                refresh_state.dirty = False
                 reloads: Dict[Any, Dict[str, Any]] = {}
                 abs_changed = os.path.abspath(filename)
                 try:
@@ -472,6 +477,17 @@ class ConfigWatcherService(Service):
 
                     registry = getattr(self.ctx, "registry", None)
                     prev_runtimes = dict(registry._runtimes) if registry else {}
+                    saved_runtimes_state: Dict[Any, Dict[str, Any]] = {}
+                    if registry:
+                        for r_key, r_val in registry._runtimes.items():
+                            saved_runtimes_state[r_key] = {
+                                "callback": r_val.callback,
+                                "runtime": r_val,
+                                "fibers": [
+                                    (f, getattr(f, "_plugin_cls", None), getattr(f, "plugin", None), getattr(f, "config", None))
+                                    for f in list(getattr(r_val, "fibers", []))
+                                ],
+                            }
                     new_modules_created: List[str] = []
 
                     try:
@@ -532,7 +548,21 @@ class ConfigWatcherService(Service):
                         for m_name in new_modules_created:
                             sys.modules.pop(m_name, None)
                         if registry:
-                            registry._runtimes = prev_runtimes
+                            registry._runtimes.clear()
+                            for r_key, saved_st in saved_runtimes_state.items():
+                                runtime = saved_st.get("runtime")
+                                if runtime is not None:
+                                    runtime.callback = saved_st["callback"]
+                                    for f, old_cls, old_plugin, old_cfg in saved_st["fibers"]:
+                                        f._plugin_cls = old_cls
+                                        f.plugin = old_plugin
+                                        f.config = old_cfg
+                                        try:
+                                            f._refresh()
+                                        except Exception:
+                                            pass
+                                    registry._runtimes[r_key] = runtime
+                                    registry._runtimes[saved_st["callback"]] = runtime
                         raise step_err
 
                     if reloads and hasattr(self.ctx, "emit"):
@@ -548,7 +578,7 @@ class ConfigWatcherService(Service):
         try:
             loop = asyncio.get_running_loop()
             task = loop.create_task(_run())
-            state.running = task
+            refresh_state.running = task
             self._refresh_tasks.add(task)
             task.add_done_callback(lambda t: self._refresh_tasks.discard(t))
         except RuntimeError:

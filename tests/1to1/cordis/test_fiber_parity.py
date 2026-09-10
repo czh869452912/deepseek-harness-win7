@@ -131,9 +131,7 @@ async def test_t5_name_inherits_nearest_named_ancestor():
         name = "grand_parent_runtime"
 
         def apply(self, c: Context) -> None:
-            def anonymous_child(child_ctx: Context):
-                pass
-            f = c.plugin(anonymous_child)
+            f = c.plugin(lambda child_ctx: None)
             child_fiber_ref.append(f)
 
     parent_fiber = ctx.plugin(NamedParent)

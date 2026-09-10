@@ -447,8 +447,8 @@ def interpolate(ctx: Any, config: Any) -> Any:
 
 def eval_condition(condition: Any, ctx: Optional[Any] = None) -> bool:
     """
-    Safely evaluate boolean expression for 'disabled' or 'enabled' fields in plugin configs.
-    Matches TS loader.ts disabledOf: if is_js_expr then evaluate, else bool(condition).
+    Evaluate boolean expression for 'disabled' or 'enabled' fields in plugin configs.
+    Matches TS disabledOf: if is_js_expr(condition) evaluate against ctx, else bool(condition).
     """
     if not condition:
         return False
@@ -456,13 +456,6 @@ def eval_condition(condition: Any, ctx: Optional[Any] = None) -> bool:
         return condition
     if is_js_expr(condition):
         return bool(evaluate_expr(ctx, condition["__jsExpr"]))
-    if isinstance(condition, str):
-        cond_str = condition.strip()
-        if cond_str.startswith("!!js"):
-            return bool(evaluate_expr(ctx, cond_str[4:].strip()))
-        if "process.platform" in cond_str or "sys.platform" in cond_str or "process.env" in cond_str:
-            return bool(evaluate_expr(ctx, cond_str))
-        return bool(cond_str)
     return bool(condition)
 
 

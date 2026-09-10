@@ -298,3 +298,41 @@ def test_t36_intersect_all_nullable_non_strict_leftover_merge():
     # Pass dict without "a" in non-strict mode: "a" is nullable/absent, leftover "b" is retained
     res = Schema.resolve({"b": 123}, s, {}, strict=False)[0]
     assert res == {"b": 123}
+
+
+def test_t37_transform_serialization_and_non_callable_fail_loud():
+    """T37 (R5): Transform serialization preserves callback source, deserialization sets callback=None, and non-callable raises TypeError."""
+    s = Schema.transform(Schema.string(), lambda x: x.upper())
+    json_rep = s.to_json()
+    assert "callback" in json_rep
+    assert isinstance(json_rep["callback"], str)
+
+    raw_tree = s.toJSON()
+    assert isinstance(raw_tree, dict) and "refs" in raw_tree
+    deserialized = Schema.from_json(raw_tree)
+    assert deserialized.type == "transform"
+    assert deserialized.callback is None
+    assert deserialized.callback_source is not None
+
+    # Resolving with a non-callable callback fails loud
+    bad_schema = Schema.transform(Schema.string(), "not-a-callable")
+    with pytest.raises(TypeError) as exc:
+        bad_schema("hello")
+    assert "callback is not callable" in str(exc.value)
+
+
+def test_t38_schema_to_string_parentheses_protocol():
+    """T38 (R8): to_string parenthesis protocol: union inline wraps in parens; intersect does not wrap outer parens; transform delegates to inner."""
+    u = Schema.union([Schema.string(), Schema.number()])
+    assert u.to_string() == "string | number"
+    assert u.to_string(True) == "(string | number)"
+
+    inter = Schema.intersect([u, Schema.boolean()])
+    # Intersect formats inner members with inline=True, wrapping union in parens, but does NOT wrap outer in parens
+    assert inter.to_string() == "(string | number) & boolean"
+    assert inter.to_string(True) == "(string | number) & boolean"
+
+    trans = Schema.transform(u, lambda x: x)
+    assert trans.to_string() == "string | number"
+    assert trans.to_string(True) == "(string | number)"
+

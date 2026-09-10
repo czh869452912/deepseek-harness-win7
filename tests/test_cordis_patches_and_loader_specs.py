@@ -119,14 +119,13 @@ def test_eval_condition_various_syntax():
     assert eval_condition(None) is False
     assert eval_condition("") is False
 
-    # Platform checks
+    # Platform checks: __jsExpr nodes evaluate dynamically, plain strings evaluate as bool matching TS disabledOf
     if sys.platform == "win32":
-        assert eval_condition("sys.platform == 'win32'") is True
-        assert eval_condition("process.platform === 'win32'") is True
-        assert eval_condition("!!js process.platform === 'win32'") is True
-        assert eval_condition("process.platform !== 'win32'") is False
+        assert eval_condition({"__jsExpr": "process.platform === 'win32'"}) is True
+        assert eval_condition({"__jsExpr": "process.platform !== 'win32'"}) is False
+        assert eval_condition("process.platform !== 'win32'") is True
     else:
-        assert eval_condition("sys.platform != 'win32'") is True
+        assert eval_condition({"__jsExpr": "process.platform !== 'win32'"}) is True
 
 
 def test_loader_load_from_dict_with_patches():

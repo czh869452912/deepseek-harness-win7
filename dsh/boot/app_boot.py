@@ -548,13 +548,71 @@ def install_fail_loud(
     exiting = False
 
     class DefaultProc:
-        def on(self, event, handler): pass
-        def off(self, event, handler): pass
+        def __init__(self):
+            self._handlers: List[Callable[[Any], None]] = []
+            self._installed_loop: Optional[asyncio.AbstractEventLoop] = None
+            self._prev_handler: Optional[Callable[..., Any]] = None
+
+        def on(self, event: str, h: Callable[[Any], None]) -> None:
+            if event == "unhandledRejection":
+                if h not in self._handlers:
+                    self._handlers.append(h)
+                self._ensure_loop_handler()
+
+        def off(self, event: str, h: Callable[[Any], None]) -> None:
+            if event == "unhandledRejection":
+                if h in self._handlers:
+                    self._handlers.remove(h)
+                if not self._handlers:
+                    self._restore_loop_handler()
+
+        def _ensure_loop_handler(self) -> None:
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                try:
+                    loop = asyncio.get_event_loop()
+                except RuntimeError:
+                    loop = None
+            if loop is None:
+                return
+            if self._installed_loop is loop:
+                return
+            self._installed_loop = loop
+            self._prev_handler = loop.get_exception_handler()
+
+            def _loop_handler(lp: asyncio.AbstractEventLoop, context: Dict[str, Any]) -> None:
+                exc = context.get("exception")
+                if exc is not None:
+                    for handler_fn in list(self._handlers):
+                        try:
+                            handler_fn(exc)
+                        except Exception:
+                            pass
+                if self._prev_handler is not None:
+                    self._prev_handler(lp, context)
+                else:
+                    lp.default_exception_handler(context)
+
+            loop.set_exception_handler(_loop_handler)
+
+        def _restore_loop_handler(self) -> None:
+            if self._installed_loop is not None:
+                try:
+                    self._installed_loop.set_exception_handler(self._prev_handler)
+                except Exception:
+                    pass
+                self._installed_loop = None
+                self._prev_handler = None
+
         class stderr:
             @staticmethod
-            def write(s): sys.stderr.write(s)
+            def write(s: str) -> None:
+                sys.stderr.write(s)
+
         @staticmethod
-        def exit(code): sys.exit(code)
+        def exit(code: int) -> None:
+            sys.exit(code)
 
     process_target = proc if proc is not None else DefaultProc()
 
@@ -734,7 +792,7 @@ async def watch_user_patches(ctx: Context, options: Dict[str, Any]) -> Callable[
         disposer = await hmr.register_config(filename, on_change)
         return disposer
     except Exception as error:
-        if getattr(error, "code", None) == "INACTIVE_EFFECT" or "inactive" in str(error).lower():
+        if getattr(error, "code", None) == "INACTIVE_EFFECT":
             async def noop_disposer(): pass
             return noop_disposer
         raise

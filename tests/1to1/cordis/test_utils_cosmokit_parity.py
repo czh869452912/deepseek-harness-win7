@@ -149,8 +149,8 @@ def test_d9_deep_equal_strict_and_patterns():
 def test_d10_disposable_list_identity_delete():
     """ts:cordis/utils.ts:21-25 - DisposableList delete removes the exact instance or matching bound method."""
     lst = DisposableList()
-    t1 = (1, 2)
-    t2 = (1, 2)
+    t1 = object()
+    t2 = object()
     lst.push(t1)
     lst.push(t2)
 
@@ -158,7 +158,7 @@ def test_d10_disposable_list_identity_delete():
     assert list(lst) == [t2]
 
     # Deleting value not in list returns False
-    assert lst.delete((9, 9)) is False
+    assert lst.delete(object()) is False
 
     # Bound method identity
     class Cls:

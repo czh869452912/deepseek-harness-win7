@@ -6,7 +6,7 @@ from dsh.cordis.context import Context
 from dsh.cordis.events import EventBus, Hook, is_bailed, AggregateError
 from dsh.cordis.fiber import Fiber, FiberState, CordisError, EffectMeta, INACTIVE_EPOCH
 from dsh.cordis.schema import Schema, ValidationError, z
-from dsh.cordis.logger import Logger, LoggerService, LoggerLevel, Message, Exporter
+from dsh.cordis.logger import Logger, LoggerService, LoggerLevel, Message, Exporter, ConsoleExporter
 from dsh.cordis.plugin import Plugin, PluginType
 from dsh.cordis.reflect import ReflectService, PropertyType, PropertyAccessor, PropertyService, Impl
 from dsh.cordis.registry import RegistryService, PluginRuntime, Inject, inject
@@ -38,6 +38,7 @@ __all__ = [
     "LoggerLevel",
     "Message",
     "Exporter",
+    "ConsoleExporter",
     "Plugin",
     "PluginType",
     "ReflectService",

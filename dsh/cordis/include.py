@@ -146,7 +146,6 @@ class Include(EntryTree, Service):
             return
         if not os.access(self.filename, os.W_OK):
             self.readonly = True
-            self.readonly = True
 
     def _read_file(self, forced: bool = False) -> Optional[Dict[str, Any]]:
         try:

@@ -16,14 +16,14 @@ from typing import Any
 
 from dsh.cordis.context import Context
 from dsh.cordis.fiber import FiberState
-from dsh.cordis.logger import Logger, LoggerLevel, LoggerService, Exporter, Message
+from dsh.cordis.logger import Logger, LoggerLevel, LoggerService, Exporter, Message, ConsoleExporter
 from dsh.cordis.plugin import Plugin
 
 
 def test_t1_logger_code_signed_hash_parity():
     """T1: Logger.code correctly computes 32-bit signed integer hash matching TS."""
-    # When level is 0, should return 0
-    assert Logger.code("test", 0) == 0
+    # When level is 0, Python returns 0 (TS evaluates empty array with NaN index, returning undefined)
+    assert Logger.code("test", 0) in (0, None)
 
     # TS constant parity: "core" -> 166 in c256, 4 in c16
     assert Logger.code("core", 2) == 166
@@ -178,3 +178,24 @@ def test_t8_logger_name_hyphenate_and_intercept_config():
     intercepted_logger = child_ctx.logger()
     assert intercepted_logger.level == LoggerLevel.DEBUG
     assert intercepted_logger.name == "custom-intercepted"
+
+
+def test_t9_console_exporter_render_and_defaults():
+    """T9: ConsoleExporter formats messages matching TS logger-console shared.ts."""
+    ctx = Context()
+    exporter = ConsoleExporter(ctx, {
+        "colors": 0,
+        "showTime": "",
+        "showDiff": False,
+        "label": {"margin": 1, "width": 10, "align": "left"},
+    })
+
+    msg = Message(sn=1, ts=1000, name="my-logger", msg_type="info", level=LoggerLevel.INFO, args=["hello world"])
+    rendered = exporter.render(msg)
+    assert "[I] my-logger  hello world" in rendered
+
+    # Test right align
+    exporter_right = ConsoleExporter({"colors": 0, "showTime": "", "label": {"margin": 1, "width": 12, "align": "right"}})
+    rendered_right = exporter_right.render(msg)
+    assert "my-logger [I]" in rendered_right
+

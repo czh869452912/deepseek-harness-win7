@@ -210,7 +210,8 @@ class LaunchEnvironmentSnapshot:
         return entry.value if entry else default
 
 
-LAUNCH_ENVIRONMENT_KEY: str = "launch_environment"
+LAUNCH_ENVIRONMENT_KEY: str = "launchEnvironment"
+DSH_LAUNCH_ENVIRONMENT_KEY: str = LAUNCH_ENVIRONMENT_KEY
 
 
 def launch_environment_of(ctx: Any) -> LaunchEnvironmentSnapshot:

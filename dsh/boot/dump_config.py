@@ -6,7 +6,7 @@ Compatible with Python 3.8.10 and Windows 7 SP1.
 
 import os
 import sys
-from typing import List, Sequence
+from typing import List, Optional, Sequence
 
 from dsh.boot.app_boot import (
     load_optional_patches,
@@ -21,11 +21,16 @@ from dsh.boot.profile_boot import (
 )
 
 
-def run_dump_config(profile: str, default_only: bool, patches: Sequence[str] = ()) -> str:
+def run_dump_config(
+    profile: str,
+    default_only: bool,
+    patches: Sequence[str] = (),
+    dsh_home: Optional[str] = None,
+) -> str:
     """
     Print a profile composition with comments naming each source file and patch layer.
     """
-    loaded = prepare_profile(profile, not default_only)
+    loaded = prepare_profile(profile, not default_only, dsh_home=dsh_home)
     layers = [
         {"label": layer.packageName, "patches": layer.patches}
         for layer in loaded.layers
@@ -33,7 +38,7 @@ def run_dump_config(profile: str, default_only: bool, patches: Sequence[str] = (
     if not default_only:
         if os.path.exists(loaded.patchPath):
             layers.append({"label": loaded.patchPath, "patches": loaded.patches})
-        home_patch_file = home_patch_path()
+        home_patch_file = home_patch_path(dsh_home)
         home_patches = load_optional_patches(NAME, home_patch_file)
         if home_patches is not None:
             layers.append({"label": home_patch_file, "patches": home_patches})

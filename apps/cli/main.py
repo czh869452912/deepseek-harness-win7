@@ -181,7 +181,6 @@ async def main_async():
 
 
 def main():
-    install_fail_loud("dsh")
     try:
         argv = sys.argv[1:]
         has_legacy = any(
@@ -195,18 +194,23 @@ def main():
                 dump_text = run_dump_config(invocation["profile"], invocation["defaultOnly"], invocation["patches"])
                 sys.stdout.write(dump_text)
                 return
+            elif invocation["mode"] == "plugin":
+                sys.stderr.write("dsh: 'plugin' command is not supported in portable release\n")
+                sys.exit(1)
             elif invocation["mode"] == "profile":
-                asyncio.run(run_profile({
+                boot_res = asyncio.run(run_profile({
                     "environment": load_layered_env("dsh"),
                     "profile": invocation["profile"],
                     "patchFiles": invocation["patches"],
                     "args": invocation["args"],
                 }))
-                return
+                shutdown_ctrl = boot_res.get("shutdown") if isinstance(boot_res, dict) else None
+                code = shutdown_ctrl.exit_code if shutdown_ctrl is not None else 0
+                sys.exit(code)
 
         asyncio.run(main_async())
     except KeyboardInterrupt:
-        pass
+        sys.exit(130)
 
 
 if __name__ == "__main__":

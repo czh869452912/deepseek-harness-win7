@@ -164,5 +164,66 @@ async def test_hmr_dynamic_module_reload_and_fiber_restart():
 
         assert len(changes) >= 1
         assert len(reloads) >= 1
+        new_fiber = reloads[0][plugin_cls]["runtime"].fibers[0]
+        assert new_fiber.plugin.version == 2
         assert fiber.plugin.version == 2
         hmr.teardown()
+
+
+@pytest.mark.asyncio
+async def test_hmr_dynamic_module_reload_failure_triggers_rollback():
+    """R4 test: Module reload failure triggers deep rollback restoring previous plugin and fiber state."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        mod_file = os.path.join(tmpdir, 'failing_plugin.py')
+        with open(mod_file, 'w', encoding='utf-8') as f:
+            f.write(
+                'from dsh.cordis.plugin import Plugin\n'
+                'class FailingSamplePlugin(Plugin):\n'
+                '    id = \'failing-sample\'\n'
+                '    def apply(self, ctx):\n'
+                '        self.version = 1\n'
+            )
+
+        ctx = Context()
+        hmr = HmrService(ctx, config={'debounce': 10, 'root': []})
+        ctx.set_service('hmr', hmr)
+
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('failing_plugin', mod_file)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        plugin_cls = getattr(mod, 'FailingSamplePlugin')
+
+        fiber = ctx.plugin(plugin_cls)
+        assert fiber.plugin.version == 1
+
+        changes = []
+        ctx.on('hmr/change', lambda fn: changes.append(fn))
+        hmr.register_module(mod_file, plugin_cls)
+
+        await asyncio.sleep(0.05)
+        # Update file with code that raises on apply
+        new_mtime = os.path.getmtime(mod_file) + 2.0
+        with open(mod_file, 'w', encoding='utf-8') as f:
+            f.write(
+                'from dsh.cordis.plugin import Plugin\n'
+                'class FailingSamplePlugin(Plugin):\n'
+                '    id = \'failing-sample\'\n'
+                '    def apply(self, ctx):\n'
+                '        raise RuntimeError("boom on reload")\n'
+            )
+        os.utime(mod_file, (new_mtime, new_mtime))
+
+        for _ in range(30):
+            await asyncio.sleep(0.05)
+            if changes:
+                break
+
+        # Give rollback time to settle
+        await asyncio.sleep(0.1)
+
+        assert len(changes) >= 1
+        # Previous plugin was restored on rollback
+        assert fiber.plugin.version == 1
+        hmr.teardown()
+

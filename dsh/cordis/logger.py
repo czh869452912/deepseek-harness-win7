@@ -353,6 +353,14 @@ class ConsoleExporter(Exporter):
     """
     Shared console log exporter matching reference/vendor/logger-console.
     Formats structured log messages and outputs to sys.stdout.
+
+    Permitted ADAPT deviations:
+    - showTime: Uses message.ts formatted via time.strftime.
+    - showDiff: Always formatted in milliseconds.
+    - colors: Detected via sys.stdout.isatty() and TERM (levels 0, 1, 2); 24-bit truecolor
+      is omitted for Windows 7 SP1 console compatibility.
+    - o/O formatters: Uses json.dumps(val, default=str) with fallback to str(val) rather than
+      Node-specific util.inspect.
     """
     name = "logger-console"
 
@@ -410,7 +418,8 @@ class ConsoleExporter(Exporter):
             line = self.render(message)
             sys.stdout.write(line + "\n")
             sys.stdout.flush()
-        except Exception:
+        except (OSError, UnicodeEncodeError):
+            # Safe ignore broken pipe or console encoding error when stdout is closed
             pass
 
     def render(self, message: Message) -> str:

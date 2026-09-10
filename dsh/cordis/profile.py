@@ -106,16 +106,16 @@ def _load_builtin_bundles() -> Dict[str, List[Dict[str, Any]]]:
         for b_dir in candidate_dirs:
             path = os.path.join(b_dir, subdir, "cordis.patch.yml")
             if os.path.isfile(path):
-                try:
-                    with open(path, "r", encoding="utf-8") as f:
-                        content = f.read()
-                    parsed = yaml.safe_load(content)
-                    if isinstance(parsed, list):
-                        return parsed
-                except Exception as e:
-                    sys.stderr.write(f"warning: failed to read bundle patch {path}: {e}\n")
-                    return []
-        return []
+                with open(path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                parsed = yaml.safe_load(content)
+                if not isinstance(parsed, list):
+                    raise RuntimeError(f"dsh: overlay {path} must be a top-level YAML array of loader patch entries")
+                for index, entry in enumerate(parsed):
+                    if not isinstance(entry, dict):
+                        raise RuntimeError(f"dsh: overlay entry {index + 1} in {path} must be a mapping")
+                return parsed
+        raise RuntimeError(f"dsh: failed to read bundle patch for '{subdir}': file not found")
 
     base_patches = _read_bundle_patch("base")
     web_patches = _read_bundle_patch("web-app")
@@ -123,65 +123,6 @@ def _load_builtin_bundles() -> Dict[str, List[Dict[str, Any]]]:
     sdk_patches = _read_bundle_patch("sdk-app")
     acp_patches = _read_bundle_patch("acp-app")
     sdk_min_patches = _read_bundle_patch("sdk-minimal")
-
-    if not base_patches:
-        base_patches = [
-            {
-                "insert": [
-                    {"id": "timer", "name": "@deepseek-ai/cordis-plugin-timer"},
-                    {"id": "hmr", "name": "@deepseek-ai/cordis-plugin-hmr", "disabled": True, "config": {"root": ["."]}},
-                    {"id": "llm", "name": "@deepseek-ai/dsh-llm"},
-                    {"id": "deepseek-llm-api-extensions", "name": "@deepseek-ai/dsh-deepseek-llm-api-extensions"},
-                    {"id": "session", "name": "@deepseek-ai/dsh-session"},
-                    {"id": "session-log-deepseek", "name": "@deepseek-ai/dsh-session-log-deepseek"},
-                    {"id": "typert", "name": "@deepseek-ai/dsh-typert-registry"},
-                    {"id": "typert-loader", "name": "@deepseek-ai/dsh-typert-loader"},
-                    {"id": "typert-gateway", "name": "@deepseek-ai/dsh-api-gateway"},
-                    {"id": "session-title", "name": "@deepseek-ai/dsh-session-title"},
-                    {"id": "tools", "name": "@deepseek-ai/dsh-tools"},
-                    {"id": "tool-str-replace-editor", "name": "@deepseek-ai/dsh-tool-str-replace-editor"},
-                    {"id": "tool-pwsh", "name": "@deepseek-ai/dsh-tool-pwsh"},
-                    {"id": "tool-fs-search", "name": "@deepseek-ai/dsh-tool-fs-search"},
-                    {"id": "agent", "name": "@deepseek-ai/dsh-agent"},
-                    {"id": "persona", "name": "@deepseek-ai/dsh-persona"},
-                    {"id": "agent-instructions", "name": "@deepseek-ai/dsh-agent-instructions"},
-                    {"id": "agent-loop", "name": "@deepseek-ai/dsh-agent-loop"},
-                ]
-            }
-        ]
-    if not web_patches:
-        web_patches = [
-            {"id": "host-webserver", "name": "@deepseek-ai/dsh-host-webserver"},
-            {"id": "host-frontend-static", "name": "@deepseek-ai/dsh-host-frontend-static"},
-            {"id": "host-client-modules", "name": "@deepseek-ai/dsh-host-client-modules"},
-            {"id": "host-directory-picker", "name": "@deepseek-ai/dsh-host-directory-picker"},
-            {"id": "host-plugin-inventory", "name": "@deepseek-ai/dsh-host-plugin-inventory"},
-            {"id": "host-apiproxy", "name": "@deepseek-ai/dsh-host-apiproxy"},
-        ]
-    if not headless_patches:
-        headless_patches = [
-            {"id": "cli-visualizer", "name": "@deepseek-ai/dsh-cli-visualizer", "config": {"verbose": True}},
-        ]
-    if not sdk_patches:
-        sdk_patches = [
-            {"id": "session-query-sqlite", "name": "@deepseek-ai/dsh-session-query-sqlite"},
-        ]
-    if not acp_patches:
-        acp_patches = [
-            {"id": "acp-server", "name": "@deepseek-ai/dsh-acp-server", "disabled": False},
-        ]
-    if not sdk_min_patches:
-        sdk_min_patches = [
-            {
-                "insert": [
-                    {"id": "fs-local", "name": "@deepseek-ai/dsh-fs-local"},
-                    {"id": "agent-spine", "name": "@deepseek-ai/dsh-agent-spine-demo"},
-                    {"id": "persistent-pwsh", "name": "@deepseek-ai/dsh-tool-pwsh-persistent"},
-                    {"id": "str-replace-editor", "name": "@deepseek-ai/dsh-tool-str-replace-editor"},
-                    {"id": "sessions", "name": "@deepseek-ai/dsh-session-persistence-jsonl"},
-                ]
-            }
-        ]
 
     bundles: Dict[str, List[Dict[str, Any]]] = {
         "dsh-base": base_patches,
@@ -336,6 +277,10 @@ def compose_profile(
     for bname in profile.bundles:
         if bname in BUILTIN_BUNDLES:
             bundle_patches.extend(copy.deepcopy(BUILTIN_BUNDLES[bname]))
+        else:
+            raise RuntimeError(
+                f"dsh: profile bundle {json.dumps(bname)} could not be resolved; run 'dsh plugin --profile {profile.name} install' if its dependency is not installed"
+            )
 
     # 2. Home Patches ($DSH_HOME/cordis.patch.yml)
     home_patch = home_patch_path(dsh_home)
@@ -373,14 +318,16 @@ def dump_config(
     Dump the fully composed 4-layer entry tree as YAML matching `dsh --dump-config`.
     Delegates to canonical run_dump_config with provenance comments.
     """
+    from dsh.boot.dump_config import run_dump_config
     try:
-        from dsh.boot.dump_config import run_dump_config
-        return run_dump_config(profile_name, default_only=default_only, patches=patch_files or [])
-    except Exception:
-        composed = compose_profile(profile_name, patch_files=patch_files, dsh_home=dsh_home)
-        from dsh.boot.profile import compose_entries
-        final_entries = compose_entries([composed.bundle_patches, composed.profile.patches, composed.home_patches, composed.overlays])
-        return yaml.safe_dump(final_entries, sort_keys=False, allow_unicode=True)
+        return run_dump_config(profile_name, default_only=default_only, patches=patch_files or [], dsh_home=dsh_home)
+    except RuntimeError as e:
+        if "does not exist" in str(e) and profile_name in BUILTIN_PROFILES:
+            composed = compose_profile(profile_name, patch_files=patch_files, dsh_home=dsh_home)
+            from dsh.boot.profile import compose_entries
+            final_entries = compose_entries([composed.bundle_patches, composed.profile.patches, composed.home_patches, composed.overlays])
+            return yaml.safe_dump(final_entries, sort_keys=False, allow_unicode=True)
+        raise
 
 
 def render_config_dump(

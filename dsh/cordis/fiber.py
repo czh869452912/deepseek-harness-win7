@@ -977,14 +977,15 @@ class Fiber:
 
         # Remove from runtime.fibers and registry if empty
         if self.runtime is not None:
-            try:
-                self.runtime.remove_fiber(self)
-            except Exception:
-                pass
-            if not self.runtime.fibers:
-                registry = getattr(self.ctx, "registry", None)
-                if registry is not None and hasattr(registry, "_runtimes"):
-                    registry._runtimes.pop(self.runtime.callback, None)
+            registry = getattr(self.ctx, "registry", None)
+            if registry is not None and hasattr(registry, "has") and registry.has(self.runtime.callback):
+                try:
+                    self.runtime.remove_fiber(self)
+                except Exception:
+                    pass
+                if not self.runtime.fibers:
+                    if hasattr(registry, "_runtimes"):
+                        registry._runtimes.pop(self.runtime.callback, None)
 
         self.set_epoch(INACTIVE_EPOCH)
         if hasattr(self, "_in_flight_effects"):

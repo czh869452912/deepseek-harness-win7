@@ -26,10 +26,17 @@ class ProcessShutdown:
         self._complete = complete if complete is not None else (lambda code: setattr(sys, "exitcode", code))
         self._timeout_ms = timeout_ms
 
+        self.exit_code: int = 0
         self._pending: Optional[asyncio.Task] = None
         self._timeout_task: Optional[asyncio.TimerHandle] = None
         self._completed = False
         self._force_exited = False
+        self._done_event: Optional[asyncio.Event] = None
+
+    def _get_done_event(self) -> asyncio.Event:
+        if self._done_event is None:
+            self._done_event = asyncio.Event()
+        return self._done_event
 
     def _clear_exit_timeout(self) -> None:
         if self._timeout_task is not None:
@@ -43,14 +50,20 @@ class ProcessShutdown:
         if self._force_exited:
             return
         self._force_exited = True
+        self.exit_code = code
         self._clear_exit_timeout()
+        if self._done_event is not None:
+            self._done_event.set()
         self._force_exit(code)
 
     def _complete_once(self, code: int) -> None:
         if self._completed or self._force_exited:
             return
         self._completed = True
+        self.exit_code = code
         self._clear_exit_timeout()
+        if self._done_event is not None:
+            self._done_event.set()
         self._complete(code)
 
     async def _run_start(self, code: int, force_after_dispose: bool) -> None:
@@ -67,15 +80,20 @@ class ProcessShutdown:
         except Exception:
             self._force_exit_once(code)
 
-    async def shutdown(self, code: int = 0) -> None:
+    def shutdown(self, code: int = 0) -> asyncio.Future:
         """Start or join graceful disposal before allowing natural completion with `code`."""
         if self._pending is not None:
-            await self._pending
-            return
-        loop = asyncio.get_running_loop()
-        task = loop.create_task(self._run_start(code, False))
-        self._pending = task
-        await task
+            return self._pending
+        try:
+            loop = asyncio.get_running_loop()
+            task = loop.create_task(self._run_start(code, False))
+            self._pending = task
+            return task
+        except RuntimeError:
+            fut: asyncio.Future = asyncio.Future()
+            fut.set_result(None)
+            self._force_exit_once(code)
+            return fut
 
     def interrupt(self, code: int = 130) -> None:
         """Start graceful disposal followed by exit, or force exit when shutdown is already running."""
@@ -88,6 +106,14 @@ class ProcessShutdown:
             self._pending = task
         except RuntimeError:
             self._force_exit_once(code)
+
+    async def wait(self) -> int:
+        """Wait until graceful shutdown or forced exit has completed."""
+        if self._completed or self._force_exited:
+            return self.exit_code
+        event = self._get_done_event()
+        await event.wait()
+        return self.exit_code
 
 
 def create_process_shutdown(

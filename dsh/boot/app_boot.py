@@ -587,8 +587,8 @@ def install_fail_loud(
                     for handler_fn in list(self._handlers):
                         try:
                             handler_fn(exc)
-                        except Exception:
-                            pass
+                        except Exception as handler_err:
+                            sys.stderr.write(f"dsh: error in unhandledRejection listener: {handler_err}\n")
                 if self._prev_handler is not None:
                     self._prev_handler(lp, context)
                 else:

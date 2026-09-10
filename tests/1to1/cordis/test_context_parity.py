@@ -135,3 +135,25 @@ def test_t7_strict_resolve_order_root_store_accessible():
     assert "nonexistent_service" in caught_negative[0]
 
 
+def test_r1_repr_with_strict_inject_safe_fiber_access():
+    """R1 pin test: Context.__repr__ on strict-inject context reads fiber safely without triggering inject checks."""
+    ctx = Context(strict_inject=True)
+
+    captured_reprs = []
+
+    class DummyPlugin(Plugin):
+        name = "dummy-plug"
+        inject = []
+
+        def apply(self, child_ctx: Context) -> None:
+            r = repr(child_ctx)
+            captured_reprs.append(r)
+
+    fiber = ctx.plugin(DummyPlugin)
+    assert fiber.state == FiberState.ACTIVE
+    assert len(captured_reprs) == 1
+    assert "dummy-plug" in captured_reprs[0]
+    assert captured_reprs[0].startswith("Context <")
+
+
+

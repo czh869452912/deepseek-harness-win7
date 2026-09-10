@@ -146,6 +146,28 @@ class ComposedProfile:
     allPatches = all_patches
 
 
+class SignalShutdown:
+    """Invocation-level signal shutdown state matching TS AbortController."""
+
+    def __init__(self):
+        self.aborted = False
+
+    def abort(self) -> None:
+        self.aborted = True
+
+
+def suppress_shutdown_error(ctx: Context, signal_obj: SignalShutdown, error: Any) -> None:
+    """
+    Re-throw a watcher-setup failure unless a shutdown already owns the tree.
+    Matching TS suppressShutdownError.
+    """
+    if signal_obj.aborted:
+        return
+    if ctx.fiber.state != FiberState.ACTIVE or ctx.get("loader") is None:
+        return
+    raise error
+
+
 async def compose_profile(
     name: str,
     patch_files: Sequence[str] = (),
@@ -153,10 +175,7 @@ async def compose_profile(
 ) -> ComposedProfile:
     """Load `name` and compose its effective patch stack."""
     profile = prepare_profile(name, dsh_home=dsh_home)
-    try:
-        await heal_profiles_module_fallback(INSTALL_ANCHOR, profile)
-    except Exception:
-        pass
+    await heal_profiles_module_fallback({"installAnchor": INSTALL_ANCHOR, "profile": profile})
 
     home_patches = load_optional_patches(NAME, home_patch_path(dsh_home)) or []
     overlays: List[Dict[str, Any]] = []
@@ -192,22 +211,46 @@ async def run_profile(options: Dict[str, Any]) -> Dict[str, Any]:
     """
     profile_name = options["profile"]
     patch_files = options.get("patchFiles", options.get("patch_files", []))
+    dsh_home = options.get("dshHome", options.get("dsh_home"))
     environment = options.get("environment")
     if environment is None:
         from dsh.boot.app_boot import load_layered_env
         environment = load_layered_env(NAME)
     args = options.get("args", [])
 
-    composed = await compose_profile(profile_name, patch_files)
+    composed = await compose_profile(profile_name, patch_files, dsh_home=dsh_home)
     app: Dict[str, Any] = {"current": None}
     app_ready = create_app_ready()
 
+    old_sigterm = None
+    old_sigint = None
+
     async def _dispose_app():
+        try:
+            import signal
+            if old_sigterm is not None:
+                signal.signal(signal.SIGTERM, old_sigterm)
+            if old_sigint is not None:
+                signal.signal(signal.SIGINT, old_sigint)
+        except (ValueError, OSError, AttributeError):
+            pass
         curr = app.get("current")
         if curr is not None and hasattr(curr, "fiber"):
             await curr.fiber.dispose()
 
     shutdown = create_process_shutdown(_dispose_app)
+    signal_shutdown = SignalShutdown()
+
+    def interrupt(code: int) -> None:
+        signal_shutdown.abort()
+        shutdown.interrupt(code)
+
+    try:
+        import signal
+        old_sigterm = signal.signal(signal.SIGTERM, lambda s, f: interrupt(0))
+        old_sigint = signal.signal(signal.SIGINT, lambda s, f: interrupt(130))
+    except (ValueError, OSError, AttributeError):
+        pass
 
     install_fail_loud(NAME, None, release=_dispose_app)
 
@@ -236,6 +279,7 @@ async def run_profile(options: Dict[str, Any]) -> Dict[str, Any]:
 
     if (
         composed.profile.patch_reload == "live"
+        and not signal_shutdown.aborted
         and ctx.fiber.state == FiberState.ACTIVE
         and ctx.get("loader") is not None
     ):
@@ -255,11 +299,18 @@ async def run_profile(options: Dict[str, Any]) -> Dict[str, Any]:
                 "compose": compose_live,
             })
         except Exception as error:
-            if ctx.fiber.state == FiberState.ACTIVE and ctx.get("loader") is not None:
-                raise error
+            suppress_shutdown_error(ctx, signal_shutdown, error)
 
-    if ctx.fiber.state == FiberState.ACTIVE and ctx.get("loader") is not None:
+    if (
+        not signal_shutdown.aborted
+        and ctx.fiber.state == FiberState.ACTIVE
+        and ctx.get("loader") is not None
+    ):
         app_ready["commit"]()
+
+    wait_for_exit = options.get("wait_for_exit", options.get("waitForExit", True))
+    if wait_for_exit:
+        await shutdown.wait()
 
     return {"ctx": ctx, "shutdown": shutdown}
 

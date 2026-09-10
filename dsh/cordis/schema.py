@@ -661,7 +661,16 @@ class Schema:
 
     @classmethod
     def from_json(cls, payload: Dict[str, Any]) -> "Schema":
-        """Deserialize Schema tree from flat refs dictionary matching TS Schema(options.refs)."""
+        """
+        Deserialize Schema tree from flat refs dictionary matching TS Schema(options.refs).
+
+        Permitted ADAPT deviation:
+        In TypeScript Schemastery, deserialization may evaluate string callback functions via
+        `new Function(...)`. In Python 3.8, arbitrary serialized code string evaluation is intentionally
+        omitted for safety and deterministic runtime semantics. `callback` is kept as None (preserving
+        `callback_source`), and `_resolve_transform` raises a 1:1 fail-loud TypeError when validation
+        is attempted on an uncallable transform callback.
+        """
         if not isinstance(payload, dict):
             return cls.any()
         if "refs" in payload and isinstance(payload["refs"], dict):

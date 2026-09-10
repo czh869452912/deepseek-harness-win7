@@ -106,3 +106,37 @@ def test_t5_service_plain_check_method_used_by_provide_path():
 
     assert fiber.state == FiberState.PENDING
     assert ctx.get("dependent_active", strict=False) is None
+
+
+def test_r6_service_extended_proxy_write_shadowing():
+    """R6 pin test: _ServiceExtendedProxy writes to shadow props/dict without mutating underlying target service."""
+    from dsh.cordis.service import _ServiceExtendedProxy
+
+    class BaseTarget:
+        def __init__(self):
+            self.count = 10
+            self.title = "original"
+
+    base = BaseTarget()
+    proxy = _ServiceExtendedProxy(base, {"extra": "value"})
+
+    # Reading base attributes via proxy
+    assert proxy.count == 10
+    assert proxy.title == "original"
+    assert proxy.extra == "value"
+
+    # Writing attribute to proxy shadows without mutating base
+    proxy.count = 20
+    proxy.title = "shadowed"
+    proxy.new_attr = "new"
+
+    assert proxy.count == 20
+    assert proxy.title == "shadowed"
+    assert proxy.new_attr == "new"
+
+    # Base instance must remain completely untouched
+    assert base.count == 10
+    assert base.title == "original"
+    assert not hasattr(base, "new_attr")
+    assert not hasattr(base, "extra")
+

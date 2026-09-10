@@ -525,44 +525,63 @@ class ConfigWatcherService(Service):
                                             if getattr(reg_key, "__name__", "") == attr_name:
                                                 found_classes.append((reg_key, obj))
 
+                            saved_fibers: Dict[Any, List[Any]] = {}
+                            for old_key, new_cls in found_classes:
+                                r_entry = registry.get(old_key)
+                                if r_entry:
+                                    saved_fibers[old_key] = list(getattr(r_entry, "fibers", []))
+
+                            async def reload_plugin(plugin_target: Any, r_time: Any, old_key: Any = None) -> None:
+                                if not r_time:
+                                    return
+                                target_fibers = (saved_fibers.get(old_key) if old_key else None) or list(getattr(r_time, "fibers", []))
+                                for old_fiber in list(target_fibers):
+                                    parent = getattr(old_fiber, "parent", None) or self.ctx
+                                    reg = getattr(parent, "registry", None) or getattr(self.ctx, "registry", None)
+                                    new_fiber = reg.plugin(plugin_target, getattr(old_fiber, "config", None))
+                                    err = getattr(new_fiber, "_error", None) or getattr(new_fiber, "error", None)
+                                    if err is not None:
+                                        raise err
+                                    new_fiber.entry = getattr(old_fiber, "entry", None)
+                                    if new_fiber.entry:
+                                        new_fiber.entry.fiber = new_fiber
+                                    old_fiber._plugin_cls = plugin_target
+                                    old_fiber.plugin = new_fiber.plugin
+
                             for old_key, new_cls in found_classes:
                                 runtime = registry.get(old_key)
                                 if runtime:
-                                    runtime.callback = new_cls
-                                    registry._runtimes.pop(old_key, None)
-                                    registry._runtimes[new_cls] = runtime
+                                    reloads[old_key] = {"filename": file_path, "runtime": runtime, "attempt": new_cls}
+                                    try:
+                                        await registry.delete_async(old_key)
+                                    except Exception as err:
+                                        if hasattr(self.ctx, "logger"):
+                                            self.ctx.logger("hmr").warn("failed to dispose plugin %s: %s", old_key, err)
 
-                                    for fiber in list(runtime.fibers):
-                                        fiber._plugin_cls = new_cls
-                                        if isinstance(fiber.plugin, Plugin):
-                                            new_inst = new_cls(config=fiber.config)
-                                            new_inst.id = getattr(fiber.plugin, "id", None)
-                                            new_inst.ctx = fiber.ctx
-                                            fiber.plugin = new_inst
-                                        else:
-                                            fiber.plugin = new_cls
-                                        await fiber.restart()
-
-                                    reloads[old_key] = {"filename": file_path, "runtime": runtime}
+                                    try:
+                                        await reload_plugin(new_cls, runtime, old_key)
+                                        if hasattr(self.ctx, "logger"):
+                                            self.ctx.logger("hmr").info("reload plugin %s", new_cls)
+                                    except Exception as err:
+                                        if hasattr(self.ctx, "logger"):
+                                            self.ctx.logger("hmr").warn("failed to reload plugin %s: %s", new_cls, err)
+                                        raise err
                     except Exception as step_err:
                         for m_name in new_modules_created:
                             sys.modules.pop(m_name, None)
                         if registry:
-                            registry._runtimes.clear()
-                            for r_key, saved_st in saved_runtimes_state.items():
-                                runtime = saved_st.get("runtime")
-                                if runtime is not None:
-                                    runtime.callback = saved_st["callback"]
-                                    for f, old_cls, old_plugin, old_cfg in saved_st["fibers"]:
-                                        f._plugin_cls = old_cls
-                                        f.plugin = old_plugin
-                                        f.config = old_cfg
-                                        try:
-                                            f._refresh()
-                                        except Exception:
-                                            pass
-                                    registry._runtimes[r_key] = runtime
-                                    registry._runtimes[saved_st["callback"]] = runtime
+                            for old_key, info in reloads.items():
+                                runtime = info.get("runtime")
+                                attempt = info.get("attempt")
+                                if not runtime:
+                                    continue
+                                try:
+                                    if attempt:
+                                        await registry.delete_async(attempt)
+                                    await reload_plugin(old_key, runtime, old_key)
+                                except Exception as err:
+                                    if hasattr(self.ctx, "logger"):
+                                        self.ctx.logger("hmr").warn("failed during rollback of %s: %s", old_key, err)
                         raise step_err
 
                     if reloads and hasattr(self.ctx, "emit"):

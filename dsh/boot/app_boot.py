@@ -61,6 +61,17 @@ from dsh.boot.profile import (
 HARNESS_SOURCE_SECTION = "harness:source"
 FAIL_LOUD_RELEASE_TIMEOUT_MS = 2000
 
+try:
+    from dsh.core.system_prompt import FIRST_PARTY_SECTION_ORDER
+except Exception:
+    class _FallbackFirstPartySectionOrder(dict):
+        def __getattr__(self, name: str) -> int:
+            try:
+                return self[name]
+            except KeyError:
+                raise AttributeError(name)
+    FIRST_PARTY_SECTION_ORDER = _FallbackFirstPartySectionOrder({"HARNESS_SOURCE": -900})
+
 
 def path_to_file_url(path: str) -> str:
     return Path(os.path.abspath(path)).as_uri()
@@ -674,6 +685,38 @@ def _format_activation_error(error: Any) -> str:
     return str(error)
 
 
+def assert_entries_activated_sync(ctx: Context, bin_name: str) -> None:
+    """Synchronous assertion that all entries are loaded and active/settled."""
+    assert_entries_loaded(ctx, bin_name)
+    loader = ctx.get("loader")
+    if not loader:
+        return
+
+    failures: List[str] = []
+    for entry in loader.entries():
+        fiber = entry.fiber
+        if fiber is None or getattr(entry, "disabled", False):
+            continue
+        state = fiber.state
+        if state == FiberState.ACTIVE:
+            continue
+        if state == FiberState.FAILED:
+            error = getattr(fiber, "error", None) or getattr(fiber, "_error", None) or RuntimeError("activation failed")
+            failures.append(f"{entry.options.get('name', getattr(entry, 'name', 'unknown'))}: {_format_activation_error(error)}")
+            continue
+        if state == FiberState.PENDING:
+            missing = [s for s in getattr(fiber, "inject", {}) if getattr(fiber.ctx, "get", lambda _: None)(s) is None]
+            subject = "service" if len(missing) == 1 else "services"
+            missing_names = ", ".join(missing) if missing else "unknown"
+            failures.append(f"{entry.options.get('name', getattr(entry, 'name', 'unknown'))}: pending (waiting for {subject}: {missing_names})")
+        else:
+            failures.append(f"{entry.options.get('name', getattr(entry, 'name', 'unknown'))}: fiber state {state}")
+
+    if failures:
+        noun = "entry" if len(failures) == 1 else "entries"
+        raise RuntimeError(f"{bin_name}: {len(failures)} {noun} did not activate\n" + "\n".join(failures))
+
+
 async def assert_entries_activated(ctx: Context, bin_name: str) -> None:
     """Ensure all entries are active and settled."""
     assert_entries_loaded(ctx, bin_name)
@@ -692,13 +735,19 @@ async def assert_entries_activated(ctx: Context, bin_name: str) -> None:
         if state == FiberState.ACTIVE:
             continue
         if state == FiberState.FAILED:
+            error = None
             try:
                 await_fn = getattr(fiber, "await_", None) or getattr(fiber, "await", None)
                 if await_fn:
-                    await await_fn()
-            except Exception as error:
-                rejection_reasons.append(error)
-                failures.append(f"{entry.options.get('name', getattr(entry, 'name', 'unknown'))}: {_format_activation_error(error)}")
+                    res = await_fn()
+                    if asyncio.iscoroutine(res):
+                        await res
+            except Exception as exc:
+                error = exc
+            if error is None:
+                error = getattr(fiber, "error", None) or getattr(fiber, "_error", None) or RuntimeError("activation failed")
+            rejection_reasons.append(error)
+            failures.append(f"{entry.options.get('name', getattr(entry, 'name', 'unknown'))}: {_format_activation_error(error)}")
             continue
         if state == FiberState.PENDING:
             missing = [s for s in getattr(fiber, "inject", {}) if getattr(fiber.ctx, "get", lambda _: None)(s) is None]
@@ -749,9 +798,11 @@ async def boot(
             return ctx
         await assert_entries_activated(ctx, bin_name)
         return ctx
-    except Exception as cause:
+    except (Exception, asyncio.CancelledError) as cause:
         if hasattr(ctx, "fiber") and hasattr(ctx.fiber, "dispose"):
             await ctx.fiber.dispose()
+        if isinstance(cause, asyncio.CancelledError):
+            raise
         detail = str(cause)
         deepest: Any = cause
         while getattr(deepest, "__cause__", None) is not None or getattr(deepest, "cause", None) is not None:
@@ -805,7 +856,7 @@ def add_harness_source_section(ctx: Context, source_root: str) -> Optional[Calla
         return None
     return system_prompt.section({
         "name": HARNESS_SOURCE_SECTION,
-        "order": -900,
+        "order": FIRST_PARTY_SECTION_ORDER.HARNESS_SOURCE,
         "text": (
             f"The DeepSeek Harness implementation checkout is at {source_root}. "
             f"The checkout location and current working directory are separate values and may differ; "
@@ -824,6 +875,7 @@ loadEnv = load_env
 loadLayeredEnv = load_layered_env
 assertEntriesLoaded = assert_entries_loaded
 assertEntriesActivated = assert_entries_activated
+assertEntriesActivatedSync = assert_entries_activated_sync
 mountRootInclude = mount_root_include
 installFailLoud = install_fail_loud
 watchUserPatches = watch_user_patches

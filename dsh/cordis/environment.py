@@ -19,19 +19,54 @@ def expand_home_path(path: str) -> str:
     return path
 
 
+DSH_HOME_DIR_NAME: str = ".dsh"
+DEFAULT_DSH_HOME_DISPLAY: str = "~/.dsh"
+DSH_HOME_ENV: str = "DSH_HOME"
+
+
+def default_dsh_home() -> str:
+    """Return default ~/.dsh path matching TS defaultDshHome."""
+    return os.path.join(os.path.expanduser("~"), DSH_HOME_DIR_NAME)
+
+
+def dsh_home_display(configured: Optional[str] = None, env: Optional[Dict[str, str]] = None) -> str:
+    """Return ~/.dsh or $DSH_HOME display string matching TS dshHomeDisplay."""
+    resolved_home = resolve_dsh_home(configured, env)
+    default_home = os.path.abspath(default_dsh_home())
+    return DEFAULT_DSH_HOME_DISPLAY if os.path.normcase(resolved_home) == os.path.normcase(default_home) else "$DSH_HOME"
+
+
+def canonicalize_watch_path(path: str) -> str:
+    """Canonicalize a watch path with missing ancestor fallback matching TS canonicalizeWatchPath."""
+    current = os.path.abspath(path)
+    missing: List[str] = []
+    while True:
+        if os.path.exists(current):
+            canonical = os.path.realpath(current)
+            for seg in reversed(missing):
+                canonical = os.path.join(canonical, seg)
+            return canonical
+        parent = os.path.dirname(current)
+        if parent == current:
+            return os.path.abspath(path)
+        missing.append(os.path.basename(current))
+        current = parent
+
+
 def resolve_dsh_home(custom_home: Optional[str] = None, env: Optional[Dict[str, str]] = None) -> str:
     """
     Resolve the Harness home directory ($DSH_HOME or ~/.dsh), expanding ~ if present.
+    Matching reference/packages/util/home-paths/src/index.ts:87-91.
     """
-    if custom_home and isinstance(custom_home, str) and custom_home.strip():
-        selected = custom_home.strip()
+    if custom_home is not None:
+        selected = custom_home
     else:
         env_dict = env if isinstance(env, dict) else os.environ
-        env_home = env_dict.get("DSH_HOME")
-        if env_home and isinstance(env_home, str) and env_home.strip():
-            selected = env_home.strip()
+        env_home = env_dict.get(DSH_HOME_ENV)
+        if env_home is not None and env_home.strip():
+            selected = env_home
         else:
-            selected = os.path.join(os.path.expanduser("~"), ".dsh")
+            selected = default_dsh_home()
     return os.path.abspath(expand_home_path(selected))
 
 
@@ -192,7 +227,7 @@ class LaunchEnvironmentSnapshot:
 
     def get_from(self, name: str, sources: Optional[List[str]] = None) -> Optional[LaunchEnvironmentEntry]:
         lookup = name.upper() if sys.platform == "win32" else name
-        allowed = sources or SOURCE_ORDER
+        allowed = SOURCE_ORDER if sources is None else list(sources)
         for src in SOURCE_ORDER:
             if src not in allowed:
                 continue
@@ -220,7 +255,7 @@ def launch_environment_of(ctx: Any) -> LaunchEnvironmentSnapshot:
     """
     if hasattr(ctx, "get"):
         res = ctx.get(LAUNCH_ENVIRONMENT_KEY)
-        if isinstance(res, LaunchEnvironmentSnapshot):
+        if res is not None:
             return res
     return LaunchEnvironmentSnapshot([{"source": "process", "values": dict(os.environ)}])
 

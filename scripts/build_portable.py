@@ -18,8 +18,13 @@ def build_portable():
 
     # 1. Copy dsh framework and apps application
     shutil.copytree(os.path.join(ROOT_DIR, "dsh"), os.path.join(DIST_DIR, "dsh"))
-    os.makedirs(os.path.join(DIST_DIR, "apps", "cli"), exist_ok=True)
-    shutil.copy(os.path.join(ROOT_DIR, "apps", "cli", "main.py"), os.path.join(DIST_DIR, "apps", "cli", "main.py"))
+    if os.path.exists(os.path.join(ROOT_DIR, "apps", "cli")):
+        shutil.copytree(
+            os.path.join(ROOT_DIR, "apps", "cli"),
+            os.path.join(DIST_DIR, "apps", "cli"),
+            ignore=shutil.ignore_patterns("__pycache__"),
+            dirs_exist_ok=True,
+        )
     ref_cli_pkg = os.path.join(ROOT_DIR, "reference", "apps", "cli", "package.json")
     if os.path.exists(ref_cli_pkg):
         shutil.copy(ref_cli_pkg, os.path.join(DIST_DIR, "apps", "cli", "package.json"))

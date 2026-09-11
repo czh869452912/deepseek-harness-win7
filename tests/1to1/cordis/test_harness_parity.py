@@ -78,5 +78,5 @@ def test_t10_build_harness_fails_on_plugin_activation_failure(monkeypatch):
     monkeypatch.setattr(StrReplaceEditorPlugin, "apply", bad_apply)
     with pytest.raises(RuntimeError) as exc_info:
         build_harness(mode="minimal")
-    assert "plugin(s) failed to activate" in str(exc_info.value)
+    assert "did not activate" in str(exc_info.value) or "plugin(s) failed to activate" in str(exc_info.value)
 

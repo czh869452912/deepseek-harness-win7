@@ -199,3 +199,24 @@ def test_t9_console_exporter_render_and_defaults():
     rendered_right = exporter_right.render(msg)
     assert "my-logger [I]" in rendered_right
 
+
+def test_t10_logger_format_d6_d8_parity():
+    """T10 (G8-D6, G8-D8): Trailing non-primitives use o_formatter and lines split on \\r?\\n only."""
+    exp = Exporter(colors=0, max_length=100)
+
+    # D6: non-primitive non-dict object (e.g. tuple or object) uses o_formatter
+    class CustomItem:
+        def __repr__(self):
+            return "ItemObj"
+
+    msg = Message(sn=1, ts=0, type="info", level=LoggerLevel.INFO, name="test", args=["val:", (1, 2), True, False])
+    formatted = Logger.format(exp, msg)
+    assert formatted == 'val: [1, 2] true false'
+
+    # D8: line split only on \r?\n, form feed \x0c does NOT split
+    msg_split = Message(sn=2, ts=0, type="info", level=LoggerLevel.INFO, name="test", args=["line1\r\nline2\x0cline3"])
+    lines = Logger.format(exp, msg_split).split("\n")
+    assert len(lines) == 2
+    assert lines[0] == "line1"
+    assert lines[1] == "line2\x0cline3"
+

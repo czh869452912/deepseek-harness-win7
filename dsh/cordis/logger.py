@@ -188,21 +188,24 @@ class Logger:
 
         res = re.sub(r"%([a-zA-Z%])", replace_placeholder, fmt_str)
 
-        o_formatter = exporter.formatters.get("o") if exporter.formatters else None
+        o_formatter = (exporter.formatters.get("o") if exporter.formatters else None) or (
+            lambda val, exp, msg: json.dumps(val, default=str, ensure_ascii=False)
+        )
         for remaining in args:
-            if o_formatter is not None and not isinstance(remaining, (str, int, float, bool)):
-                res += " " + str(o_formatter(remaining, exporter, message))
-            elif isinstance(remaining, (dict, list)):
+            if remaining is not None and not isinstance(remaining, (str, int, float, bool)):
                 try:
-                    res += " " + json.dumps(remaining, default=str, ensure_ascii=False)
+                    formatted_arg = o_formatter(remaining, exporter, message)
                 except Exception:
-                    res += f" {remaining}"
+                    formatted_arg = str(remaining)
+                res += " " + str(formatted_arg)
+            elif isinstance(remaining, bool):
+                res += " true" if remaining else " false"
             else:
                 res += f" {remaining}"
 
         max_len = exporter.max_length
         lines = []
-        for line in res.splitlines():
+        for line in re.split(r"\r?\n", res):
             if len(line) > max_len:
                 lines.append(line[:max_len] + "...")
             else:

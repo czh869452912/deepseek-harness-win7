@@ -13,7 +13,16 @@ from dsh.cordis.service import Service
 from dsh.cordis.schema import Schema, z
 
 
-FIRST_PARTY_SECTION_ORDER: Dict[str, int] = {
+class _FirstPartySectionOrder(dict):
+    """Dict subclass allowing attribute access for section orders."""
+    def __getattr__(self, name: str) -> int:
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError(name)
+
+
+FIRST_PARTY_SECTION_ORDER: Dict[str, int] = _FirstPartySectionOrder({
     "HARNESS_IDENTITY": -1000,
     "HARNESS_SOURCE": -900,
     "WEB_SURFACE": -800,
@@ -44,7 +53,7 @@ FIRST_PARTY_SECTION_ORDER: Dict[str, int] = {
     "TOOLS_SDK": 5000,
     "DELIVERABLE_FILE_REFERENCES": 9000,
     "STRUCTURED_OUTPUT": 9900,
-}
+})
 
 PERSONA_SECTION: str = "deployment:persona"
 PERSONA_ORDER: int = FIRST_PARTY_SECTION_ORDER["DEPLOYMENT_PERSONA"]

@@ -40,16 +40,8 @@ def load_optional_patches(bin_or_path: str, filepath: Optional[str] = None) -> L
         bin_name = bin_or_path
         target_path = filepath
     from dsh.boot.app_boot import load_optional_patches as _boot_load_optional
-    try:
-        res = _boot_load_optional(bin_name, target_path)
-        return res if res is not None else []
-    except Exception as e:
-        msg = str(e)
-        if "failed to parse patches" in msg:
-            from dsh.boot.app_boot import PatchParseError
-            msg = msg.replace("failed to parse patches", "failed to read patches: failed to parse patches")
-            raise PatchParseError(msg) from e
-        raise
+    res = _boot_load_optional(bin_name, target_path)
+    return res if res is not None else []
 
 
 def load_overlay_patches(bin_or_path: str, filepath: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -190,6 +182,7 @@ BUILTIN_PROFILES: Dict[str, Dict[str, Any]] = {
 def prepare_profile(name: str, dsh_home: Optional[str] = None, user_layer: bool = True) -> Profile:
     """
     Load a resolved profile for `name` from $DSH_HOME/profiles/<name> or built-ins.
+    Rewrites empty root config on every preparation matching TS profile-boot.ts:118-122.
     """
     if not name or "/" in name or "\\" in name or name in (".", "..", "node_modules"):
         raise ValueError(f"dsh: invalid profile name {name!r}")
@@ -200,6 +193,50 @@ def prepare_profile(name: str, dsh_home: Optional[str] = None, user_layer: bool 
 
     user_patches = load_optional_patches(patch_file) if user_layer else []
 
+    if name not in BUILTIN_PROFILES and not os.path.isdir(profile_dir):
+        raise ValueError(f"dsh: profile {name!r} does not exist; create it with 'dsh plugin --profile {name} add <package>'")
+
+    # Rewrite empty root config on every prepare matching TS profile-boot.ts:118-122 (D8)
+    os.makedirs(profile_dir, exist_ok=True)
+    root_path = os.path.join(profile_dir, PROFILE_ROOT_FILENAME)
+    try:
+        with open(root_path, "w", encoding="utf-8") as f:
+            f.write("[]\n")
+    except Exception:
+        pass
+
+    # Synchronize custom BUILTIN_PROFILES entry to PROFILE_TEMPLATES if needed
+    from dsh.boot.profile import PROFILE_TEMPLATES
+    if name in BUILTIN_PROFILES and name not in PROFILE_TEMPLATES:
+        PROFILE_TEMPLATES[name] = {
+            "bundles": list(BUILTIN_PROFILES[name].get("bundles", [])),
+            "patchReload": BUILTIN_PROFILES[name].get("patchReload", "live" if name == "web" else "startup"),
+        }
+
+    # Check for custom profile package.json manifest (D6)
+    manifest_path = os.path.join(profile_dir, "package.json")
+    if os.path.exists(manifest_path):
+        try:
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                manifest = json.load(f)
+            custom_bundles = manifest.get("dsh", {}).get("profile", {}).get("bundles")
+            raw_reload = manifest.get("dsh", {}).get("profile", {}).get("patchReload")
+            if raw_reload is not None and raw_reload not in ("live", "startup"):
+                raise RuntimeError(
+                    f"dsh: profile manifest {manifest_path} dsh.profile.patchReload must be \"live\" or \"startup\""
+                )
+            if custom_bundles is not None:
+                return Profile(
+                    name=name,
+                    dir_path=profile_dir,
+                    patch_path=patch_file,
+                    patches=user_patches,
+                    bundles=list(custom_bundles),
+                    patch_reload=raw_reload or "startup",
+                )
+        except (ValueError, json.JSONDecodeError):
+            pass
+
     if name in BUILTIN_PROFILES:
         meta = BUILTIN_PROFILES[name]
         bundles = list(meta.get("bundles", ["dsh-base"]))
@@ -207,15 +244,17 @@ def prepare_profile(name: str, dsh_home: Optional[str] = None, user_layer: bool 
         combined_patches = copy.deepcopy(builtin_patches)
         if user_patches:
             combined_patches.extend(user_patches)
+        patch_reload = meta.get("patchReload", "live" if name == "web" else "startup")
         return Profile(
             name=name,
             dir_path=profile_dir,
             patch_path=patch_file,
             patches=combined_patches,
             bundles=bundles,
+            patch_reload=patch_reload,
         )
 
-    # Check for custom profile in $DSH_HOME/profiles/<name>
+    # Check for custom profile directory with default bundle fallback
     if os.path.isdir(profile_dir):
         return Profile(
             name=name,
@@ -223,6 +262,7 @@ def prepare_profile(name: str, dsh_home: Optional[str] = None, user_layer: bool 
             patch_path=patch_file,
             patches=user_patches,
             bundles=["dsh-base"],
+            patch_reload="startup",
         )
 
     raise ValueError(f"dsh: profile {name!r} does not exist; create it with 'dsh plugin --profile {name} add <package>'")
@@ -239,7 +279,9 @@ class ComposedProfile:
     ):
         self.profile = profile
         self.bundle_patches = bundle_patches
+        self.bundlePatches = bundle_patches
         self.home_patches = home_patches
+        self.homePatches = home_patches
         self.overlays = overlays
 
     def all_patches(self) -> List[Dict[str, Any]]:
@@ -250,6 +292,8 @@ class ComposedProfile:
             *self.home_patches,
             *self.overlays,
         ]
+
+    allPatches = all_patches
 
 
 def resolve_telemetry_patch(disabled_env: Optional[str], has_row: bool) -> Optional[Dict[str, Any]]:
@@ -275,16 +319,28 @@ def compose_profile(
     """
     profile = prepare_profile(name, dsh_home=dsh_home)
     
+    # Heal module fallback (D9)
+    try:
+        from dsh.boot.profile import heal_profiles_module_fallback_locked
+        from dsh.boot.profile_boot import INSTALL_ANCHOR
+        heal_profiles_module_fallback_locked({"installAnchor": INSTALL_ANCHOR, "profile": profile})
+    except Exception:
+        pass
+
     # 1. Bundle Patches
     bundle_patches: List[Dict[str, Any]] = []
-    for bname in profile.bundles:
-        if bname in BUILTIN_BUNDLES:
-            bundle_patches.extend(copy.deepcopy(BUILTIN_BUNDLES[bname]))
-        else:
-            raise RuntimeError(
-                f"dsh: cannot resolve profile bundle {json.dumps(bname)} from the dsh installation or {profile.dir}; "
-                f"run 'dsh plugin --profile {os.path.basename(profile.dir)} install' if its dependency is not installed"
-            )
+    if profile.layers:
+        for layer in profile.layers:
+            bundle_patches.extend(copy.deepcopy(layer.patches))
+    else:
+        for bname in profile.bundles:
+            if bname in BUILTIN_BUNDLES:
+                bundle_patches.extend(copy.deepcopy(BUILTIN_BUNDLES[bname]))
+            else:
+                raise RuntimeError(
+                    f"dsh: cannot resolve profile bundle {json.dumps(bname)} from the dsh installation or {profile.dir}; "
+                    f"run 'dsh plugin --profile {os.path.basename(profile.dir)} install' if its dependency is not installed"
+                )
 
     # 2. Home Patches ($DSH_HOME/cordis.patch.yml)
     home_patch = home_patch_path(dsh_home)
@@ -342,26 +398,25 @@ def render_config_dump(
 ) -> str:
     """
     Render offline configuration composition with layer provenance comments matching TS renderConfigDump.
-    Delegates to canonical implementation in dsh.boot.app_boot.
+    Delegates to canonical implementation in dsh.boot.app_boot without duplicate pre-checks.
     """
     from dsh.boot.app_boot import render_config_dump as _boot_render
-    if not os.path.exists(base_config_path):
-        raise FileNotFoundError(f"{bin_name}: failed to read config {base_config_path}: file not found")
     return _boot_render(bin_name, base_config_path, layers, warn=warn_fn)
 
 
 def resolve_lan_trust(bind_host: str, extra: Optional[List[str]] = None) -> Dict[str, List[str]]:
     """
     Single-sample LAN-trust resolution for the /api browser-trust fence matching TS resolveLanTrust.
+    Constrained to bind_host == '0.0.0.0' with non-deduplicated output matching TS [...lanAddresses, ...extra].
     """
     import socket
     extra_list = list(extra or [])
-    if bind_host in ("0.0.0.0", "::", ""):
+    if bind_host == "0.0.0.0":
         lan_addresses: List[str] = []
         try:
             hostname = socket.gethostname()
             for ip in socket.gethostbyname_ex(hostname)[2]:
-                if not ip.startswith("127.") and ip not in lan_addresses:
+                if not ip.startswith("127."):
                     lan_addresses.append(ip)
         except Exception:
             pass

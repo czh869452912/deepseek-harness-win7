@@ -1,3 +1,4 @@
+import asyncio
 import os
 from typing import Any, Dict, Optional
 import yaml
@@ -76,14 +77,25 @@ def build_harness(
     Build and initialize a DeepSeek Harness Context with requested preset mode.
     """
     ctx = Context()
-    launch_env = load_layered_env(cwd=os.getcwd())
+    launch_env = load_layered_env("dsh", cwd=os.getcwd())
+    from dsh.cordis.environment import DSH_LAUNCH_ENVIRONMENT_KEY, resolve_dsh_home
+    ctx.provide(DSH_LAUNCH_ENVIRONMENT_KEY, launch_env)
+    ctx.provide("launch_environment", launch_env)
     ctx.set_service("launch_environment", launch_env)
 
+    # Provide cmdline args / appExit / appReady matching TS provideCmdline (D16)
+    from dsh.boot.cmdline import provide_cmdline
+    provide_cmdline(ctx, {
+        "args": [],
+        "exit": lambda code=0: None,
+        "ready": None,
+    })
+
     # Provide dshHomePath on ctx matching TS ctx.provide('dshHomePath', dshHomePath)
-    from dsh.cordis.environment import resolve_dsh_home
     def dsh_home_path(subpath: str = "") -> str:
         home = resolve_dsh_home()
         return os.path.join(home, subpath) if subpath else home
+    ctx.provide("dshHomePath", dsh_home_path)
     ctx.dshHomePath = dsh_home_path
     ctx.dsh_home_path = dsh_home_path
 
@@ -186,9 +198,9 @@ def build_harness(
     if not os.path.isfile(preset_file):
         raise FileNotFoundError(f"dsh: failed to read preset at {preset_file}")
 
-    # Load and apply patches (user home layer + CLI overlay layer)
-    from dsh.boot.app_boot import load_optional_patches, load_overlay_patches
-    from dsh.cordis.profile import home_patch_path
+    # Load and apply patches (user home layer + CLI overlay layer + telemetry)
+    from dsh.boot.app_boot import load_optional_patches, load_overlay_patches, assert_entries_loaded, assert_entries_activated_sync
+    from dsh.cordis.profile import home_patch_path, resolve_telemetry_patch
     combined_patches = []
     user_patch_file = home_patch_path()
     if os.path.isfile(user_patch_file):
@@ -201,32 +213,15 @@ def build_harness(
             raise FileNotFoundError(f"dsh: failed to read overlay {patch_file}: file not found")
         combined_patches.extend(load_overlay_patches("dsh", patch_file))
 
+    # Incorporate DSH_TELEMETRY_DISABLED patch (D17)
+    telemetry_patch = resolve_telemetry_patch(os.environ.get("DSH_TELEMETRY_DISABLED"), True)
+    if telemetry_patch is not None:
+        combined_patches.append(telemetry_patch)
+
     try:
         loader.load_preset_file(preset_file, ctx, patches=combined_patches if combined_patches else None)
-        entries = loader.entries if isinstance(loader.entries, list) else (list(loader.entries()) if callable(loader.entries) else list(loader.store.values()))
-        from dsh.cordis.fiber import FiberState
-        failed = []
-        for entry in entries:
-            if getattr(entry, "disabled", False):
-                continue
-            if getattr(entry, "options", {}).get("group", False) or getattr(entry, "name", "") in ("cordis:group", "group") or type(entry).__name__ in ("EntryGroup",):
-                continue
-            fiber = getattr(entry, "fiber", None)
-            name = getattr(entry, "name", getattr(entry, "id", str(entry)))
-            if fiber is None:
-                failed.append(f"{name} (not loaded)")
-            elif fiber.state == FiberState.FAILED:
-                err = getattr(fiber, "error", None)
-                failed.append(f"{name} (activation failed: {err})" if err else f"{name} (activation failed)")
-            elif fiber.state == FiberState.PENDING:
-                missing = [s for s in getattr(fiber, "inject", {}) if getattr(fiber.ctx, "get", lambda _: None)(s) is None]
-                subj = "service" if len(missing) == 1 else "services"
-                missing_str = ", ".join(missing) if missing else "unknown"
-                failed.append(f"{name} (pending waiting for {subj}: {missing_str})")
-            elif fiber.state != FiberState.ACTIVE:
-                failed.append(f"{name} (state {fiber.state})")
-        if failed:
-            raise RuntimeError(f"plugin(s) failed to activate: {', '.join(failed)}")
+        assert_entries_loaded(ctx, "dsh")
+        assert_entries_activated_sync(ctx, "dsh")
     except Exception as exc:
         try:
             if hasattr(ctx, "teardown"):

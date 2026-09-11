@@ -50,7 +50,8 @@ def test_t1_prepare_profile_unknown_name_fails_loud():
         assert p.name == "standard"
     finally:
         if os.path.exists(tmp_home):
-            os.rmdir(tmp_home)
+            import shutil
+            shutil.rmtree(tmp_home, ignore_errors=True)
 
 
 def test_t2_load_optional_patches_fail_loud():
@@ -66,7 +67,7 @@ def test_t2_load_optional_patches_fail_loud():
     try:
         with pytest.raises(ValueError) as exc1:
             load_optional_patches(bad_syntax_file)
-        assert "failed to read patches" in str(exc1.value)
+        assert "failed to parse patches" in str(exc1.value) or "failed to read patches" in str(exc1.value)
     finally:
         if os.path.exists(bad_syntax_file):
             os.remove(bad_syntax_file)

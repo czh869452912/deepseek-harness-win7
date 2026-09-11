@@ -2215,6 +2215,12 @@ class Loader(EntryTree, Service):
                 nested_items = item.get("config", [])
                 isolate_config = item.get("isolate", None)
 
+                fiber = ctx.registry.plugin(Group, config=nested_items, get_outer_stack=entry.get_outer_stack)
+                if fiber:
+                    fiber.entry = entry
+                    fiber.state = FiberState.ACTIVE
+                entry.fiber = fiber
+
                 if isolate_config:
                     sub_ctx = ctx.isolate(isolate_config)
                     self.load_from_dict(nested_items, sub_ctx)

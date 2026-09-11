@@ -90,7 +90,14 @@ def test_t6_ctx_effect_delegates_to_fiber_effect():
 
 
 def test_t7_strict_resolve_order_root_store_accessible():
-    """T7: Plugin child context and grandchild context can resolve root-provided services without inject."""
+    """T7: Plugin child context and grandchild context can resolve root-provided services without inject.
+
+    [ADAPT / PERMITTED DEVIATION]
+    In Cordis TypeScript, strict mode requires all accessed services to be explicitly declared in inject.
+    In Python deepseek-harness-win7, root-provided services (e.g. core launcher services) remain accessible
+    from descendant fibers even under strict_inject for framework convenience, while access to non-root
+    undeclared services still strictly raises RuntimeError.
+    """
     root = Context(strict_inject=True)
     root.provide("my_service", "hello_root")
 

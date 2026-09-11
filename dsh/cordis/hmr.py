@@ -78,6 +78,12 @@ class ModuleDependencyGraph:
             self.dependents.setdefault(new_f, set()).add(abs_path)
         return imported_files
 
+    def add_dependency(self, file_path: str, dependency_file: str) -> None:
+        abs_file = os.path.abspath(file_path)
+        abs_dep = os.path.abspath(dependency_file)
+        self.dependencies.setdefault(abs_file, set()).add(abs_dep)
+        self.dependents.setdefault(abs_dep, set()).add(abs_file)
+
     def _resolve_relative(self, mod_name: str, target_dir: str) -> Optional[str]:
         if not mod_name:
             init_py = os.path.join(target_dir, "__init__.py")
@@ -488,8 +494,26 @@ class ConfigWatcherService(Service):
                                     for f in list(getattr(r_val, "fibers", []))
                                 ],
                             }
-                    new_modules_created: List[str] = []
+                    saved_fibers: Dict[Any, List[Any]] = {}
 
+                    async def reload_plugin(plugin_target: Any, r_time: Any, old_key: Any = None) -> None:
+                        if not r_time:
+                            return
+                        target_fibers = (saved_fibers.get(old_key) if old_key else None) or list(getattr(r_time, "fibers", []))
+                        for old_fiber in list(target_fibers):
+                            parent = getattr(old_fiber, "parent", None) or self.ctx
+                            reg = getattr(parent, "registry", None) or getattr(self.ctx, "registry", None)
+                            new_fiber = reg.plugin(plugin_target, getattr(old_fiber, "config", None))
+                            err = getattr(new_fiber, "_error", None) or getattr(new_fiber, "error", None)
+                            if err is not None:
+                                raise err
+                            new_fiber.entry = getattr(old_fiber, "entry", None)
+                            if new_fiber.entry:
+                                new_fiber.entry.fiber = new_fiber
+                            old_fiber._plugin_cls = plugin_target
+                            old_fiber.plugin = new_fiber.plugin
+
+                    new_modules_created: List[str] = []
                     try:
                         for file_path in files_to_reload:
                             if not os.path.isfile(file_path):
@@ -525,28 +549,10 @@ class ConfigWatcherService(Service):
                                             if getattr(reg_key, "__name__", "") == attr_name:
                                                 found_classes.append((reg_key, obj))
 
-                            saved_fibers: Dict[Any, List[Any]] = {}
                             for old_key, new_cls in found_classes:
                                 r_entry = registry.get(old_key)
-                                if r_entry:
+                                if r_entry and old_key not in saved_fibers:
                                     saved_fibers[old_key] = list(getattr(r_entry, "fibers", []))
-
-                            async def reload_plugin(plugin_target: Any, r_time: Any, old_key: Any = None) -> None:
-                                if not r_time:
-                                    return
-                                target_fibers = (saved_fibers.get(old_key) if old_key else None) or list(getattr(r_time, "fibers", []))
-                                for old_fiber in list(target_fibers):
-                                    parent = getattr(old_fiber, "parent", None) or self.ctx
-                                    reg = getattr(parent, "registry", None) or getattr(self.ctx, "registry", None)
-                                    new_fiber = reg.plugin(plugin_target, getattr(old_fiber, "config", None))
-                                    err = getattr(new_fiber, "_error", None) or getattr(new_fiber, "error", None)
-                                    if err is not None:
-                                        raise err
-                                    new_fiber.entry = getattr(old_fiber, "entry", None)
-                                    if new_fiber.entry:
-                                        new_fiber.entry.fiber = new_fiber
-                                    old_fiber._plugin_cls = plugin_target
-                                    old_fiber.plugin = new_fiber.plugin
 
                             for old_key, new_cls in found_classes:
                                 runtime = registry.get(old_key)

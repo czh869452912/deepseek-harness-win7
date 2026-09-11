@@ -5,6 +5,7 @@ Compatible with Python 3.8.10 and Windows 7 SP1.
 """
 
 import copy
+import json
 import os
 import sys
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
@@ -279,7 +280,8 @@ def compose_profile(
             bundle_patches.extend(copy.deepcopy(BUILTIN_BUNDLES[bname]))
         else:
             raise RuntimeError(
-                f"dsh: profile bundle {json.dumps(bname)} could not be resolved; run 'dsh plugin --profile {profile.name} install' if its dependency is not installed"
+                f"dsh: cannot resolve profile bundle {json.dumps(bname)} from the dsh installation or {profile.dir}; "
+                f"run 'dsh plugin --profile {os.path.basename(profile.dir)} install' if its dependency is not installed"
             )
 
     # 2. Home Patches ($DSH_HOME/cordis.patch.yml)

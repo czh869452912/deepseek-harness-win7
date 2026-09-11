@@ -223,7 +223,112 @@ async def test_hmr_dynamic_module_reload_failure_triggers_rollback():
         await asyncio.sleep(0.1)
 
         assert len(changes) >= 1
-        # Previous plugin was restored on rollback
+        # Previous plugin was restored on rollback:
+        # X5 discriminating assertions: verify old_cls remains registered in registry and its active fiber is restored
+        assert ctx.registry.has(plugin_cls)
+        restored_runtime = ctx.registry.get(plugin_cls)
+        assert restored_runtime is not None
+        assert len(restored_runtime.fibers) >= 1
+        assert restored_runtime.fibers[0].plugin.version == 1
         assert fiber.plugin.version == 1
+        hmr.teardown()
+
+
+@pytest.mark.asyncio
+async def test_hmr_multi_file_reload_failure_triggers_rollback_all():
+    """X2 test: Multi-file reload failure rolls back all affected modules and restores all previous fibers."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        file_a = os.path.join(tmpdir, 'plugin_a.py')
+        file_b = os.path.join(tmpdir, 'plugin_b.py')
+
+        with open(file_a, 'w', encoding='utf-8') as f:
+            f.write(
+                'from dsh.cordis.plugin import Plugin\n'
+                'class MultiSamplePluginA(Plugin):\n'
+                '    id = \'multi-sample-a\'\n'
+                '    def apply(self, ctx):\n'
+                '        self.version = 1\n'
+            )
+
+        with open(file_b, 'w', encoding='utf-8') as f:
+            f.write(
+                'from dsh.cordis.plugin import Plugin\n'
+                'class MultiSamplePluginB(Plugin):\n'
+                '    id = \'multi-sample-b\'\n'
+                '    def apply(self, ctx):\n'
+                '        self.version = 1\n'
+            )
+
+        ctx = Context()
+        # [ADAPT] config uses root: [] to avoid scanning the active repository root in unit tests.
+        hmr = HmrService(ctx, config={'debounce': 10, 'root': []})
+        ctx.set_service('hmr', hmr)
+
+        import importlib.util
+        spec_a = importlib.util.spec_from_file_location('plugin_a', file_a)
+        mod_a = importlib.util.module_from_spec(spec_a)
+        spec_a.loader.exec_module(mod_a)
+        cls_a = getattr(mod_a, 'MultiSamplePluginA')
+
+        spec_b = importlib.util.spec_from_file_location('plugin_b', file_b)
+        mod_b = importlib.util.module_from_spec(spec_b)
+        spec_b.loader.exec_module(mod_b)
+        cls_b = getattr(mod_b, 'MultiSamplePluginB')
+
+        fiber_a = ctx.plugin(cls_a)
+        fiber_b = ctx.plugin(cls_b)
+        assert fiber_a.plugin.version == 1
+        assert fiber_b.plugin.version == 1
+
+        changes = []
+        ctx.on('hmr/change', lambda fn: changes.append(fn))
+        hmr.register_module(file_a, cls_a)
+        hmr.register_module(file_b, cls_b)
+
+        # Set dependency: file_b depends on file_a so modifying file_a triggers reload of both
+        hmr.graph.add_dependency(file_b, file_a)
+
+        await asyncio.sleep(0.05)
+        mtime_a = os.path.getmtime(file_a) + 2.0
+        with open(file_a, 'w', encoding='utf-8') as f:
+            f.write(
+                'from dsh.cordis.plugin import Plugin\n'
+                'class MultiSamplePluginA(Plugin):\n'
+                '    id = \'multi-sample-a\'\n'
+                '    def apply(self, ctx):\n'
+                '        self.version = 2\n'
+            )
+        os.utime(file_a, (mtime_a, mtime_a))
+
+        mtime_b = os.path.getmtime(file_b) + 2.0
+        with open(file_b, 'w', encoding='utf-8') as f:
+            f.write(
+                'from dsh.cordis.plugin import Plugin\n'
+                'class MultiSamplePluginB(Plugin):\n'
+                '    id = \'multi-sample-b\'\n'
+                '    def apply(self, ctx):\n'
+                '        raise RuntimeError("boom in plugin_b reload")\n'
+            )
+        os.utime(file_b, (mtime_b, mtime_b))
+
+        for _ in range(30):
+            await asyncio.sleep(0.05)
+            if changes:
+                break
+
+        await asyncio.sleep(0.15)
+        assert len(changes) >= 1
+
+        # X2 verification: BOTH plugin A and plugin B are restored to version 1 in ctx.registry
+        assert ctx.registry.has(cls_a)
+        runtime_a = ctx.registry.get(cls_a)
+        assert runtime_a is not None and len(runtime_a.fibers) >= 1
+        assert runtime_a.fibers[0].plugin.version == 1
+
+        assert ctx.registry.has(cls_b)
+        runtime_b = ctx.registry.get(cls_b)
+        assert runtime_b is not None and len(runtime_b.fibers) >= 1
+        assert runtime_b.fibers[0].plugin.version == 1
+
         hmr.teardown()
 

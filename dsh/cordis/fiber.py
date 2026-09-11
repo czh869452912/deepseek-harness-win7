@@ -981,7 +981,7 @@ class Fiber:
             if registry is not None and hasattr(registry, "has") and registry.has(self.runtime.callback):
                 try:
                     self.runtime.remove_fiber(self)
-                except Exception:
+                except (ValueError, KeyError, AttributeError):
                     pass
                 if not self.runtime.fibers:
                     if hasattr(registry, "_runtimes"):

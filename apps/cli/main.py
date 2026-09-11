@@ -211,6 +211,9 @@ def main():
         asyncio.run(main_async())
     except KeyboardInterrupt:
         sys.exit(130)
+    except RuntimeError as err:
+        sys.stderr.write(f"{err}\n")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

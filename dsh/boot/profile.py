@@ -52,6 +52,18 @@ PROFILE_TEMPLATES: Dict[str, Dict[str, Any]] = {
         "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-headless"],
         "patchReload": "startup",
     },
+    "standard": {
+        "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-headless"],
+        "patchReload": "startup",
+    },
+    "minimal": {
+        "bundles": ["@deepseek-ai/dsh-sdk-minimal"],
+        "patchReload": "startup",
+    },
+    "creative": {
+        "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-headless"],
+        "patchReload": "startup",
+    },
     "sdk": {
         "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-sdk-app"],
         "patchReload": "startup",
@@ -430,13 +442,39 @@ def package_dir_from_anchor(
     package_name: str,
     exclude: Optional[Callable[[str, str], bool]] = None,
 ) -> Optional[str]:
-    """Resolve package root by probing parent node_modules directories."""
+    """Resolve package root by probing parent node_modules directories with portable packages/ layout fallback."""
     curr = os.path.dirname(os.path.abspath(anchor))
     while True:
         candidate = os.path.join(curr, "node_modules", package_name)
         if os.path.exists(os.path.join(candidate, "package.json")):
             if exclude is None or not exclude(candidate, package_name):
                 return candidate
+
+        # Portable / workspace packages/ layout fallback
+        pkgs_dir = os.path.join(curr, "packages")
+        if os.path.isdir(pkgs_dir):
+            if package_name.startswith("@deepseek-ai/dsh-"):
+                bundle_sub = package_name[len("@deepseek-ai/dsh-"):]
+                b_cand = os.path.join(pkgs_dir, "bundle", bundle_sub)
+                if os.path.exists(os.path.join(b_cand, "package.json")):
+                    if exclude is None or not exclude(b_cand, package_name):
+                        return b_cand
+            for cat in ("bundle", "boot", "client", "preset", "core", "api", "attachment"):
+                cat_dir = os.path.join(pkgs_dir, cat)
+                if os.path.isdir(cat_dir):
+                    for sub in os.listdir(cat_dir):
+                        sub_cand = os.path.join(cat_dir, sub)
+                        sub_pkg = os.path.join(sub_cand, "package.json")
+                        if os.path.isfile(sub_pkg):
+                            try:
+                                with open(sub_pkg, "r", encoding="utf-8") as f:
+                                    m = json.load(f)
+                                if m.get("name") == package_name:
+                                    if exclude is None or not exclude(sub_cand, package_name):
+                                        return sub_cand
+                            except Exception:
+                                pass
+
         parent = os.path.dirname(curr)
         if parent == curr:
             break

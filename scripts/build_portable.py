@@ -20,6 +20,10 @@ def build_portable():
     shutil.copytree(os.path.join(ROOT_DIR, "dsh"), os.path.join(DIST_DIR, "dsh"))
     os.makedirs(os.path.join(DIST_DIR, "apps", "cli"), exist_ok=True)
     shutil.copy(os.path.join(ROOT_DIR, "apps", "cli", "main.py"), os.path.join(DIST_DIR, "apps", "cli", "main.py"))
+    ref_cli_pkg = os.path.join(ROOT_DIR, "reference", "apps", "cli", "package.json")
+    if os.path.exists(ref_cli_pkg):
+        shutil.copy(ref_cli_pkg, os.path.join(DIST_DIR, "apps", "cli", "package.json"))
+        shutil.copy(ref_cli_pkg, os.path.join(DIST_DIR, "package.json"))
     if os.path.exists(os.path.join(ROOT_DIR, "apps", "web")):
         shutil.copytree(os.path.join(ROOT_DIR, "apps", "web"), os.path.join(DIST_DIR, "apps", "web"))
     # Copy official compiled web dist and client packages

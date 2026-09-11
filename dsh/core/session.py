@@ -890,7 +890,13 @@ class SessionStore:
         self.ctx = ctx
         self._entries: Dict[str, _SessionStoreEntry] = {}
 
+    def apply(self, ctx: Any = None) -> None:
+        target_ctx = ctx or self.ctx
+        if target_ctx and not target_ctx.has("sessions"):
+            target_ctx.set_service("sessions", self)
+
     @property
+
     def _sessions(self) -> Dict[str, Session]:
         return {entry.id: entry.session for entry in self._entries.values()}
 

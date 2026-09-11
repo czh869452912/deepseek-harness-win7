@@ -526,3 +526,4 @@ class ToolsPlugin(Plugin):
 
 
 ToolRegistry = ToolsService
+ToolRuntime = ToolsPlugin

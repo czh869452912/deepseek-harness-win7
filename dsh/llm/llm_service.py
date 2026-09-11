@@ -985,3 +985,21 @@ class LLMService:
             {"provider": "openai", "displayName": "OpenAI Compatible", "settingsNs": "llm-openai", "settingsPath": []},
             {"provider": "deepseek", "displayName": "DeepSeek Official", "settingsNs": "llm", "settingsPath": []}
         ]
+
+
+class LlmRuntime:
+    """
+    Cordis plugin mounting LLMService on ctx.llm.
+    1:1 aligned with reference packages/llm/llm.
+    """
+    id = "llm"
+    name = "@deepseek-ai/dsh-llm"
+
+    def __init__(self, config=None):
+        self.config = config or {}
+
+    def apply(self, ctx: Any) -> None:
+        if not ctx.has("llm"):
+            svc = LLMService(ctx=ctx)
+            ctx.set_service("llm", svc)
+

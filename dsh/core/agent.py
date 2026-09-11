@@ -289,6 +289,11 @@ class AgentRegistry:
         self._active_initiator_runs: int = 0
         self._initiator_drain: Optional[asyncio.Event] = None
 
+    def apply(self, ctx: Any = None) -> None:
+        target_ctx = ctx or self.ctx
+        if target_ctx and not target_ctx.has("agents"):
+            target_ctx.set_service("agents", self)
+
     @property
     def initiator_state(self) -> str:
         return self._initiator_state

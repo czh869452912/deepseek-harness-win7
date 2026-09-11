@@ -1052,3 +1052,7 @@ class AgentLoopPlugin(Plugin):
             ctx.disposable(agent_loop.teardown, label="agent_loop.teardown")
         elif hasattr(ctx, "effect"):
             ctx.effect(lambda: agent_loop.teardown)
+
+
+AgentLoop = AgentLoopPlugin
+

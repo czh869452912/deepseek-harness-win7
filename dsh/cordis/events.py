@@ -41,17 +41,33 @@ def _bind_caller_ctx(cb: Callable[..., Any], caller_ctx: Any) -> Callable[..., A
         sig = inspect.signature(cb)
         has_caller_ctx = "caller_ctx" in sig.parameters
         has_varkw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
+        pos_names = [p.name for p in sig.parameters.values() if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)]
+        caller_idx = pos_names.index("caller_ctx") if has_caller_ctx and "caller_ctx" in pos_names else None
         if has_caller_ctx or has_varkw:
             import functools
             @functools.wraps(cb)
             def wrapped(*args: Any, **kwargs: Any) -> Any:
-                if "caller_ctx" not in kwargs:
+                if "caller_ctx" not in kwargs and (caller_idx is None or len(args) <= caller_idx):
                     kwargs["caller_ctx"] = caller_ctx
                 return cb(*args, **kwargs)
             return wrapped
     except Exception:
         pass
     return cb
+
+
+def _normalize_event_call(event_name: Any, args: Sequence[Any], default_caller: Any, kwargs: Dict[str, Any]) -> Tuple[str, List[Any], Any]:
+    caller_ctx = kwargs.pop("caller_ctx", None)
+    if not isinstance(event_name, str) and args and isinstance(args[0], str):
+        caller_ctx = event_name
+        actual_event_name = args[0]
+        actual_args = list(args[1:])
+    else:
+        actual_event_name = str(event_name)
+        actual_args = list(args)
+    if caller_ctx is None:
+        caller_ctx = default_caller
+    return actual_event_name, actual_args, caller_ctx
 
 
 class EventBus:
@@ -275,8 +291,8 @@ class EventBus:
         """
         Dispatch an event synchronously, ignoring return values matching TS EventBus.emit.
         """
-        caller_ctx = kwargs.pop("caller_ctx", None)
-        listeners = self._dispatch_hooks("emit", event_name, args, caller_ctx)
+        event_name, actual_args, caller_ctx = _normalize_event_call(event_name, args, self.ctx, kwargs)
+        listeners = self._dispatch_hooks("emit", event_name, actual_args, caller_ctx)
         for listener in listeners:
             sig = None
             try:
@@ -284,7 +300,7 @@ class EventBus:
             except Exception:
                 pass
 
-            res = listener(*args, **kwargs)
+            res = listener(*actual_args, **kwargs)
             if inspect.isawaitable(res):
                 try:
                     loop = asyncio.get_running_loop()
@@ -296,10 +312,10 @@ class EventBus:
         """
         Emit event asynchronously to listeners in sequence.
         """
-        caller_ctx = kwargs.pop("caller_ctx", None)
-        listeners = self._dispatch_hooks("emit", event_name, args, caller_ctx)
+        event_name, actual_args, caller_ctx = _normalize_event_call(event_name, args, self.ctx, kwargs)
+        listeners = self._dispatch_hooks("emit", event_name, actual_args, caller_ctx)
         for listener in listeners:
-            res = listener(*args, **kwargs)
+            res = listener(*actual_args, **kwargs)
             if inspect.isawaitable(res):
                 await res
 
@@ -308,13 +324,13 @@ class EventBus:
         Parallel dispatch: run all listeners concurrently matching TS EventBus.parallel.
         Raises AggregateError if any listeners fail.
         """
-        caller_ctx = kwargs.pop("caller_ctx", None)
-        listeners = self._dispatch_hooks("emit", event_name, args, caller_ctx)
+        event_name, actual_args, caller_ctx = _normalize_event_call(event_name, args, self.ctx, kwargs)
+        listeners = self._dispatch_hooks("emit", event_name, actual_args, caller_ctx)
         if not listeners:
             return []
 
         async def _run(cb: Callable[..., Any]) -> Any:
-            res = cb(*args, **kwargs)
+            res = cb(*actual_args, **kwargs)
             if inspect.isawaitable(res):
                 return await res
             return res
@@ -329,10 +345,10 @@ class EventBus:
         """
         Dispatch an event, awaiting listeners in order until one bails.
         """
-        caller_ctx = kwargs.pop("caller_ctx", None)
-        listeners = self._dispatch_hooks("serial", event_name, args, caller_ctx)
+        event_name, actual_args, caller_ctx = _normalize_event_call(event_name, args, self.ctx, kwargs)
+        listeners = self._dispatch_hooks("serial", event_name, actual_args, caller_ctx)
         for listener in listeners:
-            res = listener(*args, **kwargs)
+            res = listener(*actual_args, **kwargs)
             if inspect.isawaitable(res):
                 res = await res
             if is_bailed(res):
@@ -343,8 +359,8 @@ class EventBus:
         """
         Dispatch an event synchronously, stopping on the first bail value matching TS EventBus.bail.
         """
-        caller_ctx = kwargs.pop("caller_ctx", None)
-        listeners = self._dispatch_hooks("bail", event_name, args, caller_ctx)
+        event_name, actual_args, caller_ctx = _normalize_event_call(event_name, args, self.ctx, kwargs)
+        listeners = self._dispatch_hooks("bail", event_name, actual_args, caller_ctx)
         for listener in listeners:
             sig = None
             try:
@@ -355,12 +371,12 @@ class EventBus:
                 params = list(sig.parameters.values())
                 has_var = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
                 pos_count = sum(1 for p in params if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD))
-                call_args = args if (has_var or pos_count >= len(args)) else args[:pos_count]
-                if event_name == "internal/listener" and len(args) == 3 and isinstance(args[2], dict) and not has_var and pos_count == 4:
-                    call_args = (args[0], args[1], args[2].get("prepend", False), args[2].get("global", False))
+                call_args = actual_args if (has_var or pos_count >= len(actual_args)) else actual_args[:pos_count]
+                if event_name == "internal/listener" and len(actual_args) == 3 and isinstance(actual_args[2], dict) and not has_var and pos_count == 4:
+                    call_args = (actual_args[0], actual_args[1], actual_args[2].get("prepend", False), actual_args[2].get("global", False))
                 res = listener(*call_args, **kwargs)
             else:
-                res = listener(*args, **kwargs)
+                res = listener(*actual_args, **kwargs)
             if is_bailed(res):
                 return res
         return None
@@ -369,8 +385,8 @@ class EventBus:
         """
         Dispatch an event, calling listeners in order until one bails matching TS EventBus.bail.
         """
-        caller_ctx = kwargs.pop("caller_ctx", None)
-        listeners = self._dispatch_hooks("bail", event_name, args, caller_ctx)
+        event_name, actual_args, caller_ctx = _normalize_event_call(event_name, args, self.ctx, kwargs)
+        listeners = self._dispatch_hooks("bail", event_name, actual_args, caller_ctx)
         for listener in listeners:
             sig = None
             try:
@@ -381,12 +397,12 @@ class EventBus:
                 params = list(sig.parameters.values())
                 has_var = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
                 pos_count = sum(1 for p in params if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD))
-                call_args = args if (has_var or pos_count >= len(args)) else args[:pos_count]
-                if event_name == "internal/listener" and len(args) == 3 and isinstance(args[2], dict) and not has_var and pos_count == 4:
-                    call_args = (args[0], args[1], args[2].get("prepend", False), args[2].get("global", False))
+                call_args = actual_args if (has_var or pos_count >= len(actual_args)) else actual_args[:pos_count]
+                if event_name == "internal/listener" and len(actual_args) == 3 and isinstance(actual_args[2], dict) and not has_var and pos_count == 4:
+                    call_args = (actual_args[0], actual_args[1], actual_args[2].get("prepend", False), actual_args[2].get("global", False))
                 res = listener(*call_args, **kwargs)
             else:
-                res = listener(*args, **kwargs)
+                res = listener(*actual_args, **kwargs)
             if inspect.isawaitable(res):
                 res = await res
             if is_bailed(res):
@@ -398,9 +414,9 @@ class EventBus:
         Synchronous waterfall middleware pipeline matching TS waterfall semantics.
         Supports onion middleware return-threading and short-circuit veto.
         """
-        caller_ctx = kwargs.pop("caller_ctx", None) or self.ctx
-        listeners = list(self._dispatch_hooks("waterfall", event_name, list(args), caller_ctx))
-        args_list = list(args)
+        event_name, actual_args, caller_ctx = _normalize_event_call(event_name, args, self.ctx, kwargs)
+        listeners = list(self._dispatch_hooks("waterfall", event_name, list(actual_args), caller_ctx))
+        args_list = list(actual_args)
         inner = args_list.pop() if args_list and callable(args_list[-1]) else None
 
         idx = 0
@@ -459,9 +475,9 @@ class EventBus:
         Waterfall middleware pipeline matching TS waterfall semantics.
         Supports onion middleware return-threading and short-circuit veto.
         """
-        caller_ctx = kwargs.pop("caller_ctx", None) or self.ctx
-        listeners = list(self._dispatch_hooks("waterfall", event_name, list(args), caller_ctx))
-        args_list = list(args)
+        event_name, actual_args, caller_ctx = _normalize_event_call(event_name, args, self.ctx, kwargs)
+        listeners = list(self._dispatch_hooks("waterfall", event_name, list(actual_args), caller_ctx))
+        args_list = list(actual_args)
         inner = args_list.pop() if args_list and callable(args_list[-1]) else None
 
         idx = 0

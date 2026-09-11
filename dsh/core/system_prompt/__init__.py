@@ -1,0 +1,77 @@
+"""
+SystemPrompt module barrel exports.
+Strict 1:1 parity with reference/packages/core/system-prompt/src/index.ts.
+Compatible with Python 3.8.10 and Windows 7 SP1.
+"""
+
+from dsh.core.system_prompt.types import (
+    FIRST_PARTY_SECTION_ORDER,
+    PERSONA_ORDER,
+    PERSONA_SECTION,
+    TOOL_ORDER_REST,
+    VARIABLE_NAME,
+    GROUP_AT,
+    PromptSection,
+    PromptContext,
+    AssembledSection,
+    AssembledContext,
+    AssembledItem,
+    PromptAssembly,
+    AssembleContext,
+    ToolProviderResult,
+    compare_names,
+    compare_prompt_sections,
+    compare_tool_names,
+    validate_tool_order,
+    order_tools,
+    interpolate_text,
+    interpolate,
+    interpolateText,
+    render_prompt,
+    renderPrompt,
+    render_context_snapshot,
+    renderContextSnapshot,
+    join_context_sections,
+    joinContextSections,
+    render_context_sections,
+    renderContextSections,
+)
+from dsh.core.system_prompt.layer import PromptLayer
+from dsh.core.system_prompt.service import SystemPrompt
+from dsh.core.system_prompt.invariant import SystemPromptInvariantPlugin
+
+__all__ = [
+    "FIRST_PARTY_SECTION_ORDER",
+    "PERSONA_ORDER",
+    "PERSONA_SECTION",
+    "TOOL_ORDER_REST",
+    "VARIABLE_NAME",
+    "GROUP_AT",
+    "PromptSection",
+    "PromptContext",
+    "AssembledSection",
+    "AssembledContext",
+    "AssembledItem",
+    "PromptAssembly",
+    "AssembleContext",
+    "ToolProviderResult",
+    "compare_names",
+    "compare_prompt_sections",
+    "compare_tool_names",
+    "validate_tool_order",
+    "order_tools",
+    "interpolate_text",
+    "interpolate",
+    "interpolateText",
+    "render_prompt",
+    "renderPrompt",
+    "render_context_snapshot",
+    "renderContextSnapshot",
+    "join_context_sections",
+    "joinContextSections",
+    "render_context_sections",
+    "renderContextSections",
+    "PromptLayer",
+    "SystemPrompt",
+    "SystemPromptInvariantPlugin",
+]

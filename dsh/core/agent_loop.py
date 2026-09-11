@@ -581,9 +581,11 @@ class AgentLoopService:
         except asyncio.CancelledError:
             pass
         except Exception as e:
-            logger = getattr(self.ctx, "logger", None)
-            if logger and hasattr(logger, "error"):
-                logger.error("agent driver crashed: %s", str(e))
+            if hasattr(self.ctx, "logger"):
+                try:
+                    self.ctx.logger("agent_loop").error("agent driver crashed: %s", str(e))
+                except Exception:
+                    pass
         finally:
             agent.set_phase("idle")
 

@@ -4,6 +4,8 @@ an opaque identity and build routing-only event carriers for that identity.
 1:1 aligned with official `@deepseek-ai/dsh-scope`.
 """
 
+import collections.abc
+import inspect
 import weakref
 from typing import Any, Callable, Dict, Iterator, List, Optional, Set, Tuple, TypeVar, Union
 from dsh.cordis.context import Context
@@ -14,9 +16,58 @@ V = TypeVar("V")
 # Context attribute key written by create_scope
 K_SCOPE = "_dsh_scope_key"
 
-# Global weak maps tracking scope hierarchy and carriers
-_scope_parents: "weakref.WeakKeyDictionary[Any, Any]" = weakref.WeakKeyDictionary()
-_carrier_keys: "weakref.WeakKeyDictionary[Any, Any]" = weakref.WeakKeyDictionary()
+
+class ScopeKey:
+    """Opaque hashable, weakrefable scope key matching JS object reference identity."""
+    __slots__ = ("value", "__weakref__")
+
+    def __init__(self, value: Any):
+        self.value = value
+
+    def __repr__(self) -> str:
+        return f"ScopeKey({self.value!r})"
+
+    def __getitem__(self, item: str) -> Any:
+        if isinstance(self.value, dict):
+            return self.value[item]
+        return getattr(self.value, item)
+
+
+class _UniversalKeyMap:
+    """Key map supporting both weakrefable and non-weakrefable keys."""
+
+    def __init__(self):
+        self._weak: "weakref.WeakKeyDictionary[Any, Any]" = weakref.WeakKeyDictionary()
+        self._strong: Dict[Any, Any] = {}
+
+    def __setitem__(self, key: Any, value: Any) -> None:
+        try:
+            self._weak[key] = value
+        except TypeError:
+            self._strong[key] = value
+
+    def get(self, key: Any, default: Any = None) -> Any:
+        try:
+            return self._weak.get(key, default)
+        except TypeError:
+            return self._strong.get(key, default)
+
+    def __contains__(self, key: Any) -> bool:
+        try:
+            return key in self._weak
+        except TypeError:
+            return key in self._strong
+
+    def pop(self, key: Any, default: Any = None) -> Any:
+        try:
+            return self._weak.pop(key, default)
+        except TypeError:
+            return self._strong.pop(key, default)
+
+
+# Global weak/universal maps tracking scope hierarchy and carriers
+_scope_parents: _UniversalKeyMap = _UniversalKeyMap()
+_carrier_keys: _UniversalKeyMap = _UniversalKeyMap()
 
 
 class ScopeParentBinding:
@@ -79,21 +130,45 @@ class Scope:
             await res
 
 
-def create_scope(ctx: Context, key: Any, parent: Optional[Any] = None) -> Scope:
+def _empty_scope_plugin(ctx: Context) -> None:
+    pass
+
+
+def create_scope(ctx: Context, key: Any, options_or_parent: Optional[Any] = None) -> Scope:
     """
     Mint a scope under ctx. The scoped context inherits the minting context's
     dependency API and owns every registration made through it.
     """
+    parent = None
+    if isinstance(options_or_parent, dict) and "parent" in options_or_parent:
+        parent = options_or_parent["parent"]
+    elif options_or_parent is not None and not isinstance(options_or_parent, dict):
+        parent = options_or_parent
+
+    if not isinstance(key, collections.abc.Hashable):
+        key = ScopeKey(key)
+    if parent is not None and not isinstance(parent, collections.abc.Hashable):
+        parent = ScopeKey(parent)
+
     if parent is not None:
         bind_scope_parent(key, parent)
 
-    scoped = ctx.extend()
+    fiber = ctx.plugin(_empty_scope_plugin)
+    scoped = fiber.ctx.extend()
     setattr(scoped, K_SCOPE, key)
 
-    def raw_dispose():
-        scoped.teardown()
+    async def dispose() -> None:
+        res = fiber.dispose()
+        if inspect.isawaitable(res):
+            await res
+        if hasattr(fiber, "inertia") and fiber.inertia is not None:
+            if inspect.isawaitable(fiber.inertia):
+                await fiber.inertia
 
-    return Scope(ctx=scoped, raw_dispose=raw_dispose, fiber_dispose=raw_dispose)
+    def raw_dispose() -> Any:
+        return fiber.dispose()
+
+    return Scope(ctx=scoped, raw_dispose=raw_dispose, fiber_dispose=dispose)
 
 
 def scope_of(ctx: Context) -> Optional[Any]:
@@ -151,6 +226,15 @@ def carrier_key_of(value: Any) -> Optional[Any]:
     return _carrier_keys.get(value)
 
 
+class ScopeLayer:
+    """One scope's aggregate contribution to a registry."""
+
+    def is_empty(self) -> bool:
+        return True
+
+    isEmpty = is_empty
+
+
 class NamedEntries:
     """Insertion-ordered named entries with caller-owned duplicate diagnostics."""
 
@@ -186,7 +270,16 @@ class NamedEntries:
         return iter(self.data.values())
 
     def entries(self) -> Iterator[Tuple[str, Any]]:
-        return iter(self.data.items())
+        keys = list(self.data.keys())
+        idx = 0
+        while idx < len(keys):
+            k = keys[idx]
+            idx += 1
+            if k in self.data:
+                yield k, self.data[k]
+            for new_k in self.data.keys():
+                if new_k not in keys:
+                    keys.append(new_k)
 
     def is_empty(self) -> bool:
         return len(self.data) == 0
@@ -198,7 +291,7 @@ class AnonymousEntries:
     def __init__(self):
         self.data: List[Any] = []
 
-    def insert(self, value: Any) -> Callable[[], None]:
+    def append(self, value: Any) -> Callable[[], None]:
         self.data.append(value)
         active = True
 
@@ -212,32 +305,126 @@ class AnonymousEntries:
 
         return undo
 
+    insert = append
+
     def values(self) -> Iterator[Any]:
-        return iter(self.data)
+        return iter(list(self.data))
 
     def is_empty(self) -> bool:
         return len(self.data) == 0
+
+    isEmpty = is_empty
 
 
 class ScopedLayers:
     """Layers of tables partitioned by scope key."""
 
-    def __init__(self, create_layer: Callable[[Any], Any]):
+    def __init__(self, create_layer: Callable[[Any], Any], on_change: Optional[Callable[[], None]] = None):
         self._create_layer = create_layer
-        self._layers: Dict[Any, Any] = {}
-        self._unscoped = create_layer(None)
+        self._on_change = on_change or (lambda: None)
+        self.scoped: Dict[Any, Any] = {}
+        self._layers = self.scoped
+        self.global_layer = create_layer(None)
+        self._unscoped = self.global_layer
+
+    @property
+    def global_(self) -> Any:
+        return self.global_layer
+
+    def peek(self, scope: Optional[Any]) -> Optional[Any]:
+        if scope is None:
+            return None
+        if not isinstance(scope, collections.abc.Hashable):
+            scope = ScopeKey(scope)
+        return self.scoped.get(scope)
+
+    def chain_layers(self, scope: Optional[Any]) -> List[Any]:
+        key = scope_of(scope) if isinstance(scope, Context) else scope
+        if key is not None and not isinstance(key, collections.abc.Hashable):
+            key = ScopeKey(key)
+        layers: List[Any] = []
+        for k in reversed(scope_chain_of(key)):
+            if k in self.scoped:
+                layers.append(self.scoped[k])
+        return layers
+
+    chainLayers = chain_layers
+
+    def chain_layers_of(self, ctx_or_key: Any) -> List[Any]:
+        key = scope_of(ctx_or_key) if isinstance(ctx_or_key, Context) else ctx_or_key
+        if key is not None and not isinstance(key, collections.abc.Hashable):
+            key = ScopeKey(key)
+        chain = scope_chain_of(key)
+        layers = [self.scoped[k] for k in chain if k in self.scoped]
+        layers.append(self.global_layer)
+        return layers
+
+    def merge(self, scope: Optional[Any], pick: Callable[[Any], NamedEntries]) -> Dict[str, Any]:
+        merged: Dict[str, Any] = dict(pick(self.global_layer).entries())
+        for layer in self.chain_layers(scope):
+            for name, value in pick(layer).entries():
+                merged[name] = value
+        return merged
 
     def layer_of(self, ctx_or_key: Any) -> Any:
         key = scope_of(ctx_or_key) if isinstance(ctx_or_key, Context) else ctx_or_key
         if key is None:
-            return self._unscoped
-        if key not in self._layers:
-            self._layers[key] = self._create_layer(key)
-        return self._layers[key]
+            return self.global_layer
+        if not isinstance(key, collections.abc.Hashable):
+            key = ScopeKey(key)
+        if key not in self.scoped:
+            self.scoped[key] = self._create_layer(key)
+        return self.scoped[key]
 
-    def chain_layers_of(self, ctx_or_key: Any) -> List[Any]:
-        key = scope_of(ctx_or_key) if isinstance(ctx_or_key, Context) else ctx_or_key
-        chain = scope_chain_of(key)
-        layers = [self._layers[k] for k in chain if k in self._layers]
-        layers.append(self._unscoped)
-        return layers
+    def effect(
+        self,
+        ctx: Context,
+        action: Callable[[Any], Callable[[], None]],
+        options: Optional[Dict[str, Any]] = None,
+    ) -> Callable[[], None]:
+        opts = options or {}
+        label = opts.get("label", "scoped_layers.effect()")
+        notify = opts.get("notify", True)
+        scope = scope_of(ctx)
+        if scope is not None and not isinstance(scope, collections.abc.Hashable):
+            scope = ScopeKey(scope)
+
+        layer: Any
+        created = False
+        if scope is None:
+            layer = self.global_layer
+        else:
+            existing = self.scoped.get(scope)
+            if existing is None:
+                layer = self._create_layer(scope)
+                self.scoped[scope] = layer
+                created = True
+            else:
+                layer = existing
+
+        try:
+            undo = action(layer)
+        except Exception as error:
+            if scope is not None and created and hasattr(layer, "is_empty") and layer.is_empty():
+                self.scoped.pop(scope, None)
+            raise error
+
+        def cleanup():
+            undo()
+            if scope is not None and hasattr(layer, "is_empty") and layer.is_empty():
+                self.scoped.pop(scope, None)
+            if notify:
+                self._on_change()
+
+        if notify:
+            try:
+                self._on_change()
+            except Exception as error:
+                undo()
+                if scope is not None and created and hasattr(layer, "is_empty") and layer.is_empty():
+                    self.scoped.pop(scope, None)
+                raise error
+
+        if hasattr(ctx, "effect"):
+            return ctx.effect(lambda: cleanup, label=label)
+        return cleanup

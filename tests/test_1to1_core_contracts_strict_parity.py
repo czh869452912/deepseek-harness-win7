@@ -177,10 +177,14 @@ async def test_session_store_prepare_persistence():
         meta=meta,
         seed_source="persistence",
     )
-    assert prep.session.id == "p-session"
-    # Interrupted turn closer was appended by from_restore
-    assert len(prep.session.events) >= 2
-    assert any(e["type"] == "turn/end" for e in prep.session.events)
+    # `Session.fromRestore` takes ownership of the supplied seed verbatim
+    # (index.ts:493-494): the seed, plus the `session/end-seed` marker the
+    # constructor appends. Interrupted-turn repair belongs to the persistence
+    # layer, which runs before the seed is handed over.
+    assert prep.id == "p-session"
+    assert len(prep.events) == 2
+    assert prep.events[0]["type"] == "turn/start"
+    assert prep.events[-1]["type"] == "session/end-seed"
 
 
 @pytest.mark.asyncio

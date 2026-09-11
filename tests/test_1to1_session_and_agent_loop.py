@@ -18,7 +18,12 @@ from dsh.session.title import SessionTitlePlugin, normalize_session_title
 
 def test_runtime_context_eviction_on_replacement_surface_event():
     ctx = Context()
-    session = Session(session_id="test-rc-eviction", ctx=ctx)
+    # The projection is driven by `session/event`, which only a
+    # store-attached session publishes (index.ts:638-645), so the session
+    # must be live in a store.
+    SessionPlugin().apply(ctx)
+    store: SessionStore = ctx.get("sessions")
+    session = store.create("test-rc-eviction")
 
     # Append an initial owned user/message
     ev1 = session.append(

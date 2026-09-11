@@ -114,7 +114,14 @@ def build_session(events: List[Dict[str, Any]]) -> Session:
     for e in events:
         intent = e.get("intent")
         if intent is not None:
-            session.append(e["type"], e["data"], **intent)
+            # The upstream arbitrary carries a camelCase `SurfaceIntent`; the
+            # Python append takes the two fields as explicit keyword arguments.
+            session.append(
+                e["type"],
+                e["data"],
+                surface_op=intent.get("surfaceOp"),
+                source_event_seqs=intent.get("sourceEventSeqs"),
+            )
         else:
             session.append(e["type"], e["data"])
     return session

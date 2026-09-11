@@ -12,9 +12,15 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Union
 from dsh.cordis.plugin import Plugin
 from dsh.cordis.service import Service
 from dsh.core.scope import scope_of, scope_target
-from dsh.core.session.json import is_json_value, snapshot_json_value
+from dsh.core.session.json import (
+    UNDEFINED,
+    FrozenList,
+    deep_freeze,
+    freeze_restored_object,
+    snapshot_json_value,
+    walk_json_value,
+)
 from dsh.core.session.preparation import SessionPreparation
-from dsh.core.session.repair import interrupted_turn_closers
 from dsh.core.session.request_header import canonical_header, fold_request_header
 from dsh.core.session.surface import (
     SurfaceManager,
@@ -37,6 +43,7 @@ from dsh.core.session.types import (
     validate_restored_session_header,
     validate_session_header,
 )
+from dsh.typert.protocol import TypertLookupProvider
 
 
 class _SessionStoreEntry:
@@ -106,14 +113,14 @@ class Session:
         self,
         session_id: str,
         seed: Optional[Sequence[Dict[str, Any]]] = None,
-        header: Optional[Union[SessionHeader, Dict[str, Any]]] = None,
+        header: Any = UNDEFINED,
         mode: str = "snapshot",
         ctx: Optional[Any] = None,
     ):
         self.ctx = ctx
         restored_header = (
             validate_restored_session_header(session_id, header)
-            if mode == "restore" and header is not None
+            if mode == "restore"
             else None
         )
 
@@ -125,8 +132,17 @@ class Session:
 
         if seed is not None:
             for index, source in enumerate(seed):
-                snapshot = source if mode == "restore" else snapshot_json_value(source)
-                if snapshot is None:
+                # The seed is a persistence/replay boundary: validate and detach
+                # the complete event in one lossless-JSON pass. The detach
+                # sentinel is `undefined` (not `None`) because a JSON `null`
+                # seed still reaches the envelope check below, exactly like the
+                # reference `snapshotJsonValue(source) === undefined` test.
+                snapshot = (
+                    source
+                    if mode == "restore"
+                    else walk_json_value(source, detach=True, undefined_sentinel=UNDEFINED)
+                )
+                if snapshot is UNDEFINED:
                     raise ValueError(f"seed event at index {index} is not losslessly JSON-serializable")
                 assert_session_event_envelope(snapshot, index=index)
                 assert_current_llm_shape(snapshot, index=index)
@@ -143,7 +159,12 @@ class Session:
                     self._surface_manager.validate_next(snapshot)
                 except Exception as error:
                     raise ValueError(f"invalid seed event at index {index}: {error}") from error
-                self._log.append(snapshot)
+                # A restored seed transfers ownership and is frozen iteratively
+                # (`freezeRestoredObject`); a borrowed seed became a fresh
+                # snapshot above and is deeply frozen (`deepFreeze`).
+                self._log.append(
+                    freeze_restored_object(snapshot) if mode == "restore" else deep_freeze(snapshot)
+                )
 
         self._first_live_seq = len(self._log)
         if restored_header is not None:
@@ -200,9 +221,14 @@ class Session:
 
     @property
     def events(self) -> List[Dict[str, Any]]:
-        """Immutable snapshot of the append-only event log."""
+        """
+        An immutable snapshot of the append-only event log, cached until the
+        next append (a previously returned array does not grow later). Events
+        and their nested data are deep-frozen at acceptance, so neither a cast
+        nor ordinary Python can rewrite durable history.
+        """
         if self._events_snapshot is None:
-            self._events_snapshot = list(self._log)
+            self._events_snapshot = FrozenList(self._log)
         return self._events_snapshot
 
     @classmethod
@@ -210,7 +236,7 @@ class Session:
         cls,
         session_id: str,
         seed: Optional[Sequence[Dict[str, Any]]] = None,
-        header: Optional[Union[SessionHeader, Dict[str, Any]]] = None,
+        header: Any = UNDEFINED,
         ctx: Optional[Any] = None,
     ) -> "Session":
         return cls(session_id=session_id, seed=seed, header=header, mode="snapshot", ctx=ctx)
@@ -223,11 +249,12 @@ class Session:
         header: Union[SessionHeader, Dict[str, Any]],
         ctx: Optional[Any] = None,
     ) -> "Session":
-        from dsh.core.session.repair import interrupted_turn_closers, migrate_legacy_event
-        repaired_seed = [migrate_legacy_event(ev, session_id) for ev in (seed or [])]
-        closers = interrupted_turn_closers(repaired_seed)
-        repaired_seed.extend(closers)
-        return cls(session_id=session_id, seed=repaired_seed, header=header, mode="restore", ctx=ctx)
+        # Exactly `new Session(id, seed, header, 'restore')` (index.ts:493-494):
+        # a restore takes ownership of the supplied values as they are. It does
+        # NOT migrate legacy events and does NOT synthesize interrupted-turn
+        # closers - that repair belongs to the persistence layer, which performs
+        # it before handing the seed over.
+        return cls(session_id=session_id, seed=seed, header=header, mode="restore", ctx=ctx)
 
     fromRestore = from_restore
 
@@ -253,9 +280,10 @@ class Session:
             if s_seqs is None:
                 s_seqs = opts.get("sourceEventSeqs")
 
-        # For message-producing surface-eligible events, default surfaceOp to 'append' if not specified
-        if s_op is None and is_surface_eligible_type(event_type):
-            s_op = "append"
+        # No marker is synthesized here: the TS overloads reject a
+        # surface-eligible append without one at COMPILE time, so the runtime
+        # guard in the surface validator is the only remaining enforcement and
+        # must observe the missing marker unchanged.
 
         surface_metadata: Dict[str, Any] = {}
         if s_seqs is not None:
@@ -263,28 +291,39 @@ class Session:
         if s_op is not None:
             surface_metadata["surfaceOp"] = s_op
 
-        if not is_json_value(data):
-            raise TypeError(f'session event "{event_type}" data is not losslessly JSON-serializable')
-
-        data_snapshot = snapshot_json_value(data)
+        data_snapshot = walk_json_value(data, detach=True, undefined_sentinel=UNDEFINED)
+        if data_snapshot is UNDEFINED:
+            raise ValueError(f'session event "{event_type}" carries non-JSON-serializable data')
         assert_supported_request_header(event_type, data_snapshot, location=f'session event "{event_type}"')
 
-        surface_metadata_snapshot = snapshot_json_value(surface_metadata)
-        if surface_metadata_snapshot is None and surface_metadata:
-            raise TypeError(f'session event "{event_type}" carries non-JSON-serializable surface metadata')
+        surface_metadata_snapshot = walk_json_value(
+            surface_metadata, detach=True, undefined_sentinel=UNDEFINED
+        )
+        if surface_metadata_snapshot is UNDEFINED:
+            raise ValueError(
+                f'session event "{event_type}" carries non-JSON-serializable surface metadata'
+            )
 
         entry = _attachments.get(id(self))
         if self._appending or (entry is not None and entry.appending):
             raise RuntimeError("session append cannot reenter while another append is being published")
 
-        event: Dict[str, Any] = {
+        # The complete candidate is built and deep-frozen BEFORE surface
+        # validation and dispatch resolution, 1:1 with reference
+        # `deepFreeze({type, seq, time, data: dataSnapshot, ...surfaceMetadata})`
+        # (index.ts:625-631). `data` is the SNAPSHOT itself, never a
+        # substitution: a literal JSON `null` payload stays `null` (Python
+        # `None`) instead of becoming `{}`.
+        candidate: Dict[str, Any] = {
             "type": event_type,
             "seq": len(self._log),
             "time": int(time.time() * 1000),
-            "data": data_snapshot if data_snapshot is not None else {},
+            "data": data_snapshot,
         }
         if surface_metadata_snapshot:
-            event.update(surface_metadata_snapshot)
+            candidate.update(surface_metadata_snapshot)
+
+        event: Dict[str, Any] = deep_freeze(candidate)
 
         self._surface_manager.validate_next(event)
 
@@ -309,9 +348,6 @@ class Session:
                 _invoke_contained_session_observers(
                     emit_ctx, "session/event", entry.id, callback_args, callbacks
                 )
-            elif emit_ctx is not None and entry is None:
-                # Direct emit when not attached to a store
-                emit_ctx.emit("session/event", self, event)
 
             return event
         finally:
@@ -511,7 +547,10 @@ class Session:
 
         self._derived_nodes = len(nodes)
 
-        history = [copy.deepcopy(m) for m in self._derived]
+        # A fresh array per call, holding the SHARED, deep-frozen messages: the
+        # reference returns `[...this.derived]`, so a consumer cannot mutate the
+        # durable history it was handed (index.ts:744).
+        history = list(self._derived)
         if system_prompt is not None:
             return [{"role": "system", "content": system_prompt}] + history
         return history
@@ -550,7 +589,10 @@ class Session:
         if self.header.cwd is not None:
             meta_dict.setdefault("cwd", self.header.cwd)
 
-        header = validate_session_header(child_session_id, {"id": child_session_id, **meta_dict})
+        # `version`/`id`/`createdAt` are assembled the way the store assembles
+        # them (index.ts:875-885): the validator requires all three, so this
+        # convenience cannot hand it a partial record.
+        header = SessionHeader.from_dict({"id": child_session_id, **meta_dict})
         return Session(session_id=child_session_id, seed=seed_events, header=header, ctx=self.ctx)
 
     async def flush(self) -> bool:
@@ -573,6 +615,40 @@ class SessionStore(Service):
         super().__init__(ctx, "sessions")
         self._entries: Dict[str, _SessionStoreEntry] = {}
         self._counter: int = 0
+        self._contribute_typert(ctx)
+
+    def _contribute_typert(self, ctx: Optional[Any]) -> None:
+        """
+        Contribute the live `Session` lookup to the Typert registry, 1:1 with
+        reference index.ts:796-804: the store registers, through dependency
+        inversion (`ctx.inject(['typert'], ...)`), a lookup whose `parameter` is
+        `session`, whose wire identity is `sessionId`, whose canonical type
+        symbols are the session host object and its wire id, and whose
+        `resolve` reads the live store entry.
+
+        The contribution is an effect of the store's own context, so disposing
+        the store's fiber withdraws the lookup again (reference: the inject
+        callback's registration is owned by the injecting fiber).
+        """
+        if ctx is None or not hasattr(ctx, "inject"):
+            return
+
+        def contribute(type_ctx: Any) -> None:
+            registry = getattr(type_ctx, "typert", None)
+            if registry is None:
+                return
+            lookup = TypertLookupProvider(
+                parameter="session",
+                wire="sessionId",
+                host_type_symbol="@deepseek-ai/dsh-session#Session",
+                wire_type_symbol="@deepseek-ai/dsh-session/types#SessionId",
+                resolve=lambda session_id: self.get(session_id),
+            )
+            withdraw = registry.lookups.register("session", lookup)
+            if getattr(ctx, "fiber", None) is not None:
+                ctx.disposable(withdraw, label="typert.lookups.register('session')")
+
+        ctx.inject(["typert"], contribute)
 
     def apply(self, ctx: Any = None) -> None:
         target_ctx = ctx or self.ctx
@@ -628,7 +704,13 @@ class SessionStore(Service):
         session_id: Optional[str] = None,
         options: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
-    ) -> SessionPreparation:
+    ) -> Session:
+        """
+        Build a session WITHOUT entering it into the store.
+        1:1 with reference `SessionStore.prepare` (index.ts:861-887), which
+        returns the unpublished {@link Session} itself; a caller that wants a
+        preparation lifetime wraps it with `SessionPreparation.create`.
+        """
         opts = dict(options or {})
         opts.update(kwargs)
 
@@ -650,8 +732,7 @@ class SessionStore(Service):
         if seed_source == "persistence":
             seed = opts.get("seed", [])
             meta = opts.get("meta", {})
-            session = Session.from_restore(session_id=sid, seed=seed, header=meta, ctx=self.ctx)
-            return SessionPreparation.create(session)
+            return Session.from_restore(session_id=sid, seed=seed, header=meta, ctx=self.ctx)
 
         seed = opts.get("seed")
         meta = opts.get("meta") or {}
@@ -668,8 +749,7 @@ class SessionStore(Service):
             if k in meta and meta[k] is not None:
                 header_dict[k] = meta[k]
 
-        session = Session.create(session_id=sid, seed=seed, header=header_dict, ctx=self.ctx)
-        return SessionPreparation.create(session)
+        return Session.create(session_id=sid, seed=seed, header=header_dict, ctx=self.ctx)
 
     def enter(self, session: Union[Session, SessionPreparation]) -> Callable[[], None]:
         sess = session.session if isinstance(session, SessionPreparation) else session
@@ -697,7 +777,10 @@ class SessionStore(Service):
                 return
             self._detach_entry(entry)
 
-        entry.detach = detach
+        # The entry holds the INTERNAL capability the publication paths call to
+        # honor a deferred detach; only the returned closure is single-shot
+        # (reference `entry.detach = () => this.detachEntered(entry)`).
+        entry.detach = lambda: self._detach_entry(entry)
         return detach
 
     def _detach_entry(self, entry: _SessionStoreEntry) -> None:
@@ -779,8 +862,7 @@ class SessionStore(Service):
         options: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> Session:
-        prep = self.prepare(session_id=session_id, options=options, **kwargs)
-        session = prep.session
+        session = self.prepare(session_id=session_id, options=options, **kwargs)
         detach = self.enter(session)
 
         # In Cordis, registered as disposable on context effect

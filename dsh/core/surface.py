@@ -46,8 +46,8 @@ def derive_event_message(event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         return None
 
     if etype == "user/message":
-        if "message" in edata and isinstance(edata["message"], dict):
-            return edata["message"]
+        # A `user/message` carries its message INLINE: the reference returns
+        # `event.data` verbatim, so a nested `data.message` is never projected.
         return edata
 
     elif etype == "assistant/message":
@@ -183,14 +183,21 @@ def _assert_provenance(event: Dict[str, Any], shadowed_seqs: List[int]) -> None:
         if len(raw) == 0 and event.get("type") != "assistant/message":
             raise ValueError("sourceEventSeqs must not be empty except on assistant/message")
 
+        # Reference order (surface.ts:224-237): classify EVERY entry first,
+        # then report duplicates, then the first non-earlier reference. A
+        # mixed list such as `[0, -1]` therefore fails the integer check,
+        # not the ordering check that entry `0` would also violate.
+        non_earlier_source: Optional[int] = None
         for s in raw:
             if not _is_event_seq(s):
                 raise ValueError(f'session event "{event.get("type")}" sourceEventSeqs must densely contain non-negative safe integers')
-            if s in sources:
-                raise ValueError("sourceEventSeqs must not contain duplicates")
             sources.add(s)
-            if s >= current_seq:
-                raise ValueError(f"sourceEventSeqs must reference earlier events: {s} >= current seq {current_seq}")
+            if non_earlier_source is None and s >= current_seq:
+                non_earlier_source = s
+        if len(sources) != len(raw):
+            raise ValueError("sourceEventSeqs must not contain duplicates")
+        if non_earlier_source is not None:
+            raise ValueError(f"sourceEventSeqs must reference earlier events: {non_earlier_source} >= current seq {current_seq}")
 
     missing = [seq for seq in shadowed_seqs if seq not in sources]
     if missing:

@@ -200,7 +200,7 @@ class TestSessionLogInvariants:
         sessions: SessionStore = env["ctx"].get("sessions")
         chunk = sessions.create()
         chunk.append("turn/start", {"turn": 1})
-        with pytest.raises(InvariantError, match=r"open is turn 1/step None"):
+        with pytest.raises(InvariantError, match=r"open is turn 1/step null"):
             chunk.append("assistant/chunk", {"turn": 1, "step": 1, "chunk": {"type": "text-delta", "index": 0, "text": "x"}})
 
         tool = sessions.create()
@@ -354,3 +354,148 @@ class TestSessionLogInvariants:
                 },
                 surface_op="append",
             )
+
+
+    @pytest.mark.asyncio
+    async def test_does_not_advance_committed_trace_state_when_a_later_dispatch_listener_vetoes(self):
+        env = await setup_env()
+        ctx: Context = env["ctx"]
+        sessions: SessionStore = ctx.get("sessions")
+        session = sessions.create(SessionId("dispatch-veto-rollback"))
+        state = {"veto": True}
+
+        def on_dispatch(mode, name, args, *extra):
+            if name != "session/event" or not state["veto"]:
+                return
+            state["veto"] = False
+            raise ValueError("later dispatch veto")
+
+        ctx.on("internal/dispatch", on_dispatch)
+
+        with pytest.raises(ValueError, match="later dispatch veto"):
+            session.append("turn/start", {"turn": 1})
+        assert session.events == []
+        # The committed trace did not advance, so the retried sequence is legal.
+        session.append("turn/start", {"turn": 1})
+        session.append("turn/end", {"turn": 1, "reason": {"kind": "completed"}})
+
+    @pytest.mark.asyncio
+    async def test_rejects_non_monotonic_event_sequence_numbers(self):
+        env = await setup_env()
+        ctx: Context = env["ctx"]
+        sessions: SessionStore = ctx.get("sessions")
+        session = sessions.create()
+
+        ctx.emit(scope_target(session, None), "session/event", session, {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 1,
+            "data": {"turn": 1},
+        })
+        with pytest.raises(InvariantError, match="seq must strictly increase"):
+            ctx.emit(scope_target(session, None), "session/event", session, {
+                "type": "turn/end",
+                "seq": 0,
+                "time": 2,
+                "data": {"turn": 1, "reason": {"kind": "completed"}},
+            })
+
+    @pytest.mark.asyncio
+    async def test_keeps_fresh_tool_result_appends_open_step_checked(self):
+        env = await setup_env()
+        ctx: Context = env["ctx"]
+        sessions: SessionStore = ctx.get("sessions")
+        session = sessions.create()
+        session.append("turn/start", {"turn": 1})
+
+        with pytest.raises(InvariantError, match=r"open is turn 1/step null"):
+            session.append(
+                "tool/result",
+                {
+                    "turn": 1,
+                    "step": 1,
+                    "message": create_tool_result_message({
+                        "callId": "closed",
+                        "content": [],
+                        "isError": False,
+                    }),
+                },
+                surface_op="append",
+            )
+
+    @pytest.mark.asyncio
+    async def test_replays_seeded_sessions_and_tracks_each_session_independently(self):
+        env = await setup_env()
+        ctx: Context = env["ctx"]
+        sessions: SessionStore = ctx.get("sessions")
+        bad_seed = [
+            {"type": "turn/start", "seq": 0, "time": 0, "data": {"turn": 1}},
+            {"type": "turn/start", "seq": 1, "time": 0, "data": {"turn": 2}},
+        ]
+        with pytest.raises(InvariantError):
+            sessions.create(None, {"seed": bad_seed})
+
+        a = sessions.create(SessionId("a"))
+        b = sessions.create(SessionId("b"))
+        a.append("turn/start", {"turn": 1})
+        b.append("turn/start", {"turn": 1})
+
+    @pytest.mark.asyncio
+    async def test_rebuilds_trace_state_for_sessions_that_exist_when_the_companion_reloads(self):
+        ctx = Context()
+        SessionPlugin().apply(ctx)
+        InvariantRegistry(ctx)
+        fiber = ctx.plugin(SessionInvariantPlugin)
+
+        sessions: SessionStore = ctx.get("sessions")
+        session = sessions.create()
+        session.append("turn/start", {"turn": 1})
+        session.append("step/start", {"turn": 1, "step": 1})
+
+        await fiber.dispose()
+        ctx.plugin(SessionInvariantPlugin)
+
+        # The reloaded companion re-seeded the live session from its log.
+        session.append("assistant/chunk", {
+            "turn": 1,
+            "step": 1,
+            "chunk": {"type": "text-delta", "index": 0, "text": "h"},
+        })
+        with pytest.raises(InvariantError, match="turn 1 is still open"):
+            session.append("turn/start", {"turn": 2})
+
+    @pytest.mark.asyncio
+    async def test_accepts_end_seed_whether_or_not_a_turn_is_open(self):
+        env = await setup_env()
+        ctx: Context = env["ctx"]
+        sessions: SessionStore = ctx.get("sessions")
+
+        # Balanced seed: between turns.
+        sessions.create(SessionId("inherited-between-turns"), {"seed": [
+            {"type": "turn/start", "seq": 0, "time": 1, "data": {"turn": 1}},
+            {"type": "turn/end", "seq": 1, "time": 2, "data": {"turn": 1, "reason": {"kind": "completed"}}},
+        ]})
+
+        # Unbalanced seed: inside the open turn, which the relation permits.
+        open_session = sessions.create(SessionId("inherited-inside-open-turn"), {"seed": [
+            {"type": "turn/start", "seq": 0, "time": 1, "data": {"turn": 1}},
+        ]})
+        assert [event["type"] for event in open_session.events] == ["turn/start", "session/end-seed"]
+        # Still open afterwards: the boundary moves no cursor.
+        with pytest.raises(InvariantError, match="turn 1 is still open"):
+            open_session.append("turn/start", {"turn": 2})
+        open_session.append("turn/end", {"turn": 1, "reason": {"kind": "completed"}})
+
+    @pytest.mark.asyncio
+    async def test_removes_all_listeners_when_the_companion_is_disposed(self):
+        ctx = Context()
+        SessionPlugin().apply(ctx)
+        InvariantRegistry(ctx)
+        fiber = ctx.plugin(SessionInvariantPlugin)
+
+        sessions: SessionStore = ctx.get("sessions")
+        session = sessions.create()
+        session.append("turn/start", {"turn": 1})
+
+        await fiber.dispose()
+        session.append("turn/start", {"turn": 2})

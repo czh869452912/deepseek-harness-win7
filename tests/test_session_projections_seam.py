@@ -37,14 +37,14 @@ def test_session_projection_registry_lifecycle():
 
     sess = Session("test-session")
     
-    # Send event through context
-    evt1 = {"type": "counter/inc", "seq": 1, "data": {}}
-    sess.events.append(evt1)
+    # Record the event through the append API (`Session.events` is a frozen
+    # snapshot) and publish it, since a detached session emits nothing.
+    evt1 = sess.append("counter/inc", {})
     ctx.emit("session/event", sess, evt1)
 
 
     assert len(changes) == 1
-    assert changes[0] == ("counter", 1, 1)
+    assert changes[0] == ("counter", 1, 0)
 
     snap = reg.snapshot(sess)
     assert snap["values"]["counter"] == 1

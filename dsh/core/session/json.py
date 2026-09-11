@@ -4,6 +4,7 @@ Ported 1:1 from reference packages/core/session/src/json.ts.
 Compatible with Python 3.8.10 and Windows 7 SP1.
 """
 
+import copy
 import math
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
@@ -17,6 +18,131 @@ class _UndefinedType:
 
 
 UNDEFINED = _UndefinedType()
+
+
+class FrozenDict(dict):
+    """
+    Immutable mapping: the Python 3.8.10 equivalent of an `Object.freeze`d JSON
+    object. Python cannot freeze an existing `dict` in place, so durability is
+    emulated with a `dict` subclass whose mutators raise `TypeError` - the same
+    error a strict-mode JavaScript write to a frozen object throws. Because it
+    still IS a `dict`, `json.dumps`, equality, iteration, `isinstance` checks
+    and the mapping protocol keep working on frozen durable session data.
+    """
+
+    __slots__ = ()
+
+    def _frozen(self, *args: Any, **kwargs: Any) -> None:
+        raise TypeError("frozen session object does not support item assignment")
+
+    __setitem__ = _frozen
+    __delitem__ = _frozen
+    clear = _frozen
+    pop = _frozen
+    popitem = _frozen
+    setdefault = _frozen
+    update = _frozen
+
+    def __copy__(self) -> Dict[str, Any]:
+        return dict(self)
+
+    def __deepcopy__(self, memo: Any = None) -> Dict[str, Any]:
+        # `copy.deepcopy` mirrors `structuredClone`: a copy is detached and no
+        # longer frozen, exactly like the reference `snapshotSessionEvent`.
+        return copy.deepcopy(dict(self), memo if memo is not None else {})
+
+    def __reduce__(self) -> Any:
+        return (FrozenDict, (dict(self),))
+
+
+class FrozenList(list):
+    """Immutable array: the Python equivalent of an `Object.freeze`d JSON array."""
+
+    __slots__ = ()
+
+    def _frozen(self, *args: Any, **kwargs: Any) -> None:
+        raise TypeError("frozen session array does not support item assignment")
+
+    __setitem__ = _frozen
+    __delitem__ = _frozen
+    append = _frozen
+    extend = _frozen
+    insert = _frozen
+    pop = _frozen
+    remove = _frozen
+    clear = _frozen
+    reverse = _frozen
+    sort = _frozen
+    __iadd__ = _frozen
+    __imul__ = _frozen
+
+    def __copy__(self) -> List[Any]:
+        return list(self)
+
+    def __deepcopy__(self, memo: Any = None) -> List[Any]:
+        return copy.deepcopy(list(self), memo if memo is not None else {})
+
+    def __reduce__(self) -> Any:
+        return (FrozenList, (list(self),))
+
+
+def deep_freeze(value: Any) -> Any:
+    """
+    Deep-freeze one JSON tree, mirroring reference `deepFreeze` (index.ts:625)
+    and `freezeRestoredObject` (index.ts:197).
+
+    The reference freezes the borrowed graph IN PLACE and returns the same
+    object. Python cannot retrofit immutability onto an existing `dict`/`list`,
+    so the closest observable equivalent is returned instead: an already frozen
+    value is returned unchanged, any other JSON container is copied into frozen
+    containers (LEGAL_ADAPTATION: identity of the caller's container is not
+    preserved, immutability of the session's durable copy is). The traversal is
+    iterative, like the reference, so deep trees cannot exhaust the stack.
+    """
+    if type(value) is dict:
+        root: Any = FrozenDict()
+    elif type(value) is list:
+        root = FrozenList()
+    else:
+        # Primitives are immutable in Python, and an already frozen container
+        # needs no second pass, exactly like re-freezing in JavaScript.
+        return value
+    pending: List[Any] = [(value, root)]
+    while pending:
+        source, target = pending.pop()
+        if type(source) is dict:
+            for key in source:
+                child = source[key]
+                if type(child) is dict:
+                    frozen_child: Any = FrozenDict()
+                    dict.__setitem__(target, key, frozen_child)
+                    pending.append((child, frozen_child))
+                elif type(child) is list:
+                    frozen_child = FrozenList()
+                    dict.__setitem__(target, key, frozen_child)
+                    pending.append((child, frozen_child))
+                else:
+                    dict.__setitem__(target, key, child)
+        else:
+            for item in source:
+                if type(item) is dict:
+                    frozen_item: Any = FrozenDict()
+                    list.append(target, frozen_item)
+                    pending.append((item, frozen_item))
+                elif type(item) is list:
+                    frozen_item = FrozenList()
+                    list.append(target, frozen_item)
+                    pending.append((item, frozen_item))
+                else:
+                    list.append(target, item)
+    return root
+
+
+#: The reference distinguishes `freezeRestoredObject` (index.ts:197, iterative)
+#: from `deepFreeze` (index.ts:88 in dsh-llm, which also skips AbortSignal).
+#: Python has no AbortSignal and both traversals are iterative here, so the two
+#: names share one implementation.
+freeze_restored_object = deep_freeze
 
 
 def _is_negative_zero(val: float) -> bool:
@@ -74,7 +200,7 @@ def walk_json_value(value: Any, detach: bool = False, undefined_sentinel: Any = 
                 continue
 
             # Containers: strict list
-            if type(curr) is list:
+            if type(curr) is list or type(curr) is FrozenList:
                 ptr = id(curr)
                 if ptr in ancestors:
                     return undefined_sentinel if detach else False
@@ -90,7 +216,7 @@ def walk_json_value(value: Any, detach: bool = False, undefined_sentinel: Any = 
                 continue
 
             # Containers: strict dict with str keys only
-            if type(curr) is dict:
+            if type(curr) is dict or type(curr) is FrozenDict:
                 ptr = id(curr)
                 if ptr in ancestors:
                     return undefined_sentinel if detach else False

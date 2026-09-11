@@ -13,6 +13,7 @@ import time
 from typing import Any, Dict, List, Optional, Tuple, Union
 from dsh.cordis.plugin import Plugin
 from dsh.core.session import SessionHeader, SESSION_FORMAT_VERSION
+from dsh.session.repair import migrate_legacy_event
 from dsh.session.persistence import (
     SessionFormatUnsupportedError,
     SessionInspection,
@@ -398,7 +399,14 @@ class JsonlSessionPersistence(SessionPersistence):
             raise ValueError(f'corrupt session log: first line is not a session header in "{path}"')
 
         scanned = scan_log(raw_bytes)
-        return SessionInspection(meta=scanned["meta"], events=scanned["events"])
+        # A resumable load feeds the raw rows to `Session.fromRestore`, which
+        # validates the CURRENT wrapper shape and rejects a pre-identity
+        # message. Upgrade legacy rows first, exactly like the reference
+        # session-persistence coordinator (`migrateLegacyMessageEvent`) and
+        # like this port's sqlite read path.
+        meta = scanned["meta"]
+        events = [migrate_legacy_event(ev, meta.id) for ev in scanned["events"]]
+        return SessionInspection(meta=meta, events=events)
 
     def _check_interrupted_turn(self, session_id: str, events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         open_turn: Optional[int] = None

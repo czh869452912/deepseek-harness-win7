@@ -39,6 +39,12 @@ class SessionTraceTransition:
         self.pending_calls_op = pending_calls_op
 
 
+#: `String(value)` for the nullable trace fields a failure message renders
+#: (`null` in JavaScript, never Python's `None`).
+def _js(value: Any) -> Any:
+    return "null" if value is None else value
+
+
 def _require_open_step(
     trace: SessionTrace,
     kind: str,
@@ -47,7 +53,7 @@ def _require_open_step(
     fail: Callable[[str], None],
 ) -> None:
     if trace.open_turn != turn or trace.open_step != step:
-        fail(f"{kind} names turn {turn}/step {step} but open is turn {trace.open_turn}/step {trace.open_step}")
+        fail(f"{kind} names turn {turn}/step {step} but open is turn {_js(trace.open_turn)}/step {_js(trace.open_step)}")
 
 
 def validate_event(
@@ -80,7 +86,7 @@ def validate_event(
     elif etype == "turn/end":
         ev_turn = data.get("turn")
         if trace.open_turn != ev_turn:
-            fail(f"turn/end {ev_turn} does not match open turn {trace.open_turn}")
+            fail(f"turn/end {ev_turn} does not match open turn {_js(trace.open_turn)}")
         if trace.open_step is not None:
             fail(f"turn/end {ev_turn} while step {trace.open_step} is still open")
         open_turn = None
@@ -90,7 +96,7 @@ def validate_event(
         ev_turn = data.get("turn")
         ev_step = data.get("step")
         if trace.open_turn != ev_turn:
-            fail(f"step/start in turn {ev_turn} but open turn is {trace.open_turn}")
+            fail(f"step/start in turn {ev_turn} but open turn is {_js(trace.open_turn)}")
         if trace.open_step is not None:
             fail(f"step/start {ev_step} while step {trace.open_step} is still open")
         if ev_step != trace.next_step:
@@ -181,7 +187,7 @@ class SessionInvariantPlugin(Plugin):
     name = "session-invariant"
     inject = ["invariants"]
 
-    def apply(self, ctx: Any) -> None:
+    def apply(self, ctx: Any) -> Any:
         invariants_svc = ctx.get("invariants")
         if not invariants_svc:
             return
@@ -237,7 +243,11 @@ class SessionInvariantPlugin(Plugin):
             target_ctx.on("internal/dispatch", on_dispatch, global_listener=True)
 
         if hasattr(invariants_svc, "register"):
-            invariants_svc.register(PACKAGE_NAME, installer)
+            # The registration disposer is the companion fiber's cleanup: the
+            # reference companion RETURNS it, so disposing the companion removes
+            # every listener the registration installed.
+            return invariants_svc.register(PACKAGE_NAME, installer)
+        return None
 
 
 # Module-level apply for convenience

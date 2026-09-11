@@ -8,6 +8,7 @@ from typing import Any, Dict, List
 import pytest
 
 from dsh.core.session import Session, SessionId
+from dsh.core.session.json import FrozenDict, FrozenList
 from dsh.llm.message import create_message, create_user_message, createMessage, createUserMessage
 
 
@@ -136,3 +137,26 @@ class TestSessionDeriveEventMessage:
             surface_op="append",
         )
         assert session.derive_event_message(empty) is None
+
+
+    def test_reuses_the_logged_events_already_frozen_content(self):
+        """derived-cache.spec.ts `reuses the logged event's already frozen content`."""
+        session = Session.create(SessionId("per-event-clone"))
+        session.append("turn/start", {"turn": 1})
+        event = session.append(
+            "user/message",
+            create_user_message({
+                "content": [{"type": "text", "text": "orig"}],
+                "source": {"kind": "user"},
+            }),
+            surface_op="append",
+        )
+        message = session.derive_event_message(event)
+        # The projection SHARES the logged, already frozen content rather than
+        # cloning it per event.
+        assert message["content"] is event["data"]["content"]
+        assert isinstance(message["content"], FrozenList)
+        assert isinstance(message["content"][0], FrozenDict)
+        with pytest.raises(TypeError):
+            message["content"][0]["text"] = "mutated"
+        assert session.derive_messages()[-1]["content"] == [{"type": "text", "text": "orig"}]

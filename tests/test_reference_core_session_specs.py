@@ -19,6 +19,8 @@ from dsh.core.session import (
     SessionForkError,
     SessionHeader,
     SessionStore,
+    SessionId,
+    SessionPlugin,
     canonical_header,
     fold_request_header,
     header_equals,
@@ -407,11 +409,12 @@ def test_session_reasoning_effort_and_adapter_defaults_validation():
 
 
 def test_session_rejects_non_json_data_at_source():
+    """session.spec.ts `rejects non-JSON-serializable event data at the source`."""
     session = Session.create("s-json-check")
-    with pytest.raises(TypeError, match="not losslessly JSON-serializable"):
+    with pytest.raises(ValueError, match="carries non-JSON-serializable data"):
         session.append("turn/start", {"bad": lambda x: x})
 
-    with pytest.raises(TypeError, match="not losslessly JSON-serializable"):
+    with pytest.raises(ValueError, match="carries non-JSON-serializable data"):
         session.append("turn/start", {"bad": float("inf")})
 
     assert len(session.events) == 0
@@ -427,12 +430,18 @@ def test_session_rejects_non_contiguous_seed():
 
 
 def test_session_log_isolated_from_mutation_through_derived_messages():
+    """session.spec.ts `isolates the log from mutation through a derived message`."""
     session = Session.create("isolation")
     session.append_user_message("original")
     before = json.loads(json.dumps(session.events))
 
     messages = session.derive_messages()
-    messages[0]["content"][0]["text"] = "HACKED"
+    # The derived messages ARE the already frozen durable event data, shared
+    # with the log, so a mutating consumer is rejected outright.
+    with pytest.raises(TypeError):
+        messages[0]["content"][0]["text"] = "HACKED"
+    with pytest.raises(TypeError):
+        messages[0]["content"].append({"type": "text", "text": "extra"})
 
     # Log remains unchanged
     assert session.events == before
@@ -620,17 +629,42 @@ def test_session_rejects_pre_provider_request_headers_and_assistant_on_seed():
 
 
 def test_session_prevents_reentrant_append():
-    session = Session.create("reentrant-sess")
-    ctx = Context()
-    session.ctx = ctx
+    """
+    reference session.spec.ts `contains a reentrant observer append without
+    reordering later observers`.
 
-    def on_event(sess, ev):
-        if ev["type"] == "turn/start":
-            session.append("turn/end", {"turn": 1, "reason": {"kind": "completed"}})
+    `Session.append` dispatches `session/event` only for an entry attached to a
+    store (reference index.ts `if (callbacks !== undefined && entry !== undefined)`),
+    and a reentrant append from inside an observer is contained by
+    `invokeContainedSessionObservers`: the guard message is reported through
+    `ctx.logger.warn` while the outer append stays committed and the remaining
+    observers still receive the event in registration order. The JS
+    `String(error)` prefix `Error: ` is absent because Python `str(exception)`
+    carries no type prefix (LEGAL_ADAPTATION).
+    """
+    ctx = Context()
+    SessionPlugin().apply(ctx)
+    store: SessionStore = ctx.get("sessions")
+
+    warnings = []
+    ctx.logger.warn = lambda message, *args: warnings.append(str(message))
+
+    session = store.create(SessionId("reentrant-observer"))
+    heard = []
+
+    def on_event(observed_session, event):
+        if event["type"] == "turn/start":
+            observed_session.append("request/context", {"provider": "mock", "model": "mock"})
 
     ctx.on("session/event", on_event)
+    ctx.on("session/event", lambda _observed_session, event: heard.append(event))
 
-    with pytest.raises(RuntimeError, match="cannot reenter"):
-        session.append("turn/start", {"turn": 1})
+    appended = session.append("turn/start", {"turn": 1})
+    assert session.events == [appended]
+    assert heard == [appended]
+    assert warnings == [
+        'session "reentrant-observer": session/event listener threw: '
+        "session append cannot reenter while another append is being published"
+    ]
 
 

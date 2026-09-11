@@ -818,3 +818,55 @@ class TestSurfaceManagerReplaceGeneration:
             "content": [{"type": "text", "text": "summary"}], "source": {"kind": "plugin", "plugin": "compact"},
         }), surface_op={"op": "replace", "start": nodes[0], "end": nodes[1]}, source_event_seqs=[nodes[0], nodes[1]])
         assert s.surface.replace_generation == 1
+
+
+class TestSurfaceEventProjectionFields:
+    def test_records_source_event_seqs_and_surface_op_on_the_event(self):
+        session = Session.create(SessionId("opts"))
+        session.append("turn/start", {"turn": 1})
+        session.append("step/start", {"turn": 1, "step": 1})
+        event = session.append(
+            "assistant/message",
+            {
+                "turn": 1,
+                "step": 1,
+                "message": create_message({
+                    "role": "assistant",
+                    "content": [{"type": "text", "text": "h"}],
+                    "source": {"kind": "model", "provider": "mock", "model": "mock"},
+                }),
+            },
+            surface_op="append",
+            source_event_seqs=[0, 1],
+        )
+        assert event["sourceEventSeqs"] == [0, 1]
+        assert event["surfaceOp"] == "append"
+        # The logged event matches the returned event.
+        assert session.events[2]["sourceEventSeqs"] == [0, 1]
+        assert session.events[2]["surfaceOp"] == "append"
+
+    def test_a_non_surface_event_carries_no_surface_fields(self):
+        session = Session.create(SessionId("noopts"))
+        session.append("turn/start", {"turn": 1})
+        assert session.events[0].get("sourceEventSeqs") is None
+        assert session.events[0].get("surfaceOp") is None
+
+    def test_surface_op_primitives_are_not_cloned(self):
+        session = Session.create(SessionId("prim"))
+        event = session.append(
+            "assistant/message",
+            {
+                "turn": 1,
+                "step": 1,
+                "message": create_message({
+                    "role": "assistant",
+                    "content": [],
+                    "source": {"kind": "model", "provider": "mock", "model": "mock"},
+                }),
+            },
+            surface_op="append",
+        )
+        # `'append'` is an immutable primitive: it is recorded by value, and the
+        # recorded marker is the canonical string.
+        assert event["surfaceOp"] == "append"
+        assert type(event["surfaceOp"]) is str

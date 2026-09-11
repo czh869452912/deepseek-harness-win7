@@ -9,7 +9,13 @@ import os
 import time
 from typing import Any, Dict, FrozenSet, Iterator, List, Optional, Sequence, Union
 
-from dsh.core.session.json import is_json_value, snapshot_json_value
+from dsh.core.session.json import (
+    UNDEFINED,
+    deep_freeze,
+    is_json_value,
+    snapshot_json_value,
+    walk_json_value,
+)
 
 SESSION_FORMAT_VERSION = 0
 
@@ -169,12 +175,32 @@ class SessionHeader:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "SessionHeader":
-        sid = str(data.get("id", "default-session"))
-        return validate_session_header(sid, data)
+        """
+        Materialize a store-shaped header record (reference index.ts:875-885)
+        from a partial metadata mapping, then validate it.
+
+        Port-only convenience: the reference store is the only thing that
+        builds a header and it always fills `version`/`id`/`createdAt` itself.
+        This helper does the same instead of loosening
+        {@link validate_session_header}, which stays exactly as strict as the
+        reference validator.
+        """
+        record = dict(data)
+        sid = str(record.get("id", "default-session"))
+        record.setdefault("version", SESSION_FORMAT_VERSION)
+        record.setdefault("id", sid)
+        if record.get("createdAt") is None:
+            record["createdAt"] = int(time.time() * 1000)
+        return validate_session_header(sid, record)
+
+
+def _is_safe_int(val: Any) -> bool:
+    """`Number.isSafeInteger(val)` for the value kinds a JSON number can hold."""
+    return isinstance(val, int) and not isinstance(val, bool) and -0x1FFFFFFFFFFFFF <= val <= 0x1FFFFFFFFFFFFF
 
 
 def _is_safe_non_negative_int(val: Any) -> bool:
-    return isinstance(val, int) and not isinstance(val, bool) and 0 <= val <= 0x1FFFFFFFFFFFFF
+    return _is_safe_int(val) and val >= 0
 
 
 def _has_provider_model(obj: Any) -> bool:
@@ -205,18 +231,26 @@ def assert_session_event_envelope(event: Any, index: Optional[int] = None) -> No
     if not _is_safe_non_negative_int(seq):
         raise ValueError(f"{subject} has an invalid event envelope")
 
+    # The reference checks only `Number.isSafeInteger(time)`: a back-dated
+    # (negative) clock reading is a legal envelope value, unlike `seq`.
     ev_time = event.get("time")
-    if not _is_safe_non_negative_int(ev_time):
+    if not _is_safe_int(ev_time):
         raise ValueError(f"{subject} has an invalid event envelope")
 
-    data = event.get("data")
-    if data is None:
+    # `undefined` is rejected, a literal JSON `null` is NOT: the reference test
+    # `event['data'] === undefined` accepts `data: null` (session.spec.ts
+    # `rejects pre-provider request headers ... on seed/load` adopts a
+    # `plugin/event` seed whose data is null verbatim).
+    if "data" not in event:
         raise ValueError(f"{subject} has an invalid event envelope")
 
 
 def assert_adapter_defaults(defaults: Any, config: Any, index: Optional[int] = None) -> None:
     subject = f"seed request/header at index {index}" if index is not None else "request/header"
-    if defaults is None:
+    # Only an ABSENT marker returns early; the reference `value === undefined`
+    # check exists precisely so that a durable `null` marker is rejected as
+    # "invalid adapterDefaults" instead of passing as "no markers".
+    if defaults is UNDEFINED:
         return
     if not isinstance(defaults, dict) or isinstance(defaults, list):
         raise ValueError(f"{subject} has invalid adapterDefaults")
@@ -235,7 +269,10 @@ def assert_message_event_shape(event: Dict[str, Any], subject: str) -> None:
         raise ValueError(f"{subject} lacks an identified message")
 
     if etype == "user/message":
-        msg = data.get("message") if isinstance(data.get("message"), dict) else data
+        # A `user/message` carries the message INLINE: the reference reads
+        # `const message = type === 'user/message' ? record : record?.['message']`,
+        # so a nested `data.message` is never consulted for this type.
+        msg = data
         msg_id = msg.get("id")
         if not isinstance(msg_id, str) or len(msg_id) == 0:
             raise ValueError(f"{subject} lacks an identified message")
@@ -327,62 +364,106 @@ def assert_supported_request_header(etype: str, data: Any, location: str = "requ
         raise ValueError(f'{location} uses unsupported legacy request/header reason "fallback"')
 
 
+def _js_string(value: Any) -> str:
+    """`String(value)` for the value kinds a header field can hold."""
+    if value is None:
+        return "null"
+    if value is True:
+        return "true"
+    if value is False:
+        return "false"
+    if isinstance(value, str):
+        return value
+    if type(value) is float and value.is_integer():
+        return str(int(value))
+    return str(value)
+
+
 def validate_session_header(session_id: str, input_data: Any) -> SessionHeader:
-    """Validate plain dictionary session header against schema rules."""
+    """
+    Validate one detached session header, 1:1 with reference
+    `validateSessionHeader` (index.ts:96-136):
+
+    - `version`, `id` and `createdAt` are REQUIRED. The reference compares the
+      read value against the expected one, so an omitted field is a mismatch
+      (`String(undefined)` is rendered in the message), never a default.
+    - only the canonical camelCase keys are read: snake_case aliases are not
+      part of the storage contract and are ignored.
+    - an explicitly supplied `null` for an optional field is a type error
+      (`typeof null !== 'string'`), so "omitted" is tracked with the
+      `undefined` sentinel rather than with `None`.
+    - `seedLength`/`delegationDepth` are validated BEFORE any numeric
+      conversion, so `"1"`, `0.5` and `-1` are rejected rather than coerced.
+    """
     if isinstance(input_data, SessionHeader):
         input_data = input_data.to_dict()
-    elif not isinstance(input_data, dict):
+    if input_data is None or not isinstance(input_data, dict):
         raise ValueError("session header is not a plain JSON record")
-    version = input_data.get("version", SESSION_FORMAT_VERSION)
-    if version != SESSION_FORMAT_VERSION:
-        raise ValueError(f"session header version must be {SESSION_FORMAT_VERSION}, got {version}")
-    hid = input_data.get("id", session_id)
-    if hid != session_id:
-        raise ValueError(f'session header id "{hid}" does not match session id "{session_id}"')
 
-    raw_created = input_data.get("createdAt")
-    if raw_created is None:
-        raw_created = input_data.get("created_at")
-    created_at = int(raw_created) if raw_created is not None else int(time.time() * 1000)
-    if not _is_safe_non_negative_int(created_at):
+    raw_version = input_data.get("version", UNDEFINED)
+    if type(raw_version) is not int or raw_version != SESSION_FORMAT_VERSION:
+        raise ValueError(
+            f"session header version must be {SESSION_FORMAT_VERSION}, got {_js_string(raw_version)}"
+        )
+
+    raw_id = input_data.get("id", UNDEFINED)
+    if raw_id != session_id:
+        raise ValueError(
+            f'session header id "{_js_string(raw_id)}" does not match session id "{session_id}"'
+        )
+
+    raw_created = input_data.get("createdAt", UNDEFINED)
+    if not _is_safe_non_negative_int(raw_created):
         raise ValueError("session header createdAt must be a non-negative safe integer")
+    created_at: int = raw_created
 
-    cwd = input_data.get("cwd")
-    if cwd is not None:
-        if not isinstance(cwd, str):
+    cwd: Optional[str] = None
+    raw_cwd = input_data.get("cwd", UNDEFINED)
+    if raw_cwd is not UNDEFINED:
+        if not isinstance(raw_cwd, str):
             raise ValueError("session header cwd must be a string")
-        if not os.path.isabs(cwd):
-            raise ValueError(f'session header cwd must be an absolute path, got "{cwd}"')
+        if not os.path.isabs(raw_cwd):
+            raise ValueError(f'session header cwd must be an absolute path, got "{raw_cwd}"')
+        cwd = raw_cwd
 
-    parent_session = input_data.get("parentSession") or input_data.get("parent_session")
-    if parent_session is not None and not isinstance(parent_session, str):
-        raise ValueError("session header parentSession must be a string")
+    parent_session: Optional[str] = None
+    raw_parent = input_data.get("parentSession", UNDEFINED)
+    if raw_parent is not UNDEFINED:
+        if not isinstance(raw_parent, str):
+            raise ValueError("session header parentSession must be a string")
+        parent_session = raw_parent
 
-    raw_seed_len = input_data.get("seedLength")
-    if raw_seed_len is None:
-        raw_seed_len = input_data.get("seed_length")
-    seed_length = int(raw_seed_len) if raw_seed_len is not None else None
-    if seed_length is not None and not _is_safe_non_negative_int(seed_length):
-        raise ValueError("session header seedLength must be a non-negative safe integer")
+    seed_length: Optional[int] = None
+    raw_seed_len = input_data.get("seedLength", UNDEFINED)
+    if raw_seed_len is not UNDEFINED:
+        if not _is_safe_non_negative_int(raw_seed_len):
+            raise ValueError("session header seedLength must be a non-negative safe integer")
+        seed_length = raw_seed_len
 
-    origin = input_data.get("origin")
-    if origin is not None and origin != "subagent":
-        raise ValueError('session header origin must be "subagent"')
+    origin: Optional[str] = None
+    raw_origin = input_data.get("origin", UNDEFINED)
+    if raw_origin is not UNDEFINED:
+        if raw_origin != "subagent":
+            raise ValueError('session header origin must be "subagent"')
+        origin = raw_origin
 
-    raw_depth = input_data.get("delegationDepth")
-    if raw_depth is None:
-        raw_depth = input_data.get("delegation_depth")
-    delegation_depth = int(raw_depth) if raw_depth is not None else None
-    if delegation_depth is not None and not _is_safe_non_negative_int(delegation_depth):
-        raise ValueError("session header delegationDepth must be a non-negative safe integer")
+    delegation_depth: Optional[int] = None
+    raw_depth = input_data.get("delegationDepth", UNDEFINED)
+    if raw_depth is not UNDEFINED:
+        if not _is_safe_non_negative_int(raw_depth):
+            raise ValueError("session header delegationDepth must be a non-negative safe integer")
+        delegation_depth = raw_depth
 
-    agent_preset = input_data.get("agentPreset") or input_data.get("agent_preset")
-    if agent_preset is not None and not isinstance(agent_preset, str):
-        raise ValueError("session header agentPreset must be a string")
+    agent_preset: Optional[str] = None
+    raw_preset = input_data.get("agentPreset", UNDEFINED)
+    if raw_preset is not UNDEFINED:
+        if not isinstance(raw_preset, str):
+            raise ValueError("session header agentPreset must be a string")
+        agent_preset = raw_preset
 
     return SessionHeader(
         session_id=session_id,
-        version=version,
+        version=raw_version,
         created_at=created_at,
         cwd=cwd,
         parent_session=parent_session,
@@ -398,33 +479,63 @@ def validate_restored_session_header(session_id: str, input_data: Any) -> Sessio
     return validate_session_header(session_id, input_data)
 
 
-def snapshot_session_header(session_id: str, source: Optional[Any] = None) -> SessionHeader:
-    """Detach, validate, and freeze creation metadata published by a session."""
-    raw = (
+def snapshot_session_header(session_id: str, source: Any = UNDEFINED) -> SessionHeader:
+    """
+    Detach, validate, and freeze creation metadata published by a session.
+
+    `source` distinguishes an omitted header (the `undefined` overload slot, which
+    receives the minimal current-version default) from an explicit non-record such
+    as `None`/`1`, which the header validator rejects as "not a plain JSON
+    record", exactly like reference `snapshotSessionHeader(id, source)`.
+    """
+    if isinstance(source, SessionHeader):
+        source = source.to_dict()
+    raw: Any = (
         {"version": SESSION_FORMAT_VERSION, "id": session_id, "createdAt": int(time.time() * 1000)}
-        if source is None
-        else (source.to_dict() if isinstance(source, SessionHeader) else dict(source))
+        if source is UNDEFINED
+        else source
     )
-    snap = snapshot_json_value(raw)
-    if snap is None:
+    # A JSON `null` is a VALID snapshot payload, so the invalid-payload signal
+    # must be the detach sentinel itself rather than `None`.
+    snap = walk_json_value(raw, detach=True, undefined_sentinel=UNDEFINED)
+    if snap is UNDEFINED:
         raise ValueError("session header is not losslessly JSON-serializable")
     return validate_session_header(session_id, snap)
 
 
 def adopt_session_event(event: Dict[str, Any]) -> Dict[str, Any]:
-    """Adopt a live session event after envelope and shape validation."""
+    """
+    Validate an exclusively owned event and deeply freeze its identified message
+    without copying the event, 1:1 with reference `adoptSessionEvent`
+    (index.ts:167-185): a `user/message` freezes its whole `data`, while
+    `assistant/message` and `tool/result` freeze the identified `data.message`
+    and leave `usage`/`timing`/`meta` untouched.
+    """
     assert_session_event_envelope(event)
     assert_current_llm_shape(event)
+    etype = event.get("type")
+    data = event.get("data")
+    if type(data) is dict:
+        if etype == "user/message":
+            event["data"] = deep_freeze(data)
+        elif etype in ("assistant/message", "tool/result"):
+            message = data.get("message")
+            if type(message) is dict:
+                data["message"] = deep_freeze(message)
     return event
 
 
 def snapshot_session_event(event: Dict[str, Any]) -> Dict[str, Any]:
-    """Return a deep snapshot of an event after validating its envelope."""
+    """
+    Return a detached, deeply frozen event snapshot, 1:1 with reference
+    `snapshotSessionEvent` (index.ts:192-194): a JSON-materializing detach
+    (`structuredClone`) followed by {@link adopt_session_event}.
+    """
     assert_session_event_envelope(event)
     snap = snapshot_json_value(event)
     if snap is None:
         raise TypeError("event is not losslessly JSON-serializable")
-    return snap
+    return adopt_session_event(snap)
 
 
 # CamelCase aliases 1:1 with reference

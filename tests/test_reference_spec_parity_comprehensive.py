@@ -183,7 +183,7 @@ def test_session_fork_history_immutability():
     forked = sessions.create("forked-session", parent_session_id=parent.session_id)
     # Copy history from parent up to current seq
     for ev in parent.events:
-        forked.append(ev["type"], dict(ev.get("data", {})), surface_op=ev.get("surface_op"))
+        forked.append(ev["type"], dict(ev.get("data", {})), surface_op=ev.get("surfaceOp"))
 
     assert len(forked.events) == 2
     assert forked.parent_session_id == parent.session_id

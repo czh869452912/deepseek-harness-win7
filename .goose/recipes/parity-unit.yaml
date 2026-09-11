@@ -17,7 +17,7 @@ parameters:
   - key: migrator_model
     input_type: string
     requirement: optional
-    default: "deepseek-v4-flash"
+    default: "deepseek-flash"
     description: "Model used for implementation/fix rounds."
 
   - key: reviewer_provider
@@ -46,13 +46,17 @@ parameters:
 
 settings:
   goose_provider: "custom_deepseek"
-  goose_model: "deepseek-v4-flash"
+  goose_model: "deepseek-flash"
   temperature: 0.0
   max_turns: 40
 
 extensions:
   - type: platform
     name: summon
+  - type: platform
+    name: developer
+  - type: platform
+    name: analyze
 
 instructions: |
   You are the coordinator for a strict 1:1 source-porting verification pipeline.
@@ -66,6 +70,10 @@ instructions: |
   - `parity-judge`: expensive arbitration agent, used only on genuine disagreement / escalation
 
   Always use Goose `delegate` with `source` set to the required named agent. Each delegated run is an isolated subagent session.
+
+  Every delegation, including corrections and final verification, MUST explicitly
+  repeat the role-specific provider, model, extensions, and max_turns below.
+  Use synchronous delegation (async: false) and wait for its result before the next phase.
 
   ## Mandatory state machine
 

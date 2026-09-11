@@ -1,0 +1,34 @@
+version: "1.0.0"
+title: "Parity routing smoke check"
+description: "Read-only verification of named agents, model routing and developer tools."
+settings:
+  goose_provider: custom_deepseek
+  goose_model: deepseek-flash
+  temperature: 0.0
+  max_turns: 12
+extensions:
+  - type: platform
+    name: summon
+  - type: platform
+    name: developer
+  - type: platform
+    name: analyze
+instructions: |
+  This is a configuration smoke check, not a migration or parity verdict.
+  Sequentially delegate to each named agent with async=false and max_turns=5:
+  1. source=parity-migrator, provider=custom_deepseek, model=deepseek-flash
+  2. source=parity-reviewer, provider=openai, model=gpt-5.6-luna
+  3. source=parity-judge, provider=openai, model=gpt-5.6-sol
+  For every call set extensions=["developer", "analyze"].
+  Give each agent ONLY these smoke instructions:
+  "This is an authorized routing/tool smoke check, not a migration, review or
+  arbitration. Do not execute your normal parity procedure. Use developer's
+  shell tool with powershell.exe -NoProfile -Command "Get-Content -LiteralPath
+  AGENTS.md -Encoding UTF8 -TotalCount 3" to read the root AGENTS.md.
+  This read-only command is the only shell command allowed. Do not edit files.
+  Report SMOKE_OK, your role, the first
+  heading you actually read, and whether analyze tools are available."
+  Do not replace missing agents with anonymous agents. A failed delegation,
+  missing tool, or missing file-read evidence means failure. Report each result
+  and finish with SMOKE_PASS only if all three checks succeeded, else SMOKE_FAIL.
+prompt: "Run the three named-agent smoke checks now. Do not perform migration work."

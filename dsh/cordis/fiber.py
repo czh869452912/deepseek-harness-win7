@@ -144,9 +144,27 @@ class Fiber:
                     if config is not None:
                         self.ctx._intercept_map[name] = config
 
+            if runtime is not None:
+                runtime.add_fiber(self)
+
             parent_fiber = getattr(parent_ctx, "fiber", None) if parent_ctx else None
             if parent_fiber is not None and parent_fiber is not self:
                 parent_fiber.effect(lambda: (lambda: self.dispose()), label="ctx.plugin()")
+
+            try:
+                if self.ctx and hasattr(self.ctx, "emit"):
+                    self.ctx.emit("internal/plugin", self)
+            except Exception as error:
+                if runtime is not None:
+                    runtime.remove_fiber(self)
+                    if not runtime.fibers and parent_ctx and hasattr(parent_ctx, "registry"):
+                        parent_ctx.registry._runtimes.pop(runtime.callback, None)
+                try:
+                    loop = asyncio.get_running_loop()
+                    loop.create_task(self.dispose())
+                except RuntimeError:
+                    pass
+                raise error
         else:
             # Root Fiber (runtime is None)
             self.uid = 0
@@ -160,12 +178,6 @@ class Fiber:
         while fiber is not None:
             if getattr(fiber, "runtime", None) and getattr(fiber.runtime, "name", None):
                 return fiber.runtime.name
-            plugin = getattr(fiber, "plugin", None)
-            if plugin:
-                if hasattr(plugin, "name") and plugin.name:
-                    return plugin.name
-                if hasattr(plugin, "id") and plugin.id:
-                    return plugin.id
             parent_ctx = getattr(fiber, "parent", None)
             if not parent_ctx:
                 break
@@ -745,39 +757,28 @@ class Fiber:
                     except RuntimeError:
                         pass
 
+            def _invoke_apply(fn: Callable[..., Any]) -> Any:
+                call_single = False
+                try:
+                    sig = inspect.signature(fn)
+                    params = [p for name, p in sig.parameters.items() if name != "self" and p.kind not in (inspect.Parameter.VAR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)]
+                    has_varargs = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
+                    if len(params) == 1 and not has_varargs:
+                        call_single = True
+                except (ValueError, TypeError):
+                    pass
+                if call_single:
+                    return fn(self.ctx)
+                return fn(self.ctx, self.config)
+
             res = None
             from dsh.cordis.service import Service
             if hasattr(self.plugin, "apply") and callable(self.plugin.apply):
-                take_two = False
-                try:
-                    sig = inspect.signature(self.plugin.apply)
-                    params = [p for name, p in sig.parameters.items() if name != "self" and p.kind not in (inspect.Parameter.VAR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)]
-                    has_varargs = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
-                    if len(params) >= 2 or has_varargs:
-                        take_two = True
-                except (ValueError, TypeError):
-                    take_two = False
-                if take_two:
-                    res = self.plugin.apply(self.ctx, self.config)
-                else:
-                    res = self.plugin.apply(self.ctx)
+                res = _invoke_apply(self.plugin.apply)
             elif isinstance(self.plugin, dict) and callable(self.plugin.get("apply")):
-                apply_fn = self.plugin["apply"]
-                take_two = False
-                try:
-                    sig = inspect.signature(apply_fn)
-                    params = [p for name, p in sig.parameters.items() if name != "self" and p.kind not in (inspect.Parameter.VAR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)]
-                    has_varargs = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
-                    if len(params) >= 2 or has_varargs:
-                        take_two = True
-                except (ValueError, TypeError):
-                    take_two = False
-                if take_two:
-                    res = apply_fn(self.ctx, self.config)
-                else:
-                    res = apply_fn(self.ctx)
+                res = _invoke_apply(self.plugin["apply"])
             elif not isinstance(self.plugin, Service) and callable(self.plugin):
-                res = self.plugin(self.ctx, self.config)
+                res = _invoke_apply(self.plugin)
 
             if res is not None:
                 if inspect.isawaitable(res):
@@ -788,6 +789,8 @@ class Fiber:
                                 self.disposable(ret)
                             elif inspect.isgenerator(ret) or inspect.isasyncgen(ret):
                                 self.effect(lambda r=ret: r, label=f"apply({self.name})")
+                            elif ret is not None:
+                                raise TypeError("Invalid effect")
                             if self.epoch != epoch or self.state in (FiberState.UNLOADING, FiberState.DISPOSED):
                                 self.set_state(FiberState.UNLOADING)
                                 self._unload()
@@ -814,10 +817,14 @@ class Fiber:
                             self.disposable(ret)
                         elif inspect.isgenerator(ret) or inspect.isasyncgen(ret):
                             self.effect(lambda r=ret: r, label=f"apply({self.name})")
+                        elif ret is not None:
+                            raise TypeError("Invalid effect")
                 elif inspect.isgenerator(res) or inspect.isasyncgen(res):
                     self.effect(lambda r=res: r, label=f"apply({self.name})")
                 elif callable(res):
                     self.disposable(res)
+                elif res is not None:
+                    raise TypeError("Invalid effect")
 
             self._error = None
             self.set_state(FiberState.ACTIVE)
@@ -1031,35 +1038,35 @@ class Fiber:
                 return self.ctx.waterfall_sync("internal/update", resolved_config, no_save, _do_update, caller_ctx=self.ctx)
         return _do_update()
 
-    def restart(self, new_config: Optional[Any] = None) -> Any:
-        """Dispose and immediately reload this plugin with current or new config matching TS fiber.restart()."""
-        self.assert_active(check_error=False)
-        if new_config is not None:
-            self._config = new_config
+    def restart(self) -> Any:
+        """Dispose and immediately reload this plugin matching TS fiber.restart()."""
+        self.assert_active()
         self.set_epoch(INACTIVE_EPOCH)
-        for name in list(self.inject.keys()):
-            self._checkImpl(name)
         self._refresh()
 
-        async def _wait_settled():
-            while self.inertia is not None and not self.inertia.done():
-                await self.inertia
-            if hasattr(self, "_in_flight_effects"):
-                for t in list(self._in_flight_effects):
-                    if not t.done():
-                        try:
-                            await t
-                        except Exception:
-                            pass
-            if self._error:
-                raise self._error
-            return None
+        async def _do_restart() -> "Fiber":
+            await self.await_settled()
+            return self
 
         try:
             loop = asyncio.get_running_loop()
-            return loop.create_task(_wait_settled())
+            return loop.create_task(_do_restart())
         except RuntimeError:
-            return None
+            class _SyncResolvedFuture:
+                def __init__(self, result: Any):
+                    self._result = result
+                def __await__(self):
+                    async def _coro():
+                        return self._result
+                    return _coro().__await__()
+                def result(self):
+                    return self._result
+                def done(self):
+                    return True
+                def add_done_callback(self, fn: Callable[..., Any]):
+                    fn(self)
+
+            return _SyncResolvedFuture(self)
 
     async def await_settled(self) -> "Fiber":
         """Wait for current lifecycle transitions to settle."""

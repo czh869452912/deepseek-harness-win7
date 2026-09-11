@@ -79,10 +79,12 @@ def inject(name_or_deps: Any = None, config: Optional[Any] = None) -> Callable[[
             @functools.wraps(target)
             def wrapper(self_or_ctx: Any, *args: Any, **kwargs: Any) -> Any:
                 ctx = getattr(self_or_ctx, "ctx", self_or_ctx)
-                if ctx and hasattr(ctx, "has"):
-                    for dep in target._cordis_inject.keys():
-                        if not ctx.has(dep):
-                            raise RuntimeError(f"Cannot call method '{target.__name__}' without injected service '{dep}'")
+                if ctx and hasattr(ctx, "has") and hasattr(ctx, "inject"):
+                    missing = [dep for dep in target._cordis_inject.keys() if not ctx.has(dep)]
+                    if missing:
+                        def _on_ready(injected_ctx: Any) -> Any:
+                            return target(self_or_ctx, *args, **kwargs)
+                        return ctx.inject(missing, _on_ready)
                 return target(self_or_ctx, *args, **kwargs)
 
             wrapper._cordis_inject = target._cordis_inject
@@ -179,7 +181,11 @@ class RegistryService:
 
     def get_fiber(self, plugin_id_or_name: str) -> Optional[Fiber]:
         for fiber in self.list_fibers():
-            if fiber.name == plugin_id_or_name or getattr(fiber.plugin, "id", None) == plugin_id_or_name:
+            if (
+                fiber.name == plugin_id_or_name
+                or getattr(fiber.plugin, "id", None) == plugin_id_or_name
+                or getattr(getattr(fiber, "_plugin_cls", None), "id", None) == plugin_id_or_name
+            ):
                 return fiber
         return None
 
@@ -281,14 +287,14 @@ class RegistryService:
 
         runtime = self._runtimes.get(callback)
         if not runtime:
-            name = getattr(plugin_cls_or_instance, "name", None) or getattr(plugin_cls_or_instance, "id", None)
+            name = getattr(plugin_cls_or_instance, "name", None)
             if not name and isinstance(plugin_cls_or_instance, dict):
-                name = plugin_cls_or_instance.get("name") or plugin_cls_or_instance.get("id")
+                name = plugin_cls_or_instance.get("name")
             if name == "apply":
                 name = None
-            cfg_schema = getattr(plugin_cls_or_instance, "Config", None) or getattr(plugin_cls_or_instance, "schema", None)
+            cfg_schema = getattr(plugin_cls_or_instance, "Config", None)
             if isinstance(plugin_cls_or_instance, dict):
-                cfg_schema = cfg_schema or plugin_cls_or_instance.get("Config") or plugin_cls_or_instance.get("schema")
+                cfg_schema = cfg_schema or plugin_cls_or_instance.get("Config")
             runtime = PluginRuntime(callback=callback, name=name, Config=cfg_schema)
             self._runtimes[callback] = runtime
 
@@ -373,19 +379,6 @@ class RegistryService:
                     pass
         runtime.add_fiber(fiber)
 
-        try:
-            target_ctx.emit("internal/plugin", fiber)
-        except Exception as e:
-            runtime.remove_fiber(fiber)
-            if not runtime.fibers:
-                self._runtimes.pop(callback, None)
-            try:
-                loop = asyncio.get_running_loop()
-                loop.create_task(fiber.dispose())
-            except RuntimeError:
-                pass
-            raise e
-
         # Evaluate dependencies via composite epoch refresh
         for name in list(fiber.inject.keys()):
             fiber._checkImpl(name)
@@ -433,18 +426,21 @@ class RegistryService:
             if names:
                 self.ctx.reflect.notify(list(names))
 
-    async def unload_plugin(self, plugin_id: str) -> bool:
+    async def unload_plugin(self, target: Any) -> bool:
         """
-        Unload and dispose a plugin by id or callback name.
+        Unload and dispose a plugin by plugin object, callback, or name matching TS registry.delete.
         """
+        callback = self.resolve(target) if target is not None else None
+        if callback is not None and callback in self._runtimes:
+            runtime = await self.delete_async(callback)
+            return runtime is not None
+
         for runtime in list(self._runtimes.values()):
+            if runtime.name == target or runtime.callback == target:
+                res = await self.delete_async(runtime.callback)
+                return res is not None
             for fiber in list(runtime.fibers):
-                if fiber.name == plugin_id or getattr(fiber.plugin, "id", None) == plugin_id:
-                    runtime.remove_fiber(fiber)
-                    if fiber in self._pending_fibers:
-                        self._pending_fibers.remove(fiber)
-                    await fiber.dispose()
-                    if not runtime.fibers:
-                        self._runtimes.pop(runtime.callback, None)
-                    return True
+                if target in (fiber.name, getattr(fiber.plugin, "id", None), getattr(fiber.plugin, "name", None)):
+                    res = await self.delete_async(runtime.callback)
+                    return res is not None
         return False

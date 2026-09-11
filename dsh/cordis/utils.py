@@ -3,6 +3,8 @@ Cordis Utilities matching reference/vendor/cordis/src/utils.ts
 Implements DisposableList, Symbol constants, Traceable proxy, and Stack builders.
 """
 
+import base64
+import binascii
 import copy
 import functools
 import inspect
@@ -12,7 +14,8 @@ import re
 import datetime
 import time
 import traceback
-from typing import Any, Callable, Dict, Generic, Iterator, List, Optional, Set, Tuple, TypeVar
+import types
+from typing import Any, Callable, Dict, Generic, Iterator, List, Optional, Set, Tuple, TypeVar, Union
 
 T = TypeVar("T")
 
@@ -542,6 +545,18 @@ class Time:
             m = parts[1] if len(parts) > 1 else 0
             s = parts[2] if len(parts) > 2 else 0
             return now.replace(hour=h, minute=m, second=s, microsecond=0)
+        m_triple = re.match(r"^(\d{1,2})-(\d{1,2})-(\d{1,2}(?::\d{1,2}){1,2})$", date_str)
+        if m_triple:
+            month = int(m_triple.group(1))
+            day = int(m_triple.group(2))
+            time_parts = [int(p) for p in m_triple.group(3).split(":")]
+            h = time_parts[0]
+            m = time_parts[1] if len(time_parts) > 1 else 0
+            s = time_parts[2] if len(time_parts) > 2 else 0
+            try:
+                return now.replace(month=month, day=day, hour=h, minute=m, second=s, microsecond=0)
+            except ValueError:
+                return now
         return now
 
     parseDate = parse_date
@@ -876,3 +891,88 @@ def get_isolate_symbol(ctx: Any, name: str) -> Any:
     if hasattr(ctx, "root") and hasattr(ctx.root, "_isolated_keys"):
         return ctx.root._isolated_keys.get(name)
     return None
+
+
+def is_(type_str: str, value: Any = Ellipsis) -> Any:
+    """Type predicate factory matching Cosmokit is()."""
+    type_map = {
+        "String": str,
+        "Number": (int, float),
+        "Boolean": bool,
+        "Function": (types.FunctionType, types.MethodType, types.BuiltinFunctionType),
+        "Array": list,
+        "Object": dict,
+        "Date": datetime.datetime,
+        "RegExp": type(re.compile("")),
+    }
+
+    def _check(val: Any) -> bool:
+        expected = type_map.get(type_str)
+        if expected is not None:
+            return isinstance(val, expected)
+        return type(val).__name__ == type_str or type(val).__name__.capitalize() == type_str
+
+    if value is Ellipsis:
+        return _check
+    return _check(value)
+
+
+class Binary:
+    """Binary buffer and encoding helpers matching Cosmokit Binary."""
+
+    @staticmethod
+    def is_source(source: Any) -> bool:
+        return isinstance(source, (bytes, bytearray, memoryview))
+
+    isSource = is_source
+
+    @staticmethod
+    def to_base64(source: Union[bytes, bytearray, memoryview]) -> str:
+        if isinstance(source, memoryview):
+            source = source.tobytes()
+        elif isinstance(source, bytearray):
+            source = bytes(source)
+        return base64.b64encode(source).decode("ascii")
+
+    toBase64 = to_base64
+
+    @staticmethod
+    def from_base64(source: str) -> bytes:
+        return base64.b64decode(source)
+
+    fromBase64 = from_base64
+
+    @staticmethod
+    def to_hex(source: Union[bytes, bytearray, memoryview]) -> str:
+        if isinstance(source, memoryview):
+            source = source.tobytes()
+        elif isinstance(source, bytearray):
+            source = bytes(source)
+        return binascii.hexlify(source).decode("ascii")
+
+    toHex = to_hex
+
+    @staticmethod
+    def from_hex(source: str) -> bytes:
+        return binascii.unhexlify(source)
+
+    fromHex = from_hex
+
+
+def define_property(obj: Any, key: str, value: Any) -> Any:
+    """Set non-enumerable / internal property on obj matching Cosmokit defineProperty."""
+    try:
+        setattr(obj, key, value)
+    except (AttributeError, TypeError):
+        pass
+    return obj
+
+defineProperty = define_property
+
+
+def map_values(source: Dict[str, Any], callback: Callable[[Any, str], Any]) -> Dict[str, Any]:
+    """Transform values of a dict matching Cosmokit mapValues."""
+    return {k: callback(v, k) for k, v in source.items()}
+
+mapValues = map_values
+value_map = map_values

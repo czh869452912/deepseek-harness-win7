@@ -292,7 +292,7 @@ def test_reflect_duplicate_provide_rejection():
     root_ctx.plugin(Plugin2())
 
     assert len(errors) == 1
-    assert "service 'exclusiveService' has been registered at <provider-1>" in str(errors[0])
+    assert 'service "exclusiveService" has been registered at <provider-1>' in str(errors[0]) or "service 'exclusiveService' has been registered at <provider-1>" in str(errors[0])
 
 
 # ==============================================================================

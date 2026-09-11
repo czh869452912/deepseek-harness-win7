@@ -39,13 +39,7 @@ class Context:
         """
         if value is None:
             return False
-        if getattr(value, "__cordis_context_brand__", None) == "cordis.v1.context":
-            return True
-        return isinstance(value, Context) or (
-            hasattr(value, "registry")
-            and hasattr(value, "reflect")
-            and hasattr(value, "extend")
-        )
+        return getattr(value, "__cordis_context_brand__", None) == "cordis.v1.context"
 
     @classmethod
     def is_context(cls, value: Any) -> bool:
@@ -97,7 +91,6 @@ class Context:
             self.timer = TimerService(self)
             self.reflect.setup_mixins()
             self.fiber._disposables.clear()
-            self.fiber._effect_metas.clear()
 
     @property
     def parent(self) -> Optional["Context"]:
@@ -132,6 +125,19 @@ class Context:
                 chk = service_instance._check_availability
             elif hasattr(service_instance, "check") and callable(service_instance.check):
                 chk = service_instance.check
+
+        from dsh.cordis.utils import get_isolate_symbol
+        key = get_isolate_symbol(self, name) or (getattr(self.root, "_isolated_keys", {}).get(name) if hasattr(self, "root") else name)
+        if hasattr(self, "reflect") and hasattr(self.reflect, "store"):
+            if key in self.reflect.store:
+                impl = self.reflect.store[key]
+                if chk is not None:
+                    impl.check = chk
+                if impl.value is service_instance and chk is None:
+                    return
+                impl.value = service_instance
+                self.reflect.notify([name])
+                return
 
         self.reflect.provide(self, name, service_instance, check=chk, allow_replace=True)
 
@@ -324,26 +330,31 @@ class Context:
         child = Context(parent=self, is_extension=True, strict_inject=self.strict_inject, base_url=self.baseUrl)
         child._isolated_keys = dict(self._isolated_keys)
         child._intercept_map = dict(self._intercept_map)
+        shadow = getattr(self, "_shadow", None)
+        if shadow is not None:
+            child._shadow = shadow
         if meta:
             for k, v in meta.items():
                 setattr(child, k, v)
         return child
 
-    def isolate(self, name_or_keys: Union[str, List[str], Dict[str, Any]] = None, label: Any = None, keys: Optional[List[str]] = None) -> "Context":
+    def isolate(self, name: Optional[Union[str, List[str]]] = None, label: Any = None, **kwargs: Any) -> "Context":
         """
-        Create a child context isolated from parent for specific service keys matching TS Context.isolate.
+        Create a child context isolated from parent for a specific service key matching TS Context.isolate.
         """
-        shadow = dict(self._isolated_keys)
-        target_keys = keys if keys is not None else name_or_keys
-        if isinstance(target_keys, str):
-            shadow[target_keys] = label or object()
-        elif isinstance(target_keys, list):
-            for k in target_keys:
-                shadow[k] = label or object()
-        elif isinstance(target_keys, dict):
-            for k, v in target_keys.items():
-                shadow[k] = v
+        keys = kwargs.get("keys")
+        if keys is not None:
+            name_list = keys
+        elif isinstance(name, list):
+            name_list = name
+        elif isinstance(name, str):
+            name_list = [name]
+        else:
+            name_list = []
 
+        shadow = dict(self._isolated_keys)
+        for k in name_list:
+            shadow[k] = label if label is not None else object()
         child = self.extend()
         child._isolated_keys = shadow
         return child
@@ -411,23 +422,34 @@ class Context:
             raise AttributeError(f"Context object has no attribute '{name}'")
 
         # 1. Accessor check matching TS def?.type === 'accessor'
+        err = RuntimeError(f"cannot get property '{name}' without inject")
         if hasattr(self, "reflect") and self.reflect and hasattr(self.reflect, "props"):
             def_prop = self.reflect.props.get(name)
             if def_prop and getattr(def_prop, "type", None) == "accessor":
                 from dsh.cordis.utils import Symbols
                 receiver = getattr(self, Symbols.receiver, self)
-                err = RuntimeError(f"cannot get property '{name}' without inject")
                 return def_prop.get(receiver, err)
 
-        # 2. 1:1 Strict Dependency Injection Enforcement matching TS Cordis ReflectService.handler
-        if getattr(self, "strict_inject", True) and getattr(self, "fiber", None) and getattr(self.fiber, "runtime", None) is not None:
-            err = RuntimeError(f"cannot get property '{name}' without inject")
+        # 2. Strict Dependency Injection Enforcement matching TS Cordis ReflectService.handler:152-167
+        # TS reflect.ts:152: if (!ctx.fiber.runtime) return ctx.reflect.get(prop, false)
+        if getattr(self, "fiber", None) and getattr(self.fiber, "runtime", None) is None:
+            if hasattr(self, "reflect") and hasattr(self.reflect, "get"):
+                val = self.reflect.get(self, name, default=None, strict=False)
+                if val is not None:
+                    from dsh.cordis.utils import get_traceable
+                    return get_traceable(self, val)
+            raise AttributeError(f"Context object has no attribute or service '{name}'")
 
+        if getattr(self, "strict_inject", True) and getattr(self, "fiber", None) and self.fiber.runtime is not None:
             def _resolve_strict():
                 curr_fiber = getattr(self, "_shadow_fiber", None) or self.fiber
-                key = getattr(self, "_isolated_keys", {}).get(name, name)
+                from dsh.cordis.utils import get_isolate_symbol
+                key = get_isolate_symbol(self, name) or getattr(self, "_isolated_keys", {}).get(name, name)
                 while curr_fiber is not None:
-                    impl = getattr(curr_fiber, "store", {}).get(name) if getattr(curr_fiber, "store", None) else None
+                    store = getattr(curr_fiber, "store", None)
+                    impl = None
+                    if store:
+                        impl = store.get(key) or store.get(name)
                     if impl is not None:
                         from dsh.cordis.utils import get_traceable
                         val = getattr(impl, "value", impl)
@@ -439,7 +461,7 @@ class Context:
                     parent_ctx = getattr(curr_fiber, "parent", None)
                     if not parent_ctx:
                         raise err
-                    parent_key = getattr(parent_ctx, "_isolated_keys", {}).get(name, name)
+                    parent_key = get_isolate_symbol(parent_ctx, name) or getattr(parent_ctx, "_isolated_keys", {}).get(name, name)
                     if parent_key != key:
                         raise err
                     curr_fiber = getattr(parent_ctx, "fiber", None)
@@ -449,16 +471,11 @@ class Context:
                 return self.waterfall_sync("internal/get", self, name, err, _resolve_strict)
             return _resolve_strict()
 
-        if name in self._services:
-            from dsh.cordis.utils import get_traceable
-            return get_traceable(self, self._services[name])
         if hasattr(self, "reflect"):
             val = self.reflect.get(self, name, default=None, strict=False)
             if val is not None:
                 from dsh.cordis.utils import get_traceable
                 return get_traceable(self, val)
-        if self._parent and name not in self._isolated_keys and hasattr(self._parent, name):
-            return getattr(self._parent, name)
         raise AttributeError(f"Context object has no attribute or service '{name}'")
 
     def __getitem__(self, item: Any) -> Any:

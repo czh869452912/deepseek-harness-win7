@@ -118,21 +118,21 @@ async def test_d3_waterfall_inner_receives_all_args():
 
 
 def test_d2_waterfall_reducer_via_next():
-    """Waterfall middleware reducer pattern passing modified value via next."""
+    """Waterfall middleware reducer pattern transforming return value via next."""
     ctx = Context()
 
     def step1(data, next_fn):
-        return next_fn(f"{data}_step1")
+        return f"{next_fn()}_step1"
 
     def step2(data, next_fn=None):
-        val = f"{data}_step2"
-        return next_fn(val) if next_fn else val
+        res = next_fn() if next_fn else data
+        return f"{res}_step2"
 
     ctx.on("test.reduce", step1)
     ctx.on("test.reduce", step2)
 
-    res = ctx.waterfall_sync("test.reduce", "init")
-    assert res == "init_step1_step2"
+    res = ctx.waterfall_sync("test.reduce", "init", lambda d: d)
+    assert res == "init_step2_step1"
 
 
 def test_d5_internal_listener_prepend_unshift():
@@ -185,7 +185,7 @@ async def test_d8_parallel_dispatch_mode_emit():
     bus = EventBus()
     dispatch_modes = []
 
-    bus.on("internal/dispatch", lambda info: dispatch_modes.append(info.get("type")), global_listener=True)
+    bus.on("internal/dispatch", lambda disp_type, *_: dispatch_modes.append(disp_type), global_listener=True)
     await bus.parallel("test.parallel", 1, 2)
 
     assert "emit" in dispatch_modes

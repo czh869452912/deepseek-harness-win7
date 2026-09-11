@@ -60,30 +60,32 @@ async def test_event_bus_modes():
 
     # 2. Waterfall
     async def middleware1(data, next_fn):
-        res = await next_fn(data + "_m1")
+        res = await next_fn()
         return res + "_m1_end"
 
     async def middleware2(data, next_fn):
-        return await next_fn(data + "_m2")
+        res = await next_fn()
+        return res + "_m2"
 
     ctx.on("test/waterfall", middleware1)
     ctx.on("test/waterfall", middleware2)
 
-    res = await ctx.waterfall("test/waterfall", "init")
-    assert res == "init_m1_m2_m1_end"
+    res = await ctx.waterfall("test/waterfall", "init", lambda d: d)
+    assert res == "init_m2_m1_end"
 
     # 2b. Waterfall with transformer passing next_fn
-    def transformer1(data, next_fn):
-        return next_fn(data + "-t1")
+    async def transformer1(data, next_fn):
+        res = await next_fn()
+        return f"{res}-t1"
 
     async def transformer2(data, next_fn=None):
-        res = data + "-t2"
-        return await next_fn(res) if next_fn else res
+        res = (await next_fn()) if next_fn else data
+        return f"{res}-t2"
 
     ctx.on("test/transform", transformer1)
     ctx.on("test/transform", transformer2)
-    t_res = await ctx.waterfall("test/transform", "start")
-    assert t_res == "start-t1-t2"
+    t_res = await ctx.waterfall("test/transform", "start", lambda d: d)
+    assert t_res == "start-t2-t1"
 
     # 3. Parallel
     async def p1():

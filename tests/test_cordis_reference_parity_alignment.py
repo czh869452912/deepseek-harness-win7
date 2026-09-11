@@ -44,7 +44,7 @@ def test_context_brand_checking():
     cross_realm_ctx = CrossRealmContext()
     assert Context.is_(cross_realm_ctx) is True
 
-    # Duck typing fallback
+    # Duck typing fallback rejected per G6-D1 (Context brand is sole arbiter)
     class DuckContext:
         def __init__(self):
             self.registry = None
@@ -52,7 +52,7 @@ def test_context_brand_checking():
             self.extend = None
 
     duck = DuckContext()
-    assert Context.is_(duck) is True
+    assert Context.is_(duck) is False
 
 
 # ---------------------------------------------------------------------------
@@ -105,21 +105,22 @@ async def test_waterfall_veto_without_calling_next():
     """Verify handler taking next_fn vetoes downstream when returning without next_fn()."""
     ctx = Context()
 
-    def middleware_ok(data, next_fn):
-        return next_fn(data + " -> m1")
+    async def middleware_ok(data, next_fn):
+        res = await next_fn()
+        return f"{res} (via m1)"
 
     def middleware_veto(data, next_fn):
         return data + " -> vetoed"
 
     def middleware_never(data, next_fn):
-        return next_fn(data + " -> unreachable")
+        return next_fn()
 
     ctx.on("pipeline", middleware_ok)
     ctx.on("pipeline", middleware_veto)
     ctx.on("pipeline", middleware_never)
 
     res = await ctx.waterfall("pipeline", "start")
-    assert res == "start -> m1 -> vetoed"
+    assert res == "start -> vetoed (via m1)"
 
 
 # ---------------------------------------------------------------------------

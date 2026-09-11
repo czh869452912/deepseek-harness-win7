@@ -33,13 +33,13 @@ def test_events_waterfall_middleware_pipeline():
 
     def middleware_1(val: str, next_fn=None):
         trail.append("m1_pre")
-        res = next_fn(f"{val}+m1") if next_fn else val
+        res = (next_fn() if next_fn else val) + "+m1"
         trail.append("m1_post")
         return res
 
     def middleware_2(val: str, next_fn=None):
         trail.append("m2_pre")
-        res = next_fn(f"{val}+m2") if next_fn else val
+        res = (next_fn() if next_fn else val) + "+m2"
         trail.append("m2_post")
         return res
 
@@ -47,7 +47,7 @@ def test_events_waterfall_middleware_pipeline():
     ctx.on("test/waterfall", middleware_2)
 
     final_result = ctx.waterfall_sync("test/waterfall", "init", lambda v: f"{v}+final")
-    assert final_result == "init+m1+m2+final"
+    assert final_result == "init+final+m2+m1"
     assert trail == ["m1_pre", "m2_pre", "m2_post", "m1_post"]
 
 

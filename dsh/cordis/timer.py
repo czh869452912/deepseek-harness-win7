@@ -311,8 +311,11 @@ class TimerService(Service):
                                 break
                             try:
                                 callback()
-                            except Exception:
-                                pass
+                            except Exception as e:
+                                if hasattr(target_ctx, "logger"):
+                                    target_ctx.logger("timer").error("Exception in interval callback: %s", e)
+                                else:
+                                    sys.stderr.write(f"[Cordis Timer Error] Exception in interval thread callback: {e}\n")
                     threading_timer = threading.Thread(target=_thread_interval, daemon=True)
                     threading_timer.start()
 

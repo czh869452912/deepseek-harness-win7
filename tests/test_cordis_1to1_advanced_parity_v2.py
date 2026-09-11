@@ -32,22 +32,22 @@ async def test_waterfall_next_continuation_and_pipeline():
 
     async def mw1(data, next_fn):
         order.append("mw1_start")
-        res = await next_fn(data + " -> mw1")
+        res = await next_fn()
         order.append("mw1_end")
-        return res
+        return res + " -> mw1"
 
     async def mw2(data, next_fn):
         order.append("mw2_start")
         await asyncio.sleep(0.01)
-        res = await next_fn(data + " -> mw2")
+        res = await next_fn()
         order.append("mw2_end")
-        return res
+        return res + " -> mw2"
 
     ctx.on("test/pipeline", mw1)
     ctx.on("test/pipeline", mw2)
 
     result = await ctx.waterfall("test/pipeline", "initial", lambda d: d + " -> final")
-    assert result == "initial -> mw1 -> mw2 -> final"
+    assert result == "initial -> final -> mw2 -> mw1"
     assert order == ["mw1_start", "mw2_start", "mw2_end", "mw1_end"]
 
 

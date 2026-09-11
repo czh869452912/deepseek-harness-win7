@@ -65,10 +65,19 @@ class EventBus:
         self._hooks: Dict[str, List[Hook]] = {}
 
         # 1:1 Built-in internal/listener handler matching TS EventsService
-        def _on_internal_listener(name: str, listener: Any, prepend: bool = False, global_listener: bool = False, *args: Any, **kwargs: Any) -> Any:
-            if global_listener:
+        def _on_internal_listener(name: str, listener: Any, options: Any = None, *args: Any, **kwargs: Any) -> Any:
+            if isinstance(options, dict):
+                prepend = bool(options.get("prepend", False))
+                is_global = bool(options.get("global", False))
+            elif isinstance(options, bool):
+                prepend = options
+                is_global = bool(args[0]) if args else False
+            else:
+                prepend = False
+                is_global = False
+            if is_global:
                 return None
-            target_ctx = kwargs.get("caller_ctx") or (args[0] if args and hasattr(args[0], "fiber") else None) or self.ctx
+            target_ctx = kwargs.get("caller_ctx") or (args[1] if len(args) > 1 and hasattr(args[1], "fiber") else None) or (args[0] if args and hasattr(args[0], "fiber") else None) or self.ctx
             if name == "internal/update" and target_ctx and hasattr(target_ctx, "fiber") and target_ctx.fiber:
                 fiber = target_ctx.fiber
                 if "internal/update" not in fiber._hooks:
@@ -138,13 +147,13 @@ class EventBus:
         if caller_ctx is not None and hasattr(caller_ctx, "reflect") and hasattr(caller_ctx.reflect, "bind"):
             handler = caller_ctx.reflect.bind(handler)
 
-        # Handle internal/listener interception hook if caller_ctx is present
-        if caller_ctx is not None and not event_name.startswith("internal/listener"):
-            intercepted = self.bail_sync("internal/listener", event_name, handler, prepend, global_listener, caller_ctx=caller_ctx)
-            if intercepted:
-                if callable(intercepted):
-                    return intercepted
-                return lambda: True
+        # Handle internal/listener interception hook matching TS events.ts:296
+        options = {"prepend": prepend, "global": global_listener}
+        intercepted = self.bail_sync("internal/listener", event_name, handler, options, caller_ctx=caller_ctx or self.ctx)
+        if intercepted:
+            if callable(intercepted):
+                return intercepted
+            return lambda: True
 
         hook = Hook(handler, prepend=prepend, global_listener=global_listener, ctx=caller_ctx)
 
@@ -256,16 +265,7 @@ class EventBus:
             except Exception:
                 pass
 
-            if sig is not None and len(sig.parameters) == 1 and not any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in sig.parameters.values()) and event_name == "internal/dispatch":
-                info = {
-                    "type": args[0] if len(args) > 0 else None,
-                    "name": args[1] if len(args) > 1 else None,
-                    "args": args[2] if len(args) > 2 else [],
-                    "ctx": args[3] if len(args) > 3 else None,
-                }
-                res = listener(info)
-            else:
-                res = listener(*args, **kwargs)
+            res = listener(*args, **kwargs)
             if inspect.isawaitable(res):
                 try:
                     loop = asyncio.get_running_loop()
@@ -337,6 +337,8 @@ class EventBus:
                 has_var = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
                 pos_count = sum(1 for p in params if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD))
                 call_args = args if (has_var or pos_count >= len(args)) else args[:pos_count]
+                if event_name == "internal/listener" and len(args) == 3 and isinstance(args[2], dict) and not has_var and pos_count == 4:
+                    call_args = (args[0], args[1], args[2].get("prepend", False), args[2].get("global", False))
                 res = listener(*call_args, **kwargs)
             else:
                 res = listener(*args, **kwargs)
@@ -361,6 +363,8 @@ class EventBus:
                 has_var = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
                 pos_count = sum(1 for p in params if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD))
                 call_args = args if (has_var or pos_count >= len(args)) else args[:pos_count]
+                if event_name == "internal/listener" and len(args) == 3 and isinstance(args[2], dict) and not has_var and pos_count == 4:
+                    call_args = (args[0], args[1], args[2].get("prepend", False), args[2].get("global", False))
                 res = listener(*call_args, **kwargs)
             else:
                 res = listener(*args, **kwargs)
@@ -383,7 +387,7 @@ class EventBus:
         idx = 0
         def next_fn(*override_args: Any) -> Any:
             nonlocal idx
-            current_args = list(override_args) + list(args_list[len(override_args):]) if override_args else list(args_list)
+            current_args = list(args_list)
             if idx < len(listeners):
                 cb = listeners[idx]
                 idx += 1
@@ -444,7 +448,7 @@ class EventBus:
         idx = 0
         async def next_fn(*override_args: Any) -> Any:
             nonlocal idx
-            current_args = list(override_args) + list(args_list[len(override_args):]) if override_args else list(args_list)
+            current_args = list(args_list)
             if idx < len(listeners):
                 cb = listeners[idx]
                 idx += 1

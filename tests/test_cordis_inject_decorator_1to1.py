@@ -29,21 +29,24 @@ def test_inject_method_decorator():
     class ServiceCaller:
         def __init__(self, ctx):
             self.ctx = ctx
+            self.called = False
 
         @inject("tools")
         def execute_tool(self):
+            self.called = True
             return "tool executed"
 
     ctx = Context()
     caller = ServiceCaller(ctx)
 
-    # Calling without injected service throws
-    with pytest.raises(RuntimeError, match="without injected service 'tools'"):
-        caller.execute_tool()
+    # Calling without injected service defers execution via ctx.inject rather than throwing
+    caller.execute_tool()
+    assert not caller.called
 
     # Once service is provided, call succeeds
     ctx.set_service("tools", {"name": "dummy_tools"})
     assert caller.execute_tool() == "tool executed"
+    assert caller.called
 
 
 def test_inject_resolve_utility():

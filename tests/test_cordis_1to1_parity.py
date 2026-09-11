@@ -58,22 +58,24 @@ def test_multi_fiber_same_plugin_class():
 async def test_waterfall_veto_semantics():
     ctx = Context()
 
-    def middleware1(data, next_fn):
-        return next_fn(data + " -> m1")
+    async def middleware1(data, next_fn):
+        res = await next_fn()
+        return res + " -> m1"
 
-    def middleware_veto(data, next_fn):
+    async def middleware_veto(data, next_fn):
         # Does NOT call next_fn: short-circuits/vetoes downstream
         return data + " -> veto"
 
-    def middleware3(data, next_fn):
-        return next_fn(data + " -> m3")
+    async def middleware3(data, next_fn):
+        res = await next_fn()
+        return res + " -> m3"
 
     ctx.on("pipeline", middleware1)
     ctx.on("pipeline", middleware_veto)
     ctx.on("pipeline", middleware3)
 
-    res = await ctx.waterfall("pipeline", "start")
-    assert res == "start -> m1 -> veto"
+    res = await ctx.waterfall("pipeline", "start", lambda d: d)
+    assert res == "start -> veto -> m1"
 
 
 def test_is_bailed_exact_semantics():

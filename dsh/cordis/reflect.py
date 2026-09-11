@@ -216,14 +216,15 @@ class ReflectService:
             key = get_isolate_symbol(target_ctx, name) or root_sym
 
             fiber = getattr(target_ctx, "fiber", None)
-            if not allow_replace and key in self.store:
+            if key in self.store:
                 prev = self.store[key]
-                if prev.value is not val:
+                from dsh.cordis.service import Service
+                if prev.value is val and isinstance(val, Service):
+                    return lambda: None
+                if not allow_replace:
                     prev_fiber = getattr(prev, "fiber", None)
                     prev_name = getattr(prev_fiber, "name", "root") if prev_fiber else "root"
-                    raise RuntimeError(f"service '{name}' has been registered at <{prev_name}>")
-                else:
-                    return lambda: None
+                    raise RuntimeError(f'service "{name}" has been registered at <{prev_name}>')
 
             impl = Impl(name=name, fiber=fiber, value=val, check=chk)
 

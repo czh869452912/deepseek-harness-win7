@@ -500,27 +500,33 @@ class Session:
         return self.append("request/context", payload)
 
     def request_header(self) -> Optional[Dict[str, Any]]:
-        """Fold and cache the latest request/header from the event log."""
+        """Fold and cache the latest request/header from the event log.
+
+        The folded record is deep-frozen (index.ts:674 wraps the fold in
+        `deepFreeze`), so a reader that mutates it cannot desync the cached
+        comparisons a later append performs.
+        """
         if self._header_fold_seq < len(self._log):
-            self._header_fold = fold_request_header(
+            self._header_fold = deep_freeze(fold_request_header(
                 self._log[self._header_fold_seq :], self._header_fold
-            )
+            ))
             self._header_fold_seq = len(self._log)
         return self._header_fold
 
     requestHeader = request_header
 
     def request_context(self) -> Optional[Any]:
-        """Fold and cache the latest request/context from the event log."""
+        """Fold and cache the latest request/context from the event log.
+
+        Mirrors index.ts:689-696: each record is stored as
+        `deepFreeze({ ...event.data })`, so the exposed record is immutable.
+        """
         if self._context_fold_seq < len(self._log):
             for event in self._log[self._context_fold_seq :]:
                 if event.get("type") == "request/context":
-                    self._context_fold = dict(event.get("data", {}))
+                    self._context_fold = deep_freeze(dict(event.get("data", {})))
             self._context_fold_seq = len(self._log)
-        if self._context_fold is None:
-            return None
-        from types import MappingProxyType
-        return MappingProxyType(self._context_fold)
+        return self._context_fold
 
     requestContext = request_context
 

@@ -117,7 +117,7 @@ def validate_event(
 
     elif etype == "tool/call":
         _require_open_step(trace, "tool/call", data.get("turn"), data.get("step"), fail)
-        cid = data.get("callId") or data.get("call_id")
+        cid = data.get("callId")
         if cid:
             pending_calls_op = ("add", cid)
 
@@ -134,8 +134,6 @@ def validate_event(
                 src = msg.get("source", {})
                 if isinstance(src, dict):
                     call_id = src.get("callId")
-            if not call_id:
-                call_id = data.get("callId") or data.get("tool_call_id")
 
             content = msg.get("content", [])
             is_error = isinstance(content, list) and len(content) > 0 and isinstance(content[0], dict) and content[0].get("isError") is True
@@ -193,24 +191,32 @@ class SessionInvariantPlugin(Plugin):
             return
 
         def installer(target_ctx: Any, fail: Callable[[str], None]) -> None:
-            traces: Dict[str, SessionTrace] = {}
-            staged: Dict[int, Tuple[Any, SessionTrace, SessionTraceTransition]] = {}
+            # Keyed by the Session OBJECT (its default identity hash), mirroring
+            # the reference `WeakMap<Session, SessionTrace>`: two distinct
+            # Session objects that happen to share a session id must not share
+            # trace state.
+            traces: Dict[Any, SessionTrace] = {}
+            # Staged transitions are keyed by the event's identity. The event is
+            # stored alongside so its id cannot be reused while the transition
+            # is pending (the reference keys the WeakMap on the event object
+            # itself, which pins that identity for as long as the entry lives).
+            staged: Dict[int, Tuple[Any, Dict[str, Any], SessionTrace, SessionTraceTransition]] = {}
 
             def fresh_trace() -> SessionTrace:
                 return SessionTrace()
 
             def seed_session(session: Any) -> SessionTrace:
                 trace = fresh_trace()
-                traces[session.id] = trace
+                traces[session] = trace
                 for ev in session.events:
                     transition = validate_event(trace, ev, fail)
                     apply_transition(trace, transition)
                 return trace
 
             def trace_for(session: Any) -> SessionTrace:
-                if session.id not in traces:
+                if session not in traces:
                     return seed_session(session)
-                return traces[session.id]
+                return traces[session]
 
             sessions_svc = target_ctx.get("sessions")
             if sessions_svc:
@@ -223,12 +229,11 @@ class SessionInvariantPlugin(Plugin):
             target_ctx.on("session/created", on_created, global_listener=True)
 
             def on_event(session: Any, event: Dict[str, Any]) -> None:
-                ptr = id(event)
-                staged_item = staged.pop(ptr, None)
-                if staged_item is None or staged_item[0] is not session:
+                staged_item = staged.pop(id(event), None)
+                if staged_item is None or staged_item[0] is not session or staged_item[1] is not event:
                     fail("session/event reached publication without matching pre-commit validation")
                     return
-                apply_transition(staged_item[1], staged_item[2])
+                apply_transition(staged_item[2], staged_item[3])
 
             target_ctx.on("session/event", on_event, global_listener=True)
 
@@ -238,7 +243,7 @@ class SessionInvariantPlugin(Plugin):
                 session, event = args[0], args[1]
                 trace = trace_for(session)
                 transition = validate_event(trace, event, fail)
-                staged[id(event)] = (session, trace, transition)
+                staged[id(event)] = (session, event, trace, transition)
 
             target_ctx.on("internal/dispatch", on_dispatch, global_listener=True)
 

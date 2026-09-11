@@ -31,6 +31,16 @@ def _has_exact_keys(d: Dict[str, Any], keys: Sequence[str]) -> bool:
     return len(d) == len(keys) and all(k in d for k in keys)
 
 
+def _is_number(value: Any) -> bool:
+    """JavaScript `typeof value === 'number'`: ints and floats, never bool."""
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _is_safe_integer(value: Any) -> bool:
+    """`Number.isSafeInteger`: an integer within +/-(2**53 - 1)."""
+    return isinstance(value, int) and not isinstance(value, bool) and abs(value) <= MAX_SAFE_INTEGER
+
+
 def _classify(event: Dict[str, Any]) -> Optional[str]:
     if not isinstance(event, dict) or event.get("type") != "assistant/chunk":
         return None
@@ -38,15 +48,7 @@ def _classify(event: Dict[str, Any]) -> Optional[str]:
         return None
     seq = event.get("seq")
     time_val = event.get("time")
-    if (
-        isinstance(seq, bool)
-        or not isinstance(seq, int)
-        or seq < 0
-        or seq > MAX_SAFE_INTEGER
-        or isinstance(time_val, bool)
-        or not isinstance(time_val, int)
-        or time_val > MAX_SAFE_INTEGER
-    ):
+    if not _is_safe_integer(seq) or seq < 0 or not _is_safe_integer(time_val):
         return None
     data = event.get("data")
     if not isinstance(data, dict) or not _has_exact_keys(data, ["turn", "step", "chunk"]):
@@ -54,16 +56,10 @@ def _classify(event: Dict[str, Any]) -> Optional[str]:
     turn = data.get("turn")
     step = data.get("step")
     chunk = data.get("chunk")
-    if (
-        isinstance(turn, bool)
-        or not isinstance(turn, int)
-        or isinstance(step, bool)
-        or not isinstance(step, int)
-        or not isinstance(chunk, dict)
-    ):
+    if not _is_number(turn) or not _is_number(step) or not isinstance(chunk, dict):
         return None
     c_idx = chunk.get("index")
-    if isinstance(c_idx, bool) or not isinstance(c_idx, int):
+    if not _is_number(c_idx):
         return None
     c_type = chunk.get("type")
     if c_type in ("text-delta", "reasoning-delta"):
@@ -189,16 +185,13 @@ def _malformed(tag: str, why: str) -> None:
 
 def _validate_run_data(tag: str, data: Dict[str, Any], payload_key: str) -> List[str]:
     for key in ("turn", "step", "index"):
-        val = data.get(key)
-        if isinstance(val, bool) or not isinstance(val, int):
+        if not _is_number(data.get(key)):
             _malformed(tag, "turn/step/index must be numbers")
     payload = data.get(payload_key)
     if not isinstance(payload, list) or len(payload) == 0 or any(not isinstance(x, str) for x in payload):
         _malformed(tag, f"{payload_key} must be a non-empty string array")
     dt = data.get("dt")
-    if not isinstance(dt, list) or any(
-        isinstance(g, bool) or not isinstance(g, int) or abs(g) > MAX_SAFE_INTEGER for g in dt
-    ):
+    if not isinstance(dt, list) or any(not _is_safe_integer(g) for g in dt):
         _malformed(tag, "dt must be an array of safe integers")
     if len(dt) != len(payload) - 1:
         _malformed(tag, f"dt length {len(dt)} does not match {len(payload)} members")
@@ -209,10 +202,10 @@ def _validate_row(value: Dict[str, Any], tag: str) -> Dict[str, Any]:
     if not _has_exact_keys(value, ["type", "seq0", "time0", "data"]):
         _malformed(tag, "envelope must be exactly {type, seq0, time0, data}")
     seq0 = value.get("seq0")
-    if isinstance(seq0, bool) or not isinstance(seq0, int) or seq0 < 0 or seq0 > MAX_SAFE_INTEGER:
+    if not _is_safe_integer(seq0) or seq0 < 0:
         _malformed(tag, "seq0 must be a non-negative safe integer")
     time0 = value.get("time0")
-    if isinstance(time0, bool) or not isinstance(time0, int) or abs(time0) > MAX_SAFE_INTEGER:
+    if not _is_safe_integer(time0):
         _malformed(tag, "time0 must be a safe integer")
     data = value.get("data")
     if not isinstance(data, dict):

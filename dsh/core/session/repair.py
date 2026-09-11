@@ -42,21 +42,19 @@ def interrupted_turn_closers(events: Sequence[Dict[str, Any]]) -> List[Dict[str,
             pending_calls.clear()
             open_step = None
         elif ev_type == "assistant/message":
+            # The assistant message carries the tool-call blocks; each is pending
+            # until a `tool/result` event with the same callId is logged.
             msg = data.get("message", {})
             content = msg.get("content", [])
             if isinstance(content, list):
                 for block in content:
                     if isinstance(block, dict) and block.get("type") == "tool-call":
-                        cid = block.get("id") or block.get("call_id")
+                        cid = block.get("id")
                         if cid:
-                            pending_calls[cid] = {"step": data.get("step", 1)}
-            tool_calls = msg.get("tool_calls", [])
-            if isinstance(tool_calls, list):
-                for tcall in tool_calls:
-                    if isinstance(tcall, dict) and tcall.get("id"):
-                        pending_calls[tcall["id"]] = {"step": data.get("step", 1)}
+                            pending_calls[cid] = {"step": data.get("step")}
         elif ev_type == "tool/call":
-            cid = data.get("callId") or data.get("call_id")
+            # Cite the `tool/call` seq from the synthetic result.
+            cid = data.get("callId")
             if cid and cid in pending_calls:
                 pending_calls[cid]["call_seq"] = event.get("seq")
         elif ev_type == "tool/result":
@@ -64,10 +62,8 @@ def interrupted_turn_closers(events: Sequence[Dict[str, Any]]) -> List[Dict[str,
             cid = None
             if isinstance(msg, dict):
                 src = msg.get("source", {})
-                if isinstance(src, dict) and src.get("callId"):
+                if isinstance(src, dict):
                     cid = src.get("callId")
-            if not cid:
-                cid = data.get("callId") or data.get("tool_call_id")
             if cid and cid in pending_calls:
                 del pending_calls[cid]
 
@@ -110,9 +106,6 @@ def interrupted_turn_closers(events: Sequence[Dict[str, Any]]) -> List[Dict[str,
             "data": {
                 "turn": open_turn,
                 "step": step,
-                "callId": call_id,
-                "call_id": call_id,
-                "tool_call_id": call_id,
                 "message": {
                     "id": f"interrupted-tool-result-{call_id}-{seq}",
                     "role": "user",

@@ -47,7 +47,18 @@ def canonical_header(header: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _same_schema(a: Any, b: Any) -> bool:
-    return json.dumps(a, sort_keys=True, ensure_ascii=False) == json.dumps(b, sort_keys=True, ensure_ascii=False)
+    """
+    Canonical JSON equality for tool schemas assembled through the same path.
+
+    Mirrors reference `sameSchema` (`JSON.stringify(a) === JSON.stringify(b)`):
+    key ORDER is part of the compared text, so two schemas carrying the same
+    entries in a different insertion order are NOT equal (JSON.stringify keeps
+    insertion order). `sort_keys` would have normalized that away.
+    """
+    return (
+        json.dumps(a, separators=(",", ":"), ensure_ascii=False)
+        == json.dumps(b, separators=(",", ":"), ensure_ascii=False)
+    )
 
 
 def header_equals(a: Dict[str, Any], b: Dict[str, Any]) -> bool:

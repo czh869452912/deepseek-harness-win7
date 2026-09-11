@@ -9,6 +9,11 @@ from typing import Any, List, Sequence, Union
 MAX_SAFE_INTEGER = 0x1FFFFFFFFFFFFF
 
 
+def _is_number(value: Any) -> bool:
+    """JavaScript `typeof value === 'number'`: ints and floats, never bool."""
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
 def _is_strictly_increasing(values: Sequence[int]) -> bool:
     for i in range(1, len(values)):
         if values[i] <= values[i - 1]:
@@ -52,7 +57,7 @@ def decode_seq_ranges(value: Any, max_entries: int = MAX_SAFE_INTEGER) -> List[i
     decoded: List[int] = []
     has_range = False
     for entry in value:
-        if isinstance(entry, int) and not isinstance(entry, bool):
+        if _is_number(entry):
             _assert_seq(entry)
             if len(decoded) >= max_entries:
                 raise TypeError("sourceEventSeqs exceeds its event sequence")
@@ -64,15 +69,15 @@ def decode_seq_ranges(value: Any, max_entries: int = MAX_SAFE_INTEGER) -> List[i
             _assert_seq(start)
             _assert_seq(end)
             if start > end:
-                raise TypeError("sourceEventSeqs range start must not exceed end: start <= end")
+                raise TypeError("sourceEventSeqs ranges require start <= end")
 
             count = end - start + 1
             if len(decoded) + count > max_entries:
-                raise TypeError("sourceEventSeqs exceeds its event sequence")
+                raise TypeError("sourceEventSeqs range exceeds its event sequence")
             for seq in range(start, end + 1):
                 decoded.append(seq)
             continue
-        raise TypeError("sourceEventSeqs must contain safe integers or [start, end] pairs")
+        raise TypeError("sourceEventSeqs range entries must be [start, end] pairs")
     if has_range and not _is_strictly_increasing(decoded):
         raise TypeError("sourceEventSeqs ranges must be strictly increasing")
     return decoded

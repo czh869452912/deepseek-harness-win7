@@ -163,11 +163,13 @@ BUILTIN_PROFILES: Dict[str, Dict[str, Any]] = {
         "bundles": ["dsh-sdk-minimal"],
         "patches": [],
     },
+    # Creative Mode aligns with the upstream profile shape (bundles only):
+    # the host composition carries no invention layer, and @deepseek-ai/dsh-cordis-manager
+    # is mounted solely from the agent preset layer (dsh/presets/creative.yaml),
+    # matching the upstream separation of host profile vs. agent preset.
     "creative": {
         "bundles": ["dsh-base", "dsh-headless"],
-        "patches": [
-            {"insert": [{"id": "cordis-manager", "name": "@deepseek-ai/dsh-cordis-manager"}]}
-        ],
+        "patches": [],
     },
 
     "sdk": {

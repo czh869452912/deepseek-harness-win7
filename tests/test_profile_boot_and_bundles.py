@@ -19,6 +19,24 @@ def test_prepare_builtin_profiles():
         assert len(prof.bundles) >= 1
 
 
+def test_creative_profile_aligns_with_upstream_shape():
+    """Creative Mode host composition carries no invention layer (upstream profiles are
+    bundles+patchReload only); @deepseek-ai/dsh-cordis-manager is mounted solely from the
+    agent preset layer (dsh/presets/creative.yaml), matching the upstream separation of
+    host profile vs. agent preset."""
+    from dsh.boot.profile import PROFILE_TEMPLATES
+
+    assert "patches" not in PROFILE_TEMPLATES["creative"]
+    assert BUILTIN_PROFILES["creative"]["patches"] == []
+    assert all(entry.get("name") != "@deepseek-ai/dsh-cordis-manager" for entry in BUILTIN_PROFILES["creative"]["patches"])
+
+    preset_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "dsh", "presets", "creative.yaml")
+    with open(preset_path, "r", encoding="utf-8") as f:
+        rows = yaml.safe_load(f)
+    manager_rows = [r for r in rows if isinstance(r, dict) and r.get("name") == "@deepseek-ai/dsh-cordis-manager"]
+    assert len(manager_rows) == 1
+
+
 def test_compose_profile_4_layer_cascading():
     with tempfile.TemporaryDirectory() as tmpdir:
         # Create user home patch

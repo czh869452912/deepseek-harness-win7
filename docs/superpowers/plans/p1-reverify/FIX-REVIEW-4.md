@@ -28,8 +28,8 @@ FIX-REVIEW-3 §五 的解除判据为「完成 ①② 即可重审解除」。�
 
 ## 三、深验发现（登记项，不阻塞 P2）
 
-### R-1（登记）：canonical creative 缺 cordis-manager 挂载
-实测 `run_dump_config('creative')` 输出 **0 行 cordis-manager**：boot `PROFILE_TEMPLATES.creative` 仅有 bundles（TS 模板本无 patches 层），而 AGENTS.md §4 要求 Creative Mode 挂载 `@deepseek-ai/dsh-cordis-manager`——该 insert 只存在于 cordis 侧 BUILTIN_PROFILES（G12 D5 自发明层），canonical 化后对三预设不再触发（fallback 成死代码）。**生产主入口 `dsh.py --mode creative` 走 legacy 路径不受影响；`--profile creative` 新路径受影响。** 修法（P2 开工项）：按 G12 D5 原建议把 cordis-manager insert 移入 BUILTIN_BUNDLES 注册的合成 bundle 键，使 boot 模板 creative 引用之。
+### R-1（登记 → 已按原版对齐闭合）：creative 挂载分层归位
+原判"canonical creative 缺 cordis-manager 挂载"经原版对照重新定性：**reference 全树不存在 cordis-manager**（`@deepseek-ai/dsh-cordis-manager` 为本移植的产品层发明），且原版 profile 层仅 bundles+patchReload、无 patches 发明层。creative 的 cordis-manager 本就由 agent preset 层挂载（`dsh/presets/creative.yaml` L97），cordis BUILTIN_PROFILES 的 patches insert 属于与 preset 层重复的双挂载。已删除该 insert（`dsh/cordis/profile.py` BUILTIN_PROFILES.creative 回归 bundles-only，与原版 profile 形状一致；cordis-manager 单一挂载点归位 preset 层），新钉测 `test_creative_profile_aligns_with_upstream_shape` 钉住"profile 层无发明 + preset 层恰一行"。canonical creative dump 不含 cordis-manager 行为**正确行为**（host composition 本不含 agent preset 行）。Legacy 主入口（--mode creative → build_harness + preset yaml）行为不变。
 
 ### R-2（登记）：便携冒烟覆盖解析逻辑而非构建产物
 `test_portable_layout_bundle_resolution_smoke` 验证了解析臂与布局匹配，但未对 `dist/` 实际构建产物跑端到端 profile boot。建议 P2 内补一条构建后冒烟门。

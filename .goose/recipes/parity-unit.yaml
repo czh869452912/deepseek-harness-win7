@@ -48,7 +48,6 @@ settings:
   goose_provider: "custom_deepseek"
   goose_model: "deepseek-flash"
   temperature: 0.0
-  max_turns: 40
 
 extensions:
   - type: platform
@@ -72,25 +71,20 @@ instructions: |
   Always use Goose `delegate` with `source` set to the required named agent. Each delegated run is an isolated subagent session.
 
   Every delegation, including corrections and final verification, MUST explicitly
-  repeat the role-specific provider, model, extensions, and max_turns below.
+  repeat the role-specific provider, model, and extensions below.
   Use synchronous delegation (async: false) and wait for its result before the next phase.
 
-  ## Dependency scope and bounded execution
+  ## Dependency scope and continuing execution
 
   The migration unit is a semantic goal, never a directory/line-range read allowlist.
   All roles may inspect relevant dependencies anywhere in the repository. Never
-  limit reads per file, ban dependency discovery, or declare analysis complete on
-  another worker's behalf. Migrator fixes may cross directories at canonical owners.
-  Do not request reduced bridges/stubs to satisfy an artificial directory boundary.
-  Record dependency expansions and real missing capabilities, not fake exclusions.
-  Never delegate anonymously or bypass the named role contracts.
-
-  This recipe is also the model-routing configuration for run-parity.ps1's Python
-  controller. Prefer that launcher: it enforces round limits, checkpoints and status.
-  If run directly, do not silently restart exhausted workers. Return INCOMPLETE
-  with explicit remaining work when a worker fails to return a valid result.
-  Announce each phase and its verdict. No new round after the correction and judge
-  budgets below; report INCOMPLETE. Never finish with an unrelated conversational reply.
+  impose read quotas. Migrator fixes may cross directories at canonical owners.
+  Use normal project tools and permissions. Do not request reduced bridges/stubs
+  to satisfy an artificial directory boundary.
+  Continue correction and independent review until correct; do not impose a fixed
+  number of attempts. Repeated problems need a new approach or arbitration.
+  Prefer run-parity.ps1 for progress, checkpoint commits and automatic continuation
+  when Goose reaches its native per-invocation action limit.
 
   ## Mandatory state machine
 
@@ -101,7 +95,6 @@ instructions: |
        provider: {{ migrator_provider }}
        model: {{ migrator_model }}
        extensions: ["developer", "analyze"]
-       max_turns: 60
 
      Tell it to process exactly `{{ migration_unit }}` and return `MIGRATION_RESULT`.
 
@@ -110,7 +103,6 @@ instructions: |
        provider: {{ reviewer_provider }}
        model: {{ reviewer_model }}
        extensions: ["developer", "analyze"]
-       max_turns: 45
 
      CRITICAL BLINDNESS RULE:
      Do NOT pass the migrator's reasoning, findings, claimed fixes, confidence, pytest pass count, or final verdict to the reviewer.
@@ -138,7 +130,7 @@ instructions: |
        - after the correction completes, start a NEW `parity-reviewer` delegation using the same blind input policy as step 2;
        - do not reveal the previous reviewer report to the new blind reviewer.
 
-     Allow one normal correction + re-review cycle.
+     Repeat correction + fresh review as necessary until all issues are resolved.
 
   4. ESCALATION
 
@@ -146,12 +138,11 @@ instructions: |
        provider: {{ judge_provider }}
        model: {{ judge_model }}
        extensions: ["developer", "analyze"]
-       max_turns: 35
 
      Invoke the judge only when one of these is true:
        - migrator returned ESCALATE;
        - reviewer returned ESCALATE;
-       - after one correction cycle, reviewer and migrator still disagree on a concrete semantic item;
+       - reviewer and migrator disagree on a concrete semantic item;
        - the second blind review reports a disputed issue that cannot be resolved mechanically from the migration worker's evidence.
 
      For judge input, provide ONLY the exact disputed items, the two conclusions, and the migration-unit scope. Tell the judge to independently inspect authoritative files.

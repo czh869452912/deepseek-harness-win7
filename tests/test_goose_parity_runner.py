@@ -109,12 +109,13 @@ class Harness(runner.Runner):
         return True
 
 
-def test_unchanged_findings_stop_instead_of_restarting_agents(repo):
+def test_unchanged_findings_trigger_judge_instead_of_stopping(repo):
     review = result("MUST_FIX", [{"id": "session/null", "detail": "missing", "evidence": "upstream:1"}])
-    h = Harness(repo, [("migrate", result()), ("review", review)] * 2)
-    assert h.run() == 2
-    assert h.state["status"] == "STALLED"
-    assert len(h.calls) == 4
+    h = Harness(repo, [("migrate", result()), ("review", review)] * 2 +
+                [("judge", result("RESOLVED")), ("migrate", result()), ("review", result("PASS"))])
+    assert h.run() == 0
+    assert h.state["status"] == "COMPLETE"
+    assert h.calls[4][0] == "judge"
 
 
 def test_round_limit_is_hard_even_with_new_findings(repo):
@@ -124,12 +125,14 @@ def test_round_limit_is_hard_even_with_new_findings(repo):
     assert len(h.calls) == 2
 
 
-def test_failed_full_suite_stops_without_another_migration(repo):
-    h = Harness(repo, [("migrate", result()), ("review", result("PASS"))])
-    h.check = lambda *args: False
-    assert h.run() == 2
-    assert h.state["status"] == "BLOCKED"
-    assert "Full suite" in h.state["reason"]
+def test_failed_full_suite_returns_to_migrator(repo):
+    h = Harness(repo, [("migrate", result()), ("review", result("PASS"))] * 2, rounds=0)
+    (repo / "01-full-suite.log").write_text("FAILED integration test", encoding="utf-8")
+    outcomes = iter([False, True])
+    h.check = lambda *args: next(outcomes)
+    assert h.run() == 0
+    assert h.state["status"] == "COMPLETE"
+    assert h.calls[2][1]["full_suite_failure"] == "FAILED integration test"
 
 
 def test_single_judge_and_fresh_blind_review_after_correction(repo):
@@ -194,7 +197,8 @@ def test_test_paths_cannot_escape_repository(tmp_path, name):
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows CLI integration")
-def test_complete_cli_pipeline_with_fake_goose(repo):
+@pytest.mark.parametrize("native_stop", [False, True])
+def test_complete_cli_pipeline_with_fake_goose(repo, native_stop):
     """Real child processes, target/full tests, structured output and checkpoint."""
     source = Path(__file__).resolve().parents[1]
     for name in [".goose/parity_runner.py", ".goose/recipes/parity-unit.yaml"] + [
@@ -202,14 +206,27 @@ def test_complete_cli_pipeline_with_fake_goose(repo):
         dest = repo / name
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(str(source / name), str(dest))
-    (repo / ".gitignore").write_text(".goose/runs/\n__pycache__/\n.pytest_cache/\n", encoding="utf-8")
+    (repo / ".gitignore").write_text(".goose/runs/\n__pycache__/\n.pytest_cache/\nsaved-recipe.json\n", encoding="utf-8")
     (repo / "tests").mkdir()
     (repo / "tests/test_unit.py").write_text("def test_unit():\n    assert 1 == 1\n", encoding="utf-8")
     fake = repo / "fake.py"
     fake.write_text('''import json, sys
 from pathlib import Path
 args = sys.argv[1:]
-recipe = json.loads(Path(args[args.index('--recipe') + 1]).read_text(encoding='utf-8'))
+assert '--max-tool-repetitions' not in args
+assert '--max-turns' not in args
+assert '--no-profile' not in args
+if '--resume' in args:
+    recipe = json.loads(Path('saved-recipe.json').read_text(encoding='utf-8'))
+else:
+    recipe = json.loads(Path(args[args.index('--recipe') + 1]).read_text(encoding='utf-8'))
+    assert 'max_turns' not in recipe['settings']
+    Path('saved-recipe.json').write_text(json.dumps(recipe), encoding='utf-8')
+if Path('native-stop').exists() and '--resume' not in args:
+    print(json.dumps({'type':'message','message':{'id':'limit','role':'assistant',
+        'content':[{'type':'text','text':"I've reached the maximum number of actions I can do without user input. Would you like me to continue?"}]}}), flush=True)
+    print(json.dumps({'type':'complete'}), flush=True)
+    sys.exit(0)
 phase = recipe['title']
 changed = []
 if phase == 'parity-migrator':
@@ -229,6 +246,8 @@ print(json.dumps({'type':'complete'}), flush=True)
 ''', encoding="utf-8")
     executable = repo / "fake-goose.cmd"
     executable.write_text('@echo off\n"' + sys.executable + '" "' + str(fake) + '" %*\n', encoding="utf-8")
+    if native_stop:
+        (repo / "native-stop").write_text("enabled", encoding="utf-8")
     runner.git(repo, "add", ".")
     runner.git(repo, "commit", "-qm", "controller fixture")
     proc = subprocess.run([sys.executable, str(repo / ".goose/parity_runner.py"),
@@ -242,4 +261,6 @@ print(json.dumps({'type':'complete'}), flush=True)
     assert len(state["commits"]) == 1
     assert "unreviewed" in runner.git(repo, "log", "-1", "--format=%s")
     assert "progress:" in proc.stdout
+    if native_stop:
+        assert "resuming the same session with its tools" in proc.stdout
     assert not (repo / ".goose/runs/active.lock").exists()

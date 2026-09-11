@@ -1,4 +1,4 @@
-"""Bounded, observable Goose parity workflow. Python 3.8; development tooling only."""
+"""Observable Goose parity workflow. Python 3.8; development tooling only."""
 import argparse
 import hashlib
 import json
@@ -36,14 +36,13 @@ matching case counts alone is not evidence. Existing regression tests may count
 if their bodies faithfully map to the upstream case; directory names alone do not
 prove or disprove a port. Never weaken assertions or add skipped placeholders.
 Do not read credentials or unrelated private files. Do not modify reference/.
-Never run git add/commit/reset/checkout/clean, spawn subagents, or edit this workflow.
-The controller owns commits and phase transitions. Reports go in the final response,
+The controller handles checkpoint commits and phase transitions. Reports go in the final response,
 not source files. Do not read .goose/runs/, .goose/out/, or old review conclusions
 during blind review. Review/judge may inspect all dependencies but must not mutate
 any worktree file. The migrator may change relevant implementation, tests and docs.
 Provide brief visible progress updates (action, finding, next step) while working.
-Work on a coherent testable chunk. Near the turn limit, finish with an honest JSON
-result, including remaining gaps; do not restart analysis or ask for continuation.
+Work until the phase is correct. Return an honest JSON result with remaining gaps
+when another role is needed; continue autonomously without asking for continuation.
 """
 SCHEMA = {
     "type": "object",
@@ -161,6 +160,7 @@ class Stream:
         self.last_id = None
         self.complete = False
         self.buffer = ""
+        self.action_limit_reached = False
 
     def feed(self, event):
         if event.get("type") == "complete":
@@ -178,6 +178,8 @@ class Stream:
                 self.last_id = mid
                 text = block.get("text", "")
                 self.messages[mid] = self.messages.get(mid, "") + text
+                if "I've reached the maximum number of actions I can do without user input" in self.messages[mid]:
+                    self.action_limit_reached = True
                 self.buffer += text
                 if "\n" in self.buffer or len(self.buffer) > 240:
                     self.flush()
@@ -235,7 +237,7 @@ def run_process(command, root, log_path, notify, timeout, stream=None):
         with log_path.open("w", encoding="utf-8") as log:
             while True:
                 now = time.monotonic()
-                if now - started >= timeout:
+                if timeout and now - started >= timeout:
                     raise TimeoutError("Phase wall-time limit reached; child process tree stopped")
                 if now - last_heartbeat >= 15:
                     notify("heartbeat", "running %.0fs; output idle %.0fs (not proof of deadlock)" %
@@ -314,12 +316,14 @@ class Runner:
         if self.args.adopt_existing and phase == "migrate":
             prompt += "\nThe user selected adoption of prior work: include verified prior migration files in changed_files, even if unchanged this round."
         turns = self.args.max_turns
-        recipe = {"version": "1.0.0", "title": role, "description": "Bounded parity " + phase,
-                  "settings": {"goose_provider": provider, "goose_model": model, "max_turns": turns},
+        recipe = {"version": "1.0.0", "title": role, "description": "Parity " + phase,
+                  "settings": {"goose_provider": provider, "goose_model": model},
                   "extensions": [{"type": "platform", "name": x} for x in ("developer", "analyze")],
                   "instructions": body + "\n\n" + prompt,
                   "prompt": "Execute this phase and return its structured result.",
                   "response": {"json_schema": SCHEMA}}
+        if turns:
+            recipe["settings"]["max_turns"] = turns
         stem = "%02d-%s" % (self.state["round"], phase)
         recipe_path = self.run_dir / (stem + ".yaml")
         save_json(recipe_path, recipe)  # JSON is valid YAML; no templated shell commands.
@@ -328,17 +332,38 @@ class Runner:
         head = git(self.root, "rev-parse", "HEAD")
         index = git(self.root, "diff", "--cached", "--binary")
         stream = Stream(self.notify)
-        code = run_process([self.args.goose, "run", "--recipe", str(recipe_path),
-                            "--max-turns", str(turns), "--max-tool-repetitions", "3",
-                            "--output-format", "stream-json"], self.root,
-                           self.run_dir / (stem + ".events.jsonl"), self.notify,
-                           self.args.phase_timeout, stream)
+        session_name = self.run_dir.name + "-" + stem
+        started = time.monotonic()
+        command = [self.args.goose, "run", "--recipe", str(recipe_path),
+                   "--name", session_name, "--output-format", "stream-json"]
+        if turns:
+            command += ["--max-turns", str(turns)]
+        continuation = 0
+        while True:
+            log_name = stem + (".continue-%d" % continuation if continuation else "") + ".events.jsonl"
+            remaining = self.args.phase_timeout
+            if remaining:
+                remaining -= time.monotonic() - started
+                if remaining <= 0:
+                    raise TimeoutError("Explicit phase timeout reached")
+            code = run_process(command, self.root, self.run_dir / log_name,
+                               self.notify, remaining, stream)
+            if code or not stream.complete or not stream.action_limit_reached or turns:
+                break
+            continuation += 1
+            self.notify("continue", "Goose native action limit reached; resuming the same session with its tools")
+            stream = Stream(self.notify)
+            command = [self.args.goose, "run", "--resume", "--name", session_name,
+                       "--output-format", "stream-json", "--text",
+                       "Continue the current phase with your existing context and tools. "
+                       "Work until correct; do not restart completed analysis or ask for permission to continue. "
+                       "Return the required structured result when this phase is done."]
         after = snapshot(self.root)
         changes = changed(before, after)
         if git(self.root, "rev-parse", "HEAD") != head:
-            raise ValueError("Agent changed HEAD; stop for inspection")
+            self.notify("git", "Agent updated HEAD; preserving the commit")
         if git(self.root, "diff", "--cached", "--binary") != index:
-            raise ValueError("Agent changed the staging area; stop for inspection")
+            self.notify("git", "Agent updated the index; automatic checkpoint will preserve staged work")
         if phase != "migrate" and changes:
             raise ValueError("Read-only phase mutated files; preserved for inspection: " + ", ".join(changes))
         if code:
@@ -346,14 +371,12 @@ class Runner:
         result = stream.result(phase)
         result["observed_changes"] = changes
         if phase == "migrate":
-            forbidden = [p for p in changes if p.startswith(("reference/", ".goose/", ".agents/"))
-                         or p in ("AGENTS.md", ".gitignore")]
-            if forbidden:
-                raise ValueError("Agent modified workflow or upstream reference: " + str(forbidden))
             for name in result["changed_files"]:
                 safe_path(self.root, name)
-            if set(changes) - set(result["changed_files"]):
-                raise ValueError("Agent omitted modified files from result: " + str(set(changes) - set(result["changed_files"])))
+            missing = set(changes) - set(result["changed_files"])
+            if missing:
+                self.notify("files", "Including observed changes omitted from report: " + ", ".join(sorted(missing)))
+                result["changed_files"] = sorted(set(result["changed_files"]) | missing)
         save_json(self.run_dir / (stem + ".result.json"), result)
         self.state["history"].append({"phase": phase, "round": self.state["round"],
                                       "status": result["status"], "issues": len(result["issues"])})
@@ -396,10 +419,6 @@ class Runner:
         if not paths or self.args.no_commit:
             self.notify("checkpoint", "No changes or -NoCommit selected")
             return
-        forbidden = [p for p in paths if p.startswith(("reference/", ".goose/", ".agents/", ".git"))
-                     or p == "AGENTS.md"]
-        if forbidden:
-            raise ValueError("Workflow/reference changes are not migration checkpoint material: " + str(forbidden))
         overlap = set(paths) & self.initial_dirty
         if overlap and not self.args.adopt_existing:
             self.notify("checkpoint", "SKIPPED: pre-existing edits in " + ", ".join(sorted(overlap)) +
@@ -431,10 +450,11 @@ class Runner:
     def run(self):
         feedback = None
         last_signature = None
-        judge_used = False
         try:
             self.notify("artifacts", str(self.run_dir))
-            for round_number in range(1, self.args.max_rounds + 1):
+            round_number = 0
+            while not self.args.max_rounds or round_number < self.args.max_rounds:
+                round_number += 1
                 self.state["round"] = round_number
                 migration = self.phase("migrate", feedback)
                 verified = self.verify_chunk(migration)
@@ -442,24 +462,26 @@ class Runner:
                     self.checkpoint(migration)
                 review = self.phase("review")  # No migration or previous review evidence is passed.
                 self.state["issues"] = review["issues"]
-                self.notify("progress", "round %d/%d; open issues=%d; coverage_complete=%s" %
-                            (round_number, self.args.max_rounds, len(review["issues"]), review["coverage_complete"]))
+                self.notify("progress", "round %d/%s; open issues=%d; coverage_complete=%s" %
+                            (round_number, self.args.max_rounds or "unlimited", len(review["issues"]), review["coverage_complete"]))
                 needs_judge = ("ESCALATE" in (migration["status"], review["status"]) or
                                (review["status"] == "PASS" and bool(migration["issues"])))
                 if review["status"] == "PASS" and verified and not needs_judge:
                     if self.check("full-suite", ["-m", "pytest", "tests"]):
                         return self.finish("COMPLETE", "Independent review and full test suite passed")
-                    return self.finish("BLOCKED", "Full suite failed; see full-suite.log. No automatic verification loop.")
+                    log = self.run_dir / ("%02d-full-suite.log" % round_number)
+                    feedback = {"migration": migration, "review": review,
+                                "full_suite_failure": log.read_text(encoding="utf-8")[-40000:]}
+                    self.notify("repair", "Full suite failed; returning failures to migrator for correction")
+                    continue
                 feedback = {"migration": migration, "review": review, "targeted_checks_passed": verified}
                 signature = (tuple(sorted(i["id"] for i in review["issues"])),
                              tuple(sorted(snapshot(self.root).items())))
                 if signature == last_signature:
-                    return self.finish("STALLED", "Same issue IDs and unchanged files across two reviews")
+                    self.notify("progress", "Same findings and files; requesting arbitration to change approach")
+                    needs_judge = True
                 last_signature = signature
                 if needs_judge:
-                    if judge_used:
-                        return self.finish("BLOCKED", "Repeated escalation after the single arbitration budget")
-                    judge_used = True
                     judgment = self.phase("judge", feedback)
                     if judgment["status"] == "BLOCKED":
                         return self.finish("BLOCKED", judgment["summary"])
@@ -475,14 +497,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--unit", required=True)
     parser.add_argument("--goose", required=True)
-    parser.add_argument("--max-rounds", type=int, default=3)
-    parser.add_argument("--max-turns", type=int, default=60)
-    parser.add_argument("--phase-timeout", type=int, default=1800)
+    parser.add_argument("--max-rounds", type=int, default=0)
+    parser.add_argument("--max-turns", type=int, default=0)
+    parser.add_argument("--phase-timeout", type=int, default=0)
     parser.add_argument("--no-commit", action="store_true")
     parser.add_argument("--adopt-existing", action="store_true")
     args = parser.parse_args()
-    if min(args.max_rounds, args.max_turns, args.phase_timeout) <= 0:
-        parser.error("Budgets must be positive")
+    if min(args.max_rounds, args.max_turns, args.phase_timeout) < 0:
+        parser.error("Limits must be nonnegative; zero means unlimited")
     if sys.version_info[:2] != (3, 8):
         parser.error("Use the repository Python 3.8 interpreter for compile/test verification")
     lock = ROOT / ".goose/runs/active.lock"

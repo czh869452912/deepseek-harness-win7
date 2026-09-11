@@ -3,9 +3,9 @@ param(
     [switch]$Smoke,
     [string]$GooseExe = $env:GOOSE_EXE,
     [string]$PythonExe,
-    [ValidateRange(1, 100)][int]$MaxRounds = 3,
-    [ValidateRange(1, 1000)][int]$MaxTurns = 60,
-    [ValidateRange(1, 86400)][int]$PhaseTimeoutSeconds = 1800,
+    [ValidateRange(0, 2147483647)][int]$MaxRounds = 0,
+    [ValidateRange(0, 2147483647)][int]$MaxTurns = 0,
+    [ValidateRange(0, 2147483647)][int]$PhaseTimeoutSeconds = 0,
     [switch]$NoCommit,
     [switch]$AdoptExisting
 )

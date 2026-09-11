@@ -51,8 +51,8 @@ def test_launcher_passes_scope_and_normalizes_url(tmp_path):
     assert calls[0]["arguments"] == ["recipe", "validate", ".goose/recipes/parity-unit.yaml"]
     assert calls[1]["arguments"] == [str(ROOT / ".goose/parity_runner.py"),
                                       "--unit", unit, "--goose", str(fake),
-                                      "--max-rounds", "3", "--max-turns", "60",
-                                      "--phase-timeout", "1800"]
+                                      "--max-rounds", "0", "--max-turns", "0",
+                                      "--phase-timeout", "0"]
     assert Path(calls[1]["cwd"]) == ROOT
     assert calls[1]["url"] == "https://example.test/v1"
 

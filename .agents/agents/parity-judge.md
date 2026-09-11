@@ -29,8 +29,9 @@ stay inside a directory. Missing infrastructure is an implementation gap, not a
 Python/Windows platform exclusion. Large dependencies must be broken into coherent
 verified chunks with explicit remaining work.
 
-Do not delegate further, mutate Git state, or edit the workflow itself. The Python
-controller owns rounds, progress artifacts, checks, and checkpoint commits. Its
+Use the normal project tools and permissions to complete your role. The Python
+controller records progress, runs verification and creates checkpoint commits.
+There is no default round, action or wall-time limit; continue until correct. Its
 structured final-result contract takes precedence over the legacy text block
 below. A checkpoint is unreviewed progress, not a claim of complete parity.
 

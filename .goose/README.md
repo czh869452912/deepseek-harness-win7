@@ -1,11 +1,10 @@
 # Goose parity workflow
 
 `run-parity.ps1` uses a Python 3.8 controller to run the three specialist agents
-in separate Goose sessions. Python owns phase transitions, bounded retries,
-verification, visible progress, and checkpoint commits. It loads agent instructions
+in separate Goose sessions. Python owns phase transitions, continuing correction,
+verification, visible progress, and checkpoint commits. By default it continues until correct, without workflow quotas. It loads agent instructions
 from `.agents/agents/` and provider/model defaults from `recipes/parity-unit.yaml`.
-A coordinator model can no longer silently invent extra continuation rounds or
-narrow another worker's read scope.
+A coordinator model can no longer silently invent narrow another worker's read scope.
 
 ## Run
 
@@ -31,9 +30,9 @@ Useful options:
 
 | Option | Default | Effect |
 | --- | --- | --- |
-| `-MaxRounds` | 3 | Hard cap on migration + fresh-review pairs |
-| `-MaxTurns` | 60 | Goose turn budget for each phase |
-| `-PhaseTimeoutSeconds` | 1800 | Wall-time cap per model phase or verification command |
+| `-MaxRounds` | 0 | Unlimited; a positive value is an optional user-selected cap |
+| `-MaxTurns` | 0 | No workflow cap; automatically resume Goose native action-limit stops |
+| `-PhaseTimeoutSeconds` | 0 | No timeout; positive values opt into a wall-time cap |
 | `-NoCommit` | off | Keep all migration edits uncommitted |
 | `-AdoptExisting` | off | Include verified prior migration edits as described above |
 | `-GooseExe` | PATH, then local desktop install | Override CLI location; `GOOSE_EXE` also works |
@@ -114,30 +113,33 @@ reject it or to call it equivalent.
 ## State and commits
 
 Each round runs MIGRATE -> targeted pytest / compileall -> checkpoint when eligible
--> fresh REVIEW. Necessary arbitration runs at most once; its correction is followed
-by another fresh review within the same overall round budget.
+-> fresh REVIEW. Corrections continue until independent review and the full suite
+pass. There is no default round limit, action quota, timeout or repeat-tool cutoff.
+Goose's own action-limit message automatically resumes the same session with tools
+and context intact. The controller does not switch to a report-only/no-tools mode.
 
-- Identical open issue IDs and unchanged files across consecutive reviews: STALLED.
-- Exhausted round budget: INCOMPLETE, with findings and checkpoints retained.
-- Invalid result, timeout, forbidden mutation, repeated escalation or failed final
-  full suite: BLOCKED with evidence, no hidden restart.
-- Independent PASS, complete case mapping, no unresolved disputes, targeted checks
-  and the required full suite green: COMPLETE.
+Repeated findings trigger arbitration to help change approach, not an automatic
+STALLED exit. Arbitration is not limited to one invocation. A failed full suite is
+fed back to the migrator for correction rather than automatically terminating.
+True infrastructure errors, user interruption, or a judge's unresolved BLOCKED
+verdict are still reported honestly. COMPLETE still requires actual verification.
+Optional positive limits remain available only when the user explicitly supplies
+those flags. Zero means unlimited.
 
 After a coherent chunk passes targeted tests and Python 3.8 compile checks, an
 eligible checkpoint is committed with `(unreviewed)` in its message. This saves
 progress before another lengthy review, but **does not claim parity completeness**.
 No pushes are made. Checkpoints are restricted to observed migration changes (plus
 explicitly adopted prior files); unrelated dirty/staged work is never swept in.
-The full `pytest tests` gate runs once after independent PASS. Existing full-suite
-failures remain blockers to COMPLETE and are not relabeled as a pass.
+The full `pytest tests` gate runs after independent PASS. Failures are returned for
+correction; they are never relabeled as a pass.
 
-A new invocation starts a new bounded run and inspects the current worktree. There
-is no automatic resumption of a half-completed Goose conversation. Prior commits
+A new invocation starts a new run and inspects the current worktree. Native Goose action-limit stops within a running phase resume automatically. A
+new launcher invocation does not automatically adopt an old interrupted session. Prior commits
 and logs remain available; fresh blind reviewers must still ignore old conclusions.
 
 Direct `goose run --recipe .goose/recipes/parity-unit.yaml` remains the legacy
-model-coordinated path. It does not provide the Python controller's hard budgets,
+model-coordinated path. It does not provide the Python controller's automatic continuation,
 checkpoint policy or durable progress display. Use the PowerShell launcher.
 
 ## Verified model setup (2026-09-11, Goose 1.50.0)

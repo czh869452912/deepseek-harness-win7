@@ -6,7 +6,7 @@ Supports emit, parallel, serial, bail, and waterfall dispatch modes with interna
 import asyncio
 import inspect
 import sys
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 
 def is_bailed(value: Any) -> bool:
@@ -241,6 +241,8 @@ class EventBus:
                     ctx_filter = getattr(actual_ctx, "_filter_hook", None) or getattr(actual_ctx, "__dict__", {}).get("filter")
                 else:
                     ctx_filter = getattr(actual_ctx, "filter", None)
+                if ctx_filter is None and callable(actual_ctx):
+                    ctx_filter = actual_ctx
                 if ctx_filter is None:
                     if actual_ctx is not None:
                         cb = _bind_caller_ctx(cb, actual_ctx)
@@ -251,6 +253,23 @@ class EventBus:
                             cb = _bind_caller_ctx(cb, actual_ctx)
                         result_callbacks.append(cb)
         return result_callbacks
+
+    def dispatch(self, dispatch_type: str, args: Sequence[Any]) -> List[Callable[..., Any]]:
+        """
+        1:1 TS EventBus.dispatch(type, args) matching TS events.ts.
+        args can be [event_name, *event_args] or [carrier, event_name, *event_args].
+        """
+        if not args:
+            return []
+        if isinstance(args[0], str):
+            event_name = args[0]
+            event_args = list(args[1:])
+            caller_ctx = None
+        else:
+            caller_ctx = args[0]
+            event_name = args[1]
+            event_args = list(args[2:])
+        return self._dispatch_hooks(dispatch_type, event_name, event_args, caller_ctx)
 
     def emit(self, event_name: str, *args: Any, **kwargs: Any) -> None:
         """

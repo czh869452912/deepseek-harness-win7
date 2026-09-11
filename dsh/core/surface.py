@@ -77,15 +77,38 @@ class SurfaceFoldReplacement:
         self.seq = seq
         self.start = start
         self.end = end
-        self.shadowed_seqs = shadowed_seqs
+        self.shadowed_seqs = list(shadowed_seqs)
+        self.shadowedSeqs = self.shadowed_seqs
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "seq": self.seq,
             "start": self.start,
             "end": self.end,
+            "shadowedSeqs": list(self.shadowed_seqs),
             "shadowed_seqs": list(self.shadowed_seqs),
         }
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, SurfaceFoldReplacement):
+            return (self.seq, self.start, self.end, self.shadowed_seqs) == (
+                other.seq,
+                other.start,
+                other.end,
+                other.shadowed_seqs,
+            )
+        if isinstance(other, dict):
+            s_seqs = other.get("shadowedSeqs", other.get("shadowed_seqs"))
+            return (self.seq, self.start, self.end, self.shadowed_seqs) == (
+                other.get("seq"),
+                other.get("start"),
+                other.get("end"),
+                s_seqs,
+            )
+        return False
+
+    def __repr__(self) -> str:
+        return f"SurfaceFoldReplacement(seq={self.seq}, start={self.start}, end={self.end}, shadowed_seqs={self.shadowed_seqs})"
 
 
 class SurfaceFoldResult:
@@ -121,7 +144,7 @@ class SurfacePlan:
 
 
 def _is_event_seq(value: Any) -> bool:
-    return isinstance(value, int) and value >= 0
+    return type(value) is int and value >= 0
 
 
 def _surface_op_of(event: Dict[str, Any]) -> Optional[Union[str, Dict[str, Any]]]:

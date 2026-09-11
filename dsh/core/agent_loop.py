@@ -439,7 +439,7 @@ class AgentLoopService:
             raise ValueError(f'agent "{sid}" already exists')
 
         sessions_svc = self.ctx.get("sessions")
-        if isinstance(sessions_svc, SessionStore):
+        if isinstance(sessions_svc, SessionStore) or (sessions_svc is not None and hasattr(sessions_svc, "create")):
             session = sessions_svc.get(sid) or sessions_svc.create(sid, meta=meta)
         else:
             header = SessionHeader.from_dict({"id": sid, **(meta or {})})

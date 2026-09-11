@@ -56,6 +56,10 @@ class _ServiceExtendedProxy:
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return self.__dict__["_target"](*args, **kwargs)
 
+    @property
+    def __class__(self) -> Any:
+        return self.__dict__["_target"].__class__
+
     def __repr__(self) -> str:
         return f"<Extended {repr(self.__dict__['_target'])}>"
 

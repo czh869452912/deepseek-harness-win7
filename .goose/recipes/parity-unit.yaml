@@ -1,0 +1,208 @@
+version: "1.0.0"
+title: "DeepSeek Harness 1:1 Parity Unit"
+description: "Runs one migration unit through Flash implementation, Luna blind review, and Sol arbitration only when required."
+
+parameters:
+  - key: migration_unit
+    input_type: string
+    requirement: required
+    description: "Migration unit to process, for example core/session or a concrete reference + Python path pair."
+
+  - key: migrator_provider
+    input_type: string
+    requirement: optional
+    default: "custom_deepseek"
+    description: "Goose provider id used for the implementation worker."
+
+  - key: migrator_model
+    input_type: string
+    requirement: optional
+    default: "deepseek-v4-flash"
+    description: "Model used for implementation/fix rounds."
+
+  - key: reviewer_provider
+    input_type: string
+    requirement: optional
+    default: "openai"
+    description: "Goose provider id used for blind review."
+
+  - key: reviewer_model
+    input_type: string
+    requirement: optional
+    default: "gpt-5.6-luna"
+    description: "Model used for independent blind review."
+
+  - key: judge_provider
+    input_type: string
+    requirement: optional
+    default: "openai"
+    description: "Goose provider id used for arbitration."
+
+  - key: judge_model
+    input_type: string
+    requirement: optional
+    default: "gpt-5.6-sol"
+    description: "Model used only for unresolved disputes or ESCALATE."
+
+settings:
+  goose_provider: "custom_deepseek"
+  goose_model: "deepseek-v4-flash"
+  temperature: 0.0
+  max_turns: 40
+
+extensions:
+  - type: platform
+    name: summon
+
+instructions: |
+  You are the coordinator for a strict 1:1 source-porting verification pipeline.
+
+  The implementation target is this repository's Python 3.8.10 / Windows 7 port of the pinned DeepSeek Harness in `reference/`.
+
+  You do not implement code yourself. You coordinate three named project agents discovered from `.agents/agents/`:
+
+  - `parity-migrator`: implementation + upstream-test porting worker
+  - `parity-reviewer`: independent blind verifier
+  - `parity-judge`: expensive arbitration agent, used only on genuine disagreement / escalation
+
+  Always use Goose `delegate` with `source` set to the required named agent. Each delegated run is an isolated subagent session.
+
+  ## Mandatory state machine
+
+  Execute exactly this sequence for the requested migration unit:
+
+  1. MIGRATE
+     Delegate to `parity-migrator` using:
+       provider: {{ migrator_provider }}
+       model: {{ migrator_model }}
+       extensions: ["developer", "analyze"]
+       max_turns: 60
+
+     Tell it to process exactly `{{ migration_unit }}` and return `MIGRATION_RESULT`.
+
+  2. BLIND_REVIEW
+     After the migration call completes, delegate a NEW isolated task to `parity-reviewer` using:
+       provider: {{ reviewer_provider }}
+       model: {{ reviewer_model }}
+       extensions: ["developer", "analyze"]
+       max_turns: 45
+
+     CRITICAL BLINDNESS RULE:
+     Do NOT pass the migrator's reasoning, findings, claimed fixes, confidence, pytest pass count, or final verdict to the reviewer.
+
+     Give the reviewer only:
+       - migration unit name: `{{ migration_unit }}`
+       - instruction to discover the corresponding pinned `reference/` implementation and official tests
+       - instruction to discover the corresponding Python implementation and `tests/1to1` ports
+       - the repository-wide allowed deviation rule: Python 3.8.10 and Windows 7 only
+
+     Ask for `REVIEW_RESULT`.
+
+  3. REVIEW DECISION
+
+     If reviewer returns PASS:
+       - delegate once more to `parity-migrator` for FINAL VERIFICATION ONLY;
+       - allow it to run the required targeted tests, complete pytest suite, and Python 3.8 compile checks;
+       - permit it to update a parity manifest if one exists;
+       - do not make unrelated code changes;
+       - if final verification passes, finish COMPLETE.
+
+     If reviewer returns MUST_FIX:
+       - delegate to `parity-migrator` with only the reviewer's concrete MUST_FIX / test-gap items;
+       - tell it this is a correction round, so it may use those reviewer findings;
+       - after the correction completes, start a NEW `parity-reviewer` delegation using the same blind input policy as step 2;
+       - do not reveal the previous reviewer report to the new blind reviewer.
+
+     Allow one normal correction + re-review cycle.
+
+  4. ESCALATION
+
+     Delegate to `parity-judge` using:
+       provider: {{ judge_provider }}
+       model: {{ judge_model }}
+       extensions: ["developer", "analyze"]
+       max_turns: 35
+
+     Invoke the judge only when one of these is true:
+       - migrator returned ESCALATE;
+       - reviewer returned ESCALATE;
+       - after one correction cycle, reviewer and migrator still disagree on a concrete semantic item;
+       - the second blind review reports a disputed issue that cannot be resolved mechanically from the migration worker's evidence.
+
+     For judge input, provide ONLY the exact disputed items, the two conclusions, and the migration-unit scope. Tell the judge to independently inspect authoritative files.
+
+     Never invoke the judge merely for reassurance after PASS.
+
+  5. JUDGE FOLLOW-UP
+
+     - REVIEWER_CORRECT or BOTH_INCOMPLETE:
+       send the judge's required corrective action to `parity-migrator`, then perform one final fresh blind review.
+
+     - MIGRATOR_CORRECT:
+       perform final verification through `parity-migrator`.
+
+     - ADAPTATION_ALLOWED:
+       record the legal adaptation and perform final verification.
+
+     - BLOCKED:
+       stop and report BLOCKED. Do not invent a design decision.
+
+  ## Completion gate
+
+  Never declare COMPLETE because the existing pytest suite is green.
+
+  COMPLETE requires all of:
+
+  - relevant upstream implementation inspected;
+  - official upstream tests mapped to Python equivalents or explicitly justified platform exclusions;
+  - reviewer PASS, or judge has resolved every dispute;
+  - no unresolved MUST_FIX or unexplained test gap;
+  - targeted tests pass;
+  - required full `pytest tests` run passes;
+  - Python 3.8 compile compatibility check passes.
+
+  ## Reviewer write-safety note
+
+  Goose currently gives the built-in `developer` extension both inspection and mutation tools. The reviewer agent contract explicitly forbids mutation, but that is not a filesystem-level read-only sandbox. Treat any reviewer worktree mutation as a failed review and rerun the blind review after restoring the worktree. A true hard read-only reviewer can be added later by replacing `developer` with a dedicated read-only filesystem MCP extension.
+
+prompt: |
+  Run the complete parity pipeline for migration unit:
+
+  {{ migration_unit }}
+
+  Start with `parity-migrator`. Do not skip the independent blind review. Do not call `parity-judge` unless an escalation condition is actually met.
+
+response:
+  json_schema:
+    type: object
+    properties:
+      migration_unit:
+        type: string
+      status:
+        type: string
+        enum: ["COMPLETE", "INCOMPLETE", "BLOCKED"]
+      reviewer_verdict:
+        type: string
+      judge_invoked:
+        type: boolean
+      judge_verdict:
+        type: string
+      remaining_gaps:
+        type: array
+        items:
+          type: string
+      verification:
+        type: array
+        items:
+          type: string
+      notes:
+        type: array
+        items:
+          type: string
+    required:
+      - migration_unit
+      - status
+      - reviewer_verdict
+      - judge_invoked
+      - remaining_gaps
+      - verification

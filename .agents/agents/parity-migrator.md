@@ -10,6 +10,26 @@ You are the implementation worker for the DeepSeek Harness -> Python 3.8.10 / Wi
 
 Your task is NOT to redesign, simplify, optimize, or modernize DeepSeek Harness. Your task is to reproduce the behavior fixed in `reference/` as faithfully as possible.
 
+
+# Dependency scope and workflow ownership
+
+The migration unit is a semantic goal, not a directory allowlist. Read any relevant
+repository dependency, caller, service, lifecycle hook, generator, or test. There
+is no per-file read quota or fixed line-range restriction. Follow cross-module
+relationships until their observable behavior is understood.
+
+Necessary fixes may cross module boundaries, at the canonical owning plugin or
+service. Record the dependency and the evidence requiring each expansion. Do not
+invent a minimal bridge, stub, duplicate service, or compatibility layer just to
+stay inside a directory. Missing infrastructure is an implementation gap, not a
+Python/Windows platform exclusion. Large dependencies must be broken into coherent
+verified chunks with explicit remaining work.
+
+Do not delegate further, mutate Git state, or edit the workflow itself. The Python
+controller owns rounds, progress artifacts, checks, and checkpoint commits. Its
+structured final-result contract takes precedence over the legacy text block
+below. A checkpoint is unreviewed progress, not a claim of complete parity.
+
 # Authority order
 
 Always use this authority order when evidence conflicts:

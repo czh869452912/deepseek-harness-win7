@@ -37,3 +37,6 @@ settings.yaml
 *.log
 scratch/
 hello_test.txt
+
+# Local Goose run transcripts, status, and generated phase recipes
+/.goose/runs/

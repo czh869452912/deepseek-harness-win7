@@ -1,7 +1,13 @@
 param(
     [string]$MigrationUnit,
     [switch]$Smoke,
-    [string]$GooseExe = $env:GOOSE_EXE
+    [string]$GooseExe = $env:GOOSE_EXE,
+    [string]$PythonExe,
+    [ValidateRange(1, 100)][int]$MaxRounds = 3,
+    [ValidateRange(1, 1000)][int]$MaxTurns = 60,
+    [ValidateRange(1, 86400)][int]$PhaseTimeoutSeconds = 1800,
+    [switch]$NoCommit,
+    [switch]$AdoptExisting
 )
 $ErrorActionPreference = 'Stop'
 if (-not $Smoke -and [string]::IsNullOrWhiteSpace($MigrationUnit)) {
@@ -23,6 +29,7 @@ foreach ($name in @('GOOSE_SUBAGENT_PROVIDER', 'GOOSE_SUBAGENT_MODEL')) {
     }
 }
 $repoRoot = Split-Path -Parent $PSScriptRoot
+if (-not $PythonExe) { $PythonExe = Join-Path $repoRoot '.venv\Scripts\python.exe' }
 $recipe = '.goose/recipes/parity-unit.yaml'
 if ($Smoke) { $recipe = '.goose/recipes/parity-smoke.yaml' }
 Push-Location $repoRoot
@@ -45,8 +52,19 @@ try {
             throw 'Smoke check did not return SMOKE_PASS. Inspect the agent results above.'
         }
     } else {
-        & $GooseExe @runArgs
-        if ($LASTEXITCODE -ne 0) { throw "Goose failed with exit code $LASTEXITCODE." }
+        if (-not (Test-Path -LiteralPath $PythonExe -PathType Leaf)) {
+            throw 'Repository Python not found. Supply -PythonExe (Python 3.8).'
+        }
+        $controllerArgs = @((Join-Path $PSScriptRoot 'parity_runner.py'),
+            '--unit', $MigrationUnit, '--goose', $GooseExe,
+            '--max-rounds', "$MaxRounds", '--max-turns', "$MaxTurns",
+            '--phase-timeout', "$PhaseTimeoutSeconds")
+        if ($NoCommit) { $controllerArgs += '--no-commit' }
+        if ($AdoptExisting) { $controllerArgs += '--adopt-existing' }
+        & $PythonExe @controllerArgs
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Parity did not complete. See the final status and .goose/runs/ artifacts.'
+        }
     }
 } finally {
     $env:OPENAI_BASE_URL = $originalBaseUrl

@@ -1,203 +1,169 @@
-# Goose multi-model parity pipeline
+# Goose parity workflow
 
-This repository includes a Goose workflow for repeatedly migrating and independently reviewing one DeepSeek Harness parity unit at a time.
+`run-parity.ps1` uses a Python 3.8 controller to run the three specialist agents
+in separate Goose sessions. Python owns phase transitions, bounded retries,
+verification, visible progress, and checkpoint commits. It loads agent instructions
+from `.agents/agents/` and provider/model defaults from `recipes/parity-unit.yaml`.
+A coordinator model can no longer silently invent extra continuation rounds or
+narrow another worker's read scope.
 
-## Architecture
+## Run
 
-```text
-Goose recipe coordinator (DeepSeek Flash by default)
-    |
-    +--> parity-migrator  -- DeepSeek Flash -- implementation + test porting
-    |
-    +--> parity-reviewer  -- GPT-5.6 Luna      -- fresh blind review
-    |
-    `--> parity-judge     -- GPT-5.6 Sol       -- only on ESCALATE / unresolved conflict
-```
-
-Project agents live in:
-
-```text
-.agents/agents/
-```
-
-The executable recipe lives in:
-
-```text
-.goose/recipes/parity-unit.yaml
-```
-
-Goose discovers project-local agents from `.agents/agents/` and project-local recipes from `.goose/recipes/`.
-
-## Why this shape
-
-The workflow deliberately separates implementation from verification:
-
-1. Flash performs the migration and ports upstream tests.
-2. Luna receives a fresh isolated subagent session and is not given Flash's reasoning or claimed fixes.
-3. Flash gets concrete reviewer findings only if correction is required.
-4. Sol is invoked only if either worker escalates or a concrete disagreement survives one correction cycle.
-5. A green local pytest suite is not sufficient for COMPLETE; official upstream test mapping is also required.
-
-The pinned `reference/` submodule remains the sole upstream authority.
-
-## Goose requirements
-
-Use a recent Goose version with:
-
-- project-local agent discovery;
-- the `summon` platform extension;
-- `delegate(source=..., provider=..., model=...)` support;
-- Recipe parameters and structured response support.
-
-The current Goose implementation discovers project agents from `.agents/agents/`, creates delegated agents as independent sessions, and allows each delegate call to override provider, model, extensions, temperature, and max turns.
-
-## Provider setup
-
-Do not commit API keys to this repository.
-
-The recipe defaults are:
-
-| Role | Goose provider id | Model |
-| --- | --- | --- |
-| Coordinator | `custom_deepseek` | `deepseek-flash` |
-| Migrator | `custom_deepseek` | `deepseek-flash` |
-| Reviewer | `openai` | `gpt-5.6-luna` |
-| Judge | `openai` | `gpt-5.6-sol` |
-
-The verified local `custom_deepseek` provider uses `deepseek-flash` and reads `CUSTOM_DEEPSEEK_API_KEY` from Goose's credential store. The upstream built-in provider can instead use `DEEPSEEK_API_KEY`; inspect the local JSON's `api_key_env` rather than assuming they are interchangeable.
-
-OpenAI uses `OPENAI_API_KEY` unless you configure another supported authentication path/provider.
-
-If your installed Goose version exposes different provider or model identifiers, override the recipe parameters instead of editing the agents:
+From the repository root:
 
 ```powershell
-goose run --recipe .goose/recipes/parity-unit.yaml `
-  --params migration_unit=core/session `
-  --params migrator_provider=custom_deepseek `
-  --params migrator_model=deepseek-flash `
-  --params reviewer_provider=openai `
-  --params reviewer_model=gpt-5.6-luna `
-  --params judge_provider=openai `
-  --params judge_model=gpt-5.6-sol
-```
-
-On a POSIX shell, use ordinary line continuations instead of PowerShell backticks.
-
-## Typical use
-
-From the repository root (the wrapper also locates the installed CLI when it is not on PATH):
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .goose/run-parity.ps1 -Smoke
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .goose/run-parity.ps1 -MigrationUnit core/session
 ```
 
-For a different installation, pass `-GooseExe C:/path/to/goose.exe` or set `GOOSE_EXE`. The wrapper normalizes a Markdown-formatted `OPENAI_BASE_URL` for the child process and restores the original environment afterward. Do not add `--no-profile`: on the tested Goose 1.50.0 it suppresses recipe extensions as well. The recipe explicitly loads `summon`, `developer`, and `analyze`; delegate extension lists filter already-loaded extensions.
-
-You may also provide a more explicit unit when the mapping is not obvious, for example:
+To include **existing migration edits** in verified checkpoints:
 
 ```powershell
-goose run --recipe .goose/recipes/parity-unit.yaml --params migration_unit="reference/packages/core/agent-loop <-> dsh/core/agent_loop.py <-> tests/1to1/core/agent-loop"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .goose/run-parity.ps1 -MigrationUnit core/session -AdoptExisting
 ```
 
-The recipe should finish with structured output containing:
+`-AdoptExisting` authorizes inclusion of prior edits only for files the migrator
+explicitly lists as verified migration work. It does not stage the whole repository.
+Without it, overlapping pre-existing edits cause the checkpoint to be skipped with
+an explanation, while work can continue. Existing staged changes always prevent an
+automatic checkpoint. No reset, cleanup or automatic rollback is performed.
 
-- migration unit;
-- `COMPLETE`, `INCOMPLETE`, or `BLOCKED`;
-- reviewer verdict;
-- whether the judge was invoked;
-- remaining gaps;
-- verification commands/results.
+Useful options:
 
-## Reasoning-effort limitation
-
-The current Goose `delegate` schema exposes per-delegate provider/model/temperature/max-turn overrides, but not a generic per-delegate `reasoning_effort` field.
-
-Therefore this repository fixes the model routing in Goose but does **not** pretend to enforce `Flash=max`, `Luna=high`, or `Sol=high` through Recipe YAML. Configure reasoning/thinking behavior through the selected provider's supported Goose/provider configuration when available. Model routing and escalation policy remain deterministic at the Recipe-contract level.
-
-## Reviewer isolation and write safety
-
-The blind reviewer is hard-isolated at the **session/context** level: Goose delegates run independently and do not share parent conversation history.
-
-There is an important current limitation: Goose's built-in `developer` extension bundles inspection, shell, and edit capabilities together. The reviewer agent therefore has a strict no-mutation contract, but this is not a filesystem-level read-only sandbox.
-
-If hard write isolation is required, add a dedicated read-only filesystem/search MCP extension and change the reviewer/judge delegate calls to use only that extension (plus `analyze`) instead of `developer`.
-
-Until then, any reviewer-caused worktree mutation invalidates the review. Restore the worktree and rerun a fresh blind review.
-
-## Validation expectations
-
-The migrator must follow repository policy and, before COMPLETE, run the appropriate unit/regression checks plus the full suite:
-
-```powershell
-.venv\Scripts\python.exe -m pytest tests
-```
-
-It must also perform Python 3.8 `compileall` validation for changed Python code.
-
-The workflow must not weaken or rewrite tests merely to make the current port pass.
-
-## Files
-
-```text
-.agents/agents/parity-migrator.md
-.agents/agents/parity-reviewer.md
-.agents/agents/parity-judge.md
-.goose/recipes/parity-unit.yaml
-.goose/README.md
-```
-
-## Verified local setup (2026-09-11, Goose 1.50.0)
-
-Local configuration is in `%APPDATA%/Block/goose/config/`, outside the repository.
-Existing config and both DeepSeek provider JSON files were backed up in
-`backup-parity-20260911-194837/` before modification. API keys were not changed.
-Restart the desktop app to reload disk configuration; use the wrapper for CLI runs
-from terminals that still carry the malformed environment URL.
-
-| Setting | Effective configuration | Meaning |
+| Option | Default | Effect |
 | --- | --- | --- |
-| DeepSeek context | `context_limit: 1000000` in both local DeepSeek provider JSONs | Replaces null / fallback metadata |
-| Luna / Sol context | 1,050,000 in Goose's built-in OpenAI model catalog | Already defined; no global context override needed |
-| Single-response output | `GOOSE_MAX_TOKENS: 16384` | Operational budget, not the model's maximum capability |
-| Automatic compaction | `GOOSE_AUTO_COMPACT_THRESHOLD: 0.7` | Start compacting at 70% of context |
-| Request timeout | DeepSeek `timeout_seconds: 600`; OpenAI `OPENAI_TIMEOUT: "600"` | Allow longer inference |
-| OpenAI routing | Plain HTTPS `OPENAI_BASE_URL`, matching `OPENAI_HOST` and `OPENAI_BASE_PATH` | Use the configured proxy, not the official default host |
-| Thinking | Existing `GOOSE_THINKING_EFFORT: high` retained | Not a per-role max/high guarantee |
-| Turn budgets | Coordinator 40; migrator 60; reviewer 45; judge 35 | Every follow-up must repeat its role routing and budget |
+| `-MaxRounds` | 3 | Hard cap on migration + fresh-review pairs |
+| `-MaxTurns` | 60 | Goose turn budget for each phase |
+| `-PhaseTimeoutSeconds` | 1800 | Wall-time cap per model phase or verification command |
+| `-NoCommit` | off | Keep all migration edits uncommitted |
+| `-AdoptExisting` | off | Include verified prior migration edits as described above |
+| `-GooseExe` | PATH, then local desktop install | Override CLI location; `GOOSE_EXE` also works |
+| `-PythonExe` | `.venv/Scripts/python.exe` | Must be Python 3.8 for runtime checks |
+| `-Smoke` | off | Original read-only named-agent delegation/credential smoke test |
 
-Context includes instructions, history, tool definitions/results and generated
-output; it is not a separate promise that a full context window of input plus
-another full output budget will fit. `GOOSE_INPUT_LIMIT` is for Ollama's `num_ctx`,
-not a generic OpenAI-compatible input-token field. Avoid a global
-`GOOSE_CONTEXT_LIMIT` override when different models have different windows.
-The proxy's `/models` response confirms Luna/Sol names but does not publish its
-own context caps. The catalog values above are not a long-context stress test of
-the proxy. Lower the operational context if the proxy imposes a smaller limit.
+The wrapper normalizes a Markdown-formatted `OPENAI_BASE_URL` in the child
+process environment and restores the original afterward. Do not add `--no-profile`
+to phase recipe calls: Goose 1.50.0 suppresses their extensions with that flag.
 
-Sources: [Goose configuration variables](https://goose-docs.ai/docs/guides/environment-variables/),
-[Goose OpenAI model catalog](https://github.com/aaif-goose/goose/blob/main/crates/goose-providers/src/openai.rs),
-[DeepSeek context documentation](https://api-docs.deepseek.com/quick_start/pricing/).
+## What you will see
 
-The live smoke session `20260911_9` returned `SMOKE_PASS`. Its three independent
-child sessions (`20260911_10`, `20260911_11`, `20260911_12`) used Flash, Luna and Sol
-respectively, executed the permitted read-only AGENTS.md command, and confirmed
-analyze tools. Their saved model configs confirm the 16,384-token output budget.
-This verifies routing, credentials and tool execution, not completion of a real
-migration unit. The production recipe's correction and arbitration decisions
-remain model-followed instructions rather than a programmatically enforced state
-machine.
+Each console entry includes a timestamp, phase and round. Output includes:
 
-Validation: launcher regression tests: **4 passed**; Python 3.8 compile check and
-both recipe validators passed. Full `pytest tests` run: **1479 passed, 3 failed**
-(before the final two launcher verdict cases were added and passed separately).
-The same three failures were present before the Goose edits:
+- role/provider/model at phase start;
+- the agent's public text as it arrives and a concise tool description;
+- a heartbeat every 15 seconds, with elapsed time and time since last output;
+- structured verdict, dependency expansions, open issue count and coverage flag;
+- targeted/full-test command results;
+- checkpoint hash, or the explicit reason a checkpoint was skipped;
+- a final status and artifact directory, including failures and interruptions.
 
-- `test_hmr_config.py::test_normalizes_refresh_failures_and_broadcasts_them_without_escaping_watcher`
-- `test_user_patches.py::test_watches_add_failure_recovery_and_removal_through_transactional_hmr`
-- `test_portable_smoke.py::test_smoke_dist_portable_directory`
+The heartbeat indicates liveness of the controller, not proof that the model is
+making progress. It deliberately does not invent a percentage-complete estimate.
+Model-private thinking is not displayed or retained in the event transcript.
 
-The first two compare Windows short and long temporary paths (`ADMINI~1` versus
-`Administrator`); the portable smoke launches an existing `dist` entrypoint that
-rejects `--profile minimal`. These remain unresolved and will prevent the real
-migration recipe's full-test completion gate from passing until addressed.
+Each run has its own ignored `.goose/runs/<timestamp-id>/` directory:
+
+| Artifact | Contents |
+| --- | --- |
+| `status.json` | Latest phase, round, verdict, open issues, commits and stop reason |
+| `progress.jsonl` | Timestamped user-visible activity |
+| `NN-role.events.jsonl` | Goose stream events (thinking blocks excluded) |
+| `NN-role.result.json` | Parsed result for that exact phase |
+| `NN-role.yaml` | Exact generated phase recipe |
+| `NN-targeted.log`, `NN-full-suite.log` | Verification output |
+
+For example, in another terminal:
+
+```powershell
+Get-Content .goose/runs/<run-id>/progress.jsonl -Tail 20 -Wait
+Get-Content .goose/runs/<run-id>/status.json -Encoding UTF8
+```
+
+Only one controller may operate this checkout at a time. `active.lock` stores its
+PID. After a hard process kill, verify the PID is no longer running before removing
+that stale lock. Ctrl+C normally stops the child process tree, records INTERRUPTED,
+and releases the lock. A non-COMPLETE result exits nonzero; an ordinary greeting,
+truncated result, or Goose exit code 0 alone cannot be treated as success.
+
+## Dependency scope
+
+The unit is a semantic goal, **not a directory allowlist**. Every role may follow
+relevant imports, callers, Cordis dispatch/lifecycle, typert services, generators
+and tests across the repository. There are no per-file read quotas or fixed line
+ranges. Migration fixes belong in the canonical owning plugin/service, even when
+that owner is outside the unit's directory.
+
+A missing subsystem is real missing work. Do not disguise it with an artificial
+bridge, stub, duplicated service, skipped test, or platform exclusion. Record why
+each dependency is needed; split large dependencies into coherent testable chunks.
+Read access to dependencies is separate from review write policy: reviewers and
+judges still must not mutate source. The controller detects worktree/HEAD/index
+changes after phases and stops on violations; this is **not an OS sandbox**.
+Existing changes are preserved for inspection, never automatically discarded.
+
+Blind reviews use a fresh process/session with the role contract and unit only.
+They receive no migration report, previous findings, test pass counts or judge
+conclusions. Migration correction sessions receive the preceding structured
+results; arbitration receives disputed evidence. Reviewers must not consult
+`.goose/out/`, `.goose/runs/`, or historical review reports.
+
+Case-by-case mapping requires upstream titles, Python test locations and explicit
+classification. Matching counts is insufficient. A root-level regression test may
+be a valid port if its assertions match: its directory alone is not grounds to
+reject it or to call it equivalent.
+
+## State and commits
+
+Each round runs MIGRATE -> targeted pytest / compileall -> checkpoint when eligible
+-> fresh REVIEW. Necessary arbitration runs at most once; its correction is followed
+by another fresh review within the same overall round budget.
+
+- Identical open issue IDs and unchanged files across consecutive reviews: STALLED.
+- Exhausted round budget: INCOMPLETE, with findings and checkpoints retained.
+- Invalid result, timeout, forbidden mutation, repeated escalation or failed final
+  full suite: BLOCKED with evidence, no hidden restart.
+- Independent PASS, complete case mapping, no unresolved disputes, targeted checks
+  and the required full suite green: COMPLETE.
+
+After a coherent chunk passes targeted tests and Python 3.8 compile checks, an
+eligible checkpoint is committed with `(unreviewed)` in its message. This saves
+progress before another lengthy review, but **does not claim parity completeness**.
+No pushes are made. Checkpoints are restricted to observed migration changes (plus
+explicitly adopted prior files); unrelated dirty/staged work is never swept in.
+The full `pytest tests` gate runs once after independent PASS. Existing full-suite
+failures remain blockers to COMPLETE and are not relabeled as a pass.
+
+A new invocation starts a new bounded run and inspects the current worktree. There
+is no automatic resumption of a half-completed Goose conversation. Prior commits
+and logs remain available; fresh blind reviewers must still ignore old conclusions.
+
+Direct `goose run --recipe .goose/recipes/parity-unit.yaml` remains the legacy
+model-coordinated path. It does not provide the Python controller's hard budgets,
+checkpoint policy or durable progress display. Use the PowerShell launcher.
+
+## Verified model setup (2026-09-11, Goose 1.50.0)
+
+| Role | Provider | Model | Context |
+| --- | --- | --- | --- |
+| Migrator | `custom_deepseek` | `deepseek-flash` | 1,000,000 in local provider JSON |
+| Reviewer | `openai` | `gpt-5.6-luna` | 1,050,000 in Goose's built-in catalog |
+| Judge | `openai` | `gpt-5.6-sol` | 1,050,000 in Goose's built-in catalog |
+
+Local `%APPDATA%/Block/goose/config/config.yaml` uses an operational output budget
+of `GOOSE_MAX_TOKENS: 16384`, auto-compaction threshold `0.7`, the configured HTTPS
+OpenAI proxy and existing thinking effort `high`. Provider timeouts are 600 seconds.
+Context metadata is not a long-context stress test of the proxy. `GOOSE_INPUT_LIMIT`
+is primarily Ollama's `num_ctx`, not a generic input-budget field. Avoid overriding
+all three models with a single global context limit.
+
+The local custom DeepSeek provider reads `CUSTOM_DEEPSEEK_API_KEY`; the upstream
+built-in definition may instead read `DEEPSEEK_API_KEY`. Check `api_key_env` locally.
+Credentials and local provider configuration remain outside Git. The earlier
+configuration backup is `backup-parity-20260911-194837/` beside `config.yaml`.
+Restart Goose Desktop after changing disk configuration.
+
+References: [Goose CLI streaming](https://goose-docs.ai/docs/guides/goose-cli-commands/),
+[recipe schemas](https://goose-docs.ai/docs/guides/recipes/recipe-reference/),
+[configuration variables](https://goose-docs.ai/docs/guides/environment-variables/).
+
+See [the core/session run diagnosis](diagnosis-core-session.md) for the observed
+old-loop failures and verification limits of this change.

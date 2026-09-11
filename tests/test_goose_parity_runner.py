@@ -1,0 +1,245 @@
+"""Controller regressions: real stream deltas, bounded phases and Git ownership."""
+import argparse
+import importlib.util
+import json
+from pathlib import Path
+import subprocess
+import sys
+import shutil
+
+import pytest
+
+
+SPEC = importlib.util.spec_from_file_location(
+    "goose_parity_runner", Path(__file__).resolve().parents[1] / ".goose/parity_runner.py")
+runner = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(runner)
+
+
+def result(status="READY", issues=None):
+    return dict(status=status, summary="checked", coverage_complete=status == "PASS",
+                issues=issues or [], changed_files=[], test_paths=["tests/test_unit.py"],
+                dependencies=[], test_map=["upstream case -> tests/test_unit.py -> PORTED"],
+                observed_changes=[])
+
+
+def message(mid, text, role="assistant"):
+    return {"type": "message", "message": {"id": mid, "role": role,
+            "content": [{"type": "text", "text": text}]}}
+
+
+def test_stream_assembles_deltas_and_ignores_tool_result_and_thinking():
+    seen = []
+    stream = runner.Stream(lambda k, v: seen.append((k, v)))
+    text = json.dumps(result())
+    stream.feed(message("first", "I am checking dependencies."))
+    stream.feed(message("tool-result", json.dumps(result("PASS")), "user"))
+    stream.feed({"type": "message", "message": {"role": "assistant", "content": [
+        {"type": "thinking", "thinking": "not public output"}]}})
+    for fragment in [text[:30], text[30:81], text[81:]]:
+        stream.feed(message("final", fragment))
+    stream.feed({"type": "complete"})
+    assert stream.result("migrate")["status"] == "READY"
+    assert "not public output" not in str(seen)
+
+
+def test_stream_cannot_reuse_an_earlier_valid_result():
+    stream = runner.Stream(lambda *args: None)
+    stream.feed(message("old", json.dumps(result())))
+    stream.feed(message("new", "Yes - what would you like me to do?"))
+    stream.feed({"type": "complete"})
+    with pytest.raises(ValueError, match="No complete structured result"):
+        stream.result("migrate")
+
+
+def test_missing_complete_event_is_a_failure():
+    stream = runner.Stream(lambda *args: None)
+    stream.feed(message("final", json.dumps(result())))
+    with pytest.raises(ValueError, match="without a complete"):
+        stream.result("migrate")
+
+
+def test_pass_requires_complete_mapping_and_no_issues():
+    data = result("PASS")
+    data["coverage_complete"] = False
+    with pytest.raises(ValueError, match="PASS requires"):
+        runner.parse_result(json.dumps(data), "review")
+
+
+@pytest.fixture
+def repo(tmp_path):
+    subprocess.check_call(["git", "init", "-q", str(tmp_path)])
+    runner.git(tmp_path, "config", "user.name", "Test")
+    runner.git(tmp_path, "config", "user.email", "test@example.invalid")
+    (tmp_path / "module.py").write_text("x = 1\n", encoding="utf-8")
+    runner.git(tmp_path, "add", "module.py")
+    runner.git(tmp_path, "commit", "-qm", "baseline")
+    return tmp_path
+
+
+class Harness(runner.Runner):
+    def __init__(self, root, phases, rounds=3):
+        self.root = root
+        self.args = argparse.Namespace(max_rounds=rounds, no_commit=False, adopt_existing=False, unit="core/session")
+        self.state = {"phase": "startup", "round": 0, "commits": [], "issues": []}
+        self.run_dir = root
+        self.initial_dirty = set()
+        self.phases = iter(phases)
+        self.calls = []
+        self.notifications = []
+
+    def notify(self, kind, message):
+        self.notifications.append((kind, message))
+
+    def phase(self, phase, feedback=None):
+        self.calls.append((phase, feedback))
+        expected, response = next(self.phases)
+        assert phase == expected
+        if phase == "review":
+            assert feedback is None
+        return response
+
+    def verify_chunk(self, value):
+        return True
+
+    def checkpoint(self, value):
+        pass
+
+    def check(self, name, args):
+        return True
+
+
+def test_unchanged_findings_stop_instead_of_restarting_agents(repo):
+    review = result("MUST_FIX", [{"id": "session/null", "detail": "missing", "evidence": "upstream:1"}])
+    h = Harness(repo, [("migrate", result()), ("review", review)] * 2)
+    assert h.run() == 2
+    assert h.state["status"] == "STALLED"
+    assert len(h.calls) == 4
+
+
+def test_round_limit_is_hard_even_with_new_findings(repo):
+    h = Harness(repo, [("migrate", result()), ("review", result("MUST_FIX"))], rounds=1)
+    assert h.run() == 2
+    assert h.state["status"] == "INCOMPLETE"
+    assert len(h.calls) == 2
+
+
+def test_failed_full_suite_stops_without_another_migration(repo):
+    h = Harness(repo, [("migrate", result()), ("review", result("PASS"))])
+    h.check = lambda *args: False
+    assert h.run() == 2
+    assert h.state["status"] == "BLOCKED"
+    assert "Full suite" in h.state["reason"]
+
+
+def test_single_judge_and_fresh_blind_review_after_correction(repo):
+    h = Harness(repo, [("migrate", result("ESCALATE")), ("review", result("ESCALATE")),
+                       ("judge", result("RESOLVED")), ("migrate", result()),
+                       ("review", result("PASS"))])
+    assert h.run() == 0
+    assert h.state["status"] == "COMPLETE"
+    assert h.calls[3][1]["judgment"]["status"] == "RESOLVED"
+    assert h.calls[4][1] is None
+
+
+def test_checkpoint_does_not_capture_preexisting_edits(repo):
+    h = Harness(repo, [])
+    h.initial_dirty = {"module.py"}
+    (repo / "module.py").write_text("x = 2\n", encoding="utf-8")
+    original = runner.git(repo, "rev-parse", "HEAD")
+    data = result()
+    data["observed_changes"] = ["module.py"]
+    runner.Runner.checkpoint(h, data)
+    assert runner.git(repo, "rev-parse", "HEAD") == original
+    assert runner.git(repo, "diff", "--cached", "--name-only") == ""
+    assert "pre-existing" in str(h.notifications)
+
+
+def test_explicit_adoption_commits_only_the_verified_paths(repo):
+    h = Harness(repo, [])
+    h.initial_dirty = {"module.py"}
+    h.args.adopt_existing = True
+    (repo / "module.py").write_text("x = 2\n", encoding="utf-8")
+    (repo / "unrelated.txt").write_text("keep me", encoding="utf-8")
+    data = result()
+    data["observed_changes"] = ["module.py"]
+    runner.Runner.checkpoint(h, data)
+    assert "unreviewed" in runner.git(repo, "log", "-1", "--format=%s")
+    assert runner.git(repo, "show", "--format=", "--name-only", "HEAD") == "module.py"
+    assert "unrelated.txt" in runner.dirty_paths(repo)
+
+
+def test_existing_index_is_preserved(repo):
+    h = Harness(repo, [])
+    (repo / "module.py").write_text("x = 2\n", encoding="utf-8")
+    runner.git(repo, "add", "module.py")
+    before = runner.git(repo, "diff", "--cached")
+    data = result()
+    data["observed_changes"] = ["module.py"]
+    runner.Runner.checkpoint(h, data)
+    assert runner.git(repo, "diff", "--cached") == before
+    assert not h.state["commits"]
+
+
+def test_process_timeout_stops_a_silent_child(tmp_path):
+    with pytest.raises(TimeoutError):
+        runner.run_process([sys.executable, "-c", "import time; time.sleep(30)"],
+                           tmp_path, tmp_path / "log.txt", lambda *args: None, 0.1)
+
+
+@pytest.mark.parametrize("name", ["../outside.py", "tests/../../outside", "C:/outside", ".git/config"])
+def test_test_paths_cannot_escape_repository(tmp_path, name):
+    with pytest.raises(ValueError):
+        runner.safe_path(tmp_path, name)
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows CLI integration")
+def test_complete_cli_pipeline_with_fake_goose(repo):
+    """Real child processes, target/full tests, structured output and checkpoint."""
+    source = Path(__file__).resolve().parents[1]
+    for name in [".goose/parity_runner.py", ".goose/recipes/parity-unit.yaml"] + [
+            ".agents/agents/" + role + ".md" for role in runner.ROLES.values()]:
+        dest = repo / name
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(str(source / name), str(dest))
+    (repo / ".gitignore").write_text(".goose/runs/\n__pycache__/\n.pytest_cache/\n", encoding="utf-8")
+    (repo / "tests").mkdir()
+    (repo / "tests/test_unit.py").write_text("def test_unit():\n    assert 1 == 1\n", encoding="utf-8")
+    fake = repo / "fake.py"
+    fake.write_text('''import json, sys
+from pathlib import Path
+args = sys.argv[1:]
+recipe = json.loads(Path(args[args.index('--recipe') + 1]).read_text(encoding='utf-8'))
+phase = recipe['title']
+changed = []
+if phase == 'parity-migrator':
+    Path('module.py').write_text('x = 2\\n', encoding='utf-8')
+    changed = ['module.py']
+else:
+    assert 'Continuation evidence' not in recipe['instructions']
+value = dict(status='READY' if changed else 'PASS', summary='verified',
+             coverage_complete=not changed, issues=[], changed_files=changed,
+             test_paths=['tests/test_unit.py'], dependencies=['canonical owner checked'],
+             test_map=['upstream case -> tests/test_unit.py -> PORTED'])
+text = json.dumps(value)
+for part in [text[:17], text[17:]]:
+    print(json.dumps({'type':'message','message':{'id':'final','role':'assistant',
+          'content':[{'type':'text','text':part}]}}), flush=True)
+print(json.dumps({'type':'complete'}), flush=True)
+''', encoding="utf-8")
+    executable = repo / "fake-goose.cmd"
+    executable.write_text('@echo off\n"' + sys.executable + '" "' + str(fake) + '" %*\n', encoding="utf-8")
+    runner.git(repo, "add", ".")
+    runner.git(repo, "commit", "-qm", "controller fixture")
+    proc = subprocess.run([sys.executable, str(repo / ".goose/parity_runner.py"),
+                           "--unit", "core/session", "--goose", str(executable),
+                           "--max-rounds", "1"], cwd=str(repo), stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE, encoding="utf-8", errors="replace", timeout=60)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    status_files = list((repo / ".goose/runs").glob("*/status.json"))
+    state = json.loads(status_files[0].read_text(encoding="utf-8"))
+    assert state["status"] == "COMPLETE"
+    assert len(state["commits"]) == 1
+    assert "unreviewed" in runner.git(repo, "log", "-1", "--format=%s")
+    assert "progress:" in proc.stdout
+    assert not (repo / ".goose/runs/active.lock").exists()

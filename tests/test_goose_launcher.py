@@ -42,15 +42,17 @@ def test_launcher_passes_scope_and_normalizes_url(tmp_path):
     result = subprocess.run(
         [POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
          str(ROOT / ".goose/run-parity.ps1"), "-GooseExe", str(fake),
-         "-MigrationUnit", unit], cwd=str(tmp_path), env=env,
+         "-PythonExe", str(fake), "-MigrationUnit", unit], cwd=str(tmp_path), env=env,
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8",
         errors="replace",
     )
     assert result.returncode == 0, result.stderr
     calls = [json.loads(line) for line in log.read_text(encoding="utf-8-sig").splitlines()]
     assert calls[0]["arguments"] == ["recipe", "validate", ".goose/recipes/parity-unit.yaml"]
-    assert calls[1]["arguments"] == ["run", "--recipe", ".goose/recipes/parity-unit.yaml",
-                                      "--params", "migration_unit=" + unit]
+    assert calls[1]["arguments"] == [str(ROOT / ".goose/parity_runner.py"),
+                                      "--unit", unit, "--goose", str(fake),
+                                      "--max-rounds", "3", "--max-turns", "60",
+                                      "--phase-timeout", "1800"]
     assert Path(calls[1]["cwd"]) == ROOT
     assert calls[1]["url"] == "https://example.test/v1"
 

@@ -17,7 +17,10 @@ exact manifest equality after JSON parsing, the exact manifest link tag in
 
 The install metadata is authored in ``apps/web/public/`` and copied verbatim
 into ``dist/`` by the app build; ``test_web_package_contract.py`` asserts that
-public -> dist relation.
+public -> dist relation. ``dist/index.html`` is the build of the mirrored
+source document (``apps/web/index.html``), which declares the same manifest
+link as a root-absolute URL; ``test_app_source_contract.py`` asserts that
+source -> dist projection.
 """
 
 import json

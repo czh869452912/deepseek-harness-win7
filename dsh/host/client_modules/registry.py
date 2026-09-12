@@ -428,13 +428,20 @@ class ClientModulesPlugin(Plugin):
         if not web_server:
             return
 
-        # Default package search directories
-        default_dirs = [
-            os.path.join(os.getcwd(), "packages"),
-            os.path.join(os.getcwd(), "reference", "deepseek-harness", "packages"),
-            os.path.join(os.getcwd(), "dsh", "client"),
-            os.path.join(os.getcwd(), "apps", "web"),
-        ]
+        # Default package search directories. The package tree lives beside the
+        # framework package, not beside whatever directory the process was
+        # launched from: the portable launcher starts `python <app>/dsh.py`
+        # without changing directory, and the served boot graph must not depend
+        # on the caller cwd (an unresolved graph injects no preload and the shell
+        # cannot boot).
+        app_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        default_dirs: List[str] = []
+        for root in (os.getcwd(), app_root):
+            for rel in (("packages",), ("reference", "deepseek-harness", "packages"),
+                        ("dsh", "client"), ("apps", "web")):
+                candidate = os.path.join(root, *rel)
+                if candidate not in default_dirs:
+                    default_dirs.append(candidate)
         all_dirs = list(self.search_dirs) + default_dirs
 
         self.registry = ClientModuleRegistry(ctx, search_dirs=all_dirs)

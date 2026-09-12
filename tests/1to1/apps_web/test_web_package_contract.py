@@ -10,6 +10,13 @@ the upstream React 18 build and is what the Python SPA seat
 (``dsh/host/frontend_static``) serves, so its shape is observable behavior of
 this migration unit.
 
+The source tree is mirrored verbatim from the pinned reference (``index.html``,
+``src/main.ts`` with ``src/preview.ts`` and ``src/node-module-stub.ts``,
+``vite.config.ts``, ``tsconfig.json``, ``tests/``, ``stress-tests/``); the built
+``dist/`` ships with it because the Python 3.8.10 / Windows 7 runtime has no
+Node build step. The source-to-dist derivation and the browser entry contract
+are asserted in ``test_app_source_contract.py``.
+
 Upstream sources of each asserted invariant:
 
   * ``package.json`` -> ``name`` / ``exports`` / ``files``.
@@ -17,7 +24,8 @@ Upstream sources of each asserted invariant:
     inputs (``index.html`` + ``src/preview.ts`` as the ``bootstrap`` entry),
     ``entryFileNames`` (``preview/`` for bootstrap, ``assets/`` otherwise),
     ``chunkFileNames`` (lazy ``@shikijs/langs`` grammars under
-    ``assets/langs/``), ``assetFileNames`` (fonts under ``assets/fonts/``), and
+    ``assets/langs/``), ``assetFileNames`` (fonts under ``assets/fonts/``),
+    ``sourcemap: true``, the ``worker.rollupOptions`` preview route, and
     ``emitPreviewPage()`` (``dist/preview.html`` is the built index page with
     one module script — the bootstrap entry — spliced ahead of its entry tag).
   * ``index.html`` + ``public/`` -> the document root element and the install
@@ -63,6 +71,8 @@ def test_package_publishes_the_built_app_contract():
         "!dist/preview.html",
         "!dist/preview",
     ]
+    # `.npmignore` drops sourcemaps from a directory publish of the same tree.
+    assert _read_text(os.path.join(WEB_ROOT, ".npmignore")).strip() == "*.map"
 
 
 def test_built_index_is_relative_and_declares_the_document_root():
@@ -89,6 +99,21 @@ def test_built_asset_layout_groups_grammars_and_fonts():
     assert any(name.endswith(".js") for name in os.listdir(langs_dir))
     # KaTeX faces referenced by the vendor stylesheet.
     assert any(name.endswith(".woff2") for name in os.listdir(fonts_dir))
+
+
+def test_built_dist_carries_sourcemaps_and_the_preview_surface():
+    """`sourcemap: true` emits the maps, and the preview surface owns `preview/`."""
+    assets = os.path.join(DIST_ROOT, "assets")
+    chunks = [name for name in os.listdir(assets) if name.endswith(".js")]
+    assert chunks
+    for name in chunks:
+        assert os.path.isfile(os.path.join(assets, name + ".map")), name
+    # The worker-preview surface: the bootstrap entry plus its worker chunk.
+    preview = os.path.join(DIST_ROOT, "preview")
+    assert len([name for name in os.listdir(preview)
+                if name.startswith("bootstrap-") and name.endswith(".js")]) == 1
+    assert any(name.startswith("worker-") and name.endswith(".js") for name in os.listdir(preview))
+    assert os.path.isfile(os.path.join(DIST_ROOT, "preview.html"))
 
 
 def test_preview_page_splices_the_bootstrap_entry_ahead_of_the_entry_tag():

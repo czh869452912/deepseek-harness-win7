@@ -37,10 +37,14 @@ class FrontendStaticPlugin(Plugin):
         super().__init__(config)
         cfg = config or {}
         repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        # The seat serves the BUILT application (`apps/web/dist`, the vite output).
+        # The source document (`apps/web/index.html`) is deliberately not a
+        # candidate: it names `/src/main.ts`, which no browser executes, so
+        # serving it would present exactly the bootless shell
+        # `apps/web/tests/vite-entry.e2e.ts` forbids.
         candidates = [
             os.path.join(repo_root, "apps", "web", "dist", "index.html"),
             os.path.join(repo_root, "reference", "apps", "web", "dist", "index.html"),
-            os.path.join(repo_root, "apps", "web", "index.html"),
         ]
         chosen = cfg.get("distIndex")
         if not chosen:
@@ -48,7 +52,7 @@ class FrontendStaticPlugin(Plugin):
                 if os.path.isfile(c):
                     chosen = c
                     break
-        self.dist_index = chosen or candidates[-1]
+        self.dist_index = chosen or candidates[0]
         self.dist_root = os.path.dirname(self.dist_index)
 
     def apply(self, ctx: Any) -> None:

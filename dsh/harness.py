@@ -188,7 +188,19 @@ def build_harness(
     loader.register_plugin_class("@deepseek-ai/dsh-host-plugin-inventory", PluginInventoryPlugin)
 
     if enable_web:
-        ctx.plugin(WebServerPlugin, config={"host": web_host, "port": web_port})
+        # The shipped Web composition configures response compression on the
+        # carrier (`reference/packages/bundle/web-app/cordis.patch.yml`: gzip,
+        # level 1, 1024-byte threshold); the served dist rides that fallback.
+        ctx.plugin(
+            WebServerPlugin,
+            config={
+                "host": web_host,
+                "port": web_port,
+                "compression": "gzip",
+                "compressionLevel": 1,
+                "compressionThresholdBytes": 1024,
+            },
+        )
         ctx.plugin(ClientModulesPlugin)
         ctx.plugin(PluginInventoryPlugin)
         ctx.plugin(DirectoryPickerAutoPlugin)

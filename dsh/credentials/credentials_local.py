@@ -412,19 +412,33 @@ class CredentialsService(CredentialProvider):
             if prev_records.get(rk) != next_records.get(rk):
                 self.notify_record_updated(rk)
 
+    def _write_locked(self) -> None:
+        """
+        Persist the memory snapshot assuming the caller holds the process and
+        writer locks.
+
+        Upstream encloses each mutation's decision *and* its persist in exactly
+        one `withFileLock(filename, ...)`
+        (`reference/packages/credentials/credentials-local/src/index.ts`, the
+        `DOCUMENT_LOCK_WAIT_MS` write sites). The writer lock is exclusive, so a
+        mutation that persisted through the locking `save()` nested a second
+        acquisition of a lock it already held and blocked until the wait expired.
+        """
+        os.makedirs(os.path.dirname(self.filepath) or ".", exist_ok=True)
+        doc: Dict[str, Any] = {"version": DOCUMENT_VERSION, "refs": dict(self._credentials)}
+        if self._records:
+            doc["records"] = dict(self._records)
+        text = yaml.dump(doc, default_flow_style=False, allow_unicode=True, sort_keys=False)
+        with open(self.filepath, "w", encoding="utf-8") as f:
+            f.write(text)
+        self._text = text
+
     def save(self) -> None:
         """Persist memory snapshot to disk under lock."""
         with self._lock:
             lock = FileLock(self.lock_path, timeout=5)
             with lock:
-                os.makedirs(os.path.dirname(self.filepath) or ".", exist_ok=True)
-                doc: Dict[str, Any] = {"version": DOCUMENT_VERSION, "refs": dict(self._credentials)}
-                if self._records:
-                    doc["records"] = dict(self._records)
-                text = yaml.dump(doc, default_flow_style=False, allow_unicode=True, sort_keys=False)
-                with open(self.filepath, "w", encoding="utf-8") as f:
-                    f.write(text)
-                self._text = text
+                self._write_locked()
 
     # ---- Reference Seam Methods ----
 
@@ -463,7 +477,7 @@ class CredentialsService(CredentialProvider):
             with lock:
                 self.reconcile_from_disk()
                 self._credentials[ref] = value
-                self.save()
+                self._write_locked()
                 self.notify_updated(ref)
 
     def unset(self, ref: str) -> None:
@@ -476,7 +490,7 @@ class CredentialsService(CredentialProvider):
                 if ref not in self._credentials:
                     return
                 del self._credentials[ref]
-                self.save()
+                self._write_locked()
                 self.notify_updated(ref)
 
     def set_credential(self, ref_name: str, value: str, save_to_disk: bool = True) -> None:
@@ -537,7 +551,7 @@ class CredentialsService(CredentialProvider):
                     raise ValueError(f'credentials-local: record "{key}" has unknown kind {json.dumps(kind)}')
 
                 self._records[key] = copy.deepcopy(nxt)
-                self.save()
+                self._write_locked()
                 self.notify_record_updated(key)
                 return copy.deepcopy(nxt)
 
@@ -552,7 +566,7 @@ class CredentialsService(CredentialProvider):
                 if key not in self._records:
                     return
                 del self._records[key]
-                self.save()
+                self._write_locked()
                 self.notify_record_updated(key)
 
 

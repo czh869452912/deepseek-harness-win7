@@ -138,9 +138,14 @@ def entry_chunk():
 
 
 def boot_graph(body):
-    match = re.search(r"window\.__DSH_BOOT__ = (\{.*?\});</script>", body, re.DOTALL)
+    match = re.search(r'globalThis\["__DSH_BOOT__"\] = (\{.*?\})</script>', body, re.DOTALL)
     assert match is not None, "served index carries no boot graph"
     return json.loads(match.group(1))
+
+
+def map_url(url):
+    """The combo source-map URL beside a combo script URL (`mapUrl`)."""
+    return re.sub(r"/client\.js(?=,|&rev=)", "/client.js.map", url)
 
 
 def entry_script_offset(body):
@@ -160,7 +165,7 @@ async def test_the_built_entry_demands_the_facade_the_served_index_provides(serv
     body = await served_index(served_web)
     entry_at = entry_script_offset(body)
     facade_at = body.find("window.__ModuleLoader__={")
-    graph_at = body.find("window.__DSH_BOOT__ = ")
+    graph_at = body.find('globalThis["__DSH_BOOT__"] = ')
     assert facade_at != -1, "served index carries no registration queue facade"
     assert graph_at != -1, "served index carries no boot graph global"
     # Both globals are plain parser-order siblings of the (deferred) entry
@@ -180,7 +185,7 @@ async def test_queue_facade_carries_the_upstream_failure_contract(served_web):
     # `createClientModuleSystem` builds it, `apply` installs it as a plugin.
     assert 'typeof exports.createClientModuleSystem!=="function"' in body
     assert 'typeof exports.apply!=="function"' in body
-    assert "return exports.createClientModuleSystem(this,{id:registration.id,exports},options);" in body
+    assert "return exports.createClientModuleSystem(this,{id:registration.id,exports},options)" in body
 
 
 @pytest.mark.asyncio
@@ -190,16 +195,27 @@ async def test_parser_preload_bundle_is_blocking_and_ahead_of_the_shell(served_w
     graph = boot_graph(body)
     modules = [entry for entry in graph["entries"] if entry["id"] == CLIENT_MODULES_ID]
     assert len(modules) == 1, "the shipped roster carries exactly one module-system row"
-    url = modules[0]["url"]
+    # The parser tier executes the bootstrap *batch*, not the row's own URL: the
+    # batches are the initial-load resources the graph advertises.
+    bootstrap = [
+        batch for batch in graph["batches"]
+        if batch["phase"] == "bootstrap" and CLIENT_MODULES_ID in batch["entries"]
+    ]
+    assert len(bootstrap) == 1, "the served graph carries no module-system bootstrap batch"
+    url = bootstrap[0]["url"]
+    assert url == "/plugins/??%s/client.js&rev=%s" % (CLIENT_MODULES_ID, bootstrap[0]["rev"])
 
     match = re.search(r'<script src="([^"]*%s[^"]*)"' % re.escape(CLIENT_MODULES_ID), body)
     assert match is not None, "served index carries no parser-preload script for the module-system bundle"
-    assert match.group(1) == url
+    # Attribute escaping turns the generated `&` into `&amp;`; the browser
+    # decodes it back to the combo URL.
+    assert match.group(1).replace("&amp;", "&") == url
     # Parser-blocking: a module/defer/async script would execute after the entry.
-    assert match.group(0) == '<script src="%s"' % url
+    assert match.group(0) == '<script src="%s"' % match.group(1)
     assert match.start() < entry_script_offset(body)
     assert match.start() > body.find("window.__ModuleLoader__={")
-    assert modules[0]["rev"] != "0" * 12
+    # The startup revision is opaque, never a placeholder or an artifact hash.
+    assert re.match(r"^[0-9a-f]{16}-\d+$", modules[0]["rev"]), modules[0]["rev"]
 
 
 @pytest.mark.asyncio
@@ -217,7 +233,7 @@ async def test_served_body_settles_the_boot_readiness_deferred(served_web):
     assert "globalThis.__DSH_BOOT_READY__" in body
     # Settled in the body, i.e. after the document's head rows are defined.
     assert body.find(READY_MARKUP) > body.index("<body>")
-    assert body.find(READY_MARKUP) > body.find("window.__DSH_BOOT__ = ")
+    assert body.find(READY_MARKUP) > body.find('globalThis["__DSH_BOOT__"] = ')
 
 
 def test_application_preload_rows_render_as_preload_links():
@@ -251,7 +267,7 @@ async def test_served_graph_is_the_shipped_client_roster(served_web):
     """
     The graph advertises exactly the browser plugins the shipped profile mounts.
 
-    Upstream composes `window.__DSH_BOOT__` from the `dsh.client` declarations of
+    Upstream composes the `__DSH_BOOT__` global from the `dsh.client` declarations of
     the Loader rows the profile activated, so the roster is a composition fact,
     not a directory listing: an extra entry mounts a plugin no shipped profile
     asked for, and a missing entry leaves a UI the lane drives unregistered. The
@@ -315,13 +331,28 @@ async def test_every_advertised_client_bundle_is_served_over_a_real_socket(serve
             status, headers, payload = await raw_get(port, entry["url"], cookie)
             assert status == 200, entry["id"]
             assert "javascript" in headers.get("content-type", ""), entry["id"]
+            # Versioned bytes are immutable.
+            assert headers.get("cache-control") == "public, max-age=31536000, immutable", entry["id"]
             # The bundle registers itself through the facade the index defines,
             # under the id the graph advertises.
             assert b"__ModuleLoader__.load(" in payload, entry["id"]
             assert ('"%s"' % entry["id"]).encode("utf-8") in payload, entry["id"]
-            # Versioned bytes are immutable: the rev in the URL is the hash of
-            # what the route serves.
-            assert entry["rev"] == hashlib.sha1(payload).hexdigest()[:12], entry["id"]
+            # A stale revision is rejected rather than served newer bytes.
+            stale = entry["url"].replace(entry["rev"], "0" * 12)
+            assert stale != entry["url"]
+            assert (await raw_get(port, stale, cookie))[0] == 404, entry["id"]
+
+        # Every startup batch the graph advertises is fetchable, with its
+        # immutable source map beside it.
+        assert graph["batches"], "the served graph carries no startup batch"
+        for batch in graph["batches"]:
+            status, headers, payload = await raw_get(port, batch["url"], cookie)
+            assert status == 200, batch["url"]
+            assert headers.get("cache-control") == "public, max-age=31536000, immutable"
+            assert ("//# sourceMappingURL=" + map_url(batch["url"])).encode("utf-8") in payload
+            status, headers, _ = await raw_get(port, map_url(batch["url"]), cookie)
+            assert status == 200, batch["url"]
+            assert headers.get("content-type") == "application/json; charset=utf-8"
     finally:
         await server.stop()
 

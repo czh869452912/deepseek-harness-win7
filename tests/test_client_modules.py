@@ -56,10 +56,11 @@ async def test_client_modules_plugin_and_route():
     assert "rev" in g
     assert any(e["id"] == "@deepseek-ai/dsh-client-sample" for e in g["entries"])
 
-    # Test HTTP handler for bundle
+    # Test HTTP handler for the generated combo resource the graph advertises
     server: WebServerService = ctx.get("web_server")
-    route = server.match("/plugins/@deepseek-ai/dsh-client-sample/client.js")
+    route = server.match("/plugins/??@deepseek-ai/dsh-client-sample/client.js&rev=1")
     assert route is not None
+    sample_row = [e for e in g["entries"] if e["id"] == "@deepseek-ai/dsh-client-sample"][0]
 
     class MockWriter:
         def __init__(self):
@@ -76,20 +77,54 @@ async def test_client_modules_plugin_and_route():
     writer = MockWriter()
     req = {
         "method": "GET",
-        "path": "/plugins/@deepseek-ai/dsh-client-sample/client.js",
-        "query": "",
+        "path": sample_row["url"].split("&", 1)[0],
+        "query": sample_row["url"].split("?", 1)[1],
+        "raw_url": sample_row["url"],
         "headers": {},
         "body": b"",
     }
     resp = HttpResponseWriter(writer)
     await route.handler(req, resp)
     assert resp.status == 200
-    assert resp.headers.get("Content-Type") == "application/javascript; charset=utf-8"
-    assert sample_bundle in writer.data
+    assert resp.headers.get("content-type") == "text/javascript; charset=utf-8"
+    assert resp.headers.get("cache-control") == "public, max-age=31536000, immutable"
+    assert sample_bundle.rstrip(b"\n") in writer.data
 
-    # Test index tap injection
-    html_in = "<html><head><title>Test</title></head><body></body></html>"
-    tapped = registry.tap_index(html_in)
-    assert "window.__DSH_BOOT__" in tapped
-    assert "create(options)" in tapped
-    assert "window.__ModuleLoader__" in tapped
+    # An unknown resource (a stale revision, an unadvertised combination) is an
+    # empty 404 rather than newer bytes.
+    stale = dict(req, raw_url=sample_row["url"].replace(sample_row["rev"], "000000000000"))
+    stale_resp = HttpResponseWriter(MockWriter())
+    await route.handler(stale, stale_resp)
+    assert stale_resp.status == 404
+
+    # Test the boot rows against an explicit graph: the queue facade, one
+    # preload row per application batch, one blocking script per bootstrap
+    # batch, and the graph global last.
+    graph = {
+        "rev": "graph",
+        "entries": [
+            {"id": "@deepseek-ai/dsh-client-modules", "url": "/plugins/??a/client.js&rev=m", "rev": "m"},
+            {"id": "@deepseek-ai/dsh-client-ui-renderer", "url": "/plugins/??b/client.js&rev=r", "rev": "r"},
+        ],
+        "batches": [
+            {
+                "phase": "bootstrap",
+                "url": "/plugins/??a/client.js&rev=boot",
+                "rev": "boot",
+                "entries": ["@deepseek-ai/dsh-client-modules"],
+            },
+            {
+                "phase": "application",
+                "url": "/plugins/??b/client.js&rev=app",
+                "rev": "app",
+                "entries": ["@deepseek-ai/dsh-client-ui-renderer"],
+            },
+        ],
+    }
+    rows = registry.boot_injections(graph)
+    assert rows[0]["kind"] == "script"
+    assert "window.__ModuleLoader__={" in rows[0]["text"]
+    assert "create(options){" in rows[0]["text"]
+    assert rows[1] == {"kind": "script-preload", "src": graph["batches"][1]["url"]}
+    assert rows[2] == {"kind": "script-src", "placement": "head", "src": graph["batches"][0]["url"]}
+    assert rows[3] == {"kind": "global", "name": "__DSH_BOOT__", "value": graph}

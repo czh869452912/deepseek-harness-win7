@@ -91,8 +91,8 @@ async def test_web_profile_entry_boots_the_shipped_web_surface():
 
     body = await served_index(ctx)
     assert '<div id="root"></div>' in body
-    assert "window.__DSH_BOOT__" in body
-    graph = re.search(r"window\.__DSH_BOOT__ = (\{.*?\});</script>", body, re.DOTALL)
+    assert 'globalThis["__DSH_BOOT__"]' in body
+    graph = re.search(r'globalThis\["__DSH_BOOT__"\] = (\{.*?\})</script>', body, re.DOTALL)
     assert graph is not None, "the served index carries no boot graph"
     import json
 

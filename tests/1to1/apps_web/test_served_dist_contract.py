@@ -134,7 +134,7 @@ async def test_served_index_carries_dist_markup_and_the_boot_manifest(served_web
     assert '<div id="root"></div>' in body
     # vite-entry.e2e.ts's invariant: a shell without the boot manifest is not a
     # working GUI. The served page must carry the composed client boot graph.
-    assert "window.__DSH_BOOT__" in body
+    assert 'globalThis["__DSH_BOOT__"]' in body
 
 
 @pytest.mark.asyncio
@@ -174,7 +174,7 @@ async def test_served_index_carries_the_composed_boot_graph_from_any_cwd(served_
     """The boot graph is composed from the application root, not the caller cwd."""
     monkeypatch.chdir(str(tmp_path))
     body = _body_text(await _request(served_web, "/"))
-    match = re.search(r"window\.__DSH_BOOT__ = (\{.*?\});</script>", body, re.DOTALL)
+    match = re.search(r'globalThis\["__DSH_BOOT__"\] = (\{.*?\})</script>', body, re.DOTALL)
     assert match is not None, "served index carries no boot manifest"
     graph = json.loads(match.group(1))
     ids = [entry["id"] for entry in graph["entries"]]
@@ -184,7 +184,9 @@ async def test_served_index_carries_the_composed_boot_graph_from_any_cwd(served_
     assert "@deepseek-ai/dsh-client-modules" in ids
     for entry in graph["entries"]:
         assert entry["rev"] != "000000000000", entry["id"]
-    assert '<script src="/plugins/@deepseek-ai/dsh-client-modules/client.js?rev=' in body
+    # Attribute values are escaped like every other injected src (`&amp;`),
+    # which the browser decodes back to the generated combo URL.
+    assert '<script src="/plugins/??@deepseek-ai/dsh-client-modules/client.js&amp;rev=' in body
 
 
 def test_spa_seat_resolves_the_built_dist_not_the_source_document():

@@ -23,6 +23,13 @@ Cases:
 - C49      misc.ts: callback invocation arity for filterKeys/mapValues
 - C50      misc.ts: the falsy operand `isPlainObject` returns through `&&`
 - C51      types.ts: is() name resolution for the Map family, undefined, unmapped names
+- C52      misc.ts/types.ts: ECMAScript own-key order in every object-returning helper
+- C53      types.ts:12-16 `is('Proxy', value)` throws for an object operand
+- C54      time.ts:36-61 V8's non-ISO number assignment (month/day/year slots)
+- C55      time.ts:36-61 V8's non-ISO names, whitespace and word handling
+- C56      time.ts:36-61 V8's non-ISO clock, am/pm and timezone grammar
+- C57      time.ts:36-61 V8's non-ISO punctuation, parenthesis and sign handling
+- C58      time.ts:36-61 V8 rejects a numeric zone offset with no clock time
 - C44      exported-name surface of the reference package
 - T1..T7   reference/vendor/cordis/src/utils.ts cases owned by the same module
 """
@@ -108,11 +115,10 @@ def _local_wall_clock(utc_seconds):
 
 
 def _assert_now(value):
-    """The port's `new Date()` fallback for an unrepresentable reference date.
+    """The port's `new Date()` fallback for a reference Invalid Date.
 
-    An ECMAScript Invalid Date has no Python value, and neither has a date
-    the implementation-defined legacy parser produces from a two-digit year;
-    both map onto the `new Date()` the reference uses for an empty input.
+    An ECMAScript Invalid Date has no Python value, so it maps onto the
+    `new Date()` the reference uses for an empty input.
     """
     assert abs((value - datetime.datetime.now()).total_seconds()) < 5
 
@@ -262,10 +268,20 @@ def test_c7_make_array_wraps_non_arrays():
 # ---------------------------------------------------------------------------
 
 
-def test_c8_noop_returns_none():
-    """misc.ts:17 - `noop()` is an empty body: undefined."""
-    assert noop() is None
-    assert noop(1, 2, key='value') is None
+def test_c8_noop_returns_undefined():
+    """misc.ts:17 - `noop()` is an empty body, so its value is `undefined`.
+
+    The Node oracle answers `noop() === undefined`, `is('Undefined', noop())`
+    and `deepEqual(noop(), undefined)` true; the port carries `undefined` as
+    `_UNDEFINED` (its `null` is `None`), so the empty callback returns that
+    sentinel and stays falsy and nullish like the reference value.
+    """
+    assert noop() is _UNDEFINED
+    assert noop(1, 2, key='value') is _UNDEFINED
+    assert is_('Undefined', noop()) is True
+    assert is_( 'Null', noop()) is False
+    assert is_nullable(noop()) is True
+    assert deep_equal(noop(), _UNDEFINED) is True
 
 
 def test_c9_nullability_helpers():
@@ -767,9 +783,9 @@ def test_c45_parse_date_rejects_malformed_zone_offsets():
     """time.ts:51-61 - an out-of-range zone offset is an Invalid Date.
 
     Reference behavior read from the pinned source on Node 22
-    (`new Date(string)`): hours are 00-23, minutes 00-59, only `Z` may
-    follow a date with no clock time, and a numeric offset must keep the
-    `+HH:MM` / `+HHMM` shape.
+    (`new Date(string)`): an offset in the Date Time String Format has hours
+    00-23 and minutes 00-59, must keep the `+HH:MM` / `+HHMM` shape, and
+    needs a clock time; the non-ISO offset rules are in `test_c58`.
     """
     _assert_now(Time.parseDate('2026-09-03T14:30+24:00'))
     _assert_now(Time.parseDate('2026-09-03T14:30-24:00'))
@@ -799,9 +815,9 @@ def test_c46_parse_date_legacy_and_padded_forms():
 
     The non-ISO grammar is implementation defined; every value below is the
     one the pinned reference produces on Node 22.  `T` belongs to the Date
-    Time String Format only, V8 trims a padded string and then reads the
-    trimmed form as local wall clock, and the two-digit-year / time-only
-    heuristics stay unrepresentable (documented LEGAL_ADAPTATION).
+    Time String Format only, and V8 trims a padded string and then reads the
+    trimmed form as local wall clock.  The bare numbers, month names, clock
+    times and timezones of that grammar are the C54..C58 cases.
     """
     # `YYYY[-M[-D]]`, `YYYY/MM[/DD]` and `M/D/YYYY` are local wall clock.
     assert Time.parseDate('2026-9') == datetime.datetime(2026, 9, 1)
@@ -853,20 +869,16 @@ def test_c46_parse_date_legacy_and_padded_forms():
     _assert_now(Time.parseDate('2026-09-03T14:30\n'))
     _assert_now(Time.parseDate('2026-09-03T14:30Z\n'))
     _assert_now(Time.parseDate('14:30\n'))
-    # The reference loses its own regex match on a padded M-D-H:MM string
-    # and reads it as a two-digit year instead ('9-9-12:30 ' is 2001-09-09
-    # on V8), which stays unrepresentable and reports as now.
-    _assert_now(Time.parseDate('9-9-12:30\n'))
-    # V8's remaining implementation-defined heuristics stay outside the subset
-    # this port reproduces: a bare `M-D` / `M-D-YYYY` date and RFC 2822 text
-    # parse there (Node 22 oracle: '3-5' is 2001-03-05 local, '3-5-2026' is
-    # 2026-03-05 local, '5' is 2001-05-01 local, 'Jan 1 2026' is
-    # 2026-01-01T00:00Z) and report as now here.
-    _assert_now(Time.parseDate('3-5'))
-    _assert_now(Time.parseDate('3-5-2026'))
-    _assert_now(Time.parseDate('5'))
-    _assert_now(Time.parseDate('Jan 1 2026'))
-    _assert_now(Time.parseDate('1 Jan 2026'))
+    # A padded `M-D-H:MM` string misses the reference's own regex match, so
+    # the two-digit year survives: '9-9-12:30 ' is 2001-09-09 12:30 locally.
+    assert Time.parseDate('9-9-12:30\n') == datetime.datetime(2001, 9, 9, 12, 30)
+    # The bare `M-D`, `M-D-YYYY`, `M` and month-name forms V8 reads are the
+    # legacy number assignment (see `test_c54`), not a fallback.
+    assert Time.parseDate('3-5') == datetime.datetime(2001, 3, 5)
+    assert Time.parseDate('3-5-2026') == datetime.datetime(2026, 3, 5)
+    assert Time.parseDate('5') == datetime.datetime(2001, 5, 1)
+    assert Time.parseDate('Jan 1 2026') == datetime.datetime(2026, 1, 1)
+    assert Time.parseDate('1 Jan 2026') == datetime.datetime(2026, 1, 1)
 
 
 def test_c32_format_rounds_half_up_with_unit_thresholds():
@@ -1669,3 +1681,280 @@ def test_c52_own_key_order_follows_ecmascript():
     holder.a = 3
     setattr(holder, '1', 4)
     assert list(filterKeys(holder, lambda k, v: True)) == ['1', '2', 'w', 'b', 'a']
+
+# ---------------------------------------------------------------------------
+# types.ts: is() Proxy behavior
+# ---------------------------------------------------------------------------
+
+
+def test_c53_is_proxy_throws_for_an_object_operand():
+    """types.ts:8-16 - `Proxy` is in the typed domain but has no prototype.
+
+    The reference evaluates `value instanceof globalThis[type]` for every
+    constructor name in `GlobalConstructorNames`, and `Proxy.prototype` is
+    `undefined`, so the lookup throws for an object operand.  A primitive
+    operand answers false without the lookup (`InstanceofOperator` returns
+    false when the left operand is not an object).  Node 22 oracle:
+    `is('Proxy', {})` and `is('Proxy')({})` both throw
+    `TypeError: Function has non-object prototype 'undefined' in instanceof
+    check`, while `is('Proxy', null|undefined|5|'a'|true)` is false.
+    """
+    for operand in ({}, [], (), object(), _Widget(), Time):
+        with pytest.raises(TypeError) as caught:
+            is_('Proxy', operand)
+        assert str(caught.value) == (
+            "Function has non-object prototype 'undefined' in instanceof check")
+        with pytest.raises(TypeError):
+            is_('Proxy')(operand)
+    for operand in (None, _UNDEFINED, 5, 1.5, 'a', True):
+        assert is_('Proxy', operand) is False
+
+
+# ---------------------------------------------------------------------------
+# time.ts: V8's non-ISO date grammar
+# ---------------------------------------------------------------------------
+
+
+def _assert_legacy_table(cases):
+    """Assert `Time.parseDate` on each `(source, expected)` pair.
+
+    `None` means the reference answers an Invalid Date, which this port
+    renders as `new Date()` (see `_assert_now`).  Every expected value is the
+    `new Date(string)` result the pinned Node 22 runtime produces, read
+    through `new Date().toLocaleDateString()`-free inputs.
+    """
+    for source, expected in cases:
+        value = Time.parseDate(source)
+        if expected is None:
+            _assert_now(value)
+            continue
+        assert value == expected, '%r -> %s' % (source, value)
+
+
+def test_c54_parse_date_legacy_number_assignment():
+    """time.ts:36-61 - V8's positional month/day/year assignment.
+
+    Reference `new Date(string)` reads at most three numbers; without a month
+    name they name month, day and year, a leading 0 or a leading number past
+    31 is the year instead (so `13` alone names no month at all), a missing
+    day is 1 and a missing year is 2001, and a two-digit year takes the
+    century V8 gives it (0-49 is 20xx, 50-99 is 19xx).  A fourth number ends
+    the string as an Invalid Date.
+    """
+    _assert_legacy_table((
+        ('5', datetime.datetime(2001, 5, 1)),
+        ('12', datetime.datetime(2001, 12, 1)),
+        ('13', None),
+        ('31', None),
+        ('32', datetime.datetime(2032, 1, 1)),
+        ('50', datetime.datetime(1950, 1, 1)),
+        ('99', datetime.datetime(1999, 1, 1)),
+        ('100', datetime.datetime(100, 1, 1)),
+        ('0', datetime.datetime(2000, 1, 1)),
+        ('3-5', datetime.datetime(2001, 3, 5)),
+        ('3-5-2026', datetime.datetime(2026, 3, 5)),
+        ('5-3-2026', datetime.datetime(2026, 5, 3)),
+        ('1-2-3', datetime.datetime(2003, 1, 2)),
+        ('12-5-3', datetime.datetime(2003, 12, 5)),
+        ('1-1-0', datetime.datetime(2000, 1, 1)),
+        ('0-1-2', datetime.datetime(2000, 1, 2)),
+        ('50-5-3', datetime.datetime(1950, 5, 3)),
+        ('2026-5-3', datetime.datetime(2026, 5, 3)),
+        # A leading 0 or a number past 31 is the year, so the second number
+        # becomes the month and a day past 31 is out of range.
+        ('5-2026', None),
+        ('13-5', None),
+        ('1-0-2', None),
+        ('1-2-3-4', None),
+        ('Jan 32 2026', None),
+        ('Jan 5 32', datetime.datetime(2032, 1, 5)),
+        # A month name moves the numbers to day and year, and a full date
+        # ignores one further number (a fourth ends the string).
+        ('Jan 5', datetime.datetime(2001, 1, 5)),
+        ('Jan 2026', datetime.datetime(2026, 1, 1)),
+        ('2026 5 Jan', datetime.datetime(2026, 1, 5)),
+        ('5 2026 Jan', datetime.datetime(2026, 1, 5)),
+        ('Jan 5 2026 12', datetime.datetime(2026, 1, 5)),
+        ('Jan 5 2026 2027', datetime.datetime(2026, 1, 5)),
+        # Every separator V8 skips reads the same numbers.
+        ('2026-3-5', datetime.datetime(2026, 3, 5)),
+        ('2026/3/5', datetime.datetime(2026, 3, 5)),
+        ('2026.3.5', datetime.datetime(2026, 3, 5)),
+        ('2026,3,5', datetime.datetime(2026, 3, 5)),
+        ('1.2.3', datetime.datetime(2003, 1, 2)),
+        ('0.0', None),
+    ))
+
+
+def test_c55_parse_date_legacy_names_and_words():
+    """time.ts:36-61 - V8's word handling in the non-ISO grammar.
+
+    A word names a month when it starts with the three-letter month name
+    (`Janu`, `Janx` and `JANUARY` all name January, while `Ja` and the
+    ambiguous `Ju` name nothing), an unknown word is ignored only before any
+    number or clock time (`new Date("abc Mar 5 2026")` is valid, `new
+    Date("Mar 5 2026 xyz")` is not), and a digit glued to a word that is not a
+    month is not a number V8 reads (`Mar5` is March 5 but `GMT5` and `x5` are
+    Invalid).
+    """
+    _assert_legacy_table((
+        ('Mar 5 2026', datetime.datetime(2026, 3, 5)),
+        ('mar 5 2026', datetime.datetime(2026, 3, 5)),
+        ('JANUARY 5 2026', datetime.datetime(2026, 1, 5)),
+        ('Janu 5 2026', datetime.datetime(2026, 1, 5)),
+        ('Janx 5 2026', datetime.datetime(2026, 1, 5)),
+        ('Marc 5 2026', datetime.datetime(2026, 3, 5)),
+        ('Jule 5 2026', datetime.datetime(2026, 7, 5)),
+        ('Ja 5 2026', None),
+        ('Ju 5 2026', None),
+        ('Mar 5 2026 March', datetime.datetime(2026, 3, 5)),
+        ('5-Jan-2026', datetime.datetime(2026, 1, 5)),
+        ('Mar5 2026', datetime.datetime(2026, 3, 5)),
+        ('5Jan 2026', datetime.datetime(2026, 1, 5)),
+        ('Jan5', datetime.datetime(2001, 1, 5)),
+        ('abc Mar 5 2026', datetime.datetime(2026, 3, 5)),
+        ('Mar abc 5 2026', datetime.datetime(2026, 3, 5)),
+        ('Mon Mar 5 2026', datetime.datetime(2026, 3, 5)),
+        ('Mar 5 abc 2026', None),
+        ('Mar 5 2026 Mon', None),
+        ('Mar 5 2026 xyz', None),
+        ('GMT5', None),
+        ('x5', None),
+        ('abc5', None),
+    ))
+
+
+def test_c56_parse_date_legacy_clock_grammar():
+    """time.ts:36-61 - V8's clock, am/pm and colon handling.
+
+    `H:M[:S[.ms]]` is a clock time; its minute or second past 59 ends the
+    clock at the preceding part and leaves the run as a number (so `12:99` is
+    12:00), `24:00` rolls into the next day while any other 24:x is Invalid,
+    an hour past 24 is not a clock hour at all, a colon after a four-digit
+    number is a separator (`2026:1`), and a digit glued to a clock makes the
+    string Invalid (`12:30PM`) unless it is an am/pm marker (`12:30 PM`,
+    which `12:30 PM5` shows may carry a number).
+    """
+    _assert_legacy_table((
+        ('Mar 5 2026 12:30', datetime.datetime(2026, 3, 5, 12, 30)),
+        ('Mar 5 2026 12:30:45', datetime.datetime(2026, 3, 5, 12, 30, 45)),
+        ('Mar 5 2026 12:30:45.678', datetime.datetime(2026, 3, 5, 12, 30, 45, 678000)),
+        ('Mar 5 2026 12:30:45.6789', datetime.datetime(2026, 3, 5, 12, 30, 45, 678000)),
+        ('Mar 5 2026 12:', datetime.datetime(2026, 3, 5, 12, 0)),
+        ('Mar 5 2026 24:00', datetime.datetime(2026, 3, 6, 0, 0)),
+        ('Mar 5 2026 24:01', None),
+        ('Mar 5 2026 25:00', None),
+        ('Mar 5 2026 12:99', datetime.datetime(2026, 3, 5, 12, 0)),
+        ('Mar 5 2026 12:3456', datetime.datetime(2026, 3, 5, 12, 0)),
+        ('Mar 5 2026 12:34:5678', datetime.datetime(2026, 3, 5, 12, 34)),
+        ('Mar 5 2026 12:30 PM', datetime.datetime(2026, 3, 5, 12, 30)),
+        ('Mar 5 2026 12:30 pm', datetime.datetime(2026, 3, 5, 12, 30)),
+        ('Mar 5 2026 0:30 pm', datetime.datetime(2026, 3, 5, 12, 30)),
+        ('Mar 5 2026 12:00 am', datetime.datetime(2026, 3, 5, 0, 0)),
+        ('Mar 5 2026 12:30 AM PM', datetime.datetime(2026, 3, 5, 12, 30)),
+        ('Mar 5 2026 12:30 PM5', datetime.datetime(2026, 3, 5, 12, 30)),
+        ('Mar 5 2026 12:30PM', None),
+        ('Mar 5 2026 13:30 pm', None),
+        ('Mar 5 2026 12 AM', None),
+        ('2026:1', datetime.datetime(2026, 1, 1)),
+        ('2026:3:5', datetime.datetime(2026, 1, 1, 3, 5)),
+        ('100:1', None),
+    ))
+    # A clock-only string is the reference's own rewrite with today's date.
+    now = datetime.datetime.now()
+    assert Time.parseDate('12:30') == now.replace(
+        hour=12, minute=30, second=0, microsecond=0)
+    assert Time.parseDate('12:30:45') == now.replace(
+        hour=12, minute=30, second=45, microsecond=0)
+
+
+def test_c57_parse_date_legacy_punctuation_and_signs():
+    """time.ts:36-61 - V8's punctuation, parenthesis and sign handling.
+
+    Symbols outside V8's separator set are unknown words: ignored before the
+    date and Invalid after it (`new Date(")Mar 5 2026")` is valid while `new
+    Date("Mar 5 2026 )")` is not), such a word glued to a letter or digit is
+    not a token at all (`_5 2026`, `~Mar 5 2026`), a parenthesis skips nested
+    text to its match, and a sign is a separator where it follows a number or
+    a word but is otherwise legal only in the leading position.
+    """
+    _assert_legacy_table((
+        ('Mar 5 2026 ((x))', datetime.datetime(2026, 3, 5)),
+        ('Mar 5 2026 (x', datetime.datetime(2026, 3, 5)),
+        ('Mar (5) 2026', datetime.datetime(2026, 3, 1)),
+        ('(Mar 5 2026)', None),
+        (')Mar 5 2026', datetime.datetime(2026, 3, 5)),
+        ('Mar)5 2026', datetime.datetime(2026, 3, 5)),
+        (')5', datetime.datetime(2001, 5, 1)),
+        (')5 2026', None),
+        ('Mar 5 2026 )', None),
+        ('Mar 5 2026 5)', None),
+        ('_5 2026', None),
+        ('Mar_5_2026', None),
+        ('~Mar 5 2026', None),
+        ('_ Mar 5 2026', datetime.datetime(2026, 3, 5)),
+        ('~~~ Mar 5 2026', datetime.datetime(2026, 3, 5)),
+        ('Mar _ 5 2026', datetime.datetime(2026, 3, 5)),
+        ('Mar 5 2026 _', None),
+        ('Mar 5 2026 ~~', None),
+        ('Mar#5#2026', datetime.datetime(2026, 3, 5)),
+        ('Mar,5,2026', datetime.datetime(2026, 3, 5)),
+        ('Mar 5 2026 5/', datetime.datetime(2026, 3, 5)),
+        ('Mar 5 2026 12:30:45.678,', datetime.datetime(2026, 3, 5, 12, 30, 45, 678000)),
+        ('Mar 5 2026 12:30/', None),
+        ('Mar 5 2026 12:30.', None),
+        ('Mar 5 2026 12:30.5', None),
+        ('-5-3', datetime.datetime(2001, 5, 3)),
+        ('1- 2', datetime.datetime(2001, 1, 2)),
+        ('-Mar 5 2026', datetime.datetime(2026, 3, 5)),
+        ('Mar -5 2026', datetime.datetime(2026, 3, 5)),
+        ('Mar+5 2026', datetime.datetime(2026, 3, 5)),
+        ('5 +3', None),
+        ('1 -2', None),
+        ('0+1', None),
+        ('Mar+5+2026', None),
+        ('Mar 5 2026 +', None),
+        ('Mar 5 2026 -', None),
+    ))
+
+
+def test_c58_parse_date_legacy_zone_grammar():
+    """time.ts:36-61 - V8's timezone names and numeric offsets.
+
+    Only `UT`, `UTC`, `GMT`, `EST`/`EDT`, `CST`/`CDT`, `MST`/`MDT`,
+    `PST`/`PDT` and `Z`/`z` are timezone words (`CET` is an ordinary word),
+    they must be delimited (`new Date("GMT/50")` names January 1950), an
+    offset applies to the wall clock they name, and the zero zones may carry
+    an offset with no clock time while the named ones may not (`Mar 5 2026
+    EST+0200` is Invalid but `EST` with a clock is not).  A sign after a
+    non-zero zone with no clock is not an offset either.
+    """
+    _assert_legacy_table((
+        ('Mar 5 2026 GMT', datetime.datetime(2026, 3, 5, 8, 0)),
+        ('Mar 5 2026 UTC', datetime.datetime(2026, 3, 5, 8, 0)),
+        ('Mar 5 2026 EST', datetime.datetime(2026, 3, 5, 13, 0)),
+        ('Mar 5 2026 PDT', datetime.datetime(2026, 3, 5, 15, 0)),
+        ('Mar 5 2026 CET', None),
+        ('Mar 5 2026 GMT+0200', datetime.datetime(2026, 3, 5, 6, 0)),
+        ('Mar 5 2026 GMT-05:00', datetime.datetime(2026, 3, 5, 13, 0)),
+        ('Mar 5 2026 UT+0200', datetime.datetime(2026, 3, 5, 6, 0)),
+        ('Mar 5 2026 EST+0200', None),
+        ('Mar 5 2026 12:30 EST+0200', datetime.datetime(2026, 3, 5, 18, 30)),
+        ('Mar 5 2026 GMT 12:30', datetime.datetime(2026, 3, 5, 20, 30)),
+        ('Mar 5 2026 12:30 GMT', datetime.datetime(2026, 3, 5, 20, 30)),
+        ('Mar 5 2026 12:30Z', datetime.datetime(2026, 3, 5, 20, 30)),
+        ('Mar 5 2026 12:30z', datetime.datetime(2026, 3, 5, 20, 30)),
+        ('Mar 5 2026 GMT z', datetime.datetime(2026, 3, 5, 8, 0)),
+        ('Mar 5 2026 GMT)', None),
+        ('GMT/50', datetime.datetime(1950, 1, 1)),
+        ('1Z2', datetime.datetime(2001, 1, 2, 8, 0)),
+        ('Z 5', datetime.datetime(2001, 5, 1)),
+        ('Z5', None),
+        # A leading `GMT+0200` names the year 200 rather than a timezone.
+        ('GMT+0200', datetime.datetime(200, 1, 1)),
+        ('GMT+0200 5', datetime.datetime(200, 5, 1)),
+        ('Jan 5 GMT+0200', datetime.datetime(2001, 1, 5, 6, 0)),
+        ('Mar 5 2026 +0200', None),
+        ('Mar 5 2026 12:30 +0200', datetime.datetime(2026, 3, 5, 18, 30)),
+        ('Mar 5 2026 12:30-0800', datetime.datetime(2026, 3, 6, 4, 30)),
+    ))

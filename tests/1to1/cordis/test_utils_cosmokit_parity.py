@@ -183,6 +183,12 @@ def test_c4_union_deduplicates_by_same_value_zero():
     assert union([9007199254740992], [9007199254740993]) == [9007199254740992]
     assert len(union([9007199254740993], [9007199254740992])) == 1
     assert len(union([10 ** 400], [2 * 10 ** 400])) == 1
+    # `Set.prototype.add` stores -0 as +0 (ECMA-262), so a negative zero in the
+    # union comes back positive while the filter-based helpers keep the operand.
+    assert math.copysign(1.0, union([-0.0], [])[0]) == 1.0
+    assert math.copysign(1.0, union([1], [-0.0])[1]) == 1.0
+    assert math.copysign(1.0, intersection([-0.0], [-0.0])[0]) == -1.0
+    assert math.copysign(1.0, difference([-0.0], [])[0]) == -1.0
 
 
 def test_c5_deduplicate_keeps_first_occurrence():
@@ -196,6 +202,9 @@ def test_c5_deduplicate_keeps_first_occurrence():
     # `new Set` collapses integers that round to the same double.
     assert deduplicate([9007199254740992, 9007199254740993]) == [9007199254740992]
     assert len(deduplicate([9007199254740993, 9007199254740992, 1e21, 1e21 + 2])) == 2
+    # `Set.prototype.add` stores -0 as +0, so the surviving element is positive.
+    assert math.copysign(1.0, deduplicate([-0.0])[0]) == 1.0
+    assert math.copysign(1.0, deduplicate([-0.0, 0])[0]) == 1.0
 
 
 def test_c6_remove_uses_index_of_and_mutates_in_place():
@@ -1178,6 +1187,15 @@ def test_c42_deep_equal_structures():
                      {'k': json.loads('"' + 'y' * 40 + '"')}) is True
     # A mapping subclass is still an object comparison.
     assert deep_equal({'a': 1}, collections.OrderedDict([('a', 1)])) is True
+    # `Object.keys(new WeakSet())` and `Object.keys(new WeakMap())` are empty,
+    # so the port's stdlib stand-ins must not expose their Python internals
+    # (the WeakSet `data` set and its removal callback) as own keys.
+    assert deep_equal(weakref.WeakSet(), {}) is True
+    assert deep_equal(weakref.WeakSet(), weakref.WeakSet()) is True
+    assert deep_equal(weakref.WeakKeyDictionary(), weakref.WeakSet()) is True
+    # A WeakMap exposes no own keys, and reading a missing key answers
+    # undefined, so a key the other operand owns stays unequal.
+    assert deep_equal(weakref.WeakKeyDictionary(), {'a': 1}) is False
 
 
 def test_c43_deep_equal_strict_disables_the_nullish_shortcut():
@@ -1612,3 +1630,42 @@ def test_t7_plugin_metadata_and_apply_signature():
             return 'applied'
 
     assert SamplePlugin().apply(None, {'key': 'val'}) == 'applied'
+
+
+def test_c52_own_key_order_follows_ecmascript():
+    """misc.ts:39-70, types.ts:88-116 - `Object.keys`/spread/`Reflect.ownKeys` order.
+
+    OrdinaryOwnPropertyKeys enumerates array index keys (canonical numeric
+    strings below 2**32 - 1) in ascending order before the remaining keys in
+    creation order, so every helper that rebuilds an object enumerates that way
+    whatever order its keys arrived in (Node oracle values below).
+    """
+    source = {'b': 1, '2': 2, 'a': 3, '1': 4}
+    assert list(filterKeys(source, lambda k, v: True)) == ['1', '2', 'b', 'a']
+    assert list(map_values(source, lambda v: v)) == ['1', '2', 'b', 'a']
+    assert list(pick(source)) == ['1', '2', 'b', 'a']
+    assert list(pick(source, ['b', '2', 'a', '1'])) == ['1', '2', 'b', 'a']
+    assert list(omit(source, ['a'])) == ['1', '2', 'b']
+    assert list(clone(source)) == ['1', '2', 'b', 'a']
+    # A clone reorders the nested objects as well.
+    nested = clone({'z': {'2': 1, 'a': 2}, '1': 3})
+    assert list(nested) == ['1', 'z']
+    assert list(nested['z']) == ['2', 'a']
+    # Only canonical indices count, and 2**32 - 1 is not one.
+    bounds = filterKeys({'4294967295': 1, '0': 2, '4294967294': 3, '4294967296': 4},
+                        lambda k, v: True)
+    assert list(bounds) == ['0', '4294967294', '4294967295', '4294967296']
+    assert list(filterKeys({'10': 1, '9': 2, 'z': 3, '01': 4, '1.5': 5, '-1': 6, '0': 7},
+                           lambda k, v: True)) == ['0', '9', '10', 'z', '01', '1.5', '-1']
+    # A forced key the source lacks is ordered too, and keeps the undefined read.
+    missing = pick({'b': 1}, ['b', '2'], True)
+    assert list(missing) == ['2', 'b']
+    assert missing['2'] is _UNDEFINED
+    # Own attributes of a class instance enumerate the same way.
+    holder = _Widget()
+    holder.w = 1
+    holder.b = 1
+    setattr(holder, '2', 2)
+    holder.a = 3
+    setattr(holder, '1', 4)
+    assert list(filterKeys(holder, lambda k, v: True)) == ['1', '2', 'w', 'b', 'a']

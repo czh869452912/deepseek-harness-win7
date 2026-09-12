@@ -36,6 +36,11 @@ _JS_FUNCTION_TYPES = (
     functools.partial,
 )
 
+#: A canonical array index key: ``"0"``, ``"1"``, ... with no sign, leading
+#: zero, fraction or exponent (ECMA-262 ``Array index`` before the 2**32 - 1
+#: bound, which `_js_own_key_order` applies).
+_JS_ARRAY_INDEX = re.compile(r"^(?:0|[1-9][0-9]*)\Z", re.ASCII)
+
 # ---------------------------------------------------------------------------
 # ECMAScript runtime semantics helpers
 #
@@ -299,16 +304,61 @@ def _js_own_enumerable_keys(value: Any) -> List[Any]:
     """``Object.keys`` for a Python value (dict keys, else instance attributes).
 
     A `memoryview` is the port's ArrayBufferView, whose own enumerable keys
-    are its element indices.
+    are its element indices.  ``weakref.WeakSet``/``weakref.WeakKeyDictionary``
+    are the port's WeakSet/WeakMap, and the reference's containers of those
+    kinds hold no own properties: their Python internals (the ``data`` set and
+    the removal callback) are not JavaScript properties, so the fallback to
+    ``__dict__`` must not expose them.
     """
     if isinstance(value, dict):
-        return list(value.keys())
+        return _js_own_key_order(list(value.keys()))
     if isinstance(value, memoryview):
         return [str(index) for index in range(len(value))]
+    if isinstance(value, (weakref.WeakSet, weakref.WeakKeyDictionary)):
+        return []
     own = getattr(value, "__dict__", None)
     if isinstance(own, dict):
-        return list(own.keys())
+        return _js_own_key_order(list(own.keys()))
     return []
+
+
+def _js_own_key_order(keys: List[Any]) -> List[Any]:
+    """The order ECMAScript enumerates these own keys in.
+
+    ``Object.keys``/``Object.entries``/object spread/``Reflect.ownKeys`` all
+    follow ``OrdinaryOwnPropertyKeys``: the array index keys (the canonical
+    numeric strings below ``2**32 - 1``, i.e. ``"0"``, ``"1"``, ... but not
+    ``"01"``, ``"1.5"``, ``"-1"`` or ``"4294967295"``) in ascending numeric
+    order first, then the remaining keys in creation order. A Python dict only
+    carries insertion order, so every helper whose result object the reference
+    enumerates reorders through here.
+    """
+    indices: List[int] = []
+    others: List[Any] = []
+    for key in keys:
+        if isinstance(key, str) and _JS_ARRAY_INDEX.match(key) and int(key) < 4294967295:
+            indices.append(int(key))
+        else:
+            others.append(key)
+    if not indices:
+        return list(keys)
+    indices.sort()
+    return [str(index) for index in indices] + others
+
+
+def _js_ordered_mapping(obj: Any) -> Dict[Any, Any]:
+    """The plain-object copy of ``obj`` (``{...obj}``) in enumeration order."""
+    return {key: _js_read_key(obj, key) for key in _js_own_enumerable_keys(obj)}
+
+
+def _js_reorder_mapping(mapping: Dict[Any, Any]) -> None:
+    """Reorder a mapping's own keys in place when ECMAScript would differ."""
+    keys = list(mapping.keys())
+    ordered = _js_own_key_order(keys)
+    if ordered != keys:
+        items = [(key, mapping[key]) for key in ordered]
+        mapping.clear()
+        mapping.update(items)
 
 
 def _js_read_key(value: Any, key: Any) -> Any:
@@ -441,10 +491,56 @@ def clone(value: Any) -> Any:
     keeps the source's own attributes as plain ones, and values with no
     reference counterpart (an unchanged ``tuple``/``frozenset`` of atomic
     elements) may be shared with the source where the reference allocates.
+
+    LEGAL_ADAPTATION: the reference's leaf/container branches cover arrays,
+    dates, regexps, buffers and plain objects but not `Set`/`Map`/`WeakSet`/
+    `WeakMap`/`Promise`: it rebuilds those from their prototype alone, which
+    drops the internal slots, so ``clone(new Set([1]))`` yields an object whose
+    every method throws. The port deep-copies those containers, and raises
+    `TypeError` for a `Promise` (an `asyncio.Future`) whose state cannot be
+    rebuilt; no caller in the tree clones any of them.
     """
     memo = _CloneMemo()
     _register_leaf_copies(value, memo.factories, set())
-    return copy.deepcopy(value, memo)
+    result = copy.deepcopy(value, memo)
+    # The reference assigns into each new object in `Reflect.ownKeys` order, so
+    # every cloned object enumerates in ECMAScript own-key order; the reorder
+    # is in place, which keeps shared containers and cycles shared.
+    _js_reorder_clone_keys(result, set())
+    return result
+
+
+def _js_reorder_clone_keys(value: Any, seen: Set[int]) -> None:
+    """Reorder a cloned value's own keys the way the reference enumerates them.
+
+    See `_js_own_key_order`; the containers are reused, so container identity
+    - what preserves aliasing and cycles in a clone - is unchanged.
+    """
+    key = id(value)
+    if key in seen:
+        return
+    seen.add(key)
+    if isinstance(value, dict):
+        for item in list(value.values()):
+            _js_reorder_clone_keys(item, seen)
+        _js_reorder_mapping(value)
+        return
+    if isinstance(value, (list, tuple, set, frozenset)):
+        for item in value:
+            _js_reorder_clone_keys(item, seen)
+        return
+    own = getattr(value, "__dict__", None)
+    if isinstance(own, dict):
+        for item in list(own.values()):
+            _js_reorder_clone_keys(item, seen)
+        _js_reorder_mapping(own)
+        return
+    for name in getattr(type(value), "__slots__", ()) or ():
+        try:
+            item = getattr(value, name)
+        except AttributeError:
+            continue
+        _js_reorder_clone_keys(item, seen)
 
 
 def deep_equal(a: Any, b: Any, strict: bool = False) -> bool:
@@ -513,12 +609,15 @@ def pick(obj: Dict[str, Any], keys: Optional[Any] = None, forced: bool = False) 
     `_js_truthy` the port of the ``!keys`` short-circuit.
     """
     if not _js_truthy(keys):
-        return dict(obj)
+        return _js_ordered_mapping(obj)
     res = {}
     for k in keys:
         value = _js_read_key(obj, k)
         if forced or value is not _UNDEFINED:
             res[k] = value
+    # The reference's result is a fresh object whose enumeration order is
+    # ECMAScript own-key order, whatever order the keys arrived in.
+    _js_reorder_mapping(res)
     return res
 
 
@@ -532,9 +631,9 @@ def omit(obj: Dict[str, Any], keys: Optional[Any] = None) -> Dict[str, Any]:
     list, tuple or set is truthy there and deletes nothing.
     """
     if not _js_truthy(keys):
-        return dict(obj)
+        return _js_ordered_mapping(obj)
     key_set = set(keys)
-    return {k: v for k, v in obj.items() if k not in key_set}
+    return {k: v for k, v in _js_ordered_mapping(obj).items() if k not in key_set}
 
 
 def _js_supplied_arg_count(callback: Callable[..., Any], maximum: int = 2) -> Optional[int]:
@@ -636,7 +735,10 @@ def filter_keys(obj: Dict[str, Any], predicate: Callable[..., bool]) -> Dict[str
     # picks the equivalent call (see _js_call_callback, which pads through
     # _js_call_args and replays the reference list for an unreported one).
     res = {}
-    for k, v in obj.items():
+    # `Object.entries(object)` enumerates in ECMAScript own-key order, which
+    # `Object.fromEntries` then preserves.
+    for k in _js_own_enumerable_keys(obj):
+        v = _js_read_key(obj, k)
         if _js_truthy(_js_call_callback(predicate, (k, v))):
             res[k] = v
     return res
@@ -1102,6 +1204,19 @@ def _js_membership_set(array: Any) -> Dict[Any, bool]:
     return keys
 
 
+def _js_set_element(value: Any) -> Any:
+    """The value a JavaScript ``Set`` stores for ``value``.
+
+    ECMA-262 ``Set.prototype.add`` stores ``-0`` as ``+0`` (the same
+    normalization ``Map`` keys get), so the two helpers that build their result
+    through a Set - `union` and `deduplicate` - answer with a positive zero
+    where the ``filter``/``indexOf`` helpers keep the operand unchanged.
+    """
+    if isinstance(value, float) and value == 0:
+        return 0.0
+    return value
+
+
 def contain(array1: Any, array2: Any) -> bool:
     """Return true when every item in array2 is present in array1.
 
@@ -1124,7 +1239,11 @@ def difference(array1: Any, array2: Any) -> List[Any]:
 
 
 def union(array1: Any, array2: Any) -> List[Any]:
-    """Return the set-union of two arrays while preserving first occurrence order."""
+    """Return the set-union of two arrays while preserving first occurrence order.
+
+    The result is built through a JavaScript ``Set``, whose elements are
+    normalized by :func:`_js_set_element`.
+    """
     res = []
     seen: Dict[Any, bool] = {}
     for item in list(array1) + list(array2):
@@ -1132,12 +1251,16 @@ def union(array1: Any, array2: Any) -> List[Any]:
         if key in seen:
             continue
         seen[key] = True
-        res.append(item)
+        res.append(_js_set_element(item))
     return res
 
 
 def deduplicate(array: Any) -> List[Any]:
-    """Remove duplicate values while preserving first occurrence order."""
+    """Remove duplicate values while preserving first occurrence order.
+
+    The result is built through a JavaScript ``Set``, whose elements are
+    normalized by :func:`_js_set_element`.
+    """
     res = []
     seen: Dict[Any, bool] = {}
     for item in array:
@@ -1145,7 +1268,7 @@ def deduplicate(array: Any) -> List[Any]:
         if key in seen:
             continue
         seen[key] = True
-        res.append(item)
+        res.append(_js_set_element(item))
     return res
 
 
@@ -1228,7 +1351,16 @@ class Time:
 
     @classmethod
     def from_date_number(cls, value: int, offset: Optional[int] = None) -> datetime.datetime:
-        """Convert a day number to a date matching Cosmokit Time.fromDateNumber."""
+        """Convert a day number to a date matching Cosmokit Time.fromDateNumber.
+
+        LEGAL_ADAPTATION: the reference is ``new Date(value * day + offset *
+        minute)``, which answers a Date (or an Invalid Date past +/-8.64e15 ms)
+        for every input, while this port carries a Date as a naive local
+        `datetime` (years 1-9999), so a day number naming an instant outside
+        that range raises instead of answering an unrepresentable value. The
+        practical domain - day numbers for representable dates - round trips
+        exactly, as `getDateNumber` does.
+        """
         if offset is None:
             offset = cls._timezone_offset
         ts_ms = value * cls.day + offset * cls.minute
@@ -2093,8 +2225,15 @@ def _js_apply_with_key(callback: Callable[..., Any], value: Any, key: str) -> An
 
 
 def map_values(source: Dict[str, Any], callback: Callable[..., Any]) -> Dict[str, Any]:
-    """Transform values of a dict matching Cosmokit mapValues."""
-    return {k: _js_apply_with_key(callback, v, k) for k, v in source.items()}
+    """Transform values of a dict matching Cosmokit mapValues.
+
+    `Object.entries(source)` enumerates in ECMAScript own-key order, which
+    `Object.fromEntries` then preserves.
+    """
+    res = {}
+    for key in _js_own_enumerable_keys(source):
+        res[key] = _js_apply_with_key(callback, _js_read_key(source, key), key)
+    return res
 
 mapValues = map_values
 value_map = map_values

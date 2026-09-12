@@ -54,6 +54,15 @@ from dsh.boot.app_boot import (
     heal_profiles_module_fallback,
     healProfilesModuleFallback,
 )
+from dsh.boot.plugin_registry import (
+    HARNESS_PLUGIN_CLASSES,
+    harness_plugin_names,
+    harness_plugin_spec,
+    install_harness_plugin_classes,
+    install_installation_module_roots,
+    installation_module_roots,
+    resolve_harness_plugin,
+)
 from dsh.boot.cmdline import (
     CmdlineArgs,
     AppReady,
@@ -119,6 +128,13 @@ __all__ = [
     "composeEntries",
     "heal_profiles_module_fallback",
     "healProfilesModuleFallback",
+    "HARNESS_PLUGIN_CLASSES",
+    "harness_plugin_names",
+    "harness_plugin_spec",
+    "install_harness_plugin_classes",
+    "install_installation_module_roots",
+    "installation_module_roots",
+    "resolve_harness_plugin",
     "CmdlineArgs",
     "AppReady",
     "Command",

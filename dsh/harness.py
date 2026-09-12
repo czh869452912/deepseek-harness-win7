@@ -6,46 +6,14 @@ import yaml
 from dsh.cordis.context import Context
 from dsh.cordis.environment import load_layered_env
 from dsh.cordis.loader import PresetLoader
-from dsh.context.agent_instructions import AgentInstructionsPlugin
-from dsh.context.file_reference_local import FileReferenceLocalPlugin
-from dsh.context.time_context import TimeContextPlugin
-from dsh.core.agent import AgentPlugin
+from dsh.boot.plugin_registry import install_harness_plugin_classes
 from dsh.core.agent_loop import AgentLoopPlugin
-from dsh.core.persona import PersonaPlugin
-from dsh.core.tools import ToolsPlugin, ToolsService
+from dsh.core.tools import ToolsPlugin
 from dsh.credentials.credentials_local import CredentialsLocalPlugin
 from dsh.extensions.cli_visualizer import CliVisualizerPlugin
-from dsh.extensions.cordis_manager import CordisManagerPlugin
-from dsh.fs.fs_local import FsLocalPlugin
-from dsh.fs.tool_fs import ToolFsPlugin
-from dsh.fs.tool_fs_search import ToolFsSearchPlugin
-from dsh.fs.tool_str_replace_editor import StrReplaceEditorPlugin
-from dsh.interaction.tool_ask_user import ToolAskUserPlugin
 from dsh.llm.llm_openai import LLMOpenAIPlugin
 from dsh.llm.token_meter import TokenMeterPlugin
-from dsh.session.persistence_jsonl import JsonlSessionPersistencePlugin
-from dsh.compaction.pruner import ToolResultPrunerPlugin
-from dsh.compaction.engine import BasicCompactionPlugin
 from dsh.settings.settings_file import SettingsFilePlugin
-from dsh.shell.tool_pwsh import ToolPwshPlugin
-from dsh.shell.tool_pwsh_persistent import ToolPwshPersistentPlugin
-from dsh.skill.skill_filesystem import SkillFilesystemPlugin
-from dsh.skill.tool_skill import ToolSkillPlugin
-from dsh.todo.tool_todo import ToolTodoPlugin
-from dsh.plan.plan_mode import PlanModePlugin
-from dsh.goal.tool_goal import ToolGoalPlugin
-from dsh.guard.repeat_tool_reminder import RepeatToolReminderPlugin
-from dsh.guard.timeout_policy import ToolCallTimeoutPolicyPlugin
-from dsh.jobs.tool_jobs import ToolJobsPlugin
-from dsh.spill.spill_store import SpillStorePlugin
-from dsh.web.web_search_deepseek import WebSearchDeepSeekPlugin
-from dsh.web.web_fetch_http import WebFetchHttpPlugin
-from dsh.web.tool_web import ToolWebPlugin
-from dsh.subagent.tool_subagent import ToolSubagentPlugin
-from dsh.workflow.tool_ralph import ToolRalphPlugin
-from dsh.workflow.tool_workflow import ToolWorkflowPlugin
-from dsh.team.agent_team import AgentTeamPlugin
-from dsh.team.tool_agent_team import ToolAgentTeamPlugin
 from dsh.host.apiproxy.api_proxy import ApiProxyPlugin
 
 from dsh.host.client_modules.registry import ClientModulesPlugin
@@ -129,61 +97,10 @@ def build_harness(
         "model": model,
     })
 
-    # Setup preset loader & register available plugins
+    # Setup preset loader & register the installation-owned plugin set:
+    # dsh.boot.plugin_registry owns the row-name -> plugin-class table.
     loader = PresetLoader(ctx)
-    loader.register_plugin_class("@deepseek-ai/dsh-tools", ToolsPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-agent", AgentPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-persona", PersonaPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-agent-instructions", AgentInstructionsPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-file-reference-local", FileReferenceLocalPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-time-context", TimeContextPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-fs-local", FsLocalPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-tool-fs", ToolFsPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-tool-str-replace-editor", StrReplaceEditorPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-tool-pwsh", ToolPwshPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-tool-pwsh-persistent", ToolPwshPersistentPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-tool-fs-search", ToolFsSearchPlugin)
-
-    loader.register_plugin_class("@deepseek-ai/dsh-tool-ask-user", ToolAskUserPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-tool-todo", ToolTodoPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-cordis-manager", CordisManagerPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-skill-filesystem", SkillFilesystemPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-tool-skill", ToolSkillPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-credentials-local", CredentialsLocalPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-settings-file", SettingsFilePlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-storage", StoragePlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-workspace", WorkspacePlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-user-approval", UserApprovalPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-permission-presets", PermissionPresetsPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-commands", CommandsPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-llm-retry", LLMRetryPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-session-query-sqlite", SessionQueryPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-cli-visualizer", CliVisualizerPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-token-meter", TokenMeterPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-session-persistence-jsonl", JsonlSessionPersistencePlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-compaction-tool-result-pruner", ToolResultPrunerPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-compaction-basic", BasicCompactionPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-plan-mode", PlanModePlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-tool-goal", ToolGoalPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-repeat-tool-reminder", RepeatToolReminderPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-tool-call-timeout-policy", ToolCallTimeoutPolicyPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-tool-jobs", ToolJobsPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-spill-local", SpillStorePlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-web-search-deepseek", WebSearchDeepSeekPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-web-fetch-http", WebFetchHttpPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-tool-web", ToolWebPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-tool-subagent", ToolSubagentPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-tool-ralph", ToolRalphPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-tool-workflow", ToolWorkflowPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-agent-team", AgentTeamPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-tool-agent-team", ToolAgentTeamPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-host-webserver", WebServerPlugin)
-
-    loader.register_plugin_class("@deepseek-ai/dsh-host-frontend-static", FrontendStaticPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-apiproxy", ApiProxyPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-client-modules", ClientModulesPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-host-directory-picker-auto", DirectoryPickerAutoPlugin)
-    loader.register_plugin_class("@deepseek-ai/dsh-host-plugin-inventory", PluginInventoryPlugin)
+    install_harness_plugin_classes(loader)
 
     if enable_web:
         ctx.plugin(WebServerPlugin, config={"host": web_host, "port": web_port})

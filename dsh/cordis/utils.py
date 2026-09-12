@@ -1479,7 +1479,17 @@ class Time:
         parsed = cls.parse_time(date_str)
         now = datetime.datetime.now()
         if parsed:
-            return now + datetime.timedelta(milliseconds=parsed)
+            # The reference is `Date.now() + parsed`, a number the Date
+            # constructor turns into a valid Date up to +/-8.64e15 ms and into
+            # an Invalid Date past it.  `datetime` spans years 1-9999, so an
+            # offset that far from `now` has no Python value and reports as
+            # `new Date()` like every other unrepresentable instant
+            # (`new Date("100000000000h")` is Invalid, `new Date("999999999999s")`
+            # is a valid year-33715 Date; both land here).
+            try:
+                return now + datetime.timedelta(milliseconds=parsed)
+            except (OverflowError, ValueError):
+                return now
         # The reference rewrites a clock time with today's date and an
         # `M-D-HH:MM` string with the current year, then re-parses the joined
         # string, so the port joins the same string and reads it with the same

@@ -30,6 +30,7 @@ Cases:
 - C56      time.ts:36-61 V8's non-ISO clock, am/pm and timezone grammar
 - C57      time.ts:36-61 V8's non-ISO punctuation, parenthesis and sign handling
 - C58      time.ts:36-61 V8 rejects a numeric zone offset with no clock time
+- C59      time.ts:51-53 a parseTime offset outside the datetime year range
 - C44      exported-name surface of the reference package
 - T1..T7   reference/vendor/cordis/src/utils.ts cases owned by the same module
 """
@@ -777,6 +778,25 @@ def test_c31_parse_date_unrepresentable_inputs_fall_back_to_now():
     _assert_now(Time.parseDate('2026-09-03T14:30:60Z'))
     # A time-only string is not an Invalid Date; it is today at that clock time.
     assert Time.parseDate('14:30').hour == 14
+
+
+def test_c59_parse_time_offset_outside_the_date_range_falls_back_to_now():
+    """time.ts:51-53 - `Date.now() + parseTime(date)`, then `new Date(number)`.
+
+    The reference adds the parsed offset to `Date.now()` and hands the number
+    to the Date constructor: `new Date("100000w")` is 700000 days after the
+    current instant (a 3943 date on the Node 22 oracle), while an offset past
+    +/-8.64e15 ms is an Invalid Date (`new Date("100000000000h")`).  Python
+    `datetime` spans years 1-9999, so the offsets between those bounds have no
+    Python value and map onto `new Date()` like every other unrepresentable
+    instant (`new Date("999999999999s")` is a valid year-33715 Date); the
+    representable ones must stay exact.
+    """
+    for source in ('100000w', '100000weeks'):
+        delta = Time.parseDate(source) - datetime.datetime.now()
+        assert abs(delta - datetime.timedelta(weeks=100000)) < datetime.timedelta(seconds=5)
+    for source in ('999999999999s', '999999999999d', '999999999999m', '100000000000h'):
+        _assert_now(Time.parseDate(source))
 
 
 def test_c45_parse_date_rejects_malformed_zone_offsets():

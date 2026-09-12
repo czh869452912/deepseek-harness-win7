@@ -5,6 +5,7 @@ Implements DisposableList, Symbol constants, Traceable proxy, and Stack builders
 
 import base64
 import binascii
+import calendar
 import copy
 import functools
 import inspect
@@ -19,63 +20,287 @@ from typing import Any, Callable, Dict, Generic, Iterator, List, Optional, Set, 
 
 T = TypeVar("T")
 
+_REGEX_TYPE = type(re.compile(""))
+
+#: Python values whose ECMAScript ``typeof`` is ``'function'`` (classes are
+#: ``instanceof Function`` in the reference as well).
+_JS_FUNCTION_TYPES = (
+    types.FunctionType,
+    types.LambdaType,
+    types.MethodType,
+    types.BuiltinFunctionType,
+    types.BuiltinMethodType,
+    types.MethodWrapperType,
+    type,
+    functools.partial,
+)
+
+# ---------------------------------------------------------------------------
+# ECMAScript runtime semantics helpers
+#
+# The authoritative implementation is TypeScript running on an ECMAScript
+# engine, so a 1:1 port must reproduce `===`/SameValueZero membership, `typeof`
+# buckets, `Math.round`, `Number.prototype.toString`, `String.prototype.padStart`
+# and Node's lenient Buffer decoding instead of the nearest Python idiom.
+# ---------------------------------------------------------------------------
+
+
+def _shortest_decimal_digits(value: float) -> Tuple[str, int]:
+    """Shortest decimal digits `s` and exponent `n` with value == 0.s * 10**n."""
+    text = repr(value)
+    exponent = 0
+    if "e" in text:
+        text, exponent_text = text.split("e")
+        exponent = int(exponent_text)
+    integer_part, _, fraction_part = text.partition(".")
+    combined = integer_part + fraction_part
+    point_index = len(integer_part)
+    stripped = combined.lstrip("0")
+    point_index -= len(combined) - len(stripped)
+    return stripped.rstrip("0"), point_index + exponent
+
+
+def _js_double_to_string(value: float) -> str:
+    """ECMAScript `Number::toString` for a double (shortest round-trip form)."""
+    if math.isnan(value):
+        return "NaN"
+    if math.isinf(value):
+        return "Infinity" if value > 0 else "-Infinity"
+    if value == 0:
+        return "0"  # String(-0) === "0"
+    sign = "-" if value < 0 else ""
+    digits, n = _shortest_decimal_digits(abs(value))
+    k = len(digits)
+    if k <= n <= 21:
+        return sign + digits + "0" * (n - k)
+    if 0 < n <= 21:
+        return sign + digits[:n] + "." + digits[n:]
+    if -6 < n <= 0:
+        return sign + "0." + "0" * (-n) + digits
+    exponent = n - 1
+    mantissa = digits if k == 1 else digits[0] + "." + digits[1:]
+    return "%s%se%s%d" % (sign, mantissa, "+" if exponent >= 0 else "-", abs(exponent))
+
+
+def _js_number_to_string(value: Any) -> str:
+    """Render a number like ECMAScript ``Number.prototype.toString``."""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, int):
+        # ECMAScript numbers are doubles: integers beyond 2**53 round first.
+        if -9007199254740992 <= value <= 9007199254740992:
+            return str(value)
+        try:
+            return _js_double_to_string(float(value))
+        except OverflowError:
+            return "Infinity" if value > 0 else "-Infinity"
+    if isinstance(value, float):
+        return _js_double_to_string(value)
+    return str(value)
+
+
+_EPOCH = datetime.datetime(1970, 1, 1)
+
+
+def _local_utc_offset_seconds() -> float:
+    """Local UTC offset in seconds east, using the platform DST state."""
+    if time.daylight:
+        try:
+            if time.localtime().tm_isdst:
+                return -time.altzone
+        except (OSError, OverflowError, ValueError):
+            pass
+    return -time.timezone
+
+
+def _datetime_from_epoch(ts_seconds: float) -> datetime.datetime:
+    """``datetime.fromtimestamp`` for instants at or before the epoch.
+
+    LEGAL_ADAPTATION (Windows 7): the Windows C runtime rejects timestamps
+    <= 0 (`OSError: [Errno 22]`), while the reference `new Date(ms)` handles
+    them. The naive local datetime is rebuilt from the UTC instant plus the
+    local offset in that case.
+    """
+    try:
+        return datetime.datetime.fromtimestamp(ts_seconds)
+    except (OSError, OverflowError, ValueError):
+        return (_EPOCH + datetime.timedelta(seconds=ts_seconds)
+                + datetime.timedelta(seconds=_local_utc_offset_seconds()))
+
+
+def _epoch_seconds_of(value: datetime.datetime) -> float:
+    """``Date.valueOf() / 1000`` for a naive local datetime.
+
+    LEGAL_ADAPTATION (Windows 7): `datetime.timestamp()` raises for instants at
+    or before the epoch on Windows; the wall-clock delta plus the local offset
+    yields the same value there.
+    """
+    if value.tzinfo is not None:
+        return value.timestamp()
+    try:
+        return value.timestamp()
+    except (OSError, OverflowError, ValueError):
+        return (value - _EPOCH).total_seconds() - _local_utc_offset_seconds()
+
+
+def _js_round(value: Any) -> Any:
+    """ECMAScript ``Math.round``: ``floor(x + 0.5)`` with NaN/Infinity passthrough."""
+    if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
+        return value
+    return int(math.floor(value + 0.5))
+
+
+def _js_pad_start(source: str, length: int) -> str:
+    """ECMAScript ``String.prototype.padStart`` (pads before a leading sign too)."""
+    if len(source) >= length:
+        return source
+    return "0" * (length - len(source)) + source
+
+
+def _js_typeof(value: Any) -> str:
+    """ECMAScript ``typeof`` bucket of a Python value."""
+    if value is None:
+        return "object"  # typeof null === 'object'
+    if isinstance(value, bool):
+        return "boolean"
+    if isinstance(value, (int, float)):
+        return "number"
+    if isinstance(value, str):
+        return "string"
+    if isinstance(value, _JS_FUNCTION_TYPES):
+        return "function"
+    return "object"
+
+
+def _js_strict_equal(a: Any, b: Any) -> bool:
+    """ECMAScript ``===``, i.e. ``Array.prototype.indexOf`` membership semantics."""
+    if a is b:
+        return True
+    if isinstance(a, bool) or isinstance(b, bool):
+        return False
+    if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+        return a == b  # NaN === NaN is false
+    if isinstance(a, str) and isinstance(b, str):
+        return a == b
+    return False  # other primitives and all objects compare by reference
+
+
+def _js_same_value_zero(a: Any, b: Any) -> bool:
+    """ECMAScript SameValueZero: ``Array.prototype.includes`` / ``Set`` membership."""
+    if isinstance(a, float) and isinstance(b, float) and math.isnan(a) and math.isnan(b):
+        return True
+    return _js_strict_equal(a, b)
+
+
+def _js_membership_key(value: Any) -> Any:
+    """Hashable key whose equality matches SameValueZero for a single value."""
+    if isinstance(value, bool):
+        return ("boolean", value)
+    if isinstance(value, (int, float)):
+        if isinstance(value, float) and math.isnan(value):
+            return ("number", "NaN")
+        return ("number", value)
+    if isinstance(value, str):
+        return ("string", value)
+    if value is None:
+        return ("null", None)
+    return ("reference", id(value))
+
+
+def _js_own_enumerable_keys(value: Any) -> List[Any]:
+    """``Object.keys`` for a Python value (dict keys, else instance attributes)."""
+    if isinstance(value, dict):
+        return list(value.keys())
+    own = getattr(value, "__dict__", None)
+    if isinstance(own, dict):
+        return list(own.keys())
+    return []
+
+
+def _js_read_key(value: Any, key: Any) -> Any:
+    """``value[key]``; a missing key reads as ``undefined`` (``None`` here)."""
+    if isinstance(value, dict):
+        return value.get(key)
+    return getattr(value, key, None)
+
 
 def clone(value: Any) -> Any:
-    """Deep clone a value matching Cosmokit clone."""
+    """Deep clone a value matching Cosmokit clone.
+
+    LEGAL_ADAPTATION: ``copy.deepcopy`` follows the reference clone by keeping
+    the class (prototype) and reference cycles, and it copies every own
+    attribute the way ``Reflect.ownKeys`` does. Python has no property
+    enumerability and no ArrayBuffer/TypedArray split, so immutable containers
+    (``tuple``/``bytes``/``datetime``) may be shared with the source.
+    """
     return copy.deepcopy(value)
 
 
 def deep_equal(a: Any, b: Any, strict: bool = False) -> bool:
     """Deep equality check matching Cosmokit deepEqual."""
-    if a is b:
+    # The opening reference test is `a === b`, not object identity: two equal
+    # strings are distinct Python objects, so `is` would report them unequal
+    # while `===` (and the reference) reports equal.
+    if _js_strict_equal(a, b):
         return True
-    if a == b:
-        # Check bool vs int: in Python True == 1 is True, but TS 1 === true is False!
-        if isinstance(a, bool) != isinstance(b, bool):
-            return False
+    if not strict and is_nullable(a) and is_nullable(b):
         return True
-    if type(a) != type(b):
-        # Allow numbers int vs float
-        if isinstance(a, (int, float)) and isinstance(b, (int, float)):
-            return not (isinstance(a, bool) or isinstance(b, bool)) and a == b
-        # Allow dict vs OrderedDict
-        if isinstance(a, dict) and isinstance(b, dict):
-            pass
-        else:
+    if _js_typeof(a) != _js_typeof(b):
+        return False
+    if _js_typeof(a) != "object":
+        return False  # non-object primitives that were not identical
+    if a is None or b is None:
+        return False
+    if isinstance(a, (list, tuple)) or isinstance(b, (list, tuple)):
+        if not (isinstance(a, (list, tuple)) and isinstance(b, (list, tuple))):
             return False
-    if isinstance(a, dict):
-        if not isinstance(b, dict):
-            return False
-        keys = set(a.keys()) | set(b.keys())
-        if strict and len(a) != len(b):
-            return False
-        for k in keys:
-            if strict and (k not in a or k not in b):
-                return False
-            if not deep_equal(a.get(k), b.get(k), strict=strict):
-                return False
-        return True
-    if isinstance(a, (list, tuple)):
         if len(a) != len(b):
             return False
-        for x, y in zip(a, b):
-            if not deep_equal(x, y, strict=strict):
-                return False
-        return True
-    if isinstance(a, type(re.compile(""))) and isinstance(b, type(re.compile(""))):
-        return a.pattern == b.pattern and a.flags == b.flags
-    if isinstance(a, (datetime.datetime, datetime.date)) and isinstance(b, (datetime.datetime, datetime.date)):
+        return all(deep_equal(x, y, strict=strict) for x, y in zip(a, b))
+    if isinstance(a, (datetime.datetime, datetime.date)) or isinstance(b, (datetime.datetime, datetime.date)):
+        if not (isinstance(a, (datetime.datetime, datetime.date))
+                and isinstance(b, (datetime.datetime, datetime.date))):
+            return False
         return a == b
-    return False
+    if isinstance(a, _REGEX_TYPE) or isinstance(b, _REGEX_TYPE):
+        if not (isinstance(a, _REGEX_TYPE) and isinstance(b, _REGEX_TYPE)):
+            return False
+        return a.pattern == b.pattern and a.flags == b.flags
+    if isinstance(a, (bytes, bytearray, memoryview)) or isinstance(b, (bytes, bytearray, memoryview)):
+        if not (isinstance(a, (bytes, bytearray, memoryview))
+                and isinstance(b, (bytes, bytearray, memoryview))):
+            return False
+        return bytes(a) == bytes(b)
+    if strict and isinstance(a, dict) and isinstance(b, dict) and len(a) != len(b):
+        # deepEqual({ a: null }, {}, true) is false: with the nullish shortcut
+        # disabled the extra key compares null against undefined.
+        return False
+    # Reference fallback:
+    # Object.keys({...a, ...b}).every(key => deepEqual(a[key], b[key], strict))
+    keys: List[Any] = []
+    for source in (a, b):
+        for key in _js_own_enumerable_keys(source):
+            if key not in keys:
+                keys.append(key)
+    return all(deep_equal(_js_read_key(a, key), _js_read_key(b, key), strict=strict) for key in keys)
+
+
+deepEqual = deep_equal
 
 
 def pick(obj: Dict[str, Any], keys: Optional[Any] = None, forced: bool = False) -> Dict[str, Any]:
-    """Pick specified keys from a dictionary matching Cosmokit pick."""
+    """Pick specified keys from a dictionary matching Cosmokit pick.
+
+    The reference keeps every key whose value is not ``undefined``.  Python has
+    no ``undefined``; a present key holding ``None`` therefore maps to the
+    reference's ``null`` (kept), while a missing key maps to ``undefined``
+    (dropped) - `k in obj` is the faithful test (LEGAL_ADAPTATION).
+    """
     if keys is None:
         return dict(obj)
     res = {}
     for k in keys:
-        if forced or (k in obj and obj[k] is not None):
+        if forced or k in obj:
             res[k] = obj.get(k)
     return res
 
@@ -88,32 +313,12 @@ def omit(obj: Dict[str, Any], keys: Optional[Any] = None) -> Dict[str, Any]:
     return {k: v for k, v in obj.items() if k not in key_set}
 
 
-def value_map(obj: Dict[str, Any], transform: Callable[..., Any]) -> Dict[str, Any]:
-    """Transform values of a dictionary matching Cosmokit valueMap."""
-    res = {}
-    for k, v in obj.items():
-        sig = None
-        try:
-            sig = inspect.signature(transform)
-        except Exception:
-            pass
-        if sig is not None:
-            params = list(sig.parameters.values())
-            takes_two = len(params) >= 2 or any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
-            if takes_two:
-                res[k] = transform(v, k)
-            else:
-                res[k] = transform(v)
-        else:
-            try:
-                res[k] = transform(v, k)
-            except TypeError:
-                res[k] = transform(v)
-    return res
-
-
 def filter_keys(obj: Dict[str, Any], predicate: Callable[..., bool]) -> Dict[str, Any]:
     """Filter dictionary keys matching Cosmokit filterKeys."""
+    # LEGAL_ADAPTATION: the reference always calls `filter(key, value)` and
+    # JavaScript silently ignores surplus arguments.  Python cannot express
+    # that, so the predicate arity selects between `predicate(key, value)` and
+    # the equivalent one-argument call for predicates declared with one slot.
     res = {}
     try:
         sig = inspect.signature(predicate)
@@ -132,24 +337,21 @@ def filter_keys(obj: Dict[str, Any], predicate: Callable[..., bool]) -> Dict[str
     return res
 
 
+filterKeys = filter_keys
+
+
 def capitalize(source: str) -> str:
-    """Uppercase the first character of a string."""
-    if not source:
-        return source or ""
-    return source[0].upper() + source[1:]
+    """Uppercase the first character of a string (``source.charAt(0)``)."""
+    return source[:1].upper() + source[1:]
 
 
 def uncapitalize(source: str) -> str:
-    """Lowercase the first character of a string."""
-    if not source:
-        return source or ""
-    return source[0].lower() + source[1:]
+    """Lowercase the first character of a string (``source.charAt(0)``)."""
+    return source[:1].lower() + source[1:]
 
 
 def camel_case(source: str) -> str:
     """Convert dash or underscore delimited text to camelCase matching Cosmokit camelCase."""
-    if not source:
-        return source or ""
     return re.sub(r"[_-]([a-z])", lambda m: m.group(1).upper(), source)
 
 
@@ -209,7 +411,13 @@ snakeCase = snake_case
 
 
 def template(source: str, params: Dict[str, Any]) -> str:
-    """Interpolate {key} or {{key}} placeholders in a string matching Cosmokit template."""
+    """Interpolate {key} or {{key}} placeholders in a string.
+
+    NOTE: this helper is not part of the cosmokit package contract - cosmokit's
+    `template` is `Time.template(template, date)`, implemented above.  This is
+    the harness prompt-variable interpolation helper kept here for the existing
+    callers.
+    """
     def _repl(match):
         k = match.group(1) or match.group(2)
         return str(params.get(k, match.group(0)))
@@ -357,20 +565,47 @@ def is_non_nullable(value: Any) -> bool:
     """Return true when value is not None."""
     return value is not None
 
+isNonNullable = is_non_nullable
+
 
 def is_plain_object(data: Any) -> bool:
-    """Return true for non-array dict values."""
-    return bool(data and isinstance(data, dict))
+    """Return true for non-array object values matching Cosmokit isPlainObject.
+
+    The reference is `data && typeof data === 'object' && !Array.isArray(data)`:
+    every non-array object (date, regexp, map, set, class instance) counts as
+    "plain", only primitives, functions and arrays are rejected. A tuple is the
+    second Python sequence type, so it maps to the array bucket like
+    `make_array`/`is_("Array", ...)`.
+
+    LEGAL_ADAPTATION: the reference returns the falsy operand itself (`null`,
+    `0`, `''`) rather than a boolean; only the truthiness is observable.
+    """
+    if data is None or isinstance(data, (bool, int, float, str)):
+        # ECMAScript falsy primitives (0, '', false, null, undefined) and any
+        # other primitive (typeof !== 'object').
+        return False
+    if isinstance(data, (list, tuple)):
+        return False  # Array.isArray
+    if isinstance(data, _JS_FUNCTION_TYPES):
+        return False  # ECMAScript typeof is 'function'
+    # Every other object is accepted, including empty dicts/sets (a Python
+    # empty container is falsy but the reference object is truthy).
+    return True
+
+
+isPlainObject = is_plain_object
 
 
 def format_property(key: Any) -> str:
     """Format a property key as a JavaScript member access suffix matching Cosmokit formatProperty."""
     import json
     if not isinstance(key, str):
-        return f"[{key}]"
-    if re.match(r"^[a-zA-Z_$][\w$]*$", key):
+        return "[{}]".format(_js_number_to_string(key))
+    # The reference uses /^[a-z_$][\w$]*$/i without the /u flag, so `\w` is
+    # ASCII-only; Python's `re` is Unicode-aware by default.
+    if re.match(r"^[a-zA-Z_$][0-9A-Za-z_$]*$", key):
         return f".{key}"
-    return f"[{json.dumps(key)}]"
+    return f"[{json.dumps(key, ensure_ascii=False)}]"
 
 
 formatProperty = format_property
@@ -393,67 +628,89 @@ def sanitize(source: str) -> str:
     return trim_slash(source)
 
 
+def _js_membership_set(array: Any) -> Dict[Any, bool]:
+    """SameValueZero membership set backing ``Array.prototype.includes``."""
+    keys: Dict[Any, bool] = {}
+    for item in array:
+        keys[_js_membership_key(item)] = True
+    return keys
+
+
 def contain(array1: Any, array2: Any) -> bool:
-    """Return true when every item in array2 is present in array1."""
-    return all(item in array1 for item in array2)
+    """Return true when every item in array2 is present in array1.
+
+    ``array1.includes(item)`` uses SameValueZero, not Python ``==``.
+    """
+    keys = _js_membership_set(array1)
+    return all(_js_membership_key(item) in keys for item in array2)
 
 
 def intersection(array1: Any, array2: Any) -> List[Any]:
-    """Return items that appear in both arrays."""
-    return [item for item in array1 if item in array2]
+    """Return items that appear in both arrays (``includes`` semantics)."""
+    keys = _js_membership_set(array2)
+    return [item for item in array1 if _js_membership_key(item) in keys]
 
 
 def difference(array1: Any, array2: Any) -> List[Any]:
-    """Return items from array1 that do not appear in array2."""
-    return [item for item in array1 if item not in array2]
+    """Return items from array1 that do not appear in array2 (``includes`` semantics)."""
+    keys = _js_membership_set(array2)
+    return [item for item in array1 if _js_membership_key(item) not in keys]
 
 
 def union(array1: Any, array2: Any) -> List[Any]:
     """Return the set-union of two arrays while preserving first occurrence order."""
     res = []
-    seen = set()
+    seen: Dict[Any, bool] = {}
     for item in list(array1) + list(array2):
-        try:
-            if item not in seen:
-                seen.add(item)
-                res.append(item)
-        except TypeError:
-            if item not in res:
-                res.append(item)
+        key = _js_membership_key(item)
+        if key in seen:
+            continue
+        seen[key] = True
+        res.append(item)
     return res
 
 
 def deduplicate(array: Any) -> List[Any]:
     """Remove duplicate values while preserving first occurrence order."""
     res = []
-    seen = set()
+    seen: Dict[Any, bool] = {}
     for item in array:
-        try:
-            if item not in seen:
-                seen.add(item)
-                res.append(item)
-        except TypeError:
-            if item not in res:
-                res.append(item)
+        key = _js_membership_key(item)
+        if key in seen:
+            continue
+        seen[key] = True
+        res.append(item)
     return res
 
 
 def remove(lst: List[Any], item: Any) -> bool:
-    """Remove one item from a list and report whether it was found."""
-    try:
-        lst.remove(item)
-        return True
-    except ValueError:
+    """Remove one item from a list and report whether it was found.
+
+    ``list?.indexOf(item)`` uses strict equality (``===``) and tolerates a
+    nullish list.
+    """
+    if lst is None:
         return False
+    for index, value in enumerate(lst):
+        if _js_strict_equal(value, item):
+            del lst[index]
+            return True
+    return False
 
 
 def make_array(source: Any) -> List[Any]:
-    """Normalize nullish, scalar, or array input to a list."""
+    """Normalize nullish, scalar, or array input to a list.
+
+    LEGAL_ADAPTATION: Python's `tuple` is the second array-like sequence type
+    (there is no second ECMAScript array type), so it is treated like `list` -
+    the same mapping `is_("Array", ...)` uses.  A `set` is not an array in the
+    reference either, so it is wrapped as a scalar value.
+    """
     if source is None:
         return []
     if isinstance(source, list):
         return source
-    if isinstance(source, (tuple, set)):
+    if isinstance(source, tuple):
         return list(source)
     return [source]
 
@@ -486,32 +743,55 @@ class Time:
 
     @classmethod
     def get_date_number(cls, date: Optional[Any] = None, offset: Optional[int] = None) -> int:
+        """Convert a date to a day number matching Cosmokit Time.getDateNumber."""
         if date is None:
             date = datetime.datetime.now()
-        elif isinstance(date, (int, float)):
-            date = datetime.datetime.fromtimestamp(date / 1000.0)
+        elif isinstance(date, (int, float)) and not isinstance(date, bool):
+            date = _datetime_from_epoch(date / 1000.0)
         if offset is None:
             offset = cls._timezone_offset
-        ts_ms = date.timestamp() * 1000.0
+        ts_ms = _epoch_seconds_of(date) * 1000.0
         return int(math.floor((ts_ms / cls.minute - offset) / 1440))
 
     getDateNumber = get_date_number
 
     @classmethod
     def from_date_number(cls, value: int, offset: Optional[int] = None) -> datetime.datetime:
+        """Convert a day number to a date matching Cosmokit Time.fromDateNumber."""
         if offset is None:
             offset = cls._timezone_offset
         ts_ms = value * cls.day + offset * cls.minute
-        return datetime.datetime.fromtimestamp(ts_ms / 1000.0)
+        return _datetime_from_epoch(ts_ms / 1000.0)
 
     fromDateNumber = from_date_number
 
+    # ECMAScript regular expressions do not treat `$` as matching before a
+    # trailing newline and `\d` is ASCII-only, so the reference parse-time
+    # pattern is reproduced with `\Z` + re.ASCII.
     _TIME_REGEX = re.compile(
         r"^(?:(\d+(?:\.\d+)?)w(?:eek(?:s)?)?)?"
         r"(?:(\d+(?:\.\d+)?)d(?:ay(?:s)?)?)?"
         r"(?:(\d+(?:\.\d+)?)h(?:our(?:s)?)?)?"
         r"(?:(\d+(?:\.\d+)?)m(?:in(?:ute)?(?:s)?)?)?"
-        r"(?:(\d+(?:\.\d+)?)s(?:ec(?:ond)?(?:s)?)?)?$"
+        r"(?:(\d+(?:\.\d+)?)s(?:ec(?:ond)?(?:s)?)?)?\Z",
+        re.ASCII,
+    )
+
+    _TIME_ONLY_REGEX = re.compile(r"^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$", re.ASCII)
+    _MONTH_DAY_REGEX = re.compile(r"^(\d{1,2})-(\d{1,2})-(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$", re.ASCII)
+    # The Date Time String Format of ECMA-262: the month and day parts,
+    # and the whole time part, are optional and default to 01/01/00:00:00;
+    # a date-only form is UTC while a date-time form is local wall clock.
+    _ISO_DATETIME_REGEX = re.compile(
+        r"^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?"
+        r"(?:[Tt ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?)?"
+        r"(Z|z|[+-]\d{2}:?\d{2})?$",
+        re.ASCII,
+    )
+    _LOCAL_DATE_REGEX = re.compile(
+        r"^(?:(\d{4})[-/](\d{1,2})[-/](\d{1,2})|(\d{1,2})/(\d{1,2})/(\d{4}))"
+        r"(?:[ T](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$",
+        re.ASCII,
     )
 
     @classmethod
@@ -532,59 +812,159 @@ class Time:
 
     parseTime = parse_time
 
+    @staticmethod
+    def _is_valid_clock(hour: int, minute: int, second: int) -> bool:
+        """V8 accepts 00:00-24:00:00 and rejects out-of-range clock parts."""
+        if not (0 <= minute <= 59 and 0 <= second <= 59 and 0 <= hour <= 24):
+            return False
+        if hour == 24 and (minute != 0 or second != 0):
+            return False
+        return True
+
     @classmethod
     def parse_date(cls, date_str: str) -> datetime.datetime:
-        """Parse date matching Cosmokit Time.parseDate."""
+        """Parse date matching Cosmokit Time.parseDate.
+
+        LEGAL_ADAPTATION: an ECMAScript ``Invalid Date`` has no Python value.
+        Where the reference returns ``new Date(NaN)`` (an unreachable clock
+        part, an out-of-range month/day) this port returns ``new Date()`` -
+        the same value the reference uses for an empty input - instead of
+        raising, keeping the no-throw contract of the reference.
+        """
         parsed = cls.parse_time(date_str)
         if parsed:
             return datetime.datetime.now() + datetime.timedelta(milliseconds=parsed)
         now = datetime.datetime.now()
-        if re.match(r"^\d{1,2}(:\d{1,2}){1,2}$", date_str):
-            parts = [int(p) for p in date_str.split(":")]
-            h = parts[0]
-            m = parts[1] if len(parts) > 1 else 0
-            s = parts[2] if len(parts) > 2 else 0
-            return now.replace(hour=h, minute=m, second=s, microsecond=0)
-        m_triple = re.match(r"^(\d{1,2})-(\d{1,2})-(\d{1,2}(?::\d{1,2}){1,2})$", date_str)
-        if m_triple:
-            month = int(m_triple.group(1))
-            day = int(m_triple.group(2))
-            time_parts = [int(p) for p in m_triple.group(3).split(":")]
-            h = time_parts[0]
-            m = time_parts[1] if len(time_parts) > 1 else 0
-            s = time_parts[2] if len(time_parts) > 2 else 0
-            try:
-                return now.replace(month=month, day=day, hour=h, minute=m, second=s, microsecond=0)
-            except ValueError:
-                return now
-        return now
+        # `new Date().toLocaleDateString()` + '-' + date: today plus a clock time.
+        m = cls._TIME_ONLY_REGEX.match(date_str) if isinstance(date_str, str) else None
+        if m:
+            hour, minute, second = int(m.group(1)), int(m.group(2)), int(m.group(3) or 0)
+            if cls._is_valid_clock(hour, minute, second):
+                return (now.replace(hour=0, minute=0, second=0, microsecond=0)
+                        + datetime.timedelta(hours=hour, minutes=minute, seconds=second))
+            return now
+        # `new Date().getFullYear()` + '-' + date: current year, given month/day/time.
+        m = cls._MONTH_DAY_REGEX.match(date_str) if isinstance(date_str, str) else None
+        if m:
+            month, day = int(m.group(1)), int(m.group(2))
+            hour, minute, second = int(m.group(3)), int(m.group(4)), int(m.group(5) or 0)
+            if 1 <= month <= 12 and 1 <= day <= 31 and cls._is_valid_clock(hour, minute, second):
+                return (datetime.datetime(now.year, month, 1)
+                        + datetime.timedelta(days=day - 1, hours=hour, minutes=minute, seconds=second))
+            return now
+        return cls._parse_js_date_string(date_str, now)
 
     parseDate = parse_date
+
+    @staticmethod
+    def _build_local(year: int, month: int, day: int, hour: int, minute: int,
+                     second: int, microsecond: int) -> Optional[datetime.datetime]:
+        """Build a local wall-clock instant; None when `datetime` cannot hold it.
+
+        LEGAL_ADAPTATION: a `Date` spans about +/-8.64e15 ms while `datetime`
+        spans years 1-9999, so only the reference values outside that range
+        report as unrepresentable and fall back to `new Date()` like an
+        unparseable string. `day` may exceed the month length: the reference
+        normalizes "2026-02-30" to March 2 the same way `timedelta` does.
+        """
+        if not 1 <= year <= 9999:
+            return None
+        try:
+            return (datetime.datetime(year, month, 1)
+                    + datetime.timedelta(days=day - 1, hours=hour, minutes=minute,
+                                         seconds=second, microseconds=microsecond))
+        except (ValueError, OverflowError):
+            return None
+
+    @classmethod
+    def _parse_js_date_string(cls, source: Any, now: datetime.datetime) -> datetime.datetime:
+        """Best effort `new Date(string)` for the deterministic date forms.
+
+        LEGAL_ADAPTATION: the ECMAScript grammar for non-ISO date strings is
+        implementation defined - V8 also accepts RFC 2822 text, a one-digit
+        month ("2026-9") and two-digit years - and an unparseable string
+        produces an Invalid Date that Python cannot represent.  The Date Time
+        String Format of ECMA-262 and the unambiguous legacy `YYYY-M-D` /
+        `YYYY/MM/DD` / `M/D/YYYY` forms are reproduced exactly; every other
+        string falls back to `new Date()` (now) exactly like an empty string
+        does, which is how this port also renders a reference Invalid Date.
+        """
+        if not source or not isinstance(source, str):
+            return now
+        m = cls._ISO_DATETIME_REGEX.match(source)
+        if m:
+            year = int(m.group(1))
+            # An absent month/day part defaults to the first of its parent.
+            month = int(m.group(2)) if m.group(2) is not None else 1
+            day = int(m.group(3)) if m.group(3) is not None else 1
+            if not (1 <= month <= 12 and 1 <= day <= 31):
+                return now
+            if not 1 <= year <= 9999:
+                # Representative in the reference, outside `datetime`.
+                return now
+            if m.group(4) is None:
+                # A date-only form is UTC; a numeric offset needs a time part.
+                if m.group(8) not in (None, "Z", "z"):
+                    return now
+                epoch = calendar.timegm((year, month, 1, 0, 0, 0)) + (day - 1) * 86400
+                try:
+                    return _datetime_from_epoch(epoch)
+                except (OSError, OverflowError, ValueError):
+                    return now
+            hour, minute, second = int(m.group(4)), int(m.group(5)), int(m.group(6) or 0)
+            if not cls._is_valid_clock(hour, minute, second):
+                return now
+            # Date time values have millisecond resolution: extra digits truncate.
+            micro = int((m.group(7) + "000")[:3]) * 1000 if m.group(7) else 0
+            offset = m.group(8)
+            if offset is None:
+                # A date-time without an offset is local wall-clock time.
+                return cls._build_local(year, month, day, hour, minute, second, micro) or now
+            if offset in ("Z", "z"):
+                offset_minutes = 0
+            else:
+                digits = offset[1:].replace(":", "")
+                sign = 1 if offset[0] == "+" else -1
+                offset_minutes = sign * (int(digits[:2]) * 60 + int(digits[2:]))
+            epoch = (calendar.timegm((year, month, 1, hour, minute, second))
+                     + (day - 1) * 86400 - offset_minutes * 60
+                     + micro / 1000000.0)
+            try:
+                return _datetime_from_epoch(epoch)
+            except (OSError, OverflowError, ValueError):
+                return now
+        m = cls._LOCAL_DATE_REGEX.match(source)
+        if m:
+            if m.group(1) is not None:
+                year, month, day = int(m.group(1)), int(m.group(2)), int(m.group(3))
+            else:
+                year, month, day = int(m.group(6)), int(m.group(4)), int(m.group(5))
+            hour = int(m.group(7) or 0)
+            minute = int(m.group(8) or 0)
+            second = int(m.group(9) or 0)
+            if not (1 <= month <= 12 and 1 <= day <= 31) or not cls._is_valid_clock(hour, minute, second):
+                return now
+            return cls._build_local(year, month, day, hour, minute, second, 0) or now
+        return now
 
     @classmethod
     def format(cls, ms: float) -> str:
         """Format milliseconds matching Cosmokit Time.format."""
         abs_ms = abs(ms)
-        def _round_half_up(val: float) -> int:
-            return int(math.floor(val + 0.5))
-
         if abs_ms >= cls.day - cls.hour / 2:
-            return f"{_round_half_up(ms / cls.day)}d"
+            return _js_number_to_string(_js_round(ms / cls.day)) + "d"
         elif abs_ms >= cls.hour - cls.minute / 2:
-            return f"{_round_half_up(ms / cls.hour)}h"
+            return _js_number_to_string(_js_round(ms / cls.hour)) + "h"
         elif abs_ms >= cls.minute - cls.second / 2:
-            return f"{_round_half_up(ms / cls.minute)}m"
+            return _js_number_to_string(_js_round(ms / cls.minute)) + "m"
         elif abs_ms >= cls.second:
-            return f"{_round_half_up(ms / cls.second)}s"
-
-        if isinstance(ms, float) and ms.is_integer():
-            return f"{int(ms)}ms"
-        return f"{ms}ms"
+            return _js_number_to_string(_js_round(ms / cls.second)) + "s"
+        return _js_number_to_string(ms) + "ms"
 
     @classmethod
     def to_digits(cls, source: int, length: int = 2) -> str:
         """Format number padded with leading zeros matching Cosmokit Time.toDigits."""
-        return str(source).zfill(length)
+        return _js_pad_start(_js_number_to_string(source), length)
 
     toDigits = to_digits
 
@@ -894,85 +1274,239 @@ def get_isolate_symbol(ctx: Any, name: str) -> Any:
 
 
 def is_(type_str: str, value: Any = Ellipsis) -> Any:
-    """Type predicate factory matching Cosmokit is()."""
-    type_map = {
-        "String": str,
-        "Number": (int, float),
-        "Boolean": bool,
-        "Function": (types.FunctionType, types.MethodType, types.BuiltinFunctionType),
-        "Array": list,
-        "Object": dict,
-        "Date": datetime.datetime,
-        "RegExp": type(re.compile("")),
-    }
+    """Type predicate factory matching Cosmokit is().
+
+    The reference is `type in globalThis && value instanceof globalThis[type]
+    || Object.prototype.toString.call(value).slice(8, -1) === type`, so the
+    check is by global constructor / internal tag.  The Python mapping reuses
+    the same idea for the constructor names that exist here (`Object` covers
+    plain data objects, `Map` the dict-backed mapping, `Null`/`Undefined` the
+    single Python `None`, `ArrayBuffer`/`Uint8Array` the bytes-like buffers).
+
+    LEGAL_ADAPTATION: `Symbol` has no Python equivalent, and the reference's
+    single `typeof`-based `Array`/`Object` split cannot distinguish a Python
+    dict used as a plain object from one used as a `Map`, so `Map`/`WeakMap`
+    accept every dict even though a JavaScript plain object is not a Map.
+    `is` is a Python keyword, so the exported predicate is spelled `is_`
+    (the same spelling `Binary.is` keeps as an attribute).
+    """
 
     def _check(val: Any) -> bool:
-        expected = type_map.get(type_str)
-        if expected is not None:
-            return isinstance(val, expected)
-        return type(val).__name__ == type_str or type(val).__name__.capitalize() == type_str
+        if type_str in ("Null", "Undefined"):
+            return val is None
+        if type_str == "Boolean":
+            return isinstance(val, bool)
+        if type_str == "Number":
+            return isinstance(val, (int, float)) and not isinstance(val, bool)
+        if type_str == "String":
+            return isinstance(val, str)
+        if type_str == "BigInt":
+            return isinstance(val, int) and not isinstance(val, bool)
+        if type_str == "Function":
+            return isinstance(val, _JS_FUNCTION_TYPES)
+        if type_str == "Array":
+            return isinstance(val, (list, tuple))
+        if type_str == "Date":
+            return isinstance(val, datetime.datetime)
+        if type_str == "RegExp":
+            return isinstance(val, _REGEX_TYPE)
+        if type_str in ("ArrayBuffer", "SharedArrayBuffer"):
+            return isinstance(val, (bytes, bytearray, memoryview))
+        if type_str in ("Uint8Array", "Uint8ClampedArray", "Int8Array", "Uint16Array",
+                        "Int16Array", "Uint32Array", "Int32Array", "Float32Array",
+                        "Float64Array", "BigInt64Array", "BigUint64Array", "DataView"):
+            return isinstance(val, (bytes, bytearray, memoryview))
+        if type_str in ("Map", "WeakMap"):
+            return isinstance(val, dict)
+        if type_str in ("Set", "WeakSet"):
+            return isinstance(val, (set, frozenset))
+        if type_str == "Promise":
+            import asyncio
+            return isinstance(val, asyncio.Future)
+        if type_str == "Error":
+            return isinstance(val, Exception)
+        if type_str in ("EvalError", "RangeError", "ReferenceError", "SyntaxError",
+                        "TypeError", "URIError", "AggregateError"):
+            return isinstance(val, Exception) and type(val).__name__ == type_str
+        if type_str == "Object":
+            # `value instanceof Object` holds for every non-primitive value
+            # (arrays, dates, regexps, maps, functions included); only the
+            # ECMAScript primitives (and null/undefined) are rejected.
+            return val is not None and not isinstance(val, (bool, int, float, str))
+        return type(val).__name__ == type_str
 
     if value is Ellipsis:
         return _check
     return _check(value)
 
 
+def _binary_from_source(source: Any) -> Any:
+    """`Binary.fromSource`: an ArrayBuffer is returned as-is, a view is sliced."""
+    if isinstance(source, memoryview):
+        return source.tobytes()
+    return source
+
+
+#: Node's `Buffer.from(source, 'base64')` also accepts the base64url alphabet.
+_BASE64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+#: Node's base64 decoder also accepts the base64url substitutions ('-' -> 62, '_' -> 63).
+_BASE64_LOOKUP = {char: index for index, char in enumerate(_BASE64_ALPHABET)}
+_BASE64_LOOKUP["-"] = 62
+_BASE64_LOOKUP["_"] = 63
+_HEX_DIGITS = "0123456789abcdefABCDEF"
+
+
+def _decode_base64(source: str) -> bytes:
+    """Node-compatible base64 decode.
+
+    `Buffer.from(source, 'base64')` never throws: characters outside the
+    alphabet are skipped, a partial trailing group decodes its complete bytes
+    and decoding stops at the first `=` padding character.
+    """
+    accumulator = 0
+    bits = 0
+    out = bytearray()
+    for char in source:
+        if char == "=":
+            break
+        value = _BASE64_LOOKUP.get(char)
+        if value is None:
+            continue
+        accumulator = (accumulator << 6) | value
+        bits += 6
+        if bits >= 8:
+            bits -= 8
+            out.append((accumulator >> bits) & 0xFF)
+    return bytes(out)
+
+
+def _decode_hex(source: str) -> bytes:
+    """Node-compatible hex decode.
+
+    `Buffer.from(source, 'hex')` never throws: it stops at the first
+    non-hexadecimal character and drops an odd trailing nibble.
+    """
+    nibbles: List[int] = []
+    for char in source:
+        if char not in _HEX_DIGITS:
+            break
+        nibbles.append(int(char, 16))
+    if len(nibbles) % 2:
+        nibbles.pop()
+    out = bytearray()
+    for index in range(0, len(nibbles), 2):
+        out.append((nibbles[index] << 4) | nibbles[index + 1])
+    return bytes(out)
+
+
 class Binary:
     """Binary buffer and encoding helpers matching Cosmokit Binary."""
 
+    #: Reference name `Binary.is` (`isArrayBufferLike`); `is` is a Python
+    #: keyword, so the port keeps the module-wide `is_` spelling.
+    @staticmethod
+    def is_(source: Any) -> bool:
+        """Return true for an ArrayBuffer-like value (a view is not one).
+
+        `memoryview` maps to the reference's ArrayBufferView, `bytes` and
+        `bytearray` to ArrayBuffer/SharedArrayBuffer.
+        """
+        return isinstance(source, (bytes, bytearray))
+
     @staticmethod
     def is_source(source: Any) -> bool:
+        """`Binary.isSource`: an ArrayBuffer-like or an ArrayBuffer view."""
         return isinstance(source, (bytes, bytearray, memoryview))
 
     isSource = is_source
 
     @staticmethod
+    def from_source(source: Any) -> Any:
+        """`Binary.fromSource`: return the backing buffer of a view."""
+        return _binary_from_source(source)
+
+    fromSource = from_source
+
+    @staticmethod
     def to_base64(source: Union[bytes, bytearray, memoryview]) -> str:
-        if isinstance(source, memoryview):
-            source = source.tobytes()
-        elif isinstance(source, bytearray):
-            source = bytes(source)
+        source = _binary_from_source(source)
         return base64.b64encode(source).decode("ascii")
 
     toBase64 = to_base64
 
     @staticmethod
     def from_base64(source: str) -> bytes:
-        return base64.b64decode(source)
+        return _decode_base64(source)
 
     fromBase64 = from_base64
 
     @staticmethod
     def to_hex(source: Union[bytes, bytearray, memoryview]) -> str:
-        if isinstance(source, memoryview):
-            source = source.tobytes()
-        elif isinstance(source, bytearray):
-            source = bytes(source)
+        source = _binary_from_source(source)
         return binascii.hexlify(source).decode("ascii")
 
     toHex = to_hex
 
     @staticmethod
     def from_hex(source: str) -> bytes:
-        return binascii.unhexlify(source)
+        return _decode_hex(source)
 
     fromHex = from_hex
 
 
+# `Binary.is` cannot be spelled in the class body (`is` is a Python keyword),
+# so the reference name is installed after the class is created.
+setattr(Binary, "is", Binary.is_)
+
+# Module-level aliases exported by cosmokit's types.ts.
+base64_to_array_buffer = Binary.from_base64
+base64ToArrayBuffer = Binary.from_base64
+array_buffer_to_base64 = Binary.to_base64
+arrayBufferToBase64 = Binary.to_base64
+hex_to_array_buffer = Binary.from_hex
+hexToArrayBuffer = Binary.from_hex
+array_buffer_to_hex = Binary.to_hex
+arrayBufferToHex = Binary.to_hex
+
+
 def define_property(obj: Any, key: str, value: Any) -> Any:
-    """Set non-enumerable / internal property on obj matching Cosmokit defineProperty."""
-    try:
-        setattr(obj, key, value)
-    except (AttributeError, TypeError):
-        pass
+    """Define an own property on obj matching Cosmokit defineProperty.
+
+    The reference defines a writable, non-enumerable property and lets
+    `Object.defineProperty` raise a TypeError for a target that cannot hold it;
+    the port does not swallow that failure either.  A dict is the plain-object
+    equivalent and receives a plain entry (Python has no enumerability, so the
+    `enumerable: false` part of the descriptor cannot be represented).
+    """
+    if isinstance(obj, dict):
+        obj[key] = value
+        return obj
+    setattr(obj, key, value)
     return obj
 
 defineProperty = define_property
 
 
-def map_values(source: Dict[str, Any], callback: Callable[[Any, str], Any]) -> Dict[str, Any]:
+def _js_apply_with_key(callback: Callable[..., Any], value: Any, key: str) -> Any:
+    """LEGAL_ADAPTATION: JavaScript ignores surplus arguments, Python cannot.
+
+    The reference always calls `callback(value, key)`; a one-parameter Python
+    callback is the `(value) => ...` equivalent and is called with one argument.
+    """
+    try:
+        signature = inspect.signature(callback)
+    except (TypeError, ValueError):
+        return callback(value, key)
+    params = list(signature.parameters.values())
+    if len(params) >= 2 or any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params):
+        return callback(value, key)
+    return callback(value)
+
+
+def map_values(source: Dict[str, Any], callback: Callable[..., Any]) -> Dict[str, Any]:
     """Transform values of a dict matching Cosmokit mapValues."""
-    return {k: callback(v, k) for k, v in source.items()}
+    return {k: _js_apply_with_key(callback, v, k) for k, v in source.items()}
 
 mapValues = map_values
 value_map = map_values
+valueMap = map_values

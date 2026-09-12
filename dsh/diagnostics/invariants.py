@@ -73,6 +73,26 @@ class InvariantRegistry(Service):
             self.registrations.discard(package_name)
             raise
 
+        # Reference `register` awaits its child fiber: an installer failure
+        # disposes that fiber, releases the reservation, and re-raises, so a
+        # companion that cannot honor the durable log fails loud instead of
+        # being silently recorded on the fiber. A synchronous installer fails
+        # here; an installer that returns a coroutine settles on its fiber, whose
+        # error is re-raised by the same check once it is observable.
+        install_error = getattr(child_fiber, "error", None)
+        if install_error is not None:
+            self.registrations.discard(package_name)
+            try:
+                teardown = child_fiber.dispose()
+                if hasattr(teardown, "__await__"):
+                    import asyncio
+
+                    loop = asyncio.get_running_loop()
+                    loop.create_task(teardown)
+            except Exception:
+                pass
+            raise install_error
+
         def disposer():
             if child_fiber:
                 try:

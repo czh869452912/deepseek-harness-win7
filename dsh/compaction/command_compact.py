@@ -1,15 +1,17 @@
 """
 Manual compaction command plugin (`@deepseek-ai/dsh-command-compact`).
-Registers `/compact` command to force immediate conversation summarization.
+Registers the `/compact` command to force immediate conversation summarization
+through the backend-independent compaction seam, matching
+reference/packages/compaction/command-compact/src/index.ts.
 """
 
-from typing import Any, List, Optional
+from typing import Any, Dict, Optional
 from dsh.cordis.plugin import Plugin
 
 
 class CommandCompactPlugin(Plugin):
     """
-    Plugin `@deepseek-ai/dsh-command-compact`: Registers `/compact` slash command.
+    Plugin `@deepseek-ai/dsh-command-compact`: Registers the `/compact` command.
     """
 
     id = "command-compact"
@@ -21,42 +23,33 @@ class CommandCompactPlugin(Plugin):
         if not cmd_svc or not hasattr(cmd_svc, "register"):
             return
 
-        async def exec_compact(session: Any, args: List[str]) -> str:
+        async def exec_compact(invocation: Any) -> Dict[str, Any]:
             compaction_svc = ctx.get("compaction")
             if not compaction_svc:
-                return "Error: Compaction service is not mounted."
+                return {"kind": "error", "text": "Error: Compaction service is not mounted."}
 
-            agents_svc = ctx.get("agents")
-            target_agent = None
-            if agents_svc and hasattr(agents_svc, "current_initiator"):
-                target_agent = agents_svc.current_initiator()
-
-            if not target_agent and hasattr(session, "agent"):
-                target_agent = session.agent
-
-            if not target_agent:
-                # Mock or fallback agent with session
-                class _AgentWrapper:
-                    def __init__(self, s):
-                        self.session = s
-                        self.id = getattr(s, "id", "agent-main")
-                target_agent = _AgentWrapper(session)
+            agent = getattr(invocation, "agent", None)
+            if agent is None:
+                agents_svc = ctx.get("agents")
+                if agents_svc and hasattr(agents_svc, "current_initiator"):
+                    agent = agents_svc.current_initiator()
+            if agent is None:
+                return {"kind": "error", "text": "Error: No agent is available for compaction."}
 
             try:
-                result = await compaction_svc.compact_now(target_agent)
+                result = await compaction_svc.compact_now(agent)
                 if result:
-                    return f"Compaction completed. Shadowed {len(result.get('shadowedSeqs', []))} events."
-                return "Compaction completed: context already compact."
+                    shadowed = result.get("shadowedSeqs", []) if isinstance(result, dict) else []
+                    return {
+                        "kind": "success",
+                        "text": f"Compaction completed. Shadowed {len(shadowed)} events.",
+                    }
+                return {"kind": "success", "text": "Compaction completed: context already compact."}
             except Exception as e:
-                return f"Compaction failed: {e}"
+                return {"kind": "error", "text": f"Compaction failed: {e}"}
 
-        disposer = cmd_svc.register(
-            name="compact",
-            description="Force manual compaction/summarization of the current conversation history.",
-            handler=exec_compact,
-        )
-
-        if hasattr(ctx, "disposable"):
-            ctx.disposable(disposer, label="command_compact.disposer")
-        elif hasattr(ctx, "effect"):
-            ctx.effect(lambda: disposer)
+        cmd_svc.register({
+            "name": "compact",
+            "description": "Force manual compaction/summarization of the current conversation history.",
+            "handler": exec_compact,
+        })

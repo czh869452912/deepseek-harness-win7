@@ -105,7 +105,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-client-connection",
         "@deepseek-ai/dsh-client-hmr",
         "@deepseek-ai/dsh-code-runtime-worker-thread",
-        "@deepseek-ai/dsh-command-feedback",
         "@deepseek-ai/dsh-cordis-client-runner",
         "@deepseek-ai/dsh-cordis-host-runner",
         "@deepseek-ai/dsh-deepseek-llm-api-extensions",
@@ -141,7 +140,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
     "standard": [
         "@deepseek-ai/dsh-api-gateway",
         "@deepseek-ai/dsh-code-runtime-worker-thread",
-        "@deepseek-ai/dsh-command-feedback",
         "@deepseek-ai/dsh-command-goal",
         "@deepseek-ai/dsh-deepseek-llm-api-extensions",
         "@deepseek-ai/dsh-fs-observation-policy",
@@ -175,7 +173,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
     "headless": [
         "@deepseek-ai/dsh-api-gateway",
         "@deepseek-ai/dsh-code-runtime-worker-thread",
-        "@deepseek-ai/dsh-command-feedback",
         "@deepseek-ai/dsh-command-goal",
         "@deepseek-ai/dsh-deepseek-llm-api-extensions",
         "@deepseek-ai/dsh-fs-observation-policy",
@@ -209,7 +206,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
     "creative": [
         "@deepseek-ai/dsh-api-gateway",
         "@deepseek-ai/dsh-code-runtime-worker-thread",
-        "@deepseek-ai/dsh-command-feedback",
         "@deepseek-ai/dsh-command-goal",
         "@deepseek-ai/dsh-deepseek-llm-api-extensions",
         "@deepseek-ai/dsh-fs-observation-policy",
@@ -243,7 +239,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
     "acp": [
         "@deepseek-ai/dsh-acp-app",
         "@deepseek-ai/dsh-api-gateway",
-        "@deepseek-ai/dsh-command-feedback",
         "@deepseek-ai/dsh-command-goal",
         "@deepseek-ai/dsh-deepseek-llm-api-extensions",
         "@deepseek-ai/dsh-fs-observation-policy",
@@ -273,7 +268,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
     ],
     "sdk": [
         "@deepseek-ai/dsh-api-gateway",
-        "@deepseek-ai/dsh-command-feedback",
         "@deepseek-ai/dsh-command-goal",
         "@deepseek-ai/dsh-deepseek-llm-api-extensions",
         "@deepseek-ai/dsh-fs-observation-policy",
@@ -720,7 +714,7 @@ def test_the_frozen_gap_is_the_union_of_every_shipped_profile():
 
             collect(patch)
     assert union <= shipped_names
-    assert len(union) == 51
+    assert len(union) == 50
 
 
 # --- boot installs and consults the table ------------------------------------

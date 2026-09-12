@@ -33,7 +33,9 @@ from dsh.boot.profile import (
     read_module_fallback_manifest,
     resolve_module_fallback_entries,
 )
+from dsh.boot.plugin_registry import installation_module_roots
 from dsh.boot.profile_boot import INSTALL_ANCHOR
+from dsh.cordis.loader import exports_subpath_target, resolve_module_specifier
 
 
 def _repository_root() -> str:
@@ -148,6 +150,34 @@ async def test_resolves_every_dependency_and_peer_dependency_the_pinned_manifest
 
 
 @pytest.mark.asyncio
+async def test_every_healed_package_is_declared_by_a_manifest_the_closure_reaches():
+    """
+    The Node-anchor invariant, checked against the healed generation itself.
+
+    Node can only import a package some reachable manifest declares, so every
+    healed entry must be named by the anchor manifest or by the manifest of
+    another healed entry. This reads the resolver's own output and the pinned
+    manifests, so an over-resolving workspace scan (a package merely present in
+    the checkout) fails here even though the inventory-based expectation above
+    would still agree with it.
+    """
+    entries, names = resolve_module_fallback_entries(INSTALL_ANCHOR)
+    declared: Set[str] = set()
+    app_manifest = read_module_fallback_manifest(INSTALL_ANCHOR)
+    declared.update(app_manifest.get("dependencies", {}))
+    declared.update(app_manifest.get("peerDependencies", {}))
+    if isinstance(app_manifest.get("name"), str):
+        declared.add(app_manifest["name"])
+    for entry in entries:
+        manifest = read_module_fallback_manifest(
+            os.path.join(entry["packageDir"], "package.json")
+        )
+        declared.update(manifest.get("dependencies", {}))
+        declared.update(manifest.get("peerDependencies", {}))
+    assert names <= declared
+
+
+@pytest.mark.asyncio
 async def test_the_closure_carries_packages_no_bundle_category_list_names():
     """
     The rows the profiles mount live outside the bundles' own categories; a
@@ -220,3 +250,52 @@ def test_the_workspace_scan_runs_once_per_workspace(monkeypatch):
     assert names_again == names
     assert len(entries_again) == len(entries)
     assert len(scans) == first_pass
+
+
+@pytest.mark.asyncio
+async def test_the_healed_generation_resolves_every_shipped_subpath_row_through_its_exports_map():
+    """
+    The pinned Node-anchor contract, end to end on the real installation.
+
+    A row named `<package>/<subpath>` (dsh-web-app/startup, dsh-headless/startup,
+    dsh-tool-subagent-control/list-agents) resolves the way Node resolves it:
+    the healed `$DSH_HOME/profiles/node_modules` link makes the package root
+    reachable, and the package's own `exports` map answers the subpath. No
+    synthetic staging is involved: this heals the pinned installation anchor and
+    then resolves from an ordinary profile directory.
+    """
+    home = tempfile.mkdtemp(prefix="dsh-subpath-closure-")
+    try:
+        await heal_profiles_module_fallback({"installAnchor": INSTALL_ANCHOR, "home": home})
+        profile_dir = os.path.join(home, "profiles", "standard")
+        os.makedirs(profile_dir, exist_ok=True)
+        config = os.path.join(profile_dir, "cordis.yml")
+        with open(config, "w", encoding="utf-8") as f:
+            f.write("[]\n")
+        roots = installation_module_roots(config, home)
+        for row, package, subpath in (
+            ("@deepseek-ai/dsh-web-app/startup", "@deepseek-ai/dsh-web-app", "startup"),
+            ("@deepseek-ai/dsh-headless/startup", "@deepseek-ai/dsh-headless", "startup"),
+            (
+                "@deepseek-ai/dsh-tool-subagent-control/list-agents",
+                "@deepseek-ai/dsh-tool-subagent-control",
+                "list-agents",
+            ),
+        ):
+            resolved = resolve_module_specifier(row, profile_dir, roots)
+            assert resolved is not None, row
+            # The resolved target is the package's own declared export target,
+            # computed from the manifest the healed link points at.
+            package_link = os.path.join(
+                home, "profiles", "node_modules", *package.split("/")
+            )
+            assert os.path.isdir(package_link), package
+            with open(os.path.join(package_link, "package.json"), "r", encoding="utf-8") as f:
+                manifest = json.load(f)
+            target = exports_subpath_target(manifest.get("exports"), subpath)
+            assert isinstance(target, str), f"{package} declares no ./{subpath} export"
+            assert os.path.realpath(resolved) == os.path.realpath(
+                os.path.join(os.path.realpath(package_link), target)
+            )
+    finally:
+        shutil.rmtree(home, ignore_errors=True)

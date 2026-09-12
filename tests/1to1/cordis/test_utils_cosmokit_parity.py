@@ -117,6 +117,10 @@ def _assert_now(value):
     assert abs((value - datetime.datetime.now()).total_seconds()) < 5
 
 
+class _Widget:
+    """A plain class instance - the reference's `new Widget()` - tag `Object`."""
+
+
 # ---------------------------------------------------------------------------
 # array.ts
 # ---------------------------------------------------------------------------
@@ -135,6 +139,14 @@ def test_c1_contain_uses_includes_semantics():
     assert contain([1, 2], [1.0, 2.0]) is True
     # Duplicate membership still satisfies every().
     assert contain([1, 1], [1, 1]) is True
+    # Every JavaScript number is a double, so two distinct Python integers that
+    # round to the same double are the same value there (Node oracle:
+    # `[9007199254740992].includes(9007199254740993)` is true).
+    assert contain([9007199254740992], [9007199254740993]) is True
+    assert contain([9007199254740993], [9007199254740992]) is True
+    assert contain([1e21], [1e21 + 2]) is True
+    # An integer past the double range is Infinity: `1e400 === 2e400` there.
+    assert contain([10 ** 400], [2 * 10 ** 400]) is True
 
 
 def test_c2_intersection_keeps_left_order_and_duplicates():
@@ -166,6 +178,11 @@ def test_c4_union_deduplicates_by_same_value_zero():
     left = {'n': 1}
     assert len(union([left], [left])) == 1
     assert len(union([{'n': 1}], [{'n': 1}])) == 2
+    # A Set is keyed by the double each JavaScript number holds, so these two
+    # distinct Python integers collapse into one entry.
+    assert union([9007199254740992], [9007199254740993]) == [9007199254740992]
+    assert len(union([9007199254740993], [9007199254740992])) == 1
+    assert len(union([10 ** 400], [2 * 10 ** 400])) == 1
 
 
 def test_c5_deduplicate_keeps_first_occurrence():
@@ -176,6 +193,9 @@ def test_c5_deduplicate_keeps_first_occurrence():
     assert len(deduplicate([float('nan'), float('nan')])) == 1
     shared = {'n': 1}
     assert len(deduplicate([shared, shared, {'n': 1}])) == 2
+    # `new Set` collapses integers that round to the same double.
+    assert deduplicate([9007199254740992, 9007199254740993]) == [9007199254740992]
+    assert len(deduplicate([9007199254740993, 9007199254740992, 1e21, 1e21 + 2])) == 2
 
 
 def test_c6_remove_uses_index_of_and_mutates_in_place():
@@ -202,6 +222,15 @@ def test_c6_remove_uses_index_of_and_mutates_in_place():
     values = [0]
     assert remove(values, -0.0) is True
     assert values == []
+    # indexOf uses ===, which compares the doubles JavaScript numbers hold.
+    values = [9007199254740992]
+    assert remove(values, 9007199254740993) is True
+    assert values == []
+    # Numbers have no identity, so indexOf never finds NaN - not even the very
+    # same NaN object (Node oracle: `remove([NaN], NaN)` is false).
+    values = [float('nan')]
+    assert remove(values, values[0]) is False
+    assert len(values) == 1
 
 
 def test_c7_make_array_wraps_non_arrays():
@@ -484,10 +513,52 @@ def test_c22_format_property_matches_member_access_and_json_quoting():
     # `\w` is ASCII-only without the /u flag, so non-ASCII identifiers bracket.
     assert format_property('\u00e9') == '["\u00e9"]'
     assert format_property('a\u00e9') == '["a\u00e9"]'
-    # Non-string keys use `key.toString()`.
+    # A non-string key uses its own `key.toString()`: the Number and Boolean
+    # prototype forms first (Node oracle values in the comments).
     assert format_property(0) == '[0]'
+    assert format_property(-0.0) == '[0]'          # String(-0) is "0"
     assert format_property(-1.5) == '[-1.5]'
+    assert format_property(1e21) == '[1e+21]'
+    assert format_property(float('nan')) == '[NaN]'
+    assert format_property(float('inf')) == '[Infinity]'
+    assert format_property(9007199254740993) == '[9007199254740992]'  # a double
     assert format_property(True) == '[true]'
+    assert format_property(False) == '[false]'
+    # An ordinary object renders through Object.prototype.toString; a `dict` is
+    # the port's object literal and a class instance its `new Widget()`.
+    assert format_property({'a': 1}) == '[[object Object]]'
+    assert format_property({}) == '[[object Object]]'
+    assert format_property(_Widget()) == '[[object Object]]'
+    # An array renders through Array.prototype.toString, which is join(',').
+    assert format_property([1, 2]) == '[1,2]'
+    assert format_property([[1, 2], [3, 4]]) == '[1,2,3,4]'
+    assert format_property([{'a': 1}, [2]]) == '[[object Object],2]'
+    assert format_property([True, False]) == '[true,false]'
+    # join renders a nullish element as the empty string.
+    assert format_property([None, _UNDEFINED]) == '[,]'
+    # A typed array shares Array.prototype.toString.
+    assert format_property(memoryview(bytearray([1, 2]))) == '[1,2]'
+    # Set/ArrayBuffer/RegExp/Error keep their own prototype conversion.
+    assert format_property({1, 2}) == '[[object Set]]'
+    assert format_property(bytes(2)) == '[[object ArrayBuffer]]'
+    assert format_property(re.compile('a')) == '[/a/]'
+    assert format_property(re.compile('a', re.I | re.M)) == '[/a/im]'
+    assert format_property(ValueError('boom')) == '[ValueError: boom]'
+    assert format_property(TypeError()) == '[TypeError]'
+    # `Date.prototype.toString` in the host's local zone (the port carries a
+    # JavaScript Date as the naive local datetime).  Node prints exactly this
+    # for `new Date(0)` on this host.
+    assert format_property(datetime.datetime(1970, 1, 1, 8, 0, 0)) == \
+        '[Thu Jan 01 1970 08:00:00 GMT+0800 (\u4e2d\u56fd\u6807\u51c6\u65f6\u95f4)]'
+    # A nullish key has no `toString` at all: `null.toString()` throws.
+    with pytest.raises(TypeError) as null_error:
+        format_property(None)
+    assert str(null_error.value) == (
+        "Cannot read properties of null (reading 'toString')")
+    with pytest.raises(TypeError) as undefined_error:
+        format_property(_UNDEFINED)
+    assert str(undefined_error.value) == (
+        "Cannot read properties of undefined (reading 'toString')")
 
 
 def test_c23_trim_slash_removes_one_trailing_slash():
@@ -1024,6 +1095,17 @@ def test_c41_deep_equal_primitives_and_nullish():
     assert left is not right
     assert deepEqual(left, right) is True
     assert deepEqual('1', 1) is False
+    # `a === b` for numbers compares the doubles JavaScript holds: two distinct
+    # Python integers that round to the same double are equal there, and an
+    # integer past the double range is Infinity (10**400 and 2 * 10**400).
+    assert deepEqual(9007199254740992, 9007199254740993) is True
+    assert deepEqual([9007199254740992], [9007199254740993]) is True
+    assert deepEqual(1e21, 1e21 + 2) is True
+    assert deepEqual(10 ** 400, 2 * 10 ** 400) is True
+    # NaN has no identity either: `===` reports false even when both operands
+    # are the same Python NaN object.
+    same_nan = float('nan')
+    assert deep_equal(same_nan, same_nan) is False
 
 
 def test_c42_deep_equal_structures():

@@ -222,14 +222,36 @@ def _js_truthy(value: Any) -> bool:
     return True
 
 
+def _js_number_value(value: Any) -> float:
+    """The IEEE-754 double an ECMAScript number holds.
+
+    Every JavaScript number is a double, so two Python integers that differ but
+    round to the same double are the *same* value there:
+    ``9007199254740992 === 9007199254740993`` is true, and
+    ``new Set([9007199254740992, 9007199254740993])`` has one entry.  A Python
+    integer past the double range is ``Infinity``, exactly as the reference
+    renders such a value (see `_js_number_to_string`).
+    """
+    if isinstance(value, float):
+        return value
+    try:
+        return float(value)
+    except OverflowError:
+        return math.inf if value > 0 else -math.inf
+
+
 def _js_strict_equal(a: Any, b: Any) -> bool:
     """ECMAScript ``===``, i.e. ``Array.prototype.indexOf`` membership semantics."""
+    if isinstance(a, float) and isinstance(b, float) and math.isnan(a) and math.isnan(b):
+        return False  # NaN === NaN is false even for the same NaN value
     if a is b:
         return True
     if isinstance(a, bool) or isinstance(b, bool):
         return False
     if isinstance(a, (int, float)) and isinstance(b, (int, float)):
-        return a == b  # NaN === NaN is false
+        # Both operands compare as the doubles their JavaScript counterparts
+        # hold; NaN === NaN is false.
+        return _js_number_value(a) == _js_number_value(b)
     if isinstance(a, str) and isinstance(b, str):
         return a == b
     return False  # other primitives and all objects compare by reference
@@ -247,9 +269,13 @@ def _js_membership_key(value: Any) -> Any:
     if isinstance(value, bool):
         return ("boolean", value)
     if isinstance(value, (int, float)):
-        if isinstance(value, float) and math.isnan(value):
+        # The key carries the double the JavaScript value holds, so integers
+        # that differ but round to the same double collapse (see
+        # `_js_number_value`); -0 and 0 are the same key under SameValueZero.
+        number = _js_number_value(value)
+        if math.isnan(number):
             return ("number", "NaN")
-        return ("number", value)
+        return ("number", number)
     if isinstance(value, str):
         return ("string", value)
     if value is None:
@@ -885,11 +911,144 @@ def is_plain_object(data: Any) -> Any:
 isPlainObject = is_plain_object
 
 
+#: `Date.prototype.toString` weekday and month names (the reference renders an
+#: English date string regardless of the machine locale).
+_JS_WEEKDAY_NAMES = ("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+_JS_MONTH_NAMES = ("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+#: JavaScript `RegExp` flag letters in the engine's canonical order (``d g i m
+#: s u v y``) with the Python flag each stands for.  The other Python flags
+#: (`re.A`, `re.L`, `re.U`, `re.X`) have no JavaScript flag letter.
+_JS_REGEX_FLAGS = (("i", re.IGNORECASE), ("m", re.MULTILINE), ("s", re.DOTALL))
+
+
+def _js_date_to_string(value: datetime.datetime) -> str:
+    """``Date.prototype.toString`` for the port's naive local `datetime`.
+
+    A JavaScript `Date` is carried as the naive local `datetime` the port's
+    epoch arithmetic produces, so the calendar fields are read directly while
+    the offset and zone name come from the platform's current local state - the
+    same source `Time.timezoneOffset` derives its constant from (the reference
+    computes its own offset constant at module load too).
+
+    LEGAL_ADAPTATION: a `datetime` covers years 1..9999 while a JavaScript
+    `Date` covers a far wider range, and a zone observing DST reports its
+    current state rather than the instant's; the zone name is the platform's
+    localized name, which is what the reference's engine reports as well.
+    """
+    offset = _local_utc_offset_seconds()
+    total = abs(int(offset))
+    is_dst = bool(time.daylight) and bool(time.localtime().tm_isdst)
+    return "%s %s %02d %04d %02d:%02d:%02d GMT%s%02d%02d (%s)" % (
+        _JS_WEEKDAY_NAMES[(value.weekday() + 1) % 7], _JS_MONTH_NAMES[value.month - 1],
+        value.day, value.year, value.hour, value.minute, value.second,
+        "+" if offset >= 0 else "-", total // 3600, (total % 3600) // 60,
+        time.tzname[1 if is_dst else 0],
+    )
+
+
+def _js_regex_to_string(value: Any) -> str:
+    """``RegExp.prototype.toString``, i.e. ``/source/flags``."""
+    flags = "".join(letter for letter, flag in _JS_REGEX_FLAGS if value.flags & flag)
+    return "/{}/{}".format(value.pattern, flags)
+
+
+def _js_error_to_string(value: BaseException) -> str:
+    """``Error.prototype.toString``, i.e. ``name`` or ``name: message``.
+
+    LEGAL_ADAPTATION: the reference reads the error's own `name` property,
+    which its constructors initialise to the native error name.  The closest
+    Python equivalent is the exception class name, so a Python error with no
+    JavaScript native namesake renders under its own name.
+    """
+    name = type(value).__name__
+    message = str(value)
+    if not name:
+        return message
+    if not message:
+        return name
+    return "{}: {}".format(name, message)
+
+
+def _js_to_string_element(value: Any) -> str:
+    """``ToString`` for one element of ``Array.prototype.join``."""
+    if _js_is_nullish(value):
+        return ""  # join renders a nullish element as the empty string
+    return _js_key_to_string(value)
+
+
+def _js_array_to_string(value: Any) -> str:
+    """``Array.prototype.toString``, which is ``join(',')``."""
+    return ",".join(_js_to_string_element(item) for item in value)
+
+
+def _js_key_to_string(key: Any) -> str:
+    """The reference's ``key.toString()`` for a non-string `formatProperty` key.
+
+    `formatProperty` wraps a non-string key with ``key.toString()``, so every
+    non-string value renders through its own prototype's string conversion: a
+    number through `Number.prototype.toString`, an array (and a typed array,
+    whose `toString` is the shared `Array.prototype.toString`) through
+    ``join(',')``, a `Date` through `Date.prototype.toString`, a `RegExp`
+    through `RegExp.prototype.toString`, an `Error` through
+    `Error.prototype.toString`, and an ordinary object through
+    `Object.prototype.toString`.  A nullish key has no `toString` at all and
+    throws.
+
+    LEGAL_ADAPTATION: the package's declared key domain is ``keyof any``
+    (``string | number | symbol``), and the port carries a JavaScript symbol as
+    a Python string (see `Symbols`), so a symbol key formats through the string
+    branch instead of `Symbol.prototype.toString`.  `Function.prototype.toString`
+    returns a function's source text, which Python does not keep, so a function
+    key renders as its internal `Object.prototype.toString` tag.  An object that
+    carries a `toString` of its own has no counterpart either: a JavaScript
+    object literal is a `dict` here and a JavaScript method has no property to
+    hang on, so every ordinary object renders through
+    `Object.prototype.toString`.  A `memoryview` stands for a typed array and
+    for `DataView` alike; Python exposes one generic view type, so every view
+    renders through the typed-array form, exactly as `is_` maps them to one
+    type.
+    """
+    if key is None or key is _UNDEFINED:
+        # `null.toString()` / `undefined.toString()` throw a TypeError.
+        noun = "null" if key is None else "undefined"
+        raise TypeError("Cannot read properties of {} (reading 'toString')".format(noun))
+    if isinstance(key, str):
+        return key
+    if isinstance(key, bool):
+        return "true" if key else "false"
+    if isinstance(key, (int, float)):
+        return _js_number_to_string(key)
+    if isinstance(key, (list, tuple, memoryview)):
+        return _js_array_to_string(key)
+    if isinstance(key, datetime.datetime):
+        return _js_date_to_string(key)
+    if isinstance(key, _REGEX_TYPE) and isinstance(key.pattern, str):
+        return _js_regex_to_string(key)
+    if isinstance(key, BaseException):
+        return _js_error_to_string(key)
+    if isinstance(key, (set, frozenset)):
+        return "[object Set]"
+    if isinstance(key, (bytes, bytearray)):
+        # The port carries an ArrayBuffer (and the Buffer `Binary` reads) as
+        # bytes/bytearray, whose `Object.prototype.toString` tag this is.
+        return "[object ArrayBuffer]"
+    if isinstance(key, weakref.WeakSet):
+        return "[object WeakSet]"
+    if isinstance(key, weakref.WeakKeyDictionary):
+        return "[object WeakMap]"
+    if isinstance(key, _JS_FUNCTION_TYPES):
+        return "[object Function]"
+    return "[object Object]"
+
+
 def format_property(key: Any) -> str:
     """Format a property key as a JavaScript member access suffix matching Cosmokit formatProperty."""
     import json
     if not isinstance(key, str):
-        return "[{}]".format(_js_number_to_string(key))
+        # `[${key.toString()}]` - the key's own JavaScript string conversion.
+        return "[{}]".format(_js_key_to_string(key))
     # The reference uses /^[a-z_$][\w$]*$/i without the /u flag, so `\w` is
     # ASCII-only; Python's `re` is Unicode-aware by default.
     if re.match(r"^[a-zA-Z_$][0-9A-Za-z_$]*$", key):

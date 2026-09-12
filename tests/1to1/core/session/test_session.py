@@ -1630,3 +1630,69 @@ class TestSessionDispatchAndObservers:
         detach()
 
         assert heard == [session]
+
+
+class TestReferenceValidationOrderAndAdoptionBounds:
+    """Pins the reference validation ORDER and admission bounds that no single
+    upstream case isolates: `assertMessageEventShape` runs the shared content
+    check before the assistant model-source check (index.ts:324-331) and reads
+    only `data.message` for a non-user message (index.ts:307); `adoptSessionEvent`
+    admits an event on its message shape alone (index.ts:167-185), and
+    `snapshotSessionEvent` is exactly `structuredClone` + adopt (index.ts:192-194)
+    with no envelope or request-header vocabulary check."""
+
+    def test_reports_invalid_assistant_content_before_the_model_source(self):
+        seed = [{
+            "type": "assistant/message", "seq": 0, "time": 1, "surfaceOp": "append",
+            "data": {
+                "turn": 1, "step": 1,
+                "message": {
+                    "id": "double-defect",
+                    "role": "assistant",
+                    "content": "not-an-array",
+                    "source": {"kind": "user"},
+                },
+            },
+        }]
+        with pytest.raises(ValueError, match="message has invalid content"):
+            Session.create(SessionId("assistant-content-first"), seed)
+
+    def test_rejects_an_assistant_seed_without_a_nested_message_record(self):
+        seed = [{
+            "type": "assistant/message", "seq": 0, "time": 1, "surfaceOp": "append",
+            "data": {
+                "turn": 1, "step": 1,
+                "id": "not-nested",
+                "role": "assistant",
+                "content": [],
+                "source": {"kind": "model", "provider": "mock", "model": "mock"},
+            },
+        }]
+        with pytest.raises(ValueError, match=r"lacks an identified message"):
+            Session.create(SessionId("assistant-no-message"), seed)
+
+    def test_adopts_a_message_event_whose_envelope_carries_unknown_keys(self):
+        event = {
+            "type": "user/message", "seq": 0, "time": 1, "surfaceOp": "append", "extra": 1,
+            "data": {
+                "id": "owned-extra",
+                "role": "user",
+                "content": [{"type": "text", "text": "owned"}],
+                "source": {"kind": "user"},
+            },
+        }
+        # The message shape is the only admission check: an unknown envelope key is
+        # preserved, not rejected.
+        assert adopt_session_event(event) is event
+        assert event["extra"] == 1
+
+    def test_snapshots_a_log_only_event_without_re_validating_its_envelope(self):
+        event = {"type": "session/end-seed", "seq": 0, "time": 1, "data": {}, "extra": True}
+        snapshot = snapshot_session_event(event)
+        assert snapshot == event
+        assert snapshot is not event
+
+    def test_snapshots_a_legacy_request_header_delta_without_the_seed_vocabulary_check(self):
+        event = {"type": "request/header-delta", "seq": 0, "time": 1, "data": {"config": {}}}
+        snapshot = snapshot_session_event(event)
+        assert snapshot == event

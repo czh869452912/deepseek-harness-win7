@@ -153,3 +153,26 @@ class TestIsJsonValue:
         assert is_json_value(Exotic()) is False
         assert is_json_value(cyclic) is False
         assert is_json_value({1: "non-str-key"}) is False
+
+
+class TestDeepFreeze:
+    """`deepFreeze` terminates on a cyclic graph instead of re-freezing forever
+    (dsh-llm call-config.ts:69-93 keeps a `seen` set). No upstream json.spec case
+    covers a cycle through `deepFreeze`: `snapshotJsonValue`/`isJsonValue` reject
+    one earlier, so this pins the freezing pass alone."""
+
+    def test_freezes_a_cyclic_graph_without_re_freezing_forever(self):
+        from dsh.core.session.json import deep_freeze
+
+        cyclic = {"a": 1}
+        cyclic["self"] = cyclic
+
+        frozen = deep_freeze(cyclic)
+
+        assert frozen["a"] == 1
+        # The aliasing survives: the cycle's edge points at the same frozen
+        # target instead of an empty stand-in.
+        assert frozen["self"]["a"] == 1
+        assert frozen["self"] is frozen
+        with pytest.raises(TypeError):
+            frozen["a"] = 2

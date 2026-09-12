@@ -152,8 +152,27 @@ class TestPackChunkRuns:
     def test_stores_an_off_whitelist_delta_verbatim(self):
         extra_field = dict(chunk_event(0, 1000, {"type": "text-delta", "index": 0, "text": "x"}), surfaceOp="append")
         bad_text = chunk_event(1, 1001, {"type": "text-delta", "index": 0, "text": 7})
-        events = [extra_field, bad_text]
+        fractional_time = chunk_event(2, 1001.5, {"type": "text-delta", "index": 0, "text": "y"})
+        events = [extra_field, bad_text, fractional_time]
         assert pack_chunk_runs(events) == events
+
+    def test_breaks_a_run_on_a_time_gap_beyond_safe_integer_range(self):
+        # Both endpoints are safe integers, but their true difference (~2^54)
+        # exceeds exact double range: a packed row would decode to a different
+        # timestamp, so the run must break at the gap.
+        a = -MAX_SAFE_INTEGER
+        b = MAX_SAFE_INTEGER - 1
+        # JavaScript rounds this difference (~2^54) out of exact range, which is
+        # the guard the reference encodes; Python's integers are exact, so the
+        # portable spelling is the same rule: the gap leaves the safe range.
+        assert abs(b - a) > MAX_SAFE_INTEGER
+        events = [
+            chunk_event(0, a, {"type": "text-delta", "index": 0, "text": "x"}),
+            chunk_event(1, b, {"type": "text-delta", "index": 0, "text": "y"}),
+            chunk_event(2, b + 1, {"type": "text-delta", "index": 0, "text": "z"}),
+        ]
+        assert pack_chunk_runs(events) == events  # split at the gap; halves too short
+        assert decode_all(pack_chunk_runs(events)) == events
 
     def test_stores_delta_with_off_whitelist_data_envelope_verbatim(self):
         def mk(seq: int, data: Any) -> Dict[str, Any]:
@@ -166,6 +185,7 @@ class TestPackChunkRuns:
             mk(3, {"turn": 1, "step": 1, "chunk": "not-an-object"}),
             mk(4, {"turn": 1, "step": 1, "chunk": {"type": "text-delta", "index": "x", "text": "a"}}),
             mk(5, {"turn": 1, "step": 1, "chunk": {"type": "tool-call-delta", "index": 0, "id": 7, "argumentsDelta": "a"}}),
+            mk(6, {"turn": 1, "step": 1, "chunk": {"type": "tool-call-delta", "index": 0, "id": "c", "name": 7, "argumentsDelta": "a"}}),
         ]
         assert pack_chunk_runs(events) == events
 
@@ -195,9 +215,17 @@ class TestDecodeStorageRecord:
             ("a non-string member", {"type": "text-chunks", "seq0": 0, "time0": 1, "data": {"turn": 1, "step": 1, "index": 0, "dt": [], "texts": [7]}}),
             ("an empty member list", {"type": "text-chunks", "seq0": 0, "time0": 1, "data": {"turn": 1, "step": 1, "index": 0, "dt": [], "texts": []}}),
             ("a dt arity mismatch", {"type": "text-chunks", "seq0": 0, "time0": 1, "data": {"turn": 1, "step": 1, "index": 0, "dt": [1, 2], "texts": ["a", "b"]}}),
+            ("a non-finite dt gap", {"type": "text-chunks", "seq0": 0, "time0": 1, "data": {"turn": 1, "step": 1, "index": 0, "dt": [float("nan")], "texts": ["a", "b"]}}),
+            ("a fractional dt gap", {"type": "text-chunks", "seq0": 0, "time0": 1, "data": {"turn": 1, "step": 1, "index": 0, "dt": [0.5], "texts": ["a", "b"]}}),
+            # `Number.MAX_SAFE_INTEGER` member seq/time bounds, in the Python spelling of the same numbers.
+            ("a member seq leaving safe range", {"type": "text-chunks", "seq0": 9007199254740991, "time0": 1, "data": {"turn": 1, "step": 1, "index": 0, "dt": [0], "texts": ["a", "b"]}}),
+            ("a member time leaving safe range", {"type": "text-chunks", "seq0": 0, "time0": 9007199254740991, "data": {"turn": 1, "step": 1, "index": 0, "dt": [1], "texts": ["a", "b"]}}),
+            ("a non-finite time0", {"type": "text-chunks", "seq0": 0, "time0": float("inf"), "data": {"turn": 1, "step": 1, "index": 0, "dt": [], "texts": ["a"]}}),
+            ("a fractional time0", {"type": "text-chunks", "seq0": 0, "time0": 1.5, "data": {"turn": 1, "step": 1, "index": 0, "dt": [], "texts": ["a"]}}),
             ("a non-numeric turn", {"type": "text-chunks", "seq0": 0, "time0": 1, "data": {"turn": "x", "step": 1, "index": 0, "dt": [], "texts": ["a"]}}),
             ("a tool-call row without id", {"type": "tool-call-chunks", "seq0": 0, "time0": 1, "data": {"turn": 1, "step": 1, "index": 0, "dt": [], "args": ["a"]}}),
             ("a tool-call row with non-string id", {"type": "tool-call-chunks", "seq0": 0, "time0": 1, "data": {"turn": 1, "step": 1, "index": 0, "id": 7, "dt": [], "args": ["a"]}}),
+            ("a tool-call row with non-string name", {"type": "tool-call-chunks", "seq0": 0, "time0": 1, "data": {"turn": 1, "step": 1, "index": 0, "id": "c", "name": 7, "dt": [], "args": ["a"]}}),
         ],
     )
     def test_throws_on_malformed_row(self, label, row):

@@ -173,3 +173,18 @@ class TestSessionRequestContext:
         assert held is not None
         with pytest.raises(TypeError):
             held["contextWindow"] = 1
+
+
+class TestReferenceFoldShape:
+    """`foldRequestHeader` reads `event.data.header` unconditionally and folds it
+    through `canonicalHeader` (request-header.ts:69). No upstream case covers a
+    `request/header` event without a header record: the fold must fail loudly
+    rather than skip the event and return a stale header."""
+
+    def test_fails_loudly_when_a_request_header_event_carries_no_header_record(self):
+        events = [{"type": "request/header", "seq": 0, "time": 1, "data": {"reason": "initial"}}]
+        # JavaScript throws `TypeError: Cannot read properties of undefined`;
+        # Python's closest native failures are KeyError/AttributeError for the
+        # same malformed durable record (LEGAL_ADAPTATION: loud, not silent).
+        with pytest.raises((KeyError, AttributeError, TypeError)):
+            fold_request_header(events)

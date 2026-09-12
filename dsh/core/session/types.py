@@ -264,6 +264,11 @@ def assert_adapter_defaults(defaults: Any, config: Any, index: Optional[int] = N
 
 def assert_message_event_shape(event: Dict[str, Any], subject: str) -> None:
     etype = event.get("type")
+    # Only the three message-producing types carry an identified message; every
+    # other type returns early, exactly like reference `assertMessageEventShape`
+    # (index.ts:299-302), so `adopt_session_event` can call this unconditionally.
+    if etype not in ("user/message", "assistant/message", "tool/result"):
+        return
     data = event.get("data")
     if not isinstance(data, dict):
         raise ValueError(f"{subject} lacks an identified message")
@@ -287,7 +292,12 @@ def assert_message_event_shape(event: Dict[str, Any], subject: str) -> None:
             raise ValueError(f"{subject} message has invalid content")
 
     elif etype == "assistant/message":
-        msg = data.get("message") if isinstance(data.get("message"), dict) else data
+        # The reference reads `record?.['message']` for a non-user message, so a
+        # missing `data.message` is an absent message (rejected below), never a
+        # fallback to the outer record.
+        msg = data.get("message")
+        if not isinstance(msg, dict):
+            raise ValueError(f"{subject} lacks an identified message")
         msg_id = msg.get("id")
         if not isinstance(msg_id, str) or len(msg_id) == 0:
             raise ValueError(f"{subject} lacks an identified message")
@@ -295,14 +305,20 @@ def assert_message_event_shape(event: Dict[str, Any], subject: str) -> None:
         if role != "assistant":
             raise ValueError(f'{subject} message must have role "assistant"')
         source = msg.get("source")
-        if not isinstance(source, dict) or source.get("kind") != "model" or not _has_provider_model(source):
-            raise ValueError(f"{subject} message must have model source")
+        if not isinstance(source, dict) or not isinstance(source.get("kind"), str) or len(source.get("kind")) == 0:
+            raise ValueError(f"{subject} message has invalid source")
         content = msg.get("content")
         if not isinstance(content, list):
             raise ValueError(f"{subject} message has invalid content")
+        # The model-source check is event-specific and runs AFTER the shared
+        # content check (index.ts:324-331).
+        if source.get("kind") != "model" or not _has_provider_model(source):
+            raise ValueError(f"{subject} message must have model source")
 
     elif etype == "tool/result":
-        msg = data.get("message") if isinstance(data.get("message"), dict) else data
+        msg = data.get("message")
+        if not isinstance(msg, dict):
+            raise ValueError(f"{subject} lacks an identified message")
         msg_id = msg.get("id")
         if not isinstance(msg_id, str) or len(msg_id) == 0:
             raise ValueError(f"{subject} lacks an identified message")
@@ -509,10 +525,11 @@ def adopt_session_event(event: Dict[str, Any]) -> Dict[str, Any]:
     without copying the event, 1:1 with reference `adoptSessionEvent`
     (index.ts:167-185): a `user/message` freezes its whole `data`, while
     `assistant/message` and `tool/result` freeze the identified `data.message`
-    and leave `usage`/`timing`/`meta` untouched.
+    and leave `usage`/`timing`/`meta` untouched. The ONLY admission check is the
+    event-specific message shape; the envelope and request-header vocabulary are
+    seed/append concerns and are not re-validated here.
     """
-    assert_session_event_envelope(event)
-    assert_current_llm_shape(event)
+    assert_message_event_shape(event, f"session event at seq {event.get('seq')}")
     etype = event.get("type")
     data = event.get("data")
     if type(data) is dict:
@@ -531,7 +548,6 @@ def snapshot_session_event(event: Dict[str, Any]) -> Dict[str, Any]:
     `snapshotSessionEvent` (index.ts:192-194): a JSON-materializing detach
     (`structuredClone`) followed by {@link adopt_session_event}.
     """
-    assert_session_event_envelope(event)
     snap = snapshot_json_value(event)
     if snap is None:
         raise TypeError("event is not losslessly JSON-serializable")

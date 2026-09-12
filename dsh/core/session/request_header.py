@@ -93,9 +93,13 @@ def fold_request_header(
     state = from_header
     for event in events:
         if event.get("type") == "request/header":
-            hdr = event.get("data", {}).get("header")
-            if isinstance(hdr, dict):
-                state = canonical_header(hdr)
+            # No defensive skip: the reference reads `event.data.header`
+            # unconditionally (request-header.ts:69), so a header-less
+            # `request/header` event fails the fold loudly. Python raises
+            # AttributeError/KeyError where JavaScript throws the TypeError that
+            # reads a property of `undefined` (LEGAL_ADAPTATION: same loud
+            # failure, the platform's closest native error).
+            state = canonical_header(event["data"]["header"])
     return state
 
 

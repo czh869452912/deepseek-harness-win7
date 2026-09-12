@@ -132,8 +132,17 @@ def test_interrupted_turn_closers_skips_already_answered_tool_call():
             "data": {
                 "turn": 2,
                 "step": 1,
-                "callId": "call-1",
-                "message": {"role": "user", "content": [{"type": "tool-result", "toolCallId": "call-1", "content": [{"type": "text", "text": "done"}]}]},
+                "message": {
+                    "id": "tool-result-call-1",
+                    "role": "user",
+                    "content": [{
+                        "type": "tool-result",
+                        "toolCallId": "call-1",
+                        "content": [{"type": "text", "text": "done"}],
+                        "isError": False,
+                    }],
+                    "source": {"kind": "tool", "callId": "call-1"},
+                },
             },
         },
     ]

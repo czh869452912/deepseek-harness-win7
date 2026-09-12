@@ -128,7 +128,6 @@ class Session:
         self.log = self._log
         self._surface_manager = SurfaceManager(self._log)
         self._events_snapshot: Optional[List[Dict[str, Any]]] = None
-        self._appending: bool = False
 
         if seed is not None:
             for index, source in enumerate(seed):
@@ -305,7 +304,9 @@ class Session:
             )
 
         entry = _attachments.get(id(self))
-        if self._appending or (entry is not None and entry.appending):
+        # The publication boundary is store-owned: only an entry that is mid-append
+        # rejects a reentrant append, exactly like reference `entry?.appending`.
+        if entry is not None and entry.appending:
             raise RuntimeError("session append cannot reenter while another append is being published")
 
         # The complete candidate is built and deep-frozen BEFORE surface
@@ -327,7 +328,6 @@ class Session:
 
         self._surface_manager.validate_next(event)
 
-        self._appending = True
         if entry is not None:
             entry.appending = True
 
@@ -351,7 +351,6 @@ class Session:
 
             return event
         finally:
-            self._appending = False
             if entry is not None:
                 entry.appending = False
                 if entry.detach_requested and not entry.announcing:
@@ -729,7 +728,10 @@ class SessionStore(Service):
                     sid = candidate
                     break
         else:
-            sid = SessionId(session_id or opts.get("id"))
+            # An explicit empty id is a real id, not an absent one: `or` would
+            # substitute the fallback for `""` and mint a different session.
+            raw_id = session_id if session_id is not None else opts.get("id")
+            sid = SessionId(raw_id)
 
         if sid in self._entries:
             raise ValueError(f'session "{sid}" already exists')
@@ -859,7 +861,7 @@ class SessionStore(Service):
     def _live_entry_for(self, session: Session) -> _SessionStoreEntry:
         entry = _attachments.get(id(session))
         if entry is None or self._entries.get(entry.id) is not entry:
-            raise ValueError(f'session "{session.id}" is not live in this store')
+            raise RuntimeError(f'session "{session.id}" is not live in this store')
         return entry
 
     def create(
@@ -975,12 +977,11 @@ class SessionStore(Service):
 
     async def flush(self, session: Optional[Union[Session, SessionPreparation]] = None) -> bool:
         sess = session.session if isinstance(session, SessionPreparation) else session
-        if sess is not None and self.get(sess.id) is None:
-            raise RuntimeError(f'session "{sess.id}" is not live in this store')
+        # `liveEntryFor`: a detached or prepared object -- or a same-id object that
+        # is not this store's live instance -- rejects rather than dispatching.
+        entry = self._live_entry_for(sess) if sess is not None else None
         if not self.ctx:
             return False
-
-        entry = self._entries.get(sess.id) if sess is not None else None
         carrier = entry.carrier if entry else None
         emit_ctx = entry.emit_ctx if entry else self.ctx
 

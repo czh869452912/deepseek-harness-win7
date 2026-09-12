@@ -26,7 +26,10 @@ def test_session_repair_interrupted_turn():
 
     # Check synthetic tool result
     tool_res = [c for c in closers if c["type"] == "tool/result"][0]
-    assert tool_res["data"]["tool_call_id"] == "call-interrupted-1"
+    # The identified message carries the call identity in `source.callId` and in
+    # its single `tool-result` block (reference `interruptedTurnClosers`).
+    assert tool_res["data"]["message"]["source"]["callId"] == "call-interrupted-1"
+    assert tool_res["data"]["message"]["content"][0]["toolCallId"] == "call-interrupted-1"
     assert tool_res["data"]["error"]["code"] == TOOL_OUTCOME_UNKNOWN
 
     # Check step/end and turn/end

@@ -108,31 +108,50 @@ def deep_freeze(value: Any) -> Any:
         # needs no second pass, exactly like re-freezing in JavaScript.
         return value
     pending: List[Any] = [(value, root)]
+    # `copies` maps each source container's id to the frozen target materialized
+    # for it, so a graph that references one container twice (including a cycle)
+    # terminates AND keeps that aliasing: the same source node always freezes to
+    # the same target, mirroring the shared identity the reference's in-place
+    # `Object.freeze` preserves (`deepFreeze`'s `seen` set, dsh-llm
+    # call-config.ts:69-93).
+    copies: Dict[int, Any] = {id(value): root}
     while pending:
         source, target = pending.pop()
         if type(source) is dict:
             for key in source:
                 child = source[key]
                 if type(child) is dict:
-                    frozen_child: Any = FrozenDict()
+                    frozen_child = copies.get(id(child))
+                    if frozen_child is None:
+                        frozen_child = FrozenDict()
+                        copies[id(child)] = frozen_child
+                        pending.append((child, frozen_child))
                     dict.__setitem__(target, key, frozen_child)
-                    pending.append((child, frozen_child))
                 elif type(child) is list:
-                    frozen_child = FrozenList()
+                    frozen_child = copies.get(id(child))
+                    if frozen_child is None:
+                        frozen_child = FrozenList()
+                        copies[id(child)] = frozen_child
+                        pending.append((child, frozen_child))
                     dict.__setitem__(target, key, frozen_child)
-                    pending.append((child, frozen_child))
                 else:
                     dict.__setitem__(target, key, child)
         else:
             for item in source:
                 if type(item) is dict:
-                    frozen_item: Any = FrozenDict()
+                    frozen_item = copies.get(id(item))
+                    if frozen_item is None:
+                        frozen_item = FrozenDict()
+                        copies[id(item)] = frozen_item
+                        pending.append((item, frozen_item))
                     list.append(target, frozen_item)
-                    pending.append((item, frozen_item))
                 elif type(item) is list:
-                    frozen_item = FrozenList()
+                    frozen_item = copies.get(id(item))
+                    if frozen_item is None:
+                        frozen_item = FrozenList()
+                        copies[id(item)] = frozen_item
+                        pending.append((item, frozen_item))
                     list.append(target, frozen_item)
-                    pending.append((item, frozen_item))
                 else:
                     list.append(target, item)
     return root

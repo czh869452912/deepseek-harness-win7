@@ -149,6 +149,7 @@ class TestFoldSurfaceSourceEventReferences:
             ("a non-array", [dict(provenance_event(0, None), sourceEventSeqs="invalid")], r"must be an array"),
             ("an empty array", [provenance_event(0, [])], r"must not be empty"),
             ("duplicates", [provenance_event(0, None), provenance_event(1, [0, 0])], r"must not contain duplicates"),
+            # A JavaScript sparse-array hole reads as `undefined`; Python's            # closest durable equivalent is a present JSON `null` entry.            ("a sparse array", [dict(provenance_event(0, None), sourceEventSeqs=[None])], r"densely contain"),
             ("a non-number", [dict(provenance_event(0, None), sourceEventSeqs=["0"])], r"non-negative safe integers"),
             ("a fractional number", [provenance_event(0, [0.5])], r"non-negative safe integers"),
             ("a negative number", [provenance_event(0, [-1])], r"non-negative safe integers"),
@@ -870,3 +871,52 @@ class TestSurfaceEventProjectionFields:
         # recorded marker is the canonical string.
         assert event["surfaceOp"] == "append"
         assert type(event["surfaceOp"]) is str
+
+
+# ============================================================================
+# surface.spec.ts does not isolate these runtime guard shapes with a single
+# upstream case each: they pin the reference rules `foldSurface`/`SurfaceManager`
+# apply before any fold state mutates (surface.ts:186-246).
+# ============================================================================
+
+
+class TestReferenceSurfaceGuardShapes:
+    def test_rejects_a_log_only_event_carrying_a_null_surface_op(self):
+        events = [{
+            "type": "turn/start", "seq": 0, "time": 1, "data": {"turn": 1},
+            "surfaceOp": None,
+        }]
+        with pytest.raises(ValueError, match="not surface-eligible and cannot carry surfaceOp"):
+            fold_surface(events)
+
+    def test_rejects_a_surface_eligible_event_carrying_a_null_surface_op(self):
+        events = [{
+            "type": "user/message", "seq": 0, "time": 1,
+            "data": create_user_message({
+                "content": [{"type": "text", "text": "x"}], "source": {"kind": "user"},
+            }),
+            "surfaceOp": None,
+        }]
+        with pytest.raises(ValueError, match="carries an invalid surfaceOp"):
+            fold_surface(events)
+
+    def test_rejects_a_replace_surface_op_with_unknown_keys(self):
+        events = [
+            provenance_event(0, None),
+            dict(
+                provenance_event(1, [0]),
+                surfaceOp={"op": "replace", "start": 0, "end": 0, "extra": 1},
+            ),
+        ]
+        with pytest.raises(ValueError, match="invalid replace surfaceOp"):
+            fold_surface(events)
+
+    def test_rejects_a_present_but_null_source_event_seqs_list(self):
+        events = [dict(provenance_event(0, None), sourceEventSeqs=None)]
+        with pytest.raises(ValueError, match="must be an array when present"):
+            fold_surface(events)
+
+    def test_exposes_the_live_ordered_surface_view(self):
+        session = surface_session()
+        # `get nodes()` is a readonly view over the fold state, not a copy.
+        assert session.surface.nodes is session.surface.nodes

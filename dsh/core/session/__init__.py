@@ -25,7 +25,6 @@ from dsh.core.session.repair import (
     TOOL_OUTCOME_UNKNOWN,
     interrupted_turn_closers,
     interruptedTurnClosers,
-    migrate_legacy_event,
 )
 from dsh.core.session.request_header import (
     canonical_header,
@@ -130,7 +129,6 @@ __all__ = [
     "interruptedTurnClosers",
     "TOOL_NOT_STARTED",
     "TOOL_OUTCOME_UNKNOWN",
-    "migrate_legacy_event",
     "canonical_header",
     "canonicalHeader",
     "header_equals",

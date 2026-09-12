@@ -12,6 +12,9 @@ SURFACE_EVENT_TYPES: Set[str] = {
     "tool/result",
 }
 
+# Largest integer JavaScript represents exactly (`Number.MAX_SAFE_INTEGER`).
+MAX_SAFE_INTEGER = 0x1FFFFFFFFFFFFF
+
 
 def is_surface_eligible_type(event_type: str) -> bool:
     """Whether an event type can join the model-visible surface."""
@@ -144,40 +147,60 @@ class SurfacePlan:
 
 
 def _is_event_seq(value: Any) -> bool:
-    return type(value) is int and value >= 0
+    """`Number.isSafeInteger(value) && value >= 0` for one JSON number."""
+    return type(value) is int and 0 <= value <= MAX_SAFE_INTEGER
+
+
+def _is_replace_op(op: Dict[str, Any]) -> bool:
+    """Whether a runtime value is the exact positional-replacement shape."""
+    return (
+        len(op) == 3
+        and "op" in op
+        and "start" in op
+        and "end" in op
+        and op.get("op") == "replace"
+        and _is_event_seq(op.get("start"))
+        and _is_event_seq(op.get("end"))
+    )
 
 
 def _surface_op_of(event: Dict[str, Any]) -> Optional[Union[str, Dict[str, Any]]]:
     etype = event.get("type", "")
-    op = event.get("surfaceOp")
 
     if not is_surface_eligible_type(etype):
-        if op is not None:
+        # Presence, not truthiness: a durable `surfaceOp: null` is still surface
+        # metadata on a log-only event and is rejected, exactly like the
+        # reference `raw.surfaceOp !== undefined` test (surface.ts:193-202).
+        if "surfaceOp" in event:
             raise ValueError(f'session event "{etype}" is not surface-eligible and cannot carry surfaceOp')
-        if event.get("sourceEventSeqs") is not None:
+        if "sourceEventSeqs" in event:
             raise ValueError(f'session event "{etype}" is not surface-eligible and cannot carry sourceEventSeqs')
         return None
 
-    if op is None:
+    if "surfaceOp" not in event:
         raise ValueError(f'session event "{etype}" is surface-eligible and requires a surfaceOp marker')
 
+    op = event.get("surfaceOp")
     if op == "append":
         return "append"
 
-    if isinstance(op, dict):
-        if op.get("op") == "replace" and _is_event_seq(op.get("start")) and _is_event_seq(op.get("end")):
-            return op
-        raise ValueError(f'session event "{etype}" carries an invalid replace surfaceOp: {op}')
+    if op is None or not isinstance(op, dict):
+        raise ValueError(f'session event "{etype}" carries an invalid surfaceOp')
 
-    raise ValueError(f'session event "{etype}" carries an invalid surfaceOp: {op}')
+    if not _is_replace_op(op):
+        raise ValueError(f'session event "{etype}" carries an invalid replace surfaceOp')
+
+    return op
 
 
 def _assert_provenance(event: Dict[str, Any], shadowed_seqs: List[int]) -> None:
-    raw = event.get("sourceEventSeqs")
     sources: Set[int] = set()
     current_seq = event.get("seq", 0)
 
-    if raw is not None:
+    # Presence, not truthiness: `sourceEventSeqs: null` is present-but-invalid
+    # (`raw !== undefined` in surface.ts:220) and must not read as "absent".
+    if "sourceEventSeqs" in event:
+        raw = event.get("sourceEventSeqs")
         if not isinstance(raw, list):
             raise ValueError(f"sourceEventSeqs on event at seq {current_seq} must be an array when present")
         if len(raw) == 0 and event.get("type") != "assistant/message":
@@ -206,17 +229,29 @@ def _assert_provenance(event: Dict[str, Any], shadowed_seqs: List[int]) -> None:
 
 
 def _is_deep_equal_json(a: Any, b: Any) -> bool:
-    if a == b:
-        return True
+    """Deep structural equality over the JSON value domain, `===` per scalar.
+
+    Scalar equality is the reference's `a === b`: Python's `==` would equate
+    `True` with `1` and `1` with `1.0` differently than JavaScript, so the
+    comparison discriminates on the JSON type before comparing values.
+    """
     if isinstance(a, list) or isinstance(b, list):
         if not isinstance(a, list) or not isinstance(b, list) or len(a) != len(b):
             return False
         return all(_is_deep_equal_json(x, y) for x, y in zip(a, b))
-    if not isinstance(a, dict) or not isinstance(b, dict):
-        return False
-    if set(a.keys()) != set(b.keys()):
-        return False
-    return all(_is_deep_equal_json(a[k], b[k]) for k in a)
+    if isinstance(a, dict) or isinstance(b, dict):
+        if not isinstance(a, dict) or not isinstance(b, dict):
+            return False
+        if set(a.keys()) != set(b.keys()):
+            return False
+        return all(_is_deep_equal_json(a[k], b[k]) for k in a)
+    if a is None or b is None:
+        return a is None and b is None
+    if isinstance(a, bool) or isinstance(b, bool):
+        return a is b
+    if isinstance(a, str) or isinstance(b, str):
+        return isinstance(a, str) and isinstance(b, str) and a == b
+    return a == b
 
 
 def _assert_tool_result_rewrite(
@@ -368,9 +403,11 @@ class SurfaceManager:
 
     @property
     def nodes(self) -> List[int]:
+        # The live surface list, exactly like reference `get nodes()`: it is a
+        # `readonly number[]` view over the fold state, not a defensive copy.
         if self._last_processed_seq < self.base_seq + len(self.log) - 1:
             self._process_delta()
-        return list(self._state.nodes)
+        return self._state.nodes
 
     def validate_next(self, event: Dict[str, Any]) -> None:
         """

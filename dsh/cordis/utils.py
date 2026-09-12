@@ -919,7 +919,9 @@ _JS_MONTH_NAMES = ("Jan", "Feb", "Mar", "Apr", "May", "Jun",
 
 #: JavaScript `RegExp` flag letters in the engine's canonical order (``d g i m
 #: s u v y``) with the Python flag each stands for.  The other Python flags
-#: (`re.A`, `re.L`, `re.U`, `re.X`) have no JavaScript flag letter.
+#: (`re.A`, `re.L`, `re.U`, `re.X`) have no JavaScript flag letter, and a
+#: JavaScript-only letter (`d`, `g`, `u`, `v`, `y`) has no Python flag - the
+#: port's regexps are built by Python callers, so only the shared letters occur.
 _JS_REGEX_FLAGS = (("i", re.IGNORECASE), ("m", re.MULTILINE), ("s", re.DOTALL))
 
 
@@ -1050,8 +1052,12 @@ def format_property(key: Any) -> str:
         # `[${key.toString()}]` - the key's own JavaScript string conversion.
         return "[{}]".format(_js_key_to_string(key))
     # The reference uses /^[a-z_$][\w$]*$/i without the /u flag, so `\w` is
-    # ASCII-only; Python's `re` is Unicode-aware by default.
-    if re.match(r"^[a-zA-Z_$][0-9A-Za-z_$]*$", key):
+    # ASCII-only; Python's `re` is Unicode-aware by default.  ECMAScript `$`
+    # (without the `m` flag) only matches at the very end of the input while
+    # Python's also matches just before a trailing newline, so this literal
+    # anchors with `\Z`: `formatProperty("foo\n")` is `["foo\n"]`, not a
+    # member access, exactly as the reference answers.
+    if re.match(r"^[a-zA-Z_$][0-9A-Za-z_$]*\Z", key):
         return f".{key}"
     return f"[{json.dumps(key, ensure_ascii=False)}]"
 

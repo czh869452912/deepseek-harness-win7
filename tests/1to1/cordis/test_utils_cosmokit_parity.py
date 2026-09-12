@@ -510,6 +510,14 @@ def test_c22_format_property_matches_member_access_and_json_quoting():
     assert format_property('a b') == '["a b"]'
     assert format_property('a"b') == '["a\\"b"]'
     assert format_property('a\nb') == '["a\\nb"]'
+    # ECMAScript `$` (no /m flag) only matches at the very end of the input,
+    # while Python's `$` also matches just before a trailing newline, so an
+    # identifier followed by a newline still brackets (Node oracle values).
+    assert format_property('foo\n') == '["foo\\n"]'
+    assert format_property('_a\n') == '["_a\\n"]'
+    assert format_property('a\n') == '["a\\n"]'
+    assert format_property('foo\r\n') == '["foo\\r\\n"]'
+    assert format_property('foo\n\n') == '["foo\\n\\n"]'
     # `\w` is ASCII-only without the /u flag, so non-ASCII identifiers bracket.
     assert format_property('\u00e9') == '["\u00e9"]'
     assert format_property('a\u00e9') == '["a\u00e9"]'

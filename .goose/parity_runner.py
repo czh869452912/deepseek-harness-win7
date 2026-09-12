@@ -106,6 +106,20 @@ def changed(before, after):
     return sorted(k for k in set(before) | set(after) if before.get(k) != after.get(k))
 
 
+def valid_changed_files(root, names, notify=None):
+    """Drop model-authored non-path annotations from changed_files. Real
+    changes are re-included from the snapshot diff by the callers."""
+    kept = []
+    for name in names:
+        try:
+            safe_path(root, name)
+            kept.append(name)
+        except ValueError as error:
+            if notify:
+                notify("files", "Rejected changed-file entry: " + str(error))
+    return kept
+
+
 def dirty_paths(root):
     names = set()
     for args in [("diff", "--name-only", "-z", "HEAD"),
@@ -532,16 +546,8 @@ class Runner:
             result = stream.result(phase)
             result["observed_changes"] = changes
             if phase == "migrate":
-                kept = []
-                for name in result["changed_files"]:
-                    try:
-                        safe_path(self.root, name)
-                        kept.append(name)
-                    except ValueError as error:
-                        # Model-authored annotations are not paths; real changes
-                        # are re-included from the snapshot diff below.
-                        self.notify("files", "Rejected changed-file entry: " + str(error))
-                result["changed_files"] = kept
+                result["changed_files"] = valid_changed_files(
+                    self.root, result["changed_files"], self.notify)
                 missing = set(changes) - set(result["changed_files"])
                 if missing:
                     self.notify("files", "Including observed changes omitted from report: " + ", ".join(sorted(missing)))

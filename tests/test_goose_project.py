@@ -498,3 +498,36 @@ print(json.dumps({'type':'complete'}),flush=True)
     p.store.apply_plan(plan(task("a")))
     assert p.run() == 0
     assert all(r["state"] == "INTEGRATED" for r in p.store.rows())
+
+
+def test_cached_phase_recovery_filters_malformed_changed_files(repo):
+    p = make_project(repo)
+    p.store.apply_plan(plan(task("a")))
+    group = p.store.claim("w")
+    agent = p.task_runner(group)
+    run_dir = agent.run_dir
+    head = project.git(agent.root, "rev-parse", "HEAD")
+    files = project.snapshot(agent.root)
+    index = project.git(agent.root, "diff", "--cached", "--binary")
+    project.save_json(run_dir / "00-migrate.start.json",
+                      {"head": head, "files": files, "index": index,
+                       "scope": getattr(agent.args, "task_contract", None)})
+    project.save_json(run_dir / "00-migrate.completion.json",
+                      {"files": files, "head": head, "index": index})
+    value = dict(status="READY", summary="worked", coverage_complete=True, issues=[],
+                 changed_files=["a.py", "apps/web/dist (upstream build payload: *)"],
+                 test_paths=["tests/test_a.py"], dependencies=[],
+                 test_map=["upstream case -> tests/test_a.py -> PORTED"])
+    events = [
+        {"type": "message", "message": {"id": "final", "role": "assistant", "content": [
+            {"type": "toolRequest", "id": "t1", "toolCall": {"value": {
+                "name": "recipe__final_output", "arguments": value}}}]}},
+        {"type": "message", "message": {"role": "user", "content": [
+            {"type": "toolResponse", "id": "t1", "toolResult": {"status": "success", "value": {}}}]}},
+        {"type": "complete"},
+    ]
+    (run_dir / "00-migrate.events.jsonl").write_text(
+        "\n".join(json.dumps(e) for e in events) + "\n", encoding="utf-8")
+    result = p.cached_phase(agent, "migrate", None)
+    assert result["changed_files"] == ["a.py"]
+    assert (run_dir / "00-migrate.result.json").exists()

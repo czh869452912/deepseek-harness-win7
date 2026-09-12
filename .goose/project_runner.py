@@ -12,7 +12,7 @@ import sys
 import threading
 import time
 
-from parity_runner import Runner, Stream, git, snapshot, changed, safe_path, save_json, run_process, ROOT, SCHEMA, parse_result
+from parity_runner import Runner, Stream, git, snapshot, changed, safe_path, save_json, run_process, ROOT, SCHEMA, parse_result, valid_changed_files
 from project_store import Store, digest
 from project_seed import discover
 
@@ -429,9 +429,9 @@ class Project:
                     value = stream.result(phase)
                     value["observed_changes"] = changed(bound["files"], files)
                     if phase == "migrate":
-                        value["changed_files"] = sorted(set(value["changed_files"]) | set(value["observed_changes"]))
-                        for name in value["changed_files"]:
-                            safe_path(agent.root, name)
+                        value["changed_files"] = sorted(
+                            set(valid_changed_files(agent.root, value["changed_files"], agent.notify)) |
+                            set(value["observed_changes"]))
                     save_json(result_path, value)
                     save_json(agent.run_dir / (stem + ".binding.json"),
                               {"head": bound["head"], "files": files, "scope": agent.args.task_contract})

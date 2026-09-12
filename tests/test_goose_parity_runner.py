@@ -376,3 +376,23 @@ def test_review_repeated_mutation_stays_a_hard_failure(repo):
     with pytest.raises(ValueError, match="Read-only phase mutated files"):
         h.phase("review")
     assert (repo / "scratch-$null").exists()  # preserved for inspection
+
+
+def test_save_json_retries_while_a_reader_holds_the_target(tmp_path):
+    import threading
+    target = tmp_path / "status.json"
+    runner.save_json(target, {"n": 0})
+    with open(target, "r", encoding="utf-8") as handle:
+        threading.Timer(0.2, handle.close).start()
+        runner.save_json(target, {"n": 1})
+    assert json.loads(target.read_text(encoding="utf-8")) == {"n": 1}
+
+
+def test_verify_chunk_rejects_malformed_test_paths_as_feedback(repo):
+    h = make_review_runner(repo)
+    seen = []
+    h.notify = lambda k, m: seen.append((k, m))
+    bad = "apps/web/tests (mirrored official lane: 90 *.e2e.ts, snapshots/**)"
+    assert h.verify_chunk({"test_paths": [bad], "changed_files": []}) is False
+    assert any(k == "verification" and "Rejected test path" in m for k, m in seen)
+    assert h.verify_chunk({"test_paths": [], "changed_files": []}) is False

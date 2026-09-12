@@ -65,7 +65,16 @@ SCHEMA = {
 def save_json(path, data):
     temp = path.with_suffix(path.suffix + "." + uuid.uuid4().hex + ".tmp")
     temp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    os.replace(str(temp), str(path))
+    # A plain reader (the dashboard, an editor, an indexer) holds the target
+    # without delete-share, which makes os.replace fail on Windows. Retry.
+    for attempt in range(6):
+        try:
+            os.replace(str(temp), str(path))
+            return
+        except PermissionError:
+            if attempt == 5:
+                raise
+            time.sleep(0.05 * (attempt + 1))
 
 
 def git(root, *args):
@@ -112,7 +121,12 @@ def safe_path(root, name):
     path = Path(name)
     if path.is_absolute() or any(p in ("..", ".git", ".env") for p in path.parts):
         raise ValueError("Invalid repository path: " + name)
-    resolved = (root / path).resolve()
+    try:
+        resolved = (root / path).resolve()
+    except OSError as error:
+        # Windows-illegal characters (":", "*", "?", ...) must become clean
+        # validation feedback, not an infra crash.
+        raise ValueError("Invalid repository path " + name + ": " + str(error))
     try:
         resolved.relative_to(root.resolve())
     except ValueError:
@@ -394,7 +408,11 @@ class Runner:
             self.state["execution_state"] = "RUNNING"
         elif kind in ("result_received", "draining"):
             self.state["execution_state"] = kind.upper()
-        save_json(self.run_dir / "status.json", self.state)
+        try:
+            save_json(self.run_dir / "status.json", self.state)
+        except OSError as error:
+            # Progress display is best-effort; a stuck reader must not kill the phase.
+            print("[progress] status.json deferred: " + str(error), flush=True)
 
     def phase(self, phase, feedback=None):
         self.state["phase"] = phase
@@ -542,9 +560,17 @@ class Runner:
             self.notify("verification", "No targeted test paths: no checkpoint")
             return False
         for name in paths:
-            path = safe_path(self.root, name)
-            if not name.startswith("tests/") or not path.exists() or "::" in name:
-                raise ValueError("Invalid pytest path: " + name)
+            try:
+                path = safe_path(self.root, name)
+                valid = name.startswith("tests/") and path.exists() and "::" not in name
+                reason = None if valid else "not an existing tests/ pytest path"
+            except ValueError as error:
+                # Model-provided paths can be malformed descriptions; send the
+                # phase back for correction instead of failing infrastructure.
+                valid, reason = False, str(error)
+            if not valid:
+                self.notify("verification", "Rejected test path " + name + ": " + str(reason))
+                return False
         if not self.check("targeted", ["-m", "pytest"] + paths + ["-q"]):
             return False
         files = [name for name in result["changed_files"] if name.endswith(".py")

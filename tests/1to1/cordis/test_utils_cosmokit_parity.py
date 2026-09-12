@@ -19,6 +19,7 @@ Cases:
 - C25..C33 time.ts: constants/offset/parseTime/parseDate/format/toDigits/template/date numbers
 - C45..C46 time.ts: zone-offset validation and the legacy/padded date grammar
 - C34..C43 types.ts: is/Binary encodings/clone/deepEqual
+- C47..C48 types.ts: clone leaf-branch freshness and deepEqual own-key strictness
 - C44      exported-name surface of the reference package
 - T1..T7   reference/vendor/cordis/src/utils.ts cases owned by the same module
 """
@@ -446,6 +447,11 @@ def test_c26_timezone_offset_round_trip():
     original = Time.get_timezone_offset()
     assert Time.getTimezoneOffset() == original
     assert isinstance(original, int)
+    # `new Date().getTimezoneOffset()` is the local offset in minutes west of
+    # UTC in the current DST state, which the local wall clock minus UTC is;
+    # it is never a silent UTC (0) default on a host without `tm_gmtoff`.
+    local_offset = datetime.datetime.now() - datetime.datetime.utcnow()
+    assert original == -int(round(local_offset.total_seconds()) / 60)
     try:
         Time.set_timezone_offset(-480)
         assert Time.get_timezone_offset() == -480
@@ -888,9 +894,15 @@ def test_c40_clone_copies_containers_and_preserves_cycles():
     assert clone(buffer) == buffer
     assert clone(buffer) is not buffer
     assert bytes(clone(b'\x01\x02')) == b'\x01\x02'
-    # Immutable values may be shared; the reference allocates a fresh instance.
+    # A Date and an ArrayBuffer are rebuilt by the reference's leaf branches
+    # (`new Date(source.valueOf())`, `source.slice(0)`), never shared.
     frozen = datetime.datetime(2026, 9, 3)
     assert clone(frozen) == frozen
+    assert clone(frozen) is not frozen
+    array_buffer = bytes(bytearray(b'\x01\x02'))
+    assert clone(array_buffer) == array_buffer
+    assert clone(array_buffer) is not array_buffer
+    # Primitives pass through: `typeof source !== 'object'` returns the source.
     assert clone(5) == 5
     assert clone('a') == 'a'
     assert clone(None) is None
@@ -957,6 +969,92 @@ def test_c43_deep_equal_strict_disables_the_nullish_shortcut():
     # Strict: the absent key reads as undefined, which is not null.
     assert deepEqual({'a': None}, {}, True) is False
     assert deepEqual({'a': 1}, {'a': 1}, True) is True
+
+
+def test_c47_clone_leaf_branches_build_a_fresh_instance_per_occurrence():
+    """types.ts:89-94 - Date/RegExp/ArrayBuffer/View return before `refs`."""
+    date = datetime.datetime(2026, 9, 3, 12)
+    assert clone(date) == date
+    assert clone(date) is not date
+    pattern = re.compile('a', re.I)
+    copied = clone(pattern)
+    assert copied is not pattern
+    assert (copied.pattern, copied.flags) == (pattern.pattern, pattern.flags)
+    assert copied.findall('xAx') == pattern.findall('xAx') == ['A']
+    buffer = bytes(bytearray(b'\x01\x02'))
+    assert clone(buffer) == buffer
+    assert clone(buffer) is not buffer
+    writable = bytearray(b'\x01\x02')
+    assert clone(writable) == writable
+    assert clone(writable) is not writable
+    view = memoryview(b'\x01\x02\x03\x04')[1:3]
+    assert bytes(clone(view)) == b'\x02\x03'
+    assert clone(view) is not view
+    # Each leaf branch returns before the `refs` lookup, so two occurrences of
+    # one leaf become two independent copies...
+    aliased = clone({'a': buffer, 'b': buffer})
+    assert aliased['a'] == aliased['b']
+    assert aliased['a'] is not aliased['b']
+    # ...while a repeated container stays shared through the `refs` memo.
+    shared = {'x': 1}
+    holder = clone({'a': shared, 'b': shared})
+    assert holder['a'] is holder['b']
+    # Leaves are reached through own keys, elements, slots and cycles.
+    nested = clone({'d': date, 'p': pattern, 'b': buffer, 'v': view})
+    assert nested['d'] == date and nested['d'] is not date
+    assert nested['p'] is not pattern
+    assert nested['b'] is not buffer
+    assert bytes(nested['v']) == b'\x02\x03'
+    assert clone([buffer])[0] is not buffer
+    assert clone((1, buffer))[1] is not buffer
+
+    class Holder:
+        def __init__(self):
+            self.v = view
+            self.d = date
+
+    class Slotted:
+        __slots__ = ('v', 'd')
+
+        def __init__(self):
+            self.v = view
+            self.d = date
+
+    assert bytes(clone(Holder()).v) == b'\x02\x03'
+    assert clone(Holder()).d is not date
+    assert bytes(clone(Slotted()).v) == b'\x02\x03'
+    assert clone(Slotted()).d is not date
+    cyclic = {'b': buffer}
+    cyclic['self'] = cyclic
+    copied_cyclic = clone(cyclic)
+    assert copied_cyclic['self'] is copied_cyclic
+    assert copied_cyclic['b'] is not buffer
+
+
+def test_c48_deep_equal_reads_an_absent_own_key_as_undefined():
+    """types.ts:141-142 - `deepEqual(a[key], b[key], strict)` over both key sets."""
+    # Strict: a key only one operand has reads as `undefined`, which never
+    # equals `null`, so the key names matter even when the counts match.
+    assert deepEqual({'a': None}, {'b': None}, True) is False
+    assert deepEqual({'a': None}, {'b': None}) is True
+    assert deepEqual({'a': 1, 'b': None}, {'a': 1, 'c': None}, True) is False
+    assert deepEqual({'a': 1, 'b': None}, {'a': 1, 'c': None}) is True
+    assert deepEqual({'a': None}, {}, True) is False
+    assert deepEqual({'a': None}, {}) is True
+    assert deepEqual({'a': None}, {'a': None}, True) is True
+    assert deepEqual({}, {}, True) is True
+    # `strict` reaches the own-key recursion but not array elements: the array
+    # branch is `deepEqual(item, b[index])` with no third argument, so elements
+    # compare non-strict even inside a strict comparison.
+    assert deepEqual({'x': {'a': None}}, {'x': {}}, True) is False
+    assert deepEqual([{'a': None}], [{}], True) is True
+    assert deepEqual([[{'a': None}]], [[{}]], True) is True
+    assert deepEqual([{'x': {'a': None}}], [{'x': {}}], True) is True
+    assert deepEqual({'k': [{'a': None}]}, {'k': [{}]}, True) is True
+    assert deepEqual([1, [2]], [1, [2]], True) is True
+    # Array length and the Array-vs-object branch are unchanged.
+    assert deepEqual([1, 2], [1, 2, 3], True) is False
+    assert deepEqual([1], {0: 1}, True) is False
 
 
 def test_c44_reference_export_surface_is_present():

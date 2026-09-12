@@ -157,8 +157,33 @@ def _js_pad_start(source: str, length: int) -> str:
     return "0" * (length - len(source)) + source
 
 
+class _UndefinedValue(object):
+    """JavaScript ``undefined``: an absent own key, or a missing value.
+
+    Python has no such value, so the port carries a single instance for the one
+    place the reference keeps it observable: ``deepEqual`` reads ``a[key]`` and
+    ``b[key]`` over the union of both operands' own keys, where a key only one
+    operand has reads as ``undefined`` and must stay distinct from ``null``
+    (``undefined !== null``) when the comparison is strict.
+    """
+
+    __slots__ = ()
+
+    def __bool__(self) -> bool:
+        return False  # an ECMAScript falsy value
+
+    def __repr__(self) -> str:
+        return "undefined"
+
+
+#: The port's ``undefined`` (see :class:`_UndefinedValue`).
+_UNDEFINED = _UndefinedValue()
+
+
 def _js_typeof(value: Any) -> str:
     """ECMAScript ``typeof`` bucket of a Python value."""
+    if value is _UNDEFINED:
+        return "undefined"
     if value is None:
         return "object"  # typeof null === 'object'
     if isinstance(value, bool):
@@ -170,6 +195,11 @@ def _js_typeof(value: Any) -> str:
     if isinstance(value, _JS_FUNCTION_TYPES):
         return "function"
     return "object"
+
+
+def _js_is_nullish(value: Any) -> bool:
+    """ECMAScript ``value == null``, which ``undefined`` satisfies as well."""
+    return value is None or value is _UNDEFINED
 
 
 def _js_strict_equal(a: Any, b: Any) -> bool:
@@ -224,43 +254,90 @@ def _js_own_enumerable_keys(value: Any) -> List[Any]:
 
 
 def _js_read_key(value: Any, key: Any) -> Any:
-    """``value[key]``; a missing key reads as ``undefined`` (``None`` here)."""
+    """``value[key]``, where a key the value does not have reads as ``undefined``."""
     if isinstance(value, dict):
-        return value.get(key)
+        return value[key] if key in value else _UNDEFINED
     if isinstance(value, memoryview):
         if isinstance(key, str) and key.isdigit() and int(key) < len(value):
             return value[int(key)]
-        return None
-    return getattr(value, key, None)
+        return _UNDEFINED  # an index past the view's byteLength
+    return getattr(value, key, _UNDEFINED)
 
 
-def _seed_view_copies(value: Any, memo: Dict[int, Any], seen: Set[int]) -> None:
-    """Register the clone of every reachable `memoryview` in a deepcopy memo.
+def _fresh_date(value: Any) -> Any:
+    """A new ``Date`` for the reference's ``new Date(source.valueOf())`` branch."""
+    if isinstance(value, datetime.datetime):
+        return datetime.datetime(
+            value.year, value.month, value.day, value.hour, value.minute,
+            value.second, value.microsecond, tzinfo=value.tzinfo, fold=value.fold,
+        )
+    return datetime.date(value.year, value.month, value.day)
 
-    The reference clone branches on ``ArrayBuffer.isView`` and copies the
-    view's own byte range into a fresh buffer, and it reaches a nested view
-    through ``Reflect.ownKeys``/array elements.  A `memoryview` is the port's
-    ArrayBufferView and the one value ``copy.deepcopy`` cannot copy, so its
-    clone is registered before the deepcopy walk reads it.
+
+def _fresh_pattern(value: Any) -> Any:
+    """A new ``RegExp`` for the reference's ``new RegExp(source, flags)`` branch.
+
+    ``re.compile`` hands back the interned pattern for a (source, flags) pair
+    this process already compiled, so the compiler entry point below builds a
+    distinct object instead. A ``RegExp`` clone also drops ``lastIndex``, of
+    which Python keeps no state.
+    """
+    compiler = getattr(re, "_compiler", None)
+    if compiler is not None:  # Python 3.11+ moves the compiler to `re._compiler`
+        return compiler.compile(value.pattern, value.flags)
+    import sre_compile
+    return sre_compile.compile(value.pattern, value.flags)
+
+
+def _leaf_copy_factory(value: Any) -> Optional[Callable[[], Any]]:
+    """The fresh copy a reference leaf branch builds, or ``None`` for a container.
+
+    Leaf branches: ``is('Date', ...)`` -> ``new Date``, ``is('RegExp', ...)`` ->
+    ``new RegExp``, ``isArrayBufferLike`` -> ``source.slice(0)``, and
+    ``ArrayBuffer.isView`` -> a copy of the view's own byte range.
+    """
+    if isinstance(value, (datetime.datetime, datetime.date)):
+        return functools.partial(_fresh_date, value)
+    if isinstance(value, _REGEX_TYPE):
+        return functools.partial(_fresh_pattern, value)
+    if isinstance(value, bytes):
+        return lambda: bytes(bytearray(value))
+    if isinstance(value, bytearray):
+        return lambda: bytearray(value)
+    if isinstance(value, memoryview):
+        return value.tobytes
+    return None
+
+
+def _register_leaf_copies(value: Any, factories: Dict[int, Callable[[], Any]],
+                          seen: Set[int]) -> None:
+    """Register a fresh-copy factory for every leaf a clone can reach.
+
+    The reference returns from its Date/RegExp/ArrayBuffer/ArrayBufferView
+    branches *before* it consults ``refs``, so a leaf is copied once per
+    occurrence while containers stay memoized. The walk reaches leaves through
+    dict values, sequence and set elements, instance ``__dict__`` entries and
+    ``__slots__``, the same places ``Reflect.ownKeys`` and array elements lead.
     """
     key = id(value)
     if key in seen:
         return
     seen.add(key)
-    if isinstance(value, memoryview):
-        memo[key] = value.tobytes()
+    factory = _leaf_copy_factory(value)
+    if factory is not None:
+        factories[key] = factory
         return
-    if value is None or isinstance(value, (bytes, bytearray, str, bool, int, float, type)):
+    if value is None or isinstance(value, (str, bool, int, float)):
         return
-    if isinstance(value, (datetime.datetime, datetime.date, _REGEX_TYPE)):
+    if isinstance(value, _JS_FUNCTION_TYPES):
         return
     if isinstance(value, dict):
         for item in value.values():
-            _seed_view_copies(item, memo, seen)
+            _register_leaf_copies(item, factories, seen)
         return
     if isinstance(value, (list, tuple, set, frozenset)):
         for item in value:
-            _seed_view_copies(item, memo, seen)
+            _register_leaf_copies(item, factories, seen)
         return
     members: List[Any] = []
     own = getattr(value, "__dict__", None)
@@ -272,23 +349,43 @@ def _seed_view_copies(value: Any, memo: Dict[int, Any], seen: Set[int]) -> None:
         except AttributeError:
             pass
     for item in members:
-        _seed_view_copies(item, memo, seen)
+        _register_leaf_copies(item, factories, seen)
+
+
+class _CloneMemo(dict):
+    """``copy.deepcopy`` memo carrying the reference's per-occurrence leaf copies.
+
+    ``deepcopy`` reads ``memo.get(id(value))`` before it dispatches, so a
+    registered leaf id answers with a new copy on every lookup and is never
+    stored, while containers keep deepcopy's per-identity memo - the reference's
+    ``refs`` map, which preserves shared containers and cycles.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.factories: Dict[int, Callable[[], Any]] = {}
+
+    def get(self, key: Any, default: Any = None) -> Any:
+        factory = self.factories.get(key)
+        if factory is not None:
+            return factory()
+        return super().get(key, default)
 
 
 def clone(value: Any) -> Any:
     """Deep clone a value matching Cosmokit clone.
 
-    The reference re-creates every container with the source prototype and
-    follows reference cycles, which is what ``copy.deepcopy`` does for Python
-    values.
+    The reference re-creates containers with the source prototype and follows
+    reference cycles, which is what ``copy.deepcopy`` does for Python values;
+    each leaf branch builds a fresh instance per occurrence (see `_CloneMemo`).
 
-    LEGAL_ADAPTATION: Python has no property enumerability, so immutable
-    values (``tuple``/``bytes``/``datetime``) may be shared with the source
-    where the reference allocates a fresh instance; an ArrayBuffer-like
-    ``bytearray`` is copied exactly like ``ArrayBuffer.slice(0)`` copies it.
+    LEGAL_ADAPTATION: Python has no property enumerability, so a cloned object
+    keeps the source's own attributes as plain ones, and values with no
+    reference counterpart (an unchanged ``tuple``/``frozenset`` of atomic
+    elements) may be shared with the source where the reference allocates.
     """
-    memo: Dict[int, Any] = {}
-    _seed_view_copies(value, memo, set())
+    memo = _CloneMemo()
+    _register_leaf_copies(value, memo.factories, set())
     return copy.deepcopy(value, memo)
 
 
@@ -299,20 +396,22 @@ def deep_equal(a: Any, b: Any, strict: bool = False) -> bool:
     # while `===` (and the reference) reports equal.
     if _js_strict_equal(a, b):
         return True
-    if not strict and is_nullable(a) and is_nullable(b):
+    if not strict and _js_is_nullish(a) and _js_is_nullish(b):
         return True
     if _js_typeof(a) != _js_typeof(b):
         return False
     if _js_typeof(a) != "object":
         return False  # non-object primitives that were not identical
-    if a is None or b is None:
-        return False
+    if _js_is_nullish(a) or _js_is_nullish(b):
+        return False  # `if (!a || !b) return false`: null and undefined only
     if isinstance(a, (list, tuple)) or isinstance(b, (list, tuple)):
         if not (isinstance(a, (list, tuple)) and isinstance(b, (list, tuple))):
             return False
         if len(a) != len(b):
             return False
-        return all(deep_equal(x, y, strict=strict) for x, y in zip(a, b))
+        # `a.every((item, index) => deepEqual(item, b[index]))`: the array branch
+        # does not forward `strict` to its elements.
+        return all(deep_equal(x, y) for x, y in zip(a, b))
     if isinstance(a, (datetime.datetime, datetime.date)) or isinstance(b, (datetime.datetime, datetime.date)):
         if not (isinstance(a, (datetime.datetime, datetime.date))
                 and isinstance(b, (datetime.datetime, datetime.date))):
@@ -329,10 +428,6 @@ def deep_equal(a: Any, b: Any, strict: bool = False) -> bool:
         if not (isinstance(a, (bytes, bytearray)) and isinstance(b, (bytes, bytearray))):
             return False
         return bytes(a) == bytes(b)
-    if strict and isinstance(a, dict) and isinstance(b, dict) and len(a) != len(b):
-        # deepEqual({ a: null }, {}, true) is false: with the nullish shortcut
-        # disabled the extra key compares null against undefined.
-        return False
     # Reference fallback:
     # Object.keys({...a, ...b}).every(key => deepEqual(a[key], b[key], strict))
     keys: List[Any] = []
@@ -785,7 +880,11 @@ class Time:
     day = hour * 24
     week = day * 7
 
-    _timezone_offset = -int(time.localtime().tm_gmtoff / 60) if hasattr(time, "localtime") and hasattr(time.localtime(), "tm_gmtoff") else 0
+    #: `new Date().getTimezoneOffset()`: minutes west of UTC in the local DST
+    #: state. Derived from `time.timezone`/`time.altzone`, which a Windows build
+    #: always provides, instead of `struct_time.tm_gmtoff`, which it may omit - a
+    #: missing field must not silently default the offset to UTC.
+    _timezone_offset = -int(_local_utc_offset_seconds() / 60)
 
     @classmethod
     def set_timezone_offset(cls, offset: int) -> None:

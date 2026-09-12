@@ -465,3 +465,36 @@ def test_unknown_contract_validation_reports_all_missing_references(store):
         store.apply_plan(invalid)
     assert "missing-a" in str(error.value) and "missing-b" in str(error.value)
     assert store.rows() == []
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows fake CLI")
+def test_empty_work_plan_does_not_block_integration(repo):
+    script = repo / "fake.py"
+    script.write_text('''import json,sys
+from pathlib import Path
+args = sys.argv
+recipe = json.loads(Path(args[args.index('--recipe')+1]).read_text(encoding='utf-8'))
+name = recipe['instructions'].split('Unit: ')[1].split('\\n')[0]
+phase = recipe['title']
+value = dict(status='READY' if phase == 'parity-migrator' else 'PASS', summary='verified',
+             coverage_complete=phase != 'parity-migrator', issues=[], changed_files=[],
+             test_paths=['tests/test_'+name+'.py'], dependencies=[],
+             test_map=['upstream case -> tests/test_'+name+'.py -> PORTED'])
+if phase == 'parity-migrator':
+    Path(name+'.py').write_text('value = 1\\n', encoding='utf-8')
+    Path('tests/test_'+name+'.py').write_text("from pathlib import Path\\ndef test_value():\\n    assert Path('"+name+".py').read_text().strip() == 'value = 1'\\n", encoding='utf-8')
+    value['changed_files'] = [name+'.py', 'tests/test_'+name+'.py']
+else:
+    value['work_plan'] = {"tasks": [], "contracts": []}
+print(json.dumps({'type':'message','message':{'role':'assistant','id':'final','content':[{'type':'text','text':json.dumps(value)}]}}),flush=True)
+print(json.dumps({'type':'complete'}),flush=True)
+''', encoding="utf-8")
+    executable = repo / "fake.cmd"
+    executable.write_text('@echo off\n"' + sys.executable + '" "' + str(script) + '" %*\n', encoding="utf-8")
+    project.git(repo, "add", ".")
+    project.git(repo, "commit", "-qm", "fake CLI fixture")
+    p = make_project(repo)
+    p.goose = str(executable)
+    p.store.apply_plan(plan(task("a")))
+    assert p.run() == 0
+    assert all(r["state"] == "INTEGRATED" for r in p.store.rows())

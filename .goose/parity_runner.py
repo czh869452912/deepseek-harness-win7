@@ -118,6 +118,9 @@ def dirty_paths(root):
 def safe_path(root, name):
     if not isinstance(name, str) or not name or "\\" in name:
         raise ValueError("Paths must be nonempty repository-relative forward-slash paths")
+    if any(c in name for c in '<>:"|?*'):
+        # resolve() does not reject every Windows-illegal combination on 3.8.
+        raise ValueError("Invalid repository path (illegal character): " + name)
     path = Path(name)
     if path.is_absolute() or any(p in ("..", ".git", ".env") for p in path.parts):
         raise ValueError("Invalid repository path: " + name)
@@ -529,8 +532,16 @@ class Runner:
             result = stream.result(phase)
             result["observed_changes"] = changes
             if phase == "migrate":
+                kept = []
                 for name in result["changed_files"]:
-                    safe_path(self.root, name)
+                    try:
+                        safe_path(self.root, name)
+                        kept.append(name)
+                    except ValueError as error:
+                        # Model-authored annotations are not paths; real changes
+                        # are re-included from the snapshot diff below.
+                        self.notify("files", "Rejected changed-file entry: " + str(error))
+                result["changed_files"] = kept
                 missing = set(changes) - set(result["changed_files"])
                 if missing:
                     self.notify("files", "Including observed changes omitted from report: " + ", ".join(sorted(missing)))

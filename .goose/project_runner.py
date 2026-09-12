@@ -459,7 +459,11 @@ class Project:
                 return
             review = self.cached_phase(agent, "review")
             feedback = {"migration": migration, "review": review, "targeted_checks_passed": ok}
-            proposal = migration.get("work_plan") or review.get("work_plan")
+            # An empty work_plan is the schema's "no proposals" value, not a plan;
+            # treating it as one would bounce a PASS review back into replanning.
+            plans = [p for p in (migration.get("work_plan"), review.get("work_plan"))
+                     if p and (p.get("tasks") or p.get("contracts"))]
+            proposal = plans[0] if plans else None
             if proposal and not self.store.plan_is_current(proposal):
                 # Persist proposals, then apply between active waves. Never rewrite a
                 # running peer's acceptance scope or repeatedly enqueue an identical plan.

@@ -396,3 +396,34 @@ def test_verify_chunk_rejects_malformed_test_paths_as_feedback(repo):
     assert h.verify_chunk({"test_paths": [bad], "changed_files": []}) is False
     assert any(k == "verification" and "Rejected test path" in m for k, m in seen)
     assert h.verify_chunk({"test_paths": [], "changed_files": []}) is False
+
+
+def test_migrate_filters_malformed_changed_file_entries(repo):
+    h = make_review_runner(repo)
+    fake = repo / "fake-migrate.py"
+    fake.write_text(
+        "import json,sys\n"
+        "from pathlib import Path\n"
+        "Path('real-change.txt').write_text('work')\n"
+        "value = dict(status='READY', summary='worked', coverage_complete=True, issues=[],\n"
+        "             changed_files=['real-change.txt', 'apps/web/dist (upstream build payload: *)'],\n"
+        "             test_paths=['tests/test_unit.py'], dependencies=[],\n"
+        "             test_map=['upstream case -> tests/test_unit.py -> PORTED'])\n"
+        "events = [\n"
+        " {'type':'message','message':{'id':'final','role':'assistant','content':["
+        "{'type':'toolRequest','id':'t1','toolCall':{'value':{'name':'recipe__final_output','arguments':value}}}]}},\n"
+        " {'type':'message','message':{'role':'user','content':["
+        "{'type':'toolResponse','id':'t1','toolResult':{'status':'success','value':{}}}]}},\n"
+        " {'type':'complete'},\n"
+        "]\n"
+        "for e in events:\n"
+        "    print(json.dumps(e), flush=True)\n",
+        encoding="utf-8")
+    executable = repo / "fake-goose.cmd"
+    executable.write_text('@echo off\n"' + sys.executable + '" "' + str(fake) + '" %*\n', encoding="utf-8")
+    h.args.goose = executable
+    seen = []
+    h.notify = lambda k, m: seen.append((k, m))
+    result = h.phase("migrate")
+    assert result["changed_files"] == ["real-change.txt"]
+    assert any(k == "files" and "Rejected changed-file entry" in m for k, m in seen)

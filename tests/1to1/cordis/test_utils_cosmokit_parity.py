@@ -75,6 +75,7 @@ from dsh.cordis.utils import (
     is_plain_object,
     isPlainObject,
     is_nullable,
+    is_non_nullable,
     makeArray,
     make_array,
     mapValues,
@@ -204,6 +205,9 @@ def test_c6_remove_uses_index_of_and_mutates_in_place():
 def test_c7_make_array_wraps_non_arrays():
     """array.ts:40-42 - `Array.isArray(source) ? source : isNullable(source) ? [] : [source]`."""
     assert makeArray(None) == []
+    # `isNullable` covers `undefined` as well, so the port's own undefined
+    # sentinel normalizes to the empty array like `null` does.
+    assert makeArray(_UNDEFINED) == []
     assert makeArray(0) == [0]
     assert makeArray('') == ['']
     assert makeArray(False) == [False]
@@ -228,6 +232,14 @@ def test_c9_nullability_helpers():
     """misc.ts:20-28 - isNullable is `value === null || value === undefined`."""
     assert is_nullable(None) is True
     assert isNullable(None) is True
+    # `undefined` is the second nullish value the reference accepts, and the
+    # port carries it as its own `_UNDEFINED` sentinel: the Node oracle answers
+    # `isNullable(undefined) === true` and `isNonNullable(undefined) === false`.
+    assert is_nullable(_UNDEFINED) is True
+    assert isNullable(_UNDEFINED) is True
+    assert is_non_nullable(_UNDEFINED) is False
+    assert isNonNullable(_UNDEFINED) is False
+    assert is_non_nullable(None) is False
     assert is_nullable(0) is False
     assert is_nullable('') is False
     assert is_nullable(False) is False
@@ -808,7 +820,8 @@ def test_c36_is_matches_constructor_or_internal_tag():
     assert is_('Date', datetime.datetime.now()) is True
     assert is_('RegExp', re.compile('a')) is True
     assert is_('Null', None) is True
-    assert is_('Undefined', None) is True
+    assert is_('Undefined', None) is False
+    assert is_('Undefined', _UNDEFINED) is True
     assert is_('Function', lambda: 1) is True
     assert is_('Set', {1, 2}) is True
     # The internal tags differ, so a plain object is not a Map/WeakMap and a
@@ -1228,6 +1241,7 @@ def test_c51_is_name_resolution_for_the_map_family_and_undefined():
     Node oracle on the unmodified reference: `is('WeakMap', {})` is false,
     `is('WeakMap', new WeakMap())` is true, `is('WeakSet', new WeakSet())` is
     true, `is('Object', new WeakMap())` is true, `is('Null', undefined)` is
+    false, `is('Undefined', undefined)` is true, `is('Undefined', null)` is
     false and `is('Widget', new class Widget {})` is false.
     """
     # The stdlib containers the port keys by object identity are the values a
@@ -1238,11 +1252,14 @@ def test_c51_is_name_resolution_for_the_map_family_and_undefined():
     assert is_('WeakSet', weakref.WeakSet()) is True
     assert is_('WeakSet', {1, 2}) is False
     assert is_('Set', weakref.WeakSet()) is False
-    # `null` and `undefined` are two tags: the public Python model carries the
-    # one nullish value, and the port's undefined sentinel is the other.
+    # `null` and `undefined` are two internal tags and the port keeps two
+    # values for them: `None` is the reference's `null` and the port's own
+    # undefined sentinel is the reference's `undefined`.  The Node oracle
+    # answers `is('Null', undefined) === false` and
+    # `is('Undefined', null) === false`.
     assert is_('Null', None) is True
     assert is_('Null', _UNDEFINED) is False
-    assert is_('Undefined', None) is True
+    assert is_('Undefined', None) is False
     assert is_('Undefined', _UNDEFINED) is True
     assert is_('Object', _UNDEFINED) is False
     assert is_('Array', _UNDEFINED) is False

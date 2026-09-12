@@ -752,8 +752,17 @@ def is_object(value: Any) -> bool:
 
 
 def is_nullable(value: Any) -> bool:
-    """Return true for None or undefined-like values."""
-    return value is None
+    """Return true when value is `null` or `undefined` (misc.ts:20-21).
+
+    The reference is `value === null || value === undefined`, and the port
+    carries the two ECMAScript nullish values separately: Python ``None`` is
+    the reference's ``null``, while ``_UNDEFINED`` is the port's own
+    ``undefined`` sentinel (the value ``deepEqual`` reads for a key only one
+    operand owns, and the value ``make_array``/``is_("Undefined", ...)`` must
+    recognize).  ``_js_is_nullish`` answers for both, so `isNullable(None)` and
+    `isNullable(undefined)` are both true.
+    """
+    return _js_is_nullish(value)
 
 
 isNullable = is_nullable
@@ -765,8 +774,12 @@ def noop(*args: Any, **kwargs: Any) -> None:
 
 
 def is_non_nullable(value: Any) -> bool:
-    """Return true when value is not None."""
-    return value is not None
+    """Return true when value is neither `null` nor `undefined` (misc.ts:25-27).
+
+    The reference is the negation of `isNullable`, so the port negates the
+    same predicate instead of testing for ``None`` alone.
+    """
+    return not is_nullable(value)
 
 isNonNullable = is_non_nullable
 
@@ -918,7 +931,7 @@ def make_array(source: Any) -> List[Any]:
     the same mapping `is_("Array", ...)` uses.  A `set` is not an array in the
     reference either, so it is wrapped as a scalar value.
     """
-    if source is None:
+    if _js_is_nullish(source):
         return []
     if isinstance(source, list):
         return source
@@ -1585,10 +1598,12 @@ def is_(type_str: str, value: Any = Ellipsis) -> Any:
             return val is None
         if type_str == "Undefined":
             # `Object.prototype.toString.call(undefined)` is '[object
-            # Undefined]'; the public Python model carries `null` and
-            # `undefined` as the one nullish value, and the port's own
-            # undefined sentinel is the other value that matches.
-            return _js_is_nullish(val)
+            # Undefined]' while `Object.prototype.toString.call(null)` is
+            # '[object Null]', so the two nullish tags are distinct
+            # (`is('Undefined', null)` is false).  The port carries `null` as
+            # ``None`` and `undefined` as its own ``_UNDEFINED`` sentinel, so
+            # only the sentinel matches here and ``None`` answers `Null`.
+            return val is _UNDEFINED
         if type_str == "Boolean":
             return isinstance(val, bool)
         if type_str == "Number":

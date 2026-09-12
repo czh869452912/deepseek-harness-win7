@@ -75,6 +75,7 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     "@deepseek-ai/dsh-agent-presets": "dsh.presets.agent_presets:AgentPresets",
     # LLM capability and providers.
     "@deepseek-ai/dsh-llm": "dsh.llm.llm_service:LlmRuntime",
+    "@deepseek-ai/dsh-deepseek-llm-api-extensions": "dsh.llm.deepseek_api_extensions:DeepSeekLlmApiExtensionRegistry",
     "@deepseek-ai/dsh-llm-openai": "dsh.llm.llm_openai:LLMOpenAIPlugin",
     "@deepseek-ai/dsh-llm-retry": "dsh.llm.llm_retry:LLMRetryPlugin",
     "@deepseek-ai/dsh-token-meter": "dsh.llm.token_meter:TokenMeterPlugin",
@@ -84,6 +85,7 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     "@deepseek-ai/dsh-session-projection": "dsh.session.projections:SessionProjectionsPlugin",
     "@deepseek-ai/dsh-session-query-sqlite": "dsh.session.session_query:SessionQueryPlugin",
     "@deepseek-ai/dsh-session-checkpoint-policy": "dsh.session.checkpoint_policy:SessionCheckpointPolicyPlugin",
+    "@deepseek-ai/dsh-session-log-deepseek": "dsh.session.session_log_deepseek:SessionLogDeepSeekPlugin",
     "@deepseek-ai/dsh-session-stats": "dsh.session.stats:SessionStatsPlugin",
     "@deepseek-ai/dsh-session-title": "dsh.session.title:SessionTitlePlugin",
     "@deepseek-ai/dsh-storage": "dsh.storage.hub:StoragePlugin",

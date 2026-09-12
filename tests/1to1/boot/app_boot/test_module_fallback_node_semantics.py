@@ -150,3 +150,55 @@ def test_the_closure_walk_follows_the_declared_graph_from_each_package_anchor():
                 assert json.load(handle)["name"] == entry["packageName"]
     finally:
         _close(root)
+
+
+def test_an_enclosing_checkout_layout_never_answers_a_lookup():
+    """
+    The workspace layout stands in for the installation's module graph, so it is
+    bounded to the workspace the anchor lives in. A package only an enclosing
+    directory's own `packages/` tree carries is not installed for this anchor,
+    exactly as `createRequire(anchor).resolve.paths` would not reach it.
+    """
+    outer = tempfile.mkdtemp(prefix="dsh-closure-enclosing-")
+    try:
+        _write_manifest(os.path.join(outer, "packages", "group", "outer-only"), {"name": "outer-only"})
+        inner = os.path.join(outer, "inner")
+        anchor = _write_manifest(
+            os.path.join(inner, "app"),
+            {"name": "app", "dependencies": {"outer-only": "0.0.0"}},
+        )
+        # The anchor's own workspace root exists and carries nothing installed.
+        os.makedirs(os.path.join(inner, "packages", "group"), exist_ok=True)
+
+        _, names = resolve_module_fallback_entries(anchor)
+
+        assert names == {"app"}
+    finally:
+        _close(outer)
+
+
+def test_an_outer_checkout_is_still_reached_through_an_installed_node_modules_edge():
+    """
+    Hoisting stays Node's decision: an enclosing checkout never answers a lookup
+    by its source layout, but a real `node_modules` entry anywhere in the
+    anchor's chain does, exactly like `resolve.paths`.
+    """
+    outer = tempfile.mkdtemp(prefix="dsh-closure-enclosing-")
+    try:
+        _write_manifest(os.path.join(outer, "packages", "group", "hoisted"), {"name": "hoisted"})
+        _write_manifest(os.path.join(outer, "node_modules", "hoisted"), {"name": "hoisted"})
+        inner = os.path.join(outer, "inner")
+        anchor = _write_manifest(
+            os.path.join(inner, "app"),
+            {"name": "app", "dependencies": {"hoisted": "0.0.0"}},
+        )
+        os.makedirs(os.path.join(inner, "packages", "group"), exist_ok=True)
+
+        entries, names = resolve_module_fallback_entries(anchor)
+
+        assert names == {"app", "hoisted"}
+        assert os.path.realpath(_entry(entries, "hoisted")["packageDir"]) == os.path.realpath(
+            os.path.join(outer, "node_modules", "hoisted")
+        )
+    finally:
+        _close(outer)

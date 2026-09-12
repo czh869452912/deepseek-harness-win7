@@ -12,6 +12,12 @@ from dsh.session.projections import (
     SessionProjectionsPlugin,
 )
 from dsh.session.repair import interrupted_turn_closers, migrate_legacy_event
+from dsh.session.session_log_deepseek import (
+    SessionLogDeepSeekPlugin,
+    accepted_through,
+    acceptedThrough,
+)
+from dsh.session.session_log_deepseek_invariant import apply as apply_session_log_deepseek_invariant
 from dsh.session.session_query import SessionQueryPlugin, SessionQueryService, extract_session_event_text
 from dsh.session.stats import SessionStatsPlugin, SessionStatsProjection
 from dsh.session.title import SessionTitlePlugin, SessionTitleService, fallback_session_title, normalize_session_title
@@ -39,4 +45,8 @@ __all__ = [
     "SessionTitlePlugin",
     "fallback_session_title",
     "normalize_session_title",
+    "SessionLogDeepSeekPlugin",
+    "accepted_through",
+    "acceptedThrough",
+    "apply_session_log_deepseek_invariant",
 ]

@@ -299,3 +299,31 @@ async def test_the_healed_generation_resolves_every_shipped_subpath_row_through_
             )
     finally:
         shutil.rmtree(home, ignore_errors=True)
+
+
+@pytest.mark.asyncio
+async def test_every_healed_package_lives_in_the_anchor_workspace():
+    """
+    The healed closure is anchored at the installation's own workspace: every
+    resolved package directory is inside the workspace root the install anchor
+    lives in. A lookup answered from an enclosing checkout's `packages/` tree
+    would fail here even though the pinned closure would still look complete.
+    """
+    anchor_dir = os.path.dirname(os.path.abspath(INSTALL_ANCHOR))
+    workspace_root = None
+    current = anchor_dir
+    while True:
+        if os.path.isdir(os.path.join(current, "packages")):
+            workspace_root = current
+            break
+        parent = os.path.dirname(current)
+        if parent == current:
+            break
+        current = parent
+    assert workspace_root is not None, "the pinned install anchor must live in a workspace"
+
+    entries, names = resolve_module_fallback_entries(INSTALL_ANCHOR)
+    assert len(names) > 100
+    for entry in entries:
+        package_dir = os.path.abspath(entry["packageDir"])
+        assert os.path.commonpath([workspace_root, package_dir]) == workspace_root, entry["packageName"]

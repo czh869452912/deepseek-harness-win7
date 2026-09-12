@@ -462,7 +462,7 @@ def resolution_scope(anchor: str) -> Tuple[str, List[str]]:
 
     Resolution depends only on the ancestors that carry a workspace marker or a
     `node_modules`; anchors inside the same workspace share that suffix, so the
-    per-chain caches below hold one entry per workspace instead of one per
+    `node_modules` chain cache below holds one entry per workspace, not one per
     package. Ancestors above the first marker carry neither, so they contribute
     no candidate.
 
@@ -529,37 +529,63 @@ def _workspace_manifests(directory: str) -> Iterator[str]:
                 yield candidate
 
 
-def workspace_package_index(anchor: str) -> Dict[str, str]:
+def workspace_scope_root(anchor: str) -> Optional[str]:
     """
-    Return the workspace's package directories by name, nearest root first.
+    The workspace root one anchor's package layout covers.
 
-    The Python runtime has no Node module graph, so the workspace layout the
-    pinned manifests live in stands in for it: every dependency and peer
-    dependency reachable from the install anchor resolves to the directory the
-    workspace keeps, at the nearest ancestor that carries one (Node's own
-    nearest-wins order). The index is built once per anchor chain and cached,
-    because the closure walk asks for hundreds of names.
+    `packageDirFromAnchor` (reference/packages/boot/app-boot/src/profile.ts)
+    resolves through `createRequire(anchor).resolve.paths(packageName)` only:
+    Node's `node_modules` chain from that anchor, nearest first. The
+    installation's module graph is the resolved closure of the installed app,
+    so a package counts as installed exactly when it is linked into the anchor's
+    chain. An enclosing directory's own `packages/` tree is some other checkout's
+    source, not this installation's graph, and must never answer a lookup.
 
     @param anchor: a file inside the tree the lookup starts from.
-    @returns: the package name -> directory map.
+    @returns: the nearest ancestor carrying a workspace marker, or None when no
+        ancestor is a workspace root.
     """
-    key, chain = resolution_scope(anchor)
-    cached = _WORKSPACE_PACKAGE_INDEX_CACHE.get(key)
+    for directory in _ancestor_chain(os.path.dirname(os.path.abspath(anchor))):
+        for marker in _WORKSPACE_MARKERS:
+            if os.path.isdir(os.path.join(directory, marker)):
+                return directory
+    return None
+
+
+def workspace_package_index(anchor: str) -> Dict[str, str]:
+    """
+    Return one workspace's package directories by name.
+
+    The Python runtime has no Node module graph, so the layout of the workspace
+    the install anchor lives in stands in for the graph's installed packages:
+    every dependency and peer dependency the closure walk actually declares
+    resolves to the directory that workspace keeps. The stand-in is bounded to
+    that one workspace, so it cannot answer with a package from an enclosing
+    checkout that this installation never installed, and it is built once per
+    workspace and cached, because the closure walk asks for hundreds of names.
+
+    @param anchor: a file inside the tree the lookup starts from.
+    @returns: the package name -> directory map (empty for an anchor that is not
+        inside a workspace root).
+    """
+    root = workspace_scope_root(anchor)
+    if root is None:
+        return {}
+    cached = _WORKSPACE_PACKAGE_INDEX_CACHE.get(root)
     if cached is not None:
         return cached
 
     index: Dict[str, str] = {}
-    for directory in chain:
-        for manifest in _workspace_manifests(directory):
-            try:
-                with open(manifest, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-            except Exception:
-                continue
-            name = data.get("name")
-            if isinstance(name, str) and name and name not in index:
-                index[name] = os.path.dirname(manifest)
-    _WORKSPACE_PACKAGE_INDEX_CACHE[key] = index
+    for manifest in _workspace_manifests(root):
+        try:
+            with open(manifest, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            continue
+        name = data.get("name")
+        if isinstance(name, str) and name and name not in index:
+            index[name] = os.path.dirname(manifest)
+    _WORKSPACE_PACKAGE_INDEX_CACHE[root] = index
     return index
 
 
@@ -569,9 +595,12 @@ def package_dir_from_anchor(
     exclude: Optional[Callable[[str, str], bool]] = None,
 ) -> Optional[str]:
     """
-    Resolve one package root the way Node resolves it from `anchor`:
-    node_modules directories up the chain first, then the workspace layout the
-    pinned manifests live in.
+    Resolve one package root the way Node resolves it from `anchor`.
+
+    The anchor's `node_modules` chain answers first, nearest first, exactly like
+    `createRequire(anchor).resolve.paths`. When no installed copy is reachable
+    there, the layout of the workspace the anchor lives in stands in for the
+    installation's module graph (see `workspace_package_index`).
     """
     for modules_dir in node_modules_chain(anchor):
         candidate = os.path.join(modules_dir, package_name)

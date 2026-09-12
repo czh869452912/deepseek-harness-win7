@@ -24,6 +24,7 @@ from dsh.host.apiproxy.api import (
     HostDomainHandler,
     JobsDomainHandler,
     LLMDomainHandler,
+    MessageFeedbackDomainHandler,
     QuestionsDomainHandler,
     SessionSearchDomainHandler,
     SessionsDomainHandler,
@@ -117,6 +118,7 @@ class ApiProxyPlugin(Plugin):
         self.host_handler: Optional[HostDomainHandler] = None
         self.jobs_handler: Optional[JobsDomainHandler] = None
         self.llm_handler: Optional[LLMDomainHandler] = None
+        self.message_feedback_handler: Optional[MessageFeedbackDomainHandler] = None
         self.questions_handler: Optional[QuestionsDomainHandler] = None
         self.session_search_handler: Optional[SessionSearchDomainHandler] = None
         self.sessions_handler: Optional[SessionsDomainHandler] = None
@@ -134,6 +136,7 @@ class ApiProxyPlugin(Plugin):
         self.host_handler = HostDomainHandler(self.ctx, self._active_sessions)
         self.jobs_handler = JobsDomainHandler(self.ctx, self._background_jobs)
         self.llm_handler = LLMDomainHandler(self.ctx)
+        self.message_feedback_handler = MessageFeedbackDomainHandler(self.ctx)
         self.questions_handler = QuestionsDomainHandler(self.ctx, self._pending_server_requests, self._broadcast_mux)
         self.session_search_handler = SessionSearchDomainHandler(self.ctx)
         self.sessions_handler = SessionsDomainHandler(self.ctx, self._active_sessions, self._broadcast_mux, self._broadcast_host, self._workspaces)
@@ -925,6 +928,23 @@ class ApiProxyPlugin(Plugin):
 
             if rpc_method in ("skill.list", "skill/list"):
                 res = await self.skills_handler.list_skills(req_payload)
+                await send_rpc_success(res)
+                return
+
+            # `messageFeedback` is a Remote namespace: the business result
+            # travels INSIDE a successful server-response value, and a
+            # gateway-boundary failure (an invalid wire field, an unmounted
+            # service) becomes the reference's `internal` error envelope.
+            if rpc_method in (
+                "messageFeedback.list",
+                "messageFeedback/list",
+                "messageFeedback.put",
+                "messageFeedback/put",
+                "messageFeedback.delete",
+                "messageFeedback/delete",
+            ):
+                method_name = rpc_method.split("." if "." in rpc_method else "/", 1)[1]
+                res = await self.message_feedback_handler.invoke(method_name, req_payload)
                 await send_rpc_success(res)
                 return
 

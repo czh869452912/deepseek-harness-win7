@@ -227,6 +227,59 @@ def test_does_not_report_other_bundle_read_failures_as_missing_builds(tmp_path):
     assert "pnpm run build" not in message
 
 
+def test_rejects_a_null_dsh_client_declaration_but_skips_an_absent_one(tmp_path):
+    """
+    `parseDshClient` distinguishes an absent declaration (upstream
+    `undefined`) from an explicit JSON `null`: absent means the package
+    declares nothing, while `null` is a present non-object declaration and
+    fails the load loudly instead of being silently dropped.
+    """
+    packages_dir = tmp_path / "packages"
+    null_client = "@fixture/null-client-declaration"
+    write_package(packages_dir, null_client, metadata={"dsh": {"client": None}})
+    with pytest.raises(ValueError) as excinfo:
+        build(packages_dir, [null_client]).graph()
+    assert str(excinfo.value) == "client-modules: %s has a non-object dsh.client declaration" % null_client
+
+    # A `dsh` container that is null (or not an object) carries no declaration
+    # at all, exactly like `dsh !== null && typeof dsh === 'object'`.
+    null_dsh = "@fixture/null-dsh-container"
+    write_package(packages_dir, null_dsh, metadata={"dsh": None})
+    assert build(packages_dir, [null_dsh]).graph()["entries"] == []
+
+    absent_dsh = "@fixture/absent-dsh-container"
+    write_package(packages_dir, absent_dsh, metadata={})
+    assert build(packages_dir, [absent_dsh]).graph()["entries"] == []
+
+
+def test_rejects_null_optional_declaration_fields(tmp_path):
+    """A present `null` optional field is malformed; only an absent one is skipped."""
+    packages_dir = tmp_path / "packages"
+    null_inject = "@fixture/null-inject"
+    write_package(
+        packages_dir, null_inject, metadata={"dsh": {"client": {"platform": "web", "inject": None}}}
+    )
+    with pytest.raises(ValueError) as excinfo:
+        build(packages_dir, [null_inject]).graph()
+    assert str(excinfo.value) == "client-modules: %s dsh.client.inject must be a string array" % null_inject
+
+    null_external = "@fixture/null-external"
+    write_package(
+        packages_dir, null_external, metadata={"dsh": {"client": {"platform": "web", "external": None}}}
+    )
+    with pytest.raises(ValueError) as excinfo:
+        build(packages_dir, [null_external]).graph()
+    assert str(excinfo.value) == "client-modules: %s dsh.client.external must be a string array" % null_external
+
+    null_immediately = "@fixture/null-immediately"
+    write_package(
+        packages_dir, null_immediately, metadata={"dsh": {"client": {"platform": "web", "immediately": None}}}
+    )
+    with pytest.raises(ValueError) as excinfo:
+        build(packages_dir, [null_immediately]).graph()
+    assert str(excinfo.value) == "client-modules: %s dsh.client.immediately must be a boolean" % null_immediately
+
+
 def test_rejects_a_non_object_dsh_client_declaration(tmp_path):
     packages_dir = tmp_path / "packages"
     name = "@fixture/non-object-declaration"

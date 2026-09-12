@@ -202,7 +202,13 @@ def is_upgrade_request(headers: Dict[str, str]) -> bool:
 
 
 class WebRoute:
-    """Named route registration."""
+    """
+    Named route registration.
+
+    `path` is used verbatim: the reference treats it as an absolute pathname
+    without a trailing slash (a caller contract) and never rewrites it, so a
+    registration at `/probe/` and a request for `/probe` are different keys.
+    """
 
     def __init__(
         self,
@@ -211,7 +217,7 @@ class WebRoute:
         handler: Callable[[Any, Any], Coroutine[Any, Any, None]],
     ):
         self.kind = kind
-        self.path = path.rstrip("/") if path != "/" else "/"
+        self.path = path
         self.handler = handler
 
 
@@ -257,15 +263,14 @@ class WebServerService:
         Register a named route. Duplicate (kind, path) raises — route patterns
         are a composition-level contract, so a collision is a misconfiguration.
         """
-        norm_path = path.rstrip("/") if path != "/" else "/"
         table = self._exact_routes if kind == "exact" else self._prefix_routes
-        if norm_path in table:
-            raise ValueError(f'webserver: duplicate {kind} route "{norm_path}"')
-        route = WebRoute(kind=kind, path=norm_path, handler=handler)
-        table[norm_path] = route
+        if path in table:
+            raise ValueError(f'webserver: duplicate {kind} route "{path}"')
+        route = WebRoute(kind=kind, path=path, handler=handler)
+        table[path] = route
 
         def disposer():
-            table.pop(norm_path, None)
+            table.pop(path, None)
 
         return disposer
 
@@ -274,13 +279,12 @@ class WebServerService:
         Register an exact-path HTTP upgrade route (e.g. WebSocket). Duplicate
         paths raise because one socket can have only one protocol owner.
         """
-        norm_path = path.rstrip("/") if path != "/" else "/"
-        if norm_path in self._upgrade_routes:
-            raise ValueError(f'webserver: duplicate upgrade route "{norm_path}"')
-        self._upgrade_routes[norm_path] = handler
+        if path in self._upgrade_routes:
+            raise ValueError(f'webserver: duplicate upgrade route "{path}"')
+        self._upgrade_routes[path] = handler
 
         def disposer():
-            self._upgrade_routes.pop(norm_path, None)
+            self._upgrade_routes.pop(path, None)
 
         return disposer
 
@@ -341,14 +345,21 @@ class WebServerService:
         )
 
     def match(self, pathname: str) -> Optional[WebRoute]:
-        norm = pathname.rstrip("/") if pathname != "/" else "/"
-        if norm in self._exact_routes:
-            return self._exact_routes[norm]
+        """
+        Longest-prefix-wins over the prefix table after an exact-table miss.
+
+        Both lookups use the request pathname verbatim: `/probe/` is not a
+        match for a route registered at `/probe`.
+        """
+        exact = self._exact_routes.get(pathname)
+        if exact is not None:
+            return exact
         best: Optional[WebRoute] = None
         for prefix, route in self._prefix_routes.items():
-            if norm == prefix or norm.startswith(prefix + "/"):
-                if best is None or len(prefix) > len(best.path):
-                    best = route
+            if pathname != prefix and not pathname.startswith(prefix + "/"):
+                continue
+            if best is None or len(prefix) > len(best.path):
+                best = route
         return best
 
     async def start(self) -> None:

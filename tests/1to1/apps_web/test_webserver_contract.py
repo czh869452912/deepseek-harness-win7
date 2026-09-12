@@ -200,6 +200,22 @@ async def test_serves_registered_routes_index_taps_and_the_fallback_seat_semanti
         assert "shell" in (await raw_request(port, "/once"))[2]  # back to the fallback owner
         server.register("exact", "/once", lambda request, response: None)
 
+        # Routes and requests use the pathname verbatim: the reference treats a
+        # registered path as an absolute pathname without a trailing slash and
+        # never rewrites either side, so `/probe/` is a different key that does
+        # not answer `/probe` (and vice versa).
+        async def trailing(request, response):
+            response.write_status(200)
+            response.write_body(b"TRAILING")
+            await response.finish()
+
+        assert server.match("/probe/") is None
+        assert server.match("/probe") is not None
+        dispose_trailing = server.register("exact", "/trailing/", trailing)
+        assert (await raw_request(port, "/trailing/"))[2] == "TRAILING"
+        assert "shell" in (await raw_request(port, "/trailing"))[2]  # not a match
+        dispose_trailing()
+
         # Upgrade routes match exact pathnames, reject duplicate ownership, and
         # become registrable again after disposal. The accepted socket stays
         # open so the teardown assertion also covers upgraded-connection
@@ -221,6 +237,30 @@ async def test_serves_registered_routes_index_taps_and_the_fallback_seat_semanti
         upgraded_reader, upgraded_writer = await raw_upgrade(port, "/events?stream=mux")
         dispose_upgrade()
         server.register_upgrade("/events", lambda request, socket: None)
+
+        # The upgrade table is keyed verbatim too: `/exact-only/` claims only
+        # that pathname, and an upgrade to the trailing-slash-less spelling is
+        # dispatched to no handler at all (destroyed without a response).
+        async def exact_only(request, socket):
+            socket.write(
+                b"HTTP/1.1 101 Switching Protocols\r\n"
+                b"Connection: Upgrade\r\nUpgrade: dsh-test\r\n\r\n"
+            )
+            await socket.drain()
+
+        dispose_exact_only = server.register_upgrade("/exact-only/", exact_only)
+        exact_reader, exact_writer = await raw_upgrade(port, "/exact-only/")
+        exact_writer.close()
+        assert await read_or_reset(exact_reader) == b""
+        missing_reader, missing_writer = await asyncio.open_connection("127.0.0.1", port)
+        missing_writer.write(
+            b"GET /exact-only HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            b"Connection: Upgrade\r\nUpgrade: dsh-test\r\n\r\n"
+        )
+        await missing_writer.drain()
+        assert await read_or_reset(missing_reader) == b""
+        missing_writer.close()
+        dispose_exact_only()
 
         # The webserver contains raw-socket errors even before an upgrade
         # handler has installed its protocol implementation.

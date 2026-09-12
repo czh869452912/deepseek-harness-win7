@@ -17,6 +17,7 @@ from dsh.credentials.credentials_local import CredentialsLocalPlugin
 from dsh.extensions.cli_visualizer import CliVisualizerPlugin
 from dsh.extensions.cordis_manager import CordisManagerPlugin
 from dsh.fs.fs_local import FsLocalPlugin
+from dsh.feedback.message_feedback import MessageFeedbackPlugin
 from dsh.fs.tool_fs import ToolFsPlugin
 from dsh.fs.tool_fs_search import ToolFsSearchPlugin
 from dsh.fs.tool_str_replace_editor import StrReplaceEditorPlugin
@@ -111,6 +112,12 @@ def build_harness(
     ctx.plugin(CommandsPlugin)
     ctx.plugin(TokenMeterPlugin)
     ctx.plugin(LLMRetryPlugin)
+    # The base bundle's durable session log row
+    # (`reference/packages/bundle/base/cordis.patch.yml`: `session-persistence-jsonl`
+    # rooted at `dshHomePath('sessions')`). The Web Host's session surfaces and
+    # the message-feedback sidecar inspect this durable log, so the row belongs
+    # to the shared base layer rather than to one surface.
+    ctx.plugin(JsonlSessionPersistencePlugin, config={"root": dsh_home_path("sessions")})
     if mode != "minimal":
         ctx.plugin(SessionQueryPlugin, config={"path": ":memory:", "open_at": "never"})
     ctx.plugin(AgentLoopPlugin)
@@ -186,6 +193,7 @@ def build_harness(
     loader.register_plugin_class("@deepseek-ai/dsh-client-modules", ClientModulesPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-host-directory-picker-auto", DirectoryPickerAutoPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-host-plugin-inventory", PluginInventoryPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-message-feedback", MessageFeedbackPlugin)
 
     if enable_web:
         # The shipped Web composition configures response compression on the
@@ -207,6 +215,10 @@ def build_harness(
         ctx.plugin(ApiProxyPlugin)
         ctx.plugin(ConnectionPlugin)
         ctx.plugin(FrontendStaticPlugin)
+        # The shipped web-app bundle inserts the `message-feedback` row with
+        # `maxNoteBytes: 8192`; the browser's messageFeedback Remote is served
+        # from this host-plane provider.
+        ctx.plugin(MessageFeedbackPlugin, config={"maxNoteBytes": 8192})
 
     base_dir = os.path.dirname(os.path.abspath(__file__))
     # The `web` profile is the standard workspace preset plus the web surface

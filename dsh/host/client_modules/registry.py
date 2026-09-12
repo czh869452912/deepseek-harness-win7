@@ -368,14 +368,40 @@ class ClientPackageCompositionError(Exception):
         super().__init__("\n".join(lines))
 
 
+class _Absent:
+    """
+    Stand-in for JavaScript's `undefined` at the JSON boundary.
+
+    Python collapses a missing key and an explicit JSON `null` into `None`, but
+    the reference parser distinguishes them: `undefined` means "no declaration"
+    while `null` is a malformed declaration that must fail the load loudly
+    (upstream `parseDshClient` / `optionalStringArray`).
+    """
+
+    _instance: Optional["_Absent"] = None
+
+    def __new__(cls) -> "_Absent":
+        if cls._instance is None:
+            cls._instance = super(_Absent, cls).__new__(cls)
+        return cls._instance
+
+    def __repr__(self) -> str:
+        return "ABSENT"
+
+
+#: The JavaScript `undefined` analogue: a key that is not present at all.
+ABSENT = _Absent()
+
+
 def optional_string_array(subject: str, field: str, value: Any) -> Optional[List[str]]:
     """
     Validate an optional string-array field read from a `dsh.client`
-    declaration. Absent fields return None; a present non-array (or an array
-    holding a non-string) throws, because a malformed declaration must fail the
-    load loudly rather than silently dropping graph edges.
+    declaration. Absent fields (upstream `undefined`) return None; a present
+    non-array (including an explicit JSON `null`) or an array holding a
+    non-string throws, because a malformed declaration must fail the load
+    loudly rather than silently dropping graph edges.
     """
-    if value is None:
+    if value is ABSENT:
         return None
     if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
         raise ValueError(f"client-modules: {subject} {field} must be a string array")
@@ -383,24 +409,31 @@ def optional_string_array(subject: str, field: str, value: Any) -> Optional[List
 
 
 def parse_dsh_client(pkg_name: str, value: Any) -> Optional[Dict[str, Any]]:
-    """Narrow the parsed JSON value to the `dsh.client` declaration, throwing on malformed fields."""
-    if value is None:
+    """
+    Narrow the parsed JSON value to the `dsh.client` declaration, throwing on
+    malformed fields. `ABSENT` (upstream `undefined`) means the package
+    declares nothing; a JSON `null` is a present, malformed declaration.
+    """
+    if value is ABSENT:
         return None
     if not isinstance(value, dict):
         raise ValueError(f"client-modules: {pkg_name} has a non-object dsh.client declaration")
-    if not isinstance(value.get("platform"), str):
+    platform = value.get("platform", ABSENT)
+    if not isinstance(platform, str):
         raise ValueError(f"client-modules: {pkg_name} dsh.client.platform must be a string")
-    inject = optional_string_array(pkg_name, "dsh.client.inject", value.get("inject"))
-    external = optional_string_array(pkg_name, "dsh.client.external", value.get("external"))
-    immediately = value.get("immediately")
-    if immediately is not None and not isinstance(immediately, bool):
+    inject = optional_string_array(pkg_name, "dsh.client.inject", value.get("inject", ABSENT))
+    external = optional_string_array(pkg_name, "dsh.client.external", value.get("external", ABSENT))
+    immediately = value.get("immediately", ABSENT)
+    if immediately is not ABSENT and not isinstance(immediately, bool):
         raise ValueError(f"client-modules: {pkg_name} dsh.client.immediately must be a boolean")
-    return {
-        "platform": value.get("platform"),
-        "inject": inject,
-        "external": external,
-        "immediately": immediately,
-    }
+    decl: Dict[str, Any] = {"platform": platform}
+    if inject is not None:
+        decl["inject"] = inject
+    if external is not None:
+        decl["external"] = external
+    if immediately is not ABSENT:
+        decl["immediately"] = immediately
+    return decl
 
 
 def client_export_of(pkg_name: str, exports_field: Any) -> Optional[str]:
@@ -588,8 +621,17 @@ class ClientModuleRegistry:
                         continue
 
                     pkg_name = data.get("name")
-                    dsh_decl = (data.get("dsh") or {}).get("client")
-                    if not pkg_name or dsh_decl is None:
+                    # A `dsh` value that is absent, null, or not an object
+                    # carries no declaration at all (upstream's
+                    # `dsh !== null && typeof dsh === 'object' ? dsh.client : undefined`);
+                    # an explicit `"client": null` inside an object is present
+                    # and therefore malformed.
+                    dsh_field = data.get("dsh", ABSENT)
+                    if isinstance(dsh_field, dict):
+                        dsh_decl = dsh_field.get("client", ABSENT)
+                    else:
+                        dsh_decl = ABSENT
+                    if not pkg_name or dsh_decl is ABSENT:
                         continue
 
                     # Only mounted client rows are composed: the Web roster and

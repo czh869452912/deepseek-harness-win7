@@ -23,7 +23,8 @@ OFFICIAL_RPC_METHODS: Set[str] = {
     "settings.describe", "settings.openDocument", "settings.update", "settings.replace", "settings.mutate",
     "credentials.describe", "credentials.set", "credentials.unset",
     "llm.providers", "llm.models", "llm.discoverModels",
-    "jobs.list", "pluginInventory.list"
+    "jobs.list", "pluginInventory.list",
+    "messageFeedback.list", "messageFeedback.put", "messageFeedback.delete"
 }
 
 INVALID_REQUEST_RPC_ID = "invalid-request"

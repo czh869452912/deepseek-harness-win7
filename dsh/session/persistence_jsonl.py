@@ -449,6 +449,18 @@ class JsonlSessionPersistence(SessionPersistence):
         return inspection
 
     async def inspect(self, session_id: str) -> SessionInspection:
+        # A live owner answers from memory (reference coordinator `inspect`:
+        # `const live = this.ctx.sessions.get(id); if (live !== undefined)
+        # return this.inspectLive(live)`), so a session that is live but not yet
+        # materialized on disk still inspects. `read_from` stays a physical
+        # durable-prefix read on purpose.
+        live = None
+        if self.ctx is not None and hasattr(self.ctx, "get"):
+            sessions = self.ctx.get("sessions")
+            live = sessions.get(session_id) if sessions is not None and hasattr(sessions, "get") else None
+        if live is not None:
+            return SessionInspection(meta=live.header, events=list(live.events))
+
         path = self._find_log_path(session_id)
         if not path:
             raise FileNotFoundError(f'persisted session "{session_id}" not found')
@@ -544,6 +556,10 @@ class JsonlSessionPersistencePlugin(Plugin):
     def apply(self, ctx: Any) -> None:
         persistence = JsonlSessionPersistence(root=self.root, pack_chunks=self.pack_chunks, ctx=ctx)
         ctx.set_service("session_persistence", persistence)
+        # The reference service key is `sessionPersistence`
+        # (`@deepseek-ai/dsh-session-persistence`); consumers that inject that
+        # name resolve here too.
+        ctx.set_service("sessionPersistence", persistence)
 
         ctx.on("session/event", persistence.on_session_event)
         ctx.on("session/flush", persistence.on_session_flush)

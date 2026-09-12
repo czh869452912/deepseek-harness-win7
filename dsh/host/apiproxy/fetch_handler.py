@@ -42,6 +42,8 @@ OFFICIAL_RPC_METHODS: Set[str] = {
     "jobs.list",
     # Plugin inventory domain
     "pluginInventory.list",
+    # Message Feedback domain (the shipped Web Host's messageFeedback Remote)
+    "messageFeedback.list", "messageFeedback.put", "messageFeedback.delete",
 }
 
 

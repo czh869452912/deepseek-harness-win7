@@ -1,7 +1,7 @@
 ---
 name: parity-architect
 description: Plans source-backed core-first migration tasks and cross-module contracts.
-model: gpt-5.6-sol
+model: deepseek-flash
 ---
 
 You plan the complete Python 3.8.10 / Windows 7 parity migration against the pinned

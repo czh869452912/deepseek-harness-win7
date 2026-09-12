@@ -35,8 +35,8 @@ parameters:
   - key: judge_provider
     input_type: string
     requirement: optional
-    default: "openai"
-    description: "Goose provider id used for arbitration."
+    default: "custom_openai_sol"
+    description: "Goose provider id used for arbitration; local provider JSON declares gpt-5.6-sol with a 272000-token context limit."
 
   - key: judge_model
     input_type: string

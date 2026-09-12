@@ -11,11 +11,14 @@ import subprocess
 import sys
 import threading
 import time
-import yaml
 
 from parity_runner import Runner, Stream, git, snapshot, changed, safe_path, save_json, run_process, ROOT, SCHEMA, parse_result
 from project_store import Store, digest
 from project_seed import discover
+
+
+ARCHITECT_PROVIDER = "custom_deepseek"
+ARCHITECT_MODEL = "deepseek-flash"
 
 
 STRINGS = {"type": "array", "items": {"type": "string"}}
@@ -185,10 +188,8 @@ class Project:
             saved = None
         path = Path(saved["recipe"]) if saved else self.folder / ("architecture-" + str(time.time_ns()) + ".yaml")
         instructions = (self.root / ".agents/agents/parity-architect.md").read_text(encoding="utf-8")
-        config = yaml.safe_load((self.root / ".goose/recipes/parity-unit.yaml").read_text(encoding="utf-8"))
-        defaults = {p["key"]: p.get("default") for p in config["parameters"]}
         recipe = {"version": "1.0.0", "title": "parity-architect", "description": "Discover project dependencies",
-                  "settings": {"goose_provider": defaults["judge_provider"], "goose_model": defaults["judge_model"]},
+                  "settings": {"goose_provider": ARCHITECT_PROVIDER, "goose_model": ARCHITECT_MODEL},
                   "extensions": [{"type": "platform", "name": x} for x in ("developer", "analyze")],
                   "instructions": instructions + "\nExisting task graph: " + str(self.folder / "status.json") +
                   "\nReturn incremental tasks/contracts using this plan example: " + json.dumps(discover(self.root)["tasks"][:1]) +

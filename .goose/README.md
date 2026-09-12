@@ -248,9 +248,17 @@ checkpoint policy or durable progress display. Use the PowerShell launcher.
 
 | Role | Provider | Model | Context |
 | --- | --- | --- | --- |
+| Architect | `custom_deepseek` | `deepseek-flash` | 1,000,000 in local provider JSON |
 | Migrator | `custom_deepseek` | `deepseek-flash` | 1,000,000 in local provider JSON |
 | Reviewer | `openai` | `gpt-5.6-luna` | 1,050,000 in Goose's built-in catalog |
-| Judge | `openai` | `gpt-5.6-sol` | 1,050,000 in Goose's built-in catalog |
+| Judge | `custom_openai_sol` | `gpt-5.6-sol` | 272,000 in local provider JSON |
+
+Architect routing uses the `ARCHITECT_PROVIDER` / `ARCHITECT_MODEL` constants at the
+top of `.goose/project_runner.py` (goose recipes reject unused template parameters,
+so the architect cannot share parity-unit.yaml's parameter surface); it is
+independent of the judge routing. `gpt-5.6-sol` context is declared per model in
+the local `custom_providers/custom_openai_sol.json` (`context_limit: 272000`),
+because the global `GOOSE_CONTEXT_LIMIT` would apply to every model in the process.
 
 Local `%APPDATA%/Block/goose/config/config.yaml` uses an operational output budget
 of `GOOSE_MAX_TOKENS: 16384`, auto-compaction threshold `0.7`, the configured HTTPS

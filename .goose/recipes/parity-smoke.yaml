@@ -18,7 +18,7 @@ instructions: |
   Sequentially delegate to each named agent with async=false and max_turns=5:
   1. source=parity-migrator, provider=custom_deepseek, model=deepseek-flash
   2. source=parity-reviewer, provider=openai, model=gpt-5.6-luna
-  3. source=parity-judge, provider=openai, model=gpt-5.6-sol
+  3. source=parity-judge, provider=custom_openai_sol, model=gpt-5.6-sol
   For every call set extensions=["developer", "analyze"].
   Give each agent ONLY these smoke instructions:
   "This is an authorized routing/tool smoke check, not a migration, review or

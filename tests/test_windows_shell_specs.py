@@ -1,5 +1,6 @@
 import os
 import sys
+from dsh.shell.shell_env import ShellEnvPlugin
 from dsh.shell.tool_pwsh import ToolPwshPlugin
 from dsh.cordis.context import Context
 from dsh.core.tools import ToolsPlugin
@@ -8,6 +9,7 @@ from dsh.core.tools import ToolsPlugin
 def test_windows_shell_pwsh_tool_registration():
     ctx = Context()
     ctx.plugin(ToolsPlugin)
+    ctx.plugin(ShellEnvPlugin)
     ctx.plugin(ToolPwshPlugin)
 
     tools_svc = ctx.get("tools")

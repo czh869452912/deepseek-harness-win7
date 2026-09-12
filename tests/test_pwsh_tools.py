@@ -5,6 +5,7 @@ import pytest
 from dsh.cordis.context import Context
 from dsh.core.tools import ToolsService
 from dsh.jobs.jobs_service import JobsService
+from dsh.shell.shell_env import ShellEnvPlugin
 from dsh.shell.tool_pwsh import ToolPwshPlugin
 
 
@@ -16,6 +17,9 @@ async def test_tool_pwsh_one_shot_execution():
     ctx = Context()
     ctx.set_service("tools", ToolsService(ctx))
     ctx.set_service("jobs", JobsService())
+    # The base bundle mounts shell-env before tool-pwsh; the tool consumes its
+    # `ctx.shellEnv` snapshot for every execution.
+    ctx.plugin(ShellEnvPlugin)
     ctx.plugin(ToolPwshPlugin)
 
     tools: ToolsService = ctx.get("tools")

@@ -95,6 +95,7 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     "@deepseek-ai/dsh-tool-fs": "dsh.fs.tool_fs:ToolFsPlugin",
     "@deepseek-ai/dsh-tool-fs-search": "dsh.fs.tool_fs_search:ToolFsSearchPlugin",
     "@deepseek-ai/dsh-tool-str-replace-editor": "dsh.fs.tool_str_replace_editor:StrReplaceEditorPlugin",
+    "@deepseek-ai/dsh-shell-env": "dsh.shell.shell_env:ShellEnvPlugin",
     "@deepseek-ai/dsh-tool-pwsh": "dsh.shell.tool_pwsh:ToolPwshPlugin",
     "@deepseek-ai/dsh-tool-pwsh-persistent": "dsh.shell.tool_pwsh_persistent:ToolPwshPersistentPlugin",
     "@deepseek-ai/dsh-subprocess-local": "dsh.subprocess.local:LocalSubprocessRuntime",

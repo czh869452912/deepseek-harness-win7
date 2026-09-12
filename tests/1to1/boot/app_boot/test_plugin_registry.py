@@ -127,7 +127,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-session-reference",
         "@deepseek-ai/dsh-session-telemetry-otel",
         "@deepseek-ai/dsh-session-title-first-prompt-llm",
-        "@deepseek-ai/dsh-shell-env",
         "@deepseek-ai/dsh-skill",
         "@deepseek-ai/dsh-storage-domain",
         "@deepseek-ai/dsh-storage-json",
@@ -162,7 +161,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-session-projection-cache",
         "@deepseek-ai/dsh-session-telemetry-otel",
         "@deepseek-ai/dsh-session-title-first-prompt-llm",
-        "@deepseek-ai/dsh-shell-env",
         "@deepseek-ai/dsh-skill",
         "@deepseek-ai/dsh-storage-domain",
         "@deepseek-ai/dsh-storage-json",
@@ -197,7 +195,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-session-projection-cache",
         "@deepseek-ai/dsh-session-telemetry-otel",
         "@deepseek-ai/dsh-session-title-first-prompt-llm",
-        "@deepseek-ai/dsh-shell-env",
         "@deepseek-ai/dsh-skill",
         "@deepseek-ai/dsh-storage-domain",
         "@deepseek-ai/dsh-storage-json",
@@ -232,7 +229,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-session-projection-cache",
         "@deepseek-ai/dsh-session-telemetry-otel",
         "@deepseek-ai/dsh-session-title-first-prompt-llm",
-        "@deepseek-ai/dsh-shell-env",
         "@deepseek-ai/dsh-skill",
         "@deepseek-ai/dsh-storage-domain",
         "@deepseek-ai/dsh-storage-json",
@@ -264,7 +260,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-session-log-deepseek",
         "@deepseek-ai/dsh-session-projection-cache",
         "@deepseek-ai/dsh-session-telemetry-otel",
-        "@deepseek-ai/dsh-shell-env",
         "@deepseek-ai/dsh-skill",
         "@deepseek-ai/dsh-storage-domain",
         "@deepseek-ai/dsh-storage-json",
@@ -297,7 +292,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-session-log-deepseek",
         "@deepseek-ai/dsh-session-projection-cache",
         "@deepseek-ai/dsh-session-telemetry-otel",
-        "@deepseek-ai/dsh-shell-env",
         "@deepseek-ai/dsh-skill",
         "@deepseek-ai/dsh-storage-domain",
         "@deepseek-ai/dsh-storage-json",
@@ -726,7 +720,7 @@ def test_the_frozen_gap_is_the_union_of_every_shipped_profile():
 
             collect(patch)
     assert union <= shipped_names
-    assert len(union) == 52
+    assert len(union) == 51
 
 
 # --- boot installs and consults the table ------------------------------------

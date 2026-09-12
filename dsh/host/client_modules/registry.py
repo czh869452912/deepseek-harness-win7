@@ -10,9 +10,15 @@ import json
 import os
 import re
 from urllib.parse import unquote
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 from dsh.cordis.plugin import Plugin
 from dsh.host.webserver.webserver import HttpResponseWriter, WebServerService
+
+# Bootstrap package whose ordinary client bundle supplies the module-system
+# implementation (upstream `CLIENT_MODULES_ID`), and the one parser-preload id
+# ahead of the shell (upstream `PARSER_PRELOAD_IDS`).
+CLIENT_MODULES_ID = "@deepseek-ai/dsh-client-modules"
+PARSER_PRELOAD_IDS: Tuple[str, ...] = (CLIENT_MODULES_ID,)
 
 # Official Web roster from packages/bundle/web-app/cordis.patch.yml
 OFFICIAL_WEB_ROSTER: Set[str] = {
@@ -359,14 +365,25 @@ class ClientModuleRegistry:
         await response.finish()
 
     def tap_index(self, html: str) -> str:
-        """Inject window.__DSH_BOOT__ manifest and bootstrap facade into HTML index response."""
+        """
+        Render the boot protocol rows into a served seed document.
+
+        The head rows, in execution order: the inline registration queue facade,
+        the parser-preload scripts, and the `window.__DSH_BOOT__` graph global.
+        These are the head rows upstream `bootInjections` contributes ahead of
+        the built `apps/web/dist` document, whose client entry reads
+        `window.__ModuleLoader__` and `window.__DSH_BOOT__` and refuses to boot
+        without them. The boot-readiness tail that follows the same rows is
+        rendered by the webserver injection table.
+        """
         g = self.graph()
         boot_json = json.dumps(g, ensure_ascii=False).replace("<", "\\u003c")
         
-        # Preload scripts for modules and runtime
-        preload_ids = ["@deepseek-ai/dsh-client-modules", "@deepseek-ai/dsh-client-runtime"]
+        # The parser-preload tier: the module-system bundle registers itself
+        # through the queue facade, so its script is parser-blocking and
+        # precedes every application row (upstream `PARSER_PRELOAD_IDS`).
         preload_scripts = []
-        for pid in preload_ids:
+        for pid in PARSER_PRELOAD_IDS:
             for entry in g.get("entries", []):
                 if entry.get("id") == pid:
                     url = entry.get("url")
@@ -390,8 +407,8 @@ class ClientModuleRegistry:
             f'    const exports=registration.factory(specifier=>{{'
             f'      throw new Error("client-modules: @deepseek-ai/dsh-client-modules/client.js requested external \\""+specifier+"\\" before the module system existed");'
             f'    }});'
-            f'    if(typeof exports!=="object"||exports===null||typeof exports.createClientModuleSystem!=="function"){{'
-            f'      throw new Error("client-modules: @deepseek-ai/dsh-client-modules/client.js did not export createClientModuleSystem");'
+            f'    if(typeof exports!=="object"||exports===null||typeof exports.createClientModuleSystem!=="function"||typeof exports.apply!=="function"){{'
+            f'      throw new Error("client-modules: @deepseek-ai/dsh-client-modules/client.js did not export the bootstrap module face");'
             f'    }}'
             f'    return exports.createClientModuleSystem(this,{{id:registration.id,exports}},options);'
             f'  }}'
@@ -402,11 +419,13 @@ class ClientModuleRegistry:
         )
 
         if "<head>" in html:
-            return html.replace("<head>", f"<head>\n  {bootstrap_script}", 1)
+            out = html.replace("<head>", f"<head>\n  {bootstrap_script}", 1)
         elif "<title>" in html:
-            return html.replace("<title>", f"{bootstrap_script}\n  <title>", 1)
+            out = html.replace("<title>", f"{bootstrap_script}\n  <title>", 1)
         else:
-            return f"{bootstrap_script}\n{html}"
+            out = f"{bootstrap_script}\n{html}"
+
+        return out
 
 
 class ClientModulesPlugin(Plugin):

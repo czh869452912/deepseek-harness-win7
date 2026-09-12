@@ -17,8 +17,14 @@ That lane is a Node/pnpm/Vite workspace lane: `apps/web` resolves `vite`,
 `../../tsconfig.base.json` from the repository's Node workspace root, which this
 Python 3.8.10 / Windows 7 port does not carry (no root `package.json`, no
 `pnpm-workspace.yaml`, no `node_modules`, and `reference/` is a read-only pinned
-submodule). The process-level assertions are therefore recorded as
-`PLATFORM_EXCLUDED` in the migration test map; the executable cases below assert
+submodule; the newest Node that runs on Windows 7 SP1 is 13 while the workspace
+requires `^22.19 || >=24`, and Playwright Chromium requires Windows 10).
+
+Both upstream cases are therefore classified `MISSING` in the migration test
+map, not `PLATFORM_EXCLUDED`: neither the Node workspace lane nor an executable
+Python equivalent of it exists yet, and absent infrastructure is unported work,
+never an allowed deviation. The cases below are supporting configuration
+evidence (`PARTIAL`), not a port of the two cases: they assert
 the same guarantee where the port can observe it — the mirrored configuration
 must fail a serve before it can expose the shell, and it must state the exact
 correction the upstream cases grep for.

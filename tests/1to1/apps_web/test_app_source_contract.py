@@ -170,6 +170,73 @@ def test_official_lane_and_stress_suite_are_mirrored():
         assert len(official) > 80
 
 
+def test_shipped_dist_is_the_build_of_the_mirrored_source():
+    """
+    Every build input the source maps embed is the mirrored file itself.
+
+    `vite.config.ts` builds with `sourcemap: true`, so each emitted chunk carries
+    its inputs in `sourcesContent`. Comparing those bytes against the trees this
+    port mirrors is what distinguishes 'the served payload is the upstream build
+    of the pinned source' from 'the served payload looks similar': no string
+    sniffing, and any port-local edit to a source the payload was built from
+    fails here.
+    """
+    import json
+
+    resolved = {}  # source path -> (map path, on-disk path)
+    maps = []
+    for dirpath, _dirnames, filenames in os.walk(DIST_ROOT):
+        for name in filenames:
+            if name.endswith(".js.map"):
+                maps.append(os.path.join(dirpath, name))
+    assert maps, "the shipped dist carries no source maps"
+
+    for map_path in maps:
+        with open(map_path, "r", encoding="utf-8") as handle:
+            document = json.load(handle)
+        sources = document["sources"]
+        contents = document["sourcesContent"]
+        assert len(sources) == len(contents), map_path
+        for source, embedded in zip(sources, contents):
+            if "packages/" not in source and not re.search(r"(^|/)src/[\w.-]+\.(ts|js)$", source):
+                continue
+            if embedded is None:
+                continue
+            candidates = [
+                os.path.normpath(os.path.join(os.path.dirname(map_path), source)),
+                os.path.normpath(os.path.join(REPO_ROOT, source.lstrip("./"))),
+            ]
+            found = next((path for path in candidates if os.path.isfile(path)), None)
+            if found is None:
+                # The only build inputs this port does not carry are the vendored
+                # and npm package trees; nothing else may go unverified.
+                stripped = source.lstrip("./")
+                assert stripped.startswith("node_modules/") or stripped.startswith("vendor/"), (map_path, source)
+                continue
+            assert embedded.replace("\r\n", "\n") == _read_text(found), (map_path, source)
+            resolved[source] = found
+
+    # The shell chunk is the build of the mirrored browser entry, the vendored
+    # browser stand-in, and the four client packages it embeds inline.
+    for source in ("../../src/main.ts", "../../src/node-module-stub.ts",
+                   "../../../../packages/client/web/lib/index.js",
+                   "../../../../packages/client/store/lib/index.js",
+                   "../../../../packages/client/ui-slots/lib/index.js",
+                   "../../../../packages/client/ui-primitives/lib/index.js"):
+        assert source in resolved, source
+
+    # The preview surface is the build of the mirrored worker bootstrap, the
+    # worker entry, and its client half.
+    for source in ("../../src/preview.ts",
+                   "../../../../packages/experimental/webworker-runtime/lib/client.js",
+                   "../../../packages/experimental/webworker-runtime/lib/worker.js"):
+        assert source in resolved, source
+
+    # The browser entry the built chunk embeds is read from the mirrored source:
+    # the mount goes to `#root`, and the refusal is the packaged one.
+    assert "web app: missing #root" in _read_text(resolved["../../src/main.ts"])
+
+
 def _built_scripts() -> str:
     """Every emitted JS chunk of the shipped dist, concatenated."""
     assets = os.path.join(DIST_ROOT, "assets")

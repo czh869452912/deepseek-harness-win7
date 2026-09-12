@@ -66,6 +66,42 @@ def test_pass_requires_complete_mapping_and_no_issues():
         runner.parse_result(json.dumps(data), "review")
 
 
+def test_final_tool_acknowledgement_survives_missing_text_and_rejected_attempt():
+    stream = runner.Stream(lambda *args: None)
+    def request(call_id, value):
+        return {"type": "message", "message": {"role": "assistant", "content": [
+            {"type": "toolRequest", "id": call_id, "toolCall": {"value": {
+                "name": "recipe__final_output", "arguments": value}}}]}}
+    def response(call_id, status):
+        return {"type": "message", "message": {"role": "user", "content": [
+            {"type": "toolResponse", "id": call_id, "toolResult": {"status": status,
+             "value": {"isError": status != "success"}}}]}}
+    stream.feed(request("bad", result("PASS")))
+    stream.feed(response("bad", "error"))
+    assert stream.accepted_result is None
+    stream.feed(request("good", result("MUST_FIX")))
+    stream.feed(response("good", "success"))
+    stream.feed({"type": "complete"})
+    assert stream.result("review")["status"] == "MUST_FIX"
+
+
+@pytest.mark.parametrize("child_holds_pipe", [False, True])
+def test_complete_ends_protocol_even_when_process_or_descendant_keeps_pipe(tmp_path, child_holds_pipe):
+    import time
+    code = "import json,time,subprocess,sys\n"
+    if child_holds_pipe:
+        code += "subprocess.Popen([sys.executable,'-c','import time; time.sleep(45)'])\n"
+    code += "print(json.dumps({'type':'complete'}),flush=True)\n"
+    if not child_holds_pipe:
+        code += "time.sleep(45)\n"
+    stream = runner.Stream(lambda *args: None)
+    start = time.monotonic()
+    assert runner.run_process([sys.executable, "-c", code], tmp_path, tmp_path / "events.jsonl",
+                              lambda *args: None, 0, stream, exit_grace=0.1) == 0
+    assert stream.complete
+    assert time.monotonic() - start < 8
+
+
 @pytest.fixture
 def repo(tmp_path):
     subprocess.check_call(["git", "init", "-q", str(tmp_path)])
@@ -182,6 +218,18 @@ def test_existing_index_is_preserved(repo):
     runner.Runner.checkpoint(h, data)
     assert runner.git(repo, "diff", "--cached") == before
     assert not h.state["commits"]
+
+
+def test_resuming_after_checkpoint_does_not_attempt_an_empty_commit(repo):
+    h = Harness(repo, [])
+    (repo / "module.py").write_text("x = 2\n", encoding="utf-8")
+    data = result()
+    data["observed_changes"] = ["module.py"]
+    runner.Runner.checkpoint(h, data)
+    head = runner.git(repo, "rev-parse", "HEAD")
+    runner.Runner.checkpoint(h, data)
+    assert runner.git(repo, "rev-parse", "HEAD") == head
+    assert len(h.state["commits"]) == 1
 
 
 def test_process_timeout_stops_a_silent_child(tmp_path):

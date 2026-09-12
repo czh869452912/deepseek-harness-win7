@@ -1,5 +1,101 @@
 # Goose parity workflow
 
+## Whole-project scheduling
+
+Use the project launcher to schedule the entire pinned reference, rather than
+manually selecting one migration unit:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .goose/run-project.ps1 -Action run -Jobs 3
+```
+
+The first run discovers package and peer dependencies, calls the architecture
+agent to refine runtime services/events, acceptance contracts and core-first
+priorities, then starts ready task groups. Later runs reuse the SQLite graph.
+The default is two concurrent groups; `-Jobs` selects resource concurrency, not
+a work quota. There are no default round, action or model-work time limits.
+The architect uses the existing judge provider/model configuration; migration,
+review and arbitration retain their existing role configurations.
+
+```powershell
+# Discovery/status only: no model calls or source edits.
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .goose/run-project.ps1 -Action init
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .goose/run-project.ps1 -Action status
+# Explicitly refine the plan again, or apply a source-backed incremental plan.
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .goose/run-project.ps1 -Action plan
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .goose/run-project.ps1 -Action apply -PlanFile plan.json
+# Resume an interrupted/failed group after stopping the previous controller.
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .goose/run-project.ps1 -Action recover -Task core/session
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .goose/run-project.ps1 -Action run -Jobs 3
+```
+
+Progress is in `.goose/runs/project/index.html` (open in a browser, refreshes every
+10 seconds), `status.json`, and `state.sqlite3`. The dashboard shows task state,
+current phase, latest activity, dependency blockers, rounds, commits and log paths.
+Console messages identify each task group. Integrated/discovered counts describe
+the current graph; new dependency discovery can increase the total.
+
+The controller persists four edge kinds: implementation, contract, acceptance and
+change. Cyclic dependencies form one atomic task group. Ready groups are ordered
+by architectural wave, downstream impact, priority and age. Providers must be
+integrated before external consumers run. Contract fingerprints and evidence are
+bound to the pinned upstream, implementation revision, tests and environment.
+Changes to known contract paths invalidate affected providers and transitive
+consumers, including changes made by another module's worker. Empty path mappings
+are discovery placeholders; the architect/workers must refine them from source.
+
+Each group uses a dedicated Git worktree under `.goose/runs/project/worktrees/`.
+Targeted tests and Python 3.8 compile checks produce local `(unreviewed)` checkpoint
+commits before a fresh blind review. Agents can follow and modify relevant
+cross-module source in their own worktree; there is no directory read allowlist.
+Missing providers and interface changes can produce a structured `work_plan`.
+The controller saves these proposals and applies them between active waves, so a
+running peer's acceptance scope cannot silently change. Invalid plans go back to
+the proposer with validation errors. Identical plans are not repeatedly applied.
+
+Integration is serial, on a dedicated `codex/parity-integration-*` branch and
+worktree at `.goose/runs/project/integration/`. Candidates are retained under
+`candidates/`. A changed baseline forces fresh migration/review on the combined
+code. Merge conflicts retain both branches and conflict markers for repair;
+full-suite failures return the combined candidate and failure log to the migrator.
+Only independently reviewed changes passing `python -m pytest tests` enter the
+integration branch. The launcher does not move the user's checkout or push.
+It starts from committed project code; commit intended project edits before the
+first run. The initial baseline is frozen when execution starts.
+
+Recovery retains worktrees/checkpoints/logs. A completed result is reused only
+when its recorded code/scope still match (and review HEAD is identical). An
+unfinished or unbound phase runs fresh. A live scheduler PID prevents a second
+controller or recovery command from taking ownership. Ctrl+C stops owned process
+trees; a stale lock is reclaimed only after its PID is no longer running. Windows
+Job Objects also terminate assigned descendants if the controller crashes.
+Historical single-unit runs are not automatically imported as project evidence.
+
+`FAILED_INFRA` and `NEEDS_ARBITRATION` retain the exact error/evidence and stop
+only that group. Other ready groups continue. A newly discovered cycle with
+multiple clean saved worktrees combines their commits; if a separate old tree
+contains unfinished uncommitted edits, consolidation stops visibly with that path
+instead of dropping those edits. Resolve/checkpoint those edits, then recover the
+group. `PROJECT COMPLETE` means all discovered tasks are integrated; it does not
+claim a Windows 7 VM or a portable release was exercised by this controller.
+
+The schema for incremental plans is in `project_runner.py` (`TASK_SCHEMA` and
+`CONTRACT_SCHEMA`); `.goose/runs/project/seed-plan.json` is an editable example.
+Definitions are validated transactionally. Every dependency/contract needs source
+evidence; current reports and architecture suggestions are not instructions to
+weaken upstream acceptance.
+
+Validation on 2026-09-12: 41 Goose controller/launcher/project tests passed,
+including a real-process fake-Goose parallel run with real Git worktrees, targeted
+and integration pytest, conflicts, plan updates, result recovery and checkpoints.
+Replaying the observed stalled review recognized its accepted MUST_FIX result
+(four issues) and complete event. Full `pytest tests`: 1609 passed, three existing
+failures (two Windows short/long TEMP path comparisons and the old portable
+distribution rejecting `--profile`). Live model-driven whole-project convergence
+and execution on a Windows 7 machine have not been verified by these tests.
+
+## Single-unit compatibility
+
 `run-parity.ps1` uses a Python 3.8 controller to run the three specialist agents
 in separate Goose sessions. Python owns phase transitions, continuing correction,
 verification, visible progress, and checkpoint commits. By default it continues until correct, without workflow quotas. It loads agent instructions

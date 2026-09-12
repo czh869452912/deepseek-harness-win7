@@ -63,7 +63,7 @@ SCHEMA = {
 
 
 def save_json(path, data):
-    temp = path.with_suffix(path.suffix + ".tmp")
+    temp = path.with_suffix(path.suffix + "." + uuid.uuid4().hex + ".tmp")
     temp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     os.replace(str(temp), str(path))
 
@@ -161,6 +161,8 @@ class Stream:
         self.complete = False
         self.buffer = ""
         self.action_limit_reached = False
+        self.final_calls = {}
+        self.accepted_result = None
 
     def feed(self, event):
         if event.get("type") == "complete":
@@ -170,6 +172,15 @@ class Stream:
         if event.get("type") == "error":
             raise ValueError("Goose stream error: " + str(event.get("error", event.get("message", "unknown"))))
         message = event.get("message", {})
+        for block in message.get("content", []):
+            if block.get("type") == "toolResponse" and block.get("id") in self.final_calls:
+                response = block.get("toolResult", {})
+                value = response.get("value", {})
+                if response.get("status") == "success" and not value.get("isError", False):
+                    self.accepted_result = self.final_calls.pop(block["id"])
+                    self.notify("result_received", "Structured result accepted; waiting for protocol completion")
+                else:
+                    self.final_calls.pop(block["id"], None)
         if message.get("role") != "assistant":
             return
         for block in message.get("content", []):
@@ -187,6 +198,8 @@ class Stream:
                 self.flush()
                 call = block.get("toolCall", {}).get("value", {})
                 args = call.get("arguments", {})
+                if call.get("name") == "recipe__final_output" and isinstance(args, dict):
+                    self.final_calls[block.get("id")] = args
                 description = args.get("command", args.get("path", ""))
                 self.notify("tool", call.get("name", "tool") + " " + str(description)[:180])
 
@@ -199,7 +212,72 @@ class Stream:
         self.flush()
         if not self.complete:
             raise ValueError("Goose stopped without a complete event")
+        if self.accepted_result is not None:
+            return parse_result(json.dumps(self.accepted_result), phase)
         return parse_result(self.messages.get(self.last_id, ""), phase)
+
+
+class ProcessTree:
+    """A Windows Job owns descendants even after their parent has exited."""
+    def __init__(self, proc):
+        self.proc = proc
+        self.job = None
+        self.closed = False
+        if os.name == "nt":
+            import ctypes
+            from ctypes import wintypes
+            self.api = ctypes.WinDLL("kernel32", use_last_error=True)
+            self.api.CreateJobObjectW.argtypes = [ctypes.c_void_p, wintypes.LPCWSTR]
+            self.api.CreateJobObjectW.restype = wintypes.HANDLE
+            self.api.AssignProcessToJobObject.argtypes = [wintypes.HANDLE, wintypes.HANDLE]
+            self.api.AssignProcessToJobObject.restype = wintypes.BOOL
+            self.api.TerminateJobObject.argtypes = [wintypes.HANDLE, wintypes.UINT]
+            self.api.TerminateJobObject.restype = wintypes.BOOL
+            self.api.CloseHandle.argtypes = [wintypes.HANDLE]
+            self.job = self.api.CreateJobObjectW(None, None)
+            class BasicLimits(ctypes.Structure):
+                _fields_ = [("process_time", ctypes.c_int64), ("job_time", ctypes.c_int64),
+                            ("flags", wintypes.DWORD), ("min_ws", ctypes.c_size_t), ("max_ws", ctypes.c_size_t),
+                            ("active", wintypes.DWORD), ("affinity", ctypes.c_size_t),
+                            ("priority", wintypes.DWORD), ("scheduling", wintypes.DWORD)]
+            class ExtendedLimits(ctypes.Structure):
+                _fields_ = [("basic", BasicLimits), ("io", ctypes.c_uint64 * 6),
+                            ("process_memory", ctypes.c_size_t), ("job_memory", ctypes.c_size_t),
+                            ("peak_process", ctypes.c_size_t), ("peak_job", ctypes.c_size_t)]
+            limits = ExtendedLimits()
+            limits.basic.flags = 0x2000  # JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE, including controller crash.
+            self.api.SetInformationJobObject.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]
+            configured = self.job and self.api.SetInformationJobObject(self.job, 9, ctypes.byref(limits), ctypes.sizeof(limits))
+            if not configured or not self.api.AssignProcessToJobObject(self.job, int(proc._handle)):
+                if self.job:
+                    self.api.CloseHandle(self.job)
+                self.job = None
+                # An existing outer job can prohibit nesting on Windows 7.
+                # Fail visibly rather than pretending descendants are owned.
+                stop_process(proc)
+                raise OSError("Unable to own Goose process tree (Windows job assignment failed)")
+
+    def close(self):
+        if self.closed:
+            return
+        self.closed = True
+        if self.job:
+            try:
+                if not self.api.TerminateJobObject(self.job, 0):
+                    raise OSError("Unable to clean up owned process tree")
+                self.proc.wait(timeout=5)
+            finally:
+                self.api.CloseHandle(self.job)
+                self.job = None
+        elif os.name != "nt":
+            import signal
+            try:
+                os.killpg(self.proc.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+            stop_process(self.proc)
+        else:
+            stop_process(self.proc)
 
 
 def stop_process(proc):
@@ -216,11 +294,13 @@ def stop_process(proc):
         proc.kill()
 
 
-def run_process(command, root, log_path, notify, timeout, stream=None):
+def run_process(command, root, log_path, notify, timeout, stream=None, exit_grace=2, cancel_event=None):
     """Drain output on a reader thread, so quiet tools still get timed heartbeats."""
     proc = subprocess.Popen(command, cwd=str(root), stdin=subprocess.DEVNULL,
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                            encoding="utf-8", errors="replace", bufsize=1)
+                            encoding="utf-8", errors="replace", bufsize=1,
+                            start_new_session=os.name != "nt")
+    tree = ProcessTree(proc)
     lines = queue.Queue()
 
     def read():
@@ -236,6 +316,8 @@ def run_process(command, root, log_path, notify, timeout, stream=None):
     try:
         with log_path.open("w", encoding="utf-8") as log:
             while True:
+                if cancel_event is not None and cancel_event.is_set():
+                    raise InterruptedError("Project scheduler interrupted; owned process tree stopped")
                 now = time.monotonic()
                 if timeout and now - started >= timeout:
                     raise TimeoutError("Phase wall-time limit reached; child process tree stopped")
@@ -268,11 +350,24 @@ def run_process(command, root, log_path, notify, timeout, stream=None):
                     log.write(line)
                     notify("check", line.rstrip())
                 log.flush()
+                if stream and stream.accepted_result is not None:
+                    save_json(log_path.with_suffix(".accepted.json"), stream.accepted_result)
+                if stream and stream.complete:
+                    notify("draining", "Protocol complete; collecting result and closing owned processes")
+                    # This grace is for an already-complete process, not model work.
+                    try:
+                        code = proc.wait(timeout=exit_grace)
+                    except subprocess.TimeoutExpired:
+                        code = 0
+                    tree.close()
+                    return code
         return proc.wait(timeout=5)
     finally:
-        stop_process(proc)
-        proc.stdout.close()
+        tree.close()
         reader.join(timeout=2)
+        if reader.is_alive():
+            raise OSError("Owned output reader did not close after process cleanup")
+        proc.stdout.close()
 
 
 class Runner:
@@ -284,7 +379,8 @@ class Runner:
                       "max_rounds": args.max_rounds, "issues": [], "commits": [], "history": []}
         self.initial_dirty = dirty_paths(root)
         self.start_head = git(root, "rev-parse", "HEAD")
-        self.config = yaml.safe_load((root / ".goose/recipes/parity-unit.yaml").read_text(encoding="utf-8"))
+        self.control_root = Path(getattr(args, "control_root", root))
+        self.config = yaml.safe_load((self.control_root / ".goose/recipes/parity-unit.yaml").read_text(encoding="utf-8"))
         self.defaults = {p["key"]: p.get("default") for p in self.config["parameters"]}
 
     def notify(self, kind, message):
@@ -294,6 +390,10 @@ class Runner:
         with (self.run_dir / "progress.jsonl").open("a", encoding="utf-8") as file:
             file.write(json.dumps(record, ensure_ascii=False) + "\n")
         self.state["last_activity"] = record
+        if kind == "start":
+            self.state["execution_state"] = "RUNNING"
+        elif kind in ("result_received", "draining"):
+            self.state["execution_state"] = kind.upper()
         save_json(self.run_dir / "status.json", self.state)
 
     def phase(self, phase, feedback=None):
@@ -301,9 +401,18 @@ class Runner:
         role = ROLES[phase]
         prefix = {"migrate": "migrator", "review": "reviewer", "judge": "judge"}[phase]
         provider, model = (self.defaults[prefix + "_" + x] for x in ("provider", "model"))
-        body = (self.root / (".agents/agents/" + role + ".md")).read_text(encoding="utf-8")
+        body = (self.control_root / (".agents/agents/" + role + ".md")).read_text(encoding="utf-8")
         body = body.split("---", 2)[-1]
         prompt = "Unit: " + self.args.unit + "\n" + SCOPE
+        if getattr(self.args, "task_contract", None):
+            prompt += "\nTask acceptance contract (shared neutral scope, not prior conclusions):\n" + json.dumps(self.args.task_contract)
+            prompt += ("\nIf a missing provider or interface change needs separate ownership, return optional work_plan "
+                       "with incremental tasks and contracts, source-backed dependencies, and canonical Python contract paths. "
+                       "Include the caller task updated to depend on the provider task. Preserve existing IDs and requirements; "
+                       "do not weaken acceptance to obtain PASS. Tasks require id, owner, goal, evidence, wave, dependencies, "
+                       "consumes, provides. Edges require task, kind(implementation/contract/acceptance/change), evidence. "
+                       "Contracts require id, owner(task ID), evidence, paths. Do not repeat an already-applied work_plan. "
+                       "The scheduler owns graph updates; do not write its database or other workers' worktrees.")
         prompt += "\nThis controller contract replaces the agent's final text-block format and full-suite step. "
         prompt += "The controller runs targeted tests after each chunk and the full suite at the final gate. "
         prompt += "Return one final JSON object matching the schema. Allowed status: " + ", ".join(sorted(STATUSES[phase]))
@@ -331,6 +440,8 @@ class Runner:
         before = snapshot(self.root)
         head = git(self.root, "rev-parse", "HEAD")
         index = git(self.root, "diff", "--cached", "--binary")
+        save_json(self.run_dir / (stem + ".start.json"), {"head": head, "files": before, "index": index,
+                  "scope": getattr(self.args, "task_contract", None)})
         stream = Stream(self.notify)
         session_name = self.run_dir.name + "-" + stem
         started = time.monotonic()
@@ -347,7 +458,7 @@ class Runner:
                 if remaining <= 0:
                     raise TimeoutError("Explicit phase timeout reached")
             code = run_process(command, self.root, self.run_dir / log_name,
-                               self.notify, remaining, stream)
+                               self.notify, remaining, stream, cancel_event=getattr(self.args, "cancel_event", None))
             if code or not stream.complete or not stream.action_limit_reached or turns:
                 break
             continuation += 1
@@ -359,6 +470,10 @@ class Runner:
                        "Work until correct; do not restart completed analysis or ask for permission to continue. "
                        "Return the required structured result when this phase is done."]
         after = snapshot(self.root)
+        if stream.complete and code == 0:
+            save_json(self.run_dir / (stem + ".completion.json"), {"files": after,
+                      "head": git(self.root, "rev-parse", "HEAD"),
+                      "index": git(self.root, "diff", "--cached", "--binary")})
         changes = changed(before, after)
         if git(self.root, "rev-parse", "HEAD") != head:
             self.notify("git", "Agent updated HEAD; preserving the commit")
@@ -366,6 +481,9 @@ class Runner:
             self.notify("git", "Agent updated the index; automatic checkpoint will preserve staged work")
         if phase != "migrate" and changes:
             raise ValueError("Read-only phase mutated files; preserved for inspection: " + ", ".join(changes))
+        if phase != "migrate" and (git(self.root, "rev-parse", "HEAD") != head or
+                                  git(self.root, "diff", "--cached", "--binary") != index):
+            raise ValueError("Read-only phase mutated HEAD/index; preserved for inspection")
         if code:
             raise ValueError("Goose exited with code " + str(code))
         result = stream.result(phase)
@@ -378,6 +496,8 @@ class Runner:
                 self.notify("files", "Including observed changes omitted from report: " + ", ".join(sorted(missing)))
                 result["changed_files"] = sorted(set(result["changed_files"]) | missing)
         save_json(self.run_dir / (stem + ".result.json"), result)
+        save_json(self.run_dir / (stem + ".binding.json"), {"files": after, "head": git(self.root, "rev-parse", "HEAD"),
+                  "scope": getattr(self.args, "task_contract", None)})
         self.state["history"].append({"phase": phase, "round": self.state["round"],
                                       "status": result["status"], "issues": len(result["issues"])})
         self.notify("result", result["status"] + ": " + result["summary"])
@@ -390,7 +510,7 @@ class Runner:
         self.notify("start", " ".join(args))
         code = run_process([sys.executable] + args, self.root,
                            self.run_dir / ("%02d-%s.log" % (self.state["round"], name)),
-                           self.notify, self.args.phase_timeout)
+                           self.notify, self.args.phase_timeout, cancel_event=getattr(self.args, "cancel_event", None))
         self.notify("result", "exit=" + str(code))
         return code == 0
 
@@ -430,6 +550,9 @@ class Runner:
         for name in paths:
             safe_path(self.root, name)
         git(self.root, "add", "--", *paths)
+        if not git(self.root, "diff", "--cached", "--name-only"):
+            self.notify("checkpoint", "Verified paths are already committed; reusing the checkpoint")
+            return
         try:
             git(self.root, "commit", "-m", "chore(parity): checkpoint %s round %d (unreviewed)" %
                 (self.args.unit, self.state["round"]))

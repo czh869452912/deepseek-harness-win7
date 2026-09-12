@@ -466,27 +466,57 @@ def omit(obj: Dict[str, Any], keys: Optional[Any] = None) -> Dict[str, Any]:
     return {k: v for k, v in obj.items() if k not in key_set}
 
 
+def _js_supplied_arg_count(callback: Callable[..., Any], maximum: int = 2, fallback: int = 1) -> int:
+    """LEGAL_ADAPTATION: JavaScript ignores surplus arguments, Python cannot.
+
+    Cosmokit always invokes these callbacks with a fixed argument list --
+    ``filter(key, value)`` for filterKeys and ``transform(value, key)`` for
+    mapValues.  JavaScript hands the surplus arguments to a callback declared
+    with fewer parameters and reads the missing ones as ``undefined`` for one
+    declared with more, so the closest Python equivalent is to supply exactly
+    as many arguments as the callback declares positional slots for, capped at
+    the reference arity.  A callback with no positional slot is the
+    ``() => ...`` equivalent and is therefore called with no arguments at all
+    (``callback()``), not with a surplus one.  A callback whose signature
+    CPython cannot report (a C-implemented callable such as ``bool`` or ``next``)
+    keeps the call this module already made at that site, passed in through
+    ``fallback``.  A callback that declares more than the reference arity still
+    raises Python's TypeError when the surplus slots are required, because
+    Python has no value for the ``undefined`` JavaScript would fill them with
+    (the reference always passes exactly two arguments).
+    """
+    try:
+        signature = inspect.signature(callback)
+    except (TypeError, ValueError):
+        return fallback
+    params = list(signature.parameters.values())
+    if any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params):
+        return maximum
+    positional = [
+        p for p in params
+        if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+    ]
+    return min(len(positional), maximum)
+
+
 def filter_keys(obj: Dict[str, Any], predicate: Callable[..., bool]) -> Dict[str, Any]:
     """Filter dictionary keys matching Cosmokit filterKeys."""
     # LEGAL_ADAPTATION: the reference always calls `filter(key, value)` and
     # JavaScript silently ignores surplus arguments.  Python cannot express
-    # that, so the predicate arity selects between `predicate(key, value)` and
-    # the equivalent one-argument call for predicates declared with one slot.
+    # that, so the predicate arity selects between `predicate(key, value)`,
+    # `predicate(key)` and `predicate()` for a predicate declared with two, one
+    # or zero positional slots (see _js_supplied_arg_count).
+    supplied = _js_supplied_arg_count(predicate)
     res = {}
-    try:
-        sig = inspect.signature(predicate)
-        params = list(sig.parameters.values())
-        has_two_params = len(params) >= 2 or any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
-    except Exception:
-        has_two_params = False
-
     for k, v in obj.items():
-        if has_two_params:
-            if predicate(k, v):
-                res[k] = v
+        if supplied >= 2:
+            keep = predicate(k, v)
+        elif supplied == 1:
+            keep = predicate(k)
         else:
-            if predicate(k):
-                res[k] = v
+            keep = predicate()
+        if keep:
+            res[k] = v
     return res
 
 
@@ -1719,17 +1749,19 @@ defineProperty = define_property
 def _js_apply_with_key(callback: Callable[..., Any], value: Any, key: str) -> Any:
     """LEGAL_ADAPTATION: JavaScript ignores surplus arguments, Python cannot.
 
-    The reference always calls `callback(value, key)`; a one-parameter Python
-    callback is the `(value) => ...` equivalent and is called with one argument.
+    The reference always calls `callback(value, key)`; the callback arity picks
+    the equivalent Python call -- `callback(value, key)` for two positional
+    slots, `callback(value)` for one, and `callback()` for none (a
+    ``() => ...`` transform that ignores both arguments), see
+    _js_supplied_arg_count.  The two-argument fallback keeps this call site's
+    pre-existing behaviour for a callback whose signature cannot be reported.
     """
-    try:
-        signature = inspect.signature(callback)
-    except (TypeError, ValueError):
+    supplied = _js_supplied_arg_count(callback, fallback=2)
+    if supplied >= 2:
         return callback(value, key)
-    params = list(signature.parameters.values())
-    if len(params) >= 2 or any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params):
-        return callback(value, key)
-    return callback(value)
+    if supplied == 1:
+        return callback(value)
+    return callback()
 
 
 def map_values(source: Dict[str, Any], callback: Callable[..., Any]) -> Dict[str, Any]:

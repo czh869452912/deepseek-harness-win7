@@ -20,6 +20,7 @@ Cases:
 - C45..C46 time.ts: zone-offset validation and the legacy/padded date grammar
 - C34..C43 types.ts: is/Binary encodings/clone/deepEqual
 - C47..C48 types.ts: clone leaf-branch freshness and deepEqual own-key strictness
+- C49      misc.ts: callback invocation arity for filterKeys/mapValues
 - C44      exported-name surface of the reference package
 - T1..T7   reference/vendor/cordis/src/utils.ts cases owned by the same module
 """
@@ -258,6 +259,16 @@ def test_c11_filter_keys_passes_key_then_value():
     assert result == data
     assert result is not data
     assert list(filter_keys({'b': 1, 'a': 2}, lambda k, v: True)) == ['b', 'a']
+    # misc.ts:41 always calls `filter(key, value)`; a zero-parameter predicate
+    # is the `() => ...` equivalent and JavaScript silently drops both
+    # arguments, so the Python call must pass none (Node oracle:
+    # filterKeys({a:1,b:2}, () => true) is {"a":1,"b":2}).
+    assert filter_keys(data, lambda: True) == data
+    assert filter_keys(data, lambda: False) == {}
+    seen_keys = []
+    assert filter_keys(data, lambda: seen_keys.append(1) or True) == data
+    assert len(seen_keys) == 3
+    assert filterKeys({}, lambda: True) == {}
 
 
 def test_c12_map_values_passes_value_then_key():
@@ -273,6 +284,20 @@ def test_c12_map_values_passes_value_then_key():
 
     with pytest.raises(ValueError, match='boom'):
         map_values({'a': 1}, boom)
+
+    # misc.ts:46 always calls `transform(value, key)`; a zero-parameter
+    # transform is the `() => ...` equivalent and JavaScript silently drops
+    # both arguments (Node oracle: mapValues({a:1,b:2}, () => 7) is
+    # {"a":7,"b":7}).
+    assert map_values({'a': 1, 'b': 2}, lambda: 7) == {'a': 7, 'b': 7}
+    seen_values = []
+    assert mapValues({'a': 1, 'b': 2}, lambda: seen_values.append(1) or 0) == {'a': 0, 'b': 0}
+    assert len(seen_values) == 2
+    # A zero-argument transform returning `undefined` still produces the key;
+    # JSON.stringify drops it in the oracle, but the key itself is present.
+    undefined_value = map_values({'a': 1}, lambda: None)
+    assert list(undefined_value) == ['a']
+    assert undefined_value['a'] is None
 
 
 def test_c13_value_map_aliases_are_the_same_function():
@@ -1055,6 +1080,86 @@ def test_c48_deep_equal_reads_an_absent_own_key_as_undefined():
     # Array length and the Array-vs-object branch are unchanged.
     assert deepEqual([1, 2], [1, 2, 3], True) is False
     assert deepEqual([1], {0: 1}, True) is False
+
+
+def test_c49_callback_arity_matches_the_javascript_invocation_rule():
+    """misc.ts:39-47 - `filter(key, value)` / `transform(value, key)` arity.
+
+    JavaScript invokes both callbacks with two arguments: a callback declared
+    with fewer parameters ignores the surplus ones and a callback declared with
+    more reads the missing ones as `undefined`.  Python cannot express that, so
+    the port supplies exactly as many arguments as the callback declares
+    positional slots for (`_js_supplied_arg_count`), reproducing the Node
+    oracle for zero-, one-, two- and rest-parameter callbacks.
+    """
+    # Zero positional parameters is the `() => ...` form: no argument at all.
+    assert filterKeys({'a': 1, 'b': 2}, lambda: True) == {'a': 1, 'b': 2}
+    assert filterKeys({'a': 1, 'b': 2}, lambda: False) == {}
+    assert mapValues({'a': 1, 'b': 2}, lambda: 7) == {'a': 7, 'b': 7}
+    assert valueMap({'a': 1}, lambda: 'z') == {'a': 'z'}
+    assert mapValues({}, lambda: 7) == {}
+
+    # One positional slot receives the value for mapValues and the key for
+    # filterKeys, exactly like the first argument of the reference call.
+    assert mapValues({'a': 1, 'b': 2}, lambda v: v * 10) == {'a': 10, 'b': 20}
+    assert filterKeys({'a': 1, 'b': 2}, lambda k: k == 'b') == {'b': 2}
+
+    # A rest parameter receives both arguments unharmed.
+    filter_args = []
+    assert filterKeys({'a': 1}, lambda *args: filter_args.append(args) or True) == {'a': 1}
+    assert filter_args == [('a', 1)]
+    map_args = []
+    assert mapValues({'a': 1}, lambda *args: map_args.append(args) or 0) == {'a': 0}
+    assert map_args == [(1, 'a')]
+
+    # Only positional slots are fillable: a trailing keyword-only parameter
+    # cannot receive the second reference argument and keeps its default.
+    def transform_kw_only(value, *, key=None):
+        return (value, key)
+
+    def predicate_kw_only(key, *, value=None):
+        return key == 'a' and value is None
+
+    assert mapValues({'a': 1}, transform_kw_only) == {'a': (1, None)}
+    assert filterKeys({'a': 1, 'b': 2}, predicate_kw_only) == {'a': 1}
+
+    # The same rule applies to positional-only parameters and callable objects
+    # (whose bound `__call__` signature hides `self`).
+    def transform_pos_only(value, /):
+        return value + 1
+
+    class ZeroArity:
+        def __call__(self):
+            return 'always'
+
+    class TwoArity:
+        def __call__(self, value, key):
+            return '%s%s' % (value, key)
+
+    assert mapValues({'a': 1}, transform_pos_only) == {'a': 2}
+    assert mapValues({'a': 1}, ZeroArity()) == {'a': 'always'}
+    assert filterKeys({'a': 1}, ZeroArity()) == {'a': 1}
+    assert mapValues({'a': 1}, TwoArity()) == {'a': '1a'}
+
+    # A non-callable callback raises TypeError in JavaScript and in Python.
+    with pytest.raises(TypeError):
+        filterKeys({'a': 1}, 42)
+    with pytest.raises(TypeError):
+        mapValues({'a': 1}, None)
+
+    # A callback that raises propagates unchanged rather than being swallowed.
+    def boom_zero():
+        raise ValueError('boom-zero')
+
+    with pytest.raises(ValueError, match='boom-zero'):
+        filterKeys({'a': 1}, boom_zero)
+    with pytest.raises(ValueError, match='boom-zero'):
+        mapValues({'a': 1}, boom_zero)
+
+    # Residual adaptation limit (see `_js_supplied_arg_count`): a callback that
+    # declares a third required positional slot cannot be satisfied, because the
+    # reference supplies exactly two arguments and Python has no `undefined`
+    # value for the surplus slot JavaScript would fill.
 
 
 def test_c44_reference_export_surface_is_present():

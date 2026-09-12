@@ -412,12 +412,49 @@ def test_architect_applies_plan_recovered_from_text_when_tool_result_missing(rep
         stream.complete = True
         stream.messages["m1"] = "The plan follows: " + json.dumps(expected) + " Thank you."
         return 0
+def test_architect_applies_plan_recovered_from_text_when_tool_result_missing(repo, monkeypatch):
+    p = make_project(repo)
+    expected = plan(task("a"))
+    calls = []
+    def process(command, root, log, notify, timeout, stream, **kwargs):
+        calls.append(command)
+        stream.complete = True
+        stream.messages["m1"] = "The plan follows: " + json.dumps(expected) + " Thank you."
+        return 0
     monkeypatch.setattr(project, "run_process", process)
     p.architect()
     assert len(calls) == 1
     assert p.store.plan_is_current(expected)
     assert not (p.folder / "architecture-pending.json").exists()
     assert json.loads((p.folder / "architecture-status.json").read_text())["state"] == "APPLIED"
+
+
+def test_worktree_inits_submodule_offline_from_local_module_store(tmp_path):
+    upstream = tmp_path / "upstream"
+    upstream.mkdir()
+    project.git(upstream, "init", "-q")
+    project.git(upstream, "config", "user.name", "Test")
+    project.git(upstream, "config", "user.email", "test@example.invalid")
+    (upstream / "marker.txt").write_text("pinned", encoding="utf-8")
+    project.git(upstream, "add", ".")
+    project.git(upstream, "commit", "-qm", "sub")
+    main = tmp_path / "main"
+    main.mkdir()
+    project.git(main, "init", "-q")
+    project.git(main, "config", "user.name", "Test")
+    project.git(main, "config", "user.email", "test@example.invalid")
+    project.git(main, "commit", "-qm", "base", "--allow-empty")
+    project.git(main, "-c", "protocol.file.allow=always", "submodule", "add", "-q", str(upstream), "reference")
+    project.git(main, "commit", "-qm", "submodule")
+    # A recorded remote overrides .gitmodules; make it unreachable on purpose.
+    project.git(main, "config", "submodule.reference.url", "https://127.0.0.1:1/x.git")
+    target = tmp_path / "wt"
+    project.worktree(main, target, "task-offline-submodule", "HEAD")
+    assert (target / "reference" / "marker.txt").read_text(encoding="utf-8") == "pinned"
+    # A worktree left without its submodule heals in place.
+    project.shutil.rmtree(str(target / "reference"))
+    project.worktree(main, target, "task-offline-submodule", "HEAD")
+    assert (target / "reference" / "marker.txt").read_text(encoding="utf-8") == "pinned"
 
 
 def test_unknown_contract_validation_reports_all_missing_references(store):

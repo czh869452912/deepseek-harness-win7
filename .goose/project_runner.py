@@ -141,16 +141,36 @@ def dashboard(store, folder):
     return view
 
 
+def _init_reference(root, path):
+    """Init the reference submodule from the main checkout's local module store.
+
+    The recorded remote can be unreachable, and --reference only borrows
+    objects while still contacting the remote. Overriding the URL clones the
+    pinned objects without any network access.
+    """
+    common = Path(git(root, "rev-parse", "--git-common-dir"))
+    if not common.is_absolute():
+        common = root / common
+    local = common / "modules" / "reference"
+    if not (local / "HEAD").exists():
+        raise ValueError("Local reference module store missing at " + str(local) +
+                         "; run 'git submodule update --init' once in the main checkout")
+    subprocess.check_call(["git", "-c", "protocol.file.allow=always",
+                           "-c", "submodule.reference.url=" + str(local),
+                           "submodule", "update", "--init", "reference"], cwd=str(path))
+
+
 def worktree(root, path, branch, base):
     if path.exists():
         if git(path, "rev-parse", "--show-toplevel").replace("\\", "/").lower() != path.as_posix().lower():
             raise ValueError("Unexpected worktree path " + str(path))
+        if (path / ".gitmodules").exists() and not (path / "reference" / ".git").exists():
+            _init_reference(root, path)  # heal a worktree left without its submodule
         return
     path.parent.mkdir(parents=True, exist_ok=True)
     subprocess.check_call(["git", "worktree", "add", "-b", branch, str(path), base], cwd=str(root))
     if (path / ".gitmodules").exists():
-        subprocess.check_call(["git", "-c", "protocol.file.allow=always", "submodule", "update", "--init",
-                               "--reference", str(root / "reference"), "reference"], cwd=str(path))
+        _init_reference(root, path)
 
 
 class Project:

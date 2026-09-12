@@ -51,6 +51,11 @@ consumers, including changes made by another module's worker. Empty path mapping
 are discovery placeholders; the architect/workers must refine them from source.
 
 Each group uses a dedicated Git worktree under `.goose/runs/project/worktrees/`.
+Worktree creation initializes the `reference` submodule from the main checkout's
+local module store (`git -c submodule.reference.url=...`), so no network access to
+the upstream remote is required; a worktree left without its submodule heals in
+place on the next run. Repositories must have run `git submodule update --init`
+once in the main checkout before scheduling.
 Targeted tests and Python 3.8 compile checks produce local `(unreviewed)` checkpoint
 commits before a fresh blind review. Agents can follow and modify relevant
 cross-module source in their own worktree; there is no directory read allowlist.

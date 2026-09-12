@@ -312,3 +312,67 @@ print(json.dumps({'type':'complete'}), flush=True)
     if native_stop:
         assert "resuming the same session with its tools" in proc.stdout
     assert not (repo / ".goose/runs/active.lock").exists()
+
+
+def make_review_runner(repo):
+    args = argparse.Namespace(unit="core/session", goose=None, max_rounds=0, no_commit=True,
+                              adopt_existing=False, max_turns=0, phase_timeout=0,
+                              control_root=Path(__file__).resolve().parents[1])
+    h = runner.Runner(args, root=repo)
+    h.args.goose = repo / "fake-goose.cmd"
+    return h
+
+
+REVIEW_EVENTS = [
+    {"type": "message", "message": {"id": "final", "role": "assistant", "content": [
+        {"type": "toolRequest", "id": "t1", "toolCall": {"value": {
+            "name": "recipe__final_output", "arguments": {
+                "status": "MUST_FIX", "summary": "checked", "coverage_complete": False, "issues": [],
+                "changed_files": [], "test_paths": ["tests/test_unit.py"], "dependencies": [],
+                "test_map": ["upstream case -> tests/test_unit.py -> PORTED"]}}}}]}},
+    {"type": "message", "message": {"role": "user", "content": [
+        {"type": "toolResponse", "id": "t1", "toolResult": {"status": "success", "value": {}}}]}},
+    {"type": "complete"},
+]
+
+
+def review_fake(repo, once):
+    fake = repo / "fake-review.py"
+    fake.write_text(
+        "import json,sys\n"
+        "from pathlib import Path\n"
+        "recipe = Path(sys.argv[sys.argv.index('--recipe') + 1])\n"
+        "counter = recipe.parent / 'invocations.txt'\n"
+        "count = int(counter.read_text()) if counter.exists() else 0\n"
+        "counter.write_text(str(count + 1))\n"
+        + ("if count == 0:\n    Path('scratch-$null').write_text('junk')\n" if once
+           else "Path('scratch-$null').write_text('junk')\n")
+        + "events = json.loads(r'''REPLACE''')\n"
+        .replace("REPLACE", json.dumps(REVIEW_EVENTS))
+        + "for e in events:\n    print(json.dumps(e), flush=True)\n",
+        encoding="utf-8")
+    executable = repo / "fake-goose.cmd"
+    executable.write_text('@echo off\n"' + sys.executable + '" "' + str(fake) + '" %*\n', encoding="utf-8")
+    return executable
+
+
+def test_review_heals_untracked_scratch_and_reruns_blind(repo):
+    h = make_review_runner(repo)
+    h.args.goose = review_fake(repo, once=True)
+    seen = []
+    h.notify = lambda k, m: seen.append((k, m))
+    result = h.phase("review")
+    assert result["status"] == "MUST_FIX"
+    assert not (repo / "scratch-$null").exists()
+    assert ("repair", "Read-only phase left untracked scratch files (scratch-$null); "
+            "removed them and rerunning the blind phase") in seen
+    assert (h.run_dir / "00-review-blind-retry.result.json").exists()
+
+
+def test_review_repeated_mutation_stays_a_hard_failure(repo):
+    h = make_review_runner(repo)
+    h.args.goose = review_fake(repo, once=False)
+    h.notify = lambda *a: None
+    with pytest.raises(ValueError, match="Read-only phase mutated files"):
+        h.phase("review")
+    assert (repo / "scratch-$null").exists()  # preserved for inspection

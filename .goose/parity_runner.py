@@ -437,73 +437,95 @@ class Runner:
         recipe_path = self.run_dir / (stem + ".yaml")
         save_json(recipe_path, recipe)  # JSON is valid YAML; no templated shell commands.
         self.notify("start", role + " / " + provider + " / " + model)
-        before = snapshot(self.root)
-        head = git(self.root, "rev-parse", "HEAD")
-        index = git(self.root, "diff", "--cached", "--binary")
-        save_json(self.run_dir / (stem + ".start.json"), {"head": head, "files": before, "index": index,
-                  "scope": getattr(self.args, "task_contract", None)})
-        stream = Stream(self.notify)
-        session_name = self.run_dir.name + "-" + stem
-        started = time.monotonic()
-        command = [self.args.goose, "run", "--recipe", str(recipe_path),
-                   "--name", session_name, "--output-format", "stream-json"]
-        if turns:
-            command += ["--max-turns", str(turns)]
-        continuation = 0
-        while True:
-            log_name = stem + (".continue-%d" % continuation if continuation else "") + ".events.jsonl"
-            remaining = self.args.phase_timeout
-            if remaining:
-                remaining -= time.monotonic() - started
-                if remaining <= 0:
-                    raise TimeoutError("Explicit phase timeout reached")
-            code = run_process(command, self.root, self.run_dir / log_name,
-                               self.notify, remaining, stream, cancel_event=getattr(self.args, "cancel_event", None))
-            if code or not stream.complete or not stream.action_limit_reached or turns:
-                break
-            continuation += 1
-            self.notify("continue", "Goose native action limit reached; resuming the same session with its tools")
+        blind_retry = 0
+        while True:  # read-only phases rerun once after removing accidental scratch files
+            before = snapshot(self.root)
+            head = git(self.root, "rev-parse", "HEAD")
+            index = git(self.root, "diff", "--cached", "--binary")
+            save_json(self.run_dir / (stem + ".start.json"), {"head": head, "files": before, "index": index,
+                      "scope": getattr(self.args, "task_contract", None)})
             stream = Stream(self.notify)
-            command = [self.args.goose, "run", "--resume", "--name", session_name,
-                       "--output-format", "stream-json", "--text",
-                       "Continue the current phase with your existing context and tools. "
-                       "Work until correct; do not restart completed analysis or ask for permission to continue. "
-                       "Return the required structured result when this phase is done."]
-        after = snapshot(self.root)
-        if stream.complete and code == 0:
-            save_json(self.run_dir / (stem + ".completion.json"), {"files": after,
-                      "head": git(self.root, "rev-parse", "HEAD"),
-                      "index": git(self.root, "diff", "--cached", "--binary")})
-        changes = changed(before, after)
-        if git(self.root, "rev-parse", "HEAD") != head:
-            self.notify("git", "Agent updated HEAD; preserving the commit")
-        if git(self.root, "diff", "--cached", "--binary") != index:
-            self.notify("git", "Agent updated the index; automatic checkpoint will preserve staged work")
-        if phase != "migrate" and changes:
-            raise ValueError("Read-only phase mutated files; preserved for inspection: " + ", ".join(changes))
-        if phase != "migrate" and (git(self.root, "rev-parse", "HEAD") != head or
-                                  git(self.root, "diff", "--cached", "--binary") != index):
-            raise ValueError("Read-only phase mutated HEAD/index; preserved for inspection")
-        if code:
-            raise ValueError("Goose exited with code " + str(code))
-        result = stream.result(phase)
-        result["observed_changes"] = changes
-        if phase == "migrate":
-            for name in result["changed_files"]:
-                safe_path(self.root, name)
-            missing = set(changes) - set(result["changed_files"])
-            if missing:
-                self.notify("files", "Including observed changes omitted from report: " + ", ".join(sorted(missing)))
-                result["changed_files"] = sorted(set(result["changed_files"]) | missing)
-        save_json(self.run_dir / (stem + ".result.json"), result)
-        save_json(self.run_dir / (stem + ".binding.json"), {"files": after, "head": git(self.root, "rev-parse", "HEAD"),
-                  "scope": getattr(self.args, "task_contract", None)})
-        self.state["history"].append({"phase": phase, "round": self.state["round"],
-                                      "status": result["status"], "issues": len(result["issues"])})
-        self.notify("result", result["status"] + ": " + result["summary"])
-        for dependency in result["dependencies"]:
-            self.notify("dependency", dependency)
-        return result
+            session_name = self.run_dir.name + "-" + stem
+            started = time.monotonic()
+            command = [self.args.goose, "run", "--recipe", str(recipe_path),
+                       "--name", session_name, "--output-format", "stream-json"]
+            if turns:
+                command += ["--max-turns", str(turns)]
+            continuation = 0
+            while True:
+                log_name = stem + (".continue-%d" % continuation if continuation else "") + ".events.jsonl"
+                remaining = self.args.phase_timeout
+                if remaining:
+                    remaining -= time.monotonic() - started
+                    if remaining <= 0:
+                        raise TimeoutError("Explicit phase timeout reached")
+                code = run_process(command, self.root, self.run_dir / log_name,
+                                   self.notify, remaining, stream, cancel_event=getattr(self.args, "cancel_event", None))
+                if code or not stream.complete or not stream.action_limit_reached or turns:
+                    break
+                continuation += 1
+                self.notify("continue", "Goose native action limit reached; resuming the same session with its tools")
+                stream = Stream(self.notify)
+                command = [self.args.goose, "run", "--resume", "--name", session_name,
+                           "--output-format", "stream-json", "--text",
+                           "Continue the current phase with your existing context and tools. "
+                           "Work until correct; do not restart completed analysis or ask for permission to continue. "
+                           "Return the required structured result when this phase is done."]
+            after = snapshot(self.root)
+            if stream.complete and code == 0:
+                save_json(self.run_dir / (stem + ".completion.json"), {"files": after,
+                          "head": git(self.root, "rev-parse", "HEAD"),
+                          "index": git(self.root, "diff", "--cached", "--binary")})
+            changes = changed(before, after)
+            if git(self.root, "rev-parse", "HEAD") != head:
+                self.notify("git", "Agent updated HEAD; preserving the commit")
+            if git(self.root, "diff", "--cached", "--binary") != index:
+                self.notify("git", "Agent updated the index; automatic checkpoint will preserve staged work")
+            if phase != "migrate" and changes:
+                # The blind-phase contract treats any mutation as a failed review.
+                # Untracked scratch files (for example a literal "$null" from a
+                # cmd-mode "> $null" redirect) are accidental pollution: remove
+                # them and rerun the phase once with a fresh blind session. Any
+                # tracked mutation, or a repeat, stays a hard failure.
+                clean = (git(self.root, "rev-parse", "HEAD") == head and
+                         git(self.root, "diff", "--cached", "--binary") == index)
+                scratch = clean and [n for n in changes if n not in before and
+                                     not git(self.root, "ls-files", "--cached", "--", n)]
+                if scratch and blind_retry == 0:
+                    for name in scratch:
+                        target = safe_path(self.root, name)
+                        if target.is_file():
+                            target.unlink()
+                    if snapshot(self.root) == before:
+                        blind_retry += 1
+                        stem = stem + "-blind-retry"
+                        self.notify("repair", "Read-only phase left untracked scratch files (" +
+                                    ", ".join(scratch) + "); removed them and rerunning the blind phase")
+                        continue
+                raise ValueError("Read-only phase mutated files; preserved for inspection: " + ", ".join(changes))
+            if phase != "migrate" and (git(self.root, "rev-parse", "HEAD") != head or
+                                      git(self.root, "diff", "--cached", "--binary") != index):
+                raise ValueError("Read-only phase mutated HEAD/index; preserved for inspection")
+            if code:
+                raise ValueError("Goose exited with code " + str(code))
+            result = stream.result(phase)
+            result["observed_changes"] = changes
+            if phase == "migrate":
+                for name in result["changed_files"]:
+                    safe_path(self.root, name)
+                missing = set(changes) - set(result["changed_files"])
+                if missing:
+                    self.notify("files", "Including observed changes omitted from report: " + ", ".join(sorted(missing)))
+                    result["changed_files"] = sorted(set(result["changed_files"]) | missing)
+            save_json(self.run_dir / (stem + ".result.json"), result)
+            save_json(self.run_dir / (stem + ".binding.json"), {"files": after, "head": git(self.root, "rev-parse", "HEAD"),
+                      "scope": getattr(self.args, "task_contract", None)})
+            self.state["history"].append({"phase": phase, "round": self.state["round"],
+                                          "status": result["status"], "issues": len(result["issues"])})
+            self.notify("result", result["status"] + ": " + result["summary"])
+            for dependency in result["dependencies"]:
+                self.notify("dependency", dependency)
+            return result
 
     def check(self, name, args):
         self.state["phase"] = name

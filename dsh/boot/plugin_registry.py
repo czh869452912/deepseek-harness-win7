@@ -24,6 +24,7 @@ import os
 from typing import Any, Dict, List, Optional
 
 from dsh.boot.profile import PROFILE_MODULE_FALLBACK_DIR, PROFILES_DIR
+from dsh.client.rows import CLIENT_HOST_HALF_ROWS
 from dsh.cordis.environment import resolve_dsh_home
 
 __all__ = [
@@ -144,11 +145,18 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     "@deepseek-ai/dsh-host-directory-picker-browse": "dsh.host.directory_picker.browse:BrowseDirectoryPickerPlugin",
     "@deepseek-ai/dsh-host-directory-picker-native": "dsh.host.directory_picker.native:NativeDirectoryPickerPlugin",
     "@deepseek-ai/dsh-cli-visualizer": "dsh.extensions.cli_visualizer:CliVisualizerPlugin",
+    # Web bundle rows.
+    "@deepseek-ai/dsh-web-app/startup": "dsh.bundle.web_app.startup:WebStartupPlugin",
     # The self-inspection toolset publishes itself as `dsh-tool-cordis`; profiles
     # composed before that rename name the `dsh-cordis-manager` row.
     "@deepseek-ai/dsh-tool-cordis": "dsh.extensions.cordis_manager:CordisManagerPlugin",
     "@deepseek-ai/dsh-cordis-manager": "dsh.extensions.cordis_manager:CordisManagerPlugin",
 }
+
+# The browser client rows the Web bundle mounts: each package's host half, so
+# the modules node half discovers its `dsh.client` declaration. Kept in one
+# table (dsh/client/rows.py) so a row and its implementation cannot drift.
+HARNESS_PLUGIN_CLASSES.update(CLIENT_HOST_HALF_ROWS)
 
 
 def harness_plugin_names() -> List[str]:

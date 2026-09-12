@@ -11,7 +11,7 @@ import re
 import shutil
 import stat
 import sys
-from typing import Any, Callable, Dict, List, Optional, Sequence, Set, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Set, Tuple, Union
 import urllib.parse
 
 from dsh.cordis.loader import apply_entry_patches
@@ -437,48 +437,151 @@ def profile_dependency_names(manifest: Dict[str, Any]) -> List[str]:
     return deps + [p for p in peer_deps if p not in deps]
 
 
+_WORKSPACE_PACKAGE_INDEX_CACHE: Dict[str, Dict[str, str]] = {}
+_NODE_MODULES_CHAIN_CACHE: Dict[str, List[str]] = {}
+
+
+def _ancestor_chain(directory: str) -> List[str]:
+    """Every ancestor directory of `directory`, nearest first, ending at the root."""
+    chain: List[str] = []
+    curr = directory
+    while True:
+        chain.append(curr)
+        parent = os.path.dirname(curr)
+        if parent == curr:
+            return chain
+        curr = parent
+
+
+_WORKSPACE_MARKERS = ("packages", "apps", "vendor", "node_modules")
+
+
+def resolution_scope(anchor: str) -> Tuple[str, List[str]]:
+    """
+    Return the cache key and the directories one anchor resolves through.
+
+    Resolution depends only on the ancestors that carry a workspace marker or a
+    `node_modules`; anchors inside the same workspace share that suffix, so the
+    per-chain caches below hold one entry per workspace instead of one per
+    package. Ancestors above the first marker carry neither, so they contribute
+    no candidate.
+
+    @param anchor: a file inside the tree the lookup starts from.
+    @returns: the cache key and the anchors the resolution walks, nearest first.
+    """
+    chain = _ancestor_chain(os.path.dirname(os.path.abspath(anchor)))
+    for index in range(len(chain)):
+        directory = chain[index]
+        for marker in _WORKSPACE_MARKERS:
+            if os.path.isdir(os.path.join(directory, marker)):
+                return "\0".join(chain[index:]), chain[index:]
+    return "\0".join(chain), chain
+
+
+def node_modules_chain(anchor: str) -> List[str]:
+    """
+    Return every existing `node_modules` directory Node would look in from
+    `anchor`, nearest first.
+
+    Node probes `<ancestor>/node_modules` for every ancestor; a candidate below
+    an absent one cannot exist, so probing only the directories that do exist
+    answers identically while keeping a hundreds-of-names closure walk off the
+    filesystem. Cached once per anchor chain.
+
+    @param anchor: a file inside the tree the lookup starts from.
+    @returns: the candidate `node_modules` directories, in resolution order.
+    """
+    key, chain = resolution_scope(anchor)
+    cached = _NODE_MODULES_CHAIN_CACHE.get(key)
+    if cached is not None:
+        return cached
+    roots = []
+    for directory in chain:
+        candidate = os.path.join(directory, "node_modules")
+        if os.path.isdir(candidate):
+            roots.append(candidate)
+    _NODE_MODULES_CHAIN_CACHE[key] = roots
+    return roots
+
+
+def _workspace_manifests(directory: str) -> Iterator[str]:
+    """Every package manifest the workspace keeps directly under one directory."""
+    packages_dir = os.path.join(directory, "packages")
+    if os.path.isdir(packages_dir):
+        for group in sorted(os.listdir(packages_dir)):
+            group_dir = os.path.join(packages_dir, group)
+            if not os.path.isdir(group_dir):
+                continue
+            direct = os.path.join(group_dir, "package.json")
+            if os.path.isfile(direct):
+                yield direct
+            for package in sorted(os.listdir(group_dir)):
+                candidate = os.path.join(group_dir, package, "package.json")
+                if os.path.isfile(candidate):
+                    yield candidate
+    for top in ("apps", "vendor"):
+        top_dir = os.path.join(directory, top)
+        if not os.path.isdir(top_dir):
+            continue
+        for package in sorted(os.listdir(top_dir)):
+            candidate = os.path.join(top_dir, package, "package.json")
+            if os.path.isfile(candidate):
+                yield candidate
+
+
+def workspace_package_index(anchor: str) -> Dict[str, str]:
+    """
+    Return the workspace's package directories by name, nearest root first.
+
+    The Python runtime has no Node module graph, so the workspace layout the
+    pinned manifests live in stands in for it: every dependency and peer
+    dependency reachable from the install anchor resolves to the directory the
+    workspace keeps, at the nearest ancestor that carries one (Node's own
+    nearest-wins order). The index is built once per anchor chain and cached,
+    because the closure walk asks for hundreds of names.
+
+    @param anchor: a file inside the tree the lookup starts from.
+    @returns: the package name -> directory map.
+    """
+    key, chain = resolution_scope(anchor)
+    cached = _WORKSPACE_PACKAGE_INDEX_CACHE.get(key)
+    if cached is not None:
+        return cached
+
+    index: Dict[str, str] = {}
+    for directory in chain:
+        for manifest in _workspace_manifests(directory):
+            try:
+                with open(manifest, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            except Exception:
+                continue
+            name = data.get("name")
+            if isinstance(name, str) and name and name not in index:
+                index[name] = os.path.dirname(manifest)
+    _WORKSPACE_PACKAGE_INDEX_CACHE[key] = index
+    return index
+
+
 def package_dir_from_anchor(
     anchor: str,
     package_name: str,
     exclude: Optional[Callable[[str, str], bool]] = None,
 ) -> Optional[str]:
-    """Resolve package root by probing parent node_modules directories with portable packages/ layout fallback."""
-    curr = os.path.dirname(os.path.abspath(anchor))
-    while True:
-        candidate = os.path.join(curr, "node_modules", package_name)
+    """
+    Resolve one package root the way Node resolves it from `anchor`:
+    node_modules directories up the chain first, then the workspace layout the
+    pinned manifests live in.
+    """
+    for modules_dir in node_modules_chain(anchor):
+        candidate = os.path.join(modules_dir, package_name)
         if os.path.exists(os.path.join(candidate, "package.json")):
             if exclude is None or not exclude(candidate, package_name):
                 return candidate
 
-        # Portable / workspace packages/ layout fallback
-        pkgs_dir = os.path.join(curr, "packages")
-        if os.path.isdir(pkgs_dir):
-            if package_name.startswith("@deepseek-ai/dsh-"):
-                bundle_sub = package_name[len("@deepseek-ai/dsh-"):]
-                b_cand = os.path.join(pkgs_dir, "bundle", bundle_sub)
-                if os.path.exists(os.path.join(b_cand, "package.json")):
-                    if exclude is None or not exclude(b_cand, package_name):
-                        return b_cand
-            for cat in ("bundle", "boot", "client", "preset", "core", "api", "attachment"):
-                cat_dir = os.path.join(pkgs_dir, cat)
-                if os.path.isdir(cat_dir):
-                    for sub in os.listdir(cat_dir):
-                        sub_cand = os.path.join(cat_dir, sub)
-                        sub_pkg = os.path.join(sub_cand, "package.json")
-                        if os.path.isfile(sub_pkg):
-                            try:
-                                with open(sub_pkg, "r", encoding="utf-8") as f:
-                                    m = json.load(f)
-                                if m.get("name") == package_name:
-                                    if exclude is None or not exclude(sub_cand, package_name):
-                                        return sub_cand
-                            except Exception:
-                                pass
-
-        parent = os.path.dirname(curr)
-        if parent == curr:
-            break
-        curr = parent
+    candidate = workspace_package_index(anchor).get(package_name)
+    if candidate is not None and (exclude is None or not exclude(candidate, package_name)):
+        return candidate
     return None
 
 

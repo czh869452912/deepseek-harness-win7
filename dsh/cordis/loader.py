@@ -1109,12 +1109,75 @@ class GlobalRealm(Realm):
         return f"@{self.label}"
 
 
-def _entry_from_package_json(pkg_json_path: str) -> Optional[str]:
+def _exports_condition_target(value: Any) -> Optional[str]:
+    """Resolve one exports entry (possibly a conditions map) to its relative target."""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dict):
+        for condition in ("import", "default"):
+            inner = value.get(condition)
+            resolved = _exports_condition_target(inner)
+            if resolved is not None:
+                return resolved
+    return None
+
+
+def exports_subpath_target(exports: Any, subpath: str) -> Optional[str]:
+    """
+    Resolve a `./subpath` request through a package's exports map, matching Node's
+    exact-key-then-pattern rule.
+
+    @param exports: the package's `exports` field.
+    @param subpath: the requested subpath without a leading `.`, e.g. `startup`.
+    @returns: the relative target, or None when the map does not export it.
+    """
+    if not isinstance(exports, (dict, str)):
+        return None
+    key = "./" + subpath
+    if isinstance(exports, str):
+        return exports if key == "." else None
+    target = _exports_condition_target(exports.get(key))
+    if target is not None:
+        return target
+    for pattern, value in exports.items():
+        if not isinstance(pattern, str) or "*" not in pattern:
+            continue
+        prefix, _, suffix = pattern.partition("*")
+        if not key.startswith(prefix) or not key.endswith(suffix):
+            continue
+        if len(key) < len(prefix) + len(suffix):
+            continue
+        matched = key[len(prefix): len(key) - len(suffix)]
+        resolved = _exports_condition_target(value)
+        if resolved is not None:
+            return resolved.replace("*", matched)
+    return None
+
+
+def _entry_from_package_json(pkg_json_path: str, subpath: Optional[str] = None) -> Optional[str]:
+    """
+    Resolve one package manifest to the module a request names.
+
+    @param pkg_json_path: absolute path of the package's `package.json`.
+    @param subpath: a `./subpath` request to resolve through the exports map;
+        None asks for the package root entry.
+    @returns: the resolved file path, or None when nothing answers it.
+    """
     try:
         with open(pkg_json_path, "r", encoding="utf-8") as f:
             manifest = json.load(f)
         pkg_dir = os.path.dirname(pkg_json_path)
         exports = manifest.get("exports")
+        if subpath is not None:
+            # The exports map is a path computation: Node resolves `./startup`
+            # to its target without probing the filesystem, and the import that
+            # follows is what fails when the artifact is absent. Keeping that
+            # shape is what lets the Loader classify the row as installation
+            # owned and answer it from the table instead of the shipped JS.
+            target = exports_subpath_target(exports, subpath)
+            if not isinstance(target, str):
+                return None
+            return os.path.normpath(os.path.join(pkg_dir, target))
         if isinstance(exports, str):
             res = os.path.normpath(os.path.join(pkg_dir, exports))
             if os.path.exists(res):
@@ -1207,8 +1270,67 @@ def is_installation_owned_module(path: str, installation_roots: Optional[List[st
     return False
 
 
-def resolve_module_specifier(name: str, base_dir: str) -> Optional[str]:
-    """Resolve a relative, absolute, or bare module specifier from base_dir matching Node module resolution."""
+def split_package_specifier(name: str) -> Tuple[Optional[str], Optional[str]]:
+    """
+    Split a bare specifier into its package name and requested subpath.
+
+    @param name: a bare specifier, e.g. `@scope/pkg` or `@scope/pkg/startup`.
+    @returns: the package name and the subpath without a leading `.` (None for
+        the package root), or (None, None) when the specifier names no package.
+    """
+    if name.startswith("@"):
+        parts = name.split("/")
+        if len(parts) < 2 or not parts[0] or not parts[1]:
+            return None, None
+        return "/".join(parts[:2]), "/".join(parts[2:]) if len(parts) > 2 else None
+    parts = name.split("/")
+    if not parts[0]:
+        return None, None
+    return parts[0], "/".join(parts[1:]) if len(parts) > 1 else None
+
+
+def module_search_dirs(base_dir: str, module_roots: Optional[List[str]] = None) -> List[str]:
+    """
+    Return every `node_modules`-style directory a bare specifier resolves through.
+
+    Node walks the ancestor chain; the healed installation closure the launcher
+    publishes is installed on the Loader as extra roots, so it is answered here
+    in the same order the Loader's `installation_module_roots` names them.
+
+    @param base_dir: the directory resolution starts from.
+    @param module_roots: additional `node_modules` directories, e.g. the healed
+        `$DSH_HOME/profiles/node_modules` and the profile-owned projection.
+    @returns: the search directories, in resolution order.
+    """
+    dirs: List[str] = []
+    curr = os.path.abspath(base_dir)
+    while True:
+        dirs.append(os.path.join(curr, "node_modules"))
+        parent = os.path.dirname(curr)
+        if parent == curr:
+            break
+        curr = parent
+    for root in module_roots or []:
+        if root and root not in dirs:
+            dirs.append(root)
+    return dirs
+
+
+def resolve_module_specifier(
+    name: str,
+    base_dir: str,
+    module_roots: Optional[List[str]] = None,
+) -> Optional[str]:
+    """
+    Resolve a relative, absolute, or bare module specifier from base_dir matching
+    Node module resolution, including a package subpath through its exports map.
+
+    @param name: the specifier to resolve.
+    @param base_dir: the directory resolution starts from.
+    @param module_roots: additional `node_modules` directories to search after
+        the ancestor chain, e.g. the healed installation fallback.
+    @returns: the resolved file (or package directory) path, or None.
+    """
     if name.startswith(("./", "../", "/", "\\")) or name.startswith("file://") or os.path.isabs(name):
         raw_path = name
         if raw_path.startswith("file://"):
@@ -1236,27 +1358,29 @@ def resolve_module_specifier(name: str, base_dir: str) -> Optional[str]:
                     return idx
         return file_path
 
-    # Bare module specifier: walk up node_modules
-    curr = os.path.abspath(base_dir)
-    while True:
-        parts = name.replace("/", os.sep).split(os.sep)
-        cand_dir = os.path.join(curr, "node_modules", *parts)
-        if os.path.isdir(cand_dir):
-            pkg_json = os.path.join(cand_dir, "package.json")
-            if os.path.isfile(pkg_json):
-                entry = _entry_from_package_json(pkg_json)
-                if entry:
-                    return entry
-            for ext in (".mjs", ".js", ".ts", ".py"):
-                idx = os.path.join(cand_dir, "index" + ext)
-                if os.path.isfile(idx):
-                    return idx
-            return cand_dir
-
-        parent = os.path.dirname(curr)
-        if parent == curr:
-            break
-        curr = parent
+    # Bare module specifier: walk up node_modules, then the healed installation
+    # fallback roots Node would reach from this config tree.
+    package_name, subpath = split_package_specifier(name)
+    if package_name is None:
+        return None
+    for modules_dir in module_search_dirs(base_dir, module_roots):
+        cand_dir = os.path.join(modules_dir, *package_name.split("/"))
+        if not os.path.isdir(cand_dir):
+            continue
+        pkg_json = os.path.join(cand_dir, "package.json")
+        if os.path.isfile(pkg_json):
+            if subpath is not None:
+                # A subpath the exports map does not carry has no module to
+                # return; only the package root falls back below.
+                return _entry_from_package_json(pkg_json, subpath)
+            entry = _entry_from_package_json(pkg_json)
+            if entry:
+                return entry
+        for ext in (".mjs", ".js", ".ts", ".py"):
+            idx = os.path.join(cand_dir, "index" + ext)
+            if os.path.isfile(idx):
+                return idx
+        return cand_dir
 
     return None
 
@@ -1494,7 +1618,9 @@ class EntryTree:
             or name.startswith("file://")
             or os.path.isabs(name)
         )
-        resolved_path = resolve_module_specifier(name, base_dir)
+        resolved_path = resolve_module_specifier(
+            name, base_dir, getattr(loader, "installation_module_roots", None)
+        )
         if resolved_path is not None and is_bare_name and is_installation_owned_module(
             resolved_path, getattr(loader, "installation_module_roots", None)
         ):
@@ -2433,10 +2559,16 @@ class Loader(EntryTree, Service):
             self.ctx.on("loader/partial-dispose", _on_partial_dispose)
 
             def _on_internal_plugin(fiber: Any) -> None:
-                # 1. set fiber.entry and resolve inject matching TS Loader index.ts:118-123
+                # 1. set fiber.entry and resolve inject matching TS Loader index.ts:118-123.
+                # A fiber created from an entry context already carries that entry, so
+                # `entry.options.inject` is merged the first time the loader sees the
+                # fiber rather than only while it is still unset: it is what keeps a row
+                # whose config reads an injected service PENDING until the provider that
+                # provides it has activated.
                 parent_entry = getattr(getattr(fiber, "parent", None), "_entry", None) or getattr(getattr(fiber, "parent", None), "entry", None)
-                if parent_entry and not getattr(fiber, "entry", None):
+                if parent_entry is not None and not getattr(fiber, "_entry_inject_resolved", False):
                     fiber.entry = parent_entry
+                    fiber._entry_inject_resolved = True
                     from dsh.cordis.registry import Inject
                     opt_inject = getattr(parent_entry, "options", {}).get("inject") if hasattr(parent_entry, "options") else None
                     if opt_inject:

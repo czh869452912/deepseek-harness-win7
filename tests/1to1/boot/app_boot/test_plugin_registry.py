@@ -50,7 +50,14 @@ from dsh.boot.plugin_registry import (
 )
 from dsh.boot.profile import PROFILE_TEMPLATES, compose_entries, is_symlink_or_junction
 from dsh.cordis.context import Context
-from dsh.cordis.loader import Loader, eval_condition, evaluate_expr
+from dsh.cordis.loader import (
+    Loader,
+    eval_condition,
+    evaluate_expr,
+    exports_subpath_target,
+    is_installation_owned_module,
+    resolve_module_specifier,
+)
 from dsh.cordis.plugin import Plugin
 from dsh.cordis.service import Service
 
@@ -97,41 +104,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-api-workspace-controller",
         "@deepseek-ai/dsh-client-connection",
         "@deepseek-ai/dsh-client-hmr",
-        "@deepseek-ai/dsh-client-locale",
-        "@deepseek-ai/dsh-client-ui-agent-preset",
-        "@deepseek-ai/dsh-client-ui-approval",
-        "@deepseek-ai/dsh-client-ui-attachment",
-        "@deepseek-ai/dsh-client-ui-brand-official",
-        "@deepseek-ai/dsh-client-ui-chat",
-        "@deepseek-ai/dsh-client-ui-commands",
-        "@deepseek-ai/dsh-client-ui-conversation",
-        "@deepseek-ai/dsh-client-ui-cordis",
-        "@deepseek-ai/dsh-client-ui-deliverables",
-        "@deepseek-ai/dsh-client-ui-goal",
-        "@deepseek-ai/dsh-client-ui-input-trigger",
-        "@deepseek-ai/dsh-client-ui-jobs",
-        "@deepseek-ai/dsh-client-ui-layout",
-        "@deepseek-ai/dsh-client-ui-message-feedback",
-        "@deepseek-ai/dsh-client-ui-model-selection",
-        "@deepseek-ai/dsh-client-ui-permission-presets",
-        "@deepseek-ai/dsh-client-ui-plan",
-        "@deepseek-ai/dsh-client-ui-reference",
-        "@deepseek-ai/dsh-client-ui-renderer",
-        "@deepseek-ai/dsh-client-ui-session",
-        "@deepseek-ai/dsh-client-ui-settings",
-        "@deepseek-ai/dsh-client-ui-settings-general",
-        "@deepseek-ai/dsh-client-ui-settings-models",
-        "@deepseek-ai/dsh-client-ui-settings-plugin-inventory",
-        "@deepseek-ai/dsh-client-ui-settings-plugins",
-        "@deepseek-ai/dsh-client-ui-sidebar",
-        "@deepseek-ai/dsh-client-ui-skill",
-        "@deepseek-ai/dsh-client-ui-subagent",
-        "@deepseek-ai/dsh-client-ui-theme",
-        "@deepseek-ai/dsh-client-ui-tool",
-        "@deepseek-ai/dsh-client-ui-trajectory",
-        "@deepseek-ai/dsh-client-ui-user-questions",
-        "@deepseek-ai/dsh-client-ui-workflow-run",
-        "@deepseek-ai/dsh-client-ui-workspace",
         "@deepseek-ai/dsh-code-runtime-worker-thread",
         "@deepseek-ai/dsh-command-feedback",
         "@deepseek-ai/dsh-cordis-client-runner",
@@ -166,7 +138,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-typert-loader",
         "@deepseek-ai/dsh-web",
         "@deepseek-ai/dsh-web-app",
-        "@deepseek-ai/dsh-web-app/startup",
     ],
     "standard": [
         "@deepseek-ai/dsh-api-gateway",
@@ -599,6 +570,126 @@ async def test_a_config_project_module_still_wins_over_the_installation_fallback
         safe_rmtree(home)
 
 
+def _stage_healed_subpath_package(home: str, package: str, manifest_path: str) -> str:
+    """
+    Stage one package inside the healed installation with its pinned manifest.
+
+    The Python runtime answers the row from the class table, but the row must
+    still resolve the way Node resolves it: through the package root and, for a
+    subpath row, through that package's exports map.
+    """
+    package_dir = _stage_healed_installation(home, package, package.rsplit("/", 1)[-1])
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+    with open(os.path.join(package_dir, "package.json"), "w", encoding="utf-8") as f:
+        json.dump(manifest, f)
+    return package_dir
+
+
+def test_a_package_subpath_row_resolves_through_the_package_exports_map():
+    """
+    A row naming a package subpath (`@deepseek-ai/dsh-web-app/startup`) resolves
+    through that package's exports map, so the Loader classifies the row as
+    installation owned and answers it from the table.
+    """
+    home = tmp()
+    try:
+        manifest = os.path.join(REPOSITORY_ROOT, "reference", "packages", "bundle", "web-app", "package.json")
+        package_dir = _stage_healed_subpath_package(home, "@deepseek-ai/dsh-web-app", manifest)
+        profile_dir = os.path.join(home, "profiles", "standard")
+        os.makedirs(profile_dir, exist_ok=True)
+        config = os.path.join(profile_dir, "cordis.yml")
+        with open(config, "w", encoding="utf-8") as f:
+            f.write("- id: web-startup\n  name: '@deepseek-ai/dsh-web-app/startup'\n")
+
+        roots = installation_module_roots(config, home)
+        resolved = resolve_module_specifier("@deepseek-ai/dsh-web-app/startup", profile_dir, roots)
+        assert os.path.normpath(resolved) == os.path.normpath(os.path.join(package_dir, "lib", "startup.js"))
+        assert is_installation_owned_module(resolved, roots)
+
+        loader = _loader_with_table()
+        install_installation_module_roots(loader, config, home)
+        assert loader.import_plugin("@deepseek-ai/dsh-web-app/startup") is resolve_harness_plugin(
+            "@deepseek-ai/dsh-web-app/startup"
+        )
+        # The package root keeps its own `exports["."]` resolution.
+        root_resolved = resolve_module_specifier("@deepseek-ai/dsh-web-app", profile_dir, roots)
+        assert os.path.normpath(root_resolved) == os.path.normpath(os.path.join(package_dir, "lib", "index.js"))
+    finally:
+        safe_rmtree(home)
+
+
+def test_a_package_subpath_the_exports_map_omits_does_not_resolve():
+    """A subpath the exports map omits has no module, exactly as Node reports."""
+    home = tmp()
+    try:
+        manifest = os.path.join(REPOSITORY_ROOT, "reference", "packages", "bundle", "web-app", "package.json")
+        _stage_healed_subpath_package(home, "@deepseek-ai/dsh-web-app", manifest)
+        profile_dir = os.path.join(home, "profiles", "standard")
+        os.makedirs(profile_dir, exist_ok=True)
+        config = os.path.join(profile_dir, "cordis.yml")
+        with open(config, "w", encoding="utf-8") as f:
+            f.write("[]\n")
+
+        roots = installation_module_roots(config, home)
+        assert resolve_module_specifier("@deepseek-ai/dsh-web-app/not-exported", profile_dir, roots) is None
+        assert exports_subpath_target(
+            json.load(open(manifest, encoding="utf-8"))["exports"], "not-exported"
+        ) is None
+        assert exports_subpath_target(
+            json.load(open(manifest, encoding="utf-8"))["exports"], "startup"
+        ) == "./lib/startup.js"
+
+        loader = _loader_with_table()
+        install_installation_module_roots(loader, config, home)
+        with pytest.raises(ModuleNotFoundError) as raised:
+            loader.import_plugin("@deepseek-ai/dsh-web-app/not-exported")
+        assert str(raised.value) == "Cannot find module '@deepseek-ai/dsh-web-app/not-exported'"
+    finally:
+        safe_rmtree(home)
+
+
+@pytest.mark.asyncio
+async def test_a_config_project_subpath_row_still_wins_over_the_installation_table(monkeypatch):
+    """A project-local package subpath is imported from the project, not the table."""
+    home = tmp()
+    try:
+        profile_dir = os.path.join(home, "profiles", "standard")
+        shadow = os.path.join(profile_dir, "node_modules", "@deepseek-ai", "dsh-local-pkg")
+        os.makedirs(shadow, exist_ok=True)
+        with open(os.path.join(shadow, "package.json"), "w", encoding="utf-8") as f:
+            json.dump(
+                {
+                    "name": "@deepseek-ai/dsh-local-pkg",
+                    "type": "module",
+                    "exports": {".": "./index.mjs", "./startup": "./startup.mjs"},
+                },
+                f,
+            )
+        with open(os.path.join(shadow, "index.mjs"), "w", encoding="utf-8") as f:
+            f.write('export function apply(ctx) { ctx.provide("localRootLoaded", true) }\n')
+        with open(os.path.join(shadow, "startup.mjs"), "w", encoding="utf-8") as f:
+            f.write('export function apply(ctx) { ctx.provide("localStartupLoaded", true) }\n')
+        config = os.path.join(profile_dir, "cordis.yml")
+        with open(config, "w", encoding="utf-8") as f:
+            f.write("- id: local-startup\n  name: '@deepseek-ai/dsh-local-pkg/startup'\n")
+        monkeypatch.setenv("DSH_HOME", home)
+
+        roots = installation_module_roots(config, home)
+        resolved = resolve_module_specifier("@deepseek-ai/dsh-local-pkg/startup", profile_dir, roots)
+        assert resolved == os.path.join(shadow, "startup.mjs")
+        assert not is_installation_owned_module(resolved, roots)
+
+        ctx = await boot(NAME, config)
+        try:
+            assert ctx.get("localStartupLoaded") is True
+            assert ctx.get("localRootLoaded") is None
+        finally:
+            await ctx.fiber.dispose()
+    finally:
+        safe_rmtree(home)
+
+
 def test_the_table_answers_only_the_installation_owned_names():
     # An unknown bare name still resolves nowhere: the table must not turn a
     # name the installation does not carry into a silent success.
@@ -635,7 +726,7 @@ def test_the_frozen_gap_is_the_union_of_every_shipped_profile():
 
             collect(patch)
     assert union <= shipped_names
-    assert len(union) == 88
+    assert len(union) == 52
 
 
 # --- boot installs and consults the table ------------------------------------
@@ -795,10 +886,7 @@ def test_table_names_are_sorted_and_unique():
 # unimplemented imports. Frozen like SHIPPED_PROVIDER_GAP: it may only shrink,
 # and only together with the provider that lands.
 SHIPPED_ACTIVATION_GAP: Dict[str, List[str]] = {
-    "web": [
-        "failed to apply loader entry webserver (@deepseek-ai/dsh-host-webserver): "
-        "cannot get property 'webStartup' without inject",
-    ],
+    "web": [],
     "standard": [],
     "headless": [],
     "creative": [],
@@ -817,9 +905,9 @@ async def test_run_profile_reports_exactly_the_shipped_provider_gap(profile):
     the same set the derived inventory reports. It never exits half-empty, and no
     row the installation does implement fails to activate.
 
-    `SHIPPED_ACTIVATION_GAP` freezes the one remaining activation failure of an
-    implemented row: the web `webserver` row injects `webStartup`, which the
-    unimplemented `@deepseek-ai/dsh-web-app/startup` row provides. Like
+    `SHIPPED_ACTIVATION_GAP` freezes the activation failures of implemented
+    rows; it is empty now that the web `webserver` row's injected `webStartup`
+    provider (`@deepseek-ai/dsh-web-app/startup`) is implemented. Like
     `SHIPPED_PROVIDER_GAP` it may only shrink, and only together with the
     provider that lands.
     """
@@ -860,21 +948,17 @@ async def test_run_profile_reports_exactly_the_shipped_provider_gap(profile):
         safe_rmtree(home)
 
 
-def test_the_activation_gap_names_only_the_web_startup_provider():
+def test_the_activation_gap_is_empty_and_the_web_startup_provider_landed():
     """
-    Guard the frozen activation gap itself: the only entry names the web
-    webserver row's injected service, whose provider is in the frozen provider
-    gap, so a provider landing must shrink both sets together.
+    Guard the frozen activation gap itself: the web `webserver` row injects
+    `webStartup`, so its provider row must be implemented in the table (and out
+    of the provider gap) for no profile to report an activation failure of an
+    implemented row.
     """
+    assert resolve_harness_plugin("@deepseek-ai/dsh-web-app/startup") is not None
     for profile in PROFILES:
-        if profile == "web":
-            assert SHIPPED_ACTIVATION_GAP[profile]
-            for entry in SHIPPED_ACTIVATION_GAP[profile]:
-                assert "failed to apply loader entry webserver (@deepseek-ai/dsh-host-webserver)" in entry
-                assert "webStartup" in entry
-                assert "@deepseek-ai/dsh-web-app/startup" in SHIPPED_PROVIDER_GAP[profile]
-        else:
-            assert SHIPPED_ACTIVATION_GAP[profile] == []
+        assert SHIPPED_ACTIVATION_GAP[profile] == []
+        assert "@deepseek-ai/dsh-web-app/startup" not in SHIPPED_PROVIDER_GAP[profile]
 
 
 # --- The shipped `!!js` bodies evaluate with JS semantics --------------------

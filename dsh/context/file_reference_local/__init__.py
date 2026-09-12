@@ -2,6 +2,7 @@ import os
 import re
 from typing import Any, Dict, List, Optional
 from dsh.cordis.plugin import Plugin
+from dsh.core.system_prompt.types import FIRST_PARTY_SECTION_ORDER
 from dsh.context.file_reference_local.grammar import active_at_token, format_file_mention
 from dsh.context.file_reference_local.search import (
     DEFAULT_FILE_SEARCH_EXCLUDED_DIRECTORIES,
@@ -44,10 +45,16 @@ class FileReferenceLocalPlugin(Plugin):
         })
         ctx.set_service("fileReferences", self.searcher)
 
-        # Register system prompt section if system_prompt or systemPrompt is available
+        # Register system prompt section if system_prompt or systemPrompt is available.
+        # Matching reference/packages/context/file-reference-local/src/index.ts, the
+        # section is contributed at FIRST_PARTY_SECTION_ORDER.FILE_REFERENCE.
         sp = ctx.get("system_prompt") if ctx.has("system_prompt") else (ctx.get("systemPrompt") if ctx.has("systemPrompt") else None)
         if sp and hasattr(sp, "section"):
-            sp.section("context:file-reference", FILE_REFERENCE_PROMPT, order=99)
+            sp.section({
+                "name": "context:file-reference",
+                "order": FIRST_PARTY_SECTION_ORDER["FILE_REFERENCE"],
+                "text": FILE_REFERENCE_PROMPT,
+            })
 
         # Invalidate search index on tool result
         ctx.on("tools/result", lambda *a, **kw: self.searcher.invalidate() if self.searcher else None)

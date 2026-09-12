@@ -17,6 +17,7 @@ Cases:
 - C8..C17  misc.ts: noop/nullability/plain-object/filterKeys/mapValues/pick/omit/defineProperty
 - C18..C24 string.ts: capitalize/camelCase/tokenize aliases/formatProperty/trimSlash/sanitize
 - C25..C33 time.ts: constants/offset/parseTime/parseDate/format/toDigits/template/date numbers
+- C45..C46 time.ts: zone-offset validation and the legacy/padded date grammar
 - C34..C43 types.ts: is/Binary encodings/clone/deepEqual
 - C44      exported-name surface of the reference package
 - T1..T7   reference/vendor/cordis/src/utils.ts cases owned by the same module
@@ -99,7 +100,12 @@ def _local_wall_clock(utc_seconds):
 
 
 def _assert_now(value):
-    """The reference's Invalid Date maps onto `new Date()` (port adaptation)."""
+    """The port's `new Date()` fallback for an unrepresentable reference date.
+
+    An ECMAScript Invalid Date has no Python value, and neither has a date
+    the implementation-defined legacy parser produces from a two-digit year;
+    both map onto the `new Date()` the reference uses for an empty input.
+    """
     assert abs((value - datetime.datetime.now()).total_seconds()) < 5
 
 
@@ -573,6 +579,102 @@ def test_c31_parse_date_unrepresentable_inputs_fall_back_to_now():
     assert Time.parseDate('14:30').hour == 14
 
 
+def test_c45_parse_date_rejects_malformed_zone_offsets():
+    """time.ts:51-61 - an out-of-range zone offset is an Invalid Date.
+
+    Reference behavior read from the pinned source on Node 22
+    (`new Date(string)`): hours are 00-23, minutes 00-59, only `Z` may
+    follow a date with no clock time, and a numeric offset must keep the
+    `+HH:MM` / `+HHMM` shape.
+    """
+    _assert_now(Time.parseDate('2026-09-03T14:30+24:00'))
+    _assert_now(Time.parseDate('2026-09-03T14:30-24:00'))
+    _assert_now(Time.parseDate('2026-09-03T14:30+00:60'))
+    _assert_now(Time.parseDate('2026-09-03T14:30+02:99'))
+    _assert_now(Time.parseDate('2026-09-03T14:30+99:99'))
+    _assert_now(Time.parseDate('2026-09-03T14:30+0260'))
+    _assert_now(Time.parseDate('2026-09-03T14:30+02:00:00'))
+    _assert_now(Time.parseDate('2026-09-03T14:30+02'))
+    _assert_now(Time.parseDate('2026-09-03T14:30+02:'))
+    _assert_now(Time.parseDate('2026-09-03+02:00'))
+    _assert_now(Time.parseDate('2026-09-03+0200'))
+    _assert_now(Time.parseDate('2026-9-3+02:00'))
+    # The boundary values are accepted and normalize the instant.
+    assert Time.parseDate('2026-09-03T14:30+23:59') == _local_wall_clock(
+        calendar.timegm((2026, 9, 2, 14, 31, 0)))
+    assert Time.parseDate('2026-09-03T14:30-00:00') == _local_wall_clock(
+        calendar.timegm((2026, 9, 3, 14, 30, 0)))
+    assert Time.parseDate('2026-09-03T14:30+0230') == _local_wall_clock(
+        calendar.timegm((2026, 9, 3, 12, 0, 0)))
+    assert Time.parseDate('2026-09-03T14:30-0130') == _local_wall_clock(
+        calendar.timegm((2026, 9, 3, 16, 0, 0)))
+
+
+def test_c46_parse_date_legacy_and_padded_forms():
+    """time.ts:51-61 - the legacy forms `new Date(string)` resolves locally.
+
+    The non-ISO grammar is implementation defined; every value below is the
+    one the pinned reference produces on Node 22.  `T` belongs to the Date
+    Time String Format only, V8 trims a padded string and then reads the
+    trimmed form as local wall clock, and the two-digit-year / time-only
+    heuristics stay unrepresentable (documented LEGAL_ADAPTATION).
+    """
+    # `YYYY[-M[-D]]`, `YYYY/MM[/DD]` and `M/D/YYYY` are local wall clock.
+    assert Time.parseDate('2026-9') == datetime.datetime(2026, 9, 1)
+    assert Time.parseDate('2026/9') == datetime.datetime(2026, 9, 1)
+    assert Time.parseDate('2026/09') == datetime.datetime(2026, 9, 1)
+    assert Time.parseDate('2026-9/3') == datetime.datetime(2026, 9, 3)
+    assert Time.parseDate('2026-09/03') == datetime.datetime(2026, 9, 3)
+    assert Time.parseDate('2026-1-3') == datetime.datetime(2026, 1, 3)
+    assert Time.parseDate('1/3/2026') == datetime.datetime(2026, 1, 3)
+    assert Time.parseDate('2026-9 12:30') == datetime.datetime(2026, 9, 1, 12, 30)
+    assert Time.parseDate('2026-9-3 12:30:45') == datetime.datetime(2026, 9, 3, 12, 30, 45)
+    assert Time.parseDate('2026-9-3 12:30:45.5') == datetime.datetime(2026, 9, 3, 12, 30, 45, 500000)
+    # Repeated whitespace is accepted between the date and the clock time.
+    assert Time.parseDate('2026-9-3  12:30') == datetime.datetime(2026, 9, 3, 12, 30)
+    assert Time.parseDate('2026-09-03\t12:30') == datetime.datetime(2026, 9, 3, 12, 30)
+    # A zone suffix on a legacy form shifts the wall clock like an ISO one,
+    # and `Z` may also follow a legacy date that has no clock time.
+    assert Time.parseDate('2026-9-3 12:30Z') == _local_wall_clock(
+        calendar.timegm((2026, 9, 3, 12, 30, 0)))
+    assert Time.parseDate('2026-9-3 12:30 Z') == _local_wall_clock(
+        calendar.timegm((2026, 9, 3, 12, 30, 0)))
+    assert Time.parseDate('2026-9-3 12:30 +02:00') == _local_wall_clock(
+        calendar.timegm((2026, 9, 3, 10, 30, 0)))
+    assert Time.parseDate('2026/9/3Z') == _local_wall_clock(
+        calendar.timegm((2026, 9, 3, 0, 0, 0)))
+    assert Time.parseDate('2026-9Z') == _local_wall_clock(
+        calendar.timegm((2026, 9, 1, 0, 0, 0)))
+    assert Time.parseDate('2026-09-03 Z') == _local_wall_clock(
+        calendar.timegm((2026, 9, 3, 0, 0, 0)))
+    # Only a space (never `T`) separates these forms from their clock time.
+    _assert_now(Time.parseDate('2026-9-3T12:30'))
+    _assert_now(Time.parseDate('2026-9-3t12:30'))
+    _assert_now(Time.parseDate('2026/9/3T12:30'))
+    _assert_now(Time.parseDate('1/3/2026T12:30'))
+    _assert_now(Time.parseDate('2026-9-3 12:30.5'))
+    _assert_now(Time.parseDate('2026-9-3 +02:00'))
+    _assert_now(Time.parseDate('2026-9-3 12:30:60'))
+    # A padded string is read through the trimmed form, which is local wall
+    # clock even where the unpadded Date Time String Format is UTC.
+    assert Time.parseDate('2026-09') == _local_wall_clock(
+        calendar.timegm((2026, 9, 1, 0, 0, 0)))
+    assert Time.parseDate('2026-09\n') == datetime.datetime(2026, 9, 1)
+    assert Time.parseDate('2026-09-03 ') == datetime.datetime(2026, 9, 3)
+    assert Time.parseDate(' 2026-09-03') == datetime.datetime(2026, 9, 3)
+    assert Time.parseDate('\t2026-09-03') == datetime.datetime(2026, 9, 3)
+    assert Time.parseDate('2026-9-3 12:30 \n') == datetime.datetime(2026, 9, 3, 12, 30)
+    assert Time.parseDate('2026 ') == datetime.datetime(2026, 1, 1)
+    # Padding does not rescue a form whose own grammar V8 rejects.
+    _assert_now(Time.parseDate('2026-09-03T14:30\n'))
+    _assert_now(Time.parseDate('2026-09-03T14:30Z\n'))
+    _assert_now(Time.parseDate('14:30\n'))
+    # The reference loses its own regex match on a padded M-D-H:MM string
+    # and reads it as a two-digit year instead ('9-9-12:30 ' is 2001-09-09
+    # on V8), which stays unrepresentable and reports as now.
+    _assert_now(Time.parseDate('9-9-12:30\n'))
+
+
 def test_c32_format_rounds_half_up_with_unit_thresholds():
     """time.ts:63-75 - `Math.round` against day/hour/minute/second thresholds."""
     assert Time.format(0) == '0ms'
@@ -668,7 +770,15 @@ def test_c36_is_matches_constructor_or_internal_tag():
     assert is_('Function', lambda: 1) is True
     assert is_('Set', {1, 2}) is True
     assert is_('ArrayBuffer', b'\x01\x02') is True
-    assert is_('Uint8Array', b'\x01\x02') is True
+    assert is_('SharedArrayBuffer', bytearray(b'\x01\x02')) is True
+    # `isArrayBufferLike` only matches a buffer that owns its memory;
+    # `is('ArrayBuffer', new Uint8Array(2))` is false in the reference.
+    assert is_('ArrayBuffer', memoryview(b'\x01\x02')) is False
+    # `ArrayBuffer.isView` is the other half of the split, so a buffer is
+    # not a view (`is('Uint8Array', new ArrayBuffer(2))` is false).
+    assert is_('Uint8Array', b'\x01\x02') is False
+    assert is_('Uint8Array', memoryview(b'\x01\x02')) is True
+    assert is_('DataView', memoryview(b'\x01\x02')) is True
     assert is_('Uint8Array', 'abc') is False
     assert is_('Error', ValueError('x')) is True
     # An unknown global name cannot match.
@@ -685,10 +795,11 @@ def test_c37_binary_source_detection_and_slicing():
     binary_is = getattr(Binary, 'is')
     assert binary_is(b'\x01\x02') is True
     assert binary_is(bytearray(b'\x01\x02')) is True
-    # A view is not a buffer.
+    # A view is not a buffer, but it is an ArrayBuffer source.
     assert binary_is(memoryview(b'\x01\x02')) is False
     assert Binary.is_source(memoryview(b'\x01\x02')) is True
     assert Binary.isSource(b'\x01\x02') is True
+    assert Binary.isSource(bytearray(b'\x01\x02')) is True
     assert Binary.isSource('abc') is False
     buffer = b'\x01\x02\x03\x04'
     assert Binary.from_source(buffer) is buffer
@@ -741,6 +852,42 @@ def test_c40_clone_copies_containers_and_preserves_cycles():
     result = clone(cyclic)
     assert result['a'] == 1
     assert result['self'] is result
+    # `ArrayBuffer.isView` -> the view's own byte range becomes a fresh
+    # buffer, so a `memoryview` clone is bytes and never raises.
+    view = memoryview(b'\x01\x02\x03\x04')[1:3]
+    copied = clone(view)
+    assert isinstance(copied, memoryview) is False
+    assert bytes(copied) == b'\x02\x03'
+    # The reference reaches a nested view through own keys and elements.
+    assert bytes(clone({'a': view})['a']) == b'\x02\x03'
+    assert bytes(clone([view])[0]) == b'\x02\x03'
+    assert bytes(clone((1, view))[1]) == b'\x02\x03'
+
+    class Holder:
+        def __init__(self, value):
+            self.view = value
+
+    class Slotted:
+        __slots__ = ('view',)
+
+        def __init__(self, value):
+            self.view = value
+
+    # A view held by an object is cloned like any other own key; a plain
+    # `copy.deepcopy` would raise on it.
+    assert bytes(clone(Holder(view)).view) == b'\x02\x03'
+    assert bytes(clone(Slotted(view)).view) == b'\x02\x03'
+    # Cycles are preserved while the view inside them is still copied.
+    cyclic_with_view = {'view': view}
+    cyclic_with_view['self'] = cyclic_with_view
+    copied = clone(cyclic_with_view)
+    assert copied['self'] is copied
+    assert bytes(copied['view']) == b'\x02\x03'
+    # An ArrayBuffer-like `bytearray` is copied, not shared.
+    buffer = bytearray(b'\x01\x02')
+    assert clone(buffer) == buffer
+    assert clone(buffer) is not buffer
+    assert bytes(clone(b'\x01\x02')) == b'\x01\x02'
     # Immutable values may be shared; the reference allocates a fresh instance.
     frozen = datetime.datetime(2026, 9, 3)
     assert clone(frozen) == frozen
@@ -783,6 +930,15 @@ def test_c42_deep_equal_structures():
     assert deep_equal(re.compile('a', re.I), re.compile('b', re.I)) is False
     assert deepEqual(b'\x01\x02', b'\x01\x02') is True
     assert deepEqual(b'\x01\x02', b'\x01') is False
+    assert deepEqual(bytearray(b'\x01\x02'), b'\x01\x02') is True
+    # `check(isArrayBufferLike, ...)`: an ArrayBuffer is never equal to a
+    # view over the same bytes, which compares through its index keys.
+    assert deepEqual(b'\x02\x03', memoryview(b'\x02\x03')) is False
+    assert deep_equal(memoryview(b'\x02\x03'), b'\x02\x03') is False
+    assert deepEqual(memoryview(b'\x02\x03'), memoryview(b'\x02\x03')) is True
+    assert deepEqual(memoryview(b'\x02\x03'), memoryview(b'\x09\x09')) is False
+    assert deepEqual(memoryview(b'\x02\x03'), [2, 3]) is False
+    assert deep_equal(memoryview(b'\x02\x03'), {'0': 2, '1': 3}) is True
     assert deepEqual({'a': 1}, {'a': 1}) is True
     assert deepEqual({'a': 1}, {'a': 2}) is False
     assert deepEqual({'a': 1}, {'a': 1, 'b': 2}) is False
@@ -796,7 +952,6 @@ def test_c42_deep_equal_structures():
 
 def test_c43_deep_equal_strict_disables_the_nullish_shortcut():
     """types.ts:120 - `if (!strict && isNullable(a) && isNullable(b)) return true`."""
-    assert deepEqual({'a': None}, {}) is False or deepEqual({'a': None}, {}) is True
     # Non-strict: a null field equals an absent one.
     assert deepEqual({'a': None}, {}) is True
     # Strict: the absent key reads as undefined, which is not null.

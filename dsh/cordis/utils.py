@@ -208,9 +208,15 @@ def _js_membership_key(value: Any) -> Any:
 
 
 def _js_own_enumerable_keys(value: Any) -> List[Any]:
-    """``Object.keys`` for a Python value (dict keys, else instance attributes)."""
+    """``Object.keys`` for a Python value (dict keys, else instance attributes).
+
+    A `memoryview` is the port's ArrayBufferView, whose own enumerable keys
+    are its element indices.
+    """
     if isinstance(value, dict):
         return list(value.keys())
+    if isinstance(value, memoryview):
+        return [str(index) for index in range(len(value))]
     own = getattr(value, "__dict__", None)
     if isinstance(own, dict):
         return list(own.keys())
@@ -221,19 +227,69 @@ def _js_read_key(value: Any, key: Any) -> Any:
     """``value[key]``; a missing key reads as ``undefined`` (``None`` here)."""
     if isinstance(value, dict):
         return value.get(key)
+    if isinstance(value, memoryview):
+        if isinstance(key, str) and key.isdigit() and int(key) < len(value):
+            return value[int(key)]
+        return None
     return getattr(value, key, None)
+
+
+def _seed_view_copies(value: Any, memo: Dict[int, Any], seen: Set[int]) -> None:
+    """Register the clone of every reachable `memoryview` in a deepcopy memo.
+
+    The reference clone branches on ``ArrayBuffer.isView`` and copies the
+    view's own byte range into a fresh buffer, and it reaches a nested view
+    through ``Reflect.ownKeys``/array elements.  A `memoryview` is the port's
+    ArrayBufferView and the one value ``copy.deepcopy`` cannot copy, so its
+    clone is registered before the deepcopy walk reads it.
+    """
+    key = id(value)
+    if key in seen:
+        return
+    seen.add(key)
+    if isinstance(value, memoryview):
+        memo[key] = value.tobytes()
+        return
+    if value is None or isinstance(value, (bytes, bytearray, str, bool, int, float, type)):
+        return
+    if isinstance(value, (datetime.datetime, datetime.date, _REGEX_TYPE)):
+        return
+    if isinstance(value, dict):
+        for item in value.values():
+            _seed_view_copies(item, memo, seen)
+        return
+    if isinstance(value, (list, tuple, set, frozenset)):
+        for item in value:
+            _seed_view_copies(item, memo, seen)
+        return
+    members: List[Any] = []
+    own = getattr(value, "__dict__", None)
+    if isinstance(own, dict):
+        members.extend(own.values())
+    for name in getattr(type(value), "__slots__", ()) or ():
+        try:
+            members.append(getattr(value, name))
+        except AttributeError:
+            pass
+    for item in members:
+        _seed_view_copies(item, memo, seen)
 
 
 def clone(value: Any) -> Any:
     """Deep clone a value matching Cosmokit clone.
 
-    LEGAL_ADAPTATION: ``copy.deepcopy`` follows the reference clone by keeping
-    the class (prototype) and reference cycles, and it copies every own
-    attribute the way ``Reflect.ownKeys`` does. Python has no property
-    enumerability and no ArrayBuffer/TypedArray split, so immutable containers
-    (``tuple``/``bytes``/``datetime``) may be shared with the source.
+    The reference re-creates every container with the source prototype and
+    follows reference cycles, which is what ``copy.deepcopy`` does for Python
+    values.
+
+    LEGAL_ADAPTATION: Python has no property enumerability, so immutable
+    values (``tuple``/``bytes``/``datetime``) may be shared with the source
+    where the reference allocates a fresh instance; an ArrayBuffer-like
+    ``bytearray`` is copied exactly like ``ArrayBuffer.slice(0)`` copies it.
     """
-    return copy.deepcopy(value)
+    memo: Dict[int, Any] = {}
+    _seed_view_copies(value, memo, set())
+    return copy.deepcopy(value, memo)
 
 
 def deep_equal(a: Any, b: Any, strict: bool = False) -> bool:
@@ -266,9 +322,11 @@ def deep_equal(a: Any, b: Any, strict: bool = False) -> bool:
         if not (isinstance(a, _REGEX_TYPE) and isinstance(b, _REGEX_TYPE)):
             return False
         return a.pattern == b.pattern and a.flags == b.flags
-    if isinstance(a, (bytes, bytearray, memoryview)) or isinstance(b, (bytes, bytearray, memoryview)):
-        if not (isinstance(a, (bytes, bytearray, memoryview))
-                and isinstance(b, (bytes, bytearray, memoryview))):
+    # `check(isArrayBufferLike, ...)`: only buffers that own their memory take
+    # this branch, so an ArrayBuffer never equals a TypedArray over the same
+    # bytes - the view falls through to the own-index-key comparison below.
+    if isinstance(a, (bytes, bytearray)) or isinstance(b, (bytes, bytearray)):
+        if not (isinstance(a, (bytes, bytearray)) and isinstance(b, (bytes, bytearray))):
             return False
         return bytes(a) == bytes(b)
     if strict and isinstance(a, dict) and isinstance(b, dict) and len(a) != len(b):
@@ -777,20 +835,30 @@ class Time:
         re.ASCII,
     )
 
-    _TIME_ONLY_REGEX = re.compile(r"^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$", re.ASCII)
-    _MONTH_DAY_REGEX = re.compile(r"^(\d{1,2})-(\d{1,2})-(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$", re.ASCII)
+    # JavaScript's `$` (without the `m` flag) only matches at the very end,
+    # while Python's also matches before a trailing newline, so the mirrored
+    # literals anchor with `\Z`.
+    _TIME_ONLY_REGEX = re.compile(r"^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?\Z", re.ASCII)
+    _MONTH_DAY_REGEX = re.compile(r"^(\d{1,2})-(\d{1,2})-(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?\Z", re.ASCII)
     # The Date Time String Format of ECMA-262: the month and day parts,
     # and the whole time part, are optional and default to 01/01/00:00:00;
     # a date-only form is UTC while a date-time form is local wall clock.
     _ISO_DATETIME_REGEX = re.compile(
         r"^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?"
-        r"(?:[Tt ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?)?"
-        r"(Z|z|[+-]\d{2}:?\d{2})?$",
+        r"(?:(?:[Tt]|[ \t]+)(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?)?"
+        r"(Z|z|[+-]\d{2}:?\d{2})?\Z",
         re.ASCII,
     )
-    _LOCAL_DATE_REGEX = re.compile(
-        r"^(?:(\d{4})[-/](\d{1,2})[-/](\d{1,2})|(\d{1,2})/(\d{1,2})/(\d{4}))"
-        r"(?:[ T](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$",
+    # The legacy forms V8 accepts beyond the Date Time String Format, all
+    # resolved as local wall clock unless they carry an explicit zone:
+    # `YYYY[-M[-D]]`, `YYYY/MM[/DD]` and `M/D/YYYY`, with an optional
+    # whitespace-separated clock time.  V8 rejects every `T` variant here
+    # (`new Date("2026-9-3T12:30")` is an Invalid Date) and rejects a
+    # numeric zone offset on a date that has no clock time.
+    _LEGACY_DATE_REGEX = re.compile(
+        r"^(?:(\d{4})(?:[-/](\d{1,2})(?:[-/](\d{1,2}))?)?|(\d{1,2})/(\d{1,2})/(\d{4}))"
+        r"(?:[ \t]+(\d{1,2}):(\d{1,2})(?::(\d{1,2})(?:\.(\d+))?)?)?"
+        r"(?: ?(Z|z|[+-]\d{2}:?\d{2}))?\Z",
         re.ASCII,
     )
 
@@ -827,7 +895,8 @@ class Time:
 
         LEGAL_ADAPTATION: an ECMAScript ``Invalid Date`` has no Python value.
         Where the reference returns ``new Date(NaN)`` (an unreachable clock
-        part, an out-of-range month/day) this port returns ``new Date()`` -
+        part, an out-of-range month/day or timezone offset) this port returns
+        ``new Date()`` -
         the same value the reference uses for an empty input - instead of
         raising, keeping the no-throw contract of the reference.
         """
@@ -876,18 +945,54 @@ class Time:
         except (ValueError, OverflowError):
             return None
 
+    @staticmethod
+    def _build_zoned(year: int, month: int, day: int, hour: int, minute: int,
+                     second: int, microsecond: int, zone: str) -> Optional[datetime.datetime]:
+        """The local instant an explicit zone offset names, or None for an
+        offset the reference rejects (an Invalid Date)."""
+        offset_minutes = Time._parse_zone_offset(zone)
+        if offset_minutes is None:
+            return None
+        epoch = (calendar.timegm((year, month, 1, hour, minute, second))
+                 + (day - 1) * 86400 - offset_minutes * 60
+                 + microsecond / 1000000.0)
+        try:
+            return _datetime_from_epoch(epoch)
+        except (OSError, OverflowError, ValueError):
+            return None
+
+    @staticmethod
+    def _parse_zone_offset(offset: str) -> Optional[int]:
+        """Zone offset in minutes, or None for an offset the reference rejects.
+
+        ECMA-262 allows ``Z``/``z`` or ``+HH:MM``/``+HHMM`` with hours 00-23
+        and minutes 00-59; every other offset is an Invalid Date in V8
+        (``+24:00``, ``+00:60``, ``+02``, ``+02:00:00``).
+        """
+        if offset in ("Z", "z"):
+            return 0
+        digits = offset[1:].replace(":", "")
+        hour, minute = int(digits[:2]), int(digits[2:])
+        if hour > 23 or minute > 59:
+            return None
+        return (1 if offset[0] == "+" else -1) * (hour * 60 + minute)
+
     @classmethod
     def _parse_js_date_string(cls, source: Any, now: datetime.datetime) -> datetime.datetime:
         """Best effort `new Date(string)` for the deterministic date forms.
 
         LEGAL_ADAPTATION: the ECMAScript grammar for non-ISO date strings is
-        implementation defined - V8 also accepts RFC 2822 text, a one-digit
-        month ("2026-9") and two-digit years - and an unparseable string
-        produces an Invalid Date that Python cannot represent.  The Date Time
-        String Format of ECMA-262 and the unambiguous legacy `YYYY-M-D` /
-        `YYYY/MM/DD` / `M/D/YYYY` forms are reproduced exactly; every other
-        string falls back to `new Date()` (now) exactly like an empty string
-        does, which is how this port also renders a reference Invalid Date.
+        implementation defined - V8 also accepts RFC 2822 text, two-digit
+        years and bare time strings - and an unparseable string produces an
+        Invalid Date that Python cannot represent.  The Date Time String
+        Format of ECMA-262 and the legacy `YYYY[-M[-D]]`, `YYYY/MM[/DD]` and
+        `M/D/YYYY` forms are reproduced exactly, each with an optional
+        whitespace-separated clock time, zone suffix and millisecond
+        fraction, and each read as local wall clock unless it names a zone;
+        V8 trims a padded string before it reads those forms, so a padded
+        string is reproduced through its trimmed form.  Every other string
+        falls back to `new Date()` (now) exactly like an empty string does,
+        which is how this port also renders a reference Invalid Date.
         """
         if not source or not isinstance(source, str):
             return now
@@ -920,32 +1025,49 @@ class Time:
             if offset is None:
                 # A date-time without an offset is local wall-clock time.
                 return cls._build_local(year, month, day, hour, minute, second, micro) or now
-            if offset in ("Z", "z"):
-                offset_minutes = 0
-            else:
-                digits = offset[1:].replace(":", "")
-                sign = 1 if offset[0] == "+" else -1
-                offset_minutes = sign * (int(digits[:2]) * 60 + int(digits[2:]))
-            epoch = (calendar.timegm((year, month, 1, hour, minute, second))
-                     + (day - 1) * 86400 - offset_minutes * 60
-                     + micro / 1000000.0)
-            try:
-                return _datetime_from_epoch(epoch)
-            except (OSError, OverflowError, ValueError):
-                return now
-        m = cls._LOCAL_DATE_REGEX.match(source)
-        if m:
-            if m.group(1) is not None:
-                year, month, day = int(m.group(1)), int(m.group(2)), int(m.group(3))
-            else:
-                year, month, day = int(m.group(6)), int(m.group(4)), int(m.group(5))
-            hour = int(m.group(7) or 0)
-            minute = int(m.group(8) or 0)
-            second = int(m.group(9) or 0)
-            if not (1 <= month <= 12 and 1 <= day <= 31) or not cls._is_valid_clock(hour, minute, second):
-                return now
-            return cls._build_local(year, month, day, hour, minute, second, 0) or now
+            return cls._build_zoned(year, month, day, hour, minute, second, micro, offset) or now
+        for candidate in (source, source.strip()):
+            m = cls._LEGACY_DATE_REGEX.match(candidate)
+            if not m:
+                continue
+            value = cls._build_legacy(m)
+            if value is not None:
+                return value
+            if candidate is source:
+                break
         return now
+
+    @classmethod
+    def _build_legacy(cls, m: Any) -> Optional[datetime.datetime]:
+        """The instant a `_LEGACY_DATE_REGEX` match names, or None if invalid.
+
+        LEGAL_ADAPTATION: V8's non-ISO parser trims the string before it
+        reads these forms, so a whitespace-padded form resolves as local wall
+        clock instead of as the UTC Date Time String Format; its two-digit
+        year and time-only heuristics stay unrepresentable and report as now.
+        """
+        if m.group(1) is not None:
+            year = int(m.group(1))
+            month = int(m.group(2)) if m.group(2) is not None else 1
+            day = int(m.group(3)) if m.group(3) is not None else 1
+        else:
+            year, month, day = int(m.group(6)), int(m.group(4)), int(m.group(5))
+        hour = int(m.group(7) or 0)
+        minute = int(m.group(8) or 0)
+        second = int(m.group(9) or 0)
+        # Date time values have millisecond resolution.
+        micro = int((m.group(10) + "000")[:3]) * 1000 if m.group(10) else 0
+        zone = m.group(11)
+        if not (1 <= month <= 12 and 1 <= day <= 31) or not 1 <= year <= 9999:
+            return None
+        if not cls._is_valid_clock(hour, minute, second):
+            return None
+        if zone is None:
+            return cls._build_local(year, month, day, hour, minute, second, micro)
+        if m.group(7) is None and zone not in ("Z", "z"):
+            # Only `Z` may follow a date that has no clock time.
+            return None
+        return cls._build_zoned(year, month, day, hour, minute, second, micro, zone)
 
     @classmethod
     def format(cls, ms: float) -> str:
@@ -1281,14 +1403,17 @@ def is_(type_str: str, value: Any = Ellipsis) -> Any:
     check is by global constructor / internal tag.  The Python mapping reuses
     the same idea for the constructor names that exist here (`Object` covers
     plain data objects, `Map` the dict-backed mapping, `Null`/`Undefined` the
-    single Python `None`, `ArrayBuffer`/`Uint8Array` the bytes-like buffers).
+    single Python `None`, `ArrayBuffer`/`SharedArrayBuffer` the owning buffers
+    `bytes`/`bytearray`, and every ArrayBufferView name the `memoryview`).
 
-    LEGAL_ADAPTATION: `Symbol` has no Python equivalent, and the reference's
+    LEGAL_ADAPTATION: `Symbol` has no Python equivalent, the reference's
     single `typeof`-based `Array`/`Object` split cannot distinguish a Python
     dict used as a plain object from one used as a `Map`, so `Map`/`WeakMap`
-    accept every dict even though a JavaScript plain object is not a Map.
-    `is` is a Python keyword, so the exported predicate is spelled `is_`
-    (the same spelling `Binary.is` keeps as an attribute).
+    accept every dict even though a JavaScript plain object is not a Map, and
+    Python exposes one generic view type, so every typed-array name matches a
+    `memoryview` regardless of its element type.  `is` is a Python keyword,
+    so the exported predicate is spelled `is_` (the same spelling `Binary.is`
+    keeps as an attribute).
     """
 
     def _check(val: Any) -> bool:
@@ -1311,11 +1436,16 @@ def is_(type_str: str, value: Any = Ellipsis) -> Any:
         if type_str == "RegExp":
             return isinstance(val, _REGEX_TYPE)
         if type_str in ("ArrayBuffer", "SharedArrayBuffer"):
-            return isinstance(val, (bytes, bytearray, memoryview))
+            # `isArrayBufferLike`: only a buffer that owns its memory matches,
+            # i.e. `bytes`/`bytearray`.  A view over one is not an ArrayBuffer
+            # (`is('ArrayBuffer', new Uint8Array(2))` is false).
+            return isinstance(val, (bytes, bytearray))
         if type_str in ("Uint8Array", "Uint8ClampedArray", "Int8Array", "Uint16Array",
                         "Int16Array", "Uint32Array", "Int32Array", "Float32Array",
                         "Float64Array", "BigInt64Array", "BigUint64Array", "DataView"):
-            return isinstance(val, (bytes, bytearray, memoryview))
+            # `ArrayBuffer.isView`: a view matches, the buffer it views does
+            # not (`is('Uint8Array', new ArrayBuffer(2))` is false).
+            return isinstance(val, memoryview)
         if type_str in ("Map", "WeakMap"):
             return isinstance(val, dict)
         if type_str in ("Set", "WeakSet"):

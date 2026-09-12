@@ -372,6 +372,54 @@ def test_architect_repairs_saved_invalid_plan_in_original_session(repo, monkeypa
     assert json.loads((p.folder / "architecture-status.json").read_text())["state"] == "APPLIED"
 
 
+def test_architect_requests_tool_submission_after_text_only_completion(repo, monkeypatch):
+    p = make_project(repo)
+    p.store.meta("architecture", "not-planned")
+    invalid = plan(task("a"))
+    invalid["tasks"][0]["provides"] += ["contract:ghost"]
+    valid = json.loads(json.dumps(invalid))
+    valid["tasks"][0]["provides"].remove("contract:ghost")
+    recipe = p.folder / "architecture-123.yaml"
+    recipe.write_text("{}", encoding="utf-8")
+    project.save_json(p.folder / "architecture-123.0.events.accepted.json", invalid)
+    (p.folder / "architecture-123.0.events.jsonl").write_text('{"type":"complete"}\n', encoding="utf-8")
+    project.save_json(p.folder / "architecture-pending.json",
+                      {"recipe": str(recipe), "upstream": "pinned-fixture"})
+    calls = []
+    def process(command, root, log, notify, timeout, stream, **kwargs):
+        calls.append(command)
+        stream.complete = True
+        if len(calls) == 1:
+            assert "recipe__final_output" in command[-1]  # plan-rejection repair prompt
+            return 0  # session finished but answered with plain text, no tool result
+        assert "arrived as plain text" in command[-1]
+        stream.accepted_result = valid
+        return 0
+    monkeypatch.setattr(project, "run_process", process)
+    p.architect()
+    assert len(calls) == 2
+    assert p.store.plan_is_current(valid)
+    assert not (p.folder / "architecture-pending.json").exists()
+    assert json.loads((p.folder / "architecture-status.json").read_text())["state"] == "APPLIED"
+
+
+def test_architect_applies_plan_recovered_from_text_when_tool_result_missing(repo, monkeypatch):
+    p = make_project(repo)
+    expected = plan(task("a"))
+    calls = []
+    def process(command, root, log, notify, timeout, stream, **kwargs):
+        calls.append(command)
+        stream.complete = True
+        stream.messages["m1"] = "The plan follows: " + json.dumps(expected) + " Thank you."
+        return 0
+    monkeypatch.setattr(project, "run_process", process)
+    p.architect()
+    assert len(calls) == 1
+    assert p.store.plan_is_current(expected)
+    assert not (p.folder / "architecture-pending.json").exists()
+    assert json.loads((p.folder / "architecture-status.json").read_text())["state"] == "APPLIED"
+
+
 def test_unknown_contract_validation_reports_all_missing_references(store):
     invalid = plan(task("a"), task("b"))
     invalid["tasks"][0]["consumes"] = ["missing-a"]

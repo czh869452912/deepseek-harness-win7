@@ -36,6 +36,26 @@ CONTRACT_SCHEMA = {"type": "object", "properties": {
 PLAN_SCHEMA = {"type": "object", "properties": {
     "tasks": {"type": "array", "items": TASK_SCHEMA},
     "contracts": {"type": "array", "items": CONTRACT_SCHEMA}}, "required": ["tasks", "contracts"]}
+
+
+def recover_plan(stream):
+    """Extract a plan-shaped object the session delivered as plain text."""
+    decoder = json.JSONDecoder()
+    best = None
+    for text in list(stream.messages.values()):
+        idx = text.find("{")
+        while idx != -1:
+            try:
+                obj, _ = decoder.raw_decode(text, idx)
+            except ValueError:
+                idx = text.find("{", idx + 1)
+                continue
+            if isinstance(obj, dict) and isinstance(obj.get("tasks"), list) and isinstance(obj.get("contracts"), list):
+                if best is None or len(text) > len(best[1]):
+                    best = (obj, text)
+                break
+            idx = text.find("{", idx + 1)
+    return None if best is None else best[0]
 # Optional graph proposals are machine-actionable; old role results remain valid.
 SCHEMA["properties"]["work_plan"] = PLAN_SCHEMA
 
@@ -210,6 +230,7 @@ class Project:
         command = [self.goose, "run", "--recipe", str(path), "--name", name, "--output-format", "stream-json"]
         continuation = 0
         prior_plan = None
+        tool_rounds = 0
         if saved:
             previous_logs = list(self.folder.glob(name + ".*.events.jsonl"))
             continuation = max([int(p.name[len(name) + 1:].split('.')[0]) for p in previous_logs] or [-1]) + 1
@@ -242,12 +263,33 @@ class Project:
                 if code or not stream.complete:
                     raise ValueError("Architect did not complete; retained session and logs for resume")
                 command = [self.goose, "run", "--resume", "--name", name, "--output-format", "stream-json",
-                           "--text", "Continue architecture planning with your existing context/tools until correct; return the structured plan."]
+                           "--text", "Continue architecture planning with your existing context/tools until correct; "
+                           "return the structured plan through the recipe__final_output tool."]
                 if stream.action_limit_reached:
                     continue
                 if stream.accepted_result is None:
-                    raise ValueError("Architect did not complete a structured plan; retained its log")
-                plan = stream.accepted_result
+                    # The session can finish with the plan written as plain text or
+                    # lose its final_output call to a provider failure. The store's
+                    # transactional validation is the real gate, so consume the
+                    # delivered text first and only then ask for a tool resubmission.
+                    recovered = recover_plan(stream)
+                    if recovered is None:
+                        tool_rounds += 1
+                        if tool_rounds > 2:
+                            raise ValueError("Architect never submitted the plan through recipe__final_output; "
+                                             "retained session and logs for resume")
+                        print("[architect] repair: plan arrived as plain text; requesting recipe__final_output "
+                              "submission (round %d)" % tool_rounds, flush=True)
+                        command = [self.goose, "run", "--resume", "--name", name, "--output-format", "stream-json",
+                                   "--text", "Your plan arrived as plain text, which the scheduler cannot apply. Call the "
+                                   "recipe__final_output tool once with the complete corrected plan JSON (tasks and "
+                                   "contracts) you already produced. Do not repeat the plan as chat text."]
+                        continue
+                    print("[architect] repair: session delivered the plan as text; "
+                          "applying it after store validation", flush=True)
+                    plan = recovered
+                else:
+                    plan = stream.accepted_result
             save_json(path.with_suffix(".%d.proposal.json" % continuation), plan)
             try:
                 self.store.apply_plan(plan)
@@ -261,7 +303,8 @@ class Project:
                            "Repair the existing plan, preserving all valid tasks and evidence. Return the complete corrected "
                            "incremental plan, not only the missing definitions. Every consumed/provided contract must "
                            "exist in the registry or in contracts. Inspect canonical owners; do not invent placeholders "
-                           "or remove requirements to bypass validation. Validation error: " + str(error)]
+                           "or remove requirements to bypass validation. Submit the plan through the recipe__final_output "
+                           "tool; plain-text output is not accepted. Validation error: " + str(error)]
                 continue
             break
         save_json(path.with_suffix(".plan.json"), plan)

@@ -431,6 +431,13 @@ def test_c16_define_property_returns_the_target():
     assert target['k'] == 5
     target = {'k': 1}
     assert defineProperty(target, 'k', 2) == {'k': 2}
+    # `Object.defineProperty` requires an object, so every ECMAScript primitive
+    # target throws the reference's TypeError (Node 22: "Object.defineProperty
+    # called on non-object") instead of `setattr`'s AttributeError.
+    for primitive in (None, _UNDEFINED, True, 1, 1.5, 'a'):
+        with pytest.raises(TypeError) as error:
+            define_property(primitive, 'k', 5)
+        assert str(error.value) == 'Object.defineProperty called on non-object'
 
 
 def test_c17_export_aliases_of_misc_helpers():
@@ -841,6 +848,16 @@ def test_c46_parse_date_legacy_and_padded_forms():
     # and reads it as a two-digit year instead ('9-9-12:30 ' is 2001-09-09
     # on V8), which stays unrepresentable and reports as now.
     _assert_now(Time.parseDate('9-9-12:30\n'))
+    # V8's remaining implementation-defined heuristics stay outside the subset
+    # this port reproduces: a bare `M-D` / `M-D-YYYY` date and RFC 2822 text
+    # parse there (Node 22 oracle: '3-5' is 2001-03-05 local, '3-5-2026' is
+    # 2026-03-05 local, '5' is 2001-05-01 local, 'Jan 1 2026' is
+    # 2026-01-01T00:00Z) and report as now here.
+    _assert_now(Time.parseDate('3-5'))
+    _assert_now(Time.parseDate('3-5-2026'))
+    _assert_now(Time.parseDate('5'))
+    _assert_now(Time.parseDate('Jan 1 2026'))
+    _assert_now(Time.parseDate('1 Jan 2026'))
 
 
 def test_c32_format_rounds_half_up_with_unit_thresholds():
@@ -1083,6 +1100,19 @@ def test_c40_clone_copies_containers_and_preserves_cycles():
     assert clone(5) == 5
     assert clone('a') == 'a'
     assert clone(None) is None
+    # `undefined` is falsy, so `!source` returns it unchanged and
+    # `clone(undefined)` *is* `undefined`: the sentinel must stay the single
+    # instance every identity-based nullish check recognizes, or the clone
+    # stops being nullish.
+    assert clone(_UNDEFINED) is _UNDEFINED
+    assert is_('Undefined', clone(_UNDEFINED)) is True
+    assert is_nullable(clone(_UNDEFINED)) is True
+    assert deep_equal([_UNDEFINED], [clone(_UNDEFINED)]) is True
+    # `pick(..., forced=True)` is where the sentinel reaches a container, so a
+    # cloned result must not turn its absent key into a distinct value.
+    forced_pick = pick({'a': 1}, ['a', 'z'], True)
+    assert clone(forced_pick)['z'] is _UNDEFINED
+    assert deepEqual(clone(forced_pick), forced_pick) is True
 
 
 def test_c41_deep_equal_primitives_and_nullish():

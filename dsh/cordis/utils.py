@@ -173,6 +173,18 @@ class _UndefinedValue(object):
     def __bool__(self) -> bool:
         return False  # an ECMAScript falsy value
 
+    def __deepcopy__(self, memo: Any) -> "_UndefinedValue":
+        """`clone` returns a falsy source unchanged, so the sentinel stays itself.
+
+        The reference opens `clone` with `if (!source || typeof source !==
+        'object') return source`, and `undefined` is falsy, so
+        ``clone(undefined)`` *is* ``undefined``.  Every nullish check in the
+        port recognizes the sentinel by identity, so a deep-copied duplicate
+        would stop being nullish and would report as a distinct value
+        (``deepEqual([undefined], [clone(undefined)])`` must stay true).
+        """
+        return self
+
     def __repr__(self) -> str:
         return "undefined"
 
@@ -2045,7 +2057,17 @@ def define_property(obj: Any, key: str, value: Any) -> Any:
     the port does not swallow that failure either.  A dict is the plain-object
     equivalent and receives a plain entry (Python has no enumerability, so the
     `enumerable: false` part of the descriptor cannot be represented).
+
+    `Object.defineProperty` requires an object, so every ECMAScript primitive
+    target (null, undefined, boolean, number, string) throws a TypeError with
+    the reference's message, where a bare `setattr` reports an AttributeError.
+
+    LEGAL_ADAPTATION: a target that is an object in the reference but a Python
+    value with no attribute store (list, tuple, set, bytes, memoryview) cannot
+    carry an own property, so `setattr` reports AttributeError there.
     """
+    if obj is None or obj is _UNDEFINED or isinstance(obj, (bool, int, float, str)):
+        raise TypeError("Object.defineProperty called on non-object")
     if isinstance(obj, dict):
         obj[key] = value
         return obj

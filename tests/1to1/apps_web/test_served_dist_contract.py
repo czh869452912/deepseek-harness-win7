@@ -21,7 +21,9 @@ import re
 import pytest
 
 from dsh.cordis.context import Context
+from dsh.credentials.credentials_local import CredentialsLocalPlugin
 from dsh.host.client_modules.registry import ClientModulesPlugin
+from dsh.host.connection.connection import ConnectionPlugin
 from dsh.host.frontend_static.frontend_static import FrontendStaticPlugin
 from dsh.host.webserver.webserver import HttpResponseWriter, WebServerService
 
@@ -64,22 +66,56 @@ class RecordingStream:
 
 
 @pytest.fixture
-def served_web():
+def served_web(tmp_path):
     ctx = Context()
     server = WebServerService(ctx, host="127.0.0.1", port=0)
     ctx.set_service("web_server", server)
-    # The client-module seat owns the boot manifest injection; the frontend seat
-    # owns the fallback that serves the dist.
+    # The shipped Web composition: the credentials store, the connection owner
+    # (browser authentication plus the /api fence), the client-module seat that
+    # owns the boot manifest injection, and the frontend seat that owns the
+    # authenticated fallback serving the dist.
+    ctx.plugin(CredentialsLocalPlugin, config={"path": str(tmp_path / ".credentials.yaml"), "watch": False})
     ctx.plugin(ClientModulesPlugin)
+    ctx.plugin(ConnectionPlugin)
     ctx.plugin(FrontendStaticPlugin)
     return ctx
+
+
+async def _authenticated_cookie(ctx):
+    """Run the launch-token exchange the browser performs on its first navigation."""
+    server = ctx.get("web_server")
+    fallback = server._fallback
+    connection = ctx.get("connection")
+    url = connection.authenticated_url("http://127.0.0.1")
+    token = url.split("token=", 1)[1]
+    request = {
+        "method": "GET",
+        "path": "/",
+        "query": "token=" + token,
+        "raw_url": "/?token=" + token,
+        "headers": {"host": "127.0.0.1"},
+        "body": b"",
+    }
+    response = HttpResponseWriter(RecordingStream())
+    await fallback(request, response)
+    assert response.status == 303, "launch-token exchange did not redirect"
+    return response.headers["set-cookie"].split(";", 1)[0]
 
 
 async def _request(ctx, path, method="GET"):
     server = ctx.get("web_server")
     fallback = server._fallback
     assert fallback is not None, "frontend-static claimed no fallback seat"
-    request = {"method": method, "path": path, "query": "", "headers": {}, "body": b""}
+    cookie = await _authenticated_cookie(ctx)
+    pathname, _, query = path.partition("?")
+    request = {
+        "method": method,
+        "path": pathname,
+        "query": query,
+        "raw_url": path,
+        "headers": {"host": "127.0.0.1", "cookie": cookie},
+        "body": b"",
+    }
     response = HttpResponseWriter(RecordingStream())
     await fallback(request, response)
     return response
@@ -93,7 +129,7 @@ def _body_text(response):
 async def test_served_index_carries_dist_markup_and_the_boot_manifest(served_web):
     response = await _request(served_web, "/")
     assert response.status == 200
-    assert response.headers.get("Content-Type") == "text/html; charset=utf-8"
+    assert response.headers.get("content-type") == "text/html; charset=utf-8"
     body = _body_text(response)
     assert '<div id="root"></div>' in body
     # vite-entry.e2e.ts's invariant: a shell without the boot manifest is not a
@@ -105,7 +141,7 @@ async def test_served_index_carries_dist_markup_and_the_boot_manifest(served_web
 async def test_served_install_metadata_matches_the_shipped_manifest(served_web):
     response = await _request(served_web, "/manifest.webmanifest")
     assert response.status == 200
-    assert response.headers.get("Content-Type") == "application/manifest+json"
+    assert response.headers.get("content-type") == "application/manifest+json"
     assert json.loads(_body_text(response)) == EXPECTED_MANIFEST
 
 
@@ -113,7 +149,7 @@ async def test_served_install_metadata_matches_the_shipped_manifest(served_web):
 async def test_served_favicon_keeps_its_dark_scheme_mark(served_web):
     response = await _request(served_web, "/favicon.svg")
     assert response.status == 200
-    assert response.headers.get("Content-Type") == "image/svg+xml"
+    assert response.headers.get("content-type") == "image/svg+xml"
     body = _body_text(response)
     assert re.search(
         r"@media \(prefers-color-scheme: dark\)\s*{\s*path\s*{[^}]*fill:\s*#fff",

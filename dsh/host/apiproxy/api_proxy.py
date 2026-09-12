@@ -229,7 +229,21 @@ class ApiProxyPlugin(Plugin):
         }
         self._workspace_order = [ws_id]
 
-        disposer = web_server.register("prefix", "/api", self._handle_api_request)
+        async def api_route(request: Dict[str, Any], response: HttpResponseWriter) -> None:
+            # Browser-trust fence and authentication, owned by the connection
+            # service (upstream's Connection row owns the /api route and runs
+            # `requestRejection` before dispatch). The owner is resolved per
+            # request: the sibling row may mount after this one.
+            connection = ctx.get("connection")
+            rejection = connection.request_rejection(request) if connection is not None else None
+            if rejection is not None:
+                response.write_status(rejection)
+                response.write_body(b"unauthorized" if rejection == 401 else b"forbidden")
+                await response.finish()
+                return
+            await self._handle_api_request(request, response)
+
+        disposer = web_server.register("prefix", "/api", api_route)
         if hasattr(ctx, "effect"):
             ctx.effect(lambda: disposer)
 

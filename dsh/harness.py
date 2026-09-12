@@ -49,6 +49,7 @@ from dsh.team.tool_agent_team import ToolAgentTeamPlugin
 from dsh.host.apiproxy.api_proxy import ApiProxyPlugin
 
 from dsh.host.client_modules.registry import ClientModulesPlugin
+from dsh.host.connection.connection import ConnectionPlugin
 from dsh.host.directory_picker.directory_picker import DirectoryPickerAutoPlugin
 from dsh.host.frontend_static.frontend_static import FrontendStaticPlugin
 from dsh.host.plugin_inventory.plugin_inventory import PluginInventoryPlugin
@@ -178,6 +179,7 @@ def build_harness(
     loader.register_plugin_class("@deepseek-ai/dsh-agent-team", AgentTeamPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-tool-agent-team", ToolAgentTeamPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-host-webserver", WebServerPlugin)
+    loader.register_plugin_class("@deepseek-ai/dsh-client-connection", ConnectionPlugin)
 
     loader.register_plugin_class("@deepseek-ai/dsh-host-frontend-static", FrontendStaticPlugin)
     loader.register_plugin_class("@deepseek-ai/dsh-apiproxy", ApiProxyPlugin)
@@ -191,10 +193,18 @@ def build_harness(
         ctx.plugin(PluginInventoryPlugin)
         ctx.plugin(DirectoryPickerAutoPlugin)
         ctx.plugin(ApiProxyPlugin)
+        ctx.plugin(ConnectionPlugin)
         ctx.plugin(FrontendStaticPlugin)
 
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    preset_file = os.path.join(base_dir, "presets", f"{mode}.yaml")
+    # The `web` profile is the standard workspace preset plus the web surface
+    # (`enable_web` mounts WebServer, client-modules, apiproxy, connection and
+    # frontend-static), exactly the shape the reference composes from the base +
+    # web-app bundles. No separate preset file exists for it, so the documented
+    # `dsh --web` / `--profile web` entry resolves here instead of failing to
+    # read a preset that was never shipped.
+    preset_mode = "standard" if mode == "web" else mode
+    preset_file = os.path.join(base_dir, "presets", f"{preset_mode}.yaml")
     if not os.path.isfile(preset_file):
         raise FileNotFoundError(f"dsh: failed to read preset at {preset_file}")
 

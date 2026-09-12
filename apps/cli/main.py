@@ -135,6 +135,11 @@ async def main_async():
         if web_server:
             await web_server.start()
             url = f"http://{args.host}:{web_server.port}"
+            # The browser reaches the authenticated root URL: the launch token
+            # mints the session cookie on the first navigation.
+            connection = ctx.get("connection")
+            if connection is not None:
+                url = connection.authenticated_url(url)
             print(f"\n[DeepSeek Harness Web] GUI is running at: {url}")
             print("Press Ctrl+C to stop the Web server.\n")
             if not args.no_open:

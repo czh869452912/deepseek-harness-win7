@@ -75,9 +75,110 @@ def short_hash(data: bytes) -> str:
     return hashlib.sha1(data).hexdigest()[:12]
 
 
+# Recovery instruction shared by grouped startup and steady-state bundle diagnostics.
+CLIENT_BUNDLE_BUILD_INSTRUCTION = "run `pnpm run build` before launch"
+
+
+class MissingClientBundleError(Exception):
+    """Missing built client export, retained for activation-error grouping."""
+
+    def __init__(self, package_name: str, client_path: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            "client-modules: client bundle not found; %s:\n  package: %s\n  path: %s"
+            % (CLIENT_BUNDLE_BUILD_INSTRUCTION, package_name, client_path)
+        )
+        self.package_name = package_name
+        self.client_path = client_path
+        self.cause = cause
+
+
+class ClientPackageCompositionError(Exception):
+    """Activation failures grouped by actionable package-build errors and unrelated failures."""
+
+    def __init__(self, failures: List[BaseException]):
+        self.failures = list(failures)
+        missing = [f for f in self.failures if isinstance(f, MissingClientBundleError)]
+        other = [f for f in self.failures if not isinstance(f, MissingClientBundleError)]
+        noun = "package" if len(self.failures) == 1 else "packages"
+        lines = ["client-modules: %d client %s failed to compose:" % (len(self.failures), noun)]
+        if missing:
+            lines.append("  client bundles not found; %s:" % CLIENT_BUNDLE_BUILD_INSTRUCTION)
+            for error in missing:
+                lines.append("    - package: %s" % error.package_name)
+                lines.append("      path: %s" % error.client_path)
+        if other:
+            lines.append("  other failures:")
+            for error in other:
+                lines.append("    - %s" % error)
+        super().__init__("\n".join(lines))
+
+
+def optional_string_array(subject: str, field: str, value: Any) -> Optional[List[str]]:
+    """
+    Validate an optional string-array field read from a `dsh.client`
+    declaration. Absent fields return None; a present non-array (or an array
+    holding a non-string) throws, because a malformed declaration must fail the
+    load loudly rather than silently dropping graph edges.
+    """
+    if value is None:
+        return None
+    if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
+        raise ValueError(f"client-modules: {subject} {field} must be a string array")
+    return list(value)
+
+
+def parse_dsh_client(pkg_name: str, value: Any) -> Optional[Dict[str, Any]]:
+    """Narrow the parsed JSON value to the `dsh.client` declaration, throwing on malformed fields."""
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError(f"client-modules: {pkg_name} has a non-object dsh.client declaration")
+    if not isinstance(value.get("platform"), str):
+        raise ValueError(f"client-modules: {pkg_name} dsh.client.platform must be a string")
+    inject = optional_string_array(pkg_name, "dsh.client.inject", value.get("inject"))
+    external = optional_string_array(pkg_name, "dsh.client.external", value.get("external"))
+    immediately = value.get("immediately")
+    if immediately is not None and not isinstance(immediately, bool):
+        raise ValueError(f"client-modules: {pkg_name} dsh.client.immediately must be a boolean")
+    return {
+        "platform": value.get("platform"),
+        "inject": inject,
+        "external": external,
+        "immediately": immediately,
+    }
+
+
+def client_export_of(pkg_name: str, exports_field: Any) -> Optional[str]:
+    """Resolve `exports["./client"]` to a relative path, accepting the string and one-level conditional forms."""
+    if not isinstance(exports_field, dict):
+        return None
+    if "./client" not in exports_field:
+        return None
+    client = exports_field.get("./client")
+    if isinstance(client, str):
+        return client
+    if isinstance(client, dict) and isinstance(client.get("default"), str):
+        return client["default"]
+    raise ValueError(
+        f'client-modules: {pkg_name} exports["./client"] must be a string or an object with a string default'
+    )
+
+
+def strip_client_suffix(spec: str) -> str:
+    """
+    Normalize a module specifier onto the graph row that owns it: a plugin
+    bundle IS its package's client half, so `<id>/client` and the bare package
+    name resolve to the same exports.
+    """
+    return spec[:-len("/client")] if spec.endswith("/client") else spec
+
+
 def order_by_module_graph(entries: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
-    Order composed rows so every requested dynamic package precedes its consumers.
+    Order composed rows so every requested dynamic package precedes its
+    consumers. An `external` specifier is either the package row it names
+    (`<pkg>/client` aliases the bare package) or a static-table name that adds
+    no graph edge. `inject` is a Cordis service edge, never a module-graph one.
     """
     rows_by_id = {e["id"]: e for e in entries}
     ordered: List[Dict[str, Any]] = []
@@ -96,18 +197,17 @@ def order_by_module_graph(entries: List[Dict[str, Any]]) -> List[Dict[str, Any]]
                 "— requested package row must precede consumers"
             )
         open_stack.append(entry_id)
-        deps = list(entry.get("external", [])) + list(entry.get("inject", []))
-        for ext in deps:
-            if not isinstance(ext, str):
+        for name in entry.get("external") or []:
+            if not isinstance(name, str):
                 continue
-            dep_id = ext
-            # Handle scoped packages like @deepseek-ai/dsh-client-ui-theme/client or bare @deepseek-ai/dsh-api-gateway
-            if ext.startswith("@"):
-                parts = ext.split("/")
-                if len(parts) >= 2:
-                    dep_id = f"{parts[0]}/{parts[1]}"
-            if dep_id in rows_by_id:
-                visit(rows_by_id[dep_id])
+            dependency = rows_by_id.get(name) or rows_by_id.get(strip_client_suffix(name))
+            if dependency is entry:
+                raise ValueError(
+                    f'client-modules: "{entry_id}" requests module "{name}" that it answers itself '
+                    "\u2014 a row must not declare its own package in dsh.client.external"
+                )
+            if dependency is not None:
+                visit(dependency)
         open_stack.pop()
         placed.add(entry_id)
         ordered.append(entry)
@@ -169,57 +269,47 @@ class ClientModuleRegistry:
 
                     pkg_name = data.get("name")
                     dsh_decl = (data.get("dsh") or {}).get("client")
-                    if not pkg_name or not dsh_decl:
+                    if not pkg_name or dsh_decl is None:
                         continue
 
-                    if not isinstance(dsh_decl, dict):
+                    # Only mounted client rows are composed: the Web roster and
+                    # the active dynamic capability seams. Everything else in
+                    # the tree is not a client row at all.
+                    if self._roster and pkg_name not in (self._roster | self._dynamic_surfaces):
                         continue
 
-                    platform = dsh_decl.get("platform", "web")
-                    if platform != "web":
+                    decl = parse_dsh_client(pkg_name, dsh_decl)
+                    if decl is None or decl.get("platform") != "web":
                         continue
 
-                    # Look for built client bundle
-                    exports = data.get("exports") or {}
-                    client_export = None
-                    if isinstance(exports, dict):
-                        ce = exports.get("./client")
-                        if isinstance(ce, str):
-                            client_export = ce
-                        elif isinstance(ce, dict):
-                            client_export = ce.get("default")
+                    client_rel = client_export_of(pkg_name, data.get("exports"))
+                    if client_rel is None:
+                        raise ValueError(
+                            f'client-modules: {pkg_name} declares dsh.client but exports no "./client" bundle'
+                        )
 
-                    candidate_paths = []
-                    if client_export:
-                        candidate_paths.append(os.path.normpath(os.path.join(root, client_export)))
-                    candidate_paths.extend([
-                        os.path.join(root, "lib", "client.js"),
-                        os.path.join(root, "dist", "client.js"),
-                        os.path.join(root, "client.js"),
-                    ])
-
-                    bundle_path = None
-                    for cp in candidate_paths:
-                        if os.path.isfile(cp):
-                            bundle_path = cp
-                            break
-
+                    client_path = os.path.normpath(os.path.join(root, client_rel))
                     self._pkg_meta[pkg_name] = {
                         "name": pkg_name,
                         "dir": root,
-                        "bundle_path": bundle_path,
-                        "inject": dsh_decl.get("inject", []),
-                        "immediately": bool(dsh_decl.get("immediately", False)),
-                        "external": dsh_decl.get("external", []),
+                        "client_path": client_path,
+                        # A directory in the bundle's place exists but cannot be
+                        # read: it is an "other" composition failure, not a
+                        # missing build (upstream readFile's EISDIR arm).
+                        "bundle_path": client_path if os.path.exists(client_path) else None,
+                        "inject": decl.get("inject") or [],
+                        "immediately": decl.get("immediately") is True,
+                        "external": decl.get("external") or [],
                     }
-                    if bundle_path:
-                        self._bundle_paths[pkg_name] = bundle_path
+                    self._bundle_paths[pkg_name] = client_path
 
         self._compose_graph()
 
     def _compose_graph(self) -> None:
         raw_entries = []
         allowed_packages = self._roster | self._dynamic_surfaces
+        missing: List[MissingClientBundleError] = []
+        other_failures: List[BaseException] = []
 
         for pkg_name, meta in self._pkg_meta.items():
             # In official Cordis, only packages part of the Web App roster or active dynamic capability seams are composed
@@ -227,15 +317,34 @@ class ClientModuleRegistry:
                 continue
 
             bundle_path = meta.get("bundle_path")
-            rev = "000000000000"
-            if bundle_path and os.path.isfile(bundle_path):
-                try:
-                    with open(bundle_path, "rb") as f:
-                        content = f.read()
-                    rev = short_hash(content)
-                    self._bundle_cache[pkg_name] = content
-                except Exception:
-                    pass
+            client_path = meta.get("client_path") or bundle_path
+            if meta.get("virtual"):
+                # An in-memory bundle registered by a dynamic capability seam.
+                rev = short_hash(self._bundle_cache.get(pkg_name) or b"")
+                entry = {"id": pkg_name, "url": f"/plugins/{pkg_name}/client.js?rev={rev}", "rev": rev}
+                if meta.get("inject"):
+                    entry["inject"] = meta["inject"]
+                if meta.get("immediately"):
+                    entry["immediately"] = True
+                if meta.get("external"):
+                    entry["external"] = meta["external"]
+                raw_entries.append(entry)
+                continue
+            if not bundle_path:
+                missing.append(MissingClientBundleError(pkg_name, client_path))
+                continue
+            try:
+                if os.path.isdir(bundle_path):
+                    raise IsADirectoryError(21, "EISDIR: illegal operation on a directory", bundle_path)
+                with open(bundle_path, "rb") as f:
+                    content = f.read()
+            except OSError as error:
+                # A bundle that exists but cannot be read is not a missing
+                # build: it is reported under the composition's other failures.
+                other_failures.append(error)
+                continue
+            rev = short_hash(content)
+            self._bundle_cache[pkg_name] = content
 
             entry = {
                 "id": pkg_name,
@@ -251,10 +360,10 @@ class ClientModuleRegistry:
 
             raw_entries.append(entry)
 
-        try:
-            ordered_entries = order_by_module_graph(raw_entries)
-        except Exception:
-            ordered_entries = raw_entries
+        if missing or other_failures:
+            raise ClientPackageCompositionError(list(missing) + list(other_failures))
+
+        ordered_entries = order_by_module_graph(raw_entries)
 
         graph_json = json.dumps(ordered_entries, sort_keys=True).encode("utf-8")
         graph_rev = short_hash(graph_json)
@@ -286,6 +395,8 @@ class ClientModuleRegistry:
             "name": pkg_id,
             "dir": "",
             "bundle_path": "",
+            "client_path": "",
+            "virtual": True,
             "inject": inject or [],
             "immediately": immediately,
             "external": [],

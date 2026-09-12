@@ -2,6 +2,12 @@
 Browser HTTP carrier service (`@deepseek-ai/dsh-host-webserver`).
 Provides `ctx.web_server`, route registries (exact & prefix), index transform taps,
 and fallback handler seat for SPA static serving.
+
+Registration is a composition-level contract: duplicate named routes, duplicate
+upgrade routes and a second fallback seat all fail loudly (reference
+`webserver: duplicate ...` / `webserver: fallback already registered`). An
+unclaimed fallback answers 404 with an empty body, and a request whose handling
+raises is logged and answered 400 — never a process exit.
 """
 
 import asyncio
@@ -48,10 +54,15 @@ class WebServerService:
         self._is_running = False
 
     def register(self, kind: str, path: str, handler: Callable[[Any, Any], Coroutine[Any, Any, None]]) -> Callable[[], None]:
-        """Register a named route."""
+        """
+        Register a named route. Duplicate (kind, path) raises — route patterns
+        are a composition-level contract, so a collision is a misconfiguration.
+        """
         norm_path = path.rstrip("/") if path != "/" else "/"
-        route = WebRoute(kind=kind, path=norm_path, handler=handler)
         table = self._exact_routes if kind == "exact" else self._prefix_routes
+        if norm_path in table:
+            raise ValueError(f'webserver: duplicate {kind} route "{norm_path}"')
+        route = WebRoute(kind=kind, path=norm_path, handler=handler)
         table[norm_path] = route
 
         def disposer():
@@ -60,8 +71,13 @@ class WebServerService:
         return disposer
 
     def register_upgrade(self, path: str, handler: Any) -> Callable[[], None]:
-        """Register an exact-path HTTP upgrade route (e.g. WebSocket)."""
+        """
+        Register an exact-path HTTP upgrade route (e.g. WebSocket). Duplicate
+        paths raise because one socket can have only one protocol owner.
+        """
         norm_path = path.rstrip("/") if path != "/" else "/"
+        if norm_path in self._upgrade_routes:
+            raise ValueError(f'webserver: duplicate upgrade route "{norm_path}"')
         self._upgrade_routes[norm_path] = handler
 
         def disposer():
@@ -70,12 +86,17 @@ class WebServerService:
         return disposer
 
     def register_fallback(self, handler: Callable[[Any, Any], Coroutine[Any, Any, None]]) -> Callable[[], None]:
-        """Register the single fallback handler (e.g. SPA dist server)."""
+        """
+        Claim the fallback seat: the handler answering every request no named
+        route matches. One owner only — a second registration raises, because
+        two fallbacks cannot compose.
+        """
+        if self._fallback is not None:
+            raise ValueError("webserver: fallback already registered")
         self._fallback = handler
 
         def disposer():
-            if self._fallback == handler:
-                self._fallback = None
+            self._fallback = None
 
         return disposer
 
@@ -126,20 +147,27 @@ class WebServerService:
         async def _client_connected_cb(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
             await self._handle_http_connection(reader, writer)
 
-        # Bind to port (or find free port if 0)
+        # Bind to port (or find free port if 0). A listen failure rejects
+        # activation: the composition reports the failed fiber instead of
+        # silently serving on a different port than the one configured.
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        if os.name != "nt":
+            # POSIX: reuse a socket in TIME_WAIT. On Windows SO_REUSEADDR means
+            # "allow hijacking a bound port", which would silently let a second
+            # composition claim a taken port instead of failing loud the way the
+            # reference listen does (libuv sets no such option there).
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             sock.bind((self.host, self.port))
             sock.listen(128)
             sock.setblocking(False)
             self.listened_port = sock.getsockname()[1]
         except OSError:
-            # Fallback to random available port
-            sock.bind((self.host, 0))
-            sock.listen(128)
-            sock.setblocking(False)
-            self.listened_port = sock.getsockname()[1]
+            try:
+                sock.close()
+            except Exception:
+                pass
+            raise
 
         self._server = await asyncio.start_server(
             _client_connected_cb,
@@ -156,6 +184,7 @@ class WebServerService:
         self._is_running = False
 
     async def _handle_http_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        response: Optional[HttpResponseWriter] = None
         try:
             line = await reader.readline()
             if not line:
@@ -190,6 +219,7 @@ class WebServerService:
             request = {
                 "method": method.upper(),
                 "path": pathname,
+                "raw_url": raw_url,
                 "query": parsed.query,
                 "headers": headers,
                 "body": body,
@@ -204,23 +234,36 @@ class WebServerService:
             elif self._fallback is not None:
                 await self._fallback(request, response)
             else:
+                # Unclaimed fallback seat: an empty 404, exactly like every other
+                # unmatched request the composing application never handled.
                 response.write_status(404)
-                response.write_header("Content-Type", "text/plain; charset=utf-8")
-                response.write_body(b"404 Not Found")
                 await response.finish()
 
         except Exception as e:
+            # Last-resort guard: an unhandled per-request failure (a malformed
+            # %-escape, a client dropping mid-body, a filesystem error that is
+            # not a static miss) logs and answers 400 — never a process exit.
             try:
-                err_resp = HttpResponseWriter(writer)
-                err_resp.write_status(500)
-                err_resp.write_header("Content-Type", "text/plain; charset=utf-8")
-                err_resp.write_body(f"500 Internal Server Error: {str(e)}".encode("utf-8"))
-                await err_resp.finish()
+                if self.ctx is not None and hasattr(self.ctx, "logger"):
+                    self.ctx.logger("webserver").warn(e)
+            except Exception:
+                pass
+            try:
+                if response is not None and response._headers_sent:
+                    writer.close()
+                else:
+                    err_resp = HttpResponseWriter(writer)
+                    err_resp.write_status(400)
+                    await err_resp.finish()
             except Exception:
                 pass
         finally:
             try:
                 writer.close()
+                # Await the real close: the response bytes are queued on the
+                # transport, and closing without waiting can drop a body-less
+                # response (headers only) on the proactor loop.
+                await writer.wait_closed()
             except Exception:
                 pass
 

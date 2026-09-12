@@ -5,7 +5,7 @@ Served boot contract of the built `@deepseek-ai/dsh-web-frontend` payload.
 (`assets/index-*.js`, the vite build of `apps/web/src/main.ts`) reads the
 globals a boot protocol injects ahead of it and refuses to run without them
 (`web boot: window.__ModuleLoader__ bootstrap facade is missing`). Upstream
-renders that document from one injection table — the rows
+renders that document from one injection table 鈥?the rows
 `reference/packages/client/modules/src/index.ts` `bootInjections` contributes,
 rendered by `reference/packages/host/webserver/src/injections.ts`
 `renderIndexInjections`:
@@ -30,10 +30,12 @@ import re
 import pytest
 
 from dsh.cordis.context import Context
+from dsh.credentials.credentials_local import CredentialsLocalPlugin
 from dsh.host.client_modules.registry import (
     CLIENT_MODULES_ID,
     ClientModulesPlugin,
 )
+from dsh.host.connection.connection import ConnectionPlugin
 from dsh.host.frontend_static.frontend_static import FrontendStaticPlugin
 from dsh.host.webserver.injections import READY_MARKUP, render_index_injections
 from dsh.host.webserver.webserver import HttpResponseWriter, WebServerService
@@ -66,13 +68,60 @@ class RecordingStream:
 
 
 @pytest.fixture
-def served_web():
+def served_web(tmp_path):
     ctx = Context()
     server = WebServerService(ctx, host="127.0.0.1", port=0)
     ctx.set_service("web_server", server)
+    # The shipped Web composition mounts the credentials store, the connection
+    # owner (browser authentication plus the /api trust fence), the client-module
+    # seat that owns the boot manifest injection, and the frontend seat that owns
+    # the fallback serving the dist.
+    ctx.plugin(CredentialsLocalPlugin, config={"path": str(tmp_path / ".credentials.yaml"), "watch": False})
     ctx.plugin(ClientModulesPlugin)
+    ctx.plugin(ConnectionPlugin)
     ctx.plugin(FrontendStaticPlugin)
     return ctx
+
+
+async def _authenticated_cookie(ctx):
+    """Run the launch-token exchange the browser performs on its first navigation."""
+    server = ctx.get("web_server")
+    fallback = server._fallback
+    connection = ctx.get("connection")
+    url = connection.authenticated_url("http://127.0.0.1")
+    token = url.split("token=", 1)[1]
+    request = {
+        "method": "GET",
+        "path": "/",
+        "query": "token=" + token,
+        "raw_url": "/?token=" + token,
+        "headers": {"host": "127.0.0.1"},
+        "body": b"",
+    }
+    response = HttpResponseWriter(RecordingStream())
+    await fallback(request, response)
+    assert response.status == 303, "launch-token exchange did not redirect"
+    return response.headers["set-cookie"].split(";", 1)[0]
+
+
+async def served_index(ctx):
+    """Render the served document through the real seat chain."""
+    server = ctx.get("web_server")
+    fallback = server._fallback
+    assert fallback is not None, "frontend-static claimed no fallback seat"
+    cookie = await _authenticated_cookie(ctx)
+    request = {
+        "method": "GET",
+        "path": "/",
+        "query": "",
+        "raw_url": "/",
+        "headers": {"host": "127.0.0.1", "cookie": cookie},
+        "body": b"",
+    }
+    response = HttpResponseWriter(RecordingStream())
+    await fallback(request, response)
+    assert response.status == 200
+    return bytes(response.body).decode("utf-8")
 
 
 def entry_chunk_path():
@@ -86,18 +135,6 @@ def entry_chunk_path():
 
 def entry_chunk():
     return open(entry_chunk_path(), "r", encoding="utf-8", errors="replace").read()
-
-
-async def served_index(ctx):
-    """Render the served document through the real seat chain."""
-    server = ctx.get("web_server")
-    fallback = server._fallback
-    assert fallback is not None, "frontend-static claimed no fallback seat"
-    request = {"method": "GET", "path": "/", "query": "", "headers": {}, "body": b""}
-    response = HttpResponseWriter(RecordingStream())
-    await fallback(request, response)
-    assert response.status == 200
-    return bytes(response.body).decode("utf-8")
 
 
 def boot_graph(body):
@@ -266,7 +303,8 @@ async def test_every_advertised_client_bundle_is_served_over_a_real_socket(serve
     await server.start()
     try:
         port = server.listened_port
-        status, _, body_bytes = await raw_get(port, "/")
+        cookie = await raw_launch_exchange(port, served_web.get("connection"))
+        status, _, body_bytes = await raw_get(port, "/", cookie)
         assert status == 200
         body = body_bytes.decode("utf-8")
         graph = boot_graph(body)
@@ -274,7 +312,7 @@ async def test_every_advertised_client_bundle_is_served_over_a_real_socket(serve
         urls = [entry["url"] for entry in graph["entries"]]
         assert len(urls) > 30, "the shipped roster is not a hand-picked subset"
         for entry in graph["entries"]:
-            status, headers, payload = await raw_get(port, entry["url"])
+            status, headers, payload = await raw_get(port, entry["url"], cookie)
             assert status == 200, entry["id"]
             assert "javascript" in headers.get("content-type", ""), entry["id"]
             # The bundle registers itself through the facade the index defines,
@@ -288,14 +326,27 @@ async def test_every_advertised_client_bundle_is_served_over_a_real_socket(serve
         await server.stop()
 
 
-async def raw_get(port, path):
+async def raw_launch_exchange(port, connection):
+    """Exchange the printed process token for the browser-session cookie over a real socket."""
+    url = connection.authenticated_url("http://127.0.0.1:%d" % port)
+    token = url.split("token=", 1)[1]
+    status, headers, _ = await raw_get(port, "/?token=" + token)
+    assert status == 303, "launch-token exchange did not redirect"
+    assert headers.get("location") == "/"
+    return headers["set-cookie"].split(";", 1)[0]
+
+
+async def raw_get(port, path, cookie=None):
     """One real HTTP/1.1 request against the bound server."""
     reader, writer = await asyncio.open_connection("127.0.0.1", port)
     try:
-        writer.write(("GET %s HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n" % path).encode("ascii"))
+        head = "GET %s HTTP/1.1\r\nHost: 127.0.0.1\r\n" % path
+        if cookie is not None:
+            head += "Cookie: %s\r\n" % cookie
+        writer.write((head + "Connection: close\r\n\r\n").encode("ascii"))
         await writer.drain()
-        head = await reader.readuntil(b"\r\n\r\n")
-        status_line, _, raw_headers = head.partition(b"\r\n")
+        head_bytes = await reader.readuntil(b"\r\n\r\n")
+        status_line, _, raw_headers = head_bytes.partition(b"\r\n")
         status = int(status_line.split(b" ")[1])
         headers = {}
         for line in raw_headers.decode("latin-1").split("\r\n"):

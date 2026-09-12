@@ -27,7 +27,9 @@ def test_render_index_injections():
         {"kind": "html", "placement": "body", "html": "<!-- injected html -->"},
     ]
     res = render_index_injections(html, rows)
-    assert 'globalThis["__DSH_CONFIG__"] = {"env": "test"}' in res
+    # JSON.stringify spelling: upstream renders the value with no padding, so a
+    # row's rendering is byte-identical to its wire form.
+    assert 'globalThis["__DSH_CONFIG__"] = {"env":"test"}' in res
     assert '<style>body { margin: 0; }</style>' in res
     assert '<script src="/plugins/my-plugin/client.js"></script>' in res
     assert '<script>console.log(\'ready\');</script>' in res

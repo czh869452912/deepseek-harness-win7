@@ -39,7 +39,13 @@ def render_row(row: Dict[str, Any]) -> Tuple[IndexInjectionPlacement, str]:
     if kind == "global":
         name_str = json.dumps(row.get("name", "")).replace("<", "\\u003c")
         val = row.get("value")
-        val_str = "undefined" if val is None else json.dumps(val, ensure_ascii=False).replace("<", "\\u003c")
+        # JSON.stringify spelling: no padding between tokens, and `<` escaped so
+        # a row-controlled string cannot close the script element early.
+        val_str = (
+            "undefined"
+            if val is None
+            else json.dumps(val, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c")
+        )
         return "head", f"<script>globalThis[{name_str}] = {val_str}</script>"
 
     elif kind == "script":

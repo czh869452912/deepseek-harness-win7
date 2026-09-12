@@ -443,7 +443,7 @@ def test_c16_define_property_returns_the_target():
 def test_c17_export_aliases_of_misc_helpers():
     """misc.ts:20-78 - every exported name resolves to the same behaviour."""
     assert isNullable is is_nullable
-    assert isNonNullable is not None
+    assert isNonNullable is is_non_nullable
     assert isPlainObject is is_plain_object
     assert filterKeys is filter_keys
     assert defineProperty is define_property

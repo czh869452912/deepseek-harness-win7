@@ -188,8 +188,10 @@ def test_c6_remove_uses_index_of_and_mutates_in_place():
     assert remove(values, 2) is True
     assert values == [1, 2]
     assert remove(values, 9) is False
-    # `list?.` tolerates a nullish list.
+    # `list?.` tolerates a nullish list: null and the port's own `undefined`
+    # sentinel (optional chaining short-circuits on both).
     assert remove(None, 1) is False
+    assert remove(_UNDEFINED, 1) is False
     # indexOf uses ===, so a bool never matches a number and vice versa.
     values = [1]
     assert remove(values, True) is False
@@ -292,6 +294,17 @@ def test_c11_filter_keys_passes_key_then_value():
     assert filter_keys(data, lambda: seen_keys.append(1) or True) == data
     assert len(seen_keys) == 3
     assert filterKeys({}, lambda: True) == {}
+    # misc.ts:41 filters with `.filter(...)`, so the predicate result is tested
+    # with ECMAScript ToBoolean rather than Python truthiness: `[]` and `{}` are
+    # truthy there while `NaN`, `0` and `''` are falsy (Node oracle keeps both
+    # entries for `() => []` / `() => {}` and drops them for `() => NaN`,
+    # `() => 0` and `() => ''`).
+    assert filter_keys(data, lambda k, v: []) == data
+    assert filter_keys(data, lambda k, v: {}) == data
+    assert filter_keys(data, lambda k, v: float('nan')) == {}
+    assert filter_keys(data, lambda k, v: 0) == {}
+    assert filter_keys(data, lambda k, v: '') == {}
+    assert filter_keys(data, lambda k, v: '0') == data
 
 
 def test_c12_map_values_passes_value_then_key():
@@ -339,10 +352,25 @@ def test_c14_pick_copies_or_selects_keys():
     assert pick(source, ['a']) == {'a': 1}
     # A missing key reads as undefined and is dropped.
     assert pick(source, ['a', 'c']) == {'a': 1}
-    # `forced` keeps the key even when it reads as undefined.
-    assert pick(source, ['a', 'c'], True) == {'a': 1, 'c': None}
-    # An empty key list is not the `!keys` fast path: it selects nothing.
+    # `forced` keeps the key with the property read itself, so a miss keeps the
+    # port's `undefined` sentinel - never `None`, which is the reference's
+    # `null`: a value `source[key] !== undefined` keeps (Node oracle:
+    # pick({a:1}, ['a','c'], true) has own keys ["a","c"] and `result.c` is
+    # `=== undefined`).
+    forced_result = pick(source, ['a', 'c'], True)
+    assert list(forced_result) == ['a', 'c']
+    assert forced_result['a'] == 1
+    assert forced_result['c'] is _UNDEFINED
+    assert pick(source, ['a', 'c'], True) == {'a': 1, 'c': _UNDEFINED}
+    # A property the source itself holds as `undefined` reads as undefined too.
+    assert pick({'a': _UNDEFINED, 'b': 2}, ['a', 'b']) == {'b': 2}
+    assert pick({'a': _UNDEFINED, 'b': 2}, ['a'], True) == {'a': _UNDEFINED}
+    # An empty key list is not the `!keys` fast path: an array is truthy in
+    # ECMAScript, so it selects nothing.
     assert pick(source, []) == {}
+    assert pick(source, set()) == {}
+    # An empty string IS falsy there, so `!keys` returns the shallow copy.
+    assert pick(source, '') == {'a': 1, 'b': 2}
     # A present null value is not undefined, so it is kept.
     assert pick({'a': None, 'b': 2}, ['a', 'b']) == {'a': None, 'b': 2}
     assert pick(source, ['a'], True) == {'a': 1}
@@ -357,6 +385,13 @@ def test_c15_omit_deletes_keys():
     assert omit(source, ['a']) == {'b': 2}
     assert omit(source, []) == {'a': 1, 'b': 2}
     assert omit(source, ['z']) == {'a': 1, 'b': 2}
+    # `!keys` is ECMAScript falsiness: an empty string and a number are falsy
+    # there and take the copy branch (Node oracle: omit({a:1,b:2}, '') and
+    # omit({a:1,b:2}, 0) both keep both keys), while an empty set is truthy
+    # there and deletes nothing.
+    assert omit(source, '') == {'a': 1, 'b': 2}
+    assert omit(source, 0) == {'a': 1, 'b': 2}
+    assert omit(source, set()) == {'a': 1, 'b': 2}
     assert source == {'a': 1, 'b': 2}
 
 
@@ -1125,10 +1160,11 @@ def test_c49_callback_arity_matches_the_javascript_invocation_rule():
 
     JavaScript invokes both callbacks with two arguments: a callback declared
     with fewer parameters ignores the surplus ones and a callback declared with
-    more reads the missing ones as `undefined`.  Python cannot express that, so
-    the port supplies exactly as many arguments as the callback declares
-    positional slots for (`_js_supplied_arg_count`), reproducing the Node
-    oracle for zero-, one-, two- and rest-parameter callbacks.
+    more reads the missing ones as `undefined`.  Python cannot express that
+    literally, so the port supplies as many arguments as the callback declares
+    positional slots for, padding the surplus slots with its own `undefined`
+    sentinel (`_js_supplied_arg_count` / `_js_call_args`), reproducing the Node
+    oracle for zero-, one-, two-, three-, four- and rest-parameter callbacks.
     """
     # Zero positional parameters is the `() => ...` form: no argument at all.
     assert filterKeys({'a': 1, 'b': 2}, lambda: True) == {'a': 1, 'b': 2}
@@ -1194,10 +1230,34 @@ def test_c49_callback_arity_matches_the_javascript_invocation_rule():
     with pytest.raises(ValueError, match='boom-zero'):
         mapValues({'a': 1}, boom_zero)
 
-    # Residual adaptation limit (see `_js_supplied_arg_count`): a callback that
-    # declares a third required positional slot cannot be satisfied, because the
-    # reference supplies exactly two arguments and Python has no `undefined`
-    # value for the surplus slot JavaScript would fill.
+    # Residual adaptation limit (see `_js_supplied_arg_count`): a C-implemented
+    # callback whose signature CPython cannot report (e.g. `str`, `bool`) keeps
+    # the two-argument call this module already made, so ECMAScript's
+    # surplus-argument rule is not reproduced for it and Python's own TypeError
+    # is not caught or retried.
+    with pytest.raises(TypeError):
+        mapValues({'a': 1}, str)
+
+    # A callback that declares MORE positional slots than the reference arity
+    # reads the missing ones as `undefined` (Node oracle:
+    # filterKeys({a:1}, (k, v, u) => u === undefined) keeps "a";
+    # mapValues({a:1}, (v, k, u) => String(u)) is {"a":"undefined"}), so the
+    # port pads those slots with its own `undefined` sentinel.
+    def predicate_three(key, value, third):
+        return third is _UNDEFINED
+
+    def transform_four(value, key, third, fourth):
+        return (value, key, third is _UNDEFINED, fourth is _UNDEFINED)
+
+    assert filterKeys({'a': 1}, predicate_three) == {'a': 1}
+    assert mapValues({'a': 1}, lambda v, k, u: str(u)) == {'a': 'undefined'}
+    assert mapValues({'a': 1}, transform_four) == {'a': (1, 'a', True, True)}
+    # A surplus slot WITH a default is not padded: JavaScript passes
+    # `undefined`, which triggers the default (Node oracle:
+    # filterKeys({a:1}, (k, v, u = 5) => u === 5) keeps "a";
+    # mapValues({a:1}, (v, k, u = 'dflt') => u) is {"a":"dflt"}).
+    assert filterKeys({'a': 1}, lambda k, v, u=5: u == 5) == {'a': 1}
+    assert mapValues({'a': 1}, lambda v, k, u='dflt': u) == {'a': 'dflt'}
 
 
 def test_c50_is_plain_object_returns_the_falsy_operand():

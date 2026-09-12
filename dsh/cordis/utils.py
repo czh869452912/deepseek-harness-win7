@@ -464,23 +464,36 @@ deepEqual = deep_equal
 def pick(obj: Dict[str, Any], keys: Optional[Any] = None, forced: bool = False) -> Dict[str, Any]:
     """Pick specified keys from a dictionary matching Cosmokit pick.
 
-    The reference keeps every key whose value is not ``undefined``.  Python has
-    no ``undefined``; a present key holding ``None`` therefore maps to the
-    reference's ``null`` (kept), while a missing key maps to ``undefined``
-    (dropped) - `k in obj` is the faithful test (LEGAL_ADAPTATION).
+    misc.ts:52-60 is ``if (!keys) return { ...source }`` followed by
+    ``if (forced || source[key] !== undefined) result[key] = source[key]``, so
+    the port's ``undefined`` sentinel enters and leaves the result: a property
+    that reads as ``undefined`` - an absent key, or one the source itself holds
+    as ``undefined`` - is dropped unless ``forced`` keeps it, while a forced
+    miss keeps the sentinel itself rather than Python's ``None``, which is the
+    reference's ``null`` and is a value ``source[key] !== undefined`` keeps.
+    LEGAL_ADAPTATION: `_js_read_key` is the port of ``source[key]`` and
+    `_js_truthy` the port of the ``!keys`` short-circuit.
     """
-    if keys is None:
+    if not _js_truthy(keys):
         return dict(obj)
     res = {}
     for k in keys:
-        if forced or k in obj:
-            res[k] = obj.get(k)
+        value = _js_read_key(obj, k)
+        if forced or value is not _UNDEFINED:
+            res[k] = value
     return res
 
 
 def omit(obj: Dict[str, Any], keys: Optional[Any] = None) -> Dict[str, Any]:
-    """Omit specified keys from a dictionary matching Cosmokit omit."""
-    if keys is None:
+    """Omit specified keys from a dictionary matching Cosmokit omit.
+
+    misc.ts:62-69 is ``if (!keys) return { ...source }`` followed by a
+    ``Reflect.deleteProperty`` per key, so a falsy key collection takes the
+    shallow-copy branch - `_js_truthy` is the port of ``!keys``, exactly as in
+    :func:`pick`.  An empty string is falsy there and copies, while an empty
+    list, tuple or set is truthy there and deletes nothing.
+    """
+    if not _js_truthy(keys):
         return dict(obj)
     key_set = set(keys)
     return {k: v for k, v in obj.items() if k not in key_set}
@@ -494,16 +507,16 @@ def _js_supplied_arg_count(callback: Callable[..., Any], maximum: int = 2, fallb
     mapValues.  JavaScript hands the surplus arguments to a callback declared
     with fewer parameters and reads the missing ones as ``undefined`` for one
     declared with more, so the closest Python equivalent is to supply exactly
-    as many arguments as the callback declares positional slots for, capped at
-    the reference arity.  A callback with no positional slot is the
-    ``() => ...`` equivalent and is therefore called with no arguments at all
-    (``callback()``), not with a surplus one.  A callback whose signature
-    CPython cannot report (a C-implemented callable such as ``bool`` or ``next``)
-    keeps the call this module already made at that site, passed in through
-    ``fallback``.  A callback that declares more than the reference arity still
-    raises Python's TypeError when the surplus slots are required, because
-    Python has no value for the ``undefined`` JavaScript would fill them with
-    (the reference always passes exactly two arguments).
+    as many arguments as the callback declares positional slots for: fewer than
+    the reference arity for a callback that ignores the surplus arguments (a
+    callback with no positional slot is the ``() => ...`` equivalent and is
+    called with no argument at all) and more - the surplus slots receive the
+    port's ``undefined`` sentinel through ``_js_call_args`` - for a callback
+    that declares them.  A declared surplus slot with a default is left to that
+    default, exactly as JavaScript's ``undefined`` triggers it, so it is not
+    padded.  A callback whose signature CPython cannot report (a C-implemented
+    callable such as ``bool`` or ``next``) keeps the call this module already
+    made at that site, passed in through ``fallback``.
     """
     try:
         signature = inspect.signature(callback)
@@ -516,26 +529,46 @@ def _js_supplied_arg_count(callback: Callable[..., Any], maximum: int = 2, fallb
         p for p in params
         if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
     ]
-    return min(len(positional), maximum)
+    # Required slots beyond the reference arity are read as `undefined` in
+    # JavaScript, so the call must reach them; a trailing defaulted slot is
+    # left to its default, which is what a JavaScript `undefined` does.
+    required = 0
+    for index, parameter in enumerate(positional):
+        if parameter.default is inspect.Parameter.empty:
+            required = index + 1
+    return max(min(len(positional), maximum), required)
+
+
+def _js_call_args(arguments: Tuple[Any, ...], count: int) -> Tuple[Any, ...]:
+    """The reference's positional argument list, padded to ``count``.
+
+    Slots the callback declares beyond the values the reference passes are
+    read as ``undefined`` in JavaScript, so they are filled with the port's
+    ``_UNDEFINED`` sentinel (see :func:`_js_supplied_arg_count`).
+    """
+    supplied = list(arguments[:count])
+    supplied.extend([_UNDEFINED] * (count - len(supplied)))
+    return tuple(supplied)
 
 
 def filter_keys(obj: Dict[str, Any], predicate: Callable[..., bool]) -> Dict[str, Any]:
-    """Filter dictionary keys matching Cosmokit filterKeys."""
+    """Filter dictionary keys matching Cosmokit filterKeys.
+
+    The reference builds the result with
+    ``Object.entries(object).filter(([key, value]) => filter(key, value))``, so
+    the predicate result is tested with ECMAScript ``ToBoolean`` (``[]`` and
+    ``{}`` keep the entry while ``NaN`` drops it) and the predicate always
+    receives ``(key, value)``.
+    """
     # LEGAL_ADAPTATION: the reference always calls `filter(key, value)` and
-    # JavaScript silently ignores surplus arguments.  Python cannot express
-    # that, so the predicate arity selects between `predicate(key, value)`,
-    # `predicate(key)` and `predicate()` for a predicate declared with two, one
-    # or zero positional slots (see _js_supplied_arg_count).
+    # JavaScript silently ignores surplus arguments and fills the missing ones
+    # with `undefined`; Python cannot express either, so the predicate arity
+    # picks the equivalent call (see _js_supplied_arg_count, padding through
+    # _js_call_args).
     supplied = _js_supplied_arg_count(predicate)
     res = {}
     for k, v in obj.items():
-        if supplied >= 2:
-            keep = predicate(k, v)
-        elif supplied == 1:
-            keep = predicate(k)
-        else:
-            keep = predicate()
-        if keep:
+        if _js_truthy(predicate(*_js_call_args((k, v), supplied))):
             res[k] = v
     return res
 
@@ -912,9 +945,10 @@ def remove(lst: List[Any], item: Any) -> bool:
     """Remove one item from a list and report whether it was found.
 
     ``list?.indexOf(item)`` uses strict equality (``===``) and tolerates a
-    nullish list.
+    nullish list - `null` and the port's ``undefined`` sentinel alike, since
+    optional chaining short-circuits on both.
     """
-    if lst is None:
+    if _js_is_nullish(lst):
         return False
     for index, value in enumerate(lst):
         if _js_strict_equal(value, item):
@@ -1829,18 +1863,15 @@ def _js_apply_with_key(callback: Callable[..., Any], value: Any, key: str) -> An
     """LEGAL_ADAPTATION: JavaScript ignores surplus arguments, Python cannot.
 
     The reference always calls `callback(value, key)`; the callback arity picks
-    the equivalent Python call -- `callback(value, key)` for two positional
-    slots, `callback(value)` for one, and `callback()` for none (a
-    ``() => ...`` transform that ignores both arguments), see
-    _js_supplied_arg_count.  The two-argument fallback keeps this call site's
-    pre-existing behaviour for a callback whose signature cannot be reported.
+    the equivalent Python call -- fewer positional slots receive the leading
+    arguments only (a ``() => ...`` transform that ignores both gets none) and
+    surplus declared slots receive the port's ``undefined`` sentinel, see
+    _js_supplied_arg_count and _js_call_args.  The two-argument fallback keeps
+    this call site's pre-existing behaviour for a callback whose signature
+    cannot be reported.
     """
     supplied = _js_supplied_arg_count(callback, fallback=2)
-    if supplied >= 2:
-        return callback(value, key)
-    if supplied == 1:
-        return callback(value)
-    return callback()
+    return callback(*_js_call_args((value, key), supplied))
 
 
 def map_values(source: Dict[str, Any], callback: Callable[..., Any]) -> Dict[str, Any]:

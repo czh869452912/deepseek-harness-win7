@@ -426,17 +426,25 @@ class Project:
                         completed == {"files": files, "head": bound["head"], "index": bound["index"]} and
                         bound.get("scope") == agent.args.task_contract and
                         (phase == "migrate" or bound["files"] == files)):
-                    value = stream.result(phase)
-                    value["observed_changes"] = changed(bound["files"], files)
-                    if phase == "migrate":
-                        value["changed_files"] = sorted(
-                            set(valid_changed_files(agent.root, value["changed_files"], agent.notify)) |
-                            set(value["observed_changes"]))
-                    save_json(result_path, value)
-                    save_json(agent.run_dir / (stem + ".binding.json"),
-                              {"head": bound["head"], "files": files, "scope": agent.args.task_contract})
-                    agent.notify("recovered", "Reused completed protocol result for " + phase)
-                    return value
+                    try:
+                        value = stream.result(phase)
+                    except ValueError as error:
+                        # A retained session can end without a usable result (for
+                        # example an interrupted generation). Never re-record the
+                        # stale failure; rerun the phase in a fresh session.
+                        agent.notify("recovered", "Retained session had no structured result (" +
+                                     str(error) + "); rerunning the phase")
+                    else:
+                        value["observed_changes"] = changed(bound["files"], files)
+                        if phase == "migrate":
+                            value["changed_files"] = sorted(
+                                set(valid_changed_files(agent.root, value["changed_files"], agent.notify)) |
+                                set(value["observed_changes"]))
+                        save_json(result_path, value)
+                        save_json(agent.run_dir / (stem + ".binding.json"),
+                                  {"head": bound["head"], "files": files, "scope": agent.args.task_contract})
+                        agent.notify("recovered", "Reused completed protocol result for " + phase)
+                        return value
         return agent.phase(phase, feedback)
 
     def execute(self, group):

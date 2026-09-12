@@ -531,3 +531,34 @@ def test_cached_phase_recovery_filters_malformed_changed_files(repo):
     result = p.cached_phase(agent, "migrate", None)
     assert result["changed_files"] == ["a.py"]
     assert (run_dir / "00-migrate.result.json").exists()
+
+
+def test_cached_phase_recovery_falls_back_after_interrupted_generation(repo, monkeypatch):
+    p = make_project(repo)
+    p.store.apply_plan(plan(task("a")))
+    group = p.store.claim("w")
+    agent = p.task_runner(group)
+    run_dir = agent.run_dir
+    head = project.git(agent.root, "rev-parse", "HEAD")
+    files = project.snapshot(agent.root)
+    index = project.git(agent.root, "diff", "--cached", "--binary")
+    project.save_json(run_dir / "00-migrate.start.json",
+                      {"head": head, "files": files, "index": index,
+                       "scope": getattr(agent.args, "task_contract", None)})
+    project.save_json(run_dir / "00-migrate.completion.json",
+                      {"files": files, "head": head, "index": index})
+    events = [
+        {"type": "message", "message": {"id": "mid", "role": "assistant", "content": [
+            {"type": "text", "text": "Writing probe scripts and analyzing the unit..."}]}},
+        {"type": "complete"},
+    ]
+    (run_dir / "00-migrate.events.jsonl").write_text(
+        "\n".join(json.dumps(e) for e in events) + "\n", encoding="utf-8")
+    sentinel = dict(status="READY", summary="fresh", coverage_complete=True, issues=[],
+                    changed_files=[], test_paths=["tests/test_a.py"], dependencies=[],
+                    test_map=["upstream case -> tests/test_a.py -> PORTED"])
+    calls = []
+    monkeypatch.setattr(agent, "phase", lambda phase, feedback=None: calls.append(phase) or sentinel)
+    result = p.cached_phase(agent, "migrate", None)
+    assert calls == ["migrate"]
+    assert result is sentinel

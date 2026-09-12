@@ -16,6 +16,7 @@ import datetime
 import time
 import traceback
 import types
+import weakref
 from typing import Any, Callable, Dict, Generic, Iterator, List, Optional, Set, Tuple, TypeVar, Union
 
 T = TypeVar("T")
@@ -200,6 +201,25 @@ def _js_typeof(value: Any) -> str:
 def _js_is_nullish(value: Any) -> bool:
     """ECMAScript ``value == null``, which ``undefined`` satisfies as well."""
     return value is None or value is _UNDEFINED
+
+
+def _js_truthy(value: Any) -> bool:
+    """ECMAScript ``ToBoolean``, which Python truthiness is not.
+
+    Only ``undefined``/``null``/``false``/``+0``/``-0``/``NaN``/``''`` are
+    falsy in the reference; an empty ``dict``/``set``/``()``/``[]`` is truthy
+    there but falsy in Python, so the reference's `&&`/``||`` short-circuits
+    cannot be reproduced with Python truthiness.
+    """
+    if value is _UNDEFINED or value is None or value is False:
+        return False
+    if isinstance(value, bool):
+        return True
+    if isinstance(value, (int, float)):
+        return value != 0 and value == value  # +0/-0 and NaN are falsy
+    if isinstance(value, str):
+        return value != ""
+    return True
 
 
 def _js_strict_equal(a: Any, b: Any) -> bool:
@@ -751,8 +771,8 @@ def is_non_nullable(value: Any) -> bool:
 isNonNullable = is_non_nullable
 
 
-def is_plain_object(data: Any) -> bool:
-    """Return true for non-array object values matching Cosmokit isPlainObject.
+def is_plain_object(data: Any) -> Any:
+    """Non-array object test matching Cosmokit isPlainObject.
 
     The reference is `data && typeof data === 'object' && !Array.isArray(data)`:
     every non-array object (date, regexp, map, set, class instance) counts as
@@ -760,17 +780,26 @@ def is_plain_object(data: Any) -> bool:
     second Python sequence type, so it maps to the array bucket like
     `make_array`/`is_("Array", ...)`.
 
-    LEGAL_ADAPTATION: the reference returns the falsy operand itself (`null`,
-    `0`, `''`) rather than a boolean; only the truthiness is observable.
+    The leading `data &&` is an ECMAScript short-circuit, so it returns the
+    falsy operand itself instead of `false`: `isPlainObject(null)` is `null`,
+    `isPlainObject(0)` is `0`, `isPlainObject(NaN)` is `NaN` and
+    `isPlainObject(undefined)` is `undefined` (the Node oracle answers
+    `isPlainObject(0) === 0`). Only truthy non-objects answer the boolean
+    `false`, and the falsy set is ECMAScript's, so a Python value that is only
+    falsy here (`[]`, `{}`, `()`, `set()`) stays on the object branch.
+
+    RESIDUAL: because the operand comes back unchanged, the operand's Python
+    truthiness is what a Python condition sees. `float('nan')` is the single
+    JavaScript-falsy value Python calls truthy, so
+    `bool(is_plain_object(float('nan')))` is true where `!!isPlainObject(NaN)`
+    is false in the reference; no Python value is both a NaN and falsy.
     """
-    if data is None or isinstance(data, (bool, int, float, str)):
-        # ECMAScript falsy primitives (0, '', false, null, undefined) and any
-        # other primitive (typeof !== 'object').
-        return False
+    if not _js_truthy(data):
+        return data
+    if _js_typeof(data) != "object":
+        return False  # a primitive (typeof !== 'object') or a function
     if isinstance(data, (list, tuple)):
         return False  # Array.isArray
-    if isinstance(data, _JS_FUNCTION_TYPES):
-        return False  # ECMAScript typeof is 'function'
     # Every other object is accepted, including empty dicts/sets (a Python
     # empty container is falsy but the reference object is truthy).
     return True
@@ -1528,26 +1557,38 @@ def is_(type_str: str, value: Any = Ellipsis) -> Any:
     """Type predicate factory matching Cosmokit is().
 
     The reference is `type in globalThis && value instanceof globalThis[type]
-    || Object.prototype.toString.call(value).slice(8, -1) === type`, so the
-    check is by global constructor / internal tag.  The Python mapping reuses
-    the same idea for the constructor names that exist here (`Object` covers
-    plain data objects, `Map` the dict-backed mapping, `Null`/`Undefined` the
-    single Python `None`, `ArrayBuffer`/`SharedArrayBuffer` the owning buffers
-    `bytes`/`bytearray`, and every ArrayBufferView name the `memoryview`).
+    || Object.prototype.toString.call(value).slice(8, -1) === type`: the name
+    is resolved to a global constructor or compared with the value's internal
+    tag.  The Python mapping resolves the constructor names that exist here
+    (`Object` every non-primitive, `Null` the Python `None`, `Undefined` the
+    port's own ``undefined``, `ArrayBuffer`/`SharedArrayBuffer` the owning
+    buffers `bytes`/`bytearray`, every ArrayBufferView name the `memoryview`,
+    `WeakMap`/`WeakSet` the stdlib `weakref` containers), and a name the port
+    does not map matches nothing, because a Python class name is not an
+    internal tag (`is('Widget', new Widget())` is false in the reference: a
+    module-scoped class is not in `globalThis`).
 
-    LEGAL_ADAPTATION: `Symbol` has no Python equivalent, the reference's
-    single `typeof`-based `Array`/`Object` split cannot distinguish a Python
-    dict used as a plain object from one used as a `Map`, so `Map`/`WeakMap`
-    accept every dict even though a JavaScript plain object is not a Map, and
-    Python exposes one generic view type, so every typed-array name matches a
-    `memoryview` regardless of its element type.  `is` is a Python keyword,
-    so the exported predicate is spelled `is_` (the same spelling `Binary.is`
-    keeps as an attribute).
+    LEGAL_ADAPTATION: `Symbol` has no Python equivalent; Python has one
+    integer type, so an integer matches `Number` and `BigInt` alike; Python
+    exposes one generic view type, so every typed-array name matches a
+    `memoryview` regardless of its element type; and the port carries a
+    JavaScript `Map` as a `dict`, which is also its plain-object
+    representation, whose tag is `Object` rather than `Map` - a plain object
+    is not a Map in the reference (`is('Map', {})` is false), so `Map`
+    matches no Python value.  `is` is a Python keyword, so the exported
+    predicate is spelled `is_` (the same spelling `Binary.is` keeps as an
+    attribute).
     """
 
     def _check(val: Any) -> bool:
-        if type_str in ("Null", "Undefined"):
+        if type_str == "Null":
             return val is None
+        if type_str == "Undefined":
+            # `Object.prototype.toString.call(undefined)` is '[object
+            # Undefined]'; the public Python model carries `null` and
+            # `undefined` as the one nullish value, and the port's own
+            # undefined sentinel is the other value that matches.
+            return _js_is_nullish(val)
         if type_str == "Boolean":
             return isinstance(val, bool)
         if type_str == "Number":
@@ -1575,10 +1616,29 @@ def is_(type_str: str, value: Any = Ellipsis) -> Any:
             # `ArrayBuffer.isView`: a view matches, the buffer it views does
             # not (`is('Uint8Array', new ArrayBuffer(2))` is false).
             return isinstance(val, memoryview)
-        if type_str in ("Map", "WeakMap"):
-            return isinstance(val, dict)
-        if type_str in ("Set", "WeakSet"):
+        if type_str == "Map":
+            # A JavaScript `Map` is keyed by identity and is not a plain
+            # object: its tag is '[object Map]' while a plain object's is
+            # '[object Object]', so `is('Map', {})` is false in the reference
+            # even though `is('Object', new Map())` is true.  The port carries
+            # a JavaScript Map as a `dict`, which is also its plain-object
+            # representation and therefore cannot be recognized as a Map (see
+            # the LEGAL_ADAPTATION in the docstring).
+            return False
+        if type_str == "WeakMap":
+            # `weakref.WeakKeyDictionary` is the stdlib container the port
+            # uses where the reference keeps a `WeakMap` (an identity-keyed
+            # collection, as in dsh/boot/app_boot.py, dsh/core/scope.py and
+            # dsh/schedule/transaction.py); a plain object is not one.
+            return isinstance(val, weakref.WeakKeyDictionary)
+        if type_str == "Set":
             return isinstance(val, (set, frozenset))
+        if type_str == "WeakSet":
+            # A Python `set` is the JavaScript `Set`, not a `WeakSet`
+            # (`is('WeakSet', new Set())` is false in the reference), and
+            # `weakref.WeakSet` is the stdlib container the reference's
+            # `WeakSet` corresponds to.
+            return isinstance(val, weakref.WeakSet)
         if type_str == "Promise":
             import asyncio
             return isinstance(val, asyncio.Future)
@@ -1590,9 +1650,13 @@ def is_(type_str: str, value: Any = Ellipsis) -> Any:
         if type_str == "Object":
             # `value instanceof Object` holds for every non-primitive value
             # (arrays, dates, regexps, maps, functions included); only the
-            # ECMAScript primitives (and null/undefined) are rejected.
-            return val is not None and not isinstance(val, (bool, int, float, str))
-        return type(val).__name__ == type_str
+            # ECMAScript primitives (and null/undefined) are rejected, so the
+            # port's own undefined sentinel is rejected as well.
+            return not _js_is_nullish(val) and not isinstance(val, (bool, int, float, str))
+        # A name that is neither a global constructor nor the value's internal
+        # tag never matches: `is('Widget', new Widget())` is false in the
+        # reference, where a module-scoped class is not in `globalThis`.
+        return False
 
     if value is Ellipsis:
         return _check

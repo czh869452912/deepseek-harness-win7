@@ -21,6 +21,8 @@ Cases:
 - C34..C43 types.ts: is/Binary encodings/clone/deepEqual
 - C47..C48 types.ts: clone leaf-branch freshness and deepEqual own-key strictness
 - C49      misc.ts: callback invocation arity for filterKeys/mapValues
+- C50      misc.ts: the falsy operand `isPlainObject` returns through `&&`
+- C51      types.ts: is() name resolution for the Map family, undefined, unmapped names
 - C44      exported-name surface of the reference package
 - T1..T7   reference/vendor/cordis/src/utils.ts cases owned by the same module
 """
@@ -29,8 +31,10 @@ import calendar
 import collections
 import datetime
 import json
+import math
 import re
 import time
+import weakref
 
 import pytest
 
@@ -38,6 +42,7 @@ from dsh.cordis.utils import (
     Binary,
     DisposableList,
     Time,
+    _UNDEFINED,
     arrayBufferToBase64,
     arrayBufferToHex,
     base64ToArrayBuffer,
@@ -239,13 +244,19 @@ def test_c10_is_plain_object_accepts_every_non_array_object():
     assert is_plain_object(datetime.datetime(2026, 9, 3)) is True
     assert is_plain_object(re.compile('a')) is True
     assert is_plain_object({'a'}) is True
-    # Falsy operands and non-objects return falsy.
-    assert is_plain_object(None) is False
-    assert is_plain_object(0) is False
-    assert is_plain_object('') is False
+    # A JavaScript Map/WeakMap/WeakSet is a non-array object as well.
+    assert is_plain_object(weakref.WeakKeyDictionary()) is True
+    assert is_plain_object(weakref.WeakSet()) is True
+    # The leading `data &&` returns the falsy operand itself, not `false`.
+    assert is_plain_object(None) is None
+    assert is_plain_object('') == '' and is_plain_object('') is not False
+    assert is_plain_object(0) == 0 and is_plain_object(0) is not False
     assert is_plain_object(False) is False
+    # Truthy non-objects answer the boolean `false`.
     assert is_plain_object([]) is False
     assert is_plain_object(lambda: 1) is False
+    assert is_plain_object(1) is False
+    assert is_plain_object('x') is False
 
 
 def test_c11_filter_keys_passes_key_then_value():
@@ -800,6 +811,20 @@ def test_c36_is_matches_constructor_or_internal_tag():
     assert is_('Undefined', None) is True
     assert is_('Function', lambda: 1) is True
     assert is_('Set', {1, 2}) is True
+    # The internal tags differ, so a plain object is not a Map/WeakMap and a
+    # Python `set` (the JavaScript Set) is not a WeakSet: `is('Map', {})`,
+    # `is('WeakMap', {})` and `is('WeakSet', new Set())` are false in the
+    # reference, and `is('Object', new Map())` is true.
+    assert is_('Map', {}) is False
+    assert is_('Map', {'a': 1}) is False
+    assert is_('Map', []) is False
+    assert is_('Map', {1, 2}) is False
+    assert is_('WeakMap', {}) is False
+    assert is_('WeakSet', {}) is False
+    assert is_('WeakSet', {1, 2}) is False
+    assert is_('Map', weakref.WeakKeyDictionary()) is False
+    assert is_('Object', weakref.WeakKeyDictionary()) is True
+    assert is_('Object', weakref.WeakSet()) is True
     assert is_('ArrayBuffer', b'\x01\x02') is True
     assert is_('SharedArrayBuffer', bytearray(b'\x01\x02')) is True
     # `isArrayBufferLike` only matches a buffer that owns its memory;
@@ -1160,6 +1185,78 @@ def test_c49_callback_arity_matches_the_javascript_invocation_rule():
     # declares a third required positional slot cannot be satisfied, because the
     # reference supplies exactly two arguments and Python has no `undefined`
     # value for the surplus slot JavaScript would fill.
+
+
+def test_c50_is_plain_object_returns_the_falsy_operand():
+    """misc.ts:30-32 - `data && ...` short-circuits with the falsy operand.
+
+    Node oracle on the unmodified reference: `isPlainObject(0) === 0`,
+    `String(isPlainObject(0)) === '0'`, `isPlainObject(-0) === -0`,
+    `isPlainObject(NaN)` is NaN, `isPlainObject(undefined) === undefined`,
+    `isPlainObject(null) === null`, `isPlainObject('') === ''` and
+    `isPlainObject(false) === false`.
+    """
+    assert is_plain_object(0) == 0 and is_plain_object(0) is not False
+    assert str(is_plain_object(0)) == '0'
+    assert is_plain_object(-0.0) == 0 and is_plain_object(-0.0) is not False
+    assert is_plain_object(None) is None
+    assert is_plain_object(_UNDEFINED) is _UNDEFINED
+    assert is_plain_object(False) is False
+    assert is_plain_object('') == '' and is_plain_object('') is not False
+    nan = float('nan')
+    result = is_plain_object(nan)
+    assert math.isnan(result) and result is nan
+    # Every one of them stays falsy in an ECMAScript condition. `NaN` is the
+    # one exception a Python condition cannot see, because Python's
+    # `float('nan')` is truthy while JavaScript's `NaN` is falsy (see the
+    # residual note in `is_plain_object`).
+    for value in (0, -0.0, None, _UNDEFINED, False, ''):
+        assert not is_plain_object(value)
+    assert bool(is_plain_object(nan)) is True
+    # Python's own falsiness is not the reference's: `[]`, `()` and `{}` are
+    # falsy here but truthy objects in ECMAScript, so they are not
+    # short-circuited and reach the array/object branches instead.
+    assert is_plain_object([]) is False
+    assert is_plain_object(()) is False
+    assert is_plain_object({}) is True
+    assert is_plain_object(set()) is True
+
+
+def test_c51_is_name_resolution_for_the_map_family_and_undefined():
+    """types.ts:8-22 - `value instanceof globalThis[type] || tag === type`.
+
+    Node oracle on the unmodified reference: `is('WeakMap', {})` is false,
+    `is('WeakMap', new WeakMap())` is true, `is('WeakSet', new WeakSet())` is
+    true, `is('Object', new WeakMap())` is true, `is('Null', undefined)` is
+    false and `is('Widget', new class Widget {})` is false.
+    """
+    # The stdlib containers the port keys by object identity are the values a
+    # JavaScript WeakMap/WeakSet corresponds to.
+    assert is_('WeakMap', weakref.WeakKeyDictionary()) is True
+    assert is_('WeakMap', {}) is False
+    assert is_('WeakMap', weakref.WeakSet()) is False
+    assert is_('WeakSet', weakref.WeakSet()) is True
+    assert is_('WeakSet', {1, 2}) is False
+    assert is_('Set', weakref.WeakSet()) is False
+    # `null` and `undefined` are two tags: the public Python model carries the
+    # one nullish value, and the port's undefined sentinel is the other.
+    assert is_('Null', None) is True
+    assert is_('Null', _UNDEFINED) is False
+    assert is_('Undefined', None) is True
+    assert is_('Undefined', _UNDEFINED) is True
+    assert is_('Object', _UNDEFINED) is False
+    assert is_('Array', _UNDEFINED) is False
+
+    class Widget:
+        pass
+
+    # A name that resolves to neither a global constructor nor an internal tag
+    # matches no value, a Python class instance included.
+    assert is_('Widget', Widget()) is False
+    assert is_('Widget', {'a': 1}) is False
+    predicate = is_('Widget')
+    assert predicate(Widget()) is False
+    assert predicate({'a': 1}) is False
 
 
 def test_c44_reference_export_surface_is_present():

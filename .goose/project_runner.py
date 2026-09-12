@@ -174,7 +174,16 @@ class Project:
         before = snapshot(self.root)
         head = git(self.root, "rev-parse", "HEAD")
         index = git(self.root, "diff", "--cached", "--binary")
-        path = self.folder / ("architecture-" + str(time.time_ns()) + ".yaml")
+        pending = self.folder / "architecture-pending.json"
+        saved = json.loads(pending.read_text(encoding="utf-8")) if pending.exists() else None
+        # Older controllers retained accepted output but did not save a repair cursor.
+        if saved is None and self.store.meta("architecture") != self.store.meta("upstream"):
+            old = sorted(self.folder.glob("architecture-*.yaml"), key=lambda p: p.stat().st_mtime_ns)
+            if old and list(self.folder.glob(old[-1].stem + ".*.events.accepted.json")):
+                saved = {"recipe": str(old[-1]), "upstream": self.store.meta("upstream")}
+        if saved and saved["upstream"] != self.store.meta("upstream"):
+            saved = None
+        path = Path(saved["recipe"]) if saved else self.folder / ("architecture-" + str(time.time_ns()) + ".yaml")
         instructions = (self.root / ".agents/agents/parity-architect.md").read_text(encoding="utf-8")
         config = yaml.safe_load((self.root / ".goose/recipes/parity-unit.yaml").read_text(encoding="utf-8"))
         defaults = {p["key"]: p.get("default") for p in config["parameters"]}
@@ -186,32 +195,78 @@ class Project:
                   "\nDependency kinds: implementation, contract, acceptance, change. Every edge needs evidence. "
                   "Every task requires id, owner, goal, evidence, wave, dependencies, consumes, provides. "
                   "Contracts require id, owner(task ID), evidence, paths(Python implementation paths). "
+                  "Every consumes/provides ID must already exist in the graph registry or have a complete definition "
+                  "in your contracts array. Before finishing, cross-check all referenced IDs, including those "
+                  "declared only in provides. Do not return dangling references. "
                   "Use work tasks for missing runtime contracts, not package-directory restrictions. "
                   "Do not modify files or Git state. Inspect any relevant code. Do not claim historical verdicts as fresh evidence.",
                   "prompt": "Review the pinned architecture and refine core-first task priorities and cross-module contracts.",
                   "response": {"json_schema": PLAN_SCHEMA}}
-        save_json(path, recipe)
+        if not saved:
+            save_json(path, recipe)
+        save_json(pending, {"recipe": str(path), "upstream": self.store.meta("upstream")})
         name = path.stem
         command = [self.goose, "run", "--recipe", str(path), "--name", name, "--output-format", "stream-json"]
         continuation = 0
-        while True:
-            stream = Stream(lambda k, v: print("[architect]", k, v, flush=True))
-            log = path.with_suffix(".%d.events.jsonl" % continuation)
-            code = run_process(command, self.root, log, stream.notify, 0, stream, cancel_event=self.stop)
-            if code or not stream.complete or not stream.action_limit_reached:
-                break
-            continuation += 1
+        prior_plan = None
+        if saved:
+            previous_logs = list(self.folder.glob(name + ".*.events.jsonl"))
+            continuation = max([int(p.name[len(name) + 1:].split('.')[0]) for p in previous_logs] or [-1]) + 1
+            accepted = sorted(self.folder.glob(name + ".*.events.accepted.json"), key=lambda p: p.stat().st_mtime_ns)
+            if accepted:
+                completed_log = accepted[-1].with_name(accepted[-1].name.replace(".accepted.json", ".jsonl"))
+                if completed_log.exists():
+                    replay = Stream(lambda *args: None)
+                    for line in completed_log.read_text(encoding="utf-8").splitlines():
+                        try:
+                            event = json.loads(line)
+                        except ValueError:
+                            continue
+                        replay.feed(event)
+                    if replay.complete and not replay.action_limit_reached:
+                        prior_plan = json.loads(accepted[-1].read_text(encoding="utf-8"))
             command = [self.goose, "run", "--resume", "--name", name, "--output-format", "stream-json",
-                       "--text", "Continue architecture planning with your existing context/tools until correct; return the structured plan."]
-        if code or not stream.complete or stream.accepted_result is None:
-            raise ValueError("Architect did not complete a structured plan; retained its log")
-        if (snapshot(self.root) != before or git(self.root, "rev-parse", "HEAD") != head or
-                git(self.root, "diff", "--cached", "--binary") != index):
-            raise ValueError("Architect mutated worktree; inspect before applying plan")
-        plan = stream.accepted_result
-        self.store.apply_plan(plan)
+                       "--text", "Continue the existing architecture plan with tools and return a complete corrected structured plan."]
+        while True:
+            if prior_plan is not None:
+                plan, prior_plan = prior_plan, None
+            else:
+                stream = Stream(lambda k, v: print("[architect]", k, v, flush=True))
+                log = path.with_suffix(".%d.events.jsonl" % continuation)
+                code = run_process(command, self.root, log, stream.notify, 0, stream, cancel_event=self.stop)
+                continuation += 1
+                if (snapshot(self.root) != before or git(self.root, "rev-parse", "HEAD") != head or
+                        git(self.root, "diff", "--cached", "--binary") != index):
+                    raise ValueError("Architect mutated worktree; inspect before applying plan")
+                if code or not stream.complete:
+                    raise ValueError("Architect did not complete; retained session and logs for resume")
+                command = [self.goose, "run", "--resume", "--name", name, "--output-format", "stream-json",
+                           "--text", "Continue architecture planning with your existing context/tools until correct; return the structured plan."]
+                if stream.action_limit_reached:
+                    continue
+                if stream.accepted_result is None:
+                    raise ValueError("Architect did not complete a structured plan; retained its log")
+                plan = stream.accepted_result
+            save_json(path.with_suffix(".%d.proposal.json" % continuation), plan)
+            try:
+                self.store.apply_plan(plan)
+            except (ValueError, KeyError, TypeError) as error:
+                feedback = {"state": "REPAIRING_PLAN", "error": str(error), "session": name,
+                            "proposal": str(path.with_suffix(".%d.proposal.json" % continuation))}
+                save_json(self.folder / "architecture-status.json", feedback)
+                print("[architect] repair: " + str(error), flush=True)
+                command = [self.goose, "run", "--resume", "--name", name, "--output-format", "stream-json",
+                           "--text", "The scheduler rejected your plan transactionally; nothing was applied. "
+                           "Repair the existing plan, preserving all valid tasks and evidence. Return the complete corrected "
+                           "incremental plan, not only the missing definitions. Every consumed/provided contract must "
+                           "exist in the registry or in contracts. Inspect canonical owners; do not invent placeholders "
+                           "or remove requirements to bypass validation. Validation error: " + str(error)]
+                continue
+            break
         save_json(path.with_suffix(".plan.json"), plan)
         self.store.meta("architecture", self.store.meta("upstream"))
+        save_json(self.folder / "architecture-status.json", {"state": "APPLIED", "session": name})
+        pending.unlink()
         self.show()
 
     def task_runner(self, group):

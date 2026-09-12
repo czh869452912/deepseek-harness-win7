@@ -341,3 +341,42 @@ def test_architect_resumes_native_stop_and_applies_acknowledged_plan(repo, monke
     assert p.store.plan_is_current(proposed)
     assert p.store.meta("architecture") == "pinned-fixture"
     assert project.git(repo, "rev-parse", "HEAD") == before
+
+
+def test_architect_repairs_saved_invalid_plan_in_original_session(repo, monkeypatch):
+    p = make_project(repo)
+    p.store.meta("architecture", "not-planned")
+    invalid = plan(task("a"))
+    invalid["tasks"][0]["provides"] += ["contract:branded-identifiers", "contract:settings"]
+    valid = json.loads(json.dumps(invalid))
+    valid["contracts"] += [{"id": cid, "owner": "a", "evidence": "reference/a.py", "paths": ["a.py"]}
+                           for cid in invalid["tasks"][0]["provides"][1:]]
+    recipe = p.folder / "architecture-123.yaml"
+    recipe.write_text("{}", encoding="utf-8")
+    project.save_json(p.folder / "architecture-123.0.events.accepted.json", invalid)
+    (p.folder / "architecture-123.0.events.jsonl").write_text('{"type":"complete"}\n', encoding="utf-8")
+    calls = []
+    def repair(command, root, log, notify, timeout, stream, **kwargs):
+        calls.append(command)
+        assert "--resume" in command and command[command.index("--name") + 1] == "architecture-123"
+        assert "contract:branded-identifiers" in command[-1] and "contract:settings" in command[-1]
+        assert p.store.rows() == []  # The rejected plan was not partially applied.
+        stream.accepted_result = valid
+        stream.complete = True
+        return 0
+    monkeypatch.setattr(project, "run_process", repair)
+    p.architect()
+    assert len(calls) == 1
+    assert p.store.plan_is_current(valid)
+    assert not (p.folder / "architecture-pending.json").exists()
+    assert json.loads((p.folder / "architecture-status.json").read_text())["state"] == "APPLIED"
+
+
+def test_unknown_contract_validation_reports_all_missing_references(store):
+    invalid = plan(task("a"), task("b"))
+    invalid["tasks"][0]["consumes"] = ["missing-a"]
+    invalid["tasks"][1]["provides"].append("missing-b")
+    with pytest.raises(ValueError) as error:
+        store.apply_plan(invalid)
+    assert "missing-a" in str(error.value) and "missing-b" in str(error.value)
+    assert store.rows() == []

@@ -105,6 +105,17 @@ class Store:
                 raise ValueError("Contract IDs must be unique nonempty strings")
             contracts = {r[0] for r in db.execute("SELECT id FROM contracts")}
             contracts.update(contract_ids)
+            missing = {}
+            for task in tasks:
+                for dep in task.get("dependencies", []):
+                    if dep.get("task") not in known or not dep.get("evidence"):
+                        raise ValueError("Unknown dependency or missing evidence: " + str(dep))
+                for cid in task.get("consumes", []) + task.get("provides", []):
+                    if cid not in contracts:
+                        missing.setdefault(cid, []).append(task["id"])
+            if missing:
+                raise ValueError("Unknown contracts (define each in contracts with owner, evidence and paths): " +
+                                 json.dumps(missing, sort_keys=True))
             changed_tasks = set()
             changed_owners = set()
             for task in tasks:

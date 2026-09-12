@@ -16,6 +16,12 @@ The default is two concurrent groups; `-Jobs` selects resource concurrency, not
 a work quota. There are no default round, action or model-work time limits.
 The architect uses the existing judge provider/model configuration; migration,
 review and arbitration retain their existing role configurations.
+Plans rejected by graph validation return to the same architect session for
+correction, without a retry quota. Missing contract definitions are reported
+together with their referring tasks. Proposals and repair status are retained in
+`architecture-*.proposal.json` and `architecture-status.json`. Restarting `run`
+or `plan` resumes unfinished planning, including accepted output saved by the
+earlier controller, rather than discarding the completed architecture analysis.
 
 ```powershell
 # Discovery/status only: no model calls or source edits.

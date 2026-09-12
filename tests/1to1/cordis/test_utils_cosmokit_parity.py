@@ -1164,7 +1164,9 @@ def test_c49_callback_arity_matches_the_javascript_invocation_rule():
     literally, so the port supplies as many arguments as the callback declares
     positional slots for, padding the surplus slots with its own `undefined`
     sentinel (`_js_supplied_arg_count` / `_js_call_args`), reproducing the Node
-    oracle for zero-, one-, two-, three-, four- and rest-parameter callbacks.
+    oracle for zero-, one-, two-, three-, four- and rest-parameter callbacks;
+    a C-implemented callback reports no slots at all, so the reference list is
+    replayed from its full length down to none (see `_js_call_callback`).
     """
     # Zero positional parameters is the `() => ...` form: no argument at all.
     assert filterKeys({'a': 1, 'b': 2}, lambda: True) == {'a': 1, 'b': 2}
@@ -1230,13 +1232,23 @@ def test_c49_callback_arity_matches_the_javascript_invocation_rule():
     with pytest.raises(ValueError, match='boom-zero'):
         mapValues({'a': 1}, boom_zero)
 
-    # Residual adaptation limit (see `_js_supplied_arg_count`): a C-implemented
-    # callback whose signature CPython cannot report (e.g. `str`, `bool`) keeps
-    # the two-argument call this module already made, so ECMAScript's
-    # surplus-argument rule is not reproduced for it and Python's own TypeError
-    # is not caught or retried.
-    with pytest.raises(TypeError):
-        mapValues({'a': 1}, str)
+    # A C-implemented callback reports no signature, so its positional slots
+    # cannot be read and the port replays the reference's own argument list
+    # from its full length down to none, taking the shortest call that binds -
+    # exactly JavaScript's "surplus arguments are dropped" rule (Node oracle:
+    # mapValues({a:1,b:2}, String) is {"a":"1","b":"2"}, mapValues({a:"7"},
+    # Number) is {"a":7}, filterKeys({a:1,b:0}, Boolean) is {"a":1,"b":0}, and
+    # filterKeys({a:1,b:2}, String) keeps both keys).
+    assert mapValues({'a': 1, 'b': 2}, str) == {'a': '1', 'b': '2'}
+    assert mapValues({'a': '7'}, int) == {'a': 7}
+    assert filterKeys({'a': 1, 'b': 0}, bool) == {'a': 1, 'b': 0}
+    assert filterKeys({'a': 1, 'b': 2}, str) == {'a': 1, 'b': 2}
+    # When no attempted length binds, the error of the reference-faithful
+    # (longest) call is the one re-raised, not a shortened binding failure, so
+    # a genuine callback error is never masked (Node oracle has no equivalent:
+    # this pins the Python adaptation itself, hence `iter(5, 'a')`).
+    with pytest.raises(TypeError, match='v must be callable'):
+        mapValues({'a': 5}, iter)
 
     # A callback that declares MORE positional slots than the reference arity
     # reads the missing ones as `undefined` (Node oracle:

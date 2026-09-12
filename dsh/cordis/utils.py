@@ -499,7 +499,7 @@ def omit(obj: Dict[str, Any], keys: Optional[Any] = None) -> Dict[str, Any]:
     return {k: v for k, v in obj.items() if k not in key_set}
 
 
-def _js_supplied_arg_count(callback: Callable[..., Any], maximum: int = 2, fallback: int = 1) -> int:
+def _js_supplied_arg_count(callback: Callable[..., Any], maximum: int = 2) -> Optional[int]:
     """LEGAL_ADAPTATION: JavaScript ignores surplus arguments, Python cannot.
 
     Cosmokit always invokes these callbacks with a fixed argument list --
@@ -515,13 +515,13 @@ def _js_supplied_arg_count(callback: Callable[..., Any], maximum: int = 2, fallb
     that declares them.  A declared surplus slot with a default is left to that
     default, exactly as JavaScript's ``undefined`` triggers it, so it is not
     padded.  A callback whose signature CPython cannot report (a C-implemented
-    callable such as ``bool`` or ``next``) keeps the call this module already
-    made at that site, passed in through ``fallback``.
+    callable such as ``str`` or ``bool``) reports ``None`` instead, and the
+    reference's own argument list is replayed by :func:`_js_call_callback`.
     """
     try:
         signature = inspect.signature(callback)
     except (TypeError, ValueError):
-        return fallback
+        return None
     params = list(signature.parameters.values())
     if any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params):
         return maximum
@@ -551,6 +551,38 @@ def _js_call_args(arguments: Tuple[Any, ...], count: int) -> Tuple[Any, ...]:
     return tuple(supplied)
 
 
+def _js_call_callback(callback: Callable[..., Any], arguments: Tuple[Any, ...], maximum: int = 2) -> Any:
+    """Invoke a callback with the reference's positional argument list.
+
+    The reference always passes the same two arguments - ``filter(key, value)``
+    for filterKeys and ``transform(value, key)`` for mapValues - so this is the
+    single adaptation point for JavaScript's argument rule:
+
+    * a callback whose positional slots CPython can report is called with
+      exactly those slots (see :func:`_js_supplied_arg_count` and
+      :func:`_js_call_args`); a non-TypeError it raises propagates unchanged;
+    * a C-implemented callable reports no signature, so its slots cannot be
+      read and the reference's argument list is replayed from its full length
+      down to none - the shortest list that binds wins, which is what
+      "JavaScript drops the surplus arguments" means for such a callable (Node
+      oracle: ``mapValues({a:1,b:2}, String)`` is ``{"a":"1","b":"2"}``).
+      A non-TypeError propagates unchanged, and when every attempt raises
+      TypeError the reference-faithful (longest) call is re-raised rather than
+      a shortened binding failure, so a genuine error is never masked.
+    """
+    supplied = _js_supplied_arg_count(callback, maximum)
+    if supplied is not None:
+        return callback(*_js_call_args(arguments, supplied))
+    first_error = None
+    for count in range(min(maximum, len(arguments)), -1, -1):
+        try:
+            return callback(*arguments[:count])
+        except TypeError as error:
+            if first_error is None:
+                first_error = error
+    raise first_error
+
+
 def filter_keys(obj: Dict[str, Any], predicate: Callable[..., bool]) -> Dict[str, Any]:
     """Filter dictionary keys matching Cosmokit filterKeys.
 
@@ -563,12 +595,11 @@ def filter_keys(obj: Dict[str, Any], predicate: Callable[..., bool]) -> Dict[str
     # LEGAL_ADAPTATION: the reference always calls `filter(key, value)` and
     # JavaScript silently ignores surplus arguments and fills the missing ones
     # with `undefined`; Python cannot express either, so the predicate arity
-    # picks the equivalent call (see _js_supplied_arg_count, padding through
-    # _js_call_args).
-    supplied = _js_supplied_arg_count(predicate)
+    # picks the equivalent call (see _js_call_callback, which pads through
+    # _js_call_args and replays the reference list for an unreported one).
     res = {}
     for k, v in obj.items():
-        if _js_truthy(predicate(*_js_call_args((k, v), supplied))):
+        if _js_truthy(_js_call_callback(predicate, (k, v))):
             res[k] = v
     return res
 
@@ -1866,12 +1897,12 @@ def _js_apply_with_key(callback: Callable[..., Any], value: Any, key: str) -> An
     the equivalent Python call -- fewer positional slots receive the leading
     arguments only (a ``() => ...`` transform that ignores both gets none) and
     surplus declared slots receive the port's ``undefined`` sentinel, see
-    _js_supplied_arg_count and _js_call_args.  The two-argument fallback keeps
-    this call site's pre-existing behaviour for a callback whose signature
-    cannot be reported.
+    _js_supplied_arg_count and _js_call_args; a callback CPython cannot report
+    is served by _js_call_callback from the reference's own argument list.
+    A non-TypeError raised by the callback propagates unchanged.
     """
-    supplied = _js_supplied_arg_count(callback, fallback=2)
-    return callback(*_js_call_args((value, key), supplied))
+    # _js_call_callback replays the reference list for an unreported signature.
+    return _js_call_callback(callback, (value, key))
 
 
 def map_values(source: Dict[str, Any], callback: Callable[..., Any]) -> Dict[str, Any]:

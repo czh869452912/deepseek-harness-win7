@@ -236,6 +236,13 @@ class Fiber:
         def collect_disposer(disp: Any) -> None:
             if callable(disp):
                 disposables.append(disp)
+                # fiber.ts `collect`: this effect takes ownership of a disposer the
+                # fiber list also held (a nested effect), so the fiber no longer
+                # owns it and its metadata nests under this effect.
+                self._disposables.delete(disp)
+                nested = self._effect_metas.get(disp)
+                if nested is not None and nested is not meta:
+                    meta.children.append(nested)
 
         def rollback_sync() -> None:
             nonlocal remove_wrapper, wrapper
@@ -358,11 +365,25 @@ class Fiber:
                         in_flight_cleanup.add_done_callback(lambda t: self._in_flight_effects.discard(t))
                     return in_flight_cleanup
                 except RuntimeError:
+                    # A synchronous caller (for example `ctx.teardown()` invoked
+                    # outside a task) has no loop to schedule the cleanup on;
+                    # drain it on a fresh loop so disposal still reaches
+                    # quiescence before returning.
                     for r in async_disposers:
                         try:
-                            pass
-                        except Exception:
-                            pass
+                            if inspect.iscoroutine(r):
+                                asyncio.run(r)
+                            else:
+                                new_loop = asyncio.new_event_loop()
+                                try:
+                                    new_loop.run_until_complete(r)
+                                finally:
+                                    new_loop.close()
+                        except Exception as err:
+                            if self.ctx and hasattr(self.ctx, "logger"):
+                                self.ctx.logger("fiber").error("Exception in async disposer '%s': %s", label, err)
+                            else:
+                                sys.stderr.write(f"[Cordis Fiber Error] Exception in async disposer '{label}': {err}\n")
                     return None
             return None
 
@@ -502,6 +523,19 @@ class Fiber:
 
         return wrapper
 
+    def _collect(self, dispose: Any) -> None:
+        """
+        Bind a disposer produced by the plugin body to this fiber.
+
+        Mirrors the fiber-level `collect` in TS `Fiber._execute`: the disposer is
+        pushed as given, so a nested effect wrapper keeps its own metadata while a
+        plain function carries none. Any other produced value is rejected.
+        """
+        if callable(dispose):
+            self._disposables.push(dispose)
+        elif dispose is not None:
+            raise TypeError("Invalid effect")
+
     def disposable(self, disposer: Callable[[], Any], label: str = "") -> Callable[[], None]:
         """Register a pure cleanup/teardown disposer on this fiber without executing it at setup."""
         return self.effect(disposer, label=label, is_disposer=True)
@@ -602,6 +636,13 @@ class Fiber:
         if epoch != INACTIVE_EPOCH and old_epoch == INACTIVE_EPOCH:
             self._epoch_transition_driven = True
             self.set_state(FiberState.LOADING)
+            if self.uid is None or self.epoch != epoch:
+                # A reentrant disposer invalidated this load while the LOADING
+                # status was reported. fiber.ts re-checks the epoch after its
+                # initial microtask and never runs the plugin body; the nested
+                # transition already drove the unload this fiber needs.
+                self._epoch_transition_driven = True
+                return
             self._reload()
         elif epoch == INACTIVE_EPOCH and old_epoch != INACTIVE_EPOCH:
             self._epoch_transition_driven = True
@@ -712,7 +753,7 @@ class Fiber:
                         try:
                             async for item in gen:
                                 if callable(item):
-                                    self.disposable(item)
+                                    self._collect(item)
                             if self.epoch != epoch or self.state in (FiberState.UNLOADING, FiberState.DISPOSED):
                                 self.set_state(FiberState.UNLOADING)
                                 self._unload()
@@ -734,13 +775,13 @@ class Fiber:
                 elif inspect.isgenerator(init_res) or hasattr(init_res, "__iter__"):
                     for item in init_res:
                         if callable(item):
-                            self.disposable(item)
+                            self._collect(item)
                 elif inspect.iscoroutine(init_res):
                     async def _run_coro_init(coro=init_res):
                         try:
                             ret = await coro
                             if callable(ret):
-                                self.disposable(ret)
+                                self._collect(ret)
                             if self.epoch != epoch or self.state in (FiberState.UNLOADING, FiberState.DISPOSED):
                                 self.set_state(FiberState.UNLOADING)
                                 self._unload()
@@ -791,13 +832,13 @@ class Fiber:
                 # disposer that is also thenable (e.g. the wrapper from `ctx.provide()`)
                 # is collected as an effect instead of being awaited and disposed.
                 if callable(res):
-                    self.disposable(res)
+                    self._collect(res)
                 elif inspect.isawaitable(res):
                     async def _async_wait_res():
                         try:
                             ret = await res
                             if callable(ret):
-                                self.disposable(ret)
+                                self._collect(ret)
                             elif inspect.isgenerator(ret) or inspect.isasyncgen(ret):
                                 self.effect(lambda r=ret: r, label=f"apply({self.name})")
                             elif ret is not None:
@@ -825,15 +866,20 @@ class Fiber:
                     except RuntimeError:
                         ret = asyncio.run(res)
                         if callable(ret):
-                            self.disposable(ret)
+                            self._collect(ret)
                         elif inspect.isgenerator(ret) or inspect.isasyncgen(ret):
                             self.effect(lambda r=ret: r, label=f"apply({self.name})")
                         elif ret is not None:
                             raise TypeError("Invalid effect")
-                elif inspect.isgenerator(res) or inspect.isasyncgen(res):
+                elif inspect.isgenerator(res) or isinstance(res, (list, tuple)):
+                    # fiber.ts `_execute` iterates a returned iterable and collects
+                    # each produced disposer on the fiber itself.
+                    for item in res:
+                        self._collect(item)
+                elif inspect.isasyncgen(res):
+                    # An async iterable is consumed after activation, so it keeps
+                    # the effect that owns the yielded disposers.
                     self.effect(lambda r=res: r, label=f"apply({self.name})")
-                elif callable(res):
-                    self.disposable(res)
                 elif res is not None:
                     raise TypeError("Invalid effect")
 
@@ -976,14 +1022,24 @@ class Fiber:
                     except Exception:
                         pass
 
-    async def dispose(self) -> None:
-        """Dispose this fiber and execute disposers in strict reverse order matching TS fiber.dispose."""
+    def dispose(self) -> Any:
+        """
+        Dispose this fiber and return an awaitable that settles once it is quiescent.
+
+        Mirrors TS `fiber.dispose`, an async function whose body runs synchronously
+        up to its first await: clearing the uid, notifying `internal/plugin`
+        observers, and starting disposers all happen at the call site, while
+        awaiting the returned object waits for teardown to finish. Disposers run in
+        strict reverse registration order.
+        """
+        self._begin_dispose()
+        return self._await_quiescent()
+
+    def _begin_dispose(self) -> None:
+        """Run the part of TS `dispose` before its first await."""
         if self.runtime is None:
             self.set_state(FiberState.UNLOADING)
             self._unload()
-            while self.inertia is not None and not self.inertia.done():
-                await self.inertia
-            self.set_state(FiberState.ACTIVE)
             return
 
         if getattr(self, "_disposing", False) or self.state == FiberState.DISPOSED:
@@ -1006,6 +1062,15 @@ class Fiber:
                         registry._runtimes.pop(self.runtime.callback, None)
 
         self.set_epoch(INACTIVE_EPOCH)
+
+    async def _await_quiescent(self) -> None:
+        """Run the await tail of TS `dispose` for a teardown started by `_begin_dispose`."""
+        if self.runtime is None:
+            while self.inertia is not None and not self.inertia.done():
+                await self.inertia
+            self.set_state(FiberState.ACTIVE)
+            return
+
         if hasattr(self, "_in_flight_effects"):
             for t in list(self._in_flight_effects):
                 if not t.done():

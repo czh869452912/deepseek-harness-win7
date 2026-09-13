@@ -189,12 +189,15 @@ class Context:
             curr = getattr(curr, "_parent", None)
         return False
 
-    def effect(self, setup_or_disposer: Any, label: str = "") -> Callable[[], None]:
+    def effect(self, setup_or_disposer: Any, label: Optional[str] = None) -> Callable[[], None]:
         """
         Register a reversible effect setup/cleanup function.
-        Delegates to current fiber effect matching TS context.effect().
+        Delegates to current fiber effect matching TS context.effect(); an omitted
+        label keeps the fiber default.
         """
         if self.fiber:
+            if label is None:
+                return self.fiber.effect(setup_or_disposer)
             return self.fiber.effect(setup_or_disposer, label=label)
         raise RuntimeError("cannot register effect on context without fiber")
 
@@ -210,13 +213,7 @@ class Context:
         """
         if self.fiber:
             self.fiber.assert_active()
-        disposer = self._event_bus.on(event_name, handler, prepend=prepend, global_listener=global_listener, ctx=self)
-        try:
-            self.disposable(disposer, label=f"ctx.on({event_name})")
-        except Exception:
-            disposer()
-            raise
-        return disposer
+        return self._event_bus.on(event_name, handler, prepend=prepend, global_listener=global_listener, ctx=self)
 
     def once(self, event_name: str, handler: Callable[..., Any], prepend: bool = False, global_listener: bool = False) -> Callable[[], None]:
         """
@@ -224,13 +221,7 @@ class Context:
         """
         if self.fiber:
             self.fiber.assert_active()
-        disposer = self._event_bus.once(event_name, handler, prepend=prepend, global_listener=global_listener, ctx=self)
-        try:
-            self.disposable(disposer, label=f"ctx.once({event_name})")
-        except Exception:
-            disposer()
-            raise
-        return disposer
+        return self._event_bus.once(event_name, handler, prepend=prepend, global_listener=global_listener, ctx=self)
 
     def emit(self, event_name: str, *args: Any, **kwargs: Any) -> None:
         kwargs.setdefault("caller_ctx", self)

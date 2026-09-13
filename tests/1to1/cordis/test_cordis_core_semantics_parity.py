@@ -288,3 +288,188 @@ async def test_c7_fiber_scoped_internal_update_hook_chain():
     assert fiber.state == FiberState.ACTIVE
     assert fiber.config == {"a": 2}
     assert log.count("apply:{'a': 2}") == applied_before_veto
+
+@pytest.mark.asyncio
+async def test_c9_ctx_on_registers_one_labeled_effect():
+    """C9: `ctx.on` adds one effect labeled `ctx.on("name")`; its disposer removes it.
+
+    Reference: events.ts `EventsService.register` returns the fiber effect
+    wrapper (label `ctx.on("...")`), and fiber.ts `getEffects` reports live
+    effects by label. `ctx.effect()` with no label keeps the fiber default.
+    """
+    ctx = Context()
+    disposer = ctx.on("c9-evt", lambda: None)
+    assert [effect["label"] for effect in ctx.fiber.get_effects()] == ['ctx.on("c9-evt")']
+
+    # The returned object is the fiber effect wrapper, so calling it reports the
+    # disposer result (`undefined` for a synchronous listener removal) and is
+    # single-shot.
+    assert disposer() is None
+    assert ctx.fiber.get_effects() == []
+    assert disposer() is None
+
+    once_disposer = ctx.once("c9-evt", lambda: None)
+    assert [effect["label"] for effect in ctx.fiber.get_effects()] == ['ctx.on("c9-evt")']
+    once_disposer()
+
+    ctx.effect(lambda: None)
+    assert [effect["label"] for effect in ctx.fiber.get_effects()] == ["anonymous"]
+
+
+@pytest.mark.asyncio
+async def test_c10_effect_takes_ownership_of_nested_effect():
+    """C10: an effect that collects another effect owns it and nests its metadata.
+
+    Reference: fiber.ts `effect` `collect` pushes the disposer into the effect's
+    own list, deletes it from the fiber list, and appends its `EffectMeta` to the
+    parent effect's `children`; `getEffects` therefore returns one root.
+    """
+    ctx = Context()
+    log = []
+
+    def inner_body():
+        return lambda: log.append("nested-disposed")
+
+    def outer_body():
+        return ctx.fiber.effect(inner_body, "c10-inner")
+
+    outer = ctx.effect(outer_body, "c10-outer")
+    effects = ctx.fiber.get_effects()
+    assert [effect["label"] for effect in effects] == ["c10-outer"]
+    assert effects[0]["children"] == [{"label": "c10-inner", "children": []}]
+
+    await outer
+    assert log == ["nested-disposed"]
+    assert ctx.fiber.get_effects() == []
+
+
+@pytest.mark.asyncio
+async def test_c11_plain_disposer_from_apply_has_no_effect_metadata():
+    """C11: a plain function returned by `apply` is collected without metadata.
+
+    Reference: fiber.ts `_execute` collects function results through the fiber
+    `collect`, and `getEffects` filters out disposers that carry no `EffectMeta`.
+    """
+    ctx = Context()
+    log = []
+
+    def body(c):
+        return lambda: log.append("disposed")
+
+    fiber = await ctx.plugin(_ApplyPlugin("c11", body))
+    assert fiber.get_effects() == []
+
+    await fiber.dispose()
+    assert log == ["disposed"]
+
+
+@pytest.mark.asyncio
+async def test_c12_provide_disposer_awaits_dependents_before_dropping_store_entry():
+    """C12: `ctx.provide` teardown wakes dependents, awaits their unload, then drops
+    its own fiber-store entry ("ensure self access before dependencies cleanup").
+
+    Reference: reflect.ts `provide` disposer: `delete this.store[key]`,
+    `this.notify([name])`, `await Promise.allSettled(fibers.map(fiber => fiber.await()))`,
+    then `delete this.ctx.fiber.store![name]`.
+    """
+    ctx = Context()
+    order = []
+
+    def provider_body(c):
+        return c.provide("c12-svc", {"v": 1})
+
+    def consumer_body(c):
+        async def cleanup():
+            await asyncio.sleep(0)
+            order.append("dependent-unloaded")
+
+        c.effect(lambda: cleanup, "c12-dependent")
+        return None
+
+    provider = await ctx.plugin(_ApplyPlugin("c12-provider", provider_body))
+    consumer = await ctx.plugin(_ApplyPlugin("c12-consumer", consumer_body, inject=["c12-svc"]))
+    assert consumer.state == FiberState.ACTIVE
+
+    disposal = provider.dispose()
+    # The provider's own teardown starts at the call; the dependent is still unloading.
+    assert order == []
+
+    await disposal
+    assert order == ["dependent-unloaded"]
+    assert consumer.state == FiberState.PENDING
+    assert ctx.get("c12-svc") is None
+
+
+@pytest.mark.asyncio
+async def test_c13_dispose_starts_teardown_synchronously_and_returns_awaitable():
+    """C13: disposal is an async function whose body starts at the call site.
+
+    Reference: fiber.ts `dispose` clears the uid, notifies `internal/plugin`
+    observers, and drives the unload before its first `await`.
+    """
+    ctx = Context()
+    log = []
+
+    def body(c):
+        c.effect(lambda: (lambda: log.append("unloaded")), "c13-effect")
+        return None
+
+    fiber = await ctx.plugin(_ApplyPlugin("c13", body))
+    pending = fiber.dispose()
+
+    assert fiber.uid is None
+    assert log == ["unloaded"]
+    assert inspect.isawaitable(pending)
+
+    await pending
+    assert fiber.state == FiberState.DISPOSED
+
+@pytest.mark.asyncio
+async def test_c14_reentrant_disposal_during_loading_never_runs_the_plugin_body():
+    """C14: a load invalidated while LOADING was reported never runs `apply`.
+
+    Reference: fiber.ts `_reload` awaits a microtask and re-checks
+    `this._runner.epoch === oldEpoch` before resolving config and executing; a
+    disposer invoked by an `internal/status` observer therefore leaves the fiber
+    PENDING work unloaded instead of activating it.
+    """
+    ctx = Context()
+    applied = []
+    state = {}
+
+    def on_status(fiber, old):
+        if fiber.name == "c14" and old == FiberState.PENDING:
+            state["disposal"] = fiber.dispose()
+
+    ctx.on("internal/status", on_status)
+    fiber = ctx.plugin(_ApplyPlugin("c14", lambda c: applied.append("applied")))
+
+    assert applied == []
+    assert fiber.uid is None
+    assert fiber.state == FiberState.DISPOSED
+
+    assert state["disposal"] is not None
+    await state["disposal"]
+    assert fiber.state == FiberState.DISPOSED
+
+
+@pytest.mark.asyncio
+async def test_c15_iterable_result_disposers_are_collected_without_metadata():
+    """C15: an iterable returned by `apply` yields bare collected disposers.
+
+    Reference: fiber.ts `_execute` iterates a returned iterable, running each
+    produced item through the fiber `collect`; `getEffects` shows no entry for
+    plain functions.
+    """
+    ctx = Context()
+    log = []
+
+    def body(c):
+        yield lambda: log.append("first")
+        yield lambda: log.append("second")
+
+    fiber = await ctx.plugin(_ApplyPlugin("c15", body))
+    assert fiber.get_effects() == []
+
+    await fiber.dispose()
+    assert log == ["second", "first"]

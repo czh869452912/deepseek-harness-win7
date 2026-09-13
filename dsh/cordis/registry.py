@@ -379,10 +379,15 @@ class RegistryService:
                     pass
         runtime.add_fiber(fiber)
 
-        # Evaluate dependencies via composite epoch refresh
-        for name in list(fiber.inject.keys()):
-            fiber._checkImpl(name)
-        fiber._refresh()
+        # fiber.ts resolves dependencies only after publication: an
+        # `internal/plugin` observer may dispose the fiber (then its teardown owns
+        # any collected effects) or add injections, and a reentrant parent unload
+        # leaves the unpublished child to the parent's disposal.
+        parent_fiber = getattr(target_parent, "fiber", None) if target_parent else None
+        if fiber.uid is not None and (parent_fiber is None or parent_fiber.state != FiberState.UNLOADING):
+            for name in list(fiber.inject.keys()):
+                fiber._checkImpl(name)
+            fiber._refresh()
 
         if fiber.state == FiberState.PENDING:
             self._pending_fibers.add(fiber)

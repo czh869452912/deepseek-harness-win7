@@ -5,6 +5,8 @@ single-shot disposers, and child publication lifecycle boundaries.
 """
 
 import asyncio
+import inspect
+
 import pytest
 from typing import Any, Dict, List, Optional
 
@@ -245,3 +247,166 @@ def test_rolls_back_when_internal_plugin_throws():
         ctx.registry.plugin(plugin)
 
     assert ctx.registry.has(plugin) is False
+
+@pytest.mark.asyncio
+async def test_contains_teardown_notification_failures_so_peers_complete():
+    """it('contains teardown notification failures so ownership cleanup and peers complete')"""
+    ctx = Context()
+    errors: List[Any] = []
+    ctx.logger.error = lambda *args: errors.append(args[0])
+    observed: List[str] = []
+
+    def throwing_observer(fiber: Fiber) -> None:
+        if fiber.name == "contained-teardown" and fiber.uid is None:
+            raise RuntimeError("broken teardown observer")
+
+    def counting_observer(fiber: Fiber) -> None:
+        if fiber.name == "contained-teardown" and fiber.uid is None:
+            observed.append("disposed")
+
+    ctx.on("internal/plugin", throwing_observer)
+    ctx.on("internal/plugin", counting_observer)
+
+    class ContainedTeardownPlugin(Plugin):
+        name = "contained-teardown"
+
+        def apply(self, c: Context) -> None:
+            pass
+
+    child = await ctx.plugin(ContainedTeardownPlugin())
+    child_disposer = child.dispose()
+    assert inspect.isawaitable(child_disposer)
+    assert await child_disposer is None
+
+    assert observed == ["disposed"]
+    assert len(errors) == 1
+    assert str(errors[0]) == "broken teardown observer"
+    assert child.uid is None
+
+
+@pytest.mark.asyncio
+async def test_loading_parent_joins_child_cleanup_started_before_unload_snapshot():
+    """it('makes a LOADING parent join child cleanup started before its unload snapshot')"""
+    ctx = Context()
+    cleanup_gate = asyncio.Future()
+    cleanup_started = asyncio.Future()
+    state: Dict[str, Any] = {}
+
+    def on_plugin(fiber: Fiber) -> None:
+        if fiber.name != "loading-child" or fiber.uid is None:
+            return
+        state["child"] = fiber
+
+        async def cleanup() -> None:
+            if not cleanup_started.done():
+                cleanup_started.set_result(None)
+            await cleanup_gate
+
+        fiber.ctx.effect(lambda: cleanup, "loading-child-cleanup")
+        state["owner_disposal"] = asyncio.ensure_future(state["owner"].dispose())
+        state["child_disposal"] = asyncio.ensure_future(fiber.dispose())
+
+    ctx.on("internal/plugin", on_plugin)
+
+    class LoadingChildPlugin(Plugin):
+        name = "loading-child"
+
+        def apply(self, c: Context) -> None:
+            pass
+
+    class LoadingOwnerPlugin(Plugin):
+        name = "loading-owner"
+
+        def apply(self, c: Context) -> None:
+            state["owner"] = c.fiber
+            c.plugin(LoadingChildPlugin())
+
+    owner_mount = ctx.plugin(LoadingOwnerPlugin())
+
+    await cleanup_started
+    settled = False
+
+    async def track() -> None:
+        nonlocal settled
+        await state["owner_disposal"]
+        settled = True
+
+    track_task = asyncio.create_task(track())
+    await asyncio.sleep(0.01)
+    assert settled is False
+
+    cleanup_gate.set_result(None)
+    await asyncio.gather(state["owner_disposal"], state["child_disposal"], owner_mount)
+    await track_task
+    assert state["child"].uid is None
+    assert state["owner"].uid is None
+
+
+@pytest.mark.asyncio
+async def test_parent_disposal_during_publication_awaits_unpublished_child():
+    """it('lets parent disposal during internal/plugin await the unpublished child to quiescence')"""
+    ctx = Context()
+    state: Dict[str, Any] = {}
+    cleanup_gate = asyncio.Future()
+    cleanup_started = asyncio.Future()
+    cleanup_finished = False
+    child_apply_calls = 0
+
+    class OwnerPlugin(Plugin):
+        name = "owner"
+
+        def apply(self, c: Context) -> None:
+            state["owner_ctx"] = c
+
+    owner = await ctx.plugin(OwnerPlugin())
+
+    def pending_child_cleanup(fiber: Fiber) -> None:
+        if fiber.name != "child" or fiber.uid is None:
+            return
+        assert fiber.state == FiberState.PENDING
+
+        async def cleanup() -> None:
+            nonlocal cleanup_finished
+            if not cleanup_started.done():
+                cleanup_started.set_result(None)
+            await cleanup_gate
+            cleanup_finished = True
+
+        fiber.ctx.effect(lambda: cleanup, "pending-child-cleanup")
+
+    def parent_disposal(fiber: Fiber) -> None:
+        if fiber.name != "child" or fiber.uid is None:
+            return
+        state["parent_disposal"] = asyncio.ensure_future(owner.dispose())
+
+    ctx.on("internal/plugin", pending_child_cleanup)
+    ctx.on("internal/plugin", parent_disposal)
+
+    class ChildPlugin(Plugin):
+        name = "child"
+
+        def apply(self, c: Context) -> None:
+            nonlocal child_apply_calls
+            child_apply_calls += 1
+
+    child = state["owner_ctx"].plugin(ChildPlugin())
+
+    await cleanup_started
+    settled = False
+
+    async def track() -> None:
+        nonlocal settled
+        await state["parent_disposal"]
+        settled = True
+
+    track_task = asyncio.create_task(track())
+    await asyncio.sleep(0.01)
+    assert settled is False
+
+    cleanup_gate.set_result(None)
+    await state["parent_disposal"]
+    await track_task
+    assert cleanup_finished is True
+    assert child_apply_calls == 0
+    assert child.uid is None
+    assert child.state == FiberState.DISPOSED

@@ -245,7 +245,10 @@ class ReflectService:
             if fiber is None or fiber.state == FiberState.ACTIVE:
                 self.notify([name])
 
-            def teardown() -> None:
+            def teardown() -> Any:
+                # Mirrors the reference async disposer: the unregistration and the
+                # dependent wake-up run at the call site, and only the dependent
+                # wait is asynchronous.
                 if key in self.store and self.store[key] == impl:
                     del self.store[key]
                 if hasattr(target_store, "_services") and name in target_store._services:
@@ -255,7 +258,27 @@ class ReflectService:
                             delattr(target_store, name)
                         except AttributeError:
                             pass
-                self.notify([name])
+                fibers = self.notify([name])
+                provider_fiber = getattr(target_ctx, "fiber", None)
+                pending = [fiber for fiber in fibers if fiber is not provider_fiber and hasattr(fiber, "await_settled")]
+                if not pending and (provider_fiber is None or getattr(provider_fiber, "store", None) is None):
+                    return None
+
+                async def _await_dependents() -> None:
+                    for dependent in pending:
+                        # fiber.ts awaits each woken fiber (`fiber.await()`), which
+                        # settles the unload driven by `notify`.
+                        try:
+                            while getattr(dependent, "inertia", None) is not None and not dependent.inertia.done():
+                                await dependent.inertia
+                        except Exception:
+                            pass
+                    # The providing fiber keeps its own store entry until every
+                    # dependent finished unloading (reflect.ts provide disposer).
+                    if provider_fiber is not None and getattr(provider_fiber, "store", None) is not None:
+                        provider_fiber.store.pop(name, None)
+
+                return _await_dependents()
 
             return teardown
 

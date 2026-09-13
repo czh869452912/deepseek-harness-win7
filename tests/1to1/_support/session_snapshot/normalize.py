@@ -256,7 +256,7 @@ def tokenize_session_fixture_cwd(raw_log: str) -> str:
             res_lines.append(line)
         else:
             tokenized = _tokenize_fixture_value(json.loads(line), ctx, basename)
-            res_lines.append(json.dumps(tokenized, separators=(",", ":")))
+            res_lines.append(json.dumps(tokenized, separators=(",", ":"), ensure_ascii=False))
     return "\n".join(res_lines)
 
 
@@ -274,7 +274,7 @@ def normalize_stdout(
     id_seq: Dict[str, int] = {}
 
     def stable_id(val: Any) -> int:
-        k = json.dumps(val, separators=(",", ":"))
+        k = json.dumps(val, separators=(",", ":"), ensure_ascii=False)
         if k not in id_seq:
             id_seq[k] = len(id_seq) + 1
         return id_seq[k]
@@ -285,7 +285,7 @@ def normalize_stdout(
         if "id" in frame and frame["id"] is not None:
             frame["id"] = stable_id(frame["id"])
         frames.append(_scrub_value(frame, c, cwd_path_mode, identity_mode))
-    return "\n".join(json.dumps(f, separators=(",", ":")) for f in frames) + "\n"
+    return "\n".join(json.dumps(f, separators=(",", ":"), ensure_ascii=False) for f in frames) + "\n"
 
 
 def normalize_session_log(
@@ -325,7 +325,7 @@ def normalize_session_log(
         if "sourceEventSeqs" in record:
             record["sourceEventSeqs"] = decode_seq_ranges(record["sourceEventSeqs"])
         records.append(_scrub_value(record, c, cwd_path_mode, identity_mode))
-    return "\n".join(json.dumps(r, separators=(",", ":")) for r in records) + "\n"
+    return "\n".join(json.dumps(r, separators=(",", ":"), ensure_ascii=False) for r in records) + "\n"
 
 
 def _repack_session_snapshot(raw_log: str) -> str:
@@ -357,7 +357,7 @@ def _repack_session_snapshot(raw_log: str) -> str:
     for stored in packed:
         projected = dict(stored)
         _omit_fixture_envelope(projected)
-        body.append(json.dumps(projected, separators=(",", ":")))
+        body.append(json.dumps(projected, separators=(",", ":"), ensure_ascii=False))
     return "\n".join([header] + body) + "\n"
 
 
@@ -384,7 +384,7 @@ def _scrub_header_content(raw_log: str, system: bool = False, tools: bool = Fals
                     header["tools"] = TOOLS
                     touched = True
                 if touched:
-                    out.append(json.dumps(record, separators=(",", ":")))
+                    out.append(json.dumps(record, separators=(",", ":"), ensure_ascii=False))
                     continue
         out.append(line)
     return "\n".join(out)
@@ -420,7 +420,7 @@ def scrub_session_snapshot(raw_log: str) -> str:
             continue
         record_index += 1
         _omit_fixture_envelope(record)
-        res.append(json.dumps(record, separators=(",", ":")))
+        res.append(json.dumps(record, separators=(",", ":"), ensure_ascii=False))
     return "\n".join(res)
 
 

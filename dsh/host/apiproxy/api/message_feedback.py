@@ -4,15 +4,38 @@ Message Feedback Domain Handler (`@deepseek-ai/dsh-apiproxy/api/message-feedback
 The shipped Web Host serves the `messageFeedback` Remote namespace over
 `/api/messageFeedback/{list,put,delete}`. The reference exposes it through the
 Typert Remote gateway (`reference/packages/api/gateway/src/index.ts`), which
-decodes each declared wire field before the business method runs:
+never lets a raw request reach the business method:
 
-  - a field that fails its declared boundary schema throws a
-    `TypertGatewayError('input-invalid', endpoint, 'wire field "request" failed
-    boundary validation')`, and
+  - `remoteRequest` requires a payload of exactly one plain-object `args` field
+    (`Remote payload must contain exactly one plain-object args field`);
+  - `assertExactArguments` requires the args keys to match the descriptor's
+    declared wire fields exactly (`args fields do not match the descriptor:
+    missing "request"` / `unexpected "x"`);
+  - `decode` runs the generated strict codec for the field, and any failure
+    becomes `wire field "request" failed boundary validation`;
   - the gateway maps any non-business error onto
     `{ ok: false, error: { code: 'internal', message, details: {} } }`
     (`rpcFailure`), while the business result itself travels inside the
     successful server-response value.
+
+The codec is generated from the declared request types by
+`reference/packages/typert/generator/src/emitter.ts`, whose `typeSchema`
+projects a `Branded<B>` id as `z.intersection(z.string(), z.unknown())`
+(`reference/packages/util/brand/src/index.ts` — a brand is a type-only
+primitive), a string union as `z.union([z.literal(...), ...])`, a `| null`
+union as `z.union([..., z.null()])`, and `note?: string` as
+`z.string().optional()`. So, per method:
+
+  list:   { sessionId: string }
+  put:    { sessionId: string, messageId: string,
+            rating: 'positive' | 'negative',
+            note?: string, ifVersion: string | null }
+  delete: { sessionId: string, messageId: string, ifVersion: string }
+
+A zod object requires every non-optional key to be present, accepts any string
+(an id brand has no runtime refinement, so an empty string is a boundary-legal
+value the business union then judges), rejects a present `null` for an optional
+string, strips unknown keys, and rejects a non-object value outright.
 
 This handler reproduces that boundary for the three messageFeedback endpoints:
 the `request` argument is validated against the declared request shape before
@@ -27,6 +50,22 @@ NAMESPACE = "messageFeedback"
 METHOD_NAMES: Tuple[str, ...] = ("list", "put", "delete")
 
 RATINGS = ("positive", "negative")
+
+#: `remoteRequest`'s payload-shape refusal, verbatim.
+PAYLOAD_ERROR = "Remote payload must contain exactly one plain-object args field"
+
+#: `decode`'s per-field refusal, verbatim (`field` is always `request` here).
+BOUNDARY_ERROR = 'wire field "request" failed boundary validation'
+
+#: `resolveDescriptor`'s refusal for an endpoint nothing exports.
+UNEXPORTED_ERROR = "no active Remote method exports this endpoint"
+
+#: The single wire field every messageFeedback method declares.
+WIRE_FIELDS: Tuple[str, ...] = ("request",)
+
+#: Absence marker distinguishing an omitted key from a present `None` (JS
+#: `undefined`-vs-`null` for a JSON body), as `Object.hasOwn` does upstream.
+_MISSING = object()
 
 
 class TypertGatewayError(Exception):
@@ -44,84 +83,90 @@ def _endpoint(method: str) -> str:
 
 
 def _is_plain_object(value: Any) -> bool:
+    """`isPlainObject`: a JSON object, never a list or a scalar."""
     return isinstance(value, dict)
+
+
+def _boundary(endpoint: str) -> TypertGatewayError:
+    return TypertGatewayError("input-invalid", endpoint, BOUNDARY_ERROR)
+
+
+def _require_string(endpoint: str, request: Dict[str, Any], field: str) -> str:
+    """
+    One required wire string.
+
+    The generated codec is a runtime string brand, so every string passes —
+    including `''`; only absence or a non-string fails the boundary.
+    """
+    value = request.get(field, _MISSING)
+    if value is _MISSING or not isinstance(value, str):
+        raise _boundary(endpoint)
+    return value
 
 
 def endpoint_request(method: str, payload: Any) -> Any:
     """
     Extract the strict `args.request` wire field, exactly like the gateway's
-    `assertExactArguments` + `decode` pair.
+    `remoteRequest` + `assertExactArguments` pair.
     """
     endpoint = _endpoint(method)
-    if not _is_plain_object(payload):
-        raise TypertGatewayError("arguments-invalid", endpoint, "args must be a plain object")
-    args = payload.get("args", None)
+    if not _is_plain_object(payload) or len(payload) != 1 or "args" not in payload:
+        raise TypertGatewayError("arguments-invalid", endpoint, PAYLOAD_ERROR)
+    args = payload["args"]
     if not _is_plain_object(args):
-        raise TypertGatewayError("arguments-invalid", endpoint, "args must be a plain object")
-    if "request" not in args:
+        raise TypertGatewayError("arguments-invalid", endpoint, PAYLOAD_ERROR)
+    missing = [field for field in WIRE_FIELDS if field not in args]
+    extra = [key for key in args.keys() if key not in WIRE_FIELDS]
+    if missing or extra:
+        clauses = []
+        if missing:
+            clauses.append("missing " + ", ".join('"%s"' % field for field in missing))
+        if extra:
+            clauses.append("unexpected " + ", ".join('"%s"' % str(key) for key in extra))
         raise TypertGatewayError(
             "arguments-invalid",
             endpoint,
-            'args fields do not match the descriptor: missing "request"',
+            "args fields do not match the descriptor: " + "; ".join(clauses),
         )
     return args["request"]
-
-
-def _require_string(endpoint: str, request: Any, field: str) -> str:
-    value = request.get(field, None)
-    if not isinstance(value, str) or len(value) == 0:
-        raise TypertGatewayError(
-            "input-invalid", endpoint, 'wire field "request" failed boundary validation'
-        )
-    return value
 
 
 def validate_wire_request(method: str, request: Any) -> Dict[str, Any]:
     """
     Validate one decoded `request` value against the declared request shape.
 
-    The codec is a zod object, so unknown fields are dropped rather than
-    rejected; a field that is present but does not match its declared type
-    fails the boundary.
+    The codec is a zod object: the value must be a plain object, every declared
+    non-optional field must be present, a present field must match its declared
+    type, and unknown fields are dropped rather than rejected.
     """
     endpoint = _endpoint(method)
     if not _is_plain_object(request):
-        raise TypertGatewayError(
-            "input-invalid", endpoint, 'wire field "request" failed boundary validation'
-        )
+        raise _boundary(endpoint)
     decoded: Dict[str, Any] = {"sessionId": _require_string(endpoint, request, "sessionId")}
     if method == "list":
         return decoded
 
     decoded["messageId"] = _require_string(endpoint, request, "messageId")
     if method == "delete":
-        ifVersion = request.get("ifVersion", None)
-        if not isinstance(ifVersion, str) or len(ifVersion) == 0:
-            raise TypertGatewayError(
-                "input-invalid", endpoint, 'wire field "request" failed boundary validation'
-            )
-        decoded["ifVersion"] = ifVersion
+        # `MessageFeedbackVersion` (never nullable) is required by presence.
+        decoded["ifVersion"] = _require_string(endpoint, request, "ifVersion")
         return decoded
 
-    rating = request.get("rating", None)
-    if rating not in RATINGS:
-        raise TypertGatewayError(
-            "input-invalid", endpoint, 'wire field "request" failed boundary validation'
-        )
+    rating = request.get("rating", _MISSING)
+    if rating is _MISSING or rating not in RATINGS:
+        raise _boundary(endpoint)
     decoded["rating"] = rating
-    note = request.get("note", None)
-    if note is not None:
+    note = request.get("note", _MISSING)
+    if note is not _MISSING:
+        # `z.string().optional()` admits absence, never an explicit `null`.
         if not isinstance(note, str):
-            raise TypertGatewayError(
-                "input-invalid", endpoint, 'wire field "request" failed boundary validation'
-            )
+            raise _boundary(endpoint)
         decoded["note"] = note
-    ifVersion = request.get("ifVersion", None)
-    if ifVersion is not None:
-        if not isinstance(ifVersion, str) or len(ifVersion) == 0:
-            raise TypertGatewayError(
-                "input-invalid", endpoint, 'wire field "request" failed boundary validation'
-            )
+    ifVersion = request.get("ifVersion", _MISSING)
+    if ifVersion is _MISSING:
+        raise _boundary(endpoint)
+    if ifVersion is not None and not isinstance(ifVersion, str):
+        raise _boundary(endpoint)
     decoded["ifVersion"] = ifVersion
     return decoded
 
@@ -139,19 +184,26 @@ class MessageFeedbackDomainHandler:
         return service
 
     async def invoke(self, method: str, payload: Any) -> Dict[str, Any]:
-        """Decode one wire invocation and return the business result."""
-        request = validate_wire_request(method, endpoint_request(method, payload))
+        """
+        Decode one wire invocation and return the business result.
+
+        Ordering is the gateway's: the endpoint resolves (an unexported method
+        is refused before its fields are looked at), the payload and args shapes
+        are checked, the receiver is required, and only then is the strict codec
+        run over the declared wire field.
+        """
+        endpoint = _endpoint(method)
+        if method not in METHOD_NAMES:
+            raise TypertGatewayError("invocation-unavailable", endpoint, UNEXPORTED_ERROR)
+        request = endpoint_request(method, payload)
         service = self._service()
         if service is None:
-            raise TypertGatewayError(
-                "invocation-unavailable",
-                _endpoint(method),
-                "no active Remote method exports this endpoint",
-            )
+            raise TypertGatewayError("invocation-unavailable", endpoint, UNEXPORTED_ERROR)
+        decoded = validate_wire_request(method, request)
         if hasattr(service, "ensure_initialized"):
             await service.ensure_initialized()
         operation: Callable[[Dict[str, Any]], Any] = getattr(service, method)
-        return await operation(request)
+        return await operation(decoded)
 
     async def list(self, payload: Any) -> Dict[str, Any]:
         return await self.invoke("list", payload)
@@ -164,10 +216,14 @@ class MessageFeedbackDomainHandler:
 
 
 __all__ = [
+    "BOUNDARY_ERROR",
     "METHOD_NAMES",
     "NAMESPACE",
+    "PAYLOAD_ERROR",
     "MessageFeedbackDomainHandler",
     "TypertGatewayError",
+    "UNEXPORTED_ERROR",
+    "WIRE_FIELDS",
     "endpoint_request",
     "validate_wire_request",
 ]

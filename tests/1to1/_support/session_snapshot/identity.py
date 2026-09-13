@@ -136,7 +136,9 @@ def redact_session_snapshot_ids(logs: Sequence[str]) -> List[str]:
 
     out_logs: List[str] = []
     for log_item in parsed:
-        lines = [json.dumps(replace(record), separators=(",", ":")) for record in log_item["records"]]
+        # `JSON.stringify` writes non-ASCII text as itself, so a recorded log that
+        # already carries non-ASCII content must round-trip byte for byte.
+        lines = [json.dumps(replace(record), separators=(",", ":"), ensure_ascii=False) for record in log_item["records"]]
         content = "\n".join(lines)
         if log_item["trailingNewline"]:
             content += "\n"

@@ -180,6 +180,9 @@ class ConfigWatcherService(Service):
 
         self.debounce_ms: float = float(self.config.get("debounce", 100))
         self._configs: Dict[str, Callable[[], Any]] = {}
+        # Canonical registration key -> absolute path observed by HMR, matching the TS
+        # `filename` passed to refreshConfig (resolve(baseDir, filename)).
+        self._config_names: Dict[str, str] = {}
         self._modules: Dict[str, Optional[Any]] = {}
         self._mtimes: Dict[str, float] = {}
         self._config_contents: Dict[str, bytes] = {}
@@ -283,6 +286,7 @@ class ConfigWatcherService(Service):
 
                 # 1. Check registered config files
                 for filename, refresh_fn in list(self._configs.items()):
+                    observed = self._config_names.get(filename, filename)
                     exists = os.path.exists(filename)
                     last_info = self._mtimes.get(filename)
                     last_mtime, last_size = last_info if isinstance(last_info, tuple) else (last_info or 0.0, -1)
@@ -314,12 +318,12 @@ class ConfigWatcherService(Service):
                             except OSError:
                                 pass
                             self._mtimes[filename] = (mtime, size)
-                            self._trigger_config_refresh(filename, refresh_fn)
+                            self._trigger_config_refresh(filename, refresh_fn, observed)
                     else:
                         if last_mtime > 0.0:  # unlink event
                             self._config_contents.pop(filename, None)
                             self._mtimes[filename] = (0.0, -1)
-                            self._trigger_config_refresh(filename, refresh_fn)
+                            self._trigger_config_refresh(filename, refresh_fn, observed)
 
                 # 2. Check registered module files
                 for filename, target_plugin in list(self._modules.items()):
@@ -413,7 +417,11 @@ class ConfigWatcherService(Service):
                 if hasattr(self.ctx, "logger"):
                     self.ctx.logger("hmr").warn("Exception in poll loop: %s", e)
 
-    def _trigger_config_refresh(self, filename: str, refresh_fn: Callable[[], Any]) -> None:
+    def _trigger_config_refresh(self, filename: str, refresh_fn: Callable[[], Any],
+                                observed: Optional[str] = None) -> None:
+        """Run a refresh keyed by `filename`, broadcasting `observed` as the watched path."""
+        if observed is None:
+            observed = filename
         state = self._refreshes.setdefault(filename, ConfigRefreshState())
         state.dirty = True
         if state.running and not state.running.done():
@@ -427,17 +435,17 @@ class ConfigWatcherService(Service):
                     if inspect.isawaitable(res):
                         await res
                     if hasattr(self.ctx, "logger"):
-                        self.ctx.logger("hmr").info("Reloaded config file %s", filename)
+                        self.ctx.logger("hmr").info("Reloaded config file %s", observed)
                 except asyncio.CancelledError:
                     raise
                 except Exception as reason:
                     error = reason
                     if hasattr(self.ctx, "logger"):
-                        self.ctx.logger("hmr").warn("config reload at %s failed", filename)
+                        self.ctx.logger("hmr").warn("config reload at %s failed", observed)
                         self.ctx.logger("hmr").warn("%s", error)
                     if hasattr(self.ctx, "parallel"):
                         try:
-                            await self.ctx.parallel("hmr/config-update-failed", filename, error)
+                            await self.ctx.parallel("hmr/config-update-failed", observed, error)
                         except Exception as rejection:
                             if hasattr(self.ctx, "logger"):
                                 self.ctx.logger("hmr").warn("%s", rejection)
@@ -454,10 +462,10 @@ class ConfigWatcherService(Service):
                 if inspect.isawaitable(res):
                     asyncio.run(res)
                 if hasattr(self.ctx, "logger"):
-                    self.ctx.logger("hmr").info("Reloaded config file %s", filename)
+                    self.ctx.logger("hmr").info("Reloaded config file %s", observed)
             except Exception as reason:
                 if hasattr(self.ctx, "logger"):
-                    self.ctx.logger("hmr").warn("config reload at %s failed: %s", filename, reason)
+                    self.ctx.logger("hmr").warn("config reload at %s failed: %s", observed, reason)
 
     def _trigger_module_reload(self, filename: str, target_plugin: Optional[Any]) -> None:
         refresh_state = self._refreshes.setdefault(filename, ConfigRefreshState())
@@ -616,12 +624,12 @@ class ConfigWatcherService(Service):
         if not self._running:
             raise RuntimeError("HMR is not active")
 
-        if not os.path.isabs(filename):
-            filename = os.path.abspath(os.path.join(self.base_dir, filename))
+        filename = os.path.abspath(os.path.join(self.base_dir, filename))
 
         canonical_filename, canonical_root, depth = find_watch_root(filename)
         if canonical_filename in self._configs:
             raise ValueError(f"config path already registered: {filename}")
+        self._config_names[canonical_filename] = filename
 
         if os.path.exists(canonical_filename):
             try:
@@ -632,7 +640,7 @@ class ConfigWatcherService(Service):
             except OSError:
                 self._mtimes[canonical_filename] = (0.0, -1)
             # Present file at registration: trigger refresh once matching TS ignoreInitial: false
-            self._trigger_config_refresh(canonical_filename, refresh_fn)
+            self._trigger_config_refresh(canonical_filename, refresh_fn, filename)
         else:
             self._mtimes[canonical_filename] = (0.0, -1)
 
@@ -647,6 +655,7 @@ class ConfigWatcherService(Service):
 
             def __call__(self) -> Any:
                 self.hmr._configs.pop(self.canonical_filename, None)
+                self.hmr._config_names.pop(self.canonical_filename, None)
                 self.hmr._mtimes.pop(self.canonical_filename, None)
                 self.hmr._config_contents.pop(self.canonical_filename, None)
                 state = self.hmr._refreshes.get(self.canonical_filename)
@@ -756,6 +765,7 @@ class ConfigWatcherService(Service):
             except Exception:
                 pass
         self._configs.clear()
+        self._config_names.clear()
         self._modules.clear()
         self._mtimes.clear()
         self._root_mtimes.clear()
@@ -772,6 +782,7 @@ class ConfigWatcherService(Service):
                 if state and state.running and not state.running.done():
                     state.running.cancel()
             self._configs.clear()
+            self._config_names.clear()
             self._modules.clear()
             self._mtimes.clear()
             self._root_mtimes.clear()

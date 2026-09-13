@@ -1,296 +1,2195 @@
 """
-1:1 Test Parity for Cordis utils and Cosmokit
-Authority:
-- reference/vendor/cordis/src/utils.ts
-- reference/vendor/cosmokit/src/{array,misc,string,time,types}.ts
+1:1 parity suite for the vendored @deepseek-ai/cosmokit public contract.
+
+Authoritative sources:
+- reference/vendor/cosmokit/src/array.ts   (array set helpers)
+- reference/vendor/cosmokit/src/misc.ts    (object / nullability helpers)
+- reference/vendor/cosmokit/src/string.ts  (case, path, property formatting)
+- reference/vendor/cosmokit/src/time.ts    (Time namespace)
+- reference/vendor/cosmokit/src/types.ts   (is, Binary, clone, deepEqual)
+
+The Python home of that contract is dsh/cordis/utils.py, which also carries the
+reference/vendor/cordis/src/utils.ts cases (DisposableList, symbols, traceable
+proxies, stack composition) that share the module.
+
+Cases:
+- C1..C7   array.ts: contain/intersection/difference/union/deduplicate/remove/makeArray
+- C8..C17  misc.ts: noop/nullability/plain-object/filterKeys/mapValues/pick/omit/defineProperty
+- C18..C24 string.ts: capitalize/camelCase/tokenize aliases/formatProperty/trimSlash/sanitize
+- C25..C33 time.ts: constants/offset/parseTime/parseDate/format/toDigits/template/date numbers
+- C45..C46 time.ts: zone-offset validation and the legacy/padded date grammar
+- C34..C43 types.ts: is/Binary encodings/clone/deepEqual
+- C47..C48 types.ts: clone leaf-branch freshness and deepEqual own-key strictness
+- C49      misc.ts: callback invocation arity for filterKeys/mapValues
+- C50      misc.ts: the falsy operand `isPlainObject` returns through `&&`
+- C51      types.ts: is() name resolution for the Map family, undefined, unmapped names
+- C52      misc.ts/types.ts: ECMAScript own-key order in every object-returning helper
+- C53      types.ts:12-16 `is('Proxy', value)` throws for an object operand
+- C54      time.ts:36-61 V8's non-ISO number assignment (month/day/year slots)
+- C55      time.ts:36-61 V8's non-ISO names, whitespace and word handling
+- C56      time.ts:36-61 V8's non-ISO clock, am/pm and timezone grammar
+- C57      time.ts:36-61 V8's non-ISO punctuation, parenthesis and sign handling
+- C58      time.ts:36-61 V8 rejects a numeric zone offset with no clock time
+- C59      time.ts:51-53 a parseTime offset outside the datetime year range
+- C60      time.ts:36-61 V8's clock-slot expectancy and its glued zone
+- C61      time.ts:36-61 V8's WhiteSpace and line-terminator word rules
+- C44      exported-name surface of the reference package
+- T1..T7   reference/vendor/cordis/src/utils.ts cases owned by the same module
+- T1b      cordis/utils.ts:14-25 DisposableList duplicate-registration identity
+- T2b      cordis/utils.ts:117-125 only a tracked value is wrapped by getTraceable
 """
 
-from collections import OrderedDict
+import calendar
+import collections
 import datetime
+import json
+import math
 import re
+import time
+import weakref
+
 import pytest
 
 from dsh.cordis.utils import (
-    camel_case,
-    camelCase,
-    param_case,
-    paramCase,
-    snake_case,
-    snakeCase,
-    Time,
-    value_map,
-    filter_keys,
-    pick,
-    omit,
-    deep_equal,
+    Binary,
     DisposableList,
-    get_traceable,
-    with_props,
-    compose_error,
+    Time,
+    _UNDEFINED,
+    arrayBufferToBase64,
+    arrayBufferToHex,
+    base64ToArrayBuffer,
     build_outer_stack,
-    is_object,
+    camelCase,
+    camel_case,
+    camelize,
+    capitalize,
+    clone,
+    compose_error,
     contain,
-    intersection,
-    difference,
-    union,
+    deepEqual,
+    deep_equal,
     deduplicate,
-    remove,
-    make_array,
-    noop,
-    is_non_nullable,
+    defineProperty,
+    define_property,
+    difference,
+    filterKeys,
+    filter_keys,
+    formatProperty,
+    format_property,
+    get_traceable,
+    hexToArrayBuffer,
+    hyphenate,
+    intersection,
+    is_,
+    is_object,
+    isNullable,
+    isNonNullable,
     is_plain_object,
-    trim_slash,
+    isPlainObject,
+    is_nullable,
+    is_non_nullable,
+    makeArray,
+    make_array,
+    mapValues,
+    map_values,
+    noop,
+    omit,
+    paramCase,
+    param_case,
+    pick,
+    remove,
     sanitize,
+    snakeCase,
+    snake_case,
+    trimSlash,
+    trim_slash,
+    uncapitalize,
+    union,
+    valueMap,
+    value_map,
+    with_props,
 )
 from dsh.cordis.plugin import Plugin
 
 
-def test_d1_camel_case_digit_and_upper_after_delimiter():
-    """ts:cosmokit/string.ts:12-14 - only lower-case characters following delimiter are converted."""
-    assert camelCase("foo-1bar") == "foo-1bar"
-    assert camelCase("foo-Foo") == "foo-Foo"
-    assert camelCase("foo_bar") == "fooBar"
-    assert camel_case("foo-bar-baz") == "fooBarBaz"
+def _local_wall_clock(utc_seconds):
+    """Local naive wall clock for a UTC instant, derived from the stdlib only."""
+    stamp = time.localtime(utc_seconds)
+    offset = -time.timezone + (3600 if stamp.tm_isdst > 0 else 0)
+    return datetime.datetime(1970, 1, 1) + datetime.timedelta(seconds=utc_seconds + offset)
 
 
-def test_d2_tokenize_acronym_and_spaces():
-    """ts:cosmokit/string.ts:22-64 - tokenize preserves non-delim characters (spaces) and handles acronym boundaries."""
-    assert paramCase("HTTPServer") == "http-server"
-    assert snakeCase("HTTPServer") == "http_server"
-    assert paramCase("fooBar baz") == "foo-bar baz"
-    assert snakeCase("fooBar baz") == "foo_bar baz"
+def _assert_now(value):
+    """The port's `new Date()` fallback for a reference Invalid Date.
+
+    An ECMAScript Invalid Date has no Python value, so it maps onto the
+    `new Date()` the reference uses for an empty input.
+    """
+    assert abs((value - datetime.datetime.now()).total_seconds()) < 5
 
 
-def test_d3_parse_time_unit_words_and_whitespace_rejection():
-    """ts:cosmokit/time.ts:32-49 - full word units supported, whitespace strictly rejected."""
-    assert Time.parse_time("1week") == 604800000
-    assert Time.parse_time("1day") == 86400000
-    assert Time.parse_time("2days") == 172800000
-    assert Time.parse_time("1hour") == 3600000
-    assert Time.parse_time("1min") == 60000
-    assert Time.parse_time("1minute") == 60000
-    assert Time.parse_time("1sec") == 1000
-    assert Time.parse_time("1second") == 1000
-
-    # Whitespace rejected
-    assert Time.parse_time("10 s") == 0
-    assert Time.parse_time(" 10s") == 0
-    assert Time.parse_time("1w 2d") == 0
+class _Widget:
+    """A plain class instance - the reference's `new Widget()` - tag `Object`."""
 
 
-def test_d4_time_format_half_up_and_subseconds():
-    """ts:cosmokit/time.ts:63-75 - Math.round half-up rounding and subsecond decimal retention."""
-    assert Time.format(59500) == "1m"  # 59500ms >= minute - second/2 (59500ms), Math.round -> 1m
-    assert Time.format(1500) == "2s"  # 1500ms Math.round -> 2s
-    assert Time.format(-1500) == "-1s"  # -1.5s Math.round is -1
-    assert Time.format(500.5) == "500.5ms"
+# ---------------------------------------------------------------------------
+# array.ts
+# ---------------------------------------------------------------------------
 
 
-def test_d5_time_missing_members():
-    """ts:cosmokit/time.ts:10-30,51-91 - date numbers, template, toDigits."""
-    assert Time.to_digits(5, 2) == "05"
-    assert Time.to_digits(12, 2) == "12"
+def test_c1_contain_uses_includes_semantics():
+    """array.ts:4-6 - `array2.every(item => array1.includes(item))`."""
+    assert contain([1, 2, 3], [2, 3]) is True
+    assert contain([1, 2], [2, 3]) is False
+    # `every` over an empty array is true.
+    assert contain([], []) is True
+    assert contain([], [1]) is False
+    # Array.prototype.includes is SameValueZero, not `===`-on-strings.
+    assert contain([float('nan')], [float('nan')]) is True
+    assert contain([1], ['1']) is False
+    assert contain([1, 2], [1.0, 2.0]) is True
+    # Duplicate membership still satisfies every().
+    assert contain([1, 1], [1, 1]) is True
+    # Every JavaScript number is a double, so two distinct Python integers that
+    # round to the same double are the same value there (Node oracle:
+    # `[9007199254740992].includes(9007199254740993)` is true).
+    assert contain([9007199254740992], [9007199254740993]) is True
+    assert contain([9007199254740993], [9007199254740992]) is True
+    assert contain([1e21], [1e21 + 2]) is True
+    # An integer past the double range is Infinity: `1e400 === 2e400` there.
+    assert contain([10 ** 400], [2 * 10 ** 400]) is True
 
-    d = datetime.datetime(2026, 9, 3, 14, 30, 45)
-    formatted = Time.template("yyyy-MM-dd hh:mm:ss", d)
-    assert formatted == "2026-09-03 14:30:45"
 
-    parsed = Time.parse_date("10:30")
-    assert isinstance(parsed, datetime.datetime)
+def test_c2_intersection_keeps_left_order_and_duplicates():
+    """array.ts:9-11 - `array1.filter(item => array2.includes(item))`."""
+    assert intersection([1, 2, 3], [2, 3, 4]) == [2, 3]
+    assert intersection([3, 2, 1], [2, 3]) == [3, 2]
+    assert intersection([1, 1, 2], [1]) == [1, 1]
+    assert intersection([float('nan'), 1], [float('nan')])[0] != intersection([1], [1])[0]
+    assert len(intersection([float('nan'), 1], [float('nan')])) == 1
+    assert intersection([], [1]) == []
 
-    num = Time.get_date_number(d)
-    recovered = Time.from_date_number(num)
-    assert recovered.year == d.year and recovered.month == d.month and recovered.day == d.day
+
+def test_c3_difference_keeps_left_order():
+    """array.ts:14-16 - `array1.filter(item => !array2.includes(item))`."""
+    assert difference([1, 2, 3], [2, 3, 4]) == [1]
+    assert difference([3, 2, 1], [2]) == [3, 1]
+    assert difference([1], ['1']) == [1]
+    assert difference([float('nan')], [float('nan')]) == []
 
 
-def test_d6_value_map_propagates_typeerror():
-    """ts:cosmokit/misc.ts:44-46 - TypeError in transform function must propagate."""
-    def bad_transform(v, k):
-        return v + 1
+def test_c4_union_deduplicates_by_same_value_zero():
+    """array.ts:19-21 - `Array.from(new Set([...array1, ...array2]))`."""
+    assert union([1, 2], [2, 3]) == [1, 2, 3]
+    assert union([1, 1, 2], [2, 1]) == [1, 2]
+    # Set membership is SameValueZero: +0 and -0 collapse, NaN equals NaN.
+    assert union([0], [-0.0]) == [0]
+    union_nan = union([float('nan')], [float('nan')])
+    assert len(union_nan) == 1
+    left = {'n': 1}
+    assert len(union([left], [left])) == 1
+    assert len(union([{'n': 1}], [{'n': 1}])) == 2
+    # A Set is keyed by the double each JavaScript number holds, so these two
+    # distinct Python integers collapse into one entry.
+    assert union([9007199254740992], [9007199254740993]) == [9007199254740992]
+    assert len(union([9007199254740993], [9007199254740992])) == 1
+    assert len(union([10 ** 400], [2 * 10 ** 400])) == 1
+    # `Set.prototype.add` stores -0 as +0 (ECMA-262), so a negative zero in the
+    # union comes back positive while the filter-based helpers keep the operand.
+    assert math.copysign(1.0, union([-0.0], [])[0]) == 1.0
+    assert math.copysign(1.0, union([1], [-0.0])[1]) == 1.0
+    assert math.copysign(1.0, intersection([-0.0], [-0.0])[0]) == -1.0
+    assert math.copysign(1.0, difference([-0.0], [])[0]) == -1.0
 
+
+def test_c5_deduplicate_keeps_first_occurrence():
+    """array.ts:24-26 - `[...new Set(array)]`."""
+    assert deduplicate([1, 2, 1, 3, 2]) == [1, 2, 3]
+    assert deduplicate(['a', 'a', 'b']) == ['a', 'b']
+    assert deduplicate([0, -0.0]) == [0]
+    assert len(deduplicate([float('nan'), float('nan')])) == 1
+    shared = {'n': 1}
+    assert len(deduplicate([shared, shared, {'n': 1}])) == 2
+    # `new Set` collapses integers that round to the same double.
+    assert deduplicate([9007199254740992, 9007199254740993]) == [9007199254740992]
+    assert len(deduplicate([9007199254740993, 9007199254740992, 1e21, 1e21 + 2])) == 2
+    # `Set.prototype.add` stores -0 as +0, so the surviving element is positive.
+    assert math.copysign(1.0, deduplicate([-0.0])[0]) == 1.0
+    assert math.copysign(1.0, deduplicate([-0.0, 0])[0]) == 1.0
+
+
+def test_c6_remove_uses_index_of_and_mutates_in_place():
+    """array.ts:29-38 - `list?.indexOf(item)` (===) with splice."""
+    values = [1, 2, 3]
+    assert remove(values, 2) is True
+    assert values == [1, 3]
+    # Only the first match is removed.
+    values = [1, 2, 2]
+    assert remove(values, 2) is True
+    assert values == [1, 2]
+    assert remove(values, 9) is False
+    # `list?.` tolerates a nullish list: null and the port's own `undefined`
+    # sentinel (optional chaining short-circuits on both).
+    assert remove(None, 1) is False
+    assert remove(_UNDEFINED, 1) is False
+    # indexOf uses ===, so a bool never matches a number and vice versa.
+    values = [1]
+    assert remove(values, True) is False
+    assert values == [1]
+    values = ['1']
+    assert remove(values, 1) is False
+    # 0 and -0 ARE the same value under ===.
+    values = [0]
+    assert remove(values, -0.0) is True
+    assert values == []
+    # indexOf uses ===, which compares the doubles JavaScript numbers hold.
+    values = [9007199254740992]
+    assert remove(values, 9007199254740993) is True
+    assert values == []
+    # Numbers have no identity, so indexOf never finds NaN - not even the very
+    # same NaN object (Node oracle: `remove([NaN], NaN)` is false).
+    values = [float('nan')]
+    assert remove(values, values[0]) is False
+    assert len(values) == 1
+
+
+def test_c7_make_array_wraps_non_arrays():
+    """array.ts:40-42 - `Array.isArray(source) ? source : isNullable(source) ? [] : [source]`."""
+    assert makeArray(None) == []
+    # `isNullable` covers `undefined` as well, so the port's own undefined
+    # sentinel normalizes to the empty array like `null` does.
+    assert makeArray(_UNDEFINED) == []
+    assert makeArray(0) == [0]
+    assert makeArray('') == ['']
+    assert makeArray(False) == [False]
+    assert makeArray({'a': 1}) == [{'a': 1}]
+    values = [1, 2]
+    assert makeArray(values) is values
+    assert makeArray([]) == []
+
+
+# ---------------------------------------------------------------------------
+# misc.ts
+# ---------------------------------------------------------------------------
+
+
+def test_c8_noop_returns_undefined():
+    """misc.ts:17 - `noop()` is an empty body, so its value is `undefined`.
+
+    The Node oracle answers `noop() === undefined`, `is('Undefined', noop())`
+    and `deepEqual(noop(), undefined)` true; the port carries `undefined` as
+    `_UNDEFINED` (its `null` is `None`), so the empty callback returns that
+    sentinel and stays falsy and nullish like the reference value.
+    """
+    assert noop() is _UNDEFINED
+    assert noop(1, 2, key='value') is _UNDEFINED
+    assert is_('Undefined', noop()) is True
+    assert is_( 'Null', noop()) is False
+    assert is_nullable(noop()) is True
+    assert deep_equal(noop(), _UNDEFINED) is True
+
+
+def test_c9_nullability_helpers():
+    """misc.ts:20-28 - isNullable is `value === null || value === undefined`."""
+    assert is_nullable(None) is True
+    assert isNullable(None) is True
+    # `undefined` is the second nullish value the reference accepts, and the
+    # port carries it as its own `_UNDEFINED` sentinel: the Node oracle answers
+    # `isNullable(undefined) === true` and `isNonNullable(undefined) === false`.
+    assert is_nullable(_UNDEFINED) is True
+    assert isNullable(_UNDEFINED) is True
+    assert is_non_nullable(_UNDEFINED) is False
+    assert isNonNullable(_UNDEFINED) is False
+    assert is_non_nullable(None) is False
+    assert is_nullable(0) is False
+    assert is_nullable('') is False
+    assert is_nullable(False) is False
+    assert is_nullable(float('nan')) is False
+    assert isNonNullable(None) is False
+    assert isNonNullable(0) is True
+    assert isNonNullable('') is True
+
+
+def test_c10_is_plain_object_accepts_every_non_array_object():
+    """misc.ts:30-32 - `data && typeof data === 'object' && !Array.isArray(data)`."""
+    assert is_plain_object({'a': 1}) is True
+    assert isPlainObject({}) is True
+    assert is_plain_object(datetime.datetime(2026, 9, 3)) is True
+    assert is_plain_object(re.compile('a')) is True
+    assert is_plain_object({'a'}) is True
+    # A JavaScript Map/WeakMap/WeakSet is a non-array object as well.
+    assert is_plain_object(weakref.WeakKeyDictionary()) is True
+    assert is_plain_object(weakref.WeakSet()) is True
+    # The leading `data &&` returns the falsy operand itself, not `false`.
+    assert is_plain_object(None) is None
+    assert is_plain_object('') == '' and is_plain_object('') is not False
+    assert is_plain_object(0) == 0 and is_plain_object(0) is not False
+    assert is_plain_object(False) is False
+    # Truthy non-objects answer the boolean `false`.
+    assert is_plain_object([]) is False
+    assert is_plain_object(lambda: 1) is False
+    assert is_plain_object(1) is False
+    assert is_plain_object('x') is False
+
+
+def test_c11_filter_keys_passes_key_then_value():
+    """misc.ts:39-41 - `Object.entries(object).filter(([key, value]) => filter(key, value))`."""
+    data = {'a': 1, 'b': 2, 'c': 3}
+    assert filter_keys(data, lambda k, v: v >= 2) == {'b': 2, 'c': 3}
+    assert filterKeys(data, lambda k: k == 'a') == {'a': 1}
+    assert filter_keys({}, lambda k, v: True) == {}
+    # A new object is returned; the source is untouched.
+    result = filter_keys(data, lambda k, v: True)
+    assert result == data
+    assert result is not data
+    assert list(filter_keys({'b': 1, 'a': 2}, lambda k, v: True)) == ['b', 'a']
+    # misc.ts:41 always calls `filter(key, value)`; a zero-parameter predicate
+    # is the `() => ...` equivalent and JavaScript silently drops both
+    # arguments, so the Python call must pass none (Node oracle:
+    # filterKeys({a:1,b:2}, () => true) is {"a":1,"b":2}).
+    assert filter_keys(data, lambda: True) == data
+    assert filter_keys(data, lambda: False) == {}
+    seen_keys = []
+    assert filter_keys(data, lambda: seen_keys.append(1) or True) == data
+    assert len(seen_keys) == 3
+    assert filterKeys({}, lambda: True) == {}
+    # misc.ts:41 filters with `.filter(...)`, so the predicate result is tested
+    # with ECMAScript ToBoolean rather than Python truthiness: `[]` and `{}` are
+    # truthy there while `NaN`, `0` and `''` are falsy (Node oracle keeps both
+    # entries for `() => []` / `() => {}` and drops them for `() => NaN`,
+    # `() => 0` and `() => ''`).
+    assert filter_keys(data, lambda k, v: []) == data
+    assert filter_keys(data, lambda k, v: {}) == data
+    assert filter_keys(data, lambda k, v: float('nan')) == {}
+    assert filter_keys(data, lambda k, v: 0) == {}
+    assert filter_keys(data, lambda k, v: '') == {}
+    assert filter_keys(data, lambda k, v: '0') == data
+
+
+def test_c12_map_values_passes_value_then_key():
+    """misc.ts:44-47 - `Object.entries(object).map(([key, value]) => [key, transform(value, key)])`."""
+    assert map_values({'a': 1, 'b': 2}, lambda v, k: str(v) + k) == {'a': '1a', 'b': '2b'}
+    assert mapValues({'a': 1}, lambda v: v * 2) == {'a': 2}
+    assert list(mapValues({'b': 1, 'a': 2}, lambda v: v)) == ['b', 'a']
+    source = {'a': 1}
+    assert map_values(source, lambda v: v) is not source
+
+    def boom(value):
+        raise ValueError('boom')
+
+    with pytest.raises(ValueError, match='boom'):
+        map_values({'a': 1}, boom)
+
+    # misc.ts:46 always calls `transform(value, key)`; a zero-parameter
+    # transform is the `() => ...` equivalent and JavaScript silently drops
+    # both arguments (Node oracle: mapValues({a:1,b:2}, () => 7) is
+    # {"a":7,"b":7}).
+    assert map_values({'a': 1, 'b': 2}, lambda: 7) == {'a': 7, 'b': 7}
+    seen_values = []
+    assert mapValues({'a': 1, 'b': 2}, lambda: seen_values.append(1) or 0) == {'a': 0, 'b': 0}
+    assert len(seen_values) == 2
+    # A zero-argument transform returning `undefined` still produces the key;
+    # JSON.stringify drops it in the oracle, but the key itself is present.
+    undefined_value = map_values({'a': 1}, lambda: None)
+    assert list(undefined_value) == ['a']
+    assert undefined_value['a'] is None
+
+
+def test_c13_value_map_aliases_are_the_same_function():
+    """misc.ts:49 - `export { mapValues as valueMap }`."""
+    assert valueMap is map_values
+    assert value_map is map_values
+    assert mapValues is map_values
+    assert valueMap({'a': 1}, lambda v: v + 1) == {'a': 2}
+
+
+def test_c14_pick_copies_or_selects_keys():
+    """misc.ts:52-60 - `!keys` copies the object, otherwise undefined values are dropped."""
+    source = {'a': 1, 'b': 2}
+    assert pick(source) == {'a': 1, 'b': 2}
+    assert pick(source) is not source
+    assert pick(source, ['a']) == {'a': 1}
+    # A missing key reads as undefined and is dropped.
+    assert pick(source, ['a', 'c']) == {'a': 1}
+    # `forced` keeps the key with the property read itself, so a miss keeps the
+    # port's `undefined` sentinel - never `None`, which is the reference's
+    # `null`: a value `source[key] !== undefined` keeps (Node oracle:
+    # pick({a:1}, ['a','c'], true) has own keys ["a","c"] and `result.c` is
+    # `=== undefined`).
+    forced_result = pick(source, ['a', 'c'], True)
+    assert list(forced_result) == ['a', 'c']
+    assert forced_result['a'] == 1
+    assert forced_result['c'] is _UNDEFINED
+    assert pick(source, ['a', 'c'], True) == {'a': 1, 'c': _UNDEFINED}
+    # A property the source itself holds as `undefined` reads as undefined too.
+    assert pick({'a': _UNDEFINED, 'b': 2}, ['a', 'b']) == {'b': 2}
+    assert pick({'a': _UNDEFINED, 'b': 2}, ['a'], True) == {'a': _UNDEFINED}
+    # An empty key list is not the `!keys` fast path: an array is truthy in
+    # ECMAScript, so it selects nothing.
+    assert pick(source, []) == {}
+    assert pick(source, set()) == {}
+    # An empty string IS falsy there, so `!keys` returns the shallow copy.
+    assert pick(source, '') == {'a': 1, 'b': 2}
+    # A present null value is not undefined, so it is kept.
+    assert pick({'a': None, 'b': 2}, ['a', 'b']) == {'a': None, 'b': 2}
+    assert pick(source, ['a'], True) == {'a': 1}
+    assert source == {'a': 1, 'b': 2}
+
+
+def test_c15_omit_deletes_keys():
+    """misc.ts:62-70 - shallow copy then `Reflect.deleteProperty` per key."""
+    source = {'a': 1, 'b': 2}
+    assert omit(source) == {'a': 1, 'b': 2}
+    assert omit(source) is not source
+    assert omit(source, ['a']) == {'b': 2}
+    assert omit(source, []) == {'a': 1, 'b': 2}
+    assert omit(source, ['z']) == {'a': 1, 'b': 2}
+    # `!keys` is ECMAScript falsiness: an empty string and a number are falsy
+    # there and take the copy branch (Node oracle: omit({a:1,b:2}, '') and
+    # omit({a:1,b:2}, 0) both keep both keys), while an empty set is truthy
+    # there and deletes nothing.
+    assert omit(source, '') == {'a': 1, 'b': 2}
+    assert omit(source, 0) == {'a': 1, 'b': 2}
+    assert omit(source, set()) == {'a': 1, 'b': 2}
+    assert source == {'a': 1, 'b': 2}
+
+
+def test_c16_define_property_returns_the_target():
+    """misc.ts:76-78 - Object.defineProperty(object, key, { writable: true, value })."""
+    target = {}
+    assert define_property(target, 'k', 5) is target
+    assert target['k'] == 5
+    target = {'k': 1}
+    assert defineProperty(target, 'k', 2) == {'k': 2}
+    # `Object.defineProperty` requires an object, so every ECMAScript primitive
+    # target throws the reference's TypeError (Node 22: "Object.defineProperty
+    # called on non-object") instead of `setattr`'s AttributeError.
+    for primitive in (None, _UNDEFINED, True, 1, 1.5, 'a'):
+        with pytest.raises(TypeError) as error:
+            define_property(primitive, 'k', 5)
+        assert str(error.value) == 'Object.defineProperty called on non-object'
+
+
+def test_c17_export_aliases_of_misc_helpers():
+    """misc.ts:20-78 - every exported name resolves to the same behaviour."""
+    assert isNullable is is_nullable
+    assert isNonNullable is is_non_nullable
+    assert isPlainObject is is_plain_object
+    assert filterKeys is filter_keys
+    assert defineProperty is define_property
+
+
+# ---------------------------------------------------------------------------
+# string.ts
+# ---------------------------------------------------------------------------
+
+
+def test_c18_capitalize_uncapitalize_use_char_at():
+    """string.ts:2-10 - `source.charAt(0).toUpperCase() + source.slice(1)`."""
+    assert capitalize('foo') == 'Foo'
+    assert capitalize('FOO') == 'FOO'
+    assert capitalize('') == ''
+    assert capitalize('1abc') == '1abc'
+    assert uncapitalize('FOO') == 'fOO'
+    assert uncapitalize('foo') == 'foo'
+    assert uncapitalize('') == ''
+
+
+def test_c19_camel_case_only_folds_lowercase_after_a_delimiter():
+    """string.ts:12-14 - `/[_-][a-z]/g` replacement."""
+    assert camelCase('foo-bar') == 'fooBar'
+    assert camelCase('foo_bar') == 'fooBar'
+    assert camel_case('a_b_c') == 'aBC'
+    assert camelCase('') == ''
+    # A digit or an uppercase letter after the delimiter is left alone.
+    assert camelCase('foo-1bar') == 'foo-1bar'
+    assert camelCase('foo-Foo') == 'foo-Foo'
+    assert camelCase('foo-') == 'foo-'
+    assert camelize is camel_case
+
+
+def test_c20_param_case_tokens_camel_and_acronym_boundaries():
+    """string.ts:19-64 - the DELIM/UPPER/LOWER tokenizer with an acronym lookahead."""
+    assert paramCase('fooBar') == 'foo-bar'
+    assert param_case('foo_bar_baz') == 'foo-bar-baz'
+    assert paramCase('HTTPServer') == 'http-server'
+    assert paramCase('ABc') == 'a-bc'
+    assert paramCase('ABC') == 'abc'
+    assert paramCase('FooBar') == 'foo-bar'
+    assert paramCase('foo2Bar') == 'foo2-bar'
+    assert paramCase('_fooBar') == 'foo-bar'
+    assert paramCase('fooBar_') == 'foo-bar-'
+    assert paramCase('a--b') == 'a-b'
+    # Only the delimiter and underscore are delimiters; other characters pass through.
+    assert paramCase('fooBar baz') == 'foo-bar baz'
+    assert paramCase('a.b') == 'a.b'
+    assert paramCase('123') == '123'
+    assert paramCase('') == ''
+
+
+def test_c21_snake_case_and_token_aliases():
+    """string.ts:57-69 - paramCase/hyphenate and snakeCase share one tokenizer."""
+    assert snakeCase('fooBar') == 'foo_bar'
+    assert snake_case('foo-bar-baz') == 'foo_bar_baz'
+    assert snakeCase('HTTPServer') == 'http_server'
+    assert hyphenate is param_case
+    assert hyphenate('fooBar') == 'foo-bar'
+
+
+def test_c22_format_property_matches_member_access_and_json_quoting():
+    """string.ts:99-103 - identifier regex plus JSON.stringify for the bracket form."""
+    assert formatProperty('foo') == '.foo'
+    assert format_property('$a') == '.$a'
+    assert format_property('_a') == '._a'
+    assert format_property('foo-bar') == '["foo-bar"]'
+    assert format_property('1') == '["1"]'
+    assert format_property('') == '[""]'
+    assert format_property('a b') == '["a b"]'
+    assert format_property('a"b') == '["a\\"b"]'
+    assert format_property('a\nb') == '["a\\nb"]'
+    # ECMAScript `$` (no /m flag) only matches at the very end of the input,
+    # while Python's `$` also matches just before a trailing newline, so an
+    # identifier followed by a newline still brackets (Node oracle values).
+    assert format_property('foo\n') == '["foo\\n"]'
+    assert format_property('_a\n') == '["_a\\n"]'
+    assert format_property('a\n') == '["a\\n"]'
+    assert format_property('foo\r\n') == '["foo\\r\\n"]'
+    assert format_property('foo\n\n') == '["foo\\n\\n"]'
+    # `\w` is ASCII-only without the /u flag, so non-ASCII identifiers bracket.
+    assert format_property('\u00e9') == '["\u00e9"]'
+    assert format_property('a\u00e9') == '["a\u00e9"]'
+    # A non-string key uses its own `key.toString()`: the Number and Boolean
+    # prototype forms first (Node oracle values in the comments).
+    assert format_property(0) == '[0]'
+    assert format_property(-0.0) == '[0]'          # String(-0) is "0"
+    assert format_property(-1.5) == '[-1.5]'
+    assert format_property(1e21) == '[1e+21]'
+    assert format_property(float('nan')) == '[NaN]'
+    assert format_property(float('inf')) == '[Infinity]'
+    assert format_property(9007199254740993) == '[9007199254740992]'  # a double
+    assert format_property(True) == '[true]'
+    assert format_property(False) == '[false]'
+    # An ordinary object renders through Object.prototype.toString; a `dict` is
+    # the port's object literal and a class instance its `new Widget()`.
+    assert format_property({'a': 1}) == '[[object Object]]'
+    assert format_property({}) == '[[object Object]]'
+    assert format_property(_Widget()) == '[[object Object]]'
+    # An array renders through Array.prototype.toString, which is join(',').
+    assert format_property([1, 2]) == '[1,2]'
+    assert format_property([[1, 2], [3, 4]]) == '[1,2,3,4]'
+    assert format_property([{'a': 1}, [2]]) == '[[object Object],2]'
+    assert format_property([True, False]) == '[true,false]'
+    # join renders a nullish element as the empty string.
+    assert format_property([None, _UNDEFINED]) == '[,]'
+    # A typed array shares Array.prototype.toString.
+    assert format_property(memoryview(bytearray([1, 2]))) == '[1,2]'
+    # Set/ArrayBuffer/RegExp/Error keep their own prototype conversion.
+    assert format_property({1, 2}) == '[[object Set]]'
+    assert format_property(bytes(2)) == '[[object ArrayBuffer]]'
+    assert format_property(re.compile('a')) == '[/a/]'
+    assert format_property(re.compile('a', re.I | re.M)) == '[/a/im]'
+    assert format_property(ValueError('boom')) == '[ValueError: boom]'
+    assert format_property(TypeError()) == '[TypeError]'
+    # `Date.prototype.toString` in the host's local zone (the port carries a
+    # JavaScript Date as the naive local datetime).  Node prints exactly this
+    # for `new Date(0)` on this host.
+    assert format_property(datetime.datetime(1970, 1, 1, 8, 0, 0)) == \
+        '[Thu Jan 01 1970 08:00:00 GMT+0800 (\u4e2d\u56fd\u6807\u51c6\u65f6\u95f4)]'
+    # A nullish key has no `toString` at all: `null.toString()` throws.
+    with pytest.raises(TypeError) as null_error:
+        format_property(None)
+    assert str(null_error.value) == (
+        "Cannot read properties of null (reading 'toString')")
+    with pytest.raises(TypeError) as undefined_error:
+        format_property(_UNDEFINED)
+    assert str(undefined_error.value) == (
+        "Cannot read properties of undefined (reading 'toString')")
+
+
+def test_c23_trim_slash_removes_one_trailing_slash():
+    """string.ts:105-107 - `source.replace(/\\/$/, '')`."""
+    assert trimSlash('/foo/bar/') == '/foo/bar'
+    assert trim_slash('///foo///') == '///foo//'
+    assert trim_slash('foo/bar') == 'foo/bar'
+    assert trim_slash('/') == ''
+    assert trim_slash('') == ''
+    # ECMAScript `$` without /m does not match before a trailing newline.
+    assert trim_slash('foo/\n') == 'foo/\n'
+
+
+def test_c24_sanitize_prefixes_then_trims():
+    """string.ts:110-113 - ensure a leading slash, then one trailing-slash trim."""
+    assert sanitize('foo/bar/') == '/foo/bar'
+    assert sanitize('/foo/bar') == '/foo/bar'
+    assert sanitize('/foo/') == '/foo'
+    assert sanitize('/') == ''
+    assert sanitize('') == ''
+
+
+# ---------------------------------------------------------------------------
+# time.ts
+# ---------------------------------------------------------------------------
+
+
+def test_c25_time_constants():
+    """time.ts:3-8 - millisecond/second/minute/hour/day/week."""
+    assert Time.millisecond == 1
+    assert Time.second == 1000
+    assert Time.minute == 60000
+    assert Time.hour == 3600000
+    assert Time.day == 86400000
+    assert Time.week == 604800000
+
+
+def test_c26_timezone_offset_round_trip():
+    """time.ts:10-18 - the module-level offset defaults to getTimezoneOffset()."""
+    original = Time.get_timezone_offset()
+    assert Time.getTimezoneOffset() == original
+    assert isinstance(original, int)
+    # `new Date().getTimezoneOffset()` is the local offset in minutes west of
+    # UTC in the current DST state, which the local wall clock minus UTC is;
+    # it is never a silent UTC (0) default on a host without `tm_gmtoff`.
+    local_offset = datetime.datetime.now() - datetime.datetime.utcnow()
+    assert original == -int(round(local_offset.total_seconds()) / 60)
+    try:
+        Time.set_timezone_offset(-480)
+        assert Time.get_timezone_offset() == -480
+        Time.setTimezoneOffset(60)
+        assert Time.getTimezoneOffset() == 60
+    finally:
+        Time.set_timezone_offset(original)
+    assert Time.get_timezone_offset() == original
+
+
+def test_c27_parse_time_units_and_strict_anchoring():
+    """time.ts:32-49 - the anchored unit regex and `parseFloat(x) * unit || 0`."""
+    assert Time.parse_time('10s') == 10000
+    assert Time.parseTime('5m') == 300000
+    assert Time.parse_time('1h') == 3600000
+    assert Time.parse_time('1d') == 86400000
+    assert Time.parse_time('1w') == 604800000
+    assert Time.parse_time('1w2d3h4m5s') == 604800000 + 172800000 + 10800000 + 240000 + 5000
+    # Every unit accepts its full and plural word spellings.
+    assert Time.parse_time('1week') == 604800000
+    assert Time.parse_time('2days') == 172800000
+    assert Time.parse_time('1hour') == 3600000
+    assert Time.parse_time('1minute') == 60000
+    assert Time.parse_time('1second') == 1000
+    assert Time.parse_time('3secs') == 3000
+    assert Time.parse_time('2mins') == 120000
+    assert Time.parse_time('1.5s') == 1500
+    assert Time.parse_time('0.5h') == 1800000
+    # Anchored: no surrounding whitespace, no bare numbers, no suffix leftovers.
+    assert Time.parse_time('10 s') == 0
+    assert Time.parse_time(' 10s') == 0
+    assert Time.parse_time('10s ') == 0
+    assert Time.parse_time('1w 2d') == 0
+    assert Time.parse_time('abc') == 0
+    assert Time.parse_time('10') == 0
+    assert Time.parse_time('1m5') == 0
+    assert Time.parse_time('10S') == 0
+    # ECMAScript `$` without /m and ASCII `\d`: a trailing newline or a
+    # non-ASCII digit is not a match.
+    assert Time.parse_time('10\ns') == 0
+    assert Time.parse_time('1s\r\n') == 0
+    assert Time.parse_time('\u0661\u0660s') == 0
+    assert Time.parse_time('\uff11\uff10s') == 0
+    assert Time.parse_time('') == 0
+    assert Time.parse_time('0s') == 0
+
+
+def test_c28_parse_date_time_only_forms_use_today():
+    """time.ts:51-61 - `toLocaleDateString() + '-' + date` then `new Date(date)`."""
+    now = datetime.datetime.now()
+    result = Time.parseDate('10:30')
+    assert (result.year, result.month, result.day) == (now.year, now.month, now.day)
+    assert (result.hour, result.minute, result.second, result.microsecond) == (10, 30, 0, 0)
+    result = Time.parse_date('10:30:45')
+    assert (result.hour, result.minute, result.second) == (10, 30, 45)
+    # 24:00 is a reachable clock value and lands on the next midnight.
+    result = Time.parseDate('24:00')
+    assert (result.hour, result.minute) == (0, 0)
+    assert result.date() == (now + datetime.timedelta(days=1)).date()
+
+
+def test_c29_parse_date_month_day_form_uses_the_current_year():
+    """time.ts:55-57 - `getFullYear() + '-' + date` for `M-D-H:M`."""
+    now = datetime.datetime.now()
+    result = Time.parseDate('9-3-14:30')
+    assert (result.year, result.month, result.day) == (now.year, 9, 3)
+    assert (result.hour, result.minute, result.second) == (14, 30, 0)
+
+
+def test_c30_parse_date_iso_forms():
+    """time.ts:51-61 -> `new Date(string)`; ECMA-262 Date Time String Format."""
+    # Date-only forms are UTC.
+    assert Time.parseDate('2026-09-03') == _local_wall_clock(calendar.timegm((2026, 9, 3, 0, 0, 0)))
+    assert Time.parseDate('2026-09') == _local_wall_clock(calendar.timegm((2026, 9, 1, 0, 0, 0)))
+    assert Time.parseDate('2026') == _local_wall_clock(calendar.timegm((2026, 1, 1, 0, 0, 0)))
+    # An explicit `Z` is the absent-offset default, not a numeric offset.
+    assert Time.parseDate('2026-09-03Z') == _local_wall_clock(calendar.timegm((2026, 9, 3, 0, 0, 0)))
+    # Date-time forms without an offset are local wall clock.
+    assert Time.parseDate('2026-09-03T14:30') == datetime.datetime(2026, 9, 3, 14, 30)
+    assert Time.parseDate('2026-09-03 14:30:45') == datetime.datetime(2026, 9, 3, 14, 30, 45)
+    assert Time.parseDate('2026-09-03t14:30:45z') == _local_wall_clock(
+        calendar.timegm((2026, 9, 3, 14, 30, 45)))
+    # A missing month/day part defaults to the first of its parent.
+    assert Time.parseDate('2026T14:30') == datetime.datetime(2026, 1, 1, 14, 30)
+    assert Time.parseDate('2026-09T14:30') == datetime.datetime(2026, 9, 1, 14, 30)
+    # Explicit offsets shift the instant.
+    assert Time.parseDate('2026-09-03T14:30:45Z') == _local_wall_clock(
+        calendar.timegm((2026, 9, 3, 14, 30, 45)))
+    assert Time.parseDate('2026-09-03T14:30:45+02:00') == _local_wall_clock(
+        calendar.timegm((2026, 9, 3, 12, 30, 45)))
+    assert Time.parseDate('2026-09-03T14:30+0200') == _local_wall_clock(
+        calendar.timegm((2026, 9, 3, 12, 30, 0)))
+    # A `Date` has millisecond resolution: extra fraction digits truncate.
+    assert Time.parseDate('2026-09-03T14:30:45.123') == datetime.datetime(2026, 9, 3, 14, 30, 45, 123000)
+    assert Time.parseDate('2026-09-03T14:30:45.5Z') == _local_wall_clock(
+        calendar.timegm((2026, 9, 3, 14, 30, 45))) + datetime.timedelta(milliseconds=500)
+    # `microsecond=123456` would keep sub-millisecond precision the reference drops.
+    assert Time.parseDate('2026-09-03T14:30:45.123456789') == datetime.datetime(
+        2026, 9, 3, 14, 30, 45, 123000)
+    assert Time.parseDate('2026-09-03T14:30:45.999999999Z') == _local_wall_clock(
+        calendar.timegm((2026, 9, 3, 14, 30, 45))) + datetime.timedelta(milliseconds=999)
+    # `24:00:00` rolls into the next day; an out-of-range day rolls forward too.
+    assert Time.parseDate('2026-09-03T24:00:00') == datetime.datetime(2026, 9, 4)
+    assert Time.parseDate('2026-02-30') == _local_wall_clock(calendar.timegm((2026, 3, 2, 0, 0, 0)))
+    # The unambiguous legacy forms are local wall clock.
+    assert Time.parseDate('2026-9-3') == datetime.datetime(2026, 9, 3)
+    assert Time.parseDate('2026/09/03') == datetime.datetime(2026, 9, 3)
+    assert Time.parseDate('09/03/2026') == datetime.datetime(2026, 9, 3)
+    assert Time.parseDate('9/3/2026 14:30') == datetime.datetime(2026, 9, 3, 14, 30)
+    # Relative time strings are `Date.now() + parsed`.
+    delta = Time.parseDate('1h') - datetime.datetime.now()
+    assert abs(delta - datetime.timedelta(hours=1)) < datetime.timedelta(seconds=5)
+
+
+def test_c31_parse_date_unrepresentable_inputs_fall_back_to_now():
+    """time.ts:61 - the reference returns `new Date(date)`, here `new Date()`.
+
+    LEGAL_ADAPTATION: an ECMAScript Invalid Date has no Python value, so every
+    input the reference rejects maps to the same `new Date()` an empty string
+    produces. Each assertion below is an Invalid Date on the reference side.
+    """
+    _assert_now(Time.parseDate(''))
+    _assert_now(Time.parseDate('not a date'))
+    _assert_now(Time.parseDate('2026-13-01'))
+    _assert_now(Time.parseDate('2026-09-32'))
+    _assert_now(Time.parseDate('2026-09-03T25:00'))
+    _assert_now(Time.parseDate('13:99'))
+    _assert_now(Time.parseDate('2026-09-03+02:00'))
+    _assert_now(Time.parseDate('2026-09-03T14:30:60Z'))
+    # A time-only string is not an Invalid Date; it is today at that clock time.
+    assert Time.parseDate('14:30').hour == 14
+
+
+def test_c59_parse_time_offset_outside_the_date_range_falls_back_to_now():
+    """time.ts:51-53 - `Date.now() + parseTime(date)`, then `new Date(number)`.
+
+    The reference adds the parsed offset to `Date.now()` and hands the number
+    to the Date constructor: `new Date("100000w")` is 700000 days after the
+    current instant (a 3943 date on the Node 22 oracle), while an offset past
+    +/-8.64e15 ms is an Invalid Date (`new Date("100000000000h")`).  Python
+    `datetime` spans years 1-9999, so the offsets between those bounds have no
+    Python value and map onto `new Date()` like every other unrepresentable
+    instant (`new Date("999999999999s")` is a valid year-33715 Date); the
+    representable ones must stay exact.
+    """
+    for source in ('100000w', '100000weeks'):
+        delta = Time.parseDate(source) - datetime.datetime.now()
+        assert abs(delta - datetime.timedelta(weeks=100000)) < datetime.timedelta(seconds=5)
+    for source in ('999999999999s', '999999999999d', '999999999999m', '100000000000h'):
+        _assert_now(Time.parseDate(source))
+
+
+def test_c45_parse_date_rejects_malformed_zone_offsets():
+    """time.ts:51-61 - an out-of-range zone offset is an Invalid Date.
+
+    Reference behavior read from the pinned source on Node 22
+    (`new Date(string)`): an offset in the Date Time String Format has hours
+    00-23 and minutes 00-59, must keep the `+HH:MM` / `+HHMM` shape, and
+    needs a clock time; the non-ISO offset rules are in `test_c58`.
+    """
+    _assert_now(Time.parseDate('2026-09-03T14:30+24:00'))
+    _assert_now(Time.parseDate('2026-09-03T14:30-24:00'))
+    _assert_now(Time.parseDate('2026-09-03T14:30+00:60'))
+    _assert_now(Time.parseDate('2026-09-03T14:30+02:99'))
+    _assert_now(Time.parseDate('2026-09-03T14:30+99:99'))
+    _assert_now(Time.parseDate('2026-09-03T14:30+0260'))
+    _assert_now(Time.parseDate('2026-09-03T14:30+02:00:00'))
+    _assert_now(Time.parseDate('2026-09-03T14:30+02'))
+    _assert_now(Time.parseDate('2026-09-03T14:30+02:'))
+    _assert_now(Time.parseDate('2026-09-03+02:00'))
+    _assert_now(Time.parseDate('2026-09-03+0200'))
+    _assert_now(Time.parseDate('2026-9-3+02:00'))
+    # The boundary values are accepted and normalize the instant.
+    assert Time.parseDate('2026-09-03T14:30+23:59') == _local_wall_clock(
+        calendar.timegm((2026, 9, 2, 14, 31, 0)))
+    assert Time.parseDate('2026-09-03T14:30-00:00') == _local_wall_clock(
+        calendar.timegm((2026, 9, 3, 14, 30, 0)))
+    assert Time.parseDate('2026-09-03T14:30+0230') == _local_wall_clock(
+        calendar.timegm((2026, 9, 3, 12, 0, 0)))
+    assert Time.parseDate('2026-09-03T14:30-0130') == _local_wall_clock(
+        calendar.timegm((2026, 9, 3, 16, 0, 0)))
+
+
+def test_c46_parse_date_legacy_and_padded_forms():
+    """time.ts:51-61 - the legacy forms `new Date(string)` resolves locally.
+
+    The non-ISO grammar is implementation defined; every value below is the
+    one the pinned reference produces on Node 22.  `T` belongs to the Date
+    Time String Format only, and V8 trims a padded string and then reads the
+    trimmed form as local wall clock.  The bare numbers, month names, clock
+    times and timezones of that grammar are the C54..C58 cases.
+    """
+    # `YYYY[-M[-D]]`, `YYYY/MM[/DD]` and `M/D/YYYY` are local wall clock.
+    assert Time.parseDate('2026-9') == datetime.datetime(2026, 9, 1)
+    assert Time.parseDate('2026/9') == datetime.datetime(2026, 9, 1)
+    assert Time.parseDate('2026/09') == datetime.datetime(2026, 9, 1)
+    assert Time.parseDate('2026-9/3') == datetime.datetime(2026, 9, 3)
+    assert Time.parseDate('2026-09/03') == datetime.datetime(2026, 9, 3)
+    assert Time.parseDate('2026-1-3') == datetime.datetime(2026, 1, 3)
+    assert Time.parseDate('1/3/2026') == datetime.datetime(2026, 1, 3)
+    assert Time.parseDate('2026-9 12:30') == datetime.datetime(2026, 9, 1, 12, 30)
+    assert Time.parseDate('2026-9-3 12:30:45') == datetime.datetime(2026, 9, 3, 12, 30, 45)
+    assert Time.parseDate('2026-9-3 12:30:45.5') == datetime.datetime(2026, 9, 3, 12, 30, 45, 500000)
+    # Repeated whitespace is accepted between the date and the clock time.
+    assert Time.parseDate('2026-9-3  12:30') == datetime.datetime(2026, 9, 3, 12, 30)
+    assert Time.parseDate('2026-09-03\t12:30') == datetime.datetime(2026, 9, 3, 12, 30)
+    # A zone suffix on a legacy form shifts the wall clock like an ISO one,
+    # and `Z` may also follow a legacy date that has no clock time.
+    assert Time.parseDate('2026-9-3 12:30Z') == _local_wall_clock(
+        calendar.timegm((2026, 9, 3, 12, 30, 0)))
+    assert Time.parseDate('2026-9-3 12:30 Z') == _local_wall_clock(
+        calendar.timegm((2026, 9, 3, 12, 30, 0)))
+    assert Time.parseDate('2026-9-3 12:30 +02:00') == _local_wall_clock(
+        calendar.timegm((2026, 9, 3, 10, 30, 0)))
+    assert Time.parseDate('2026/9/3Z') == _local_wall_clock(
+        calendar.timegm((2026, 9, 3, 0, 0, 0)))
+    assert Time.parseDate('2026-9Z') == _local_wall_clock(
+        calendar.timegm((2026, 9, 1, 0, 0, 0)))
+    assert Time.parseDate('2026-09-03 Z') == _local_wall_clock(
+        calendar.timegm((2026, 9, 3, 0, 0, 0)))
+    # Only a space (never `T`) separates these forms from their clock time.
+    _assert_now(Time.parseDate('2026-9-3T12:30'))
+    _assert_now(Time.parseDate('2026-9-3t12:30'))
+    _assert_now(Time.parseDate('2026/9/3T12:30'))
+    _assert_now(Time.parseDate('1/3/2026T12:30'))
+    _assert_now(Time.parseDate('2026-9-3 12:30.5'))
+    _assert_now(Time.parseDate('2026-9-3 +02:00'))
+    _assert_now(Time.parseDate('2026-9-3 12:30:60'))
+    # A padded string is read through the trimmed form, which is local wall
+    # clock even where the unpadded Date Time String Format is UTC.
+    assert Time.parseDate('2026-09') == _local_wall_clock(
+        calendar.timegm((2026, 9, 1, 0, 0, 0)))
+    assert Time.parseDate('2026-09\n') == datetime.datetime(2026, 9, 1)
+    assert Time.parseDate('2026-09-03 ') == datetime.datetime(2026, 9, 3)
+    assert Time.parseDate(' 2026-09-03') == datetime.datetime(2026, 9, 3)
+    assert Time.parseDate('\t2026-09-03') == datetime.datetime(2026, 9, 3)
+    assert Time.parseDate('2026-9-3 12:30 \n') == datetime.datetime(2026, 9, 3, 12, 30)
+    assert Time.parseDate('2026 ') == datetime.datetime(2026, 1, 1)
+    # Padding does not rescue a form whose own grammar V8 rejects.
+    _assert_now(Time.parseDate('2026-09-03T14:30\n'))
+    _assert_now(Time.parseDate('2026-09-03T14:30Z\n'))
+    _assert_now(Time.parseDate('14:30\n'))
+    # A padded `M-D-H:MM` string misses the reference's own regex match, so
+    # the two-digit year survives: '9-9-12:30 ' is 2001-09-09 12:30 locally.
+    assert Time.parseDate('9-9-12:30\n') == datetime.datetime(2001, 9, 9, 12, 30)
+    # The bare `M-D`, `M-D-YYYY`, `M` and month-name forms V8 reads are the
+    # legacy number assignment (see `test_c54`), not a fallback.
+    assert Time.parseDate('3-5') == datetime.datetime(2001, 3, 5)
+    assert Time.parseDate('3-5-2026') == datetime.datetime(2026, 3, 5)
+    assert Time.parseDate('5') == datetime.datetime(2001, 5, 1)
+    assert Time.parseDate('Jan 1 2026') == datetime.datetime(2026, 1, 1)
+    assert Time.parseDate('1 Jan 2026') == datetime.datetime(2026, 1, 1)
+
+
+def test_c32_format_rounds_half_up_with_unit_thresholds():
+    """time.ts:63-75 - `Math.round` against day/hour/minute/second thresholds."""
+    assert Time.format(0) == '0ms'
+    assert Time.format(500) == '500ms'
+    assert Time.format(999) == '999ms'
+    assert Time.format(-500) == '-500ms'
+    # Math.round is floor(x + 0.5), so -1.5 rounds to -1.
+    assert Time.format(1500) == '2s'
+    assert Time.format(2500) == '3s'
+    assert Time.format(-1500) == '-1s'
+    assert Time.format(-2500) == '-2s'
+    assert Time.format(59500) == '1m'
+    assert Time.format(59499) == '59s'
+    assert Time.format(120000) == '2m'
+    assert Time.format(3570000) == '1h'
+    assert Time.format(3569999) == '59m'
+    assert Time.format(7200000) == '2h'
+    assert Time.format(85800000) == '1d'
+    assert Time.format(594999) == '10m'
+    assert Time.format(85799999) == '1d'
+    assert Time.format(172800000) == '2d'
+    # Sub-second values render through Number.prototype.toString.
+    assert Time.format(500.5) == '500.5ms'
+    assert Time.format(1.25) == '1.25ms'
+    assert Time.format(float('nan')) == 'NaNms'
+
+
+def test_c33_to_digits_pads_the_rendered_number():
+    """time.ts:77-79 - `source.toString().padStart(length, '0')`."""
+    assert Time.toDigits(5) == '05'
+    assert Time.toDigits(12) == '12'
+    assert Time.toDigits(123, 2) == '123'
+    assert Time.toDigits(0, 3) == '000'
+    # padStart pads before the sign, not after it.
+    assert Time.to_digits(-5, 3) == '0-5'
+    # toString of a fraction keeps the fraction.
+    assert Time.to_digits(1.5) == '1.5'
+    assert Time.to_digits(1.5, 6) == '0001.5'
+
+
+def test_c34_template_replaces_the_first_occurrence_of_each_token():
+    """time.ts:81-91 - chained single-occurrence String.replace calls."""
+    moment = datetime.datetime(2026, 9, 3, 14, 30, 45, 123000)
+    assert Time.template('yyyy-MM-dd hh:mm:ss', moment) == '2026-09-03 14:30:45'
+    assert Time.template('yy/MM/dd', moment) == '26/09/03'
+    assert Time.template('SSS', moment) == '123'
+    # `yyyy` is replaced before `yy`, each only once.
+    # The `yy` pass then folds the first two characters of the leftover token.
+    assert Time.template('yyyy-yyyy', moment) == '2026-26yy'
+    assert Time.template('no tokens', moment) == 'no tokens'
+
+
+def test_c35_date_numbers_use_the_supplied_offset():
+    """time.ts:20-30 - getDateNumber/fromDateNumber over a minute-based offset."""
+    moment = datetime.datetime(2026, 9, 3, 14, 30, 45)
+    assert Time.getDateNumber(moment, 0) == int(
+        (calendar.timegm((2026, 9, 3, 14, 30, 45)) / 60) // 1440)
+    assert Time.getDateNumber(moment, -480) == int(
+        (calendar.timegm((2026, 9, 3, 14, 30, 45)) / 60 + 480) // 1440)
+    number = Time.getDateNumber(moment, -480)
+    restored = Time.from_date_number(number, -480)
+    assert (restored.year, restored.month, restored.day) == (2026, 9, 3)
+    assert Time.fromDateNumber(number, -480) == restored
+    # fromDateNumber builds `value * day + offset * minute` milliseconds.
+    assert Time.from_date_number(0, 480) == _local_wall_clock(28800)
+    assert Time.getDateNumber(0, 0) == 0
+
+
+# ---------------------------------------------------------------------------
+# types.ts
+# ---------------------------------------------------------------------------
+
+
+def test_c36_is_matches_constructor_or_internal_tag():
+    """types.ts:8-22 - `value instanceof globalThis[type] || tag === type`."""
+    assert is_('String', 'a') is True
+    assert is_('String', ['a']) is False
+    assert is_('Number', 1) is True
+    assert is_('Number', '1') is False
+    assert is_('Boolean', True) is True
+    assert is_('Array', []) is True
+    assert is_('Array', 'abc') is False
+    # `[] instanceof Object` is true even though Array.isArray distinguishes it.
+    assert is_('Object', []) is True
+    assert is_('Object', {'a': 1}) is True
+    assert is_('Object', lambda: 1) is True
+    assert is_('Object', None) is False
+    assert is_('Object', 1) is False
+    assert is_('Date', datetime.datetime.now()) is True
+    assert is_('RegExp', re.compile('a')) is True
+    assert is_('Null', None) is True
+    assert is_('Undefined', None) is False
+    assert is_('Undefined', _UNDEFINED) is True
+    assert is_('Function', lambda: 1) is True
+    assert is_('Set', {1, 2}) is True
+    # The internal tags differ, so a plain object is not a Map/WeakMap and a
+    # Python `set` (the JavaScript Set) is not a WeakSet: `is('Map', {})`,
+    # `is('WeakMap', {})` and `is('WeakSet', new Set())` are false in the
+    # reference, and `is('Object', new Map())` is true.
+    assert is_('Map', {}) is False
+    assert is_('Map', {'a': 1}) is False
+    assert is_('Map', []) is False
+    assert is_('Map', {1, 2}) is False
+    assert is_('WeakMap', {}) is False
+    assert is_('WeakSet', {}) is False
+    assert is_('WeakSet', {1, 2}) is False
+    assert is_('Map', weakref.WeakKeyDictionary()) is False
+    assert is_('Object', weakref.WeakKeyDictionary()) is True
+    assert is_('Object', weakref.WeakSet()) is True
+    assert is_('ArrayBuffer', b'\x01\x02') is True
+    assert is_('SharedArrayBuffer', bytearray(b'\x01\x02')) is True
+    # `isArrayBufferLike` only matches a buffer that owns its memory;
+    # `is('ArrayBuffer', new Uint8Array(2))` is false in the reference.
+    assert is_('ArrayBuffer', memoryview(b'\x01\x02')) is False
+    # `ArrayBuffer.isView` is the other half of the split, so a buffer is
+    # not a view (`is('Uint8Array', new ArrayBuffer(2))` is false).
+    assert is_('Uint8Array', b'\x01\x02') is False
+    assert is_('Uint8Array', memoryview(b'\x01\x02')) is True
+    assert is_('DataView', memoryview(b'\x01\x02')) is True
+    assert is_('Uint8Array', 'abc') is False
+    assert is_('Error', ValueError('x')) is True
+    # An unknown global name cannot match.
+    assert is_('Widget', {'a': 1}) is False
+    # One-argument form is a predicate factory.
+    predicate = is_('String')
+    assert predicate('a') is True
+    assert predicate(1) is False
+
+
+def test_c37_binary_source_detection_and_slicing():
+    """types.ts:19-40 - is/isSource/fromSource."""
+    # `is` is a Python keyword, so the reference attribute is read by name.
+    binary_is = getattr(Binary, 'is')
+    assert binary_is(b'\x01\x02') is True
+    assert binary_is(bytearray(b'\x01\x02')) is True
+    # A view is not a buffer, but it is an ArrayBuffer source.
+    assert binary_is(memoryview(b'\x01\x02')) is False
+    assert Binary.is_source(memoryview(b'\x01\x02')) is True
+    assert Binary.isSource(b'\x01\x02') is True
+    assert Binary.isSource(bytearray(b'\x01\x02')) is True
+    assert Binary.isSource('abc') is False
+    buffer = b'\x01\x02\x03\x04'
+    assert Binary.from_source(buffer) is buffer
+    # A view is narrowed to its own byte range.
+    assert bytes(Binary.fromSource(memoryview(buffer)[1:3])) == b'\x02\x03'
+
+
+def test_c38_binary_encodings_match_node_buffer():
+    """types.ts:42-76 - Buffer base64/hex encode and Node's lenient decode."""
+    assert Binary.to_base64(b'\x01\x02\x03\xfa') == 'AQID+g=='
+    assert Binary.toBase64(b'') == ''
+    assert bytes(Binary.from_base64('AQID+g==')) == b'\x01\x02\x03\xfa'
+    assert bytes(Binary.fromBase64('AQID+g')) == b'\x01\x02\x03\xfa'
+    assert bytes(Binary.fromBase64('AQ==ID')) == b'\x01'
+    assert Binary.from_base64('') == b''
+    assert Binary.to_hex(b'\x00\x0f\xff') == '000fff'
+    assert Binary.toHex(b'\x00\x0f\xff') == '000fff'
+    assert Binary.to_hex(b'') == ''
+    assert bytes(Binary.from_hex('00ff10')) == b'\x00\xff\x10'
+    assert bytes(Binary.fromHex('AB')) == b'\xab'
+    assert Binary.from_hex('') == b''
+
+
+def test_c39_binary_module_aliases_are_the_same_callables():
+    """types.ts:78-85 - base64/hex ArrayBuffer aliases."""
+    assert base64ToArrayBuffer is Binary.from_base64
+    assert arrayBufferToBase64 is Binary.to_base64
+    assert hexToArrayBuffer is Binary.from_hex
+    assert arrayBufferToHex is Binary.to_hex
+    assert bytes(base64ToArrayBuffer('AQID')) == b'\x01\x02\x03'
+    assert arrayBufferToBase64(b'\x01\x02\x03') == 'AQID'
+    assert bytes(hexToArrayBuffer('0102')) == b'\x01\x02'
+    assert arrayBufferToHex(b'\x01\x02') == '0102'
+
+
+def test_c40_clone_copies_containers_and_preserves_cycles():
+    """types.ts:87-116 - deep clone over own keys, preserving prototype and cycles."""
+    source = {'a': 1, 'b': {'c': 2}}
+    result = clone(source)
+    assert result == source
+    assert result is not source
+    assert result['b'] is not source['b']
+    values = [1, [2, 3]]
+    result = clone(values)
+    assert result == values
+    assert result is not values
+    assert result[1] is not values[1]
+    cyclic = {'a': 1}
+    cyclic['self'] = cyclic
+    result = clone(cyclic)
+    assert result['a'] == 1
+    assert result['self'] is result
+    # `ArrayBuffer.isView` -> the view's own byte range becomes a fresh
+    # buffer, so a `memoryview` clone is bytes and never raises.
+    view = memoryview(b'\x01\x02\x03\x04')[1:3]
+    copied = clone(view)
+    assert isinstance(copied, memoryview) is False
+    assert bytes(copied) == b'\x02\x03'
+    # The reference reaches a nested view through own keys and elements.
+    assert bytes(clone({'a': view})['a']) == b'\x02\x03'
+    assert bytes(clone([view])[0]) == b'\x02\x03'
+    assert bytes(clone((1, view))[1]) == b'\x02\x03'
+
+    class Holder:
+        def __init__(self, value):
+            self.view = value
+
+    class Slotted:
+        __slots__ = ('view',)
+
+        def __init__(self, value):
+            self.view = value
+
+    # A view held by an object is cloned like any other own key; a plain
+    # `copy.deepcopy` would raise on it.
+    assert bytes(clone(Holder(view)).view) == b'\x02\x03'
+    assert bytes(clone(Slotted(view)).view) == b'\x02\x03'
+    # Cycles are preserved while the view inside them is still copied.
+    cyclic_with_view = {'view': view}
+    cyclic_with_view['self'] = cyclic_with_view
+    copied = clone(cyclic_with_view)
+    assert copied['self'] is copied
+    assert bytes(copied['view']) == b'\x02\x03'
+    # An ArrayBuffer-like `bytearray` is copied, not shared.
+    buffer = bytearray(b'\x01\x02')
+    assert clone(buffer) == buffer
+    assert clone(buffer) is not buffer
+    assert bytes(clone(b'\x01\x02')) == b'\x01\x02'
+    # A Date and an ArrayBuffer are rebuilt by the reference's leaf branches
+    # (`new Date(source.valueOf())`, `source.slice(0)`), never shared.
+    frozen = datetime.datetime(2026, 9, 3)
+    assert clone(frozen) == frozen
+    assert clone(frozen) is not frozen
+    array_buffer = bytes(bytearray(b'\x01\x02'))
+    assert clone(array_buffer) == array_buffer
+    assert clone(array_buffer) is not array_buffer
+    # Primitives pass through: `typeof source !== 'object'` returns the source.
+    assert clone(5) == 5
+    assert clone('a') == 'a'
+    assert clone(None) is None
+    # `undefined` is falsy, so `!source` returns it unchanged and
+    # `clone(undefined)` *is* `undefined`: the sentinel must stay the single
+    # instance every identity-based nullish check recognizes, or the clone
+    # stops being nullish.
+    assert clone(_UNDEFINED) is _UNDEFINED
+    assert is_('Undefined', clone(_UNDEFINED)) is True
+    assert is_nullable(clone(_UNDEFINED)) is True
+    assert deep_equal([_UNDEFINED], [clone(_UNDEFINED)]) is True
+    # `pick(..., forced=True)` is where the sentinel reaches a container, so a
+    # cloned result must not turn its absent key into a distinct value.
+    forced_pick = pick({'a': 1}, ['a', 'z'], True)
+    assert clone(forced_pick)['z'] is _UNDEFINED
+    assert deepEqual(clone(forced_pick), forced_pick) is True
+
+
+def test_c41_deep_equal_primitives_and_nullish():
+    """types.ts:118-142 - `a === b` then the `!strict && isNullable` shortcut."""
+    assert deepEqual(1, 1) is True
+    assert deepEqual(1, 2) is False
+    assert deepEqual(1, 1.0) is True
+    assert deepEqual(1, True) is False
+    assert deepEqual(0, False) is False
+    assert deep_equal(None, None) is True
+    # NaN === NaN is false, so a NaN pair is never equal.
+    assert deep_equal(float('nan'), float('nan')) is False
+    assert deepEqual('a', 'a') is True
+    assert deepEqual('a', 'b') is False
+    # Two equal strings are distinct Python objects; === still reports equal.
+    left = json.loads('"' + 'x' * 40 + '"')
+    right = json.loads('"' + 'x' * 40 + '"')
+    assert left is not right
+    assert deepEqual(left, right) is True
+    assert deepEqual('1', 1) is False
+    # `a === b` for numbers compares the doubles JavaScript holds: two distinct
+    # Python integers that round to the same double are equal there, and an
+    # integer past the double range is Infinity (10**400 and 2 * 10**400).
+    assert deepEqual(9007199254740992, 9007199254740993) is True
+    assert deepEqual([9007199254740992], [9007199254740993]) is True
+    assert deepEqual(1e21, 1e21 + 2) is True
+    assert deepEqual(10 ** 400, 2 * 10 ** 400) is True
+    # NaN has no identity either: `===` reports false even when both operands
+    # are the same Python NaN object.
+    same_nan = float('nan')
+    assert deep_equal(same_nan, same_nan) is False
+
+
+def test_c42_deep_equal_structures():
+    """types.ts:120-142 - Array/Date/RegExp/ArrayBuffer branches then own keys."""
+    assert deepEqual([1, 2], [1, 2]) is True
+    assert deepEqual([1, 2], [1, 3]) is False
+    assert deepEqual([1, 2], [1, 2, 3]) is False
+    assert deepEqual([], []) is True
+    assert deepEqual([], {}) is False
+    assert deepEqual(datetime.datetime(2026, 9, 3, 12), datetime.datetime(2026, 9, 3, 12)) is True
+    assert deepEqual(datetime.datetime(2026, 9, 3, 12), datetime.datetime(2026, 9, 3, 13)) is False
+    assert deep_equal(re.compile('a', re.I), re.compile('a', re.I)) is True
+    assert deep_equal(re.compile('a', re.I), re.compile('a')) is False
+    assert deep_equal(re.compile('a', re.I), re.compile('b', re.I)) is False
+    assert deepEqual(b'\x01\x02', b'\x01\x02') is True
+    assert deepEqual(b'\x01\x02', b'\x01') is False
+    assert deepEqual(bytearray(b'\x01\x02'), b'\x01\x02') is True
+    # `check(isArrayBufferLike, ...)`: an ArrayBuffer is never equal to a
+    # view over the same bytes, which compares through its index keys.
+    assert deepEqual(b'\x02\x03', memoryview(b'\x02\x03')) is False
+    assert deep_equal(memoryview(b'\x02\x03'), b'\x02\x03') is False
+    assert deepEqual(memoryview(b'\x02\x03'), memoryview(b'\x02\x03')) is True
+    assert deepEqual(memoryview(b'\x02\x03'), memoryview(b'\x09\x09')) is False
+    assert deepEqual(memoryview(b'\x02\x03'), [2, 3]) is False
+    assert deep_equal(memoryview(b'\x02\x03'), {'0': 2, '1': 3}) is True
+    assert deepEqual({'a': 1}, {'a': 1}) is True
+    assert deepEqual({'a': 1}, {'a': 2}) is False
+    assert deepEqual({'a': 1}, {'a': 1, 'b': 2}) is False
+    assert deepEqual({'a': [1, {'b': 2}]}, {'a': [1, {'b': 2}]}) is True
+    # Own enumerable keys of both operands take part in the comparison.
+    assert deepEqual({'k': json.loads('"' + 'y' * 40 + '"')},
+                     {'k': json.loads('"' + 'y' * 40 + '"')}) is True
+    # A mapping subclass is still an object comparison.
+    assert deep_equal({'a': 1}, collections.OrderedDict([('a', 1)])) is True
+    # `Object.keys(new WeakSet())` and `Object.keys(new WeakMap())` are empty,
+    # so the port's stdlib stand-ins must not expose their Python internals
+    # (the WeakSet `data` set and its removal callback) as own keys.
+    assert deep_equal(weakref.WeakSet(), {}) is True
+    assert deep_equal(weakref.WeakSet(), weakref.WeakSet()) is True
+    assert deep_equal(weakref.WeakKeyDictionary(), weakref.WeakSet()) is True
+    # A WeakMap exposes no own keys, and reading a missing key answers
+    # undefined, so a key the other operand owns stays unequal.
+    assert deep_equal(weakref.WeakKeyDictionary(), {'a': 1}) is False
+
+
+def test_c43_deep_equal_strict_disables_the_nullish_shortcut():
+    """types.ts:120 - `if (!strict && isNullable(a) && isNullable(b)) return true`."""
+    # Non-strict: a null field equals an absent one.
+    assert deepEqual({'a': None}, {}) is True
+    # Strict: the absent key reads as undefined, which is not null.
+    assert deepEqual({'a': None}, {}, True) is False
+    assert deepEqual({'a': 1}, {'a': 1}, True) is True
+
+
+def test_c47_clone_leaf_branches_build_a_fresh_instance_per_occurrence():
+    """types.ts:89-94 - Date/RegExp/ArrayBuffer/View return before `refs`."""
+    date = datetime.datetime(2026, 9, 3, 12)
+    assert clone(date) == date
+    assert clone(date) is not date
+    pattern = re.compile('a', re.I)
+    copied = clone(pattern)
+    assert copied is not pattern
+    assert (copied.pattern, copied.flags) == (pattern.pattern, pattern.flags)
+    assert copied.findall('xAx') == pattern.findall('xAx') == ['A']
+    buffer = bytes(bytearray(b'\x01\x02'))
+    assert clone(buffer) == buffer
+    assert clone(buffer) is not buffer
+    writable = bytearray(b'\x01\x02')
+    assert clone(writable) == writable
+    assert clone(writable) is not writable
+    view = memoryview(b'\x01\x02\x03\x04')[1:3]
+    assert bytes(clone(view)) == b'\x02\x03'
+    assert clone(view) is not view
+    # Each leaf branch returns before the `refs` lookup, so two occurrences of
+    # one leaf become two independent copies...
+    aliased = clone({'a': buffer, 'b': buffer})
+    assert aliased['a'] == aliased['b']
+    assert aliased['a'] is not aliased['b']
+    # ...while a repeated container stays shared through the `refs` memo.
+    shared = {'x': 1}
+    holder = clone({'a': shared, 'b': shared})
+    assert holder['a'] is holder['b']
+    # Leaves are reached through own keys, elements, slots and cycles.
+    nested = clone({'d': date, 'p': pattern, 'b': buffer, 'v': view})
+    assert nested['d'] == date and nested['d'] is not date
+    assert nested['p'] is not pattern
+    assert nested['b'] is not buffer
+    assert bytes(nested['v']) == b'\x02\x03'
+    assert clone([buffer])[0] is not buffer
+    assert clone((1, buffer))[1] is not buffer
+
+    class Holder:
+        def __init__(self):
+            self.v = view
+            self.d = date
+
+    class Slotted:
+        __slots__ = ('v', 'd')
+
+        def __init__(self):
+            self.v = view
+            self.d = date
+
+    assert bytes(clone(Holder()).v) == b'\x02\x03'
+    assert clone(Holder()).d is not date
+    assert bytes(clone(Slotted()).v) == b'\x02\x03'
+    assert clone(Slotted()).d is not date
+    cyclic = {'b': buffer}
+    cyclic['self'] = cyclic
+    copied_cyclic = clone(cyclic)
+    assert copied_cyclic['self'] is copied_cyclic
+    assert copied_cyclic['b'] is not buffer
+
+
+def test_c48_deep_equal_reads_an_absent_own_key_as_undefined():
+    """types.ts:141-142 - `deepEqual(a[key], b[key], strict)` over both key sets."""
+    # Strict: a key only one operand has reads as `undefined`, which never
+    # equals `null`, so the key names matter even when the counts match.
+    assert deepEqual({'a': None}, {'b': None}, True) is False
+    assert deepEqual({'a': None}, {'b': None}) is True
+    assert deepEqual({'a': 1, 'b': None}, {'a': 1, 'c': None}, True) is False
+    assert deepEqual({'a': 1, 'b': None}, {'a': 1, 'c': None}) is True
+    assert deepEqual({'a': None}, {}, True) is False
+    assert deepEqual({'a': None}, {}) is True
+    assert deepEqual({'a': None}, {'a': None}, True) is True
+    assert deepEqual({}, {}, True) is True
+    # `strict` reaches the own-key recursion but not array elements: the array
+    # branch is `deepEqual(item, b[index])` with no third argument, so elements
+    # compare non-strict even inside a strict comparison.
+    assert deepEqual({'x': {'a': None}}, {'x': {}}, True) is False
+    assert deepEqual([{'a': None}], [{}], True) is True
+    assert deepEqual([[{'a': None}]], [[{}]], True) is True
+    assert deepEqual([{'x': {'a': None}}], [{'x': {}}], True) is True
+    assert deepEqual({'k': [{'a': None}]}, {'k': [{}]}, True) is True
+    assert deepEqual([1, [2]], [1, [2]], True) is True
+    # Array length and the Array-vs-object branch are unchanged.
+    assert deepEqual([1, 2], [1, 2, 3], True) is False
+    assert deepEqual([1], {0: 1}, True) is False
+
+
+def test_c49_callback_arity_matches_the_javascript_invocation_rule():
+    """misc.ts:39-47 - `filter(key, value)` / `transform(value, key)` arity.
+
+    JavaScript invokes both callbacks with two arguments: a callback declared
+    with fewer parameters ignores the surplus ones and a callback declared with
+    more reads the missing ones as `undefined`.  Python cannot express that
+    literally, so the port supplies as many arguments as the callback declares
+    positional slots for, padding the surplus slots with its own `undefined`
+    sentinel (`_js_supplied_arg_count` / `_js_call_args`), reproducing the Node
+    oracle for zero-, one-, two-, three-, four- and rest-parameter callbacks;
+    a C-implemented callback reports no slots at all, so the reference list is
+    replayed from its full length down to none (see `_js_call_callback`).
+    """
+    # Zero positional parameters is the `() => ...` form: no argument at all.
+    assert filterKeys({'a': 1, 'b': 2}, lambda: True) == {'a': 1, 'b': 2}
+    assert filterKeys({'a': 1, 'b': 2}, lambda: False) == {}
+    assert mapValues({'a': 1, 'b': 2}, lambda: 7) == {'a': 7, 'b': 7}
+    assert valueMap({'a': 1}, lambda: 'z') == {'a': 'z'}
+    assert mapValues({}, lambda: 7) == {}
+
+    # One positional slot receives the value for mapValues and the key for
+    # filterKeys, exactly like the first argument of the reference call.
+    assert mapValues({'a': 1, 'b': 2}, lambda v: v * 10) == {'a': 10, 'b': 20}
+    assert filterKeys({'a': 1, 'b': 2}, lambda k: k == 'b') == {'b': 2}
+
+    # A rest parameter receives both arguments unharmed.
+    filter_args = []
+    assert filterKeys({'a': 1}, lambda *args: filter_args.append(args) or True) == {'a': 1}
+    assert filter_args == [('a', 1)]
+    map_args = []
+    assert mapValues({'a': 1}, lambda *args: map_args.append(args) or 0) == {'a': 0}
+    assert map_args == [(1, 'a')]
+
+    # Only positional slots are fillable: a trailing keyword-only parameter
+    # cannot receive the second reference argument and keeps its default.
+    def transform_kw_only(value, *, key=None):
+        return (value, key)
+
+    def predicate_kw_only(key, *, value=None):
+        return key == 'a' and value is None
+
+    assert mapValues({'a': 1}, transform_kw_only) == {'a': (1, None)}
+    assert filterKeys({'a': 1, 'b': 2}, predicate_kw_only) == {'a': 1}
+
+    # The same rule applies to positional-only parameters and callable objects
+    # (whose bound `__call__` signature hides `self`).
+    def transform_pos_only(value, /):
+        return value + 1
+
+    class ZeroArity:
+        def __call__(self):
+            return 'always'
+
+    class TwoArity:
+        def __call__(self, value, key):
+            return '%s%s' % (value, key)
+
+    assert mapValues({'a': 1}, transform_pos_only) == {'a': 2}
+    assert mapValues({'a': 1}, ZeroArity()) == {'a': 'always'}
+    assert filterKeys({'a': 1}, ZeroArity()) == {'a': 1}
+    assert mapValues({'a': 1}, TwoArity()) == {'a': '1a'}
+
+    # A non-callable callback raises TypeError in JavaScript and in Python.
     with pytest.raises(TypeError):
-        value_map({"a": None}, bad_transform)
+        filterKeys({'a': 1}, 42)
+    with pytest.raises(TypeError):
+        mapValues({'a': 1}, None)
+
+    # A callback that raises propagates unchanged rather than being swallowed.
+    def boom_zero():
+        raise ValueError('boom-zero')
+
+    with pytest.raises(ValueError, match='boom-zero'):
+        filterKeys({'a': 1}, boom_zero)
+    with pytest.raises(ValueError, match='boom-zero'):
+        mapValues({'a': 1}, boom_zero)
+
+    # A C-implemented callback reports no signature, so its positional slots
+    # cannot be read and the port replays the reference's own argument list
+    # from its full length down to none, taking the shortest call that binds -
+    # exactly JavaScript's "surplus arguments are dropped" rule (Node oracle:
+    # mapValues({a:1,b:2}, String) is {"a":"1","b":"2"}, mapValues({a:"7"},
+    # Number) is {"a":7}, filterKeys({a:1,b:0}, Boolean) is {"a":1,"b":0}, and
+    # filterKeys({a:1,b:2}, String) keeps both keys).
+    assert mapValues({'a': 1, 'b': 2}, str) == {'a': '1', 'b': '2'}
+    assert mapValues({'a': '7'}, int) == {'a': 7}
+    assert filterKeys({'a': 1, 'b': 0}, bool) == {'a': 1, 'b': 0}
+    assert filterKeys({'a': 1, 'b': 2}, str) == {'a': 1, 'b': 2}
+    # When no attempted length binds, the error of the reference-faithful
+    # (longest) call is the one re-raised, not a shortened binding failure, so
+    # a genuine callback error is never masked (Node oracle has no equivalent:
+    # this pins the Python adaptation itself, hence `iter(5, 'a')`).
+    with pytest.raises(TypeError, match='v must be callable'):
+        mapValues({'a': 5}, iter)
+
+    # A callback that declares MORE positional slots than the reference arity
+    # reads the missing ones as `undefined` (Node oracle:
+    # filterKeys({a:1}, (k, v, u) => u === undefined) keeps "a";
+    # mapValues({a:1}, (v, k, u) => String(u)) is {"a":"undefined"}), so the
+    # port pads those slots with its own `undefined` sentinel.
+    def predicate_three(key, value, third):
+        return third is _UNDEFINED
+
+    def transform_four(value, key, third, fourth):
+        return (value, key, third is _UNDEFINED, fourth is _UNDEFINED)
+
+    assert filterKeys({'a': 1}, predicate_three) == {'a': 1}
+    assert mapValues({'a': 1}, lambda v, k, u: str(u)) == {'a': 'undefined'}
+    assert mapValues({'a': 1}, transform_four) == {'a': (1, 'a', True, True)}
+    # A surplus slot WITH a default is not padded: JavaScript passes
+    # `undefined`, which triggers the default (Node oracle:
+    # filterKeys({a:1}, (k, v, u = 5) => u === 5) keeps "a";
+    # mapValues({a:1}, (v, k, u = 'dflt') => u) is {"a":"dflt"}).
+    assert filterKeys({'a': 1}, lambda k, v, u=5: u == 5) == {'a': 1}
+    assert mapValues({'a': 1}, lambda v, k, u='dflt': u) == {'a': 'dflt'}
 
 
-def test_d7_filter_keys_two_args_and_one_arg():
-    """ts:cosmokit/misc.ts:39-41 - filterKeys passes (key, value) and supports single arg predicate."""
-    data = {"a": 1, "b": 2, "c": 3}
-    assert filter_keys(data, lambda k, v: v >= 2) == {"b": 2, "c": 3}
-    assert filter_keys(data, lambda k: k == "a") == {"a": 1}
+def test_c50_is_plain_object_returns_the_falsy_operand():
+    """misc.ts:30-32 - `data && ...` short-circuits with the falsy operand.
+
+    Node oracle on the unmodified reference: `isPlainObject(0) === 0`,
+    `String(isPlainObject(0)) === '0'`, `isPlainObject(-0) === -0`,
+    `isPlainObject(NaN)` is NaN, `isPlainObject(undefined) === undefined`,
+    `isPlainObject(null) === null`, `isPlainObject('') === ''` and
+    `isPlainObject(false) === false`.
+    """
+    assert is_plain_object(0) == 0 and is_plain_object(0) is not False
+    assert str(is_plain_object(0)) == '0'
+    assert is_plain_object(-0.0) == 0 and is_plain_object(-0.0) is not False
+    assert is_plain_object(None) is None
+    assert is_plain_object(_UNDEFINED) is _UNDEFINED
+    assert is_plain_object(False) is False
+    assert is_plain_object('') == '' and is_plain_object('') is not False
+    nan = float('nan')
+    result = is_plain_object(nan)
+    assert math.isnan(result) and result is nan
+    # Every one of them stays falsy in an ECMAScript condition. `NaN` is the
+    # one exception a Python condition cannot see, because Python's
+    # `float('nan')` is truthy while JavaScript's `NaN` is falsy (see the
+    # residual note in `is_plain_object`).
+    for value in (0, -0.0, None, _UNDEFINED, False, ''):
+        assert not is_plain_object(value)
+    assert bool(is_plain_object(nan)) is True
+    # Python's own falsiness is not the reference's: `[]`, `()` and `{}` are
+    # falsy here but truthy objects in ECMAScript, so they are not
+    # short-circuited and reach the array/object branches instead.
+    assert is_plain_object([]) is False
+    assert is_plain_object(()) is False
+    assert is_plain_object({}) is True
+    assert is_plain_object(set()) is True
 
 
-def test_d8_pick_omit_defaults_and_forced():
-    """ts:cosmokit/misc.ts:52-69 - pick and omit with None keys return shallow copy, forced retains missing."""
-    d = {"a": 1, "b": 2}
-    assert pick(d) == {"a": 1, "b": 2}
-    assert omit(d) == {"a": 1, "b": 2}
+def test_c51_is_name_resolution_for_the_map_family_and_undefined():
+    """types.ts:8-22 - `value instanceof globalThis[type] || tag === type`.
 
-    picked_forced = pick(d, ["a", "c"], forced=True)
-    assert "c" in picked_forced and picked_forced["a"] == 1
+    Node oracle on the unmodified reference: `is('WeakMap', {})` is false,
+    `is('WeakMap', new WeakMap())` is true, `is('WeakSet', new WeakSet())` is
+    true, `is('Object', new WeakMap())` is true, `is('Null', undefined)` is
+    false, `is('Undefined', undefined)` is true, `is('Undefined', null)` is
+    false and `is('Widget', new class Widget {})` is false.
+    """
+    # The stdlib containers the port keys by object identity are the values a
+    # JavaScript WeakMap/WeakSet corresponds to.
+    assert is_('WeakMap', weakref.WeakKeyDictionary()) is True
+    assert is_('WeakMap', {}) is False
+    assert is_('WeakMap', weakref.WeakSet()) is False
+    assert is_('WeakSet', weakref.WeakSet()) is True
+    assert is_('WeakSet', {1, 2}) is False
+    assert is_('Set', weakref.WeakSet()) is False
+    # `null` and `undefined` are two internal tags and the port keeps two
+    # values for them: `None` is the reference's `null` and the port's own
+    # undefined sentinel is the reference's `undefined`.  The Node oracle
+    # answers `is('Null', undefined) === false` and
+    # `is('Undefined', null) === false`.
+    assert is_('Null', None) is True
+    assert is_('Null', _UNDEFINED) is False
+    assert is_('Undefined', None) is False
+    assert is_('Undefined', _UNDEFINED) is True
+    assert is_('Object', _UNDEFINED) is False
+    assert is_('Array', _UNDEFINED) is False
 
-
-def test_d9_deep_equal_strict_and_patterns():
-    """ts:cosmokit/types.ts:118-142 - strict parameter, distinct types, regex patterns, datetime."""
-    assert deep_equal(1, True) is False
-    assert deep_equal(1, 1.0) is True
-    assert deep_equal({"a": 1}, OrderedDict([("a", 1)])) is True
-
-    p1 = re.compile(r"abc", re.I)
-    p2 = re.compile(r"abc", re.I)
-    p3 = re.compile(r"abc")
-    assert deep_equal(p1, p2) is True
-    assert deep_equal(p1, p3) is False
-
-    t1 = datetime.datetime(2026, 9, 3, 12, 0, 0)
-    t2 = datetime.datetime(2026, 9, 3, 12, 0, 0)
-    assert deep_equal(t1, t2) is True
-
-
-def test_d10_disposable_list_identity_delete():
-    """ts:cordis/utils.ts:21-25 - DisposableList delete removes the exact instance or matching bound method."""
-    lst = DisposableList()
-    t1 = object()
-    t2 = object()
-    lst.push(t1)
-    lst.push(t2)
-
-    assert lst.delete(t1) is True
-    assert list(lst) == [t2]
-
-    # Deleting value not in list returns False
-    assert lst.delete(object()) is False
-
-    # Bound method identity
-    class Cls:
-        def disp(self):
-            pass
-
-    c = Cls()
-    lst.push(c.disp)
-    assert lst.delete(c.disp) is True
-
-
-def test_d11_get_traceable_requires_tracker():
-    """ts:cordis/utils.ts:117-125 - getTraceable without tracker returns original value."""
-    class DummyCtx:
+    class Widget:
         pass
 
-    ctx = DummyCtx()
+    # A name that resolves to neither a global constructor nor an internal tag
+    # matches no value, a Python class instance included.
+    assert is_('Widget', Widget()) is False
+    assert is_('Widget', {'a': 1}) is False
+    predicate = is_('Widget')
+    assert predicate(Widget()) is False
+    assert predicate({'a': 1}) is False
 
-    def normal_fn():
+
+def test_c44_reference_export_surface_is_present():
+    """package.json/index.ts - every runtime export of the reference package."""
+    import dsh.cordis.utils as module
+
+    expected = [
+        'contain', 'intersection', 'difference', 'union', 'deduplicate', 'remove', 'makeArray',
+        'noop', 'isNullable', 'isNonNullable', 'isPlainObject', 'filterKeys', 'mapValues',
+        'valueMap', 'pick', 'omit', 'defineProperty',
+        'capitalize', 'uncapitalize', 'camelCase', 'camelize', 'paramCase', 'hyphenate',
+        'snakeCase', 'formatProperty', 'trimSlash', 'sanitize',
+        'Time', 'is', 'Binary', 'base64ToArrayBuffer', 'arrayBufferToBase64', 'hexToArrayBuffer',
+        'arrayBufferToHex', 'clone', 'deepEqual',
+    ]
+    missing = []
+    for name in expected:
+        if name == 'is':
+            # `is` is a Python keyword: the port exposes it as `is_`.
+            resolved = module.is_
+        else:
+            resolved = getattr(module, name, None)
+        if resolved is None:
+            missing.append(name)
+    assert missing == []
+    assert getattr(Binary, 'is') is Binary.is_
+
+
+# ---------------------------------------------------------------------------
+# reference/vendor/cordis/src/utils.ts cases owned by the same module
+# ---------------------------------------------------------------------------
+
+
+def test_t1_disposable_list_identity_and_order():
+    """cordis/utils.ts:5-31 - DisposableList keeps insertion order and O(1) delete."""
+    values = DisposableList()
+    first = object()
+    second = object()
+    remove_first = values.push(first)
+    values.push(second)
+    assert len(values) == 2
+    assert list(values) == [first, second]
+    assert values.delete(first) is True
+    assert list(values) == [second]
+    assert values.delete(object()) is False
+    remove_first()
+    assert len(values) == 1
+    assert values.clear() == [second]
+    assert list(values) == []
+
+    # A bound method re-created by attribute access must still delete its entry.
+    class Host:
+        def disposer(self):
+            return None
+
+    host = Host()
+    values.push(host.disposer)
+    assert values.delete(host.disposer) is True
+    assert len(values) == 0
+
+
+def test_t1b_disposable_list_duplicate_registration_identity():
+    """cordis/utils.ts:14-25 - `weak` is a WeakMap keyed by value.
+
+    Pushing the same object twice stores the second sequence number in the
+    identity index, so `delete(value)` removes the later registration and
+    leaves the earlier one; a disposer only removes its own sequence number and
+    never rewrites the index, so once its registration is gone `delete(value)`
+    reports false for that value.
+    """
+    values = DisposableList()
+    duplicate = object()
+    first_disposer = values.push(duplicate)
+    second_disposer = values.push(duplicate)
+    assert len(values) == 2
+
+    # A disposer for the first registration must not touch the identity index.
+    assert first_disposer() is True
+    assert len(values) == 1
+    assert values.delete(duplicate) is True
+    assert len(values) == 0
+    assert second_disposer() is False
+
+    values = DisposableList()
+    duplicate = object()
+    first_disposer = values.push(duplicate)
+    second_disposer = values.push(duplicate)
+    # `weak.get(value)` reads the later sequence number, already removed.
+    assert second_disposer() is True
+    assert values.delete(duplicate) is False
+    assert len(values) == 1
+    assert first_disposer() is True
+    assert len(values) == 0
+
+
+def test_t2_get_traceable_returns_untracked_values():
+    """cordis/utils.ts:117-125 - a value without `symbols.tracker` passes through."""
+    class DummyContext:
+        pass
+
+    def plain():
         return 42
 
-    assert get_traceable(ctx, normal_fn) is normal_fn
+    def accepting_caller_ctx(caller_ctx=None):
+        return caller_ctx
+
+    context = DummyContext()
+    assert get_traceable(context, plain) is plain
+    assert get_traceable(context, 5) == 5
+    # `if (!tracker) return value` covers every callable too: the reference
+    # never wraps an untracked function, whatever its parameter list looks like.
+    assert get_traceable(context, accepting_caller_ctx) is accepting_caller_ctx
+    assert accepting_caller_ctx is get_traceable(context, accepting_caller_ctx)
+    assert get_traceable(context, object()).__class__ is object
 
 
-def test_d12_with_props_overlay():
-    """ts:cordis/utils.ts:128-140 - withProps creates overlay where props takes precedence."""
+def test_t2b_get_traceable_wraps_only_a_tracked_value():
+    """cordis/utils.ts:122-124,165-172 - `symbols.tracker` selects the wrapper.
+
+    Only a value carrying the tracker symbol enters `createTraceable`; the
+    wrapper then rebinds the tracker's property (the caller context) into the
+    calls it forwards.
+    """
+    from dsh.cordis.context import Context
+    from dsh.cordis.utils import Symbols, TracedProxy
+
+    context = Context()
+
+    class Tracked:
+        def work(self, caller_ctx=None):
+            return caller_ctx
+
+    tracked = Tracked()
+    setattr(tracked, Symbols.tracker, {'property': 'ctx'})
+    wrapped = get_traceable(context, tracked)
+    assert isinstance(wrapped, TracedProxy)
+    assert wrapped.ctx is context
+    assert wrapped.work() is context
+
+    untracked = Tracked()
+    assert get_traceable(context, untracked) is untracked
+
+
+def test_t3_with_props_overlays_writable_properties():
+    """cordis/utils.ts:128-140 - the overlay reads and writes through to props."""
     class Target:
         def __init__(self):
-            self.foo = "target_foo"
-            self.bar = "target_bar"
+            self.foo = 'target_foo'
+            self.bar = 'target_bar'
 
-    t = Target()
-    p = with_props(t, {"foo": "overlay_foo"})
-    assert p.foo == "overlay_foo"
-    assert p.bar == "target_bar"
+    target = Target()
+    assert with_props(target, None) is target
+    overlay = with_props(target, {'foo': 'overlay_foo'})
+    assert overlay.foo == 'overlay_foo'
+    assert overlay.bar == 'target_bar'
+    overlay.foo = 'written'
+    assert overlay.foo == 'written'
+    assert target.foo == 'target_foo'
 
-
-def test_d13_d14_compose_error_and_build_outer_stack():
-    """ts:cordis/utils.ts:268-287 - composeError passes info dict with offset, build_outer_stack offset."""
-    received_info = []
-
-    def action(info):
-        received_info.append(info)
-        raise ValueError("test error")
-
-    getter_0 = build_outer_stack(offset=0)
-    getter_1 = build_outer_stack(offset=1)
-    stack_0 = getter_0()
-    stack_1 = getter_1()
-    assert isinstance(stack_0, list)
-    assert isinstance(stack_1, list)
-    assert len(stack_0) - len(stack_1) == 1
-    assert stack_0[:-1] == stack_1
-
-    with pytest.raises(ValueError) as exc:
-        compose_error(action, get_outer_stack=getter_1)
-
-    assert len(received_info) == 1
-    assert "offset" in received_info[0]
-    assert hasattr(exc.value, "_outer_stack")
-    assert exc.value._outer_stack == stack_1
+    # `if (!props) return target` only skips an ECMAScript falsy props value,
+    # and an empty object is truthy: `{}` still builds the overlay proxy.
+    empty_overlay = with_props(target, {})
+    assert empty_overlay is not target
+    assert empty_overlay.foo == 'target_foo'
+    assert empty_overlay.bar == 'target_bar'
+    empty_overlay.bar = 'written_through'
+    assert empty_overlay.bar == 'written_through'
+    assert target.bar == 'written_through'
 
 
-def test_d15_is_object_slots_instance():
-    """ts:cordis/utils.ts:102-104 - isObject returns True for __slots__ instance."""
+def test_t4_is_object_rejects_primitives_only():
+    """cordis/utils.ts:102-104 - `value && (typeof value === 'object' || 'function')`."""
     class SlotClass:
-        __slots__ = ("a", "b")
+        __slots__ = ('a', 'b')
 
         def __init__(self):
             self.a = 1
             self.b = 2
 
     assert is_object(SlotClass()) is True
+    assert is_object({}) is True
+    assert is_object(lambda: 1) is True
     assert is_object(None) is False
     assert is_object(123) is False
-    assert is_object("string") is False
+    assert is_object('string') is False
+    assert is_object(True) is False
 
 
-def test_d16_cosmokit_array_helpers():
-    """ts:cosmokit/array.ts:4-41 - contain, intersection, difference, union, deduplicate, remove, make_array."""
-    assert contain([1, 2, 3], [2, 3]) is True
-    assert contain([1, 2], [2, 3]) is False
-
-    assert intersection([1, 2, 3], [2, 3, 4]) == [2, 3]
-    assert difference([1, 2, 3], [2, 3, 4]) == [1]
-    assert union([1, 2], [2, 3]) == [1, 2, 3]
-    assert deduplicate([1, 2, 1, 3, 2]) == [1, 2, 3]
-
-    arr = [1, 2, 3]
-    assert remove(arr, 2) is True
-    assert arr == [1, 3]
-    assert remove(arr, 99) is False
-
-    assert make_array(None) == []
-    assert make_array(1) == [1]
-    assert make_array([1, 2]) == [1, 2]
+def test_t5_build_outer_stack_offset_slices_the_same_frames():
+    """cordis/utils.ts:284-287 - `outerError.stack.split('\\n').slice(3 + offset)`."""
+    frames_0 = build_outer_stack(0)()
+    frames_1 = build_outer_stack(1)()
+    assert isinstance(frames_0, list)
+    assert isinstance(frames_1, list)
+    assert frames_0[:-1] == frames_1
 
 
-def test_d17_cosmokit_misc_helpers():
-    """ts:cosmokit/misc.ts - noop, is_non_nullable, is_plain_object, trim_slash, sanitize."""
-    assert noop() is None
-    assert is_non_nullable(None) is False
-    assert is_non_nullable(0) is True
-    assert is_non_nullable("") is True
+def test_t6_compose_error_attaches_the_outer_stack():
+    """cordis/utils.ts:268-282 - composeError splices outer frames into the error."""
+    seen = []
 
-    assert is_plain_object({"a": 1}) is True
-    assert is_plain_object([1, 2]) is False
-    assert is_plain_object(None) is False
+    def action(info):
+        seen.append(info)
+        raise ValueError('test error')
 
-    from dsh.cordis.utils import format_property
-    assert trim_slash("/foo/bar/") == "/foo/bar"
-    assert trim_slash("///foo///") == "///foo//"
-    assert trim_slash("foo/bar") == "foo/bar"
-    assert sanitize("foo/bar/") == "/foo/bar"
-    assert sanitize("/foo/bar") == "/foo/bar"
-
-    assert format_property("foo") == ".foo"
-    assert format_property("foo-bar") == '["foo-bar"]'
-    assert format_property(0) == "[0]"
+    get_outer = build_outer_stack(1)
+    with pytest.raises(ValueError, match='test error') as excinfo:
+        compose_error(action, get_outer_stack=get_outer)
+    assert len(seen) == 1
+    assert seen[0]['offset'] == 1
+    assert excinfo.value._outer_stack == get_outer()
 
 
-def test_plugin_metadata_and_apply_signature():
-    """ts:cordis/registry.ts:100-111 - Plugin base class metadata attributes and apply signature."""
-    p = Plugin()
-    assert hasattr(p, "provide")
-    assert hasattr(p, "intercept")
-    assert hasattr(p, "Config")
+def test_t7_plugin_metadata_and_apply_signature():
+    """cordis/registry.ts:100-111 - Plugin base class metadata attributes."""
+    plugin = Plugin()
+    assert hasattr(plugin, 'provide')
+    assert hasattr(plugin, 'intercept')
+    assert hasattr(plugin, 'Config')
 
-    # apply accepts config
     class SamplePlugin(Plugin):
         def apply(self, ctx, config=None):
-            return "applied"
+            return 'applied'
 
-    sp = SamplePlugin()
-    assert sp.apply(None, {"key": "val"}) == "applied"
+    assert SamplePlugin().apply(None, {'key': 'val'}) == 'applied'
+
+
+def test_c52_own_key_order_follows_ecmascript():
+    """misc.ts:39-70, types.ts:88-116 - `Object.keys`/spread/`Reflect.ownKeys` order.
+
+    OrdinaryOwnPropertyKeys enumerates array index keys (canonical numeric
+    strings below 2**32 - 1) in ascending order before the remaining keys in
+    creation order, so every helper that rebuilds an object enumerates that way
+    whatever order its keys arrived in (Node oracle values below).
+    """
+    source = {'b': 1, '2': 2, 'a': 3, '1': 4}
+    assert list(filterKeys(source, lambda k, v: True)) == ['1', '2', 'b', 'a']
+    assert list(map_values(source, lambda v: v)) == ['1', '2', 'b', 'a']
+    assert list(pick(source)) == ['1', '2', 'b', 'a']
+    assert list(pick(source, ['b', '2', 'a', '1'])) == ['1', '2', 'b', 'a']
+    assert list(omit(source, ['a'])) == ['1', '2', 'b']
+    assert list(clone(source)) == ['1', '2', 'b', 'a']
+    # A clone reorders the nested objects as well.
+    nested = clone({'z': {'2': 1, 'a': 2}, '1': 3})
+    assert list(nested) == ['1', 'z']
+    assert list(nested['z']) == ['2', 'a']
+    # Only canonical indices count, and 2**32 - 1 is not one.
+    bounds = filterKeys({'4294967295': 1, '0': 2, '4294967294': 3, '4294967296': 4},
+                        lambda k, v: True)
+    assert list(bounds) == ['0', '4294967294', '4294967295', '4294967296']
+    assert list(filterKeys({'10': 1, '9': 2, 'z': 3, '01': 4, '1.5': 5, '-1': 6, '0': 7},
+                           lambda k, v: True)) == ['0', '9', '10', 'z', '01', '1.5', '-1']
+    # A forced key the source lacks is ordered too, and keeps the undefined read.
+    missing = pick({'b': 1}, ['b', '2'], True)
+    assert list(missing) == ['2', 'b']
+    assert missing['2'] is _UNDEFINED
+    # Own attributes of a class instance enumerate the same way.
+    holder = _Widget()
+    holder.w = 1
+    holder.b = 1
+    setattr(holder, '2', 2)
+    holder.a = 3
+    setattr(holder, '1', 4)
+    assert list(filterKeys(holder, lambda k, v: True)) == ['1', '2', 'w', 'b', 'a']
+
+# ---------------------------------------------------------------------------
+# types.ts: is() Proxy behavior
+# ---------------------------------------------------------------------------
+
+
+def test_c53_is_proxy_throws_for_an_object_operand():
+    """types.ts:8-16 - `Proxy` is in the typed domain but has no prototype.
+
+    The reference evaluates `value instanceof globalThis[type]` for every
+    constructor name in `GlobalConstructorNames`, and `Proxy.prototype` is
+    `undefined`, so the lookup throws for an object operand.  A primitive
+    operand answers false without the lookup (`InstanceofOperator` returns
+    false when the left operand is not an object).  Node 22 oracle:
+    `is('Proxy', {})` and `is('Proxy')({})` both throw
+    `TypeError: Function has non-object prototype 'undefined' in instanceof
+    check`, while `is('Proxy', null|undefined|5|'a'|true)` is false.
+    """
+    for operand in ({}, [], (), object(), _Widget(), Time):
+        with pytest.raises(TypeError) as caught:
+            is_('Proxy', operand)
+        assert str(caught.value) == (
+            "Function has non-object prototype 'undefined' in instanceof check")
+        with pytest.raises(TypeError):
+            is_('Proxy')(operand)
+    for operand in (None, _UNDEFINED, 5, 1.5, 'a', True):
+        assert is_('Proxy', operand) is False
+
+
+# ---------------------------------------------------------------------------
+# time.ts: V8's non-ISO date grammar
+# ---------------------------------------------------------------------------
+
+
+def _assert_legacy_table(cases):
+    """Assert `Time.parseDate` on each `(source, expected)` pair.
+
+    `None` means the reference answers an Invalid Date, which this port
+    renders as `new Date()` (see `_assert_now`).  Every expected value is the
+    `new Date(string)` result the pinned Node 22 runtime produces, read
+    through `new Date().toLocaleDateString()`-free inputs.
+    """
+    for source, expected in cases:
+        value = Time.parseDate(source)
+        if expected is None:
+            _assert_now(value)
+            continue
+        assert value == expected, '%r -> %s' % (source, value)
+
+
+def test_c54_parse_date_legacy_number_assignment():
+    """time.ts:36-61 - V8's positional month/day/year assignment.
+
+    Reference `new Date(string)` reads at most three numbers; without a month
+    name they name month, day and year, a leading 0 or a leading number past
+    31 is the year instead (so `13` alone names no month at all), a missing
+    day is 1 and a missing year is 2001, and a two-digit year takes the
+    century V8 gives it (0-49 is 20xx, 50-99 is 19xx).  A fourth number ends
+    the string as an Invalid Date.
+    """
+    _assert_legacy_table((
+        ('5', datetime.datetime(2001, 5, 1)),
+        ('12', datetime.datetime(2001, 12, 1)),
+        ('13', None),
+        ('31', None),
+        ('32', datetime.datetime(2032, 1, 1)),
+        ('50', datetime.datetime(1950, 1, 1)),
+        ('99', datetime.datetime(1999, 1, 1)),
+        ('100', datetime.datetime(100, 1, 1)),
+        ('0', datetime.datetime(2000, 1, 1)),
+        ('3-5', datetime.datetime(2001, 3, 5)),
+        ('3-5-2026', datetime.datetime(2026, 3, 5)),
+        ('5-3-2026', datetime.datetime(2026, 5, 3)),
+        ('1-2-3', datetime.datetime(2003, 1, 2)),
+        ('12-5-3', datetime.datetime(2003, 12, 5)),
+        ('1-1-0', datetime.datetime(2000, 1, 1)),
+        ('0-1-2', datetime.datetime(2000, 1, 2)),
+        ('50-5-3', datetime.datetime(1950, 5, 3)),
+        ('2026-5-3', datetime.datetime(2026, 5, 3)),
+        # A leading 0 or a number past 31 is the year, so the second number
+        # becomes the month and a day past 31 is out of range.
+        ('5-2026', None),
+        ('13-5', None),
+        ('1-0-2', None),
+        ('1-2-3-4', None),
+        ('Jan 32 2026', None),
+        ('Jan 5 32', datetime.datetime(2032, 1, 5)),
+        # A month name moves the numbers to day and year, and a full date
+        # ignores one further number (a fourth ends the string).
+        ('Jan 5', datetime.datetime(2001, 1, 5)),
+        ('Jan 2026', datetime.datetime(2026, 1, 1)),
+        ('2026 5 Jan', datetime.datetime(2026, 1, 5)),
+        ('5 2026 Jan', datetime.datetime(2026, 1, 5)),
+        ('Jan 5 2026 12', datetime.datetime(2026, 1, 5)),
+        ('Jan 5 2026 2027', datetime.datetime(2026, 1, 5)),
+        # Every separator V8 skips reads the same numbers.
+        ('2026-3-5', datetime.datetime(2026, 3, 5)),
+        ('2026/3/5', datetime.datetime(2026, 3, 5)),
+        ('2026.3.5', datetime.datetime(2026, 3, 5)),
+        ('2026,3,5', datetime.datetime(2026, 3, 5)),
+        ('1.2.3', datetime.datetime(2003, 1, 2)),
+        ('0.0', None),
+    ))
+
+
+def test_c55_parse_date_legacy_names_and_words():
+    """time.ts:36-61 - V8's word handling in the non-ISO grammar.
+
+    A word names a month when it starts with the three-letter month name
+    (`Janu`, `Janx` and `JANUARY` all name January, while `Ja` and the
+    ambiguous `Ju` name nothing), an unknown word is ignored only before any
+    number or clock time (`new Date("abc Mar 5 2026")` is valid, `new
+    Date("Mar 5 2026 xyz")` is not), and a digit glued to a word that is not a
+    month is not a number V8 reads (`Mar5` is March 5 but `GMT5` and `x5` are
+    Invalid).
+    """
+    _assert_legacy_table((
+        ('Mar 5 2026', datetime.datetime(2026, 3, 5)),
+        ('mar 5 2026', datetime.datetime(2026, 3, 5)),
+        ('JANUARY 5 2026', datetime.datetime(2026, 1, 5)),
+        ('Janu 5 2026', datetime.datetime(2026, 1, 5)),
+        ('Janx 5 2026', datetime.datetime(2026, 1, 5)),
+        ('Marc 5 2026', datetime.datetime(2026, 3, 5)),
+        ('Jule 5 2026', datetime.datetime(2026, 7, 5)),
+        ('Ja 5 2026', None),
+        ('Ju 5 2026', None),
+        ('Mar 5 2026 March', datetime.datetime(2026, 3, 5)),
+        ('5-Jan-2026', datetime.datetime(2026, 1, 5)),
+        ('Mar5 2026', datetime.datetime(2026, 3, 5)),
+        ('5Jan 2026', datetime.datetime(2026, 1, 5)),
+        ('Jan5', datetime.datetime(2001, 1, 5)),
+        ('abc Mar 5 2026', datetime.datetime(2026, 3, 5)),
+        ('Mar abc 5 2026', datetime.datetime(2026, 3, 5)),
+        ('Mon Mar 5 2026', datetime.datetime(2026, 3, 5)),
+        ('Mar 5 abc 2026', None),
+        ('Mar 5 2026 Mon', None),
+        ('Mar 5 2026 xyz', None),
+        ('GMT5', None),
+        ('x5', None),
+        ('abc5', None),
+    ))
+
+
+def test_c56_parse_date_legacy_clock_grammar():
+    """time.ts:36-61 - V8's clock, am/pm and colon handling.
+
+    `H:M[:S[.ms]]` is a clock time; its minute or second past 59 ends the
+    clock at the preceding part and leaves the run as a number (so `12:99` is
+    12:00), `24:00` rolls into the next day while any other 24:x is Invalid,
+    an hour past 24 is not a clock hour at all, a colon after a four-digit
+    number is a separator (`2026:1`), and a digit glued to a clock makes the
+    string Invalid (`12:30PM`) unless it is an am/pm marker (`12:30 PM`,
+    which `12:30 PM5` shows may carry a number).
+    """
+    _assert_legacy_table((
+        ('Mar 5 2026 12:30', datetime.datetime(2026, 3, 5, 12, 30)),
+        ('Mar 5 2026 12:30:45', datetime.datetime(2026, 3, 5, 12, 30, 45)),
+        ('Mar 5 2026 12:30:45.678', datetime.datetime(2026, 3, 5, 12, 30, 45, 678000)),
+        ('Mar 5 2026 12:30:45.6789', datetime.datetime(2026, 3, 5, 12, 30, 45, 678000)),
+        ('Mar 5 2026 12:', datetime.datetime(2026, 3, 5, 12, 0)),
+        ('Mar 5 2026 24:00', datetime.datetime(2026, 3, 6, 0, 0)),
+        ('Mar 5 2026 24:01', None),
+        ('Mar 5 2026 25:00', None),
+        ('Mar 5 2026 12:99', datetime.datetime(2026, 3, 5, 12, 0)),
+        ('Mar 5 2026 12:3456', datetime.datetime(2026, 3, 5, 12, 0)),
+        ('Mar 5 2026 12:34:5678', datetime.datetime(2026, 3, 5, 12, 34)),
+        ('Mar 5 2026 12:30 PM', datetime.datetime(2026, 3, 5, 12, 30)),
+        ('Mar 5 2026 12:30 pm', datetime.datetime(2026, 3, 5, 12, 30)),
+        ('Mar 5 2026 0:30 pm', datetime.datetime(2026, 3, 5, 12, 30)),
+        ('Mar 5 2026 12:00 am', datetime.datetime(2026, 3, 5, 0, 0)),
+        ('Mar 5 2026 12:30 AM PM', datetime.datetime(2026, 3, 5, 12, 30)),
+        ('Mar 5 2026 12:30 PM5', datetime.datetime(2026, 3, 5, 12, 30)),
+        ('Mar 5 2026 12:30PM', None),
+        ('Mar 5 2026 13:30 pm', None),
+        ('Mar 5 2026 12 AM', None),
+        ('2026:1', datetime.datetime(2026, 1, 1)),
+        ('2026:3:5', datetime.datetime(2026, 1, 1, 3, 5)),
+        ('100:1', None),
+    ))
+    # A clock-only string is the reference's own rewrite with today's date.
+    now = datetime.datetime.now()
+    assert Time.parseDate('12:30') == now.replace(
+        hour=12, minute=30, second=0, microsecond=0)
+    assert Time.parseDate('12:30:45') == now.replace(
+        hour=12, minute=30, second=45, microsecond=0)
+
+
+def test_c57_parse_date_legacy_punctuation_and_signs():
+    """time.ts:36-61 - V8's punctuation, parenthesis and sign handling.
+
+    Symbols outside V8's separator set are unknown words: ignored before the
+    date and Invalid after it (`new Date(")Mar 5 2026")` is valid while `new
+    Date("Mar 5 2026 )")` is not), such a word glued to a letter or digit is
+    not a token at all (`_5 2026`, `~Mar 5 2026`), a parenthesis skips nested
+    text to its match, and a sign is a separator where it follows a number or
+    a word but is otherwise legal only in the leading position.
+    """
+    _assert_legacy_table((
+        ('Mar 5 2026 ((x))', datetime.datetime(2026, 3, 5)),
+        ('Mar 5 2026 (x', datetime.datetime(2026, 3, 5)),
+        ('Mar (5) 2026', datetime.datetime(2026, 3, 1)),
+        ('(Mar 5 2026)', None),
+        (')Mar 5 2026', datetime.datetime(2026, 3, 5)),
+        ('Mar)5 2026', datetime.datetime(2026, 3, 5)),
+        (')5', datetime.datetime(2001, 5, 1)),
+        (')5 2026', None),
+        ('Mar 5 2026 )', None),
+        ('Mar 5 2026 5)', None),
+        ('_5 2026', None),
+        ('Mar_5_2026', None),
+        ('~Mar 5 2026', None),
+        ('_ Mar 5 2026', datetime.datetime(2026, 3, 5)),
+        ('~~~ Mar 5 2026', datetime.datetime(2026, 3, 5)),
+        ('Mar _ 5 2026', datetime.datetime(2026, 3, 5)),
+        ('Mar 5 2026 _', None),
+        ('Mar 5 2026 ~~', None),
+        ('Mar#5#2026', datetime.datetime(2026, 3, 5)),
+        ('Mar,5,2026', datetime.datetime(2026, 3, 5)),
+        ('Mar 5 2026 5/', datetime.datetime(2026, 3, 5)),
+        ('Mar 5 2026 12:30:45.678,', datetime.datetime(2026, 3, 5, 12, 30, 45, 678000)),
+        ('Mar 5 2026 12:30/', None),
+        ('Mar 5 2026 12:30.', None),
+        ('Mar 5 2026 12:30.5', None),
+        ('-5-3', datetime.datetime(2001, 5, 3)),
+        ('1- 2', datetime.datetime(2001, 1, 2)),
+        ('-Mar 5 2026', datetime.datetime(2026, 3, 5)),
+        ('Mar -5 2026', datetime.datetime(2026, 3, 5)),
+        ('Mar+5 2026', datetime.datetime(2026, 3, 5)),
+        ('5 +3', None),
+        ('1 -2', None),
+        ('0+1', None),
+        ('Mar+5+2026', None),
+        ('Mar 5 2026 +', None),
+        ('Mar 5 2026 -', None),
+    ))
+
+
+def test_c58_parse_date_legacy_zone_grammar():
+    """time.ts:36-61 - V8's timezone names and numeric offsets.
+
+    Only `UT`, `UTC`, `GMT`, `EST`/`EDT`, `CST`/`CDT`, `MST`/`MDT`,
+    `PST`/`PDT` and `Z`/`z` are timezone words (`CET` is an ordinary word),
+    they must be delimited (`new Date("GMT/50")` names January 1950), an
+    offset applies to the wall clock they name, and the zero zones may carry
+    an offset with no clock time while the named ones may not (`Mar 5 2026
+    EST+0200` is Invalid but `EST` with a clock is not).  A sign after a
+    non-zero zone with no clock is not an offset either.
+    """
+    _assert_legacy_table((
+        ('Mar 5 2026 GMT', datetime.datetime(2026, 3, 5, 8, 0)),
+        ('Mar 5 2026 UTC', datetime.datetime(2026, 3, 5, 8, 0)),
+        ('Mar 5 2026 EST', datetime.datetime(2026, 3, 5, 13, 0)),
+        ('Mar 5 2026 PDT', datetime.datetime(2026, 3, 5, 15, 0)),
+        ('Mar 5 2026 CET', None),
+        ('Mar 5 2026 GMT+0200', datetime.datetime(2026, 3, 5, 6, 0)),
+        ('Mar 5 2026 GMT-05:00', datetime.datetime(2026, 3, 5, 13, 0)),
+        ('Mar 5 2026 UT+0200', datetime.datetime(2026, 3, 5, 6, 0)),
+        ('Mar 5 2026 EST+0200', None),
+        ('Mar 5 2026 12:30 EST+0200', datetime.datetime(2026, 3, 5, 18, 30)),
+        ('Mar 5 2026 GMT 12:30', datetime.datetime(2026, 3, 5, 20, 30)),
+        ('Mar 5 2026 12:30 GMT', datetime.datetime(2026, 3, 5, 20, 30)),
+        ('Mar 5 2026 12:30Z', datetime.datetime(2026, 3, 5, 20, 30)),
+        ('Mar 5 2026 12:30z', datetime.datetime(2026, 3, 5, 20, 30)),
+        ('Mar 5 2026 GMT z', datetime.datetime(2026, 3, 5, 8, 0)),
+        ('Mar 5 2026 GMT)', None),
+        ('GMT/50', datetime.datetime(1950, 1, 1)),
+        ('1Z2', datetime.datetime(2001, 1, 2, 8, 0)),
+        ('Z 5', datetime.datetime(2001, 5, 1)),
+        ('Z5', None),
+        # A leading `GMT+0200` names the year 200 rather than a timezone.
+        ('GMT+0200', datetime.datetime(200, 1, 1)),
+        ('GMT+0200 5', datetime.datetime(200, 5, 1)),
+        ('Jan 5 GMT+0200', datetime.datetime(2001, 1, 5, 6, 0)),
+        ('Mar 5 2026 +0200', None),
+        ('Mar 5 2026 12:30 +0200', datetime.datetime(2026, 3, 5, 18, 30)),
+        ('Mar 5 2026 12:30-0800', datetime.datetime(2026, 3, 6, 4, 30)),
+    ))
+
+
+def _zoned_wall_clock(*utc_fields):
+    """The local naive value this port renders for a UTC instant.
+
+    The reference applies V8's timezone database, whose offsets vary over
+    time; the port reads the current offset for every year
+    (LEGAL_ADAPTATION), so the expected local value is derived from the
+    current offset rather than from the platform's historical data.
+    """
+    offset = -time.timezone
+    if time.daylight and time.localtime().tm_isdst:
+        offset = -time.altzone
+    return (datetime.datetime(1970, 1, 1)
+            + datetime.timedelta(seconds=calendar.timegm(utc_fields) + offset))
+
+
+def test_c60_parse_date_legacy_clock_slot_expectancy():
+    """time.ts:36-61 - V8 keeps its day, time and zone composers alive for the
+    whole string and consults them before a number becomes a date component.
+
+    `n::` and `n:` add the number to the clock time, and a colon that opens no
+    clock part leaves the number to the composer that still expects it: `12: 5
+    6` reads the 5 as the minute rather than the month, and a number past 59
+    becomes the year once the minute slot no longer wants it (`12: 60` is the
+    year 1960).  A zone word or a glued `Z` is recorded while `has_read_number`
+    holds, so `12:Z0` is Invalid (the clock stays unfinished, and the trailing
+    number never reaches the day composer) while `12:Z0 1` is the year 2001 at
+    20:00.  A number that arrives after the clock was finalized is refused by
+    the trailing-token check, so token order matters: `5 12:Z0 2026` is
+    Invalid while `12:Z0 2026 5` is not.
+    """
+    _assert_legacy_table((
+        # The clock time is incomplete and no date component was read.
+        ('12:', None),
+        ('12: ', None),
+        ('12: 1', None),
+        ('12: 5', None),
+        ('12: 59', None),
+        ('12: 0', None),
+        ('12: 00', None),
+        ('12: 24', None),
+        ('12: 25', None),
+        ('12:Z', None),
+        ('12:z', None),
+        ('12:Z0', None),
+        ('12:Z00', None),
+        ('12:Z001', None),
+        ('12:Z 0', None),
+        ('12:Z0 GMT', None),
+        ('12:Z0 Z', None),
+        ('12:00:Z0', None),
+        ('12:00:00:Z0', None),
+        ('12: 5.', None),
+        ('12: 5.5', None),
+        # A number the minute slot refuses is the year instead.
+        ('12: 60', datetime.datetime(1960, 1, 1, 12, 0)),
+        ('12: 61', datetime.datetime(1961, 1, 1, 12, 0)),
+        ('12: 100', datetime.datetime(100, 1, 1, 12, 0)),
+        # The minute slot takes the next number, the rest name the date.
+        ('12: 5 6', datetime.datetime(2001, 6, 1, 12, 5)),
+        ('12: 5 6 7', datetime.datetime(2001, 6, 7, 12, 5)),
+        ('12: 0 1', datetime.datetime(2001, 1, 1, 12, 0)),
+        ('12: 59 59', datetime.datetime(1959, 1, 1, 12, 59)),
+        ('12: 5 2026', datetime.datetime(2026, 1, 1, 12, 5)),
+        ('12: 2026 5', datetime.datetime(2026, 1, 1, 12, 5)),
+        ('12: 2026 59', datetime.datetime(2026, 1, 1, 12, 59)),
+        ('12: 2026 5 7', datetime.datetime(2026, 7, 1, 12, 5)),
+        # A second colon adds the seconds slot, and the number after it fills
+        # it: `12:00: 2026` is 12:00:05 rather than May 2026.
+        ('12:00: 2026 5', datetime.datetime(2026, 1, 1, 12, 0, 5)),
+        ('12:00::2026', None),
+        # The glued zone and the completed clock time.
+        ('12:Z0 1', _zoned_wall_clock(2001, 1, 1, 12, 0, 0)),
+        ('12:Z0 5', _zoned_wall_clock(2001, 5, 1, 12, 0, 0)),
+        ('12:Z0 2026 5', _zoned_wall_clock(2026, 5, 1, 12, 0, 0)),
+        ('12:Z0 1 2 3', _zoned_wall_clock(2003, 1, 2, 12, 0, 0)),
+        ('12:Z 1 2 3', _zoned_wall_clock(2001, 2, 3, 12, 1, 0)),
+        ('12:Z01234', _zoned_wall_clock(1234, 1, 1, 12, 0, 0)),
+        ('12:Z 1234', _zoned_wall_clock(1234, 1, 1, 12, 0, 0)),
+        ('12:00:Z0 2026', _zoned_wall_clock(2026, 1, 1, 12, 0, 0)),
+        ('12:00:Z0 2026 5', _zoned_wall_clock(2026, 5, 1, 12, 0, 0)),
+        ('2026 12:00:Z0', _zoned_wall_clock(2026, 1, 1, 12, 0, 0)),
+        ('5 12:Z0', _zoned_wall_clock(2001, 5, 1, 12, 0, 0)),
+        ('Mar 5 2026 12:GMT', _zoned_wall_clock(2026, 3, 5, 12, 0, 0)),
+        # A completed clock leaves no slot expecting the glued number, so it is
+        # the month: `12:00Z9` is September 2001.
+        ('12:00Z9', _zoned_wall_clock(2001, 9, 1, 12, 0, 0)),
+        ('12:00Z 9', _zoned_wall_clock(2001, 9, 1, 12, 0, 0)),
+        ('12:30:45.6z2026',
+         _zoned_wall_clock(2026, 1, 1, 12, 30, 45) + datetime.timedelta(milliseconds=600)),
+        # The trailing-token check makes the order matter: a number that
+        # arrives after the clock was finalized is refused, while the same
+        # numbers before it are the date the clock time completes.
+        ('5 12:Z0 2026', None),
+        ('2026 5 12:Z0', _zoned_wall_clock(2026, 5, 1, 12, 0, 0)),
+    ))
+
+
+def test_c61_parse_date_word_boundary_whitespace_and_line_terminators():
+    """time.ts:36-61 - V8 skips line terminators between tokens but only the
+    WhiteSpace characters end a word.
+
+    `SkipWhiteSpace` accepts `IsWhiteSpaceOrLineTerminator`, while the word
+    scanner tests `IsWhiteSpace` alone, so U+2028 and U+2029 continue a word:
+    `Mar<U+2028>5<U+2028>2026` is the single word `mar<U+2028>` (which names
+    November) followed by a number, and a garbage word after the first number
+    is Invalid.  U+200B is neither a WhiteSpace nor a line terminator
+    character, so it is part of the word for the same reason.
+    """
+    _assert_legacy_table((
+        ('Mar\u20285\u20282026', None),
+        ('5\u2028Mar\u20282026', None),
+        ('Mar\u20295\u20292026', None),
+        ('Mar\u200b5\u200b2026', None),
+        # The line separators are still skipped between tokens.
+        ('Mar\u2028 5 2026', datetime.datetime(2026, 3, 5)),
+        ('Mar\u2029 5 2026', datetime.datetime(2026, 3, 5)),
+        # Every WhiteSpace character separates the words.
+        ('Mar 5 2026', datetime.datetime(2026, 3, 5)),
+        ('Mar\t5\t2026', datetime.datetime(2026, 3, 5)),
+        ('Mar\v5\v2026', datetime.datetime(2026, 3, 5)),
+        ('Mar\f5\f2026', datetime.datetime(2026, 3, 5)),
+        ('Mar\r\n5 2026', datetime.datetime(2026, 3, 5)),
+        ('Mar\u00a05\u00a02026', datetime.datetime(2026, 3, 5)),
+        ('Mar\u16805 2026', datetime.datetime(2026, 3, 5)),
+        ('Mar\u20005\u20002026', datetime.datetime(2026, 3, 5)),
+        ('Mar\u202f5\u202f2026', datetime.datetime(2026, 3, 5)),
+        ('Mar\u205f5\u205f2026', datetime.datetime(2026, 3, 5)),
+        ('Mar\u30005\u30002026', datetime.datetime(2026, 3, 5)),
+        ('Mar\ufeff5\ufeff2026', datetime.datetime(2026, 3, 5)),
+    ))

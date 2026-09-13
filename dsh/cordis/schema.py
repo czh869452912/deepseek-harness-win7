@@ -11,6 +11,11 @@ import math
 import re
 from typing import Any, Callable, Dict, Iterator, List, Optional, Set, Tuple, Union
 
+# index.ts:1 imports `deepEqual` from @deepseek-ai/cosmokit, so the schema port
+# consumes the one canonical comparison the rest of the port already carries
+# (utils.py mirrors cosmokit src/types.ts:118-142) rather than a private copy.
+from dsh.cordis.utils import _UNDEFINED, deep_equal
+
 __schemastery_index__ = 0
 
 
@@ -62,40 +67,6 @@ class ValidationError(TypeError):
         full_msg = msg_str if prefix == "$" else f"{prefix} {msg_str}"
         super().__init__(full_msg)
         self.message = full_msg
-
-
-def deep_equal(a: Any, b: Any, is_dict: bool = False) -> bool:
-    if a is b:
-        return True
-    if not is_dict and is_nullable(a) and is_nullable(b):
-        return True
-    if isinstance(a, bool) != isinstance(b, bool):
-        return False
-    if isinstance(a, re.Pattern) and isinstance(b, re.Pattern):
-        return a.pattern == b.pattern and a.flags == b.flags
-    if isinstance(a, (int, float)) and isinstance(b, (int, float)):
-        return a == b
-    if isinstance(a, dict) and isinstance(b, dict):
-        if is_dict:
-            if len(a) != len(b):
-                return False
-            for k in a:
-                if k not in b or not deep_equal(a[k], b[k], is_dict=True):
-                    return False
-            return True
-        keys = set(a.keys()) | set(b.keys())
-        for k in keys:
-            if not deep_equal(a.get(k), b.get(k), is_dict=False):
-                return False
-        return True
-    if isinstance(a, (list, tuple)) and isinstance(b, (list, tuple)):
-        if len(a) != len(b):
-            return False
-        for x, y in zip(a, b):
-            if not deep_equal(x, y, is_dict=is_dict):
-                return False
-        return True
-    return a == b
 
 
 def is_nullable(val: Any) -> bool:
@@ -384,9 +355,17 @@ class Schema:
         return s
 
     def simplify(self, value: Any = None) -> Any:
-        """Strip values equal to default schema values matching TS Schema.simplify()."""
-        default_val = self.meta.get("default")
-        if default_val is not None and deep_equal(value, default_val, self.type == "dict"):
+        """Strip values equal to default schema values matching TS Schema.simplify().
+
+        index.ts:408/417 compare unconditionally against ``this.meta.default``,
+        which is ``undefined`` when the schema never set one, so the port reads
+        the missing meta key as its ``undefined`` sentinel rather than skipping
+        the comparison.  The third argument is the reference's ``strict`` flag
+        (``this.type === 'dict'``), which cosmokit forwards into the object
+        fallback (types.ts:141) but not into array elements (types.ts:129).
+        """
+        default_val = self.meta.get("default", _UNDEFINED)
+        if deep_equal(value, default_val, self.type == "dict"):
             return None
         if is_nullable(value):
             return value
@@ -402,7 +381,7 @@ class Schema:
                 item = schema.simplify(v) if schema else v
                 if self.type == "dict" or not is_nullable(item):
                     res[k] = item
-            if default_val is not None and deep_equal(res, default_val, self.type == "dict"):
+            if deep_equal(res, default_val, self.type == "dict"):
                 return None
             return res
         elif self.type in ("array", "tuple"):

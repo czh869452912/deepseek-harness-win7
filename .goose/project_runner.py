@@ -429,6 +429,7 @@ class Project:
             if binding.exists():
                 evidence = json.loads(binding.read_text(encoding="utf-8"))
                 if (evidence["files"] == snapshot(agent.root) and evidence["scope"] == agent.args.task_contract and
+                        (phase not in ('integrate', 'integration_review') or evidence.get('feedback_signature') == digest(feedback)) and
                         (phase == "migrate" or evidence.get("head") == git(agent.root, "rev-parse", "HEAD"))):
                     return parse_result(result_path.read_text(encoding="utf-8"), phase)
             # Current files or acceptance scope changed. Old results are retained, not reused.
@@ -439,7 +440,7 @@ class Project:
             start = agent.run_dir / (stem + ".start.json")
             completion = agent.run_dir / (stem + ".completion.json")
             logs = list(agent.run_dir.glob(stem + "*.events.jsonl"))
-            if start.exists() and completion.exists() and logs:
+            if start.exists() and completion.exists() and logs and phase not in ('integrate', 'integration_review'):
                 bound = json.loads(start.read_text(encoding="utf-8"))
                 completed = json.loads(completion.read_text(encoding="utf-8"))
                 latest = max(logs, key=lambda p: p.stat().st_mtime_ns)
@@ -482,6 +483,10 @@ class Project:
         try:
             record = group["records"][0]
             feedback = json.loads(record["feedback"]) if record["feedback"] else None
+            if feedback and feedback.get('integration_handoff'):
+                agent = self.task_runner(group)
+                self.execute_integration(group, agent, feedback)
+                return
             if feedback and feedback.get('plan_error') and feedback.get('proposed_work_plan'):
                 self.store.update(group, 'PLAN_REPAIR', feedback=feedback, error=feedback['plan_error'])
                 return
@@ -585,6 +590,45 @@ class Project:
                 save_json(agent.run_dir / "status.json", agent.state)
             self.show()
 
+    def execute_integration(self, group, agent, feedback):
+        """Exclusive repair of the retained combination, followed by impact review."""
+        handoff = feedback['integration_handoff']
+        hashes = self.store.contract_hashes()
+        agent.state['round'] = agent.state['round'] or 1
+        if handoff.get('needs_decision') and not feedback.get('contract_decision'):
+            decision = self.cached_phase(agent, 'judge', feedback)
+            if decision['status'] == 'BLOCKED' or judge_verdict(decision) in (None, 'BLOCKED'):
+                self.store.update(group, 'NEEDS_ARBITRATION', feedback=dict(feedback, judgment=decision),
+                                  error='Integration contract remains unresolved; combined candidate retained')
+                return
+            feedback['contract_decision'] = decision
+            self.store.update(group, feedback=feedback)
+        repair = self.cached_phase(agent, 'integrate', feedback)
+        feedback['integration_repair'] = repair
+        peers = self.store.observe_writes(group, valid_changed_files(agent.root, repair['changed_files']))
+        if peers:
+            self.store.update(group, 'INTEGRATION_REPAIR', feedback=feedback,
+                              error='Integration waits for affected writers: ' + ', '.join(peers))
+            return
+        ok = agent.verify_chunk(repair)
+        if ok:
+            agent.checkpoint(repair)
+        feedback['affected_paths'] = sorted(set(handoff.get('affected_paths', [])) | set(repair['changed_files']))
+        review = self.cached_phase(agent, 'integration_review', feedback)
+        feedback['integration_review'] = review
+        if 'ESCALATE' in (repair['status'], review['status']):
+            self.store.update(group, 'NEEDS_ARBITRATION', feedback=feedback,
+                              error='Integrator requested a shared-contract decision; do not restart source migration')
+            return
+        if not ok or repair['status'] != 'READY' or review['status'] != 'PASS' or open_issues(repair):
+            self.store.update(group, 'INTEGRATION_REPAIR', feedback=feedback,
+                              round=agent.state['round'] + 1, error='Repair affected integration findings only')
+            return
+        if git(agent.root, 'status', '--porcelain'):
+            raise ValueError('Integration repair is not checkpointed; preserve candidate')
+        self.store.update(group, 'VERIFIED', feedback=feedback, head=git(agent.root, 'rev-parse', 'HEAD'))
+        self.merge(group, agent, hashes, review)
+
     def baseline_requires_review(self, group, base, tip, review):
         """Conservative impact check; unknown consumed mappings require fresh review."""
         if base == tip:
@@ -622,9 +666,9 @@ class Project:
             git(path, "commit", "-m", "chore(parity): integration candidate " + ", ".join(group["ids"]))
         return path, conflicts
 
-    def apply_proposals(self):
+    def apply_proposals(self, only_task=None):
         rows = self.store.rows()
-        owners = {r["owner"] for r in rows if r["state"] == "WAITING_PLAN"}
+        owners = {r["owner"] for r in rows if r["state"] == "WAITING_PLAN" and (only_task is None or r['id'] == only_task)}
         for owner in owners:
             members = [r for r in rows if r["owner"] == owner]
             group = {"ids": [r["id"] for r in members], "token": owner}
@@ -648,10 +692,10 @@ class Project:
             feedback.pop("plan_error", None)
             self.store.update(group, "READY", feedback=feedback, error=None)
 
-    def repair_plans(self):
+    def repair_plans(self, only_task=None):
         """Repair graph data only. Never send a schema error back to implementation."""
         rows = self.store.rows()
-        owners = {r['owner'] for r in rows if r['state'] == 'PLAN_REPAIR'}
+        owners = {r['owner'] for r in rows if r['state'] == 'PLAN_REPAIR' and (only_task is None or r['id'] == only_task)}
         for owner in owners:
             members = [r for r in rows if r['owner'] == owner]
             group = {'ids': [r['id'] for r in members], 'token': owner}
@@ -706,7 +750,7 @@ class Project:
                 feedback['proposed_work_plan'] = corrected
                 feedback['plan_repair_config'] = config_revision(config)
                 self.store.update(group, 'WAITING_PLAN', feedback=feedback, error=None)
-                self.apply_proposals()
+                self.apply_proposals(only_task) if only_task else self.apply_proposals()
             except InterruptedError:
                 feedback['plan_repair_attempts'] = attempts
                 self.store.update(group, 'PLAN_REPAIR', feedback=feedback)
@@ -735,17 +779,23 @@ class Project:
                                prior_run_dir=str(agent.run_dir), contracts=current_hashes,
                                instruction="Repair this combined baseline against the shared acceptance contract. "
                                "Reuse completed work and decisions in the retained reports; do not redesign either side independently.")
-                self.store.update(group, "READY", worktree=str(candidate), base=tip, run_dir=None, round=0,
-                                  error="Combined baseline needs fresh migration/review",
-                                  feedback=handoff)
+                handoff["integration_handoff"] = {"source_review": review, "source_head": handoff["source_head"],
+                    "baseline": tip, "needs_decision": bool(stale or conflicts),
+                    "affected_paths": sorted(set(conflicts) | set(git(candidate, "diff", "--name-only", tip).splitlines()) |
+                                             set(git(candidate, "diff", "--name-only", tip, "HEAD").splitlines()))}
+                self.store.update(group, "INTEGRATION_REPAIR", worktree=str(candidate), base=tip, run_dir=None, round=1,
+                                  error="Combined candidate assigned to the exclusive integrator", feedback=handoff)
                 return
             # Every merge rechecks the combined baseline; a clean cherry-pick is not semantic evidence.
             code = run_process([sys.executable, "-m", "pytest", "tests"], candidate,
                                candidate / ".goose/runs-integration.log", agent.notify, 0, cancel_event=self.stop)
             if code:
-                self.store.update(group, "READY", error="Integration tests failed; continuing repair on combined candidate",
+                self.store.update(group, "INTEGRATION_REPAIR", error="Integration tests failed; exclusive integrator repairs combined candidate",
                                   worktree=str(candidate), base=tip, round=agent.state["round"] + 1,
                                   feedback={"candidate": str(candidate), "tests": "tests", "review": review,
+                                            "integration_handoff": {"source_review": review, "baseline": tip,
+                                                "source_head": git(agent.root,"rev-parse","HEAD"), "needs_decision": False,
+                                                "affected_paths": git(candidate,"diff","--name-only",tip,"HEAD").splitlines()},
                                             "full_suite_failure": (candidate / ".goose/runs-integration.log").read_text(encoding="utf-8")[-40000:]})
                 return
             combined = git(candidate, "rev-parse", "HEAD")
@@ -830,9 +880,11 @@ class Project:
         save_json(self.folder / "publication.json", publication)
         print("Published " + publication["head"] + " to " + publication["target"])
 
-    def run(self):
+    def run(self, only_task=None):
         with scheduler_guard(self.folder):
             self.init()
+            if only_task is not None and not any(r["id"] == only_task for r in self.store.rows()):
+                raise ValueError("Unknown pilot task: " + only_task)
             self.store.meta("scheduler", "RUNNING")
             pause_flag = self.folder / "pause.flag"
             if pause_flag.exists():
@@ -849,11 +901,11 @@ class Project:
                             paused = True
                             self.stop.set()
                         if not paused:
-                            self.apply_proposals()
+                            self.apply_proposals(only_task) if only_task else self.apply_proposals()
                             if not running:
-                                self.repair_plans()
+                                self.repair_plans(only_task) if only_task else self.repair_plans()
                         while len(running) < self.jobs and not paused:
-                            group = self.store.claim(str(os.getpid()))
+                            group = self.store.claim(str(os.getpid()), only_task) if only_task else self.store.claim(str(os.getpid()))
                             if not group:
                                 break
                             running.add(pool.submit(self.execute, group))
@@ -871,8 +923,14 @@ class Project:
                                 self.store.meta("scheduler", "PAUSED")
                                 self.show()
                                 return 0
-                            if any(r['state'] == 'PLAN_REPAIR' for r in rows):
+                            if any(r['state'] == 'PLAN_REPAIR' and (only_task is None or r['id'] == only_task) for r in rows):
                                 continue  # Bounded data repair, never a new implementation round.
+                            if only_task is not None:
+                                complete = next(r['state'] for r in rows if r['id'] == only_task) == 'INTEGRATED'
+                                self.store.meta('scheduler', 'PAUSED')
+                                self.store.meta('pilot', {'task': only_task, 'state': 'INTEGRATED' if complete else 'NEEDS_ATTENTION'})
+                                self.show()
+                                return 0 if complete else 2
                             complete = bool(rows) and all(r["state"] == "INTEGRATED" for r in rows)
                             print("PROJECT COMPLETE" if complete else "WAITING: inspect task dependencies/errors in " + str(self.folder / "index.html"))
                             self.store.meta("scheduler", "COMPLETE" if complete else "WAITING")
@@ -889,7 +947,7 @@ class Project:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["init", "status", "plan", "apply", "run", "recover", "prepare-main", "publish-main"])
+    parser.add_argument("command", choices=["init", "status", "plan", "apply", "run", "recover", "prepare-main", "publish-main", "pilot"])
     parser.add_argument("--goose", default=os.environ.get("GOOSE_EXE", "goose.exe"))
     parser.add_argument("--jobs", type=int, default=2)
     parser.add_argument("--file", type=Path)
@@ -904,8 +962,21 @@ def main():
     if args.command == "status":
         view = project.show()
         print(json.dumps({"tasks": len(view["tasks"]), "dashboard": str(project.folder / "index.html")}, indent=2))
-    elif args.command == "run":
-        return project.run()
+    elif args.command in ('run', 'pilot'):
+        if args.command == 'run':
+            return project.run()
+        if not args.task:
+            parser.error('pilot requires --task')
+        project.jobs = 1
+        code = project.run(args.task)
+        if code:
+            return code
+        with scheduler_guard(project.folder):
+            project.prepare_main(args.target)
+            project.publish_main()
+            project.store.meta('pilot', {'task': args.task, 'state': 'PUBLISHED', 'head': git(project.root,'rev-parse','HEAD')})
+            project.show()
+        return 0
     else:
         with scheduler_guard(project.folder):
             if args.command == "init":

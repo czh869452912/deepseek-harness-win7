@@ -49,6 +49,31 @@ work; this console does not make existing absolute-path task databases portable.
 
 ## Whole-project scheduling
 
+### One-task lifecycle pilot and integration ownership
+
+```powershell
+.\.goose\run-project.ps1 -Action pilot -Task vendor/cordis
+```
+
+`pilot` forces one worker, claims only the selected task's atomic group, and stops
+if prerequisites or adjudication need attention. It never starts unrelated READY
+tasks. On integration success it tests a master publication candidate, publishes
+it by fast-forward, and leaves scheduling PAUSED. Clean publication inputs are
+required; the ignored `.goose/out/` directory is reserved for local reports.
+
+`20260913-cordis-lifecycle-pilot.json` assigns the existing Cordis owner the
+necessary boot/harness/CLI/HMR/diagnostics consumers and their test write sets.
+Acceptance is in `cordis-lifecycle-contract.md`; this does not waive full Cordis
+parity or turn downstream feature completeness into a prerequisite of the core.
+
+Text conflicts, changed consumed contracts and integration regressions enter
+`INTEGRATION_REPAIR`, retaining both heads and prior review. One integrator owns
+the combined candidate. Shared-contract disputes go to judge before implementation;
+`integrate` uses the configured migrator model and `integration_review` uses the
+reviewer model. The latter reuses unaffected evidence and expands review when
+affected contracts expand. Full tests still gate every integrated combination.
+The original source worker is not sent back through the entire migration audit.
+
 Use the project launcher to schedule the entire pinned reference, rather than
 manually selecting one migration unit:
 

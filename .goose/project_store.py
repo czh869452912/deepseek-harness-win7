@@ -267,12 +267,12 @@ class Store:
                      if r[0] not in group["ids"]]
             return [t for t in peers if self.overlapping(own, self.resources(db, [t]))]
 
-    def claim(self, worker):
+    def claim(self, worker, only_task=None):
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             rows = {r["id"]: dict(r) for r in db.execute("SELECT * FROM tasks")}
             edges = list(db.execute("SELECT task,dependency FROM edges"))
-            active = [r for r in rows.values() if r["state"] in ("RUNNING", "VERIFIED")]
+            active = [r for r in rows.values() if r["state"] in ("RUNNING", "VERIFIED", "INTEGRATION_REPAIR")]
             resources = {t: self.resources(db, [t]) for t in rows}
             candidates = []
             pending = set()
@@ -281,11 +281,17 @@ class Store:
                     proposal = json.loads(row["feedback"]).get("proposed_work_plan", {})
                     pending.update(t["id"] for t in proposal.get("tasks", []))
             for group in self.groups(db):
+                if only_task is not None and only_task not in group:
+                    continue
                 if pending.intersection(group):
                     continue
                 members = [rows[t] for t in group]
-                if any(r["state"] not in ("READY", "NEEDS_REVALIDATION", "INTEGRATED") for r in members):
+                if any(r["state"] not in ("READY", "NEEDS_REVALIDATION", "INTEGRATED", "INTEGRATION_REPAIR") for r in members):
                     continue
+                if any(r['state'] == 'INTEGRATION_REPAIR' for r in members) and any(
+                        r['id'] not in group and r['state'] in ('RUNNING', 'VERIFIED') and
+                        (json.loads(r['feedback']) if r['feedback'] else {}).get('integration_handoff') for r in active):
+                    continue  # One integrator owns combined-candidate repair at a time.
                 if all(r["state"] == "INTEGRATED" for r in members):
                     continue
                 external = {dep for task, dep in edges if task in group and dep not in group}

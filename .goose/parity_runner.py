@@ -592,6 +592,20 @@ class Runner:
             started = time.monotonic()
             command = [self.args.goose, "run", "--recipe", str(recipe_path),
                        "--name", session_name, "--output-format", "stream-json"]
+            resume_path = self.run_dir / (stem + '.resume.json')
+            if resume_path.exists():
+                retained = json.loads(resume_path.read_text(encoding='utf-8'))
+                if (retained.get('files') == before and retained.get('head') == head and
+                        retained.get('scope') == getattr(self.args, 'task_contract', None) and
+                        retained.get('provider') == provider and retained.get('model') == model):
+                    session_name = retained['session_name']
+                    command = [self.args.goose, 'run', '--resume', '--name', session_name,
+                               '--output-format', 'stream-json', '--text',
+                               'Resume the interrupted phase with the existing context and tools. '
+                               'The controller verified the worktree, acceptance scope and model are unchanged. '
+                               'Continue unfinished analysis only; preserve completed work. '
+                               'Return the required final structured result.']
+                    self.notify('recovered', 'Resuming interrupted native session: ' + session_name)
             if turns:
                 command += ["--max-turns", str(turns)]
             continuation = 0
@@ -602,8 +616,16 @@ class Runner:
                     remaining -= time.monotonic() - started
                     if remaining <= 0:
                         raise TimeoutError("Explicit phase timeout reached")
-                code = run_process(command, self.root, self.run_dir / log_name,
-                                   self.notify, remaining, stream, cancel_event=getattr(self.args, "cancel_event", None))
+                try:
+                    code = run_process(command, self.root, self.run_dir / log_name,
+                                       self.notify, remaining, stream, cancel_event=getattr(self.args, "cancel_event", None))
+                except InterruptedError:
+                    retained_files = snapshot(self.root)
+                    if phase in ('migrate', 'integrate') or retained_files == before:
+                        save_json(resume_path, {'files': retained_files, 'head': git(self.root, 'rev-parse', 'HEAD'),
+                                  'scope': getattr(self.args, 'task_contract', None), 'provider': provider,
+                                  'model': model, 'session_name': session_name})
+                    raise
                 if code or not stream.complete or not stream.action_limit_reached or turns:
                     break
                 continuation += 1
@@ -661,6 +683,8 @@ class Runner:
                     self.notify("files", "Including observed changes omitted from report: " + ", ".join(sorted(missing)))
                     result["changed_files"] = sorted(set(result["changed_files"]) | missing)
             save_json(self.run_dir / (stem + ".result.json"), result)
+            if resume_path.exists():
+                resume_path.unlink()
             save_json(self.run_dir / (stem + ".binding.json"), {"files": after, "head": git(self.root, "rev-parse", "HEAD"),
                       "scope": getattr(self.args, "task_contract", None),
                       "feedback_signature": hashlib.sha256(json.dumps(feedback, sort_keys=True, ensure_ascii=False).encode('utf-8')).hexdigest()})

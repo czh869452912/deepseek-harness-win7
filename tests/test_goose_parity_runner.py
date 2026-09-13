@@ -331,6 +331,29 @@ def make_review_runner(repo):
     return h
 
 
+@pytest.mark.parametrize('change_scope', [False, True])
+def test_interrupted_phase_resumes_native_session_only_for_same_scope(repo, monkeypatch, change_scope):
+    h = make_review_runner(repo)
+    h.args.task_contract = {'scope': 'original'}
+    calls = []
+    def process(command, root, log, notify, timeout, stream, **kwargs):
+        calls.append(command)
+        if len(calls) == 1:
+            raise InterruptedError('pause')
+        for event in REVIEW_EVENTS:
+            stream.feed(event)
+        return 0
+    monkeypatch.setattr(runner, 'run_process', process)
+    with pytest.raises(InterruptedError):
+        h.phase('review')
+    assert (h.run_dir / '00-review.resume.json').exists()
+    if change_scope:
+        h.args.task_contract = {'scope': 'changed'}
+    assert h.phase('review')['status'] == 'MUST_FIX'
+    assert ('--resume' in calls[1]) == (not change_scope)
+    assert not (h.run_dir / '00-review.resume.json').exists()
+
+
 REVIEW_EVENTS = [
     {"type": "message", "message": {"id": "final", "role": "assistant", "content": [
         {"type": "toolRequest", "id": "t1", "toolCall": {"value": {

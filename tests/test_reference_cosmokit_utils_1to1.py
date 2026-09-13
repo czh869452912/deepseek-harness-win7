@@ -13,7 +13,10 @@ from dsh.cordis.utils import (
     snake_case,
     snakeCase,
     is_nullable,
+    is_non_nullable,
     isNullable,
+    isNonNullable,
+    _UNDEFINED,
     Time,
 )
 
@@ -52,9 +55,18 @@ def test_cosmokit_time_parsing_and_formatting():
 
 
 def test_cosmokit_nullability():
-    """Verify is_nullable and isNullable."""
+    """Verify is_nullable and isNullable.
+
+    misc.ts:20-21 is `value === null || value === undefined`, so the port's own
+    `_UNDEFINED` sentinel (its `undefined`) is nullish too and the negation
+    rejects it.
+    """
     assert is_nullable(None) is True
     assert isNullable(None) is True
+    assert is_nullable(_UNDEFINED) is True
+    assert isNullable(_UNDEFINED) is True
+    assert is_non_nullable(_UNDEFINED) is False
+    assert isNonNullable(_UNDEFINED) is False
     assert is_nullable("") is False
     assert is_nullable(0) is False
     assert is_nullable(False) is False

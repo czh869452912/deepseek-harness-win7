@@ -36,7 +36,7 @@ async def test_fiber_reactive_dependency_resolution():
     ctx = Context()
     
     # Mount dependent plugin before required service exists
-    plugin_inst = ctx.plugin(DependentPlugin)
+    plugin_inst = await ctx.plugin(DependentPlugin)
     fiber = ctx.registry.get_fiber("dependent")
     assert fiber is not None
     assert fiber.state == FiberState.PENDING
@@ -44,6 +44,7 @@ async def test_fiber_reactive_dependency_resolution():
 
     # Provide required dependency
     ctx.set_service("required_db", "connected_db")
+    await fiber.await_settled()
     assert fiber.state == FiberState.ACTIVE
     assert ctx.get("dependent_ready") is True
 
@@ -97,15 +98,17 @@ async def test_event_bus_modes():
 
     ctx.on("test/parallel", p1)
     ctx.on("test/parallel", p2)
+    # TS EventBus.parallel resolves with no value; only the AggregateError path
+    # carries listener results.
     p_res = await ctx.parallel("test/parallel")
-    assert set(p_res) == {"p1", "p2"}
+    assert p_res is None
 
     # 4. Bail 1:1 Semantics (False should NOT trigger bail; non-None non-False triggers bail)
     ctx.on("test/bail", lambda: False)
     ctx.on("test/bail", lambda: "bailed_val")
     ctx.on("test/bail", lambda: "unreachable")
 
-    bail_res = ctx.bail_sync("test/bail")
+    bail_res = ctx.bail("test/bail")
     assert bail_res == "bailed_val"
 
 

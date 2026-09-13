@@ -95,7 +95,7 @@ def test_strict_inject_partial_declaration_blocks_undeclared():
 
     fiber = ctx.registry.plugin(PartialPlugin())
     assert fiber.state == FiberState.FAILED
-    assert "cannot get property 'beta' without inject" in str(fiber.error)
+    assert 'cannot get property "beta" without inject' in str(fiber.error)
 
 
 def test_strict_inject_child_context_inheritance():

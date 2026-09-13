@@ -16,11 +16,11 @@ async def test_1to1_tools_schema_and_descriptions():
     tools = ToolsService(ctx)
     ctx.set_service("tools", tools)
     ctx.set_service("web", WebService())
-    ctx.plugin(FsLocalPlugin)
-    ctx.plugin(StrReplaceEditorPlugin)
-    ctx.plugin(ToolFsSearchPlugin)
-    ctx.plugin(ToolTodoPlugin, config={"allowParallelInProgress": True})
-    ctx.plugin(ToolWebPlugin)
+    await ctx.plugin(FsLocalPlugin)
+    await ctx.plugin(StrReplaceEditorPlugin)
+    await ctx.plugin(ToolFsSearchPlugin)
+    await ctx.plugin(ToolTodoPlugin, config={"allowParallelInProgress": True})
+    await ctx.plugin(ToolWebPlugin)
 
     # 1. str_replace_editor tool schema
     tool_editor = tools.get_tool("str_replace_editor")

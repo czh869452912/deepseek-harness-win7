@@ -6,6 +6,8 @@ Covers:
 - T3: has() returns True for declared services even if value is None
 - T4: internal/get waterfall listener intercepts property access
 - T6: ctx.effect() delegates directly to fiber.effect()
+- T8: extend()/isolate()/intercept() derived contexts resolve the root registry
+  state (shared runtime table and fiber-uid allocator)
 """
 
 import pytest
@@ -55,9 +57,15 @@ def test_t3_has_true_for_declared_none_valued_service():
 
 
 def test_t4_internal_get_waterfall_listener_shape_and_short_circuit():
-    """T4: internal/get waterfall listener intercepts and short-circuits proxy property access matching TS reflect.ts:152-167."""
-    ctx = Context(strict_inject=False)
+    """T4: internal/get intercepts proxy property access of a plugin-fiber context.
+
+    reflect.ts `ReflectService.handler.get` dispatches the waterfall only when
+    `ctx.fiber.runtime` is set, and `ReflectService.get()` reads the store
+    directly, so `ctx.get(...)` is never intercepted.
+    """
+    ctx = Context()
     intercepted = []
+    seen = {}
 
     def on_get(target_ctx, name, error, next_fn):
         intercepted.append(name)
@@ -67,9 +75,23 @@ def test_t4_internal_get_waterfall_listener_shape_and_short_circuit():
 
     ctx.on("internal/get", on_get)
 
-    val = getattr(ctx, "virtual_prop")
-    assert val == "intercepted_val"
-    assert "virtual_prop" in intercepted
+    class ReaderPlugin(Plugin):
+        name = "internal_get_reader"
+        inject = ["probe_service"]
+
+        def apply(self, c: Context) -> None:
+            seen["virtual"] = c.virtual_prop
+            seen["declared"] = c.probe_service
+
+    ctx.provide("probe_service", "provided-value")
+    fiber = ctx.plugin(ReaderPlugin)
+
+    assert fiber.state == FiberState.ACTIVE
+    assert seen["virtual"] == "intercepted_val"
+    assert seen["declared"] == "provided-value"
+    # `ctx.get()` and runtime-less attribute reads do not dispatch the waterfall.
+    assert ctx.get("probe_service") == "provided-value"
+    assert intercepted == ["virtual_prop", "probe_service"]
 
 
 def test_t6_ctx_effect_delegates_to_fiber_effect():
@@ -164,3 +186,34 @@ def test_r1_repr_with_strict_inject_safe_fiber_access():
 
 
 
+
+
+def test_t8_derived_contexts_resolve_the_root_registry_state():
+    """T8: `extend()`/`isolate()`/`intercept()` keep one registry allocator.
+
+    Reference: `context.ts#Context.extend` builds the child with
+    `Object.create(this)`, so `ctx.registry`, `ctx.events`, `ctx.reflect` and
+    `ctx.logger` all resolve to the parent's service instances; only the meta
+    properties passed in shadow them. The Python port binds a per-context
+    registry view, so the shared state itself (the fiber-uid allocator and the
+    runtime table) must stay common to the whole tree.
+    """
+    root = Context()
+    extended = root.extend()
+    isolated = root.isolate("t8_service")
+    intercepted = root.intercept("t8_service", {"flag": True})
+
+    class TreePlugin(Plugin):
+        name = "t8_tree"
+
+    fiber = extended.plugin(TreePlugin, {})
+
+    # The child published the fiber into the one shared runtime table.
+    assert root.registry.get(TreePlugin) is extended.registry.get(TreePlugin)
+    assert fiber in root.registry.list_fibers()
+    assert fiber in isolated.registry.list_fibers()
+    assert fiber in intercepted.registry.list_fibers()
+
+    # ... and the shared allocator kept issuing strictly increasing uids.
+    assert isolated.registry.counter == fiber.uid + 1
+    assert intercepted.registry.counter == fiber.uid + 2

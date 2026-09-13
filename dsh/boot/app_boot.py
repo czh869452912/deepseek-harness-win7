@@ -666,6 +666,32 @@ def install_fail_loud(
     return uninstall
 
 
+async def settle_fibers(ctx: Context) -> None:
+    """
+    Wait until no fiber of `ctx` has a load, unload, or teardown settlement in flight.
+
+    `ctx.plugin()` returns as soon as the fiber enters LOADING -- `fiber.ts`
+    `_reload` crosses an event-loop checkpoint before resolving config or
+    running the plugin body -- and a plugin body may mount further plugins, so
+    settling is a fixpoint over the runtime-owned fiber set. This is the port's
+    stand-in for the reference Loader's own `await()` for callers that mount
+    plugins outside the config tree (`build_harness`).
+
+    The root fiber is included even after its plugins are gone: the script
+    bridge can dispose it mid-startup (`void ctx.root.fiber.dispose()`), and its
+    teardown has no parent-owned registration to drive it.
+    """
+    while True:
+        fibers = list(ctx.registry.list_fibers())
+        root = getattr(ctx, "fiber", None)
+        if root is not None and root not in fibers:
+            fibers.append(root)
+        pending = [task for fiber in fibers for task in fiber.settlement_tasks()]
+        if not pending:
+            return
+        await asyncio.gather(*pending, return_exceptions=True)
+
+
 def assert_entries_loaded(ctx: Context, bin_name: str) -> None:
     """Ensure all non-disabled entries have fibers."""
     loader = ctx.get("loader")
@@ -683,38 +709,6 @@ def _format_activation_error(error: Any) -> str:
     if isinstance(error, Exception):
         return getattr(error, "stack", None) or str(error)
     return str(error)
-
-
-def assert_entries_activated_sync(ctx: Context, bin_name: str) -> None:
-    """Synchronous assertion that all entries are loaded and active/settled."""
-    assert_entries_loaded(ctx, bin_name)
-    loader = ctx.get("loader")
-    if not loader:
-        return
-
-    failures: List[str] = []
-    for entry in loader.entries():
-        fiber = entry.fiber
-        if fiber is None or getattr(entry, "disabled", False):
-            continue
-        state = fiber.state
-        if state == FiberState.ACTIVE:
-            continue
-        if state == FiberState.FAILED:
-            error = getattr(fiber, "error", None) or getattr(fiber, "_error", None) or RuntimeError("activation failed")
-            failures.append(f"{entry.options.get('name', getattr(entry, 'name', 'unknown'))}: {_format_activation_error(error)}")
-            continue
-        if state == FiberState.PENDING:
-            missing = [s for s in getattr(fiber, "inject", {}) if getattr(fiber.ctx, "get", lambda _: None)(s) is None]
-            subject = "service" if len(missing) == 1 else "services"
-            missing_names = ", ".join(missing) if missing else "unknown"
-            failures.append(f"{entry.options.get('name', getattr(entry, 'name', 'unknown'))}: pending (waiting for {subject}: {missing_names})")
-        else:
-            failures.append(f"{entry.options.get('name', getattr(entry, 'name', 'unknown'))}: fiber state {state}")
-
-    if failures:
-        noun = "entry" if len(failures) == 1 else "entries"
-        raise RuntimeError(f"{bin_name}: {len(failures)} {noun} did not activate\n" + "\n".join(failures))
 
 
 async def assert_entries_activated(ctx: Context, bin_name: str) -> None:
@@ -794,6 +788,11 @@ async def boot(
             await_fn = getattr(loader, "await_", None) or getattr(loader, "await", None)
             if await_fn:
                 await await_fn()
+        # A surface can dispose the root fiber while the tree is still starting,
+        # before the last entry settles. Join that teardown -- and the dependent
+        # fiber inertia -- before reporting settlement, so no scheduled task or
+        # coroutine outlives the call.
+        await settle_fibers(ctx)
         if ctx.get("loader") is None:
             return ctx
         await assert_entries_activated(ctx, bin_name)
@@ -875,7 +874,6 @@ loadEnv = load_env
 loadLayeredEnv = load_layered_env
 assertEntriesLoaded = assert_entries_loaded
 assertEntriesActivated = assert_entries_activated
-assertEntriesActivatedSync = assert_entries_activated_sync
 mountRootInclude = mount_root_include
 installFailLoud = install_fail_loud
 watchUserPatches = watch_user_patches

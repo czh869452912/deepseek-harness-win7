@@ -159,11 +159,15 @@ class Context:
             return self._parent.get_service(name, default)
         return default
 
-    def get(self, name: str, default: Any = None, strict: bool = True) -> Any:
+    def get(self, name: str, strict: bool = True, default: Any = None) -> Any:
         """
         Read a service or property from context via reflect layer.
+
+        The second parameter is `strict`, matching reflect.ts
+        `get(name, strict = true)`, so a positional second argument cannot
+        silently turn into a default value.
         """
-        return self.reflect.get(self, name, default=default, strict=strict)
+        return self.reflect.get(self, name, strict=strict, default=default)
 
     def set(self, name: str, value: Any) -> bool:
         """
@@ -189,12 +193,15 @@ class Context:
             curr = getattr(curr, "_parent", None)
         return False
 
-    def effect(self, setup_or_disposer: Any, label: str = "") -> Callable[[], None]:
+    def effect(self, setup_or_disposer: Any, label: Optional[str] = None) -> Callable[[], None]:
         """
         Register a reversible effect setup/cleanup function.
-        Delegates to current fiber effect matching TS context.effect().
+        Delegates to current fiber effect matching TS context.effect(); an omitted
+        label keeps the fiber default.
         """
         if self.fiber:
+            if label is None:
+                return self.fiber.effect(setup_or_disposer)
             return self.fiber.effect(setup_or_disposer, label=label)
         raise RuntimeError("cannot register effect on context without fiber")
 
@@ -210,13 +217,7 @@ class Context:
         """
         if self.fiber:
             self.fiber.assert_active()
-        disposer = self._event_bus.on(event_name, handler, prepend=prepend, global_listener=global_listener, ctx=self)
-        try:
-            self.disposable(disposer, label=f"ctx.on({event_name})")
-        except Exception:
-            disposer()
-            raise
-        return disposer
+        return self._event_bus.on(event_name, handler, prepend=prepend, global_listener=global_listener, ctx=self)
 
     def once(self, event_name: str, handler: Callable[..., Any], prepend: bool = False, global_listener: bool = False) -> Callable[[], None]:
         """
@@ -224,13 +225,7 @@ class Context:
         """
         if self.fiber:
             self.fiber.assert_active()
-        disposer = self._event_bus.once(event_name, handler, prepend=prepend, global_listener=global_listener, ctx=self)
-        try:
-            self.disposable(disposer, label=f"ctx.once({event_name})")
-        except Exception:
-            disposer()
-            raise
-        return disposer
+        return self._event_bus.once(event_name, handler, prepend=prepend, global_listener=global_listener, ctx=self)
 
     def emit(self, event_name: str, *args: Any, **kwargs: Any) -> None:
         kwargs.setdefault("caller_ctx", self)
@@ -248,7 +243,8 @@ class Context:
         kwargs.setdefault("caller_ctx", self)
         return self._event_bus.waterfall_sync(event_name, *args, **kwargs)
 
-    async def parallel(self, event_name: str, *args: Any, **kwargs: Any) -> List[Any]:
+    async def parallel(self, event_name: str, *args: Any, **kwargs: Any) -> None:
+        """Dispatch an event to every listener concurrently matching TS EventBus.parallel."""
         kwargs.setdefault("caller_ctx", self)
         return await self._event_bus.parallel(event_name, *args, **kwargs)
 
@@ -256,13 +252,10 @@ class Context:
         kwargs.setdefault("caller_ctx", self)
         return await self._event_bus.serial(event_name, *args, **kwargs)
 
-    async def bail(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
+    def bail(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
+        """Dispatch an event synchronously until a listener bails matching TS EventBus.bail."""
         kwargs.setdefault("caller_ctx", self)
-        return await self._event_bus.bail(event_name, *args, **kwargs)
-
-    def bail_sync(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
-        kwargs.setdefault("caller_ctx", self)
-        return self._event_bus.bail_sync(event_name, *args, **kwargs)
+        return self._event_bus.bail(event_name, *args, **kwargs)
 
     def plugin(self, plugin_cls_or_instance: Any, config: Optional[Dict[str, Any]] = None) -> Any:
         """
@@ -329,7 +322,10 @@ class Context:
         """
         child = Context(parent=self, is_extension=True, strict_inject=self.strict_inject, base_url=self.baseUrl)
         child._isolated_keys = dict(self._isolated_keys)
-        child._intercept_map = dict(self._intercept_map)
+        # TS `extend()` inherits the parent's intercept map through the context
+        # prototype chain, so the child starts with no entry of its own; readers
+        # walk `_parent` for the ancestors' levels. Copying the parent map here
+        # would replay every ancestor entry a second time and hide overrides.
         shadow = getattr(self, "_shadow", None)
         if shadow is not None:
             child._shadow = shadow
@@ -370,13 +366,19 @@ class Context:
     def teardown(self) -> None:
         """
         Teardown context effects in reverse order.
+
+        A root context's teardown owns no parent registration to drive it,
+        so the fiber owns the settlement: `await_settled()` and
+        `settle_fibers()` then join it instead of leaving a scheduled task
+        that dies with the loop.
         """
         if self._parent is None and self.fiber:
             try:
-                loop = asyncio.get_running_loop()
-                loop.create_task(self.fiber.dispose())
+                asyncio.get_running_loop()
             except RuntimeError:
                 asyncio.run(self.fiber.dispose())
+            else:
+                self.fiber.schedule_settlement(self.fiber.dispose())
 
         if self._effects:
             self._effects.clear()
@@ -422,7 +424,7 @@ class Context:
             raise AttributeError(f"Context object has no attribute '{name}'")
 
         # 1. Accessor check matching TS def?.type === 'accessor'
-        err = RuntimeError(f"cannot get property '{name}' without inject")
+        err = RuntimeError(f'cannot get property "{name}" without inject')
         if hasattr(self, "reflect") and self.reflect and hasattr(self.reflect, "props"):
             def_prop = self.reflect.props.get(name)
             if def_prop and getattr(def_prop, "type", None) == "accessor":
@@ -440,6 +442,20 @@ class Context:
                     return get_traceable(self, val)
             raise AttributeError(f"Context object has no attribute or service '{name}'")
 
+        if getattr(self, "fiber", None) is not None and getattr(self.fiber, "runtime", None) is not None and not getattr(self, "strict_inject", True):
+            # Plugin-fiber context without strict injection: the reference proxy
+            # dispatches `internal/get` for every fiber-owned context.
+            def _resolve_loose():
+                val = self.reflect.get(self, name, default=None, strict=False)
+                if val is not None:
+                    from dsh.cordis.utils import get_traceable
+                    return get_traceable(self, val)
+                raise AttributeError(f"Context object has no attribute or service '{name}'")
+
+            if hasattr(self, "waterfall_sync"):
+                return self.waterfall_sync("internal/get", self, name, err, _resolve_loose)
+            return _resolve_loose()
+
         if getattr(self, "strict_inject", True) and getattr(self, "fiber", None) and self.fiber.runtime is not None:
             def _resolve_strict():
                 curr_fiber = getattr(self, "_shadow_fiber", None) or self.fiber
@@ -455,7 +471,7 @@ class Context:
                         val = getattr(impl, "value", impl)
                         return get_traceable(self, val)
                     if name in getattr(curr_fiber, "inject", {}):
-                        raise RuntimeError(f"cannot get required service '{name}' in inactive context")
+                        raise RuntimeError(f'cannot get required service "{name}" in inactive context')
                     if not getattr(curr_fiber, "runtime", None):
                         raise err
                     parent_ctx = getattr(curr_fiber, "parent", None)

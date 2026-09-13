@@ -9,7 +9,7 @@ from dsh.jobs.tool_jobs import ToolJobsPlugin
 async def test_jobs_service_and_tools():
     ctx = Context()
     ctx.set_service("tools", ToolsService(ctx))
-    ctx.plugin(ToolJobsPlugin)
+    await ctx.plugin(ToolJobsPlugin)
 
     jobs_svc: JobsService = ctx.get("jobs")
     assert jobs_svc is not None

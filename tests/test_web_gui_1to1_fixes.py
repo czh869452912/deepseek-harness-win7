@@ -30,6 +30,9 @@ async def test_plugin_inventory_1to1_fiber_phases():
     loader.load_from_dict([
         {"id": "sample-plugin", "name": "@deepseek-ai/dsh-sample-plugin", "disabled": False}
     ])
+    # Mounting returns while the fiber is LOADING; the phase read below is a
+    # settled-fiber contract.
+    await asyncio.sleep(0)
 
     gateway = PluginInventoryGateway(ctx)
     snapshot = gateway.list()
@@ -49,8 +52,8 @@ async def test_agent_presets_1to1_schemas():
     ctx = Context()
     web_server = WebServerPlugin({"port": 0})
     api_proxy = ApiProxyPlugin()
-    ctx.plugin(web_server)
-    ctx.plugin(api_proxy)
+    await ctx.plugin(web_server)
+    await ctx.plugin(api_proxy)
 
     handler = api_proxy.agent_presets_handler
 
@@ -92,8 +95,8 @@ async def test_sessions_1to1_schemas_and_projections():
 
     web_server = WebServerPlugin({"port": 0})
     api_proxy = ApiProxyPlugin()
-    ctx.plugin(web_server)
-    ctx.plugin(api_proxy)
+    await ctx.plugin(web_server)
+    await ctx.plugin(api_proxy)
 
     handler = api_proxy.sessions_handler
 
@@ -126,8 +129,8 @@ async def test_sse_event_target_resolution_non_default_session():
     ctx = Context()
     web_server = WebServerPlugin({"port": 0})
     api_proxy = ApiProxyPlugin()
-    ctx.plugin(web_server)
-    ctx.plugin(api_proxy)
+    await ctx.plugin(web_server)
+    await ctx.plugin(api_proxy)
 
     sessions_svc = SessionStore(ctx)
     ctx.set_service("sessions", sessions_svc)

@@ -1241,7 +1241,7 @@ class TestSessionStoreLifecycle:
                 self.inner = inner
 
         owner = OwnerPlugin()
-        fiber = ctx.plugin(owner)
+        fiber = await ctx.plugin(owner)
         pending = []
 
         def on_created(session):
@@ -1334,7 +1334,7 @@ class TestSessionStoreLifecycle:
                 self.session = inner.sessions.create(SessionId("scoped"))
 
         owner = ScopedOwnerPlugin()
-        fiber = ctx.plugin(owner)
+        fiber = await ctx.plugin(owner)
         assert store.get(SessionId("scoped")) is owner.session
 
         observed = []

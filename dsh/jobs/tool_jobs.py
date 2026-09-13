@@ -27,9 +27,10 @@ class ToolJobsPlugin(Plugin):
             return
 
         if not ctx.has("jobs"):
-            ctx.set_service("jobs", JobsService(ctx))
-
-        jobs_svc: JobsService = ctx.get("jobs")
+            jobs_svc = JobsService(ctx)
+            ctx.set_service("jobs", jobs_svc)
+        else:
+            jobs_svc: JobsService = ctx.get("jobs")
 
         if ctx.has("system_prompt"):
             sp = ctx.get("system_prompt")

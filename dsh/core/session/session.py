@@ -4,7 +4,9 @@ Ported 1:1 from reference packages/core/session/src/index.ts.
 Compatible with Python 3.8.10 and Windows 7 SP1.
 """
 
+import asyncio
 import copy
+import inspect
 import os
 import time
 from typing import Any, Callable, Dict, List, Optional, Sequence, Union
@@ -605,8 +607,27 @@ class Session:
             sessions_svc = self.ctx.get("sessions")
             if sessions_svc and hasattr(sessions_svc, "flush"):
                 return await sessions_svc.flush(self)
-            res = await self.ctx.parallel("session/flush", self)
-            return len(res) > 0 if isinstance(res, list) else True
+            # No store is mounted, so run the store's own dispatch shape
+            # (index.ts `flush`): every callback settles, the first failure is
+            # rethrown, and the result reports whether a listener participated.
+            # `ctx.parallel` resolves with no value (events.ts), so it cannot
+            # report participation.
+            events_bus = getattr(self.ctx, "events", None)
+            callbacks = list(events_bus.dispatch("parallel", [None, "session/flush", self])) if events_bus is not None else []
+            if not callbacks:
+                return False
+
+            async def _run(callback: Callable[..., Any]) -> Any:
+                result = callback(self)
+                if inspect.isawaitable(result):
+                    return await result
+                return result
+
+            results = await asyncio.gather(*(_run(callback) for callback in callbacks), return_exceptions=True)
+            for result in results:
+                if isinstance(result, Exception):
+                    raise result
+            return True
         return False
 
 

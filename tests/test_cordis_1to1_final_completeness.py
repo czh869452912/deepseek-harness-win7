@@ -125,7 +125,7 @@ def test_strict_inject_default_and_plugin_context_enforcement():
 
     root_ctx.plugin(NoInjectPlugin())
     assert len(plugin_errors) == 1
-    assert "cannot get property 'serviceA' without inject" in str(plugin_errors[0])
+    assert 'cannot get property "serviceA" without inject' in str(plugin_errors[0])
 
     # But plugin CAN access serviceA via explicit ctx.get('serviceA')
     get_res = []
@@ -173,7 +173,7 @@ def test_strict_inject_inactive_service_error():
     assert consumer_fiber.state == FiberState.PENDING
 
     # Attempting to read consumer_fiber.ctx.depService directly raises inactive context error
-    with pytest.raises(RuntimeError, match="cannot get required service 'depService' in inactive context"):
+    with pytest.raises(RuntimeError, match='cannot get required service "depService" in inactive context'):
         _ = consumer_fiber.ctx.depService
 
 
@@ -263,7 +263,7 @@ def test_reflect_set_invariants():
     root_ctx.plugin(PluginB())
 
     assert len(fiber_a_errors) == 1
-    assert "cannot set property 'sharedService' in multiple fibers" in str(fiber_a_errors[0])
+    assert 'cannot set property "sharedService" in multiple fibers' in str(fiber_a_errors[0])
 
 
 def test_reflect_duplicate_provide_rejection():

@@ -75,7 +75,7 @@ def test_grep_options(search_workspace):
 async def test_fs_search_plugin_execution(search_workspace):
     ctx = Context()
     ctx.set_service("tools", ToolsService(ctx))
-    ctx.plugin(ToolFsSearchPlugin)
+    await ctx.plugin(ToolFsSearchPlugin)
 
     orig_cwd = os.getcwd()
     os.chdir(search_workspace)

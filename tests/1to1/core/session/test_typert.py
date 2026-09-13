@@ -49,7 +49,7 @@ class TestSessionTypertProvider:
         #    its contribution has to be delayed until `typert` is provided.
         session_fiber = ctx.plugin(SessionStore)
         await session_fiber
-        assert ctx.get("typert", None) is None
+        assert ctx.get("typert") is None
 
         # 3. The registry arrives afterwards and activates the delayed inject.
         await ctx.plugin(TypertRegistry)

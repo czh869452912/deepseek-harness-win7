@@ -21,7 +21,7 @@ async def test_todo_write_tool_execution():
     agent = Agent(session=session, ctx=ctx, agent_id="default-session")
     ctx.get("agents").enter(agent)
 
-    ctx.plugin(ToolTodoPlugin, config={"allowParallelInProgress": True})
+    await ctx.plugin(ToolTodoPlugin, config={"allowParallelInProgress": True})
 
     todos_payload = [
         {"content": "Implement feature A", "status": "completed"},
@@ -49,7 +49,7 @@ async def test_ask_user_question_tool_execution():
     tools = ToolsService(ctx)
     ctx.set_service("tools", tools)
 
-    ctx.plugin(ToolAskUserPlugin)
+    await ctx.plugin(ToolAskUserPlugin)
 
     questions_payload = [
         {

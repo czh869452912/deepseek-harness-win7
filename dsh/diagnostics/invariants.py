@@ -58,8 +58,19 @@ class InvariantRegistry(Service):
         def fail_fn(message: str):
             raise InvariantError(package_name, message)
 
-        child_fiber = None
-        try:
+        def install_on_target() -> Any:
+            """
+            Install the enabled contribution and settle once the child is active.
+
+            `invariants.register` in the reference is `ctx.effect(async () => ...)`:
+            the mount happens while the setup runs and `await child` keeps the
+            registration unsettled until the installer's listeners exist. Python
+            coroutines start lazily, so the mount stays in this synchronous setup
+            body and only the join is returned as the awaitable value.
+            """
+            if not self.selected(package_name):
+                return lambda: self.registrations.discard(package_name)
+
             inj = getattr(installer, "inject", None)
 
             def _install_entry(child_ctx: Context):
@@ -68,23 +79,50 @@ class InvariantRegistry(Service):
             if inj:
                 setattr(_install_entry, "inject", inj)
 
-            child_fiber = ctx.plugin(_install_entry)
+            try:
+                child_fiber = ctx.plugin(_install_entry)
+            except Exception:
+                self.registrations.discard(package_name)
+                raise
+
+            async def join_child():
+                try:
+                    await child_fiber.await_settled()
+                except Exception:
+                    await child_fiber.dispose()
+                    self.registrations.discard(package_name)
+                    raise
+
+                async def disposer():
+                    # The reference registration disposer awaits `child.dispose()`
+                    # so the child fiber's listeners are gone before the owner's
+                    # teardown reports completion.
+                    try:
+                        await child_fiber.dispose()
+                    finally:
+                        self.registrations.discard(package_name)
+
+                return disposer
+
+            return join_child()
+
+        try:
+            return ctx.effect(install_on_target, label=f'invariants.register("{package_name}")')
         except Exception:
             self.registrations.discard(package_name)
             raise
 
-        def disposer():
-            if child_fiber:
-                try:
-                    import asyncio
-                    loop = asyncio.get_running_loop()
-                    loop.create_task(child_fiber.dispose())
-                except RuntimeError:
-                    pass
-            self.registrations.discard(package_name)
 
-        if hasattr(ctx, "disposable"):
-            return ctx.disposable(disposer, label=f'invariants.register("{package_name}")')
-        elif hasattr(ctx, "effect"):
-            return ctx.effect(lambda: disposer, label=f'invariants.register("{package_name}")')
-        return disposer
+def registration_result(registration: Any) -> Any:
+    """
+    Return the shape a companion hands back to its own fiber.
+
+    A reference companion returns `Promise.resolve(registration)`: a plain
+    awaitable, so the companion fiber waits for the registration to settle and
+    keeps the resolved disposer, instead of treating the callable registration
+    handle itself as the cleanup.
+    """
+    async def join() -> Any:
+        return await registration
+
+    return join()

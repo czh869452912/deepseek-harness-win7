@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import os
 from typing import Any, Dict, Optional
 import yaml
@@ -62,7 +63,7 @@ from dsh.storage.storage import StoragePlugin
 from dsh.workspace.workspace import WorkspacePlugin
 
 
-def build_harness(
+async def build_harness(
     mode: str = "standard",
     api_key: Optional[str] = None,
     base_url: Optional[str] = None,
@@ -75,6 +76,13 @@ def build_harness(
 ) -> Context:
     """
     Build and initialize a DeepSeek Harness Context with requested preset mode.
+
+    Mounting is asynchronous: `ctx.plugin()` returns once the fiber is LOADING,
+    so every mount is awaited and the returned context has every mounted plugin
+    active (or the startup audit raises). The reference boot path mounts the
+    same way -- `await ctx.plugin(Loader)` and `await ctx.get('loader')?.await()`
+    in packages/boot/app-boot/src/index.ts -- and this preset harness is the
+    port's equivalent of that config-tree boot.
     """
     ctx = Context()
     launch_env = load_layered_env("dsh", cwd=os.getcwd())
@@ -100,19 +108,19 @@ def build_harness(
     ctx.dsh_home_path = dsh_home_path
 
     # Mount base infrastructure plugins
-    ctx.plugin(ToolsPlugin)
-    ctx.plugin(CredentialsLocalPlugin)
-    ctx.plugin(SettingsFilePlugin)
-    ctx.plugin(StoragePlugin)
-    ctx.plugin(WorkspacePlugin)
-    ctx.plugin(UserApprovalPlugin)
-    ctx.plugin(PermissionPresetsPlugin)
-    ctx.plugin(CommandsPlugin)
-    ctx.plugin(TokenMeterPlugin)
-    ctx.plugin(LLMRetryPlugin)
+    await ctx.plugin(ToolsPlugin)
+    await ctx.plugin(CredentialsLocalPlugin)
+    await ctx.plugin(SettingsFilePlugin)
+    await ctx.plugin(StoragePlugin)
+    await ctx.plugin(WorkspacePlugin)
+    await ctx.plugin(UserApprovalPlugin)
+    await ctx.plugin(PermissionPresetsPlugin)
+    await ctx.plugin(CommandsPlugin)
+    await ctx.plugin(TokenMeterPlugin)
+    await ctx.plugin(LLMRetryPlugin)
     if mode != "minimal":
-        ctx.plugin(SessionQueryPlugin, config={"path": ":memory:", "open_at": "never"})
-    ctx.plugin(AgentLoopPlugin)
+        await ctx.plugin(SessionQueryPlugin, config={"path": ":memory:", "open_at": "never"})
+    await ctx.plugin(AgentLoopPlugin)
 
     # Note: WebService is provided unconditionally on the root context so that plugins
     # with strict inject requirements (e.g. tool-web declaring inject=["web"]) can cleanly
@@ -121,9 +129,9 @@ def build_harness(
     ctx.set_service("web", WebService())
 
     if verbose:
-        ctx.plugin(CliVisualizerPlugin, config={"verbose": True})
+        await ctx.plugin(CliVisualizerPlugin, config={"verbose": True})
 
-    ctx.plugin(LLMOpenAIPlugin, config={
+    await ctx.plugin(LLMOpenAIPlugin, config={
         "api_key": api_key,
         "base_url": base_url,
         "model": model,
@@ -186,12 +194,12 @@ def build_harness(
     loader.register_plugin_class("@deepseek-ai/dsh-host-plugin-inventory", PluginInventoryPlugin)
 
     if enable_web:
-        ctx.plugin(WebServerPlugin, config={"host": web_host, "port": web_port})
-        ctx.plugin(ClientModulesPlugin)
-        ctx.plugin(PluginInventoryPlugin)
-        ctx.plugin(DirectoryPickerAutoPlugin)
-        ctx.plugin(ApiProxyPlugin)
-        ctx.plugin(FrontendStaticPlugin)
+        await ctx.plugin(WebServerPlugin, config={"host": web_host, "port": web_port})
+        await ctx.plugin(ClientModulesPlugin)
+        await ctx.plugin(PluginInventoryPlugin)
+        await ctx.plugin(DirectoryPickerAutoPlugin)
+        await ctx.plugin(ApiProxyPlugin)
+        await ctx.plugin(FrontendStaticPlugin)
 
     base_dir = os.path.dirname(os.path.abspath(__file__))
     preset_file = os.path.join(base_dir, "presets", f"{mode}.yaml")
@@ -199,7 +207,13 @@ def build_harness(
         raise FileNotFoundError(f"dsh: failed to read preset at {preset_file}")
 
     # Load and apply patches (user home layer + CLI overlay layer + telemetry)
-    from dsh.boot.app_boot import load_optional_patches, load_overlay_patches, assert_entries_loaded, assert_entries_activated_sync
+    from dsh.boot.app_boot import (
+        assert_entries_activated,
+        assert_entries_loaded,
+        load_optional_patches,
+        load_overlay_patches,
+        settle_fibers,
+    )
     from dsh.cordis.profile import home_patch_path, resolve_telemetry_patch
     combined_patches = []
     user_patch_file = home_patch_path()
@@ -221,13 +235,32 @@ def build_harness(
     try:
         loader.load_preset_file(preset_file, ctx, patches=combined_patches if combined_patches else None)
         assert_entries_loaded(ctx, "dsh")
-        assert_entries_activated_sync(ctx, "dsh")
+        # `load_preset_file` mounts synchronously, so every entry it created is
+        # still loading at this point; settle them before the activation audit.
+        await settle_fibers(ctx)
+        await assert_entries_activated(ctx, "dsh")
     except Exception as exc:
+        # The reference boot catch awaits `ctx.fiber.dispose()` before it
+        # relabels the failure (packages/boot/app-boot/src/index.ts:798-802),
+        # so the partial tree's teardown has finished when the error escapes:
+        # the spec asserts the partial setup was disposed and the tree owns no
+        # pending task afterwards. A root fiber has no parent-owned
+        # registration to drive its teardown, so a synchronous `ctx.teardown()`
+        # only schedules the disposal and lets this raise with the cleanup still
+        # pending; awaiting the settlement here owns it, and `settle_fibers`
+        # then joins the dependent fiber inertia.
         try:
-            if hasattr(ctx, "teardown"):
+            root_fiber = getattr(ctx, "fiber", None)
+            dispose = getattr(root_fiber, "dispose", None)
+            if dispose is not None:
+                settled = dispose()
+                if inspect.isawaitable(settled):
+                    await settled
+            elif hasattr(ctx, "teardown"):
                 ctx.teardown()
             elif hasattr(ctx, "dispose"):
                 ctx.dispose()
+            await settle_fibers(ctx)
         except Exception:
             pass
         if isinstance(exc, (FileNotFoundError, ValueError)) and not str(exc).startswith("dsh:"):

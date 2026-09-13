@@ -16,7 +16,7 @@ async def test_tool_pwsh_one_shot_execution():
     ctx = Context()
     ctx.set_service("tools", ToolsService(ctx))
     ctx.set_service("jobs", JobsService())
-    ctx.plugin(ToolPwshPlugin)
+    await ctx.plugin(ToolPwshPlugin)
 
     tools: ToolsService = ctx.get("tools")
     assert tools.has("pwsh")

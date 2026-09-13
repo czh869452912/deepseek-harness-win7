@@ -187,6 +187,10 @@ class ConfigWatcherService(Service):
         self._mtimes: Dict[str, float] = {}
         self._config_contents: Dict[str, bytes] = {}
         self._refreshes: Dict[str, ConfigRefreshState] = {}
+        # One serialized module-reload pass plus its pending changed files, so a
+        # change detected mid-pass joins that pass instead of racing it.
+        self._module_reload_task: Optional[asyncio.Task] = None
+        self._module_changes: Dict[str, Any] = {}
         self._refresh_tasks: Set[asyncio.Task] = set()
         self.graph = ModuleDependencyGraph()
         self._poll_task: Optional[asyncio.Task] = None
@@ -242,6 +246,10 @@ class ConfigWatcherService(Service):
             self._poll_task = loop.create_task(self._poll_loop())
         except RuntimeError:
             pass
+
+    async def init(self):
+        """Service.init owns watcher shutdown and every pending refresh pass."""
+        yield self._async_teardown
 
     def is_ignored(self, filepath: str, base_dir: str) -> bool:
         import fnmatch
@@ -450,6 +458,10 @@ class ConfigWatcherService(Service):
                             if hasattr(self.ctx, "logger"):
                                 self.ctx.logger("hmr").warn("%s", rejection)
 
+                # The root owns the registration disposer, which joins this
+                # pass. Waiting for root teardown here would create a cycle.
+                # Its caller joins root settlement after this pass completes.
+
         try:
             loop = asyncio.get_running_loop()
             task = loop.create_task(_run())
@@ -468,150 +480,177 @@ class ConfigWatcherService(Service):
                     self.ctx.logger("hmr").warn("config reload at %s failed: %s", observed, reason)
 
     def _trigger_module_reload(self, filename: str, target_plugin: Optional[Any]) -> None:
+        """
+        Coalesce module changes into one running reload pass.
+
+        `hmr` runs one debounced partial reload for the whole service, so a change
+        detected while a pass is running joins that pass instead of starting a
+        second one. Each pass awaits fiber disposal and remount, so overlapping
+        passes would reload one runtime twice and roll back only their own slice:
+        the multi-file rollback would leave the other file on its replacement.
+        """
         refresh_state = self._refreshes.setdefault(filename, ConfigRefreshState())
         refresh_state.dirty = True
-        if refresh_state.running and not refresh_state.running.done():
+        self._module_changes[os.path.abspath(filename)] = target_plugin
+        if self._module_reload_task is not None and not self._module_reload_task.done():
             return
 
-        async def _run() -> None:
-            while refresh_state.dirty:
-                refresh_state.dirty = False
-                reloads: Dict[Any, Dict[str, Any]] = {}
-                abs_changed = os.path.abspath(filename)
+        async def _reload_one(filename: str, target_plugin: Optional[Any]) -> None:
+            reloads: Dict[Any, Dict[str, Any]] = {}
+            abs_changed = os.path.abspath(filename)
+            try:
+                if hasattr(self.ctx, "emit"):
+                    self.ctx.emit("hmr/change", abs_changed)
+
+                # 1. Update AST dependency graph
+                self.graph.scan_file(abs_changed)
+
+                # 2. Determine all files to reload: changed file + transitive dependents
+                dependents = self.graph.get_transitive_dependents(abs_changed)
+                files_to_reload = [abs_changed] + [f for f in dependents if f != abs_changed]
+
+                registry = getattr(self.ctx, "registry", None)
+                prev_runtimes = dict(registry._runtimes) if registry else {}
+                saved_runtimes_state: Dict[Any, Dict[str, Any]] = {}
+                if registry:
+                    for r_key, r_val in registry._runtimes.items():
+                        saved_runtimes_state[r_key] = {
+                            "callback": r_val.callback,
+                            "runtime": r_val,
+                            "fibers": [
+                                (f, getattr(f, "_plugin_cls", None), getattr(f, "plugin", None), getattr(f, "config", None))
+                                for f in list(getattr(r_val, "fibers", []))
+                            ],
+                        }
+                saved_fibers: Dict[Any, List[Any]] = {}
+
+                async def reload_plugin(plugin_target: Any, r_time: Any, old_key: Any = None) -> None:
+                    if not r_time:
+                        return
+                    target_fibers = (saved_fibers.get(old_key) if old_key else None) or list(getattr(r_time, "fibers", []))
+                    for old_fiber in list(target_fibers):
+                        parent = getattr(old_fiber, "parent", None) or self.ctx
+                        reg = getattr(parent, "registry", None) or getattr(self.ctx, "registry", None)
+                        new_fiber = reg.plugin(plugin_target, getattr(old_fiber, "config", None))
+                        # The mount returns while the replacement fiber is
+                        # LOADING; the swap below needs its instantiated plugin
+                        # and must observe an apply failure to trigger rollback.
+                        await_fn = getattr(new_fiber, "await_settled", None) or getattr(new_fiber, "await_", None)
+                        if await_fn is not None:
+                            await await_fn()
+                        err = getattr(new_fiber, "_error", None) or getattr(new_fiber, "error", None)
+                        if err is not None:
+                            raise err
+                        new_fiber.entry = getattr(old_fiber, "entry", None)
+                        if new_fiber.entry:
+                            new_fiber.entry.fiber = new_fiber
+                        old_fiber._plugin_cls = plugin_target
+                        old_fiber.plugin = new_fiber.plugin
+
+                new_modules_created: List[str] = []
                 try:
-                    if hasattr(self.ctx, "emit"):
-                        self.ctx.emit("hmr/change", abs_changed)
+                    for file_path in files_to_reload:
+                        if not os.path.isfile(file_path):
+                            continue
 
-                    # 1. Update AST dependency graph
-                    self.graph.scan_file(abs_changed)
+                        # Dynamic reload Python module
+                        importlib.invalidate_caches()
+                        mod_name = f"hmr_reloaded_{abs(hash(file_path))}_{int(time.time() * 1000)}"
+                        mod = types.ModuleType(mod_name)
+                        mod.__file__ = file_path
+                        sys.modules[mod_name] = mod
+                        new_modules_created.append(mod_name)
+                        with open(file_path, "r", encoding="utf-8") as fp:
+                            source_code = fp.read()
+                        code_obj = compile(source_code, file_path, "exec")
+                        exec(code_obj, mod.__dict__)
 
-                    # 2. Determine all files to reload: changed file + transitive dependents
-                    dependents = self.graph.get_transitive_dependents(abs_changed)
-                    files_to_reload = [abs_changed] + [f for f in dependents if f != abs_changed]
+                        if not registry:
+                            continue
 
-                    registry = getattr(self.ctx, "registry", None)
-                    prev_runtimes = dict(registry._runtimes) if registry else {}
-                    saved_runtimes_state: Dict[Any, Dict[str, Any]] = {}
-                    if registry:
-                        for r_key, r_val in registry._runtimes.items():
-                            saved_runtimes_state[r_key] = {
-                                "callback": r_val.callback,
-                                "runtime": r_val,
-                                "fibers": [
-                                    (f, getattr(f, "_plugin_cls", None), getattr(f, "plugin", None), getattr(f, "config", None))
-                                    for f in list(getattr(r_val, "fibers", []))
-                                ],
-                            }
-                    saved_fibers: Dict[Any, List[Any]] = {}
+                        # Find all plugin classes in module
+                        found_classes: List[Tuple[Any, Any]] = []
+                        tgt = target_plugin if file_path == abs_changed else self._modules.get(file_path)
+                        if tgt and isinstance(tgt, type):
+                            new_cls = getattr(mod, tgt.__name__, None)
+                            if new_cls:
+                                found_classes.append((tgt, new_cls))
+                        else:
+                            for attr_name in dir(mod):
+                                obj = getattr(mod, attr_name)
+                                if isinstance(obj, type) and (issubclass(obj, Plugin) or hasattr(obj, "apply")):
+                                    for reg_key in list(registry._runtimes.keys()):
+                                        if getattr(reg_key, "__name__", "") == attr_name:
+                                            found_classes.append((reg_key, obj))
 
-                    async def reload_plugin(plugin_target: Any, r_time: Any, old_key: Any = None) -> None:
-                        if not r_time:
-                            return
-                        target_fibers = (saved_fibers.get(old_key) if old_key else None) or list(getattr(r_time, "fibers", []))
-                        for old_fiber in list(target_fibers):
-                            parent = getattr(old_fiber, "parent", None) or self.ctx
-                            reg = getattr(parent, "registry", None) or getattr(self.ctx, "registry", None)
-                            new_fiber = reg.plugin(plugin_target, getattr(old_fiber, "config", None))
-                            err = getattr(new_fiber, "_error", None) or getattr(new_fiber, "error", None)
-                            if err is not None:
-                                raise err
-                            new_fiber.entry = getattr(old_fiber, "entry", None)
-                            if new_fiber.entry:
-                                new_fiber.entry.fiber = new_fiber
-                            old_fiber._plugin_cls = plugin_target
-                            old_fiber.plugin = new_fiber.plugin
+                        for old_key, new_cls in found_classes:
+                            r_entry = registry.get(old_key)
+                            if r_entry and old_key not in saved_fibers:
+                                saved_fibers[old_key] = list(getattr(r_entry, "fibers", []))
 
-                    new_modules_created: List[str] = []
-                    try:
-                        for file_path in files_to_reload:
-                            if not os.path.isfile(file_path):
-                                continue
-
-                            # Dynamic reload Python module
-                            importlib.invalidate_caches()
-                            mod_name = f"hmr_reloaded_{abs(hash(file_path))}_{int(time.time() * 1000)}"
-                            mod = types.ModuleType(mod_name)
-                            mod.__file__ = file_path
-                            sys.modules[mod_name] = mod
-                            new_modules_created.append(mod_name)
-                            with open(file_path, "r", encoding="utf-8") as fp:
-                                source_code = fp.read()
-                            code_obj = compile(source_code, file_path, "exec")
-                            exec(code_obj, mod.__dict__)
-
-                            if not registry:
-                                continue
-
-                            # Find all plugin classes in module
-                            found_classes: List[Tuple[Any, Any]] = []
-                            tgt = target_plugin if file_path == abs_changed else self._modules.get(file_path)
-                            if tgt and isinstance(tgt, type):
-                                new_cls = getattr(mod, tgt.__name__, None)
-                                if new_cls:
-                                    found_classes.append((tgt, new_cls))
-                            else:
-                                for attr_name in dir(mod):
-                                    obj = getattr(mod, attr_name)
-                                    if isinstance(obj, type) and (issubclass(obj, Plugin) or hasattr(obj, "apply")):
-                                        for reg_key in list(registry._runtimes.keys()):
-                                            if getattr(reg_key, "__name__", "") == attr_name:
-                                                found_classes.append((reg_key, obj))
-
-                            for old_key, new_cls in found_classes:
-                                r_entry = registry.get(old_key)
-                                if r_entry and old_key not in saved_fibers:
-                                    saved_fibers[old_key] = list(getattr(r_entry, "fibers", []))
-
-                            for old_key, new_cls in found_classes:
-                                runtime = registry.get(old_key)
-                                if runtime:
-                                    reloads[old_key] = {"filename": file_path, "runtime": runtime, "attempt": new_cls}
-                                    try:
-                                        await registry.delete_async(old_key)
-                                    except Exception as err:
-                                        if hasattr(self.ctx, "logger"):
-                                            self.ctx.logger("hmr").warn("failed to dispose plugin %s: %s", old_key, err)
-
-                                    try:
-                                        await reload_plugin(new_cls, runtime, old_key)
-                                        if hasattr(self.ctx, "logger"):
-                                            self.ctx.logger("hmr").info("reload plugin %s", new_cls)
-                                    except Exception as err:
-                                        if hasattr(self.ctx, "logger"):
-                                            self.ctx.logger("hmr").warn("failed to reload plugin %s: %s", new_cls, err)
-                                        raise err
-                    except Exception as step_err:
-                        for m_name in new_modules_created:
-                            sys.modules.pop(m_name, None)
-                        if registry:
-                            for old_key, info in reloads.items():
-                                runtime = info.get("runtime")
-                                attempt = info.get("attempt")
-                                if not runtime:
-                                    continue
+                        for old_key, new_cls in found_classes:
+                            runtime = registry.get(old_key)
+                            if runtime:
+                                reloads[old_key] = {"filename": file_path, "runtime": runtime, "attempt": new_cls}
                                 try:
-                                    if attempt:
-                                        await registry.delete_async(attempt)
-                                    await reload_plugin(old_key, runtime, old_key)
+                                    await registry.delete_async(old_key)
                                 except Exception as err:
                                     if hasattr(self.ctx, "logger"):
-                                        self.ctx.logger("hmr").warn("failed during rollback of %s: %s", old_key, err)
-                        raise step_err
+                                        self.ctx.logger("hmr").warn("failed to dispose plugin %s: %s", old_key, err)
 
-                    if reloads and hasattr(self.ctx, "emit"):
-                        self.ctx.emit("hmr/reload", reloads)
+                                try:
+                                    await reload_plugin(new_cls, runtime, old_key)
+                                    if hasattr(self.ctx, "logger"):
+                                        self.ctx.logger("hmr").info("reload plugin %s", new_cls)
+                                except Exception as err:
+                                    if hasattr(self.ctx, "logger"):
+                                        self.ctx.logger("hmr").warn("failed to reload plugin %s: %s", new_cls, err)
+                                    raise err
+                except Exception as step_err:
+                    for m_name in new_modules_created:
+                        sys.modules.pop(m_name, None)
+                    if registry:
+                        for old_key, info in reloads.items():
+                            runtime = info.get("runtime")
+                            attempt = info.get("attempt")
+                            if not runtime:
+                                continue
+                            try:
+                                if attempt:
+                                    await registry.delete_async(attempt)
+                                await reload_plugin(old_key, runtime, old_key)
+                            except Exception as err:
+                                if hasattr(self.ctx, "logger"):
+                                    self.ctx.logger("hmr").warn("failed during rollback of %s: %s", old_key, err)
+                    raise step_err
 
-                    if hasattr(self.ctx, "logger"):
-                        self.ctx.logger("hmr").info("Reloaded module %s (%d plugins affected)", filename, len(reloads))
+                if reloads and hasattr(self.ctx, "emit"):
+                    self.ctx.emit("hmr/reload", reloads)
 
-                except Exception as reason:
-                    if hasattr(self.ctx, "logger"):
-                        self.ctx.logger("hmr").warn("Module reload at %s failed: %s", filename, reason)
+                if hasattr(self.ctx, "logger"):
+                    self.ctx.logger("hmr").info("Reloaded module %s (%d plugins affected)", filename, len(reloads))
+
+            except Exception as reason:
+                if hasattr(self.ctx, "logger"):
+                    self.ctx.logger("hmr").warn("Module reload at %s failed: %s", filename, reason)
+
+        async def _run() -> None:
+            while self._module_changes:
+                pending = list(self._module_changes.items())
+                self._module_changes.clear()
+                for changed_file, changed_target in pending:
+                    state = self._refreshes.get(changed_file)
+                    if state is not None:
+                        state.dirty = False
+                    await _reload_one(changed_file, changed_target)
 
         try:
             loop = asyncio.get_running_loop()
             task = loop.create_task(_run())
-            refresh_state.running = task
+            self._module_reload_task = task
+            for state in self._refreshes.values():
+                if state.dirty:
+                    state.running = task
             self._refresh_tasks.add(task)
             task.add_done_callback(lambda t: self._refresh_tasks.discard(t))
         except RuntimeError:
@@ -741,9 +780,15 @@ class ConfigWatcherService(Service):
                         pass
                 try:
                     loop = asyncio.get_running_loop()
-                    loop.create_task(_wait())
                 except RuntimeError:
-                    pass
+                    return
+                # `fiber.ts` keeps driving a dropped awaitable; CPython needs
+                # an owner, so the fiber records this join of the running pass.
+                fiber = getattr(self.ctx, "fiber", None) if self.ctx is not None else None
+                if fiber is not None and hasattr(fiber, "schedule_settlement"):
+                    fiber.schedule_settlement(_wait())
+                else:
+                    loop.create_task(_wait())
 
         if hasattr(self.ctx, "disposable"):
             return self.ctx.disposable(unregister, label=f"hmr.register_module('{abs_path}')")
@@ -757,6 +802,8 @@ class ConfigWatcherService(Service):
         self._running = False
         if self._poll_task and not self._poll_task.done():
             self._poll_task.cancel()
+        if self._poll_task is not None:
+            await asyncio.gather(self._poll_task, return_exceptions=True)
         running_tasks = [s.running for s in self._refreshes.values() if s and s.running and not s.running.done()]
         running_tasks.extend([t for t in self._refresh_tasks if not t.done()])
         if running_tasks:
@@ -770,22 +817,35 @@ class ConfigWatcherService(Service):
         self._mtimes.clear()
         self._root_mtimes.clear()
 
-    def teardown(self) -> None:
+    def teardown(self) -> Optional[asyncio.Task]:
+        """
+        Start the teardown `init` owns and give its settlement an owner.
+
+        `reference/vendor/hmr/src/index.ts:199-205` owns this teardown as the
+        `Service.init` disposer, which the service fiber awaits. A synchronous
+        caller inside a running loop cannot await it, so the fiber owns the
+        settlement the same way `Context.teardown()` does: `await_settled()`
+        and `settle_fibers()` join it, and a caller that must observe
+        quiescence awaits the returned task. With no running loop the
+        settlement runs inline and there is nothing left to join.
+
+        @returns the owned settlement task, or `None` after an inline run.
+        """
         self._running = False
         if self._poll_task and not self._poll_task.done():
             self._poll_task.cancel()
+        settlement = self._async_teardown()
+        fiber = getattr(self.ctx, "fiber", None) if self.ctx is not None else None
+        if fiber is not None and hasattr(fiber, "schedule_settlement"):
+            return fiber.schedule_settlement(settlement)
+        # A context without an owning fiber has nowhere to record the
+        # settlement, so the teardown still runs with no owner to join it.
         try:
             loop = asyncio.get_running_loop()
-            loop.create_task(self._async_teardown())
+            return loop.create_task(settlement)
         except RuntimeError:
-            for state in self._refreshes.values():
-                if state and state.running and not state.running.done():
-                    state.running.cancel()
-            self._configs.clear()
-            self._config_names.clear()
-            self._modules.clear()
-            self._mtimes.clear()
-            self._root_mtimes.clear()
+            asyncio.run(settlement)
+            return None
 
 
 # Backward-compatible and alias names

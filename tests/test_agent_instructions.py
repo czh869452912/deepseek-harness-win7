@@ -39,8 +39,8 @@ def test_instructions_discovery_and_render(temp_workspace):
 @pytest.mark.asyncio
 async def test_instructions_prompt_assembly_injection(temp_workspace):
     ctx = Context()
-    ctx.plugin(PersonaPlugin, config={"text": "You are a helpful assistant."})
-    ctx.plugin(AgentInstructionsPlugin)
+    await ctx.plugin(PersonaPlugin, config={"text": "You are a helpful assistant."})
+    await ctx.plugin(AgentInstructionsPlugin)
 
     orig_cwd = os.getcwd()
     os.chdir(temp_workspace)
@@ -56,8 +56,8 @@ async def test_instructions_prompt_assembly_injection(temp_workspace):
 @pytest.mark.asyncio
 async def test_instructions_suppressed_in_minimal_mode(temp_workspace):
     ctx = Context()
-    ctx.plugin(PersonaPlugin, config={"text": "Exclusive prompt.", "complete": True})
-    ctx.plugin(AgentInstructionsPlugin)
+    await ctx.plugin(PersonaPlugin, config={"text": "Exclusive prompt.", "complete": True})
+    await ctx.plugin(AgentInstructionsPlugin)
 
     orig_cwd = os.getcwd()
     os.chdir(temp_workspace)

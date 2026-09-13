@@ -39,7 +39,9 @@ async def test_config_watcher_debounced_reload():
 
         unregister()
     finally:
-        hmr.teardown()
+        settlement = hmr.teardown()
+        if settlement is not None:
+            await settlement
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
 
@@ -76,6 +78,8 @@ async def test_config_watcher_failure_event_broadcast():
 
         unregister()
     finally:
-        hmr.teardown()
+        settlement = hmr.teardown()
+        if settlement is not None:
+            await settlement
         if os.path.exists(tmp_path):
             os.remove(tmp_path)

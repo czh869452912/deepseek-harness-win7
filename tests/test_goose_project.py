@@ -609,6 +609,30 @@ def test_pilot_stops_after_selected_task_without_claiming_siblings(repo, monkeyp
     assert next(r['state'] for r in p.store.rows() if r['id'] == 'b') == 'READY'
 
 
+def test_conflicting_optional_plans_cannot_bypass_judge(repo, monkeypatch):
+    p = make_project(repo)
+    p.store.apply_plan(plan(task('a')))
+    group = p.store.claim('w')
+    agent = p.task_runner(group)
+    monkeypatch.setattr(p, 'task_runner', lambda group: agent)
+    monkeypatch.setattr(agent, 'verify_chunk', lambda value: True)
+    monkeypatch.setattr(agent, 'checkpoint', lambda value: None)
+    calls = []
+    def phase(agent, name, feedback=None):
+        calls.append(name)
+        if name == 'judge':
+            return dict(status='BLOCKED', verdict='BLOCKED', summary='explicit contract decision needed')
+        spec = task('a')
+        spec['goal'] = 'proposal from ' + name
+        return dict(status='ESCALATE' if name == 'migrate' else 'MUST_FIX', summary='disputed',
+                    coverage_complete=False, issues=[], changed_files=[], observed_changes=[],
+                    test_paths=['tests/test_a.py'], dependencies=[], test_map=[], work_plan=plan(spec))
+    monkeypatch.setattr(p, 'cached_phase', phase)
+    p.execute(group)
+    assert calls == ['migrate', 'review', 'judge']
+    assert p.store.rows()[0]['feedback']['judgment']['status'] == 'BLOCKED'
+
+
 def test_architect_resumes_native_stop_and_applies_acknowledged_plan(repo, monkeypatch):
     p = make_project(repo)
     calls = []

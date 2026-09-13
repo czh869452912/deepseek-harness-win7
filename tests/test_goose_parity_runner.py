@@ -28,7 +28,7 @@ def message(mid, text, role="assistant"):
             "content": [{"type": "text", "text": text}]}}
 
 
-def test_stream_assembles_deltas_and_ignores_tool_result_and_thinking():
+def test_stream_displays_thinking_without_using_it_as_final_result():
     seen = []
     stream = runner.Stream(lambda k, v: seen.append((k, v)))
     text = json.dumps(result())
@@ -40,7 +40,7 @@ def test_stream_assembles_deltas_and_ignores_tool_result_and_thinking():
         stream.feed(message("final", fragment))
     stream.feed({"type": "complete"})
     assert stream.result("migrate")["status"] == "READY"
-    assert "not public output" not in str(seen)
+    assert ("thinking", "not public output") in seen
 
 
 def test_stream_cannot_reuse_an_earlier_valid_result():
@@ -249,7 +249,7 @@ def test_test_paths_cannot_escape_repository(tmp_path, name):
 def test_complete_cli_pipeline_with_fake_goose(repo, native_stop):
     """Real child processes, target/full tests, structured output and checkpoint."""
     source = Path(__file__).resolve().parents[1]
-    for name in [".goose/parity_runner.py", ".goose/recipes/parity-unit.yaml"] + [
+    for name in [".goose/parity_runner.py", ".goose/console_runtime.py", ".goose/agent-config.json", ".goose/recipes/parity-unit.yaml"] + [
             ".agents/agents/" + role + ".md" for role in runner.ROLES.values()]:
         dest = repo / name
         dest.parent.mkdir(parents=True, exist_ok=True)
@@ -312,3 +312,118 @@ print(json.dumps({'type':'complete'}), flush=True)
     if native_stop:
         assert "resuming the same session with its tools" in proc.stdout
     assert not (repo / ".goose/runs/active.lock").exists()
+
+
+def make_review_runner(repo):
+    args = argparse.Namespace(unit="core/session", goose=None, max_rounds=0, no_commit=True,
+                              adopt_existing=False, max_turns=0, phase_timeout=0,
+                              control_root=Path(__file__).resolve().parents[1])
+    h = runner.Runner(args, root=repo)
+    h.args.goose = repo / "fake-goose.cmd"
+    return h
+
+
+REVIEW_EVENTS = [
+    {"type": "message", "message": {"id": "final", "role": "assistant", "content": [
+        {"type": "toolRequest", "id": "t1", "toolCall": {"value": {
+            "name": "recipe__final_output", "arguments": {
+                "status": "MUST_FIX", "summary": "checked", "coverage_complete": False, "issues": [],
+                "changed_files": [], "test_paths": ["tests/test_unit.py"], "dependencies": [],
+                "test_map": ["upstream case -> tests/test_unit.py -> PORTED"]}}}}]}},
+    {"type": "message", "message": {"role": "user", "content": [
+        {"type": "toolResponse", "id": "t1", "toolResult": {"status": "success", "value": {}}}]}},
+    {"type": "complete"},
+]
+
+
+def review_fake(repo, once):
+    fake = repo / "fake-review.py"
+    fake.write_text(
+        "import json,sys\n"
+        "from pathlib import Path\n"
+        "recipe = Path(sys.argv[sys.argv.index('--recipe') + 1])\n"
+        "counter = recipe.parent / 'invocations.txt'\n"
+        "count = int(counter.read_text()) if counter.exists() else 0\n"
+        "counter.write_text(str(count + 1))\n"
+        + ("if count == 0:\n    Path('scratch-$null').write_text('junk')\n" if once
+           else "Path('scratch-$null').write_text('junk')\n")
+        + "events = json.loads(r'''REPLACE''')\n"
+        .replace("REPLACE", json.dumps(REVIEW_EVENTS))
+        + "for e in events:\n    print(json.dumps(e), flush=True)\n",
+        encoding="utf-8")
+    executable = repo / "fake-goose.cmd"
+    executable.write_text('@echo off\n"' + sys.executable + '" "' + str(fake) + '" %*\n', encoding="utf-8")
+    return executable
+
+
+def test_review_heals_untracked_scratch_and_reruns_blind(repo):
+    h = make_review_runner(repo)
+    h.args.goose = review_fake(repo, once=True)
+    seen = []
+    h.notify = lambda k, m: seen.append((k, m))
+    result = h.phase("review")
+    assert result["status"] == "MUST_FIX"
+    assert not (repo / "scratch-$null").exists()
+    assert ("repair", "Read-only phase left untracked scratch files (scratch-$null); "
+            "removed them and rerunning the blind phase") in seen
+    assert (h.run_dir / "00-review-blind-retry.result.json").exists()
+
+
+def test_review_repeated_mutation_stays_a_hard_failure(repo):
+    h = make_review_runner(repo)
+    h.args.goose = review_fake(repo, once=False)
+    h.notify = lambda *a: None
+    with pytest.raises(ValueError, match="Read-only phase mutated files"):
+        h.phase("review")
+    assert (repo / "scratch-$null").exists()  # preserved for inspection
+
+
+def test_save_json_retries_while_a_reader_holds_the_target(tmp_path):
+    import threading
+    target = tmp_path / "status.json"
+    runner.save_json(target, {"n": 0})
+    with open(target, "r", encoding="utf-8") as handle:
+        threading.Timer(0.2, handle.close).start()
+        runner.save_json(target, {"n": 1})
+    assert json.loads(target.read_text(encoding="utf-8")) == {"n": 1}
+
+
+def test_verify_chunk_rejects_malformed_test_paths_as_feedback(repo):
+    h = make_review_runner(repo)
+    seen = []
+    h.notify = lambda k, m: seen.append((k, m))
+    bad = "apps/web/tests (mirrored official lane: 90 *.e2e.ts, snapshots/**)"
+    assert h.verify_chunk({"test_paths": [bad], "changed_files": []}) is False
+    assert any(k == "verification" and "Rejected test path" in m for k, m in seen)
+    assert h.verify_chunk({"test_paths": [], "changed_files": []}) is False
+
+
+def test_migrate_filters_malformed_changed_file_entries(repo):
+    h = make_review_runner(repo)
+    fake = repo / "fake-migrate.py"
+    fake.write_text(
+        "import json,sys\n"
+        "from pathlib import Path\n"
+        "Path('real-change.txt').write_text('work')\n"
+        "value = dict(status='READY', summary='worked', coverage_complete=True, issues=[],\n"
+        "             changed_files=['real-change.txt', 'apps/web/dist (upstream build payload: *)'],\n"
+        "             test_paths=['tests/test_unit.py'], dependencies=[],\n"
+        "             test_map=['upstream case -> tests/test_unit.py -> PORTED'])\n"
+        "events = [\n"
+        " {'type':'message','message':{'id':'final','role':'assistant','content':["
+        "{'type':'toolRequest','id':'t1','toolCall':{'value':{'name':'recipe__final_output','arguments':value}}}]}},\n"
+        " {'type':'message','message':{'role':'user','content':["
+        "{'type':'toolResponse','id':'t1','toolResult':{'status':'success','value':{}}}]}},\n"
+        " {'type':'complete'},\n"
+        "]\n"
+        "for e in events:\n"
+        "    print(json.dumps(e), flush=True)\n",
+        encoding="utf-8")
+    executable = repo / "fake-goose.cmd"
+    executable.write_text('@echo off\n"' + sys.executable + '" "' + str(fake) + '" %*\n', encoding="utf-8")
+    h.args.goose = executable
+    seen = []
+    h.notify = lambda k, m: seen.append((k, m))
+    result = h.phase("migrate")
+    assert result["changed_files"] == ["real-change.txt"]
+    assert any(k == "files" and "Rejected changed-file entry" in m for k, m in seen)

@@ -34,11 +34,14 @@ $recipe = '.goose/recipes/parity-unit.yaml'
 if ($Smoke) { $recipe = '.goose/recipes/parity-smoke.yaml' }
 Push-Location $repoRoot
 $originalBaseUrl = $env:OPENAI_BASE_URL
+$originalShell = $env:GOOSE_SHELL
 try {
     # Existing terminals can retain a Markdown URL even after config.yaml is fixed.
     if ($env:OPENAI_BASE_URL -match '^\[([^\]]+)\]\((https://[^)]+)\)$') {
         $env:OPENAI_BASE_URL = $Matches[2]
     }
+    # Keep model-authored redirects like "> $null" from becoming literal files (cmd default).
+    $env:GOOSE_SHELL = 'powershell.exe'
     & $GooseExe recipe validate $recipe
     if ($LASTEXITCODE -ne 0) { throw 'Recipe validation failed.' }
     $runArgs = @('run', '--recipe', $recipe)
@@ -68,5 +71,6 @@ try {
     }
 } finally {
     $env:OPENAI_BASE_URL = $originalBaseUrl
+    $env:GOOSE_SHELL = $originalShell
     Pop-Location
 }

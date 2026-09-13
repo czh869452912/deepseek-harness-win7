@@ -1,0 +1,141 @@
+"""Real concurrent streams, cursor reconnects and local model configuration."""
+from concurrent.futures import ThreadPoolExecutor
+import json
+from pathlib import Path
+import sys
+import threading
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError
+
+import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / '.goose'))
+from console_runtime import append_event, read_events, load_config, write_config, config_revision
+from project_console import make_server
+from parity_runner import Stream, run_process
+from project_runner import repeated_issues
+
+
+def test_parallel_workers_keep_complete_tool_results_and_thinking(tmp_path, monkeypatch):
+    monkeypatch.setenv('GOOSE_PROJECT_OUTPUT', 'quiet')
+    def worker(name):
+        folder = tmp_path / name
+        folder.mkdir()
+        state = dict(unit=name, phase='migrate', round=1, attempt=name)
+        stream = Stream(lambda k, v: append_event(folder, state, k, v))
+        code = "import json\n"
+        code += "for i in range(50):\n"
+        code += " print(json.dumps({'type':'message','message':{'role':'assistant','content':[{'type':'thinking','thinking':str(i)}, {'type':'toolResponse','id':str(i),'toolResult':{'text':'LINE1\\nLINE2'}}]}}),flush=True)\n"
+        code += "print(json.dumps({'type':'complete'}),flush=True)\n"
+        code += "print('tail stderr',flush=True)\n"
+        assert run_process([sys.executable, '-c', code], folder, folder / 'raw.jsonl',
+                           lambda k, v: append_event(folder, state, k, v), 10, stream) == 0
+        events, cursor = read_events(folder / 'progress.jsonl', limit=1000)
+        assert sum(e['kind'] == 'thinking' for e in events) == 50
+        assert sum(e['kind'] == 'tool_result' for e in events) == 50
+        assert all(e['task'] == name for e in events)
+        assert len({e['seq'] for e in events}) == len(events)
+        assert read_events(folder / 'progress.jsonl', cursor) == ([], cursor)
+        assert 'tail stderr' in (folder / 'raw.jsonl').read_text(encoding='utf-8')
+        return events
+    with ThreadPoolExecutor(2) as pool:
+        assert all(pool.map(worker, ['alpha', 'beta']))
+
+
+def test_pause_drains_backlog_and_retries_retain_raw_log(tmp_path):
+    stop = threading.Event()
+    count = [0]
+    def notify(kind, value):
+        if kind == 'tool_result':
+            count[0] += 1
+            stop.set()
+    stream = Stream(notify)
+    # A single write guarantees a backlog already in the pipe at cancellation.
+    code = "import sys,json,time\ne=json.dumps({'type':'message','message':{'role':'user','content':[{'type':'toolResponse','toolResult':{'value':'done'}}]}})\nsys.stdout.write((e+'\\n')*50);sys.stdout.flush();time.sleep(30)"
+    path = tmp_path / 'raw.jsonl'
+    with pytest.raises(InterruptedError):
+        run_process([sys.executable, '-c', code], tmp_path, path, notify, 5, stream, cancel_event=stop)
+    assert len(path.read_text(encoding='utf-8').splitlines()) == 50
+    assert count[0] == 50
+    run_process([sys.executable, '-c', "print('next attempt')"], tmp_path, path, lambda *a: None, 5)
+    archived = list(tmp_path.glob('raw.attempt-*.jsonl'))
+    assert len(archived) == 1
+    assert len(archived[0].read_text(encoding='utf-8').splitlines()) == 50
+    assert 'next attempt' in path.read_text(encoding='utf-8')
+
+
+def test_byte_cursor_waits_for_partial_utf8_line_and_reconnects(tmp_path):
+    path = tmp_path / 'events.jsonl'
+    first = (json.dumps({'message': '中文'}, ensure_ascii=False) + '\n').encode('utf-8')
+    path.write_bytes(first + b'{"message":')
+    events, cursor = read_events(path)
+    assert events[0]['message'] == '中文'
+    assert cursor == len(first)
+    with path.open('ab') as file:
+        file.write(b'"second"}\n')
+    events, next_cursor = read_events(path, cursor)
+    assert [e['message'] for e in events] == ['second']
+    assert read_events(path, next_cursor)[0] == []
+
+
+def test_heartbeat_does_not_replace_last_useful_activity(tmp_path, monkeypatch):
+    monkeypatch.setenv('GOOSE_PROJECT_OUTPUT', 'quiet')
+    state = dict(unit='a', phase='review', round=1)
+    append_event(tmp_path, state, 'agent', 'checking lifecycle')
+    append_event(tmp_path, state, 'heartbeat', 'idle')
+    assert state['last_activity']['message'] == 'checking lifecycle'
+    assert state['last_heartbeat']['message'] == 'idle'
+
+
+def test_model_editor_atomic_update_origin_token_and_stale_revision(tmp_path):
+    (tmp_path / '.goose').mkdir()
+    server = make_server(tmp_path, 0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    base = 'http://127.0.0.1:%d' % server.server_port
+    try:
+        with urlopen(base + '/api/config') as response:
+            initial = json.load(response)
+        initial['config']['roles']['migrator']['model'] = 'replacement-model'
+        payload = json.dumps({'config': initial['config'], 'revision': initial['revision']}).encode()
+        req = Request(base + '/api/config', payload, {'Content-Type': 'application/json'}, method='POST')
+        with pytest.raises(HTTPError) as rejected:
+            urlopen(req)
+        assert rejected.value.code == 403
+        req.add_header('Origin', base)
+        req.add_header('X-Console-Token', initial['token'])
+        with urlopen(req) as response:
+            assert json.load(response)['revision'] != initial['revision']
+        assert load_config(tmp_path)['roles']['migrator']['model'] == 'replacement-model'
+        with pytest.raises(HTTPError) as stale:
+            urlopen(req)
+        assert stale.value.code == 400
+        with pytest.raises(HTTPError):
+            urlopen(Request(base + '/api/config', headers={'Host': 'attacker.example'}))
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join()
+
+
+def test_config_rejects_secret_fields(tmp_path):
+    value = load_config(tmp_path)
+    value['roles']['judge']['api_key'] = 'do-not-store'
+    with pytest.raises(ValueError, match='provider and model only'):
+        write_config(tmp_path, value, config_revision(value))
+
+
+def test_repeated_invariant_ignores_punctuation_and_unrelated_tree_changes():
+    old = {'review': {'issues': [{'id': 'reference/vendor/cordis/src/fiber.ts#reload-microtask'}]}}
+    assert repeated_issues({'issues': [{'id': 'reference/vendor/cordis/src/fiber.ts#_reload-initial-microtask'}]}, old)
+    assert not repeated_issues({'issues': [{'id': 'reference/vendor/schema/src/number.ts#maximum'}]}, old)
+
+
+def test_terminal_disconnect_does_not_drop_persisted_events(tmp_path, monkeypatch):
+    def disconnected(*args, **kwargs):
+        raise BrokenPipeError('terminal disconnected')
+    monkeypatch.setattr('builtins.print', disconnected)
+    monkeypatch.setenv('GOOSE_PROJECT_OUTPUT', 'plain')
+    state = dict(unit='a', phase='migrate', round=1)
+    append_event(tmp_path, state, 'tool', 'retained')
+    assert read_events(tmp_path / 'progress.jsonl')[0][0]['message'] == 'retained'

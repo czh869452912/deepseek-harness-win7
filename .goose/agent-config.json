@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "roles": {
+    "architect": {
+      "provider": "custom_deepseek",
+      "model": "deepseek-flash"
+    },
+    "migrator": {
+      "provider": "custom_deepseek",
+      "model": "deepseek-flash"
+    },
+    "reviewer": {
+      "provider": "openai",
+      "model": "gpt-5.6-luna"
+    },
+    "judge": {
+      "provider": "custom_openai_sol",
+      "model": "gpt-5.6-sol"
+    }
+  }
+}

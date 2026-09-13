@@ -71,6 +71,21 @@ def test_pilot_replan_cannot_silently_enroll_another_full_task(store):
     assert rows['b']['state'] != 'RUNNING'
 
 
+def test_empty_repaired_completion_plan_preserves_scope_and_round(repo):
+    p = make_project(repo)
+    spec = task('a')
+    p.store.apply_plan(plan(spec))
+    group = p.store.claim('w')
+    p.store.update(group, 'WAITING_PLAN', round=8, feedback={
+        'proposed_work_plan': {'tasks': [], 'contracts': []},
+        'proposals_signature': 'completion-summary-only', 'resume_round_after_plan': 8})
+    p.apply_proposals()
+    row = p.store.rows()[0]
+    assert row['state'] == 'READY' and row['round'] == 8
+    assert row['spec'] == spec
+    assert row['feedback']['applied_proposals_signature'] == 'completion-summary-only'
+
+
 def test_unapproved_acceptance_cycle_is_visible_not_a_giant_worker(store):
     a, b = task("a", ["b"]), task("b", ["a"])
     b["dependencies"][0]["kind"] = "acceptance"

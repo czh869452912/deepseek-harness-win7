@@ -545,6 +545,9 @@ class Runner:
                        "requires implementation fixes. BLOCKED is only for an unresolved external/design decision; "
                        "ordinary known code defects are not an arbitration blocker. ")
         prompt += "test_paths must be existing repository-relative pytest paths under tests/ (no flags). "
+        prompt += ("work_plan is only for a necessary graph change, not a completion report or restatement of "
+                   "existing scope. Return empty tasks/contracts when the existing owner can do the work. "
+                   "Do not rename contract IDs, rewrite completed task goals, or add atomic groups to record progress. ")
         prompt += "test_map records exact upstream case titles -> Python locations -> classification. "
         if feedback and phase != "review":
             prompt += "\nContinuation evidence (verify against source; preserve completed work):\n" + json.dumps(feedback, ensure_ascii=False)

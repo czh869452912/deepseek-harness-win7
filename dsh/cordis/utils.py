@@ -880,35 +880,36 @@ class DisposableList(Generic[T]):
         return lambda: self.delete_by_sn(sn)
 
     def delete_by_sn(self, sn: int) -> bool:
+        # The reference disposer is `() => this.map.delete(sn)`; it must not
+        # touch the identity index, which a WeakMap keeps until the value dies.
         if sn in self._map:
-            val = self._map.pop(sn)
-            self._id_to_sn.pop(id(val), None)
+            del self._map[sn]
             return True
         return False
 
     def delete(self, value: T) -> bool:
-        """Delete an item by identity, with bound method fallback."""
-        val_id = id(value)
-        if val_id in self._id_to_sn:
-            sn = self._id_to_sn.pop(val_id)
-            if sn in self._map:
-                del self._map[sn]
-                return True
+        """Delete an item by identity, with bound method fallback.
 
-        for sn, v in list(self._map.items()):
-            if v is value:
-                del self._map[sn]
-                self._id_to_sn.pop(id(v), None)
-                return True
+        The reference reads the identity index (`this.weak.get(value)`) and
+        deletes that single sequence number, so a value pushed twice loses the
+        later registration and keeps the earlier one, and a value whose indexed
+        registration is already gone reports no deletion.
+        """
+        sn = self._id_to_sn.get(id(value))
 
-        if inspect.ismethod(value):
-            for sn, v in list(self._map.items()):
+        # Python re-creates a bound method object on every attribute access,
+        # while JavaScript returns one shared function object; match on the
+        # underlying receiver and function so `delete(host.method)` still finds
+        # the pushed registration.
+        if sn is None and inspect.ismethod(value):
+            for entry_sn, v in self._map.items():
                 if inspect.ismethod(v) and v.__self__ is value.__self__ and v.__func__ is value.__func__:
-                    del self._map[sn]
-                    self._id_to_sn.pop(id(v), None)
-                    return True
+                    sn = entry_sn
+                    break
 
-        return False
+        if sn is None:
+            return False
+        return self.delete_by_sn(sn)
 
     def clear(self) -> List[T]:
         """Clear all entries and return values in reverse registration order."""
@@ -1328,6 +1329,739 @@ def make_array(source: Any) -> List[Any]:
 makeArray = make_array
 
 
+# ---------------------------------------------------------------------------
+# V8's `new Date(string)` reader.
+#
+# `Time.parseDate` hands the string to the host's `new Date(date)`
+# (reference/vendor/cosmokit/src/time.ts:60), so which strings name a date -
+# and which are an Invalid Date - is decided by the engine, not by the package.
+# The classes below transcribe the `DateParser` of the pinned runtime
+# (Node 22.22.2 / V8 12.4.254.21: src/date/dateparser.h, dateparser-inl.h and
+# dateparser.cc), so the port accepts exactly the strings that runtime accepts
+# and reads every field the way it reads it.
+# ---------------------------------------------------------------------------
+
+#: `DateParser::KeywordTable::array` as (word, KeywordType, value); the table
+#: ends at the INVALID entry, which is also what an unmatched word produces.
+_V8_KEYWORD_INVALID = 0
+_V8_KEYWORD_MONTH_NAME = 1
+_V8_KEYWORD_TIME_ZONE_NAME = 2
+_V8_KEYWORD_TIME_SEPARATOR = 3
+_V8_KEYWORD_AM_PM = 4
+_V8_KEYWORD_WORDS = (
+    ("jan", _V8_KEYWORD_MONTH_NAME, 1),
+    ("feb", _V8_KEYWORD_MONTH_NAME, 2),
+    ("mar", _V8_KEYWORD_MONTH_NAME, 3),
+    ("apr", _V8_KEYWORD_MONTH_NAME, 4),
+    ("may", _V8_KEYWORD_MONTH_NAME, 5),
+    ("jun", _V8_KEYWORD_MONTH_NAME, 6),
+    ("jul", _V8_KEYWORD_MONTH_NAME, 7),
+    ("aug", _V8_KEYWORD_MONTH_NAME, 8),
+    ("sep", _V8_KEYWORD_MONTH_NAME, 9),
+    ("oct", _V8_KEYWORD_MONTH_NAME, 10),
+    ("nov", _V8_KEYWORD_MONTH_NAME, 11),
+    ("dec", _V8_KEYWORD_MONTH_NAME, 12),
+    ("am", _V8_KEYWORD_AM_PM, 0),
+    ("pm", _V8_KEYWORD_AM_PM, 12),
+    ("ut", _V8_KEYWORD_TIME_ZONE_NAME, 0),
+    ("utc", _V8_KEYWORD_TIME_ZONE_NAME, 0),
+    ("z", _V8_KEYWORD_TIME_ZONE_NAME, 0),
+    ("gmt", _V8_KEYWORD_TIME_ZONE_NAME, 0),
+    ("cdt", _V8_KEYWORD_TIME_ZONE_NAME, -5),
+    ("cst", _V8_KEYWORD_TIME_ZONE_NAME, -6),
+    ("edt", _V8_KEYWORD_TIME_ZONE_NAME, -4),
+    ("est", _V8_KEYWORD_TIME_ZONE_NAME, -5),
+    ("mdt", _V8_KEYWORD_TIME_ZONE_NAME, -6),
+    ("mst", _V8_KEYWORD_TIME_ZONE_NAME, -7),
+    ("pdt", _V8_KEYWORD_TIME_ZONE_NAME, -7),
+    ("pst", _V8_KEYWORD_TIME_ZONE_NAME, -8),
+    ("t", _V8_KEYWORD_TIME_SEPARATOR, 0),
+)
+
+#: The characters of a keyword the table stores; the rest of a longer word is
+#: only allowed for a month name.
+_V8_KEYWORD_PREFIX_LENGTH = 3
+
+#: `IsWhiteSpace`: the JavaScript WhiteSpace characters.  The two line
+#: separators are not part of this set - V8 only skips them as line
+#: terminators, and a word runs through one (`Mar<U+2028>5` is the single
+#: word `mar\u2028`, which is why `new Date("Mar<U+2028>5<U+2028>2026")`
+#: is Invalid).
+_V8_WHITESPACE = frozenset(
+    [0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x20, 0xA0, 0x1680,
+     0x202F, 0x205F, 0x3000, 0xFEFF] + list(range(0x2000, 0x200B))
+)
+
+#: `IsLineTerminator`, which `SkipWhiteSpace` also skips.
+_V8_LINE_TERMINATORS = frozenset([0x0A, 0x0D, 0x2028, 0x2029])
+
+#: `IsWhiteSpaceOrLineTerminator`, the set `SkipWhiteSpace` accepts.
+_V8_WHITESPACE_OR_LINE_TERMINATOR = _V8_WHITESPACE | _V8_LINE_TERMINATORS
+
+#: `Smi::kMaxValue`, the bound `TimeZoneComposer::Write` checks.
+_V8_SMI_MAX_VALUE = 0x3FFFFFFF
+
+_V8_END_TOKEN = ("end",)
+_V8_INVALID_TOKEN = ("invalid",)
+_V8_UNKNOWN_TOKEN = ("unknown",)
+
+
+def _v8_keyword_prefix(word):
+    """The zero-padded prefix the keyword table stores for `word`."""
+    return [ord(char) for char in word] + [0] * (_V8_KEYWORD_PREFIX_LENGTH - len(word))
+
+
+_V8_KEYWORD_TABLE = tuple(
+    (_v8_keyword_prefix(word), keyword_type, value)
+    for word, keyword_type, value in _V8_KEYWORD_WORDS
+)
+
+#: What an unmatched word reads: the `INVALID` sentinel entry of the table.
+_V8_KEYWORD_INVALID_ENTRY = ([_V8_KEYWORD_INVALID] * _V8_KEYWORD_PREFIX_LENGTH,
+                             _V8_KEYWORD_INVALID, 0)
+
+
+def _v8_keyword_lookup(prefix, length):
+    """`KeywordTable::Lookup`: (KeywordType, value) for a word's prefix."""
+    for entry_prefix, keyword_type, value in _V8_KEYWORD_TABLE:
+        matched = 0
+        while (matched < _V8_KEYWORD_PREFIX_LENGTH
+               and prefix[matched] == entry_prefix[matched]):
+            matched += 1
+        # A word longer than the keyword is only legal for a month name.
+        if matched == _V8_KEYWORD_PREFIX_LENGTH and (
+                length <= _V8_KEYWORD_PREFIX_LENGTH
+                or keyword_type == _V8_KEYWORD_MONTH_NAME):
+            return keyword_type, value
+    return _V8_KEYWORD_INVALID_ENTRY[1], _V8_KEYWORD_INVALID_ENTRY[2]
+
+
+def _v8_is_month(value):
+    """`DayComposer::IsMonth`: `Between(value, 1, 12)`."""
+    return 1 <= value <= 12
+
+
+def _v8_is_day(value):
+    """`DayComposer::IsDay`: `Between(value, 1, 31)`."""
+    return 1 <= value <= 31
+
+
+def _v8_is_minute(value):
+    """`TimeComposer::IsMinute`: `Between(value, 0, 59)`."""
+    return 0 <= value <= 59
+
+
+def _v8_is_hour(value):
+    """`TimeComposer::IsHour`: `Between(value, 0, 23)`."""
+    return 0 <= value <= 23
+
+
+def _v8_is_second(value):
+    """`TimeComposer::IsSecond`: `Between(value, 0, 59)`."""
+    return 0 <= value <= 59
+
+
+def _v8_is_hour12(value):
+    """`TimeComposer::IsHour12`: `Between(value, 0, 12)`."""
+    return 0 <= value <= 12
+
+
+def _v8_is_millisecond(value):
+    """`TimeComposer::IsMillisecond`: `Between(value, 0, 999)`."""
+    return 0 <= value <= 999
+
+
+def _v8_read_milliseconds(value, length):
+    """`DateParser::ReadMilliseconds`: the three most significant digits of a
+    numeral, read from its value and character length - so leading zeros count
+    as characters, and a numeral past nine digits only keeps nine."""
+    if length < 3:
+        if length == 1:
+            return value * 100
+        if length == 2:
+            return value * 10
+        return value
+    if length > 3:
+        if length > 9:
+            length = 9
+        factor = 1
+        while True:
+            factor *= 10
+            length -= 1
+            if length <= 3:
+                break
+        return value // factor
+    return value
+
+
+def _v8_is_number(token):
+    """`DateToken::IsNumber`."""
+    return token[0] == "num"
+
+
+def _v8_is_symbol(token, symbol):
+    """`DateToken::IsSymbol(char)`."""
+    return token[0] == "sym" and token[1] == symbol
+
+
+def _v8_is_ascii_sign(token):
+    """`DateToken::IsAsciiSign`."""
+    return token[0] == "sym" and token[1] in ("+", "-")
+
+
+def _v8_ascii_sign_value(token):
+    """`DateToken::ascii_sign`: 1 for `+`, -1 for `-`."""
+    return 1 if token[1] == "+" else -1
+
+
+def _v8_is_whitespace_token(token):
+    """`DateToken::IsWhiteSpace`."""
+    return token[0] == "ws"
+
+
+def _v8_is_keyword_type(token, keyword_type):
+    """`DateToken::IsKeywordType`."""
+    return token[0] == "kw" and token[1] == keyword_type
+
+
+def _v8_is_keyword_z(token):
+    """`DateToken::IsKeywordZ`: the one-character `z` timezone word."""
+    return (token[0] == "kw" and token[1] == _V8_KEYWORD_TIME_ZONE_NAME
+            and token[3] == 1 and token[2] == 0)
+
+
+def _v8_is_fixed_length_number(token, length):
+    """`DateToken::IsFixedLengthNumber`: the numeral's character length."""
+    return token[0] == "num" and token[2] == length
+
+
+class _V8DateReader(object):
+    """`DateParser::InputReader`: cursor with a look-ahead character.
+
+    The look-ahead is 0 past the end of the string, so a literal NUL character
+    reads as the end of the input exactly as it does in V8.
+    """
+
+    def __init__(self, source):
+        self._source = source
+        self._position = 0
+        self.ch = 0
+        self.next_char()
+
+    def next_char(self):
+        """Advance to the next character of the string."""
+        self.ch = (ord(self._source[self._position])
+                   if self._position < len(self._source) else 0)
+        self._position += 1
+
+    def position(self):
+        return self._position
+
+    def is_end(self):
+        """`IsEnd`: the look-ahead is the end of the input."""
+        return self.ch == 0
+
+    def is_ascii_digit(self):
+        """`IsDecimalDigit`: `'0' <= ch <= '9'`."""
+        return 0x30 <= self.ch <= 0x39
+
+    def is_ascii_alpha_or_above(self):
+        """`ch >= 'A'`: the ASCII letters and every non-ASCII character."""
+        return self.ch >= 0x41
+
+    def is_white_space_char(self):
+        """`IsWhiteSpace`: ends a word."""
+        return self.ch in _V8_WHITESPACE
+
+    def is_white_space_or_line_terminator(self):
+        """`IsWhiteSpaceOrLineTerminator`: what `SkipWhiteSpace` skips."""
+        return self.ch in _V8_WHITESPACE_OR_LINE_TERMINATOR
+
+    def read_unsigned_numeral(self):
+        """`ReadUnsignedNumeral`: skip leading zeros, then keep the first nine
+        significant digits.  The skipped zeros still advance the position, so
+        they count towards the numeral's length."""
+        value = 0
+        digit = 0
+        while self.ch == 0x30:
+            self.next_char()
+        while self.is_ascii_digit():
+            if digit < 9:
+                value = value * 10 + self.ch - 0x30
+            digit += 1
+            self.next_char()
+        return value
+
+    def read_word(self):
+        """`ReadWord`: the lower-cased prefix the keyword table compares, and
+        the word's full length, which may exceed the prefix."""
+        prefix = [0] * _V8_KEYWORD_PREFIX_LENGTH
+        length = 0
+        while self.is_ascii_alpha_or_above() and not self.is_white_space_char():
+            if length < _V8_KEYWORD_PREFIX_LENGTH:
+                # `AsciiAlphaToLower` is `char | 0x20`, not a case fold.
+                prefix[length] = self.ch | 0x20
+            length += 1
+            self.next_char()
+        return prefix, length
+
+
+class _V8DateStringTokenizer(object):
+    """`DateParser::DateStringTokenizer`: `Scan` with one token of
+    look-ahead."""
+
+    def __init__(self, reader):
+        self._reader = reader
+        self._next_token = self.scan()
+
+    def peek(self):
+        return self._next_token
+
+    def next_token(self):
+        token = self._next_token
+        self._next_token = self.scan()
+        return token
+
+    def skip_symbol(self, symbol):
+        if _v8_is_symbol(self._next_token, symbol):
+            self._next_token = self.scan()
+            return True
+        return False
+
+    def scan(self):
+        """`DateParser::Scan`: the token starting at the current character."""
+        reader = self._reader
+        start = reader.position()
+        if reader.is_end():
+            return _V8_END_TOKEN
+        if reader.is_ascii_digit():
+            value = reader.read_unsigned_numeral()
+            return ("num", value, reader.position() - start)
+        for symbol in (":", "-", "+", ".", ")"):
+            if reader.ch == ord(symbol):
+                reader.next_char()
+                return ("sym", symbol)
+        if reader.is_ascii_alpha_or_above() and not reader.is_white_space_char():
+            prefix, length = reader.read_word()
+            keyword_type, value = _v8_keyword_lookup(prefix, length)
+            return ("kw", keyword_type, value, length)
+        if reader.ch in _V8_WHITESPACE_OR_LINE_TERMINATOR:
+            reader.next_char()
+            return ("ws", reader.position() - start)
+        if reader.ch == 0x28:
+            # `SkipParentheses`: a comment is skipped whole, nested parentheses
+            # included; an unterminated one runs to the end of the input.
+            balance = 0
+            while True:
+                if reader.ch == 0x29:
+                    balance -= 1
+                elif reader.ch == 0x28:
+                    balance += 1
+                reader.next_char()
+                if balance <= 0 or reader.ch == 0:
+                    break
+            return _V8_UNKNOWN_TOKEN
+        reader.next_char()
+        return _V8_UNKNOWN_TOKEN
+
+
+class _V8DayComposer(object):
+    """`DateParser::DayComposer`: the date components, written once at the
+    end."""
+
+    def __init__(self):
+        self._comp = [0, 0, 0]
+        self._index = 0
+        self._named_month = None
+        self.is_iso_date = False
+
+    def is_empty(self):
+        return self._index == 0
+
+    def add(self, value):
+        if self._index < 3:
+            self._comp[self._index] = value
+            self._index += 1
+            return True
+        return False
+
+    def set_named_month(self, value):
+        self._named_month = value
+
+    def write(self):
+        """`DayComposer::Write`: (year, month, day), or None for the Invalid
+        Date it reports.  The missing components default to 1 first, so the
+        number of components read is no longer observable here."""
+        if self._index < 1:
+            return None
+        while self._index < 3:
+            self._comp[self._index] = 1
+            self._index += 1
+        year = 0
+        month = None
+        day = None
+        if self._named_month is None:
+            if self.is_iso_date or not _v8_is_day(self._comp[0]):
+                # YMD
+                year = self._comp[0]
+                month = self._comp[1]
+                day = self._comp[2]
+            else:
+                # MD(Y)
+                month = self._comp[0]
+                day = self._comp[1]
+                year = self._comp[2]
+        else:
+            month = self._named_month
+            if not _v8_is_day(self._comp[0]):
+                # YMD, MYD, or YDM
+                year = self._comp[0]
+                day = self._comp[1]
+            else:
+                # DMY, MDY, or DYM
+                day = self._comp[0]
+                year = self._comp[1]
+        if not self.is_iso_date:
+            # The default year is 0 (=> 2000) for KJS compatibility.
+            if 0 <= year <= 49:
+                year += 2000
+            elif 50 <= year <= 99:
+                year += 1900
+        if not _v8_is_month(month) or not _v8_is_day(day):
+            return None
+        return (year, month, day)
+
+
+class _V8TimeComposer(object):
+    """`DateParser::TimeComposer`: hour, minute, second and millisecond."""
+
+    def __init__(self):
+        self._comp = [0, 0, 0, 0]
+        self._index = 0
+        self._hour_offset = None
+
+    def is_empty(self):
+        return self._index == 0
+
+    def is_expecting(self, value):
+        """`IsExpecting`: the value may fill the next empty clock component."""
+        return ((self._index == 1 and _v8_is_minute(value))
+                or (self._index == 2 and _v8_is_second(value))
+                or (self._index == 3 and _v8_is_millisecond(value)))
+
+    def add(self, value):
+        if self._index < 4:
+            self._comp[self._index] = value
+            self._index += 1
+            return True
+        return False
+
+    def add_final(self, value):
+        """`AddFinal`: the value ends the clock time, the rest defaults to 0."""
+        if not self.add(value):
+            return False
+        while self._index < 4:
+            self._comp[self._index] = 0
+            self._index += 1
+        return True
+
+    def set_hour_offset(self, value):
+        """The `am`/`pm` keyword's hour offset."""
+        self._hour_offset = value
+
+    def write(self):
+        """`TimeComposer::Write`: (hour, minute, second, millisecond), or None
+        for the Invalid Date it reports."""
+        while self._index < 4:
+            self._comp[self._index] = 0
+            self._index += 1
+        hour, minute, second, millisecond = self._comp
+        if self._hour_offset is not None:
+            if not _v8_is_hour12(hour):
+                return None
+            hour %= 12
+            hour += self._hour_offset
+        if not (_v8_is_hour(hour) and _v8_is_minute(minute)
+                and _v8_is_second(second) and _v8_is_millisecond(millisecond)):
+            # A 24th hour is allowed if minutes, seconds and milliseconds are 0.
+            if hour != 24 or minute != 0 or second != 0 or millisecond != 0:
+                return None
+        return (hour, minute, second, millisecond)
+
+
+#: `TimeZoneComposer::Write`'s Invalid Date for an offset it cannot represent.
+_V8_TIME_ZONE_OVERFLOW = object()
+
+
+class _V8TimeZoneComposer(object):
+    """`DateParser::TimeZoneComposer`: the offset named by a timezone word or
+    by a sign, written once at the end."""
+
+    def __init__(self):
+        self._sign = None
+        self._hour = None
+        self._minute = None
+
+    def set(self, offset_in_hours):
+        """`Set`: a timezone word's whole-hour offset."""
+        self._sign = -1 if offset_in_hours < 0 else 1
+        self._hour = offset_in_hours * self._sign
+        self._minute = 0
+
+    def set_sign(self, sign):
+        self._sign = -1 if sign < 0 else 1
+
+    def set_absolute_hour(self, hour):
+        self._hour = hour
+
+    def set_absolute_minute(self, minute):
+        self._minute = minute
+
+    def is_expecting(self, value):
+        """`IsExpecting`: a minute may still complete this offset."""
+        return self._hour is not None and self._minute is None and _v8_is_minute(value)
+
+    def is_utc(self):
+        return self._hour == 0 and self._minute == 0
+
+    def is_empty(self):
+        return self._hour is None
+
+    def write(self):
+        """`TimeZoneComposer::Write`: the offset in seconds east of UTC, None
+        when the string named no offset (an ECMAScript NaN, which leaves the
+        wall clock local), or `_V8_TIME_ZONE_OVERFLOW` for the Invalid Date of
+        an offset too large to represent."""
+        if self._sign is None:
+            return None
+        hour = 0 if self._hour is None else self._hour
+        minute = 0 if self._minute is None else self._minute
+        # Unsigned arithmetic in the reference, to avoid signed overflow.
+        total_seconds = hour * 3600 + minute * 60
+        if total_seconds > _V8_SMI_MAX_VALUE:
+            return _V8_TIME_ZONE_OVERFLOW
+        return -total_seconds if self._sign < 0 else total_seconds
+
+
+def _v8_parse_es5_datetime(scanner, day, time, time_zone):
+    """`DateParser::ParseES5DateTime`: the ES5 Date Time String phase.
+
+    Returns the token the legacy parser continues with, `_V8_END_TOKEN` when
+    the string was read completely as an ES5 Date Time String, or
+    `_V8_INVALID_TOKEN` when the string cannot be a date at all.
+    """
+    # Mandatory date part: [('-'|'+')yy]yyyy['-'MM['-'DD]]
+    if _v8_is_ascii_sign(scanner.peek()):
+        # Keep the sign token, so the legacy parser can read it when this
+        # phase does not use it.
+        sign_token = scanner.next_token()
+        if not _v8_is_fixed_length_number(scanner.peek(), 6):
+            return sign_token
+        sign = _v8_ascii_sign_value(sign_token)
+        year = scanner.next_token()[1]
+        if sign < 0 and year == 0:
+            return sign_token
+        day.add(sign * year)
+    elif _v8_is_fixed_length_number(scanner.peek(), 4):
+        day.add(scanner.next_token()[1])
+    else:
+        return scanner.next_token()
+
+    if scanner.skip_symbol("-"):
+        peek = scanner.peek()
+        if not (_v8_is_fixed_length_number(peek, 2) and _v8_is_month(peek[1])):
+            return scanner.next_token()
+        day.add(scanner.next_token()[1])
+        if scanner.skip_symbol("-"):
+            peek = scanner.peek()
+            if not (_v8_is_fixed_length_number(peek, 2) and _v8_is_day(peek[1])):
+                return scanner.next_token()
+            day.add(scanner.next_token()[1])
+
+    # Optional time part: 'T'HH':'mm[':'ss['.'sss]]Z
+    if not _v8_is_keyword_type(scanner.peek(), _V8_KEYWORD_TIME_SEPARATOR):
+        if scanner.peek()[0] != "end":
+            return scanner.next_token()
+    else:
+        scanner.next_token()
+        peek = scanner.peek()
+        if not (_v8_is_fixed_length_number(peek, 2) and 0 <= peek[1] <= 24):
+            return _V8_INVALID_TOKEN
+        # Allow 24:00[:00[.000]], but no other time starting with 24.
+        hour_is_24 = peek[1] == 24
+        time.add(scanner.next_token()[1])
+        if not scanner.skip_symbol(":"):
+            return _V8_INVALID_TOKEN
+        peek = scanner.peek()
+        if not (_v8_is_fixed_length_number(peek, 2)
+                and _v8_is_minute(peek[1])
+                and not (hour_is_24 and peek[1] > 0)):
+            return _V8_INVALID_TOKEN
+        time.add(scanner.next_token()[1])
+        if scanner.skip_symbol(":"):
+            peek = scanner.peek()
+            if not (_v8_is_fixed_length_number(peek, 2)
+                    and _v8_is_second(peek[1])
+                    and not (hour_is_24 and peek[1] > 0)):
+                return _V8_INVALID_TOKEN
+            time.add(scanner.next_token()[1])
+            if scanner.skip_symbol("."):
+                peek = scanner.peek()
+                if not _v8_is_number(peek) or (hour_is_24 and peek[1] > 0):
+                    return _V8_INVALID_TOKEN
+                # More or less than the mandated three digits are allowed.
+                fraction = scanner.next_token()
+                time.add(_v8_read_milliseconds(fraction[1], fraction[2]))
+        # Optional timezone: 'Z' | ('+'|'-')hh':'mm
+        peek = scanner.peek()
+        if _v8_is_keyword_z(peek):
+            scanner.next_token()
+            time_zone.set(0)
+        elif _v8_is_symbol(peek, "+") or _v8_is_symbol(peek, "-"):
+            time_zone.set_sign(_v8_ascii_sign_value(scanner.next_token()))
+            peek = scanner.peek()
+            if _v8_is_fixed_length_number(peek, 4):
+                # hhmm extension syntax.
+                hourmin = scanner.next_token()[1]
+                hour = hourmin // 100
+                minute = hourmin % 100
+                if not _v8_is_hour(hour) or not _v8_is_minute(minute):
+                    return _V8_INVALID_TOKEN
+                time_zone.set_absolute_hour(hour)
+                time_zone.set_absolute_minute(minute)
+            else:
+                # hh:mm standard syntax.
+                if not (_v8_is_fixed_length_number(peek, 2) and _v8_is_hour(peek[1])):
+                    return _V8_INVALID_TOKEN
+                time_zone.set_absolute_hour(scanner.next_token()[1])
+                if not scanner.skip_symbol(":"):
+                    return _V8_INVALID_TOKEN
+                peek = scanner.peek()
+                if not (_v8_is_fixed_length_number(peek, 2) and _v8_is_minute(peek[1])):
+                    return _V8_INVALID_TOKEN
+                time_zone.set_absolute_minute(scanner.next_token()[1])
+        if scanner.peek()[0] != "end":
+            return _V8_INVALID_TOKEN
+
+    # A date-only form is UTC; a date-time form without an offset is local.
+    if time_zone.is_empty() and time.is_empty():
+        time_zone.set(0)
+    day.is_iso_date = True
+    return _V8_END_TOKEN
+
+
+def _v8_parse_date_string(source):
+    """`DateParser::Parse`: the fields a `new Date(source)` names.
+
+    Returns (year, month, day, hour, minute, second, millisecond, offset in
+    seconds east of UTC or None for a local wall clock), or None when the
+    string is an Invalid Date.  The ES5 Date Time String phase runs first; the
+    legacy loop then continues with whatever it left unread.
+    """
+    reader = _V8DateReader(source)
+    scanner = _V8DateStringTokenizer(reader)
+    time_zone = _V8TimeZoneComposer()
+    time = _V8TimeComposer()
+    day = _V8DayComposer()
+
+    token = _v8_parse_es5_datetime(scanner, day, time, time_zone)
+    if token[0] == "invalid":
+        return None
+    has_read_number = not day.is_empty()
+
+    while token[0] != "end":
+        if token[0] == "num":
+            has_read_number = True
+            number = token[1]
+            if scanner.skip_symbol(":"):
+                if scanner.skip_symbol(":"):
+                    # `n::` adds a second zero as well.
+                    if not time.is_empty():
+                        return None
+                    time.add(number)
+                    time.add(0)
+                else:
+                    if not time.add(number):
+                        return None
+                    if _v8_is_symbol(scanner.peek(), "."):
+                        scanner.next_token()
+            elif scanner.skip_symbol(".") and time.is_expecting(number):
+                time.add(number)
+                if not _v8_is_number(scanner.peek()):
+                    return None
+                fraction = scanner.next_token()
+                time.add_final(_v8_read_milliseconds(fraction[1], fraction[2]))
+            elif time_zone.is_expecting(number):
+                time_zone.set_absolute_minute(number)
+            elif time.is_expecting(number):
+                time.add_final(number)
+                # Require end, white space, "Z", "+" or "-" immediately after
+                # finalizing the time.
+                peek = scanner.peek()
+                if (peek[0] != "end" and not _v8_is_whitespace_token(peek)
+                        and not _v8_is_keyword_z(peek)
+                        and not _v8_is_ascii_sign(peek)):
+                    return None
+            else:
+                if not day.add(number):
+                    return None
+                scanner.skip_symbol("-")
+        elif token[0] == "kw":
+            keyword_type = token[1]
+            value = token[2]
+            if keyword_type == _V8_KEYWORD_AM_PM and not time.is_empty():
+                time.set_hour_offset(value)
+            elif keyword_type == _V8_KEYWORD_MONTH_NAME:
+                day.set_named_month(value)
+                scanner.skip_symbol("-")
+            elif keyword_type == _V8_KEYWORD_TIME_ZONE_NAME and has_read_number:
+                time_zone.set(value)
+            else:
+                # Garbage words are illegal once a number has been read, and
+                # the first number must be separated from them.
+                if has_read_number:
+                    return None
+                if _v8_is_number(scanner.peek()):
+                    return None
+        elif _v8_is_ascii_sign(token) and (time_zone.is_utc() or not time.is_empty()):
+            # Parse a UTC offset (only after UTC or a time).
+            time_zone.set_sign(_v8_ascii_sign_value(token))
+            # The following number may be empty.
+            number = 0
+            length = 0
+            if _v8_is_number(scanner.peek()):
+                next_token = scanner.next_token()
+                length = next_token[2]
+                number = next_token[1]
+            has_read_number = True
+            if _v8_is_symbol(scanner.peek(), ":"):
+                time_zone.set_absolute_hour(number)
+                time_zone.set_absolute_minute(None)
+            elif length == 2 or length == 1:
+                # Time zones like GMT-8.
+                time_zone.set_absolute_hour(number)
+                time_zone.set_absolute_minute(0)
+            elif length == 4 or length == 3:
+                # Looks like the hhmm format.
+                time_zone.set_absolute_hour(number // 100)
+                time_zone.set_absolute_minute(number % 100)
+            else:
+                # Time zones like GMT-12345 are not accepted.
+                return None
+        elif (_v8_is_ascii_sign(token) or _v8_is_symbol(token, ")")) and has_read_number:
+            # An extra sign or ')' is illegal once a number has been read.
+            return None
+        # Other characters and whitespace are ignored.
+        token = scanner.next_token()
+
+    day_fields = day.write()
+    time_fields = time.write()
+    offset = time_zone.write()
+    if day_fields is None or time_fields is None or offset is _V8_TIME_ZONE_OVERFLOW:
+        return None
+    return day_fields + time_fields + (offset,)
+
+
 class Time:
     """Time constants and parsing helpers matching Cosmokit Time."""
     millisecond = 1
@@ -1405,39 +2139,6 @@ class Time:
     # literals anchor with `\Z`.
     _TIME_ONLY_REGEX = re.compile(r"^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?\Z", re.ASCII)
     _MONTH_DAY_REGEX = re.compile(r"^(\d{1,2})-(\d{1,2})-(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?\Z", re.ASCII)
-    # The Date Time String Format of ECMA-262: the month and day parts,
-    # and the whole time part, are optional and default to 01/01/00:00:00;
-    # a date-only form is UTC while a date-time form is local wall clock.
-    _ISO_DATETIME_REGEX = re.compile(
-        r"^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?"
-        r"(?:(?:[Tt]|[ \t]+)(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?)?"
-        r"(Z|z|[+-]\d{2}:?\d{2})?\Z",
-        re.ASCII,
-    )
-    # Everything below reproduces V8's non-ISO grammar: `new Date(string)`
-    # after the Date Time String Format fails, as the pinned Node 22 runtime
-    # implements it (every table and rule here was derived by differential
-    # probing of the vendored TypeScript).  A word names a month when it
-    # starts with the three-letter month name (`Jan`, `Janx` and `January`
-    # all name January, while `Ja` names nothing and `Ju` is ambiguous
-    # between June and July); a timezone word must match exactly.
-    _V8_MONTH_PREFIXES = ("jan", "feb", "mar", "apr", "may", "jun", "jul",
-                          "aug", "sep", "oct", "nov", "dec")
-    #: Timezone words V8 recognizes, in minutes east of UTC.  Any other
-    #: abbreviation (`CET`, `BST`, `JST`, ...) is an ordinary word to V8.
-    _V8_TIMEZONE_WORDS = {
-        "ut": 0, "utc": 0, "gmt": 0, "z": 0, "est": -300, "edt": -240,
-        "cst": -360, "cdt": -300, "mst": -420, "mdt": -360, "pst": -480,
-        "pdt": -420,
-    }
-    #: Symbols V8 skips between tokens.  A colon is skipped as well, which is
-    #: how `new Date("2026:3:5")` reads a clock time after the year, and every
-    #: other character opens an unknown word (`_v8_word_symbol`).
-    _V8_SKIPPED_SYMBOLS = frozenset(" !\"#$%&'*,-./;<=>?@:")
-    _ASCII_DIGITS = "0123456789"
-    _ASCII_LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    _ASCII_WHITESPACE = " \t\n\r\f\v"
-
     @classmethod
     def parse_time(cls, source: str) -> float:
         """Parse time strings matching Cosmokit Time.parseTime."""
@@ -1455,15 +2156,6 @@ class Time:
         return total
 
     parseTime = parse_time
-
-    @staticmethod
-    def _is_valid_clock(hour: int, minute: int, second: int) -> bool:
-        """V8 accepts 00:00-24:00:00 and rejects out-of-range clock parts."""
-        if not (0 <= minute <= 59 and 0 <= second <= 59 and 0 <= hour <= 24):
-            return False
-        if hour == 24 and (minute != 0 or second != 0):
-            return False
-        return True
 
     @classmethod
     def parse_date(cls, date_str: str) -> datetime.datetime:
@@ -1530,10 +2222,15 @@ class Time:
     def _build_zoned(year: int, month: int, day: int, hour: int, minute: int,
                      second: int, microsecond: int, offset_minutes: int) -> Optional[datetime.datetime]:
         """The local instant a wall-clock reading with `offset_minutes` east of
-        UTC names, or None when `datetime` cannot hold it."""
-        epoch = (calendar.timegm((year, month, 1, hour, minute, second))
-                 + (day - 1) * 86400 - offset_minutes * 60)
+        UTC names, or None when `datetime` cannot hold it.
+
+        ``calendar.timegm`` raises for a year outside its range, so the whole
+        conversion sits inside the guard: a reference value `datetime` cannot
+        hold reports as unrepresentable rather than escaping as an exception.
+        """
         try:
+            epoch = (calendar.timegm((year, month, 1, hour, minute, second))
+                     + (day - 1) * 86400 - offset_minutes * 60)
             # The sub-second part is added after the conversion: a float epoch
             # loses a millisecond of a `Date`'s precision.
             return (_datetime_from_epoch(epoch)
@@ -1541,35 +2238,19 @@ class Time:
         except (OSError, OverflowError, ValueError):
             return None
 
-    @staticmethod
-    def _parse_zone_offset(offset: str) -> Optional[int]:
-        """Zone offset in minutes, or None for an offset the reference rejects.
-
-        ECMA-262 allows ``Z``/``z`` or ``+HH:MM``/``+HHMM`` with hours 00-23
-        and minutes 00-59; every other offset is an Invalid Date in V8
-        (``+24:00``, ``+00:60``, ``+02``, ``+02:00:00``).
-        """
-        if offset in ("Z", "z"):
-            return 0
-        digits = offset[1:].replace(":", "")
-        hour, minute = int(digits[:2]), int(digits[2:])
-        if hour > 23 or minute > 59:
-            return None
-        return (1 if offset[0] == "+" else -1) * (hour * 60 + minute)
-
     @classmethod
     def _parse_js_date_string(cls, source: Any, now: datetime.datetime) -> datetime.datetime:
         """`new Date(string)` for a date string, else `new Date()` (now).
 
-        The Date Time String Format of ECMA-262 is read first - a date-only
-        form is UTC, a date-time form is local wall clock unless it names an
-        offset - and V8's non-ISO grammar (`_v8_parse_legacy`) second, in the
-        same order the reference tries them.
+        The grammar is V8's own (`_v8_parse_date_string`), because that is what
+        the reference's `new Date(date)` runs: a date-only form is UTC, a
+        date-time form is local wall clock unless it names an offset, and a
+        string V8 rejects is an Invalid Date.
 
         LEGAL_ADAPTATION: an unparseable string produces an Invalid Date that
-        Python cannot represent, so a string neither reader accepts falls back
-        to `new Date()` exactly like an empty string does; `now` is also what
-        the port renders a reference Invalid Date as.  Two reference values are
+        Python cannot represent, so a string V8 rejects falls back to
+        `new Date()` exactly like an empty string does; `now` is also what the
+        port renders a reference Invalid Date as.  Two reference values are
         outside a naive local `datetime` and report as `now` as well: an
         instant past year 9999 / before year 1, and the local mean time V8's
         timezone data uses before a zone's first recorded offset (this port
@@ -1579,421 +2260,18 @@ class Time:
         """
         if not source or not isinstance(source, str):
             return now
-        m = cls._ISO_DATETIME_REGEX.match(source)
-        if m:
-            year = int(m.group(1))
-            # An absent month/day part defaults to the first of its parent.
-            month = int(m.group(2)) if m.group(2) is not None else 1
-            day = int(m.group(3)) if m.group(3) is not None else 1
-            if not (1 <= month <= 12 and 1 <= day <= 31):
-                return now
-            if not 1 <= year <= 9999:
-                # Representative in the reference, outside `datetime`.
-                return now
-            if m.group(4) is None:
-                # A date-only form is UTC; a numeric offset needs a time part.
-                if m.group(8) not in (None, "Z", "z"):
-                    return now
-                epoch = calendar.timegm((year, month, 1, 0, 0, 0)) + (day - 1) * 86400
-                try:
-                    return _datetime_from_epoch(epoch)
-                except (OSError, OverflowError, ValueError):
-                    return now
-            hour, minute, second = int(m.group(4)), int(m.group(5)), int(m.group(6) or 0)
-            if not cls._is_valid_clock(hour, minute, second):
-                return now
-            # Date time values have millisecond resolution: extra digits truncate.
-            micro = int((m.group(7) + "000")[:3]) * 1000 if m.group(7) else 0
-            offset = m.group(8)
-            if offset is None:
-                # A date-time without an offset is local wall-clock time.
-                return cls._build_local(year, month, day, hour, minute, second, micro) or now
-            offset_minutes = cls._parse_zone_offset(offset)
-            if offset_minutes is None:
-                # An offset outside 00-23:00-59 is an Invalid Date.
-                return now
-            return cls._build_zoned(year, month, day, hour, minute, second, micro,
-                                    offset_minutes) or now
-        legacy = cls._v8_parse_legacy(source)
-        return legacy if legacy is not None else now
-
-    @classmethod
-    def _v8_scan_offset(cls, source: str, start: int) -> Optional[Tuple[int, int, int]]:
-        """V8's numeric zone offset at `start`, as (minutes east, value, end).
-
-        The sign must be followed by digits and at most four of them open the
-        offset (`GMT+12345` is not a token at all).  One or two digits are
-        whole hours, a longer number splits into hours and minutes at its last
-        two digits, and a `:MM` part holds at most two digits - a longer one
-        is not part of the offset, so the reference reads it as a number
-        (`12:30+12:345` is +12:00 with a stray 345).  `value` is the digit run
-        itself, which V8 reads as a number when the offset leads the string
-        (`new Date("GMT+0200")` is the year 200, not a timezone).
-        """
-        index = start + 1
-        begin = index
-        while index < len(source) and source[index] in cls._ASCII_DIGITS:
-            index += 1
-        digits = source[begin:index]
-        if not digits or len(digits) > 4:
-            return None
-        value = int(digits)
-        if index < len(source) and source[index] == ":":
-            colon = index + 1
-            end = colon
-            while end < len(source) and end - colon < 2 and source[end] in cls._ASCII_DIGITS:
-                end += 1
-            if end == colon:
-                return None
-            hours, minutes, index = value, int(source[colon:end]), end
-        elif len(digits) <= 2:
-            hours, minutes = value, 0
-        else:
-            hours, minutes = int(digits[:-2]), int(digits[-2:])
-        offset = hours * 60 + minutes
-        return (offset if source[start] == "+" else -offset), value, index
-
-    @classmethod
-    def _v8_scan_time(cls, source: str, start: int) -> Optional[Tuple[Any, int]]:
-        """V8's `H:M[:S[.ms]]` clock token at `start`, or None when the string
-        is not a valid date at all.
-
-        An hour past 24 is not a clock time (`new Date("99:00")` is Invalid
-        rather than the year 99), a fraction that names no digit and a
-        fraction on a clock time without seconds are Invalid (`12:30.` and
-        `12:30.45`), and a minute or second past 59 is Invalid when another
-        clock part follows while a final one leaves the run to the next token
-        (`new Date("12:99:1")` is Invalid but `new Date("12:3456")` is the year
-        3456 at 12:00).
-        """
-        digits = cls._ASCII_DIGITS
-        length = len(source)
-        index = start
-        while index < length and source[index] in digits:
-            index += 1
-        if int(source[start:index]) > 24:
-            return None
-        values = [int(source[start:index])]
-        seconds_read = False
-        while len(values) < 3 and index < length and source[index] == ":":
-            colon = index
-            index += 1
-            begin = index
-            while index < length and source[index] in digits:
-                index += 1
-            if index == begin:
-                # `12:` names 12:00:00, the same reading as a missing part.
-                values.append(0)
-                if len(values) == 3:
-                    break
-                continue
-            value = int(source[begin:index])
-            if value > 59:
-                if index < length and source[index] == ":" and index + 1 < length \
-                        and source[index + 1] in digits:
-                    # A part past 59 that another clock part follows is not a
-                    # clock time at all (`new Date("12:99:1")` is Invalid).
-                    return None
-                # As the last part it is not a clock part either: V8 leaves the
-                # colon for the next token, which reads the run as a number
-                # (`new Date("12:3456")` is the year 3456 at 12:00).
-                index = colon
-                break
-            values.append(value)
-            seconds_read = len(values) == 3
-        micro = 0
-        fraction_read = False
-        if index < length and source[index] == ".":
-            if not seconds_read:
-                return None
-            while index < length and source[index] == ".":
-                begin = index + 1
-                probe = begin
-                while probe < length and source[probe] in digits:
-                    probe += 1
-                if probe == begin:
-                    return None
-                if not fraction_read:
-                    micro = int((source[begin:probe] + "000")[:3]) * 1000
-                fraction_read = True
-                index = probe
-        elif (index < length and source[index] not in cls._ASCII_WHITESPACE
-              and source[index] not in ":+-Zz"):
-            # Without a millisecond fraction V8 ends the clock token only at a
-            # separator it recognizes: `new Date("Mar 5 2026 12:30/")` and
-            # `new Date("Mar 5 2026 12:30PM")` are Invalid, while `12:30Z`,
-            # `12:30+0200` and `12:30 ` are not.
-            return None
-        hour, minute = values[0], values[1] if len(values) > 1 else 0
-        second = values[2] if len(values) > 2 else 0
-        return (hour, minute, second, micro), index
-
-    @classmethod
-    def _v8_legacy_tokens(cls, source: str) -> Optional[List[Tuple[str, Any]]]:
-        """V8's tokens for a non-ISO date string, or None when it rejects it.
-
-        Tokens are `("num", value)`, `("clock", (hour, minute, second,
-        micro))`, `("word", text)` and `("zone", minutes east of UTC)`.  A
-        `+`/`-` is a sign only where it opens a token: between two numbers it
-        is a separator, and after a clock time or a timezone word it opens a
-        numeric offset instead.
-        """
-        tokens = []  # type: List[Tuple[str, Any]]
-        index = 0
-        length = len(source)
-        while index < length:
-            char = source[index]
-            if char in cls._ASCII_WHITESPACE:
-                index += 1
-                continue
-            if char == "(":
-                # A parenthesized comment is skipped whole, nested parentheses
-                # included; an unterminated one runs to the end, as in
-                # `new Date("Mar 5 2026 (x")`.
-                depth = 1
-                index += 1
-                while index < length and depth:
-                    if source[index] == "(":
-                        depth += 1
-                    elif source[index] == ")":
-                        depth -= 1
-                    index += 1
-                continue
-            if char in "+-":
-                trailing = tokens[-1][0] if tokens else None
-                if trailing in ("clock", "zone", "marker"):
-                    offset = cls._v8_scan_offset(source, index)
-                    if offset is None:
-                        return None
-                    minutes, value, index = offset
-                    if trailing == "zone":
-                        has_field = any(t[0] in ("num", "clock") for t in tokens)
-                        if (tokens[-1][1] and has_field
-                                and not any(t[0] == "clock" for t in tokens)):
-                            # Only the zero zones (`GMT`, `UT`, `UTC`, `Z`)
-                            # may carry an offset without a clock time:
-                            # `new Date("Mar 5 2026 EST+0200")` is invalid.
-                            return None
-                        if has_field:
-                            tokens[-1] = ("zone", minutes)
-                        else:
-                            # A leading `GMT+0200` names the year 200 rather
-                            # than a timezone: `new Date("GMT+0200")` is
-                            # 0200-01-01, not an instant at 02:00.
-                            tokens[-1] = ("num", value)
-                    else:
-                        tokens.append(("zone", minutes))
-                    continue
-                if char == "-" and index > 0 and (
-                        source[index - 1] in cls._ASCII_DIGITS
-                        or source[index - 1] in cls._ASCII_LETTERS
-                        or source[index - 1] == "."):
-                    # A hyphen attached to a number or a word is a separator
-                    # (`new Date("5-Jan-2026")` names the 5th of January, and
-                    # `new Date("5.-3")` names May 3), while a plus opens a
-                    # sign wherever it appears.
-                    index += 1
-                    continue
-                if any(token[0] in ("num", "clock") for token in tokens):
-                    # A sign is legal only in the leading position: V8 rejects
-                    # `new Date("1 -2")` and `new Date("Mar 5 2026 +")`.
-                    return None
-                index += 1
-                continue
-            if char in cls._ASCII_DIGITS:
-                start = index
-                while index < length and source[index] in cls._ASCII_DIGITS:
-                    index += 1
-                if (index < length and source[index] == ":" and index - start == 4
-                        and any(token[0] in ("num", "clock") for token in tokens)):
-                    # A four-digit year-like number carries a colon only where
-                    # it leads the string: `new Date("2026:1")` names the first
-                    # of January 2026 while `new Date("Mar 5 2026:")` is
-                    # Invalid.
-                    return None
-                if index < length and source[index] == ":" and index - start != 4:
-                    # A colon is only ignored after a four-digit year-like
-                    # number (`new Date("2026:1")` names the first of January
-                    # 2026); anywhere else it must open a clock time, and a
-                    # string that does not open one is Invalid.
-                    scanned = cls._v8_scan_time(source, start)
-                    if scanned is None:
-                        return None
-                    clock, index = scanned
-                    tokens.append(("clock", clock))
-                    if (index < length and source[index] in "Zz"
-                            and not (index + 1 < length
-                                     and source[index + 1] in cls._ASCII_LETTERS)):
-                        # `Z` glued to a clock is its UTC zone, and a number
-                        # may follow it (`new Date("12:30:45.6z2026")` is the
-                        # year 2026 at 20:30:45.600).
-                        tokens.append(("zone", 0))
-                        index += 1
-                    continue
-                tokens.append(("num", int(source[start:index])))
-                continue
-            if cls._v8_word_char(char):
-                start = index
-                while index < length and cls._v8_word_char(source[index]):
-                    index += 1
-                word = source[start:index]
-                lowered = word.lower()
-                if lowered in ("am", "pm") and any(t[0] == "clock" for t in tokens):
-                    # A clock marker may carry a glued number
-                    # (`new Date("12:30 PM5")` is May 2001 at 12:30).
-                    tokens.append(("marker", lowered))
-                    continue
-                is_month = len(lowered) >= 3 and lowered[:3] in cls._V8_MONTH_PREFIXES
-                if (not is_month and index < length
-                        and source[index] in cls._ASCII_DIGITS
-                        and not any(t[0] in ("num", "clock") for t in tokens)):
-                    # A digit glued to a leading word that is not a month is
-                    # not a number V8 reads: `new Date("Mar5")` is March 5
-                    # while `new Date("GMT5")` and `new Date("x5")` are
-                    # Invalid, but `new Date("1Z2")` reads the zone and the 2.
-                    return None
-                zone_word = cls._V8_TIMEZONE_WORDS.get(lowered)
-                if zone_word is not None and cls._v8_zone_delimited(source, index):
-                    tokens.append(("zone", zone_word))
-                    continue
-                tokens.append(("word", word))
-                continue
-            if char in cls._V8_SKIPPED_SYMBOLS:
-                index += 1
-                continue
-            if char == ")":
-                # A closing parenthesis is a token of its own: V8 ignores it
-                # before the date and rejects `new Date("Mar 5 2026 )")`.
-                tokens.append(("word", char))
-                index += 1
-                continue
-            return None
-        return tokens
-
-    @staticmethod
-    def _v8_word_char(char: str) -> bool:
-        """True for a character V8 scans as part of a word.
-
-        A word spans letters and every character outside V8's separator set,
-        so `new Date("Mar~ 5 2026")` names March 5 and `new Date("a_G&4")`
-        names April 2001.  Digits, whitespace, the skipped separators, `+`/`-`
-        and the parentheses end the word.
-        """
-        if char in Time._ASCII_WHITESPACE or char in Time._ASCII_DIGITS:
-            return False
-        if char in Time._ASCII_LETTERS or char > "\x7f":
-            return True
-        return char not in Time._V8_SKIPPED_SYMBOLS and char not in "()+-"
-
-    @classmethod
-    def _v8_zone_delimited(cls, source: str, index: int) -> bool:
-        """True when a timezone word ending at `index` is followed by a
-        delimiter V8 accepts there: whitespace, `+`/`-`, a glued number, the
-        end of the string, or nothing but skipped separators and comments
-        (`new Date("GMT/50")` names January 1950 at 00:00, not a timezone)."""
-        if index < len(source) and (source[index] in cls._ASCII_WHITESPACE
-                                    or source[index] in "+-"
-                                    or source[index] in cls._ASCII_DIGITS):
-            # A glued number is read after the zone in `new Date("1Z2")`; a
-            # leading one is not a token at all and is rejected before this.
-            return True
-        while index < len(source):
-            if source[index] == "(":
-                depth = 1
-                index += 1
-                while index < len(source) and depth:
-                    if source[index] == "(":
-                        depth += 1
-                    elif source[index] == ")":
-                        depth -= 1
-                    index += 1
-                continue
-            if source[index] not in cls._V8_SKIPPED_SYMBOLS:
-                return False
-            index += 1
-        return True
-
-    @classmethod
-    def _v8_parse_legacy(cls, source: str) -> Optional[datetime.datetime]:
-        """V8's non-ISO `new Date(string)` reading, or None for an Invalid Date.
-
-        The numbers name fields positionally - `month`, `day`, `year` unless a
-        month name already filled the month, in which case `day`, `year` - a
-        leading 0 or a leading number past 31 is the year instead, at most
-        three numbers are read (an extra one is ignored), and a missing year
-        is 2001, a missing day is 1.  A two-digit year takes the century V8
-        gives it (0-49 is 20xx, 50-99 is 19xx).  The rest of the reading is
-        `_v8_legacy_tokens` and `_v8_scan_time`: a clock time is local wall
-        clock unless a timezone names an offset, and a month or day outside
-        its range is an Invalid Date (a day past the month's length rolls
-        forward, as `MakeDay` does).
-        """
-        tokens = cls._v8_legacy_tokens(source)
-        if tokens is None:
-            return None
-        numbers = []  # type: List[int]
-        month = None
-        clock = None
-        zone = None
-        marker = None
-        for kind, value in tokens:
-            if kind == "num":
-                if len(numbers) == 3:
-                    return None
-                numbers.append(value)
-            elif kind == "clock":
-                if clock is not None:
-                    return None
-                clock = value
-            elif kind == "marker":
-                marker = value
-            elif kind == "zone":
-                if numbers or clock is not None:
-                    zone = value
-                # Otherwise the word precedes the date: `new Date("GMT 5")`
-                # names May 2001 without applying the timezone.
-            else:
-                lowered = value.lower()
-                if len(lowered) >= 3 and lowered[:3] in cls._V8_MONTH_PREFIXES:
-                    month = cls._V8_MONTH_PREFIXES.index(lowered[:3]) + 1
-                elif numbers or clock is not None:
-                    # An unknown word (`new Date("Mar 5 2026 xyz")`) is only
-                    # ignored before any number or clock time.
-                    return None
-        if not numbers:
-            return None
-        slots = ["day", "year"] if month is not None else ["month", "day", "year"]
-        fields = {}
-        remaining = list(numbers)
-        if remaining[0] == 0 or remaining[0] > 31:
-            fields["year"] = remaining.pop(0)
-            slots = [slot for slot in slots if slot != "year"]
-        for value in remaining:
-            if not slots:
-                break
-            fields[slots.pop(0)] = value
-        year = fields.get("year", 2001)
-        if year < 100:
-            year += 2000 if year < 50 else 1900
-        month = fields.get("month", month if month is not None else 1)
-        day = fields.get("day", 1)
-        if not 1 <= month <= 12 or not 1 <= day <= 31 or not 1 <= year <= 9999:
-            return None
-        hour = minute = second = micro = 0
-        if clock is not None:
-            hour, minute, second, micro = clock
-        if marker is not None:
-            if hour > 12:
-                return None
-            if marker == "pm":
-                hour += 12 if hour < 12 else 0
-            elif hour == 12:
-                hour = 0
-        if hour == 24 and (minute or second or micro):
-            return None
-        if zone is None:
-            return cls._build_local(year, month, day, hour, minute, second, micro)
-        return cls._build_zoned(year, month, day, hour, minute, second, micro, zone)
+        parsed = _v8_parse_date_string(source)
+        if parsed is None:
+            return now
+        year, month, day, hour, minute, second, millisecond, offset = parsed
+        microsecond = millisecond * 1000
+        if offset is None:
+            return cls._build_local(year, month, day, hour, minute, second,
+                                    microsecond) or now
+        # V8 holds the offset in seconds; the grammar only produces whole
+        # minutes, so the minute-granularity builder is exact here.
+        return cls._build_zoned(year, month, day, hour, minute, second,
+                                microsecond, offset // 60) or now
 
     @classmethod
     def format(cls, ms: float) -> str:
@@ -2199,13 +2477,8 @@ def get_traceable(ctx: Any, value: Any) -> Any:
         return value._extend({"ctx": effective_ctx})
     if tracker and not hasattr(value, "_mock_return_value"):
         return TracedProxy(effective_ctx, value, tracker=tracker if isinstance(tracker, dict) else {})
-    if callable(value) and not inspect.isclass(value) and not hasattr(value, "_mock_return_value"):
-        try:
-            sig = inspect.signature(value)
-            if "caller_ctx" in sig.parameters:
-                return TracedProxy(effective_ctx, value)
-        except Exception:
-            pass
+    # reference/vendor/cordis/src/utils.ts:122-124 - a value without
+    # `symbols.tracker` is returned unchanged, callable or not.
     return value
 
 
@@ -2258,8 +2531,12 @@ class _WithPropsProxy:
 def with_props(target: Any, props: Optional[Any] = None) -> Any:
     """
     Overlay properties onto a target matching TS withProps.
+
+    reference/vendor/cordis/src/utils.ts:129 is `if (!props) return target`,
+    and an empty object is truthy in JavaScript, so only a nullish props value
+    (Python ``None``) skips the overlay; ``{}`` still builds the proxy.
     """
-    if not props:
+    if props is None:
         return target
     return _WithPropsProxy(target, props)
 

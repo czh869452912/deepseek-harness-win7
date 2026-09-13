@@ -31,8 +31,12 @@ Cases:
 - C57      time.ts:36-61 V8's non-ISO punctuation, parenthesis and sign handling
 - C58      time.ts:36-61 V8 rejects a numeric zone offset with no clock time
 - C59      time.ts:51-53 a parseTime offset outside the datetime year range
+- C60      time.ts:36-61 V8's clock-slot expectancy and its glued zone
+- C61      time.ts:36-61 V8's WhiteSpace and line-terminator word rules
 - C44      exported-name surface of the reference package
 - T1..T7   reference/vendor/cordis/src/utils.ts cases owned by the same module
+- T1b      cordis/utils.ts:14-25 DisposableList duplicate-registration identity
+- T2b      cordis/utils.ts:117-125 only a tracked value is wrapped by getTraceable
 """
 
 import calendar
@@ -1577,6 +1581,40 @@ def test_t1_disposable_list_identity_and_order():
     assert len(values) == 0
 
 
+def test_t1b_disposable_list_duplicate_registration_identity():
+    """cordis/utils.ts:14-25 - `weak` is a WeakMap keyed by value.
+
+    Pushing the same object twice stores the second sequence number in the
+    identity index, so `delete(value)` removes the later registration and
+    leaves the earlier one; a disposer only removes its own sequence number and
+    never rewrites the index, so once its registration is gone `delete(value)`
+    reports false for that value.
+    """
+    values = DisposableList()
+    duplicate = object()
+    first_disposer = values.push(duplicate)
+    second_disposer = values.push(duplicate)
+    assert len(values) == 2
+
+    # A disposer for the first registration must not touch the identity index.
+    assert first_disposer() is True
+    assert len(values) == 1
+    assert values.delete(duplicate) is True
+    assert len(values) == 0
+    assert second_disposer() is False
+
+    values = DisposableList()
+    duplicate = object()
+    first_disposer = values.push(duplicate)
+    second_disposer = values.push(duplicate)
+    # `weak.get(value)` reads the later sequence number, already removed.
+    assert second_disposer() is True
+    assert values.delete(duplicate) is False
+    assert len(values) == 1
+    assert first_disposer() is True
+    assert len(values) == 0
+
+
 def test_t2_get_traceable_returns_untracked_values():
     """cordis/utils.ts:117-125 - a value without `symbols.tracker` passes through."""
     class DummyContext:
@@ -1585,9 +1623,44 @@ def test_t2_get_traceable_returns_untracked_values():
     def plain():
         return 42
 
+    def accepting_caller_ctx(caller_ctx=None):
+        return caller_ctx
+
     context = DummyContext()
     assert get_traceable(context, plain) is plain
     assert get_traceable(context, 5) == 5
+    # `if (!tracker) return value` covers every callable too: the reference
+    # never wraps an untracked function, whatever its parameter list looks like.
+    assert get_traceable(context, accepting_caller_ctx) is accepting_caller_ctx
+    assert accepting_caller_ctx is get_traceable(context, accepting_caller_ctx)
+    assert get_traceable(context, object()).__class__ is object
+
+
+def test_t2b_get_traceable_wraps_only_a_tracked_value():
+    """cordis/utils.ts:122-124,165-172 - `symbols.tracker` selects the wrapper.
+
+    Only a value carrying the tracker symbol enters `createTraceable`; the
+    wrapper then rebinds the tracker's property (the caller context) into the
+    calls it forwards.
+    """
+    from dsh.cordis.context import Context
+    from dsh.cordis.utils import Symbols, TracedProxy
+
+    context = Context()
+
+    class Tracked:
+        def work(self, caller_ctx=None):
+            return caller_ctx
+
+    tracked = Tracked()
+    setattr(tracked, Symbols.tracker, {'property': 'ctx'})
+    wrapped = get_traceable(context, tracked)
+    assert isinstance(wrapped, TracedProxy)
+    assert wrapped.ctx is context
+    assert wrapped.work() is context
+
+    untracked = Tracked()
+    assert get_traceable(context, untracked) is untracked
 
 
 def test_t3_with_props_overlays_writable_properties():
@@ -1605,6 +1678,16 @@ def test_t3_with_props_overlays_writable_properties():
     overlay.foo = 'written'
     assert overlay.foo == 'written'
     assert target.foo == 'target_foo'
+
+    # `if (!props) return target` only skips an ECMAScript falsy props value,
+    # and an empty object is truthy: `{}` still builds the overlay proxy.
+    empty_overlay = with_props(target, {})
+    assert empty_overlay is not target
+    assert empty_overlay.foo == 'target_foo'
+    assert empty_overlay.bar == 'target_bar'
+    empty_overlay.bar = 'written_through'
+    assert empty_overlay.bar == 'written_through'
+    assert target.bar == 'written_through'
 
 
 def test_t4_is_object_rejects_primitives_only():
@@ -1977,4 +2060,136 @@ def test_c58_parse_date_legacy_zone_grammar():
         ('Mar 5 2026 +0200', None),
         ('Mar 5 2026 12:30 +0200', datetime.datetime(2026, 3, 5, 18, 30)),
         ('Mar 5 2026 12:30-0800', datetime.datetime(2026, 3, 6, 4, 30)),
+    ))
+
+
+def _zoned_wall_clock(*utc_fields):
+    """The local naive value this port renders for a UTC instant.
+
+    The reference applies V8's timezone database, whose offsets vary over
+    time; the port reads the current offset for every year
+    (LEGAL_ADAPTATION), so the expected local value is derived from the
+    current offset rather than from the platform's historical data.
+    """
+    offset = -time.timezone
+    if time.daylight and time.localtime().tm_isdst:
+        offset = -time.altzone
+    return (datetime.datetime(1970, 1, 1)
+            + datetime.timedelta(seconds=calendar.timegm(utc_fields) + offset))
+
+
+def test_c60_parse_date_legacy_clock_slot_expectancy():
+    """time.ts:36-61 - V8 keeps its day, time and zone composers alive for the
+    whole string and consults them before a number becomes a date component.
+
+    `n::` and `n:` add the number to the clock time, and a colon that opens no
+    clock part leaves the number to the composer that still expects it: `12: 5
+    6` reads the 5 as the minute rather than the month, and a number past 59
+    becomes the year once the minute slot no longer wants it (`12: 60` is the
+    year 1960).  A zone word or a glued `Z` is recorded while `has_read_number`
+    holds, so `12:Z0` is Invalid (the clock stays unfinished, and the trailing
+    number never reaches the day composer) while `12:Z0 1` is the year 2001 at
+    20:00.  A number that arrives after the clock was finalized is refused by
+    the trailing-token check, so token order matters: `5 12:Z0 2026` is
+    Invalid while `12:Z0 2026 5` is not.
+    """
+    _assert_legacy_table((
+        # The clock time is incomplete and no date component was read.
+        ('12:', None),
+        ('12: ', None),
+        ('12: 1', None),
+        ('12: 5', None),
+        ('12: 59', None),
+        ('12: 0', None),
+        ('12: 00', None),
+        ('12: 24', None),
+        ('12: 25', None),
+        ('12:Z', None),
+        ('12:z', None),
+        ('12:Z0', None),
+        ('12:Z00', None),
+        ('12:Z001', None),
+        ('12:Z 0', None),
+        ('12:Z0 GMT', None),
+        ('12:Z0 Z', None),
+        ('12:00:Z0', None),
+        ('12:00:00:Z0', None),
+        ('12: 5.', None),
+        ('12: 5.5', None),
+        # A number the minute slot refuses is the year instead.
+        ('12: 60', datetime.datetime(1960, 1, 1, 12, 0)),
+        ('12: 61', datetime.datetime(1961, 1, 1, 12, 0)),
+        ('12: 100', datetime.datetime(100, 1, 1, 12, 0)),
+        # The minute slot takes the next number, the rest name the date.
+        ('12: 5 6', datetime.datetime(2001, 6, 1, 12, 5)),
+        ('12: 5 6 7', datetime.datetime(2001, 6, 7, 12, 5)),
+        ('12: 0 1', datetime.datetime(2001, 1, 1, 12, 0)),
+        ('12: 59 59', datetime.datetime(1959, 1, 1, 12, 59)),
+        ('12: 5 2026', datetime.datetime(2026, 1, 1, 12, 5)),
+        ('12: 2026 5', datetime.datetime(2026, 1, 1, 12, 5)),
+        ('12: 2026 59', datetime.datetime(2026, 1, 1, 12, 59)),
+        ('12: 2026 5 7', datetime.datetime(2026, 7, 1, 12, 5)),
+        # A second colon adds the seconds slot, and the number after it fills
+        # it: `12:00: 2026` is 12:00:05 rather than May 2026.
+        ('12:00: 2026 5', datetime.datetime(2026, 1, 1, 12, 0, 5)),
+        ('12:00::2026', None),
+        # The glued zone and the completed clock time.
+        ('12:Z0 1', _zoned_wall_clock(2001, 1, 1, 12, 0, 0)),
+        ('12:Z0 5', _zoned_wall_clock(2001, 5, 1, 12, 0, 0)),
+        ('12:Z0 2026 5', _zoned_wall_clock(2026, 5, 1, 12, 0, 0)),
+        ('12:Z0 1 2 3', _zoned_wall_clock(2003, 1, 2, 12, 0, 0)),
+        ('12:Z 1 2 3', _zoned_wall_clock(2001, 2, 3, 12, 1, 0)),
+        ('12:Z01234', _zoned_wall_clock(1234, 1, 1, 12, 0, 0)),
+        ('12:Z 1234', _zoned_wall_clock(1234, 1, 1, 12, 0, 0)),
+        ('12:00:Z0 2026', _zoned_wall_clock(2026, 1, 1, 12, 0, 0)),
+        ('12:00:Z0 2026 5', _zoned_wall_clock(2026, 5, 1, 12, 0, 0)),
+        ('2026 12:00:Z0', _zoned_wall_clock(2026, 1, 1, 12, 0, 0)),
+        ('5 12:Z0', _zoned_wall_clock(2001, 5, 1, 12, 0, 0)),
+        ('Mar 5 2026 12:GMT', _zoned_wall_clock(2026, 3, 5, 12, 0, 0)),
+        # A completed clock leaves no slot expecting the glued number, so it is
+        # the month: `12:00Z9` is September 2001.
+        ('12:00Z9', _zoned_wall_clock(2001, 9, 1, 12, 0, 0)),
+        ('12:00Z 9', _zoned_wall_clock(2001, 9, 1, 12, 0, 0)),
+        ('12:30:45.6z2026',
+         _zoned_wall_clock(2026, 1, 1, 12, 30, 45) + datetime.timedelta(milliseconds=600)),
+        # The trailing-token check makes the order matter: a number that
+        # arrives after the clock was finalized is refused, while the same
+        # numbers before it are the date the clock time completes.
+        ('5 12:Z0 2026', None),
+        ('2026 5 12:Z0', _zoned_wall_clock(2026, 5, 1, 12, 0, 0)),
+    ))
+
+
+def test_c61_parse_date_word_boundary_whitespace_and_line_terminators():
+    """time.ts:36-61 - V8 skips line terminators between tokens but only the
+    WhiteSpace characters end a word.
+
+    `SkipWhiteSpace` accepts `IsWhiteSpaceOrLineTerminator`, while the word
+    scanner tests `IsWhiteSpace` alone, so U+2028 and U+2029 continue a word:
+    `Mar<U+2028>5<U+2028>2026` is the single word `mar<U+2028>` (which names
+    November) followed by a number, and a garbage word after the first number
+    is Invalid.  U+200B is neither a WhiteSpace nor a line terminator
+    character, so it is part of the word for the same reason.
+    """
+    _assert_legacy_table((
+        ('Mar\u20285\u20282026', None),
+        ('5\u2028Mar\u20282026', None),
+        ('Mar\u20295\u20292026', None),
+        ('Mar\u200b5\u200b2026', None),
+        # The line separators are still skipped between tokens.
+        ('Mar\u2028 5 2026', datetime.datetime(2026, 3, 5)),
+        ('Mar\u2029 5 2026', datetime.datetime(2026, 3, 5)),
+        # Every WhiteSpace character separates the words.
+        ('Mar 5 2026', datetime.datetime(2026, 3, 5)),
+        ('Mar\t5\t2026', datetime.datetime(2026, 3, 5)),
+        ('Mar\v5\v2026', datetime.datetime(2026, 3, 5)),
+        ('Mar\f5\f2026', datetime.datetime(2026, 3, 5)),
+        ('Mar\r\n5 2026', datetime.datetime(2026, 3, 5)),
+        ('Mar\u00a05\u00a02026', datetime.datetime(2026, 3, 5)),
+        ('Mar\u16805 2026', datetime.datetime(2026, 3, 5)),
+        ('Mar\u20005\u20002026', datetime.datetime(2026, 3, 5)),
+        ('Mar\u202f5\u202f2026', datetime.datetime(2026, 3, 5)),
+        ('Mar\u205f5\u205f2026', datetime.datetime(2026, 3, 5)),
+        ('Mar\u30005\u30002026', datetime.datetime(2026, 3, 5)),
+        ('Mar\ufeff5\ufeff2026', datetime.datetime(2026, 3, 5)),
     ))

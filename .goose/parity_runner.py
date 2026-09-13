@@ -605,6 +605,11 @@ class Runner:
                                'The controller verified the worktree, acceptance scope and model are unchanged. '
                                'Continue unfinished analysis only; preserve completed work. '
                                'Return the required final structured result.']
+                    command[-1] += (' If your last response already completed the audit but used a legacy '
+                                    'format, only re-serialize that result without repeating analysis or tests. '
+                                    'The controller requires exactly this JSON schema, including all required '
+                                    'fields and string arrays; do not substitute the role markdown format: ' +
+                                    json.dumps(phase_schema, ensure_ascii=False))
                     self.notify('recovered', 'Resuming interrupted native session: ' + session_name)
             if turns:
                 command += ["--max-turns", str(turns)]

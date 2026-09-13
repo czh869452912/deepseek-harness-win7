@@ -351,6 +351,8 @@ def test_interrupted_phase_resumes_native_session_only_for_same_scope(repo, monk
         h.args.task_contract = {'scope': 'changed'}
     assert h.phase('review')['status'] == 'MUST_FIX'
     assert ('--resume' in calls[1]) == (not change_scope)
+    if not change_scope:
+        assert 'coverage_complete' in calls[1][-1] and 'required' in calls[1][-1]
     assert not (h.run_dir / '00-review.resume.json').exists()
 
 

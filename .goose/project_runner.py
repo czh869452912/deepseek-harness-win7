@@ -128,8 +128,10 @@ def dashboard(store, folder):
         live = {}
         if task["run_dir"]:
             status = Path(task["run_dir"]) / "status.json"
-            if status.exists():
+            try:
                 live = json.loads(status.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                pass  # The SQLite task state remains authoritative during file replacement.
         activity = live.get("last_activity", {})
         if task["state"] not in ("RUNNING", "VERIFIED"):
             live = {"phase": "", "execution_state": task["state"]}
@@ -204,7 +206,10 @@ class Project:
 
     def show(self):
         with self.display_lock:
-            return dashboard(self.store, self.folder)
+            try:
+                return dashboard(self.store, self.folder)
+            except OSError as error:
+                print('[progress] dashboard refresh deferred: ' + str(error), flush=True)
 
     def init(self):
         revision = git(self.root / "reference", "rev-parse", "HEAD")
@@ -598,7 +603,10 @@ class Project:
                 row = next(r for r in self.store.rows() if r["id"] == group["ids"][0])
                 agent.state["status"] = row["state"]
                 agent.state["execution_state"] = row["state"]
-                save_json(agent.run_dir / "status.json", agent.state)
+                try:
+                    save_json(agent.run_dir / "status.json", agent.state)
+                except OSError as error:
+                    print('[progress] final status refresh deferred: ' + str(error), flush=True)
             self.show()
 
     def execute_integration(self, group, agent, feedback):

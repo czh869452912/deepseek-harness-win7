@@ -970,6 +970,40 @@ def test_run_honors_pause_flag(repo, monkeypatch):
     assert not (p.folder / "pause.flag").exists()
 
 
+def test_dashboard_sharing_violation_does_not_cancel_the_pilot(repo, monkeypatch):
+    p = make_project(repo)
+    p.store.apply_plan(plan(task('a')))
+    monkeypatch.setattr(p, 'init', lambda: None)
+    p.store.meta('architecture', p.store.meta('upstream'))
+    def locked(*args):
+        raise PermissionError('Windows display file sharing violation')
+    monkeypatch.setattr(project, 'dashboard', locked)
+    def execute(group):
+        assert not p.stop.is_set()
+        assert p.store.meta('pilot')['state'] == 'RUNNING'
+        p.store.update(group, 'INTEGRATED')
+    monkeypatch.setattr(p, 'execute', execute)
+    assert p.run('a') == 0
+    assert p.store.rows()[0]['state'] == 'INTEGRATED'
+
+
+def test_dashboard_tolerates_unreadable_live_status(repo, monkeypatch):
+    p = make_project(repo)
+    p.store.apply_plan(plan(task('a')))
+    group = p.store.claim('w')
+    run_dir = p.folder / 'live'
+    run_dir.mkdir()
+    p.store.update(group, run_dir=str(run_dir))
+    original = Path.read_text
+    def read(path, *args, **kwargs):
+        if path == run_dir / 'status.json':
+            raise PermissionError('replace in progress')
+        return original(path, *args, **kwargs)
+    monkeypatch.setattr(Path, 'read_text', read)
+    project.dashboard(p.store, p.folder)
+    assert 'RUNNING' in (p.folder / 'index.html').read_text(encoding='utf-8')
+
+
 @pytest.mark.skipif(os.name != "nt", reason="Windows console signals")
 def test_pause_flag_parks_and_exits_promptly(repo):
     import subprocess

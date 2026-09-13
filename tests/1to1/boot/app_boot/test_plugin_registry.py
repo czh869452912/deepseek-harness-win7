@@ -139,7 +139,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-goal",
         "@deepseek-ai/dsh-goal-round-driver",
         "@deepseek-ai/dsh-headless",
-        "@deepseek-ai/dsh-headless/startup",
         "@deepseek-ai/dsh-jobs-local",
         "@deepseek-ai/dsh-llm-deepseek",
         "@deepseek-ai/dsh-llm-pi-ai",
@@ -167,7 +166,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-goal",
         "@deepseek-ai/dsh-goal-round-driver",
         "@deepseek-ai/dsh-headless",
-        "@deepseek-ai/dsh-headless/startup",
         "@deepseek-ai/dsh-jobs-local",
         "@deepseek-ai/dsh-llm-deepseek",
         "@deepseek-ai/dsh-llm-pi-ai",
@@ -195,7 +193,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-goal",
         "@deepseek-ai/dsh-goal-round-driver",
         "@deepseek-ai/dsh-headless",
-        "@deepseek-ai/dsh-headless/startup",
         "@deepseek-ai/dsh-jobs-local",
         "@deepseek-ai/dsh-llm-deepseek",
         "@deepseek-ai/dsh-llm-pi-ai",
@@ -681,7 +678,7 @@ def test_the_frozen_gap_is_the_union_of_every_shipped_profile():
 
             collect(patch)
     assert union <= shipped_names
-    assert len(union) == 45
+    assert len(union) == 44
 
 
 # --- boot installs and consults the table ------------------------------------
@@ -837,6 +834,19 @@ def test_table_names_are_sorted_and_unique():
 # --- The shipped profile boot path ------------------------------------------
 
 
+# The inner arguments each shipped profile's own command line requires: the
+# one-shot profiles answer exactly one task, the others name no positional.
+PROFILE_INVOCATION_ARGS: Dict[str, List[str]] = {
+    "web": [],
+    "standard": ["run the tests"],
+    "headless": ["run the tests"],
+    "creative": ["run the tests"],
+    "acp": [],
+    "sdk": [],
+    "minimal": [],
+}
+
+
 # The only activation failure a shipped profile may report besides the
 # unimplemented imports. Frozen like SHIPPED_PROVIDER_GAP: it may only shrink,
 # and only together with the provider that lands.
@@ -865,6 +875,11 @@ async def test_run_profile_reports_exactly_the_shipped_provider_gap(profile):
     provider (`@deepseek-ai/dsh-web-app/startup`) is implemented. Like
     `SHIPPED_PROVIDER_GAP` it may only shrink, and only together with the
     provider that lands.
+
+    Each invocation carries the arguments its own app command line requires
+    (`dsh --profile headless "<task>"`), so a profile whose startup provider
+    row is implemented parses a real invocation instead of rejecting its own
+    usage and shutting down before the unresolved rows are reached.
     """
     from dsh.boot.profile_boot import run_profile
 
@@ -875,7 +890,15 @@ async def test_run_profile_reports_exactly_the_shipped_provider_gap(profile):
     try:
         with pytest.raises(RuntimeError) as raised:
             await asyncio.wait_for(
-                run_profile({"profile": profile, "dshHome": home, "waitForExit": False}), timeout=300
+                run_profile(
+                    {
+                        "profile": profile,
+                        "dshHome": home,
+                        "waitForExit": False,
+                        "args": PROFILE_INVOCATION_ARGS[profile],
+                    }
+                ),
+                timeout=300,
             )
         message = str(raised.value)
         assert "plugin tree failed to load" in message

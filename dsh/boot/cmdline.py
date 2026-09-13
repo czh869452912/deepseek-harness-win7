@@ -163,6 +163,9 @@ class Command:
         self._commands: List[Command] = []
         self._action_handler: Optional[Callable[..., Any]] = None
         self._parsed_opts: Dict[str, Any] = {}
+        # Commander exposes the collected positionals as .args on every
+        # command, empty before a parse.
+        self.args: List[str] = []
         self._exit_override = False
         self._description = ""
         self._help_flags = "-h, --help"
@@ -288,11 +291,24 @@ class Command:
         raise err
 
     def output_help(self) -> None:
+        # Commander renders the usage line with the declared arguments, then
+        # the description, the argument table, the options, and finally the
+        # addHelpText('after') block; the pinned help assertions read the
+        # description and the app name out of this output.
         lines = [f"Usage: {self._name or 'program'} [options]"]
         if self._commands:
             lines[0] += " [command]"
+        for argument in self._arguments:
+            lines[0] += f" {argument['name']}"
+        if self._description:
+            lines.append("")
+            lines.append(self._description)
+        if self._arguments:
+            lines.append("\nArguments:")
+            for argument in self._arguments:
+                lines.append(f"  {argument['name']:<12} {argument['description']}".rstrip())
         lines.append("\nOptions:")
-        lines.append("  -h, --help  display help for command")
+        lines.append(f"  {self._help_flags}  {self._help_description}")
         for opt in self._options:
             flag_str = f"--{opt['long']}" if opt["long"] else f"-{opt['short']}"
             if opt["takes_arg"]:
@@ -302,6 +318,8 @@ class Command:
             lines.append("\nCommands:")
             for cmd in self._commands:
                 lines.append(f"  {cmd._name}")
+        if self._help_text_after:
+            lines.append(self._help_text_after.rstrip("\n"))
         text = "\n".join(lines) + "\n"
         self._write_out(text)
 

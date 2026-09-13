@@ -152,8 +152,10 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     "@deepseek-ai/dsh-host-directory-picker-browse": "dsh.host.directory_picker.browse:BrowseDirectoryPickerPlugin",
     "@deepseek-ai/dsh-host-directory-picker-native": "dsh.host.directory_picker.native:NativeDirectoryPickerPlugin",
     "@deepseek-ai/dsh-cli-visualizer": "dsh.extensions.cli_visualizer:CliVisualizerPlugin",
-    # Web bundle rows.
+    # Bundle entry rows: each shipped app's command-line provider provides the
+    # service that app's own runner row injects.
     "@deepseek-ai/dsh-web-app/startup": "dsh.bundle.web_app.startup:WebStartupPlugin",
+    "@deepseek-ai/dsh-headless/startup": "dsh.bundle.headless.startup:HeadlessStartupPlugin",
     # The self-inspection toolset publishes itself as `dsh-tool-cordis`; profiles
     # composed before that rename name the `dsh-cordis-manager` row.
     "@deepseek-ai/dsh-tool-cordis": "dsh.extensions.cordis_manager:CordisManagerPlugin",

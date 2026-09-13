@@ -37,7 +37,11 @@ class WebStartupValues:
 
     An invocation publishes only the flags it named: `host` and `port` stay
     absent until an invocation names them, while `openBrowser` and
-    `trustedHosts` always carry a value.
+    `trustedHosts` always carry a value. A `__slots__` class expresses that
+    absence directly, so reading an unnamed flag raises `AttributeError` and a
+    lazy config expression resolves it to None - the port's `undefined`, which
+    `?? fallback` then replaces, exactly as the reference object literal with
+    its conditional spreads does.
     """
 
     __slots__ = ("openBrowser", "host", "port", "trustedHosts")
@@ -50,16 +54,18 @@ class WebStartupValues:
         trusted_hosts: Optional[List[str]] = None,
     ) -> None:
         self.openBrowser = open_browser
-        self.host = host
-        self.port = port
+        if host is not None:
+            self.host = host
+        if port is not None:
+            self.port = port
         self.trustedHosts = list(trusted_hosts or [])
 
     def to_dict(self) -> Dict[str, Any]:
         """This invocation's flags as the plain object upstream publishes."""
         values: Dict[str, Any] = {"openBrowser": self.openBrowser}
-        if self.host is not None:
+        if hasattr(self, "host"):
             values["host"] = self.host
-        if self.port is not None:
+        if hasattr(self, "port"):
             values["port"] = self.port
         values["trustedHosts"] = list(self.trustedHosts)
         return values

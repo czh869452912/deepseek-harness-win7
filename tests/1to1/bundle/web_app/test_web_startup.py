@@ -148,6 +148,9 @@ async def test_publishes_each_flag_and_releases_direct_service_expressions():
             port=8080,
             trusted_hosts=["lab.internal", "lab-2.internal", "10.0.0.9"],
         )
+        # Upstream's `toEqual` compares the published key set here: every named
+        # flag is present.
+        assert set(values.to_dict()) == {"host", "openBrowser", "port", "trustedHosts"}
         assert reader_config(ctx) == {
             "host": "127.0.0.1",
             "openBrowser": False,
@@ -166,6 +169,11 @@ async def test_leaves_deployment_values_to_each_consumer_when_flags_omit_them():
     values, observed, ctx, directory = await boot_provider([])
     try:
         assert values == WebStartupValues(open_browser=True, host=None, port=None, trusted_hosts=[])
+        # The reference publishes `{ openBrowser: true, trustedHosts: [] }`: an
+        # unnamed flag is an absent key, not a present None.
+        assert not hasattr(values, "host")
+        assert not hasattr(values, "port")
+        assert set(values.to_dict()) == {"openBrowser", "trustedHosts"}
         assert reader_config(ctx) == {
             "host": "127.0.0.1",
             "openBrowser": True,

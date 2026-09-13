@@ -12,7 +12,8 @@ import threading
 import time
 import uuid
 
-import yaml
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from console_runtime import append_event, load_config, config_revision, worker_environment
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -206,7 +207,7 @@ def parse_result(text, phase):
 
 
 class Stream:
-    """Goose stream-json message deltas; exclude thinking and tool-result text."""
+    """Render public stream content; only assistant text is a final result."""
     def __init__(self, notify):
         self.notify = notify
         self.messages = {}
@@ -226,6 +227,12 @@ class Stream:
             raise ValueError("Goose stream error: " + str(event.get("error", event.get("message", "unknown"))))
         message = event.get("message", {})
         for block in message.get("content", []):
+            if block.get("type") == "toolResponse":
+                self.notify("tool_result", json.dumps(block, ensure_ascii=False))
+            elif block.get("type") in ("thinking", "reasoning"):
+                self.notify("thinking", block.get("thinking", block.get("text", block.get("reasoning", ""))))
+            elif block.get("type") == "redactedThinking":
+                self.notify("thinking", "[Provider returned redacted thinking; content unavailable]")
             if block.get("type") == "toolResponse" and block.get("id") in self.final_calls:
                 response = block.get("toolResult", {})
                 value = response.get("value", {})
@@ -253,8 +260,7 @@ class Stream:
                 args = call.get("arguments", {})
                 if call.get("name") == "recipe__final_output" and isinstance(args, dict):
                     self.final_calls[block.get("id")] = args
-                description = args.get("command", args.get("path", ""))
-                self.notify("tool", call.get("name", "tool") + " " + str(description)[:180])
+                self.notify("tool", call.get("name", "tool") + " " + json.dumps(args, ensure_ascii=False))
 
     def flush(self):
         if self.buffer.strip():
@@ -352,7 +358,7 @@ def run_process(command, root, log_path, notify, timeout, stream=None, exit_grac
     proc = subprocess.Popen(command, cwd=str(root), stdin=subprocess.DEVNULL,
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                             encoding="utf-8", errors="replace", bufsize=1,
-                            start_new_session=os.name != "nt")
+                            start_new_session=os.name != "nt", env=worker_environment())
     tree = ProcessTree(proc)
     lines = queue.Queue()
 
@@ -367,9 +373,14 @@ def run_process(command, root, log_path, notify, timeout, stream=None, exit_grac
     reader.start()
     started = last_activity = last_heartbeat = time.monotonic()
     try:
+        # Archive legacy same-name logs; every retry retains its own raw stream.
+        if log_path.exists():
+            archive = log_path.with_name(log_path.stem + ".attempt-" + uuid.uuid4().hex + log_path.suffix)
+            os.replace(str(log_path), str(archive))
         with log_path.open("w", encoding="utf-8") as log:
             while True:
-                if cancel_event is not None and cancel_event.is_set():
+                if cancel_event is not None and (cancel_event.is_set() or
+                        (getattr(cancel_event, 'pause_file', None) is not None and cancel_event.pause_file.exists())):
                     raise InterruptedError("Project scheduler interrupted; owned process tree stopped")
                 now = time.monotonic()
                 if timeout and now - started >= timeout:
@@ -392,12 +403,10 @@ def run_process(command, root, log_path, notify, timeout, stream=None, exit_grac
                         # Startup banners and stderr are useful, but not model results.
                         log.write(line)
                         log.flush()
+                        notify('stderr', line.rstrip())
                         continue
-                    msg = event.get("message", {})
-                    if "content" in msg:
-                        msg["content"] = [b for b in msg["content"]
-                                          if b.get("type") not in ("thinking", "redactedThinking")]
                     log.write(json.dumps(event, ensure_ascii=False) + "\n")
+                    log.flush()
                     stream.feed(event)
                 else:
                     log.write(line)
@@ -420,6 +429,32 @@ def run_process(command, root, log_path, notify, timeout, stream=None, exit_grac
         reader.join(timeout=2)
         if reader.is_alive():
             raise OSError("Owned output reader did not close after process cleanup")
+        # Capture everything already produced, even after complete, pause or a
+        # parser exception. Never let the renderer determine raw-log durability.
+        with log_path.open("a", encoding="utf-8") as tail:
+            while True:
+                try:
+                    line = lines.get_nowait()
+                except queue.Empty:
+                    break
+                if line is None:
+                    continue
+                tail.write(line)
+                tail.flush()
+                if stream:
+                    try:
+                        event = json.loads(line)
+                    except ValueError:
+                        notify('stderr', line.rstrip())
+                        continue
+                    try:
+                        stream.feed(event)
+                    except (ValueError, TypeError, AttributeError) as error:
+                        notify("stderr", "Tail event retained: " + str(error))
+                else:
+                    notify("check", line.rstrip())
+        if stream:
+            stream.flush()
         proc.stdout.close()
 
 
@@ -433,16 +468,9 @@ class Runner:
         self.initial_dirty = dirty_paths(root)
         self.start_head = git(root, "rev-parse", "HEAD")
         self.control_root = Path(getattr(args, "control_root", root))
-        self.config = yaml.safe_load((self.control_root / ".goose/recipes/parity-unit.yaml").read_text(encoding="utf-8"))
-        self.defaults = {p["key"]: p.get("default") for p in self.config["parameters"]}
 
     def notify(self, kind, message):
-        record = {"time": time.strftime("%Y-%m-%d %H:%M:%S"), "phase": self.state["phase"],
-                  "round": self.state["round"], "kind": kind, "message": message}
-        print("[{time}] [{phase} {round}] {kind}: {message}".format(**record), flush=True)
-        with (self.run_dir / "progress.jsonl").open("a", encoding="utf-8") as file:
-            file.write(json.dumps(record, ensure_ascii=False) + "\n")
-        self.state["last_activity"] = record
+        append_event(self.run_dir, self.state, kind, message)
         if kind == "start":
             self.state["execution_state"] = "RUNNING"
         elif kind in ("result_received", "draining"):
@@ -457,10 +485,23 @@ class Runner:
         self.state["phase"] = phase
         role = ROLES[phase]
         prefix = {"migrate": "migrator", "review": "reviewer", "judge": "judge"}[phase]
-        provider, model = (self.defaults[prefix + "_" + x] for x in ("provider", "model"))
+        effective = load_config(self.control_root)
+        provider, model = (effective['roles'][prefix][x] for x in ('provider', 'model'))
+        self.state.update(attempt=uuid.uuid4().hex, provider=provider, model=model,
+                          config_revision=config_revision(effective), test_python=sys.executable)
+        save_json(self.run_dir / (self.state['attempt'] + '.config.json'), effective)
+        probe = subprocess.run([sys.executable, '-c',
+            'import sys, pytest, pytest_asyncio; assert sys.version_info[:2] == (3,8); print(sys.executable)'],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf-8', env=worker_environment())
+        if probe.returncode:
+            raise OSError('Test environment preflight failed: ' + probe.stdout)
         body = (self.control_root / (".agents/agents/" + role + ".md")).read_text(encoding="utf-8")
         body = body.split("---", 2)[-1]
         prompt = "Unit: " + self.args.unit + "\n" + SCOPE
+        prompt += ("\nAll tests MUST use the controller interpreter: " + sys.executable +
+                   ". In PowerShell use & $env:DSH_TEST_PYTHON -m pytest <paths>. "
+                   "Do not look for a .venv in this worktree or install a different test environment. "
+                   "A missing test dependency is an infrastructure error, not a product parity defect.")
         if getattr(self.args, "task_contract", None):
             prompt += "\nTask acceptance contract (shared neutral scope, not prior conclusions):\n" + json.dumps(self.args.task_contract)
             if phase == "migrate":

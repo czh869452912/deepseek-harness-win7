@@ -453,21 +453,108 @@ def test_cross_owner_implementation_change_invalidates_actual_contract_owner(sto
     assert states["z"] == "INTEGRATED"
 
 
-def test_incremental_plan_errors_return_to_proposer_and_valid_plans_create_dependencies(repo):
+def test_incremental_plan_errors_park_without_rerunning_implementation(repo):
     p = make_project(repo)
     p.store.apply_plan(plan(task("a")))
     group = p.store.claim("w")
     p.store.update(group, "WAITING_PLAN", feedback={"proposed_work_plan": plan(task("a", ["unknown"]))})
     p.apply_proposals()
     row = p.store.rows()[0]
-    assert row["state"] == "READY"
+    assert row["state"] == "PLAN_REPAIR"
     assert "Unknown dependency" in row["feedback"]["plan_error"]
-    group = p.store.claim("w")
+    assert p.store.claim("w") is None
     proposed = plan(task("a", ["b"]), task("b"))
     p.store.update(group, "WAITING_PLAN", feedback={"proposed_work_plan": proposed})
     p.apply_proposals()
     assert p.store.claim("w")["ids"] == ["b"]
     assert p.store.plan_is_current(proposed)
+
+
+def test_plan_repair_uses_registry_without_replaying_code(repo, monkeypatch):
+    p = make_project(repo)
+    p.store.apply_plan(plan(task('a')))
+    group = p.store.claim('w')
+    retained = {'proposed_work_plan': plan(task('a', ['missing'])), 'migration': {'summary': 'retained'},
+                'review': {'summary': 'retained review'}}
+    p.store.update(group, 'WAITING_PLAN', feedback=retained, round=5)
+    p.apply_proposals()
+    corrected = plan(task('a', ['b']), task('b'))
+    def repair(command, root, log, notify, timeout, stream, **kwargs):
+        recipe = json.loads(Path(command[command.index('--recipe') + 1]).read_text(encoding='utf-8'))
+        assert recipe['extensions'] == []
+        assert 'registry' in recipe['instructions']
+        stream.accepted_result = corrected
+        stream.complete = True
+        return 0
+    monkeypatch.setattr(project, 'run_process', repair)
+    monkeypatch.setattr(p, 'task_runner', lambda *a: pytest.fail('Implementation must not run'))
+    p.repair_plans()
+    row = next(r for r in p.store.rows() if r['id'] == 'a')
+    assert row['state'] == 'READY'
+    assert row['round'] == 5
+    assert row['feedback']['review']['summary'] == 'retained review'
+    assert row['feedback']['migration']['summary'] == 'retained'
+    assert 'plan_error' not in row['feedback']
+    assert p.store.claim('w')['ids'] == ['b']
+
+
+def test_historical_plan_error_routes_before_task_runner(repo, monkeypatch):
+    p = make_project(repo)
+    p.store.apply_plan(plan(task('a')))
+    group = p.store.claim('w')
+    p.store.update(group, 'READY', feedback={'plan_error': 'Unknown contract',
+                   'proposed_work_plan': plan(task('a'))}, round=6)
+    group = p.store.claim('w')
+    monkeypatch.setattr(p, 'task_runner', lambda *a: pytest.fail('Do not restart code for a plan error'))
+    p.execute(group)
+    assert p.store.rows()[0]['state'] == 'PLAN_REPAIR'
+    assert p.store.rows()[0]['round'] == 6
+
+
+def test_repair_exhaustion_retains_evidence_for_arbitration(repo, monkeypatch):
+    p = make_project(repo)
+    p.store.apply_plan(plan(task('a')))
+    group = p.store.claim('w')
+    p.store.update(group, 'PLAN_REPAIR', feedback={'plan_error': 'bad contract',
+                   'proposed_work_plan': plan(task('a')), 'review': {'summary': 'keep'}}, round=3)
+    monkeypatch.setattr(project, 'run_process', lambda *a, **kw: 1)
+    for _ in range(3):
+        p.repair_plans()
+    row = p.store.rows()[0]
+    assert row['state'] == 'NEEDS_ARBITRATION'
+    assert row['feedback']['plan_repair_attempts'] == 2
+    assert row['feedback']['review']['summary'] == 'keep'
+    assert row['round'] == 3
+
+
+def test_phase_reads_current_allocation_and_records_requested_model(repo, monkeypatch):
+    from console_runtime import load_config, write_config, config_revision
+    p = make_project(repo)
+    p.store.apply_plan(plan(task('a')))
+    agent = p.task_runner(p.store.claim('w'))
+    agent.state['round'] = 1
+    seen = []
+    def fake_process(command, root, path, notify, timeout, stream, **kwargs):
+        recipe = json.loads(Path(command[command.index('--recipe') + 1]).read_text(encoding='utf-8'))
+        seen.append(recipe['settings']['goose_model'])
+        phase = agent.state['phase']
+        stream.accepted_result = dict(status='READY' if phase == 'migrate' else 'PASS', summary='verified',
+               coverage_complete=True, issues=[], changed_files=[], test_paths=['tests/test_a.py'],
+               dependencies=[], test_map=['upstream case -> tests/test_a.py -> PORTED'])
+        stream.complete = True
+        return 0
+    monkeypatch.setattr(project.sys.modules['parity_runner'], 'run_process', fake_process)
+    agent.phase('migrate')
+    first_revision = agent.state['config_revision']
+    config = load_config(repo)
+    revision = config_revision(config)
+    config['roles']['reviewer']['model'] = 'new-review-model'
+    write_config(repo, config, revision)
+    agent.phase('review')
+    assert seen == ['deepseek-flash', 'new-review-model']
+    assert agent.state['model'] == 'new-review-model'
+    assert agent.state['config_revision'] != first_revision
+    assert len(list(agent.run_dir.glob('*.config.json'))) == 2
 
 
 def test_architect_resumes_native_stop_and_applies_acknowledged_plan(repo, monkeypatch):
@@ -817,7 +904,7 @@ def test_pause_flag_parks_and_exits_promptly(repo):
     p.store.meta("upstream", revision)
     p.store.meta("architecture", revision)
     p.store.apply_plan(plan(task("a")))
-    for module in ("project_runner.py", "parity_runner.py", "project_store.py", "project_seed.py"):
+    for module in ("project_runner.py", "parity_runner.py", "project_store.py", "project_seed.py", "console_runtime.py", "agent-config.json"):
         copy = repo / ".goose" / module
         copy.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(str(SOURCE / ".goose" / module), str(copy))

@@ -1,5 +1,52 @@
 # Goose parity workflow
 
+## Lightweight local console
+
+```powershell
+.\.goose\run-project.ps1 -Action console -Port 8766
+# Open http://127.0.0.1:8766 (does not resume workers)
+.\.goose\run-project.ps1 -Action overview
+.\.goose\run-project.ps1 -Action follow -Task vendor/cordis
+```
+
+The console offers task filtering, per-worker output/tool-result/thinking streams,
+an aggregate timeline, and model allocation editing. No gateway, container, Node
+build, external service or extra Python package is required. The API binds only to
+loopback; configuration writes require the same origin and a local request token.
+
+`.goose/agent-config.json` is the controller's canonical model allocation for
+architect/migrator/reviewer/judge. Edit it through the console or Git. Existing
+Goose provider IDs are used directly; credentials remain in Goose/environment
+configuration. The next newly started phase reads the new allocation; an in-flight
+request or resumed native session keeps its original model. Each worker records
+the requested provider/model, configuration revision and interpreter. This is the
+requested model, not a claim about a gateway's undisclosed backend routing.
+
+Worker events are persisted separately before rendering. Tool arguments/results
+are complete on disk; public provider thinking is displayed separately and never
+parsed as a verdict. Redacted thinking cannot be reconstructed. Historical logs
+previously stripped by the controller cannot recover those missing fields.
+Per-run byte sequence cursors support reconnects; retries archive old raw logs and
+stop/complete drains queued output. A forced OS kill cannot guarantee flushing
+events that the child never delivered. Heartbeats update liveness without replacing
+the last useful activity or flooding terminal output.
+
+`run` defaults to concise, attributed lifecycle/tool summaries. For complete
+prefixed terminal output use `-OutputMode plain`; use a separate `overview` or
+`follow` terminal for inspection. UI preview truncation never truncates the retained
+event. Test subprocesses inherit the controller interpreter on PATH and
+`DSH_TEST_PYTHON`; phase preflight checks Python 3.8, pytest and pytest_asyncio.
+
+Invalid incremental plans enter `PLAN_REPAIR`, retaining implementation/review
+and the round cursor. The architect repairs only graph data, without source tools;
+unresolved repairs remain visible and escalate after two repair attempts. Explicit
+ESCALATE and recurring upstream findings are adjudicated before optional planning.
+Recovering a historical READY record with a plan error routes it to plan repair
+before invoking implementation. The console itself never resumes the scheduler.
+
+Cross-host export/import and multi-tag campaign management remain separate future
+work; this console does not make existing absolute-path task databases portable.
+
 ## Whole-project scheduling
 
 Use the project launcher to schedule the entire pinned reference, rather than
@@ -222,7 +269,7 @@ Each console entry includes a timestamp, phase and round. Output includes:
 
 - role/provider/model at phase start;
 - the agent's public text as it arrives and a concise tool description;
-- a heartbeat every 15 seconds, with elapsed time and time since last output;
+- a heartbeat recorded every 15 seconds, with elapsed time and time since last output;
 - structured verdict, dependency expansions, open issue count and coverage flag;
 - targeted/full-test command results;
 - checkpoint hash, or the explicit reason a checkpoint was skipped;
@@ -230,7 +277,8 @@ Each console entry includes a timestamp, phase and round. Output includes:
 
 The heartbeat indicates liveness of the controller, not proof that the model is
 making progress. It deliberately does not invent a percentage-complete estimate.
-Model-private thinking is not displayed or retained in the event transcript.
+Provider-returned thinking is retained and available in the console/follow view.
+Unavailable or redacted reasoning is not reconstructed.
 
 Each run has its own ignored `.goose/runs/<timestamp-id>/` directory:
 
@@ -238,7 +286,7 @@ Each run has its own ignored `.goose/runs/<timestamp-id>/` directory:
 | --- | --- |
 | `status.json` | Latest phase, round, verdict, open issues, commits and stop reason |
 | `progress.jsonl` | Timestamped user-visible activity |
-| `NN-role.events.jsonl` | Goose stream events (thinking blocks excluded) |
+| `NN-role.events.jsonl` | Full received Goose stream; retries archive the preceding file |
 | `NN-role.result.json` | Parsed result for that exact phase |
 | `NN-role.yaml` | Exact generated phase recipe |
 | `NN-targeted.log`, `NN-full-suite.log` | Verification output |
@@ -324,10 +372,10 @@ checkpoint policy or durable progress display. Use the PowerShell launcher.
 | Reviewer | `openai` | `gpt-5.6-luna` | 1,050,000 in Goose's built-in catalog |
 | Judge | `custom_openai_sol` | `gpt-5.6-sol` | 272,000 in local provider JSON |
 
-Architect routing uses the `ARCHITECT_PROVIDER` / `ARCHITECT_MODEL` constants at the
-top of `.goose/project_runner.py` (goose recipes reject unused template parameters,
-so the architect cannot share parity-unit.yaml's parameter surface); it is
-independent of the judge routing. `gpt-5.6-sol` context is declared per model in
+All four controller roles now use `.goose/agent-config.json`, editable in the local
+console. The table above is a historical configuration snapshot; recipe defaults
+and agent markdown frontmatter do not override the controller allocation.
+`gpt-5.6-sol` context is declared per model in
 the local `custom_providers/custom_openai_sol.json` (`context_limit: 272000`),
 because the global `GOOSE_CONTEXT_LIMIT` would apply to every model in the process.
 

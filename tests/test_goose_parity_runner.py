@@ -28,7 +28,7 @@ def message(mid, text, role="assistant"):
             "content": [{"type": "text", "text": text}]}}
 
 
-def test_stream_assembles_deltas_and_ignores_tool_result_and_thinking():
+def test_stream_displays_thinking_without_using_it_as_final_result():
     seen = []
     stream = runner.Stream(lambda k, v: seen.append((k, v)))
     text = json.dumps(result())
@@ -40,7 +40,7 @@ def test_stream_assembles_deltas_and_ignores_tool_result_and_thinking():
         stream.feed(message("final", fragment))
     stream.feed({"type": "complete"})
     assert stream.result("migrate")["status"] == "READY"
-    assert "not public output" not in str(seen)
+    assert ("thinking", "not public output") in seen
 
 
 def test_stream_cannot_reuse_an_earlier_valid_result():
@@ -249,7 +249,7 @@ def test_test_paths_cannot_escape_repository(tmp_path, name):
 def test_complete_cli_pipeline_with_fake_goose(repo, native_stop):
     """Real child processes, target/full tests, structured output and checkpoint."""
     source = Path(__file__).resolve().parents[1]
-    for name in [".goose/parity_runner.py", ".goose/recipes/parity-unit.yaml"] + [
+    for name in [".goose/parity_runner.py", ".goose/console_runtime.py", ".goose/agent-config.json", ".goose/recipes/parity-unit.yaml"] + [
             ".agents/agents/" + role + ".md" for role in runner.ROLES.values()]:
         dest = repo / name
         dest.parent.mkdir(parents=True, exist_ok=True)

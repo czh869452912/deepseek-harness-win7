@@ -310,7 +310,7 @@ class Store:
             group = min(candidates)[2]
             token = worker + ":" + uuid.uuid4().hex
             for task in group:
-                db.execute("UPDATE tasks SET state='RUNNING',owner=?,updated=? WHERE id=?",
+                db.execute("UPDATE tasks SET state='RUNNING',owner=?,updated=?,error=NULL WHERE id=?",
                            (token, time.time(), task))
                 self.event(db, task, "claimed", token)
             return {"ids": group, "token": token, "tasks": [json.loads(rows[t]["spec"]) for t in group],

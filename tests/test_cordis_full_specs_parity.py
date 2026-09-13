@@ -51,8 +51,8 @@ def test_events_waterfall_middleware_pipeline():
     assert trail == ["m1_pre", "m2_pre", "m2_post", "m1_post"]
 
 
-def test_events_bail_sync_short_circuit():
-    """Test ctx.bail_sync stopping at first non-null/non-false value matching TS EventsService.bail."""
+def test_events_bail_short_circuit():
+    """Test ctx.bail stopping at first non-null/non-false value matching TS EventsService.bail."""
     ctx = Context()
     called = []
 
@@ -60,7 +60,7 @@ def test_events_bail_sync_short_circuit():
     ctx.on("test/bail", lambda: (called.append(2), "hit_bail")[1])
     ctx.on("test/bail", lambda: (called.append(3), "should_not_reach")[1])
 
-    res = ctx.bail_sync("test/bail")
+    res = ctx.bail("test/bail")
     assert res == "hit_bail"
     assert called == [1, 2]
 

@@ -42,7 +42,9 @@ def test_strict_inject_enabled_blocks_undeclared_service():
     class DummyServiceProvider(Plugin):
         name = "dummy-provider"
         def apply(self, c: Context) -> None:
-            c.provide("dummy", DummyService(c))
+            # The Service constructor registers `dummy` itself (reflect.ts
+            # `provide`); providing the same name twice throws.
+            DummyService(c)
 
     ctx.plugin(DummyServiceProvider)
 
@@ -70,7 +72,9 @@ def test_strict_inject_enabled_allows_declared_service():
     class DummyServiceProvider(Plugin):
         name = "dummy-provider"
         def apply(self, c: Context) -> None:
-            c.provide("dummy", DummyService(c))
+            # The Service constructor registers `dummy` itself (reflect.ts
+            # `provide`); providing the same name twice throws.
+            DummyService(c)
 
     ctx.plugin(DummyServiceProvider)
 
@@ -94,7 +98,9 @@ def test_strict_inject_enabled_ctx_get_bypasses_for_optional():
     class DummyServiceProvider(Plugin):
         name = "dummy-provider"
         def apply(self, c: Context) -> None:
-            c.provide("dummy", DummyService(c))
+            # The Service constructor registers `dummy` itself (reflect.ts
+            # `provide`); providing the same name twice throws.
+            DummyService(c)
 
     ctx.plugin(DummyServiceProvider)
 

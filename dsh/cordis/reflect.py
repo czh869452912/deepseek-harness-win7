@@ -79,9 +79,12 @@ class ReflectService:
         self.mixin("logger", ["error", "info", "warn", "debug"])
         self.mixin("timer", ["timeout", "interval", "throttle", "debounce", "setTimeout", "setInterval"])
 
-    def get(self, ctx: Any, name: str, default: Any = None, strict: bool = True) -> Any:
+    def get(self, ctx: Any, name: str, strict: bool = True, default: Any = None) -> Any:
         """
         Read a service or accessor property from context.
+
+        `strict` occupies the reference's positional slot; `default` is the
+        port-only fallback returned when no implementation resolves.
         """
         if name in RESERVED_PROPERTIES or name.startswith("_") or (isinstance(name, str) and name.isdigit()):
             return default
@@ -222,9 +225,6 @@ class ReflectService:
             fiber = getattr(target_ctx, "fiber", None)
             if key in self.store:
                 prev = self.store[key]
-                from dsh.cordis.service import Service
-                if prev.value is val and isinstance(val, Service):
-                    return lambda: None
                 if not allow_replace:
                     prev_fiber = getattr(prev, "fiber", None)
                     prev_name = getattr(prev_fiber, "name", "root") if prev_fiber else "root"

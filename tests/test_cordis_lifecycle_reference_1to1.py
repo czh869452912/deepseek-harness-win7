@@ -183,8 +183,10 @@ async def test_effect_registration_while_pending_and_loading():
     loading_cleanup = []
 
     def on_plugin(fiber: Fiber):
-        if fiber.name != "state-probe" or fiber.uid is None or fiber.state != FiberState.PENDING:
+        if fiber.name != "state-probe" or fiber.uid is None:
             return
+        # Upstream asserts the state at publication time: `expect(fiber.state).toBe(PENDING)`.
+        assert fiber.state == FiberState.PENDING
         fiber.ctx.effect(lambda: lambda: pending_cleanup.append(True), "pending-effect")
 
     ctx.on("internal/plugin", on_plugin)

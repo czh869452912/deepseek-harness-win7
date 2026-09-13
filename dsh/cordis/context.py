@@ -159,11 +159,15 @@ class Context:
             return self._parent.get_service(name, default)
         return default
 
-    def get(self, name: str, default: Any = None, strict: bool = True) -> Any:
+    def get(self, name: str, strict: bool = True, default: Any = None) -> Any:
         """
         Read a service or property from context via reflect layer.
+
+        The second parameter is `strict`, matching reflect.ts
+        `get(name, strict = true)`, so a positional second argument cannot
+        silently turn into a default value.
         """
-        return self.reflect.get(self, name, default=default, strict=strict)
+        return self.reflect.get(self, name, strict=strict, default=default)
 
     def set(self, name: str, value: Any) -> bool:
         """
@@ -239,7 +243,8 @@ class Context:
         kwargs.setdefault("caller_ctx", self)
         return self._event_bus.waterfall_sync(event_name, *args, **kwargs)
 
-    async def parallel(self, event_name: str, *args: Any, **kwargs: Any) -> List[Any]:
+    async def parallel(self, event_name: str, *args: Any, **kwargs: Any) -> None:
+        """Dispatch an event to every listener concurrently matching TS EventBus.parallel."""
         kwargs.setdefault("caller_ctx", self)
         return await self._event_bus.parallel(event_name, *args, **kwargs)
 
@@ -247,13 +252,10 @@ class Context:
         kwargs.setdefault("caller_ctx", self)
         return await self._event_bus.serial(event_name, *args, **kwargs)
 
-    async def bail(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
+    def bail(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
+        """Dispatch an event synchronously until a listener bails matching TS EventBus.bail."""
         kwargs.setdefault("caller_ctx", self)
-        return await self._event_bus.bail(event_name, *args, **kwargs)
-
-    def bail_sync(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
-        kwargs.setdefault("caller_ctx", self)
-        return self._event_bus.bail_sync(event_name, *args, **kwargs)
+        return self._event_bus.bail(event_name, *args, **kwargs)
 
     def plugin(self, plugin_cls_or_instance: Any, config: Optional[Dict[str, Any]] = None) -> Any:
         """
@@ -320,7 +322,10 @@ class Context:
         """
         child = Context(parent=self, is_extension=True, strict_inject=self.strict_inject, base_url=self.baseUrl)
         child._isolated_keys = dict(self._isolated_keys)
-        child._intercept_map = dict(self._intercept_map)
+        # TS `extend()` inherits the parent's intercept map through the context
+        # prototype chain, so the child starts with no entry of its own; readers
+        # walk `_parent` for the ancestors' levels. Copying the parent map here
+        # would replay every ancestor entry a second time and hide overrides.
         shadow = getattr(self, "_shadow", None)
         if shadow is not None:
             child._shadow = shadow

@@ -22,6 +22,34 @@ for this unit (both implementations observed through the same scenario).
 - C7  events.ts built-in `internal/listener` / `internal/update` handlers: a
       fiber-scoped `internal/update` listener is chained through the fiber's
       `_hooks` list, and not calling `next()` vetoes the restart.
+- C8  reflect.ts `ReflectService.handler.get`: `internal/get` dispatches for
+      plugin-fiber proxy reads, not for `reflect.get()` itself.
+- C9  events.ts `EventsService.register` / fiber.ts `getEffects`.
+- C10 fiber.ts `effect` `collect`: a nested effect is owned by its collector and
+      its `EffectMeta` nests under the collector's.
+- C11 fiber.ts `_execute` / `getEffects`: a plain function result is collected on
+      the fiber and reports no metadata.
+- C12 reflect.ts `provide` disposer ordering (unregister, notify, await woken
+      fibers, then drop the providing fiber's own store entry).
+- C13 fiber.ts `dispose`: the async body starts at the call site.
+- C14 fiber.ts `_reload`: a load invalidated before its first checkpoint never
+      runs the plugin body.
+- C15 fiber.ts `_execute` iterable branch: yielded disposers are collected on the
+      fiber without metadata.
+- C16 fiber.ts `effect` wrapper `then`/`disposeAfter`: awaiting the public
+      disposer waits for async setup and propagates its failure; calling the
+      disposer while setup is in flight reraises the same reason.
+- C17 context.ts `extend`/`intercept` and service.ts `resolveConfig`: the
+      intercept map is inherited through the context chain, so each ancestor
+      level contributes exactly one merge input, root first.
+- C18 events.ts `EventsService.parallel`: resolves with no value and raises
+      `AggregateError` when listeners fail.
+- C19 events.ts `EventsService.bail`: synchronous dispatch returning the first
+      bail value, without awaiting the remaining listeners.
+- C20 fiber.ts `_execute` asyncIterator branch: disposers from an async-iterable
+      plugin body are collected on the fiber without metadata.
+- C21 reflect.ts `ReflectService.get(name, strict = true)`: the second positional
+      parameter of `ctx.get` selects strict resolution.
 """
 
 import asyncio
@@ -30,8 +58,10 @@ import inspect
 import pytest
 
 from dsh.cordis.context import Context
+from dsh.cordis.events import AggregateError
 from dsh.cordis.fiber import FiberState
 from dsh.cordis.plugin import Plugin
+from dsh.cordis.service import Service
 
 
 class _ApplyPlugin(Plugin):
@@ -473,3 +503,188 @@ async def test_c15_iterable_result_disposers_are_collected_without_metadata():
 
     await fiber.dispose()
     assert log == ["second", "first"]
+
+
+@pytest.mark.asyncio
+async def test_c16_async_effect_setup_failure_propagates_from_the_disposer():
+    """C16: the public disposer reports an async setup failure.
+
+    Reference: fiber.ts `effect` `wrapper.then` chains `Promise.resolve(task)`,
+    so awaiting the disposer rejects with the setup reason; the call path
+    (`disposeAfter`) awaits disposal and rethrows the same reason.
+    """
+    ctx = Context()
+
+    async def failing_setup():
+        await asyncio.sleep(0)
+        raise RuntimeError("async setup failed")
+
+    disposer = ctx.effect(failing_setup, "c16-await")
+    with pytest.raises(RuntimeError, match="async setup failed"):
+        await disposer
+    assert ctx.fiber.get_effects() == []
+
+    gate = asyncio.Event()
+
+    async def gated_setup():
+        await gate.wait()
+        raise RuntimeError("gated setup failed")
+
+    gated = ctx.effect(gated_setup, "c16-call")
+    gate.set()
+    with pytest.raises(RuntimeError, match="gated setup failed"):
+        await gated()
+    assert ctx.fiber.get_effects() == []
+
+
+class _C17Config:
+    """Config schema recording the exact merge inputs of `resolveConfig`."""
+
+    def __init__(self):
+        self.calls = []
+
+    def merge(self, *configs):
+        self.calls.append(configs)
+        merged = {}
+        for config in configs:
+            merged.update(config)
+        return merged
+
+
+def test_c17_intercept_config_merges_once_per_ancestor_level():
+    """C17: every intercept level contributes one merge input, root first.
+
+    Reference: context.ts `extend` creates a child whose intercept map inherits
+    the parent's through the prototype chain, and service.ts `resolveConfig`
+    collects one own entry per level (`Object.hasOwn`).
+    """
+    recorder = _C17Config()
+
+    class InterceptedService(Service):
+        name = "c17-svc"
+        Config = recorder
+
+    root = Context()
+    leaf = root.intercept("c17-svc", {"root": 1}).intercept("c17-svc", {"mid": 2})
+    child = leaf.extend()
+
+    # `extend` gives the child no intercept entry of its own; its ancestors are
+    # reached through the context chain.
+    assert child._intercept_map == {}
+    assert InterceptedService(child).resolve_intercept_config() == {"root": 1, "mid": 2}
+    assert recorder.calls == [
+        ({"root": 1}, {"mid": 2}),
+    ]
+
+    recorder.calls.clear()
+    single = Context().intercept("c17-svc", {"only": True}).extend()
+    assert InterceptedService(single).resolve_intercept_config() == {"only": True}
+    assert recorder.calls == [
+        ({"only": True},),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_c18_parallel_resolves_without_results():
+    """C18: `parallel` waits for every listener and resolves with no value.
+
+    Reference: events.ts `parallel` awaits `Promise.allSettled` and returns
+    `undefined`; only failures surface, as an `AggregateError`.
+    """
+    ctx = Context()
+    ctx.on("c18-evt", lambda: "ignored")
+
+    assert await ctx.parallel("c18-evt") is None
+
+    def failing_listener():
+        raise ValueError("listener failed")
+
+    ctx.on("c18-fail", failing_listener)
+    with pytest.raises(AggregateError) as excinfo:
+        await ctx.parallel("c18-fail")
+    assert len(excinfo.value.errors) == 1
+
+
+@pytest.mark.asyncio
+async def test_c19_bail_dispatches_synchronously():
+    """C19: `bail` runs listeners synchronously until one returns a bail value.
+
+    Reference: events.ts `bail` calls each listener and stops at the first value
+    that is not `null`, `false`, or `undefined`; it never awaits.
+    """
+    ctx = Context()
+    called = []
+
+    ctx.on("c19-evt", lambda: called.append(1) or None)
+    ctx.on("c19-evt", lambda: called.append(2) or "stop")
+    ctx.on("c19-evt", lambda: called.append(3) or "unreachable")
+
+    result = ctx.bail("c19-evt")
+    assert result == "stop"
+    assert called == [1, 2]
+    assert not inspect.isawaitable(result)
+
+    ctx.on("c19-false", lambda: False)
+    ctx.on("c19-false", lambda: "value")
+    assert ctx.bail("c19-false") == "value"
+
+    async def async_listener():
+        return "async"
+
+    ctx.on("c19-async", async_listener)
+    # A coroutine result is a bail value, exactly like the promise an async
+    # listener returns in the reference (which `isBailed` also accepts).
+    pending = ctx.bail("c19-async")
+    assert inspect.isawaitable(pending)
+    pending.close()
+
+
+@pytest.mark.asyncio
+async def test_c20_async_iterable_result_disposers_are_collected_on_the_fiber():
+    """C20: an async-iterable `apply` result is drained onto the fiber.
+
+    Reference: fiber.ts `_execute` asyncIterator branch consumes the iterator
+    through the fiber `collect` while the load is in flight, so the yielded
+    disposers carry no effect metadata and unload in reverse order.
+    """
+    ctx = Context()
+    log = []
+
+    async def body(c):
+        yield lambda: log.append("first")
+        await asyncio.sleep(0)
+        yield lambda: log.append("second")
+
+    fiber = ctx.plugin(_ApplyPlugin("c20", body))
+    await fiber.await_settled()
+
+    assert fiber.state == FiberState.ACTIVE
+    assert fiber.get_effects() == []
+
+    await fiber.dispose()
+    assert log == ["second", "first"]
+
+
+@pytest.mark.asyncio
+async def test_c21_context_get_second_positional_parameter_is_strict():
+    """C21: `ctx.get(name, strict)` follows the reference parameter order.
+
+    Reference: reflect.ts `get(name, strict = true)` resolves only ACTIVE
+    providers when `strict` is true, and `false` reads the store directly.
+    """
+    ctx = Context()
+
+    async def body(c):
+        c.provide("c21-svc", "value")
+        await asyncio.sleep(0.03)
+
+    fiber = ctx.plugin(_ApplyPlugin("c21", body))
+    await asyncio.sleep(0)
+    await asyncio.sleep(0)
+    assert fiber.state == FiberState.LOADING
+
+    assert ctx.get("c21-svc", True) is None
+    assert ctx.get("c21-svc", False) == "value"
+
+    await fiber.await_settled()
+    assert ctx.get("c21-svc", True) == "value"

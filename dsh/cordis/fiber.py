@@ -140,8 +140,10 @@ class Fiber:
             self.ctx = parent_ctx.extend(ext_dict) if parent_ctx else None
             self.state = FiberState.PENDING
             if self.inject and self.ctx:
-                parent_intercept = getattr(parent_ctx, "_intercept_map", {}) if parent_ctx else {}
-                self.ctx._intercept_map = dict(parent_intercept)
+                # fiber.ts `Object.create(parent[Context.intercept])`: the new
+                # context owns only the entries its own inject declarations add;
+                # the parent's entries stay reachable through `_parent`.
+                self.ctx._intercept_map = {}
                 for name, config in self.inject.items():
                     if config is not None:
                         self.ctx._intercept_map[name] = config
@@ -244,6 +246,17 @@ class Fiber:
                 if nested is not None and nested is not meta:
                     meta.children.append(nested)
 
+        def retire_in_flight(task: asyncio.Task) -> None:
+            """
+            Drop a finished effect task and mark its failure as reported.
+
+            A setup task nobody awaits must not surface later as an unretrieved
+            task exception; the reference logs the failure inside the task chain.
+            """
+            self._in_flight_effects.discard(task)
+            if not task.cancelled():
+                task.exception()
+
         def rollback_sync() -> None:
             nonlocal remove_wrapper, wrapper
             if wrapper is not None:
@@ -263,7 +276,7 @@ class Fiber:
                             t = loop.create_task(res)
                             if hasattr(self, "_in_flight_effects"):
                                 self._in_flight_effects.add(t)
-                                t.add_done_callback(lambda task: self._in_flight_effects.discard(task))
+                                t.add_done_callback(retire_in_flight)
                         except RuntimeError:
                             pass
                 except Exception as e:
@@ -315,7 +328,7 @@ class Fiber:
                     in_flight_cleanup = loop.create_task(_dispose_after_barrier())
                     if hasattr(self, "_in_flight_effects"):
                         self._in_flight_effects.add(in_flight_cleanup)
-                        in_flight_cleanup.add_done_callback(lambda t: self._in_flight_effects.discard(t))
+                        in_flight_cleanup.add_done_callback(retire_in_flight)
                     return in_flight_cleanup
                 except RuntimeError:
                     while disposables:
@@ -362,7 +375,7 @@ class Fiber:
                     in_flight_cleanup = loop.create_task(_run_cleanup())
                     if hasattr(self, "_in_flight_effects"):
                         self._in_flight_effects.add(in_flight_cleanup)
-                        in_flight_cleanup.add_done_callback(lambda t: self._in_flight_effects.discard(t))
+                        in_flight_cleanup.add_done_callback(retire_in_flight)
                     return in_flight_cleanup
                 except RuntimeError:
                     # A synchronous caller (for example `ctx.teardown()` invoked
@@ -388,6 +401,15 @@ class Fiber:
             return None
 
         class _EffectWrapper:
+            """
+            Public disposer returned by `effect()`, matching the reference wrapper.
+
+            Calling it tears the effect down; when async setup is still running the
+            call waits for it first and rethrows its failure after cleanup. Awaiting
+            it waits for setup and then tears down, propagating a setup failure the
+            way the reference `then` chain does.
+            """
+
             def __init__(self, c_fn: Callable[[], Any], get_task: Callable[[], Optional[asyncio.Task]]):
                 self._c_fn = c_fn
                 self._get_task = get_task
@@ -399,7 +421,10 @@ class Fiber:
                         try:
                             await t
                         except Exception:
-                            pass
+                            res = self._c_fn(*args, **kwargs)
+                            if inspect.isawaitable(res):
+                                await res
+                            raise
                         res = self._c_fn(*args, **kwargs)
                         if inspect.isawaitable(res):
                             return await res
@@ -410,11 +435,8 @@ class Fiber:
             def __await__(self):
                 async def _await_wrapper():
                     t = self._get_task()
-                    if t is not None and not t.done():
-                        try:
-                            await t
-                        except Exception:
-                            pass
+                    if t is not None:
+                        await t
                     res = self._c_fn()
                     if inspect.isawaitable(res):
                         return await res
@@ -461,7 +483,7 @@ class Fiber:
                         setup_task = loop.create_task(_await_async_setup())
                         if hasattr(self, "_in_flight_effects"):
                             self._in_flight_effects.add(setup_task)
-                            setup_task.add_done_callback(lambda t: self._in_flight_effects.discard(t))
+                            setup_task.add_done_callback(retire_in_flight)
                     except RuntimeError:
                         pass
                 elif res is None:
@@ -501,7 +523,7 @@ class Fiber:
                         setup_task = loop.create_task(_consume_async_gen())
                         if hasattr(self, "_in_flight_effects"):
                             self._in_flight_effects.add(setup_task)
-                            setup_task.add_done_callback(lambda t: self._in_flight_effects.discard(t))
+                            setup_task.add_done_callback(retire_in_flight)
                     except RuntimeError:
                         pass
                 else:
@@ -876,10 +898,39 @@ class Fiber:
                     # each produced disposer on the fiber itself.
                     for item in res:
                         self._collect(item)
-                elif inspect.isasyncgen(res):
-                    # An async iterable is consumed after activation, so it keeps
-                    # the effect that owns the yielded disposers.
-                    self.effect(lambda r=res: r, label=f"apply({self.name})")
+                elif hasattr(res, "__aiter__"):
+                    # fiber.ts `_execute` asyncIterator branch: yielded disposers
+                    # belong to the fiber itself, and the fiber stays busy until
+                    # the iterable is drained.
+                    async def _collect_async_iter(gen: Any = res) -> None:
+                        try:
+                            async for item in gen:
+                                if self.epoch != epoch:
+                                    break
+                                self._collect(item)
+                            if self.epoch != epoch or self.state in (FiberState.UNLOADING, FiberState.DISPOSED):
+                                self.set_state(FiberState.UNLOADING)
+                                self._unload()
+                                return
+                            self._error = None
+                            self.set_state(FiberState.ACTIVE)
+                        except Exception as e:
+                            self._error = e
+                            self.epoch = INACTIVE_EPOCH
+                            self.set_state(FiberState.FAILED)
+                            if self.ctx and hasattr(self.ctx, "logger"):
+                                self.ctx.logger("fiber").error("Exception consuming async apply in fiber '%s': %s", self.name, e)
+                            else:
+                                sys.stderr.write(f"[Cordis Fiber Error] Exception consuming async apply in fiber '{self.name}': {e}\n")
+                            self.set_state(FiberState.UNLOADING)
+                            self._unload()
+
+                    try:
+                        loop = asyncio.get_running_loop()
+                        self.inertia = loop.create_task(_collect_async_iter())
+                        return
+                    except RuntimeError:
+                        asyncio.run(_collect_async_iter())
                 elif res is not None:
                     raise TypeError("Invalid effect")
 

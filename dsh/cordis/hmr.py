@@ -247,6 +247,10 @@ class ConfigWatcherService(Service):
         except RuntimeError:
             pass
 
+    async def init(self):
+        """Service.init owns watcher shutdown and every pending refresh pass."""
+        yield self._async_teardown
+
     def is_ignored(self, filepath: str, base_dir: str) -> bool:
         import fnmatch
         try:
@@ -453,6 +457,10 @@ class ConfigWatcherService(Service):
                         except Exception as rejection:
                             if hasattr(self.ctx, "logger"):
                                 self.ctx.logger("hmr").warn("%s", rejection)
+
+                # The root owns the registration disposer, which joins this
+                # pass. Waiting for root teardown here would create a cycle.
+                # Its caller joins root settlement after this pass completes.
 
         try:
             loop = asyncio.get_running_loop()
@@ -788,6 +796,8 @@ class ConfigWatcherService(Service):
         self._running = False
         if self._poll_task and not self._poll_task.done():
             self._poll_task.cancel()
+        if self._poll_task is not None:
+            await asyncio.gather(self._poll_task, return_exceptions=True)
         running_tasks = [s.running for s in self._refreshes.values() if s and s.running and not s.running.done()]
         running_tasks.extend([t for t in self._refresh_tasks if not t.done()])
         if running_tasks:

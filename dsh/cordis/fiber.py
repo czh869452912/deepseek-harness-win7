@@ -160,6 +160,11 @@ class Fiber:
         self._effect_metas: Dict[Any, EffectMeta] = {}
         self._hooks: Dict[str, DisposableList[Any]] = {}
         self._in_flight_effects: Set[asyncio.Task] = set()
+        # Teardown settlements this fiber owns because their caller dropped the
+        # awaitable `dispose()` returned -- the script bridge running a
+        # `void ctx.root.fiber.dispose()` body. `await_settled()` joins them
+        # together with `inertia`.
+        self._detached_settlements: Set[asyncio.Task] = set()
         # The parent-owned `ctx.plugin()` effect wrapper, whose disposer
         # `fiber.ts` assigns to `this.dispose`: disposing a child retires the
         # registration, and the child teardown is that effect's cleanup.
@@ -1296,9 +1301,57 @@ class Fiber:
 
         return _retire_when_settled()
 
+    def schedule_settlement(self, awaitable: Any) -> Any:
+        """
+        Take ownership of a teardown settlement whose caller cannot await it.
+
+        `fiber.ts` lets a caller start a teardown and drop the returned promise
+        -- a plugin body running `void ctx.root.fiber.dispose()` -- because the
+        microtask queue keeps driving it. CPython drives a coroutine only while
+        a task holds it, so an unowned settlement is destroyed with the loop.
+        `create_js_mock_plugin` hands the returned awaitable here instead of
+        starting an unowned task: this fiber records the settlement, and
+        `await_settled()` joins it with `inertia`, so boot, harness, CLI, and
+        HMR settlement observe the teardown finish. A caller with no running
+        loop has no checkpoint to defer to, so the settlement runs inline.
+
+        @param awaitable the settlement returned by `dispose()`.
+        @returns the scheduled task, `None` after an inline run, or the
+            argument unchanged when it is not awaitable.
+        """
+        if not inspect.isawaitable(awaitable):
+            return awaitable
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            run_async_setup_sync(awaitable)
+            return None
+        task = loop.create_task(awaitable)
+        self._detached_settlements.add(task)
+        task.add_done_callback(self._retire_settlement)
+        return task
+
+    def _retire_settlement(self, task: Any) -> None:
+        """Drop a settled teardown settlement from its owner and report its failure once."""
+        self._detached_settlements.discard(task)
+        if task.cancelled():
+            return
+        error = task.exception()
+        if error is not None:
+            self._log_error(error)
+
+    def settlement_tasks(self) -> List[Any]:
+        """Return the lifecycle tasks this fiber still owes before it is quiescent."""
+        tasks = [task for task in self._detached_settlements if not task.done()]
+        if self.inertia is not None and not self.inertia.done():
+            tasks.append(self.inertia)
+        return tasks
+
     def _begin_dispose(self) -> None:
         """Run the part of TS `dispose` before its first await."""
         if self.runtime is None:
+            if self.state == FiberState.UNLOADING:
+                return  # Reentrant/root callers join the existing unload inertia.
             self.set_state(FiberState.UNLOADING)
             self._unload()
             return
@@ -1453,9 +1506,12 @@ class Fiber:
             return _SyncResolvedFuture(self)
 
     async def await_settled(self) -> "Fiber":
-        """Wait for current lifecycle transitions to settle."""
-        while self.inertia is not None and not self.inertia.done():
-            await self.inertia
+        """Wait for current lifecycle transitions and owned teardown settlements to settle."""
+        while True:
+            pending = self.settlement_tasks()
+            if not pending:
+                break
+            await asyncio.gather(*pending, return_exceptions=True)
         if hasattr(self, "_in_flight_effects"):
             for t in list(self._in_flight_effects):
                 if not t.done():

@@ -968,3 +968,72 @@ async def test_t37_startup_failure_publishes_loading_unloading_failed():
     assert fiber.state == FiberState.FAILED
     assert cleanups == ["pre-failure"]
     assert fiber.get_effects() == []
+
+
+@pytest.mark.asyncio
+async def test_t38_dropped_teardown_settlement_is_owned_and_joined():
+    """T38: a teardown whose caller cannot await it stays owned and joinable.
+
+    Reference: `fiber.ts` declares `dispose: () => Promise<void>` and lets a
+    caller drop the promise -- a plugin body running `void ctx.root.fiber.
+    dispose()` -- because the microtask queue keeps driving it, while `await()`
+    joins the transition it started. The port schedules that settlement on the
+    owning fiber, records it, and joins it with `inertia` in `await_settled()`.
+    """
+    ctx = Context()
+    cleanup_started = asyncio.Event()
+    release = asyncio.Event()
+    log = []
+
+    async def cleanup():
+        cleanup_started.set()
+        await release.wait()
+        log.append("cleanup")
+
+    ctx.effect(lambda: lambda: cleanup(), label="dropped-teardown")
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        settlement = ctx.fiber.schedule_settlement(ctx.fiber.dispose())
+        assert isinstance(settlement, asyncio.Task)
+        assert ctx.fiber.settlement_tasks() == [settlement, ctx.fiber.inertia]
+
+        joiner = asyncio.ensure_future(ctx.fiber.await_settled())
+        await cleanup_started.wait()
+        assert log == []
+        assert not joiner.done()
+
+        release.set()
+        await joiner
+        gc.collect()
+
+    assert log == ["cleanup"]
+    assert ctx.fiber.settlement_tasks() == []
+    assert [str(w.message) for w in caught if "never awaited" in str(w.message)] == []
+
+
+@pytest.mark.asyncio
+async def test_concurrent_root_disposal_preserves_the_active_unload():
+    """Root dispose/restart joins current inertia instead of starting another unload."""
+    ctx = Context()
+    started, release = asyncio.Event(), asyncio.Event()
+    calls = []
+    async def cleanup():
+        started.set()
+        await release.wait()
+        calls.append('cleaned')
+    ctx.effect(lambda: cleanup)
+    first = asyncio.ensure_future(ctx.fiber.dispose())
+    await asyncio.wait_for(started.wait(), 2)
+    inertia = ctx.fiber.inertia
+    second = asyncio.ensure_future(ctx.fiber.dispose())
+    try:
+        await asyncio.sleep(0)
+        assert ctx.fiber.inertia is inertia
+        assert not first.done() and not second.done()
+        release.set()
+        await asyncio.wait_for(asyncio.gather(first, second), 2)
+        assert calls == ['cleaned']
+        assert ctx.fiber.settlement_tasks() == []
+    finally:
+        release.set()

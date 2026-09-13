@@ -598,3 +598,40 @@ print(json.dumps({'type':'complete'}),flush=True)
     p.store.apply_plan(plan(task("a")))
     assert p.run() == 0
     assert all(r["state"] == "INTEGRATED" for r in p.store.rows())
+
+
+def test_recover_stale_reclaims_dead_owner_tasks(repo):
+    p = make_project(repo)
+    p.store.apply_plan(plan(task("a")))
+    group = p.store.claim("w")
+    with p.store.connect() as db:
+        db.execute("UPDATE tasks SET owner='999999:deadbeef', state='RUNNING' WHERE id='a'")
+    assert p.recover_stale() == ["a"]
+    assert p.store.rows()[0]["state"] == "READY"
+    group = p.store.claim("w2")
+    with p.store.connect() as db:
+        db.execute("UPDATE tasks SET owner=?, state='RUNNING' WHERE id='a'", (str(os.getpid()) + ":alive",))
+    assert p.recover_stale() == []
+    assert p.store.rows()[0]["state"] == "RUNNING"
+
+
+def test_execute_parks_groups_on_scheduler_interrupt(repo, monkeypatch):
+    p = make_project(repo)
+    p.store.apply_plan(plan(task("a")))
+    group = p.store.claim("w")
+    def interrupted(group_arg):
+        raise InterruptedError("Project scheduler interrupted; owned process tree stopped")
+    monkeypatch.setattr(p, "task_runner", interrupted)
+    p.execute(group)
+    row = p.store.rows()[0]
+    assert row["state"] == "READY"
+    assert not row["error"]
+
+
+def test_run_honors_pause_flag(repo, monkeypatch):
+    p = make_project(repo)
+    def write_flag():
+        (p.folder / "pause.flag").write_text("", encoding="utf-8")
+    monkeypatch.setattr(p, "apply_proposals", write_flag)
+    assert p.run() == 0
+    assert not (p.folder / "pause.flag").exists()

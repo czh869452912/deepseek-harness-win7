@@ -511,6 +511,11 @@ class Project:
             self.store.record_evidence(group, self.store.meta("upstream"), head, hashes, review["test_paths"])
             self.store.update(group, "VERIFIED", head=head, feedback=feedback)
             self.merge(group, agent, hashes, review)
+        except InterruptedError:
+            # A requested pause or scheduler interrupt is not a failure: park the
+            # group with its round/worktree/run_dir so the next run resumes there.
+            self.store.update(group, "READY")
+            print("[project]", group["ids"], "parked for resume", flush=True)
         except Exception as error:
             self.store.update(group, "FAILED_INFRA", error=str(error))
             print("[project]", group["ids"], str(error), flush=True)
@@ -592,27 +597,64 @@ class Project:
             self.store.integrate(group, combined, changes, str(candidate))
             print("[integrated]", ",".join(group["ids"]), combined, flush=True)
 
+    def recover_stale(self):
+        """Reclaim tasks parked by a dead controller so restarts resume cleanly."""
+        stale = []
+        for row in self.store.rows():
+            if row["state"] not in ("RUNNING", "FAILED_INFRA"):
+                continue
+            owner = (row["owner"] or "").split(":")[0]
+            try:
+                alive = bool(owner) and process_alive(int(owner))
+            except (ValueError, OSError):
+                alive = False
+            if not alive:
+                stale.append(row["id"])
+        for task in stale:
+            try:
+                self.store.recover(task)
+            except ValueError:
+                pass
+        if stale:
+            print("[project] reclaimed %d tasks from dead owners: %s" %
+                  (len(stale), ", ".join(stale)), flush=True)
+        return stale
+
     def run(self):
         with scheduler_guard(self.folder):
             self.init()
+            pause_flag = self.folder / "pause.flag"
+            if pause_flag.exists():
+                pause_flag.unlink()
             if self.store.meta("architecture") != self.store.meta("upstream"):
                 self.architect()
+            self.recover_stale()
             with ThreadPoolExecutor(max_workers=self.jobs) as pool:
                 running = set()
+                paused = False
                 try:
                     while True:
                         if not running:
                             self.apply_proposals()
                         # Let active rounds finish before applying proposed dependency changes.
                         waiting_plan = any(r["state"] == "WAITING_PLAN" for r in self.store.rows())
-                        while len(running) < self.jobs and not waiting_plan:
+                        while len(running) < self.jobs and not waiting_plan and not paused:
                             group = self.store.claim(str(os.getpid()))
                             if not group:
                                 break
                             running.add(pool.submit(self.execute, group))
                         self.show()
+                        if not paused and pause_flag.exists():
+                            paused = True
+                            print("[project] pause requested; parking running groups", flush=True)
+                            self.stop.set()
                         if not running:
                             rows = self.store.rows()
+                            if paused:
+                                if pause_flag.exists():
+                                    pause_flag.unlink()
+                                print("PAUSED: task state preserved; rerun to continue")
+                                return 0
                             complete = bool(rows) and all(r["state"] == "INTEGRATED" for r in rows)
                             print("PROJECT COMPLETE" if complete else "WAITING: inspect task dependencies/errors in " + str(self.folder / "index.html"))
                             return 0 if complete else 2
@@ -653,9 +695,10 @@ def main():
                     parser.error("apply requires --file")
                 project.store.apply_plan(json.loads(args.file.read_text(encoding="utf-8")))
             elif args.command == "recover":
-                if not args.task:
-                    parser.error("recover requires --task")
-                project.store.recover(args.task)
+                if args.task:
+                    project.store.recover(args.task)
+                else:
+                    project.recover_stale()
             project.show()
     return 0
 
@@ -665,6 +708,9 @@ if __name__ == "__main__":
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     try:
         sys.exit(main())
+    except KeyboardInterrupt:
+        print("Interrupted; running groups were parked for resume", file=sys.stderr)
+        sys.exit(130)
     except (ValueError, OSError, subprocess.SubprocessError) as error:
         print(str(error), file=sys.stderr)
         sys.exit(2)

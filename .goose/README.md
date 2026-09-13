@@ -9,6 +9,22 @@ manually selecting one migration unit:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .goose/run-project.ps1 -Action run -Jobs 3
 ```
 
+### Pausing and resuming
+
+Pause a running scheduler without force-closing it:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .goose/run-project.ps1 -Action pause
+```
+
+The scheduler stops claiming new groups, parks running groups as READY (their
+round, worktree and logs are preserved) and exits with code 0. Ctrl+C parks the
+same way. Rerunning `-Action run` resumes from the saved phases. If a controller
+was killed hard, the next startup automatically reclaims every RUNNING or
+FAILED_INFRA task whose owner PID is dead (`recover_stale`), and
+`-Action recover` without `-Task` reclaims all of them on demand, so no manual
+per-task recovery is required after an interruption.
+
 The first run discovers package and peer dependencies, calls the architecture
 agent to refine runtime services/events, acceptance contracts and core-first
 priorities, then starts ready task groups. Later runs reuse the SQLite graph.

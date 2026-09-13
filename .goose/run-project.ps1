@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('init','status','plan','apply','run','recover','pause','prepare-main','publish-main','console','follow','overview')][string]$Action = 'status',
+    [ValidateSet('init','status','plan','apply','run','recover','pause','prepare-main','publish-main','console','follow','overview','pilot')][string]$Action = 'status',
     [string]$GooseExe = $env:GOOSE_EXE,
     [ValidateRange(1, 2147483647)][int]$Jobs = 2,
     [string]$PlanFile,

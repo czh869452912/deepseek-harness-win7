@@ -18,11 +18,13 @@ from console_runtime import append_event, load_config, config_revision, worker_e
 
 ROOT = Path(__file__).resolve().parents[1]
 ROLES = {"migrate": "parity-migrator", "review": "parity-reviewer", "judge": "parity-judge"}
+ROLES.update(integrate='parity-integrator', integration_review='parity-integration-reviewer')
 STATUSES = {
     "migrate": {"READY", "INCOMPLETE", "ESCALATE"},
     "review": {"PASS", "MUST_FIX", "ESCALATE"},
     "judge": {"RESOLVED", "BLOCKED"},
 }
+STATUSES.update(integrate=STATUSES['migrate'], integration_review=STATUSES['review'])
 SCOPE = """
 The unit is a starting point for dependency discovery, NOT a filesystem boundary.
 Read any relevant repository source, upstream dependency, caller, generator or test.
@@ -200,7 +202,7 @@ def parse_result(text, phase):
             raise ValueError("Invalid issue state")
     if "verdict" in value and value["verdict"] not in SCHEMA["properties"]["verdict"]["enum"]:
         raise ValueError("Invalid verdict")
-    if phase == "review" and value["status"] == "PASS":
+    if phase in ("review", "integration_review") and value["status"] == "PASS":
         if open_issues(value) or not value["coverage_complete"] or not value["test_map"]:
             raise ValueError("PASS requires complete case mapping and zero open issues")
     return value
@@ -484,7 +486,8 @@ class Runner:
     def phase(self, phase, feedback=None):
         self.state["phase"] = phase
         role = ROLES[phase]
-        prefix = {"migrate": "migrator", "review": "reviewer", "judge": "judge"}[phase]
+        prefix = {"migrate": "migrator", "review": "reviewer", "judge": "judge",
+                  "integrate": "migrator", "integration_review": "reviewer"}[phase]
         effective = load_config(self.control_root)
         provider, model = (effective['roles'][prefix][x] for x in ('provider', 'model'))
         self.state.update(attempt=uuid.uuid4().hex, provider=provider, model=model,
@@ -498,6 +501,15 @@ class Runner:
         body = (self.control_root / (".agents/agents/" + role + ".md")).read_text(encoding="utf-8")
         body = body.split("---", 2)[-1]
         prompt = "Unit: " + self.args.unit + "\n" + SCOPE
+        if phase in ('integrate', 'integration_review'):
+            prompt = "Unit: " + self.args.unit + "\n" + SCOPE.replace(
+                'Do not read .goose/runs/, .goose/out/, or old review conclusions\nduring blind review.',
+                'For integration, use only the supplied retained evidence and integration context.')
+            prompt += ('\nThis is integration repair/review on one combined candidate. The retained source review '
+                       'is evidence, not a new claim of PASS. Inspect the affected paths and contract changes in '
+                       'the handoff; reuse unaffected prior findings. If a change expands impact, explicitly '
+                       'expand review and test paths. integration_review is read-only and may use the prior review. '
+                       'Do not repeat the full migration audit; the full regression gate is still mandatory.')
         prompt += ("\nAll tests MUST use the controller interpreter: " + sys.executable +
                    ". In PowerShell use & $env:DSH_TEST_PYTHON -m pytest <paths>. "
                    "Do not look for a .venv in this worktree or install a different test environment. "
@@ -599,7 +611,7 @@ class Runner:
                 self.notify("git", "Agent updated HEAD; preserving the commit")
             if git(self.root, "diff", "--cached", "--binary") != index:
                 self.notify("git", "Agent updated the index; automatic checkpoint will preserve staged work")
-            if phase != "migrate" and changes:
+            if phase not in ("migrate", "integrate") and changes:
                 # The blind-phase contract treats any mutation as a failed review.
                 # Untracked scratch files (for example a literal "$null" from a
                 # cmd-mode "> $null" redirect) are accidental pollution: remove
@@ -621,14 +633,14 @@ class Runner:
                                     ", ".join(scratch) + "); removed them and rerunning the blind phase")
                         continue
                 raise ValueError("Read-only phase mutated files; preserved for inspection: " + ", ".join(changes))
-            if phase != "migrate" and (git(self.root, "rev-parse", "HEAD") != head or
+            if phase not in ("migrate", "integrate") and (git(self.root, "rev-parse", "HEAD") != head or
                                       git(self.root, "diff", "--cached", "--binary") != index):
                 raise ValueError("Read-only phase mutated HEAD/index; preserved for inspection")
             if code:
                 raise ValueError("Goose exited with code " + str(code))
             result = stream.result(phase)
             result["observed_changes"] = changes
-            if phase == "migrate":
+            if phase in ("migrate", "integrate"):
                 result["changed_files"] = valid_changed_files(
                     self.root, result["changed_files"], self.notify)
                 missing = set(changes) - set(result["changed_files"])
@@ -637,7 +649,8 @@ class Runner:
                     result["changed_files"] = sorted(set(result["changed_files"]) | missing)
             save_json(self.run_dir / (stem + ".result.json"), result)
             save_json(self.run_dir / (stem + ".binding.json"), {"files": after, "head": git(self.root, "rev-parse", "HEAD"),
-                      "scope": getattr(self.args, "task_contract", None)})
+                      "scope": getattr(self.args, "task_contract", None),
+                      "feedback_signature": hashlib.sha256(json.dumps(feedback, sort_keys=True, ensure_ascii=False).encode('utf-8')).hexdigest()})
             self.state["history"].append({"phase": phase, "round": self.state["round"],
                                           "status": result["status"], "issues": len(result["issues"])})
             self.notify("result", result["status"] + ": " + result["summary"])

@@ -1,0 +1,104 @@
+{
+  "tasks": [
+    {
+      "id": "vendor/cordis",
+      "owner": "@deepseek-ai/cordis",
+      "goal": "Port and verify the pinned Cordis Context, service registry, event modes, effect ownership, dependency injection, fiber activation, rollback, and quiescent disposal contract. Treat Loader and Include as optional consumers, not prerequisites of the Cordis core. This task is the single owner of the lifecycle change and ALL necessary boot/harness/CLI/HMR/diagnostics consumer adaptations. Follow .goose/cordis-lifecycle-contract.md. Preserve the retained round-six combined checkpoint, including its 49 modified files and existing event-order assertions; do not reimplement completed cases. Do not defer required consumer await/settlement changes to a separate task. Existing tests are not authority for loop-less synchronous activation: if retaining that adaptation, request a source-backed judge verdict. First inspect the combined checkpoint and run focused lifecycle tests, then close remaining concrete gaps. Full original Cordis acceptance remains required. Absorb the old activation-microtask-deferral proposal and readiness invariant source mapping into this owner; classify any genuinely Loader/Include composition-only cases with their existing owner and evidence, without deferring Cordis clauses.",
+      "evidence": "reference/vendor/cordis/package.json#dependencies; reference/vendor/cordis/package.json#peerDependenciesMeta; reference/vendor/README.md#local-modifications; reference/vendor/cordis/src/{context,events,fiber,registry,service}.ts",
+      "wave": 1,
+      "priority": 1000,
+      "consumes": [
+        "package:vendor/cosmokit"
+      ],
+      "provides": [
+        "package:vendor/cordis",
+        "contract:cordis-runtime"
+      ],
+      "upstream_paths": [
+        "reference/vendor/cordis",
+        "reference/vendor/README.md"
+      ],
+      "dependencies": [
+        {
+          "task": "vendor/cosmokit",
+          "kind": "implementation",
+          "evidence": "reference/vendor/cordis/package.json#dependencies/@deepseek-ai/cosmokit"
+        }
+      ],
+      "write_paths": [
+        "apps/cli/main.py",
+        "dsh/boot/app_boot.py",
+        "dsh/cordis",
+        "dsh/cordis/fiber.py",
+        "dsh/cordis/hmr.py",
+        "dsh/diagnostics/invariants.py",
+        "dsh/harness.py",
+        "tests/1to1/cordis",
+        "tests/1to1/cordis/test_cordis_core_semantics_parity.py",
+        "tests/1to1/cordis/test_fiber_parity.py",
+        "tests/1to1/cordis/test_harness_parity.py",
+        "tests/1to1/cordis/test_registry_parity.py",
+        "tests/1to1/core/session/test_invariant.py",
+        "tests/1to1/core/session/test_session.py",
+        "tests/1to1/core/system_prompt/test_invariant.py",
+        "tests/1to1/core/system_prompt/test_tool_order.py",
+        "tests/test_1to1_tools_parity.py",
+        "tests/test_agent_instructions.py",
+        "tests/test_agent_lifecycle.py",
+        "tests/test_agent_loop_interception_hooks_1to1.py",
+        "tests/test_agent_loop_tool_order_1to1.py",
+        "tests/test_apiproxy_1to1_structure.py",
+        "tests/test_cli.py",
+        "tests/test_cli_visualizer.py",
+        "tests/test_client_modules.py",
+        "tests/test_command_compact.py",
+        "tests/test_context_injections.py",
+        "tests/test_cordis.py",
+        "tests/test_cordis_core_exact_parity.py",
+        "tests/test_cordis_lifecycle_reference_1to1.py",
+        "tests/test_cordis_reference_parity_alignment.py",
+        "tests/test_cordis_stage1_parity.py",
+        "tests/test_e2e_core_agent_loop_llm_system_prompt_1to1.py",
+        "tests/test_e2e_core_spine_strict_parity.py",
+        "tests/test_fs_search.py",
+        "tests/test_harness.py",
+        "tests/test_host_1to1_modules.py",
+        "tests/test_jobs.py",
+        "tests/test_p2_0_cordis_ground_layer_leftovers.py",
+        "tests/test_presets_alignment.py",
+        "tests/test_pwsh_tools.py",
+        "tests/test_ralph_and_workflow.py",
+        "tests/test_reference_core_agent_extra_specs.py",
+        "tests/test_reference_core_agent_loop_specs.py",
+        "tests/test_skills.py",
+        "tests/test_subagent_delegation.py",
+        "tests/test_todo_and_ask_user.py",
+        "tests/test_web_gui_1to1_alignment.py",
+        "tests/test_web_gui_1to1_fixes.py",
+        "tests/test_web_gui_dual_sse_and_questions.py",
+        "tests/test_web_tools.py"
+      ]
+    }
+  ],
+  "contracts": [
+    {
+      "id": "contract:cordis-runtime",
+      "owner": "vendor/cordis",
+      "evidence": "reference/vendor/cordis/src/{context,events,fiber,registry,service}.ts; reference/vendor/README.md#local-modifications-6; tests/1to1/cordis/test_{context,events,fiber,registry,service}_parity.py",
+      "description": "Cordis lifecycle, effect settlement, dependency activation and necessary boot/harness/CLI/HMR consumer waiting boundaries. Acceptance: .goose/cordis-lifecycle-contract.md. Single owner vendor/cordis.",
+      "paths": [
+        "apps/cli/main.py",
+        "dsh/boot/app_boot.py",
+        "dsh/cordis",
+        "dsh/cordis/context.py",
+        "dsh/cordis/events.py",
+        "dsh/cordis/fiber.py",
+        "dsh/cordis/reflect.py",
+        "dsh/cordis/registry.py",
+        "dsh/cordis/service.py",
+        "dsh/diagnostics/invariants.py",
+        "dsh/harness.py"
+      ]
+    }
+  ]
+}

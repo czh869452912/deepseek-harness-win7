@@ -328,7 +328,7 @@ def test_merge_conflicts_are_preserved_for_repair(repo):
     project.git(integration, "commit", "-am", "provider change")
     p.merge(group, agent, p.store.contract_hashes(), {"test_paths": []})
     saved = p.store.rows()[0]
-    assert saved["state"] == "READY"
+    assert saved["state"] == "INTEGRATION_REPAIR"
     assert saved["feedback"]["conflicts"] == ["a.py"]
     assert "<<<<<<<" in (Path(saved["worktree"]) / "a.py").read_text()
     assert (agent.root / "a.py").read_text().strip() == "value = 1"
@@ -433,7 +433,7 @@ def test_integration_failure_requeues_combined_candidate_for_repair(repo, monkey
     tip = project.git(p.integration(), "rev-parse", "HEAD")
     p.merge(group, agent, p.store.contract_hashes(), {"test_paths": ["tests/test_a.py"]})
     row = p.store.rows()[0]
-    assert row["state"] == "READY"
+    assert row["state"] == "INTEGRATION_REPAIR"
     assert "FAILED integration invariant" in row["feedback"]["full_suite_failure"]
     assert project.git(p.integration(), "rev-parse", "HEAD") == tip
 
@@ -555,6 +555,58 @@ def test_phase_reads_current_allocation_and_records_requested_model(repo, monkey
     assert agent.state['model'] == 'new-review-model'
     assert agent.state['config_revision'] != first_revision
     assert len(list(agent.run_dir.glob('*.config.json'))) == 2
+
+
+def test_targeted_claim_never_starts_other_ready_work(repo):
+    p = make_project(repo)
+    p.store.apply_plan(plan(task('a'), task('b')))
+    group = p.store.claim('w', 'b')
+    assert group['ids'] == ['b']
+    assert next(r['state'] for r in p.store.rows() if r['id'] == 'a') == 'READY'
+    assert p.store.claim('w', 'does-not-exist') is None
+
+
+def test_integration_adjudicates_then_repairs_and_reviews_only_combination(repo, monkeypatch):
+    p = make_project(repo)
+    p.store.apply_plan(plan(task('a')))
+    group = p.store.claim('w')
+    agent = p.task_runner(group)
+    calls = []
+    prior = {'status': 'PASS', 'test_paths': ['tests/test_a.py']}
+    feedback = {'integration_handoff': {'source_review': prior, 'needs_decision': True,
+                                       'affected_paths': ['a.py']}}
+    def phase(worker, name, data=None):
+        calls.append(name)
+        assert data['integration_handoff']['source_review'] == prior
+        if name == 'judge':
+            return dict(status='RESOLVED', verdict='REVIEWER_CORRECT', summary='source contract decided')
+        assert data['contract_decision']['verdict'] == 'REVIEWER_CORRECT'
+        return dict(status='READY' if name == 'integrate' else 'PASS', changed_files=[],
+                    observed_changes=[], test_paths=['tests/test_a.py'], issues=[])
+    monkeypatch.setattr(p, 'cached_phase', phase)
+    monkeypatch.setattr(agent, 'verify_chunk', lambda result: True)
+    monkeypatch.setattr(agent, 'checkpoint', lambda result: None)
+    monkeypatch.setattr(p, 'merge', lambda *args: calls.append('merge'))
+    p.execute_integration(group, agent, feedback)
+    assert calls == ['judge', 'integrate', 'integration_review', 'merge']
+    assert p.store.rows()[0]['state'] == 'VERIFIED'
+
+
+def test_pilot_stops_after_selected_task_without_claiming_siblings(repo, monkeypatch):
+    p = make_project(repo)
+    p.store.apply_plan(plan(task('a'), task('b')))
+    monkeypatch.setattr(p, 'init', lambda: None)
+    p.store.meta('architecture', p.store.meta('upstream'))
+    called = []
+    def execute(group):
+        called.extend(group['ids'])
+        p.store.update(group, 'INTEGRATED')
+    monkeypatch.setattr(p, 'execute', execute)
+    p.jobs = 1
+    assert p.run('a') == 0
+    assert called == ['a']
+    assert p.store.meta('scheduler') == 'PAUSED'
+    assert next(r['state'] for r in p.store.rows() if r['id'] == 'b') == 'READY'
 
 
 def test_architect_resumes_native_stop_and_applies_acknowledged_plan(repo, monkeypatch):

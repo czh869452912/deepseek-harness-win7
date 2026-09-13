@@ -41,9 +41,9 @@ def test_agent_initiator_scope():
 async def test_agent_create_followup_and_when_idle():
     ctx = Context()
     ctx.set_service("llm", MockLlmDriver())
-    ctx.plugin(SessionPlugin)
-    ctx.plugin(AgentPlugin)
-    ctx.plugin(AgentLoopPlugin)
+    await ctx.plugin(SessionPlugin)
+    await ctx.plugin(AgentPlugin)
+    await ctx.plugin(AgentLoopPlugin)
 
     registry: AgentRegistry = ctx.get("agents")
     handle = await registry.create(session_id="scheduled-agent-1")
@@ -76,9 +76,9 @@ async def test_agent_create_followup_and_when_idle():
 async def test_agent_cancel():
     ctx = Context()
     ctx.set_service("llm", MockLlmDriver())
-    ctx.plugin(SessionPlugin)
-    ctx.plugin(AgentPlugin)
-    ctx.plugin(AgentLoopPlugin)
+    await ctx.plugin(SessionPlugin)
+    await ctx.plugin(AgentPlugin)
+    await ctx.plugin(AgentLoopPlugin)
 
     registry: AgentRegistry = ctx.get("agents")
     handle = await registry.create(session_id="cancel-agent-1")

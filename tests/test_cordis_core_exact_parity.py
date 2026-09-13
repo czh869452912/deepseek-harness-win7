@@ -22,7 +22,7 @@ async def test_reflect_internal_get_waterfall_signature_1to1():
             super().__init__(ctx, 'db')
             self.value = 42
 
-    ctx.plugin(DatabaseService)
+    await ctx.plugin(DatabaseService)
     assert ctx.get('db').value == 42
 
     get_log = []
@@ -49,7 +49,7 @@ async def test_reflect_internal_get_waterfall_signature_1to1():
         def apply(self, c: Context) -> None:
             captured['value'] = c.db.value
 
-    ctx.plugin(ReaderPlugin)
+    await ctx.plugin(ReaderPlugin)
     assert captured['value'] == 42
     assert [entry[0] for entry in get_log] == ['db']
 
@@ -69,7 +69,7 @@ async def test_reflect_internal_get_waterfall_signature_1to1():
         def apply(self, c: Context) -> None:
             overridden['virtual'] = c.custom_virtual
 
-    ctx.plugin(VirtualReaderPlugin)
+    await ctx.plugin(VirtualReaderPlugin)
     assert overridden['virtual'] == 'intercepted_virtual_value'
 
 
@@ -157,7 +157,7 @@ async def test_hmr_dynamic_module_reload_and_fiber_restart():
         spec.loader.exec_module(mod)
         plugin_cls = getattr(mod, 'DynamicSamplePlugin')
 
-        fiber = ctx.plugin(plugin_cls)
+        fiber = await ctx.plugin(plugin_cls)
         assert fiber.plugin.version == 1
 
         changes = []
@@ -218,7 +218,7 @@ async def test_hmr_dynamic_module_reload_failure_triggers_rollback():
         spec.loader.exec_module(mod)
         plugin_cls = getattr(mod, 'FailingSamplePlugin')
 
-        fiber = ctx.plugin(plugin_cls)
+        fiber = await ctx.plugin(plugin_cls)
         assert fiber.plugin.version == 1
 
         changes = []
@@ -299,8 +299,8 @@ async def test_hmr_multi_file_reload_failure_triggers_rollback_all():
         spec_b.loader.exec_module(mod_b)
         cls_b = getattr(mod_b, 'MultiSamplePluginB')
 
-        fiber_a = ctx.plugin(cls_a)
-        fiber_b = ctx.plugin(cls_b)
+        fiber_a = await ctx.plugin(cls_a)
+        fiber_b = await ctx.plugin(cls_b)
         assert fiber_a.plugin.version == 1
         assert fiber_b.plugin.version == 1
 

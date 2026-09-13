@@ -1,8 +1,9 @@
 from dsh.harness import build_harness
+import asyncio
 
 
 def test_build_harness_minimal_mode():
-    ctx = build_harness(mode="minimal")
+    ctx = asyncio.run(build_harness(mode="minimal"))
 
     plugins = [p["id"] for p in ctx.list_plugins()]
     assert "persona" in plugins
@@ -15,7 +16,7 @@ def test_build_harness_minimal_mode():
 
 
 def test_build_harness_creative_mode():
-    ctx = build_harness(mode="creative")
+    ctx = asyncio.run(build_harness(mode="creative"))
 
     plugins = [p["id"] for p in ctx.list_plugins()]
     assert "cordis-manager" in plugins

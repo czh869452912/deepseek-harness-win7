@@ -142,7 +142,7 @@ async def test_service_init_generator_disposer_registration():
                 teardown_log.append("cleaned_up")
             yield _cleanup
 
-    fiber = ctx.plugin(MyGenService)
+    fiber = await ctx.plugin(MyGenService)
     assert fiber is not None
     assert len(teardown_log) == 0
 
@@ -160,7 +160,7 @@ async def test_include_plugin_initialization_and_patches():
     """Verify Include plugin loads YAML, applies patches, and writes updates safely."""
     ctx = Context()
     from dsh.cordis.loader import Loader
-    ctx.plugin(Loader)
+    await ctx.plugin(Loader)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         config_path = os.path.join(tmp_dir, "cordis.yml")
@@ -173,6 +173,8 @@ async def test_include_plugin_initialization_and_patches():
             yaml.safe_dump(initial_entries, f)
 
         # Include with patch overriding plugin-a's config
+        # The probe entries name packages that are not installed; this case covers
+        # the include service's tree and patch result, so only its own mount settles.
         include_fiber = ctx.plugin(
             Include,
             {
@@ -183,6 +185,7 @@ async def test_include_plugin_initialization_and_patches():
             },
         )
 
+        await asyncio.sleep(0)
         assert include_fiber is not None
         # Root-context attribute access resolves a service the way the reference
         # proxy does for a runtime-less context (`reflect.get(name, false)`).
@@ -209,7 +212,7 @@ async def test_include_config_file_errors():
     """Verify Include raises ConfigFileError for read, parse, and validate stages."""
     ctx = Context()
     from dsh.cordis.loader import Loader
-    ctx.plugin(Loader)
+    await ctx.plugin(Loader)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         # Non-existent file without initial
@@ -325,7 +328,7 @@ async def test_include_patch_insert_into_nested_group():
     """Verify Include patches can insert entries into existing groups matching reference applyEntryPatches."""
     ctx = Context()
     from dsh.cordis.loader import Loader
-    ctx.plugin(Loader)
+    await ctx.plugin(Loader)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         config_path = os.path.join(tmp_dir, "cordis.yml")
@@ -343,6 +346,8 @@ async def test_include_patch_insert_into_nested_group():
             yaml.safe_dump(initial_entries, f)
 
         # Patch that inserts plugin-2 into my-group
+        # The probe entries name packages that are not installed; this case covers
+        # the include service's tree and patch result, so only its own mount settles.
         include_fiber = ctx.plugin(
             Include,
             {
@@ -358,6 +363,7 @@ async def test_include_patch_insert_into_nested_group():
             },
         )
 
+        await asyncio.sleep(0)
         assert include_fiber is not None
         inc_svc: Include = ctx.include
         assert inc_svc is not None

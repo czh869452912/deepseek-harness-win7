@@ -197,7 +197,7 @@ async def test_effect_registration_while_pending_and_loading():
             assert inner.fiber.state == FiberState.LOADING
             inner.effect(lambda: lambda: loading_cleanup.append(True), "loading-effect")
 
-    fiber = ctx.registry.plugin(StateProbePlugin())
+    fiber = await ctx.registry.plugin(StateProbePlugin())
     await fiber.dispose()
 
     assert pending_cleanup == [True]
@@ -224,7 +224,7 @@ async def test_resolves_dependencies_added_by_internal_plugin():
             nonlocal apply_calls
             apply_calls += 1
 
-    fiber = ctx.registry.plugin(LoaderShapedPlugin())
+    fiber = await ctx.registry.plugin(LoaderShapedPlugin())
     assert apply_calls == 1
     assert fiber.state == FiberState.ACTIVE
 
@@ -483,7 +483,7 @@ async def test_direct_child_disposal_retires_the_parent_owned_effect():
         def apply(self, c: Context) -> None:
             c.effect(lambda: (lambda: teardowns.append("child")), "child-effect")
 
-    child = ctx.plugin(ChildPlugin())
+    child = await ctx.plugin(ChildPlugin())
     assert [effect["label"] for effect in ctx.fiber.get_effects()] == ["ctx.plugin()"]
 
     await child.dispose()
@@ -496,3 +496,129 @@ async def test_direct_child_disposal_retires_the_parent_owned_effect():
     # A parent unload must not re-run the disposed child's teardown.
     await ctx.fiber.dispose()
     assert teardowns == ["child"]
+
+@pytest.mark.asyncio
+async def test_mount_reports_loading_and_defers_the_plugin_body():
+    """fiber.ts `_reload` crosses `await Promise.resolve()` before it resolves config
+    and executes, so `ctx.plugin()` returns a LOADING fiber whose body has not run.
+    """
+    ctx = Context()
+    applied = []
+    statuses = []
+
+    class LoadWindowPlugin(Plugin):
+        name = "load-window-probe"
+
+        def apply(self, c: Context) -> None:
+            # fiber.ts `_reload` keeps the framework status while the body runs.
+            assert c.fiber.state == FiberState.LOADING
+            applied.append(True)
+
+    def on_status(fiber: Fiber, old_state: int) -> None:
+        if fiber.name == "load-window-probe":
+            statuses.append((old_state, fiber.state))
+
+    ctx.on("internal/status", on_status)
+
+    fiber = ctx.plugin(LoadWindowPlugin)
+
+    # Immediately after the mount: the LOADING status is published and no plugin
+    # code has run yet.
+    assert fiber.state == FiberState.LOADING
+    assert applied == []
+    assert statuses == [(FiberState.PENDING, FiberState.LOADING)]
+
+    await fiber.await_settled()
+
+    assert applied == [True]
+    assert fiber.state == FiberState.ACTIVE
+
+
+@pytest.mark.asyncio
+async def test_disposal_before_the_checkpoint_skips_the_plugin_body():
+    """fiber.ts `_reload` re-checks its epoch after the initial microtask: a disposer
+    queued before that checkpoint invalidates the load, so the body never runs and the
+    fiber settles as DISPOSED with its parent-owned registration retired.
+    """
+    ctx = Context()
+    applied = []
+
+    class CancelBeforeLoadPlugin(Plugin):
+        name = "cancel-before-load"
+
+        def apply(self, c: Context) -> None:
+            applied.append(True)
+
+    fiber = ctx.plugin(CancelBeforeLoadPlugin)
+    assert fiber.state == FiberState.LOADING
+
+    await fiber.dispose()
+
+    assert applied == []
+    assert fiber.state == FiberState.DISPOSED
+    assert [effect["label"] for effect in ctx.fiber.get_effects()] == []
+
+    # the cancelled load never runs later either
+    await asyncio.sleep(0)
+    assert applied == []
+
+
+@pytest.mark.asyncio
+async def test_nested_mount_activates_after_its_parent_body_returns():
+    """A child mounted from a parent body activates at its own checkpoint, so the
+    parent body returns first and the child's body runs after it.
+    """
+    ctx = Context()
+    order = []
+
+    class NestedChildPlugin(Plugin):
+        name = "nested-child"
+
+        def apply(self, c: Context) -> None:
+            order.append("child")
+
+    class NestedParentPlugin(Plugin):
+        name = "nested-parent"
+
+        def apply(self, c: Context) -> None:
+            order.append("parent-start")
+            child = c.plugin(NestedChildPlugin)
+            order.append(("child-state-in-parent", child.state))
+            order.append("parent-end")
+
+    parent = ctx.plugin(NestedParentPlugin)
+
+    await parent.await_settled()
+    assert parent.state == FiberState.ACTIVE
+    # The parent body saw a LOADING child and ran to completion first, so the
+    # child's own body starts strictly after `parent-end`.
+    assert order[:3] == [
+        "parent-start",
+        ("child-state-in-parent", FiberState.LOADING),
+        "parent-end",
+    ]
+
+    await asyncio.sleep(0)
+    assert order.count("child") == 1
+    assert order.index("child") > order.index("parent-end")
+
+
+def test_loop_less_mount_runs_inline():
+    """Python 3.8 has no ambient microtask queue outside a running loop.
+
+    A loop-less caller therefore has no checkpoint to cross and keeps the port's
+    inline activation; the deferred path above requires a running loop.
+    """
+    ctx = Context()
+    applied = []
+
+    class LoopLessPlugin(Plugin):
+        name = "loop-less"
+
+        def apply(self, c: Context) -> None:
+            applied.append(True)
+
+    fiber = ctx.plugin(LoopLessPlugin)
+
+    assert applied == [True]
+    assert fiber.state == FiberState.ACTIVE

@@ -204,8 +204,8 @@ async def create_test_context(
 ) -> Context:
     """Helper to build a clean Cordis Context with all core plugins mounted 1:1."""
     ctx = Context()
-    ctx.plugin(SessionPlugin)
-    ctx.plugin(ToolsPlugin)
+    await ctx.plugin(SessionPlugin)
+    await ctx.plugin(ToolsPlugin)
 
     prompt_config: Dict[str, Any] = {
         "includeHarnessIdentity": include_identity,
@@ -215,11 +215,11 @@ async def create_test_context(
     if tool_order is not None:
         prompt_config["toolOrder"] = tool_order
 
-    f_sp = ctx.plugin(SystemPrompt, config=prompt_config)
+    f_sp = await ctx.plugin(SystemPrompt, config=prompt_config)
     if f_sp.error is not None:
         raise f_sp.error
-    ctx.plugin(AgentPlugin)
-    ctx.plugin(AgentLoopPlugin)
+    await ctx.plugin(AgentPlugin)
+    await ctx.plugin(AgentLoopPlugin)
 
     llm_svc = LLMService(ctx=ctx)
     llm_svc.provider = "mock-provider"

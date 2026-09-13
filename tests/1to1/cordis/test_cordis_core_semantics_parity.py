@@ -141,6 +141,7 @@ async def test_c3_strict_get_ignores_inactive_provider():
     fiber = ctx.plugin(_ApplyPlugin("loading-provider", body))
     await asyncio.sleep(0)
     await asyncio.sleep(0)
+    await asyncio.sleep(0)
 
     assert fiber.state == FiberState.LOADING
     # reflect.ts `_getImpl(name, strict = true)` filters on `fiber.state`.
@@ -368,7 +369,11 @@ async def test_c10_effect_takes_ownership_of_nested_effect():
     assert [effect["label"] for effect in effects] == ["c10-outer"]
     assert effects[0]["children"] == [{"label": "c10-inner", "children": []}]
 
-    await outer
+    # fiber.ts `wrapper.then` resolves with the disposer; running it is what
+    # tears the effect (and the nested effect it owns) down.
+    disposer = await outer
+    assert callable(disposer)
+    disposer()
     assert log == ["nested-disposed"]
     assert ctx.fiber.get_effects() == []
 
@@ -679,6 +684,7 @@ async def test_c21_context_get_second_positional_parameter_is_strict():
         await asyncio.sleep(0.03)
 
     fiber = ctx.plugin(_ApplyPlugin("c21", body))
+    await asyncio.sleep(0)
     await asyncio.sleep(0)
     await asyncio.sleep(0)
     assert fiber.state == FiberState.LOADING

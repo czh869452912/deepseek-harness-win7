@@ -477,8 +477,8 @@ class Fiber:
 
             Calling it tears the effect down; when async setup is still running the
             call waits for it first and rethrows its failure after cleanup. Awaiting
-            it waits for setup and then tears down, propagating a setup failure the
-            way the reference `then` chain does.
+            it waits for setup and resolves with the disposer, so a caller that needs
+            the effect live still receives the teardown handle.
             """
 
             def __init__(self, c_fn: Callable[[], Any], get_task: Callable[[], Optional[asyncio.Task]],
@@ -506,14 +506,14 @@ class Fiber:
                 return self._c_fn(*args, **kwargs)
 
             def __await__(self):
+                # fiber.ts `wrapper.then`: wait for the setup task, then hand
+                # the caller the disposer. Running it stays the caller's
+                # decision -- awaiting a registration must not tear it down.
                 async def _await_wrapper():
                     t = self._get_task()
                     if t is not None:
                         await t
-                    res = self._c_fn()
-                    if inspect.isawaitable(res):
-                        return await res
-                    return res
+                    return self._c_fn
                 return _await_wrapper().__await__()
 
         wrapper = _EffectWrapper(cancel_effect, lambda: setup_task, retire_effect)
@@ -760,7 +760,7 @@ class Fiber:
                 # transition already drove the unload this fiber needs.
                 self._epoch_transition_driven = True
                 return
-            self._reload()
+            self._start_reload(epoch)
         elif epoch == INACTIVE_EPOCH and old_epoch != INACTIVE_EPOCH:
             self._epoch_transition_driven = True
             self.set_state(FiberState.UNLOADING)
@@ -850,11 +850,53 @@ class Fiber:
             inst.ctx = self.ctx
         return inst
 
-    def _reload(self) -> None:
-        """Execute plugin apply and transition to ACTIVE on success."""
-        epoch = self.epoch
+    def _start_reload(self, epoch: str) -> None:
+        """
+        fiber.ts `_reload` entry: snapshot the dependency store, then cross
+        the first event-loop checkpoint before resolving config or executing
+        the plugin body.
+
+        The composite epoch that authorized this load is re-checked after the
+        checkpoint, so a disposer or dependency transition queued inside that
+        window cancels the load before any plugin code runs. A loop-less
+        caller has no checkpoint to cross: neither CPython 3.8 nor Windows 7
+        offers an ambient microtask queue outside a running loop, so the load
+        runs inline exactly as it did before.
+        """
+        self.store = dict(self._store)
         try:
-            self.store = dict(self._store)
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            self._reload(epoch)
+            return
+
+        async def _deferred_reload():
+            # fiber.ts `await Promise.resolve()`: a fresh task takes its first
+            # step at the next event-loop checkpoint, so the plugin body runs
+            # exactly one checkpoint after `ctx.plugin()` reported LOADING.
+            self._reload(epoch)
+
+        self.inertia = loop.create_task(_deferred_reload())
+
+    def _reload(self, epoch: Optional[str] = None) -> None:
+        """
+        Execute plugin apply and transition to ACTIVE on success.
+
+        `epoch` is the composite dependency epoch captured before the
+        checkpoint; a load invalidated in that window is dropped without
+        resolving config or running plugin code (fiber.ts `_reload`).
+        """
+        if epoch is None:
+            epoch = self.epoch
+        if self.uid is None or self.epoch != epoch:
+            # fiber.ts re-checks `this._runner.epoch === oldEpoch` after the
+            # initial microtask: the plugin body never runs for a stale load,
+            # and this state update drains whatever the fiber collected while
+            # it was PENDING/LOADING.
+            self.set_state(FiberState.UNLOADING)
+            self._unload()
+            return
+        try:
             self.config = self._resolve_config(self._config)
             if getattr(self, "_plugin_cls", None) is not None:
                 self.plugin = self._instantiate_plugin()
@@ -1096,7 +1138,7 @@ class Fiber:
                 self.inertia = None
             else:
                 self.set_state(FiberState.LOADING)
-                self._reload()
+                self._start_reload(self.epoch)
             return
 
         async_disposers = []
@@ -1118,7 +1160,7 @@ class Fiber:
                 self.inertia = None
             else:
                 self.set_state(FiberState.LOADING)
-                self._reload()
+                self._start_reload(self.epoch)
             return
 
         try:
@@ -1143,7 +1185,7 @@ class Fiber:
                         self.inertia = None
                     else:
                         self.set_state(FiberState.LOADING)
-                        self._reload()
+                        self._start_reload(self.epoch)
 
             self.inertia = loop.create_task(_run_gather())
             if hasattr(self, "_in_flight_effects"):
@@ -1161,7 +1203,7 @@ class Fiber:
                 self.inertia = None
             else:
                 self.set_state(FiberState.LOADING)
-                self._reload()
+                self._start_reload(self.epoch)
 
     def _emit_plugin_disposed(self) -> None:
         if not self.ctx:
@@ -1206,18 +1248,31 @@ class Fiber:
 
         Mirrors TS `fiber.dispose`, which *is* the parent-owned `ctx.plugin()`
         effect disposer (`fiber.ts` constructor assigns it to `this.dispose`).
-        Disposing retires that registration -- so the parent stops owning this
-        child and a later parent unload cannot dispose it twice -- and runs the
-        teardown body at the call site: clearing the uid, notifying
-        `internal/plugin` observers, and starting disposers. Awaiting the
-        returned object waits for teardown to finish. Disposers run in strict
-        reverse registration order; a fiber without a parent (the root fiber)
-        owns no registration.
+        The teardown body starts at the call site -- clearing the uid,
+        notifying `internal/plugin` observers, and starting disposers -- and
+        the parent-owned registration is retired once that teardown settles,
+        exactly like the reference `finalizeDisposal` chain calling
+        `removeWrapper()` in its `finally`: the record stays owner-visible
+        while the teardown is in flight, so an owner unload joins cleanup that
+        another caller already started (`runDisposable` -> `effectInertia`)
+        instead of disposing the child twice. Awaiting the returned object
+        waits for teardown to finish. Disposers run in strict reverse
+        registration order; a fiber without a parent (the root fiber) owns no
+        registration.
         """
-        if self._parent_disposer is not None:
-            self._parent_disposer.retire()
         self._begin_dispose()
-        return self._await_quiescent()
+        settled = self._await_quiescent()
+        disposer = self._parent_disposer
+        if disposer is None:
+            return settled
+
+        async def _retire_when_settled():
+            try:
+                await settled
+            finally:
+                disposer.retire()
+
+        return _retire_when_settled()
 
     def _begin_dispose(self) -> None:
         """Run the part of TS `dispose` before its first await."""

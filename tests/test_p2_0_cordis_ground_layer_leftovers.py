@@ -229,7 +229,7 @@ async def test_g5_d21_fiber_async_restart():
             nonlocal init_count
             init_count += 1
 
-    fiber = ctx.plugin(RestartablePlugin)
+    fiber = await ctx.plugin(RestartablePlugin)
     assert init_count == 1
     assert fiber.state == FiberState.ACTIVE
 

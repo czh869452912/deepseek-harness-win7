@@ -85,9 +85,11 @@ async def test_t1_parent_unload_disposes_child_fibers():
         def apply(self, c: Context) -> None:
             c.plugin(ChildPlugin)
 
-    parent_fiber = ctx.plugin(ParentPlugin)
+    parent_fiber = await ctx.plugin(ParentPlugin)
     assert parent_fiber.state == FiberState.ACTIVE
     assert ctx.registry.has(ChildPlugin)
+    # The child mounted from the parent's body loads one checkpoint later.
+    await asyncio.sleep(0)
 
     await parent_fiber.dispose()
 
@@ -137,7 +139,7 @@ async def test_t3_internal_plugin_disposed_event_before_unload_and_error_isolate
     ctx.on("internal/plugin", on_plugin_1)
     ctx.on("internal/plugin", on_plugin_failing)
 
-    fiber = ctx.plugin(TrackedPlugin)
+    fiber = await ctx.plugin(TrackedPlugin)
     await fiber.dispose()
 
     assert "event_uid_none" in event_order
@@ -160,7 +162,7 @@ async def test_t4_inject_intercept_config_reaches_intercept_map():
         def apply(self, c: Context) -> None:
             captured_intercept.update(getattr(c, "_intercept_map", {}))
 
-    fiber = ctx.plugin(InterceptConsumer)
+    fiber = await ctx.plugin(InterceptConsumer)
     assert fiber.state == FiberState.ACTIVE
     assert "my_service" in captured_intercept
     assert captured_intercept["my_service"] == {"custom_intercept_key": "custom_val"}
@@ -179,7 +181,7 @@ async def test_t5_name_inherits_nearest_named_ancestor():
             f = c.plugin(lambda child_ctx: None)
             child_fiber_ref.append(f)
 
-    parent_fiber = ctx.plugin(NamedParent)
+    parent_fiber = await ctx.plugin(NamedParent)
     assert len(child_fiber_ref) == 1
     child_fiber = child_fiber_ref[0]
     assert child_fiber.name == "grand_parent_runtime"
@@ -197,6 +199,8 @@ async def test_t6_failed_fiber_still_allows_effect_registration():
             raise ValueError("Intentional startup failure")
 
     fiber = ctx.plugin(FailingPlugin)
+    with pytest.raises(ValueError, match="Intentional startup failure"):
+        await fiber
     assert fiber.state == FiberState.FAILED
     assert fiber.uid is not None
 
@@ -221,6 +225,8 @@ async def test_t16_disposed_fiber_with_error_reports_disposed():
             raise ValueError("Fatal crash")
 
     fiber = ctx.plugin(FailingPlugin)
+    with pytest.raises(ValueError, match="Fatal crash"):
+        await fiber
     assert fiber.state == FiberState.FAILED
 
     await fiber.dispose()
@@ -428,7 +434,7 @@ async def test_t25_apply_returning_custom_sync_iterable_collects_disposers_on_fi
                 lambda: log.append("second"),
             ])
 
-    fiber = ctx.plugin(IterablePlugin)
+    fiber = await ctx.plugin(IterablePlugin)
     assert fiber.state == FiberState.ACTIVE
     assert fiber.get_effects() == []
 
@@ -452,6 +458,8 @@ async def test_t26_apply_returning_iterable_with_non_disposer_fails_loud():
             return [lambda: None, 42]
 
     fiber = ctx.plugin(BadIterablePlugin)
+    with pytest.raises(TypeError, match="Invalid effect"):
+        await fiber
     assert fiber.state == FiberState.FAILED
     assert isinstance(fiber.error, TypeError)
     assert "Invalid effect" in str(fiber.error)
@@ -572,6 +580,8 @@ async def test_t30_apply_iterator_terminal_value_is_collected():
             return 7
 
     fiber = ctx.plugin(TerminalValuePlugin)
+    with pytest.raises(TypeError, match="Invalid effect"):
+        await fiber
     assert fiber.state == FiberState.FAILED
     assert isinstance(fiber.error, TypeError)
     assert "Invalid effect" in str(fiber.error)
@@ -588,7 +598,7 @@ async def test_t30_apply_iterator_terminal_value_is_collected():
             yield lambda: log2.append("kept")
             return
 
-    fiber2 = ctx2.plugin(NullTerminalPlugin)
+    fiber2 = await ctx2.plugin(NullTerminalPlugin)
     assert fiber2.state == FiberState.ACTIVE
     assert fiber2.get_effects() == []
 

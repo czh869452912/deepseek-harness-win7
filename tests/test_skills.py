@@ -44,8 +44,8 @@ async def test_skill_filesystem_and_tool_plugin():
         with open(skill_md, "w", encoding="utf-8") as f:
             f.write("---\nname: sample-skill\ndescription: Sample skill for pytest\n---\nSample Instructions")
 
-        ctx.plugin(SkillFilesystemPlugin, config={"customSkillDirs": [os.path.join(tmpdir, "skills")]})
-        tool_skill = ctx.plugin(ToolSkillPlugin)
+        await ctx.plugin(SkillFilesystemPlugin, config={"customSkillDirs": [os.path.join(tmpdir, "skills")]})
+        tool_skill = await ctx.plugin(ToolSkillPlugin)
 
         skills = ctx.skills.list_skills()
         assert len(skills) >= 1

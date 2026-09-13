@@ -117,15 +117,15 @@ class StrictMockLlmAdapter:
 
 async def build_e2e_harness(adapter: StrictMockLlmAdapter, persona: str = "You are DeepSeek Harness Assistant.") -> Context:
     ctx = Context()
-    ctx.plugin(SessionPlugin)
-    ctx.plugin(ToolsPlugin)
+    await ctx.plugin(SessionPlugin)
+    await ctx.plugin(ToolsPlugin)
     ctx.plugin(SystemPrompt, config={
         "includeHarnessIdentity": True,
         "persona": persona,
         "includeRuntimeContext": True,
     })
-    ctx.plugin(AgentPlugin)
-    ctx.plugin(AgentLoopPlugin)
+    await ctx.plugin(AgentPlugin)
+    await ctx.plugin(AgentLoopPlugin)
     ctx.set_service("llm", adapter)
     return ctx
 

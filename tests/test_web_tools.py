@@ -42,7 +42,7 @@ async def test_tool_web_search_and_fetch():
     web_svc.register_fetch_provider("mock", MockFetchProvider())
     ctx.set_service("web", web_svc)
 
-    ctx.plugin(ToolWebPlugin)
+    await ctx.plugin(ToolWebPlugin)
     tools = ctx.get("tools")
 
     # 1. Single query legacy parameter

@@ -37,7 +37,7 @@ async def test_t1_service_provided_by_class_plugin_disposed_on_plugin_unload():
         def __init__(self, c: Context):
             super().__init__(c, "svc_service")
 
-    fiber = ctx.plugin(SvcPlugin)
+    fiber = await ctx.plugin(SvcPlugin)
     assert ctx.has("svc_service")
     assert ctx.get("svc_service") is not None
 
@@ -74,7 +74,7 @@ async def test_t5_inject_intercept_config_reaches_service_resolve_config():
         def __init__(self, c: Context):
             super().__init__(c, "db_service")
 
-    ctx.plugin(InterceptService)
+    await ctx.plugin(InterceptService)
 
     class Consumer(Plugin):
         name = "consumer"
@@ -83,7 +83,7 @@ async def test_t5_inject_intercept_config_reaches_service_resolve_config():
         def apply(self, c: Context) -> None:
             captured_config.update(getattr(c, "_intercept_map", {}).get("db_service", {}))
 
-    fiber = ctx.plugin(Consumer)
+    fiber = await ctx.plugin(Consumer)
     assert fiber.state == FiberState.ACTIVE
     assert captured_config.get("pool") == 5
     assert "required" not in captured_config
@@ -106,7 +106,7 @@ async def test_t6_object_plugin_named_apply_is_anonymous():
             f = c.plugin(obj_plugin)
             child_fiber_ref.append(f)
 
-    ctx.plugin(NamedParent)
+    await ctx.plugin(NamedParent)
     assert len(child_fiber_ref) == 1
     child_fiber = child_fiber_ref[0]
     assert child_fiber.name == "parent_named"
@@ -124,6 +124,8 @@ async def test_t7_plugin_can_load_on_failed_fiber_like_ts():
             raise RuntimeError("Setup failed")
 
     parent_fiber = ctx.plugin(FailingParent)
+    with pytest.raises(RuntimeError, match="Setup failed"):
+        await parent_fiber
     assert parent_fiber.state == FiberState.FAILED
     assert parent_fiber.uid is not None
 
@@ -134,7 +136,7 @@ async def test_t7_plugin_can_load_on_failed_fiber_like_ts():
             pass
 
     # Loading child on parent_fiber.ctx should succeed because parent_fiber.uid is not None
-    child_fiber = parent_fiber.ctx.plugin(SiblingPlugin)
+    child_fiber = await parent_fiber.ctx.plugin(SiblingPlugin)
     assert child_fiber.state == FiberState.ACTIVE
 
 
@@ -233,6 +235,7 @@ async def test_t10_registry_inspection_drops_a_fiber_on_its_own_disposal():
     assert fiber in ctx.registry.list_fibers()
 
     ctx.set_service("t10_service", {"value": 1})
+    await fiber.await_settled()
     assert fiber.state == FiberState.ACTIVE
     assert fiber in ctx.registry.list_fibers()
 

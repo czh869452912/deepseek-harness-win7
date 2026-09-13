@@ -7,6 +7,7 @@ Covers:
 - T6: dshHomePath resolves in context
 - T9: Session query mounts dormant with open_at: never
 """
+import asyncio
 
 import os
 import tempfile
@@ -18,7 +19,7 @@ from dsh.harness import build_harness
 def test_t1_build_harness_missing_preset_fails_loud():
     """T1: build_harness with nonexistent mode raises FileNotFoundError."""
     with pytest.raises(FileNotFoundError) as exc:
-        build_harness(mode="nonexistent-preset-mode-12345")
+        asyncio.run(build_harness(mode="nonexistent-preset-mode-12345"))
     assert "failed to read preset" in str(exc.value)
 
 
@@ -29,7 +30,7 @@ def test_t2_build_harness_applies_patch_overlay():
         overlay_path = f.name
 
     try:
-        ctx = build_harness(mode="minimal", patch_file=overlay_path)
+        ctx = asyncio.run(build_harness(mode="minimal", patch_file=overlay_path))
         # Verify that overlay config took effect on str-replace-editor
         found = False
         for fiber in ctx.registry.list_fibers():
@@ -46,13 +47,13 @@ def test_t2_build_harness_applies_patch_overlay():
 def test_t3_build_harness_missing_patch_file_fails_loud():
     """T3: build_harness with nonexistent patch_file raises FileNotFoundError."""
     with pytest.raises(FileNotFoundError) as exc:
-        build_harness(mode="minimal", patch_file="nonexistent_overlay_path.yaml")
+        asyncio.run(build_harness(mode="minimal", patch_file="nonexistent_overlay_path.yaml"))
     assert "Overlay patch file not found" in str(exc.value) or "not found" in str(exc.value)
 
 
 def test_t6_dsh_home_path_resolves():
     """T6: dshHomePath is provided on context and resolves against DSH_HOME."""
-    ctx = build_harness(mode="minimal")
+    ctx = asyncio.run(build_harness(mode="minimal"))
     assert hasattr(ctx, "dshHomePath") or hasattr(ctx, "dsh_home_path")
     fn = getattr(ctx, "dshHomePath", getattr(ctx, "dsh_home_path", None))
     assert callable(fn)
@@ -62,7 +63,7 @@ def test_t6_dsh_home_path_resolves():
 
 def test_t9_session_query_mounted_dormant():
     """T9: SessionQueryPlugin mounts dormant with open_at: never in standard mode."""
-    ctx = build_harness(mode="standard")
+    ctx = asyncio.run(build_harness(mode="standard"))
     sq = ctx.get("session_query")
     assert sq is not None
     assert getattr(sq, "open_at", None) == "never"
@@ -77,6 +78,6 @@ def test_t10_build_harness_fails_on_plugin_activation_failure(monkeypatch):
 
     monkeypatch.setattr(StrReplaceEditorPlugin, "apply", bad_apply)
     with pytest.raises(RuntimeError) as exc_info:
-        build_harness(mode="minimal")
+        asyncio.run(build_harness(mode="minimal"))
     assert "did not activate" in str(exc_info.value) or "plugin(s) failed to activate" in str(exc_info.value)
 

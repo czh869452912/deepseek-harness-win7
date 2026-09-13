@@ -13,7 +13,7 @@ from dsh.core.agent_loop import AgentLoopPlugin, _async_iter_chunks
 @pytest.mark.asyncio
 async def test_llm_domain_models_and_providers():
     ctx = Context()
-    ctx.plugin(LLMOpenAIPlugin)
+    await ctx.plugin(LLMOpenAIPlugin)
     handler = LLMDomainHandler(ctx)
 
     provs = await handler.list_providers({})
@@ -52,8 +52,8 @@ async def test_agent_presets_domain():
 async def test_settings_domain_describe_and_update(tmp_path):
     ctx = Context()
     settings_file = str(tmp_path / "settings.yaml")
-    ctx.plugin(SettingsFilePlugin, config={"path": settings_file})
-    ctx.plugin(LLMOpenAIPlugin)
+    await ctx.plugin(SettingsFilePlugin, config={"path": settings_file})
+    await ctx.plugin(LLMOpenAIPlugin)
 
     handler = SettingsDomainHandler(ctx)
     desc = await handler.describe_settings({})

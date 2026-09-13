@@ -36,7 +36,7 @@ async def test_fiber_reactive_dependency_resolution():
     ctx = Context()
     
     # Mount dependent plugin before required service exists
-    plugin_inst = ctx.plugin(DependentPlugin)
+    plugin_inst = await ctx.plugin(DependentPlugin)
     fiber = ctx.registry.get_fiber("dependent")
     assert fiber is not None
     assert fiber.state == FiberState.PENDING
@@ -44,6 +44,7 @@ async def test_fiber_reactive_dependency_resolution():
 
     # Provide required dependency
     ctx.set_service("required_db", "connected_db")
+    await fiber.await_settled()
     assert fiber.state == FiberState.ACTIVE
     assert ctx.get("dependent_ready") is True
 

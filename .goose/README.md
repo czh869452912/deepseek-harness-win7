@@ -73,6 +73,9 @@ the combined candidate. Shared-contract disputes go to judge before implementati
 reviewer model. The latter reuses unaffected evidence and expands review when
 affected contracts expand. Full tests still gate every integrated combination.
 The original source worker is not sent back through the entire migration audit.
+Phase recipes constrain status to their role's enum. Historical implementation
+results using `COMPLETE` are recovered as `ESCALATE`, retaining findings and test
+evidence; this compatibility path never treats that label as acceptance.
 
 Use the project launcher to schedule the entire pinned reference, rather than
 manually selecting one migration unit:

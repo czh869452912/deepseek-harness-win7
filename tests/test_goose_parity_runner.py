@@ -59,6 +59,14 @@ def test_missing_complete_event_is_a_failure():
         stream.result("migrate")
 
 
+def test_legacy_complete_requires_judge_instead_of_reimplementing():
+    value = result('COMPLETE', [{'id': 'loopless', 'detail': 'adaptation needs a verdict', 'evidence': 'fiber.ts'}])
+    normalized = runner.parse_result(json.dumps(value), 'migrate')
+    assert normalized['status'] == 'ESCALATE'
+    assert normalized['issues'] == value['issues']
+    assert normalized['test_paths'] == value['test_paths']
+
+
 def test_pass_requires_complete_mapping_and_no_issues():
     data = result("PASS")
     data["coverage_complete"] = False

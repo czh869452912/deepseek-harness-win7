@@ -22,6 +22,7 @@ from dsh.cordis.context import Context
 from dsh.cordis.fiber import Fiber, FiberState
 from dsh.cordis.plugin import Plugin
 from dsh.cordis.service import Service
+from dsh.cordis.utils import _UNDEFINED, deep_equal, is_nullable
 
 
 class AwaitableString(str):
@@ -1667,13 +1668,22 @@ class Entry:
         candidate = dict(options) if create else dict(previous_options)
         if not create:
             for k, v in options.items():
-                if v is None:
+                if is_nullable(v):
                     candidate.pop(k, None)
                 else:
                     candidate[k] = v
         sort_keys(candidate)
 
-        diff = [k for k in set(list(candidate.keys()) + list(legacy.keys())) if candidate.get(k) != legacy.get(k)]
+        # entry.ts:157-160: the key set is Object.keys({ ...candidate, ...legacy }) and
+        # cosmokit deepEqual(candidate[key], legacy[key]) decides each key without
+        # `strict`. A key only one side owns reads as undefined, so null matches it,
+        # false never matches 0, and structurally equal containers compare equal.
+        diff_keys: List[str] = list(candidate.keys())
+        for key in legacy.keys():
+            if key not in diff_keys:
+                diff_keys.append(key)
+        diff = [key for key in diff_keys
+                if not deep_equal(candidate.get(key, _UNDEFINED), legacy.get(key, _UNDEFINED))]
         if not diff and not force:
             return
 

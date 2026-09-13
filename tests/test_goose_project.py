@@ -562,3 +562,39 @@ def test_cached_phase_recovery_falls_back_after_interrupted_generation(repo, mon
     result = p.cached_phase(agent, "migrate", None)
     assert calls == ["migrate"]
     assert result is sentinel
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows fake CLI")
+def test_judge_migrator_correct_verdict_completes_the_gate(repo):
+    script = repo / "fake.py"
+    script.write_text('''import json,sys
+from pathlib import Path
+args = sys.argv
+recipe = json.loads(Path(args[args.index('--recipe')+1]).read_text(encoding='utf-8'))
+name = recipe['instructions'].split('Unit: ')[1].split('\\n')[0]
+phase = recipe['title']
+value = dict(status='READY', summary='worked', coverage_complete=True, issues=[],
+             changed_files=[], test_paths=['tests/test_'+name+'.py'], dependencies=[],
+             test_map=['upstream case -> tests/test_'+name+'.py -> PORTED'])
+if phase == 'parity-migrator':
+    Path(name+'.py').write_text('value = 1\\n', encoding='utf-8')
+    Path('tests/test_'+name+'.py').write_text("from pathlib import Path\\ndef test_value():\\n    assert Path('"+name+".py').read_text().strip() == 'value = 1'\\n", encoding='utf-8')
+    value['changed_files'] = [name+'.py', 'tests/test_'+name+'.py']
+elif phase == 'parity-reviewer':
+    value['status'] = 'ESCALATE'
+    value['coverage_complete'] = False
+else:
+    value['status'] = 'RESOLVED'
+    value['summary'] = 'JUDGE_RESULT\\nverdict: MIGRATOR_CORRECT\\nrequired_action: final verification'
+print(json.dumps({'type':'message','message':{'role':'assistant','id':'final','content':[{'type':'text','text':json.dumps(value)}]}}),flush=True)
+print(json.dumps({'type':'complete'}),flush=True)
+''', encoding="utf-8")
+    executable = repo / "fake.cmd"
+    executable.write_text('@echo off\n"' + sys.executable + '" "' + str(script) + '" %*\n', encoding="utf-8")
+    project.git(repo, "add", ".")
+    project.git(repo, "commit", "-qm", "fake CLI fixture")
+    p = make_project(repo)
+    p.goose = str(executable)
+    p.store.apply_plan(plan(task("a")))
+    assert p.run() == 0
+    assert all(r["state"] == "INTEGRATED" for r in p.store.rows())

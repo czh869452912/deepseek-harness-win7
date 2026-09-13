@@ -451,7 +451,10 @@ class Runner:
         prompt += "\nThis controller contract replaces the agent's final text-block format and full-suite step. "
         prompt += "The controller runs targeted tests after each chunk and the full suite at the final gate. "
         prompt += "Return one final JSON object matching the schema. Allowed status: " + ", ".join(sorted(STATUSES[phase]))
-        prompt += ". Issues use stable upstream-path + case/invariant identifiers, with evidence. "
+        if phase == "migrate":
+            prompt += (". READY asserts the unit passes its targeted verification this round; report INCOMPLETE "
+                       "only for genuinely unfinished work, never for a clean verified checkpoint")
+        prompt += (". Issues use stable upstream-path + case/invariant identifiers, with evidence. ")
         prompt += "test_paths must be existing repository-relative pytest paths under tests/ (no flags). "
         prompt += "test_map records exact upstream case titles -> Python locations -> classification. "
         if feedback and phase != "review":

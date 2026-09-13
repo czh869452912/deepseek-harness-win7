@@ -6,6 +6,7 @@ import html
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -485,13 +486,23 @@ class Project:
                            (review["status"] == "PASS" and bool(migration["issues"])) or
                            ((review["status"] != "PASS" or migration["status"] != "READY" or not ok) and
                             signature == previous.get("signature")))
+            resolved_ready = False
             if needs_judge:
                 judgment = self.cached_phase(agent, "judge", feedback)
                 feedback["judgment"] = judgment
                 if judgment["status"] == "BLOCKED":
                     self.store.update(group, "NEEDS_ARBITRATION", feedback=feedback, error=judgment["summary"])
                     return
-            if review["status"] != "PASS" or migration["status"] != "READY" or not ok or needs_judge:
+                # Honor the arbitration verdict instead of looping forever: a
+                # MIGRATOR_CORRECT / ADAPTATION_ALLOWED ruling completes the
+                # parity-unit step-5 contract when the blind review passes (or
+                # was overruled) and the targeted verification passed.
+                verdict = re.search(r"verdict:\s*([A-Z_]+)", judgment.get("summary", ""))
+                if (verdict and verdict.group(1) in ("MIGRATOR_CORRECT", "ADAPTATION_ALLOWED") and
+                        review["status"] in ("PASS", "ESCALATE") and ok):
+                    resolved_ready = True
+            if (not resolved_ready and
+                    (review["status"] != "PASS" or migration["status"] != "READY" or not ok or needs_judge)):
                 self.store.update(group, "READY", feedback=feedback, round=agent.state["round"] + 1)
                 return
             if git(agent.root, "status", "--porcelain", "--untracked-files=normal"):

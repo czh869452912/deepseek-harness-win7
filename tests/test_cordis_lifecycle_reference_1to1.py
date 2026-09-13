@@ -607,10 +607,15 @@ def test_loop_less_mount_runs_inline():
     """Python 3.8 has no ambient microtask queue outside a running loop.
 
     A loop-less caller therefore has no checkpoint to cross and keeps the port's
-    inline activation; the deferred path above requires a running loop.
+    inline activation; the deferred path above requires a running loop. The
+    upstream event order is nevertheless preserved: PENDING -> LOADING is
+    published before the body runs and LOADING -> ACTIVE after it, and the
+    settled fiber is ACTIVE with exactly one application, so entering a loop
+    afterwards cannot re-run the body or mount the plugin twice.
     """
     ctx = Context()
     applied = []
+    statuses = []
 
     class LoopLessPlugin(Plugin):
         name = "loop-less"
@@ -618,7 +623,80 @@ def test_loop_less_mount_runs_inline():
         def apply(self, c: Context) -> None:
             applied.append(True)
 
+    ctx.on("internal/status", lambda fiber, old_state: statuses.append((old_state, fiber.state)))
+
     fiber = ctx.plugin(LoopLessPlugin)
 
     assert applied == [True]
     assert fiber.state == FiberState.ACTIVE
+    assert statuses == [
+        (FiberState.PENDING, FiberState.LOADING),
+        (FiberState.LOADING, FiberState.ACTIVE),
+    ]
+    assert fiber.inertia is None
+
+    # The settled fiber stays stable: waiting on it from inside a loop is a
+    # no-op and no second activation is started for the executed load.
+    async def _settle() -> int:
+        await fiber.await_settled()
+        return fiber.state
+
+    assert asyncio.run(_settle()) == FiberState.ACTIVE
+    assert applied == [True]
+
+
+@pytest.mark.asyncio
+async def test_loading_status_reports_the_dependency_snapshot_before_execution():
+    """fiber.ts `_reload` runs `this.store = { ...this._store }` before its first
+    `await Promise.resolve()`, and `_setEpoch` publishes LOADING only once that
+    prefix returned. An `internal/status` observer for PENDING -> LOADING
+    therefore already sees the dependency snapshot while no plugin code has run.
+    """
+    ctx = Context()
+    observed = {}
+
+    class SnapshotProvider(Plugin):
+        name = "snapshot-provider"
+
+        def apply(self, c: Context) -> None:
+            c.provide("snapshot-svc", {"v": 1})
+
+    class SnapshotConsumer(Plugin):
+        name = "snapshot-consumer"
+        inject = ["snapshot-svc"]
+
+        def apply(self, c: Context) -> None:
+            observed["body"] = "ran"
+            return lambda: observed.__setitem__("cleanup", True)
+
+    def on_status(fiber: Fiber, old_state: int) -> None:
+        if fiber.name != "snapshot-consumer":
+            return
+        if old_state == FiberState.PENDING and fiber.state == FiberState.LOADING:
+            store = fiber.store
+            observed["store_at_loading"] = None if store is None else sorted(store)
+            observed["body_at_loading"] = observed.get("body")
+
+    ctx.on("internal/status", on_status)
+
+    provider = await ctx.plugin(SnapshotProvider)
+    consumer = ctx.plugin(SnapshotConsumer)
+
+    # The snapshot is taken before the LOADING status is published, and the body
+    # runs only at the event-loop checkpoint.
+    assert observed["store_at_loading"] == ["snapshot-svc"]
+    assert observed["body_at_loading"] is None
+    assert "body" not in observed
+    assert consumer.state == FiberState.LOADING
+
+    await consumer.await_settled()
+
+    assert observed["body"] == "ran"
+    assert consumer.state == FiberState.ACTIVE
+
+    # Losing the dependency unloads the activated body and its effect.
+    await provider.dispose()
+    await consumer.await_settled()
+
+    assert observed.get("cleanup") is True
+    assert consumer.state == FiberState.PENDING

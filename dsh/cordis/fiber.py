@@ -752,14 +752,6 @@ class Fiber:
 
         if epoch != INACTIVE_EPOCH and old_epoch == INACTIVE_EPOCH:
             self._epoch_transition_driven = True
-            self.set_state(FiberState.LOADING)
-            if self.uid is None or self.epoch != epoch:
-                # A reentrant disposer invalidated this load while the LOADING
-                # status was reported. fiber.ts re-checks the epoch after its
-                # initial microtask and never runs the plugin body; the nested
-                # transition already drove the unload this fiber needs.
-                self._epoch_transition_driven = True
-                return
             self._start_reload(epoch)
         elif epoch == INACTIVE_EPOCH and old_epoch != INACTIVE_EPOCH:
             self._epoch_transition_driven = True
@@ -852,9 +844,15 @@ class Fiber:
 
     def _start_reload(self, epoch: str) -> None:
         """
-        fiber.ts `_reload` entry: snapshot the dependency store, then cross
-        the first event-loop checkpoint before resolving config or executing
-        the plugin body.
+        fiber.ts `_reload` entry: publish LOADING and snapshot the dependency
+        store, then cross the first event-loop checkpoint before resolving
+        config or executing the plugin body.
+
+        `_reload()` runs synchronously up to its first `await Promise.resolve()`
+        -- `this.store = { ...this._store }` -- and `_setEpoch()` assigns
+        `this.state = callback()` only once that prefix has returned, so the
+        LOADING status is published with the fresh dependency snapshot already in
+        place and no plugin code having run.
 
         The composite epoch that authorized this load is re-checked after the
         checkpoint, so a disposer or dependency transition queued inside that
@@ -864,6 +862,13 @@ class Fiber:
         runs inline exactly as it did before.
         """
         self.store = dict(self._store)
+        self.set_state(FiberState.LOADING)
+        if self.uid is None or self.epoch != epoch:
+            # A reentrant disposer invalidated this load while the LOADING
+            # status was reported. fiber.ts re-checks the epoch after its
+            # initial microtask and never runs the plugin body; the nested
+            # transition already drove the unload this fiber needs.
+            return
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
@@ -1137,7 +1142,6 @@ class Fiber:
                 self.set_state(self._get_state())
                 self.inertia = None
             else:
-                self.set_state(FiberState.LOADING)
                 self._start_reload(self.epoch)
             return
 
@@ -1159,7 +1163,6 @@ class Fiber:
                 self.set_state(self._get_state())
                 self.inertia = None
             else:
-                self.set_state(FiberState.LOADING)
                 self._start_reload(self.epoch)
             return
 
@@ -1184,7 +1187,6 @@ class Fiber:
                         self.set_state(self._get_state())
                         self.inertia = None
                     else:
-                        self.set_state(FiberState.LOADING)
                         self._start_reload(self.epoch)
 
             self.inertia = loop.create_task(_run_gather())
@@ -1202,7 +1204,6 @@ class Fiber:
                 self.set_state(self._get_state())
                 self.inertia = None
             else:
-                self.set_state(FiberState.LOADING)
                 self._start_reload(self.epoch)
 
     def _emit_plugin_disposed(self) -> None:

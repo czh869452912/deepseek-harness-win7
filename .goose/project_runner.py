@@ -13,7 +13,7 @@ import sys
 import threading
 import time
 
-from parity_runner import Runner, Stream, git, snapshot, changed, safe_path, save_json, run_process, ROOT, SCHEMA, parse_result, valid_changed_files
+from parity_runner import Runner, Stream, git, snapshot, changed, safe_path, save_json, run_process, ROOT, SCHEMA, parse_result, valid_changed_files, judge_verdict, open_issues
 from project_store import Store, digest
 from project_seed import discover
 
@@ -26,7 +26,8 @@ STRINGS = {"type": "array", "items": {"type": "string"}}
 TASK_SCHEMA = {"type": "object", "properties": {
     **{k: {"type": "string"} for k in ("id", "owner", "goal", "evidence")},
     "wave": {"type": "integer"}, "priority": {"type": "integer"},
-    "consumes": STRINGS, "provides": STRINGS, "upstream_paths": STRINGS,
+    "consumes": STRINGS, "provides": STRINGS, "upstream_paths": STRINGS, "write_paths": STRINGS,
+    "atomic_group": {"type": "string"},
     "dependencies": {"type": "array", "items": {"type": "object", "properties": {
         "task": {"type": "string"}, "kind": {"type": "string", "enum": ["implementation", "contract", "acceptance", "change"]},
         "evidence": {"type": "string"}}, "required": ["task", "kind", "evidence"]}}},
@@ -121,11 +122,13 @@ def dashboard(store, folder):
             if status.exists():
                 live = json.loads(status.read_text(encoding="utf-8"))
         activity = live.get("last_activity", {})
+        if task["state"] not in ("RUNNING", "VERIFIED"):
+            live = {"phase": "", "execution_state": task["state"]}
         rows.append("<tr>" + "".join("<td>" + html.escape(str(value)) + "</td>" for value in
                     (task["id"], task["spec"].get("wave"), task["state"],
                      live.get("phase", "") + " / " + live.get("execution_state", ""),
                      activity.get("time", "") + " " + str(activity.get("message", ""))[:500],
-                     ", ".join(task["waiting_on"]), task["round"], task["head"] or "",
+                     ", ".join(task["waiting_on"] + task["waiting_for_writer"]), task["round"], task["head"] or "",
                      task["error"] or "", task["run_dir"] or "")) + "</tr>")
     body = """<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="10">
     <title>Goose project progress</title><style>body{font:14px system-ui;margin:24px}
@@ -137,6 +140,10 @@ def dashboard(store, folder):
     <th>Commit</th><th>Reason</th><th>Run artifacts</th></tr>%s</table>""" % (
         sum(t["state"] == "INTEGRATED" for t in view["tasks"]), len(rows), "".join(rows))
     temporary = folder / ("index." + str(time.time_ns()) + ".tmp")
+    body += "<p>Scheduler: " + html.escape(str(view.get("scheduler") or "UNKNOWN")) + "</p>"
+    body += "<p>Publication: " + html.escape(str((view.get("publication") or {}).get("state", "NOT_PREPARED"))) + "</p>"
+    if view["unresolved_cycles"]:
+        body += "<p>Needs dependency plan: " + html.escape(json.dumps(view["unresolved_cycles"])) + "</p>"
     temporary.write_text(body, encoding="utf-8")
     os.replace(str(temporary), str(folder / "index.html"))
     return view
@@ -346,16 +353,22 @@ class Project:
             worktree(self.root, path, "codex/parity-task-" + task_key, base)
             saved_paths = {r["worktree"] for r in group["records"] if r["worktree"]}
             previous = json.loads(record["feedback"]) if record["feedback"] else {}
+            shared = any(r["id"] not in group["ids"] and r["worktree"] == str(path)
+                         for r in self.store.rows())
+            if shared:
+                if git(path, "status", "--porcelain"):
+                    raise ValueError("Shared historical worktree has unfinished edits; checkpoint before splitting " + str(path))
+                previous["inherited_checkpoint"] = {"worktree": str(path), "head": git(path, "rev-parse", "HEAD"),
+                                                    "run_dir": record["run_dir"]}
+                fork = self.folder / "worktrees" / (task_key + "-split-" + str(time.time_ns()))
+                worktree(self.root, fork, "codex/parity-task-" + fork.name, git(path, "rev-parse", "HEAD"))
+                path = fork
+                record["run_dir"], record["round"] = None, 0
             saved_paths.update(previous.get("pending_sources", []))
-            extras = sorted(saved_paths - {str(path)})
+            extras = sorted(saved_paths - {str(path), previous.get("inherited_checkpoint", {}).get("worktree")})
             tip = git(integration, "rev-parse", "HEAD")
-            if base != tip and not git(path, "status", "--porcelain"):
-                path, conflicts = self.candidate(group, path, tip)
-                base = tip
-                record["run_dir"] = None
-                record["round"] = 0
-                previous["integration_refresh"] = {"baseline": tip, "conflicts": conflicts,
-                    "instruction": "Resolve conflicting source on this combined baseline, preserving both contracts."}
+            # Retain the reviewed source and phase cursor. The merge queue checks
+            # baseline impact; unrelated merges must not erase completed analysis.
             if extras:
                 previous["pending_sources"] = extras
                 if not git(path, "status", "--porcelain"):
@@ -378,7 +391,15 @@ class Project:
                                   "guidance": "Verify this task's acceptance contract, not every transitive provider. "
                                   "Missing cross-module owners become work_plan tasks with dependency evidence. "
                                   "Do not hide missing capability with stubs. The project scheduler runs full-suite "
-                                  "verification at integration; use targeted tests in this task worktree."})
+                                  "verification at integration; use targeted tests in this task worktree. "
+                                  "All related modules may be read and changed. Before changing a contract owned by another active writer, "
+                                  "return work_plan to request the required write_paths/dependency and handoff at a checkpoint; "
+                                  "do not independently redesign the same interface. Keep provider contract tests separate from "
+                                  "product acceptance: acceptance tasks depend on providers, not vice versa. "
+                                  "Cycles require explicit atomic_group and evidence that both ends must change together."})
+        args.writer_reservations = [{"task": r["id"], "paths": r["write_paths"]}
+                                    for r in self.store.view()["tasks"]
+                                    if r["state"] in ("RUNNING", "VERIFIED") and r["id"] not in group["ids"]]
         agent = Runner(args, root=path)
         original_notify = agent.notify
         def notify(kind, value):
@@ -458,6 +479,13 @@ class Project:
             # A READY task with a saved unfinished round resumes phase results, not the whole analysis.
             hashes = self.store.contract_hashes()
             migration = self.cached_phase(agent, "migrate", feedback)
+            touched = valid_changed_files(agent.root, migration.get("changed_files", []), agent.notify)
+            peers = self.store.observe_writes(group, touched)
+            if peers:
+                self.store.update(group, "READY", error="Waiting for overlapping writers: " + ", ".join(peers),
+                                  feedback=dict(feedback or {}, scope_handoff={"writers": peers, "paths": touched,
+                                      "instruction": "Preserve this checkpoint. Reconcile the shared contract with the integrated provider before further design."}))
+                return
             ok = agent.verify_chunk(migration)
             if ok:
                 agent.checkpoint(migration)
@@ -472,7 +500,18 @@ class Project:
             # treating it as one would bounce a PASS review back into replanning.
             plans = [p for p in (migration.get("work_plan"), review.get("work_plan"))
                      if p and (p.get("tasks") or p.get("contracts"))]
-            proposal = plans[0] if plans else None
+            proposal = {"tasks": [], "contracts": []} if plans else None
+            for key in ("tasks", "contracts"):
+                merged = {}
+                for plan in plans:
+                    for item in plan.get(key, []):
+                        if item["id"] in merged and merged[item["id"]] != item:
+                            self.store.update(group, "NEEDS_ARBITRATION", feedback=dict(feedback, conflicting_work_plans=plans),
+                                              error="Conflicting graph proposals for " + item["id"])
+                            return
+                        merged[item["id"]] = item
+                if proposal is not None:
+                    proposal[key] = list(merged.values())
             if proposal and not self.store.plan_is_current(proposal):
                 # Persist proposals, then apply between active waves. Never rewrite a
                 # running peer's acceptance scope or repeatedly enqueue an identical plan.
@@ -483,7 +522,7 @@ class Project:
             previous = json.loads(record["feedback"]) if record["feedback"] else {}
             feedback["signature"] = signature
             needs_judge = ("ESCALATE" in (migration["status"], review["status"]) or
-                           (review["status"] == "PASS" and bool(migration["issues"])) or
+                           (review["status"] == "PASS" and bool(open_issues(migration))) or
                            ((review["status"] != "PASS" or migration["status"] != "READY" or not ok) and
                             signature == previous.get("signature")))
             resolved_ready = False
@@ -497,8 +536,15 @@ class Project:
                 # MIGRATOR_CORRECT / ADAPTATION_ALLOWED ruling completes the
                 # parity-unit step-5 contract when the blind review passes (or
                 # was overruled) and the targeted verification passed.
-                verdict = re.search(r"verdict:\s*([A-Z_]+)", judgment.get("summary", ""))
-                if (verdict and verdict.group(1) in ("MIGRATOR_CORRECT", "ADAPTATION_ALLOWED") and
+                verdict = judge_verdict(judgment)
+                if verdict is None:
+                    self.store.update(group, "NEEDS_ARBITRATION", feedback=feedback,
+                                      error="Judge result has no unambiguous verdict; retain completed evidence")
+                    return
+                if verdict == "BLOCKED":
+                    self.store.update(group, "NEEDS_ARBITRATION", feedback=feedback, error=judgment["summary"])
+                    return
+                if (verdict in ("MIGRATOR_CORRECT", "ADAPTATION_ALLOWED") and
                         review["status"] in ("PASS", "ESCALATE") and ok):
                     resolved_ready = True
             if (not resolved_ready and
@@ -520,7 +566,30 @@ class Project:
             self.store.update(group, "FAILED_INFRA", error=str(error))
             print("[project]", group["ids"], str(error), flush=True)
         finally:
+            if 'agent' in locals():
+                row = next(r for r in self.store.rows() if r["id"] == group["ids"][0])
+                agent.state["status"] = row["state"]
+                agent.state["execution_state"] = row["state"]
+                save_json(agent.run_dir / "status.json", agent.state)
             self.show()
+
+    def baseline_requires_review(self, group, base, tip, review):
+        """Conservative impact check; unknown consumed mappings require fresh review."""
+        if base == tip:
+            return False
+        with self.store.connect() as db:
+            resources = self.store.resources(db, group["ids"])
+            paths = set(resources[1])
+            for cid in {c for t in group["tasks"] for c in t.get("consumes", [])}:
+                row = db.execute("SELECT spec FROM contracts WHERE id=?", (cid,)).fetchone()
+                mapped = json.loads(row[0]).get("paths", []) if row else []
+                if not mapped:
+                    return True
+                paths.update(p.lower() for p in mapped)
+        paths.update(p.lower() for p in review.get("test_paths", []))
+        paths.update(("conftest.py", "tests/conftest.py", "pytest.ini", "pyproject.toml", "setup.cfg", "requirements.txt"))
+        names = set(git(self.root, "diff", "--name-only", base, tip).lower().splitlines())
+        return self.store.overlapping((set(), paths), (set(), names))
 
     def candidate(self, group, source, tip):
         """Preserve the source branch; combine all its commits with current integration."""
@@ -548,6 +617,15 @@ class Project:
             members = [r for r in rows if r["owner"] == owner]
             group = {"ids": [r["id"] for r in members], "token": owner}
             feedback = members[0]["feedback"]
+            affected = {t["id"] for t in feedback["proposed_work_plan"].get("tasks", [])}
+            with self.store.connect() as db:
+                for contract in feedback["proposed_work_plan"].get("contracts", []):
+                    affected.add(contract["owner"])
+                    old = db.execute("SELECT owner FROM contracts WHERE id=?", (contract["id"],)).fetchone()
+                    if old:
+                        affected.add(old[0])
+            if any(r["state"] in ("RUNNING", "VERIFIED") and r["id"] in affected for r in rows):
+                continue  # Unrelated workers keep running; the affected owner hands off at its boundary.
             try:
                 self.store.apply_plan(feedback["proposed_work_plan"])
                 feedback["plan_applied"] = True
@@ -568,11 +646,16 @@ class Project:
             # Merge in a candidate worktree. Never reset a shared checkout on failure.
             tip = git(integration, "rev-parse", "HEAD")
             candidate, conflicts = self.candidate(group, agent.root, tip)
-            if stale or base != tip or conflicts:
+            if stale or conflicts or self.baseline_requires_review(group, base, tip, review):
+                handoff = dict(saved["feedback"] or {})
+                handoff.update(baseline=tip, conflicts=conflicts, consumed_contract_changed=stale,
+                               source_head=git(agent.root, "rev-parse", "HEAD"), source_base=base,
+                               prior_run_dir=str(agent.run_dir), contracts=current_hashes,
+                               instruction="Repair this combined baseline against the shared acceptance contract. "
+                               "Reuse completed work and decisions in the retained reports; do not redesign either side independently.")
                 self.store.update(group, "READY", worktree=str(candidate), base=tip, run_dir=None, round=0,
                                   error="Combined baseline needs fresh migration/review",
-                                  feedback={"baseline": tip, "conflicts": conflicts, "consumed_contract_changed": stale,
-                                            "instruction": "Repair any merge conflicts and verify this combined baseline."})
+                                  feedback=handoff)
                 return
             # Every merge rechecks the combined baseline; a clean cherry-pick is not semantic evidence.
             code = run_process([sys.executable, "-m", "pytest", "tests"], candidate,
@@ -593,7 +676,9 @@ class Project:
             tree = snapshot(candidate)
             changes = {name: tree.get(name) for name in names}
             self.store.record_evidence(group, self.store.meta("upstream"), combined, current_hashes,
-                                       {"targeted": review["test_paths"], "integration": "python -m pytest tests"})
+                                       {"targeted": review["test_paths"], "integration": "python -m pytest tests",
+                                        "review_head": git(agent.root, "rev-parse", "HEAD"),
+                                        "combined_head": combined, "previous_baseline": base})
             self.store.integrate(group, combined, changes, str(candidate))
             print("[integrated]", ",".join(group["ids"]), combined, flush=True)
 
@@ -620,9 +705,53 @@ class Project:
                   (len(stale), ", ".join(stale)), flush=True)
         return stale
 
+    def prepare_main(self, target):
+        """Build a tested publication candidate without moving the user's branch."""
+        tip = git(self.root, "rev-parse", "refs/heads/" + target)
+        integration = self.integration()
+        source = git(integration, "rev-parse", "HEAD")
+        if git(integration, "status", "--porcelain"):
+            raise ValueError("Integration has uncommitted changes")
+        candidate, conflicts = self.candidate({"ids": ["publication:" + target]}, integration, tip)
+        publication = {"target": target, "base": tip, "source": source, "candidate": str(candidate),
+                       "head": git(candidate, "rev-parse", "HEAD"), "conflicts": conflicts, "state": "NEEDS_REPAIR"}
+        self.store.meta("publication", publication)
+        save_json(self.folder / "publication.json", publication)
+        if conflicts:
+            raise ValueError("Publication conflicts preserved at " + str(candidate))
+        code = run_process([sys.executable, "-m", "pytest", "tests"], candidate,
+                           candidate / ".goose/publication-tests.log", lambda *args: None, 0)
+        if code or git(candidate, "status", "--porcelain"):
+            raise ValueError("Publication tests failed or changed files; retain " + str(candidate))
+        publication["state"] = "READY"
+        self.store.meta("publication", publication)
+        save_json(self.folder / "publication.json", publication)
+        print("Publication candidate ready: " + str(candidate))
+
+    def publish_main(self):
+        publication = self.store.meta("publication")
+        if not publication or publication["state"] != "READY":
+            raise ValueError("Run prepare-main successfully first")
+        integration = self.integration()
+        if (git(self.root, "branch", "--show-current") != publication["target"] or
+                git(self.root, "rev-parse", "HEAD") != publication["base"] or
+                git(integration, "rev-parse", "HEAD") != publication["source"]):
+            raise ValueError("Publication baseline changed; prepare a new candidate")
+        candidate = Path(publication["candidate"])
+        if (git(candidate, "rev-parse", "HEAD") != publication["head"] or
+                any(git(path, "status", "--porcelain") for path in (self.root, integration, candidate))):
+            raise ValueError("Publication inputs changed or are dirty; preserve and inspect")
+        git(self.root, "merge", "--ff-only", publication["head"])
+        git(integration, "merge", "--ff-only", publication["head"])
+        publication["state"] = "PUBLISHED"
+        self.store.meta("publication", publication)
+        save_json(self.folder / "publication.json", publication)
+        print("Published " + publication["head"] + " to " + publication["target"])
+
     def run(self):
         with scheduler_guard(self.folder):
             self.init()
+            self.store.meta("scheduler", "RUNNING")
             pause_flag = self.folder / "pause.flag"
             if pause_flag.exists():
                 pause_flag.unlink()
@@ -634,11 +763,11 @@ class Project:
                 paused = False
                 try:
                     while True:
-                        if not running:
-                            self.apply_proposals()
-                        # Let active rounds finish before applying proposed dependency changes.
-                        waiting_plan = any(r["state"] == "WAITING_PLAN" for r in self.store.rows())
-                        while len(running) < self.jobs and not waiting_plan and not paused:
+                        if not paused and pause_flag.exists():
+                            paused = True
+                            self.stop.set()
+                        self.apply_proposals()
+                        while len(running) < self.jobs and not paused:
                             group = self.store.claim(str(os.getpid()))
                             if not group:
                                 break
@@ -654,25 +783,31 @@ class Project:
                                 if pause_flag.exists():
                                     pause_flag.unlink()
                                 print("PAUSED: task state preserved; rerun to continue")
+                                self.store.meta("scheduler", "PAUSED")
+                                self.show()
                                 return 0
                             complete = bool(rows) and all(r["state"] == "INTEGRATED" for r in rows)
                             print("PROJECT COMPLETE" if complete else "WAITING: inspect task dependencies/errors in " + str(self.folder / "index.html"))
+                            self.store.meta("scheduler", "COMPLETE" if complete else "WAITING")
+                            self.show()
                             return 0 if complete else 2
                         finished, running = wait(running, timeout=15, return_when=FIRST_COMPLETED)
                         for future in finished:
                             future.result()
                 except BaseException:
                     self.stop.set()
+                    self.store.meta("scheduler", "INTERRUPTED")
                     raise
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["init", "status", "plan", "apply", "run", "recover"])
+    parser.add_argument("command", choices=["init", "status", "plan", "apply", "run", "recover", "prepare-main", "publish-main"])
     parser.add_argument("--goose", default=os.environ.get("GOOSE_EXE", "goose.exe"))
     parser.add_argument("--jobs", type=int, default=2)
     parser.add_argument("--file", type=Path)
     parser.add_argument("--task")
+    parser.add_argument("--target", default="master")
     args = parser.parse_args()
     if args.jobs < 1:
         parser.error("jobs must be positive")
@@ -699,6 +834,13 @@ def main():
                     project.store.recover(args.task)
                 else:
                     project.recover_stale()
+            elif args.command in ("prepare-main", "publish-main"):
+                if any(r["state"] in ("RUNNING", "VERIFIED") for r in project.store.rows()):
+                    raise ValueError("Park all workers before publishing a baseline")
+                if args.command == "prepare-main":
+                    project.prepare_main(args.target)
+                else:
+                    project.publish_main()
             project.show()
     return 0
 

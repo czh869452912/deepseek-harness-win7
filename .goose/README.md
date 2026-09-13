@@ -82,13 +82,63 @@ the proposer with validation errors. Identical plans are not repeatedly applied.
 
 Integration is serial, on a dedicated `codex/parity-integration-*` branch and
 worktree at `.goose/runs/project/integration/`. Candidates are retained under
-`candidates/`. A changed baseline forces fresh migration/review on the combined
-code. Merge conflicts retain both branches and conflict markers for repair;
+`candidates/`. A changed relevant contract or conflicting baseline requires fresh
+review on the combined code. Unrelated baseline changes retain the source review
+but still run the combined full suite. Conflict handoffs preserve both branches,
+conflict markers, source/base commits, acceptance contracts and prior reports;
 full-suite failures return the combined candidate and failure log to the migrator.
 Only independently reviewed changes passing `python -m pytest tests` enter the
 integration branch. The launcher does not move the user's checkout or push.
 It starts from committed project code; commit intended project edits before the
 first run. The initial baseline is frozen when execution starts.
+
+### Coordination and publication (2026-09-13)
+
+The current project was paused before applying `plans/20260913-rebalance.json`.
+The pre-change SQLite backup and status snapshot are in
+`runs/project/backup-orchestration-20260913-142514/`. No worker restarts on plan apply.
+The plan preserves all acceptance requirements, splits served-Web/resolver mechanisms
+from product acceptance, and makes Schemastery adopt the integrated deep-equal contract.
+Historical shared worktrees are retained and forked at dispatch, never reset or discarded.
+
+Task specs can declare `write_paths` (repository-relative files/directories). The scheduler
+reserves these plus provided-contract paths and observed cross-module changes. Overlap
+serializes writers even when contract IDs differ. This is coordination, not a directory
+permission boundary: workers may modify both ends of an interface. Before changing an
+active peer's contract, propose ownership/dependency changes in `work_plan` and hand off
+at the checkpoint. Unexpected overlapping writes are retained but wait before review.
+Undeclared writes cannot be prevented by this advisory model; they are detected at phase
+completion. No claim is made that worktree isolation is a filesystem sandbox.
+
+Cycles no longer silently become giant workers. They appear in `unresolved_cycles` and
+wait for a corrected plan. Only an explicit shared `atomic_group` authorizes an atomic
+multi-task writer. Acceptance edges remain real gates: put them on the product acceptance
+task, not backwards on its providers. Contract-only registration does not certify behavior.
+Unrelated work continues while a graph proposal waits for the affected owner to finish.
+
+Phase instructions and feedback are JSON data in `NN-phase.context.json`, outside the
+Goose recipe template. This preserves literal fixture tokens such as `{{cwd}}`. Reviewer
+context remains neutral. Judge decisions use `verdict`; old unambiguous textual verdicts
+remain readable. Issue states distinguish open blockers, resolved items, informational
+findings and deferred work; deferred work must retain a responsible acceptance task.
+
+Publication is explicit and requires the scheduler to be stopped:
+
+```powershell
+.goose/run-project.ps1 -Action prepare-main -Target master
+.goose/run-project.ps1 -Action publish-main
+```
+
+`prepare-main` merges integration into a new candidate based on the latest local target,
+retains conflicts for repair, and runs the full suite. It never changes master.
+`publish-main` requires the exact tested candidate, unchanged target/integration heads and
+clean worktrees; it fast-forwards both master and integration. It does not push. Source
+review evidence is retained separately from combined-test evidence in the event history.
+Commit intended controller changes before preparing; do not publish an untested baseline.
+
+Resume only when desired with `.goose/run-project.ps1 -Action run -Jobs 3`. After a pause,
+READY means parked/eligible for dependency evaluation, not actively running. The dashboard
+shows scheduler state, writer waits, unresolved cycles and publication state separately.
 
 Recovery retains worktrees/checkpoints/logs. A completed result is reused only
 when its recorded code/scope still match (and review HEAD is identical). An
@@ -99,7 +149,7 @@ Job Objects also terminate assigned descendants if the controller crashes.
 Historical single-unit runs are not automatically imported as project evidence.
 
 `FAILED_INFRA` and `NEEDS_ARBITRATION` retain the exact error/evidence and stop
-only that group. Other ready groups continue. A newly discovered cycle with
+only that group. Other ready groups continue. An explicitly approved atomic group with
 multiple clean saved worktrees combines their commits; if a separate old tree
 contains unfinished uncommitted edits, consolidation stops visibly with that path
 instead of dropping those edits. Resolve/checkpoint those edits, then recover the

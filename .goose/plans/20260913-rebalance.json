@@ -1,0 +1,1191 @@
+{
+  "tasks": [
+    {
+      "id": "packages/boot/app-boot::resolution-contract",
+      "owner": "packages/boot/app-boot::resolution-contract",
+      "goal": "Verify installation-owned package and exports/subpath lookup, config-project precedence, fail-loud errors and Loader activation against pinned reference fixtures. This is the resolver mechanism, not completion of every shipped provider. Full shipped-profile closure remains owned by packages/boot/app-boot::plugin-resolution. Record the canonical API and fixture mapping before changing consumers.",
+      "evidence": "reference/packages/boot/app-boot/src/profile.ts; reference/packages/boot/app-boot/tests/profile.spec.ts; reference/vendor/loader/src",
+      "wave": 2,
+      "dependencies": [
+        {
+          "task": "vendor/loader",
+          "kind": "implementation",
+          "evidence": "Canonical provider contract precedes consumer acceptance; see this task upstream_paths."
+        },
+        {
+          "task": "packages/boot/app-boot::module-fallback-closure",
+          "kind": "implementation",
+          "evidence": "Canonical provider contract precedes consumer acceptance; see this task upstream_paths."
+        }
+      ],
+      "consumes": [],
+      "provides": [
+        "contract:loader-resolution"
+      ],
+      "upstream_paths": [
+        "reference/packages/boot/app-boot/src/profile.ts",
+        "reference/packages/boot/app-boot/tests/profile.spec.ts",
+        "reference/vendor/loader/src"
+      ],
+      "write_paths": [
+        "dsh/boot",
+        "dsh/cordis/loader.py",
+        "tests/1to1/boot"
+      ]
+    },
+    {
+      "id": "packages/boot/app-boot::installed-module-graph",
+      "owner": "@deepseek-ai/dsh-app-boot",
+      "goal": "Give the Python runtime an installation-owned module graph so package resolution can be Node-equivalent: declare the installation's package roots/manifest the way an installed dsh ships them, materialize the install anchor's node_modules closure (symlinks/junctions of the packages the installation carries) at boot before bundle resolution, and keep it out of the way of pnpm-managed profile entries. Preserve existing resolution until the installation graph is available. Agree the graph/lookup interface with the fallback task; do not require all shipped providers to be implemented.",
+      "evidence": "The tree contains no node_modules anywhere and INSTALL_ANCHOR resolves to reference/apps/cli/package.json (dsh/boot/profile_boot.py:39-48), so every bundle lookup currently depends on workspace_package_index; without a materialized graph, resolveBundleDir returns None for @deepseek-ai/dsh-base and load_profile fails for all shipped profiles.",
+      "wave": 2,
+      "priority": 0,
+      "dependencies": [
+        {
+          "task": "vendor/loader",
+          "kind": "implementation",
+          "evidence": "Canonical provider contract precedes consumer acceptance; see this task upstream_paths."
+        }
+      ],
+      "consumes": [],
+      "provides": [
+        "contract:installed-module-graph"
+      ],
+      "upstream_paths": [
+        "reference/packages/boot/app-boot/src/profile.ts",
+        "dsh/boot/profile.py",
+        "dsh/boot/profile_boot.py",
+        "dsh/boot/plugin_registry.py"
+      ],
+      "write_paths": [
+        "dsh/boot/plugin_registry.py",
+        "dsh/boot/profile.py",
+        "dsh/boot/profile_boot.py"
+      ]
+    },
+    {
+      "id": "packages/api/*::loader-row-providers",
+      "owner": "@deepseek-ai/dsh-api-gateway",
+      "goal": "Implement and register the API gateway, remotes, session-controller, settings-controller, and workspace-controller rows with upstream transport, Remote, lifecycle, and disposal behavior. Validate this provider through the accepted resolver contract. Do not wait for unrelated shipped providers; full profile closure is a separate acceptance task.",
+      "evidence": "The rows remain in SHIPPED_PROVIDER_GAP and their upstream source/test surfaces are real and extensive; no Python row-level counterpart exists.",
+      "wave": 9,
+      "priority": 1,
+      "dependencies": [
+        {
+          "task": "packages/boot/app-boot::resolution-contract",
+          "kind": "contract",
+          "evidence": "Provider rows must resolve through the installation-owned table and activate in profile boot. Resolver mechanism is separate from all-provider acceptance."
+        }
+      ],
+      "consumes": [
+        "contract:loader-resolution"
+      ],
+      "provides": [
+        "contract:api-transport-rows"
+      ],
+      "upstream_paths": [
+        "reference/packages/api/gateway",
+        "reference/packages/api/remotes",
+        "reference/packages/api/session-controller",
+        "reference/packages/api/settings-controller",
+        "reference/packages/api/workspace-controller"
+      ],
+      "write_paths": [
+        "dsh/boot/plugin_registry.py",
+        "dsh/typert/registry.py"
+      ]
+    },
+    {
+      "id": "packages/boot/app-boot::subpath-row-resolution",
+      "owner": "@deepseek-ai/dsh-app-boot",
+      "goal": "Add canonical table/provider ownership for every shipped package subpath row after exports-map resolution, then prove successful activation rather than only target-file computation. Validate this provider through the accepted resolver contract. Do not wait for unrelated shipped providers; full profile closure is a separate acceptance task.",
+      "evidence": "resolve_module_specifier computes targets for declared exports, but @deepseek-ai/dsh-headless/startup and subagent subpaths remain absent from HARNESS_PLUGIN_CLASSES and the profile audit lists them as provider gaps.",
+      "wave": 9,
+      "priority": 0,
+      "dependencies": [
+        {
+          "task": "packages/boot/app-boot::resolution-contract",
+          "kind": "contract",
+          "evidence": "Subpath rows must be resolved and activated through the same installation-owned table. Resolver mechanism is separate from all-provider acceptance."
+        }
+      ],
+      "consumes": [
+        "contract:loader-resolution"
+      ],
+      "provides": [
+        "contract:subpath-row-resolution"
+      ],
+      "upstream_paths": [
+        "dsh/cordis/loader.py",
+        "dsh/boot/plugin_registry.py",
+        "reference/packages/boot/app-boot/src/index.ts",
+        "reference/packages/bundle/headless/src/startup.ts",
+        "reference/packages/bundle/base/cordis.patch.yml"
+      ],
+      "write_paths": [
+        "dsh/cordis/loader.py"
+      ]
+    },
+    {
+      "id": "packages/bundle/*::app-entry-rows",
+      "owner": "@deepseek-ai/dsh-headless",
+      "goal": "Implement/register the shipped web, headless, ACP, SDK, worker, and runner entry rows with profile-specific startup and disposal semantics. Validate this provider through the accepted resolver contract. Do not wait for unrelated shipped providers; full profile closure is a separate acceptance task.",
+      "evidence": "web/headless/ACP/SDK bundle patches name unresolved application-entry rows; only web-startup is present in the Python table.",
+      "wave": 9,
+      "priority": 2,
+      "dependencies": [
+        {
+          "task": "packages/boot/app-boot::resolution-contract",
+          "kind": "contract",
+          "evidence": "Application rows must resolve through healed roots and activate in profile boot. Resolver mechanism is separate from all-provider acceptance."
+        }
+      ],
+      "consumes": [
+        "contract:loader-resolution"
+      ],
+      "provides": [
+        "contract:app-entry-rows"
+      ],
+      "upstream_paths": [
+        "reference/packages/bundle/web-app",
+        "reference/packages/bundle/headless",
+        "reference/packages/bundle/acp-app",
+        "reference/packages/bundle/sdk-app",
+        "reference/packages/bundle/sdk-minimal"
+      ],
+      "write_paths": [
+        "dsh/boot/plugin_registry.py",
+        "packages/bundle/"
+      ]
+    },
+    {
+      "id": "packages/bundle/web-app::web-startup-provider",
+      "owner": "@deepseek-ai/dsh-web-app",
+      "goal": "Port reference/packages/bundle/web-app/src/startup.ts as a Loader row: plugin `web-startup`, inject ['cmdlineArgs'], parse the --host/--no-open/--port/--trusted-host family and provide the immutable `webStartup` service, registered as `@deepseek-ai/dsh-web-app/startup` in the table; then clear SHIPPED_ACTIVATION_GAP. Validate this provider through the accepted resolver contract. Do not wait for unrelated shipped providers; full profile closure is a separate acceptance task.",
+      "evidence": "run_profile('web') reports exactly one activation failure of an implemented row: `failed to apply loader entry webserver (@deepseek-ai/dsh-host-webserver): cannot get property 'webStartup' without inject`. The unit must also cover the socket bind/disposal a mounted webserver now performs, which is why it is not folded into the resolution unit.",
+      "wave": 8,
+      "priority": 1,
+      "dependencies": [
+        {
+          "task": "packages/boot/app-boot::resolution-contract",
+          "kind": "contract",
+          "evidence": "The row resolves through the boot-installed table and the webserver row's `inject: [webStartup]` then resolves. Resolver mechanism is separate from all-provider acceptance."
+        }
+      ],
+      "consumes": [
+        "contract:loader-resolution"
+      ],
+      "provides": [
+        "contract:web-startup-provider"
+      ],
+      "upstream_paths": [
+        "reference/packages/bundle/web-app/src/startup.ts",
+        "reference/packages/bundle/web-app/tests/startup.spec.ts",
+        "packages/bundle/web-app/cordis.patch.yml"
+      ],
+      "write_paths": [
+        "dsh/boot/plugin_registry.py",
+        "tests/1to1/boot/app_boot/test_plugin_registry.py"
+      ]
+    },
+    {
+      "id": "packages/client/*::loader-row-host-halves",
+      "owner": "@deepseek-ai/dsh-client-modules",
+      "goal": "Implement/register client-connection and client-hmr host halves, including trust/auth/body limits, bundle polling, graph notifications, SSE, and disposal. Validate this provider through the accepted resolver contract. Do not wait for unrelated shipped providers; full profile closure is a separate acceptance task.",
+      "evidence": "dsh/client/rows.py explicitly excludes both rows; upstream node-half sources and tests define real host behavior.",
+      "wave": 9,
+      "priority": 1,
+      "dependencies": [
+        {
+          "task": "packages/boot/app-boot::resolution-contract",
+          "kind": "contract",
+          "evidence": "Both rows must resolve as installation-owned Loader entries. Resolver mechanism is separate from all-provider acceptance."
+        }
+      ],
+      "consumes": [
+        "contract:loader-resolution"
+      ],
+      "provides": [
+        "contract:browser-row-host-halves"
+      ],
+      "upstream_paths": [
+        "reference/packages/client/connection/src/index.ts",
+        "reference/packages/client/connection/tests/node-half.host.spec.ts",
+        "reference/packages/client/hmr/src/index.ts",
+        "reference/packages/client/hmr/tests/node-half.client.spec.ts"
+      ],
+      "write_paths": [
+        "dsh/client/rows.py",
+        "dsh/host/client_modules/registry.py"
+      ]
+    },
+    {
+      "id": "packages/core/*::loader-row-providers",
+      "owner": "@deepseek-ai/dsh-llm-deepseek",
+      "goal": "Provide the base bundle's core provider rows as mountable Loader plugins registered in dsh/boot/plugin_registry.HARNESS_PLUGIN_CLASSES, shrinking SHIPPED_PROVIDER_GAP in the same change. Validate this provider through the accepted resolver contract. Do not wait for unrelated shipped providers; full profile closure is a separate acceptance task.",
+      "evidence": "22 base rows enabled in every base-backed profile raise Cannot find module today; several have a plain-class implementation folded into a consumer (SkillService, GoalService, JobsService, StoragePlugin's json/domain backends) that must become the row's mountable Service.",
+      "wave": 8,
+      "priority": 1,
+      "dependencies": [
+        {
+          "task": "packages/boot/app-boot::resolution-contract",
+          "kind": "contract",
+          "evidence": "Rows must resolve as bare names through the boot-installed table and report activation through the existing assertEntriesActivated audit. Resolver mechanism is separate from all-provider acceptance."
+        }
+      ],
+      "consumes": [
+        "contract:loader-resolution"
+      ],
+      "provides": [
+        "contract:core-provider-rows"
+      ],
+      "upstream_paths": [
+        "packages/bundle/base/cordis.patch.yml",
+        "reference/packages/skill/skill/src/index.ts",
+        "reference/packages/goal/goal/src/index.ts",
+        "reference/packages/jobs/jobs-local/src/index.ts",
+        "reference/packages/storage/storage-domain/src/index.ts",
+        "reference/packages/llm/llm-deepseek/src/index.ts"
+      ],
+      "write_paths": [
+        "dsh/boot/plugin_registry.py",
+        "packages/bundle/base/cordis.patch.yml"
+      ]
+    },
+    {
+      "id": "packages/feedback/*::loader-row-providers",
+      "owner": "@deepseek-ai/dsh-message-feedback",
+      "goal": "Implement/register message-feedback and its durable remote behavior, including persistence, version conflicts, limits, restart, and disposal. Validate this provider through the accepted resolver contract. Do not wait for unrelated shipped providers; full profile closure is a separate acceptance task.",
+      "evidence": "@deepseek-ai/dsh-message-feedback is unresolved while upstream loader-composition and service tests are present.",
+      "wave": 9,
+      "priority": 1,
+      "dependencies": [
+        {
+          "task": "packages/boot/app-boot::resolution-contract",
+          "kind": "contract",
+          "evidence": "The row must mount by its shipped package name. Resolver mechanism is separate from all-provider acceptance."
+        }
+      ],
+      "consumes": [
+        "contract:loader-resolution"
+      ],
+      "provides": [
+        "contract:feedback-rows"
+      ],
+      "upstream_paths": [
+        "reference/packages/feedback/message-feedback/src/index.ts",
+        "reference/packages/feedback/message-feedback/tests/loader-composition.spec.ts"
+      ],
+      "write_paths": [
+        "dsh/boot/plugin_registry.py"
+      ]
+    },
+    {
+      "id": "packages/sandbox/*::loader-row-providers",
+      "owner": "@deepseek-ai/dsh-sandbox-local",
+      "goal": "Implement/register the local sandbox, sandbox policy, filesystem sandbox/observation policy, and PowerShell sandbox providers with upstream authorization and disposal behavior. Validate this provider through the accepted resolver contract. Do not wait for unrelated shipped providers; full profile closure is a separate acceptance task.",
+      "evidence": "The shipped base/minimal rows remain unresolved and the official policy/local tests cover behavior absent from the Python row table.",
+      "wave": 9,
+      "priority": 1,
+      "dependencies": [
+        {
+          "task": "packages/boot/app-boot::resolution-contract",
+          "kind": "contract",
+          "evidence": "Rows must resolve by their shipped names. Resolver mechanism is separate from all-provider acceptance."
+        }
+      ],
+      "consumes": [
+        "contract:loader-resolution"
+      ],
+      "provides": [
+        "contract:sandbox-rows"
+      ],
+      "upstream_paths": [
+        "reference/packages/sandbox/sandbox-local",
+        "reference/packages/sandbox/sandbox-policy",
+        "reference/packages/fs/fs-sandbox",
+        "reference/packages/fs/fs-observation-policy",
+        "reference/packages/sandbox/sandbox-windows-acl"
+      ],
+      "write_paths": [
+        "dsh/boot/plugin_registry.py"
+      ]
+    },
+    {
+      "id": "packages/session-query/*::loader-row-providers",
+      "owner": "@deepseek-ai/dsh-session-log-export",
+      "goal": "Implement/register session-log-export and session-reference host capabilities with canonical archive/download and referenced-session semantics. Validate this provider through the accepted resolver contract. Do not wait for unrelated shipped providers; full profile closure is a separate acceptance task.",
+      "evidence": "Both shipped rows are unresolved and upstream tests cover routes, archive behavior, cancellation, media, and reference projection limits.",
+      "wave": 9,
+      "priority": 1,
+      "dependencies": [
+        {
+          "task": "packages/boot/app-boot::resolution-contract",
+          "kind": "contract",
+          "evidence": "Both rows must resolve and activate through the installed table. Resolver mechanism is separate from all-provider acceptance."
+        }
+      ],
+      "consumes": [
+        "contract:loader-resolution"
+      ],
+      "provides": [
+        "contract:web-session-rows"
+      ],
+      "upstream_paths": [
+        "reference/packages/session-query/session-log-export",
+        "reference/packages/context/session-reference"
+      ],
+      "write_paths": [
+        "dsh/boot/plugin_registry.py"
+      ]
+    },
+    {
+      "id": "packages/storage/storage-domain::loader-row-provider",
+      "owner": "@deepseek-ai/dsh-storage-domain",
+      "goal": "Split the domain form out of the hub into the shipped row: plugin name `storage-domain`, inject ['storage'], Config { backend: required, routes: default {} }, dependency-inverted activation on the routed backend service keys, ctx.provide('storageDomain'), and a disposer that closes leftover domains before unmounting. Validate this provider through the accepted resolver contract. Do not wait for unrelated shipped providers; full profile closure is a separate acceptance task.",
+      "evidence": "packages/bundle/base/cordis.patch.yml enables `@deepseek-ai/dsh-storage-domain` with `backend: json`; dsh/storage/hub.py mounts DomainFacility with a hardcoded {'backend': 'json', 'routes': {}} and no row-level config validation, routed activation, or disposal ordering; reference/packages/storage/storage-domain/src/index.ts owns all of that.",
+      "wave": 9,
+      "priority": 1,
+      "dependencies": [
+        {
+          "task": "packages/storage/storage-json::loader-row-provider",
+          "kind": "implementation",
+          "evidence": "The domain row's default route resolves backend `json`, which the json row (not the hub) must own."
+        },
+        {
+          "task": "packages/boot/app-boot::resolution-contract",
+          "kind": "contract",
+          "evidence": "The row must resolve as a bare installation-owned name and activate after its backend rows. Resolver mechanism is separate from all-provider acceptance."
+        }
+      ],
+      "consumes": [
+        "contract:storage-json-row"
+      ],
+      "provides": [
+        "contract:storage-domain-row"
+      ],
+      "upstream_paths": [
+        "reference/packages/storage/storage-domain/src/index.ts",
+        "reference/packages/storage/storage-domain/tests/domain.spec.ts",
+        "dsh/storage/hub.py",
+        "dsh/storage/domain_impl.py"
+      ],
+      "write_paths": [
+        "dsh/storage/domain_impl.py",
+        "dsh/storage/hub.py"
+      ]
+    },
+    {
+      "id": "packages/storage/storage-json::loader-row-provider",
+      "owner": "@deepseek-ai/dsh-storage-json",
+      "goal": "Split the JSON backend out of the hub into the shipped row: plugin name `storage-json`, inject ['storage'], Config { root: required }, register backend `json` through ctx.effect and close the backend on disposal, with the single AND per-record unit layouts plus the canonical document format and atomic publish the reference implements. Validate this provider through the accepted resolver contract. Do not wait for unrelated shipped providers; full profile closure is a separate acceptance task.",
+      "evidence": "packages/bundle/base/cordis.patch.yml enables `@deepseek-ai/dsh-storage-json` with `root: !!js dshHomePath('storages')`; dsh/storage/hub.py:28-35 registers the `json` backend unconditionally and dsh/storage/storage_json.py implements only `<root>/<name>.json`, while reference/packages/storage/storage-json/src has single-unit.ts, per-record-unit.ts, format.ts and atomic.ts.",
+      "wave": 9,
+      "priority": 1,
+      "dependencies": [
+        {
+          "task": "packages/boot/app-boot::resolution-contract",
+          "kind": "contract",
+          "evidence": "The row must resolve as a bare installation-owned name and activate once its `storage` injection is available. Resolver mechanism is separate from all-provider acceptance."
+        }
+      ],
+      "consumes": [],
+      "provides": [
+        "contract:storage-json-row"
+      ],
+      "upstream_paths": [
+        "reference/packages/storage/storage-json/src/index.ts",
+        "reference/packages/storage/storage-json/src/single-unit.ts",
+        "reference/packages/storage/storage-json/src/per-record-unit.ts",
+        "reference/packages/storage/storage-json/src/format.ts",
+        "reference/packages/storage/storage-json/tests/json-backend.spec.ts",
+        "dsh/storage/hub.py",
+        "dsh/storage/storage_json.py"
+      ],
+      "write_paths": [
+        "dsh/storage/hub.py",
+        "dsh/storage/storage_json.py"
+      ]
+    },
+    {
+      "id": "packages/terminal/terminal::loader-row-provider",
+      "owner": "@deepseek-ai/dsh-terminal",
+      "goal": "Implement/register terminal, terminal-bash, and persistent shell rows over the canonical terminal and sandbox lifecycle. Validate this provider through the accepted resolver contract. Do not wait for unrelated shipped providers; full profile closure is a separate acceptance task.",
+      "evidence": "The minimal bundle names all three rows, none resolves, and upstream tests require provider-owned ownership, cancellation, rollback, and cleanup.",
+      "wave": 9,
+      "priority": 1,
+      "dependencies": [
+        {
+          "task": "packages/boot/app-boot::resolution-contract",
+          "kind": "contract",
+          "evidence": "Rows must be mountable from the installation table. Resolver mechanism is separate from all-provider acceptance."
+        },
+        {
+          "task": "packages/sandbox/*::loader-row-providers",
+          "kind": "implementation",
+          "evidence": "terminal-bash consumes sandbox policy and process substrate."
+        }
+      ],
+      "consumes": [
+        "contract:loader-resolution"
+      ],
+      "provides": [
+        "contract:terminal-rows"
+      ],
+      "upstream_paths": [
+        "reference/packages/terminal/terminal",
+        "reference/packages/terminal/terminal-bash",
+        "reference/packages/shell/tool-bash-persistent"
+      ],
+      "write_paths": [
+        "dsh/boot/plugin_registry.py",
+        "dsh/shell/terminal.py"
+      ]
+    },
+    {
+      "id": "packages/boot/app-boot::plugin-resolution",
+      "owner": "@deepseek-ai/dsh-app-boot",
+      "goal": "Full shipped-profile integration acceptance. Keep the canonical profile boot: the Loader resolves every shipped bundle row the Python runtime implements through the installation table and the healed-fallback roots (never through the shipped JS artifact), a config-project module still wins, and once the provider rows below land, run_profile({'profile': web|standard|headless|creative|acp|sdk|minimal}) activates every shipped row and SHIPPED_PROVIDER_GAP / SHIPPED_ACTIVATION_GAP shrink to empty.",
+      "evidence": "Resolution, fail-loud and the activation of every mapped row are implemented and asserted per profile in tests/1to1/boot/app_boot/test_plugin_registry.py; the three activation defects this round fixed (JS expression translation, prompt-section signature, agent-presets row config) were the last failures of implemented rows outside web's unimplemented webStartup injection.",
+      "wave": 7,
+      "priority": 0,
+      "dependencies": [
+        {
+          "task": "packages/core/*::loader-row-providers",
+          "kind": "implementation",
+          "evidence": "22 base rows (dsh-llm-deepseek, dsh-llm-pi-ai, dsh-deepseek-llm-api-extensions, dsh-typert-loader, dsh-plugin-package-inventory-deepseek, dsh-session-log-deepseek, dsh-session-projection-cache, dsh-session-title-first-prompt-llm, dsh-jobs-local, dsh-skill, dsh-goal, dsh-goal-round-driver, dsh-command-goal, dsh-shell-env, dsh-storage-domain, dsh-storage-json, dsh-session-telemetry-otel, dsh-tool-subagent-control(/list-agents), dsh-tool-subagent-report, dsh-subagent-fork/spawn-in-process) are unresolved in every base-backed profile."
+        },
+        {
+          "task": "packages/api/*::loader-row-providers",
+          "kind": "implementation",
+          "evidence": "6 api/typert rows unresolved in every base-backed profile."
+        },
+        {
+          "task": "packages/sandbox/*::loader-row-providers",
+          "kind": "implementation",
+          "evidence": "dsh-sandbox-local, dsh-sandbox-policy, dsh-fs-sandbox, dsh-fs-observation-policy, dsh-pwsh-sandbox unresolved; sandbox-local/policy also block the minimal tree."
+        },
+        {
+          "task": "packages/client/*::loader-row-host-halves",
+          "kind": "implementation",
+          "evidence": "37 @deepseek-ai/dsh-client-* rows are enabled by the web bundle and have no host half."
+        },
+        {
+          "task": "packages/session-query/*::loader-row-providers",
+          "kind": "implementation",
+          "evidence": "dsh-session-log-export and dsh-session-reference are enabled by the web bundle only and unresolved."
+        },
+        {
+          "task": "packages/feedback/*::loader-row-providers",
+          "kind": "implementation",
+          "evidence": "dsh-command-feedback (base) and dsh-message-feedback (web) have no implementation in dsh/."
+        },
+        {
+          "task": "packages/terminal/terminal::loader-row-provider",
+          "kind": "implementation",
+          "evidence": "dsh-terminal, dsh-terminal-bash and dsh-tool-bash-persistent are enabled by the minimal tree and unresolved."
+        },
+        {
+          "task": "packages/bundle/*::app-entry-rows",
+          "kind": "implementation",
+          "evidence": "dsh-web, dsh-web-app, dsh-headless, dsh-acp-app, dsh-sdk-app, dsh-sdk-jsonrpc-server, dsh-agent-spine-demo, dsh-code-runtime-worker-thread, dsh-cordis-host/client-runner unresolved across the shipped profiles."
+        },
+        {
+          "task": "packages/bundle/web-app::web-startup-provider",
+          "kind": "implementation",
+          "evidence": "The last activation failure of an implemented row: run_profile('web') reports `failed to apply loader entry webserver (@deepseek-ai/dsh-host-webserver): cannot get property 'webStartup' without inject` because `@deepseek-ai/dsh-web-app/startup` is unimplemented; it must also own the socket bind/disposal behavior a mounted webserver introduces."
+        },
+        {
+          "task": "packages/boot/app-boot::module-fallback-closure",
+          "kind": "implementation",
+          "evidence": "resolve_module_fallback_entries(INSTALL_ANCHOR) yields 65 of the 210 packages the pinned manifests require, and each heal costs ~8.9s (standard profile boot measured at 8.85s)."
+        },
+        {
+          "task": "packages/boot/app-boot::subpath-row-resolution",
+          "kind": "implementation",
+          "evidence": "Rows naming a package subpath (…/startup, …/list-agents, …/model-selection-settings) never resolve through the package exports map, so they only reach a class by exact table key."
+        },
+        {
+          "task": "packages/boot/app-boot::resolution-contract",
+          "kind": "implementation",
+          "evidence": "Canonical provider contract precedes consumer acceptance; see this task upstream_paths."
+        }
+      ],
+      "consumes": [
+        "contract:provider-row-classes"
+      ],
+      "provides": [
+        "contract:web-profile-boot"
+      ],
+      "upstream_paths": [
+        "reference/packages/boot/app-boot",
+        "reference/apps/cli/src/profile-boot.ts"
+      ],
+      "write_paths": [
+        "dsh/boot/app_boot.py",
+        "packages/bundle/web-app/cordis.patch.yml",
+        "tests/1to1/boot/app_boot/test_plugin_registry.py"
+      ]
+    },
+    {
+      "id": "packages/boot/app-boot::module-fallback-closure",
+      "owner": "@deepseek-ai/dsh-app-boot",
+      "goal": "Delete workspace_package_index as a resolution answer: package_dir_from_anchor and dependency_closure resolve strictly through the anchor's node_modules chain (createRequire-equivalent), and the fixtures that stage packages without node_modules are rewritten to stage an installed graph.",
+      "evidence": "reference/packages/boot/app-boot/src/profile.ts::packageDirFromAnchor iterates only createRequire(anchor).resolve.paths; dsh/boot/profile.py::package_dir_from_anchor falls through to workspace_package_index, and tests/1to1/boot/app_boot/test_module_fallback_node_semantics.py encodes that stand-in.",
+      "wave": 2,
+      "priority": 0,
+      "dependencies": [
+        {
+          "task": "packages/boot/app-boot::installed-module-graph",
+          "kind": "implementation",
+          "evidence": "Removing the stand-in makes every shipped bundle lookup fail until the installation graph is materialized and reachable from the install anchor."
+        }
+      ],
+      "consumes": [
+        "contract:installed-module-graph"
+      ],
+      "provides": [
+        "contract:module-fallback-closure"
+      ],
+      "upstream_paths": [
+        "dsh/boot/profile.py",
+        "dsh/cordis/loader.py",
+        "reference/packages/boot/app-boot/src/profile.ts",
+        "reference/packages/boot/app-boot/tests/profile.spec.ts",
+        "tests/1to1/boot/app_boot/test_module_fallback_node_closure.py",
+        "tests/1to1/boot/app_boot/test_module_fallback_node_semantics.py"
+      ],
+      "write_paths": [
+        "dsh/boot/profile.py",
+        "dsh/cordis/loader.py"
+      ]
+    },
+    {
+      "id": "apps/web-served-host-contract",
+      "owner": "apps/web-served-host-contract",
+      "goal": "Verify the served boot graph, authentication, asset routes, client module lifecycle and real HTTP carrier against the pinned host-facing Web cases. Reuse the existing Web checkpoint as evidence and implementation input. Browser-driving and complete recorded-session acceptance remain required in apps/web; they do not block this provider contract.",
+      "evidence": "reference/apps/web/tests/scaffold.ts; reference/packages/host/frontend-static/src/index.ts; reference/packages/client/modules/src/index.ts",
+      "wave": 6,
+      "dependencies": [
+        {
+          "task": "host/webserver",
+          "kind": "implementation",
+          "evidence": "Canonical provider contract precedes consumer acceptance; see this task upstream_paths."
+        },
+        {
+          "task": "host/frontend-static",
+          "kind": "implementation",
+          "evidence": "Canonical provider contract precedes consumer acceptance; see this task upstream_paths."
+        },
+        {
+          "task": "client/modules",
+          "kind": "implementation",
+          "evidence": "Canonical provider contract precedes consumer acceptance; see this task upstream_paths."
+        },
+        {
+          "task": "client/connection",
+          "kind": "implementation",
+          "evidence": "Canonical provider contract precedes consumer acceptance; see this task upstream_paths."
+        }
+      ],
+      "consumes": [],
+      "provides": [
+        "contract:apps-web-served-boot"
+      ],
+      "upstream_paths": [
+        "reference/apps/web/tests/scaffold.ts",
+        "reference/packages/host/frontend-static/src/index.ts",
+        "reference/packages/client/modules/src/index.ts"
+      ],
+      "write_paths": [
+        "dsh/harness.py",
+        "dsh/host/client_modules/registry.py",
+        "dsh/host/connection/connection.py",
+        "dsh/host/frontend_static/frontend_static.py",
+        "dsh/host/webserver/injections.py",
+        "dsh/host/webserver/webserver.py",
+        "tests/1to1/apps_web/test_client_modules_contract.py",
+        "tests/1to1/apps_web/test_frontend_static_contract.py",
+        "tests/1to1/apps_web/test_served_boot_contract.py",
+        "tests/1to1/apps_web/test_served_dist_contract.py",
+        "tests/1to1/apps_web/test_web_profile_boot.py",
+        "tests/1to1/apps_web/test_webserver_contract.py"
+      ]
+    },
+    {
+      "id": "apps/web",
+      "owner": "@deepseek-ai/dsh-web-frontend",
+      "goal": "Full Web product acceptance: retain every original browser, replay, protocol and served-payload requirement. Keep the shipped Web payload and its served form at parity. This round the served form is complete at the host level: the built dist serves only through the authenticated frontend-static fallback, the index carries the upstream boot rows (queue facade, one application preload per combo batch, blocking bootstrap script, __DSH_BOOT__ global) over the composed {rev, entries, batches} graph, webserver compression and upgrade dispatch are provided, and the activation blocker is fixed. The remaining acceptance work is the browser lane plus the two providers below.",
+      "evidence": "reference/apps/web/package.json; reference/apps/web/tests/**; tests/1to1/apps_web (73 cases: the official gzip case, the routing+upgrade case, 27 client-module cases, 20 connection cases, the served boot/dist contracts, the web-entry acceptance); real-socket smoke of `dsh --web` (401 -> 303 -> gzipped authenticated index -> combo/batch fetch -> stale 404)",
+      "wave": 7,
+      "priority": 0,
+      "dependencies": [
+        {
+          "task": "apps/web-browser-e2e-lane",
+          "kind": "implementation",
+          "evidence": "314 official cases drive the shipped composition in Chromium; without that lane they stay unported (reference/apps/web/tests/README.md, scaffold.ts)"
+        },
+        {
+          "task": "tests/web-snapshot-lane",
+          "kind": "implementation",
+          "evidence": "the unit's snapshot/protocol cases resolve their fixtures from ../../../snapshots/web, which the port does not carry (reference/apps/web/tests/minimal-preset.snapshot.ts)"
+        },
+        {
+          "task": "packages/feedback/message-feedback::host-remote",
+          "kind": "implementation",
+          "evidence": "the unit's official lane includes the message-feedback protocol case and the feedback-command/feedback-release files consume the same remote"
+        },
+        {
+          "task": "apps/web-served-host-contract",
+          "kind": "implementation",
+          "evidence": "Canonical provider contract precedes consumer acceptance; see this task upstream_paths."
+        }
+      ],
+      "consumes": [
+        "contract:apps-web-served-boot"
+      ],
+      "provides": [
+        "package:apps/web"
+      ],
+      "upstream_paths": [
+        "reference/apps/web",
+        "reference/apps/web/tests"
+      ],
+      "write_paths": [
+        "apps/web/dist/index.html",
+        "apps/web/dist/preview.html",
+        "apps/web/index.html",
+        "apps/web/package.json",
+        "apps/web/public/manifest.webmanifest",
+        "apps/web/src/main.ts",
+        "apps/web/src/preview.ts",
+        "apps/web/tsconfig.json",
+        "apps/web/vite.config.ts",
+        "tests/1to1/apps_web/test_app_source_contract.py",
+        "tests/1to1/apps_web/test_pwa_manifest.py",
+        "tests/1to1/apps_web/test_served_dist_contract.py"
+      ]
+    },
+    {
+      "id": "apps/web-browser-e2e-lane",
+      "owner": "@deepseek-ai/dsh-web-frontend",
+      "goal": "Implement the pinned real-browser acceptance cases. Separate the test-driver host from the Python 3.8/Win7 target: a modern-host browser driver may exercise the real Python server over HTTP. Do not infer that host tooling requirements exclude product behavior. Keep Python 3.8 pytest collection independent of optional driver packages, record driver/browser/server environments and require explicit per-case evidence for any genuine Win7 exclusion. All 314 browser cases and the 44 client loader cases remain tracked, including UI-only snapshot goldens; inspect the pinned source for exact inventory.",
+      "evidence": "playwright-1.52.0.dist-info/METADATA: `Requires-Python: >=3.9`; `python38 -c \"import playwright\"` -> ModuleNotFoundError (probe run against C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python38\\python.exe); ms-playwright/chromium-1228/chrome-win64/chrome.exe FileVersion 149.0.7827.55; tests/1to1/apps_web/test_vite_entry.py:23 already records 'the lane's browser half is Playwright Chromium, which requires Windows 10'; reference/apps/web/tests/README.md and scaffold.ts describe the Chromium-driven lane; this round's host half (authenticated socket, gzipped index, messageFeedback Remote over real HTTP) is verified by tests/1to1/apps_web/test_message_feedback_protocol.py.",
+      "wave": 8,
+      "priority": 0,
+      "dependencies": [
+        {
+          "task": "apps/web-served-host-contract",
+          "kind": "implementation",
+          "evidence": "the served contract every lane case observes is complete and verified over a real socket this round Consume the served-host contract, not the aggregate product verdict."
+        },
+        {
+          "task": "tests/web-snapshot-lane",
+          "kind": "implementation",
+          "evidence": "the host-face half of the lane's cases is the executable substitute and shares the recorded-session corpus, now carried in the port"
+        }
+      ],
+      "consumes": [
+        "contract:apps-web-served-boot"
+      ],
+      "provides": [
+        "contract:web-browser-lane"
+      ],
+      "upstream_paths": [
+        "reference/apps/web/tests",
+        "reference/apps/web/tests/expected",
+        "reference/apps/web/tests/snapshots",
+        "reference/packages/client/modules/tests/loader.client.spec.ts"
+      ],
+      "write_paths": [
+        "tests/1to1/apps_web/test_message_feedback_protocol.py"
+      ]
+    },
+    {
+      "id": "tests/web-snapshot-lane",
+      "owner": "@deepseek-ai/dsh-web-frontend",
+      "goal": "CONTINUE with the corpus now carried: `snapshots/web/**` holds all 33 scenario directories / 151 files byte-identical to the reference plus the three shared session sources, and every manifest/source/redaction invariant is executed. Next chunk: boot the shipped profile per scenario and replay its recorded session, then compare the host-face goldens (`system-prompt.expected.md`, `tool-schemas.expected.json`, the normalized session log, and `workspace.expected/` oracles for the two `workspace.final: true` scenarios), starting with the four host-face prompt/schema scenarios (cordis-tool-round, fresh-round-trip, minimal-preset, ptc-round) and message-feedback-protocol (already executed). This needs an LLM replay provider that consumes the recorded script and fails loud on under-consumption (scaffold.ts installLlmReplay + assertConsumed) — a host-side item with no browser dependency. Record a per-case classification for the UI-only goldens using the classification already asserted by test_web_snapshot_corpus.py. UI-only goldens remain mandatory in apps/web-browser-e2e-lane and aggregate apps/web; this task owns host replay, not a substitute for browser verification.",
+      "evidence": "probe: snapshots/web 33 dirs / 151 files all SHA-256 identical to reference; snapshots/{acp/cancel-tool-calls,session/skill-load,session/workflow-run} carried so every declared `session.source` resolves; tests/1to1/apps_web/test_web_snapshot_corpus.py (3 cases) asserts the inventory, source resolution, per-artifact classification, and the host-face golden owner set {cordis-tool-round, fresh-round-trip, minimal-preset, ptc-round}; tests/1to1/apps_web/test_message_feedback_protocol.py executes one scenario's golden end to end; reference/apps/web/tests/scaffold.ts (launchWebScaffold/seedSession/assertReplaySession) and reference/packages/test-support/session-snapshot/src/suite.ts define the replay contract.",
+      "wave": 8,
+      "priority": 1,
+      "dependencies": [
+        {
+          "task": "apps/web-served-host-contract",
+          "kind": "implementation",
+          "evidence": "the unit's snapshot/protocol cases resolve their fixtures from this tree and observe the served contract this unit owns Consume the served-host contract, not the aggregate product verdict."
+        }
+      ],
+      "consumes": [
+        "contract:apps-web-served-boot"
+      ],
+      "provides": [
+        "contract:web-snapshot-lane"
+      ],
+      "upstream_paths": [
+        "reference/snapshots/web",
+        "reference/apps/web/tests/scaffold.ts",
+        "reference/packages/test-support/session-snapshot"
+      ],
+      "write_paths": [
+        "snapshots/acp/cancel-tool-calls",
+        "snapshots/session/skill-load",
+        "snapshots/session/workflow-run",
+        "snapshots/web",
+        "tests/1to1/apps_web/snapshot_fixtures.py",
+        "tests/1to1/apps_web/test_web_snapshot_corpus.py"
+      ]
+    },
+    {
+      "id": "packages/feedback/message-feedback::host-remote",
+      "owner": "@deepseek-ai/dsh-message-feedback",
+      "goal": "Provide the shipped Web Host message-feedback surface this unit's official lane drives: the host-plane provider plus the messageFeedback list/put/delete Remote endpoints with the strict conflict semantics the protocol case snapshots (invalid rating rejected before any write, put with ifVersion null creating a versioned item whose version matches the v4 UUID form, list returning the created item, a put against a live item reported as a conflict, delete honoring ifVersion, list-after-delete empty), and mirror reference/snapshots/web/message-feedback-protocol/{session.jsonl,protocol.expected.json} as the executable fixture.",
+      "evidence": "reference/apps/web/tests/message-feedback-protocol.snapshot.ts POSTs /api/messageFeedback/{put,list,delete} and compares normalized exchanges to snapshots/web/message-feedback-protocol/protocol.expected.json; reference/packages/api/remotes/src/client/index.ts:11 registers messageFeedbackRemote; probe: no messageFeedback/message_feedback match anywhere under dsh/**, and dsh/host/apiproxy/api/rpc_map.py OFFICIAL_RPC_METHODS omits the domain; the port carries no snapshots/ tree.",
+      "wave": 8,
+      "priority": 0,
+      "dependencies": [
+        {
+          "task": "apps/web-served-host-contract",
+          "kind": "implementation",
+          "evidence": "the unit's official lane contains the protocol case that consumes this Remote Consume the served-host contract, not the aggregate product verdict."
+        }
+      ],
+      "consumes": [
+        "contract:apps-web-served-boot"
+      ],
+      "provides": [
+        "contract:message-feedback-remote"
+      ],
+      "upstream_paths": [
+        "reference/packages/feedback/message-feedback",
+        "reference/packages/api/remotes",
+        "reference/snapshots/web/message-feedback-protocol"
+      ],
+      "write_paths": [
+        "dsh/host/apiproxy/api/rpc_map.py"
+      ]
+    },
+    {
+      "id": "client/ui-conversation",
+      "owner": "@deepseek-ai/dsh-client-ui-conversation",
+      "wave": 7,
+      "priority": 0,
+      "goal": "Verify and port @deepseek-ai/dsh-client-ui-conversation public contract and official tests; report runtime dependencies and split missing providers into owned tasks. Coordinate this explicitly grouped UI contract across conversation/sidebar/workspace; retain individual case maps.",
+      "evidence": "reference/packages/client/ui-conversation/package.json",
+      "upstream_paths": [
+        "reference/packages/client/ui-conversation"
+      ],
+      "dependencies": [
+        {
+          "task": "vendor/schemastery",
+          "kind": "implementation",
+          "evidence": "reference/packages/client/ui-conversation/package.json#dependencies/@deepseek-ai/schemastery"
+        },
+        {
+          "task": "vendor/cordis",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/cordis"
+        },
+        {
+          "task": "api/remotes",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/dsh-api-remotes"
+        },
+        {
+          "task": "api/session-controller",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/dsh-api-session-controller"
+        },
+        {
+          "task": "api/workspace-controller",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/dsh-api-workspace-controller"
+        },
+        {
+          "task": "attachment/attachment",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/dsh-attachment"
+        },
+        {
+          "task": "util/brand",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/dsh-brand"
+        },
+        {
+          "task": "client/locale",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/dsh-client-locale"
+        },
+        {
+          "task": "client/ui-layout",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/dsh-client-ui-layout"
+        },
+        {
+          "task": "client/ui-renderer",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/dsh-client-ui-renderer"
+        },
+        {
+          "task": "client/ui-session",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/dsh-client-ui-session"
+        },
+        {
+          "task": "client/ui-settings",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/dsh-client-ui-settings"
+        },
+        {
+          "task": "client/ui-workspace",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/dsh-client-ui-workspace"
+        },
+        {
+          "task": "interaction/commands",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/dsh-commands"
+        },
+        {
+          "task": "goal/goal",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/dsh-goal"
+        },
+        {
+          "task": "runtime-diagnostics/invariants",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/dsh-invariants"
+        },
+        {
+          "task": "llm/llm",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/dsh-llm"
+        },
+        {
+          "task": "llm/llm-retry",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/dsh-llm-retry"
+        },
+        {
+          "task": "interaction/permission-presets",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/dsh-permission-presets"
+        },
+        {
+          "task": "plan/plan-mode",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/dsh-plan-mode"
+        },
+        {
+          "task": "core/session",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/dsh-session"
+        },
+        {
+          "task": "settings/settings",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/dsh-settings"
+        },
+        {
+          "task": "llm/token-meter",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/dsh-token-meter"
+        },
+        {
+          "task": "todo/tool-todo",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/dsh-tool-todo"
+        },
+        {
+          "task": "util/crypto",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/dsh-util-crypto"
+        },
+        {
+          "task": "workspace/workspace",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/dsh-workspace"
+        },
+        {
+          "task": "util/workspace-path",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-conversation/package.json#peerDependencies/@deepseek-ai/dsh-util-workspace-path"
+        }
+      ],
+      "consumes": [
+        "package:api/remotes",
+        "package:api/session-controller",
+        "package:api/workspace-controller",
+        "package:attachment/attachment",
+        "package:client/locale",
+        "package:client/ui-layout",
+        "package:client/ui-renderer",
+        "package:client/ui-session",
+        "package:client/ui-settings",
+        "package:client/ui-workspace",
+        "package:core/session",
+        "package:goal/goal",
+        "package:interaction/commands",
+        "package:interaction/permission-presets",
+        "package:llm/llm",
+        "package:llm/llm-retry",
+        "package:llm/token-meter",
+        "package:plan/plan-mode",
+        "package:runtime-diagnostics/invariants",
+        "package:settings/settings",
+        "package:todo/tool-todo",
+        "package:util/brand",
+        "package:util/crypto",
+        "package:util/workspace-path",
+        "package:vendor/cordis",
+        "package:vendor/schemastery",
+        "package:workspace/workspace"
+      ],
+      "provides": [
+        "package:client/ui-conversation"
+      ],
+      "atomic_group": "client-workspace-ui",
+      "write_paths": []
+    },
+    {
+      "id": "client/ui-sidebar",
+      "owner": "@deepseek-ai/dsh-client-ui-sidebar",
+      "wave": 7,
+      "priority": 0,
+      "goal": "Verify and port @deepseek-ai/dsh-client-ui-sidebar public contract and official tests; report runtime dependencies and split missing providers into owned tasks. Coordinate this explicitly grouped UI contract across conversation/sidebar/workspace; retain individual case maps.",
+      "evidence": "reference/packages/client/ui-sidebar/package.json",
+      "upstream_paths": [
+        "reference/packages/client/ui-sidebar"
+      ],
+      "dependencies": [
+        {
+          "task": "api/workspace-controller",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-sidebar/package.json#peerDependencies/@deepseek-ai/dsh-api-workspace-controller"
+        },
+        {
+          "task": "client/locale",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-sidebar/package.json#peerDependencies/@deepseek-ai/dsh-client-locale"
+        },
+        {
+          "task": "client/ui-renderer",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-sidebar/package.json#peerDependencies/@deepseek-ai/dsh-client-ui-renderer"
+        },
+        {
+          "task": "client/ui-session",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-sidebar/package.json#peerDependencies/@deepseek-ai/dsh-client-ui-session"
+        },
+        {
+          "task": "client/ui-workspace",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-sidebar/package.json#peerDependencies/@deepseek-ai/dsh-client-ui-workspace"
+        },
+        {
+          "task": "runtime-diagnostics/invariants",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-sidebar/package.json#peerDependencies/@deepseek-ai/dsh-invariants"
+        },
+        {
+          "task": "vendor/cordis",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-sidebar/package.json#peerDependencies/@deepseek-ai/cordis"
+        },
+        {
+          "task": "client/ui-layout",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-sidebar/package.json#peerDependencies/@deepseek-ai/dsh-client-ui-layout"
+        }
+      ],
+      "consumes": [
+        "package:api/workspace-controller",
+        "package:client/locale",
+        "package:client/ui-layout",
+        "package:client/ui-renderer",
+        "package:client/ui-session",
+        "package:client/ui-workspace",
+        "package:runtime-diagnostics/invariants",
+        "package:vendor/cordis"
+      ],
+      "provides": [
+        "package:client/ui-sidebar"
+      ],
+      "atomic_group": "client-workspace-ui",
+      "write_paths": []
+    },
+    {
+      "id": "client/ui-workspace",
+      "owner": "@deepseek-ai/dsh-client-ui-workspace",
+      "wave": 7,
+      "priority": 0,
+      "goal": "Verify and port @deepseek-ai/dsh-client-ui-workspace public contract and official tests; report runtime dependencies and split missing providers into owned tasks. Coordinate this explicitly grouped UI contract across conversation/sidebar/workspace; retain individual case maps.",
+      "evidence": "reference/packages/client/ui-workspace/package.json",
+      "upstream_paths": [
+        "reference/packages/client/ui-workspace"
+      ],
+      "dependencies": [
+        {
+          "task": "api/remotes",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-workspace/package.json#peerDependencies/@deepseek-ai/dsh-api-remotes"
+        },
+        {
+          "task": "api/session-controller",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-workspace/package.json#peerDependencies/@deepseek-ai/dsh-api-session-controller"
+        },
+        {
+          "task": "api/workspace-controller",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-workspace/package.json#peerDependencies/@deepseek-ai/dsh-api-workspace-controller"
+        },
+        {
+          "task": "client/connection",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-workspace/package.json#peerDependencies/@deepseek-ai/dsh-client-connection"
+        },
+        {
+          "task": "client/locale",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-workspace/package.json#peerDependencies/@deepseek-ai/dsh-client-locale"
+        },
+        {
+          "task": "client/ui-conversation",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-workspace/package.json#peerDependencies/@deepseek-ai/dsh-client-ui-conversation"
+        },
+        {
+          "task": "client/ui-renderer",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-workspace/package.json#peerDependencies/@deepseek-ai/dsh-client-ui-renderer"
+        },
+        {
+          "task": "client/ui-session",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-workspace/package.json#peerDependencies/@deepseek-ai/dsh-client-ui-session"
+        },
+        {
+          "task": "client/ui-sidebar",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-workspace/package.json#peerDependencies/@deepseek-ai/dsh-client-ui-sidebar"
+        },
+        {
+          "task": "runtime-diagnostics/invariants",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-workspace/package.json#peerDependencies/@deepseek-ai/dsh-invariants"
+        },
+        {
+          "task": "typert/protocol",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-workspace/package.json#peerDependencies/@deepseek-ai/dsh-typert-protocol"
+        },
+        {
+          "task": "vendor/cordis",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-workspace/package.json#peerDependencies/@deepseek-ai/cordis"
+        },
+        {
+          "task": "core/session",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-workspace/package.json#peerDependencies/@deepseek-ai/dsh-session"
+        },
+        {
+          "task": "util/workspace-path",
+          "kind": "contract",
+          "evidence": "reference/packages/client/ui-workspace/package.json#peerDependencies/@deepseek-ai/dsh-util-workspace-path"
+        }
+      ],
+      "consumes": [
+        "package:api/remotes",
+        "package:api/session-controller",
+        "package:api/workspace-controller",
+        "package:client/connection",
+        "package:client/locale",
+        "package:client/ui-conversation",
+        "package:client/ui-renderer",
+        "package:client/ui-session",
+        "package:client/ui-sidebar",
+        "package:core/session",
+        "package:runtime-diagnostics/invariants",
+        "package:typert/protocol",
+        "package:util/workspace-path",
+        "package:vendor/cordis"
+      ],
+      "provides": [
+        "package:client/ui-workspace"
+      ],
+      "atomic_group": "client-workspace-ui",
+      "write_paths": []
+    },
+    {
+      "id": "vendor/schemastery",
+      "owner": "@deepseek-ai/schemastery",
+      "wave": 1,
+      "priority": 0,
+      "goal": "Verify and port @deepseek-ai/schemastery public contract and official tests; report runtime dependencies and split missing providers into owned tasks. Adopt the integrated deep-equal implementation and its tests; do not independently redesign its undefined/strict-equality semantics.",
+      "evidence": "reference/vendor/schemastery/package.json",
+      "upstream_paths": [
+        "reference/vendor/schemastery"
+      ],
+      "dependencies": [
+        {
+          "task": "vendor/cosmokit",
+          "kind": "implementation",
+          "evidence": "reference/vendor/schemastery/package.json#dependencies/@deepseek-ai/cosmokit"
+        },
+        {
+          "task": "vendor/schemastery-cosmokit-deep-equal",
+          "kind": "contract",
+          "evidence": "Canonical provider contract precedes consumer acceptance; see this task upstream_paths."
+        }
+      ],
+      "consumes": [
+        "package:vendor/cosmokit",
+        "package:vendor/schemastery-deep-equal"
+      ],
+      "provides": [
+        "package:vendor/schemastery"
+      ],
+      "write_paths": [
+        "dsh/cordis/schema.py",
+        "dsh/cordis/utils.py"
+      ]
+    }
+  ],
+  "contracts": [
+    {
+      "id": "contract:loader-resolution",
+      "owner": "packages/boot/app-boot::resolution-contract",
+      "evidence": "reference/packages/boot/app-boot/src/profile.ts; reference/packages/boot/app-boot/tests/profile.spec.ts; reference/vendor/loader/src",
+      "description": "Verify installation-owned package and exports/subpath lookup, config-project precedence, fail-loud errors and Loader activation against pinned reference fixtures. This is the resolver mechanism, not completion of every shipped provider. Full shipped-profile closure remains owned by packages/boot/app-boot::plugin-resolution. Record the canonical API and fixture mapping before changing consumers.",
+      "paths": [
+        "dsh/boot",
+        "dsh/cordis/loader.py"
+      ]
+    },
+    {
+      "id": "contract:apps-web-served-boot",
+      "owner": "apps/web-served-host-contract",
+      "evidence": "reference/packages/host/frontend-static/src/index.ts (authenticated index entry points, empty 404s, sep-aware traversal 403, 405, MIME table) + reference/packages/host/webserver/src/injections.ts (row rendering, script-preload link, READY tail) + reference/packages/client/modules/src/index.ts compose()/buildBatch()/comboUrl()/bootInjections(); the shipped bytes at apps/web/dist/assets/index-D-eoFxDP.js read __ModuleLoader__/__DSH_BOOT__/__DSH_BOOT_READY__",
+      "description": "The served form of apps/web/dist, now complete at the host level: the index is authorized through the connection service; it carries the registration queue facade, one script-preload row per application combo batch, the blocking bootstrap batch script and the rendered globalThis[\"__DSH_BOOT__\"] graph global ahead of the entry module, plus the boot-readiness tail after the body rows; assets come from the exact MIME table; empty 404/403/405/400 match the reference; the advertised graph is the shipped roster over generated /plugins/??<ids>/client.js&rev=<rev> combo URLs whose scripts and source maps are fetchable with immutable caching and stale revisions are rejected.",
+      "paths": [
+        "dsh/host/frontend_static/frontend_static.py",
+        "dsh/host/webserver/webserver.py",
+        "dsh/host/webserver/injections.py",
+        "dsh/host/client_modules/registry.py",
+        "dsh/host/connection/connection.py",
+        "dsh/harness.py",
+        "tests/1to1/apps_web/test_frontend_static_contract.py",
+        "tests/1to1/apps_web/test_webserver_contract.py",
+        "tests/1to1/apps_web/test_client_modules_contract.py",
+        "tests/1to1/apps_web/test_served_boot_contract.py",
+        "tests/1to1/apps_web/test_served_dist_contract.py",
+        "tests/1to1/apps_web/test_web_profile_boot.py"
+      ]
+    }
+  ],
+  "notes": [
+    "Operator-authorized rebalancing on 2026-09-13. No acceptance case removed. Preserve historical worktrees and reports; phase results with changed scope must be revalidated."
+  ]
+}

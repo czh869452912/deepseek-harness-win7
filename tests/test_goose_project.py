@@ -38,7 +38,8 @@ def store(tmp_path):
 
 
 def test_priority_dependencies_and_cycle_are_scheduled_atomically(store):
-    store.apply_plan(plan(task("plugin", ["a"], wave=7), task("a", ["b"]), task("b", ["a"]), task("util", wave=1)))
+    store.apply_plan(plan(task("plugin", ["a"], wave=7), dict(task("a", ["b"]), atomic_group="shared"),
+                          dict(task("b", ["a"]), atomic_group="shared"), task("util", wave=1)))
     first = store.claim("1")
     assert first["ids"] == ["util"]
     second = store.claim("2")
@@ -46,6 +47,70 @@ def test_priority_dependencies_and_cycle_are_scheduled_atomically(store):
     assert store.claim("3") is None
     store.integrate(second, "abc", {"a.py": "hash"})
     assert store.claim("3")["ids"] == ["plugin"]
+
+
+def test_unapproved_acceptance_cycle_is_visible_not_a_giant_worker(store):
+    a, b = task("a", ["b"]), task("b", ["a"])
+    b["dependencies"][0]["kind"] = "acceptance"
+    store.apply_plan(plan(a, b, task("independent")))
+    assert store.view()["unresolved_cycles"] == [["a", "b"]]
+    assert store.claim("w")["ids"] == ["independent"]
+    assert store.claim("w2") is None
+
+
+def test_explicit_atomic_scope_can_join_endpoints_without_fabricating_cycle(store):
+    store.apply_plan(plan(dict(task("a"), atomic_group="api-change"),
+                          dict(task("b"), atomic_group="api-change")))
+    assert store.claim("w")["ids"] == ["a", "b"]
+
+
+def test_pending_scope_change_blocks_affected_peer_not_independent_work(store):
+    store.apply_plan(plan(task("a"), task("b"), task("z")))
+    group = store.claim("a")
+    store.update(group, "WAITING_PLAN", feedback={"proposed_work_plan": plan(task("b", ["a"]))})
+    assert store.claim("other")["ids"] == ["z"]
+    assert store.claim("peer") is None
+
+
+def test_different_contract_ids_with_overlapping_paths_serialize(store):
+    a, b = task("a"), task("b")
+    a["write_paths"] = ["dsh/cordis"]
+    b["write_paths"] = ["dsh/cordis/schema.py"]
+    store.apply_plan(plan(a, b, task("z")))
+    first = store.claim("one")
+    assert first["ids"] == ["a"]
+    assert store.claim("two")["ids"] == ["z"]
+    assert store.claim("three") is None
+    store.integrate(first, "head", {})
+    assert store.claim("three")["ids"] == ["b"]
+
+
+def test_cross_module_scope_expansion_preserves_work_and_waits_for_owner(store):
+    store.apply_plan(plan(task("a"), task("b")))
+    a, b = store.claim("a"), store.claim("b")
+    assert store.observe_writes(a, ["b.py"]) == ["b"]
+    store.update(a, "READY", worktree="retained", round=3)
+    assert store.claim("retry") is None
+    assert store.view()["tasks"][0]["waiting_for_writer"] == ["b"]
+    store.integrate(b, "provider", {})
+    resumed = store.claim("retry")
+    assert resumed["ids"] == ["a"]
+    assert resumed["records"][0]["round"] == 3
+
+
+@pytest.mark.parametrize("value,expected", [
+    ({"verdict": "MIGRATOR_CORRECT", "summary": "free prose"}, "MIGRATOR_CORRECT"),
+    ({"summary": "JUDGE_RESULT: verdict MIGRATOR_CORRECT. Evidence follows."}, "MIGRATOR_CORRECT"),
+    ({"summary": "verdict: ADAPTATION_ALLOWED"}, "ADAPTATION_ALLOWED"),
+    ({"summary": "verdict: MIGRATOR_CORRECT or verdict: BOTH_INCOMPLETE"}, None),
+])
+def test_structured_and_historical_judge_results(value, expected):
+    assert project.judge_verdict(value) == expected
+
+
+def test_issue_lifecycle_does_not_escalate_resolved_findings():
+    assert project.open_issues({"issues": [{"state": "resolved"}, {"state": "informational"}]}) == []
+    assert project.open_issues({"issues": [{"id": "legacy"}, {"state": "open"}]}) == [{"id": "legacy"}, {"state": "open"}]
 
 
 def test_claim_is_transactional_and_survives_restart(store):
@@ -140,7 +205,90 @@ def make_project(repo):
     return p
 
 
-def test_new_baseline_merges_source_and_requeues_for_fresh_review(repo):
+def test_template_source_is_external_data_and_review_remains_blind(repo, monkeypatch):
+    import parity_runner
+    p = make_project(repo)
+    p.store.apply_plan(plan(task("a")))
+    agent = p.task_runner(p.store.claim("w"))
+    def stop_after_recipe(*args, **kwargs):
+        raise InterruptedError()
+    monkeypatch.setattr(parity_runner, "run_process", stop_after_recipe)
+    with pytest.raises(InterruptedError):
+        agent.phase("migrate", {"source": "{{cwd}} {% if dangerous %} secret-review-claim"})
+    recipe = json.loads((agent.run_dir / "00-migrate.yaml").read_text(encoding="utf-8"))
+    context = (agent.run_dir / "00-migrate.context.json").read_text(encoding="utf-8")
+    assert "{{" not in recipe["instructions"] and "{%" not in recipe["instructions"]
+    assert "{{cwd}}" in context
+    with pytest.raises(InterruptedError):
+        agent.phase("review", {"source": "secret-review-claim"})
+    assert "secret-review-claim" not in (agent.run_dir / "00-review.context.json").read_text(encoding="utf-8")
+
+
+def test_split_tasks_fork_shared_checkpoint_without_losing_progress(repo):
+    p = make_project(repo)
+    p.store.apply_plan(plan(task("a"), task("b")))
+    a = p.store.claim("a")
+    worker = p.task_runner(a)
+    (worker.root / "a.py").write_text("value = 8\n", encoding="utf-8")
+    project.git(worker.root, "commit", "-am", "retained progress")
+    p.store.update(a, "READY")
+    with p.store.connect() as db:
+        db.execute("UPDATE tasks SET worktree=?,base=? WHERE id='b'", (str(worker.root), project.git(repo, "rev-parse", "HEAD")))
+    resumed = p.task_runner(p.store.claim("next"))
+    assert resumed.root != worker.root
+    assert (resumed.root / "a.py").read_text() == (worker.root / "a.py").read_text()
+    assert p.store.rows()[0]["feedback"]["inherited_checkpoint"]["worktree"] == str(worker.root)
+
+
+def test_publication_prepares_without_moving_master_then_publishes(repo, monkeypatch):
+    p = make_project(repo)
+    branch = project.git(repo, "branch", "--show-current")
+    integration = p.integration()
+    (integration / "a.py").write_text("value = 1\n", encoding="utf-8")
+    project.git(integration, "commit", "-am", "migrated")
+    original = project.git(repo, "rev-parse", "HEAD")
+    (repo / "b.py").write_text("value = 2\n", encoding="utf-8")
+    project.git(repo, "commit", "-am", "controller")
+    target = project.git(repo, "rev-parse", "HEAD")
+    calls = []
+    monkeypatch.setattr(project, "run_process", lambda *args, **kwargs: calls.append(args) or 0)
+    p.prepare_main(branch)
+    assert project.git(repo, "rev-parse", "HEAD") == target != original
+    assert len(calls) == 1
+    p.publish_main()
+    assert project.git(repo, "rev-parse", "HEAD") == project.git(integration, "rev-parse", "HEAD")
+    assert (repo / "a.py").read_text().strip() == "value = 1"
+    assert (repo / "b.py").read_text().strip() == "value = 2"
+
+
+def test_publication_refuses_changed_candidate_or_target(repo, monkeypatch):
+    p = make_project(repo)
+    branch = project.git(repo, "branch", "--show-current")
+    monkeypatch.setattr(project, "run_process", lambda *args, **kwargs: 0)
+    p.prepare_main(branch)
+    publication = p.store.meta("publication")
+    (Path(publication["candidate"]) / "a.py").write_text("unchecked\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="dirty"):
+        p.publish_main()
+
+
+def test_publication_conflict_preserves_both_sources_without_running_tests(repo, monkeypatch):
+    p = make_project(repo)
+    integration = p.integration()
+    for path, value in ((repo, 1), (integration, 2)):
+        (path / "a.py").write_text("value = %d\n" % value, encoding="utf-8")
+        project.git(path, "commit", "-am", "conflicting design")
+    heads = [project.git(path, "rev-parse", "HEAD") for path in (repo, integration)]
+    monkeypatch.setattr(project, "run_process", lambda *a, **k: pytest.fail("Resolve conflict before test"))
+    with pytest.raises(ValueError, match="conflicts"):
+        p.prepare_main(project.git(repo, "branch", "--show-current"))
+    candidate = p.store.meta("publication")
+    assert candidate["state"] == "NEEDS_REPAIR"
+    assert "<<<<<<<" in (Path(candidate["candidate"]) / "a.py").read_text()
+    assert heads == [project.git(path, "rev-parse", "HEAD") for path in (repo, integration)]
+
+
+def test_unrelated_baseline_reuses_review_but_checks_combined_candidate(repo, monkeypatch):
     p = make_project(repo)
     p.store.apply_plan(plan(task("a")))
     group = p.store.claim("w")
@@ -151,14 +299,21 @@ def test_new_baseline_merges_source_and_requeues_for_fresh_review(repo):
     (integration / "b.py").write_text("value = 2\n", encoding="utf-8")
     project.git(integration, "commit", "-am", "independent change")
     tip = project.git(integration, "rev-parse", "HEAD")
+    checks = []
+    def verify(command, cwd, *args, **kwargs):
+        assert (cwd / "a.py").read_text().strip() == "value = 1"
+        assert (cwd / "b.py").read_text().strip() == "value = 2"
+        checks.append(command)
+        return 0
+    monkeypatch.setattr(project, "run_process", verify)
     p.merge(group, agent, p.store.contract_hashes(), {"test_paths": []})
     saved = p.store.rows()[0]
-    assert saved["state"] == "READY"
+    assert saved["state"] == "INTEGRATED"
     candidate = Path(saved["worktree"])
     assert (candidate / "a.py").read_text().strip() == "value = 1"
     assert (candidate / "b.py").read_text().strip() == "value = 2"
-    assert project.git(integration, "rev-parse", "HEAD") == tip
-    assert saved["run_dir"] is None
+    assert project.git(integration, "rev-parse", "HEAD") != tip
+    assert checks == [[sys.executable, "-m", "pytest", "tests"]]
 
 
 def test_merge_conflicts_are_preserved_for_repair(repo):
@@ -254,7 +409,8 @@ def test_new_cycle_consolidates_both_existing_clean_worktrees(repo):
         (agent.root / (name + ".py")).write_text("value = 1\n", encoding="utf-8")
         project.git(agent.root, "commit", "-am", "saved " + name)
         p.store.update(group, "VERIFIED")
-    p.store.apply_plan(plan(task("a", ["b"]), task("b", ["a"])))
+    p.store.apply_plan(plan(dict(task("a", ["b"]), atomic_group="shared"),
+                            dict(task("b", ["a"]), atomic_group="shared")))
     combined = p.store.claim("w")
     assert combined["ids"] == ["a", "b"]
     agent = p.task_runner(combined)

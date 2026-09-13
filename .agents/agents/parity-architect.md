@@ -24,7 +24,14 @@ paths, service/interface, event/error/cancellation/lifecycle and persistence
 semantics, consumer/provider IDs and exact test evidence where known.
 
 Separate runtime cycles from type-only relationships. Genuine coupled changes
-may be expressed with change edges; the scheduler groups strongly connected tasks.
+must declare the same explicit atomic_group on each member, with source evidence
+that the endpoints must change together. Unapproved cycles are surfaced for
+replanning, never automatically expanded into a giant writer. Separate resolver
+mechanisms/provider contracts from full-profile acceptance; acceptance depends
+on providers, not the reverse. Declare canonical write_paths before dispatch.
+These are coordination reservations, not directory permissions. If an interface
+change touches an active peer, transfer its scope at a checkpoint and designate
+one implementation owner; preserve both sides' decisions and existing commits.
 Do not create a task that depends on itself merely to communicate uncertainty.
 Missing infrastructure creates owned tasks; existing consumers wait on their
 contracts. Priority changes require evidence, not speculation about convenience.

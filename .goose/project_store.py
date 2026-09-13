@@ -66,6 +66,8 @@ class Store:
             CREATE TABLE IF NOT EXISTS events(
                 seq INTEGER PRIMARY KEY AUTOINCREMENT, time REAL NOT NULL,
                 task TEXT, kind TEXT NOT NULL, data TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS writes(
+                task TEXT NOT NULL, path TEXT NOT NULL, PRIMARY KEY(task,path));
             """)
 
     def connect(self):
@@ -124,6 +126,14 @@ class Store:
                         raise ValueError("Task requires " + field)
                 if not isinstance(task.get("wave", 5), int) or not isinstance(task.get("priority", 0), int):
                     raise ValueError("Wave and priority must be integers")
+                if not isinstance(task.get("atomic_group", ""), str):
+                    raise ValueError("atomic_group must be a string")
+                if not isinstance(task.get("write_paths", []), list):
+                    raise ValueError("write_paths must be a list")
+                for path in task.get("write_paths", []):
+                    if (not isinstance(path, str) or not path or path.startswith(("/", "\\")) or
+                            ":" in path or "\\" in path or ".." in path.split("/")):
+                        raise ValueError("write_paths must be repository-relative paths")
                 for dep in task.get("dependencies", []):
                     if dep.get("task") not in known or not dep.get("evidence"):
                         raise ValueError("Unknown dependency or missing evidence: " + str(dep))
@@ -200,22 +210,79 @@ class Store:
 
     @staticmethod
     def groups(db):
+        """Cycles require an explicit shared atomic group; never swallow a product."""
         graph = {r[0]: [] for r in db.execute("SELECT id FROM tasks")}
+        specs = {r[0]: json.loads(r[1]) for r in db.execute("SELECT id,spec FROM tasks")}
+        atomic = {}
+        for task, spec in specs.items():
+            if spec.get("atomic_group"):
+                atomic.setdefault(spec["atomic_group"], []).append(task)
+        for members in atomic.values():
+            for task in members:
+                graph[task].extend(t for t in members if t != task)
         for task, dependency in db.execute("SELECT task,dependency FROM edges"):
             graph[task].append(dependency)
-        return components(graph)
+        result = []
+        for group in components(graph):
+            names = {specs[t].get("atomic_group") for t in group}
+            if len(group) == 1 or (len(names) == 1 and next(iter(names))):
+                result.append(group)
+            else:
+                result.extend([[t] for t in group])
+        return result
+
+    @staticmethod
+    def resources(db, ids):
+        specs = [json.loads(r[0]) for t in ids for r in db.execute("SELECT spec FROM tasks WHERE id=?", (t,))]
+        contracts = {c for s in specs for c in s.get("provides", [])}
+        paths = {p for s in specs for p in s.get("write_paths", [])}
+        paths.update(r[0] for t in ids for r in db.execute("SELECT path FROM writes WHERE task=?", (t,)))
+        for cid in contracts:
+            row = db.execute("SELECT spec FROM contracts WHERE id=?", (cid,)).fetchone()
+            if row:
+                paths.update(p for p in json.loads(row[0]).get("paths", []) if not p.startswith("reference/"))
+        return contracts, {p.replace("\\", "/").strip("/").lower() for p in paths}
+
+    @staticmethod
+    def overlapping(left, right):
+        return bool(left[0] & right[0]) or any(
+            a == b or a.startswith(b + "/") or b.startswith(a + "/")
+            for a in left[1] for b in right[1])
+
+    def observe_writes(self, group, paths):
+        """Persist discovered cross-module writes; defer review if another writer owns them.
+
+        Workers may expand their scope. Changes stay isolated, and scope acquisition
+        precedes review/integration rather than discarding useful work on conflict.
+        """
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            for task in group["ids"]:
+                if db.execute("SELECT owner FROM tasks WHERE id=?", (task,)).fetchone()[0] != group["token"]:
+                    raise ValueError("Lost task ownership")
+                for path in paths:
+                    db.execute("INSERT OR IGNORE INTO writes VALUES(?,?)", (task, path))
+            own = self.resources(db, group["ids"])
+            peers = [r[0] for r in db.execute("SELECT id FROM tasks WHERE state IN ('RUNNING','VERIFIED')")
+                     if r[0] not in group["ids"]]
+            return [t for t in peers if self.overlapping(own, self.resources(db, [t]))]
 
     def claim(self, worker):
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             rows = {r["id"]: dict(r) for r in db.execute("SELECT * FROM tasks")}
             edges = list(db.execute("SELECT task,dependency FROM edges"))
-            running_contracts = set()
-            for row in rows.values():
-                if row["state"] == "RUNNING":
-                    running_contracts.update(json.loads(row["spec"]).get("provides", []))
+            active = [r for r in rows.values() if r["state"] in ("RUNNING", "VERIFIED")]
+            resources = {t: self.resources(db, [t]) for t in rows}
             candidates = []
+            pending = set()
+            for row in rows.values():
+                if row["state"] == "WAITING_PLAN" and row["feedback"]:
+                    proposal = json.loads(row["feedback"]).get("proposed_work_plan", {})
+                    pending.update(t["id"] for t in proposal.get("tasks", []))
             for group in self.groups(db):
+                if pending.intersection(group):
+                    continue
                 members = [rows[t] for t in group]
                 if any(r["state"] not in ("READY", "NEEDS_REVALIDATION", "INTEGRATED") for r in members):
                     continue
@@ -225,7 +292,9 @@ class Store:
                 if any(rows[d]["state"] != "INTEGRATED" for d in external):
                     continue
                 specs = [json.loads(r["spec"]) for r in members]
-                if running_contracts.intersection(c for s in specs for c in s.get("provides", [])):
+                if any(self.overlapping(resources[t], resources[r["id"]]) or
+                       (rows[t]["worktree"] and rows[t]["worktree"] == r["worktree"])
+                       for t in group for r in active if r["id"] not in group):
                     continue
                 downstream = {t for t, dep in edges if dep in group}
                 while True:
@@ -292,6 +361,9 @@ class Store:
         import platform
         with self.connect() as db:
             for task in group["ids"]:
+                self.event(db, task, "evidence", {"upstream": upstream, "head": head,
+                           "contracts": hashes, "tests": tests,
+                           "environment": {"python": platform.python_version(), "os": platform.platform()}})
                 db.execute("INSERT OR REPLACE INTO evidence VALUES(?,?,?,?,?,?)",
                            (task, upstream, head, json.dumps(hashes), json.dumps(tests),
                             json.dumps({"python": platform.python_version(), "os": platform.platform()})))
@@ -345,10 +417,22 @@ class Store:
         with self.connect() as db:
             edges = [dict(r) for r in db.execute("SELECT * FROM edges")]
             groups = self.groups(db)
+            resources = {r["id"]: self.resources(db, [r["id"]]) for r in rows}
         states = {r["id"]: r["state"] for r in rows}
         for row in rows:
             own_group = next(g for g in groups if row["id"] in g)
             row["waiting_on"] = sorted({e["dependency"] for e in edges if e["task"] == row["id"]
                                          and e["dependency"] not in own_group and states[e["dependency"]] != "INTEGRATED"})
+            own = resources[row["id"]]
+            row["write_paths"] = sorted(own[1])
+            row["waiting_for_writer"] = [r["id"] for r in rows
+                if r["id"] not in own_group and r["state"] in ("RUNNING", "VERIFIED")
+                and (self.overlapping(own, resources[r["id"]]) or
+                     (row["worktree"] and row["worktree"] == r["worktree"]))]
+        graph = {r["id"]: [] for r in rows}
+        for edge in edges:
+            graph[edge["task"]].append(edge["dependency"])
+        cycles = [g for g in components(graph) if len(g) > 1 and not any(set(g) <= set(a) for a in groups)]
         return {"tasks": rows, "edges": edges, "groups": groups,
-                "contracts": self.contract_hashes(), "updated": time.time()}
+                "scheduler": self.meta("scheduler"), "publication": self.meta("publication"),
+                "unresolved_cycles": cycles, "contracts": self.contract_hashes(), "updated": time.time()}

@@ -1,9 +1,10 @@
 param(
-    [ValidateSet('init','status','plan','apply','run','recover','pause')][string]$Action = 'status',
+    [ValidateSet('init','status','plan','apply','run','recover','pause','prepare-main','publish-main')][string]$Action = 'status',
     [string]$GooseExe = $env:GOOSE_EXE,
     [ValidateRange(1, 2147483647)][int]$Jobs = 2,
     [string]$PlanFile,
-    [string]$Task
+    [string]$Task,
+    [string]$Target = 'master'
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
@@ -29,6 +30,7 @@ try {
     $arguments = @((Join-Path $PSScriptRoot 'project_runner.py'), $Action, '--goose', $GooseExe, '--jobs', "$Jobs")
     if ($PlanFile) { $arguments += @('--file', $PlanFile) }
     if ($Task) { $arguments += @('--task', $Task) }
+    if ($Action -eq 'prepare-main') { $arguments += @('--target', $Target) }
     & $python @arguments
     if ($LASTEXITCODE -ne 0) { throw 'Project needs attention; inspect .goose/runs/project/index.html and task errors.' }
 } finally {

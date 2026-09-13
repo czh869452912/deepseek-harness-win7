@@ -33,6 +33,21 @@ class CordisError(Exception):
         super().__init__(message or CODE_MESSAGES.get(code, code))
 
 
+def is_sync_iterable_effect(value: Any) -> bool:
+    """
+    Return whether an effect result is a synchronous iterable of disposers.
+
+    Mirrors the `Symbol.iterator in effect` branch of `Fiber._execute`
+    (fiber.ts:375): a JavaScript primitive is not an object and therefore can
+    never be an effect, so the Python stand-ins for primitives (str/bytes) are
+    rejected instead of being iterated character by character. Any other object
+    exposing the synchronous iteration protocol is accepted.
+    """
+    if isinstance(value, (str, bytes, bytearray)):
+        return False
+    return hasattr(value, "__iter__")
+
+
 def resolve_config(plugin: Any, config: Any, runtime: Any = None) -> Any:
     """
     Validate and normalize config for a plugin runtime before it starts matching TS resolveConfig.
@@ -245,6 +260,19 @@ class Fiber:
                 nested = self._effect_metas.get(disp)
                 if nested is not None and nested is not meta:
                     meta.children.append(nested)
+
+        def safe_collect(produced: Any) -> None:
+            """
+            Mirror fiber.ts `_execute` `safeCollect` for values produced by an effect.
+
+            A produced value is a disposer only when it is callable; every other
+            non-null value is an invalid effect and fails the registration, which
+            makes the caller roll the already-collected disposers back.
+            """
+            if callable(produced):
+                collect_disposer(produced)
+            elif produced is not None:
+                raise TypeError("Invalid effect")
 
         def retire_in_flight(task: asyncio.Task) -> None:
             """
@@ -489,11 +517,23 @@ class Fiber:
                 elif res is None:
                     if setup_barrier_future and not setup_barrier_future.done():
                         setup_barrier_future.set_result(None)
-                elif inspect.isgenerator(res):
+                elif is_sync_iterable_effect(res):
+                    # fiber.ts `_execute` `Symbol.iterator in effect` branch: the
+                    # iterable is drained synchronously and every produced value is
+                    # run through `safeCollect`. The iterator is stepped by hand so
+                    # the terminal `{ value, done: true }` result is collected too,
+                    # exactly like `safeCollect(result.value)` before the `done`
+                    # check. A throw from iteration or from `safeCollect` rolls the
+                    # already-collected disposers back in reverse order.
                     try:
-                        for item in res:
-                            if callable(item):
-                                collect_disposer(item)
+                        iterator = iter(res)
+                        while True:
+                            try:
+                                item = next(iterator)
+                            except StopIteration as stop:
+                                safe_collect(stop.value)
+                                break
+                            safe_collect(item)
                         if setup_barrier_future and not setup_barrier_future.done():
                             setup_barrier_future.set_result(None)
                     except Exception as gen_err:
@@ -501,26 +541,32 @@ class Fiber:
                         if setup_barrier_future and not setup_barrier_future.done():
                             setup_barrier_future.set_exception(gen_err)
                         raise gen_err
-                elif inspect.isasyncgen(res):
+                elif hasattr(res, "__aiter__"):
+                    # fiber.ts `_execute` `Symbol.asyncIterator in effect` branch:
+                    # any async iterable is drained on a task with the load-epoch
+                    # re-check, collecting each produced disposer on this effect.
                     old_epoch = self.epoch
-                    async def _consume_async_gen():
+                    async def _consume_async_iter():
                         try:
                             async for item in res:
                                 if self.epoch != old_epoch:
                                     break
-                                if callable(item):
-                                    collect_disposer(item)
+                                safe_collect(item)
                             if setup_barrier_future and not setup_barrier_future.done():
                                 setup_barrier_future.set_result(None)
-                        except Exception as asyncgen_err:
+                        except Exception as async_iter_err:
+                            # Re-raise so the setup task rejects like the reference
+                            # `_execute` asyncIterator promise, which is what the
+                            # public disposer's `then` chain reports to its caller.
                             rollback_sync()
                             if setup_barrier_future and not setup_barrier_future.done():
-                                setup_barrier_future.set_exception(asyncgen_err)
+                                setup_barrier_future.set_exception(async_iter_err)
                             if self.ctx and hasattr(self.ctx, "logger"):
-                                self.ctx.logger("fiber").error("Exception consuming async generator '%s': %s", label, asyncgen_err)
+                                self.ctx.logger("fiber").error("Exception consuming async iterable '%s': %s", label, async_iter_err)
+                            raise async_iter_err
                     try:
                         loop = asyncio.get_running_loop()
-                        setup_task = loop.create_task(_consume_async_gen())
+                        setup_task = loop.create_task(_consume_async_iter())
                         if hasattr(self, "_in_flight_effects"):
                             self._in_flight_effects.add(setup_task)
                             setup_task.add_done_callback(retire_in_flight)
@@ -859,10 +905,12 @@ class Fiber:
                     async def _async_wait_res():
                         try:
                             ret = await res
+                            # fiber.ts `_execute` `'then' in effect` branch:
+                            # `effect.then(safeCollect)` accepts only a disposer
+                            # or null from the awaited setup; anything else is an
+                            # invalid effect.
                             if callable(ret):
                                 self._collect(ret)
-                            elif inspect.isgenerator(ret) or inspect.isasyncgen(ret):
-                                self.effect(lambda r=ret: r, label=f"apply({self.name})")
                             elif ret is not None:
                                 raise TypeError("Invalid effect")
                             if self.epoch != epoch or self.state in (FiberState.UNLOADING, FiberState.DISPOSED):
@@ -889,14 +937,22 @@ class Fiber:
                         ret = asyncio.run(res)
                         if callable(ret):
                             self._collect(ret)
-                        elif inspect.isgenerator(ret) or inspect.isasyncgen(ret):
-                            self.effect(lambda r=ret: r, label=f"apply({self.name})")
                         elif ret is not None:
                             raise TypeError("Invalid effect")
-                elif inspect.isgenerator(res) or isinstance(res, (list, tuple)):
-                    # fiber.ts `_execute` iterates a returned iterable and collects
-                    # each produced disposer on the fiber itself.
-                    for item in res:
+                elif is_sync_iterable_effect(res):
+                    # fiber.ts `_execute` `Symbol.iterator in effect`: the returned
+                    # iterable (not only a generator) yields disposers that are
+                    # collected on the fiber itself. The iterator is stepped by
+                    # hand so the terminal `{ value, done: true }` result is
+                    # collected too, exactly like `safeCollect(result.value)`
+                    # before the `done` check.
+                    iterator = iter(res)
+                    while True:
+                        try:
+                            item = next(iterator)
+                        except StopIteration as stop:
+                            self._collect(stop.value)
+                            break
                         self._collect(item)
                 elif hasattr(res, "__aiter__"):
                     # fiber.ts `_execute` asyncIterator branch: yielded disposers

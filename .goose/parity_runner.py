@@ -540,7 +540,10 @@ class Runner:
         prompt += ("Set issue.state to open, resolved, informational or deferred; open means a blocker for this acceptance contract. "
                    "A deferred gap must retain its owner and acceptance task; never hide unfinished acceptance as informational. ")
         if phase == "judge":
-            prompt += "Return the decision in the separate verdict enum field, not only in summary. "
+            prompt += ("Return the decision in the separate verdict enum field, not only in summary. "
+                       "RESOLVED means arbitration is decided, even when BOTH_INCOMPLETE or REVIEWER_CORRECT "
+                       "requires implementation fixes. BLOCKED is only for an unresolved external/design decision; "
+                       "ordinary known code defects are not an arbitration blocker. ")
         prompt += "test_paths must be existing repository-relative pytest paths under tests/ (no flags). "
         prompt += "test_map records exact upstream case titles -> Python locations -> classification. "
         if feedback and phase != "review":

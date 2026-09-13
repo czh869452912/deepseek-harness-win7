@@ -609,7 +609,9 @@ def test_pilot_stops_after_selected_task_without_claiming_siblings(repo, monkeyp
     assert next(r['state'] for r in p.store.rows() if r['id'] == 'b') == 'READY'
 
 
-def test_conflicting_optional_plans_cannot_bypass_judge(repo, monkeypatch):
+@pytest.mark.parametrize('verdict,expected', [('BLOCKED', 'NEEDS_ARBITRATION'),
+                                             ('BOTH_INCOMPLETE', 'PLAN_REPAIR')])
+def test_conflicting_optional_plans_cannot_bypass_judge(repo, monkeypatch, verdict, expected):
     p = make_project(repo)
     p.store.apply_plan(plan(task('a')))
     group = p.store.claim('w')
@@ -621,7 +623,7 @@ def test_conflicting_optional_plans_cannot_bypass_judge(repo, monkeypatch):
     def phase(agent, name, feedback=None):
         calls.append(name)
         if name == 'judge':
-            return dict(status='BLOCKED', verdict='BLOCKED', summary='explicit contract decision needed')
+            return dict(status='BLOCKED', verdict=verdict, summary='source based decision')
         spec = task('a')
         spec['goal'] = 'proposal from ' + name
         return dict(status='ESCALATE' if name == 'migrate' else 'MUST_FIX', summary='disputed',
@@ -631,6 +633,18 @@ def test_conflicting_optional_plans_cannot_bypass_judge(repo, monkeypatch):
     p.execute(group)
     assert calls == ['migrate', 'review', 'judge']
     assert p.store.rows()[0]['feedback']['judgment']['status'] == 'BLOCKED'
+    assert p.store.rows()[0]['state'] == expected
+    if verdict == 'BOTH_INCOMPLETE':
+        row = p.store.rows()[0]
+        assert row['feedback']['resume_round_after_plan'] == row['round'] + 1
+        feedback = row['feedback']
+        feedback['proposed_work_plan'] = plan(task('a'))
+        p.store.update(group, 'WAITING_PLAN', feedback=feedback)
+        p.apply_proposals()
+        repaired = p.store.rows()[0]
+        assert repaired['state'] == 'READY'
+        assert repaired['round'] == row['round'] + 1
+        assert repaired['feedback']['applied_proposals_signature'] == feedback['proposals_signature']
 
 
 def test_architect_resumes_native_stop_and_applies_acknowledged_plan(repo, monkeypatch):

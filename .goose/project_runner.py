@@ -517,6 +517,11 @@ class Project:
             # treating it as one would bounce a PASS review back into replanning.
             plans = [p for p in (migration.get("work_plan"), review.get("work_plan"))
                      if p and (p.get("tasks") or p.get("contracts"))]
+            previous = json.loads(record["feedback"]) if record["feedback"] else {}
+            plan_signature = digest(plans)
+            if previous.get('applied_proposals_signature') == plan_signature:
+                feedback['applied_proposals_signature'] = plan_signature
+                plans = []
             proposal = {"tasks": [], "contracts": []} if plans else None
             plan_conflicts = []
             for key in ("tasks", "contracts"):
@@ -530,7 +535,6 @@ class Project:
                 if proposal is not None:
                     proposal[key] = list(merged.values())
             signature = digest({"issues": sorted(i["id"] for i in open_issues(review))})
-            previous = json.loads(record["feedback"]) if record["feedback"] else {}
             feedback["signature"] = signature
             needs_judge = (bool(plan_conflicts) or "ESCALATE" in (migration["status"], review["status"]) or
                            (review["status"] == "PASS" and bool(open_issues(migration))) or
@@ -540,9 +544,6 @@ class Project:
             if needs_judge:
                 judgment = self.cached_phase(agent, "judge", feedback)
                 feedback["judgment"] = judgment
-                if judgment["status"] == "BLOCKED":
-                    self.store.update(group, "NEEDS_ARBITRATION", feedback=feedback, error=judgment["summary"])
-                    return
                 # Honor the arbitration verdict instead of looping forever: a
                 # MIGRATOR_CORRECT / ADAPTATION_ALLOWED ruling completes the
                 # parity-unit step-5 contract when the blind review passes (or
@@ -558,6 +559,11 @@ class Project:
                 if (verdict in ("MIGRATOR_CORRECT", "ADAPTATION_ALLOWED") and
                         review["status"] in ("PASS", "ESCALATE") and ok):
                     resolved_ready = True
+            needs_implementation = (not resolved_ready and
+                                    (review['status'] != 'PASS' or migration['status'] != 'READY' or not ok or needs_judge))
+            if proposal:
+                feedback['proposals_signature'] = plan_signature
+                feedback['resume_round_after_plan'] = agent.state['round'] + int(needs_implementation)
             if plan_conflicts:
                 feedback.update(conflicting_work_plans=plans, proposed_work_plan=proposal,
                                 plan_error='Conflicting proposals: ' + ', '.join(plan_conflicts))
@@ -570,8 +576,7 @@ class Project:
                 feedback["proposed_work_plan"] = proposal
                 self.store.update(group, "WAITING_PLAN", feedback=feedback, round=agent.state["round"])
                 return
-            if (not resolved_ready and
-                    (review["status"] != "PASS" or migration["status"] != "READY" or not ok or needs_judge)):
+            if needs_implementation:
                 self.store.update(group, "READY", feedback=feedback, round=agent.state["round"] + 1)
                 return
             if git(agent.root, "status", "--porcelain", "--untracked-files=normal"):
@@ -603,7 +608,7 @@ class Project:
         agent.state['round'] = agent.state['round'] or 1
         if handoff.get('needs_decision') and not feedback.get('contract_decision'):
             decision = self.cached_phase(agent, 'judge', feedback)
-            if decision['status'] == 'BLOCKED' or judge_verdict(decision) in (None, 'BLOCKED'):
+            if judge_verdict(decision) in (None, 'BLOCKED'):
                 self.store.update(group, 'NEEDS_ARBITRATION', feedback=dict(feedback, judgment=decision),
                                   error='Integration contract remains unresolved; combined candidate retained')
                 return
@@ -696,7 +701,9 @@ class Project:
                 self.store.update(group, "PLAN_REPAIR", feedback=feedback, error="Plan validation: " + str(error))
                 continue
             feedback.pop("plan_error", None)
-            self.store.update(group, "READY", feedback=feedback, error=None)
+            feedback['applied_proposals_signature'] = feedback.get('proposals_signature')
+            self.store.update(group, "READY", feedback=feedback, error=None,
+                              round=feedback.get('resume_round_after_plan', members[0]['round']))
 
     def repair_plans(self, only_task=None):
         """Repair graph data only. Never send a schema error back to implementation."""

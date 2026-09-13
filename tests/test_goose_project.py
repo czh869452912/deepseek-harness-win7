@@ -635,3 +635,63 @@ def test_run_honors_pause_flag(repo, monkeypatch):
     monkeypatch.setattr(p, "apply_proposals", write_flag)
     assert p.run() == 0
     assert not (p.folder / "pause.flag").exists()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows console signals")
+def test_pause_flag_parks_and_exits_promptly(repo):
+    import subprocess
+    import time
+    script = repo / "fake.py"
+    script.write_text("import time\ntime.sleep(45)\n", encoding="utf-8")
+    executable = repo / "fake.cmd"
+    executable.write_text('@echo off\n"' + sys.executable + '" "' + str(script) + '" %*\n', encoding="utf-8")
+    project.git(repo, "add", ".")
+    project.git(repo, "commit", "-qm", "fake CLI fixture")
+    reference = repo / "reference"
+    reference.mkdir()
+    project.git(reference, "init", "-q")
+    project.git(reference, "config", "user.name", "Test")
+    project.git(reference, "config", "user.email", "test@example.invalid")
+    (reference / "index.ts").write_text("export const pinned = true\n", encoding="utf-8")
+    project.git(reference, "add", ".")
+    project.git(reference, "commit", "-qm", "pinned upstream")
+    revision = project.git(reference, "rev-parse", "HEAD")
+    p = make_project(repo)
+    p.goose = str(executable)
+    p.store.meta("upstream", revision)
+    p.store.meta("architecture", revision)
+    p.store.apply_plan(plan(task("a")))
+    for module in ("project_runner.py", "parity_runner.py", "project_store.py", "project_seed.py"):
+        copy = repo / ".goose" / module
+        copy.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(str(SOURCE / ".goose" / module), str(copy))
+    controller = subprocess.Popen(
+        [sys.executable, str(repo / ".goose" / "project_runner.py"), "run",
+         "--goose", str(executable), "--jobs", "1"],
+        cwd=str(repo), creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+        stdout=open(repo / "controller.log", "w", encoding="utf-8"),
+        stderr=subprocess.STDOUT)
+    try:
+        deadline = time.monotonic() + 90
+        started = False
+        while time.monotonic() < deadline:
+            rows = p.store.rows()
+            if rows and rows[0]["state"] == "RUNNING" and rows[0]["run_dir"]:
+                runs = list(Path(rows[0]["run_dir"]).glob("*.events.jsonl"))
+                if runs:
+                    started = True
+                    break
+            time.sleep(0.5)
+        if not started:
+            controller.kill()
+            raise AssertionError("controller never started the phase: " +
+                                 (repo / "controller.log").read_text(encoding="utf-8", errors="replace")[-2000:])
+        (repo / ".goose" / "runs" / "project" / "pause.flag").write_text("", encoding="utf-8")
+        code = controller.wait(timeout=45)
+        assert code == 0, code
+    finally:
+        if controller.poll() is None:
+            controller.kill()
+    rows = p.store.rows()
+    assert rows[0]["state"] == "READY", rows[0]["state"]
+    assert not rows[0]["error"]

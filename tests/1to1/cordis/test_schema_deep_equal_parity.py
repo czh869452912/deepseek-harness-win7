@@ -22,7 +22,7 @@ branches this port must reproduce exactly:
 
 import pytest
 
-from dsh.cordis.schema import Schema
+from dsh.cordis.schema import Schema, ValidationError
 from dsh.cordis.schema import deep_equal as schema_deep_equal
 from dsh.cordis.utils import _UNDEFINED
 from dsh.cordis.utils import deep_equal as cosmokit_deep_equal
@@ -140,5 +140,14 @@ def test_index_ts_598_const_uses_loose_deep_equal():
     """
     schema = Schema.const([{"a": None}])
     assert schema([{}]) == [{"a": None}]
-    with pytest.raises(TypeError):
+    # An element that really differs still fails, and the resolver reports the
+    # reference's ValidationError (index.ts:599).
+    with pytest.raises(ValidationError):
         schema([{"a": 1}])
+
+    # The object fallback is loose here too: `{}` is missing the `a` key, so
+    # `a[key]` reads as `undefined` and matches the constant's `null`.
+    # `strict` is absent at :598, and the flag would have made this false.
+    assert Schema.const({"a": None})({}) == {"a": None}
+    with pytest.raises(ValidationError):
+        Schema.const({"a": None})({"a": 1})

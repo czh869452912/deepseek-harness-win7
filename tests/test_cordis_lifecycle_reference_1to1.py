@@ -700,3 +700,124 @@ async def test_loading_status_reports_the_dependency_snapshot_before_execution()
 
     assert observed.get("cleanup") is True
     assert consumer.state == FiberState.PENDING
+
+
+def _state_names():
+    """Return the FiberState name for each state value."""
+    return {value: name for name, value in vars(FiberState).items() if isinstance(value, int)}
+
+
+@pytest.mark.asyncio
+async def test_ordinary_effect_stays_owner_visible_until_cleanup_settles():
+    """
+    fiber.ts `finalizeDisposal` -> `removeWrapper`: an ordinary effect remains
+    listed by its owner while its asynchronous cleanup is in flight, a repeated
+    disposal joins that cleanup, and retirement happens only at settlement.
+    """
+    ctx = Context()
+    release = asyncio.Event()
+    cleanup_started = asyncio.Event()
+    cleanup_count = 0
+
+    async def cleanup():
+        nonlocal cleanup_count
+        cleanup_count += 1
+        cleanup_started.set()
+        await release.wait()
+
+    def disposer():
+        return cleanup()
+
+    def labels():
+        return [meta["label"] if isinstance(meta, dict) else meta.label for meta in ctx.fiber.get_effects()]
+
+    dispose = ctx.fiber.effect(lambda: disposer, "owner-visible")
+    assert labels() == ["owner-visible"]
+
+    first = dispose()
+    await cleanup_started.wait()
+    assert labels() == ["owner-visible"]
+
+    second = dispose()
+    assert second is first
+
+    release.set()
+    await first
+    assert cleanup_count == 1
+    assert labels() == []
+
+
+@pytest.mark.asyncio
+async def test_owner_unload_joins_effect_cleanup_started_by_another_caller():
+    """
+    fiber.ts `runDisposable` + `effectInertia`: an owner fiber unload that calls
+    a wrapper whose asynchronous cleanup another caller already started joins
+    that cleanup instead of disposing the effect a second time.
+    """
+    ctx = Context()
+    release = asyncio.Event()
+    cleanup_started = asyncio.Event()
+    cleanup_finished = False
+    cleanup_count = 0
+
+    async def cleanup():
+        nonlocal cleanup_count, cleanup_finished
+        cleanup_count += 1
+        cleanup_started.set()
+        await release.wait()
+        cleanup_finished = True
+
+    def disposer():
+        return cleanup()
+
+    dispose = ctx.fiber.effect(lambda: disposer, "joined")
+    first = dispose()
+    await cleanup_started.wait()
+    assert first is not None
+
+    restarted = ctx.fiber.restart()
+    release.set()
+    await restarted
+    assert cleanup_count == 1
+    assert cleanup_finished is True
+    assert ctx.fiber.get_effects() == []
+
+
+@pytest.mark.asyncio
+async def test_startup_failure_unloads_collected_effects_and_publishes_loading_unloading_failed():
+    """
+    fiber.ts `_reload` catch + `_unload`: a startup failure records the error,
+    invalidates the epoch, unloads the effects collected before the failure, and
+    publishes LOADING -> UNLOADING -> FAILED; awaiting the fiber rethrows the
+    failure only after that cleanup settled.
+    """
+    ctx = Context()
+    statuses = []
+    cleanups = []
+    state_names = _state_names()
+
+    ctx.on(
+        "internal/status",
+        lambda fiber, old_state: statuses.append(
+            (state_names.get(old_state, old_state), state_names.get(fiber.state, fiber.state))
+        ),
+    )
+
+    async def failing_plugin(fiber_ctx):
+        fiber_ctx.effect(lambda: lambda: cleanups.append("collected"), label="collected")
+        await asyncio.sleep(0)
+        raise RuntimeError("startup failed")
+
+    fiber = ctx.plugin(failing_plugin)
+    with pytest.raises(RuntimeError, match="startup failed"):
+        await fiber.await_settled()
+
+    assert statuses == [
+        ("PENDING", "LOADING"),
+        ("LOADING", "UNLOADING"),
+        ("UNLOADING", "FAILED"),
+    ]
+    assert cleanups == ["collected"]
+    assert fiber.state == FiberState.FAILED
+    assert fiber.error is not None
+    assert fiber.get_effects() == []

@@ -272,6 +272,7 @@ class Fiber:
         executing = True
         setup_failed = False
         disposed = False
+        retired = False
         wrapper: Optional[Any] = None
         remove_wrapper: Optional[Callable[[], bool]] = None
 
@@ -353,16 +354,19 @@ class Fiber:
             """
             Drop this effect from its owner fiber without running its cleanups.
 
-            `fiber.ts` removes the parent-owned `ctx.plugin()` record when the
-            child disposal settles (`finalizeDisposal` -> `removeWrapper`). The
-            port starts the child teardown at the call site, so it retires the
-            record there too: `getEffects()` stops reporting the effect and a
-            later owner unload cannot dispose the child a second time.
+            `fiber.ts` removes the parent-owned wrapper through the
+            `removeWrapper()` closure that `finalizeDisposal` calls: immediately
+            for a synchronous teardown, and from the cleanup promise's `finally`
+            when the teardown is asynchronous. The port starts the teardown at
+            the call site, so it retires the record with the same rule: while an
+            async cleanup is in flight `getEffects()` keeps reporting the
+            effect, a later owner unload joins the cleanup instead of disposing
+            the effect a second time, and only settlement drops the record.
             """
-            nonlocal disposed
-            if disposed:
+            nonlocal retired
+            if retired:
                 return
-            disposed = True
+            retired = True
             self._effect_metas.pop(cancel_effect, None)
             if wrapper is not None:
                 self._effect_metas.pop(wrapper, None)
@@ -373,34 +377,35 @@ class Fiber:
             nonlocal disposed, in_flight_cleanup, remove_wrapper, wrapper
             if disposed:
                 return in_flight_cleanup
-            retire_effect()
+            disposed = True
 
             if executing:
                 barrier = wait_for_setup()
                 async def _dispose_after_barrier():
-                    if barrier is not None:
-                        try:
-                            await barrier
-                        except Exception:
-                            pass
-                    while disposables:
-                        disp = disposables.pop()
-                        self._disposables.delete(disp)
-                        try:
-                            r = disp()
-                            if inspect.isawaitable(r):
-                                await r
-                        except Exception as err:
-                            if self.ctx and hasattr(self.ctx, "logger"):
-                                self.ctx.logger("fiber").error("Exception in disposer '%s': %s", label, err)
+                    try:
+                        if barrier is not None:
+                            try:
+                                await barrier
+                            except Exception:
+                                pass
+                        while disposables:
+                            disp = disposables.pop()
+                            self._disposables.delete(disp)
+                            try:
+                                r = disp()
+                                if inspect.isawaitable(r):
+                                    await r
+                            except Exception as err:
+                                if self.ctx and hasattr(self.ctx, "logger"):
+                                    self.ctx.logger("fiber").error("Exception in disposer '%s': %s", label, err)
+                    finally:
+                        # fiber.ts `finalizeDisposal` removes the owner-list entry
+                        # from the cleanup promise's `finally`, so the teardown a
+                        # caller awaits only settles once the effect is retired.
+                        retire_effect()
 
                 try:
                     loop = asyncio.get_running_loop()
-                    in_flight_cleanup = loop.create_task(_dispose_after_barrier())
-                    if hasattr(self, "_in_flight_effects"):
-                        self._in_flight_effects.add(in_flight_cleanup)
-                        in_flight_cleanup.add_done_callback(retire_in_flight)
-                    return in_flight_cleanup
                 except RuntimeError:
                     while disposables:
                         disp = disposables.pop()
@@ -411,7 +416,14 @@ class Fiber:
                                 pass
                         except Exception:
                             pass
+                    retire_effect()
                     return None
+
+                in_flight_cleanup = loop.create_task(_dispose_after_barrier())
+                if hasattr(self, "_in_flight_effects"):
+                    self._in_flight_effects.add(in_flight_cleanup)
+                    in_flight_cleanup.add_done_callback(retire_in_flight)
+                return in_flight_cleanup
 
             async_disposers = []
             while disposables:
@@ -429,17 +441,23 @@ class Fiber:
 
             if async_disposers or (setup_task and not setup_task.done()):
                 async def _run_cleanup():
-                    if setup_task and not setup_task.done():
-                        try:
-                            await setup_task
-                        except Exception:
-                            pass
-                    for r in async_disposers:
-                        try:
-                            await r
-                        except Exception as err:
-                            if self.ctx and hasattr(self.ctx, "logger"):
-                                self.ctx.logger("fiber").error("Exception in async disposer '%s': %s", label, err)
+                    try:
+                        if setup_task and not setup_task.done():
+                            try:
+                                await setup_task
+                            except Exception:
+                                pass
+                        for r in async_disposers:
+                            try:
+                                await r
+                            except Exception as err:
+                                if self.ctx and hasattr(self.ctx, "logger"):
+                                    self.ctx.logger("fiber").error("Exception in async disposer '%s': %s", label, err)
+                    finally:
+                        # Same `finalizeDisposal` rule as the barrier teardown: the
+                        # owner-list entry outlives the cleanup and is dropped with
+                        # it, so awaiting this task also awaits retirement.
+                        retire_effect()
 
                 try:
                     loop = asyncio.get_running_loop()
@@ -468,7 +486,9 @@ class Fiber:
                                 self.ctx.logger("fiber").error("Exception in async disposer '%s': %s", label, err)
                             else:
                                 sys.stderr.write(f"[Cordis Fiber Error] Exception in async disposer '{label}': {err}\n")
+                    retire_effect()
                     return None
+            retire_effect()
             return None
 
         class _EffectWrapper:
@@ -949,7 +969,6 @@ class Fiber:
                         except Exception as e:
                             self._error = e
                             self.epoch = INACTIVE_EPOCH
-                            self.set_state(FiberState.FAILED)
                             if self.ctx and hasattr(self.ctx, "logger"):
                                 self.ctx.logger("fiber").error("Exception during async init in fiber '%s': %s", self.name, e)
                             self.set_state(FiberState.UNLOADING)
@@ -977,7 +996,6 @@ class Fiber:
                         except Exception as e:
                             self._error = e
                             self.epoch = INACTIVE_EPOCH
-                            self.set_state(FiberState.FAILED)
                             if self.ctx and hasattr(self.ctx, "logger"):
                                 self.ctx.logger("fiber").error("Exception during coro init in fiber '%s': %s", self.name, e)
                             self.set_state(FiberState.UNLOADING)
@@ -1040,7 +1058,6 @@ class Fiber:
                         except Exception as e:
                             self._error = e
                             self.epoch = INACTIVE_EPOCH
-                            self.set_state(FiberState.FAILED)
                             if self.ctx and hasattr(self.ctx, "logger"):
                                 self.ctx.logger("fiber").error("Exception during async apply in fiber '%s': %s", self.name, e)
                             else:
@@ -1091,7 +1108,6 @@ class Fiber:
                         except Exception as e:
                             self._error = e
                             self.epoch = INACTIVE_EPOCH
-                            self.set_state(FiberState.FAILED)
                             if self.ctx and hasattr(self.ctx, "logger"):
                                 self.ctx.logger("fiber").error("Exception consuming async apply in fiber '%s': %s", self.name, e)
                             else:
@@ -1111,9 +1127,14 @@ class Fiber:
             self._error = None
             self.set_state(FiberState.ACTIVE)
         except Exception as e:
+            # fiber.ts `_reload` records the failure and invalidates the epoch,
+            # then derives the state transition: the epoch is INACTIVE, so the
+            # update drives UNLOADING, `_unload` drains the effects collected
+            # before the failure, and only its final `_getState()` publishes
+            # FAILED. Publishing FAILED here would emit a state the reference
+            # never reaches.
             self._error = e
             self.epoch = INACTIVE_EPOCH
-            self.set_state(FiberState.FAILED)
             if self.ctx and hasattr(self.ctx, "logger"):
                 self.ctx.logger("fiber").error("Exception during apply in fiber '%s': %s", self.name, e)
             else:

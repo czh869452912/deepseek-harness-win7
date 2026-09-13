@@ -314,14 +314,10 @@ class _IncludeInitDual:
         if self.candidate:
             patched = self.include.apply_patches(self.candidate["data"], self.include.config.get("patches"))
             res = self.include.root.update(patched)
-            if inspect.iscoroutine(res):
-                try:
-                    loop = asyncio.get_running_loop()
-                    self.include._update_task = loop.create_task(res)
-                    self._update_res = self.include._update_task
-                except RuntimeError:
-                    self._update_res = res
-            elif inspect.isawaitable(res):
+            if inspect.isawaitable(res):
+                # `root.update` already returned the task that owns the apply
+                # (`tree.ts` `apply()` returns the queued promise); wrapping it
+                # in a second task would create work the tree does not own.
                 self.include._update_task = res
                 self._update_res = res
             else:

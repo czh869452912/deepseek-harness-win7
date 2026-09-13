@@ -879,15 +879,43 @@ class EntryTree:
         self.enable_logs: Optional[bool] = None
         self.filepath = filepath
         self.store: Dict[str, "Entry"] = {}
+        self._pending_tasks: Set[asyncio.Task] = set()
         self.root = EntryGroup(self.ctx, self)
         fiber_entry = getattr(getattr(self.ctx, "fiber", None), "entry", None)
         if fiber_entry:
             fiber_entry.subtree = self
         setattr(self, "await", self.await_)
 
+    def _track(self, task: Any) -> Any:
+        """
+        Record a task this tree started as pending lifecycle work.
+
+        `tree.ts` `getTasks()` reports the work a tree still owns (`entry._initTask`
+        or `entry.fiber.inertia`). The port's synchronous entry points return the
+        task instead of awaiting it at the call site, so the tree records every
+        task it creates; `get_tasks()` then reports it and `await_()` waits for it
+        before reporting settlement.
+        """
+        if asyncio.isfuture(task):
+            self._pending_tasks.add(task)
+            task.add_done_callback(self._retire_pending)
+        return task
+
+    def _retire_pending(self, task: Any) -> None:
+        """
+        Drop a settled task from the pending set and mark its failure reported.
+
+        `await_()` collects pending task outcomes, but a tree that is torn down
+        without a settlement pass would otherwise surface a retrieved-only
+        failure as an unretrieved task exception at garbage collection.
+        """
+        self._pending_tasks.discard(task)
+        if not task.cancelled():
+            task.exception()
+
     def get_tasks(self) -> List[Any]:
         """Return pending import and lifecycle tasks owned by this tree."""
-        tasks = []
+        tasks: List[Any] = [task for task in self._pending_tasks if not task.done()]
         if getattr(self.root, "_update_task", None) and not self.root._update_task.done():
             tasks.append(self.root._update_task)
         for entry in self.entries():
@@ -990,7 +1018,7 @@ class EntryTree:
         """Stop and remove an entry from its parent group."""
         try:
             loop = asyncio.get_running_loop()
-            return loop.create_task(self._remove_tree_entry_async(entry_id))
+            return self._track(loop.create_task(self._remove_tree_entry_async(entry_id)))
         except RuntimeError:
             return asyncio.run(self._remove_tree_entry_async(entry_id))
 
@@ -1005,7 +1033,7 @@ class EntryTree:
         """Update an entry and optionally move it to another group with rollback on failure."""
         try:
             loop = asyncio.get_running_loop()
-            return loop.create_task(self._update_tree_entry_async(entry_id, options, parent_id, position))
+            return self._track(loop.create_task(self._update_tree_entry_async(entry_id, options, parent_id, position)))
         except RuntimeError:
             return asyncio.run(self._update_tree_entry_async(entry_id, options, parent_id, position))
 
@@ -1171,6 +1199,13 @@ class EntryGroup:
         if entry:
             entry.subgroup = self
 
+    def _track_task(self, task: Any) -> Any:
+        """Record a task this group started in its tree's pending set."""
+        tree = getattr(self, "tree", None)
+        if tree is not None and hasattr(tree, "_track"):
+            return tree._track(task)
+        return task
+
     def get(self, entry_id: str) -> Optional["Entry"]:
         """Look up an entry by ID in this tree."""
         return self.tree.store.get(entry_id)
@@ -1206,7 +1241,7 @@ class EntryGroup:
 
         try:
             loop = asyncio.get_running_loop()
-            task = loop.create_task(_run_create())
+            task = self._track_task(loop.create_task(_run_create()))
             return AwaitableString(eid, task)
         except RuntimeError:
             asyncio.run(_run_create())
@@ -1242,7 +1277,7 @@ class EntryGroup:
     def remove(self, entry_id: str, is_dispose: bool = False) -> Any:
         try:
             loop = asyncio.get_running_loop()
-            return loop.create_task(self._remove_async(entry_id, is_dispose=is_dispose))
+            return self._track_task(loop.create_task(self._remove_async(entry_id, is_dispose=is_dispose)))
         except RuntimeError:
             return asyncio.run(self._remove_async(entry_id, is_dispose=is_dispose))
 
@@ -1295,7 +1330,7 @@ class EntryGroup:
 
         try:
             loop = asyncio.get_running_loop()
-            task = loop.create_task(self._update_async(config_list))
+            task = self._track_task(loop.create_task(self._update_async(config_list)))
             self._update_task = task
             return task
         except RuntimeError:
@@ -1359,7 +1394,7 @@ class EntryGroup:
     def stop(self) -> Any:
         try:
             loop = asyncio.get_running_loop()
-            return loop.create_task(self._stop_async())
+            return self._track_task(loop.create_task(self._stop_async()))
         except RuntimeError:
             return asyncio.run(self._stop_async())
 
@@ -1456,6 +1491,7 @@ class Entry:
         self.subgroup: Optional[EntryGroup] = None
         self.subtree: Optional[EntryTree] = None
         self._init_task: Optional[asyncio.Future] = None
+        self._init_inner_task: Optional[asyncio.Future] = None
         self._disposing = 0
         self._loaded_module_name: Optional[str] = None
 
@@ -1526,10 +1562,20 @@ class Entry:
             entry = getattr(getattr(parent_ctx, "fiber", None), "entry", None) if parent_ctx else None
         return res
 
+    def _track_task(self, task: Any) -> Any:
+        """Record a task this entry started in the owning tree's pending set."""
+        tree = getattr(getattr(self, "parent", None), "tree", None)
+        if tree is None:
+            loader = getattr(self, "loader", None)
+            tree = loader if isinstance(loader, EntryTree) else None
+        if tree is not None and hasattr(tree, "_track"):
+            return tree._track(task)
+        return task
+
     def _dispose(self, fiber: Optional[Fiber] = None) -> Any:
         try:
             loop = asyncio.get_running_loop()
-            return loop.create_task(self._dispose_async(fiber))
+            return self._track_task(loop.create_task(self._dispose_async(fiber)))
         except RuntimeError:
             return asyncio.run(self._dispose_async(fiber))
 
@@ -1636,18 +1682,30 @@ class Entry:
             await res
 
     def init(self) -> Any:
+        """
+        Start this entry's initialization and return the task that owns it.
+
+        `tree.ts` `getTasks()` reports `entry._initTask`, so the runner created
+        here is recorded on the entry and in the owning tree's pending set, and
+        `EntryTree.await_()` waits for it before reporting settlement. A
+        loop-less caller has no checkpoint to defer to, so the runner is driven
+        to completion inline.
+        """
         try:
             loop = asyncio.get_running_loop()
-            return loop.create_task(self._init_task_runner())
         except RuntimeError:
             return asyncio.run(self._init_task_runner())
+        task = self._track_task(loop.create_task(self._init_task_runner()))
+        self._init_task = task
+        return task
 
     async def _init_task_runner(self) -> None:
         try:
-            if not self._init_task:
-                self._init_task = asyncio.create_task(self._init())
-            await self._init_task
+            if not self._init_inner_task:
+                self._init_inner_task = asyncio.ensure_future(self._init())
+            await self._init_inner_task
         finally:
+            self._init_inner_task = None
             self._init_task = None
             if hasattr(self.loader, "get_tasks") and not self.loader.get_tasks():
                 if self.ctx and hasattr(self.ctx, "reflect"):
@@ -1658,7 +1716,7 @@ class Entry:
         """Merge new options, restart as needed, and update fiber transactionally."""
         try:
             loop = asyncio.get_running_loop()
-            return loop.create_task(self._update_async(options, create=create, force=force))
+            return self._track_task(loop.create_task(self._update_async(options, create=create, force=force)))
         except RuntimeError:
             return asyncio.run(self._update_async(options, create=create, force=force))
 

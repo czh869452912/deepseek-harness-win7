@@ -1,5 +1,8 @@
 from dsh.harness import build_harness
 import asyncio
+import pytest
+
+from dsh.cordis.fiber import FiberState
 
 
 def test_build_harness_minimal_mode():
@@ -13,6 +16,30 @@ def test_build_harness_minimal_mode():
     tools = [t.name for t in ctx.tools.list_tools()]
     assert "str_replace_editor" in tools
     assert "pwsh" in tools or "bash" in tools
+
+
+@pytest.mark.asyncio
+async def test_build_harness_settles_every_loader_task():
+    """
+    boot/harness settlement: after `build_harness` returns, the loader tree owns
+    no pending task and every mounted entry fiber has settled ACTIVE.
+    """
+    ctx = await build_harness(mode="minimal")
+    loader = ctx.get("loader")
+    assert loader is not None
+    assert loader.get_tasks() == []
+
+    for entry in loader.entries():
+        fiber = entry.fiber
+        if fiber is None:
+            continue
+        assert fiber.state == FiberState.ACTIVE
+
+    pending = [
+        task for task in asyncio.all_tasks()
+        if task is not asyncio.current_task() and not task.done()
+    ]
+    assert pending == []
 
 
 def test_build_harness_creative_mode():

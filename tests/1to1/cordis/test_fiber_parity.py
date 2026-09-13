@@ -46,6 +46,11 @@ Covers:
   unawaited coroutine and does not throw out of effect()
 - T35: An async-iterable effect body outside a loop is drained and its disposers
   are disposed in reverse order
+- T36: An ordinary effect stays owner-visible while its async cleanup is in
+  flight and a repeated disposal joins that cleanup (fiber.ts `finalizeDisposal`)
+- T37: A failing startup derives LOADING -> UNLOADING -> FAILED, unloads the
+  effects collected before the failure and rethrows only after cleanup settled
+  (fiber.ts `_reload` catch + `_unload`)
 """
 
 import asyncio
@@ -882,3 +887,84 @@ def test_t35_async_iterable_effect_outside_event_loop_is_drained():
 
     disposer()
     assert log == ["first", "second", "dispose-second", "dispose-first"]
+
+
+STATE_NAMES = {value: name for name, value in vars(FiberState).items() if isinstance(value, int)}
+
+
+@pytest.mark.asyncio
+async def test_t36_ordinary_effect_stays_owner_visible_until_async_cleanup_settles():
+    """T36: an ordinary effect stays listed by its owner while its cleanup runs.
+
+    Reference: `fiber.ts` `finalizeDisposal` calls the `removeWrapper()` closure
+    from the cleanup promise's `finally`, so `getEffects()` keeps reporting the
+    effect for as long as its asynchronous teardown is in flight and a repeated
+    disposal joins that same cleanup.
+    """
+    ctx = Context()
+    release = asyncio.Event()
+    started = asyncio.Event()
+    cleanup_runs = []
+
+    async def cleanup():
+        cleanup_runs.append("cleanup")
+        started.set()
+        await release.wait()
+
+    disposer = lambda: cleanup()
+
+    def label_of(meta):
+        return meta["label"] if isinstance(meta, dict) else meta.label
+
+    dispose = ctx.fiber.effect(lambda: disposer, label="owner-visible")
+    assert [label_of(meta) for meta in ctx.fiber.get_effects()] == ["owner-visible"]
+
+    first = dispose()
+    await started.wait()
+    assert [label_of(meta) for meta in ctx.fiber.get_effects()] == ["owner-visible"]
+
+    # A repeated disposal joins the in-flight cleanup instead of starting another.
+    second = dispose()
+    assert second is first
+
+    release.set()
+    await first
+    assert cleanup_runs == ["cleanup"]
+    assert ctx.fiber.get_effects() == []
+
+
+@pytest.mark.asyncio
+async def test_t37_startup_failure_publishes_loading_unloading_failed():
+    """T37: a failing startup derives LOADING -> UNLOADING -> FAILED.
+
+    Reference: `fiber.ts` `_reload` records the failure, sets the runner epoch to
+    INACTIVE, and lets `_updateState` drive UNLOADING; `_unload` drains the
+    effects collected before the failure and only its final `_getState()`
+    publishes FAILED.
+    """
+    ctx = Context()
+    statuses = []
+    cleanups = []
+
+    def _record_status(fiber, old_state):
+        statuses.append((STATE_NAMES.get(old_state, old_state), STATE_NAMES.get(fiber.state, fiber.state)))
+
+    ctx.on("internal/status", _record_status)
+
+    async def failing_plugin(fiber_ctx):
+        fiber_ctx.effect(lambda: lambda: cleanups.append("pre-failure"), label="pre-failure")
+        await asyncio.sleep(0)
+        raise RuntimeError("startup failed")
+
+    fiber = ctx.plugin(failing_plugin)
+    with pytest.raises(RuntimeError, match="startup failed"):
+        await fiber.await_settled()
+
+    assert statuses == [
+        ("PENDING", "LOADING"),
+        ("LOADING", "UNLOADING"),
+        ("UNLOADING", "FAILED"),
+    ]
+    assert fiber.state == FiberState.FAILED
+    assert cleanups == ["pre-failure"]
+    assert fiber.get_effects() == []

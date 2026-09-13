@@ -123,6 +123,8 @@ class Fiber:
         self._effect_metas: Dict[Any, EffectMeta] = {}
         self._hooks: Dict[str, DisposableList[Any]] = {}
         self._in_flight_effects: Set[asyncio.Task] = set()
+        # Records what the last `set_epoch()` call drove; reset on every call.
+        self._epoch_transition_driven = False
         self._plugin_cls: Optional[Any] = None
 
         if runtime is not None:
@@ -589,6 +591,7 @@ class Fiber:
 
     def set_epoch(self, epoch: str) -> None:
         """Update fiber epoch and trigger reload or unload transition if needed."""
+        self._epoch_transition_driven = False
         old_epoch = self.epoch
         if epoch == old_epoch:
             return
@@ -597,12 +600,15 @@ class Fiber:
             return
 
         if epoch != INACTIVE_EPOCH and old_epoch == INACTIVE_EPOCH:
+            self._epoch_transition_driven = True
             self.set_state(FiberState.LOADING)
             self._reload()
         elif epoch == INACTIVE_EPOCH and old_epoch != INACTIVE_EPOCH:
+            self._epoch_transition_driven = True
             self.set_state(FiberState.UNLOADING)
             self._unload()
         elif epoch != INACTIVE_EPOCH and old_epoch != INACTIVE_EPOCH:
+            self._epoch_transition_driven = True
             # Composite epoch changed due to upstream dependency restart/replacement -> reload!
             self.set_state(FiberState.UNLOADING)
             self._unload()
@@ -781,7 +787,12 @@ class Fiber:
                 res = _invoke_apply(self.plugin)
 
             if res is not None:
-                if inspect.isawaitable(res):
+                # TS `_execute` tests `typeof effect === 'function'` first, so a returned
+                # disposer that is also thenable (e.g. the wrapper from `ctx.provide()`)
+                # is collected as an effect instead of being awaited and disposed.
+                if callable(res):
+                    self.disposable(res)
+                elif inspect.isawaitable(res):
                     async def _async_wait_res():
                         try:
                             ret = await res
@@ -1002,7 +1013,10 @@ class Fiber:
                         await t
                     except Exception:
                         pass
-        if not self.inertia or self.inertia.done():
+        # `set_epoch()` already drove the unload whenever the epoch changed. Only a
+        # fiber whose epoch was already inactive (still PENDING, e.g. one owning
+        # effects registered by an internal/plugin observer) needs this drain.
+        if not self._epoch_transition_driven and (self.inertia is None or self.inertia.done()):
             self.set_state(FiberState.UNLOADING)
             self._unload()
         while self.inertia is not None and not self.inertia.done():

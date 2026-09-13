@@ -56,11 +56,11 @@ def test_strict_inject_enabled_blocks_undeclared_service():
     fiber = ctx.registry.plugin(StrictUndeclaredPlugin())
     assert fiber.state == FiberState.FAILED
     assert fiber.error is not None
-    assert "cannot get property 'dummy' without inject" in str(fiber.error)
+    assert 'cannot get property "dummy" without inject' in str(fiber.error)
 
     with pytest.raises(RuntimeError) as excinfo:
         fiber.assert_active(check_error=True)
-    assert "cannot get property 'dummy' without inject" in str(excinfo.value)
+    assert 'cannot get property "dummy" without inject' in str(excinfo.value)
 
 
 def test_strict_inject_enabled_allows_declared_service():

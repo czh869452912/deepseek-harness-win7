@@ -161,7 +161,7 @@ def test_strict_inject_diagnostic_errors():
 
     f2 = ctx.plugin(UndeclaredAccessPlugin())
     assert f2.state == FiberState.FAILED
-    assert "cannot get property 'non_existent_service' without inject" in str(f2.error)
+    assert 'cannot get property "non_existent_service" without inject' in str(f2.error)
 
 
 def test_evaluate_expr_complex_ast():

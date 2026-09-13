@@ -102,28 +102,32 @@ class ReflectService:
                 from dsh.cordis.utils import get_traceable
                 return get_traceable(ctx, val)
 
-            # 3. Direct service dictionary check on Context
-            if hasattr(ctx, "_services") and name in ctx._services:
-                val = ctx._services[name]
-                if getattr(val, "ctx", None) is ctx:
-                    return val
-                from dsh.cordis.utils import get_traceable
-                return get_traceable(ctx, val)
-
-            # 4. Fallback parent hierarchy check
-            if hasattr(ctx, "get_service"):
-                val = ctx.get_service(name, default)
-                if val is not default:
+            # The `_services` lookup and the parent-hierarchy walk mirror the
+            # implementation registry; strict reads must only observe ACTIVE providers,
+            # so they are skipped when `strict` is set (TS reads `store` only).
+            if not strict:
+                # 3. Direct service dictionary check on Context
+                if hasattr(ctx, "_services") and name in ctx._services:
+                    val = ctx._services[name]
                     if getattr(val, "ctx", None) is ctx:
                         return val
                     from dsh.cordis.utils import get_traceable
                     return get_traceable(ctx, val)
 
-            return default
+                # 4. Fallback parent hierarchy check
+                if hasattr(ctx, "get_service"):
+                    val = ctx.get_service(name, default)
+                    if val is not default:
+                        if getattr(val, "ctx", None) is ctx:
+                            return val
+                        from dsh.cordis.utils import get_traceable
+                        return get_traceable(ctx, val)
 
-        err = RuntimeError(f'cannot get property "{name}" without inject')
-        if hasattr(ctx, "waterfall_sync"):
-            return ctx.waterfall_sync("internal/get", ctx, name, err, _resolve_default)
+                return default
+
+        # reflect.ts `ReflectService.get` reads the store directly; the
+        # `internal/get` waterfall belongs to the context proxy only, so the
+        # dispatch lives in `Context.__getattr__`.
         return _resolve_default()
 
     def _get_impl(self, ctx: Any, name: str, strict: bool = True) -> Optional[Impl]:
@@ -151,7 +155,7 @@ class ReflectService:
         if def_prop and getattr(def_prop, "type", None) == PropertyType.ACCESSOR:
             if not def_prop.set:
                 return False
-            err = RuntimeError(f"cannot set property '{name}'")
+            err = RuntimeError(f'cannot set property "{name}"')
             return def_prop.set(ctx, value, err)
 
 
@@ -160,11 +164,11 @@ class ReflectService:
             key = get_isolate_symbol(ctx, name) or name
             impl = self.store.get(key)
             if not impl:
-                raise RuntimeError(f"cannot set property '{name}' without provide")
+                raise RuntimeError(f'cannot set property "{name}" without provide')
 
             fiber = getattr(ctx, "fiber", None)
             if fiber is not None and impl.fiber is not None and impl.fiber is not fiber:
-                raise RuntimeError(f"cannot set property '{name}' in multiple fibers")
+                raise RuntimeError(f'cannot set property "{name}" in multiple fibers')
 
             impl.value = value
 
@@ -174,7 +178,7 @@ class ReflectService:
                 setattr(target, name, value)
             return True
 
-        err = RuntimeError(f"cannot set property '{name}' without provide")
+        err = RuntimeError(f'cannot set property "{name}" without provide')
         if hasattr(ctx, "waterfall_sync"):
             return ctx.waterfall_sync("internal/set", ctx, name, value, err, _do_set)
         return _do_set()
@@ -206,7 +210,7 @@ class ReflectService:
             if name not in self.props:
                 self.props[name] = PropertyService()
             elif getattr(self.props[name], "type", None) != PropertyType.SERVICE:
-                raise RuntimeError(f"property '{name}' is already declared as {self.props[name].type}")
+                raise RuntimeError(f'property "{name}" is already declared as {self.props[name].type}')
 
             if hasattr(target_ctx, "root") and hasattr(target_ctx.root, "_isolated_keys"):
                 root_sym = target_ctx.root._isolated_keys.setdefault(name, f"sym:{name}#{id(object())}")
@@ -321,7 +325,7 @@ class ReflectService:
             if name in self.props:
                 prop_type = getattr(self.props[name], "type", "accessor")
                 type_str = prop_type.value if hasattr(prop_type, "value") else str(prop_type)
-                raise RuntimeError(f"property '{name}' is already declared as {type_str}")
+                raise RuntimeError(f'property "{name}" is already declared as {type_str}')
             get_fn = options.get("get")
             set_fn = options.get("set")
             self.props[name] = PropertyAccessor(get_fn, set_fn)

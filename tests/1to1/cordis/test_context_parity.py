@@ -55,9 +55,15 @@ def test_t3_has_true_for_declared_none_valued_service():
 
 
 def test_t4_internal_get_waterfall_listener_shape_and_short_circuit():
-    """T4: internal/get waterfall listener intercepts and short-circuits proxy property access matching TS reflect.ts:152-167."""
-    ctx = Context(strict_inject=False)
+    """T4: internal/get intercepts proxy property access of a plugin-fiber context.
+
+    reflect.ts `ReflectService.handler.get` dispatches the waterfall only when
+    `ctx.fiber.runtime` is set, and `ReflectService.get()` reads the store
+    directly, so `ctx.get(...)` is never intercepted.
+    """
+    ctx = Context()
     intercepted = []
+    seen = {}
 
     def on_get(target_ctx, name, error, next_fn):
         intercepted.append(name)
@@ -67,9 +73,23 @@ def test_t4_internal_get_waterfall_listener_shape_and_short_circuit():
 
     ctx.on("internal/get", on_get)
 
-    val = getattr(ctx, "virtual_prop")
-    assert val == "intercepted_val"
-    assert "virtual_prop" in intercepted
+    class ReaderPlugin(Plugin):
+        name = "internal_get_reader"
+        inject = ["probe_service"]
+
+        def apply(self, c: Context) -> None:
+            seen["virtual"] = c.virtual_prop
+            seen["declared"] = c.probe_service
+
+    ctx.provide("probe_service", "provided-value")
+    fiber = ctx.plugin(ReaderPlugin)
+
+    assert fiber.state == FiberState.ACTIVE
+    assert seen["virtual"] == "intercepted_val"
+    assert seen["declared"] == "provided-value"
+    # `ctx.get()` and runtime-less attribute reads do not dispatch the waterfall.
+    assert ctx.get("probe_service") == "provided-value"
+    assert intercepted == ["virtual_prop", "probe_service"]
 
 
 def test_t6_ctx_effect_delegates_to_fiber_effect():

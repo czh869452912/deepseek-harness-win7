@@ -36,8 +36,22 @@ async def test_reflect_internal_get_waterfall_signature_1to1():
 
     res = ctx.get('db')
     assert res.value == 42
-    assert len(get_log) == 1
-    assert get_log[0][0] == 'db'
+    # reflect.ts `ReflectService.get` reads the store without the proxy
+    # waterfall, so `ctx.get(...)` is not intercepted.
+    assert get_log == []
+
+    captured = {}
+
+    class ReaderPlugin(Plugin):
+        name = 'internal-get-reader'
+        inject = ['db']
+
+        def apply(self, c: Context) -> None:
+            captured['value'] = c.db.value
+
+    ctx.plugin(ReaderPlugin)
+    assert captured['value'] == 42
+    assert [entry[0] for entry in get_log] == ['db']
 
     # Test short-circuiting in internal/get
     def on_get_override(target_ctx, prop, error, next_fn):
@@ -46,7 +60,17 @@ async def test_reflect_internal_get_waterfall_signature_1to1():
         return next_fn()
 
     ctx.on('internal/get', on_get_override, prepend=True)
-    assert ctx.get('custom_virtual') == 'intercepted_virtual_value'
+
+    overridden = {}
+
+    class VirtualReaderPlugin(Plugin):
+        name = 'internal-get-virtual-reader'
+
+        def apply(self, c: Context) -> None:
+            overridden['virtual'] = c.custom_virtual
+
+    ctx.plugin(VirtualReaderPlugin)
+    assert overridden['virtual'] == 'intercepted_virtual_value'
 
 
 @pytest.mark.asyncio

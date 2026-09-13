@@ -184,7 +184,9 @@ async def test_include_plugin_initialization_and_patches():
         )
 
         assert include_fiber is not None
-        include_service: Include = ctx.get("include")
+        # Root-context attribute access resolves a service the way the reference
+        # proxy does for a runtime-less context (`reflect.get(name, false)`).
+        include_service: Include = ctx.include
         assert include_service is not None
         assert include_service.data is not None
         assert len(include_service.data) == 2
@@ -357,7 +359,7 @@ async def test_include_patch_insert_into_nested_group():
         )
 
         assert include_fiber is not None
-        inc_svc: Include = ctx.get("include")
+        inc_svc: Include = ctx.include
         assert inc_svc is not None
 
         # Verify entry plugin-2 exists in the store

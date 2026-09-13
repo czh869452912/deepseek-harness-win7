@@ -422,7 +422,7 @@ class Context:
             raise AttributeError(f"Context object has no attribute '{name}'")
 
         # 1. Accessor check matching TS def?.type === 'accessor'
-        err = RuntimeError(f"cannot get property '{name}' without inject")
+        err = RuntimeError(f'cannot get property "{name}" without inject')
         if hasattr(self, "reflect") and self.reflect and hasattr(self.reflect, "props"):
             def_prop = self.reflect.props.get(name)
             if def_prop and getattr(def_prop, "type", None) == "accessor":
@@ -440,6 +440,20 @@ class Context:
                     return get_traceable(self, val)
             raise AttributeError(f"Context object has no attribute or service '{name}'")
 
+        if getattr(self, "fiber", None) is not None and getattr(self.fiber, "runtime", None) is not None and not getattr(self, "strict_inject", True):
+            # Plugin-fiber context without strict injection: the reference proxy
+            # dispatches `internal/get` for every fiber-owned context.
+            def _resolve_loose():
+                val = self.reflect.get(self, name, default=None, strict=False)
+                if val is not None:
+                    from dsh.cordis.utils import get_traceable
+                    return get_traceable(self, val)
+                raise AttributeError(f"Context object has no attribute or service '{name}'")
+
+            if hasattr(self, "waterfall_sync"):
+                return self.waterfall_sync("internal/get", self, name, err, _resolve_loose)
+            return _resolve_loose()
+
         if getattr(self, "strict_inject", True) and getattr(self, "fiber", None) and self.fiber.runtime is not None:
             def _resolve_strict():
                 curr_fiber = getattr(self, "_shadow_fiber", None) or self.fiber
@@ -455,7 +469,7 @@ class Context:
                         val = getattr(impl, "value", impl)
                         return get_traceable(self, val)
                     if name in getattr(curr_fiber, "inject", {}):
-                        raise RuntimeError(f"cannot get required service '{name}' in inactive context")
+                        raise RuntimeError(f'cannot get required service "{name}" in inactive context')
                     if not getattr(curr_fiber, "runtime", None):
                         raise err
                     parent_ctx = getattr(curr_fiber, "parent", None)

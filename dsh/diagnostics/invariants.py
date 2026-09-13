@@ -73,15 +73,15 @@ class InvariantRegistry(Service):
             self.registrations.discard(package_name)
             raise
 
-        def disposer():
-            if child_fiber:
-                try:
-                    import asyncio
-                    loop = asyncio.get_running_loop()
-                    loop.create_task(child_fiber.dispose())
-                except RuntimeError:
-                    pass
-            self.registrations.discard(package_name)
+        async def disposer():
+            # The reference registration disposer awaits `child.dispose()` so
+            # the child fiber's listeners are gone before the owner's teardown
+            # reports completion.
+            try:
+                if child_fiber is not None:
+                    await child_fiber.dispose()
+            finally:
+                self.registrations.discard(package_name)
 
         if hasattr(ctx, "disposable"):
             return ctx.disposable(disposer, label=f'invariants.register("{package_name}")')

@@ -28,8 +28,24 @@ Covers:
 - T32: Schema.dict default s_key is string schema
 - T33: Schema.bitset filters non-number bits
 - T34: set/push without container raises TypeError
+
+Cases ported from the Schemastery reference surface (source and README), all
+verified against the pinned reference implementation running on Node:
+
+- README basic examples: any/never/const, number/string/boolean, is(array),
+  array/dict/tuple/object, union/intersect/transform, construct defaults.
+- README instance methods, validation options, shorthand syntax, advanced
+  examples (enumeration, ToString, Listable, Alias) and extensibility.
+- Error-message rendering through ECMAScript `String`/`JSON.stringify`.
+- Path prefixes and `options.path`, `autofix` on object and array members.
+- Decimal-step numbers, default cloning, modifier container sharing.
+- dict `sKey` rename/strict skipping, tuple strict truncation, loose fallback,
+  bitset `ToInt32` coercion, ECMAScript key enumeration order.
+- `toString()` formatters, `ValidationError` marker, Standard Schema issues.
+- `toJSON()` envelope shape, envelope round-trip and lazy memoization.
 """
 
+import json
 import pytest
 import re
 from typing import Any
@@ -336,3 +352,563 @@ def test_t38_schema_to_string_parentheses_protocol():
     assert trans.to_string() == "string | number"
     assert trans.to_string(True) == "(string | number)"
 
+
+# ---------------------------------------------------------------------------
+# Cases ported from the Schemastery reference surface
+# (reference/vendor/schemastery/src/index.ts and its README examples).  Every
+# expected value below was verified against the reference implementation run on
+# Node with the pinned vendored sources.
+# ---------------------------------------------------------------------------
+
+
+def test_readme_any_never_const():
+    """README `Schema.any()` / `Schema.never()` / `Schema.const(value)`."""
+    assert Schema.any()() is None
+    assert Schema.any()(0) == 0
+    assert Schema.any()({}) == {}
+
+    assert Schema.never()() is None
+    with pytest.raises(ValidationError) as exc:
+        Schema.never()(0)
+    assert str(exc.value) == "expected nullable but got 0"
+
+    assert Schema.const_(10)(10) == 10
+    with pytest.raises(ValidationError) as exc:
+        Schema.const_(10)(0)
+    assert str(exc.value) == "expected 10 but got 0"
+
+
+def test_readme_number_string_boolean():
+    """README primitive validators and their null-input behavior."""
+    assert Schema.number()() is None
+    assert Schema.number()(1) == 1
+    with pytest.raises(ValidationError) as exc:
+        Schema.number()("")
+    assert str(exc.value) == "expected number but got "
+
+    assert Schema.string()() is None
+    assert Schema.string()("foo") == "foo"
+    with pytest.raises(ValidationError) as exc:
+        Schema.string()(0)
+    assert str(exc.value) == "expected string but got 0"
+
+    assert Schema.boolean()() is None
+    assert Schema.boolean()(True) is True
+    with pytest.raises(ValidationError) as exc:
+        Schema.boolean()(0)
+    assert str(exc.value) == "expected boolean but got 0"
+    # A Python `int` is not a boolean, matching ECMAScript's `typeof`.
+    with pytest.raises(ValidationError):
+        Schema.boolean()(1)
+
+
+def test_readme_is_constructor():
+    """README `Schema.is(constructor)` accepts instances and named prototype chains."""
+    regexp = re.compile("foo")
+    assert Schema.is_(re.Pattern)(regexp) is regexp
+    with pytest.raises(ValidationError) as exc:
+        Schema.is_(re.Pattern)("foo")
+    assert str(exc.value) == "expected Pattern but got foo"
+
+    # A string constructor matches the constructor name anywhere in the chain.
+    err = ValueError("x")
+    assert Schema.is_("Exception")(err) is err
+
+
+def test_readme_array_dict_tuple_object():
+    """README collection types, defaults and failure messages."""
+    assert Schema.array(Schema.number())() == []
+    with pytest.raises(ValidationError) as exc:
+        Schema.array(Schema.number())(0)
+    assert str(exc.value) == "expected array but got 0"
+    assert Schema.array(Schema.number())([0, 1]) == [0, 1]
+    with pytest.raises(ValidationError) as exc:
+        Schema.array(Schema.number())([0, "1"])
+    assert str(exc.value) == "$[1] expected number but got 1"
+
+    assert Schema.dict(Schema.number())() == {}
+    assert Schema.dict(Schema.number())({"a": 0, "b": 1}) == {"a": 0, "b": 1}
+    with pytest.raises(ValidationError) as exc:
+        Schema.dict(Schema.number())({"a": 0, "b": "1"})
+    assert str(exc.value) == "$.b expected number but got 1"
+
+    # A tuple fills short input member by member and keeps excess input.
+    assert Schema.tuple([Schema.number(), Schema.string()])() == [None, None]
+    assert Schema.tuple([Schema.number(), Schema.string()])([0]) == [0, None]
+    with pytest.raises(ValidationError) as exc:
+        Schema.tuple([Schema.number(), Schema.string()])([0, 1])
+    assert str(exc.value) == "$[1] expected string but got 1"
+    assert Schema.tuple([Schema.number(), Schema.string()])([0, "1"]) == [0, "1"]
+    assert Schema.tuple([Schema.number()])([0, "x", 2]) == [0, "x", 2]
+
+    assert Schema.object({"a": Schema.number(), "b": Schema.string()})() == {}
+    assert Schema.object({"a": Schema.number(), "b": Schema.string()})({"a": 0}) == {"a": 0}
+    with pytest.raises(ValidationError) as exc:
+        Schema.object({"a": Schema.number(), "b": Schema.string()})({"a": 0, "b": 1})
+    assert str(exc.value) == "$.b expected string but got 1"
+    # Undeclared members are merged back in non-strict mode.
+    assert Schema.object({"a": Schema.number()})({"a": 0, "z": 9}) == {"a": 0, "z": 9}
+
+
+def test_readme_union_intersect_transform():
+    """README union, intersect and transform semantics."""
+    assert Schema.union([Schema.number(), Schema.string()])() is None
+    assert Schema.union([Schema.number(), Schema.string()])(0) == 0
+    assert Schema.union([Schema.number(), Schema.string()])("1") == "1"
+    with pytest.raises(ValidationError) as exc:
+        Schema.union([Schema.number(), Schema.string()])(True)
+    assert str(exc.value) == "expected number | string but got true"
+
+    members = [
+        Schema.object({"a": Schema.string().required()}),
+        Schema.object({"b": Schema.number().default(0)}),
+    ]
+    intersect = Schema.intersect(members)
+    with pytest.raises(ValidationError) as exc:
+        intersect()
+    assert str(exc.value) == "$.a missing required value"
+    assert intersect({"a": ""}) == {"a": "", "b": 0}
+    assert intersect({"a": "", "b": 1}) == {"a": "", "b": 1}
+    with pytest.raises(ValidationError) as exc:
+        intersect({"a": "", "b": "2"})
+    assert str(exc.value) == "$.b expected number but got 2"
+
+    # The README shows `validate()` as 1, but the resolver returns the nullish
+    # input before the transform callback runs, so the observed value is None.
+    transform = Schema.transform(Schema.number().default(0), lambda n: n + 1)
+    assert transform() is None
+    with pytest.raises(ValidationError) as exc:
+        transform("0")
+    assert str(exc.value) == "expected number but got 0"
+    assert transform(10) == 11
+
+
+def test_readme_use_as_constructor():
+    """README `new Config()` / direct call produce the same defaults."""
+    config_schema = Schema.object({
+        "foo": Schema.dict(Schema.string()).default({}),
+        "bar": Schema.array(Schema.string()).default([]),
+    })
+    assert config_schema() == {"foo": {}, "bar": []}
+
+
+def test_readme_simplify_drops_defaults():
+    """README `schema.simplify(value)` removes values equal to schema defaults."""
+    config_schema = Schema.object({
+        "foo": Schema.string().default(""),
+        "bar": Schema.number().default(0),
+    })
+    assert config_schema.simplify({"foo": "", "bar": 1}) == {"bar": 1}
+    assert config_schema.simplify({"foo": "", "bar": 0}) is None
+
+
+def test_readme_validation_options():
+    """README `autofix`, `ignore` and `path` options."""
+    assert Schema.object({"foo": Schema.number()})({"foo": "1"}, {"autofix": True}) == {}
+    assert Schema.object({"foo": Schema.number()})({"foo": "1"}, {"ignore": lambda data, schema: True}) == {"foo": "1"}
+
+    with pytest.raises(ValidationError) as exc:
+        Schema.object({"foo": Schema.object({"bar": Schema.number()})})({"foo": {"bar": "x"}})
+    assert str(exc.value) == "$.foo.bar expected number but got x"
+    assert exc.value.options["path"] == ["foo", "bar"]
+
+    with pytest.raises(ValidationError) as exc:
+        Schema.array(Schema.number())([1, "x"])
+    assert str(exc.value) == "$[1] expected number but got x"
+    assert exc.value.options["path"] == [1]
+
+    with pytest.raises(ValidationError) as exc:
+        Schema.resolve("x", Schema.number(), {"path": ["root", 2]})
+    assert str(exc.value) == "$.root[2] expected number but got x"
+
+
+def test_autofix_removes_invalid_array_element():
+    """`property()` deletes an invalid member before returning its fallback."""
+    assert Schema.array(Schema.number().default(7))([1, "x"], {"autofix": True}) == [1, 7]
+
+    data = [1, "x"]
+    res = Schema.array(Schema.number())(data, {"autofix": True})
+    # The reference leaves the array length intact and reads index 1 as
+    # `undefined`; the port stores its nullish value at that index.
+    assert res == [1, None]
+    assert len(data) == 2
+    assert data[1] is None
+
+
+def test_readme_shorthand_syntax():
+    """README shorthand table consumed by `Schema.from()`."""
+    assert Schema.from_().type == "any"
+    assert Schema.from_(None).type == "any"
+    assert Schema.from_("foo").type == "const"
+    assert Schema.from_("foo").meta.get("required") is True
+    assert Schema.from_(5)(5) == 5
+    assert Schema.from_(True)(True) is True
+    assert Schema.from_(str)("x") == "x"
+    assert Schema.from_(int)(1) == 1
+    assert Schema.from_(bool)(True) is True
+    function_schema = Schema.from_(type(lambda: None))
+    assert function_schema.type == "function"
+    assert callable(function_schema(lambda: 1))
+    with pytest.raises(ValidationError) as exc:
+        function_schema("x")
+    assert str(exc.value) == "expected function but got x"
+    assert Schema.from_(re.Pattern).type == "is"
+
+    assert Schema.array(str)(["a"]) == ["a"]
+    assert Schema.dict(int)({"a": 1}) == {"a": 1}
+    assert Schema.union([1, 2])(1) == 1
+    with pytest.raises(ValidationError) as exc:
+        Schema.union([1, 2])(3)
+    assert str(exc.value) == "expected 1 | 2 but got 3"
+
+
+def test_readme_advanced_examples():
+    """README enumeration, ToString, Listable and Alias examples."""
+    enum = Schema.union(["red", "blue"])
+    assert enum("red") == "red"
+    with pytest.raises(ValidationError):
+        enum("green")
+
+    to_string = Schema.transform(Schema.any(), lambda value: str(value))
+    assert to_string("") == ""
+    assert to_string(0) == "0"
+    assert to_string({}) == "{}"
+
+    listable = Schema.union([Schema.array(int), Schema.transform(int, lambda n: [n])]).default([])
+    assert listable() == []
+    assert listable(0) == [0]
+    assert listable([1, 2]) == [1, 2]
+
+    # The alias example's transform callback takes no arguments; the reference
+    # calls every callback with one argument and the extra argument is dropped.
+    alias = Schema.dict(int, Schema.union(["foo", Schema.transform("bar", lambda: "foo")]))
+    assert alias({"foo": 1}) == {"foo": 1}
+    assert alias({"bar": 2}) == {"foo": 2}
+    with pytest.raises(ValidationError) as exc:
+        alias({"bar": "3"})
+    assert str(exc.value) == "$.bar expected number but got 3"
+
+
+def test_transform_callback_arity():
+    """Transform callbacks accept 0, 1 or 2 declared parameters."""
+    assert Schema.transform(Schema.string(), lambda: "foo")("x") == "foo"
+    assert Schema.transform(Schema.string(), lambda value: value.upper())("x") == "X"
+
+    seen = {}
+
+    def with_options(value, options):
+        seen["options"] = options
+        return value
+
+    assert Schema.transform(Schema.string(), with_options)("x", {"mark": 1}) == "x"
+    assert seen["options"] == {"mark": 1}
+
+
+def test_readme_extensibility():
+    """README `Schema.extend(type, resolve)` with a 3-parameter resolver."""
+    def trimmed(data, schema, options):
+        if not isinstance(data, str):
+            raise ValidationError("expected string but got " + str(data), options)
+        return (data.strip(),)
+
+    Schema.extend("trimmed", trimmed)
+    assert Schema({"type": "trimmed"})("  a  ") == "a"
+
+    def upper(data):
+        return (data.upper(), data.upper())
+
+    Schema.extend("upper_writeback", upper)
+    data = {"a": "x"}
+    Schema.object({"a": Schema({"type": "upper_writeback"})})(data)
+    assert data == {"a": "X"}
+
+
+def test_error_messages_use_ecmascript_string_conversion():
+    """Template-literal interpolation in the reference uses `String(value)`."""
+    with pytest.raises(ValidationError) as exc:
+        Schema.bitset({"read": 1})(True)
+    assert str(exc.value) == "expected number or array but got true"
+
+    with pytest.raises(ValidationError) as exc:
+        Schema.is_("Foo")({})
+    assert str(exc.value) == "expected Foo but got [object Object]"
+
+    with pytest.raises(ValidationError) as exc:
+        Schema.object({"a": Schema.number()})([])
+    assert str(exc.value) == "expected object but got "
+
+    # A nullish input returns before the resolver lookup; a real value reaches it.
+    assert Schema({"type": "nope"})() is None
+    with pytest.raises(ValidationError) as exc:
+        Schema({"type": "nope"})(1)
+    assert str(exc.value) == 'unsupported type "nope"'
+
+    with pytest.raises(TypeError) as exc:
+        Schema.from_({})
+    assert str(exc.value) == "cannot infer schema from [object Object]"
+
+
+def test_union_and_intersect_messages_use_json_stringify():
+    """The reference formats union/intersect failures with `JSON.stringify`."""
+    with pytest.raises(ValidationError) as exc:
+        Schema.union([Schema.const_(1)])({"a": 1})
+    assert str(exc.value) == 'expected 1 but got {"a":1}'
+
+    with pytest.raises(ValidationError) as exc:
+        Schema.union([Schema.const_("x")])(1)
+    assert str(exc.value) == 'expected "x" but got 1'
+
+    with pytest.raises(ValidationError) as exc:
+        Schema.const_("x")(1)
+    assert str(exc.value) == "expected x but got 1"
+
+    # ECMAScript enumerates array-index keys first, so `{"2": 1, "1": 2}`
+    # renders with ascending numeric keys.
+    with pytest.raises(ValidationError) as exc:
+        Schema.union([Schema.string()])({"2": 1, "1": 2})
+    assert str(exc.value) == 'expected string but got {"1":2,"2":1}'
+
+
+def test_object_and_dict_enumeration_order():
+    """Resolved containers enumerate array-index keys first, as ECMAScript does."""
+    resolved = Schema.object({"a": Schema.number()})({"2": "x", "1": "y"})
+    assert list(resolved.keys()) == ["1", "2"]
+    assert resolved == {"1": "y", "2": "x"}
+
+    resolved_dict = Schema.dict(Schema.number())({"2": 1, "1": 2})
+    assert list(resolved_dict.keys()) == ["1", "2"]
+    assert resolved_dict == {"1": 2, "2": 1}
+
+
+def test_number_step_uses_decimal_shift():
+    """The reference compares multiples through `decimalShift`, not float modulo."""
+    assert Schema.number().step(0.25)(0.75) == 0.75
+    assert Schema.number().step(3)(9) == 9
+    assert Schema.number().step(0.1).min(-1)(0.1) == 0.1
+    assert Schema.number().step(0.07).min(0.01)(0.08) == 0.08
+    with pytest.raises(ValidationError) as exc:
+        Schema.number().step(0.07).min(0.01)(0.09)
+    assert str(exc.value) == "expected number multiple of 0.07 but got 0.09"
+
+    # 0.1 + 0.2 carries float noise, which the decimal shift surfaces.
+    with pytest.raises(ValidationError) as exc:
+        Schema.number().step(0.1)(0.30000000000000004)
+    assert str(exc.value) == "expected number multiple of 0.1 but got 0.30000000000000004"
+    assert Schema.number().step(0.1)(0.3) == 0.3
+
+    # NaN passes the type and range checks, exactly as in JavaScript.
+    result = Schema.number().min(5)(float("nan"))
+    assert result != result
+
+
+def test_default_values_are_cloned():
+    """`resolve` clones a default before validating, so callers cannot share it."""
+    array_schema = Schema.array(Schema.number()).default([1, 2])
+    first = array_schema()
+    second = array_schema()
+    first.append(3)
+    assert second == [1, 2]
+
+    object_schema = Schema.object({"a": Schema.number()}).default({"a": 1})
+    resolved = object_schema()
+    resolved["a"] = 99
+    assert object_schema() == {"a": 1}
+
+
+def test_modifier_clones_share_containers():
+    """`Schema(this)` copies own properties by reference, containers included."""
+    base = Schema.object({"a": Schema.string()})
+    copy = base.required()
+    copy.set("b", Schema.number())
+    assert base.dict is copy.dict
+    assert sorted(base.dict.keys()) == ["a", "b"]
+
+    union_base = Schema.union([Schema.string()])
+    union_base.required().push(Schema.number())
+    assert len(union_base.list) == 2
+
+    # Only the first copy of a clone shares its meta: every builder method
+    # replaces meta with a fresh object after the clone reads the shared one.
+    string_base = Schema.string()
+    string_clone = string_base.required()
+    string_clone.meta["probe"] = 1
+    assert "probe" not in string_base.meta
+    assert string_base.meta == {}
+
+
+def test_dict_key_schema_renames_and_writes_back():
+    """`dict` renames a key through `sKey` and mutates the validated input."""
+    rename = Schema.dict(Schema.number(), Schema.transform(Schema.string(), lambda key: key.upper()))
+    data = {"hello": 123}
+    assert rename(data) == {"HELLO": 123}
+    assert data == {"HELLO": 123}
+
+    strict_data = {"hello": 123}
+    assert Schema.resolve(strict_data, rename, {}, True)[0] == {"HELLO": 123}
+
+
+def test_dict_strict_mode_skips_keys_that_fail_the_key_schema():
+    """A `strict` resolve drops keys the key schema rejects."""
+    keyed = Schema.dict(Schema.number(), Schema.string().pattern(re.compile("^[A-Z]+$")))
+    data = {"ok": 1, "bad": 2}
+    assert Schema.resolve(data, keyed, {}, True)[0] == {}
+    assert data == {"ok": 1, "bad": 2}
+    # Non-strict mode reports the key failure at the container path.
+    with pytest.raises(ValidationError) as exc:
+        keyed({"bad": 1})
+    assert str(exc.value) == "expect string to match regexp /^[A-Z]+$/"
+
+
+def test_tuple_strict_mode_truncates_excess_input():
+    """A `strict` tuple resolve drops members beyond the declared list."""
+    schema = Schema.tuple([Schema.number()])
+    assert Schema.resolve([0, "x", 2], schema, {}, True)[0] == [0]
+    assert schema([0, "x", 2]) == [0, "x", 2]
+
+
+def test_loose_falls_back_to_default():
+    """`loose()` returns the schema default instead of raising."""
+    assert Schema.number().default(42).loose()("not-a-number") == 42
+    assert Schema.number().loose()("x") is None
+    assert Schema.object({"a": Schema.object({"b": Schema.number()}).loose()})({"a": {"b": "x"}}) == {"a": {}}
+
+
+def test_bitset_number_input_uses_to_int32():
+    """The bitset resolver masks with ECMAScript `ToInt32` for numeric input."""
+    bits = Schema.bitset({"a": 1, "b": 2})
+    assert bits(3) == 3
+    assert bits(3.0) == 3
+    value, adapted = Schema.resolve(3, bits)
+    assert value == 3 and adapted == ["a", "b"]
+    value, adapted = Schema.resolve(0, bits)
+    assert value == 0 and adapted is None
+
+    data = {"f": 3.0}
+    Schema.object({"f": Schema.bitset({"a": 1, "b": 2}).default(0)})(data)
+    assert data == {"f": ["a", "b"]}
+
+
+def test_simplify_drops_undeclared_object_keys():
+    """`simplify` keeps only declared members for an object schema."""
+    assert Schema.object({"a": Schema.string().default("")}).simplify({"a": "", "b": 1}) is None
+    assert Schema.object({"a": Schema.string().default("x")}).simplify({"a": "y", "b": 1}) == {"a": "y"}
+    # A dict keeps a member whose simplified value is nullish.
+    assert Schema.dict(Schema.number().default(0)).simplify({"a": 0, "b": 1}) == {"a": None, "b": 1}
+
+
+def test_to_string_formatters():
+    """`toString()` uses the reference's per-type formatters."""
+    assert Schema.string().toString() == "string"
+    assert Schema.const_("x").toString() == '"x"'
+    assert Schema.const_(5).toString() == "5"
+    assert Schema.array(Schema.string()).toString() == "string[]"
+    assert Schema.array(Schema.union([Schema.string(), Schema.number()])).toString() == "(string | number)[]"
+    assert Schema.dict(Schema.number()).toString() == "{ [key: string]: number }"
+    assert Schema.dict(Schema.number(), Schema.const_("k")).toString() == '{ [key: "k"]: number }'
+    assert Schema.dict(Schema.object({"a": Schema.string()})).toString() == "{ [key: string]: { a?: string } }"
+    assert Schema.tuple([Schema.number(), Schema.string()]).toString() == "[number, string]"
+    assert Schema.object({}).toString() == "{}"
+    assert Schema.object({"a": Schema.string(), "b": Schema.number().required()}).toString() == "{ a?: string, b: number }"
+    assert Schema.union([Schema.number(), Schema.string()]).toString() == "number | string"
+    assert Schema.union([Schema.number(), Schema.string()]).toString(True) == "(number | string)"
+    assert Schema.intersect([
+        Schema.object({"a": Schema.string()}),
+        Schema.union([Schema.number(), Schema.boolean()]),
+    ]).toString() == "{ a?: string } & (number | boolean)"
+    assert Schema.transform(Schema.string(), lambda value: value).toString() == "string"
+    assert Schema.bitset({"a": 1}).toString() == "bitset"
+    assert Schema.function().toString() == "function"
+    assert Schema.never().toString() == "never"
+    assert Schema.boolean().toString() == "boolean"
+    assert Schema({"type": "weird"}).toString() == "Schema<weird>"
+    assert Schema.is_(re.Pattern).toString() == "Pattern"
+    assert Schema.is_("Foo").toString() == "Foo"
+
+
+def test_validation_error_marker():
+    """`ValidationError` carries the shared marker and remains a `TypeError`."""
+    with pytest.raises(ValidationError) as exc:
+        Schema.number()("x")
+    assert isinstance(exc.value, TypeError)
+    assert ValidationError.is_(exc.value)
+    assert not ValidationError.is_(TypeError("x"))
+    assert str(exc.value) == "expected number but got x"
+    assert exc.value.options == {}
+
+
+def test_standard_schema_issue_shape():
+    """`~standard.validate` reports `{ value }` or `{ issues: [{ message, path }] }`."""
+    standard = Schema.string()["~standard"]
+    assert standard["version"] == 1
+    assert standard["vendor"] == "schemastery"
+    assert standard["validate"]("a") == {"value": "a"}
+
+    top_level = Schema.number().validate("x")
+    assert top_level == {"issues": [{"message": "expected number but got x", "path": None}]}
+
+    nested = Schema.object({"a": Schema.object({"b": Schema.number()})}).validate({"a": {"b": "x"}})
+    assert nested == {"issues": [{"message": "$.a.b expected number but got x", "path": ["a", "b"]}]}
+
+    indexed = Schema.array(Schema.number()).validate([1, "x"])
+    assert indexed == {"issues": [{"message": "$[1] expected number but got x", "path": [1]}]}
+
+
+def test_tojson_envelope_shape():
+    """`toJSON()` returns a flat `{ uid, refs }` envelope with uid-keyed nodes."""
+    inner = Schema.string()
+    schema = Schema.object({"a": inner, "b": inner})
+    envelope = schema.toJSON()
+
+    assert sorted(envelope.keys()) == ["refs", "uid"]
+    assert envelope["uid"] == schema.uid
+    refs = envelope["refs"]
+    node = refs[schema.uid]
+    assert sorted(node.keys()) == ["dict", "meta", "type"]
+    assert node["type"] == "object"
+    assert node["meta"] == {"default": {}}
+    # A shared node is referenced by uid instead of being serialized twice.
+    assert node["dict"] == {"a": inner.uid, "b": inner.uid}
+    assert refs[inner.uid] == {"type": "string", "meta": {}}
+    assert len(refs) == 2
+
+
+def test_tojson_envelope_roundtrip():
+    """`Schema.from_json` hydrates the envelope back into an equivalent schema."""
+    schema = Schema.object({"foo": Schema.string(), "bar": Schema.number()})
+    hydrated = Schema.from_json(json.loads(json.dumps(schema.toJSON())))
+    assert hydrated.type == "object"
+    assert sorted(hydrated.dict.keys()) == ["bar", "foo"]
+    assert hydrated({"foo": "a", "bar": 2}) == {"foo": "a", "bar": 2}
+    with pytest.raises(ValidationError) as exc:
+        hydrated({"foo": "a", "bar": "2"})
+    assert str(exc.value) == "$.bar expected number but got 2"
+
+
+def test_lazy_builder_is_memoized_and_serialized():
+    """`lazy` builds once, merges node meta, and serializes the built schema."""
+    builds = []
+
+    def builder():
+        builds.append(1)
+        return Schema.string()
+
+    lazy_schema = Schema.lazy(builder)
+    assert lazy_schema("first") == "first"
+    assert lazy_schema("second") == "second"
+    assert len(builds) == 1
+
+    node = lazy_schema.toJSON()["refs"][lazy_schema.uid]
+    assert node["type"] == "lazy"
+    assert node["inner"] == lazy_schema.inner.uid
+
+
+def test_intersect_leftover_merge_of_nullish_result():
+    """A nullish intersect result merges the input object, as the reference does."""
+    schema = Schema.intersect([Schema.transform(Schema.any(), lambda value: None)])
+    # Every member resolved to the nullish value, so the non-strict leftover
+    # merge runs `merge(undefined, data)`; the reference reaches `key in
+    # undefined` for a non-empty object and returns undefined for an empty one.
+    with pytest.raises(TypeError) as exc:
+        schema({"a": 1})
+    assert "Cannot use 'in' operator to search for 'a' in undefined" in str(exc.value)
+    assert schema({}) is None

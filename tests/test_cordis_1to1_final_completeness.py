@@ -323,11 +323,13 @@ def test_schemastery_issue_path_precision():
     assert len(res["issues"]) == 1
     issue = res["issues"][0]
     assert issue["path"] == ["profile", "age"]
-    assert "expected number <= 150 but got 200" in issue["message"]
+    # `~standard.validate` reports the full ValidationError message, which
+    # already opens with the `$....` path prefix.
+    assert issue["message"] == "$.profile.age expected number <= 150 but got 200"
 
-    # Test ValidationError aggregation string
+    # cordis formats one line per issue, message first and path last.
     val_err = ValidationError(res["issues"])
-    assert "invalid config:\n  - expected number <= 150 but got 200 (at profile.age)" in str(val_err)
+    assert str(val_err) == "invalid config:\n  - $.profile.age expected number <= 150 but got 200 (at profile.age)"
 
 
 def test_schemastery_simplify_default_removal():

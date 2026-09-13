@@ -1180,6 +1180,23 @@ def _js_key_to_string(key: Any) -> str:
     return "[object Object]"
 
 
+def js_to_string(value: Any) -> str:
+    """ECMAScript ``String(value)``, the conversion reference messages use.
+
+    ``String(value)`` is ``value.toString()`` for every non-nullish value (see
+    `_js_key_to_string`) and the literals ``"null"``/``"undefined"`` for the
+    nullish ones.  Schemastery formats its validation messages with template
+    literals, so its port interpolates through this helper rather than Python's
+    ``str``: ``String(true)`` is ``"true"``, ``String([1, 2])`` is ``"1,2"``
+    and ``String({})`` is ``"[object Object]"``.
+    """
+    if value is None:
+        return "null"
+    if value is _UNDEFINED:
+        return "undefined"
+    return _js_key_to_string(value)
+
+
 def format_property(key: Any) -> str:
     """Format a property key as a JavaScript member access suffix matching Cosmokit formatProperty."""
     import json

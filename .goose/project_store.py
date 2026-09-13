@@ -267,7 +267,7 @@ class Store:
                      if r[0] not in group["ids"]]
             return [t for t in peers if self.overlapping(own, self.resources(db, [t]))]
 
-    def claim(self, worker, only_task=None):
+    def claim(self, worker, only_task=None, allowed_group=None):
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             rows = {r["id"]: dict(r) for r in db.execute("SELECT * FROM tasks")}
@@ -283,6 +283,12 @@ class Store:
                     pending.update(t["id"] for t in proposal.get("tasks", []))
             for group in self.groups(db):
                 if only_task is not None and only_task not in group:
+                    continue
+                if allowed_group is not None and not set(group).issubset(allowed_group):
+                    reason = 'Pilot group expanded beyond its starting scope: ' + ', '.join(group)
+                    db.execute("UPDATE tasks SET state='NEEDS_ARBITRATION',error=? WHERE id=?",
+                               (reason, only_task))
+                    self.event(db, only_task, 'pilot_scope_expansion', reason)
                     continue
                 if pending.intersection(group):
                     continue

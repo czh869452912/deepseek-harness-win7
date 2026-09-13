@@ -920,6 +920,10 @@ class Project:
             self.init()
             if only_task is not None and not any(r["id"] == only_task for r in self.store.rows()):
                 raise ValueError("Unknown pilot task: " + only_task)
+            pilot_group = None
+            if only_task is not None:
+                with self.store.connect() as db:
+                    pilot_group = set(next(g for g in self.store.groups(db) if only_task in g))
             self.store.meta("scheduler", "RUNNING")
             if only_task is not None:
                 self.store.meta('pilot', {'task': only_task, 'state': 'RUNNING'})
@@ -942,7 +946,7 @@ class Project:
                             if not running:
                                 self.repair_plans(only_task) if only_task else self.repair_plans()
                         while len(running) < self.jobs and not paused:
-                            group = self.store.claim(str(os.getpid()), only_task) if only_task else self.store.claim(str(os.getpid()))
+                            group = self.store.claim(str(os.getpid()), only_task, pilot_group) if only_task else self.store.claim(str(os.getpid()))
                             if not group:
                                 break
                             running.add(pool.submit(self.execute, group))

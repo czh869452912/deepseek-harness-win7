@@ -59,6 +59,18 @@ def test_equal_priority_selection_does_not_depend_on_scoring_duration(store, mon
     assert store.claim('w')['ids'] == ['a']
 
 
+def test_pilot_replan_cannot_silently_enroll_another_full_task(store):
+    store.apply_plan(plan(task('a'), task('b')))
+    allowed = {'a'}
+    store.apply_plan(plan(dict(task('a'), atomic_group='combined'),
+                          dict(task('b'), atomic_group='combined')))
+    assert store.claim('w', 'a', allowed) is None
+    rows = {r['id']: r for r in store.rows()}
+    assert rows['a']['state'] == 'NEEDS_ARBITRATION'
+    assert 'expanded' in rows['a']['error']
+    assert rows['b']['state'] != 'RUNNING'
+
+
 def test_unapproved_acceptance_cycle_is_visible_not_a_giant_worker(store):
     a, b = task("a", ["b"]), task("b", ["a"])
     b["dependencies"][0]["kind"] = "acceptance"

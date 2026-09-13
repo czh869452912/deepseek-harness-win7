@@ -13,6 +13,8 @@ import traceback
 import weakref
 from typing import Any, Callable, Dict, List, Optional, Union
 
+from dsh.cordis.utils import SharedCounter
+
 # ANSI color palette indexes used for logger name coloring matching TS Cordis
 c16 = [6, 2, 3, 4, 5, 1]
 c256 = [
@@ -271,8 +273,11 @@ class LoggerService:
         self.ctx = ctx
         self.buffer_size = 1000
         self.buffer: List[Message] = []
-        self._sn_message = 0
-        self._sn_exporter = 0
+        # `logger.ts` keeps `_snMessage`/`_snExporter` on the one LoggerService
+        # instance each application installs, so both sequences span the whole
+        # context tree. A bound per-context view shares the cells instead.
+        self._sn_message = SharedCounter()
+        self._sn_exporter = SharedCounter()
         self.exporters: Dict[int, Exporter] = {}
 
         # Default internal exporter writing to memory ring buffer
@@ -284,21 +289,19 @@ class LoggerService:
         self.exporter(Exporter(export_fn=record_buffer, colors=3))
 
     def _next_message_sn(self) -> int:
-        self._sn_message += 1
-        return self._sn_message
+        return self._sn_message.next()
 
     def exporter(self, exporter: Exporter) -> Callable[[], None]:
         """
         Register an exporter and dispose it with the current fiber effect.
         """
         def setup() -> Callable[[], None]:
-            self._sn_exporter += 1
-            sn = self._sn_exporter
+            sn = self._sn_exporter.next()
             self.exporters[sn] = exporter
 
             def teardown() -> None:
                 # Upstream TS quirk: deletes the current _sn_exporter
-                self.exporters.pop(self._sn_exporter, None)
+                self.exporters.pop(self._sn_exporter.value, None)
 
             return teardown
 

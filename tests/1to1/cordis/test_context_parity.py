@@ -6,6 +6,8 @@ Covers:
 - T3: has() returns True for declared services even if value is None
 - T4: internal/get waterfall listener intercepts property access
 - T6: ctx.effect() delegates directly to fiber.effect()
+- T8: extend()/isolate()/intercept() derived contexts resolve the root registry
+  state (shared runtime table and fiber-uid allocator)
 """
 
 import pytest
@@ -184,3 +186,34 @@ def test_r1_repr_with_strict_inject_safe_fiber_access():
 
 
 
+
+
+def test_t8_derived_contexts_resolve_the_root_registry_state():
+    """T8: `extend()`/`isolate()`/`intercept()` keep one registry allocator.
+
+    Reference: `context.ts#Context.extend` builds the child with
+    `Object.create(this)`, so `ctx.registry`, `ctx.events`, `ctx.reflect` and
+    `ctx.logger` all resolve to the parent's service instances; only the meta
+    properties passed in shadow them. The Python port binds a per-context
+    registry view, so the shared state itself (the fiber-uid allocator and the
+    runtime table) must stay common to the whole tree.
+    """
+    root = Context()
+    extended = root.extend()
+    isolated = root.isolate("t8_service")
+    intercepted = root.intercept("t8_service", {"flag": True})
+
+    class TreePlugin(Plugin):
+        name = "t8_tree"
+
+    fiber = extended.plugin(TreePlugin, {})
+
+    # The child published the fiber into the one shared runtime table.
+    assert root.registry.get(TreePlugin) is extended.registry.get(TreePlugin)
+    assert fiber in root.registry.list_fibers()
+    assert fiber in isolated.registry.list_fibers()
+    assert fiber in intercepted.registry.list_fibers()
+
+    # ... and the shared allocator kept issuing strictly increasing uids.
+    assert isolated.registry.counter == fiber.uid + 1
+    assert intercepted.registry.counter == fiber.uid + 2

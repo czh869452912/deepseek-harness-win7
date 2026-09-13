@@ -35,10 +35,30 @@ Covers:
   TypeError("Invalid effect") after rolling the collected disposers back
 - T30: The terminal value of a body-returned iterator is collected like every
   other produced value (`safeCollect` runs before the `done` check)
+- T31: Class plugins are constructed with `(context, resolved_config)`
+  positionally, matching fiber.ts `_runner.execute`
+  `new runtime.callback(this.ctx, this.config)`
+- T32: Python arity adaptation for constructors declaring a single positional or
+  keyword-only slot
+- T33: An async effect body called outside a running loop is still executed,
+  owned by the fiber and disposed single-shot
+- T34: A failing async effect setup outside a loop rolls back, leaves no
+  unawaited coroutine and does not throw out of effect()
+- T35: An async-iterable effect body outside a loop is drained and its disposers
+  are disposed in reverse order
 """
 
 import asyncio
+import gc
 import pytest
+import warnings
+from typing import Any
+
+from dsh.cordis.context import Context
+from dsh.cordis.fiber import CordisError, Fiber, FiberState
+from dsh.cordis.plugin import Plugin
+from dsh.cordis.schema import Schema
+from dsh.cordis.service import Service
 from typing import Any
 
 from dsh.cordis.context import Context
@@ -575,3 +595,280 @@ async def test_t30_apply_iterator_terminal_value_is_collected():
     await fiber2.dispose()
     assert log2 == ["kept"]
 
+
+
+def test_t31_class_plugin_is_constructed_with_context_and_config_positionally():
+    """T31: `new runtime.callback(this.ctx, this.config)` positional construction.
+
+    Reference: fiber.ts `_runner.execute` constructs a class plugin with
+    `new runtime.callback(this.ctx, this.config)` -- the context in the first
+    positional slot and the resolved config in the second -- before running the
+    init hooks, `init`, and the plugin body. A Python constructor declaring
+    those two slots (`ctx`/`options`, `ctx`/`config`, ...) must receive them
+    positionally too, and whatever it receives must be the validated config.
+    """
+    ctx = Context()
+    calls = []
+
+    class CtxOptionsPlugin(Plugin):
+        name = "t31_ctx_options"
+
+        def __init__(self, ctx, options):
+            calls.append(("ctor", ctx, options))
+            self.ctx = ctx
+            self.config = options
+
+        def apply(self, c, config=None):
+            calls.append(("apply", c, config))
+
+    fiber = ctx.plugin(CtxOptionsPlugin, {"value": 7})
+
+    assert fiber.state == FiberState.ACTIVE
+    assert calls[0][0] == "ctor"
+    assert calls[0][1] is fiber.ctx
+    assert calls[0][2] == {"value": 7}
+    assert calls[1] == ("apply", fiber.ctx, {"value": 7})
+
+    # the constructor receives the *validated* config (defaults applied)
+    ctx2 = Context()
+    seen = []
+
+    class SchemaPlugin(Plugin):
+        name = "t31_schema"
+        Config = Schema.object({"port": Schema.number().default(8080)})
+
+        def __init__(self, ctx, config):
+            seen.append((ctx, config))
+            self.ctx = ctx
+            self.config = config
+
+        def apply(self, c, config=None):
+            seen.append(("apply", config))
+
+    fiber2 = ctx2.plugin(SchemaPlugin, {})
+
+    assert seen[0][0] is fiber2.ctx
+    assert seen[0][1] == {"port": 8080}
+    assert seen[1] == ("apply", {"port": 8080})
+
+    # a Service subclass declaring `(ctx, config)` gets both slots as well
+    ctx3 = Context()
+    svc_seen = []
+
+    class ConfiguredService(Service):
+        provide = "t31_configured_service"
+
+        def __init__(self, ctx, config=None):
+            super().__init__(ctx)
+            svc_seen.append((ctx, config))
+
+    fiber3 = ctx3.plugin(ConfiguredService, {"enabled": True})
+
+    assert fiber3.state == FiberState.ACTIVE
+    assert svc_seen[0][0] is fiber3.ctx
+    assert svc_seen[0][1] == {"enabled": True}
+    assert ctx3.get("t31_configured_service") is not None
+
+    # a plain (non-Plugin/Service) class plugin follows the same contract
+    ctx4 = Context()
+    generic_seen = []
+
+    class GenericPlugin:
+        def __init__(self, ctx, config):
+            self.received = (ctx, config)
+
+        def apply(self, c, config=None):
+            generic_seen.append(("apply", c, config))
+
+    fiber4 = ctx4.plugin(GenericPlugin, {"n": 1})
+
+    assert fiber4.state == FiberState.ACTIVE
+    assert fiber4.plugin.received[0] is fiber4.ctx
+    assert fiber4.plugin.received[1] == {"n": 1}
+    assert generic_seen == [("apply", fiber4.ctx, {"n": 1})]
+
+
+def test_t32_single_slot_and_keyword_only_plugin_constructors():
+    """T32: Python arity adaptation of the upstream two-argument call.
+
+    `new runtime.callback(ctx, config)` in JavaScript silently drops arguments a
+    constructor does not declare and passes `undefined` into the ones it
+    declares without a value. Python raises `TypeError` for both, so the port
+    supplies the same two values in the shape the signature accepts: a single
+    positional slot keeps its `ctx`/`config` meaning (by name), and
+    keyword-only slots receive the matching value.
+    """
+    ctx = Context()
+
+    class ConfigOnlyPlugin(Plugin):
+        name = "t32_config_only"
+
+        def __init__(self, config=None):
+            self.received = config
+
+        def apply(self, c):
+            pass
+
+    fiber = ctx.plugin(ConfigOnlyPlugin, {"a": 1})
+    assert fiber.state == FiberState.ACTIVE
+    assert fiber.plugin.received == {"a": 1}
+
+    class CtxOnlyPlugin(Plugin):
+        name = "t32_ctx_only"
+
+        def __init__(self, ctx):
+            self.received_ctx = ctx
+
+        def apply(self, c):
+            pass
+
+    fiber2 = ctx.plugin(CtxOnlyPlugin, {"ignored": True})
+    assert fiber2.state == FiberState.ACTIVE
+    assert fiber2.plugin.received_ctx is fiber2.ctx
+
+    class MixedShapePlugin(Plugin):
+        name = "t32_mixed"
+
+        def __init__(self, ctx, *, config=None):
+            self.received = (ctx, config)
+
+        def apply(self, c):
+            pass
+
+    fiber3 = ctx.plugin(MixedShapePlugin, {"b": 2})
+    assert fiber3.state == FiberState.ACTIVE
+    assert fiber3.plugin.received[0] is fiber3.ctx
+    assert fiber3.plugin.received[1] == {"b": 2}
+
+    class KeywordOnlyPlugin(Plugin):
+        name = "t32_kw_only"
+
+        def __init__(self, *, config=None):
+            self.received = config
+
+        def apply(self, c):
+            pass
+
+    fiber4 = ctx.plugin(KeywordOnlyPlugin, {"c": 3})
+    assert fiber4.state == FiberState.ACTIVE
+    assert fiber4.plugin.received == {"c": 3}
+
+    class NoConstructorPlugin(Plugin):
+        name = "t32_no_ctor"
+
+        def apply(self, c):
+            pass
+
+    fiber5 = ctx.plugin(NoConstructorPlugin)
+    assert fiber5.state == FiberState.ACTIVE
+    assert fiber5.plugin.ctx is fiber5.ctx
+
+
+def test_t33_async_effect_setup_outside_event_loop_is_adopted():
+    """T33: an async effect body runs and is owned without a running loop.
+
+    Reference: fiber.ts `_execute` adopts `effect.then(safeCollect)` for any
+    thenable effect, so an async setup always runs and its disposer is collected
+    by the fiber. A synchronous Python caller has no ambient loop; the setup is
+    therefore driven on a private loop instead of leaking an unawaited
+    coroutine and leaving an empty effect behind.
+    """
+    ctx = Context()
+    log = []
+
+    async def setup():
+        log.append("setup")
+        return lambda: log.append("cleanup")
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        disposer = ctx.effect(setup, label="t33_no_loop_async")
+        gc.collect()
+
+    assert log == ["setup"]
+    assert ctx.fiber.get_effects() == [{"label": "t33_no_loop_async", "children": []}]
+    assert [str(w.message) for w in caught if "never awaited" in str(w.message)] == []
+
+    disposer()
+    assert log == ["setup", "cleanup"]
+    assert ctx.fiber.get_effects() == []
+
+    # the public disposer stays single-shot
+    disposer()
+    assert log == ["setup", "cleanup"]
+
+    # an async cleanup disposer still reaches quiescence before the public
+    # disposer returns, even though there is no loop to schedule it on
+    ctx2 = Context()
+    log2 = []
+
+    async def async_setup():
+        async def cleanup():
+            log2.append("cleanup-start")
+            await asyncio.sleep(0)
+            log2.append("cleanup-end")
+
+        return cleanup
+
+    async_disposer = ctx2.effect(async_setup, label="t33_no_loop_async_cleanup")
+    async_disposer()
+    assert log2 == ["cleanup-start", "cleanup-end"]
+
+
+def test_t34_failing_async_effect_setup_outside_event_loop_rolls_back():
+    """T34: an async setup failure outside a loop never leaks or throws.
+
+    Reference: `task?.catch(() => finalizeDisposal(dispose))` logs the failure,
+    rolls the collected disposers back and removes the effect; `effect()` itself
+    only throws for a *synchronous* setup failure.
+    """
+    ctx = Context()
+    log = []
+
+    async def setup():
+        log.append("setup")
+        raise RuntimeError("async setup failed")
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        disposer = ctx.effect(setup, label="t34_failing_no_loop")
+        gc.collect()
+
+    assert log == ["setup"]
+    assert ctx.fiber.get_effects() == []
+    assert [str(w.message) for w in caught if "never awaited" in str(w.message)] == []
+
+    # the wrapper of a failed setup is inert, exactly like the reference
+    # `runner.epoch = false` short-circuit
+    assert callable(disposer)
+    disposer()
+    assert log == ["setup"]
+
+
+def test_t35_async_iterable_effect_outside_event_loop_is_drained():
+    """T35: an async-iterable effect body is drained when no loop runs.
+
+    Reference: the `Symbol.asyncIterator in effect` branch of fiber.ts
+    `_execute` collects every yielded disposer on the effect. Without a running
+    loop the port drains the same iterable on a private loop, so its disposers
+    are still owned and disposed in reverse order.
+    """
+    ctx = Context()
+    log = []
+
+    async def disposers():
+        log.append("first")
+        yield lambda: log.append("dispose-first")
+        log.append("second")
+        yield lambda: log.append("dispose-second")
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        disposer = ctx.effect(lambda: disposers(), label="t35_no_loop_aiter")
+        gc.collect()
+
+    assert log == ["first", "second"]
+    assert [str(w.message) for w in caught if "never awaited" in str(w.message)] == []
+
+    disposer()
+    assert log == ["first", "second", "dispose-second", "dispose-first"]

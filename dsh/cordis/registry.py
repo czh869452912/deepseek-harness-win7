@@ -9,6 +9,7 @@ import inspect
 import sys
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 from dsh.cordis.fiber import Fiber, FiberState, resolve_config
+from dsh.cordis.utils import SharedCounter
 
 
 class Inject:
@@ -136,7 +137,12 @@ class RegistryService:
 
     def __init__(self, ctx: Any):
         self.ctx = ctx
-        self._counter = 0
+        # `registry.ts` installs one RegistryService per application and every
+        # derived context resolves `ctx.registry` to that same instance through
+        # the context prototype chain, so `counter` allocates from one sequence
+        # for the whole tree. The port binds a per-context view (a shallow copy),
+        # so the allocator lives in a shared cell.
+        self._counter = SharedCounter()
         self._runtimes: Dict[Any, PluginRuntime] = {}
         self._pending_fibers: Set[Fiber] = set()
         self._updating = False
@@ -149,8 +155,8 @@ class RegistryService:
 
     @property
     def counter(self) -> int:
-        self._counter += 1
-        return self._counter
+        # `registry.ts` allocates on every read of the single shared counter.
+        return self._counter.next()
 
     @property
     def size(self) -> int:

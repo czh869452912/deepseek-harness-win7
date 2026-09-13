@@ -7,6 +7,9 @@ Covers:
 - T6: Object plugin named 'apply' is treated as anonymous and inherits ancestor name
 - T7: Plugin can be loaded on FAILED fiber matching TS assertActive behavior
 - T8: internal/plugin listener can see the fiber in registry.list_fibers()
+- T9: One `RegistryService.counter` allocates fiber uids across root and
+  derived contexts (`ctx.extend()`/`isolate()`/`intercept()`)
+- T9b: `counter` increments on every read (registry.ts `get counter()`)
 """
 
 import pytest
@@ -150,3 +153,55 @@ async def test_t8_internal_plugin_listener_sees_fiber_in_registry():
     fiber = ctx.plugin(MyPlugin)
     assert len(seen_in_registry) == 1
     assert seen_in_registry[0] is True
+
+
+@pytest.mark.asyncio
+async def test_t9_registry_counter_is_shared_across_derived_contexts():
+    """T9: one `RegistryService.counter` allocates every fiber uid in the tree.
+
+    Reference: `registry.ts#RegistryService` is installed once by the Context
+    constructor, and `context.ts` derived contexts (`extend`/`isolate`/
+    `intercept`) only inherit properties through the prototype chain, so every
+    `ctx.registry` is the same service instance whose
+    `get counter() { return ++this._counter }` allocates `this.uid =
+    parent.registry.counter` (`fiber.ts` constructor). A bound Python registry
+    view must therefore share the allocator state instead of copying the
+    counter, otherwise plugins mounted from a derived context re-use uids
+    already handed to a sibling.
+    """
+    root = Context()
+    derived = root.extend().isolate("t9_isolated").intercept("t9_isolated", {})
+
+    # Every read allocates the next value, whichever context reads it.
+    first = root.registry.counter
+    second = derived.registry.counter
+    third = root.registry.counter
+    assert (first, second, third) == (first, first + 1, first + 2)
+
+    class RootPlugin(Plugin):
+        name = "t9_root"
+
+    class DerivedPlugin(Plugin):
+        name = "t9_derived"
+
+    class LaterRootPlugin(Plugin):
+        name = "t9_later_root"
+
+    root_fiber = root.plugin(RootPlugin, {})
+    derived_fiber = derived.plugin(DerivedPlugin, {})
+    later_root_fiber = root.plugin(LaterRootPlugin, {})
+
+    uids = [root_fiber.uid, derived_fiber.uid, later_root_fiber.uid]
+    assert len(set(uids)) == 3
+    assert uids == [third + 1, third + 2, third + 3]
+
+
+@pytest.mark.asyncio
+async def test_t9b_counter_property_increments_on_every_read():
+    """T9b: `counter` is a getter that increments, not a snapshot of `_counter`."""
+    ctx = Context()
+    child = ctx.extend()
+
+    values = [ctx.registry.counter for _ in range(3)]
+    assert values == [values[0], values[0] + 1, values[0] + 2]
+    assert child.registry.counter == values[0] + 3

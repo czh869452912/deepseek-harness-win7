@@ -48,6 +48,28 @@ def is_sync_iterable_effect(value: Any) -> bool:
     return hasattr(value, "__iter__")
 
 
+def run_async_setup_sync(coro: Any) -> Any:
+    """
+    Drive an async effect setup to completion when no event loop is running.
+
+    `fiber.ts` `_execute` always adopts an async effect body (`effect.then(
+    safeCollect)` for the thenable branch, the awaited try/catch for the
+    `Symbol.asyncIterator` branch) because JavaScript always has a microtask
+    queue. A synchronous Python caller (`ctx.effect(async_setup)` outside a
+    running loop) has no ambient loop, so the same coroutine is driven to
+    completion on a private loop. The effect therefore still runs, its disposers
+    are still owned by the fiber, and no unawaited coroutine is leaked. Errors
+    are already logged and rolled back by the effect body; they are not
+    re-raised, matching the reference where an async setup failure only settles
+    the effect's promise (the public disposer/`then` chain) and never throws out
+    of `effect()` itself.
+    """
+    try:
+        return asyncio.run(coro)
+    except Exception:
+        return None
+
+
 def resolve_config(plugin: Any, config: Any, runtime: Any = None) -> Any:
     """
     Validate and normalize config for a plugin runtime before it starts matching TS resolveConfig.
@@ -306,7 +328,10 @@ class Fiber:
                                 self._in_flight_effects.add(t)
                                 t.add_done_callback(retire_in_flight)
                         except RuntimeError:
-                            pass
+                            # Rollback of a synchronous caller has no loop to
+                            # schedule the async disposer on; run it to
+                            # completion so the rollback reaches quiescence.
+                            run_async_setup_sync(res)
                 except Exception as e:
                     if self.ctx and hasattr(self.ctx, "logger"):
                         self.ctx.logger("fiber").error("Exception in effect rollback '%s': %s", label, e)
@@ -513,7 +538,9 @@ class Fiber:
                             self._in_flight_effects.add(setup_task)
                             setup_task.add_done_callback(retire_in_flight)
                     except RuntimeError:
-                        pass
+                        # No ambient loop: drive the setup now so the effect is
+                        # adopted instead of leaking an unawaited coroutine.
+                        run_async_setup_sync(_await_async_setup())
                 elif res is None:
                     if setup_barrier_future and not setup_barrier_future.done():
                         setup_barrier_future.set_result(None)
@@ -571,7 +598,9 @@ class Fiber:
                             self._in_flight_effects.add(setup_task)
                             setup_task.add_done_callback(retire_in_flight)
                     except RuntimeError:
-                        pass
+                        # No ambient loop: drain the async iterable now (same
+                        # reason as the thenable branch above).
+                        run_async_setup_sync(_consume_async_iter())
                 else:
                     raise TypeError("Invalid effect")
             except Exception as e:
@@ -722,12 +751,71 @@ class Fiber:
             self.set_state(FiberState.UNLOADING)
             self._unload()
 
+    # Names that identify the context / resolved-config slots of a plugin
+    # constructor when only one positional parameter is accepted.
+    _CTX_PARAM_NAMES = ("ctx", "context", "_ctx")
+    _CONFIG_PARAM_NAMES = ("config", "cfg", "conf", "options", "opts", "settings")
+
+    def _constructor_arguments(self, init_fn: Any) -> Any:
+        """
+        Build the positional/keyword arguments for a class-plugin constructor.
+
+        `fiber.ts` `_runner.execute` always calls `new runtime.callback(this.ctx,
+        this.config)`: the context goes into the first positional slot and the
+        resolved config into the second. JavaScript silently drops surplus
+        arguments and passes `undefined` for missing ones, while Python raises
+        `TypeError` for both, so the accepted shape is read from the signature
+        and the same two values are supplied positionally wherever the
+        constructor can take them.
+        """
+        positionals = []
+        keyword_only = []
+        has_varargs = False
+        has_varkw = False
+        try:
+            sig = inspect.signature(init_fn)
+        except (ValueError, TypeError):
+            # Uninspectable callable (C extension or builtin): use the upstream call.
+            return (self.ctx, self.config), {}
+
+        for name, param in sig.parameters.items():
+            if name == "self":
+                continue
+            if param.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD):
+                positionals.append(param)
+            elif param.kind == inspect.Parameter.VAR_POSITIONAL:
+                has_varargs = True
+            elif param.kind == inspect.Parameter.VAR_KEYWORD:
+                has_varkw = True
+            elif param.kind == inspect.Parameter.KEYWORD_ONLY:
+                keyword_only.append(param)
+
+        kwargs: Dict[str, Any] = {}
+        for param in keyword_only:
+            if param.name in self._CTX_PARAM_NAMES:
+                kwargs[param.name] = self.ctx
+            elif param.name in self._CONFIG_PARAM_NAMES:
+                kwargs[param.name] = self.config
+
+        if has_varargs or len(positionals) >= 2:
+            return (self.ctx, self.config), kwargs
+        if len(positionals) == 1:
+            p_name = positionals[0].name
+            if p_name in self._CONFIG_PARAM_NAMES:
+                return (self.config,), kwargs
+            # `new callback(this.ctx, this.config)`: the first positional slot is
+            # the context, so an unrecognized single parameter still receives it.
+            return (self.ctx,), kwargs
+        if has_varkw and not keyword_only:
+            # `constructor(...args)`-style rest parameter: JavaScript hands over
+            # both values, so a Python `**kwargs` constructor receives them too.
+            return (), {"ctx": self.ctx, "config": self.config}
+        return (), kwargs
+
     def _instantiate_plugin(self) -> Any:
         cls = getattr(self, "_plugin_cls", None)
         if cls is None:
             return self.plugin
-        from dsh.cordis.service import Service
-        from dsh.cordis.plugin import Plugin
 
         init_fn = getattr(cls, "__init__", None)
         if init_fn is object.__init__ or init_fn is None:
@@ -736,48 +824,11 @@ class Fiber:
                 inst.ctx = self.ctx
             return inst
 
-        try:
-            sig = inspect.signature(init_fn)
-            params = [p for name, p in sig.parameters.items() if name != "self" and p.kind not in (inspect.Parameter.VAR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)]
-            param_names = [name for name in sig.parameters.keys() if name != "self"]
-            has_varargs = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
-            has_varkw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
-        except (ValueError, TypeError):
-            params = []
-            param_names = []
-            has_varargs = False
-            has_varkw = False
-
-        if issubclass(cls, Service):
-            if "config" in param_names or ("cfg" in param_names) or has_varkw:
-                return cls(self.ctx, config=self.config)
-            elif len(params) >= 1 or "ctx" in param_names or has_varargs:
-                return cls(self.ctx)
-            else:
-                return cls()
-        elif issubclass(cls, Plugin):
-            if len(params) >= 1 or "config" in param_names or has_varargs or has_varkw:
-                inst = cls(config=self.config)
-            else:
-                inst = cls()
+        args, kwargs = self._constructor_arguments(init_fn)
+        inst = cls(*args, **kwargs)
+        if hasattr(inst, "ctx") and getattr(inst, "ctx", None) is None:
             inst.ctx = self.ctx
-            return inst
-        else:
-            if len(params) >= 2 or has_varargs or ("ctx" in param_names and "config" in param_names):
-                inst = cls(self.ctx, config=self.config)
-            elif len(params) == 1:
-                p_name = params[0].name
-                if p_name in ("config", "cfg"):
-                    inst = cls(config=self.config)
-                else:
-                    inst = cls(self.ctx)
-            elif has_varkw:
-                inst = cls(self.ctx, config=self.config)
-            else:
-                inst = cls()
-            if hasattr(inst, "ctx") and getattr(inst, "ctx", None) is None:
-                inst.ctx = self.ctx
-            return inst
+        return inst
 
     def _reload(self) -> None:
         """Execute plugin apply and transition to ACTIVE on success."""

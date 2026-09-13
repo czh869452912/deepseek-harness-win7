@@ -903,6 +903,8 @@ class Project:
             if only_task is not None and not any(r["id"] == only_task for r in self.store.rows()):
                 raise ValueError("Unknown pilot task: " + only_task)
             self.store.meta("scheduler", "RUNNING")
+            if only_task is not None:
+                self.store.meta('pilot', {'task': only_task, 'state': 'RUNNING'})
             pause_flag = self.folder / "pause.flag"
             if pause_flag.exists():
                 pause_flag.unlink()

@@ -49,6 +49,16 @@ def test_priority_dependencies_and_cycle_are_scheduled_atomically(store):
     assert store.claim("3")["ids"] == ["plugin"]
 
 
+def test_equal_priority_selection_does_not_depend_on_scoring_duration(store, monkeypatch):
+    import project_store
+    store.apply_plan(plan(task('a'), task('b')))
+    with store.connect() as db:
+        db.execute('UPDATE tasks SET created=0')
+    ticks = iter(range(1000, 1100))
+    monkeypatch.setattr(project_store.time, 'time', lambda: next(ticks))
+    assert store.claim('w')['ids'] == ['a']
+
+
 def test_unapproved_acceptance_cycle_is_visible_not_a_giant_worker(store):
     a, b = task("a", ["b"]), task("b", ["a"])
     b["dependencies"][0]["kind"] = "acceptance"
@@ -676,6 +686,40 @@ def test_architect_resumes_native_stop_and_applies_acknowledged_plan(repo, monke
     assert project.git(repo, "rev-parse", "HEAD") == before
 
 
+@pytest.mark.parametrize('unresolved', [False, True])
+def test_scope_arbitration_can_overrule_review_only_with_no_remaining_gaps(repo, monkeypatch, unresolved):
+    p = make_project(repo)
+    p.store.apply_plan(plan(task('a')))
+    group = p.store.claim('w')
+    invalid_plan = plan(dict(task('a'), provides=['undefined-review-contract']))
+    group['records'][0]['feedback'] = json.dumps({
+        'arbitration_request': 'Classify existing provider-owned behavior',
+        'plan_error': 'undefined-review-contract', 'proposed_work_plan': invalid_plan})
+    agent = p.task_runner(group)
+    monkeypatch.setattr(p, 'task_runner', lambda group: agent)
+    monkeypatch.setattr(agent, 'verify_chunk', lambda value: True)
+    monkeypatch.setattr(agent, 'checkpoint', lambda value: None)
+    calls = []
+    issue = dict(id='provider#rollback', detail='provider transaction', evidence='reference/provider', state='open')
+    def phase(agent, name, feedback=None):
+        calls.append(name)
+        value = dict(status='READY', summary='verified', coverage_complete=True, issues=[],
+                     changed_files=[], test_paths=[], dependencies=[], test_map=[])
+        if name == 'review':
+            value.update(status='MUST_FIX', issues=[issue], work_plan=invalid_plan)
+        elif name == 'judge':
+            assert feedback['arbitration_request']
+            value.update(status='RESOLVED', verdict='MIGRATOR_CORRECT', issues=[issue] if unresolved else [],
+                         work_plan={'tasks': [], 'contracts': []})
+        return value
+    monkeypatch.setattr(p, 'cached_phase', phase)
+    monkeypatch.setattr(p.store, 'record_evidence', lambda *args: None)
+    monkeypatch.setattr(p, 'merge', lambda group, *args: p.store.update(group, 'INTEGRATED'))
+    p.execute(group)
+    assert calls == ['migrate', 'review', 'judge']
+    assert p.store.rows()[0]['state'] == ('READY' if unresolved else 'INTEGRATED')
+
+
 def test_architect_repairs_saved_invalid_plan_in_original_session(repo, monkeypatch):
     p = make_project(repo)
     p.store.meta("architecture", "not-planned")
@@ -985,6 +1029,20 @@ def test_dashboard_sharing_violation_does_not_cancel_the_pilot(repo, monkeypatch
     monkeypatch.setattr(p, 'execute', execute)
     assert p.run('a') == 0
     assert p.store.rows()[0]['state'] == 'INTEGRATED'
+
+
+def test_paused_pilot_never_prepares_or_publishes_main(repo, monkeypatch):
+    p = make_project(repo)
+    p.store.apply_plan(plan(task('a')))
+    monkeypatch.setattr(project, 'Project', lambda *args: p)
+    monkeypatch.setattr(sys, 'argv', ['project_runner.py', 'pilot', '--task', 'a'])
+    monkeypatch.setattr(p, 'run', lambda task: 0)
+    def forbidden(*args):
+        raise AssertionError('a paused pilot must not publish')
+    monkeypatch.setattr(p, 'prepare_main', forbidden)
+    monkeypatch.setattr(p, 'publish_main', forbidden)
+    assert project.main() == 0
+    assert p.store.meta('pilot')['state'] == 'PAUSED'
 
 
 def test_dashboard_tolerates_unreadable_live_status(repo, monkeypatch):

@@ -276,6 +276,7 @@ class Store:
             resources = {t: self.resources(db, [t]) for t in rows}
             candidates = []
             pending = set()
+            claim_time = time.time()
             for row in rows.values():
                 if row["state"] == "WAITING_PLAN" and row["feedback"]:
                     proposal = json.loads(row["feedback"]).get("proposed_work_plan", {})
@@ -308,7 +309,7 @@ class Store:
                     if expanded == downstream:
                         break
                     downstream = expanded
-                age = (time.time() - min(r["created"] for r in members)) / 3600
+                age = (claim_time - min(r["created"] for r in members)) / 3600
                 score = max(s.get("priority", 0) for s in specs) + len(downstream) * 10 + age
                 candidates.append((min(s.get("wave", 5) for s in specs), -score, group))
             if not candidates:

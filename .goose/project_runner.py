@@ -492,7 +492,8 @@ class Project:
                 agent = self.task_runner(group)
                 self.execute_integration(group, agent, feedback)
                 return
-            if feedback and feedback.get('plan_error') and feedback.get('proposed_work_plan'):
+            if (feedback and feedback.get('plan_error') and feedback.get('proposed_work_plan')
+                    and not feedback.get('arbitration_request')):
                 self.store.update(group, 'PLAN_REPAIR', feedback=feedback, error=feedback['plan_error'])
                 return
             agent = self.task_runner(group)
@@ -523,6 +524,8 @@ class Project:
             plans = [p for p in (migration.get("work_plan"), review.get("work_plan"))
                      if p and (p.get("tasks") or p.get("contracts"))]
             previous = json.loads(record["feedback"]) if record["feedback"] else {}
+            if previous.get('arbitration_request'):
+                feedback['arbitration_request'] = previous['arbitration_request']
             plan_signature = digest(plans)
             if previous.get('applied_proposals_signature') == plan_signature:
                 feedback['applied_proposals_signature'] = plan_signature
@@ -541,7 +544,7 @@ class Project:
                     proposal[key] = list(merged.values())
             signature = digest({"issues": sorted(i["id"] for i in open_issues(review))})
             feedback["signature"] = signature
-            needs_judge = (bool(plan_conflicts) or "ESCALATE" in (migration["status"], review["status"]) or
+            needs_judge = (bool(feedback.get('arbitration_request')) or bool(plan_conflicts) or "ESCALATE" in (migration["status"], review["status"]) or
                            (review["status"] == "PASS" and bool(open_issues(migration))) or
                            ((review["status"] != "PASS" or migration["status"] != "READY" or not ok) and
                             (signature == previous.get("signature") or repeated_issues(review, previous))))
@@ -561,8 +564,15 @@ class Project:
                 if verdict == "BLOCKED":
                     self.store.update(group, "NEEDS_ARBITRATION", feedback=feedback, error=judgment["summary"])
                     return
+                if feedback.get('arbitration_request') and 'work_plan' in judgment:
+                    feedback['superseded_proposals'] = plans
+                    proposal = judgment['work_plan'] or None
+                    if proposal and not (proposal.get('tasks') or proposal.get('contracts')):
+                        proposal = None
+                    plan_conflicts = []
+                    feedback['completed_arbitration_request'] = feedback.pop('arbitration_request')
                 if (verdict in ("MIGRATOR_CORRECT", "ADAPTATION_ALLOWED") and
-                        review["status"] in ("PASS", "ESCALATE") and ok):
+                        judgment.get('coverage_complete') and not open_issues(judgment) and ok):
                     resolved_ready = True
             needs_implementation = (not resolved_ready and
                                     (review['status'] != 'PASS' or migration['status'] != 'READY' or not ok or needs_judge))
@@ -998,6 +1008,9 @@ def main():
         code = project.run(args.task)
         if code:
             return code
+        if next(r['state'] for r in project.store.rows() if r['id'] == args.task) != 'INTEGRATED':
+            project.store.meta('pilot', {'task': args.task, 'state': 'PAUSED'})
+            return 0  # A clean scheduler pause is not a completed pilot.
         with scheduler_guard(project.folder):
             project.prepare_main(args.target)
             project.publish_main()

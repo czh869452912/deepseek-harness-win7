@@ -32,6 +32,41 @@ def test_t1_service_duplicate_registration_raises():
     assert "has been registered" in str(fiber.error)
 
 
+def test_t6_provide_same_service_instance_twice_raises():
+    """ts:reflect.ts:289-291 - a second registration of one name throws even when
+    the identical Service instance is provided again (no implicit no-op)."""
+    ctx = Context()
+
+    class ReRegistered(Service):
+        name = "re_registered"
+
+        def __init__(self, inner):
+            super().__init__(inner, "re_registered")
+
+    class FirstProvider(Plugin):
+        name = "first-provider"
+
+        def apply(self, c):
+            ReRegistered(c)
+
+    class SecondProvider(Plugin):
+        name = "second-provider"
+
+        def apply(self, c):
+            ReRegistered(c)
+
+    ctx.plugin(FirstProvider)
+    instance = ctx.get("re_registered")
+    assert instance is not None
+
+    with pytest.raises(RuntimeError, match='service "re_registered" has been registered at'):
+        ctx.provide("re_registered", instance)
+
+    fiber = ctx.plugin(SecondProvider)
+    assert fiber.state == FiberState.FAILED
+    assert "has been registered" in str(fiber.error)
+
+
 def test_t2_callable_service_invokes_invoke_method():
     """ts:service.ts:50-52 & utils.ts:220-223 - Service.__call__ routes to invoke method."""
     ctx = Context()

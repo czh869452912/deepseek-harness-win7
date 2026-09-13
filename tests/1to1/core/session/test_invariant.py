@@ -23,10 +23,9 @@ from dsh.llm.message import (
 
 async def setup_env() -> Dict[str, Any]:
     ctx = Context()
-    SessionPlugin().apply(ctx)
-    InvariantRegistry(ctx)
-    plugin = SessionInvariantPlugin()
-    plugin.apply(ctx)
+    await ctx.plugin(SessionPlugin)
+    await ctx.plugin(InvariantRegistry)
+    plugin = await ctx.plugin(SessionInvariantPlugin)
     return {"ctx": ctx, "plugin": plugin}
 
 
@@ -34,11 +33,11 @@ class TestSessionLogInvariants:
     @pytest.mark.asyncio
     async def test_keeps_registration_global_when_companion_mounted_under_scope(self):
         ctx = Context()
-        SessionPlugin().apply(ctx)
-        InvariantRegistry(ctx)
+        await ctx.plugin(SessionPlugin)
+        await ctx.plugin(InvariantRegistry)
 
         scoped = create_scope(ctx, {})
-        SessionInvariantPlugin().apply(scoped.ctx)
+        await scoped.ctx.plugin(SessionInvariantPlugin)
 
         sessions: SessionStore = ctx.get("sessions")
         session = sessions.create(SessionId("global-under-scoped-invariants"))
@@ -443,9 +442,9 @@ class TestSessionLogInvariants:
     @pytest.mark.asyncio
     async def test_rebuilds_trace_state_for_sessions_that_exist_when_the_companion_reloads(self):
         ctx = Context()
-        SessionPlugin().apply(ctx)
-        InvariantRegistry(ctx)
-        fiber = ctx.plugin(SessionInvariantPlugin)
+        await ctx.plugin(SessionPlugin)
+        await ctx.plugin(InvariantRegistry)
+        fiber = await ctx.plugin(SessionInvariantPlugin)
 
         sessions: SessionStore = ctx.get("sessions")
         session = sessions.create()
@@ -453,7 +452,7 @@ class TestSessionLogInvariants:
         session.append("step/start", {"turn": 1, "step": 1})
 
         await fiber.dispose()
-        ctx.plugin(SessionInvariantPlugin)
+        await ctx.plugin(SessionInvariantPlugin)
 
         # The reloaded companion re-seeded the live session from its log.
         session.append("assistant/chunk", {
@@ -489,9 +488,9 @@ class TestSessionLogInvariants:
     @pytest.mark.asyncio
     async def test_removes_all_listeners_when_the_companion_is_disposed(self):
         ctx = Context()
-        SessionPlugin().apply(ctx)
-        InvariantRegistry(ctx)
-        fiber = ctx.plugin(SessionInvariantPlugin)
+        await ctx.plugin(SessionPlugin)
+        await ctx.plugin(InvariantRegistry)
+        fiber = await ctx.plugin(SessionInvariantPlugin)
 
         sessions: SessionStore = ctx.get("sessions")
         session = sessions.create()

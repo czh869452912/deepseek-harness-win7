@@ -1,10 +1,11 @@
 import sys
 import pytest
 from dsh.harness import build_harness
+import asyncio
 
 
 def test_minimal_preset_alignment():
-    ctx = build_harness(mode="minimal", verbose=False)
+    ctx = asyncio.run(build_harness(mode="minimal", verbose=False))
     tools = ctx.get("tools")
     schemas = tools.get_schemas()
     tool_names = [s["function"]["name"] for s in schemas]
@@ -26,7 +27,7 @@ def test_minimal_preset_alignment():
 
 
 def test_standard_preset_alignment():
-    ctx = build_harness(mode="standard", verbose=False)
+    ctx = asyncio.run(build_harness(mode="standard", verbose=False))
     tools = ctx.get("tools")
     schemas = tools.get_schemas()
     tool_names = set(s["function"]["name"] for s in schemas)
@@ -65,7 +66,7 @@ def test_standard_preset_alignment():
 
 
 def test_creative_preset_alignment():
-    ctx = build_harness(mode="creative", verbose=False)
+    ctx = asyncio.run(build_harness(mode="creative", verbose=False))
     tools = ctx.get("tools")
     schemas = tools.get_schemas()
     tool_names = set(s["function"]["name"] for s in schemas)

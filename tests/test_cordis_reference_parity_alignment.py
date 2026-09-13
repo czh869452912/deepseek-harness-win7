@@ -9,17 +9,38 @@ Verifies:
 """
 
 import asyncio
+import gc
 import json
 import os
 import tempfile
+import warnings
 import pytest
 import yaml
 
+from dsh.boot.app_boot import settle_fibers
 from dsh.cordis.context import Context
+from dsh.cordis.fiber import FiberState
+from dsh.cordis.loader import AggregateError, Loader
 from dsh.cordis.service import Service
 from dsh.cordis.include import Include, ConfigFileError
 from dsh.cordis.schema import Schema, ValidationError, z
 from dsh.cordis.utils import symbols
+
+
+async def _settle_entry_plugin(ctx):
+    """Entry plugin body used by the loader quiescence cases below."""
+    await asyncio.sleep(0)
+
+
+def _unawaited_loader_warnings():
+    """Return 'never awaited' warnings GC reports for a loader coroutine."""
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        gc.collect()
+    return [
+        str(warning.message) for warning in caught
+        if "never awaited" in str(warning.message) and "Entry" in str(warning.message)
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -142,7 +163,7 @@ async def test_service_init_generator_disposer_registration():
                 teardown_log.append("cleaned_up")
             yield _cleanup
 
-    fiber = ctx.plugin(MyGenService)
+    fiber = await ctx.plugin(MyGenService)
     assert fiber is not None
     assert len(teardown_log) == 0
 
@@ -160,7 +181,7 @@ async def test_include_plugin_initialization_and_patches():
     """Verify Include plugin loads YAML, applies patches, and writes updates safely."""
     ctx = Context()
     from dsh.cordis.loader import Loader
-    ctx.plugin(Loader)
+    await ctx.plugin(Loader)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         config_path = os.path.join(tmp_dir, "cordis.yml")
@@ -173,6 +194,8 @@ async def test_include_plugin_initialization_and_patches():
             yaml.safe_dump(initial_entries, f)
 
         # Include with patch overriding plugin-a's config
+        # The probe entries name packages that are not installed; this case covers
+        # the include service's tree and patch result, so only its own mount settles.
         include_fiber = ctx.plugin(
             Include,
             {
@@ -183,8 +206,11 @@ async def test_include_plugin_initialization_and_patches():
             },
         )
 
+        await asyncio.sleep(0)
         assert include_fiber is not None
-        include_service: Include = ctx.get("include")
+        # Root-context attribute access resolves a service the way the reference
+        # proxy does for a runtime-less context (`reflect.get(name, false)`).
+        include_service: Include = ctx.include
         assert include_service is not None
         assert include_service.data is not None
         assert len(include_service.data) == 2
@@ -198,8 +224,21 @@ async def test_include_plugin_initialization_and_patches():
         await include_service.refresh()
         assert include_service.data is not None
 
+        # tree.ts settlement: the include tree owns the mount's apply and entry
+        # tasks, and the probe entries name packages that are not installed, so
+        # the apply rolls back and the mount fiber fails. Awaiting both leaves no
+        # loader task running when the test's loop closes.
+        await include_service.await_()
+        with pytest.raises(AggregateError) as mount_error:
+            await include_fiber.await_settled()
+        assert "failed to import loader entry plugin-a" in str(mount_error.value)
+        await asyncio.sleep(0)
+        assert include_fiber.state == FiberState.FAILED
+        assert include_service.get_tasks() == []
+
         # Clean up
         await include_service.stop()
+        await include_service.flush_write()
 
 
 @pytest.mark.asyncio
@@ -207,7 +246,7 @@ async def test_include_config_file_errors():
     """Verify Include raises ConfigFileError for read, parse, and validate stages."""
     ctx = Context()
     from dsh.cordis.loader import Loader
-    ctx.plugin(Loader)
+    await ctx.plugin(Loader)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         # Non-existent file without initial
@@ -234,6 +273,60 @@ async def test_include_config_file_errors():
         with pytest.raises(ConfigFileError) as exc_info_val:
             await inc_struct.read(forced=True)
         assert exc_info_val.value.stage == "validate"
+
+
+@pytest.mark.asyncio
+async def test_loader_tree_owns_entry_creation_and_initialization_tasks():
+    """
+    tree.ts `getTasks()`/`await()`: every entry creation and initialization task
+    belongs to the tree, is reported while it is pending, and is awaited before
+    settlement returns.
+    """
+    ctx = Context()
+    ctx_loader_fiber = await ctx.plugin(Loader)
+    loader = ctx.loader
+    assert loader is not None
+    loader.register_plugin_class("settle-pkg", _settle_entry_plugin)
+
+    # The returned awaitable is intentionally dropped: the tree, not the caller,
+    # owns the task it started.
+    created = loader.create({"id": "settle-entry", "name": "settle-pkg", "config": {}})
+    assert created is not None
+    pending = loader.get_tasks()
+    assert pending, "a freshly created entry reports its pending tree task"
+
+    await loader.await_()
+    await ctx_loader_fiber.await_settled()
+    await asyncio.sleep(0)
+    entry = loader.resolve("settle-entry")
+    assert entry.fiber is not None
+    assert entry.fiber.state == FiberState.ACTIVE
+    assert loader.get_tasks() == []
+    assert _unawaited_loader_warnings() == []
+
+
+@pytest.mark.asyncio
+async def test_loader_settlement_leaves_no_unawaited_entry_init_task():
+    """
+    An entry initialized through the loader is fully owned: after settlement no
+    `Entry._init_task_runner` coroutine is left unawaited and no loader task is
+    still pending on the loop.
+    """
+    ctx = Context()
+    await ctx.plugin(Loader)
+    loader = ctx.loader
+    assert loader is not None
+    loader.register_plugin_class("settle-pkg", _settle_entry_plugin)
+
+    loader.load_from_dict([{"id": "dict-entry", "name": "settle-pkg", "config": {}}])
+    await loader.await_()
+    await asyncio.sleep(0)
+
+    assert loader.get_tasks() == []
+    assert _unawaited_loader_warnings() == []
+    entry = loader.resolve("dict-entry")
+    assert entry.fiber is not None
+    assert entry.fiber.state == FiberState.ACTIVE
 
 
 # ---------------------------------------------------------------------------
@@ -323,7 +416,7 @@ async def test_include_patch_insert_into_nested_group():
     """Verify Include patches can insert entries into existing groups matching reference applyEntryPatches."""
     ctx = Context()
     from dsh.cordis.loader import Loader
-    ctx.plugin(Loader)
+    await ctx.plugin(Loader)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         config_path = os.path.join(tmp_dir, "cordis.yml")
@@ -341,6 +434,8 @@ async def test_include_patch_insert_into_nested_group():
             yaml.safe_dump(initial_entries, f)
 
         # Patch that inserts plugin-2 into my-group
+        # The probe entries name packages that are not installed; this case covers
+        # the include service's tree and patch result, so only its own mount settles.
         include_fiber = ctx.plugin(
             Include,
             {
@@ -356,8 +451,9 @@ async def test_include_patch_insert_into_nested_group():
             },
         )
 
+        await asyncio.sleep(0)
         assert include_fiber is not None
-        inc_svc: Include = ctx.get("include")
+        inc_svc: Include = ctx.include
         assert inc_svc is not None
 
         # Verify entry plugin-2 exists in the store
@@ -365,4 +461,56 @@ async def test_include_patch_insert_into_nested_group():
         assert entry2 is not None
         assert entry2.options.get("config", {}).get("port") == 7777
 
+        # tree.ts settlement: every apply and entry task the include tree started
+        # is awaited before the mount's work is considered finished; the probe
+        # entries cannot be imported, so the apply rolls back and the mount fails.
+        await inc_svc.await_()
+        with pytest.raises(AggregateError) as mount_error:
+            await include_fiber.await_settled()
+        assert "failed to import loader entry plugin-1" in str(mount_error.value)
+        await asyncio.sleep(0)
+        assert include_fiber.state == FiberState.FAILED
+        assert inc_svc.get_tasks() == []
+
         await inc_svc.stop()
+        await inc_svc.flush_write()
+
+
+@pytest.mark.asyncio
+async def test_settle_fibers_joins_the_root_fiber_teardown_with_its_dependent_inertia():
+    """A root teardown owns no parent registration, so `settle_fibers` reports it.
+
+    Reference: `fiber.ts` `dispose: () => Promise<void>` starts the teardown and
+    `await()` joins the transition stored on the same fiber. Harness and CLI
+    settlement then return only after a script bridge's dropped
+    `void ctx.root.fiber.dispose()` finished, including the dependent fiber
+    inertia its unload gathered.
+    """
+    ctx = Context()
+    cleanup_started = asyncio.Event()
+    release = asyncio.Event()
+    log = []
+
+    async def cleanup():
+        cleanup_started.set()
+        await release.wait()
+        log.append("cleanup")
+
+    ctx.effect(lambda: lambda: cleanup(), label="root-teardown")
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        settlement = ctx.fiber.schedule_settlement(ctx.fiber.dispose())
+        joiner = asyncio.ensure_future(settle_fibers(ctx))
+        await cleanup_started.wait()
+        assert log == []
+        assert not joiner.done()
+
+        release.set()
+        await joiner
+        gc.collect()
+
+    assert settlement.done()
+    assert log == ["cleanup"]
+    assert ctx.fiber.settlement_tasks() == []
+    assert [str(w.message) for w in caught if "never awaited" in str(w.message)] == []

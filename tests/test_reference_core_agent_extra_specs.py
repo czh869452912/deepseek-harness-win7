@@ -121,8 +121,10 @@ async def test_agent_tool_presentation_modes():
     tools = ToolsService(ctx)
     ctx.set_service("tools", tools)
 
-    plugin_native = AgentToolPresentationPlugin({"mode": "native"})
     ctx.set_service("codeRuntime", object())
     plugin_ptc = AgentToolPresentationPlugin({"mode": "ptc"})
-    plugin_ptc.apply(ctx)
+    # `mode: ptc` waits for the code runtime through `ctx.inject`, so the row
+    # settles on the loop rather than in the apply call.
+    await ctx.plugin(plugin_ptc)
+    await asyncio.sleep(0)
     assert getattr(tools, "_presentation_mode", "native") == "ptc"

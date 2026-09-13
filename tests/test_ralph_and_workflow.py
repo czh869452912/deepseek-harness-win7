@@ -9,8 +9,8 @@ from dsh.workflow.tool_workflow import ToolWorkflowPlugin
 async def test_ralph_and_workflow_tools():
     ctx = Context()
     ctx.set_service("tools", ToolsService(ctx))
-    ctx.plugin(ToolRalphPlugin)
-    ctx.plugin(ToolWorkflowPlugin)
+    await ctx.plugin(ToolRalphPlugin)
+    await ctx.plugin(ToolWorkflowPlugin)
 
     tools = ctx.get("tools")
 

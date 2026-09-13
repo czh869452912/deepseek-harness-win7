@@ -9,6 +9,8 @@ Covers:
 - T6: exporter disposer targets latest _sn_exporter and registration happens inside effect setup
 - T7: exporter exceptions propagate directly to caller
 - T8: ctx.logger() hyphenates fiber name and resolves intercept config
+- T11: `_snMessage`/`_snExporter` advance one sequence across derived contexts
+  (logger.ts keeps them on the single LoggerService instance)
 """
 
 import pytest
@@ -220,3 +222,33 @@ def test_t10_logger_format_d6_d8_parity():
     assert lines[0] == "line1"
     assert lines[1] == "line2\x0cline3"
 
+
+def test_t11_logger_counters_are_shared_across_derived_contexts():
+    """T11: message serial numbers keep advancing across derived contexts.
+
+    Reference: `logger.ts` `LoggerService` owns `_snMessage`/`_snExporter`, and
+    `context.ts` derived contexts inherit the same service instance, so the
+    sequence is tree-wide (`const sn = ++this.service._snMessage`).
+    """
+    ctx = Context()
+    child = ctx.extend()
+
+    class RecordingExporter(Exporter):
+        def __init__(self):
+            Exporter.__init__(self, colors=0)
+            self.messages = []
+
+        def export(self, message):
+            self.messages.append(message)
+            Exporter.export(self, message)
+
+    exporter = RecordingExporter()
+    ctx.logger.exporter(exporter)
+
+    ctx.logger("t10-root").info("first")
+    child.logger("t10-child").info("second")
+    ctx.logger("t10-root").info("third")
+
+    sns = [message.sn for message in exporter.messages]
+    assert len(sns) == 3
+    assert sns == [sns[0], sns[0] + 1, sns[0] + 2]

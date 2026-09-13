@@ -57,8 +57,8 @@ async def test_dual_sse_streams_endpoint_resolution():
     web_server = WebServerPlugin({"port": 0})
     api_proxy = ApiProxyPlugin()
 
-    ctx.plugin(web_server)
-    ctx.plugin(api_proxy)
+    await ctx.plugin(web_server)
+    await ctx.plugin(api_proxy)
 
     server: WebServerService = ctx.get("web_server")
     assert server.match("/api/events/mux") is not None
@@ -74,8 +74,8 @@ async def test_get_post_settings_models_sessions_rpc_endpoints():
     web_server = WebServerPlugin({"port": 0})
     api_proxy = ApiProxyPlugin()
 
-    ctx.plugin(web_server)
-    ctx.plugin(api_proxy)
+    await ctx.plugin(web_server)
+    await ctx.plugin(api_proxy)
 
     server: WebServerService = ctx.get("web_server")
     route = server.match("/api/settings")
@@ -150,9 +150,9 @@ async def test_web_ui_question_submission_and_respond():
     tools = ToolsService(ctx)
     ctx.set_service("tools", tools)
 
-    ctx.plugin(web_server)
-    ctx.plugin(api_proxy)
-    ctx.plugin(ToolAskUserPlugin)
+    await ctx.plugin(web_server)
+    await ctx.plugin(api_proxy)
+    await ctx.plugin(ToolAskUserPlugin)
 
     user_questions: UserQuestionService = ctx.get("userQuestions")
     assert user_questions is not None

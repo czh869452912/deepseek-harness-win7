@@ -79,9 +79,12 @@ class ReflectService:
         self.mixin("logger", ["error", "info", "warn", "debug"])
         self.mixin("timer", ["timeout", "interval", "throttle", "debounce", "setTimeout", "setInterval"])
 
-    def get(self, ctx: Any, name: str, default: Any = None, strict: bool = True) -> Any:
+    def get(self, ctx: Any, name: str, strict: bool = True, default: Any = None) -> Any:
         """
         Read a service or accessor property from context.
+
+        `strict` occupies the reference's positional slot; `default` is the
+        port-only fallback returned when no implementation resolves.
         """
         if name in RESERVED_PROPERTIES or name.startswith("_") or (isinstance(name, str) and name.isdigit()):
             return default
@@ -102,28 +105,32 @@ class ReflectService:
                 from dsh.cordis.utils import get_traceable
                 return get_traceable(ctx, val)
 
-            # 3. Direct service dictionary check on Context
-            if hasattr(ctx, "_services") and name in ctx._services:
-                val = ctx._services[name]
-                if getattr(val, "ctx", None) is ctx:
-                    return val
-                from dsh.cordis.utils import get_traceable
-                return get_traceable(ctx, val)
-
-            # 4. Fallback parent hierarchy check
-            if hasattr(ctx, "get_service"):
-                val = ctx.get_service(name, default)
-                if val is not default:
+            # The `_services` lookup and the parent-hierarchy walk mirror the
+            # implementation registry; strict reads must only observe ACTIVE providers,
+            # so they are skipped when `strict` is set (TS reads `store` only).
+            if not strict:
+                # 3. Direct service dictionary check on Context
+                if hasattr(ctx, "_services") and name in ctx._services:
+                    val = ctx._services[name]
                     if getattr(val, "ctx", None) is ctx:
                         return val
                     from dsh.cordis.utils import get_traceable
                     return get_traceable(ctx, val)
 
-            return default
+                # 4. Fallback parent hierarchy check
+                if hasattr(ctx, "get_service"):
+                    val = ctx.get_service(name, default)
+                    if val is not default:
+                        if getattr(val, "ctx", None) is ctx:
+                            return val
+                        from dsh.cordis.utils import get_traceable
+                        return get_traceable(ctx, val)
 
-        err = RuntimeError(f'cannot get property "{name}" without inject')
-        if hasattr(ctx, "waterfall_sync"):
-            return ctx.waterfall_sync("internal/get", ctx, name, err, _resolve_default)
+                return default
+
+        # reflect.ts `ReflectService.get` reads the store directly; the
+        # `internal/get` waterfall belongs to the context proxy only, so the
+        # dispatch lives in `Context.__getattr__`.
         return _resolve_default()
 
     def _get_impl(self, ctx: Any, name: str, strict: bool = True) -> Optional[Impl]:
@@ -151,7 +158,7 @@ class ReflectService:
         if def_prop and getattr(def_prop, "type", None) == PropertyType.ACCESSOR:
             if not def_prop.set:
                 return False
-            err = RuntimeError(f"cannot set property '{name}'")
+            err = RuntimeError(f'cannot set property "{name}"')
             return def_prop.set(ctx, value, err)
 
 
@@ -160,11 +167,11 @@ class ReflectService:
             key = get_isolate_symbol(ctx, name) or name
             impl = self.store.get(key)
             if not impl:
-                raise RuntimeError(f"cannot set property '{name}' without provide")
+                raise RuntimeError(f'cannot set property "{name}" without provide')
 
             fiber = getattr(ctx, "fiber", None)
             if fiber is not None and impl.fiber is not None and impl.fiber is not fiber:
-                raise RuntimeError(f"cannot set property '{name}' in multiple fibers")
+                raise RuntimeError(f'cannot set property "{name}" in multiple fibers')
 
             impl.value = value
 
@@ -174,7 +181,7 @@ class ReflectService:
                 setattr(target, name, value)
             return True
 
-        err = RuntimeError(f"cannot set property '{name}' without provide")
+        err = RuntimeError(f'cannot set property "{name}" without provide')
         if hasattr(ctx, "waterfall_sync"):
             return ctx.waterfall_sync("internal/set", ctx, name, value, err, _do_set)
         return _do_set()
@@ -206,7 +213,7 @@ class ReflectService:
             if name not in self.props:
                 self.props[name] = PropertyService()
             elif getattr(self.props[name], "type", None) != PropertyType.SERVICE:
-                raise RuntimeError(f"property '{name}' is already declared as {self.props[name].type}")
+                raise RuntimeError(f'property "{name}" is already declared as {self.props[name].type}')
 
             if hasattr(target_ctx, "root") and hasattr(target_ctx.root, "_isolated_keys"):
                 root_sym = target_ctx.root._isolated_keys.setdefault(name, f"sym:{name}#{id(object())}")
@@ -218,9 +225,6 @@ class ReflectService:
             fiber = getattr(target_ctx, "fiber", None)
             if key in self.store:
                 prev = self.store[key]
-                from dsh.cordis.service import Service
-                if prev.value is val and isinstance(val, Service):
-                    return lambda: None
                 if not allow_replace:
                     prev_fiber = getattr(prev, "fiber", None)
                     prev_name = getattr(prev_fiber, "name", "root") if prev_fiber else "root"
@@ -241,7 +245,10 @@ class ReflectService:
             if fiber is None or fiber.state == FiberState.ACTIVE:
                 self.notify([name])
 
-            def teardown() -> None:
+            def teardown() -> Any:
+                # Mirrors the reference async disposer: the unregistration and the
+                # dependent wake-up run at the call site, and only the dependent
+                # wait is asynchronous.
                 if key in self.store and self.store[key] == impl:
                     del self.store[key]
                 if hasattr(target_store, "_services") and name in target_store._services:
@@ -251,7 +258,27 @@ class ReflectService:
                             delattr(target_store, name)
                         except AttributeError:
                             pass
-                self.notify([name])
+                fibers = self.notify([name])
+                provider_fiber = getattr(target_ctx, "fiber", None)
+                pending = [fiber for fiber in fibers if fiber is not provider_fiber and hasattr(fiber, "await_settled")]
+                if not pending and (provider_fiber is None or getattr(provider_fiber, "store", None) is None):
+                    return None
+
+                async def _await_dependents() -> None:
+                    for dependent in pending:
+                        # fiber.ts awaits each woken fiber (`fiber.await()`), which
+                        # settles the unload driven by `notify`.
+                        try:
+                            while getattr(dependent, "inertia", None) is not None and not dependent.inertia.done():
+                                await dependent.inertia
+                        except Exception:
+                            pass
+                    # The providing fiber keeps its own store entry until every
+                    # dependent finished unloading (reflect.ts provide disposer).
+                    if provider_fiber is not None and getattr(provider_fiber, "store", None) is not None:
+                        provider_fiber.store.pop(name, None)
+
+                return _await_dependents()
 
             return teardown
 
@@ -321,7 +348,7 @@ class ReflectService:
             if name in self.props:
                 prop_type = getattr(self.props[name], "type", "accessor")
                 type_str = prop_type.value if hasattr(prop_type, "value") else str(prop_type)
-                raise RuntimeError(f"property '{name}' is already declared as {type_str}")
+                raise RuntimeError(f'property "{name}" is already declared as {type_str}')
             get_fn = options.get("get")
             set_fn = options.get("set")
             self.props[name] = PropertyAccessor(get_fn, set_fn)

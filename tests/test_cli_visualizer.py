@@ -10,7 +10,7 @@ from dsh.extensions.cli_visualizer import CliVisualizerPlugin
 async def test_cli_visualizer_plugin_events():
     ctx = Context()
     ctx.set_service("tools", ToolsService(ctx))
-    ctx.plugin(CliVisualizerPlugin, config={"verbose": True})
+    await ctx.plugin(CliVisualizerPlugin, config={"verbose": True})
 
     captured_output = io.StringIO()
     old_stdout = sys.stdout

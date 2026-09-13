@@ -36,8 +36,8 @@ async def test_canonical_tool_order_lexicographic():
     ctx = Context()
     mock_llm = MockLLMService()
     ctx.set_service("llm", mock_llm)
-    ctx.plugin(ToolsPlugin)
-    ctx.plugin(AgentLoopPlugin)
+    await ctx.plugin(ToolsPlugin)
+    await ctx.plugin(AgentLoopPlugin)
 
     tools: ToolsService = ctx.get("tools")
     # Register in non-alphabetical order

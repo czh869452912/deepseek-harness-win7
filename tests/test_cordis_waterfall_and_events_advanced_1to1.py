@@ -60,12 +60,12 @@ def test_waterfall_sync_pipeline():
     assert res == 30
 
 
-def test_bail_sync_short_circuit():
+def test_bail_short_circuit():
     ctx = Context()
 
     ctx.on("check/auth", lambda user: None)  # Returns falsy -> continue
     ctx.on("check/auth", lambda user: "DENIED" if user == "guest" else None)
     ctx.on("check/auth", lambda user: "ALLOWED")
 
-    assert ctx.bail_sync("check/auth", "guest") == "DENIED"
-    assert ctx.bail_sync("check/auth", "admin") == "ALLOWED"
+    assert ctx.bail("check/auth", "guest") == "DENIED"
+    assert ctx.bail("check/auth", "admin") == "ALLOWED"

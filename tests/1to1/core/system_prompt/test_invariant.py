@@ -13,10 +13,10 @@ from dsh.core.system_prompt import SystemPromptInvariantPlugin
 from dsh.diagnostics.invariants import InvariantRegistry
 
 
-def setup_ctx() -> Context:
+async def setup_ctx() -> Context:
     ctx = Context()
-    ctx.plugin(InvariantRegistry)
-    ctx.plugin(SystemPromptInvariantPlugin)
+    await ctx.plugin(InvariantRegistry)
+    await ctx.plugin(SystemPromptInvariantPlugin)
     return ctx
 
 
@@ -40,7 +40,7 @@ async def assemble(ctx: Context, result: Dict[str, Any]) -> Dict[str, Any]:
 
 @pytest.mark.asyncio
 async def test_accepts_well_formed_authoritative_assembly():
-    ctx = setup_ctx()
+    ctx = await setup_ctx()
     res = await assemble(ctx, valid())
     assert res == valid()
 
@@ -88,6 +88,6 @@ async def test_accepts_well_formed_authoritative_assembly():
     ],
 )
 async def test_rejects_malformed_authoritative_assembly(assembly, pattern):
-    ctx = setup_ctx()
+    ctx = await setup_ctx()
     with pytest.raises(Exception, match=pattern):
         await assemble(ctx, assembly)

@@ -176,7 +176,7 @@ def test_d7_bail_error_propagation_not_swallowed():
     bus.on("test.bug", buggy_listener)
 
     with pytest.raises(TypeError):
-        bus.bail_sync("test.bug", "some_data")
+        bus.bail("test.bug", "some_data")
 
 
 @pytest.mark.asyncio

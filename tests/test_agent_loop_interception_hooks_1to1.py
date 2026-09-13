@@ -43,8 +43,8 @@ async def test_session_start_hook_fires_and_seeds_preamble():
     """agent/session-start fires on startup and allows seeding context."""
     ctx = Context()
     ctx.set_service("llm", MockLLMService(["hello from assistant"]))
-    ctx.plugin(ToolsPlugin)
-    ctx.plugin(AgentLoopPlugin)
+    await ctx.plugin(ToolsPlugin)
+    await ctx.plugin(AgentLoopPlugin)
 
     session_start_sources = []
     def on_session_start(data):
@@ -80,8 +80,8 @@ async def test_pre_step_hook_prompt_rewrite():
     """agent/pre-step can rewrite prompt before recording into session."""
     ctx = Context()
     ctx.set_service("llm", MockLLMService(["rewritten response"]))
-    ctx.plugin(ToolsPlugin)
-    ctx.plugin(AgentLoopPlugin)
+    await ctx.plugin(ToolsPlugin)
+    await ctx.plugin(AgentLoopPlugin)
 
     async def on_pre_step(data, next_fn):
         messages = data.get("messages", [])
@@ -112,8 +112,8 @@ async def test_pre_step_hook_reject_closes_turn():
     ctx = Context()
     mock_llm = MockLLMService(["should not be called"])
     ctx.set_service("llm", mock_llm)
-    ctx.plugin(ToolsPlugin)
-    ctx.plugin(AgentLoopPlugin)
+    await ctx.plugin(ToolsPlugin)
+    await ctx.plugin(AgentLoopPlugin)
 
     async def on_pre_step_reject(data, next_fn):
         return {"kind": "reject"}

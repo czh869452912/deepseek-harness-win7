@@ -41,6 +41,33 @@ _JS_FUNCTION_TYPES = (
 #: bound, which `_js_own_key_order` applies).
 _JS_ARRAY_INDEX = re.compile(r"^(?:0|[1-9][0-9]*)\Z", re.ASCII)
 
+
+class SharedCounter:
+    """
+    Mutable counter cell shared by every derived view of one Cordis service.
+
+    `context.ts#Context.extend` builds children with `Object.create(this)`, so a
+    service installed on the root context is the *same* instance below every
+    child context and its `++this.field` counters advance one tree-wide
+    sequence (`registry.ts` `get counter()` -> `++this._counter`,
+    `logger.ts` `++this._snMessage` / `++this._snExporter`). The Python port
+    binds a per-context copy of these services so that `bound.ctx` addresses the
+    calling context, so any counter that upstream keeps as a single instance
+    field must live in a shared cell: copying a plain `int` would restart the
+    sequence in each derived context.
+    """
+
+    __slots__ = ("value",)
+
+    def __init__(self, value: int = 0) -> None:
+        self.value = value
+
+    def next(self) -> int:
+        """Advance the shared sequence and return the new value."""
+        self.value += 1
+        return self.value
+
+
 # ---------------------------------------------------------------------------
 # ECMAScript runtime semantics helpers
 #

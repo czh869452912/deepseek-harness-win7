@@ -7,6 +7,12 @@ Covers:
 - T6: Object plugin named 'apply' is treated as anonymous and inherits ancestor name
 - T7: Plugin can be loaded on FAILED fiber matching TS assertActive behavior
 - T8: internal/plugin listener can see the fiber in registry.list_fibers()
+- T9: One `RegistryService.counter` allocates fiber uids across root and
+  derived contexts (`ctx.extend()`/`isolate()`/`intercept()`)
+- T9b: `counter` increments on every read (registry.ts `get counter()`)
+- T10: inspection drops a fiber on its own disposal (`registry.ts:258-265`
+  keeps no auxiliary pending-fiber index; the child disposer removes the fiber)
+- T11: a disposed fiber of a live runtime is not reported while its live sibling is
 """
 
 import pytest
@@ -31,7 +37,7 @@ async def test_t1_service_provided_by_class_plugin_disposed_on_plugin_unload():
         def __init__(self, c: Context):
             super().__init__(c, "svc_service")
 
-    fiber = ctx.plugin(SvcPlugin)
+    fiber = await ctx.plugin(SvcPlugin)
     assert ctx.has("svc_service")
     assert ctx.get("svc_service") is not None
 
@@ -68,7 +74,7 @@ async def test_t5_inject_intercept_config_reaches_service_resolve_config():
         def __init__(self, c: Context):
             super().__init__(c, "db_service")
 
-    ctx.plugin(InterceptService)
+    await ctx.plugin(InterceptService)
 
     class Consumer(Plugin):
         name = "consumer"
@@ -77,7 +83,7 @@ async def test_t5_inject_intercept_config_reaches_service_resolve_config():
         def apply(self, c: Context) -> None:
             captured_config.update(getattr(c, "_intercept_map", {}).get("db_service", {}))
 
-    fiber = ctx.plugin(Consumer)
+    fiber = await ctx.plugin(Consumer)
     assert fiber.state == FiberState.ACTIVE
     assert captured_config.get("pool") == 5
     assert "required" not in captured_config
@@ -100,7 +106,7 @@ async def test_t6_object_plugin_named_apply_is_anonymous():
             f = c.plugin(obj_plugin)
             child_fiber_ref.append(f)
 
-    ctx.plugin(NamedParent)
+    await ctx.plugin(NamedParent)
     assert len(child_fiber_ref) == 1
     child_fiber = child_fiber_ref[0]
     assert child_fiber.name == "parent_named"
@@ -118,6 +124,8 @@ async def test_t7_plugin_can_load_on_failed_fiber_like_ts():
             raise RuntimeError("Setup failed")
 
     parent_fiber = ctx.plugin(FailingParent)
+    with pytest.raises(RuntimeError, match="Setup failed"):
+        await parent_fiber
     assert parent_fiber.state == FiberState.FAILED
     assert parent_fiber.uid is not None
 
@@ -128,7 +136,7 @@ async def test_t7_plugin_can_load_on_failed_fiber_like_ts():
             pass
 
     # Loading child on parent_fiber.ctx should succeed because parent_fiber.uid is not None
-    child_fiber = parent_fiber.ctx.plugin(SiblingPlugin)
+    child_fiber = await parent_fiber.ctx.plugin(SiblingPlugin)
     assert child_fiber.state == FiberState.ACTIVE
 
 
@@ -150,3 +158,121 @@ async def test_t8_internal_plugin_listener_sees_fiber_in_registry():
     fiber = ctx.plugin(MyPlugin)
     assert len(seen_in_registry) == 1
     assert seen_in_registry[0] is True
+
+
+@pytest.mark.asyncio
+async def test_t9_registry_counter_is_shared_across_derived_contexts():
+    """T9: one `RegistryService.counter` allocates every fiber uid in the tree.
+
+    Reference: `registry.ts#RegistryService` is installed once by the Context
+    constructor, and `context.ts` derived contexts (`extend`/`isolate`/
+    `intercept`) only inherit properties through the prototype chain, so every
+    `ctx.registry` is the same service instance whose
+    `get counter() { return ++this._counter }` allocates `this.uid =
+    parent.registry.counter` (`fiber.ts` constructor). A bound Python registry
+    view must therefore share the allocator state instead of copying the
+    counter, otherwise plugins mounted from a derived context re-use uids
+    already handed to a sibling.
+    """
+    root = Context()
+    derived = root.extend().isolate("t9_isolated").intercept("t9_isolated", {})
+
+    # Every read allocates the next value, whichever context reads it.
+    first = root.registry.counter
+    second = derived.registry.counter
+    third = root.registry.counter
+    assert (first, second, third) == (first, first + 1, first + 2)
+
+    class RootPlugin(Plugin):
+        name = "t9_root"
+
+    class DerivedPlugin(Plugin):
+        name = "t9_derived"
+
+    class LaterRootPlugin(Plugin):
+        name = "t9_later_root"
+
+    root_fiber = root.plugin(RootPlugin, {})
+    derived_fiber = derived.plugin(DerivedPlugin, {})
+    later_root_fiber = root.plugin(LaterRootPlugin, {})
+
+    uids = [root_fiber.uid, derived_fiber.uid, later_root_fiber.uid]
+    assert len(set(uids)) == 3
+    assert uids == [third + 1, third + 2, third + 3]
+
+
+@pytest.mark.asyncio
+async def test_t9b_counter_property_increments_on_every_read():
+    """T9b: `counter` is a getter that increments, not a snapshot of `_counter`."""
+    ctx = Context()
+    child = ctx.extend()
+
+    values = [ctx.registry.counter for _ in range(3)]
+    assert values == [values[0], values[0] + 1, values[0] + 2]
+    assert child.registry.counter == values[0] + 3
+
+
+@pytest.mark.asyncio
+async def test_t10_registry_inspection_drops_a_fiber_on_its_own_disposal():
+    """T10: pending and activated fibers are reported only while they are live.
+
+    Reference: `registry.ts:258-265`. `registry.values()` hands out the runtimes
+    and each runtime's `fibers` is a `DisposableList` the child disposer removes
+    from, so an activated or disposed fiber can never be reported through a
+    retained auxiliary index.
+    """
+    ctx = Context()
+
+    class LateServicePlugin(Plugin):
+        name = "t10_late_service"
+        inject = ["t10_service"]
+
+        def apply(self, c: Context) -> None:
+            pass
+
+    fiber = ctx.registry.plugin(LateServicePlugin)
+    assert fiber.state == FiberState.PENDING
+    assert fiber in ctx.registry.list_fibers()
+
+    ctx.set_service("t10_service", {"value": 1})
+    await fiber.await_settled()
+    assert fiber.state == FiberState.ACTIVE
+    assert fiber in ctx.registry.list_fibers()
+
+    await fiber.dispose()
+
+    assert fiber.state == FiberState.DISPOSED
+    assert ctx.registry.has(LateServicePlugin) is False
+    assert fiber not in ctx.registry.list_fibers()
+    assert ctx.registry.list_fibers() == []
+
+
+@pytest.mark.asyncio
+async def test_t11_disposed_fiber_of_a_live_runtime_is_not_reported():
+    """T11: a disposed fiber leaves inspection while its sibling stays registered.
+
+    Reference: `registry.ts:263-265` delegates removal to each fiber's own
+    disposer, so a runtime keeps reporting exactly its live fibers.
+    """
+    ctx = Context()
+
+    class TwinPlugin(Plugin):
+        name = "t11_twin"
+
+    first = ctx.registry.plugin(TwinPlugin)
+    second = ctx.registry.plugin(TwinPlugin)
+    assert first in ctx.registry.list_fibers()
+    assert second in ctx.registry.list_fibers()
+
+    await first.dispose()
+
+    runtime = ctx.registry.get(TwinPlugin)
+    assert runtime is not None
+    assert runtime.fibers == [second]
+    assert first not in ctx.registry.list_fibers()
+    assert second in ctx.registry.list_fibers()
+
+    await second.dispose()
+
+    assert ctx.registry.has(TwinPlugin) is False
+    assert ctx.registry.list_fibers() == []

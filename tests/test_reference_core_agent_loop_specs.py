@@ -70,10 +70,10 @@ class MockLlmService:
 async def create_harness(responses=None):
     ctx = Context()
     ctx.set_service("llm", MockLlmService(responses=responses))
-    ctx.plugin(SessionPlugin)
-    ctx.plugin(ToolsPlugin)
-    ctx.plugin(AgentPlugin)
-    ctx.plugin(AgentLoopPlugin)
+    await ctx.plugin(SessionPlugin)
+    await ctx.plugin(ToolsPlugin)
+    await ctx.plugin(AgentPlugin)
+    await ctx.plugin(AgentLoopPlugin)
     return ctx
 
 

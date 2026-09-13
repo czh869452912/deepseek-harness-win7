@@ -30,9 +30,10 @@ class ToolSubagentPlugin(Plugin):
             return
 
         if not ctx.has("subagents"):
-            ctx.set_service("subagents", SubagentRegistry(ctx))
-
-        subagents_svc: SubagentRegistry = ctx.get("subagents")
+            subagents_svc = SubagentRegistry(ctx)
+            ctx.set_service("subagents", subagents_svc)
+        else:
+            subagents_svc: SubagentRegistry = ctx.get("subagents")
 
         async def exec_subagent(
             description: Optional[str] = None,

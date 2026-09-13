@@ -10,8 +10,8 @@ from dsh.fs.fs_local import FsLocalPlugin
 async def test_file_reference_local_injection(tmp_path):
     ctx = Context()
     fs_plugin = FsLocalPlugin({"cwd": str(tmp_path)})
-    ctx.plugin(fs_plugin)
-    ctx.plugin(FileReferenceLocalPlugin)
+    await ctx.plugin(fs_plugin)
+    await ctx.plugin(FileReferenceLocalPlugin)
 
     # Create a test file
     sample_file = tmp_path / "sample.py"
@@ -34,7 +34,7 @@ async def test_file_reference_local_injection(tmp_path):
 @pytest.mark.asyncio
 async def test_time_context_injection():
     ctx = Context()
-    ctx.plugin(TimeContextPlugin)
+    await ctx.plugin(TimeContextPlugin)
 
     payload = {
         "session_id": "test-session",

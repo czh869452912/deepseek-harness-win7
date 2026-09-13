@@ -105,7 +105,7 @@ async def main_async():
         return
 
     # Build Cordis context
-    ctx = build_harness(
+    ctx = await build_harness(
         mode=selected_profile,
         api_key=args.api_key,
         base_url=args.base_url,

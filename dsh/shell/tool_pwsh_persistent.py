@@ -76,9 +76,12 @@ class ToolPwshPersistentPlugin(Plugin):
         shell_type = "bash" if tool_name == "bash" else "pwsh"
 
         if not ctx.has("terminals"):
-            ctx.set_service("terminals", TerminalService(shell_type=shell_type))
+            terminals = TerminalService(shell_type=shell_type)
+            ctx.set_service("terminals", terminals)
+        else:
+            terminals = ctx.get("terminals")
         if not ctx.has("terminal"):
-            ctx.set_service("terminal", ctx.get("terminals"))
+            ctx.set_service("terminal", terminals)
 
         parameters = {
             "type": "object",

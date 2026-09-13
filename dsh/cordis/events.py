@@ -165,7 +165,7 @@ class EventBus:
 
         # Handle internal/listener interception hook matching TS events.ts:296
         options = {"prepend": prepend, "global": global_listener}
-        intercepted = self.bail_sync("internal/listener", event_name, handler, options, caller_ctx=caller_ctx or self.ctx)
+        intercepted = self.bail("internal/listener", event_name, handler, options, caller_ctx=caller_ctx or self.ctx)
         if intercepted:
             if callable(intercepted):
                 return intercepted
@@ -319,15 +319,15 @@ class EventBus:
             if inspect.isawaitable(res):
                 await res
 
-    async def parallel(self, event_name: str, *args: Any, **kwargs: Any) -> List[Any]:
+    async def parallel(self, event_name: str, *args: Any, **kwargs: Any) -> None:
         """
         Parallel dispatch: run all listeners concurrently matching TS EventBus.parallel.
-        Raises AggregateError if any listeners fail.
+        Resolves with no value; raises AggregateError if any listeners fail.
         """
         event_name, actual_args, caller_ctx = _normalize_event_call(event_name, args, self.ctx, kwargs)
         listeners = self._dispatch_hooks("emit", event_name, actual_args, caller_ctx)
         if not listeners:
-            return []
+            return None
 
         async def _run(cb: Callable[..., Any]) -> Any:
             res = cb(*actual_args, **kwargs)
@@ -339,7 +339,7 @@ class EventBus:
         errors = [r for r in results if isinstance(r, Exception)]
         if errors:
             raise AggregateError(errors)
-        return list(results)
+        return None
 
     async def serial(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
         """
@@ -355,7 +355,7 @@ class EventBus:
                 return res
         return None
 
-    def bail_sync(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
+    def bail(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
         """
         Dispatch an event synchronously, stopping on the first bail value matching TS EventBus.bail.
         """
@@ -377,34 +377,6 @@ class EventBus:
                 res = listener(*call_args, **kwargs)
             else:
                 res = listener(*actual_args, **kwargs)
-            if is_bailed(res):
-                return res
-        return None
-
-    async def bail(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
-        """
-        Dispatch an event, calling listeners in order until one bails matching TS EventBus.bail.
-        """
-        event_name, actual_args, caller_ctx = _normalize_event_call(event_name, args, self.ctx, kwargs)
-        listeners = self._dispatch_hooks("bail", event_name, actual_args, caller_ctx)
-        for listener in listeners:
-            sig = None
-            try:
-                sig = inspect.signature(listener)
-            except Exception:
-                pass
-            if sig is not None:
-                params = list(sig.parameters.values())
-                has_var = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
-                pos_count = sum(1 for p in params if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD))
-                call_args = actual_args if (has_var or pos_count >= len(actual_args)) else actual_args[:pos_count]
-                if event_name == "internal/listener" and len(actual_args) == 3 and isinstance(actual_args[2], dict) and not has_var and pos_count == 4:
-                    call_args = (actual_args[0], actual_args[1], actual_args[2].get("prepend", False), actual_args[2].get("global", False))
-                res = listener(*call_args, **kwargs)
-            else:
-                res = listener(*actual_args, **kwargs)
-            if inspect.isawaitable(res):
-                res = await res
             if is_bailed(res):
                 return res
         return None

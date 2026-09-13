@@ -24,7 +24,7 @@ async def test_cordis_bail_dispatch():
     ctx.on("policy/check", handler_2)
     ctx.on("policy/check", handler_3)
 
-    result = await ctx.bail("policy/check", "test_item")
+    result = ctx.bail("policy/check", "test_item")
     assert result == "Handled by h2: test_item"
     assert call_order == ["h1", "h2"]  # h3 was not called!
 

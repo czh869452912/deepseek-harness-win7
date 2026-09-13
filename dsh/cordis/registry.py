@@ -7,8 +7,9 @@ import asyncio
 import functools
 import inspect
 import sys
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from dsh.cordis.fiber import Fiber, FiberState, resolve_config
+from dsh.cordis.utils import SharedCounter
 
 
 class Inject:
@@ -136,9 +137,13 @@ class RegistryService:
 
     def __init__(self, ctx: Any):
         self.ctx = ctx
-        self._counter = 0
+        # `registry.ts` installs one RegistryService per application and every
+        # derived context resolves `ctx.registry` to that same instance through
+        # the context prototype chain, so `counter` allocates from one sequence
+        # for the whole tree. The port binds a per-context view (a shallow copy),
+        # so the allocator lives in a shared cell.
+        self._counter = SharedCounter()
         self._runtimes: Dict[Any, PluginRuntime] = {}
-        self._pending_fibers: Set[Fiber] = set()
         self._updating = False
 
     def _bind(self, ctx: Any) -> "RegistryService":
@@ -149,8 +154,8 @@ class RegistryService:
 
     @property
     def counter(self) -> int:
-        self._counter += 1
-        return self._counter
+        # `registry.ts` allocates on every read of the single shared counter.
+        return self._counter.next()
 
     @property
     def size(self) -> int:
@@ -201,16 +206,14 @@ class RegistryService:
         runtime = self._runtimes.pop(key, None) if key else None
         if runtime:
             for fiber in list(runtime.fibers):
-                if fiber in self._pending_fibers:
-                    self._pending_fibers.remove(fiber)
                 try:
                     loop = asyncio.get_running_loop()
                     loop.create_task(fiber.dispose())
                 except RuntimeError:
+                    # No ambient loop: `dispose()` drains the teardown inside the
+                    # call, leaving only its settled awaitable to consume.
                     try:
-                        loop = asyncio.new_event_loop()
-                        loop.run_until_complete(fiber.dispose())
-                        loop.close()
+                        asyncio.run(fiber.dispose())
                     except Exception:
                         pass
         return runtime
@@ -220,8 +223,6 @@ class RegistryService:
         runtime = self._runtimes.pop(key, None) if key else None
         if runtime:
             for fiber in list(runtime.fibers):
-                if fiber in self._pending_fibers:
-                    self._pending_fibers.remove(fiber)
                 await fiber.dispose()
         return runtime
 
@@ -239,12 +240,17 @@ class RegistryService:
             callback(v, k, self)
 
     def list_fibers(self) -> List[Fiber]:
+        """
+        Return the fibers of every registered plugin runtime.
+
+        `registry.ts` inspection walks `runtime.fibers` (`values()`), and a
+        fiber leaves that list when its own disposer -- the parent-owned
+        `ctx.plugin()` effect -- runs, so neither a disposed fiber nor an
+        auxiliary index can surface here after teardown.
+        """
         fibers: List[Fiber] = []
         for runtime in self._runtimes.values():
             fibers.extend(runtime.fibers)
-        for f in self._pending_fibers:
-            if f not in fibers:
-                fibers.append(f)
         return fibers
 
     def plugin(self, plugin_cls_or_instance: Any, config: Optional[Dict[str, Any]] = None, get_outer_stack: Optional[Callable[[], List[str]]] = None, parent_ctx: Optional[Any] = None) -> Fiber:
@@ -379,13 +385,15 @@ class RegistryService:
                     pass
         runtime.add_fiber(fiber)
 
-        # Evaluate dependencies via composite epoch refresh
-        for name in list(fiber.inject.keys()):
-            fiber._checkImpl(name)
-        fiber._refresh()
-
-        if fiber.state == FiberState.PENDING:
-            self._pending_fibers.add(fiber)
+        # fiber.ts resolves dependencies only after publication: an
+        # `internal/plugin` observer may dispose the fiber (then its teardown owns
+        # any collected effects) or add injections, and a reentrant parent unload
+        # leaves the unpublished child to the parent's disposal.
+        parent_fiber = getattr(target_parent, "fiber", None) if target_parent else None
+        if fiber.uid is not None and (parent_fiber is None or parent_fiber.state != FiberState.UNLOADING):
+            for name in list(fiber.inject.keys()):
+                fiber._checkImpl(name)
+            fiber._refresh()
 
         return fiber
 
@@ -421,8 +429,9 @@ class RegistryService:
         """
         if hasattr(self.ctx, "reflect") and hasattr(self.ctx.reflect, "notify"):
             names = set()
-            for fiber in list(self._pending_fibers):
-                names.update(fiber.inject.keys())
+            for fiber in self.list_fibers():
+                if fiber.state == FiberState.PENDING:
+                    names.update(fiber.inject.keys())
             if names:
                 self.ctx.reflect.notify(list(names))
 

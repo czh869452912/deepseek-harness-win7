@@ -23,9 +23,10 @@ class ToolWorkflowPlugin(Plugin):
             return
 
         if not ctx.has("workflowEngine"):
-            ctx.set_service("workflowEngine", WorkflowEngine(ctx))
-
-        wf_engine: WorkflowEngine = ctx.get("workflowEngine")
+            wf_engine = WorkflowEngine(ctx)
+            ctx.set_service("workflowEngine", wf_engine)
+        else:
+            wf_engine: WorkflowEngine = ctx.get("workflowEngine")
 
         async def exec_workflow(script: str, meta: Optional[Dict[str, Any]] = None) -> str:
             res = await wf_engine.run(script, meta=meta)

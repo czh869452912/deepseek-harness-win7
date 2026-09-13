@@ -6,7 +6,7 @@ from dsh.harness import build_harness
 @pytest.mark.asyncio
 async def test_mock_llm_turn_execution():
     # Build harness with mock LLM
-    ctx = build_harness(mode="minimal")
+    ctx = await build_harness(mode="minimal")
 
     mock_llm = MagicMock()
     # Step 1: LLM decides to call tool 'str_replace_editor' command 'view'

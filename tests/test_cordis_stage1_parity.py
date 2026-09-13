@@ -101,7 +101,7 @@ async def test_fiber_async_inertia_barrier():
 
             c.effect(lambda: async_disposer, label="async_disposer")
 
-    fiber = ctx.registry.plugin(AsyncEffectPlugin())
+    fiber = await ctx.registry.plugin(AsyncEffectPlugin())
     assert fiber.state == FiberState.ACTIVE
     assert cleaned == []
 

@@ -18,9 +18,9 @@ def tool(name: str, description: Optional[str] = None) -> Dict[str, Any]:
     }
 
 
-def mount(config: Optional[Dict[str, Any]] = None) -> Context:
+async def mount(config: Optional[Dict[str, Any]] = None) -> Context:
     ctx = Context()
-    ctx.plugin(SystemPrompt, config or {})
+    await ctx.plugin(SystemPrompt, config or {})
     return ctx
 
 
@@ -34,7 +34,7 @@ def test_exports_the_rest_entry_as_unlisted_tools():
 
 @pytest.mark.asyncio
 async def test_assembles_tools_in_lexicographic_name_order_when_no_tool_order():
-    ctx = mount()
+    ctx = await mount()
     sp: SystemPrompt = ctx.get("systemPrompt")
     sp.tools(lambda _: {"schemas": [tool("charlie"), tool("alpha")]})
     sp.tools(lambda _: {"schemas": [tool("bravo")]})
@@ -44,12 +44,12 @@ async def test_assembles_tools_in_lexicographic_name_order_when_no_tool_order():
 
 @pytest.mark.asyncio
 async def test_assembles_the_same_order_regardless_of_provider_registration_order():
-    forward = mount()
+    forward = await mount()
     sp_f: SystemPrompt = forward.get("systemPrompt")
     sp_f.tools(lambda _: {"schemas": [tool("alpha")]})
     sp_f.tools(lambda _: {"schemas": [tool("zulu")]})
 
-    backward = mount()
+    backward = await mount()
     sp_b: SystemPrompt = backward.get("systemPrompt")
     sp_b.tools(lambda _: {"schemas": [tool("zulu")]})
     sp_b.tools(lambda _: {"schemas": [tool("alpha")]})
@@ -60,7 +60,7 @@ async def test_assembles_the_same_order_regardless_of_provider_registration_orde
 
 @pytest.mark.asyncio
 async def test_applies_a_configured_tool_order():
-    ctx = mount({"toolOrder": ["todo_write", TOOL_ORDER_REST, "bash"]})
+    ctx = await mount({"toolOrder": ["todo_write", TOOL_ORDER_REST, "bash"]})
     sp: SystemPrompt = ctx.get("systemPrompt")
     sp.tools(lambda _: {"schemas": [tool("bash"), tool("echo_b"), tool("todo_write"), tool("echo_a")]})
     assembly = await sp.assemble()
@@ -69,7 +69,7 @@ async def test_applies_a_configured_tool_order():
 
 @pytest.mark.asyncio
 async def test_rejects_assembly_when_tool_order_names_unregistered_tool():
-    ctx = mount({"toolOrder": ["todo_write", "ghost", TOOL_ORDER_REST, "wraith"]})
+    ctx = await mount({"toolOrder": ["todo_write", "ghost", TOOL_ORDER_REST, "wraith"]})
     sp: SystemPrompt = ctx.get("systemPrompt")
     sp.tools(lambda _: {"schemas": [tool("bash"), tool("todo_write")]})
     with pytest.raises(ValueError, match=r'toolOrder lists unregistered tools "ghost", "wraith"; known tools: bash, todo_write'):
@@ -78,7 +78,7 @@ async def test_rejects_assembly_when_tool_order_names_unregistered_tool():
 
 @pytest.mark.asyncio
 async def test_names_single_unregistered_tool_when_no_tools_registered():
-    ctx = mount({"toolOrder": ["ghost", TOOL_ORDER_REST]})
+    ctx = await mount({"toolOrder": ["ghost", TOOL_ORDER_REST]})
     sp: SystemPrompt = ctx.get("systemPrompt")
     with pytest.raises(ValueError, match=r'toolOrder lists unregistered tool "ghost"; known tools: \(none\)'):
         await sp.assemble()
@@ -87,7 +87,7 @@ async def test_names_single_unregistered_tool_when_no_tools_registered():
 @pytest.mark.asyncio
 @pytest.mark.parametrize("tool_order", [None, [TOOL_ORDER_REST]])
 async def test_rejects_provider_tool_named_like_reserved_rest_entry(tool_order):
-    ctx = mount({} if tool_order is None else {"toolOrder": tool_order})
+    ctx = await mount({} if tool_order is None else {"toolOrder": tool_order})
     sp: SystemPrompt = ctx.get("systemPrompt")
     sp.tools(lambda _: {"schemas": [tool(TOOL_ORDER_REST)]})
     with pytest.raises(ValueError, match=rf'tool provider returned reserved tool name "{TOOL_ORDER_REST}"'):
@@ -96,7 +96,7 @@ async def test_rejects_provider_tool_named_like_reserved_rest_entry(tool_order):
 
 @pytest.mark.asyncio
 async def test_keeps_collection_order_between_tools_that_share_name():
-    ctx = mount()
+    ctx = await mount()
     sp: SystemPrompt = ctx.get("systemPrompt")
     sp.tools(lambda _: {"schemas": [tool("dup", "first"), tool("anchor"), tool("dup", "second")]})
     assembly = await sp.assemble()
@@ -105,7 +105,7 @@ async def test_keeps_collection_order_between_tools_that_share_name():
 
 @pytest.mark.asyncio
 async def test_canonicalizes_before_assemble_waterfall():
-    ctx = mount()
+    ctx = await mount()
     sp: SystemPrompt = ctx.get("systemPrompt")
     sp.tools(lambda _: {"schemas": [tool("zulu"), tool("alpha")]})
     seen: List[str] = []

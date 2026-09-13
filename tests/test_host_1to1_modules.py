@@ -84,7 +84,7 @@ async def test_plugin_inventory_rpc_and_harness_web():
     from dsh.host.plugin_inventory import PluginInventoryPlugin
 
     # 1. Test build_harness in web mode
-    ctx = build_harness(enable_web=True)
+    ctx = await build_harness(enable_web=True)
     inv_svc = ctx.get("plugin_inventory") or ctx.get("pluginInventory")
     assert inv_svc is not None
     snapshot = inv_svc.list()

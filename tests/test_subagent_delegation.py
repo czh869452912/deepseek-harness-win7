@@ -9,7 +9,7 @@ from dsh.subagent.tool_subagent import ToolSubagentPlugin
 async def test_subagent_tools():
     ctx = Context()
     ctx.set_service("tools", ToolsService(ctx))
-    ctx.plugin(ToolSubagentPlugin)
+    await ctx.plugin(ToolSubagentPlugin)
 
     tools = ctx.get("tools")
     subagents_svc: SubagentRegistry = ctx.get("subagents")

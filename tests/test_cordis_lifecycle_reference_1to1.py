@@ -230,8 +230,15 @@ async def test_resolves_dependencies_added_by_internal_plugin():
 
 
 def test_rolls_back_when_internal_plugin_throws():
-    """it('rolls back parent and runtime ownership when internal/plugin publication throws')"""
+    """it('rolls back parent and runtime ownership when internal/plugin publication throws')
+
+    The disposer owns the rollback: `fiber.ts` constructor calls `void
+    Promise.resolve(this.dispose()).catch(...)` with no event loop in sight, so the
+    parent-owned `ctx.plugin()` effect and the runtime registration must both be gone
+    afterwards. A synchronous caller (no running loop) drains the teardown in the call.
+    """
     ctx = Context()
+    state: Dict[str, Any] = {}
 
     class PublicationFailurePlugin(Plugin):
         name = "publication-failure"
@@ -239,8 +246,13 @@ def test_rolls_back_when_internal_plugin_throws():
             pass
 
     def on_plugin(fiber: Fiber):
-        if fiber.name == "publication-failure":
-            raise RuntimeError("publication failed")
+        if fiber.name != "publication-failure":
+            return
+        if fiber.uid is None:
+            return
+        state["fiber"] = fiber
+        state["runtime"] = fiber.runtime
+        raise RuntimeError("publication failed")
 
     ctx.on("internal/plugin", on_plugin)
 
@@ -249,6 +261,47 @@ def test_rolls_back_when_internal_plugin_throws():
         ctx.registry.plugin(plugin)
 
     assert ctx.registry.has(plugin) is False
+    fiber = state["fiber"]
+    assert fiber.uid is None
+    assert fiber.state == FiberState.DISPOSED
+    assert state["runtime"].fibers == []
+    labels = [effect["label"] for effect in ctx.fiber.get_effects()]
+    assert "ctx.plugin()" not in labels
+
+
+@pytest.mark.asyncio
+async def test_rolls_back_publication_failure_with_a_running_loop():
+    """it('rolls back parent and runtime ownership when internal/plugin publication throws')
+    (loop mode): a running loop schedules the teardown instead of draining it in the
+    call, so the parent-owned effect and runtime record settle on the loop.
+    """
+    ctx = Context()
+    state: Dict[str, Any] = {}
+
+    class PublicationFailurePlugin(Plugin):
+        name = "publication-failure-loop"
+        def apply(self, c: Context) -> None:
+            pass
+
+    def on_plugin(fiber: Fiber):
+        if fiber.name != "publication-failure-loop" or fiber.uid is None:
+            return
+        state["fiber"] = fiber
+        raise RuntimeError("publication failed")
+
+    ctx.on("internal/plugin", on_plugin)
+
+    plugin = PublicationFailurePlugin()
+    with pytest.raises(RuntimeError, match="publication failed"):
+        ctx.registry.plugin(plugin)
+
+    await asyncio.sleep(0)
+    assert ctx.registry.has(plugin) is False
+    assert state["fiber"].uid is None
+    assert state["fiber"].state == FiberState.DISPOSED
+    labels = [effect["label"] for effect in ctx.fiber.get_effects()]
+    assert "ctx.plugin()" not in labels
+
 
 @pytest.mark.asyncio
 async def test_contains_teardown_notification_failures_so_peers_complete():
@@ -412,3 +465,34 @@ async def test_parent_disposal_during_publication_awaits_unpublished_child():
     assert child_apply_calls == 0
     assert child.uid is None
     assert child.state == FiberState.DISPOSED
+
+
+@pytest.mark.asyncio
+async def test_direct_child_disposal_retires_the_parent_owned_effect():
+    """Parent ownership: `this.dispose` is the parent-owned `ctx.plugin()` effect
+    disposer (fiber.ts:265-297). Disposing a child therefore removes that
+    registration from the parent (`Fiber.getEffects`, fiber.ts:568) instead of
+    leaving a stale owner entry, and a later parent unload cannot dispose the
+    child a second time.
+    """
+    ctx = Context()
+    teardowns: List[str] = []
+
+    class ChildPlugin(Plugin):
+        name = "owned-child"
+        def apply(self, c: Context) -> None:
+            c.effect(lambda: (lambda: teardowns.append("child")), "child-effect")
+
+    child = ctx.plugin(ChildPlugin())
+    assert [effect["label"] for effect in ctx.fiber.get_effects()] == ["ctx.plugin()"]
+
+    await child.dispose()
+
+    assert child.state == FiberState.DISPOSED
+    assert teardowns == ["child"]
+    assert ctx.fiber.get_effects() == []
+    assert ctx.registry.has(ChildPlugin) is False
+
+    # A parent unload must not re-run the disposed child's teardown.
+    await ctx.fiber.dispose()
+    assert teardowns == ["child"]

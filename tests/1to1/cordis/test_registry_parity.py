@@ -10,6 +10,9 @@ Covers:
 - T9: One `RegistryService.counter` allocates fiber uids across root and
   derived contexts (`ctx.extend()`/`isolate()`/`intercept()`)
 - T9b: `counter` increments on every read (registry.ts `get counter()`)
+- T10: inspection drops a fiber on its own disposal (`registry.ts:258-265`
+  keeps no auxiliary pending-fiber index; the child disposer removes the fiber)
+- T11: a disposed fiber of a live runtime is not reported while its live sibling is
 """
 
 import pytest
@@ -205,3 +208,68 @@ async def test_t9b_counter_property_increments_on_every_read():
     values = [ctx.registry.counter for _ in range(3)]
     assert values == [values[0], values[0] + 1, values[0] + 2]
     assert child.registry.counter == values[0] + 3
+
+
+@pytest.mark.asyncio
+async def test_t10_registry_inspection_drops_a_fiber_on_its_own_disposal():
+    """T10: pending and activated fibers are reported only while they are live.
+
+    Reference: `registry.ts:258-265`. `registry.values()` hands out the runtimes
+    and each runtime's `fibers` is a `DisposableList` the child disposer removes
+    from, so an activated or disposed fiber can never be reported through a
+    retained auxiliary index.
+    """
+    ctx = Context()
+
+    class LateServicePlugin(Plugin):
+        name = "t10_late_service"
+        inject = ["t10_service"]
+
+        def apply(self, c: Context) -> None:
+            pass
+
+    fiber = ctx.registry.plugin(LateServicePlugin)
+    assert fiber.state == FiberState.PENDING
+    assert fiber in ctx.registry.list_fibers()
+
+    ctx.set_service("t10_service", {"value": 1})
+    assert fiber.state == FiberState.ACTIVE
+    assert fiber in ctx.registry.list_fibers()
+
+    await fiber.dispose()
+
+    assert fiber.state == FiberState.DISPOSED
+    assert ctx.registry.has(LateServicePlugin) is False
+    assert fiber not in ctx.registry.list_fibers()
+    assert ctx.registry.list_fibers() == []
+
+
+@pytest.mark.asyncio
+async def test_t11_disposed_fiber_of_a_live_runtime_is_not_reported():
+    """T11: a disposed fiber leaves inspection while its sibling stays registered.
+
+    Reference: `registry.ts:263-265` delegates removal to each fiber's own
+    disposer, so a runtime keeps reporting exactly its live fibers.
+    """
+    ctx = Context()
+
+    class TwinPlugin(Plugin):
+        name = "t11_twin"
+
+    first = ctx.registry.plugin(TwinPlugin)
+    second = ctx.registry.plugin(TwinPlugin)
+    assert first in ctx.registry.list_fibers()
+    assert second in ctx.registry.list_fibers()
+
+    await first.dispose()
+
+    runtime = ctx.registry.get(TwinPlugin)
+    assert runtime is not None
+    assert runtime.fibers == [second]
+    assert first not in ctx.registry.list_fibers()
+    assert second in ctx.registry.list_fibers()
+
+    await second.dispose()
+
+    assert ctx.registry.has(TwinPlugin) is False
+    assert ctx.registry.list_fibers() == []

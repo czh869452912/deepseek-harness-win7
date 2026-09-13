@@ -160,6 +160,10 @@ class Fiber:
         self._effect_metas: Dict[Any, EffectMeta] = {}
         self._hooks: Dict[str, DisposableList[Any]] = {}
         self._in_flight_effects: Set[asyncio.Task] = set()
+        # The parent-owned `ctx.plugin()` effect wrapper, whose disposer
+        # `fiber.ts` assigns to `this.dispose`: disposing a child retires the
+        # registration, and the child teardown is that effect's cleanup.
+        self._parent_disposer: Optional[Any] = None
         # Records what the last `set_epoch()` call drove; reset on every call.
         self._epoch_transition_driven = False
         self._plugin_cls: Optional[Any] = None
@@ -190,21 +194,20 @@ class Fiber:
 
             parent_fiber = getattr(parent_ctx, "fiber", None) if parent_ctx else None
             if parent_fiber is not None and parent_fiber is not self:
-                parent_fiber.effect(lambda: (lambda: self.dispose()), label="ctx.plugin()")
+                # `fiber.ts` constructor: `this.dispose = parent.fiber.effect(
+                # () => {...}, 'ctx.plugin()')`. The parent owns the removal
+                # record, this fiber's teardown is that effect's cleanup, and
+                # `dispose()` retires the record so a disposed child is no
+                # longer owned by (or re-disposed through) its parent.
+                self._parent_disposer = parent_fiber.effect(
+                    lambda: (lambda: self.dispose()), label="ctx.plugin()"
+                )
 
             try:
                 if self.ctx and hasattr(self.ctx, "emit"):
                     self.ctx.emit("internal/plugin", self)
             except Exception as error:
-                if runtime is not None:
-                    runtime.remove_fiber(self)
-                    if not runtime.fibers and parent_ctx and hasattr(parent_ctx, "registry"):
-                        parent_ctx.registry._runtimes.pop(runtime.callback, None)
-                try:
-                    loop = asyncio.get_running_loop()
-                    loop.create_task(self.dispose())
-                except RuntimeError:
-                    pass
+                self._rollback_failed_publication()
                 raise error
         else:
             # Root Fiber (runtime is None)
@@ -346,16 +349,31 @@ class Fiber:
                     pass
             return setup_barrier_future
 
-        def cancel_effect() -> Any:
-            nonlocal disposed, in_flight_cleanup, remove_wrapper, wrapper
+        def retire_effect() -> None:
+            """
+            Drop this effect from its owner fiber without running its cleanups.
+
+            `fiber.ts` removes the parent-owned `ctx.plugin()` record when the
+            child disposal settles (`finalizeDisposal` -> `removeWrapper`). The
+            port starts the child teardown at the call site, so it retires the
+            record there too: `getEffects()` stops reporting the effect and a
+            later owner unload cannot dispose the child a second time.
+            """
+            nonlocal disposed
             if disposed:
-                return in_flight_cleanup
+                return
             disposed = True
             self._effect_metas.pop(cancel_effect, None)
             if wrapper is not None:
                 self._effect_metas.pop(wrapper, None)
             if remove_wrapper is not None:
                 remove_wrapper()
+
+        def cancel_effect() -> Any:
+            nonlocal disposed, in_flight_cleanup, remove_wrapper, wrapper
+            if disposed:
+                return in_flight_cleanup
+            retire_effect()
 
             if executing:
                 barrier = wait_for_setup()
@@ -463,9 +481,11 @@ class Fiber:
             way the reference `then` chain does.
             """
 
-            def __init__(self, c_fn: Callable[[], Any], get_task: Callable[[], Optional[asyncio.Task]]):
+            def __init__(self, c_fn: Callable[[], Any], get_task: Callable[[], Optional[asyncio.Task]],
+                         retire_fn: Callable[[], None]):
                 self._c_fn = c_fn
                 self._get_task = get_task
+                self.retire = retire_fn
 
             def __call__(self, *args: Any, **kwargs: Any) -> Any:
                 t = self._get_task()
@@ -496,7 +516,7 @@ class Fiber:
                     return res
                 return _await_wrapper().__await__()
 
-        wrapper = _EffectWrapper(cancel_effect, lambda: setup_task)
+        wrapper = _EffectWrapper(cancel_effect, lambda: setup_task, retire_effect)
         self._effect_metas[wrapper] = meta
         self._effect_metas[cancel_effect] = meta
         remove_wrapper = self._disposables.push(wrapper)
@@ -1184,12 +1204,18 @@ class Fiber:
         """
         Dispose this fiber and return an awaitable that settles once it is quiescent.
 
-        Mirrors TS `fiber.dispose`, an async function whose body runs synchronously
-        up to its first await: clearing the uid, notifying `internal/plugin`
-        observers, and starting disposers all happen at the call site, while
-        awaiting the returned object waits for teardown to finish. Disposers run in
-        strict reverse registration order.
+        Mirrors TS `fiber.dispose`, which *is* the parent-owned `ctx.plugin()`
+        effect disposer (`fiber.ts` constructor assigns it to `this.dispose`).
+        Disposing retires that registration -- so the parent stops owning this
+        child and a later parent unload cannot dispose it twice -- and runs the
+        teardown body at the call site: clearing the uid, notifying
+        `internal/plugin` observers, and starting disposers. Awaiting the
+        returned object waits for teardown to finish. Disposers run in strict
+        reverse registration order; a fiber without a parent (the root fiber)
+        owns no registration.
         """
+        if self._parent_disposer is not None:
+            self._parent_disposer.retire()
         self._begin_dispose()
         return self._await_quiescent()
 
@@ -1246,6 +1272,50 @@ class Fiber:
             await self.inertia
 
         self.set_state(FiberState.DISPOSED)
+
+    def _rollback_failed_publication(self) -> None:
+        """
+        Dispose a child whose synchronous `internal/plugin` publication threw.
+
+        `fiber.ts` constructor catch block: `void Promise.resolve(this.dispose()).
+        catch(reason => this.ctx.logger.error(reason))`. Disposing removes this
+        fiber from the parent's effect list and from the runtime records, so
+        neither outlives the failed publication. With a running loop the settle
+        awaitable runs on a task; with none it is driven to completion here, the
+        port's stand-in for the ambient microtask queue that upstream always has.
+        A teardown failure is logged only, so the publication error stays the
+        raised one.
+        """
+        try:
+            settled = self.dispose()
+        except Exception as reason:
+            self._log_error(reason)
+            return
+        if not inspect.isawaitable(settled):
+            return
+
+        async def _settle() -> None:
+            try:
+                await settled
+            except Exception as reason:
+                self._log_error(reason)
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            run_async_setup_sync(_settle())
+            return
+        loop.create_task(_settle())
+
+    def _log_error(self, reason: Any) -> None:
+        """Report a teardown failure through the fiber logger, never raising."""
+        if not self.ctx or not hasattr(self.ctx, "logger"):
+            return
+        try:
+            self.ctx.logger.error(reason)
+        except Exception:
+            # A logger that throws must not replace the failure being reported.
+            pass
 
     def update(self, config: Any, no_save: bool = False) -> Any:
         """

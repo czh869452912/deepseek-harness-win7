@@ -5,12 +5,14 @@ Compatible with Python 3.8.10 and Windows 7 SP1.
 """
 
 import asyncio
+import gc
 import inspect
 import json
 import os
 import sys
 import tempfile
 import time
+import warnings
 from typing import Any, Callable, Dict, List, Optional
 from unittest.mock import MagicMock
 
@@ -878,6 +880,38 @@ async def test_boot_returns_instead_of_asserting_over_tree_disposed_mid_startup(
 
     ctx = await boot(NAME, os.path.join(d, "cordis.yml"))
     assert ctx.get("loader") is None
+
+
+@pytest.mark.asyncio
+async def test_boot_settles_the_root_fiber_teardown_a_script_bridge_starts_mid_startup():
+    """Boot joins the teardown a dropped `void ctx.root.fiber.dispose()` started.
+
+    Reference: reference/packages/boot/app-boot/tests/app-boot.spec.ts
+    'returns instead of asserting over a tree a surface disposed mid-startup'.
+    The reference drops the promise the plugin body returns and only the
+    microtask queue keeps the teardown alive. The port owns that settlement on
+    the root fiber and joins it, with the dependent fiber inertia, so boot
+    returns with no scheduled task and no unawaited coroutine left behind.
+    """
+    d = tmp()
+    with open(os.path.join(d, "exiting.mjs"), "w", encoding="utf-8") as f:
+        f.write('export const name = "exiting"\nexport function apply(ctx) { void ctx.root.fiber.dispose() }\n')
+    with open(os.path.join(d, "delayed.mjs"), "w", encoding="utf-8") as f:
+        f.write("export function apply() {}\n")
+    with open(os.path.join(d, "cordis.yml"), "w", encoding="utf-8") as f:
+        f.write("- id: exiting\n  name: ./exiting.mjs\n- id: delayed\n  name: ./delayed.mjs\n")
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        ctx = await boot(NAME, os.path.join(d, "cordis.yml"))
+        pending = [task for task in asyncio.all_tasks() if task is not asyncio.current_task()]
+        settlements = ctx.fiber.settlement_tasks()
+        gc.collect()
+
+    assert ctx.get("loader") is None
+    assert pending == []
+    assert settlements == []
+    assert [str(w.message) for w in caught if "never awaited" in str(w.message)] == []
 
 
 @pytest.mark.asyncio

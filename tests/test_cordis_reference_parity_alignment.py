@@ -17,6 +17,7 @@ import warnings
 import pytest
 import yaml
 
+from dsh.boot.app_boot import settle_fibers
 from dsh.cordis.context import Context
 from dsh.cordis.fiber import FiberState
 from dsh.cordis.loader import AggregateError, Loader
@@ -473,3 +474,43 @@ async def test_include_patch_insert_into_nested_group():
 
         await inc_svc.stop()
         await inc_svc.flush_write()
+
+
+@pytest.mark.asyncio
+async def test_settle_fibers_joins_the_root_fiber_teardown_with_its_dependent_inertia():
+    """A root teardown owns no parent registration, so `settle_fibers` reports it.
+
+    Reference: `fiber.ts` `dispose: () => Promise<void>` starts the teardown and
+    `await()` joins the transition stored on the same fiber. Harness and CLI
+    settlement then return only after a script bridge's dropped
+    `void ctx.root.fiber.dispose()` finished, including the dependent fiber
+    inertia its unload gathered.
+    """
+    ctx = Context()
+    cleanup_started = asyncio.Event()
+    release = asyncio.Event()
+    log = []
+
+    async def cleanup():
+        cleanup_started.set()
+        await release.wait()
+        log.append("cleanup")
+
+    ctx.effect(lambda: lambda: cleanup(), label="root-teardown")
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        settlement = ctx.fiber.schedule_settlement(ctx.fiber.dispose())
+        joiner = asyncio.ensure_future(settle_fibers(ctx))
+        await cleanup_started.wait()
+        assert log == []
+        assert not joiner.done()
+
+        release.set()
+        await joiner
+        gc.collect()
+
+    assert settlement.done()
+    assert log == ["cleanup"]
+    assert ctx.fiber.settlement_tasks() == []
+    assert [str(w.message) for w in caught if "never awaited" in str(w.message)] == []

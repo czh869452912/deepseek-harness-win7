@@ -366,13 +366,19 @@ class Context:
     def teardown(self) -> None:
         """
         Teardown context effects in reverse order.
+
+        A root context's teardown owns no parent registration to drive it,
+        so the fiber owns the settlement: `await_settled()` and
+        `settle_fibers()` then join it instead of leaving a scheduled task
+        that dies with the loop.
         """
         if self._parent is None and self.fiber:
             try:
-                loop = asyncio.get_running_loop()
-                loop.create_task(self.fiber.dispose())
+                asyncio.get_running_loop()
             except RuntimeError:
                 asyncio.run(self.fiber.dispose())
+            else:
+                self.fiber.schedule_settlement(self.fiber.dispose())
 
         if self._effects:
             self._effects.clear()

@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import os
 from typing import Any, Dict, Optional
 import yaml
@@ -239,11 +240,27 @@ async def build_harness(
         await settle_fibers(ctx)
         await assert_entries_activated(ctx, "dsh")
     except Exception as exc:
+        # The reference boot catch awaits `ctx.fiber.dispose()` before it
+        # relabels the failure (packages/boot/app-boot/src/index.ts:798-802),
+        # so the partial tree's teardown has finished when the error escapes:
+        # the spec asserts the partial setup was disposed and the tree owns no
+        # pending task afterwards. A root fiber has no parent-owned
+        # registration to drive its teardown, so a synchronous `ctx.teardown()`
+        # only schedules the disposal and lets this raise with the cleanup still
+        # pending; awaiting the settlement here owns it, and `settle_fibers`
+        # then joins the dependent fiber inertia.
         try:
-            if hasattr(ctx, "teardown"):
+            root_fiber = getattr(ctx, "fiber", None)
+            dispose = getattr(root_fiber, "dispose", None)
+            if dispose is not None:
+                settled = dispose()
+                if inspect.isawaitable(settled):
+                    await settled
+            elif hasattr(ctx, "teardown"):
                 ctx.teardown()
             elif hasattr(ctx, "dispose"):
                 ctx.dispose()
+            await settle_fibers(ctx)
         except Exception:
             pass
         if isinstance(exc, (FileNotFoundError, ValueError)) and not str(exc).startswith("dsh:"):

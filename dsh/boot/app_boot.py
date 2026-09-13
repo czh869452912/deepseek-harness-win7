@@ -668,7 +668,7 @@ def install_fail_loud(
 
 async def settle_fibers(ctx: Context) -> None:
     """
-    Wait until no fiber of `ctx` has a load or unload transition in flight.
+    Wait until no fiber of `ctx` has a load, unload, or teardown settlement in flight.
 
     `ctx.plugin()` returns as soon as the fiber enters LOADING -- `fiber.ts`
     `_reload` crosses an event-loop checkpoint before resolving config or
@@ -676,13 +676,17 @@ async def settle_fibers(ctx: Context) -> None:
     settling is a fixpoint over the runtime-owned fiber set. This is the port's
     stand-in for the reference Loader's own `await()` for callers that mount
     plugins outside the config tree (`build_harness`).
+
+    The root fiber is included even after its plugins are gone: the script
+    bridge can dispose it mid-startup (`void ctx.root.fiber.dispose()`), and its
+    teardown has no parent-owned registration to drive it.
     """
     while True:
-        pending = [
-            fiber.inertia
-            for fiber in ctx.registry.list_fibers()
-            if fiber.inertia is not None and not fiber.inertia.done()
-        ]
+        fibers = list(ctx.registry.list_fibers())
+        root = getattr(ctx, "fiber", None)
+        if root is not None and root not in fibers:
+            fibers.append(root)
+        pending = [task for fiber in fibers for task in fiber.settlement_tasks()]
         if not pending:
             return
         await asyncio.gather(*pending, return_exceptions=True)
@@ -784,6 +788,11 @@ async def boot(
             await_fn = getattr(loader, "await_", None) or getattr(loader, "await", None)
             if await_fn:
                 await await_fn()
+        # A surface can dispose the root fiber while the tree is still starting,
+        # before the last entry settles. Join that teardown -- and the dependent
+        # fiber inertia -- before reporting settlement, so no scheduled task or
+        # coroutine outlives the call.
+        await settle_fibers(ctx)
         if ctx.get("loader") is None:
             return ctx
         await assert_entries_activated(ctx, bin_name)

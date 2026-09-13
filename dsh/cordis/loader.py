@@ -674,7 +674,10 @@ def create_js_mock_plugin(module_path: str, content: str) -> Any:
             if hasattr(ctx, "root") and hasattr(ctx.root, "fiber") and hasattr(ctx.root.fiber, "dispose"):
                 res = ctx.root.fiber.dispose()
                 if inspect.isawaitable(res):
-                    asyncio.create_task(res)
+                    # The reference drops this promise because the microtask
+                    # queue keeps driving it; the fiber owns the settlement
+                    # instead so boot, harness, CLI, and HMR settlement join it.
+                    ctx.root.fiber.schedule_settlement(res)
 
         for svc_name, val_expr in provides:
             val = None

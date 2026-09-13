@@ -6,11 +6,16 @@ Covers:
 - T3: User home patch layer applies at boot
 - T6: dshHomePath resolves in context
 - T9: Session query mounts dormant with open_at: never
+- T10/T11: an activation failure fails loud, and the rejected startup has
+  disposed the partial tree and left no pending lifecycle task
 """
 import asyncio
+import gc
 
 import os
 import tempfile
+import warnings
+
 import pytest
 
 from dsh.harness import build_harness
@@ -81,3 +86,58 @@ def test_t10_build_harness_fails_on_plugin_activation_failure(monkeypatch):
         asyncio.run(build_harness(mode="minimal"))
     assert "did not activate" in str(exc_info.value) or "plugin(s) failed to activate" in str(exc_info.value)
 
+
+
+@pytest.mark.asyncio
+async def test_t11_build_harness_failure_disposes_the_partial_tree_and_leaves_no_pending_task(
+    monkeypatch,
+):
+    """T11: a failed startup disposes the partial tree before the error escapes.
+
+    Reference: `reference/packages/boot/app-boot/src/index.ts` `boot` catch --
+    `await ctx.fiber.dispose()` runs before the failure is relabeled and thrown --
+    and `reference/packages/boot/app-boot/tests/app-boot.spec.ts` 'disposes partial
+    host setup and labels non-Error preparation failures', where the rejected boot
+    still ran the effect disposer (`disposed === true`). `build_harness` is the
+    port's config-tree boot equivalent, so its failure path owes the same
+    settlement. The root fiber owns no parent-owned registration, so a
+    synchronous `ctx.teardown()` only schedules the disposal and lets the fiber
+    teardown tasks (`Fiber._await_quiescent`, `_unload` gathers, effect cleanups)
+    outlive the raised error.
+    """
+    from dsh.fs.tool_str_replace_editor import StrReplaceEditorPlugin
+
+    seen = []
+
+    def bad_apply(self, ctx, config=None):
+        seen.append(ctx)
+        raise RuntimeError("boom during apply")
+
+    monkeypatch.setattr(StrReplaceEditorPlugin, "apply", bad_apply)
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        with pytest.raises(RuntimeError) as exc_info:
+            await build_harness(mode="minimal")
+        # No checkpoint between the raise and these reads: the partial tree must
+        # already be disposed when the failure escapes.
+        pending = [
+            task for task in asyncio.all_tasks()
+            if task is not asyncio.current_task() and not task.done()
+        ]
+        root = seen[0].root
+        fibers = list(root.registry.list_fibers())
+        tools = root.get("tools")
+        settlements = root.fiber.settlement_tasks()
+        gc.collect()
+
+    assert "did not activate" in str(exc_info.value)
+    assert seen, "the failing plugin never reached apply()"
+    # Every mounted fiber, and the service it provided, went with the tree.
+    assert fibers == []
+    assert tools is None
+    assert settlements == []
+    # Nothing outlives the failed startup: no pending task, no unawaited
+    # coroutine.
+    assert pending == []
+    assert [str(w.message) for w in caught if "never awaited" in str(w.message)] == []

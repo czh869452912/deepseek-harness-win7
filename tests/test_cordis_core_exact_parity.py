@@ -191,7 +191,9 @@ async def test_hmr_dynamic_module_reload_and_fiber_restart():
         new_fiber = reloads[0][plugin_cls]["runtime"].fibers[0]
         assert new_fiber.plugin.version == 2
         assert fiber.plugin.version == 2
-        hmr.teardown()
+        settlement = hmr.teardown()
+        if settlement is not None:
+            await settlement
 
 
 @pytest.mark.asyncio
@@ -255,7 +257,9 @@ async def test_hmr_dynamic_module_reload_failure_triggers_rollback():
         assert len(restored_runtime.fibers) >= 1
         assert restored_runtime.fibers[0].plugin.version == 1
         assert fiber.plugin.version == 1
-        hmr.teardown()
+        settlement = hmr.teardown()
+        if settlement is not None:
+            await settlement
 
 
 @pytest.mark.asyncio
@@ -354,5 +358,7 @@ async def test_hmr_multi_file_reload_failure_triggers_rollback_all():
         assert runtime_b is not None and len(runtime_b.fibers) >= 1
         assert runtime_b.fibers[0].plugin.version == 1
 
-        hmr.teardown()
+        settlement = hmr.teardown()
+        if settlement is not None:
+            await settlement
 

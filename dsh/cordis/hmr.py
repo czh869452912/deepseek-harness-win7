@@ -780,9 +780,15 @@ class ConfigWatcherService(Service):
                         pass
                 try:
                     loop = asyncio.get_running_loop()
-                    loop.create_task(_wait())
                 except RuntimeError:
-                    pass
+                    return
+                # `fiber.ts` keeps driving a dropped awaitable; CPython needs
+                # an owner, so the fiber records this join of the running pass.
+                fiber = getattr(self.ctx, "fiber", None) if self.ctx is not None else None
+                if fiber is not None and hasattr(fiber, "schedule_settlement"):
+                    fiber.schedule_settlement(_wait())
+                else:
+                    loop.create_task(_wait())
 
         if hasattr(self.ctx, "disposable"):
             return self.ctx.disposable(unregister, label=f"hmr.register_module('{abs_path}')")
@@ -811,22 +817,35 @@ class ConfigWatcherService(Service):
         self._mtimes.clear()
         self._root_mtimes.clear()
 
-    def teardown(self) -> None:
+    def teardown(self) -> Optional[asyncio.Task]:
+        """
+        Start the teardown `init` owns and give its settlement an owner.
+
+        `reference/vendor/hmr/src/index.ts:199-205` owns this teardown as the
+        `Service.init` disposer, which the service fiber awaits. A synchronous
+        caller inside a running loop cannot await it, so the fiber owns the
+        settlement the same way `Context.teardown()` does: `await_settled()`
+        and `settle_fibers()` join it, and a caller that must observe
+        quiescence awaits the returned task. With no running loop the
+        settlement runs inline and there is nothing left to join.
+
+        @returns the owned settlement task, or `None` after an inline run.
+        """
         self._running = False
         if self._poll_task and not self._poll_task.done():
             self._poll_task.cancel()
+        settlement = self._async_teardown()
+        fiber = getattr(self.ctx, "fiber", None) if self.ctx is not None else None
+        if fiber is not None and hasattr(fiber, "schedule_settlement"):
+            return fiber.schedule_settlement(settlement)
+        # A context without an owning fiber has nowhere to record the
+        # settlement, so the teardown still runs with no owner to join it.
         try:
             loop = asyncio.get_running_loop()
-            loop.create_task(self._async_teardown())
+            return loop.create_task(settlement)
         except RuntimeError:
-            for state in self._refreshes.values():
-                if state and state.running and not state.running.done():
-                    state.running.cancel()
-            self._configs.clear()
-            self._config_names.clear()
-            self._modules.clear()
-            self._mtimes.clear()
-            self._root_mtimes.clear()
+            asyncio.run(settlement)
+            return None
 
 
 # Backward-compatible and alias names

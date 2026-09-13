@@ -34,7 +34,7 @@ class ToolJobsPlugin(Plugin):
         if ctx.has("system_prompt"):
             sp = ctx.get("system_prompt")
             if hasattr(sp, "section"):
-                sp.section("tool:jobs", SYSTEM_PROMPT_JOBS_TEXT, order=106)
+                sp.section({"name": "tool:jobs", "text": SYSTEM_PROMPT_JOBS_TEXT, "order": 106})
 
         async def exec_job_list() -> str:
             all_jobs = jobs_svc.list_jobs()

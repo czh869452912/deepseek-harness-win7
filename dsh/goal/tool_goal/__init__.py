@@ -348,11 +348,11 @@ class ToolGoalPlugin(Plugin):
         if hasattr(ctx, "has") and ctx.has("systemPrompt"):
             sp = ctx.get("systemPrompt")
             if hasattr(sp, "section"):
-                sp.section(
-                    name="tool:goal",
-                    order=114,
-                    text=guidance(self.blocked_after_consecutive_rounds),
-                )
+                sp.section({
+                    "name": "tool:goal",
+                    "order": 114,
+                    "text": guidance(self.blocked_after_consecutive_rounds),
+                })
 
         tools = ctx.get("tools")
         if not tools:

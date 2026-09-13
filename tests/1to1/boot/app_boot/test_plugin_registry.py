@@ -107,8 +107,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-code-runtime-worker-thread",
         "@deepseek-ai/dsh-cordis-client-runner",
         "@deepseek-ai/dsh-cordis-host-runner",
-        "@deepseek-ai/dsh-fs-observation-policy",
-        "@deepseek-ai/dsh-fs-sandbox",
         "@deepseek-ai/dsh-goal",
         "@deepseek-ai/dsh-goal-round-driver",
         "@deepseek-ai/dsh-jobs-local",
@@ -118,7 +116,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
-        "@deepseek-ai/dsh-sandbox-policy",
         "@deepseek-ai/dsh-session-log-export",
         "@deepseek-ai/dsh-session-projection-cache",
         "@deepseek-ai/dsh-session-reference",
@@ -139,8 +136,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-api-gateway",
         "@deepseek-ai/dsh-code-runtime-worker-thread",
         "@deepseek-ai/dsh-command-goal",
-        "@deepseek-ai/dsh-fs-observation-policy",
-        "@deepseek-ai/dsh-fs-sandbox",
         "@deepseek-ai/dsh-goal",
         "@deepseek-ai/dsh-goal-round-driver",
         "@deepseek-ai/dsh-headless",
@@ -151,7 +146,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
-        "@deepseek-ai/dsh-sandbox-policy",
         "@deepseek-ai/dsh-session-projection-cache",
         "@deepseek-ai/dsh-session-telemetry-otel",
         "@deepseek-ai/dsh-session-title-first-prompt-llm",
@@ -170,8 +164,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-api-gateway",
         "@deepseek-ai/dsh-code-runtime-worker-thread",
         "@deepseek-ai/dsh-command-goal",
-        "@deepseek-ai/dsh-fs-observation-policy",
-        "@deepseek-ai/dsh-fs-sandbox",
         "@deepseek-ai/dsh-goal",
         "@deepseek-ai/dsh-goal-round-driver",
         "@deepseek-ai/dsh-headless",
@@ -182,7 +174,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
-        "@deepseek-ai/dsh-sandbox-policy",
         "@deepseek-ai/dsh-session-projection-cache",
         "@deepseek-ai/dsh-session-telemetry-otel",
         "@deepseek-ai/dsh-session-title-first-prompt-llm",
@@ -201,8 +192,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-api-gateway",
         "@deepseek-ai/dsh-code-runtime-worker-thread",
         "@deepseek-ai/dsh-command-goal",
-        "@deepseek-ai/dsh-fs-observation-policy",
-        "@deepseek-ai/dsh-fs-sandbox",
         "@deepseek-ai/dsh-goal",
         "@deepseek-ai/dsh-goal-round-driver",
         "@deepseek-ai/dsh-headless",
@@ -213,7 +202,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
-        "@deepseek-ai/dsh-sandbox-policy",
         "@deepseek-ai/dsh-session-projection-cache",
         "@deepseek-ai/dsh-session-telemetry-otel",
         "@deepseek-ai/dsh-session-title-first-prompt-llm",
@@ -232,8 +220,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-acp-app",
         "@deepseek-ai/dsh-api-gateway",
         "@deepseek-ai/dsh-command-goal",
-        "@deepseek-ai/dsh-fs-observation-policy",
-        "@deepseek-ai/dsh-fs-sandbox",
         "@deepseek-ai/dsh-goal",
         "@deepseek-ai/dsh-goal-round-driver",
         "@deepseek-ai/dsh-jobs-local",
@@ -242,7 +228,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
-        "@deepseek-ai/dsh-sandbox-policy",
         "@deepseek-ai/dsh-session-projection-cache",
         "@deepseek-ai/dsh-session-telemetry-otel",
         "@deepseek-ai/dsh-skill",
@@ -259,8 +244,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
     "sdk": [
         "@deepseek-ai/dsh-api-gateway",
         "@deepseek-ai/dsh-command-goal",
-        "@deepseek-ai/dsh-fs-observation-policy",
-        "@deepseek-ai/dsh-fs-sandbox",
         "@deepseek-ai/dsh-goal",
         "@deepseek-ai/dsh-goal-round-driver",
         "@deepseek-ai/dsh-jobs-local",
@@ -269,7 +252,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
-        "@deepseek-ai/dsh-sandbox-policy",
         "@deepseek-ai/dsh-sdk-app",
         "@deepseek-ai/dsh-sdk-jsonrpc-server",
         "@deepseek-ai/dsh-session-projection-cache",
@@ -290,7 +272,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-llm-deepseek",
         "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
         "@deepseek-ai/dsh-sandbox-local",
-        "@deepseek-ai/dsh-sandbox-policy",
         "@deepseek-ai/dsh-sdk-app",
         "@deepseek-ai/dsh-sdk-jsonrpc-server",
         "@deepseek-ai/dsh-terminal",
@@ -700,7 +681,7 @@ def test_the_frozen_gap_is_the_union_of_every_shipped_profile():
 
             collect(patch)
     assert union <= shipped_names
-    assert len(union) == 48
+    assert len(union) == 45
 
 
 # --- boot installs and consults the table ------------------------------------

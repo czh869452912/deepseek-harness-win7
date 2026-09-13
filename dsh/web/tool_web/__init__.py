@@ -41,7 +41,7 @@ class ToolWebPlugin(Plugin):
         if ctx.has("system_prompt"):
             sp = ctx.get("system_prompt")
             if hasattr(sp, "section"):
-                sp.section("tool:web_search", WEB_SEARCH_PROMPT, order=110)
+                sp.section({"name": "tool:web_search", "text": WEB_SEARCH_PROMPT, "order": 110})
 
         disposers = []
 

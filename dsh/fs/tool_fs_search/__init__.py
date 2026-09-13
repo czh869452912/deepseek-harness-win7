@@ -229,25 +229,25 @@ class ToolFsSearchPlugin(Plugin):
 
         sp = ctx.get("systemPrompt") if ctx.has("systemPrompt") else (ctx.get("system_prompt") if ctx.has("system_prompt") else None)
         if sp and hasattr(sp, "section"):
-            sp.section(
-                name="tool:glob",
-                text=(
+            sp.section({
+                "name": "tool:glob",
+                "text": (
                     'Use the glob tool — not shell find — to discover files by path pattern. '
                     'A pattern with no "/" matches basenames at any depth, so "*" matches every file in the tree rather than its top level. '
                     'Results are files only, never directories, and include hidden and ignored files: '
                     'a result that fits comes back in modification-time order, while a larger one is sampled across top-level entries, '
                     'so it spans the tree instead of one subtree.'
                 ),
-                order=103,
-            )
-            sp.section(
-                name="tool:grep",
-                text=(
+                "order": 103,
+            })
+            sp.section({
+                "name": "tool:grep",
+                "text": (
                     'Use the grep tool — not shell grep or rg — to search file contents. '
                     'Use read on a matched file when you need surrounding context.'
                 ),
-                order=104,
-            )
+                "order": 104,
+            })
 
         async def exec_glob(pattern: str, path: Optional[str] = None) -> str:
             return self.service.glob(pattern=pattern, path=path, ctx=ctx)

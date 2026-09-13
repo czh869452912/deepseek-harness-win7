@@ -1,4 +1,4 @@
-"""
+﻿"""
 Loader plugin-class resolution table for the dsh boot glue.
 
 Every dsh surface launches a Cordis tree whose rows name npm packages
@@ -92,8 +92,11 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     "@deepseek-ai/dsh-settings-file": "dsh.settings.settings_file:SettingsFilePlugin",
     "@deepseek-ai/dsh-credentials-local": "dsh.credentials.credentials_local:CredentialsLocalPlugin",
     "@deepseek-ai/dsh-workspace": "dsh.workspace.workspace:WorkspacePlugin",
-    # Filesystem, shell, subprocess.
+    # Filesystem, shell, subprocess, sandbox policy.
+    "@deepseek-ai/dsh-sandbox-policy": "dsh.sandbox.sandbox_policy:SandboxPolicyService",
     "@deepseek-ai/dsh-fs-local": "dsh.fs.fs_local:FsLocalPlugin",
+    "@deepseek-ai/dsh-fs-sandbox": "dsh.fs.fs_sandbox:SandboxedFileSystem",
+    "@deepseek-ai/dsh-fs-observation-policy": "dsh.fs.fs_observation_policy:FsObservationPolicyPlugin",
     "@deepseek-ai/dsh-tool-fs": "dsh.fs.tool_fs:ToolFsPlugin",
     "@deepseek-ai/dsh-tool-fs-search": "dsh.fs.tool_fs_search:ToolFsSearchPlugin",
     "@deepseek-ai/dsh-tool-str-replace-editor": "dsh.fs.tool_str_replace_editor:StrReplaceEditorPlugin",

@@ -108,11 +108,11 @@ class PlanModeController:
         if hasattr(ctx, "has") and ctx.has("systemPrompt"):
             sp = ctx.get("systemPrompt")
             if hasattr(sp, "section"):
-                sp.section(
-                    name="plan:policy",
-                    order=50,
-                    text=lambda context: self.section if self.is_active(context.get("agent") if isinstance(context, dict) else None) else "",
-                )
+                sp.section({
+                    "name": "plan:policy",
+                    "order": 50,
+                    "text": lambda context: self.section if self.is_active(context.get("agent") if isinstance(context, dict) else None) else "",
+                })
 
     def _resolve_session(self, agent: Optional[Any] = None) -> Optional[Session]:
         if agent and hasattr(agent, "session") and agent.session:

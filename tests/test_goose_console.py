@@ -139,3 +139,62 @@ def test_terminal_disconnect_does_not_drop_persisted_events(tmp_path, monkeypatc
     state = dict(unit='a', phase='migrate', round=1)
     append_event(tmp_path, state, 'tool', 'retained')
     assert read_events(tmp_path / 'progress.jsonl')[0][0]['message'] == 'retained'
+
+
+def test_token_storm_is_batched_without_losing_whitespace(monkeypatch):
+    import parity_runner
+    clock = [100.0]
+    monkeypatch.setattr(parity_runner.time, 'monotonic', lambda: clock[0])
+    output = []
+    stream = Stream(lambda k, v: output.append((k, v, None)),
+                    lambda k, v, identity: output.append((k, v, identity)))
+    fragments = ['中', ' ', '\n', 'word'] * 2500
+    for fragment in fragments:
+        stream.feed({'message': {'id': 'one', 'role': 'assistant',
+                    'content': [{'type': 'thinking', 'thinking': fragment}]}})
+    clock[0] += 0.5
+    stream.flush_due()
+    assert ''.join(row[1] for row in output) == ''.join(fragments)
+    assert len(output) <= 4  # 10,000 deltas cause only a handful of progress writes.
+    assert len(set(row[2] for row in output)) == 1
+    stream.feed({'message': {'id': 'two', 'role': 'assistant',
+                'content': [{'type': 'text', 'text': 'final '}]}})
+    stream.feed({'type': 'complete'})
+    assert output[-1][:2] == ('agent', 'final ')
+    assert output[-1][2] != output[0][2]
+
+
+def test_status_checkpoint_is_throttled_but_phase_end_is_immediate(tmp_path, monkeypatch):
+    import parity_runner
+    monkeypatch.setenv('GOOSE_PROJECT_OUTPUT', 'quiet')
+    clock = [100.0]
+    monkeypatch.setattr(parity_runner.time, 'monotonic', lambda: clock[0])
+    saves = []
+    monkeypatch.setattr(parity_runner, 'save_json', lambda *args: saves.append(args))
+    runner = object.__new__(parity_runner.Runner)
+    runner.run_dir = tmp_path
+    runner.state = dict(unit='alpha', phase='migrate', round=1)
+    for _ in range(100):
+        runner.notify('thinking', 'chunk')
+    assert len(saves) == 1
+    clock[0] += 0.5
+    runner.notify('thinking', 'next')
+    assert len(saves) == 2
+    runner.notify('draining', 'done')
+    assert len(saves) == 3
+    assert runner.state['execution_state'] == 'DRAINING'
+
+
+def test_idle_stream_flushes_before_process_completion(tmp_path):
+    observed = []
+    stream = Stream(lambda k, v: observed.append((k, v)))
+    code = ("import json,time\n"
+            "print(json.dumps({'message':{'role':'assistant','id':'one','content':"
+            "[{'type':'thinking','thinking':'partial '}]}}),flush=True)\n"
+            "time.sleep(1)\nprint(json.dumps({'type':'complete'}),flush=True)")
+    def notify(kind, value):
+        if kind == 'draining':
+            assert ('thinking', 'partial ') in observed
+    assert run_process([sys.executable, '-c', code], tmp_path, tmp_path / 'raw.jsonl',
+                       notify, 5, stream) == 0
+    assert observed == [('thinking', 'partial ')]

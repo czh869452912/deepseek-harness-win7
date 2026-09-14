@@ -215,12 +215,17 @@ def parse_result(text, phase):
 
 class Stream:
     """Render public stream content; only assistant text is a final result."""
-    def __init__(self, notify):
+    def __init__(self, notify, notify_delta=None):
         self.notify = notify
+        self.notify_delta = notify_delta
+        self.output_key = None
+        self.output_id = None
+        self.last_flush = time.monotonic()
         self.messages = {}
         self.last_id = None
         self.complete = False
         self.buffer = ""
+        self.buffer_bytes = 0
         self.action_limit_reached = False
         self.final_calls = {}
         self.accepted_result = None
@@ -233,46 +238,64 @@ class Stream:
         if event.get("type") == "error":
             raise ValueError("Goose stream error: " + str(event.get("error", event.get("message", "unknown"))))
         message = event.get("message", {})
-        for block in message.get("content", []):
-            if block.get("type") == "toolResponse":
-                self.notify("tool_result", json.dumps(block, ensure_ascii=False))
-            elif block.get("type") in ("thinking", "reasoning"):
-                self.notify("thinking", block.get("thinking", block.get("text", block.get("reasoning", ""))))
-            elif block.get("type") == "redactedThinking":
-                self.notify("thinking", "[Provider returned redacted thinking; content unavailable]")
-            if block.get("type") == "toolResponse" and block.get("id") in self.final_calls:
-                response = block.get("toolResult", {})
-                value = response.get("value", {})
-                if response.get("status") == "success" and not value.get("isError", False):
-                    self.accepted_result = self.final_calls.pop(block["id"])
-                    self.notify("result_received", "Structured result accepted; waiting for protocol completion")
-                else:
-                    self.final_calls.pop(block["id"], None)
-        if message.get("role") != "assistant":
-            return
-        for block in message.get("content", []):
-            if block.get("type") == "text":
+        for index, block in enumerate(message.get("content", [])):
+            kind = block.get("type")
+            if kind in ("thinking", "reasoning", "redactedThinking"):
+                value = ("[Provider returned redacted thinking; content unavailable]" if kind == "redactedThinking"
+                         else block.get("thinking", block.get("text", block.get("reasoning", ""))))
+                self.delta("thinking", value, message.get("id", "assistant"), index)
+            elif kind == "text" and message.get("role") == "assistant":
                 mid = message.get("id", "assistant")
                 self.last_id = mid
-                text = block.get("text", "")
-                self.messages[mid] = self.messages.get(mid, "") + text
+                value = block.get("text", "")
+                self.messages[mid] = self.messages.get(mid, "") + value
                 if "I've reached the maximum number of actions I can do without user input" in self.messages[mid]:
                     self.action_limit_reached = True
-                self.buffer += text
-                if "\n" in self.buffer or len(self.buffer) > 240:
-                    self.flush()
-            elif block.get("type") == "toolRequest":
+                self.delta("agent", value, mid, index)
+            elif kind == "toolResponse" or (kind == "toolRequest" and message.get("role") == "assistant"):
                 self.flush()
-                call = block.get("toolCall", {}).get("value", {})
-                args = call.get("arguments", {})
-                if call.get("name") == "recipe__final_output" and isinstance(args, dict):
-                    self.final_calls[block.get("id")] = args
-                self.notify("tool", call.get("name", "tool") + " " + json.dumps(args, ensure_ascii=False))
+                self.output_key = None
+                if kind == "toolRequest":
+                    call = block.get("toolCall", {}).get("value", {})
+                    args = call.get("arguments", {})
+                    if call.get("name") == "recipe__final_output" and isinstance(args, dict):
+                        self.final_calls[block.get("id")] = args
+                    self.notify("tool", call.get("name", "tool") + " " + json.dumps(args, ensure_ascii=False))
+                else:
+                    self.notify("tool_result", json.dumps(block, ensure_ascii=False))
+                    if block.get("id") in self.final_calls:
+                        response = block.get("toolResult", {})
+                        value = response.get("value", {})
+                        if response.get("status") == "success" and not value.get("isError", False):
+                            self.accepted_result = self.final_calls.pop(block["id"])
+                            self.notify("result_received", "Structured result accepted; waiting for protocol completion")
+                        else:
+                            self.final_calls.pop(block["id"], None)
+
+    def delta(self, kind, value, mid, index):
+        key = (kind, mid, index)
+        if key != self.output_key:
+            self.flush()
+            self.output_key = key
+            self.output_id = uuid.uuid4().hex
+        self.buffer += value
+        self.buffer_bytes += len(value.encode("utf-8"))
+        self.flush_due()
+
+    def flush_due(self):
+        if self.buffer_bytes >= 8192 or time.monotonic() - self.last_flush >= 0.5:
+            self.flush()
 
     def flush(self):
-        if self.buffer.strip():
-            self.notify("agent", self.buffer.strip())
+        if self.buffer:
+            kind = self.output_key[0]
+            if self.notify_delta is not None:
+                self.notify_delta(kind, self.buffer, self.output_id)
+            else:
+                self.notify(kind, self.buffer)
         self.buffer = ""
+        self.buffer_bytes = 0
+        self.last_flush = time.monotonic()
 
     def result(self, phase):
         self.flush()
@@ -378,18 +401,25 @@ def run_process(command, root, log_path, notify, timeout, stream=None, exit_grac
 
     reader = threading.Thread(target=read, daemon=True)
     reader.start()
+    accepted_saved = False
     started = last_activity = last_heartbeat = time.monotonic()
     try:
         # Archive legacy same-name logs; every retry retains its own raw stream.
         if log_path.exists():
             archive = log_path.with_name(log_path.stem + ".attempt-" + uuid.uuid4().hex + log_path.suffix)
             os.replace(str(log_path), str(archive))
+        last_log_flush = time.monotonic()
         with log_path.open("w", encoding="utf-8") as log:
             while True:
                 if cancel_event is not None and (cancel_event.is_set() or
                         (getattr(cancel_event, 'pause_file', None) is not None and cancel_event.pause_file.exists())):
                     raise InterruptedError("Project scheduler interrupted; owned process tree stopped")
                 now = time.monotonic()
+                if stream:
+                    stream.flush_due()
+                if now - last_log_flush >= 0.5:
+                    log.flush()
+                    last_log_flush = now
                 if timeout and now - started >= timeout:
                     raise TimeoutError("Phase wall-time limit reached; child process tree stopped")
                 if now - last_heartbeat >= 15:
@@ -409,17 +439,15 @@ def run_process(command, root, log_path, notify, timeout, stream=None, exit_grac
                     except ValueError:
                         # Startup banners and stderr are useful, but not model results.
                         log.write(line)
-                        log.flush()
                         notify('stderr', line.rstrip())
                         continue
                     log.write(json.dumps(event, ensure_ascii=False) + "\n")
-                    log.flush()
                     stream.feed(event)
                 else:
                     log.write(line)
                     notify("check", line.rstrip())
-                log.flush()
-                if stream and stream.accepted_result is not None:
+                if stream and stream.accepted_result is not None and not accepted_saved:
+                    accepted_saved = True
                     save_json(log_path.with_suffix(".accepted.json"), stream.accepted_result)
                 if stream and stream.complete:
                     notify("draining", "Protocol complete; collecting result and closing owned processes")
@@ -447,7 +475,6 @@ def run_process(command, root, log_path, notify, timeout, stream=None, exit_grac
                 if line is None:
                     continue
                 tail.write(line)
-                tail.flush()
                 if stream:
                     try:
                         event = json.loads(line)
@@ -476,14 +503,18 @@ class Runner:
         self.start_head = git(root, "rev-parse", "HEAD")
         self.control_root = Path(getattr(args, "control_root", root))
 
-    def notify(self, kind, message):
-        append_event(self.run_dir, self.state, kind, message)
+    def notify(self, kind, message, stream_id=None):
+        append_event(self.run_dir, self.state, kind, message, stream_id)
         if kind == "start":
             self.state["execution_state"] = "RUNNING"
         elif kind in ("result_received", "draining"):
             self.state["execution_state"] = kind.upper()
+        now = time.monotonic()
+        if kind in ("agent", "thinking", "check", "tool", "tool_result") and now - getattr(self, "_status_written", 0) < 0.5:
+            return
         try:
             save_json(self.run_dir / "status.json", self.state)
+            self._status_written = now
         except OSError as error:
             # Progress display is best-effort; a stuck reader must not kill the phase.
             print("[progress] status.json deferred: " + str(error), flush=True)
@@ -587,7 +618,7 @@ class Runner:
             index = git(self.root, "diff", "--cached", "--binary")
             save_json(self.run_dir / (stem + ".start.json"), {"head": head, "files": before, "index": index,
                       "scope": getattr(self.args, "task_contract", None)})
-            stream = Stream(self.notify)
+            stream = Stream(self.notify, self.notify)
             session_name = self.run_dir.name + "-" + stem
             started = time.monotonic()
             command = [self.args.goose, "run", "--recipe", str(recipe_path),
@@ -635,7 +666,7 @@ class Runner:
                     break
                 continuation += 1
                 self.notify("continue", "Goose native action limit reached; resuming the same session with its tools")
-                stream = Stream(self.notify)
+                stream = Stream(self.notify, self.notify)
                 command = [self.args.goose, "run", "--resume", "--name", session_name,
                            "--output-format", "stream-json", "--text",
                            "Continue the current phase with your existing context and tools. "

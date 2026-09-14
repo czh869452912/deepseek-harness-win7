@@ -426,3 +426,26 @@ References: [Goose CLI streaming](https://goose-docs.ai/docs/guides/goose-cli-co
 
 See [the core/session run diagnosis](diagnosis-core-session.md) for the observed
 old-loop failures and verification limits of this change.
+
+### Streaming console retention
+
+Assistant output and provider-visible thinking are collected every 500 ms or
+8 KiB, and flushed at tool/message boundaries, completion and interruption.
+Chunks retain a stable stream ID and exact whitespace. Each run keeps its own
+append-only progress log and complete raw protocol stream. Raw stream writes use
+buffered I/O with a 500 ms flush interval and flush on close; status snapshots
+are rate-limited while lifecycle transitions are immediate. An abrupt process or
+machine crash can lose the unflushed buffer; ordinary pause drains the pipe.
+
+The browser appends chunks to one block per output, including across polls;
+legacy consecutive chunks are also combined. It retains at most 300 displayed
+blocks and the last 64 Ki characters per block. This is a display window, not log
+deletion. Full history remains in each run's raw/progress JSONL files. Multi-worker
+output is keyed by task, run, attempt and phase, so workers cannot share a block.
+
+The Cordis pilot completed independent review and publication on 2026-09-14:
+`dc0e0a19` on master, with 1813 passed, 1 skipped in the publication candidate.
+Other tasks remain paused. Resume selected follow-up work with `pilot -Task <id>`
+or independent groups with `run -Jobs 2`; overlap reservations and serial
+integration remain enforced. Tasks invalidated by the new core contract must
+revalidate their affected behavior before they can be published.

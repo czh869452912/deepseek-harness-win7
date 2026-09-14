@@ -53,9 +53,10 @@ observed directly.
 
 ## Remaining low-cost improvements
 
-1. Resume interrupted native Goose sessions with an explicit handoff, preserving
-   phase context as well as files. Completed phase results already resume, but
-   interrupted phases still reread substantial source.
+1. Implemented: interrupted native Goose sessions resume with an explicit
+   handoff and the full output schema, guarded by saved workspace and model
+   identity. Round 11 reused its review context and repaired serialization
+   without rerunning implementation.
 2. Expose controller-owned test summaries with exit code, warnings, tested head
    and artifact path. The migration model reran full tests merely because a
    terminal tail omitted the pytest summary behind transport diagnostics.
@@ -76,3 +77,13 @@ The local run database and raw phase streams contain detailed evidence. The
 checked-in plans preserve the architecture and scope decisions without requiring
 those machine-local artifacts. No external model proxy or additional workspace
 management layer is needed for these follow-ups.
+
+
+## Published result
+
+The round 11 independent review passed. The controller combined and tested the
+integration and master candidates and published `dc0e0a19` on 2026-09-14. The
+publication suite reported 1813 passed, 1 skipped, 1 warning. Cordis is INTEGRATED;
+the pilot and publication are PUBLISHED; the scheduler remains PAUSED. There was
+no textual merge conflict in this final candidate, so the integration-repair lane
+has regression coverage but was not exercised by a real conflict in this pilot.

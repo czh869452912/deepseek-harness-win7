@@ -79,12 +79,14 @@ def terminal_event(record):
             pass  # A disconnected terminal must not stop collection or execution.
 
 
-def append_event(run_dir, state, kind, message):
+def append_event(run_dir, state, kind, message, stream_id=None):
     """One writer per run. Append before rendering; byte cursors survive restart."""
     record = {'time': time.strftime('%Y-%m-%d %H:%M:%S'), 'timestamp': time.time(),
               'task': state.get('unit', 'unknown'), 'run': run_dir.name,
               'attempt': state.get('attempt'), 'phase': state['phase'], 'round': state['round'],
               'kind': kind, 'message': message}
+    if stream_id is not None:
+        record['stream_id'] = stream_id
     with (run_dir / 'progress.jsonl').open('ab') as file:
         record['seq'] = file.tell()  # Durable monotonically increasing byte offset, not a row count.
         file.write((json.dumps(record, ensure_ascii=False) + '\n').encode('utf-8'))

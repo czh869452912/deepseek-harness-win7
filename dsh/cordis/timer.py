@@ -163,7 +163,11 @@ class TimerService(Service):
         ctx: Optional[Any] = None
     ) -> Any:
         """
-        Run a callback once, or return a Future that resolves after delay_ms.
+        Run a callback once, or return an awaitable that resolves after delay_ms.
+
+        The owning fiber's disposal before the deadline rejects the awaitable with
+        `RuntimeError("Context has been disposed")`, and a later await still raises;
+        a disposal after the deadline leaves an already-resolved awaitable resolved.
         All timers are automatically cancelled when owning fiber/context is disposed.
         """
         target_ctx = ctx or self.ctx
@@ -243,27 +247,64 @@ class TimerService(Service):
                 future = None
 
             if future is None:
-                disposed = False
                 # No loop can hold the timer, so the deadline is fixed here and the
-                # returned coroutine sleeps whatever is left of it.
+                # returned coroutine waits out whatever is left of it. The reference
+                # rejects the promise from its disposer while the deadline has not
+                # elapsed (index.ts:47-51), so the rejection is recorded here and the
+                # coroutine raises it at the consumer's first checkpoint, whether that
+                # checkpoint comes after the deadline or is already suspended.
                 deadline = time.monotonic() + delay_sec
+                rejected = False
+                waiter: Optional[asyncio.Future] = None
+                waiter_loop: Optional[asyncio.AbstractEventLoop] = None
+
+                def _resolve_no_loop() -> None:
+                    if waiter is not None and not waiter.done():
+                        waiter.set_result(None)
+
+                def _reject_no_loop() -> None:
+                    if waiter is not None and not waiter.done():
+                        waiter.set_exception(RuntimeError("Context has been disposed"))
 
                 def _setup_no_loop():
                     def _cleanup_no_loop():
-                        nonlocal disposed
-                        disposed = True
+                        nonlocal rejected
+                        # `clearTimeout` is a no-op once the timer fired, so only a
+                        # disposal before the deadline rejects the promise.
+                        rejected = time.monotonic() < deadline
+                        if not rejected or waiter_loop is None:
+                            return
+                        try:
+                            running = asyncio.get_running_loop()
+                        except RuntimeError:
+                            running = None
+                        if running is waiter_loop:
+                            _reject_no_loop()
+                        else:
+                            # The consumer awaits on a loop this disposer does not run
+                            # on, so the rejection is handed to that loop.
+                            waiter_loop.call_soon_threadsafe(_reject_no_loop)
                     return _cleanup_no_loop
 
                 dispose = target_ctx.effect(_setup_no_loop, "ctx.timeout()")
 
                 async def _fallback_sleep():
+                    nonlocal waiter, waiter_loop
+                    handle: Optional[asyncio.TimerHandle] = None
                     try:
-                        remaining = deadline - time.monotonic()
-                        if remaining > 0:
-                            if disposed:
-                                raise RuntimeError("Context has been disposed")
-                            await asyncio.sleep(remaining)
+                        if rejected:
+                            raise RuntimeError("Context has been disposed")
+                        waiter_loop = asyncio.get_running_loop()
+                        if rejected:
+                            raise RuntimeError("Context has been disposed")
+                        waiter = waiter_loop.create_future()
+                        handle = waiter_loop.call_later(max(0.0, deadline - time.monotonic()), _resolve_no_loop)
+                        await waiter
                     finally:
+                        if handle is not None:
+                            handle.cancel()
+                        waiter = None
+                        waiter_loop = None
                         dispose()
 
                 return _fallback_sleep()

@@ -661,6 +661,63 @@ def test_t9_timeout_without_running_loop_rejects_when_disposed_before_the_deadli
         asyncio.run(asyncio.wait_for(coroutine, 5))
 
 
+def test_t9_timeout_without_running_loop_rejects_when_disposed_before_a_late_await():
+    """ts:index.ts:47-51 - the disposer rejects the promise, so a consumer whose first
+    await starts after the deadline still raises instead of resolving."""
+    ctx = Context()
+    ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
+    coroutine = ctx.timeout(80)
+
+    ctx.dispose()
+    time.sleep(0.2)  # the deadline passes before anyone awaits the coroutine
+
+    with pytest.raises(RuntimeError, match="Context has been disposed"):
+        asyncio.run(asyncio.wait_for(coroutine, 5))
+    assert timer_effects(ctx) == []
+
+
+def test_t9_timeout_without_running_loop_rejects_an_await_that_is_already_suspended():
+    """ts:index.ts:47-51 - `clearTimeout` drops the deadline and the rejection reaches a
+    consumer that is already awaiting, so it does not wait the deadline out."""
+    ctx = Context()
+    ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
+    coroutine = ctx.timeout(5000)
+
+    async def await_the_rejection():
+        asyncio.get_running_loop().call_later(0.1, ctx.dispose)
+        started = time.monotonic()
+        with pytest.raises(RuntimeError, match="Context has been disposed"):
+            await coroutine
+        return time.monotonic() - started
+
+    assert asyncio.run(await_the_rejection()) < 2.0
+    assert timer_effects(ctx) == []
+
+
+def test_t9_timeout_without_running_loop_rejects_when_disposed_from_another_thread():
+    """ts:index.ts:47-51 - a disposer on another thread hands the rejection to the loop
+    that owns the suspended await."""
+    ctx = Context()
+    ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
+    coroutine = ctx.timeout(5000)
+    disposer = threading.Timer(0.1, ctx.dispose)
+    disposer.start()
+
+    async def await_the_rejection():
+        started = time.monotonic()
+        with pytest.raises(RuntimeError, match="Context has been disposed"):
+            await coroutine
+        return time.monotonic() - started
+
+    try:
+        elapsed = asyncio.run(await_the_rejection())
+    finally:
+        disposer.cancel()
+
+    assert elapsed < 2.0
+    assert timer_effects(ctx) == []
+
+
 def test_t9_timeout_without_running_loop_keeps_a_deadline_that_already_elapsed():
     """ts:index.ts:46-52 - the reject in the disposer is a no-op once the timer fired."""
     ctx = Context()

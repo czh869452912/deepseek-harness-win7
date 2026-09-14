@@ -5,6 +5,8 @@ Covers G1, G2, G3, G4, G5, G6 alignment with TS Cordis / Cosmokit.
 
 import asyncio
 import datetime
+import threading
+import time
 import pytest
 
 from dsh.cordis import Context, Plugin, Service
@@ -357,17 +359,36 @@ def test_g1_d14_cosmokit_binary_and_helpers():
     assert mapValues(d, lambda v, k: f"{k}_{v}") == {"a": "a_1", "b": "b_2"}
 
 
-def test_g4_d2_timer_exceptions_logged(capsys):
-    """G4-D2: Timer interval thread logs exceptions instead of swallowing with empty pass."""
+def test_g4_d2_timer_exceptions_reach_the_runtime_uncaught_handler():
+    """G4-D2: the reference interval callback runs unguarded
+    (reference/vendor/timer/src/index.ts:63-66), so the raising callback escapes its worker
+    thread through `threading.excepthook` and the tick chain ends there."""
     ctx = Context()
     ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
-    # interval with bad callback logs error
+    escaped = []
+
+    def hook(args):
+        escaped.append((args.exc_type, args.exc_value))
+
+    previous = threading.excepthook
+    threading.excepthook = hook
+    ticks = []
+
     def bad_cb():
+        ticks.append(1)
         raise ValueError("simulated interval failure")
 
-    # In thread mode (no running loop in sync test)
-    # TimerService interval returns a disposer
     disposer = ctx.timer.interval(bad_cb, 50)
-    import time
-    time.sleep(0.15)
+    try:
+        deadline = time.monotonic() + 2
+        while not escaped and time.monotonic() < deadline:
+            time.sleep(0.01)
+        time.sleep(0.15)  # a caught-and-retried callback would tick again here
+    finally:
+        threading.excepthook = previous
     disposer()
+
+    assert ticks == [1]
+    assert len(escaped) == 1
+    assert escaped[0][0] is ValueError
+    assert str(escaped[0][1]) == "simulated interval failure"

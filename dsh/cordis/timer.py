@@ -5,7 +5,6 @@ Disposable timer helpers mixed into Cordis contexts.
 
 import asyncio
 import inspect
-import sys
 import threading
 import time
 from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Tuple, Union
@@ -194,19 +193,16 @@ class TimerService(Service):
                     disposed = True
                     if registered_dispose:
                         registered_dispose[0]()
-                    try:
-                        res = callback()
-                        if inspect.isawaitable(res):
-                            try:
-                                loop = asyncio.get_running_loop()
-                                loop.create_task(res)
-                            except RuntimeError:
-                                pass
-                    except Exception as e:
-                        if hasattr(target_ctx, "logger"):
-                            target_ctx.logger("timer").error("Exception in timeout callback: %s", e)
-                        else:
-                            sys.stderr.write(f"[Cordis Timer Error] Exception in timeout: {e}\n")
+                    # The reference calls the callback unguarded (index.ts:38), so a
+                    # raising callback escapes to the runtime's uncaught-exception
+                    # handling instead of being caught here.
+                    res = callback()
+                    if inspect.isawaitable(res):
+                        try:
+                            res_loop = asyncio.get_running_loop()
+                            res_loop.create_task(res)
+                        except RuntimeError:
+                            pass
 
                 try:
                     loop = asyncio.get_running_loop()
@@ -319,50 +315,51 @@ class TimerService(Service):
 
             def _setup():
                 disposed = False
-                task: Optional[asyncio.Task] = None
-                threading_timer: Optional[threading.Thread] = None
+                handle: Optional[asyncio.TimerHandle] = None
+                threading_worker: Optional[threading.Thread] = None
 
-                async def _async_interval_loop():
-                    while not disposed:
-                        await asyncio.sleep(delay_sec)
-                        if disposed:
-                            break
+                def _tick_callback():
+                    # The reference hands the callback to the runtime's interval timer
+                    # unguarded (index.ts:64), so a raising callback escapes to the
+                    # runtime's uncaught-exception handling, exactly as an uncaught
+                    # Node timer callback does, and the tick chain ends there.
+                    res = callback()
+                    if inspect.isawaitable(res):
                         try:
-                            res = callback()
-                            if inspect.isawaitable(res):
-                                try:
-                                    loop = asyncio.get_running_loop()
-                                    loop.create_task(res)
-                                except RuntimeError:
-                                    pass
-                        except Exception as e:
-                            if hasattr(target_ctx, "logger"):
-                                target_ctx.logger("timer").error("Exception in interval callback: %s", e)
+                            res_loop = asyncio.get_running_loop()
+                            res_loop.create_task(res)
+                        except RuntimeError:
+                            pass
+
+                def _cleanup():
+                    nonlocal disposed
+                    disposed = True
+                    if handle is not None:
+                        handle.cancel()
 
                 try:
                     loop = asyncio.get_running_loop()
-                    task = loop.create_task(_async_interval_loop())
                 except RuntimeError:
                     def _thread_interval():
                         while not disposed:
                             time.sleep(delay_sec)
                             if disposed:
                                 break
-                            try:
-                                callback()
-                            except Exception as e:
-                                if hasattr(target_ctx, "logger"):
-                                    target_ctx.logger("timer").error("Exception in interval callback: %s", e)
-                                else:
-                                    sys.stderr.write(f"[Cordis Timer Error] Exception in interval thread callback: {e}\n")
-                    threading_timer = threading.Thread(target=_thread_interval, daemon=True)
-                    threading_timer.start()
+                            _tick_callback()
 
-                def _cleanup():
-                    nonlocal disposed
-                    disposed = True
-                    if task and not task.done():
-                        task.cancel()
+                    threading_worker = threading.Thread(target=_thread_interval, daemon=True)
+                    threading_worker.start()
+                else:
+                    def _tick():
+                        nonlocal handle
+                        if disposed:
+                            return
+                        _tick_callback()
+                        if disposed:
+                            return
+                        handle = loop.call_later(delay_sec, _tick)
+
+                    handle = loop.call_later(delay_sec, _tick)
 
                 return _cleanup
 

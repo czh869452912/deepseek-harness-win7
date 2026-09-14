@@ -5,6 +5,7 @@ Authority: reference/vendor/timer/src/index.ts
 
 import asyncio
 import pytest
+import threading
 import time
 from dsh.cordis.context import Context
 from dsh.cordis.fiber import FiberState
@@ -285,6 +286,41 @@ async def test_t2_timeout_callback_disposer_cancels_the_pending_timer():
 
 
 @pytest.mark.asyncio
+async def test_t2_timeout_callback_raising_escapes_to_the_loop_after_releasing_its_effect():
+    """ts:index.ts:34-42 - the firing callback disposes its own effect and then runs
+    unguarded, so a raising callback reaches the runtime's uncaught-exception handling
+    with its effect already released."""
+    ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
+    loop = asyncio.get_running_loop()
+    escaped = []
+
+    def handler(handler_loop, context):
+        escaped.append(context)
+
+    previous = loop.get_exception_handler()
+    loop.set_exception_handler(handler)
+    observed = []
+
+    def callback():
+        observed.append(timer_effects(ctx))
+        raise RuntimeError("timeout-boom")
+
+    ctx.timeout(callback, 20)
+    assert timer_effects(ctx) == ["ctx.timeout()"]
+    try:
+        await asyncio.sleep(0.15)
+    finally:
+        loop.set_exception_handler(previous)
+
+    assert observed == [[]]
+    assert len(escaped) == 1
+    assert isinstance(escaped[0]["exception"], RuntimeError)
+    assert str(escaped[0]["exception"]) == "timeout-boom"
+    assert timer_effects(ctx) == []
+
+
+@pytest.mark.asyncio
 async def test_t3_timeout_delay_resolves_at_the_deadline_and_releases_its_effect():
     """ts:index.ts:43-52 - the promise form resolves after `delay` and settles its effect."""
     ctx = Context()
@@ -334,23 +370,80 @@ async def test_t4_deprecated_aliases_delegate_and_keep_their_disposers():
 
 
 @pytest.mark.asyncio
-async def test_t5_interval_callback_keeps_ticking_after_a_raising_callback():
-    """ts:index.ts:62-66 - Python reports the callback error through asyncio and keeps the
-    interval running, where the reference's uncaught timer exception ends the process."""
+async def test_t5_interval_callback_raising_escapes_to_the_loop_and_ends_the_tick_chain():
+    """ts:index.ts:63-66 - `setInterval(callback, delay)` hands the callback to the runtime
+    with no catch anywhere in the timer, so a raising callback reaches the runtime's
+    uncaught-exception handling and its tick chain ends instead of continuing."""
     ctx = Context()
     await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
+    loop = asyncio.get_running_loop()
+    escaped = []
+
+    def handler(handler_loop, context):
+        escaped.append(context)
+
+    previous = loop.get_exception_handler()
+    loop.set_exception_handler(handler)
     ticks = []
 
     def callback():
         ticks.append(1)
-        if len(ticks) == 1:
-            raise RuntimeError("tick-boom")
+        raise RuntimeError("tick-boom")
 
-    dispose = ctx.interval(callback, 60)
-    await asyncio.sleep(0.3)
+    dispose = ctx.interval(callback, 20)
+    try:
+        await asyncio.sleep(0.15)
+    finally:
+        loop.set_exception_handler(previous)
+
+    assert ticks == [1]
+    assert len(escaped) == 1
+    assert isinstance(escaped[0]["exception"], RuntimeError)
+    assert str(escaped[0]["exception"]) == "tick-boom"
+
+    # The reference clears an interval only through its disposer, so the raise leaves
+    # the effect owned until that disposer runs.
+    assert timer_effects(ctx) == ["ctx.interval()"]
     dispose()
+    assert timer_effects(ctx) == []
 
-    assert len(ticks) >= 3
+
+def test_t5_interval_callback_raising_without_running_loop_escapes_to_the_thread_hook():
+    """ts:index.ts:63-66 - the same contract with no loop to hold the interval: the raising
+    callback escapes its worker thread through `threading.excepthook` and the tick chain
+    ends there."""
+    ctx = Context()
+    ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
+    escaped = []
+
+    def hook(args):
+        escaped.append((args.exc_type, args.exc_value, args.thread.name))
+
+    previous = threading.excepthook
+    threading.excepthook = hook
+    ticks = []
+
+    def callback():
+        ticks.append(1)
+        raise RuntimeError("tick-boom")
+
+    dispose = ctx.interval(callback, 20)
+    try:
+        deadline = time.monotonic() + 2
+        while not escaped and time.monotonic() < deadline:
+            time.sleep(0.01)
+        time.sleep(0.15)  # a caught-and-retried callback would tick again here
+    finally:
+        threading.excepthook = previous
+
+    assert ticks == [1]
+    booms = [entry for entry in escaped if str(entry[1]) == "tick-boom"]
+    assert len(booms) == 1
+    assert booms[0][0] is RuntimeError
+    assert booms[0][2] != "MainThread"
+
+    assert timer_effects(ctx) == ["ctx.interval()"]
+    dispose()
     assert timer_effects(ctx) == []
 
 
@@ -624,4 +717,37 @@ def test_t9_timeout_callback_without_running_loop_disposer_cancels_the_timer():
     time.sleep(0.5)
 
     assert fired == []
+    assert timer_effects(ctx) == []
+
+
+def test_t9_timeout_callback_raising_without_running_loop_escapes_to_the_thread_hook():
+    """ts:index.ts:34-42 - the same contract without a loop to hold the timer: the disposer
+    runs first and the callback's exception reaches `threading.excepthook`."""
+    ctx = Context()
+    ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
+    escaped = []
+
+    def hook(args):
+        escaped.append((args.exc_type, args.exc_value))
+
+    previous = threading.excepthook
+    threading.excepthook = hook
+    observed = []
+
+    def callback():
+        observed.append(timer_effects(ctx))
+        raise RuntimeError("timeout-boom")
+
+    ctx.timeout(callback, 0)
+    try:
+        deadline = time.monotonic() + 2
+        while not escaped and time.monotonic() < deadline:
+            time.sleep(0.01)
+    finally:
+        threading.excepthook = previous
+
+    assert observed == [[]]
+    booms = [entry for entry in escaped if str(entry[1]) == "timeout-boom"]
+    assert len(booms) == 1
+    assert booms[0][0] is RuntimeError
     assert timer_effects(ctx) == []

@@ -1,5 +1,7 @@
 # DeepSeek Harness Win7
 
+开发维护：[Goose 多智能体操作指南](.goose/OPERATIONS.zh-CN.md) · [编排工作流参考](.goose/README.md)
+
 [README.md](README.md) | [AGENTS.md](AGENTS.md)
 
 **DeepSeek Harness Win7** 是针对 Windows 7 及以上系统打造的开源 Agent Harness（智能体框架）Python 实现，集成了原汁原味的 **Cordis in Browser + React 18 + TSX + CSS Modules** 现代化 Web GUI 与完整 CLI。

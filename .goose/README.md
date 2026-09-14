@@ -1,5 +1,7 @@
 # Goose parity workflow
 
+中文日常操作入口：[多智能体操作指南](OPERATIONS.zh-CN.md)（启动、暂停、恢复、重启、模型分配和发布）。
+
 ## Lightweight local console
 
 ```powershell
@@ -105,8 +107,8 @@ agent to refine runtime services/events, acceptance contracts and core-first
 priorities, then starts ready task groups. Later runs reuse the SQLite graph.
 The default is two concurrent groups; `-Jobs` selects resource concurrency, not
 a work quota. There are no default round, action or model-work time limits.
-The architect uses the existing judge provider/model configuration; migration,
-review and arbitration retain their existing role configurations.
+The architect uses the independent architect role in `.goose/agent-config.json`;
+migration, review and arbitration use their corresponding role allocations.
 Plans rejected by graph validation return to the same architect session for
 correction, without a retry quota. Missing contract definitions are reported
 together with their referring tasks. Proposals and repair status are retained in
@@ -133,7 +135,8 @@ Console messages identify each task group. Integrated/discovered counts describe
 the current graph; new dependency discovery can increase the total.
 
 The controller persists four edge kinds: implementation, contract, acceptance and
-change. Cyclic dependencies form one atomic task group. Ready groups are ordered
+change. Cycles wait for an explicit shared `atomic_group` or a corrected plan; they do not
+automatically authorize a combined writer. Ready groups are ordered
 by architectural wave, downstream impact, priority and age. Providers must be
 integrated before external consumers run. Contract fingerprints and evidence are
 bound to the pinned upstream, implementation revision, tests and environment.
@@ -217,7 +220,8 @@ shows scheduler state, writer waits, unresolved cycles and publication state sep
 
 Recovery retains worktrees/checkpoints/logs. A completed result is reused only
 when its recorded code/scope still match (and review HEAD is identical). An
-unfinished or unbound phase runs fresh. A live scheduler PID prevents a second
+interrupted native session resumes only when saved files, HEAD, scope and model
+allocation match; otherwise that phase starts fresh while retaining source edits. A live scheduler PID prevents a second
 controller or recovery command from taking ownership. Ctrl+C stops owned process
 trees; a stale lock is reclaimed only after its PID is no longer running. Windows
 Job Objects also terminate assigned descendants if the controller crashes.

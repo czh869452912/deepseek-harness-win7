@@ -68,7 +68,8 @@ class _AsyncIntervalIterator:
     async def __anext__(self) -> None:
         if self._done is not None:
             if self._done["kind"] == "return":
-                raise StopAsyncIteration
+                # TS `next()` resolves `{ done: true, value }` and keeps returning it.
+                raise StopAsyncIteration(self._done.get("value"))
             raise self._done["reason"]
 
         loop = asyncio.get_running_loop()
@@ -84,13 +85,19 @@ class _AsyncIntervalIterator:
         if not self._done:
             self._done = {"kind": "return", "value": value}
             if self._next_future is not None and not self._next_future.done():
-                self._next_future.set_exception(StopAsyncIteration())
+                # TS resolves the pending `next()` with `{ done: true, value }`.
+                self._next_future.set_exception(StopAsyncIteration(value))
                 self._next_future = None
             if callable(self._dispose):
                 self._dispose()
 
     async def athrow(self, reason: Any) -> None:
-        """Explicit iterator throw matching TS throw(reason)."""
+        """
+        Throw `reason` into the iterator matching TS `throw(reason)`.
+
+        The reference resolves `{ done: true, value: undefined }`; a finished
+        Python async iterator signals that by raising StopAsyncIteration.
+        """
         if not self._done:
             self._done = {"kind": "throw", "reason": reason}
             if self._next_future is not None and not self._next_future.done():
@@ -99,6 +106,7 @@ class _AsyncIntervalIterator:
                 self._next_future = None
             if callable(self._dispose):
                 self._dispose()
+        raise StopAsyncIteration
 
     def __del__(self) -> None:
         if not self._done:
@@ -212,6 +220,9 @@ class TimerService(Service):
 
             if future is None:
                 disposed = False
+                # No loop can hold the timer, so the deadline is fixed here and the
+                # returned coroutine sleeps whatever is left of it.
+                deadline = time.monotonic() + delay_sec
 
                 def _setup_no_loop():
                     def _cleanup_no_loop():
@@ -223,11 +234,11 @@ class TimerService(Service):
 
                 async def _fallback_sleep():
                     try:
-                        if disposed:
-                            raise RuntimeError("Context has been disposed")
-                        await asyncio.sleep(delay_sec)
-                        if disposed:
-                            raise RuntimeError("Context has been disposed")
+                        remaining = deadline - time.monotonic()
+                        if remaining > 0:
+                            if disposed:
+                                raise RuntimeError("Context has been disposed")
+                            await asyncio.sleep(remaining)
                     finally:
                         dispose()
 
@@ -344,28 +355,33 @@ class TimerService(Service):
         delay_sec = max(0.0, delay_ms / 1000.0)
         last_call = -float("inf")
         timer_handle: Optional[asyncio.TimerHandle] = None
+        threading_timer: Optional[threading.Timer] = None
         disposed = False
 
         def _setup():
             def _cleanup():
-                nonlocal disposed, timer_handle
+                nonlocal disposed, timer_handle, threading_timer
                 disposed = True
                 if timer_handle is not None:
                     timer_handle.cancel()
                     timer_handle = None
+                if threading_timer is not None:
+                    threading_timer.cancel()
+                    threading_timer = None
             return _cleanup
 
         disposer = target_ctx.effect(_setup, "ctx.throttle()")
 
         def throttled(*args: Any, **kwargs: Any) -> Any:
-            nonlocal last_call, timer_handle
+            nonlocal last_call, timer_handle, threading_timer
             now = time.time()
             remaining = delay_sec - (now - last_call)
 
             def _execute(*a, **kw):
-                nonlocal last_call, timer_handle
+                nonlocal last_call, timer_handle, threading_timer
                 last_call = time.time()
                 timer_handle = None
+                threading_timer = None
                 res = callback(*a, **kw)
                 if inspect.isawaitable(res):
                     try:
@@ -378,15 +394,22 @@ class TimerService(Service):
                 if timer_handle is not None:
                     timer_handle.cancel()
                     timer_handle = None
+                if threading_timer is not None:
+                    threading_timer.cancel()
+                    threading_timer = None
                 _execute(*args, **kwargs)
             elif not no_trailing and not disposed:
                 if timer_handle is not None:
                     timer_handle.cancel()
+                if threading_timer is not None:
+                    threading_timer.cancel()
                 try:
                     loop = asyncio.get_running_loop()
                     timer_handle = loop.call_later(remaining, lambda a=args, kw=kwargs: _execute(*a, **kw))
                 except RuntimeError:
-                    pass
+                    threading_timer = threading.Timer(remaining, lambda a=args, kw=kwargs: _execute(*a, **kw))
+                    threading_timer.daemon = True
+                    threading_timer.start()
 
         throttled.dispose = disposer
         return throttled

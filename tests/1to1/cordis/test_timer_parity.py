@@ -7,6 +7,7 @@ import asyncio
 import pytest
 import time
 from dsh.cordis.context import Context
+from dsh.cordis.fiber import FiberState
 from dsh.cordis.timer import TimerService
 
 
@@ -87,12 +88,13 @@ async def test_d3_interval_callback_non_blocking_coroutine():
         tick_times.append(time.time())
         await asyncio.sleep(0.05)  # 50ms slow async task
 
-    # Interval is 20ms. If awaited, interval would be 70ms. Without await, interval is ~20ms.
+    # Interval is 20ms. If awaited, a tick cycle takes 20ms + 50ms, so 0.3s holds ~3
+    # ticks; without awaiting it, the callback starts on every interval (~9 ticks here).
     disposer = ctx.interval(slow_callback, 20)
-    await asyncio.sleep(0.15)
+    await asyncio.sleep(0.3)
     disposer()
 
-    assert len(tick_times) >= 3
+    assert len(tick_times) >= 5
 
 
 @pytest.mark.asyncio
@@ -169,3 +171,312 @@ async def test_d4_throttle_no_trailing():
     await asyncio.sleep(0.08)
     # Trailing call was not scheduled
     assert calls == [1]
+
+# ---------------------------------------------------------------------------
+# Public contract cases for vendor/timer, mapped onto
+# reference/vendor/timer/src/index.ts. The vendored package ships no spec file
+# and vitest collects only packages/*/*/tests, apps/*/tests and scripts/**, so
+# every case names the authoritative source lines it pins; the README API table
+# and the deprecated aliases are covered as well.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_t1_service_provides_timer_and_mixes_its_helpers():
+    """ts:index.ts:12-16 - the class provides `timer` and mixes its six helpers onto ctx."""
+    ctx = Context()
+    fiber = ctx.plugin(TimerService)
+    await asyncio.sleep(0)
+
+    assert fiber.state == FiberState.ACTIVE
+    assert ctx.get("timer").name == "timer"
+    for helper in ("timeout", "interval", "throttle", "debounce", "setTimeout", "setInterval"):
+        assert callable(getattr(ctx, helper))
+
+
+@pytest.mark.asyncio
+async def test_t2_timeout_callback_runs_once_and_releases_its_effect_first():
+    """ts:index.ts:35-42 - the firing callback disposes its own effect before user code runs."""
+    ctx = Context()
+    observed = []
+    ctx.timeout(lambda: observed.append(len(ctx.fiber.get_effects())), 30)
+    assert [meta["label"] for meta in ctx.fiber.get_effects()] == ["ctx.timeout()"]
+
+    await asyncio.sleep(0.25)
+
+    assert observed == [0]
+    assert ctx.fiber.get_effects() == []
+
+
+@pytest.mark.asyncio
+async def test_t2_timeout_callback_disposer_cancels_the_pending_timer():
+    """ts:index.ts:36-42 - the returned disposer clears the timer and releases the effect."""
+    ctx = Context()
+    fired = []
+    dispose = ctx.timeout(lambda: fired.append(1), 60)
+
+    dispose()
+    await asyncio.sleep(0.15)
+
+    assert fired == []
+    assert ctx.fiber.get_effects() == []
+
+
+@pytest.mark.asyncio
+async def test_t3_timeout_delay_resolves_at_the_deadline_and_releases_its_effect():
+    """ts:index.ts:43-52 - the promise form resolves after `delay` and settles its effect."""
+    ctx = Context()
+    started = time.perf_counter()
+    await ctx.timeout(40)
+    elapsed = time.perf_counter() - started
+
+    assert elapsed >= 0.03
+    assert ctx.fiber.get_effects() == []
+
+
+@pytest.mark.asyncio
+async def test_t3_timeout_delay_already_elapsed_survives_a_later_dispose():
+    """ts:index.ts:46-52 - `reject` after `resolve` is a no-op, so the awaited value stands."""
+    ctx = Context()
+    coroutine = ctx.timeout(30)
+
+    # The reference resolves `promise` on the timer alone; the consumer is not needed.
+    await asyncio.sleep(0.15)
+    assert ctx.fiber.get_effects() == []
+
+    await ctx.fiber.dispose()
+    assert await asyncio.wait_for(coroutine, 1) is None
+
+
+@pytest.mark.asyncio
+async def test_t4_deprecated_aliases_delegate_and_keep_their_disposers():
+    """ts:index.ts:18-26 - setTimeout/setInterval return the timeout/interval disposers."""
+    ctx = Context()
+    calls = []
+    dispose_once = ctx.setTimeout(lambda: calls.append("once"), 30)
+    dispose_repeat = ctx.setInterval(lambda: calls.append("repeat"), 30)
+
+    await asyncio.sleep(0.12)
+    dispose_once()
+    dispose_repeat()
+    settled = list(calls)
+
+    await asyncio.sleep(0.12)
+
+    assert settled[0] == "once"
+    assert settled.count("repeat") >= 1
+    assert calls == settled
+
+
+@pytest.mark.asyncio
+async def test_t5_interval_callback_keeps_ticking_after_a_raising_callback():
+    """ts:index.ts:62-66 - Python reports the callback error through asyncio and keeps the
+    interval running, where the reference's uncaught timer exception ends the process."""
+    ctx = Context()
+    ticks = []
+
+    def callback():
+        ticks.append(1)
+        if len(ticks) == 1:
+            raise RuntimeError("tick-boom")
+
+    dispose = ctx.interval(callback, 60)
+    await asyncio.sleep(0.3)
+    dispose()
+
+    assert len(ticks) >= 3
+    assert ctx.fiber.get_effects() == []
+
+
+@pytest.mark.asyncio
+async def test_t6_interval_iterator_is_its_own_async_iterator_and_waits_for_a_tick():
+    """ts:index.ts:71-73 & 99-101 - a tick resolves the waiting consumer; the iterator is its own."""
+    ctx = Context()
+    iterator = ctx.interval(60)
+    assert iterator.__aiter__() is iterator
+
+    started = time.perf_counter()
+    await iterator.__anext__()
+    elapsed = time.perf_counter() - started
+    await iterator.aclose()
+
+    assert elapsed >= 0.03
+    assert ctx.fiber.get_effects() == []
+
+
+@pytest.mark.asyncio
+async def test_t6_interval_iterator_return_delivers_the_value_to_pending_and_later_next():
+    """ts:index.ts:87-92 - `return(value)` resolves the pending `next()` with
+    `{ done: true, value }` and keeps returning that value from every later `next()`."""
+    ctx = Context()
+    iterator = ctx.interval(500)
+    pending = asyncio.ensure_future(iterator.__anext__())
+    await asyncio.sleep(0.02)
+
+    await iterator.aclose("closed")
+
+    with pytest.raises(StopAsyncIteration) as pending_exc:
+        await pending
+    with pytest.raises(StopAsyncIteration) as later_exc:
+        await iterator.__anext__()
+
+    assert pending_exc.value.args == ("closed",)
+    assert later_exc.value.args == ("closed",)
+    assert ctx.fiber.get_effects() == []
+
+
+@pytest.mark.asyncio
+async def test_t6_interval_iterator_throw_rejects_pending_and_finishes_the_iterator():
+    """ts:index.ts:93-98 - `throw(reason)` rejects the pending `next()` with the reason,
+    releases the interval, and ends the iterator without delivering the error again."""
+    ctx = Context()
+    iterator = ctx.interval(500)
+    pending = asyncio.ensure_future(iterator.__anext__())
+    await asyncio.sleep(0.02)
+
+    with pytest.raises(StopAsyncIteration):
+        await iterator.athrow(RuntimeError("boom"))
+
+    with pytest.raises(RuntimeError, match="boom"):
+        await pending
+    with pytest.raises(RuntimeError, match="boom"):
+        await iterator.__anext__()
+    assert ctx.fiber.get_effects() == []
+
+
+@pytest.mark.asyncio
+async def test_t7_throttle_trailing_call_runs_with_the_latest_arguments():
+    """ts:index.ts:112-135 - a call inside the window schedules the trailing run with its own args."""
+    ctx = Context()
+    calls = []
+    throttled = ctx.throttle(lambda *args: calls.append(args), 200)
+
+    throttled(1, "x")
+    throttled(2, "y")
+    assert calls == [(1, "x")]
+
+    await asyncio.sleep(0.4)
+
+    assert calls == [(1, "x"), (2, "y")]
+    throttled.dispose()
+
+
+@pytest.mark.asyncio
+async def test_t7_throttle_dispose_clears_the_pending_trailing_call():
+    """ts:index.ts:108-116 - disposing the wrapper clears its scheduled trailing call."""
+    ctx = Context()
+    calls = []
+    throttled = ctx.throttle(lambda value: calls.append(value), 200)
+    throttled(1)
+    throttled(2)
+
+    throttled.dispose()
+    await asyncio.sleep(0.4)
+
+    assert calls == [1]
+    assert ctx.fiber.get_effects() == []
+
+
+@pytest.mark.asyncio
+async def test_t7_throttle_and_debounce_use_their_reference_effect_labels():
+    """ts:index.ts:127 & 140 - `_schedule` registers the label of the helper that created it."""
+    ctx = Context()
+    throttled = ctx.throttle(lambda: None, 50)
+    debounced = ctx.debounce(lambda: None, 50)
+
+    assert sorted(meta["label"] for meta in ctx.fiber.get_effects()) == [
+        "ctx.debounce()",
+        "ctx.throttle()",
+    ]
+
+    throttled.dispose()
+    debounced.dispose()
+    assert ctx.fiber.get_effects() == []
+
+
+@pytest.mark.asyncio
+async def test_t8_debounce_resets_its_timer_and_calls_with_the_last_arguments():
+    """ts:index.ts:139-144 - every call clears the pending timer, so only the last call runs."""
+    ctx = Context()
+    calls = []
+    debounced = ctx.debounce(lambda *args: calls.append(args), 300)
+
+    debounced(1)
+    await asyncio.sleep(0.2)
+    debounced(2)
+    await asyncio.sleep(0.2)
+    assert calls == []  # an unreset 300ms timer would have fired by now
+
+    await asyncio.sleep(0.3)
+
+    assert calls == [(2,)]
+    debounced.dispose()
+
+
+@pytest.mark.asyncio
+async def test_t8_debounce_dispose_clears_pending_and_ignores_later_calls():
+    """ts:index.ts:108-110 & 140-143 - a disposed wrapper clears its timer and drops later calls."""
+    ctx = Context()
+    calls = []
+    debounced = ctx.debounce(lambda value: calls.append(value), 200)
+    debounced(1)
+    await asyncio.sleep(0.05)
+
+    debounced.dispose()
+    debounced(2)
+    await asyncio.sleep(0.35)
+
+    assert calls == []
+    assert ctx.fiber.get_effects() == []
+
+
+def test_t9_timeout_without_running_loop_keeps_its_creation_deadline():
+    """ts:index.ts:43-52 - Python-only fallback: with no loop to hold the timer, the
+    deadline is fixed at creation and the coroutine sleeps what is left of it."""
+    ctx = Context()
+    started = time.perf_counter()
+    coroutine = ctx.timeout(400)
+    time.sleep(0.3)
+
+    asyncio.run(asyncio.wait_for(coroutine, 5))
+    elapsed = time.perf_counter() - started
+
+    assert elapsed >= 0.35
+    assert elapsed < 0.6  # a deadline taken at await time would take 0.3s + 0.4s
+
+
+def test_t9_timeout_without_running_loop_rejects_when_disposed_before_the_deadline():
+    """ts:index.ts:47-52 - disposal before the deadline rejects with 'Context has been disposed'."""
+    ctx = Context()
+    coroutine = ctx.timeout(2000)
+
+    ctx.dispose()
+
+    with pytest.raises(RuntimeError, match="Context has been disposed"):
+        asyncio.run(asyncio.wait_for(coroutine, 5))
+
+
+def test_t9_timeout_without_running_loop_keeps_a_deadline_that_already_elapsed():
+    """ts:index.ts:46-52 - the reject in the disposer is a no-op once the timer fired."""
+    ctx = Context()
+    coroutine = ctx.timeout(60)
+    time.sleep(0.2)
+
+    ctx.dispose()
+
+    assert asyncio.run(asyncio.wait_for(coroutine, 5)) is None
+
+
+def test_t9_throttle_without_running_loop_still_runs_the_trailing_call():
+    """ts:index.ts:132-133 - the trailing invocation is scheduled on whatever timer exists."""
+    ctx = Context()
+    calls = []
+    throttled = ctx.throttle(lambda value: calls.append(value), 60)
+    throttled(1)
+    throttled(2)
+
+    time.sleep(0.4)
+    throttled.dispose()
+
+    assert calls == [1, 2]
+

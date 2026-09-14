@@ -359,10 +359,11 @@ def test_g1_d14_cosmokit_binary_and_helpers():
     assert mapValues(d, lambda v, k: f"{k}_{v}") == {"a": "a_1", "b": "b_2"}
 
 
-def test_g4_d2_timer_exceptions_reach_the_runtime_uncaught_handler():
+def test_g4_d2_timer_interval_exceptions_reach_the_runtime_uncaught_handler():
     """G4-D2: the reference interval callback runs unguarded
-    (reference/vendor/timer/src/index.ts:63-66), so the raising callback escapes its worker
-    thread through `threading.excepthook` and the tick chain ends there."""
+    (reference/vendor/timer/src/index.ts:63-66) and only its disposer clears the interval,
+    so the raising callback reaches `threading.excepthook` and keeps firing until that
+    disposer runs."""
     ctx = Context()
     ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     escaped = []
@@ -381,14 +382,14 @@ def test_g4_d2_timer_exceptions_reach_the_runtime_uncaught_handler():
     disposer = ctx.timer.interval(bad_cb, 50)
     try:
         deadline = time.monotonic() + 2
-        while not escaped and time.monotonic() < deadline:
+        while len(escaped) < 3 and time.monotonic() < deadline:
             time.sleep(0.01)
-        time.sleep(0.15)  # a caught-and-retried callback would tick again here
+        disposer()
+        time.sleep(0.2)  # a tick already in flight when the disposer ran lands here
     finally:
         threading.excepthook = previous
-    disposer()
 
-    assert ticks == [1]
-    assert len(escaped) == 1
-    assert escaped[0][0] is ValueError
-    assert str(escaped[0][1]) == "simulated interval failure"
+    assert len(ticks) >= 3
+    assert len(escaped) == len(ticks)
+    assert all(entry[0] is ValueError for entry in escaped)
+    assert all(str(entry[1]) == "simulated interval failure" for entry in escaped)

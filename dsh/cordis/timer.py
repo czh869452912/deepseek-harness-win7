@@ -316,13 +316,12 @@ class TimerService(Service):
             def _setup():
                 disposed = False
                 handle: Optional[asyncio.TimerHandle] = None
-                threading_worker: Optional[threading.Thread] = None
+                threading_timer: Optional[threading.Timer] = None
 
                 def _tick_callback():
                     # The reference hands the callback to the runtime's interval timer
-                    # unguarded (index.ts:64), so a raising callback escapes to the
-                    # runtime's uncaught-exception handling, exactly as an uncaught
-                    # Node timer callback does, and the tick chain ends there.
+                    # unguarded (index.ts:64), so nothing catches a raising callback
+                    # here: it escapes to the runtime's uncaught-exception handling.
                     res = callback()
                     if inspect.isawaitable(res):
                         try:
@@ -336,28 +335,45 @@ class TimerService(Service):
                     disposed = True
                     if handle is not None:
                         handle.cancel()
+                    if threading_timer is not None:
+                        threading_timer.cancel()
 
                 try:
                     loop = asyncio.get_running_loop()
                 except RuntimeError:
-                    def _thread_interval():
-                        while not disposed:
-                            time.sleep(delay_sec)
-                            if disposed:
-                                break
-                            _tick_callback()
+                    # No loop can hold the interval, so its cadence is carried by a
+                    # chain of runtime timers rather than by a sleeping worker: every
+                    # tick arms its successor, which is what keeps the reference's
+                    # `setInterval` firing past a raising callback.
+                    def _tick_thread():
+                        nonlocal threading_timer
+                        if disposed:
+                            return
+                        threading_timer = threading.Timer(delay_sec, _tick_thread)
+                        threading_timer.daemon = True
+                        threading_timer.start()
+                        if disposed:
+                            # A concurrent disposer cleared the interval between the
+                            # check above and this arm, so the successor is cleared too.
+                            threading_timer.cancel()
+                        _tick_callback()
 
-                    threading_worker = threading.Thread(target=_thread_interval, daemon=True)
-                    threading_worker.start()
+                    threading_timer = threading.Timer(delay_sec, _tick_thread)
+                    threading_timer.daemon = True
+                    threading_timer.start()
                 else:
                     def _tick():
                         nonlocal handle
                         if disposed:
                             return
-                        _tick_callback()
-                        if disposed:
-                            return
+                        # The reference clears its interval only through the returned
+                        # disposer (index.ts:64-65), so the successor tick is armed
+                        # before the callback runs: a raising callback cannot end the
+                        # chain, and it reaches loop.call_exception_handler instead.
                         handle = loop.call_later(delay_sec, _tick)
+                        if disposed:
+                            handle.cancel()
+                        _tick_callback()
 
                     handle = loop.call_later(delay_sec, _tick)
 

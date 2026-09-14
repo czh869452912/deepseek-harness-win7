@@ -370,10 +370,11 @@ async def test_t4_deprecated_aliases_delegate_and_keep_their_disposers():
 
 
 @pytest.mark.asyncio
-async def test_t5_interval_callback_raising_escapes_to_the_loop_and_ends_the_tick_chain():
+async def test_t5_interval_callback_raising_escapes_to_the_loop_and_keeps_the_interval_armed():
     """ts:index.ts:63-66 - `setInterval(callback, delay)` hands the callback to the runtime
-    with no catch anywhere in the timer, so a raising callback reaches the runtime's
-    uncaught-exception handling and its tick chain ends instead of continuing."""
+    with no catch anywhere in the timer and clears the interval only through the returned
+    disposer, so every raising callback reaches the runtime's uncaught-exception handling
+    while the interval keeps firing."""
     ctx = Context()
     await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     loop = asyncio.get_running_loop()
@@ -396,22 +397,28 @@ async def test_t5_interval_callback_raising_escapes_to_the_loop_and_ends_the_tic
     finally:
         loop.set_exception_handler(previous)
 
-    assert ticks == [1]
-    assert len(escaped) == 1
-    assert isinstance(escaped[0]["exception"], RuntimeError)
-    assert str(escaped[0]["exception"]) == "tick-boom"
+    # Every tick raises and every raise is reported: a 20ms interval fires repeatedly in
+    # 150ms, and nothing in the reference stops it short of the disposer.
+    assert len(ticks) >= 3
+    assert len(escaped) == len(ticks)
+    assert all(entry["exception"].__class__ is RuntimeError for entry in escaped)
+    assert [str(entry["exception"]) for entry in escaped] == ["tick-boom"] * len(ticks)
 
-    # The reference clears an interval only through its disposer, so the raise leaves
-    # the effect owned until that disposer runs.
+    # The raise leaves the effect owned: only the disposer clears the interval.
     assert timer_effects(ctx) == ["ctx.interval()"]
     dispose()
     assert timer_effects(ctx) == []
 
+    # The cleared interval stops firing.
+    settled = len(ticks)
+    await asyncio.sleep(0.12)
+    assert len(ticks) == settled
 
-def test_t5_interval_callback_raising_without_running_loop_escapes_to_the_thread_hook():
-    """ts:index.ts:63-66 - the same contract with no loop to hold the interval: the raising
-    callback escapes its worker thread through `threading.excepthook` and the tick chain
-    ends there."""
+
+def test_t5_interval_callback_raising_without_running_loop_keeps_the_interval_armed():
+    """ts:index.ts:63-66 - the same contract with no loop to hold the interval: every
+    raising tick reaches `threading.excepthook` from the thread that ran it and the
+    interval keeps firing until its disposer clears it."""
     ctx = Context()
     ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     escaped = []
@@ -430,20 +437,26 @@ def test_t5_interval_callback_raising_without_running_loop_escapes_to_the_thread
     dispose = ctx.interval(callback, 20)
     try:
         deadline = time.monotonic() + 2
-        while not escaped and time.monotonic() < deadline:
+        while len(escaped) < 3 and time.monotonic() < deadline:
             time.sleep(0.01)
-        time.sleep(0.15)  # a caught-and-retried callback would tick again here
+
+        assert timer_effects(ctx) == ["ctx.interval()"]
+
+        dispose()
+        time.sleep(0.05)  # a tick already in flight when the disposer ran lands here
+        settled_ticks = len(ticks)
+        settled_escaped = len(escaped)
+        time.sleep(0.15)  # a cleared interval fires nothing here
     finally:
         threading.excepthook = previous
 
-    assert ticks == [1]
-    booms = [entry for entry in escaped if str(entry[1]) == "tick-boom"]
-    assert len(booms) == 1
-    assert booms[0][0] is RuntimeError
-    assert booms[0][2] != "MainThread"
-
-    assert timer_effects(ctx) == ["ctx.interval()"]
-    dispose()
+    assert settled_ticks >= 3
+    assert settled_escaped == settled_ticks
+    assert all(entry[0] is RuntimeError for entry in escaped)
+    assert all(str(entry[1]) == "tick-boom" for entry in escaped)
+    assert all(entry[2] != "MainThread" for entry in escaped)
+    assert len(ticks) == settled_ticks
+    assert len(escaped) == settled_escaped
     assert timer_effects(ctx) == []
 
 

@@ -344,6 +344,28 @@ async def test_t6_interval_iterator_throw_rejects_pending_and_finishes_the_itera
     assert ctx.fiber.get_effects() == []
 
 
+def test_t6_interval_iterator_created_without_a_running_loop_keeps_the_creation_cadence():
+    """ts:index.ts:67-73 - setInterval ticks from creation, so a caller outside an
+    event loop still gets its ticks at the same instants as a loop-bound caller."""
+    ctx = Context()
+    started = time.perf_counter()
+    iterator = ctx.interval(400)
+
+    time.sleep(0.3)
+
+    async def consume():
+        await asyncio.wait_for(iterator.__anext__(), 1)
+        first_tick = time.perf_counter()
+        await asyncio.wait_for(iterator.__anext__(), 1)
+        return first_tick, time.perf_counter() - first_tick
+
+    first_tick, gap = asyncio.run(consume())
+
+    # The 0.4s tick; a tick loop started by the wait itself would deliver at 0.7s.
+    assert first_tick - started < 0.55
+    assert 0.3 <= gap < 0.6
+
+
 @pytest.mark.asyncio
 async def test_t7_throttle_trailing_call_runs_with_the_latest_arguments():
     """ts:index.ts:112-135 - a call inside the window schedules the trailing run with its own args."""

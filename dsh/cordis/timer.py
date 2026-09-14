@@ -23,24 +23,17 @@ class _AsyncIntervalIterator:
         self._done: Optional[Dict[str, Any]] = None
         self._next_future: Optional[asyncio.Future] = None
         self._task: Optional[asyncio.Task] = None
+        self._created_at: Optional[float] = None
 
         def _setup():
-            async def _tick_loop():
-                try:
-                    while not self._done:
-                        await asyncio.sleep(self.delay_sec)
-                        if self._done:
-                            break
-                        if self._next_future is not None and not self._next_future.done():
-                            self._next_future.set_result(None)
-                            self._next_future = None
-                except asyncio.CancelledError:
-                    pass
-
+            self._created_at = time.monotonic()
             try:
                 loop = asyncio.get_running_loop()
-                self._task = loop.create_task(_tick_loop())
+                self._task = loop.create_task(self._tick_loop(self.delay_sec))
             except RuntimeError:
+                # setInterval needs no event loop. The tick loop is a task, so a
+                # caller created outside one starts it at its first wait, offset
+                # to the phase that began at creation.
                 self._task = None
 
             def _cleanup():
@@ -58,6 +51,24 @@ class _AsyncIntervalIterator:
 
         self._dispose = self.ctx.effect(_setup, "ctx.interval()")
 
+    async def _tick_loop(self, first_delay_sec: float) -> None:
+        """Deliver one tick per `delay_sec`, the first `first_delay_sec` from now."""
+        try:
+            await asyncio.sleep(first_delay_sec)
+            while not self._done:
+                if self._next_future is not None and not self._next_future.done():
+                    self._next_future.set_result(None)
+                    self._next_future = None
+                await asyncio.sleep(self.delay_sec)
+        except asyncio.CancelledError:
+            pass
+
+    def _first_tick_delay(self) -> float:
+        """Delay to the next tick of the cadence that started at creation."""
+        if self._created_at is None:
+            return self.delay_sec
+        return self.delay_sec - ((time.monotonic() - self._created_at) % self.delay_sec)
+
     def __aiter__(self) -> AsyncIterator[None]:
         return self
 
@@ -73,6 +84,8 @@ class _AsyncIntervalIterator:
             raise self._done["reason"]
 
         loop = asyncio.get_running_loop()
+        if self._task is None:
+            self._task = loop.create_task(self._tick_loop(self._first_tick_delay()))
         fut = loop.create_future()
         self._next_future = fut
         try:

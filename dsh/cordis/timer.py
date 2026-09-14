@@ -174,6 +174,13 @@ class TimerService(Service):
             delay = float(delay_ms if delay_ms is not None else 0)
             delay_sec = max(0.0, delay / 1000.0)
 
+            # The reference reaches this callback only from the runtime timer
+            # queue, so the effect that owns the timer and its disposer always
+            # exist before the callback body runs. The no-loop fallback fires on
+            # its own thread, which must wait for that registration first.
+            registered = threading.Event()
+            registered_dispose: List[Callable[[], None]] = []
+
             def _setup():
                 timer_handle: Optional[asyncio.TimerHandle] = None
                 threading_timer: Optional[threading.Timer] = None
@@ -181,11 +188,12 @@ class TimerService(Service):
 
                 def _on_timeout():
                     nonlocal disposed
+                    registered.wait()
                     if disposed:
                         return
                     disposed = True
-                    if callable(dispose):
-                        dispose()
+                    if registered_dispose:
+                        registered_dispose[0]()
                     try:
                         res = callback()
                         if inspect.isawaitable(res):
@@ -218,7 +226,14 @@ class TimerService(Service):
 
                 return _cleanup
 
-            dispose = target_ctx.effect(_setup, "ctx.timeout()")
+            # `_setup` may already have armed the fallback thread, so the
+            # registration gate is released however `effect` returns.
+            dispose: Callable[[], None] = lambda: None
+            try:
+                dispose = target_ctx.effect(_setup, "ctx.timeout()")
+            finally:
+                registered_dispose.append(dispose)
+                registered.set()
             return dispose
         else:
             delay = float(callback_or_delay)

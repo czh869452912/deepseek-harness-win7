@@ -581,3 +581,47 @@ def test_t9_throttle_without_running_loop_still_runs_the_trailing_call():
 
     assert calls == [1, 2]
 
+
+def test_t9_timeout_callback_without_running_loop_runs_once_per_call():
+    """ts:index.ts:34-42 - the callback form fires exactly once per call without a
+    loop to hold the timer, and every timer effect is released afterwards."""
+    ctx = Context()
+    ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
+    calls = []
+
+    disposers = [ctx.timeout(lambda: calls.append(1), 0) for _ in range(100)]
+    time.sleep(0.3)
+
+    assert calls == [1] * 100
+    assert timer_effects(ctx) == []
+
+    for dispose in disposers:
+        dispose()
+    assert timer_effects(ctx) == []
+
+
+def test_t9_timeout_callback_without_running_loop_disposes_its_effect_first():
+    """ts:index.ts:35-42 - the firing callback disposes its own effect before user code runs."""
+    ctx = Context()
+    ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
+    observed = []
+    ctx.timeout(lambda: observed.append(len(timer_effects(ctx))), 0)
+
+    time.sleep(0.2)
+
+    assert observed == [0]
+    assert timer_effects(ctx) == []
+
+
+def test_t9_timeout_callback_without_running_loop_disposer_cancels_the_timer():
+    """ts:index.ts:36-42 - the disposer clears a pending no-loop timer and releases the effect."""
+    ctx = Context()
+    ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
+    fired = []
+    dispose = ctx.timeout(lambda: fired.append(1), 300)
+
+    dispose()
+    time.sleep(0.5)
+
+    assert fired == []
+    assert timer_effects(ctx) == []

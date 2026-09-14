@@ -53,6 +53,29 @@ class StoreDict(dict):
         return self.get(key, None)
 
 
+def resolve_mixin_source(ctx: Any, source: Any) -> Any:
+    """
+    Resolve a mixin source the way the reference context proxy resolves
+    `ctx[source]` (reflect.ts:136-142): the property read keeps its own
+    resolution (including the inject requirement) and a service is then
+    handed to `getTraceable`, so the forwarded method runs against the
+    reading context instead of the providing service's own context.
+
+    Values a context owns already -- and every non-service core helper,
+    which the reading context shares as-is -- are returned unchanged.
+    """
+    if not isinstance(source, str):
+        return source
+    if not hasattr(ctx, source):
+        return source
+    value = getattr(ctx, source)
+    from dsh.cordis.service import Service
+    if isinstance(value, Service) and getattr(value, "ctx", None) is not ctx:
+        from dsh.cordis.utils import get_traceable
+        return get_traceable(ctx, value)
+    return value
+
+
 class ReflectService:
     """
     Reflection layer backing Context service resolution, proxy lookups, accessors, and mixins.
@@ -77,7 +100,6 @@ class ReflectService:
         self.mixin("registry", ["inject", "plugin"])
         self.mixin("events", ["on", "once", "parallel", "emit", "serial", "bail", "waterfall"])
         self.mixin("logger", ["error", "info", "warn", "debug"])
-        self.mixin("timer", ["timeout", "interval", "throttle", "debounce", "setTimeout", "setInterval"])
 
     def get(self, ctx: Any, name: str, strict: bool = True, default: Any = None) -> Any:
         """
@@ -377,13 +399,10 @@ class ReflectService:
 
             def make_get(s_key: str):
                 def get_fn(ctx_self: Any, err: Exception) -> Any:
-                    target_obj = getattr(ctx_self, source) if isinstance(source, str) and hasattr(ctx_self, source) else source
+                    target_obj = resolve_mixin_source(ctx_self, source)
                     if target_obj is None:
                         return None
-                    attr_val = getattr(target_obj, s_key, None)
-                    if callable(attr_val):
-                        return attr_val
-                    return attr_val
+                    return getattr(target_obj, s_key, None)
                 return get_fn
 
             def make_set(s_key: str):

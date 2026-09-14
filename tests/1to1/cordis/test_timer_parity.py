@@ -8,13 +8,24 @@ import pytest
 import time
 from dsh.cordis.context import Context
 from dsh.cordis.fiber import FiberState
+from dsh.cordis.loader import Loader
 from dsh.cordis.timer import TimerService
+
+
+def timer_effects(ctx):
+    """Effect labels `ctx.fiber` owns for the timer helpers.
+
+    `ctx.plugin(TimerService)` is itself a fiber effect of the reading context, so
+    the timer contract is asserted on every other effect label.
+    """
+    return [meta["label"] for meta in ctx.fiber.get_effects() if meta["label"] != "ctx.plugin()"]
 
 
 @pytest.mark.asyncio
 async def test_d1_interval_dispose_raises_runtime_error_consistently():
     """ts:timer/src/index.ts:77-85 - disposed iterator raises RuntimeError on waiting and subsequent __anext__."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
 
     timer_iter = ctx.interval(20)
 
@@ -39,6 +50,7 @@ async def test_d1_interval_dispose_raises_runtime_error_consistently():
 async def test_d1_interval_aclose_clean_stop():
     """ts:timer/src/index.ts:87-92 - explicit aclose cleanly raises StopAsyncIteration."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
 
     timer_iter = ctx.interval(20)
 
@@ -58,6 +70,7 @@ async def test_d1_interval_aclose_clean_stop():
 async def test_d2_interval_slow_consumer_drops_ticks():
     """ts:timer/src/index.ts:71-73 - ticks are dropped when no consumer is waiting (no burst)."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
 
     timer_iter = ctx.interval(20)  # 20ms
 
@@ -81,6 +94,7 @@ async def test_d2_interval_slow_consumer_drops_ticks():
 async def test_d3_interval_callback_non_blocking_coroutine():
     """ts:timer/src/index.ts:63-66 - callback returning awaitable is not awaited in tick loop."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
 
     tick_times = []
 
@@ -101,6 +115,7 @@ async def test_d3_interval_callback_non_blocking_coroutine():
 async def test_d4_throttle_immediate_fires_after_dispose():
     """T5 (D4): Immediate execution path (remaining <= 0) still fires after dispose, trailing suppressed."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     calls = []
 
     def cb(val):
@@ -128,6 +143,7 @@ async def test_d4_throttle_immediate_fires_after_dispose():
 async def test_d5_timeout_future_rejects_on_dispose():
     """T6 (D5): ctx.timeout(delay) future rejects with RuntimeError on fiber dispose."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     fut = ctx.timeout(200)
 
     # Dispose fiber while timeout future is pending
@@ -142,6 +158,7 @@ async def test_d5_timeout_future_rejects_on_dispose():
 async def test_d5_no_loop_timeout_effect_cancellation():
     """T7 (D5): No-loop timeout fallback registers cancellable effect."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     # Simulate no running loop by invoking with loop=None logic directly
     timer_svc = ctx.get("timer")
     coro = timer_svc.timeout(50, ctx=ctx)
@@ -158,6 +175,7 @@ async def test_d5_no_loop_timeout_effect_cancellation():
 async def test_d4_throttle_no_trailing():
     """T8: throttle with no_trailing=True suppresses trailing invocation."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     calls = []
 
     def cb(val):
@@ -195,23 +213,67 @@ async def test_t1_service_provides_timer_and_mixes_its_helpers():
 
 
 @pytest.mark.asyncio
+async def test_t1_timer_service_and_helpers_exist_only_while_the_plugin_fiber_is_loaded():
+    """ts:index.ts:12-16 - the constructor both provides `timer` and mixes the six
+    helpers, so both surfaces are absent before the plugin loads and are removed with
+    the plugin fiber."""
+    ctx = Context()
+    assert ctx.get("timer") is None
+    for helper in ("timeout", "interval", "throttle", "debounce", "setTimeout", "setInterval"):
+        with pytest.raises(AttributeError):
+            getattr(ctx, helper)
+
+    fiber = ctx.plugin(TimerService)
+    await fiber
+    assert ctx.get("timer").name == "timer"
+    for helper in ("timeout", "interval", "throttle", "debounce", "setTimeout", "setInterval"):
+        assert callable(getattr(ctx, helper))
+
+    await fiber.dispose()
+    assert ctx.get("timer") is None
+    for helper in ("timeout", "interval", "throttle", "debounce", "setTimeout", "setInterval"):
+        with pytest.raises(AttributeError):
+            getattr(ctx, helper)
+
+
+@pytest.mark.asyncio
+async def test_t1_base_bundle_row_mounts_the_service_through_its_vendor_name():
+    """reference/packages/bundle/base/cordis.patch.yml mounts the package by name
+    (`id: timer` / `name: '@deepseek-ai/cordis-plugin-timer'`), so the loader entry owns
+    the service for exactly as long as that entry is loaded."""
+    ctx = Context()
+    await ctx.plugin(Loader)
+    assert ctx.get("timer") is None
+
+    await ctx.loader.create({"id": "timer", "name": "@deepseek-ai/cordis-plugin-timer"})
+    assert ctx.get("timer").name == "timer"
+
+    entry = next(e for e in ctx.loader.entries() if e.options.get("id") == "timer")
+    assert entry.fiber is not None
+    await entry.fiber.dispose()
+    assert ctx.get("timer") is None
+
+
+@pytest.mark.asyncio
 async def test_t2_timeout_callback_runs_once_and_releases_its_effect_first():
     """ts:index.ts:35-42 - the firing callback disposes its own effect before user code runs."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     observed = []
-    ctx.timeout(lambda: observed.append(len(ctx.fiber.get_effects())), 30)
-    assert [meta["label"] for meta in ctx.fiber.get_effects()] == ["ctx.timeout()"]
+    ctx.timeout(lambda: observed.append(len(timer_effects(ctx))), 30)
+    assert timer_effects(ctx) == ["ctx.timeout()"]
 
     await asyncio.sleep(0.25)
 
     assert observed == [0]
-    assert ctx.fiber.get_effects() == []
+    assert timer_effects(ctx) == []
 
 
 @pytest.mark.asyncio
 async def test_t2_timeout_callback_disposer_cancels_the_pending_timer():
     """ts:index.ts:36-42 - the returned disposer clears the timer and releases the effect."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     fired = []
     dispose = ctx.timeout(lambda: fired.append(1), 60)
 
@@ -219,30 +281,32 @@ async def test_t2_timeout_callback_disposer_cancels_the_pending_timer():
     await asyncio.sleep(0.15)
 
     assert fired == []
-    assert ctx.fiber.get_effects() == []
+    assert timer_effects(ctx) == []
 
 
 @pytest.mark.asyncio
 async def test_t3_timeout_delay_resolves_at_the_deadline_and_releases_its_effect():
     """ts:index.ts:43-52 - the promise form resolves after `delay` and settles its effect."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     started = time.perf_counter()
     await ctx.timeout(40)
     elapsed = time.perf_counter() - started
 
     assert elapsed >= 0.03
-    assert ctx.fiber.get_effects() == []
+    assert timer_effects(ctx) == []
 
 
 @pytest.mark.asyncio
 async def test_t3_timeout_delay_already_elapsed_survives_a_later_dispose():
     """ts:index.ts:46-52 - `reject` after `resolve` is a no-op, so the awaited value stands."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     coroutine = ctx.timeout(30)
 
     # The reference resolves `promise` on the timer alone; the consumer is not needed.
     await asyncio.sleep(0.15)
-    assert ctx.fiber.get_effects() == []
+    assert timer_effects(ctx) == []
 
     await ctx.fiber.dispose()
     assert await asyncio.wait_for(coroutine, 1) is None
@@ -252,6 +316,7 @@ async def test_t3_timeout_delay_already_elapsed_survives_a_later_dispose():
 async def test_t4_deprecated_aliases_delegate_and_keep_their_disposers():
     """ts:index.ts:18-26 - setTimeout/setInterval return the timeout/interval disposers."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     calls = []
     dispose_once = ctx.setTimeout(lambda: calls.append("once"), 30)
     dispose_repeat = ctx.setInterval(lambda: calls.append("repeat"), 30)
@@ -273,6 +338,7 @@ async def test_t5_interval_callback_keeps_ticking_after_a_raising_callback():
     """ts:index.ts:62-66 - Python reports the callback error through asyncio and keeps the
     interval running, where the reference's uncaught timer exception ends the process."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     ticks = []
 
     def callback():
@@ -285,13 +351,14 @@ async def test_t5_interval_callback_keeps_ticking_after_a_raising_callback():
     dispose()
 
     assert len(ticks) >= 3
-    assert ctx.fiber.get_effects() == []
+    assert timer_effects(ctx) == []
 
 
 @pytest.mark.asyncio
 async def test_t6_interval_iterator_is_its_own_async_iterator_and_waits_for_a_tick():
     """ts:index.ts:71-73 & 99-101 - a tick resolves the waiting consumer; the iterator is its own."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     iterator = ctx.interval(60)
     assert iterator.__aiter__() is iterator
 
@@ -301,7 +368,7 @@ async def test_t6_interval_iterator_is_its_own_async_iterator_and_waits_for_a_ti
     await iterator.aclose()
 
     assert elapsed >= 0.03
-    assert ctx.fiber.get_effects() == []
+    assert timer_effects(ctx) == []
 
 
 @pytest.mark.asyncio
@@ -309,6 +376,7 @@ async def test_t6_interval_iterator_return_delivers_the_value_to_pending_and_lat
     """ts:index.ts:87-92 - `return(value)` resolves the pending `next()` with
     `{ done: true, value }` and keeps returning that value from every later `next()`."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     iterator = ctx.interval(500)
     pending = asyncio.ensure_future(iterator.__anext__())
     await asyncio.sleep(0.02)
@@ -322,7 +390,7 @@ async def test_t6_interval_iterator_return_delivers_the_value_to_pending_and_lat
 
     assert pending_exc.value.args == ("closed",)
     assert later_exc.value.args == ("closed",)
-    assert ctx.fiber.get_effects() == []
+    assert timer_effects(ctx) == []
 
 
 @pytest.mark.asyncio
@@ -330,6 +398,7 @@ async def test_t6_interval_iterator_throw_rejects_pending_and_finishes_the_itera
     """ts:index.ts:93-98 - `throw(reason)` rejects the pending `next()` with the reason,
     releases the interval, and ends the iterator without delivering the error again."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     iterator = ctx.interval(500)
     pending = asyncio.ensure_future(iterator.__anext__())
     await asyncio.sleep(0.02)
@@ -341,13 +410,14 @@ async def test_t6_interval_iterator_throw_rejects_pending_and_finishes_the_itera
         await pending
     with pytest.raises(RuntimeError, match="boom"):
         await iterator.__anext__()
-    assert ctx.fiber.get_effects() == []
+    assert timer_effects(ctx) == []
 
 
 def test_t6_interval_iterator_created_without_a_running_loop_keeps_the_creation_cadence():
     """ts:index.ts:67-73 - setInterval ticks from creation, so a caller outside an
     event loop still gets its ticks at the same instants as a loop-bound caller."""
     ctx = Context()
+    ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     started = time.perf_counter()
     iterator = ctx.interval(400)
 
@@ -370,6 +440,7 @@ def test_t6_interval_iterator_created_without_a_running_loop_keeps_the_creation_
 async def test_t7_throttle_trailing_call_runs_with_the_latest_arguments():
     """ts:index.ts:112-135 - a call inside the window schedules the trailing run with its own args."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     calls = []
     throttled = ctx.throttle(lambda *args: calls.append(args), 200)
 
@@ -387,6 +458,7 @@ async def test_t7_throttle_trailing_call_runs_with_the_latest_arguments():
 async def test_t7_throttle_dispose_clears_the_pending_trailing_call():
     """ts:index.ts:108-116 - disposing the wrapper clears its scheduled trailing call."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     calls = []
     throttled = ctx.throttle(lambda value: calls.append(value), 200)
     throttled(1)
@@ -396,30 +468,32 @@ async def test_t7_throttle_dispose_clears_the_pending_trailing_call():
     await asyncio.sleep(0.4)
 
     assert calls == [1]
-    assert ctx.fiber.get_effects() == []
+    assert timer_effects(ctx) == []
 
 
 @pytest.mark.asyncio
 async def test_t7_throttle_and_debounce_use_their_reference_effect_labels():
     """ts:index.ts:127 & 140 - `_schedule` registers the label of the helper that created it."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     throttled = ctx.throttle(lambda: None, 50)
     debounced = ctx.debounce(lambda: None, 50)
 
-    assert sorted(meta["label"] for meta in ctx.fiber.get_effects()) == [
+    assert sorted(timer_effects(ctx)) == [
         "ctx.debounce()",
         "ctx.throttle()",
     ]
 
     throttled.dispose()
     debounced.dispose()
-    assert ctx.fiber.get_effects() == []
+    assert timer_effects(ctx) == []
 
 
 @pytest.mark.asyncio
 async def test_t8_debounce_resets_its_timer_and_calls_with_the_last_arguments():
     """ts:index.ts:139-144 - every call clears the pending timer, so only the last call runs."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     calls = []
     debounced = ctx.debounce(lambda *args: calls.append(args), 300)
 
@@ -439,6 +513,7 @@ async def test_t8_debounce_resets_its_timer_and_calls_with_the_last_arguments():
 async def test_t8_debounce_dispose_clears_pending_and_ignores_later_calls():
     """ts:index.ts:108-110 & 140-143 - a disposed wrapper clears its timer and drops later calls."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     calls = []
     debounced = ctx.debounce(lambda value: calls.append(value), 200)
     debounced(1)
@@ -449,13 +524,14 @@ async def test_t8_debounce_dispose_clears_pending_and_ignores_later_calls():
     await asyncio.sleep(0.35)
 
     assert calls == []
-    assert ctx.fiber.get_effects() == []
+    assert timer_effects(ctx) == []
 
 
 def test_t9_timeout_without_running_loop_keeps_its_creation_deadline():
     """ts:index.ts:43-52 - Python-only fallback: with no loop to hold the timer, the
     deadline is fixed at creation and the coroutine sleeps what is left of it."""
     ctx = Context()
+    ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     started = time.perf_counter()
     coroutine = ctx.timeout(400)
     time.sleep(0.3)
@@ -470,6 +546,7 @@ def test_t9_timeout_without_running_loop_keeps_its_creation_deadline():
 def test_t9_timeout_without_running_loop_rejects_when_disposed_before_the_deadline():
     """ts:index.ts:47-52 - disposal before the deadline rejects with 'Context has been disposed'."""
     ctx = Context()
+    ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     coroutine = ctx.timeout(2000)
 
     ctx.dispose()
@@ -481,6 +558,7 @@ def test_t9_timeout_without_running_loop_rejects_when_disposed_before_the_deadli
 def test_t9_timeout_without_running_loop_keeps_a_deadline_that_already_elapsed():
     """ts:index.ts:46-52 - the reject in the disposer is a no-op once the timer fired."""
     ctx = Context()
+    ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     coroutine = ctx.timeout(60)
     time.sleep(0.2)
 
@@ -492,6 +570,7 @@ def test_t9_timeout_without_running_loop_keeps_a_deadline_that_already_elapsed()
 def test_t9_throttle_without_running_loop_still_runs_the_trailing_call():
     """ts:index.ts:132-133 - the trailing invocation is scheduled on whatever timer exists."""
     ctx = Context()
+    ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     calls = []
     throttled = ctx.throttle(lambda value: calls.append(value), 60)
     throttled(1)

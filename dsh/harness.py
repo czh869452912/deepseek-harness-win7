@@ -7,6 +7,7 @@ import yaml
 from dsh.cordis.context import Context
 from dsh.cordis.environment import load_layered_env
 from dsh.cordis.loader import PresetLoader
+from dsh.cordis.timer import TimerService
 from dsh.context.agent_instructions import AgentInstructionsPlugin
 from dsh.context.file_reference_local import FileReferenceLocalPlugin
 from dsh.context.time_context import TimeContextPlugin
@@ -108,6 +109,7 @@ async def build_harness(
     ctx.dsh_home_path = dsh_home_path
 
     # Mount base infrastructure plugins
+    await ctx.plugin(TimerService)
     await ctx.plugin(ToolsPlugin)
     await ctx.plugin(CredentialsLocalPlugin)
     await ctx.plugin(SettingsFilePlugin)

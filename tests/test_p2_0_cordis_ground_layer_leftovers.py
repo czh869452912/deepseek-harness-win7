@@ -8,6 +8,7 @@ import datetime
 import pytest
 
 from dsh.cordis import Context, Plugin, Service
+from dsh.cordis.timer import TimerService
 from dsh.cordis.events import EventBus
 from dsh.cordis.fiber import FiberState
 from dsh.cordis.registry import inject
@@ -359,6 +360,7 @@ def test_g1_d14_cosmokit_binary_and_helpers():
 def test_g4_d2_timer_exceptions_logged(capsys):
     """G4-D2: Timer interval thread logs exceptions instead of swallowing with empty pass."""
     ctx = Context()
+    ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     # interval with bad callback logs error
     def bad_cb():
         raise ValueError("simulated interval failure")

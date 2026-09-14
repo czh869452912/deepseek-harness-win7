@@ -145,7 +145,7 @@ class TimerService(Service):
     name = "timer"
 
     def __init__(self, ctx: Any):
-        super().__init__(ctx, "timer", allow_replace=True)
+        super().__init__(ctx, "timer")
         if hasattr(ctx, "mixin"):
             ctx.mixin("timer", ["timeout", "interval", "throttle", "debounce", "setTimeout", "setInterval"])
 

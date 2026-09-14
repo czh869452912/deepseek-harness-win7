@@ -80,15 +80,12 @@ class Context:
             self.reflect: ReflectService = parent.reflect._bind(self) if hasattr(parent.reflect, "_bind") else parent.reflect
             self.fiber: Fiber = parent.fiber
             self.logger: LoggerService = parent.logger._bind(self) if hasattr(parent.logger, "_bind") else parent.logger
-            self.timer: Any = getattr(parent, "timer", None)
         else:
             self._event_bus = EventBus(ctx=self)
             self.reflect = ReflectService(self)
             self.registry = RegistryService(self)
             self.fiber = Fiber(self, None, config={}, runtime=None)
             self.logger = LoggerService(self)
-            from dsh.cordis.timer import TimerService
-            self.timer = TimerService(self)
             self.reflect.setup_mixins()
             self.fiber._disposables.clear()
 
@@ -385,39 +382,9 @@ class Context:
 
     dispose = teardown
 
-    def timeout(self, callback_or_delay: Any, delay_ms: Optional[Union[float, int]] = None) -> Any:
-        """Run a callback once or return a Future after delay_ms matching TS ctx.timeout()."""
-        if hasattr(self, "timer") and self.timer is not None:
-            return self.timer.timeout(callback_or_delay, delay_ms, ctx=self)
-        raise RuntimeError("TimerService is not available on Context")
-
-    def interval(self, callback_or_delay: Any, delay_ms: Optional[Union[float, int]] = None) -> Any:
-        """Run a callback repeatedly or return an AsyncIterator matching TS ctx.interval()."""
-        if hasattr(self, "timer") and self.timer is not None:
-            return self.timer.interval(callback_or_delay, delay_ms, ctx=self)
-        raise RuntimeError("TimerService is not available on Context")
-
-    def throttle(self, callback: Callable[..., Any], delay_ms: float, no_trailing: bool = False) -> Callable[..., Any]:
-        """Return a throttled function matching TS ctx.throttle()."""
-        if hasattr(self, "timer") and self.timer is not None:
-            return self.timer.throttle(callback, delay_ms, no_trailing=no_trailing, ctx=self)
-        raise RuntimeError("TimerService is not available on Context")
-
-    def debounce(self, callback: Callable[..., Any], delay_ms: float) -> Callable[..., Any]:
-        """Return a debounced function matching TS ctx.debounce()."""
-        if hasattr(self, "timer") and self.timer is not None:
-            return self.timer.debounce(callback, delay_ms, ctx=self)
-        raise RuntimeError("TimerService is not available on Context")
-
-    def setTimeout(self, callback: Callable[[], Any], delay_ms: float) -> Callable[[], None]:
-        return self.timeout(callback, delay_ms)
-
-    def setInterval(self, callback: Callable[[], Any], delay_ms: float) -> Callable[[], None]:
-        return self.interval(callback, delay_ms)
-
     def __getattr__(self, name: str) -> Any:
         RESERVED_ATTRS = (
-            "registry", "reflect", "fiber", "entry", "root", "events", "props", "store", "logger", "timer",
+            "registry", "reflect", "fiber", "entry", "root", "events", "props", "store", "logger",
             "symbols", "base_url", "baseUrl", "strict_inject", "scope", "is_shadow", "_shadow", "_shadow_fiber",
         )
         if name.startswith("_") or name.startswith("cordis.") or name.startswith("symbols.") or name in RESERVED_ATTRS or name.isdigit():

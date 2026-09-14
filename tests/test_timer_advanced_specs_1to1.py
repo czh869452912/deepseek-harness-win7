@@ -7,12 +7,14 @@ import asyncio
 import pytest
 import time
 from dsh.cordis.context import Context
+from dsh.cordis.timer import TimerService
 
 
 @pytest.mark.asyncio
 async def test_timer_timeout_zero_delay_future():
     """Verify that timeout(0) resolves promptly."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     t0 = time.time()
     await ctx.timeout(0)
     assert time.time() - t0 < 0.2
@@ -22,6 +24,7 @@ async def test_timer_timeout_zero_delay_future():
 async def test_timer_timeout_zero_delay_callback():
     """Verify that timeout(callback, 0) executes callback promptly."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     called = []
     ctx.timeout(lambda: called.append(1), 0)
     await asyncio.sleep(0.02)
@@ -32,6 +35,7 @@ async def test_timer_timeout_zero_delay_callback():
 async def test_timer_interval_immediate_aclose():
     """Verify that an interval iterator can be closed immediately without leaking tasks."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     it = ctx.interval(10)
     await it.aclose()
     assert it._disposed is True
@@ -41,6 +45,7 @@ async def test_timer_interval_immediate_aclose():
 async def test_timer_concurrent_throttles():
     """Verify independent throttle instances do not interfere with each other."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     calls1 = []
     calls2 = []
 
@@ -60,6 +65,7 @@ async def test_timer_concurrent_throttles():
 async def test_timer_debounce_cancel_reschedule():
     """Verify debounce resets countdown when called repeatedly before timeout expires."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     calls = []
 
     fn = ctx.debounce(lambda x: calls.append(x), 70)

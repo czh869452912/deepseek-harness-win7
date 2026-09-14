@@ -17,6 +17,7 @@ from dsh.cordis.timer import TimerService
 @pytest.mark.asyncio
 async def test_timer_timeout_callback():
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     called = []
 
     def on_timeout():
@@ -34,6 +35,7 @@ async def test_timer_timeout_callback():
 @pytest.mark.asyncio
 async def test_timer_timeout_future():
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     t0 = time.time()
     await ctx.timeout(30)
     t1 = time.time()
@@ -43,6 +45,7 @@ async def test_timer_timeout_future():
 @pytest.mark.asyncio
 async def test_timer_timeout_cancel():
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     called = []
 
     disposer = ctx.timeout(lambda: called.append(1), 50)
@@ -55,6 +58,7 @@ async def test_timer_timeout_cancel():
 @pytest.mark.asyncio
 async def test_timer_interval_callback():
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     ticks = []
 
     disposer = ctx.interval(lambda: ticks.append(time.time()), 20)
@@ -71,6 +75,7 @@ async def test_timer_interval_callback():
 @pytest.mark.asyncio
 async def test_timer_interval_async_iterator():
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     ticks = 0
 
     async def _consume():
@@ -89,6 +94,7 @@ async def test_timer_interval_async_iterator():
 @pytest.mark.asyncio
 async def test_timer_throttle():
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     calls = []
 
     fn = ctx.throttle(lambda x: calls.append(x), 40)
@@ -105,6 +111,7 @@ async def test_timer_throttle():
 @pytest.mark.asyncio
 async def test_timer_debounce():
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     calls = []
 
     fn = ctx.debounce(lambda x: calls.append(x), 30)
@@ -122,10 +129,14 @@ async def test_timer_debounce():
 async def test_timer_automatic_fiber_teardown():
     """Verify that all timers created by a plugin are automatically disposed when the plugin fiber unloads."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     ticks = []
 
     class TimedPlugin(Plugin):
         name = "timed-plugin"
+        # The reference routes every timer helper call through an injected
+        # `timer` service (vendor/hmr index.ts:87), so the plugin declares it.
+        inject = ["timer"]
 
         def apply(self, c: Context) -> None:
             c.interval(lambda: ticks.append(1), 15)

@@ -1918,12 +1918,14 @@ class Loader(EntryTree, Service):
         self.builtins: Dict[str, Any] = {}
         self.registry_map: Dict[str, Any] = {}
         from dsh.cordis.include import Include
+        from dsh.cordis.timer import TimerService
         self.builtins["include"] = Include
         self.builtins["group"] = Group
         self.registry_map["cordis:include"] = Include
         self.registry_map["@deepseek-ai/cordis-plugin-include"] = Include
         self.registry_map["cordis:group"] = Group
         self.registry_map["@deepseek-ai/cordis-plugin-group"] = Group
+        self.registry_map["@deepseek-ai/cordis-plugin-timer"] = TimerService
         self.entries_list: List[Entry] = []
         self._realms: Dict[str, GlobalRealm] = {}
         self._delims: Dict[str, str] = {}

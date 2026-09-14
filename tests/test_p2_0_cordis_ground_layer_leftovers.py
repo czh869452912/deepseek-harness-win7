@@ -5,9 +5,12 @@ Covers G1, G2, G3, G4, G5, G6 alignment with TS Cordis / Cosmokit.
 
 import asyncio
 import datetime
+import threading
+import time
 import pytest
 
 from dsh.cordis import Context, Plugin, Service
+from dsh.cordis.timer import TimerService
 from dsh.cordis.events import EventBus
 from dsh.cordis.fiber import FiberState
 from dsh.cordis.registry import inject
@@ -356,16 +359,37 @@ def test_g1_d14_cosmokit_binary_and_helpers():
     assert mapValues(d, lambda v, k: f"{k}_{v}") == {"a": "a_1", "b": "b_2"}
 
 
-def test_g4_d2_timer_exceptions_logged(capsys):
-    """G4-D2: Timer interval thread logs exceptions instead of swallowing with empty pass."""
+def test_g4_d2_timer_interval_exceptions_reach_the_runtime_uncaught_handler():
+    """G4-D2: the reference interval callback runs unguarded
+    (reference/vendor/timer/src/index.ts:63-66) and only its disposer clears the interval,
+    so the raising callback reaches `threading.excepthook` and keeps firing until that
+    disposer runs."""
     ctx = Context()
-    # interval with bad callback logs error
+    ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
+    escaped = []
+
+    def hook(args):
+        escaped.append((args.exc_type, args.exc_value))
+
+    previous = threading.excepthook
+    threading.excepthook = hook
+    ticks = []
+
     def bad_cb():
+        ticks.append(1)
         raise ValueError("simulated interval failure")
 
-    # In thread mode (no running loop in sync test)
-    # TimerService interval returns a disposer
     disposer = ctx.timer.interval(bad_cb, 50)
-    import time
-    time.sleep(0.15)
-    disposer()
+    try:
+        deadline = time.monotonic() + 2
+        while len(escaped) < 3 and time.monotonic() < deadline:
+            time.sleep(0.01)
+        disposer()
+        time.sleep(0.2)  # a tick already in flight when the disposer ran lands here
+    finally:
+        threading.excepthook = previous
+
+    assert len(ticks) >= 3
+    assert len(escaped) == len(ticks)
+    assert all(entry[0] is ValueError for entry in escaped)
+    assert all(str(entry[1]) == "simulated interval failure" for entry in escaped)

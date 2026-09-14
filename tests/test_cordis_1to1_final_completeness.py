@@ -74,6 +74,7 @@ async def test_parallel_dispatch_aggregate_error():
 @pytest.mark.asyncio
 async def test_timer_async_iterator_and_disposal():
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     ticks = []
 
     async def _consume():

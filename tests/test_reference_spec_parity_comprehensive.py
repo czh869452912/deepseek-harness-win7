@@ -10,6 +10,7 @@ Unit tests porting official TypeScript reference test suites (from reference/pac
 import asyncio
 import pytest
 from dsh.cordis.context import Context
+from dsh.cordis.timer import TimerService
 from dsh.core.session import Session, SessionStore
 from dsh.core.agent import Agent, AgentOptions
 from dsh.core.tools import ToolsService, TOOL_ABORTED_BEFORE_DISPATCH
@@ -231,6 +232,7 @@ def test_cordis_context_isolation_hierarchy():
 async def test_timer_interval_and_disposer_cleanup():
     """Verify Timer interval triggers repeatedly and disposes cleanly matching TS timer."""
     ctx = Context()
+    await ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
     ticks = []
 
     def on_tick():

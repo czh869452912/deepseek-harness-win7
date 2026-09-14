@@ -5,7 +5,6 @@ Disposable timer helpers mixed into Cordis contexts.
 
 import asyncio
 import inspect
-import sys
 import threading
 import time
 from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Tuple, Union
@@ -23,24 +22,17 @@ class _AsyncIntervalIterator:
         self._done: Optional[Dict[str, Any]] = None
         self._next_future: Optional[asyncio.Future] = None
         self._task: Optional[asyncio.Task] = None
+        self._created_at: Optional[float] = None
 
         def _setup():
-            async def _tick_loop():
-                try:
-                    while not self._done:
-                        await asyncio.sleep(self.delay_sec)
-                        if self._done:
-                            break
-                        if self._next_future is not None and not self._next_future.done():
-                            self._next_future.set_result(None)
-                            self._next_future = None
-                except asyncio.CancelledError:
-                    pass
-
+            self._created_at = time.monotonic()
             try:
                 loop = asyncio.get_running_loop()
-                self._task = loop.create_task(_tick_loop())
+                self._task = loop.create_task(self._tick_loop(self.delay_sec))
             except RuntimeError:
+                # setInterval needs no event loop. The tick loop is a task, so a
+                # caller created outside one starts it at its first wait, offset
+                # to the phase that began at creation.
                 self._task = None
 
             def _cleanup():
@@ -58,6 +50,24 @@ class _AsyncIntervalIterator:
 
         self._dispose = self.ctx.effect(_setup, "ctx.interval()")
 
+    async def _tick_loop(self, first_delay_sec: float) -> None:
+        """Deliver one tick per `delay_sec`, the first `first_delay_sec` from now."""
+        try:
+            await asyncio.sleep(first_delay_sec)
+            while not self._done:
+                if self._next_future is not None and not self._next_future.done():
+                    self._next_future.set_result(None)
+                    self._next_future = None
+                await asyncio.sleep(self.delay_sec)
+        except asyncio.CancelledError:
+            pass
+
+    def _first_tick_delay(self) -> float:
+        """Delay to the next tick of the cadence that started at creation."""
+        if self._created_at is None:
+            return self.delay_sec
+        return self.delay_sec - ((time.monotonic() - self._created_at) % self.delay_sec)
+
     def __aiter__(self) -> AsyncIterator[None]:
         return self
 
@@ -68,10 +78,13 @@ class _AsyncIntervalIterator:
     async def __anext__(self) -> None:
         if self._done is not None:
             if self._done["kind"] == "return":
-                raise StopAsyncIteration
+                # TS `next()` resolves `{ done: true, value }` and keeps returning it.
+                raise StopAsyncIteration(self._done.get("value"))
             raise self._done["reason"]
 
         loop = asyncio.get_running_loop()
+        if self._task is None:
+            self._task = loop.create_task(self._tick_loop(self._first_tick_delay()))
         fut = loop.create_future()
         self._next_future = fut
         try:
@@ -84,13 +97,19 @@ class _AsyncIntervalIterator:
         if not self._done:
             self._done = {"kind": "return", "value": value}
             if self._next_future is not None and not self._next_future.done():
-                self._next_future.set_exception(StopAsyncIteration())
+                # TS resolves the pending `next()` with `{ done: true, value }`.
+                self._next_future.set_exception(StopAsyncIteration(value))
                 self._next_future = None
             if callable(self._dispose):
                 self._dispose()
 
     async def athrow(self, reason: Any) -> None:
-        """Explicit iterator throw matching TS throw(reason)."""
+        """
+        Throw `reason` into the iterator matching TS `throw(reason)`.
+
+        The reference resolves `{ done: true, value: undefined }`; a finished
+        Python async iterator signals that by raising StopAsyncIteration.
+        """
         if not self._done:
             self._done = {"kind": "throw", "reason": reason}
             if self._next_future is not None and not self._next_future.done():
@@ -99,6 +118,7 @@ class _AsyncIntervalIterator:
                 self._next_future = None
             if callable(self._dispose):
                 self._dispose()
+        raise StopAsyncIteration
 
     def __del__(self) -> None:
         if not self._done:
@@ -124,7 +144,7 @@ class TimerService(Service):
     name = "timer"
 
     def __init__(self, ctx: Any):
-        super().__init__(ctx, "timer", allow_replace=True)
+        super().__init__(ctx, "timer")
         if hasattr(ctx, "mixin"):
             ctx.mixin("timer", ["timeout", "interval", "throttle", "debounce", "setTimeout", "setInterval"])
 
@@ -143,7 +163,11 @@ class TimerService(Service):
         ctx: Optional[Any] = None
     ) -> Any:
         """
-        Run a callback once, or return a Future that resolves after delay_ms.
+        Run a callback once, or return an awaitable that resolves after delay_ms.
+
+        The owning fiber's disposal before the deadline rejects the awaitable with
+        `RuntimeError("Context has been disposed")`, and a later await still raises;
+        a disposal after the deadline leaves an already-resolved awaitable resolved.
         All timers are automatically cancelled when owning fiber/context is disposed.
         """
         target_ctx = ctx or self.ctx
@@ -153,6 +177,13 @@ class TimerService(Service):
             delay = float(delay_ms if delay_ms is not None else 0)
             delay_sec = max(0.0, delay / 1000.0)
 
+            # The reference reaches this callback only from the runtime timer
+            # queue, so the effect that owns the timer and its disposer always
+            # exist before the callback body runs. The no-loop fallback fires on
+            # its own thread, which must wait for that registration first.
+            registered = threading.Event()
+            registered_dispose: List[Callable[[], None]] = []
+
             def _setup():
                 timer_handle: Optional[asyncio.TimerHandle] = None
                 threading_timer: Optional[threading.Timer] = None
@@ -160,24 +191,22 @@ class TimerService(Service):
 
                 def _on_timeout():
                     nonlocal disposed
+                    registered.wait()
                     if disposed:
                         return
                     disposed = True
-                    if callable(dispose):
-                        dispose()
-                    try:
-                        res = callback()
-                        if inspect.isawaitable(res):
-                            try:
-                                loop = asyncio.get_running_loop()
-                                loop.create_task(res)
-                            except RuntimeError:
-                                pass
-                    except Exception as e:
-                        if hasattr(target_ctx, "logger"):
-                            target_ctx.logger("timer").error("Exception in timeout callback: %s", e)
-                        else:
-                            sys.stderr.write(f"[Cordis Timer Error] Exception in timeout: {e}\n")
+                    if registered_dispose:
+                        registered_dispose[0]()
+                    # The reference calls the callback unguarded (index.ts:38), so a
+                    # raising callback escapes to the runtime's uncaught-exception
+                    # handling instead of being caught here.
+                    res = callback()
+                    if inspect.isawaitable(res):
+                        try:
+                            res_loop = asyncio.get_running_loop()
+                            res_loop.create_task(res)
+                        except RuntimeError:
+                            pass
 
                 try:
                     loop = asyncio.get_running_loop()
@@ -197,7 +226,14 @@ class TimerService(Service):
 
                 return _cleanup
 
-            dispose = target_ctx.effect(_setup, "ctx.timeout()")
+            # `_setup` may already have armed the fallback thread, so the
+            # registration gate is released however `effect` returns.
+            dispose: Callable[[], None] = lambda: None
+            try:
+                dispose = target_ctx.effect(_setup, "ctx.timeout()")
+            finally:
+                registered_dispose.append(dispose)
+                registered.set()
             return dispose
         else:
             delay = float(callback_or_delay)
@@ -211,24 +247,64 @@ class TimerService(Service):
                 future = None
 
             if future is None:
-                disposed = False
+                # No loop can hold the timer, so the deadline is fixed here and the
+                # returned coroutine waits out whatever is left of it. The reference
+                # rejects the promise from its disposer while the deadline has not
+                # elapsed (index.ts:47-51), so the rejection is recorded here and the
+                # coroutine raises it at the consumer's first checkpoint, whether that
+                # checkpoint comes after the deadline or is already suspended.
+                deadline = time.monotonic() + delay_sec
+                rejected = False
+                waiter: Optional[asyncio.Future] = None
+                waiter_loop: Optional[asyncio.AbstractEventLoop] = None
+
+                def _resolve_no_loop() -> None:
+                    if waiter is not None and not waiter.done():
+                        waiter.set_result(None)
+
+                def _reject_no_loop() -> None:
+                    if waiter is not None and not waiter.done():
+                        waiter.set_exception(RuntimeError("Context has been disposed"))
 
                 def _setup_no_loop():
                     def _cleanup_no_loop():
-                        nonlocal disposed
-                        disposed = True
+                        nonlocal rejected
+                        # `clearTimeout` is a no-op once the timer fired, so only a
+                        # disposal before the deadline rejects the promise.
+                        rejected = time.monotonic() < deadline
+                        if not rejected or waiter_loop is None:
+                            return
+                        try:
+                            running = asyncio.get_running_loop()
+                        except RuntimeError:
+                            running = None
+                        if running is waiter_loop:
+                            _reject_no_loop()
+                        else:
+                            # The consumer awaits on a loop this disposer does not run
+                            # on, so the rejection is handed to that loop.
+                            waiter_loop.call_soon_threadsafe(_reject_no_loop)
                     return _cleanup_no_loop
 
                 dispose = target_ctx.effect(_setup_no_loop, "ctx.timeout()")
 
                 async def _fallback_sleep():
+                    nonlocal waiter, waiter_loop
+                    handle: Optional[asyncio.TimerHandle] = None
                     try:
-                        if disposed:
+                        if rejected:
                             raise RuntimeError("Context has been disposed")
-                        await asyncio.sleep(delay_sec)
-                        if disposed:
+                        waiter_loop = asyncio.get_running_loop()
+                        if rejected:
                             raise RuntimeError("Context has been disposed")
+                        waiter = waiter_loop.create_future()
+                        handle = waiter_loop.call_later(max(0.0, deadline - time.monotonic()), _resolve_no_loop)
+                        await waiter
                     finally:
+                        if handle is not None:
+                            handle.cancel()
+                        waiter = None
+                        waiter_loop = None
                         dispose()
 
                 return _fallback_sleep()
@@ -280,50 +356,67 @@ class TimerService(Service):
 
             def _setup():
                 disposed = False
-                task: Optional[asyncio.Task] = None
-                threading_timer: Optional[threading.Thread] = None
+                handle: Optional[asyncio.TimerHandle] = None
+                threading_timer: Optional[threading.Timer] = None
 
-                async def _async_interval_loop():
-                    while not disposed:
-                        await asyncio.sleep(delay_sec)
-                        if disposed:
-                            break
+                def _tick_callback():
+                    # The reference hands the callback to the runtime's interval timer
+                    # unguarded (index.ts:64), so nothing catches a raising callback
+                    # here: it escapes to the runtime's uncaught-exception handling.
+                    res = callback()
+                    if inspect.isawaitable(res):
                         try:
-                            res = callback()
-                            if inspect.isawaitable(res):
-                                try:
-                                    loop = asyncio.get_running_loop()
-                                    loop.create_task(res)
-                                except RuntimeError:
-                                    pass
-                        except Exception as e:
-                            if hasattr(target_ctx, "logger"):
-                                target_ctx.logger("timer").error("Exception in interval callback: %s", e)
-
-                try:
-                    loop = asyncio.get_running_loop()
-                    task = loop.create_task(_async_interval_loop())
-                except RuntimeError:
-                    def _thread_interval():
-                        while not disposed:
-                            time.sleep(delay_sec)
-                            if disposed:
-                                break
-                            try:
-                                callback()
-                            except Exception as e:
-                                if hasattr(target_ctx, "logger"):
-                                    target_ctx.logger("timer").error("Exception in interval callback: %s", e)
-                                else:
-                                    sys.stderr.write(f"[Cordis Timer Error] Exception in interval thread callback: {e}\n")
-                    threading_timer = threading.Thread(target=_thread_interval, daemon=True)
-                    threading_timer.start()
+                            res_loop = asyncio.get_running_loop()
+                            res_loop.create_task(res)
+                        except RuntimeError:
+                            pass
 
                 def _cleanup():
                     nonlocal disposed
                     disposed = True
-                    if task and not task.done():
-                        task.cancel()
+                    if handle is not None:
+                        handle.cancel()
+                    if threading_timer is not None:
+                        threading_timer.cancel()
+
+                try:
+                    loop = asyncio.get_running_loop()
+                except RuntimeError:
+                    # No loop can hold the interval, so its cadence is carried by a
+                    # chain of runtime timers rather than by a sleeping worker: every
+                    # tick arms its successor, which is what keeps the reference's
+                    # `setInterval` firing past a raising callback.
+                    def _tick_thread():
+                        nonlocal threading_timer
+                        if disposed:
+                            return
+                        threading_timer = threading.Timer(delay_sec, _tick_thread)
+                        threading_timer.daemon = True
+                        threading_timer.start()
+                        if disposed:
+                            # A concurrent disposer cleared the interval between the
+                            # check above and this arm, so the successor is cleared too.
+                            threading_timer.cancel()
+                        _tick_callback()
+
+                    threading_timer = threading.Timer(delay_sec, _tick_thread)
+                    threading_timer.daemon = True
+                    threading_timer.start()
+                else:
+                    def _tick():
+                        nonlocal handle
+                        if disposed:
+                            return
+                        # The reference clears its interval only through the returned
+                        # disposer (index.ts:64-65), so the successor tick is armed
+                        # before the callback runs: a raising callback cannot end the
+                        # chain, and it reaches loop.call_exception_handler instead.
+                        handle = loop.call_later(delay_sec, _tick)
+                        if disposed:
+                            handle.cancel()
+                        _tick_callback()
+
+                    handle = loop.call_later(delay_sec, _tick)
 
                 return _cleanup
 
@@ -344,28 +437,33 @@ class TimerService(Service):
         delay_sec = max(0.0, delay_ms / 1000.0)
         last_call = -float("inf")
         timer_handle: Optional[asyncio.TimerHandle] = None
+        threading_timer: Optional[threading.Timer] = None
         disposed = False
 
         def _setup():
             def _cleanup():
-                nonlocal disposed, timer_handle
+                nonlocal disposed, timer_handle, threading_timer
                 disposed = True
                 if timer_handle is not None:
                     timer_handle.cancel()
                     timer_handle = None
+                if threading_timer is not None:
+                    threading_timer.cancel()
+                    threading_timer = None
             return _cleanup
 
         disposer = target_ctx.effect(_setup, "ctx.throttle()")
 
         def throttled(*args: Any, **kwargs: Any) -> Any:
-            nonlocal last_call, timer_handle
+            nonlocal last_call, timer_handle, threading_timer
             now = time.time()
             remaining = delay_sec - (now - last_call)
 
             def _execute(*a, **kw):
-                nonlocal last_call, timer_handle
+                nonlocal last_call, timer_handle, threading_timer
                 last_call = time.time()
                 timer_handle = None
+                threading_timer = None
                 res = callback(*a, **kw)
                 if inspect.isawaitable(res):
                     try:
@@ -378,15 +476,22 @@ class TimerService(Service):
                 if timer_handle is not None:
                     timer_handle.cancel()
                     timer_handle = None
+                if threading_timer is not None:
+                    threading_timer.cancel()
+                    threading_timer = None
                 _execute(*args, **kwargs)
             elif not no_trailing and not disposed:
                 if timer_handle is not None:
                     timer_handle.cancel()
+                if threading_timer is not None:
+                    threading_timer.cancel()
                 try:
                     loop = asyncio.get_running_loop()
                     timer_handle = loop.call_later(remaining, lambda a=args, kw=kwargs: _execute(*a, **kw))
                 except RuntimeError:
-                    pass
+                    threading_timer = threading.Timer(remaining, lambda a=args, kw=kwargs: _execute(*a, **kw))
+                    threading_timer.daemon = True
+                    threading_timer.start()
 
         throttled.dispose = disposer
         return throttled

@@ -6,8 +6,10 @@ Compatible with Python 3.8.10 and Windows 7 SP1.
 Language and platform adaptations, all recorded at their call site:
 
 * JavaScript `undefined` has no Python value; the port reads it back as `None`
-  and renders it as `null` in serialized output, so a resolver's "no adapted
-  value" result and a schema member that resolved to null are one value here.
+  and renders it as `null` in serialized output, except where the reference
+  keeps the two apart: `Schema.resolve` reports an omitted adapted member as the
+  port's `undefined` sentinel (`dsh.cordis.utils._UNDEFINED`), so a resolver's
+  explicit `None` stays the reference's `null` and is written back.
 * `Object.assign` copies a schema's own properties by reference, so `_clone`
   shares containers; a JavaScript `new Function('return ' + source)()` cannot
   rehydrate a Python callback, so the constructor keeps the callback source and
@@ -38,8 +40,10 @@ import re
 from typing import Any, Callable, Dict, Iterator, List, Optional, Set, Tuple, Union
 
 from dsh.cordis.utils import (
+    _UNDEFINED,
     _js_own_enumerable_keys,
     _js_reorder_mapping,
+    _js_string_length,
     clone,
     deep_equal,
     is_nullable,
@@ -1476,17 +1480,19 @@ class Schema(metaclass=_SchemaMeta):
         """
         Validate `data` against one schema node.
 
-        Returns `(value, adapted)`, where `adapted` is the nullish equivalent of
-        the reference's `undefined` "no adapted value" result for the methods
-        that write a normalized value back into the validated container.
+        Returns `(value, adapted)`, the reference's `[value, adapted?]` result:
+        `adapted` is the port's `undefined` sentinel where the reference returned
+        a one-element tuple, and the adapted value itself otherwise, so a
+        resolver's explicit `None` is the reference's `null` for `_property`,
+        which writes every adapted value back into the validated container.
         """
         opt = options or {}
         if not schema:
-            return data, None
+            return data, _UNDEFINED
 
         ignore_fn = opt.get("ignore")
         if callable(ignore_fn) and _call_with_arity(ignore_fn, (data, schema)):
-            return data, None
+            return data, _UNDEFINED
 
         if is_nullable(data) and schema.type != "lazy":
             if schema.meta.get("required"):
@@ -1497,7 +1503,7 @@ class Schema(metaclass=_SchemaMeta):
                 current = current.list[0] if getattr(current, "list", None) else None
                 fallback = current.meta.get("default") if current is not None else None
             if is_nullable(fallback):
-                return data, None
+                return data, _UNDEFINED
             data = clone(fallback)
 
         callback = cls.resolvers.get(schema.type)
@@ -1509,10 +1515,10 @@ class Schema(metaclass=_SchemaMeta):
         except Exception as error:
             if not schema.meta.get("loose"):
                 raise error
-            return schema.meta.get("default"), None
+            return schema.meta.get("default"), _UNDEFINED
         if isinstance(result, (list, tuple)):
-            return result[0], result[1] if len(result) > 1 else None
-        return result, None
+            return result[0], result[1] if len(result) > 1 else _UNDEFINED
+        return result, _UNDEFINED
 
 
 # --- Built-in Type Resolvers matching TS schemastery resolvers ---
@@ -1591,7 +1597,7 @@ def _resolve_lazy(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) 
 
 
 def _resolve_any(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) -> Tuple[Any, Any]:
-    return data, None
+    return data, _UNDEFINED
 
 
 def _resolve_never(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) -> Tuple[Any, Any]:
@@ -1600,7 +1606,7 @@ def _resolve_never(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool)
 
 def _resolve_const(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) -> Tuple[Any, Any]:
     if deep_equal(data, schema.value):
-        return schema.value, None
+        return schema.value, _UNDEFINED
     expected = js_to_string(schema.value) if schema.value_provided else "undefined"
     raise ValidationError("expected {} but got {}".format(expected, js_to_string(data)), opt)
 
@@ -1621,8 +1627,8 @@ def _resolve_string(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool
             re_flags |= re.DOTALL
         if not re.search(source, data, flags=re_flags):
             raise ValidationError("expect string to match regexp /{}/{}".format(source, flags), opt)
-    _check_range(len(data), schema.meta, "string length", opt)
-    return data, None
+    _check_range(_js_string_length(data), schema.meta, "string length", opt)
+    return data, _UNDEFINED
 
 
 def _resolve_number(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) -> Tuple[Any, Any]:
@@ -1636,12 +1642,12 @@ def _resolve_number(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool
             minimum = 0
         if not _is_multiple_of(data, minimum, step):
             raise ValidationError("expected number multiple of {} but got {}".format(js_to_string(step), js_to_string(data)), opt)
-    return data, None
+    return data, _UNDEFINED
 
 
 def _resolve_boolean(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) -> Tuple[Any, Any]:
     if isinstance(data, bool):
-        return data, None
+        return data, _UNDEFINED
     raise ValidationError("expected boolean but got " + js_to_string(data), opt)
 
 
@@ -1668,13 +1674,13 @@ def _resolve_bitset(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool
     else:
         raise ValidationError("expected number or array but got " + js_to_string(data), opt)
     if value == schema.meta.get("default"):
-        return value, None
+        return value, _UNDEFINED
     return value, keys
 
 
 def _resolve_function(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) -> Tuple[Any, Any]:
     if callable(data):
-        return data, None
+        return data, _UNDEFINED
     raise ValidationError("expected function but got " + js_to_string(data), opt)
 
 
@@ -1682,7 +1688,7 @@ def _resolve_is(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) ->
     constructor = schema.constructor
     if isinstance(constructor, type):
         if isinstance(data, constructor):
-            return data, None
+            return data, _UNDEFINED
         raise ValidationError("expected {} but got {}".format(constructor.__name__, js_to_string(data)), opt)
     if callable(constructor):
         # The reference's `data instanceof constructor` walks the data's
@@ -1690,22 +1696,28 @@ def _resolve_is(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) ->
         # itself, so a non-class callable matches nothing.
         for base in type(data).__mro__:
             if base is constructor:
-                return data, None
+                return data, _UNDEFINED
         raise ValidationError("expected {} but got {}".format(getattr(constructor, "__name__", js_to_string(constructor)), js_to_string(data)), opt)
     if is_nullable(data):
         raise ValidationError("expected {} but got {}".format(js_to_string(constructor), js_to_string(data)), opt)
     for base in type(data).__mro__:
         if base.__name__ == constructor:
-            return data, None
+            return data, _UNDEFINED
     raise ValidationError("expected {} but got {}".format(js_to_string(constructor), js_to_string(data)), opt)
 
 
 def _property(data: Any, key: Any, schema: Schema, opt: Dict[str, Any]) -> Any:
-    """Validate one container member, writing an adapted value back to `data`."""
+    """
+    Validate one container member, writing an adapted value back to `data`.
+
+    The reference writes back every adapted value except `undefined`, so an
+    explicit `null` adaptation lands in the container while a resolver that
+    adapted nothing leaves the member untouched.
+    """
     sub_opt = {**opt, "path": list(opt.get("path") or []) + [key]}
     try:
         res, adapted = Schema.resolve(_read_key(data, key), schema, sub_opt)
-        if adapted is not None:
+        if adapted is not _UNDEFINED:
             _write_key(data, key, adapted)
         return res
     except Exception as error:
@@ -1720,7 +1732,7 @@ def _resolve_array(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool)
         raise ValidationError("expected array but got " + js_to_string(data), opt)
     inner = schema.inner if isinstance(schema.inner, Schema) else Schema.any()
     _check_range(len(data), schema.meta, "array length", opt, skip_min=not is_nullable(inner.meta.get("default")))
-    return [_property(data, index, inner, opt) for index in range(len(data))], None
+    return [_property(data, index, inner, opt) for index in range(len(data))], _UNDEFINED
 
 
 def _resolve_dict(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) -> Tuple[Any, Any]:
@@ -1740,7 +1752,7 @@ def _resolve_dict(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) 
         data[r_key] = data[key]
         if key != r_key:
             del data[key]
-    return result, None
+    return result, _UNDEFINED
 
 
 def _resolve_tuple(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) -> Tuple[Any, Any]:
@@ -1749,9 +1761,9 @@ def _resolve_tuple(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool)
     items = schema.list or []
     result = [_property(data, index, inner, opt) for index, inner in enumerate(items)]
     if strict:
-        return result, None
+        return result, _UNDEFINED
     result.extend(data[len(items):])
-    return result, None
+    return result, _UNDEFINED
 
 
 def _resolve_object(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) -> Tuple[Any, Any]:
@@ -1766,7 +1778,7 @@ def _resolve_object(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool
     if not strict:
         _merge_missing(result, data)
     _js_reorder_mapping(result)
-    return result, None
+    return result, _UNDEFINED
 
 
 def _resolve_union(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) -> Tuple[Any, Any]:
@@ -1781,7 +1793,7 @@ def _resolve_union(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool)
 def _resolve_intersect(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) -> Tuple[Any, Any]:
     items = schema.list or []
     if not items:
-        return data, None
+        return data, _UNDEFINED
     message = "expected {} but got {}".format(schema.to_string(), _json_stringify(data))
     result: Any = None
     for inner in items:
@@ -1806,22 +1818,33 @@ def _resolve_intersect(data: Any, schema: Schema, opt: Dict[str, Any], strict: b
             keys = _js_own_enumerable_keys(data)
             if keys:
                 raise TypeError("Cannot use 'in' operator to search for '{}' in undefined".format(keys[0]))
-            return None, None
+            return None, _UNDEFINED
         _merge_missing(result, data)
-    return result, None
+    return result, _UNDEFINED
 
 
 def _resolve_transform(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) -> Tuple[Any, Any]:
+    """
+    `transform` resolver.
+
+    The reference destructures `[result, adapted = data]`, so the default
+    replaces an omitted adapted member only: an adapted `null` reaches both
+    callback calls.  The callback's own result is the node's adapted value, and
+    its `None` is the reference's `null`; a callback that adapts nothing returns
+    the port's `undefined` sentinel (LEGAL_ADAPTATION for a callback the
+    reference leaves without a `return`, which yields `undefined`).
+    """
     inner = schema.inner if isinstance(schema.inner, Schema) else Schema.any()
     result, adapted = Schema.resolve(data, inner, opt, True)
-    if adapted is None:
+    if adapted is _UNDEFINED:
         adapted = data
     callback = schema.callback
     if not callable(callback):
         raise TypeError("Schema(transform) callback is not callable (got {}: {!r})".format(type(callback).__name__, callback))
+    applied = _call_transform_callback(callback, result)
     if schema.preserve:
-        return _call_transform_callback(callback, result), None
-    return _call_transform_callback(callback, result), _call_transform_callback(callback, adapted)
+        return applied, _UNDEFINED
+    return applied, _call_transform_callback(callback, adapted)
 
 
 # Register all standard resolvers

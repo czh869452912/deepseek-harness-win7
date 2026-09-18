@@ -76,6 +76,12 @@ same way:
 - A lazy node serializes the schema `Schema.lazy`'s stub closes over, so a
   clone reports the original's built node and meta, while a builder that
   yields no schema fails loud.
+- `Schema.resolve` reports an omitted adapted member as the port's `undefined`
+  sentinel, so a resolver returning `[data, null]` writes `null` back into its
+  container while one that adapts nothing leaves the member untouched, and a
+  `transform` passes that explicit `null` to both callback calls.
+- String `min`/`max` compare JavaScript UTF-16 code units, so an astral
+  character counts as two and a lone surrogate as one.
 """
 
 import json
@@ -84,6 +90,7 @@ import re
 from typing import Any
 
 from dsh.cordis.schema import Schema, ValidationError, deep_equal
+from dsh.cordis.utils import _UNDEFINED
 
 
 def test_t1_factory_default_meta_on_null_input():
@@ -154,7 +161,9 @@ def test_t7_bitset_adapted_suppressed_when_value_equals_default():
     s = Schema.bitset({"read": 1, "write": 2})
     val, adapted = Schema.resolve(0, s)
     assert val == 0
-    assert adapted is None
+    # `return [value]` omits the adapted member, which the port reads as its
+    # `undefined` sentinel rather than as the reference's `null`.
+    assert adapted is _UNDEFINED
 
 
 def test_t8_array_min_length_skipped_when_inner_has_default():
@@ -845,7 +854,7 @@ def test_bitset_number_input_uses_to_int32():
     value, adapted = Schema.resolve(3, bits)
     assert value == 3 and adapted == ["a", "b"]
     value, adapted = Schema.resolve(0, bits)
-    assert value == 0 and adapted is None
+    assert value == 0 and adapted is _UNDEFINED
 
     data = {"f": 3.0}
     Schema.object({"f": Schema.bitset({"a": 1, "b": 2}).default(0)})(data)
@@ -1348,3 +1357,149 @@ def test_lazy_builder_failures_fail_loud():
     with pytest.raises(TypeError) as exc:
         Schema({"type": "lazy"})("x")
     assert "schema.builder is not a function" in str(exc.value)
+
+
+# ---------------------------------------------------------------------------
+# Cases added for the reference's adapted-member protocol and its JavaScript
+# string length, verified against the pinned reference on Node.
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_reports_an_omitted_adapted_member_as_undefined():
+    """
+    A one-member resolve result adapts nothing and reads as the port's `undefined`.
+
+    The reference returns `[data]` where a resolver adapts nothing, and
+    `definition.property` writes a member back only when `adapted !== undefined`
+    (`reference/vendor/schemastery/src/index.ts:470-495,698-711`), so an omitted
+    member has to stay distinct from an adapted `null`.
+    """
+    assert Schema.resolve("x", Schema.string()) == ("x", _UNDEFINED)
+    # `if (!schema) return [data]`, the `ignore` predicate, a nullish input
+    # without a fallback, and the `loose` catch all return one member.
+    assert Schema.resolve("x", None) == ("x", _UNDEFINED)
+    assert Schema.resolve(5, Schema.number().min(10), {"ignore": lambda d, s: True}) == (5, _UNDEFINED)
+    assert Schema.resolve(None, Schema.string()) == (None, _UNDEFINED)
+    assert Schema.resolve("x", Schema.number().loose()) == (None, _UNDEFINED)
+
+    # A resolver that returns one member adapts nothing, exactly as the bitset
+    # resolver's `[value]` suppression does when the value is its default.
+    Schema.extend("omitted_adaptation", lambda data, schema, options, strict: (data,))
+    assert Schema.resolve("x", Schema({"type": "omitted_adaptation"})) == ("x", _UNDEFINED)
+    assert Schema.resolve(0, Schema.bitset({"read": 1})) == (0, _UNDEFINED)
+
+
+def test_property_writes_an_explicit_null_adaptation_back():
+    """
+    An adapted `null` lands in the validated container; an omitted member does not.
+
+    `definition.property` writes `data[key] = adapted` for every adapted value
+    other than `undefined` and returns the resolver's first member as the
+    resolved value (`reference/vendor/schemastery/src/index.ts:698-711`).
+    """
+    Schema.extend("explicit_null", lambda data, schema, options, strict: (data, None))
+
+    data = {"x": "kept"}
+    assert Schema.resolve(data, Schema.object({"x": Schema({"type": "explicit_null"})}))[0] == {"x": "kept"}
+    assert data == {"x": None}
+
+    # The array, dict and tuple resolvers validate their members through the
+    # same `property` helper.
+    array = ["kept"]
+    assert Schema.array(Schema({"type": "explicit_null"}))(array) == ["kept"]
+    assert array == [None]
+
+    mapping = {"k": "kept"}
+    assert Schema.dict(Schema({"type": "explicit_null"}))(mapping) == {"k": "kept"}
+    assert mapping == {"k": None}
+
+    items = ["kept"]
+    assert Schema.tuple([Schema({"type": "explicit_null"})])(items) == ["kept"]
+    assert items == [None]
+
+    # An explicitly returned `undefined` member is the omitted case, which
+    # leaves the input member as it was.
+    Schema.extend("undefined_adaptation", lambda data, schema, options, strict: (data, _UNDEFINED))
+    untouched = {"y": "kept"}
+    Schema.object({"y": Schema({"type": "undefined_adaptation"})})(untouched)
+    assert untouched == {"y": "kept"}
+
+
+def test_transform_passes_an_explicit_null_adaptation_to_both_callbacks():
+    """
+    `[result, adapted = data]` defaults an omitted member only.
+
+    An adapted `null` therefore reaches both `callback!(result)` and
+    `callback!(adapted)`, and the adapted callback's own result is the node's
+    adapted value (`reference/vendor/schemastery/src/index.ts:797-813`).
+    """
+    Schema.extend("explicit_null_inner", lambda data, schema, options, strict: (data, None))
+    seen = []
+
+    def record(value):
+        seen.append(value)
+        return value
+
+    data = {"x": "kept"}
+    assert Schema.object({"x": Schema.transform(Schema({"type": "explicit_null_inner"}), record)})(data) == {"x": "kept"}
+    assert seen == ["kept", None]
+    assert data == {"x": None}
+
+    # An inner that adapts nothing leaves the destructuring default in place, so
+    # both calls observe the input.
+    plain_seen = []
+
+    def plain_record(value):
+        plain_seen.append(value)
+        return value
+
+    Schema.object({"x": Schema.transform(Schema.string(), plain_record)})({"x": "kept"})
+    assert plain_seen == ["kept", "kept"]
+
+    # The callback's `None` is the reference's `null` and is written back, while
+    # the port's `undefined` sentinel stands for the callback the reference
+    # leaves without a `return`.
+    null_data = {"x": "kept"}
+    Schema.object({"x": Schema.transform(Schema.string(), lambda value: None)})(null_data)
+    assert null_data == {"x": None}
+
+    calls = []
+
+    def nothing_adapted(value):
+        calls.append(value)
+        return _UNDEFINED if len(calls) == 2 else value
+
+    sentinel_data = {"x": "kept"}
+    assert Schema.object({"x": Schema.transform(Schema.string(), nothing_adapted)})(sentinel_data) == {"x": "kept"}
+    assert calls == ["kept", "kept"]
+    assert sentinel_data == {"x": "kept"}
+
+
+def test_string_bounds_count_utf16_code_units():
+    """
+    `checkWithinRange(data.length, ...)` counts JavaScript UTF-16 code units.
+
+    An astral character is a surrogate pair and therefore has length two, and a
+    lone surrogate has length one
+    (`reference/vendor/schemastery/src/index.ts:608-615`).
+    """
+    astral = "\U0001F600"
+    assert Schema.string().min(2).max(2)(astral) == astral
+    with pytest.raises(ValidationError) as exc:
+        Schema.string().min(1).max(1)(astral)
+    assert str(exc.value) == "expected string length <= 1 but got 2"
+
+    lone = "\uD83D"
+    assert Schema.string().min(1).max(1)(lone) == lone
+    with pytest.raises(ValidationError) as exc:
+        Schema.string().min(2).max(2)(lone)
+    assert str(exc.value) == "expected string length >= 2 but got 1"
+
+    mixed = "a\U0001F600b"
+    assert Schema.string().min(4).max(4)(mixed) == mixed
+    with pytest.raises(ValidationError) as exc:
+        Schema.string().max(3)(mixed)
+    assert str(exc.value) == "expected string length <= 3 but got 4"
+
+    # An array's `length` stays its element count, so one astral element is one.
+    assert Schema.array(Schema.string()).min(1).max(1)([astral]) == [astral]

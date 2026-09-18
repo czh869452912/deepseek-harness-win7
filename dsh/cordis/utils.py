@@ -163,6 +163,15 @@ def _js_pad_start(source: str, length: int) -> str:
     return "0" * (length - len(source)) + source
 
 
+def _js_string_length(source: str) -> int:
+    """ECMAScript ``String.length``: UTF-16 code units, not Python code points.
+
+    An astral character is a surrogate pair and counts as two, and a lone
+    surrogate counts as one; ``surrogatepass`` keeps such a string encodable.
+    """
+    return len(source.encode("utf-16-le", "surrogatepass")) // 2
+
+
 class _UndefinedValue(object):
     """JavaScript ``undefined``: an absent own key, or a missing value.
 

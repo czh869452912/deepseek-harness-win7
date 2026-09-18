@@ -24,29 +24,57 @@ def test_context_static_symbols_and_is():
 
 
 def test_schemastery_i18n_hierarchical_localization():
-    schema = Schema.object({
-        'username': Schema.string().description('Default username'),
-        'timeout': Schema.number().description('Connection timeout'),
-    }).description('Server configuration')
+    """Localize a description tree the way the reference's `i18n` does.
 
-    localized = schema.i18n({
+    Verified against reference/vendor/schemastery/src/index.ts: `mergeDesc`
+    takes a locale description from `$description`/`$desc` or a plain string
+    message, writes the merge into the meta object the source schema shares,
+    and gives each member the entry `getInner(data)?.[key] ?? data?.[key]`
+    finds, so a member message is a plain member name.
+    """
+    def build():
+        return Schema.object({
+            'username': Schema.string().description('Default username'),
+            'timeout': Schema.number().description('Connection timeout'),
+        }).description('Server configuration')
+
+    localized = build().i18n({
         'zh': {
-            '': 'Server Config ZH',
+            '$description': 'Server Config ZH',
             'username': 'Username ZH',
             'timeout': 'Timeout ZH',
         },
         'ja': {
-            '': 'Server Config JA',
+            '$desc': 'Server Config JA',
             'username': 'Username JA',
             'timeout': 'Timeout JA',
         }
     })
 
-    assert isinstance(localized.meta['description'], dict)
-    assert localized.meta['description'].get('zh') == 'Server Config ZH'
-    assert localized.meta['description'].get('ja') == 'Server Config JA'
-    assert localized.dict['username'].meta['description'].get('zh') == 'Username ZH'
-    assert localized.dict['timeout'].meta['description'].get('zh') == 'Timeout ZH'
+    assert localized.meta['description'] == {
+        '': 'Server configuration', 'zh': 'Server Config ZH', 'ja': 'Server Config JA',
+    }
+    assert localized.dict['username'].meta['description'] == {
+        '': 'Default username', 'zh': 'Username ZH', 'ja': 'Username JA',
+    }
+    assert localized.dict['timeout'].meta['description'] == {
+        '': 'Connection timeout', 'zh': 'Timeout ZH', 'ja': 'Timeout JA',
+    }
+
+    # A locale keyed by the empty string carries neither `$description` nor
+    # `$desc` and is not a string, so it contributes no root description.
+    empty_key = build().i18n({'zh': {'': 'Server Config ZH', 'username': 'Username ZH'}})
+    assert empty_key.meta['description'] == {'': 'Server configuration'}
+    assert empty_key.dict['username'].meta['description'] == {
+        '': 'Default username', 'zh': 'Username ZH',
+    }
+
+    # The merge lands in the meta object the clone shares with its source.
+    source = build()
+    assert source.i18n({'zh': 'Simple ZH'}).meta['description'] == {
+        '': 'Server configuration', 'zh': 'Simple ZH',
+    }
+    assert source.meta['description'] == {'': 'Server configuration', 'zh': 'Simple ZH'}
 
 
 @pytest.mark.asyncio

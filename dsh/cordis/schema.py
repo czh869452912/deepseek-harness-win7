@@ -10,8 +10,20 @@ Language and platform adaptations, all recorded at their call site:
   value" result and a schema member that resolved to null are one value here.
 * `Object.assign` copies a schema's own properties by reference, so `_clone`
   shares containers; a JavaScript `new Function('return ' + source)()` cannot
-  rehydrate a Python callback, so `Schema.from_json` keeps the callback source
-  and a rehydrated transform fails loud when it is validated.
+  rehydrate a Python callback, so the constructor keeps the callback source and
+  a rehydrated transform fails loud when it is validated.
+* A property the reference never assigns is not `undefined` for Python either:
+  the factories leave `preserve` and the `const` value unassigned, so `toJSON()`
+  drops a member that was never supplied while keeping an assigned `null`,
+  `false`, `0`, `[]` or `{}`, exactly as `JSON.stringify` does.
+* The reference's transform resolver calls `callback!(result)` with exactly one
+  positional argument, so a callback that declares more parameters reads
+  `undefined` for them; Python raises for the same call, so the port passes the
+  port's nullish value for every declared parameter after the first.
+* The reference's `Schema.lazy` keeps a `{ toJSON }` stub object as the node's
+  `inner` until the deferred schema is built; the port stores the port's
+  nullish value there and keeps the stub's node in `lazy_origin` instead
+  (LEGAL_ADAPTATION), so `inner` reads as `None` before the build.
 * JavaScript type names (`Date`, `RegExp`) and `Number.prototype.toString`
   spellings differ from the Python types the port validates (`datetime.date`,
   `re.Pattern`), which shows up in `toString()` and in message operands.
@@ -48,11 +60,13 @@ def _positional_arity(fn: Callable[..., Any], maximum: int) -> int:
     Count the leading positional parameters `fn` accepts, capped at `maximum`.
 
     The reference calls every resolver as `resolve(data, schema, options,
-    strict)`, every transform callback as `callback(result)` and every `ignore`
-    predicate as `ignore(data, schema)`; a JavaScript callee that declares fewer
-    parameters ignores the extra arguments.  Python raises `TypeError` for the
-    same call, so this port passes exactly the leading arguments the callee
-    declares (LEGAL_ADAPTATION).
+    strict)` and every `ignore` predicate as `ignore(data, schema)`; a
+    JavaScript callee that declares fewer parameters ignores the extra
+    arguments.  Python raises `TypeError` for the same call, so this port passes
+    exactly the leading arguments the callee declares (LEGAL_ADAPTATION).  The
+    transform callback is the exception: the reference passes it exactly one
+    argument, so `_call_transform_callback` fills the remaining declared
+    parameters with the port's nullish value instead.
     """
     try:
         arity = _ARITY_CACHE.get(fn)
@@ -82,6 +96,49 @@ def _count_positional_params(fn: Callable[..., Any], maximum: int) -> int:
 def _call_with_arity(fn: Callable[..., Any], arguments: Tuple[Any, ...]) -> Any:
     """Call `fn` with the leading `arguments` its signature declares."""
     return fn(*arguments[:_positional_arity(fn, len(arguments))])
+
+
+def _declared_positional_count(fn: Callable[..., Any]) -> Optional[int]:
+    """
+    Count the positional parameters `fn` declares, or `None` when it takes `*args`.
+
+    Unlike `_positional_arity` this is uncapped, because the transform resolver
+    has to supply the port's nullish value for every parameter the callback
+    declares after the first one the reference actually passes.
+    """
+    try:
+        parameters = inspect.signature(fn).parameters.values()
+    except (TypeError, ValueError):
+        # A callee without an inspectable signature observes the reference's
+        # single argument.
+        return None
+    count = 0
+    for parameter in parameters:
+        if parameter.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD):
+            count += 1
+        elif parameter.kind is inspect.Parameter.VAR_POSITIONAL:
+            return None
+    return count
+
+
+def _call_transform_callback(callback: Callable[..., Any], value: Any) -> Any:
+    """
+    Call a transform callback the way the reference's transform resolver does.
+
+    The reference formats both the resolved and the adapted value through
+    `callback!(value)` with exactly one positional argument, so a callback that
+    declares further parameters reads `undefined` for them.  Python raises
+    `TypeError` for the same call, so the port supplies the port's nullish value
+    for every parameter the callback declares after the first
+    (LEGAL_ADAPTATION).
+    """
+    declared = _declared_positional_count(callback)
+    if declared is None:
+        # A `*args` callee sees the reference's single argument.
+        return callback(value)
+    if declared == 0:
+        return callback()
+    return callback(value, *([None] * (declared - 1)))
 
 
 def _iso_datetime(value: datetime.datetime) -> str:
@@ -136,6 +193,50 @@ def _json_stringify(data: Any) -> str:
     return "undefined" if rendered is None else rendered
 
 
+def _json_safe(value: Any) -> Any:
+    """
+    The value `JSON.stringify` would store for a node member.
+
+    The reference serializes every node through `JSON.stringify`, which renders
+    a non-finite number as `null` and enumerates an object's own members in
+    ECMAScript order.  Python has no `NaN`/`Infinity` JSON literal, so the port
+    normalizes them here (LEGAL_ADAPTATION).
+    """
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    if isinstance(value, dict):
+        return {key: _json_safe(value[key]) for key in _js_own_enumerable_keys(value)}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(item) for item in value]
+    return value
+
+
+def _for_in_keys(value: Any) -> List[Any]:
+    """
+    The keys a `for (const key in value)` loop enumerates.
+
+    An array, string or `ArrayBufferView` enumerates its indices, a plain object
+    its own enumerable keys, and a primitive no key at all; the port's
+    `simplify()` object/dict branches read their members through this.
+    """
+    if isinstance(value, (list, tuple, memoryview)):
+        return [str(index) for index in range(len(value))]
+    if isinstance(value, str):
+        return [str(index) for index in range(len(value))]
+    return _js_own_enumerable_keys(value)
+
+
+def _for_in_member(value: Any, key: Any) -> Any:
+    """`value[key]` for a key `_for_in_keys` produced."""
+    if isinstance(key, str) and key.isascii() and key.isdigit():
+        # An index key a container enumerates indexes its own elements, as
+        # `value["0"]` does in the reference.
+        index = int(key)
+        if isinstance(value, (list, tuple, str, memoryview)) and 0 <= index < len(value):
+            return value[index]
+    return _read_key(value, key)
+
+
 def _merge_missing(result: Dict[Any, Any], data: Any) -> None:
     """`merge(result, data)` from the reference's object and intersect resolvers."""
     if isinstance(data, (list, tuple)):
@@ -161,6 +262,61 @@ def _value_typeof(value: Any) -> str:
     if callable(value):
         return "function"
     return "object"
+
+
+def _shared_badges(meta: Dict[str, Any]) -> List[Dict[str, str]]:
+    """`meta.badges ||= []`, which assigns into the meta object passed in."""
+    badges = meta.get("badges")
+    if not badges:
+        badges = []
+        meta["badges"] = badges
+    return badges
+
+
+def _get_inner(value: Any) -> Any:
+    """`getInner(value)` from the reference's `i18n`: `value?.$value ?? value?.$inner`."""
+    if not isinstance(value, dict):
+        return None
+    member = value.get("$value")
+    if member is not None:
+        return member
+    return value.get("$inner")
+
+
+def _extract_keys(value: Any) -> Dict[Any, Any]:
+    """`extractKeys(value)`: `filterKeys(value ?? {}, key => !key.startsWith('$'))`."""
+    if value is None:
+        return {}
+    if isinstance(value, dict):
+        return {
+            key: value[key]
+            for key in _js_own_enumerable_keys(value)
+            if not str(key).startswith("$")
+        }
+    if isinstance(value, (list, tuple, str, memoryview)):
+        # `Object.entries` of a sequence or string yields its index keys.
+        return {str(index): value[index] for index in range(len(value))}
+    return {}
+
+
+def _merge_desc(original: Any, messages: Dict[Any, Any]) -> Dict[str, Any]:
+    """`mergeDesc(original, messages)` from the reference's `i18n`."""
+    if isinstance(original, str):
+        result: Dict[str, Any] = {"": original}
+    elif isinstance(original, dict):
+        result = dict(original)
+    else:
+        result = {}
+    for locale in _js_own_enumerable_keys(messages):
+        value = messages[locale]
+        desc = None
+        if isinstance(value, dict):
+            desc = value.get("$description") or value.get("$desc")
+        if desc:
+            result[locale] = desc
+        elif isinstance(value, str):
+            result[locale] = value
+    return result
 
 
 def _read_key(data: Any, key: Any) -> Any:
@@ -240,6 +396,25 @@ def _to_int32(value: Any) -> int:
     return ((truncated + 2 ** 31) % 2 ** 32) - 2 ** 31
 
 
+class _Unset:
+    """
+    Stand-in for a JavaScript property the reference never assigned.
+
+    `Schema.const(undefined)` and `Schema.const(null)` are the same call in
+    Python, so the `const` factory records whether a constant was supplied at
+    all and leaves the member out of the serialized node when it was not.
+    """
+
+    __slots__ = ()
+
+    def __repr__(self) -> str:
+        return "undefined"
+
+
+#: Omitted-argument marker for `Schema.const()`.
+_UNSET = _Unset()
+
+
 class ValidationError(TypeError):
     """
     Error raised when data fails schema validation.
@@ -308,16 +483,46 @@ class ValidationError(TypeError):
         return bool(getattr(error, "_kValidationError", False))
 
 
+#: Reference member names that differ from the port's attribute spelling.
+_REFERENCE_ATTRIBUTES = {"sKey": "s_key"}
+
+
+class _SchemaMeta(type):
+    """
+    Callable constructor matching the reference's `Schema(options)`.
+
+    The reference constructor returns a *referenced* node instead of a fresh one
+    when `options.refs` carries a serialized envelope.  Python cannot express
+    that from `__new__`, because the follow-up `__init__` call would then
+    re-initialize the shared node, so the hydration branch lives in the
+    metaclass and `Schema(node)` still builds an ordinary node.
+    """
+
+    def __call__(cls, options: Optional[Dict[str, Any]] = None) -> "Schema":
+        refs = options.get("refs") if isinstance(options, dict) else None
+        if refs is not None:
+            return cls._hydrate_refs(options, refs)
+        if isinstance(options, Schema):
+            # `Schema(this)` in the reference: `Object.assign` copies the own
+            # members by reference and the copy takes a fresh uid.
+            return options._clone()
+        return super().__call__(options)
+
+
 # `deepEqual`, `isNullable` and `clone` are Cosmokit helpers shared with the
 # framework layer; the port re-exports them under the names Schemastery's
 # resolvers and `simplify()` call.
-class Schema:
+class Schema(metaclass=_SchemaMeta):
     """
     Schemastery Schema definition matching reference/vendor/schemastery/src/index.ts.
     Provides fluent builder methods, validation, simplification, i18n, and JSON serialization.
     """
 
     resolvers: Dict[str, Callable[..., Any]] = {}
+
+    #: `Schema.ValidationError`, the class the README's extensibility example
+    #: throws from a custom resolver.
+    ValidationError = ValidationError
 
     def __init__(self, options: Optional[Dict[str, Any]] = None):
         global __schemastery_index__
@@ -336,17 +541,24 @@ class Schema:
         self.callback_source: Optional[str] = None
         self.constructor: Optional[Any] = None
         self.builder: Optional[Callable[[], "Schema"]] = None
-        self.preserve: bool = False
+        #: `None` is the reference's `preserve: undefined`, so an unassigned
+        #: flag stays out of the serialized node while an assigned `false` is
+        #: kept.
+        self.preserve: Optional[bool] = None
+        #: Whether the node carries a `value` member at all, which is what
+        #: separates `Schema.const(null)` from `Schema.const(undefined)`.
+        self.value_provided: bool = False
 
         if options:
             opts = dict(options)
             opts.pop("uid", None)
+            self.value_provided = "value" in opts
             cb = opts.get("callback")
             if cb is not None and not callable(cb):
                 opts.pop("callback")
                 self.callback_source = str(cb)
             for k, v in opts.items():
-                setattr(self, k, v)
+                setattr(self, _REFERENCE_ATTRIBUTES.get(k, k), v)
         if not isinstance(self.meta, dict):
             self.meta = {}
 
@@ -407,8 +619,13 @@ class Schema:
         s.constructor = self.constructor
         s.builder = self.builder
         s.preserve = self.preserve
+        s.value_provided = getattr(self, "value_provided", False)
         if getattr(self, "_dynamic", False):
             s._dynamic = True
+        # `Schema.lazy`'s inner stub keeps a closure over the node that
+        # created it, so a clone serializes that node's built schema.
+        if getattr(self, "lazy_origin", None) is not None:
+            s.lazy_origin = self.lazy_origin
         return s
 
     def _with_meta(self, key: str, value: Any) -> "Schema":
@@ -459,17 +676,19 @@ class Schema:
         return self._with_meta("description", text)
 
     def deprecated(self) -> "Schema":
+        """Add a deprecated badge, as the reference's `meta.badges ||= []` push does."""
+        # `Schema(this)` shares the meta object, so the source schema lists
+        # the badge too, exactly as the reference mutates it.
         s = self._clone()
-        badges = list(s.meta.get("badges", []))
+        badges = _shared_badges(s.meta)
         badges.append({"text": "deprecated", "type": "danger"})
-        s.meta = {**s.meta, "badges": badges}
         return s
 
     def experimental(self) -> "Schema":
+        """Add an experimental badge, sharing the source schema's meta object."""
         s = self._clone()
-        badges = list(s.meta.get("badges", []))
+        badges = _shared_badges(s.meta)
         badges.append({"text": "experimental", "type": "warning"})
-        s.meta = {**s.meta, "badges": badges}
         return s
 
     def badges(self, badge_list: List[Dict[str, str]]) -> "Schema":
@@ -516,65 +735,68 @@ class Schema:
         return self
 
     def i18n(self, messages: Dict[str, Any]) -> "Schema":
-        """Attach localized descriptions matching TS Schema.prototype.i18n()."""
+        """
+        Attach localized descriptions matching TS `Schema.prototype.i18n()`.
+
+        The reference merges a locale message into the description only when the
+        message carries `$description`/`$desc` or is a plain string, writes the
+        result into the meta object the clone shares with its source, and passes
+        each relation member the message entry `getInner(data)?.[key] ??
+        data?.[key]` finds.
+        """
         s = self._clone()
-        desc = s.meta.get("description")
-        desc_dict: Dict[str, str] = {"": desc} if isinstance(desc, str) else dict(desc or {})
-        for locale, val in [(key, messages[key]) for key in _js_own_enumerable_keys(messages)]:
-            if isinstance(val, dict):
-                d = val.get("$description") or val.get("$desc") or val.get("")
-                if d:
-                    desc_dict[locale] = d
-            elif isinstance(val, str):
-                desc_dict[locale] = val
-        if desc_dict:
-            s.meta = {**s.meta, "description": desc_dict}
+        desc = _merge_desc(s.meta.get("description"), messages)
+        if desc:
+            s.meta["description"] = desc
 
         if s.dict:
             new_dict = {}
-            for k, inner in [(key, s.dict[key]) for key in _js_own_enumerable_keys(s.dict)]:
+            for key in _js_own_enumerable_keys(s.dict):
                 sub_msg = {}
-                for loc, m in [(key, messages[key]) for key in _js_own_enumerable_keys(messages)]:
-                    if isinstance(m, dict):
-                        inner_dict = m.get("$value") or m.get("$inner") or m
-                        if isinstance(inner_dict, dict) and k in inner_dict:
-                            sub_msg[loc] = inner_dict[k]
-                    elif isinstance(m, str):
-                        sub_msg[loc] = m
-                new_dict[k] = inner.i18n(sub_msg)
+                for locale in _js_own_enumerable_keys(messages):
+                    data = messages[locale]
+                    member = _for_in_member(_get_inner(data), key)
+                    if member is None:
+                        member = _for_in_member(data, key)
+                    sub_msg[locale] = member
+                new_dict[key] = s.dict[key].i18n(sub_msg)
             s.dict = new_dict
 
         if s.list:
             new_list = []
-            for idx, inner in enumerate(s.list):
+            for index, inner in enumerate(s.list):
                 sub_msg = {}
-                for loc, m in [(key, messages[key]) for key in _js_own_enumerable_keys(messages)]:
-                    if isinstance(m, dict):
-                        inner_list = m.get("$value") or m.get("$inner") or m
-                        if isinstance(inner_list, (list, tuple)) and idx < len(inner_list):
-                            sub_msg[loc] = inner_list[idx]
-                        elif isinstance(inner_list, dict):
-                            sub_msg[loc] = {k: v for k, v in inner_list.items() if not k.startswith("$")}
-                    elif isinstance(m, str):
-                        sub_msg[loc] = m
+                for locale in _js_own_enumerable_keys(messages):
+                    data = messages[locale]
+                    inner_value = _get_inner(data)
+                    if isinstance(inner_value, (list, tuple)):
+                        member = inner_value[index] if index < len(inner_value) else None
+                    elif isinstance(data, (list, tuple)):
+                        member = data[index] if index < len(data) else None
+                    else:
+                        member = _extract_keys(data)
+                    sub_msg[locale] = member
                 new_list.append(inner.i18n(sub_msg))
             s.list = new_list
 
-        if s.inner:
+        if s.inner is not None or s.type == "lazy":
+            # A lazy node keeps its `{ toJSON }` stub as `inner` until a
+            # resolution or serialization replaces it; the stub has no
+            # `i18n`, so localizing an unbuilt lazy schema fails loud.
+            if not isinstance(s.inner, Schema):
+                raise TypeError("schema.inner.i18n is not a function")
             sub_msg = {}
-            for loc, m in [(key, messages[key]) for key in _js_own_enumerable_keys(messages)]:
-                if isinstance(m, dict):
-                    inner_val = m.get("$value") or m.get("$inner") or {k: v for k, v in m.items() if not k.startswith("$")}
-                    sub_msg[loc] = inner_val
-                elif isinstance(m, str):
-                    sub_msg[loc] = m
+            for locale in _js_own_enumerable_keys(messages):
+                data = messages[locale]
+                inner_value = _get_inner(data)
+                sub_msg[locale] = inner_value if inner_value else _extract_keys(data)
             s.inner = s.inner.i18n(sub_msg)
 
         if s.s_key:
             sub_msg = {}
-            for loc, m in messages.items():
-                if isinstance(m, dict) and "$key" in m:
-                    sub_msg[loc] = m["$key"]
+            for locale in _js_own_enumerable_keys(messages):
+                data = messages[locale]
+                sub_msg[locale] = data.get("$key") if isinstance(data, dict) else None
             s.s_key = s.s_key.i18n(sub_msg)
 
         return s
@@ -587,15 +809,16 @@ class Schema:
             return value
 
         if self.type in ("object", "dict"):
-            if not isinstance(value, dict):
-                return value
+            # The reference walks `for (const key in value)`, so a non-object
+            # input still yields its enumerable keys instead of being returned
+            # unchanged.
             res: Dict[str, Any] = {}
-            for key in _js_own_enumerable_keys(value):
+            for key in _for_in_keys(value):
                 schema = (self.dict or {}).get(key) if self.type == "object" else self.inner
                 # `schema?.simplify(value[key])` keeps `undefined` for a member
                 # the schema does not declare, which the nullish test below then
                 # drops for an object and keeps for a dict.
-                item = schema.simplify(value[key]) if schema is not None else None
+                item = schema.simplify(_for_in_member(value, key)) if schema is not None else None
                 if self.type == "dict" or not is_nullable(item):
                     res[key] = item
             if deep_equal(res, self.meta.get("default"), self.type == "dict"):
@@ -603,7 +826,10 @@ class Schema:
             return res
         elif self.type in ("array", "tuple"):
             if not isinstance(value, (list, tuple)):
-                return value
+                # `(value as any[]).forEach(...)` is a TypeError for any value
+                # without `forEach`, which the port reproduces instead of
+                # returning the input unchanged.
+                raise TypeError("value.forEach is not a function")
             arr: List[Any] = []
             for index, item in enumerate(value):
                 schema = self.inner if self.type == "array" else (self.list[index] if self.list and index < len(self.list) else None)
@@ -625,92 +851,149 @@ class Schema:
                     pass
         return value
 
+    #: Members the reference's factory assigns after `meta`, in the order its
+    #: `defineMethod` key list assigns them; `{ ...schema }` serializes in the
+    #: property creation order, so the node carries the same member order.
+    _RELATION_KEYS: Dict[str, Tuple[str, ...]] = {
+        "is": ("constructor",),
+        "const": ("value",),
+        "bitset": ("bits",),
+        "array": ("inner",),
+        "dict": ("inner", "sKey"),
+        "tuple": ("list",),
+        "union": ("list",),
+        "intersect": ("list",),
+        "object": ("dict",),
+        "transform": ("inner", "callback", "preserve"),
+    }
+
+    def _serialized_lazy_inner(self) -> Optional["Schema"]:
+        """
+        The schema a lazy node's `inner` member serializes as.
+
+        The reference's lazy node holds a `{ toJSON }` stub as `inner` whose
+        closure builds the node `Schema.lazy()` created and merges that node's
+        meta, so serializing a clone of a lazy schema reports the original's
+        built node while a node already carrying a real `inner` reports that
+        one. The port spells the same origin relationship with `lazy_origin`.
+        """
+        if isinstance(self.inner, Schema):
+            return self.inner
+        origin = getattr(self, "lazy_origin", None)
+        if origin is None:
+            origin = self
+        if not isinstance(origin.inner, Schema):
+            origin.inner = _built_lazy_inner(origin)
+        return origin.inner
+
+    def _own_members(self) -> Iterator[Tuple[str, Any]]:
+        """
+        Own enumerable members of this node in the reference's creation order.
+
+        The reference serializes a node with
+        `JSON.parse(JSON.stringify({ ...this }))`: `type` comes from the
+        constructor options, `meta` from the constructor's `schema.meta ||= {}`,
+        and every remaining member from the factory's key list.  A member the
+        factory never assigned is `undefined` and therefore absent from the
+        serialized node, while an assigned `null`, `false`, `0`, `[]` or `{}` is
+        kept.
+        """
+        yield "type", self.type
+        if self.type == "lazy":
+            # `Schema.lazy` passes `{ type, builder, inner }` to the
+            # constructor and `builder` is a function that JSON drops, so
+            # `inner` precedes the constructor's `meta` here.
+            yield "inner", self._serialized_lazy_inner()
+            yield "meta", _json_safe(dict(self.meta))
+            return
+        yield "meta", _json_safe(dict(self.meta))
+        for key in self._RELATION_KEYS.get(self.type, ()):
+            if key == "value":
+                if self.value_provided or self.value is not None:
+                    yield "value", _json_safe(self.value)
+            elif key == "preserve":
+                if self.preserve is not None:
+                    yield "preserve", self.preserve
+            elif key == "callback":
+                source = _callback_source(self)
+                if source is not None:
+                    yield "callback", source
+            elif key == "constructor":
+                if self.constructor is not None:
+                    if isinstance(self.constructor, type):
+                        yield "constructor", self.constructor.__name__
+                    else:
+                        yield "constructor", str(self.constructor)
+            elif key == "sKey":
+                if self.s_key is not None:
+                    yield "sKey", self.s_key
+            else:
+                member = getattr(self, key)
+                if member is not None:
+                    yield key, _json_safe(member)
+
+    def _collect_node(self, refs: Dict[int, Dict[str, Any]]) -> int:
+        """Register this node in `refs` once and return its uid."""
+        if self.uid in refs:
+            return self.uid
+        node: Dict[str, Any] = {}
+        refs[self.uid] = node
+        for key, member in self._own_members():
+            if key in ("inner", "sKey"):
+                # A lazy node whose builder yields no schema carries no
+                # `inner` member, as the reference's stub-less node does not.
+                if member is not None:
+                    node[key] = member.toJSON(refs)
+            elif key == "list":
+                node[key] = [item.toJSON(refs) for item in member]
+            elif key == "dict":
+                node[key] = {name: member[name].toJSON(refs) for name in _js_own_enumerable_keys(member)}
+            else:
+                node[key] = member
+        return self.uid
+
     def toJSON(self, refs_collector: Optional[Dict[int, Dict[str, Any]]] = None) -> Union[int, Dict[str, Any]]:
         """
-        Serialize schema definition with flat reference table matching TS Schema.prototype.toJSON().
-        Returns { "uid": self.uid, "refs": { ... } } at root level, or node uid when called recursively.
+        Serialize this schema with a flat reference table, matching TS `Schema.prototype.toJSON()`.
+
+        The root call returns the `{ uid, refs }` envelope, where `refs` is
+        keyed by uid and every node carries its relations as uids so that shared
+        and recursive nodes are serialized once; a nested call returns the
+        node's uid, which is what the reference's `toJSON` returns while
+        `__schemastery_refs__` is set.
         """
         is_root = refs_collector is None
-        if self.type == "lazy" and self.inner is None and callable(getattr(self, "builder", None)):
-            built = self.builder()
-            built.meta = {**self.meta, **built.meta}
-            self.inner = built
-
         if is_root:
             refs: Dict[int, Dict[str, Any]] = {}
         else:
             refs = refs_collector
-
-        if self.uid in refs:
-            return self.uid
-
-        node: Dict[str, Any] = {
-            "type": self.type,
-            "meta": dict(self.meta),
-        }
-        refs[self.uid] = node
-
-        if self.value is not None:
-            node["value"] = self.value
-        if self.inner:
-            node["inner"] = self.inner.toJSON(refs)
-        if self.s_key:
-            node["sKey"] = self.s_key.toJSON(refs)
-        if self.list:
-            node["list"] = [s.toJSON(refs) for s in self.list]
-        if self.dict:
-            node["dict"] = {k: v.toJSON(refs) for k, v in self.dict.items()}
-        if self.bits:
-            node["bits"] = dict(self.bits)
-        if self.preserve:
-            node["preserve"] = self.preserve
-        if self.constructor is not None:
-            if isinstance(self.constructor, type):
-                node["constructor"] = self.constructor.__name__
-            else:
-                node["constructor"] = str(self.constructor)
-        source = _callback_source(self)
-        if source is not None:
-            node["callback"] = source
-
+        self._collect_node(refs)
         if is_root:
-            return {"uid": self.uid, "refs": refs}
+            # Every `refs` key is a uid, and ECMAScript enumerates integer-like
+            # own keys in ascending order however they were inserted, so the
+            # envelope lists the nodes by ascending uid.
+            return {"uid": self.uid, "refs": {uid: refs[uid] for uid in sorted(refs)}}
         return self.uid
 
     def to_json(self) -> Dict[str, Any]:
-        """Serialize schema definition matching TS toJSON()."""
-        if self.type == "lazy" and self.inner is None and callable(getattr(self, "builder", None)):
-            built = self.builder()
-            built.meta = {**self.meta, **built.meta}
-            self.inner = built
+        """
+        Port-only nested serialization; the canonical wire form is `toJSON()`.
 
-        res: Dict[str, Any] = {
-            "uid": self.uid,
-            "type": self.type,
-            "meta": self.meta,
-        }
-        if self.value is not None:
-            res["value"] = self.value
-        if self.inner:
-            res["inner"] = self.inner.to_json()
-        if self.s_key:
-            res["sKey"] = self.s_key.to_json()
-        if self.list:
-            res["list"] = [s.to_json() for s in self.list]
-        if self.dict:
-            res["dict"] = {k: v.to_json() for k, v in self.dict.items()}
-        if self.bits:
-            res["bits"] = self.bits
-        if self.preserve:
-            res["preserve"] = self.preserve
-        if self.constructor is not None:
-            if isinstance(self.constructor, type):
-                res["constructor"] = self.constructor.__name__
+        This helper predates the `{ uid, refs }` envelope and keeps the same own
+        member order and the same falsey/nullable members, nesting every
+        relation instead of referencing it by uid.
+        """
+        res: Dict[str, Any] = {"uid": self.uid}
+        for key, member in self._own_members():
+            if key in ("inner", "sKey"):
+                if member is not None:
+                    res[key] = member.to_json()
+            elif key == "list":
+                res[key] = [item.to_json() for item in member]
+            elif key == "dict":
+                res[key] = {name: member[name].to_json() for name in _js_own_enumerable_keys(member)}
             else:
-                res["constructor"] = str(self.constructor)
-        source = _callback_source(self)
-        if source is not None:
-            res["callback"] = source
+                res[key] = member
         return res
 
     def to_json_schema(self) -> Dict[str, Any]:
@@ -733,7 +1016,8 @@ class Schema:
         elif self.type == "boolean":
             json_schema["type"] = "boolean"
         elif self.type == "const":
-            json_schema["const"] = self.value
+            if self.value_provided:
+                json_schema["const"] = self.value
         elif self.type == "array":
             json_schema["type"] = "array"
             if self.inner:
@@ -814,6 +1098,13 @@ class Schema:
         elif self.type == "function":
             return "function"
         elif self.type == "const":
+            if self.value is None:
+                # The reference's formatter returns the raw constant and
+                # `Schema.prototype.toString` falls back to `Schema<const>` when
+                # that is nullish, so both `const(null)` and `const(undefined)`
+                # print the fallback (LEGAL_ADAPTATION for the non-null case,
+                # where Python has no non-str return).
+                return "Schema<const>"
             if isinstance(self.value, str):
                 return json.dumps(self.value, ensure_ascii=False)
             return js_to_string(self.value)
@@ -842,7 +1133,9 @@ class Schema:
             return "{{ {} }}".format(", ".join(members))
         elif self.type == "union":
             result = " | ".join(schema.to_string() for schema in (self.list or []))
-            return "({})".format(result) if inline and len(self.list or []) > 1 else result
+            # The reference parenthesizes the joined members for every inline
+            # call, including a union with a single member.
+            return "({})".format(result) if inline else result
         elif self.type == "intersect":
             return " & ".join(schema.to_string(True) for schema in (self.list or []))
         elif self.type == "transform":
@@ -856,61 +1149,54 @@ class Schema:
         return f"Schema<{self.type}>"
 
     @classmethod
+    def _hydrate_refs(cls, envelope: Dict[str, Any], refs_payload: Dict[Any, Any]) -> "Schema":
+        """
+        `Schema({ uid, refs })`: rebuild every referenced node and return the root.
+
+        The reference maps `refs` through `new Schema(options)`, links each node
+        with `getRef`, and returns `refs[options.uid]`; every rebuilt node takes
+        a fresh uid, so a rehydrated tree renumbers.  A relation uid the payload
+        does not carry becomes the port's nullish value, which is what
+        `refs[uid]` reads as `undefined` in the reference.
+
+        Permitted ADAPT deviation: the reference rehydrates a serialized
+        callback with `new Function('return ' + source)()`.  Python 3.8 does not
+        evaluate serialized source, so a node's callback stays uncallable with
+        its source in `callback_source` and `_resolve_transform` raises a 1:1
+        fail-loud `TypeError` when the rehydrated transform is validated.
+        """
+        nodes: Dict[str, "Schema"] = {}
+        for uid in _js_own_enumerable_keys(refs_payload):
+            nodes[str(uid)] = cls(refs_payload[uid])
+
+        def get_ref(uid: Any) -> Any:
+            if uid is None:
+                return None
+            return nodes.get(str(uid))
+
+        for uid in _js_own_enumerable_keys(refs_payload):
+            node = refs_payload[uid]
+            schema = nodes[str(uid)]
+            if not isinstance(node, dict):
+                continue
+            schema.s_key = get_ref(node.get("sKey", node.get("s_key")))
+            schema.inner = get_ref(node.get("inner"))
+            if node.get("list") is not None:
+                schema.list = [get_ref(item) for item in node["list"]]
+            if node.get("dict") is not None:
+                member_dict = node["dict"]
+                schema.dict = {name: get_ref(member_dict[name]) for name in _js_own_enumerable_keys(member_dict)}
+        return nodes.get(str(envelope.get("uid")))
+
+    @classmethod
     def from_json(cls, payload: Dict[str, Any]) -> "Schema":
         """
-        Deserialize Schema tree from flat refs dictionary matching TS Schema(options.refs).
+        Port-only alias for `Schema(payload)` (the reference's callable constructor).
 
-        Permitted ADAPT deviation:
-        In TypeScript Schemastery, deserialization may evaluate string callback functions via
-        `new Function(...)`. In Python 3.8, arbitrary serialized code string evaluation is intentionally
-        omitted for safety and deterministic runtime semantics. `callback` is kept as None (preserving
-        `callback_source`), and `_resolve_transform` raises a 1:1 fail-loud TypeError when validation
-        is attempted on an uncallable transform callback.
+        Prefer `Schema(payload)`, which is the reference contract; this alias
+        exists for the port's earlier callers and delegates to the same
+        hydration path.
         """
-        if not isinstance(payload, dict):
-            return cls.any()
-        if "refs" in payload and isinstance(payload["refs"], dict):
-            refs_dict = payload["refs"]
-            schema_map: Dict[int, "Schema"] = {}
-            for uid_str, raw_node in refs_dict.items():
-                try:
-                    uid_int = int(uid_str)
-                except (ValueError, TypeError):
-                    continue
-                s = cls(raw_node)
-                s.uid = uid_int
-                schema_map[uid_int] = s
-
-            def _get_ref(target_uid: Any) -> Any:
-                if target_uid is None:
-                    return None
-                try:
-                    return schema_map.get(int(target_uid))
-                except (ValueError, TypeError):
-                    return None
-
-            for uid_int, s in schema_map.items():
-                raw_node = refs_dict.get(str(uid_int), refs_dict.get(uid_int))
-                if raw_node is None:
-                    continue
-                if "inner" in raw_node:
-                    s.inner = _get_ref(raw_node["inner"])
-                if "sKey" in raw_node or "s_key" in raw_node:
-                    s.s_key = _get_ref(raw_node.get("sKey") if "sKey" in raw_node else raw_node.get("s_key"))
-                if "list" in raw_node and isinstance(raw_node["list"], list):
-                    s.list = [_get_ref(item) for item in raw_node["list"]]
-                if "dict" in raw_node and isinstance(raw_node["dict"], dict):
-                    s.dict = {k: _get_ref(v) for k, v in raw_node["dict"].items()}
-
-            target_uid = payload.get("uid")
-            if target_uid is not None:
-                try:
-                    target_int = int(target_uid)
-                    if target_int in schema_map:
-                        return schema_map[target_int]
-                except (ValueError, TypeError):
-                    pass
-            return cls.any()
         return cls(payload)
 
     fromJSON = from_json
@@ -929,8 +1215,18 @@ class Schema:
         return cls({"type": "never"})
 
     @classmethod
-    def const_(cls, value: Any) -> "Schema":
-        return cls({"type": "const", "value": value})
+    def const_(cls, value: Any = _UNSET) -> "Schema":
+        """
+        `Schema.const(value)`.
+
+        An omitted value stays unassigned, which is the reference's
+        `Schema.const(undefined)` and serializes without a `value` member; an
+        explicit `None` is `Schema.const(null)` and keeps `value: null`.
+        """
+        options: Dict[str, Any] = {"type": "const"}
+        if value is not _UNSET:
+            options["value"] = value
+        return cls(options)
 
     @classmethod
     def string(cls) -> "Schema":
@@ -1020,8 +1316,20 @@ class Schema:
         return cls.union(branches)
 
     @classmethod
-    def bitset(cls, bits: Dict[str, int]) -> "Schema":
-        clean_bits = {k: v for k, v in bits.items() if isinstance(v, int) and not isinstance(v, bool)}
+    def bitset(cls, bits: Dict[str, Any]) -> "Schema":
+        """
+        `Schema.bitset(bits)`.
+
+        The reference keeps every member whose value passes `typeof value ===
+        'number'`, so a fractional, `NaN` or infinite bit stays in the
+        definition and is only coerced with `ToInt32` where the resolver masks
+        with it.  Members with any other value (`true`, `'2'`) are dropped.
+        """
+        clean_bits = {
+            key: bits[key]
+            for key in _js_own_enumerable_keys(bits)
+            if isinstance(bits[key], (int, float)) and not isinstance(bits[key], bool)
+        }
         s = cls({"type": "bitset", "bits": clean_bits})
         s.meta["default"] = 0
         return s
@@ -1036,50 +1344,77 @@ class Schema:
 
     @classmethod
     def array(cls, inner: Any) -> "Schema":
-        s = cls({"type": "array", "inner": cls.from_(inner)})
+        # The reference creates the node first and resolves `inner` afterwards,
+        # which fixes the uid order of the serialized node graph.
+        s = cls({"type": "array"})
+        s.inner = cls.from_(inner)
         s.meta["default"] = []
         return s
 
     @classmethod
     def dict(cls, inner: Any, s_key: Any = None) -> "Schema":
-        s = cls({
-            "type": "dict",
-            "inner": cls.from_(inner),
-            "s_key": cls.from_(s_key) if s_key is not None else cls.string(),
-        })
+        # The reference creates the `dict` node first, then resolves `inner` and
+        # only afterwards falls back to `Schema.string()` for an omitted key
+        # schema, which fixes the uid order of the serialized node graph.
+        s = cls({"type": "dict"})
+        s.inner = cls.from_(inner)
+        s.s_key = cls.from_(s_key) if s_key is not None else cls.string()
         s.meta["default"] = {}
         return s
 
     @classmethod
     def tuple(cls, *args: Any) -> "Schema":
         list_types = args[0] if len(args) == 1 and isinstance(args[0], (list, tuple)) else list(args)
-        s = cls({"type": "tuple", "list": [cls.from_(x) for x in list_types]})
+        s = cls({"type": "tuple"})
+        s.list = [cls.from_(item) for item in list_types]
         s.meta["default"] = []
         return s
 
     @classmethod
     def object(cls, dict_types: Dict[str, Any]) -> "Schema":
-        s = cls({"type": "object", "dict": {k: cls.from_(v) for k, v in dict_types.items()}})
+        s = cls({"type": "object"})
+        # The reference maps the member object with `valueMap`, which enumerates
+        # `Object.keys`, so integer-like member names come first.
+        s.dict = {key: cls.from_(dict_types[key]) for key in _js_own_enumerable_keys(dict_types)}
         s.meta["default"] = {}
         return s
 
     @classmethod
     def union(cls, *args: Any) -> "Schema":
         list_types = args[0] if len(args) == 1 and isinstance(args[0], (list, tuple)) else list(args)
-        return cls({"type": "union", "list": [cls.from_(x) for x in list_types]})
+        s = cls({"type": "union"})
+        s.list = [cls.from_(item) for item in list_types]
+        return s
 
     @classmethod
     def intersect(cls, *args: Any) -> "Schema":
         list_types = args[0] if len(args) == 1 and isinstance(args[0], (list, tuple)) else list(args)
-        return cls({"type": "intersect", "list": [cls.from_(x) for x in list_types]})
+        s = cls({"type": "intersect"})
+        s.list = [cls.from_(item) for item in list_types]
+        return s
 
     @classmethod
-    def transform(cls, inner: Any, callback: Callable[..., Any], preserve: bool = False) -> "Schema":
-        return cls({"type": "transform", "inner": cls.from_(inner), "callback": callback, "preserve": preserve})
+    def transform(cls, inner: Any, callback: Callable[..., Any], preserve: Optional[bool] = None) -> "Schema":
+        """
+        `Schema.transform(inner, callback, preserve?)`.
+
+        An omitted `preserve` stays `undefined` and is absent from the
+        serialized node, while an explicit `false` is kept.
+        """
+        s = cls({"type": "transform", "callback": callback, "preserve": preserve})
+        # The reference assigns `inner` after creating the node.
+        s.inner = cls.from_(inner)
+        return s
 
     @classmethod
     def lazy(cls, builder: Callable[[], "Schema"]) -> "Schema":
-        return cls({"type": "lazy", "builder": builder})
+        # The reference stores a `{ toJSON }` stub whose closure builds the
+        # node this factory returned, so the stub outlives clones of it; the
+        # port keeps that node in `lazy_origin` and leaves `inner` nullish
+        # until the deferred schema is built.
+        s = cls({"type": "lazy", "builder": builder})
+        s.lazy_origin = s
+        return s
 
     @classmethod
     def dynamic(cls, builder: Callable[..., "Schema"]) -> "Schema":
@@ -1089,8 +1424,12 @@ class Schema:
     @classmethod
     def computed(cls, callback: Callable[..., Any]) -> "Schema":
         """Computed schema property based on context or sibling values."""
-        def _resolve_computed(data: Any, opt: Any) -> Any:
-            return _call_with_arity(callback, (opt.get("root", data),))
+        def _resolve_computed(data: Any, opt: Any = None) -> Any:
+            # Port-only factory: the reference has no `computed`, and a transform
+            # callback only ever receives the resolved value, so the callback
+            # sees the root value the context supplied or the value itself.
+            root = (opt or {}).get("root", data)
+            return _call_with_arity(callback, (root,))
         return cls.transform(cls.any(), _resolve_computed)
 
 
@@ -1214,6 +1553,26 @@ def _is_multiple_of(data: Union[int, float], minimum: Union[int, float], step: U
     return math.fmod(_decimal_shift(data, digits) - _decimal_shift(minimum, digits), _decimal_shift(step, digits)) == 0
 
 
+def _built_lazy_inner(schema: Schema) -> Schema:
+    """
+    Build a lazy node's deferred schema and merge the node's meta into it.
+
+    The reference reads `schema.inner!.meta` after calling `schema.builder!()`,
+    so a missing builder and a builder that yields no schema both fail loud.
+    A node `Schema.lazy()` did not create carries no builder at all, and
+    building it is a port-only path the reference reaches as
+    `undefined[kSchema]` instead.
+    """
+    builder = getattr(schema, "builder", None)
+    if not callable(builder):
+        raise TypeError("schema.builder is not a function")
+    built = builder()
+    if not isinstance(built, Schema):
+        raise TypeError("Cannot read properties of {} (reading 'meta')".format(js_to_string(built)))
+    built.meta = {**schema.meta, **built.meta}
+    return built
+
+
 def _resolve_lazy(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) -> Tuple[Any, Any]:
     """
     `lazy` resolver: build the deferred schema once and merge this node's meta
@@ -1227,9 +1586,7 @@ def _resolve_lazy(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) 
         built.meta = {**schema.meta, **built.meta}
         return Schema.resolve(data, built, opt, strict)
     if not isinstance(schema.inner, Schema):
-        built = schema.builder() if callable(getattr(schema, "builder", None)) else Schema.any()
-        built.meta = {**schema.meta, **built.meta}
-        schema.inner = built
+        schema.inner = _built_lazy_inner(schema)
     return Schema.resolve(data, schema.inner, opt, strict)
 
 
@@ -1244,7 +1601,8 @@ def _resolve_never(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool)
 def _resolve_const(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) -> Tuple[Any, Any]:
     if deep_equal(data, schema.value):
         return schema.value, None
-    raise ValidationError("expected {} but got {}".format(js_to_string(schema.value), js_to_string(data)), opt)
+    expected = js_to_string(schema.value) if schema.value_provided else "undefined"
+    raise ValidationError("expected {} but got {}".format(expected, js_to_string(data)), opt)
 
 
 def _resolve_string(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) -> Tuple[Any, Any]:
@@ -1295,7 +1653,10 @@ def _resolve_bitset(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool
         value = data
         numeric = _to_int32(data)
         for key in _js_own_enumerable_keys(bits):
-            if numeric & bits[key]:
+            # The reference's `data & bits[key]` coerces both operands with
+            # `ToInt32`, so a fractional or non-finite bit masks as its int32
+            # value.
+            if numeric & _to_int32(bits[key]):
                 keys.append(key)
     elif isinstance(data, (list, tuple)):
         keys = list(data)
@@ -1303,7 +1664,7 @@ def _resolve_bitset(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool
             if not isinstance(key, str):
                 raise ValidationError("expected string but got " + js_to_string(key), opt)
             if key in bits:
-                value |= bits[key]
+                value = _to_int32(value) | _to_int32(bits[key])
     else:
         raise ValidationError("expected number or array but got " + js_to_string(data), opt)
     if value == schema.meta.get("default"):
@@ -1459,8 +1820,8 @@ def _resolve_transform(data: Any, schema: Schema, opt: Dict[str, Any], strict: b
     if not callable(callback):
         raise TypeError("Schema(transform) callback is not callable (got {}: {!r})".format(type(callback).__name__, callback))
     if schema.preserve:
-        return _call_with_arity(callback, (result, opt)), None
-    return _call_with_arity(callback, (result, opt)), _call_with_arity(callback, (adapted, opt))
+        return _call_transform_callback(callback, result), None
+    return _call_transform_callback(callback, result), _call_transform_callback(callback, adapted)
 
 
 # Register all standard resolvers

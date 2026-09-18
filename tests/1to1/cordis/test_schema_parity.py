@@ -26,7 +26,7 @@ Covers:
 - T28: ~standard vendor is 'schemastery' and rethrows non-validation errors
 - T29: Schema.date parses UTC 'Z' suffix
 - T32: Schema.dict default s_key is string schema
-- T33: Schema.bitset filters non-number bits
+- T33: Schema.bitset keeps every `number` bit value and drops the rest
 - T34: set/push without container raises TypeError
 
 Cases ported from the Schemastery reference surface (source and README), all
@@ -43,6 +43,39 @@ verified against the pinned reference implementation running on Node:
   bitset `ToInt32` coercion, ECMAScript key enumeration order.
 - `toString()` formatters, `ValidationError` marker, Standard Schema issues.
 - `toJSON()` envelope shape, envelope round-trip and lazy memoization.
+
+Cases added for the reference constructor and serializer contract, verified the
+same way:
+
+- README Serializability: `new Schema(JSON.parse(JSON.stringify(schema1)))`
+  rehydrates the `{ uid, refs }` envelope, rebuilds every referenced node under
+  a fresh uid, resolves `inner`/`sKey`/`list`/`dict`, returns the root node and
+  keeps a shared node shared.
+- `toJSON()` keeps every assigned member (`null`, `0`, `false`, `[]`, `{}`) and
+  omits the members the factory never assigned, including `const(undefined)`
+  against `const(null)`; a non-finite number serializes as `null`; `refs` lists
+  ascending uids; a transform's `preserve` and a lazy node's `inner`/`meta`
+  order match the object the factory created.
+- The transform resolver passes exactly one positional argument to its callback.
+- `valueMap`-built member maps follow ECMAScript own-key order, so an
+  integer-like member name comes first in the definition, `toString()` and the
+  serialized node.
+- `simplify()` walks `for (const key in value)` for any value type and raises
+  the reference's `value.forEach` TypeError from the array branch.
+- Every factory creates its node before resolving shorthand members, so the
+  serialized uid numbering matches the reference graph for graph.
+- `Schema(schema)` clones an existing schema (the reference's
+  `Partial<Schema<T>>` constructor), and `Schema.ValidationError` is exposed for
+  the README's extensibility example.
+- `i18n()` merges a locale description only from `$description`/`$desc` or a
+  plain string message, resolves each member message through
+  `getInner(data)?.[key] ?? data?.[key]`, and writes the result into the meta
+  object the source schema shares; `deprecated()`/`experimental()` push into
+  that same shared `meta.badges`; the union formatter parenthesizes the inline
+  form of a single member too.
+- A lazy node serializes the schema `Schema.lazy`'s stub closes over, so a
+  clone reports the original's built node and meta, while a builder that
+  yields no schema fails loud.
 """
 
 import json
@@ -283,11 +316,27 @@ def test_t32_dict_default_skey_is_string_schema():
 
 
 def test_t33_bitset_filters_non_number_bits():
-    """T33: Schema.bitset filters non-integer bit values."""
-    s = Schema.bitset({"valid": 1, "invalid_str": "bad", "invalid_bool": True})
-    assert "valid" in s.bits
+    """T33: Schema.bitset keeps every `number` member and drops the others."""
+    s = Schema.bitset({
+        "valid": 1,
+        "fraction": 0.5,
+        "nan": float("nan"),
+        "infinite": float("inf"),
+        "invalid_str": "bad",
+        "invalid_bool": True,
+    })
+    # The reference factory keeps the members whose `typeof` is 'number', so a
+    # fractional or non-finite bit stays in the definition.
+    assert list(s.bits.keys()) == ["valid", "fraction", "nan", "infinite"]
+    assert s.bits["valid"] == 1
+    assert s.bits["fraction"] == 0.5
     assert "invalid_str" not in s.bits
     assert "invalid_bool" not in s.bits
+
+    # Masking coerces both operands with ToInt32, so a fractional bit masks as
+    # its int32 value and a non-finite one as 0.
+    assert Schema.bitset({"a": 1.5, "b": float("nan"), "c": 2})(3) == 3
+    assert Schema.bitset({"a": 1.5, "b": float("nan")})(["a", "b"]) == 1
 
 
 def test_t34_set_push_without_container_raises_typeerror():
@@ -590,25 +639,40 @@ def test_readme_advanced_examples():
 
 
 def test_transform_callback_arity():
-    """Transform callbacks accept 0, 1 or 2 declared parameters."""
+    """
+    The transform resolver calls `callback!(value)` with one positional argument.
+
+    Verified against the reference: `Schema.transform(any, (...args) =>
+    args.length)(1)` is 1 for both the preserved and the adapted call, a
+    callback declaring a second parameter reads `undefined` for it, and a
+    zero-parameter callback still runs.
+    """
     assert Schema.transform(Schema.string(), lambda: "foo")("x") == "foo"
     assert Schema.transform(Schema.string(), lambda value: value.upper())("x") == "X"
+    assert Schema.transform(Schema.any(), lambda *args: len(args))(1) == 1
+    assert Schema.transform(Schema.any(), lambda *args: len(args), True)({"a": 1}) == 1
 
-    seen = {}
+    seen = []
 
     def with_options(value, options):
-        seen["options"] = options
+        seen.append(options)
         return value
 
     assert Schema.transform(Schema.string(), with_options)("x", {"mark": 1}) == "x"
-    assert seen["options"] == {"mark": 1}
+    # The reference drops the extra argument, so `options` is `undefined`.
+    assert seen == [None, None]
 
 
 def test_readme_extensibility():
-    """README `Schema.extend(type, resolve)` with a 3-parameter resolver."""
+    """README `Schema.extend(type, resolve)` and `new Schema.ValidationError(...)`."""
+    # The README's custom resolver throws `new Schema.ValidationError(msg,
+    # options)`, and the reference exposes the class as `Schema.ValidationError`.
+    assert Schema.ValidationError is ValidationError
+    assert Schema.ValidationError.is_(Schema.ValidationError("x", {}))
+
     def trimmed(data, schema, options):
         if not isinstance(data, str):
-            raise ValidationError("expected string but got " + str(data), options)
+            raise Schema.ValidationError("expected string but got " + str(data), options)
         return (data.strip(),)
 
     Schema.extend("trimmed", trimmed)
@@ -863,25 +927,234 @@ def test_tojson_envelope_shape():
     assert envelope["uid"] == schema.uid
     refs = envelope["refs"]
     node = refs[schema.uid]
-    assert sorted(node.keys()) == ["dict", "meta", "type"]
+    # The reference serializes a node as `JSON.parse(JSON.stringify({ ...
+    # this }))`, so the member order and the set of members match the object the
+    # factory created.
+    assert list(node.keys()) == ["type", "meta", "dict"]
     assert node["type"] == "object"
     assert node["meta"] == {"default": {}}
     # A shared node is referenced by uid instead of being serialized twice.
     assert node["dict"] == {"a": inner.uid, "b": inner.uid}
     assert refs[inner.uid] == {"type": "string", "meta": {}}
     assert len(refs) == 2
+    # Every refs key is a uid, and ECMAScript enumerates integer-like own keys
+    # in ascending numeric order, so the envelope reports ascending uids.
+    assert [int(key) for key in refs] == sorted(int(key) for key in refs)
+
+
+def test_tojson_keeps_assigned_falsey_and_nullable_members():
+    """
+    `toJSON()` drops only the members the reference never assigned.
+
+    Verified against the reference: `JSON.stringify` keeps an assigned `null`,
+    `0`, `false`, `[]` or `{}` and omits an `undefined` member, so an empty
+    relation container and an explicit null constant survive serialization.
+    """
+    empty_object = Schema.object({})
+    assert empty_object.toJSON()["refs"][empty_object.uid] == {
+        "type": "object", "meta": {"default": {}}, "dict": {},
+    }
+
+    empty_tuple = Schema.tuple([])
+    assert empty_tuple.toJSON()["refs"][empty_tuple.uid] == {
+        "type": "tuple", "meta": {"default": []}, "list": [],
+    }
+
+    empty_union = Schema.union([])
+    assert empty_union.toJSON()["refs"][empty_union.uid] == {
+        "type": "union", "meta": {}, "list": [],
+    }
+
+    empty_bitset = Schema.bitset({})
+    assert empty_bitset.toJSON()["refs"][empty_bitset.uid] == {
+        "type": "bitset", "meta": {"default": 0}, "bits": {},
+    }
+
+    null_const = Schema.const_(None)
+    assert null_const.toJSON()["refs"][null_const.uid] == {"type": "const", "meta": {}, "value": None}
+    zero_const = Schema.const_(0)
+    assert zero_const.toJSON()["refs"][zero_const.uid] == {"type": "const", "meta": {}, "value": 0}
+    # `Schema.const(undefined)` never assigns `value`, so the member is absent;
+    # the reference formatter result is nullish, so `toString()` falls back.
+    unassigned = Schema.const_()
+    assert unassigned.toJSON()["refs"][unassigned.uid] == {"type": "const", "meta": {}}
+    assert unassigned.to_string() == "Schema<const>"
+    assert Schema.const_(None).to_string() == "Schema<const>"
+    with pytest.raises(ValidationError) as exc:
+        unassigned(5)
+    assert str(exc.value) == "expected undefined but got 5"
+
+    loose_false = Schema.string().required(False)
+    assert loose_false.toJSON()["refs"][loose_false.uid]["meta"] == {"required": False}
+    null_default = Schema.string().default(None)
+    assert null_default.toJSON()["refs"][null_default.uid]["meta"] == {"default": None}
+
+
+def test_tojson_transform_preserve_and_lazy_member_order():
+    """A transform's `preserve` member and a lazy node's member order."""
+    omitted = Schema.transform(Schema.string(), lambda value: value)
+    assert list(omitted.toJSON()["refs"][omitted.uid].keys()) == ["type", "meta", "inner", "callback"]
+
+    kept_false = Schema.transform(Schema.string(), lambda value: value, False)
+    assert kept_false.toJSON()["refs"][kept_false.uid]["preserve"] is False
+    kept_true = Schema.transform(Schema.string(), lambda value: value, True)
+    assert kept_true.toJSON()["refs"][kept_true.uid]["preserve"] is True
+
+    # `Schema.lazy` passes `{ type, builder, inner }` to the constructor and
+    # `builder` is a function JSON drops, so `inner` precedes `meta`.
+    lazy_schema = Schema.lazy(lambda: Schema.string())
+    lazy_node = lazy_schema.toJSON()["refs"][lazy_schema.uid]
+    assert list(lazy_node.keys()) == ["type", "inner", "meta"]
+    assert lazy_node["inner"] == lazy_schema.inner.uid
+    assert lazy_node["meta"] == {}
+
+
+def test_tojson_normalizes_non_finite_numbers():
+    """`JSON.stringify` renders a non-finite number as `null`."""
+    schema = Schema.const_(float("nan"))
+    assert schema.toJSON()["refs"][schema.uid] == {"type": "const", "meta": {}, "value": None}
+    infinite = Schema.const_(float("inf"))
+    assert infinite.toJSON()["refs"][infinite.uid]["value"] is None
+    bits = Schema.bitset({"a": float("nan"), "b": float("inf"), "c": 0.5})
+    assert bits.toJSON()["refs"][bits.uid]["bits"] == {"a": None, "b": None, "c": 0.5}
+
+
+def test_constructor_clones_an_existing_schema():
+    """`Schema(schema)` copies the own members by reference under a fresh uid."""
+    base = Schema.string().default("x")
+    copy = Schema(base)
+    assert copy.type == base.type
+    assert copy.meta is base.meta
+    assert copy.uid != base.uid
+
+
+def test_simplify_walks_the_for_in_keys_of_any_value():
+    """
+    `simplify()` enumerates `for (const key in value)` regardless of the value.
+
+    Verified against the reference: an object schema over a list, string or
+    number enumerates that value's keys, keeps nothing and reports the empty
+    default, a dict schema keeps every enumerated member, and the array branch's
+    `value.forEach` raises for a value without it.
+    """
+    assert Schema.object({"a": Schema.string()}).simplify([1, 2]) is None
+    assert Schema.object({"a": Schema.string()}).simplify("ab") is None
+    assert Schema.object({"a": Schema.string()}).simplify(7) is None
+    assert Schema.dict(Schema.number()).simplify([1, 2]) == {"0": 1, "1": 2}
+    assert Schema.dict(Schema.string()).simplify("ab") == {"0": "a", "1": "b"}
+    assert Schema.array(Schema.number()).simplify([1, 2]) == [1, 2]
+
+    with pytest.raises(TypeError) as exc:
+        Schema.array(Schema.number()).simplify({"a": 1})
+    assert str(exc.value) == "value.forEach is not a function"
+    with pytest.raises(TypeError) as exc:
+        Schema.tuple([Schema.string()]).simplify("x")
+    assert str(exc.value) == "value.forEach is not a function"
+
+
+def test_factories_create_the_node_before_shorthand_members():
+    """
+    A factory node exists before it resolves a shorthand member.
+
+    Verified against the reference uid numbering: the reference constructs
+    `new Schema({ type })` first and only then runs `Schema.from` over its
+    members, so an implicitly created member node always has the higher uid.
+    """
+    envelope = Schema.dict(Schema.number()).toJSON()
+    node = envelope["refs"][envelope["uid"]]
+    assert node["inner"] < envelope["uid"] < node["sKey"]
+    assert list(envelope["refs"].keys()) == [node["inner"], envelope["uid"], node["sKey"]]
+
+    union = Schema.union(["red", "blue"]).toJSON()
+    members = union["refs"][union["uid"]]["list"]
+    assert all(member > union["uid"] for member in members)
+
+    obj = Schema.object({"a": "x"}).toJSON()
+    assert obj["refs"][obj["uid"]]["dict"]["a"] > obj["uid"]
+
+    transform = Schema.transform("bar", lambda: "foo").toJSON()
+    assert transform["refs"][transform["uid"]]["inner"] > transform["uid"]
+
+    array = Schema.array(int).toJSON()
+    assert array["refs"][array["uid"]]["inner"] > array["uid"]
+
+    tuple_schema = Schema.tuple([int, str]).toJSON()
+    assert all(member > tuple_schema["uid"] for member in tuple_schema["refs"][tuple_schema["uid"]]["list"])
+
+
+def test_object_members_follow_ecmascript_key_order():
+    """`valueMap` enumerates `Object.keys`, so integer-like members come first."""
+    schema = Schema.object({"z": Schema.string(), "2": Schema.string(), "a": Schema.string()})
+    assert list(schema.dict.keys()) == ["2", "z", "a"]
+    assert schema.to_string() == "{ 2?: string, z?: string, a?: string }"
+    node = schema.toJSON()["refs"][schema.uid]
+    assert list(node["dict"].keys()) == ["2", "z", "a"]
 
 
 def test_tojson_envelope_roundtrip():
-    """`Schema.from_json` hydrates the envelope back into an equivalent schema."""
-    schema = Schema.object({"foo": Schema.string(), "bar": Schema.number()})
-    hydrated = Schema.from_json(json.loads(json.dumps(schema.toJSON())))
+    """
+    README Serializability: `new Schema(JSON.parse(JSON.stringify(schema1)))`
+    "should have the same effect as schema1".
+
+    The reference constructor recognizes an `options.refs` envelope, rebuilds
+    every referenced node, resolves the relations and returns the root node, so
+    the hydrated schema validates like the original, keeps its nested relations,
+    and takes fresh uids (`env.uid` stays the uid of the serialized root).
+    """
+    schema = Schema.object({
+        "foo": Schema.string(),
+        "bar": Schema.number().default(1),
+        "baz": Schema.dict(Schema.array(Schema.string())),
+    })
+    payload = json.loads(json.dumps(schema.toJSON()))
+    hydrated = Schema(payload)
+
     assert hydrated.type == "object"
-    assert sorted(hydrated.dict.keys()) == ["bar", "foo"]
-    assert hydrated({"foo": "a", "bar": 2}) == {"foo": "a", "bar": 2}
+    assert hydrated.to_string() == schema.to_string()
+    # The rebuilt root is a new node, not the uid the envelope names.
+    assert hydrated.uid != payload["uid"]
+    # Relations resolve to the referenced nodes.
+    assert hydrated.dict["foo"].type == "string"
+    assert hydrated.dict["bar"].meta == {"default": 1}
+    assert hydrated.dict["baz"].inner.inner.type == "string"
+    assert hydrated.dict["baz"].s_key.type == "string"
+
+    assert hydrated({"foo": "a", "baz": {"k": ["x"]}}) == {"foo": "a", "bar": 1, "baz": {"k": ["x"]}}
     with pytest.raises(ValidationError) as exc:
-        hydrated({"foo": "a", "bar": "2"})
-    assert str(exc.value) == "$.bar expected number but got 2"
+        hydrated({"foo": 1})
+    assert str(exc.value) == "$.foo expected string but got 1"
+
+    # Re-serializing a hydrated tree keeps the same relative node graph.
+    again = json.loads(json.dumps(hydrated.toJSON()))
+    assert again["uid"] == hydrated.uid
+    assert [int(key) for key in again["refs"]] == sorted(int(key) for key in again["refs"])
+    assert again["refs"][str(hydrated.uid)]["type"] == "object"
+
+    # A shared node is hydrated once and stays shared.
+    shared = Schema.string()
+    shared_tree = Schema.object({"a": shared, "b": shared})
+    rehydrated = Schema(json.loads(json.dumps(shared_tree.toJSON())))
+    assert rehydrated.dict["a"] is rehydrated.dict["b"]
+
+    # The upstream client case `rehydrates a serialized envelope into a
+    # working validator` (reference/packages/client/ui-settings/tests/
+    # schema.client.spec.ts) consumes a rehydrated envelope through the
+    # Standard Schema surface, whose issues carry the full message and path.
+    assert hydrated.validate({"foo": 1}) == {
+        "issues": [{"message": "$.foo expected string but got 1", "path": ["foo"]}],
+    }
+    assert hydrated.validate({"foo": "a"}) == {"value": {"foo": "a", "bar": 1, "baz": {}}}
+    nested = Schema(json.loads(json.dumps(Schema.object({"a": Schema.array(Schema.number())}).toJSON())))
+    assert nested.validate({"a": [1, "x"]}) == {
+        "issues": [{"message": "$.a[1] expected number but got x", "path": ["a", 1]}],
+    }
+
+    # `from_json` is the port-only alias for the same constructor path.
+    alias = Schema.from_json(json.loads(json.dumps(schema.toJSON())))
+    assert alias.type == "object"
+    assert alias({"foo": "a", "baz": {}}) == {"foo": "a", "bar": 1, "baz": {}}
+    # A plain node payload is an ordinary options object.
+    assert Schema({"type": "string"}).type == "string"
 
 
 def test_lazy_builder_is_memoized_and_serialized():
@@ -912,3 +1185,166 @@ def test_intersect_leftover_merge_of_nullish_result():
         schema({"a": 1})
     assert "Cannot use 'in' operator to search for 'a' in undefined" in str(exc.value)
     assert schema({}) is None
+
+
+# ---------------------------------------------------------------------------
+# Cases added for the reference's shared-meta modifiers, `i18n` lookup rules and
+# lazy stub serialization, verified against the pinned reference on Node.
+# ---------------------------------------------------------------------------
+
+
+def test_union_inline_formatter_parenthesizes_one_member():
+    """`formatters.union` wraps the joined members for every inline call."""
+    assert Schema.union([Schema.string()]).to_string(True) == "(string)"
+    assert Schema.union([Schema.string()]).to_string() == "string"
+    assert Schema.union([Schema.string(), Schema.number()]).to_string(True) == "(string | number)"
+    # Every formatter that inlines its member shows the parentheses.
+    assert Schema.array(Schema.union([Schema.string()])).to_string() == "(string)[]"
+    assert Schema.intersect([Schema.union([Schema.string()]), Schema.boolean()]).to_string() == "(string) & boolean"
+    assert Schema.transform(Schema.union([Schema.number()]), lambda value: value).to_string(True) == "(number)"
+    assert Schema.union([Schema.union([Schema.string()]), Schema.boolean()]).to_string(True) == "(string | boolean)"
+
+
+def test_badge_modifiers_write_into_the_shared_meta_object():
+    """`deprecated()`/`experimental()` push into `schema.meta.badges`."""
+    base = Schema.string()
+    one = base.deprecated()
+    two = one.experimental()
+
+    # `Schema(this)` shares the meta object, so every clone lists both badges.
+    assert base.meta is one.meta
+    assert one.meta is two.meta
+    assert base.meta["badges"] == [
+        {"text": "deprecated", "type": "danger"},
+        {"text": "experimental", "type": "warning"},
+    ]
+    assert two.toJSON()["refs"][two.uid]["meta"]["badges"] == base.meta["badges"]
+
+    # A plain modifier clone keeps sharing the badge list without adding a badge.
+    assert Schema.string().deprecated().required().meta["badges"] == [
+        {"text": "deprecated", "type": "danger"},
+    ]
+
+    # `meta.badges ||= []` replaces a falsey badge list.
+    reset = Schema.string()
+    reset.meta["badges"] = None
+    assert reset.deprecated().meta["badges"] == [{"text": "deprecated", "type": "danger"}]
+
+
+def test_i18n_description_merge_rules():
+    """`mergeDesc` reads `$description`/`$desc` or a plain string message."""
+    def build():
+        return Schema.object({
+            "username": Schema.string().description("Default username"),
+            "timeout": Schema.number().description("Connection timeout"),
+        }).description("Server configuration")
+
+    localized = build().i18n({
+        "zh": {"$description": "Server Config ZH", "username": "Username ZH", "timeout": "Timeout ZH"},
+        "ja": {"$desc": "Server Config JA", "username": "Username JA", "timeout": "Timeout JA"},
+    })
+    assert localized.meta["description"] == {
+        "": "Server configuration", "zh": "Server Config ZH", "ja": "Server Config JA",
+    }
+    assert localized.dict["username"].meta["description"] == {
+        "": "Default username", "zh": "Username ZH", "ja": "Username JA",
+    }
+    assert localized.dict["timeout"].meta["description"] == {
+        "": "Connection timeout", "zh": "Timeout ZH", "ja": "Timeout JA",
+    }
+
+    # A message keyed by the empty string carries neither `$description` nor
+    # `$desc` and is not a string, so the root description gains no entry for
+    # that locale; the member message still resolves through `data[key]`.
+    empty_key = build().i18n({"zh": {"": "Server Config ZH", "username": "Username ZH"}})
+    assert empty_key.meta["description"] == {"": "Server configuration"}
+    assert empty_key.dict["username"].meta["description"] == {
+        "": "Default username", "zh": "Username ZH",
+    }
+
+    # A plain string message is applied, and the merge lands in the meta object
+    # the source schema shares.
+    base = build()
+    assert base.i18n({"zh": "Simple ZH"}).meta["description"] == {
+        "": "Server configuration", "zh": "Simple ZH",
+    }
+    assert base.meta["description"] == {"": "Server configuration", "zh": "Simple ZH"}
+
+
+def test_i18n_member_message_lookup():
+    """`getInner(data)?.[key] ?? data?.[key]` decides every member message."""
+    nested = Schema.object({"a": Schema.object({"b": Schema.string()})}).i18n(
+        {"zh": {"$value": {"a": {"$value": {"b": "乙"}}}}}
+    )
+    assert nested.dict["a"].dict["b"].meta["description"] == {"zh": "乙"}
+
+    # A `$value` entry without the member key falls back to the message object.
+    fallback = Schema.object({"a": Schema.string(), "b": Schema.number()}).i18n(
+        {"zh": {"$value": {"a": "甲"}, "b": "乙"}}
+    )
+    assert fallback.dict["a"].meta["description"] == {"zh": "甲"}
+    assert fallback.dict["b"].meta["description"] == {"zh": "乙"}
+
+    # A message string is not an object, so a member keyed by it localizes to
+    # nothing while the dict and array `inner` and the tuple `list` read their
+    # own entries.
+    unmapped = Schema.object({"a": Schema.string()}).i18n({"zh": "顶层"})
+    assert unmapped.dict["a"].meta.get("description") is None
+    assert Schema.object({"a": Schema.string().description("keep")}).i18n(
+        {"zh": "顶层"}
+    ).dict["a"].meta["description"] == {"": "keep"}
+
+    assert Schema.dict(Schema.string()).i18n({"zh": {"$inner": "值"}}).inner.meta["description"] == {"zh": "值"}
+    assert Schema.dict(Schema.string()).i18n({"zh": {"$value": "值"}}).inner.meta["description"] == {"zh": "值"}
+    assert Schema.array(Schema.string()).i18n({"zh": {"$inner": {"$value": "项"}}}).inner.meta.get("description") is None
+    assert Schema.tuple([Schema.string(), Schema.number()]).i18n(
+        {"zh": {"$value": ["甲", "乙"]}}
+    ).list[1].meta["description"] == {"zh": "乙"}
+    assert Schema.dict(Schema.string()).i18n({"zh": {"$key": "键"}}).s_key.meta["description"] == {"zh": "键"}
+
+    # An unbuilt lazy node keeps its `{ toJSON }` stub as `inner` in the
+    # reference, and that stub has no `i18n`.
+    with pytest.raises(TypeError) as exc:
+        Schema.lazy(lambda: Schema.string()).i18n({"zh": "顶层"})
+    assert "schema.inner.i18n is not a function" in str(exc.value)
+
+
+def test_lazy_clone_serializes_the_stub_origin_schema():
+    """A clone serializes the node `Schema.lazy`'s stub closes over."""
+    built = Schema.object({"a": Schema.string()})
+    base = Schema.lazy(lambda: built)
+    clone = base.description("outer")
+
+    envelope = clone.toJSON()
+    lazy_node = envelope["refs"][clone.uid]
+    built_node = envelope["refs"][lazy_node["inner"]]
+
+    assert lazy_node["type"] == "lazy"
+    assert lazy_node["meta"] == {"description": "outer"}
+    assert built_node["type"] == "object"
+    # The stub merges the meta of the node the factory created, not the clone's.
+    assert built_node["meta"] == {"default": {}}
+    assert base.inner is built
+    # The port spells the reference's `{ toJSON }` stub as the port's nullish
+    # value plus `lazy_origin` (LEGAL_ADAPTATION).
+    assert clone.inner is None
+
+    # Resolving builds the resolved node's own schema with its meta.
+    resolved = Schema.lazy(lambda: Schema.string()).description("outer")
+    assert resolved("x") == "x"
+    assert resolved.inner.meta == {"description": "outer"}
+
+
+def test_lazy_builder_failures_fail_loud():
+    """A missing builder and a builder yielding no schema both raise TypeError."""
+    with pytest.raises(TypeError) as exc:
+        Schema.lazy(lambda: None).toJSON()
+    assert "Cannot read properties of null (reading 'meta')" in str(exc.value)
+
+    with pytest.raises(TypeError) as exc:
+        Schema.lazy(lambda: None)("x")
+    assert "Cannot read properties of null (reading 'meta')" in str(exc.value)
+
+    with pytest.raises(TypeError) as exc:
+        Schema({"type": "lazy"})("x")
+    assert "schema.builder is not a function" in str(exc.value)

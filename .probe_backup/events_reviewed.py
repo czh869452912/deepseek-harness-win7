@@ -100,147 +100,28 @@ def _report_loopless_listener_failure(loop: asyncio.AbstractEventLoop, event_nam
     loop.call_exception_handler({"message": "Listener for '%s' failed" % event_name, "exception": error})
 
 
-class _LooplessDispatchBarrier:
+async def _enter_then_settle(result: Any, event_name: str, ctx: Any, entered: threading.Event) -> None:
     """
-    Dispatch-wide release barrier shared by the loop-less listeners of one `emit`.
+    Start one loop-less listener, release its dispatcher, then settle and report it.
 
-    `events.ts:194-195` runs every listener inside a single synchronous
-    `this.dispatch('emit', args).map(cb => cb(...args))` and discards the returned
-    promises, so no promise continuation can be observed before that whole invocation
-    has completed: JavaScript only drains the microtask queue once the dispatch stack
-    has unwound. Listeners dispatched without an ambient loop are settled on the owned
-    loop, which runs concurrently with the emitter, so every settlement waits on this
-    barrier and the emitter releases it after the last listener has been invoked and
-    its synchronous prefix has run.
+    `ensure_future` queues the listener's first step before the `sleep(0)`
+    continuation is queued, so the listener body has run everything up to its
+    first real suspension once `entered` is set: the part of the body that
+    upstream runs before `emit` returns. `entered` is set on every path. A
+    listener failure is reported before this settlement completes, so a caller
+    that joins it observes the report.
     """
-
-    def __init__(self) -> None:
-        self._gate: "concurrent.futures.Future" = concurrent.futures.Future()
-
-    def release(self) -> None:
-        """Release the continuations held by this dispatch, once, from the emitter."""
-        if not self._gate.done():
-            self._gate.set_result(None)
-
-    async def wait(self) -> None:
-        """Wait until the emitter has invoked every listener of this dispatch."""
-        await asyncio.wrap_future(self._gate, loop=asyncio.get_running_loop())
-
-
-async def _enter_then_settle(
-    result: Any,
-    event_name: str,
-    ctx: Any,
-    entered: threading.Event,
-    barrier: _LooplessDispatchBarrier,
-) -> None:
-    """
-    Start one loop-less listener, release its dispatcher, then settle it behind the barrier.
-
-    The listener's synchronous prefix is run by this coroutine through an explicit first
-    step, so `entered` marks the moment everything upstream executes inside `cb(...)` is
-    done: `emit` invokes the next listener only afterwards, which keeps the listener order
-    of the dispatch. The awaited continuation is then held by the dispatch-wide barrier,
-    because no listener's continuation may run before the emitter has invoked the last
-    listener (events.ts:194-195). `entered` is set on every path. A listener failure is
-    reported before this settlement completes, so a caller that joins it observes the
-    report.
-    """
-    if not inspect.iscoroutine(result):
-        # A generic awaitable cannot be stepped by hand: it has no synchronous prefix left
-        # to run, so it is only awaited once the dispatch released the barrier.
-        entered.set()
-        await barrier.wait()
-        try:
-            await result
-        except Exception as exc:
-            _report_loopless_listener_failure(asyncio.get_running_loop(), event_name, ctx, exc)
-        return
     try:
-        awaited = result.send(None)
-    except StopIteration:
-        # The body finished without suspending, like a listener that returns at once.
-        return
-    except Exception as exc:
-        _report_loopless_listener_failure(asyncio.get_running_loop(), event_name, ctx, exc)
-        return
+        listener = asyncio.ensure_future(result)
+        await asyncio.sleep(0)
     finally:
         entered.set()
-    await _drive_loopless_settlement(result, awaited, event_name, ctx, barrier)
-
-
-async def _drive_loopless_settlement(
-    listener: Any,
-    awaited: Any,
-    event_name: str,
-    ctx: Any,
-    barrier: _LooplessDispatchBarrier,
-) -> None:
-    """
-    Drive a loop-less listener past its synchronous prefix inside this settlement.
-
-    Awaiting the listener as an independent task would let its continuation run while the
-    emitter is still invoking later listeners, so each suspension is awaited here and then
-    resumed explicitly: the continuation stays with this settlement, which first waits on the
-    dispatch-wide `barrier`, so nothing resumes before the emitter has invoked the last
-    listener of the dispatch. Awaiting a suspension this way needs the same bookkeeping a task
-    performs, and a failure - including cancellation of the settlement - is delivered into the
-    listener at its suspension point, exactly as it is for a task, so its cleanup still runs.
-    A failing listener body is reported here, which is the only handling it gets, exactly as
-    the in-loop branch leaves the failure with its scheduled task.
-    """
-    loop = asyncio.get_running_loop()
-    held = False
-    while True:
-        failure: Optional[BaseException] = None
-        value: Any = None
-        try:
-            if not held:
-                try:
-                    await barrier.wait()
-                except BaseException as exc:
-                    failure = exc
-                held = True
-            if failure is None:
-                if awaited is None:
-                    # A bare `yield`, as produced by `asyncio.sleep(0)`, only reschedules.
-                    await asyncio.sleep(0)
-                elif isinstance(awaited, asyncio.Future):
-                    # The listener's `await` yielded this future to the dispatch instead of to
-                    # a task, so the blocking marker that a consumer clears on receipt is still
-                    # set: clear it and wait for the future here, as `Task.__step` does
-                    # (asyncio/tasks.py:314), instead of awaiting it with the marker still set.
-                    awaited._asyncio_future_blocking = False
-                    value = await awaited
-                else:
-                    value = await awaited
-        except BaseException as exc:
-            failure = exc
-        try:
-            awaited = listener.throw(failure) if failure is not None else listener.send(value)
-        except StopIteration:
-            return
-        except Exception as exc:
-            _report_loopless_listener_failure(loop, event_name, ctx, exc)
-            return
-
-
-
-def _release_loopless_barrier(barrier: "_LooplessDispatchBarrier") -> None:
-    """
-    Ask the owned loop to release the finished dispatch's held continuations.
-
-    The release is published to the loop that owns the settlements instead of being
-    performed by the emitter, so the loop drains the continuations after the emitter's
-    synchronous dispatch frame has completed: upstream drains its promise continuations
-    only once the dispatch stack has unwound (events.ts:194-195).
-    """
-    loop = _loopless_owner()
     try:
-        loop.call_soon_threadsafe(barrier.release)
-    except RuntimeError:
-        # The owned loop is closing, so release inline rather than hold the continuations.
-        barrier.release()
+        await listener
+    except Exception as exc:
+        # The failure stays with the settlement, as the in-loop branch leaves it
+        # with the scheduled task; reporting it here is the only handling it gets.
+        _report_loopless_listener_failure(asyncio.get_running_loop(), event_name, ctx, exc)
 
 
 def _normalize_event_call(event_name: Any, args: Sequence[Any], default_caller: Any, kwargs: Dict[str, Any]) -> Tuple[str, List[Any], Any]:
@@ -481,44 +362,26 @@ class EventBus:
 
         A listener that returns an awaitable is scheduled on the running loop, or owned by
         `_settle_loopless_listener` when the dispatching caller holds no loop; `emit` returns
-        without waiting for that settlement either way (events.ts:194-196). The loop-less
-        listeners of one dispatch share a `_LooplessDispatchBarrier`, released once the last
-        listener has been invoked, so no continuation can overtake a later listener.
+        without waiting for that settlement either way (events.ts:194-196).
         """
         event_name, actual_args, caller_ctx = _normalize_event_call(event_name, args, self.ctx, kwargs)
         listeners = self._dispatch_hooks("emit", event_name, actual_args, caller_ctx)
-        barrier: Optional[_LooplessDispatchBarrier] = None
-        try:
-            for listener in listeners:
-                sig = None
+        for listener in listeners:
+            sig = None
+            try:
+                sig = inspect.signature(listener)
+            except Exception:
+                pass
+
+            res = listener(*actual_args, **kwargs)
+            if inspect.isawaitable(res):
                 try:
-                    sig = inspect.signature(listener)
-                except Exception:
-                    pass
+                    loop = asyncio.get_running_loop()
+                    loop.create_task(res)
+                except RuntimeError:
+                    self._settle_loopless_listener(res, event_name, caller_ctx or self.ctx)
 
-                res = listener(*actual_args, **kwargs)
-                if inspect.isawaitable(res):
-                    try:
-                        loop = asyncio.get_running_loop()
-                        loop.create_task(res)
-                    except RuntimeError:
-                        if barrier is None:
-                            barrier = _LooplessDispatchBarrier()
-                        self._settle_loopless_listener(res, event_name, caller_ctx or self.ctx, barrier)
-        finally:
-            # The synchronous dispatch is over, so every listener has been invoked and every
-            # prefix has run: the continuations held behind the barrier may resume, and none
-            # is left behind when a listener raised out of the dispatch.
-            if barrier is not None:
-                _release_loopless_barrier(barrier)
-
-    def _settle_loopless_listener(
-        self,
-        result: Any,
-        event_name: str,
-        ctx: Any,
-        barrier: _LooplessDispatchBarrier,
-    ) -> None:
+    def _settle_loopless_listener(self, result: Any, event_name: str, ctx: Any) -> None:
         """
         Hand a listener's returned awaitable to the owned loop and return once its body starts.
 
@@ -527,13 +390,11 @@ class EventBus:
         `join_loopless_settlements` can wait for it, and the awaitable is never collected
         unawaited. The listener's synchronous prefix still runs on the owned loop thread
         before this returns, matching the reference, so that prefix must not block on the
-        dispatching thread. The settlement's continuation then waits on the dispatch-wide
-        `barrier`, which the emitter releases only after the last listener of this dispatch
-        has been invoked and its prefix has run (events.ts:194-195).
+        dispatching thread.
         """
         loop = _loopless_owner()
         entered = threading.Event()
-        settlement = asyncio.run_coroutine_threadsafe(_enter_then_settle(result, event_name, ctx, entered, barrier), loop)
+        settlement = asyncio.run_coroutine_threadsafe(_enter_then_settle(result, event_name, ctx, entered), loop)
         self._loopless_settlements.add(settlement)
         settlement.add_done_callback(lambda done: self._retire_loopless_settlement(done, loop, event_name, ctx))
         entered.wait()

@@ -242,6 +242,156 @@ def make_project(repo):
     return p
 
 
+def test_finding_ledger_matches_path_spelling_and_keeps_reopened_history():
+    from review_evidence import update_ledger
+    first = dict(id='reference/vendor/timer/src/index.ts:12-16::service-lifecycle-ownership',
+                 detail='Timer service helpers exist before plugin load and remain after plugin disposal.', state='open')
+    second = dict(first, id='vendor/timer/src/index.ts#plugin-owned-registration-lifecycle')
+    ledger, _ = update_ledger({}, {'issues': [first]}, 1)
+    previous = {'issue_ledger': ledger}
+    ledger, repeated = update_ledger(previous, {'issues': [second]}, 2)
+    assert repeated == [ledger[0]['key']] and len(ledger) == 1
+    ledger, _ = update_ledger({'issue_ledger': ledger}, {'issues': [dict(second, state='informational')]}, 3)
+    ledger, _ = update_ledger({'issue_ledger': ledger}, {'issues': []}, 4)
+    ledger, repeated = update_ledger({'issue_ledger': ledger}, {'issues': [first]}, 5)
+    assert repeated == [ledger[0]['key']]
+    assert [o['state'] for o in ledger[0]['observations']] == ['open', 'open', 'informational', 'open']
+    assert not project.repeated_issues({'issues': [dict(first, id='other.ts#unrelated', detail='different')]},
+                                       {'issue_ledger': ledger})
+
+
+def test_callback_exception_reclassification_triggers_arbitration():
+    from review_evidence import update_ledger
+    first = dict(id='reference/vendor/timer/src/index.ts#callback-exception-semantics', state='informational')
+    second = dict(id='reference/vendor/timer/src/index.ts#timeout-and-interval-callback-exceptions', state='open')
+    ledger, _ = update_ledger({}, {'issues': [first]}, 3)
+    ledger, repeated = update_ledger({'issue_ledger': ledger}, {'issues': [second]}, 4)
+    assert len(ledger) == 1 and repeated == [ledger[0]['key']]
+
+
+def accepted_review(status='PASS'):
+    return dict(status=status, summary='source checked', coverage_complete=status == 'PASS',
+                issues=[], changed_files=[], observed_changes=[], test_paths=['tests/test_a.py'],
+                dependencies=[], test_map=['source case -> tests/test_a.py'])
+
+
+def invalidate_accepted_task(p, repo):
+    p.store.apply_plan(plan(task('a')))
+    group = p.store.claim('initial')
+    agent = p.task_runner(group)
+    head = project.git(agent.root, 'rev-parse', 'HEAD')
+    p.store.record_evidence(group, p.store.meta('upstream'), head, p.store.contract_hashes(), ['tests/test_a.py'])
+    p.store.update(group, 'INTEGRATED', head=head, feedback={'review': accepted_review(), 'review_head': head})
+    integration = p.integration()
+    (integration / 'b.py').write_text('value = 0\n\n', encoding='utf-8')
+    project.git(integration, 'commit', '-am', 'provider change')
+    with p.store.connect() as db:
+        p.store.invalidate(db, {'a'}, 'Provider implementation changed')
+    return agent
+
+
+def test_dependency_revalidation_checks_new_baseline_without_migration(repo, monkeypatch):
+    p = make_project(repo)
+    old = invalidate_accepted_task(p, repo)
+    calls = []
+    def phase(agent, name, feedback=None):
+        calls.append(name)
+        assert name == 'review'
+        assert agent.root != old.root
+        assert (agent.root / 'b.py').read_text(encoding='utf-8').endswith('\n\n')
+        assert feedback['review_context']['affected_paths'] == ['b.py']
+        return accepted_review()
+    monkeypatch.setattr(p, 'cached_phase', phase)
+    p.execute(p.store.claim('revalidate'))
+    assert calls == ['review']
+    assert p.store.rows()[0]['state'] == 'INTEGRATED'
+
+
+def test_revalidation_pause_resumes_same_candidate_then_routes_failure_to_repair(repo, monkeypatch):
+    p = make_project(repo)
+    invalidate_accepted_task(p, repo)
+    monkeypatch.setattr(p, 'cached_phase', lambda *args: (_ for _ in ()).throw(InterruptedError()))
+    p.execute(p.store.claim('first'))
+    paused = p.store.rows()[0]
+    assert paused['state'] == 'READY' and paused['feedback']['revalidation']
+    def phase(agent, name, feedback=None):
+        assert name == 'review' and str(agent.root) == paused['worktree']
+        return accepted_review('MUST_FIX')
+    monkeypatch.setattr(p, 'cached_phase', phase)
+    p.execute(p.store.claim('resume'))
+    row = p.store.rows()[0]
+    assert row['state'] == 'INTEGRATION_REPAIR'
+    assert row['worktree'] == paused['worktree']
+    assert 'revalidation' not in row['feedback']
+    assert row['feedback']['integration_handoff']['affected_paths'] == ['b.py']
+
+
+def test_revalidation_interrupted_at_merge_still_resumes_verification(repo, monkeypatch):
+    p = make_project(repo)
+    invalidate_accepted_task(p, repo)
+    calls = []
+    def phase(agent, name, feedback=None):
+        calls.append(name)
+        return accepted_review()
+    monkeypatch.setattr(p, 'cached_phase', phase)
+    merge = p.merge
+    monkeypatch.setattr(p, 'merge', lambda *args: (_ for _ in ()).throw(InterruptedError()))
+    p.execute(p.store.claim('first'))
+    row = p.store.rows()[0]
+    assert row['state'] == 'READY' and row['feedback']['revalidation']
+    candidate = row['worktree']
+    monkeypatch.setattr(p, 'merge', merge)
+    p.execute(p.store.claim('resume'))
+    assert calls == ['review', 'review']
+    assert p.store.rows()[0]['state'] == 'INTEGRATED'
+    assert 'revalidation' not in p.store.rows()[0]['feedback']
+    assert Path(candidate).is_dir()
+
+
+def test_changed_reviewer_or_evidence_does_not_reuse_cached_pass(repo, monkeypatch):
+    from console_runtime import write_config, config_revision
+    p = make_project(repo)
+    p.store.apply_plan(plan(task('a')))
+    agent = p.task_runner(p.store.claim('w'))
+    context = {'review_context': {'affected_paths': ['a.py']}}
+    binding = {'files': project.snapshot(agent.root), 'head': project.git(agent.root, 'rev-parse', 'HEAD'),
+               'scope': agent.args.task_contract, 'feedback_signature': project.digest(context),
+               'model_config': project.load_config(repo)['roles']['reviewer']}
+    project.save_json(agent.run_dir / '00-review.result.json', accepted_review())
+    project.save_json(agent.run_dir / '00-review.binding.json', binding)
+    monkeypatch.setattr(agent, 'phase', lambda *args: {'status': 'fresh'})
+    assert p.cached_phase(agent, 'review', context)['status'] == 'PASS'
+    assert p.cached_phase(agent, 'review', {'review_context': {}})['status'] == 'fresh'
+    config = project.load_config(repo)
+    revision = config_revision(config)
+    config['roles']['reviewer']['model'] = 'different-reviewer'
+    write_config(repo, config, revision)
+    assert p.cached_phase(agent, 'review', context)['status'] == 'fresh'
+
+
+def test_third_unsuccessful_round_routes_to_judge_and_keeps_history(repo, monkeypatch):
+    p = make_project(repo)
+    p.store.apply_plan(plan(task('a')))
+    group = p.store.claim('first')
+    p.store.update(group, 'READY', round=3, feedback={'review': accepted_review('MUST_FIX')})
+    group = p.store.claim('third')
+    calls = []
+    def phase(agent, name, feedback=None):
+        calls.append(name)
+        if name == 'migrate':
+            return accepted_review('READY')
+        if name == 'review':
+            assert feedback['review_context']['prior_review']['status'] == 'MUST_FIX'
+            return accepted_review('MUST_FIX')
+        return dict(accepted_review('RESOLVED'), verdict='REVIEWER_CORRECT')
+    monkeypatch.setattr(p, 'cached_phase', phase)
+    p.execute(group)
+    assert calls == ['migrate', 'review', 'judge']
+    row = p.store.rows()[0]
+    assert row['state'] == 'READY' and row['round'] == 4
+    assert row['feedback']['decisions'][0]['verdict'] == 'REVIEWER_CORRECT'
+
+
 def test_template_source_is_external_data_and_review_remains_blind(repo, monkeypatch):
     import parity_runner
     p = make_project(repo)
@@ -423,7 +573,9 @@ def test_completed_result_recovery_is_bound_to_files_and_commit(repo):
     value = {"status": "PASS", "summary": "checked", "coverage_complete": True, "issues": [],
              "changed_files": [], "test_paths": ["tests/test_a.py"], "dependencies": [], "test_map": ["case -> tests/test_a.py"]}
     bound = {"head": project.git(agent.root, "rev-parse", "HEAD"), "files": project.snapshot(agent.root),
-             "index": "", "scope": agent.args.task_contract}
+             "index": "", "scope": agent.args.task_contract,
+             "model_config": project.load_config(repo)["roles"]["reviewer"],
+             "feedback_signature": project.digest(None)}
     project.save_json(agent.run_dir / "01-review.start.json", bound)
     project.save_json(agent.run_dir / "01-review.completion.json", {k: bound[k] for k in ("head", "files", "index")})
     events = [{"type": "message", "message": {"role": "assistant", "id": "final", "content": [
@@ -915,7 +1067,9 @@ def test_cached_phase_recovery_filters_malformed_changed_files(repo):
     index = project.git(agent.root, "diff", "--cached", "--binary")
     project.save_json(run_dir / "00-migrate.start.json",
                       {"head": head, "files": files, "index": index,
-                       "scope": getattr(agent.args, "task_contract", None)})
+                       "scope": getattr(agent.args, "task_contract", None),
+                       "model_config": project.load_config(repo)["roles"]["migrator"],
+                       "feedback_signature": project.digest(None)})
     project.save_json(run_dir / "00-migrate.completion.json",
                       {"files": files, "head": head, "index": index})
     value = dict(status="READY", summary="worked", coverage_complete=True, issues=[],
@@ -948,7 +1102,9 @@ def test_cached_phase_recovery_falls_back_after_interrupted_generation(repo, mon
     index = project.git(agent.root, "diff", "--cached", "--binary")
     project.save_json(run_dir / "00-migrate.start.json",
                       {"head": head, "files": files, "index": index,
-                       "scope": getattr(agent.args, "task_contract", None)})
+                       "scope": getattr(agent.args, "task_contract", None),
+                       "model_config": project.load_config(repo)["roles"]["migrator"],
+                       "feedback_signature": project.digest(None)})
     project.save_json(run_dir / "00-migrate.completion.json",
                       {"files": files, "head": head, "index": index})
     events = [
@@ -1113,7 +1269,7 @@ def test_pause_flag_parks_and_exits_promptly(repo):
     p.store.meta("upstream", revision)
     p.store.meta("architecture", revision)
     p.store.apply_plan(plan(task("a")))
-    for module in ("project_runner.py", "parity_runner.py", "project_store.py", "project_seed.py", "console_runtime.py", "agent-config.json"):
+    for module in ("project_runner.py", "parity_runner.py", "review_evidence.py", "project_store.py", "project_seed.py", "console_runtime.py", "agent-config.json"):
         copy = repo / ".goose" / module
         copy.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(str(SOURCE / ".goose" / module), str(copy))
@@ -1127,6 +1283,8 @@ def test_pause_flag_parks_and_exits_promptly(repo):
         deadline = time.monotonic() + 90
         started = False
         while time.monotonic() < deadline:
+            if controller.poll() is not None:
+                break
             rows = p.store.rows()
             if rows and rows[0]["state"] == "RUNNING" and rows[0]["run_dir"]:
                 runs = list(Path(rows[0]["run_dir"]).glob("*.events.jsonl"))

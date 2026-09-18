@@ -17,18 +17,19 @@ from parity_runner import Runner, Stream, git, snapshot, changed, safe_path, sav
 from project_store import Store, digest
 from project_seed import discover
 from console_runtime import load_config, config_revision, append_event
+from review_evidence import same_issue, update_ledger, review_context
 
 
 def repeated_issues(review, previous):
-    """Track overlapping upstream findings independently of unrelated edits."""
-    from difflib import SequenceMatcher
-    def normalized(issue):
-        path, separator, case = issue['id'].lower().partition('#')
-        return (path if separator else '', re.sub(r'[^a-z0-9]+', '', case if separator else path))
-    current = [normalized(i) for i in open_issues(review)]
-    prior = [normalized(i) for i in open_issues(previous.get("review", {}))]
-    return any(a[0] == b[0] and (a[1] == b[1] or SequenceMatcher(None, a[1], b[1]).ratio() >= 0.8)
-               for a in current for b in prior)
+    """Include reopened and reclassified findings, not just last-round blockers."""
+    prior = list(previous.get('review', {}).get('issues', []))
+    prior += [entry['issue'] for entry in previous.get('issue_ledger', [])]
+    return any(same_issue(a, b) for a in open_issues(review) for b in prior)
+
+
+def review_model(agent):
+    """Use the model which actually ran, even if the dashboard changed meanwhile."""
+    return {key: agent.state.get(key) for key in ('provider', 'model')}
 
 
 STRINGS = {"type": "array", "items": {"type": "string"}}
@@ -360,12 +361,34 @@ class Project:
 
     def task_runner(self, group):
         record = group["records"][0]
-        if record["state"] in ("INTEGRATED", "NEEDS_REVALIDATION"):
-            record["run_dir"], record["round"] = None, 0
+        previous = json.loads(record['feedback']) if record['feedback'] else {}
+        with self.store.connect() as db:
+            evidence = db.execute('SELECT head,tests FROM evidence WHERE task=?', (record['id'],)).fetchone()
+        # A completed task invalidated by dependencies needs verification on the new
+        # combination, not another implementation pass. Also recognize old paused
+        # revalidation runs which were reset to READY/round=0 by earlier controllers.
+        revalidate = (evidence is not None and not previous.get('revalidation') and
+                      not previous.get('integration_handoff') and
+                      (record['state'] in ('INTEGRATED', 'NEEDS_REVALIDATION') or
+                       (record['round'] == 0 and record.get('head') == evidence[0])))
         task_key = digest(group["ids"])[:12]
         path = Path(record["worktree"]) if record["worktree"] else self.folder / "worktrees" / task_key
         with self.integration_lock:
             integration = self.integration()
+            if revalidate:
+                if record['worktree'] and git(path, 'status', '--porcelain'):
+                    raise ValueError('Revalidation source has unfinished edits; preserve before combining')
+                source = path if record['worktree'] else integration
+                tip = git(integration, 'rev-parse', 'HEAD')
+                path, conflicts = self.candidate(group, source, tip)
+                tests = json.loads(evidence[1])
+                tests = tests.get('targeted', []) if isinstance(tests, dict) else tests
+                affected = git(path, 'diff', '--name-only', evidence[0], 'HEAD').splitlines()
+                previous['revalidation'] = {'source_head': evidence[0], 'baseline': tip,
+                    'test_paths': tests, 'affected_paths': sorted(set(affected + conflicts)),
+                    'prior_run_dir': record['run_dir'], 'conflicts': conflicts}
+                record.update(worktree=str(path), base=tip, run_dir=None, round=0)
+                record['feedback'] = json.dumps(previous)
             base = record["base"] or git(integration, "rev-parse", "HEAD")
             worktree(self.root, path, "codex/parity-task-" + task_key, base)
             saved_paths = {r["worktree"] for r in group["records"] if r["worktree"]}
@@ -399,6 +422,13 @@ class Project:
                         record["run_dir"], record["round"] = None, 0
                         if conflicts:
                             break
+            if previous.get('revalidation'):
+                retained = previous['revalidation']
+                retained['affected_paths'] = sorted(set(retained['affected_paths']) |
+                    set(git(path, 'diff', '--name-only', retained['source_head'], 'HEAD').splitlines()) |
+                    set(git(path, 'diff', '--name-only', 'HEAD').splitlines()))
+                retained['conflicts'] = sorted(set(retained['conflicts']) |
+                    set(previous.get('group_consolidation', {}).get('conflicts', [])))
             record["feedback"] = json.dumps(previous)
         # Honor saved worktrees and reports. Controller code/config come from the main checkout.
         args = argparse.Namespace(unit="; ".join(group["ids"]), goose=self.goose, max_rounds=0,
@@ -429,13 +459,18 @@ class Project:
     def cached_phase(self, agent, phase, feedback=None):
         stem = "%02d-%s" % (agent.state["round"], phase)
         result_path = agent.run_dir / (stem + ".result.json")
+        role = {'migrate': 'migrator', 'integrate': 'migrator', 'review': 'reviewer',
+                'integration_review': 'reviewer', 'judge': 'judge'}[phase]
+        model_config = load_config(self.root)['roles'][role]
         if result_path.exists():
             binding = agent.run_dir / (stem + ".binding.json")
             if binding.exists():
                 evidence = json.loads(binding.read_text(encoding="utf-8"))
                 if (evidence["files"] == snapshot(agent.root) and evidence["scope"] == agent.args.task_contract and
-                        (phase not in ('integrate', 'integration_review') or evidence.get('feedback_signature') == digest(feedback)) and
+                        evidence.get('model_config') == model_config and
+                        evidence.get('feedback_signature') == digest(feedback) and
                         (phase == "migrate" or evidence.get("head") == git(agent.root, "rev-parse", "HEAD"))):
+                    agent.state.update(model_config)
                     return parse_result(result_path.read_text(encoding="utf-8"), phase)
             # Current files or acceptance scope changed. Old results are retained, not reused.
             archive = agent.run_dir / (stem + ".stale-" + str(time.time_ns()) + ".json")
@@ -462,6 +497,8 @@ class Project:
                 if (stream.complete and not stream.action_limit_reached and same_head and same_index and
                         completed == {"files": files, "head": bound["head"], "index": bound["index"]} and
                         bound.get("scope") == agent.args.task_contract and
+                        bound.get('model_config') == model_config and
+                        bound.get('feedback_signature') == digest(feedback) and
                         (phase == "migrate" or bound["files"] == files)):
                     try:
                         value = stream.result(phase)
@@ -479,8 +516,10 @@ class Project:
                                 set(value["observed_changes"]))
                         save_json(result_path, value)
                         save_json(agent.run_dir / (stem + ".binding.json"),
-                                  {"head": bound["head"], "files": files, "scope": agent.args.task_contract})
+                                  {"head": bound["head"], "files": files, "scope": agent.args.task_contract,
+                                   'model_config': model_config, 'feedback_signature': digest(feedback)})
                         agent.notify("recovered", "Reused completed protocol result for " + phase)
+                        agent.state.update(model_config)
                         return value
         return agent.phase(phase, feedback)
 
@@ -497,6 +536,10 @@ class Project:
                 self.store.update(group, 'PLAN_REPAIR', feedback=feedback, error=feedback['plan_error'])
                 return
             agent = self.task_runner(group)
+            feedback = json.loads(record['feedback']) if record['feedback'] else {}
+            if feedback.get('revalidation'):
+                self.execute_revalidation(group, agent, feedback)
+                return
             saved_round = agent.state["round"]
             agent.state["round"] = saved_round or 1
             # A READY task with a saved unfinished round resumes phase results, not the whole analysis.
@@ -517,13 +560,28 @@ class Project:
                 feedback.update(migration=migration, targeted_checks_passed=ok)
                 self.store.update(group, "READY", feedback=feedback, round=agent.state["round"] + 1)
                 return
-            review = self.cached_phase(agent, "review")
-            feedback = {"migration": migration, "review": review, "targeted_checks_passed": ok}
+            previous = json.loads(record["feedback"]) if record["feedback"] else {}
+            retained = None
+            if previous.get('review'):
+                base_head = previous.get('review_head')
+                affected = touched
+                if base_head:
+                    affected = sorted(set(migration.get('observed_changes', [])) | set(git(agent.root, 'diff', '--name-only', base_head, 'HEAD').splitlines()))
+                retained = {'review_context': review_context(previous, affected, base_head)}
+                retained['review_context']['full_review_required'] = (
+                    previous.get('review_scope') != digest(agent.args.task_contract) or
+                    previous.get('review_model') != load_config(self.root)['roles']['reviewer'])
+            review = self.cached_phase(agent, "review", retained)
+            ledger, repeated = update_ledger(previous, review, agent.state['round'])
+            feedback = {"migration": migration, "review": review, "targeted_checks_passed": ok,
+                        'issue_ledger': ledger, 'decisions': previous.get('decisions', []),
+                        'review_head': git(agent.root, 'rev-parse', 'HEAD'),
+                        'review_scope': digest(agent.args.task_contract),
+                        'review_model': review_model(agent)}
             # An empty work_plan is the schema's "no proposals" value, not a plan;
             # treating it as one would bounce a PASS review back into replanning.
             plans = [p for p in (migration.get("work_plan"), review.get("work_plan"))
                      if p and (p.get("tasks") or p.get("contracts"))]
-            previous = json.loads(record["feedback"]) if record["feedback"] else {}
             if previous.get('arbitration_request'):
                 feedback['arbitration_request'] = previous['arbitration_request']
             plan_signature = digest(plans)
@@ -547,11 +605,17 @@ class Project:
             needs_judge = (bool(feedback.get('arbitration_request')) or bool(plan_conflicts) or "ESCALATE" in (migration["status"], review["status"]) or
                            (review["status"] == "PASS" and bool(open_issues(migration))) or
                            ((review["status"] != "PASS" or migration["status"] != "READY" or not ok) and
-                            (signature == previous.get("signature") or repeated_issues(review, previous))))
+                            (bool(repeated) or signature == previous.get("signature") or repeated_issues(review, previous) or
+                             agent.state['round'] % 3 == 0)))
+            if repeated:
+                feedback['repeated_findings'] = repeated
             resolved_ready = False
             if needs_judge:
                 judgment = self.cached_phase(agent, "judge", feedback)
                 feedback["judgment"] = judgment
+                feedback['decisions'] = feedback['decisions'] + [{'round': agent.state['round'],
+                    'head': feedback['review_head'], 'verdict': judge_verdict(judgment),
+                    'summary': judgment.get('summary', ''), 'issues': judgment.get('issues', [])}]
                 # Honor the arbitration verdict instead of looping forever: a
                 # MIGRATOR_CORRECT / ADAPTATION_ALLOWED ruling completes the
                 # parity-unit step-5 contract when the blind review passes (or
@@ -657,6 +721,51 @@ class Project:
             raise ValueError('Integration repair is not checkpointed; preserve candidate')
         self.store.update(group, 'VERIFIED', feedback=feedback, head=git(agent.root, 'rev-parse', 'HEAD'))
         self.merge(group, agent, hashes, review)
+
+    def execute_revalidation(self, group, agent, feedback):
+        """Read-only affected-contract check; only failed candidates enter repair."""
+        retained = feedback['revalidation']
+        agent.state['round'] = agent.state['round'] or 1
+        hashes = self.store.contract_hashes()
+        review = feedback.get('review') or {'status': 'ESCALATE', 'issues': [], 'test_paths': []}
+        ok = False
+        if not retained['conflicts']:
+            context = review_context(feedback, retained['affected_paths'], retained['source_head'])
+            context['revalidation'] = retained
+            context['full_review_required'] = (feedback.get('review_scope') != digest(agent.args.task_contract) or
+                feedback.get('review_model') != load_config(self.root)['roles']['reviewer'])
+            review = self.cached_phase(agent, 'review', {'review_context': context})
+            paths = sorted(set(retained['test_paths']) | set(review['test_paths']))
+            review = dict(review, test_paths=paths)
+            ok = agent.verify_chunk(dict(review, test_paths=paths, changed_files=retained['affected_paths']))
+        feedback['revalidation_review'] = review
+        proposal = review.get('work_plan') or {}
+        if (proposal.get('tasks') or proposal.get('contracts')) and not self.store.plan_is_current(proposal):
+            feedback.update(proposed_work_plan=proposal, resume_round_after_plan=agent.state['round'],
+                            proposals_signature=digest(proposal))
+            self.store.update(group, 'WAITING_PLAN', feedback=feedback, round=agent.state['round'])
+            return
+        if not ok or review['status'] != 'PASS' or open_issues(review):
+            feedback['integration_handoff'] = {'source_review': review,
+                'source_head': retained['source_head'], 'baseline': retained['baseline'],
+                'needs_decision': bool(retained['conflicts']) or review['status'] == 'ESCALATE',
+                'affected_paths': retained['affected_paths']}
+            feedback.pop('revalidation')
+            self.store.update(group, 'INTEGRATION_REPAIR', feedback=feedback,
+                              round=agent.state['round'] + 1,
+                              error='Dependency revalidation failed; repair only the retained combined candidate')
+            return
+        feedback['review'] = review
+        feedback['review_head'] = git(agent.root, 'rev-parse', 'HEAD')
+        feedback['review_scope'] = digest(agent.args.task_contract)
+        feedback['review_model'] = review_model(agent)
+        self.store.update(group, 'VERIFIED', feedback=feedback, head=feedback['review_head'])
+        self.merge(group, agent, hashes, review)
+        current = next(r for r in self.store.rows() if r['id'] == group['ids'][0])
+        if current['state'] in ('INTEGRATED', 'INTEGRATION_REPAIR'):
+            completed = current['feedback'] or {}
+            completed.pop('revalidation', None)
+            self.store.update(group, feedback=completed)
 
     def baseline_requires_review(self, group, base, tip, review):
         """Conservative impact check; unknown consumed mappings require fresh review."""
@@ -829,13 +938,15 @@ class Project:
             code = run_process([sys.executable, "-m", "pytest", "tests"], candidate,
                                candidate / ".goose/runs-integration.log", agent.notify, 0, cancel_event=self.stop)
             if code:
+                retained_feedback = dict(saved['feedback'] or {})
+                retained_feedback.update(candidate=str(candidate), tests='tests', review=review,
+                    integration_handoff={'source_review': review, 'baseline': tip,
+                        'source_head': git(agent.root, 'rev-parse', 'HEAD'), 'needs_decision': False,
+                        'affected_paths': git(candidate, 'diff', '--name-only', tip, 'HEAD').splitlines()},
+                    full_suite_failure=(candidate / '.goose/runs-integration.log').read_text(encoding='utf-8')[-40000:])
                 self.store.update(group, "INTEGRATION_REPAIR", error="Integration tests failed; exclusive integrator repairs combined candidate",
                                   worktree=str(candidate), base=tip, round=agent.state["round"] + 1,
-                                  feedback={"candidate": str(candidate), "tests": "tests", "review": review,
-                                            "integration_handoff": {"source_review": review, "baseline": tip,
-                                                "source_head": git(agent.root,"rev-parse","HEAD"), "needs_decision": False,
-                                                "affected_paths": git(candidate,"diff","--name-only",tip,"HEAD").splitlines()},
-                                            "full_suite_failure": (candidate / ".goose/runs-integration.log").read_text(encoding="utf-8")[-40000:]})
+                                  feedback=retained_feedback)
                 return
             combined = git(candidate, "rev-parse", "HEAD")
             if git(candidate, "status", "--porcelain"):

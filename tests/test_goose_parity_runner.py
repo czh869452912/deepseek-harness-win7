@@ -139,8 +139,9 @@ class Harness(runner.Runner):
         self.calls.append((phase, feedback))
         expected, response = next(self.phases)
         assert phase == expected
-        if phase == "review":
-            assert feedback is None
+        if phase == "review" and feedback is not None:
+            assert set(feedback) == {"review_context"}
+            assert "migration" not in feedback["review_context"]
         return response
 
     def verify_chunk(self, value):
@@ -186,7 +187,7 @@ def test_single_judge_and_fresh_blind_review_after_correction(repo):
     assert h.run() == 0
     assert h.state["status"] == "COMPLETE"
     assert h.calls[3][1]["judgment"]["status"] == "RESOLVED"
-    assert h.calls[4][1] is None
+    assert h.calls[4][1]["review_context"]["decisions"][0]["summary"] == "checked"
 
 
 def test_checkpoint_does_not_capture_preexisting_edits(repo):
@@ -257,7 +258,7 @@ def test_test_paths_cannot_escape_repository(tmp_path, name):
 def test_complete_cli_pipeline_with_fake_goose(repo, native_stop):
     """Real child processes, target/full tests, structured output and checkpoint."""
     source = Path(__file__).resolve().parents[1]
-    for name in [".goose/parity_runner.py", ".goose/console_runtime.py", ".goose/agent-config.json", ".goose/recipes/parity-unit.yaml"] + [
+    for name in [".goose/parity_runner.py", ".goose/review_evidence.py", ".goose/console_runtime.py", ".goose/agent-config.json", ".goose/recipes/parity-unit.yaml"] + [
             ".agents/agents/" + role + ".md" for role in runner.ROLES.values()]:
         dest = repo / name
         dest.parent.mkdir(parents=True, exist_ok=True)

@@ -14,6 +14,7 @@ import uuid
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from console_runtime import append_event, load_config, config_revision, worker_environment
+from review_evidence import update_ledger, review_context
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -537,6 +538,18 @@ class Runner:
         body = (self.control_root / (".agents/agents/" + role + ".md")).read_text(encoding="utf-8")
         body = body.split("---", 2)[-1]
         prompt = "Unit: " + self.args.unit + "\n" + SCOPE
+        incremental = phase == 'review' and feedback and feedback.get('review_context')
+        if incremental:
+            prompt += ('\nThe first blind review is complete. This is a correction/dependency revalidation review. '
+                       'The controller explicitly authorizes only the supplied prior source-backed evidence and decisions. '
+                       'Review all prior open findings, unmapped acceptance, and changed paths/consumers. '
+                       'Reuse unaffected verified evidence; expand coverage if impact expands or evidence is incomplete. '
+                       'If full_review_required is true, rebuild full acceptance coverage on this candidate: '
+                       'the scope or reviewer changed, so historical PASS coverage cannot be carried forward. '
+                       'Retain controller finding keys or existing upstream IDs when reporting the same invariant. '
+                       'Explain any reopening or adaptation reclassification with new source evidence. '
+                       'Never treat a prior verdict as proof. Remain read-only.\n' +
+                       json.dumps(feedback['review_context'], ensure_ascii=False))
         if phase in ('integrate', 'integration_review'):
             prompt = "Unit: " + self.args.unit + "\n" + SCOPE.replace(
                 'Do not read .goose/runs/, .goose/out/, or old review conclusions\nduring blind review.',
@@ -609,6 +622,8 @@ class Runner:
             recipe["settings"]["max_turns"] = turns
         stem = "%02d-%s" % (self.state["round"], phase)
         recipe_path = self.run_dir / (stem + ".yaml")
+        prompt_signature = hashlib.sha256((body + prompt).encode('utf-8')).hexdigest()
+        feedback_signature = hashlib.sha256(json.dumps(feedback, sort_keys=True, ensure_ascii=False).encode('utf-8')).hexdigest()
         save_json(recipe_path, recipe)  # JSON is valid YAML; no templated shell commands.
         self.notify("start", role + " / " + provider + " / " + model)
         blind_retry = 0
@@ -617,7 +632,8 @@ class Runner:
             head = git(self.root, "rev-parse", "HEAD")
             index = git(self.root, "diff", "--cached", "--binary")
             save_json(self.run_dir / (stem + ".start.json"), {"head": head, "files": before, "index": index,
-                      "scope": getattr(self.args, "task_contract", None)})
+                      "scope": getattr(self.args, "task_contract", None),
+                      'model_config': {'provider': provider, 'model': model}, 'feedback_signature': feedback_signature})
             stream = Stream(self.notify, self.notify)
             session_name = self.run_dir.name + "-" + stem
             started = time.monotonic()
@@ -628,7 +644,8 @@ class Runner:
                 retained = json.loads(resume_path.read_text(encoding='utf-8'))
                 if (retained.get('files') == before and retained.get('head') == head and
                         retained.get('scope') == getattr(self.args, 'task_contract', None) and
-                        retained.get('provider') == provider and retained.get('model') == model):
+                        retained.get('provider') == provider and retained.get('model') == model and
+                        retained.get('prompt_signature') == prompt_signature):
                     session_name = retained['session_name']
                     command = [self.args.goose, 'run', '--resume', '--name', session_name,
                                '--output-format', 'stream-json', '--text',
@@ -660,7 +677,7 @@ class Runner:
                     if phase in ('migrate', 'integrate') or retained_files == before:
                         save_json(resume_path, {'files': retained_files, 'head': git(self.root, 'rev-parse', 'HEAD'),
                                   'scope': getattr(self.args, 'task_contract', None), 'provider': provider,
-                                  'model': model, 'session_name': session_name})
+                                  'model': model, 'session_name': session_name, 'prompt_signature': prompt_signature})
                     raise
                 if code or not stream.complete or not stream.action_limit_reached or turns:
                     break
@@ -723,6 +740,7 @@ class Runner:
                 resume_path.unlink()
             save_json(self.run_dir / (stem + ".binding.json"), {"files": after, "head": git(self.root, "rev-parse", "HEAD"),
                       "scope": getattr(self.args, "task_contract", None),
+                      'model_config': {'provider': provider, 'model': model},
                       "feedback_signature": hashlib.sha256(json.dumps(feedback, sort_keys=True, ensure_ascii=False).encode('utf-8')).hexdigest()})
             self.state["history"].append({"phase": phase, "round": self.state["round"],
                                           "status": result["status"], "issues": len(result["issues"])})
@@ -817,21 +835,35 @@ class Runner:
                 verified = self.verify_chunk(migration)
                 if verified:
                     self.checkpoint(migration)
-                review = self.phase("review")  # No migration or previous review evidence is passed.
+                previous = feedback or {}
+                retained = None
+                if previous.get('review'):
+                    base_head = previous.get('review_head')
+                    affected = sorted(set(migration.get('observed_changes', [])) |
+                        set(git(self.root, 'diff', '--name-only', base_head, 'HEAD').splitlines() if base_head else migration['changed_files']))
+                    retained = {'review_context': review_context(previous, affected, base_head)}
+                    if hasattr(self, 'control_root'):
+                        retained['review_context']['full_review_required'] = (
+                            previous.get('review_model') != load_config(self.control_root)['roles']['reviewer'])
+                review = self.phase("review", retained)
+                ledger, repeated = update_ledger(previous, review, round_number)
+                feedback = {'migration': migration, 'review': review, 'targeted_checks_passed': verified,
+                            'issue_ledger': ledger, 'decisions': previous.get('decisions', []),
+                            'review_head': git(self.root, 'rev-parse', 'HEAD'),
+                            'review_model': {key: self.state.get(key) for key in ('provider', 'model')}}
                 self.state["issues"] = review["issues"]
                 self.notify("progress", "round %d/%s; open issues=%d; coverage_complete=%s" %
                             (round_number, self.args.max_rounds or "unlimited", len(review["issues"]), review["coverage_complete"]))
                 needs_judge = ("ESCALATE" in (migration["status"], review["status"]) or
-                               (review["status"] == "PASS" and bool(migration["issues"])))
-                if review["status"] == "PASS" and verified and not needs_judge:
+                               (review["status"] == "PASS" and bool(open_issues(migration))) or
+                               (review['status'] != 'PASS' and (bool(repeated) or round_number % 3 == 0)))
+                if review["status"] == "PASS" and migration['status'] == 'READY' and verified and not needs_judge:
                     if self.check("full-suite", ["-m", "pytest", "tests"]):
                         return self.finish("COMPLETE", "Independent review and full test suite passed")
                     log = self.run_dir / ("%02d-full-suite.log" % round_number)
-                    feedback = {"migration": migration, "review": review,
-                                "full_suite_failure": log.read_text(encoding="utf-8")[-40000:]}
+                    feedback['full_suite_failure'] = log.read_text(encoding="utf-8")[-40000:]
                     self.notify("repair", "Full suite failed; returning failures to migrator for correction")
                     continue
-                feedback = {"migration": migration, "review": review, "targeted_checks_passed": verified}
                 signature = (tuple(sorted(i["id"] for i in review["issues"])),
                              tuple(sorted(snapshot(self.root).items())))
                 if signature == last_signature:
@@ -843,6 +875,9 @@ class Runner:
                     if judgment["status"] == "BLOCKED":
                         return self.finish("BLOCKED", judgment["summary"])
                     feedback["judgment"] = judgment
+                    feedback['decisions'].append({'round': round_number, 'head': feedback['review_head'],
+                        'verdict': judge_verdict(judgment), 'summary': judgment.get('summary', ''),
+                        'issues': judgment.get('issues', [])})
             return self.finish("INCOMPLETE", "Round budget exhausted; retained results and checkpoints. No silent continuation.")
         except KeyboardInterrupt:
             return self.finish("INTERRUPTED", "Interrupted; child process stopped and changes preserved")

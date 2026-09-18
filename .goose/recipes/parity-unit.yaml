@@ -1,6 +1,6 @@
 version: "1.0.0"
 title: "DeepSeek Harness 1:1 Parity Unit"
-description: "Runs one migration unit through Flash implementation, Luna blind review, and Sol arbitration only when required."
+description: "Runs one migration unit through Flash implementation, Sol independent review, and Sol arbitration only when required."
 
 parameters:
   - key: migration_unit
@@ -23,13 +23,13 @@ parameters:
   - key: reviewer_provider
     input_type: string
     requirement: optional
-    default: "openai"
+    default: "custom_openai_sol"
     description: "Goose provider id used for blind review."
 
   - key: reviewer_model
     input_type: string
     requirement: optional
-    default: "gpt-5.6-luna"
+    default: "gpt-5.6-sol"
     description: "Model used for independent blind review."
 
   - key: judge_provider
@@ -127,8 +127,8 @@ instructions: |
      If reviewer returns MUST_FIX:
        - delegate to `parity-migrator` with only the reviewer's concrete MUST_FIX / test-gap items;
        - tell it this is a correction round, so it may use those reviewer findings;
-       - after the correction completes, start a NEW `parity-reviewer` delegation using the same blind input policy as step 2;
-       - do not reveal the previous reviewer report to the new blind reviewer.
+       - after the correction completes, start a NEW `parity-reviewer` delegation with the prior source-backed findings, resolved decisions, and changed paths;
+       - verify all open findings and affected contracts; reuse unaffected evidence, and expand coverage when changes require it. Never treat the migrator summary as proof.
 
      Repeat correction + fresh review as necessary until all issues are resolved.
 

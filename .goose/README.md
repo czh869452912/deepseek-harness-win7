@@ -397,6 +397,11 @@ checkpoint policy or durable progress display. Use the PowerShell launcher.
 
 ## Verified model setup (2026-09-11, Goose 1.50.0)
 
+Current allocation (2026-09-18): Flash implements; Sol reviews and arbitrates in
+separate sessions through `custom_openai_sol`. The table below is historical.
+See [the operations guide](OPERATIONS.zh-CN.md) for incremental review, persistent
+findings, model-bound cache invalidation and dependency revalidation behavior.
+
 | Role | Provider | Model | Context |
 | --- | --- | --- | --- |
 | Architect | `custom_deepseek` | `deepseek-flash` | 1,000,000 in local provider JSON |

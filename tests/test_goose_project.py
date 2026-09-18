@@ -1305,3 +1305,104 @@ def test_pause_flag_parks_and_exits_promptly(repo):
     rows = p.store.rows()
     assert rows[0]["state"] == "READY", rows[0]["state"]
     assert not rows[0]["error"]
+
+@pytest.mark.parametrize('mode', ['repeated', 'escalate', 'third', 'legacy', 'blocked'])
+def test_integration_stalls_reach_judge_without_accepting_must_fix(repo, monkeypatch, mode):
+    p = make_project(repo)
+    p.store.apply_plan(plan(task('a')))
+    group = p.store.claim('w')
+    agent = p.task_runner(group)
+    agent.state['round'] = 5 if mode == 'legacy' else (3 if mode == 'third' else 2)
+    issue = dict(id='events.ts#dispatch-order', detail='continuation before sibling', evidence='source', state='open')
+    prior = dict(status='MUST_FIX', issues=[issue])
+    feedback = {'integration_handoff': {'source_review': prior, 'affected_paths': ['a.py']},
+                'affected_paths': ['retained.py']}
+    calls = []
+    def phase(worker, name, data=None):
+        calls.append(name)
+        if name == 'judge':
+            return dict(status='BLOCKED' if mode == 'blocked' else 'RESOLVED',
+                        verdict='BLOCKED' if mode == 'blocked' else 'REVIEWER_CORRECT', summary='contract')
+        if name == 'integration_review':
+            assert 'integration_repair' not in data
+            return dict(status='ESCALATE' if mode == 'escalate' else 'MUST_FIX',
+                        issues=[issue] if mode != 'third' else [], changed_files=[], test_paths=['tests/test_a.py'])
+        return dict(status='READY', issues=[], changed_files=[], observed_changes=[], test_paths=['tests/test_a.py'])
+    monkeypatch.setattr(p, 'cached_phase', phase)
+    monkeypatch.setattr(agent, 'verify_chunk', lambda r: True)
+    monkeypatch.setattr(agent, 'checkpoint', lambda r: None)
+    monkeypatch.setattr(p, 'merge', lambda *args: pytest.fail('MUST_FIX must never merge'))
+    p.execute_integration(group, agent, feedback)
+    assert 'judge' in calls
+    if mode == 'legacy':
+        assert calls[0] == 'judge'
+    assert p.store.rows()[0]['state'] == ('NEEDS_ARBITRATION' if mode == 'blocked' else 'INTEGRATION_REPAIR')
+    assert 'retained.py' in feedback['affected_paths']
+    assert feedback['issue_ledger']
+
+
+def test_integration_pause_keeps_implementation_input_stable(repo, monkeypatch):
+    p = make_project(repo)
+    p.store.apply_plan(plan(task('a')))
+    group = p.store.claim('w')
+    agent = p.task_runner(group)
+    agent.state['round'] = 1
+    feedback = {'integration_handoff': {'source_review': {'status': 'PASS'}, 'affected_paths': ['a.py']}}
+    inputs = []
+    paused = [False]
+    def phase(worker, name, data=None):
+        if name == 'integrate':
+            inputs.append(json.dumps(data, sort_keys=True))
+            return dict(status='READY', issues=[], changed_files=[], observed_changes=[], test_paths=['tests/test_a.py'])
+        if not paused[0]:
+            paused[0] = True
+            raise InterruptedError('pause during review')
+        return dict(status='PASS', issues=[], test_paths=['tests/test_a.py'])
+    monkeypatch.setattr(p, 'cached_phase', phase)
+    monkeypatch.setattr(agent, 'verify_chunk', lambda r: True)
+    monkeypatch.setattr(agent, 'checkpoint', lambda r: None)
+    monkeypatch.setattr(p, 'merge', lambda *args: None)
+    with pytest.raises(InterruptedError):
+        p.execute_integration(group, agent, feedback)
+    retained = p.store.rows()[0]['feedback']
+    p.execute_integration(group, agent, retained)
+    assert inputs[0] == inputs[1]
+    assert p.store.rows()[0]['state'] == 'VERIFIED'
+
+
+def test_integration_routes_plan_proposal(repo, monkeypatch):
+    p = make_project(repo)
+    p.store.apply_plan(plan(task('a')))
+    group = p.store.claim('w')
+    agent = p.task_runner(group)
+    proposal = plan(task('b'))
+    def phase(worker, name, data=None):
+        return dict(status='READY' if name == 'integrate' else 'PASS', issues=[],
+                    changed_files=[], observed_changes=[], test_paths=['tests/test_a.py'], work_plan=proposal)
+    monkeypatch.setattr(p, 'cached_phase', phase)
+    monkeypatch.setattr(agent, 'verify_chunk', lambda r: True)
+    monkeypatch.setattr(agent, 'checkpoint', lambda r: None)
+    monkeypatch.setattr(p, 'merge', lambda *args: pytest.fail('Unapplied plan must not merge'))
+    p.execute_integration(group, agent, {'integration_handoff': {'source_review': {'status': 'PASS'}}})
+    assert p.store.rows()[0]['state'] == 'WAITING_PLAN'
+
+
+@pytest.mark.parametrize('exit_code', [2, 3, 4, 5])
+def test_integration_infrastructure_error_retries_gate_without_product_repair(repo, monkeypatch, exit_code):
+    p = make_project(repo)
+    p.store.apply_plan(plan(task('a')))
+    group = p.store.claim('w')
+    agent = p.task_runner(group)
+    def failed_check(command, root, log, *args, **kwargs):
+        log.write_text('pytest infrastructure failure', encoding='utf-8')
+        return exit_code
+    monkeypatch.setattr(project, 'run_process', failed_check)
+    p.merge(group, agent, p.store.contract_hashes(), {'test_paths': ['tests/test_a.py']})
+    row = p.store.rows()[0]
+    assert row['state'] == 'FAILED_INFRA'
+    assert row['feedback']['integration_gate_retry']
+    calls = []
+    monkeypatch.setattr(p, 'cached_phase', lambda *args: pytest.fail('Do not repair code for runner failures'))
+    monkeypatch.setattr(p, 'merge', lambda *args: calls.append('gate'))
+    p.execute_integration(group, agent, row['feedback'])
+    assert calls == ['gate']

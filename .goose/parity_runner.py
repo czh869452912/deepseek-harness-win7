@@ -56,7 +56,7 @@ SCHEMA = {
         "verdict": {"type": "string", "enum": ["MIGRATOR_CORRECT", "REVIEWER_CORRECT", "BOTH_INCOMPLETE", "ADAPTATION_ALLOWED", "BLOCKED"]},
         "issues": {"type": "array", "items": {"type": "object", "properties": {
             "id": {"type": "string"}, "detail": {"type": "string"},
-            "evidence": {"type": "string"}}, "required": ["id", "detail", "evidence"]}},
+            "evidence": {"type": "string"}}, "required": ["id", "detail", "evidence", "state"]}},
         "changed_files": {"type": "array", "items": {"type": "string"}},
         "test_paths": {"type": "array", "items": {"type": "string"}},
         "dependencies": {"type": "array", "items": {"type": "string"}},
@@ -561,7 +561,9 @@ class Runner:
                        'is evidence, not a new claim of PASS. Inspect the affected paths and contract changes in '
                        'the handoff; reuse unaffected prior findings. If a change expands impact, explicitly '
                        'expand review and test paths. integration_review is read-only and may use the prior review. '
-                       'Do not repeat the full migration audit; the full regression gate is still mandatory.')
+                       'Do not repeat the full migration audit unless review_context.full_review_required is true '
+                       '(reviewer or acceptance scope changed). Recheck every prior open finding and honor '
+                       'the supplied finding ledger and source-backed decisions. The full regression gate is still mandatory.')
         prompt += ("\nAll tests MUST use the controller interpreter: " + sys.executable +
                    ". In PowerShell use & $env:DSH_TEST_PYTHON -m pytest <paths>. "
                    "Do not look for a .venv in this worktree or install a different test environment. "
@@ -693,6 +695,37 @@ class Runner:
                            "Continue the current phase with your existing context and tools. "
                            "Work until correct; do not restart completed analysis or ask for permission to continue. "
                            "Return the required structured result when this phase is done."]
+            if code == 0 and stream.complete and not stream.action_limit_reached:
+                try:
+                    formatted = stream.result(phase)
+                    if any('state' not in issue for issue in formatted['issues']):
+                        raise ValueError('Every issue requires an explicit state')
+                except ValueError as error:
+                    # Repair the report in the SAME session, never another code round.
+                    frozen = snapshot(self.root)
+                    frozen_head = git(self.root, 'rev-parse', 'HEAD')
+                    frozen_index = git(self.root, 'diff', '--cached', '--binary')
+                    self.notify('format', 'Re-serializing completed report: ' + str(error))
+                    stream = Stream(self.notify, self.notify)
+                    command = [self.args.goose, 'run', '--resume', '--name', session_name,
+                               '--output-format', 'stream-json', '--text',
+                               'FORMAT REPAIR ONLY. Do not edit files, run tests or repeat analysis. '
+                               'Re-serialize your completed findings using this schema. Explicitly classify '
+                               'every issue state; do not change the substantive verdict to pass validation. '
+                               + json.dumps(phase_schema, ensure_ascii=False)]
+                    if self.args.phase_timeout:
+                        remaining = self.args.phase_timeout - (time.monotonic() - started)
+                        if remaining <= 0:
+                            raise TimeoutError('Explicit phase timeout reached before format repair')
+                    code = run_process(command, self.root, self.run_dir / (stem + '.format.events.jsonl'),
+                                       self.notify, remaining, stream,
+                                       cancel_event=getattr(self.args, 'cancel_event', None), thinking_effort=effort)
+                    if (snapshot(self.root) != frozen or git(self.root, 'rev-parse', 'HEAD') != frozen_head or
+                            git(self.root, 'diff', '--cached', '--binary') != frozen_index):
+                        raise ValueError('Format-only repair mutated candidate; preserved for inspection')
+                    formatted = stream.result(phase)
+                    if any('state' not in issue for issue in formatted['issues']):
+                        raise ValueError('Format repair still omitted issue state; candidate retained')
             after = snapshot(self.root)
             if stream.complete and code == 0:
                 save_json(self.run_dir / (stem + ".completion.json"), {"files": after,
@@ -760,9 +793,14 @@ class Runner:
                            self.run_dir / ("%02d-%s.log" % (self.state["round"], name)),
                            self.notify, self.args.phase_timeout, cancel_event=getattr(self.args, "cancel_event", None))
         self.notify("result", "exit=" + str(code))
+        log = self.run_dir / ("%02d-%s.log" % (self.state["round"], name))
+        self.verification = {'check': name, 'exit_code': code, 'log': str(log),
+                             'output': log.read_text(encoding='utf-8')[-16000:] if code and log.exists() else ''}
         return code == 0
 
     def verify_chunk(self, result):
+        self.verification = {'check': 'test_paths', 'exit_code': None,
+                             'error': 'No valid targeted test selection'}
         paths = result["test_paths"]
         if not paths:
             self.notify("verification", "No targeted test paths: no checkpoint")
@@ -779,6 +817,10 @@ class Runner:
             if not valid:
                 self.notify("verification", "Rejected test path " + name + ": " + str(reason))
                 return False
+        # A directory already includes its descendants; do not run them twice.
+        paths = sorted(set(paths))
+        paths = [p for p in paths if not any(p != parent and p.startswith(parent.rstrip('/') + '/')
+                                           for parent in paths)]
         if not self.check("targeted", ["-m", "pytest"] + paths + ["-q"]):
             return False
         files = [name for name in result["changed_files"] if name.endswith(".py")

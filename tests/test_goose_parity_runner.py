@@ -476,3 +476,40 @@ def test_migrate_filters_malformed_changed_file_entries(repo):
     result = h.phase("migrate")
     assert result["changed_files"] == ["real-change.txt"]
     assert any(k == "files" and "Rejected changed-file entry" in m for k, m in seen)
+
+
+def test_missing_issue_state_repairs_format_in_same_session(repo, monkeypatch):
+    h = make_review_runner(repo)
+    calls = []
+    def process(command, root, log, notify, timeout, stream, **kwargs):
+        calls.append(command)
+        issue = dict(id='source#case', detail='already fixed', evidence='test')
+        if len(calls) == 2:
+            issue['state'] = 'resolved'
+        stream.feed(message('final', json.dumps(result('READY', [issue]))))
+        stream.feed({'type': 'complete'})
+        return 0
+    monkeypatch.setattr(runner, 'run_process', process)
+    actual = h.phase('integrate')
+    assert actual['issues'][0]['state'] == 'resolved'
+    assert len(calls) == 2
+    assert '--resume' in calls[1] and 'FORMAT REPAIR ONLY' in calls[1][-1]
+    assert calls[0][calls[0].index('--name') + 1] == calls[1][calls[1].index('--name') + 1]
+
+
+def test_format_repair_rejects_product_mutation(repo, monkeypatch):
+    h = make_review_runner(repo)
+    calls = []
+    def process(command, root, log, notify, timeout, stream, **kwargs):
+        calls.append(command)
+        issue = dict(id='source#case', detail='fixed', evidence='test')
+        if len(calls) == 2:
+            issue['state'] = 'resolved'
+            (root / 'unexpected.py').write_text('changed = True', encoding='utf-8')
+        stream.feed(message('final', json.dumps(result('READY', [issue]))))
+        stream.feed({'type': 'complete'})
+        return 0
+    monkeypatch.setattr(runner, 'run_process', process)
+    with pytest.raises(ValueError, match='Format-only repair mutated'):
+        h.phase('integrate')
+    assert (repo / 'unexpected.py').exists()

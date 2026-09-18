@@ -63,6 +63,14 @@ def worker_environment(thinking_effort=None):
     env['DSH_TEST_PYTHON'] = sys.executable
     env['PATH'] = str(Path(sys.executable).parent) + os.pathsep + env.get('PATH', '')
     env['PYTHONIOENCODING'] = 'utf-8'
+    # Local mock servers must not travel through an inherited HTTP proxy.
+    bypass = []
+    for value in (env.get('NO_PROXY', ''), env.get('no_proxy', ''),
+                  'localhost,127.0.0.1,::1,[::1]'):
+        for host in value.split(','):
+            if host.strip() and host.strip() not in bypass:
+                bypass.append(host.strip())
+    env['NO_PROXY'] = env['no_proxy'] = ','.join(bypass)
     if thinking_effort is not None:
         env['GOOSE_THINKING_EFFORT'] = thinking_effort
     return env

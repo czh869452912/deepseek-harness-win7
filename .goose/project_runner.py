@@ -470,7 +470,7 @@ class Project:
                 if (evidence["files"] == snapshot(agent.root) and evidence["scope"] == agent.args.task_contract and
                         evidence.get('model_config') == model_config and
                         evidence.get('feedback_signature') == digest(feedback) and
-                        (phase == "migrate" or evidence.get("head") == git(agent.root, "rev-parse", "HEAD"))):
+                        (phase in ('migrate', 'integrate') or evidence.get("head") == git(agent.root, "rev-parse", "HEAD"))):
                     agent.state.update(model_config)
                     return parse_result(result_path.read_text(encoding="utf-8"), phase)
             # Current files or acceptance scope changed. Old results are retained, not reused.
@@ -481,7 +481,7 @@ class Project:
             start = agent.run_dir / (stem + ".start.json")
             completion = agent.run_dir / (stem + ".completion.json")
             logs = list(agent.run_dir.glob(stem + "*.events.jsonl"))
-            if start.exists() and completion.exists() and logs and phase not in ('integrate', 'integration_review'):
+            if start.exists() and completion.exists() and logs:
                 bound = json.loads(start.read_text(encoding="utf-8"))
                 completed = json.loads(completion.read_text(encoding="utf-8"))
                 latest = max(logs, key=lambda p: p.stat().st_mtime_ns)
@@ -500,7 +500,7 @@ class Project:
                         bound.get("scope") == agent.args.task_contract and
                         bound.get('model_config') == model_config and
                         bound.get('feedback_signature') == digest(feedback) and
-                        (phase == "migrate" or bound["files"] == files)):
+                        (phase in ('migrate', 'integrate') or bound["files"] == files)):
                     try:
                         value = stream.result(phase)
                     except ValueError as error:
@@ -511,7 +511,7 @@ class Project:
                                      str(error) + "); rerunning the phase")
                     else:
                         value["observed_changes"] = changed(bound["files"], files)
-                        if phase == "migrate":
+                        if phase in ('migrate', 'integrate'):
                             value["changed_files"] = sorted(
                                 set(valid_changed_files(agent.root, value["changed_files"], agent.notify)) |
                                 set(value["observed_changes"]))
@@ -575,6 +575,7 @@ class Project:
             review = self.cached_phase(agent, "review", retained)
             ledger, repeated = update_ledger(previous, review, agent.state['round'])
             feedback = {"migration": migration, "review": review, "targeted_checks_passed": ok,
+                        'verification': getattr(agent, 'verification', {}),
                         'issue_ledger': ledger, 'decisions': previous.get('decisions', []),
                         'review_head': git(agent.root, 'rev-parse', 'HEAD'),
                         'review_scope': digest(agent.args.task_contract),
@@ -689,15 +690,32 @@ class Project:
         handoff = feedback['integration_handoff']
         hashes = self.store.contract_hashes()
         agent.state['round'] = agent.state['round'] or 1
-        if handoff.get('needs_decision') and not feedback.get('contract_decision'):
+        if feedback.get('integration_gate_retry'):
+            # Resuming infrastructure failure retries verification, not migration.
+            self.merge(group, agent, hashes, handoff['source_review'])
+            return
+        prior_review = feedback.get('integration_review') or handoff.get('source_review', {})
+        needs_decision = (handoff.get('needs_decision') and not feedback.get('contract_decision'))
+        # Older runs have no integration ledger; route stalled retained runs to
+        # arbitration before spending another implementation round.
+        needs_decision = needs_decision or (agent.state['round'] >= 3 and
+            prior_review.get('status') != 'PASS' and not feedback.get('integration_judged_round'))
+        if needs_decision:
             decision = self.cached_phase(agent, 'judge', feedback)
             if judge_verdict(decision) in (None, 'BLOCKED'):
                 self.store.update(group, 'NEEDS_ARBITRATION', feedback=dict(feedback, judgment=decision),
                                   error='Integration contract remains unresolved; combined candidate retained')
                 return
             feedback['contract_decision'] = decision
+            feedback['integration_judged_round'] = agent.state['round']
             self.store.update(group, feedback=feedback)
-        repair = self.cached_phase(agent, 'integrate', feedback)
+        attempt = feedback.get('integration_attempt', {})
+        if attempt.get('round') != agent.state['round']:
+            phase_input = {k: v for k, v in feedback.items() if k != 'integration_attempt'}
+            attempt = {'round': agent.state['round'], 'input': json.loads(json.dumps(phase_input))}
+            feedback['integration_attempt'] = attempt
+            self.store.update(group, feedback=feedback)
+        repair = self.cached_phase(agent, 'integrate', attempt['input'])
         feedback['integration_repair'] = repair
         peers = self.store.observe_writes(group, valid_changed_files(agent.root, repair['changed_files']))
         if peers:
@@ -707,14 +725,61 @@ class Project:
         ok = agent.verify_chunk(repair)
         if ok:
             agent.checkpoint(repair)
-        feedback['affected_paths'] = sorted(set(handoff.get('affected_paths', [])) | set(repair['changed_files']))
-        review = self.cached_phase(agent, 'integration_review', feedback)
+        feedback['verification'] = getattr(agent, 'verification', {})
+        feedback['affected_paths'] = sorted(set(feedback.get('affected_paths', [])) |
+            set(handoff.get('affected_paths', [])) | set(repair['changed_files']) |
+            set(repair.get('observed_changes', [])))
+        # A blind impact review receives review evidence, not implementer claims.
+        context = review_context(dict(feedback, review=prior_review), feedback['affected_paths'])
+        context['full_review_required'] = (
+            feedback.get('integration_review_scope', feedback.get('review_scope')) != digest(agent.args.task_contract) or
+            feedback.get('integration_review_model', feedback.get('review_model')) != load_config(self.root)['roles']['reviewer'])
+        review = self.cached_phase(agent, 'integration_review', {
+            'integration_handoff': handoff, 'review_context': context,
+            'contract_decision': feedback.get('contract_decision')})
+        ledger, repeated = update_ledger(dict(feedback, review=prior_review), review, agent.state['round'])
+        feedback['issue_ledger'] = ledger
         feedback['integration_review'] = review
-        if 'ESCALATE' in (repair['status'], review['status']):
-            self.store.update(group, 'NEEDS_ARBITRATION', feedback=feedback,
-                              error='Integrator requested a shared-contract decision; do not restart source migration')
-            return
-        if not ok or repair['status'] != 'READY' or review['status'] != 'PASS' or open_issues(repair):
+        feedback['integration_review_scope'] = digest(agent.args.task_contract)
+        feedback['integration_review_model'] = review_model(agent)
+        converged = (ok and repair['status'] == 'READY' and review['status'] == 'PASS'
+                     and not open_issues(repair) and not open_issues(review))
+        if ('ESCALATE' in (repair['status'], review['status']) or
+                (not converged and (repeated or agent.state['round'] % 3 == 0 or
+                                    (review['status'] == 'PASS' and open_issues(repair))))):
+            feedback['repeated_findings'] = repeated
+            decision = self.cached_phase(agent, 'judge', feedback)
+            feedback['contract_decision'] = decision
+            feedback['integration_judged_round'] = agent.state['round']
+            feedback.setdefault('decisions', []).append({'round': agent.state['round'],
+                'verdict': judge_verdict(decision), 'summary': decision.get('summary', ''),
+                'issues': decision.get('issues', [])})
+            if judge_verdict(decision) in (None, 'BLOCKED'):
+                self.store.update(group, 'NEEDS_ARBITRATION', feedback=feedback,
+                                  error='Integration findings require a concrete contract decision')
+                return
+        proposals = [r.get('work_plan') for r in (repair, review, feedback.get('contract_decision', {}))
+                     if r.get('work_plan') and (r['work_plan'].get('tasks') or r['work_plan'].get('contracts'))]
+        if proposals:
+            proposal = {'tasks': [], 'contracts': []}
+            for key in proposal:
+                items = {}
+                for plan in proposals:
+                    for item in plan.get(key, []):
+                        if item['id'] in items and items[item['id']] != item:
+                            feedback.update(conflicting_work_plans=proposals,
+                                            proposed_work_plan=proposals[0],
+                                            plan_error='Conflicting integration proposals: ' + item['id'])
+                            self.store.update(group, 'PLAN_REPAIR', feedback=feedback)
+                            return
+                        items[item['id']] = item
+                proposal[key] = list(items.values())
+            if not self.store.plan_is_current(proposal):
+                feedback.update(proposed_work_plan=proposal, proposals_signature=digest(proposals),
+                                resume_round_after_plan=agent.state['round'] + 1)
+                self.store.update(group, 'WAITING_PLAN', feedback=feedback)
+                return
+        if not converged:
             self.store.update(group, 'INTEGRATION_REPAIR', feedback=feedback,
                               round=agent.state['round'] + 1, error='Repair affected integration findings only')
             return
@@ -740,6 +805,7 @@ class Project:
             review = dict(review, test_paths=paths)
             ok = agent.verify_chunk(dict(review, test_paths=paths, changed_files=retained['affected_paths']))
         feedback['revalidation_review'] = review
+        feedback['verification'] = getattr(agent, 'verification', {})
         proposal = review.get('work_plan') or {}
         if (proposal.get('tasks') or proposal.get('contracts')) and not self.store.plan_is_current(proposal):
             feedback.update(proposed_work_plan=proposal, resume_round_after_plan=agent.state['round'],
@@ -940,12 +1006,22 @@ class Project:
                                candidate / ".goose/runs-integration.log", agent.notify, 0, cancel_event=self.stop)
             if code:
                 retained_feedback = dict(saved['feedback'] or {})
+                failure = (candidate / '.goose/runs-integration.log').read_text(encoding='utf-8')[-40000:]
+                failed_cases = sorted(set(re.findall(r'^FAILED (tests/\S+)', failure, re.MULTILINE)))
+                repeated_failure = bool(failed_cases and failed_cases == retained_feedback.get('failed_integration_cases'))
+                if repeated_failure:
+                    retained_feedback.pop('contract_decision', None)
+                retained_feedback.pop('integration_attempt', None)
                 retained_feedback.update(candidate=str(candidate), tests='tests', review=review,
                     integration_handoff={'source_review': review, 'baseline': tip,
-                        'source_head': git(agent.root, 'rev-parse', 'HEAD'), 'needs_decision': False,
+                        'source_head': git(agent.root, 'rev-parse', 'HEAD'), 'needs_decision': repeated_failure,
                         'affected_paths': git(candidate, 'diff', '--name-only', tip, 'HEAD').splitlines()},
-                    full_suite_failure=(candidate / '.goose/runs-integration.log').read_text(encoding='utf-8')[-40000:])
-                self.store.update(group, "INTEGRATION_REPAIR", error="Integration tests failed; exclusive integrator repairs combined candidate",
+                    failed_integration_cases=failed_cases, full_suite_failure=failure,
+                    integration_test_exit_code=code, integration_gate_retry=(code != 1))
+                # pytest usage, collection, interruption and internal errors are
+                # not failed parity assertions. Preserve evidence without editing code.
+                state = 'INTEGRATION_REPAIR' if code == 1 else 'FAILED_INFRA'
+                self.store.update(group, state, error="Integration verification failed (pytest exit %s); candidate retained" % code,
                                   worktree=str(candidate), base=tip, round=agent.state["round"] + 1,
                                   feedback=retained_feedback)
                 return

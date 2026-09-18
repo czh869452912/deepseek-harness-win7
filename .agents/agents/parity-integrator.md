@@ -3,6 +3,13 @@ name: parity-integrator
 description: Repairs one combined integration candidate without restarting completed migrations.
 ---
 
+Treat a failed verification log as the repair scope: reproduce its cause before
+editing product code. Proxy/network/test-environment failures are not evidence of
+a source parity defect. Do not opportunistically redesign unrelated lifecycle or
+dispatch behavior. Record unrelated discoveries as deferred findings with an owner.
+The controller runs the full suite; use focused reproductions rather than rerunning
+the full suite yourself. Every issue must explicitly declare its state.
+
 You own this combined candidate exclusively. Reuse the retained source review and
 completed implementation. Read the integration handoff before editing. It records
 the two heads, affected paths, consumed contracts, prior evidence and any judge

@@ -223,3 +223,14 @@ def test_idle_stream_flushes_before_process_completion(tmp_path):
     assert run_process([sys.executable, '-c', code], tmp_path, tmp_path / 'raw.jsonl',
                        notify, 5, stream) == 0
     assert observed == [('thinking', 'partial ')]
+
+
+def test_loopback_proxy_bypass_preserves_external_proxy(tmp_path, monkeypatch):
+    from console_runtime import worker_environment
+    import subprocess
+    monkeypatch.setenv('HTTP_PROXY', 'http://127.0.0.1:9')
+    monkeypatch.setenv('NO_PROXY', 'internal.example,other.example')
+    env = worker_environment()
+    code = "from urllib.request import proxy_bypass; assert all(proxy_bypass(h) for h in ['localhost:80', '127.0.0.1:80', '[::1]:80', 'internal.example', 'other.example']); assert not proxy_bypass('external.example')"
+    subprocess.check_call([sys.executable, '-c', code], env=env)
+    assert env['HTTP_PROXY'] == 'http://127.0.0.1:9'

@@ -71,3 +71,20 @@ def test_smoke_checks_verdict_not_only_process_exit(tmp_path, verdict, success):
         encoding="utf-8", errors="replace",
     )
     assert (result.returncode == 0) is success
+
+
+def test_project_waiting_exit_is_not_reported_as_powershell_exception(tmp_path):
+    fake = tmp_path / 'controller.ps1'
+    fake.write_text("Write-Output '[blocked] vendor/cordis [FAILED_INFRA]: checkpoint blocked'\nexit 2\n", encoding='utf-8')
+    launcher = tmp_path / 'run-project.ps1'
+    source = (ROOT / '.goose/run-project.ps1').read_text(encoding='utf-8')
+    source = source.replace("$python = Join-Path $root '.venv\\Scripts\\python.exe'",
+                            "$python = '" + str(fake).replace("'", "''") + "'")
+    launcher.write_text(source, encoding='utf-8')
+    proc = subprocess.run([POWERSHELL, '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File',
+                           str(launcher), '-Action', 'run', '-GooseExe', 'unused'],
+                          stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8', errors='replace')
+    assert proc.returncode == 2
+    assert '[blocked] vendor/cordis' in proc.stdout
+    assert 'RuntimeException' not in proc.stderr
+    assert 'Saved work is retained' in proc.stdout

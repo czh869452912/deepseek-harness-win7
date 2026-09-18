@@ -783,6 +783,8 @@ class Project:
             self.store.update(group, 'INTEGRATION_REPAIR', feedback=feedback,
                               round=agent.state['round'] + 1, error='Repair affected integration findings only')
             return
+        # Preserve the completed PASS even if checkpoint/publication fails.
+        self.store.update(group, feedback=feedback)
         if git(agent.root, 'status', '--porcelain'):
             raise ValueError('Integration repair is not checkpointed; preserve candidate')
         self.store.update(group, 'VERIFIED', feedback=feedback, head=git(agent.root, 'rev-parse', 'HEAD'))
@@ -1165,6 +1167,10 @@ class Project:
                                 self.show()
                                 return 0 if complete else 2
                             complete = bool(rows) and all(r["state"] == "INTEGRATED" for r in rows)
+                            if not complete:
+                                for row in rows:
+                                    if row.get('error') and row['state'] != 'INTEGRATED':
+                                        print('[blocked] %s [%s]: %s' % (row['id'], row['state'], row['error']), flush=True)
                             print("PROJECT COMPLETE" if complete else "WAITING: inspect task dependencies/errors in " + str(self.folder / "index.html"))
                             self.store.meta("scheduler", "COMPLETE" if complete else "WAITING")
                             self.show()

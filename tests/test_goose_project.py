@@ -1406,3 +1406,15 @@ def test_integration_infrastructure_error_retries_gate_without_product_repair(re
     monkeypatch.setattr(p, 'merge', lambda *args: calls.append('gate'))
     p.execute_integration(group, agent, row['feedback'])
     assert calls == ['gate']
+
+
+def test_waiting_reports_blocking_task_error(repo, monkeypatch, capsys):
+    p = make_project(repo)
+    p.store.apply_plan(plan(task('a'), task('b', ['a'])))
+    p.store.meta('architecture', p.store.meta('upstream'))
+    monkeypatch.setattr(p, 'execute', lambda group: p.store.update(
+        group, 'FAILED_INFRA', error='Integration repair is not checkpointed; preserve candidate'))
+    assert p.run() == 2
+    output = capsys.readouterr().out
+    assert '[blocked] a [FAILED_INFRA]: Integration repair is not checkpointed' in output
+    assert p.store.meta('scheduler') == 'WAITING'

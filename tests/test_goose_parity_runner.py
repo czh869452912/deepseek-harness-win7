@@ -513,3 +513,29 @@ def test_format_repair_rejects_product_mutation(repo, monkeypatch):
     with pytest.raises(ValueError, match='Format-only repair mutated'):
         h.phase('integrate')
     assert (repo / 'unexpected.py').exists()
+
+
+@pytest.mark.parametrize('unrelated', [False, True])
+def test_checkpoint_adopts_verified_staged_deletion_but_preserves_unrelated_index(repo, unrelated):
+    h = Harness(repo, [])
+    h.args.adopt_existing = True
+    (repo / 'probe.py').write_text('temporary = True\n', encoding='utf-8')
+    runner.git(repo, 'add', 'probe.py')
+    runner.git(repo, 'commit', '-qm', 'probe fixture')
+    original = runner.git(repo, 'rev-parse', 'HEAD')
+    runner.git(repo, 'rm', 'probe.py')
+    (repo / 'module.py').write_text('x = 2\n', encoding='utf-8')
+    if unrelated:
+        (repo / 'other.txt').write_text('user staged work', encoding='utf-8')
+        runner.git(repo, 'add', 'other.txt')
+    index = runner.git(repo, 'diff', '--cached', '--binary')
+    data = result()
+    data['observed_changes'] = ['probe.py', 'module.py']
+    runner.Runner.checkpoint(h, data)
+    if unrelated:
+        assert runner.git(repo, 'rev-parse', 'HEAD') == original
+        assert runner.git(repo, 'diff', '--cached', '--binary') == index
+    else:
+        assert runner.git(repo, 'rev-parse', 'HEAD') != original
+        assert runner.git(repo, 'status', '--porcelain') == ''
+        assert not (repo / 'probe.py').exists()

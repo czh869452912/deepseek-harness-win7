@@ -842,12 +842,19 @@ class Runner:
             self.notify("checkpoint", "SKIPPED: pre-existing edits in " + ", ".join(sorted(overlap)) +
                         "; use -AdoptExisting on the next run to include prior migration work")
             return
-        if git(self.root, "diff", "--cached", "--name-only"):
+        staged = set(git(self.root, "diff", "--cached", "--name-only").splitlines())
+        if staged and (not self.args.adopt_existing or not staged <= set(paths)):
             self.notify("checkpoint", "SKIPPED: existing staged changes; index preserved")
             return
         for name in paths:
             safe_path(self.root, name)
-        git(self.root, "add", "--", *paths)
+        # git rm already removed its path from the index; adding it again would
+        # fail with pathspec-not-found. Other tracked deletions still need add.
+        add_paths = [name for name in paths if name not in staged or
+                     (self.root / name).exists() or (self.root / name).is_symlink() or
+                     git(self.root, 'ls-files', '--', name)]
+        if add_paths:
+            git(self.root, "add", "--", *add_paths)
         if not git(self.root, "diff", "--cached", "--name-only"):
             self.notify("checkpoint", "Verified paths are already committed; reusing the checkpoint")
             return

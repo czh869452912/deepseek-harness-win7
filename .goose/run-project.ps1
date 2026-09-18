@@ -46,6 +46,10 @@ try {
     if ($Task) { $arguments += @('--task', $Task) }
     if ($Action -eq 'prepare-main') { $arguments += @('--target', $Target) }
     & $python @arguments
+    if (($LASTEXITCODE -eq 2) -and (@('run', 'pilot') -contains $Action)) {
+        Write-Warning 'Project is waiting for blocked tasks; see the [blocked] reasons above and .goose/runs/project/index.html. Saved work is retained.'
+        exit 2
+    }
     if ($LASTEXITCODE -ne 0) { throw 'Project needs attention; inspect .goose/runs/project/index.html and task errors.' }
 } finally {
     $env:OPENAI_BASE_URL = $originalUrl

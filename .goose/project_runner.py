@@ -29,7 +29,8 @@ def repeated_issues(review, previous):
 
 def review_model(agent):
     """Use the model which actually ran, even if the dashboard changed meanwhile."""
-    return {key: agent.state.get(key) for key in ('provider', 'model')}
+    return {key: agent.state[key] for key in ('provider', 'model', 'thinking_effort')
+            if agent.state.get(key) is not None}
 
 
 STRINGS = {"type": "array", "items": {"type": "string"}}

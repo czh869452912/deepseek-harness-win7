@@ -16,6 +16,31 @@ from parity_runner import Stream, run_process
 from project_runner import repeated_issues
 
 
+def test_role_effort_isolated_between_parallel_child_processes(tmp_path, monkeypatch):
+    import os
+    monkeypatch.setenv('GOOSE_THINKING_EFFORT', 'low')
+    def worker(effort):
+        log = tmp_path / (effort + '.log')
+        assert run_process([sys.executable, '-c', "import os; print(os.environ['GOOSE_THINKING_EFFORT'])"],
+                           tmp_path, log, lambda *args: None, 10, thinking_effort=effort) == 0
+        return log.read_text(encoding='utf-8').strip()
+    with ThreadPoolExecutor(2) as pool:
+        assert list(pool.map(worker, ['medium', 'high'])) == ['medium', 'high']
+    assert os.environ['GOOSE_THINKING_EFFORT'] == 'low'
+
+
+def test_config_effort_validation_and_legacy_compatibility():
+    from console_runtime import validate_config
+    config = load_config(Path(__file__).resolve().parents[1])
+    assert config['roles']['reviewer']['thinking_effort'] == 'medium'
+    assert config['roles']['judge']['thinking_effort'] == 'high'
+    config['roles']['reviewer']['thinking_effort'] = 'invalid'
+    with pytest.raises(ValueError, match='thinking_effort'):
+        validate_config(config)
+    config['roles']['reviewer'].pop('thinking_effort')
+    validate_config(config)
+
+
 def test_parallel_workers_keep_complete_tool_results_and_thinking(tmp_path, monkeypatch):
     monkeypatch.setenv('GOOSE_PROJECT_OUTPUT', 'quiet')
     def worker(name):
@@ -121,7 +146,7 @@ def test_model_editor_atomic_update_origin_token_and_stale_revision(tmp_path):
 def test_config_rejects_secret_fields(tmp_path):
     value = load_config(tmp_path)
     value['roles']['judge']['api_key'] = 'do-not-store'
-    with pytest.raises(ValueError, match='provider and model only'):
+    with pytest.raises(ValueError, match='expected provider, model and optional thinking_effort'):
         write_config(tmp_path, value, config_revision(value))
 
 

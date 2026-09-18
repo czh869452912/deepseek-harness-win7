@@ -384,12 +384,12 @@ def stop_process(proc):
         proc.kill()
 
 
-def run_process(command, root, log_path, notify, timeout, stream=None, exit_grace=2, cancel_event=None):
+def run_process(command, root, log_path, notify, timeout, stream=None, exit_grace=2, cancel_event=None, thinking_effort=None):
     """Drain output on a reader thread, so quiet tools still get timed heartbeats."""
     proc = subprocess.Popen(command, cwd=str(root), stdin=subprocess.DEVNULL,
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                             encoding="utf-8", errors="replace", bufsize=1,
-                            start_new_session=os.name != "nt", env=worker_environment())
+                            start_new_session=os.name != "nt", env=worker_environment(thinking_effort))
     tree = ProcessTree(proc)
     lines = queue.Queue()
 
@@ -527,7 +527,10 @@ class Runner:
                   "integrate": "migrator", "integration_review": "reviewer"}[phase]
         effective = load_config(self.control_root)
         provider, model = (effective['roles'][prefix][x] for x in ('provider', 'model'))
+        model_config = effective['roles'][prefix]
+        effort = model_config.get('thinking_effort')
         self.state.update(attempt=uuid.uuid4().hex, provider=provider, model=model,
+                          thinking_effort=effort,
                           config_revision=config_revision(effective), test_python=sys.executable)
         save_json(self.run_dir / (self.state['attempt'] + '.config.json'), effective)
         probe = subprocess.run([sys.executable, '-c',
@@ -622,7 +625,7 @@ class Runner:
             recipe["settings"]["max_turns"] = turns
         stem = "%02d-%s" % (self.state["round"], phase)
         recipe_path = self.run_dir / (stem + ".yaml")
-        prompt_signature = hashlib.sha256((body + prompt).encode('utf-8')).hexdigest()
+        prompt_signature = hashlib.sha256((body + prompt + json.dumps(model_config, sort_keys=True)).encode('utf-8')).hexdigest()
         feedback_signature = hashlib.sha256(json.dumps(feedback, sort_keys=True, ensure_ascii=False).encode('utf-8')).hexdigest()
         save_json(recipe_path, recipe)  # JSON is valid YAML; no templated shell commands.
         self.notify("start", role + " / " + provider + " / " + model)
@@ -633,7 +636,7 @@ class Runner:
             index = git(self.root, "diff", "--cached", "--binary")
             save_json(self.run_dir / (stem + ".start.json"), {"head": head, "files": before, "index": index,
                       "scope": getattr(self.args, "task_contract", None),
-                      'model_config': {'provider': provider, 'model': model}, 'feedback_signature': feedback_signature})
+                      'model_config': model_config, 'feedback_signature': feedback_signature})
             stream = Stream(self.notify, self.notify)
             session_name = self.run_dir.name + "-" + stem
             started = time.monotonic()
@@ -671,7 +674,8 @@ class Runner:
                         raise TimeoutError("Explicit phase timeout reached")
                 try:
                     code = run_process(command, self.root, self.run_dir / log_name,
-                                       self.notify, remaining, stream, cancel_event=getattr(self.args, "cancel_event", None))
+                                       self.notify, remaining, stream, cancel_event=getattr(self.args, "cancel_event", None),
+                                       thinking_effort=effort)
                 except InterruptedError:
                     retained_files = snapshot(self.root)
                     if phase in ('migrate', 'integrate') or retained_files == before:
@@ -740,7 +744,7 @@ class Runner:
                 resume_path.unlink()
             save_json(self.run_dir / (stem + ".binding.json"), {"files": after, "head": git(self.root, "rev-parse", "HEAD"),
                       "scope": getattr(self.args, "task_contract", None),
-                      'model_config': {'provider': provider, 'model': model},
+                      'model_config': model_config,
                       "feedback_signature": hashlib.sha256(json.dumps(feedback, sort_keys=True, ensure_ascii=False).encode('utf-8')).hexdigest()})
             self.state["history"].append({"phase": phase, "round": self.state["round"],
                                           "status": result["status"], "issues": len(result["issues"])})
@@ -850,7 +854,8 @@ class Runner:
                 feedback = {'migration': migration, 'review': review, 'targeted_checks_passed': verified,
                             'issue_ledger': ledger, 'decisions': previous.get('decisions', []),
                             'review_head': git(self.root, 'rev-parse', 'HEAD'),
-                            'review_model': {key: self.state.get(key) for key in ('provider', 'model')}}
+                            'review_model': {key: self.state[key] for key in ('provider', 'model', 'thinking_effort')
+                                             if self.state.get(key) is not None}}
                 self.state["issues"] = review["issues"]
                 self.notify("progress", "round %d/%s; open issues=%d; coverage_complete=%s" %
                             (round_number, self.args.max_rounds or "unlimited", len(review["issues"]), review["coverage_complete"]))

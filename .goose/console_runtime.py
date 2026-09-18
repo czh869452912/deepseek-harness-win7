@@ -19,8 +19,11 @@ def validate_config(value):
     if not isinstance(value['roles'], dict) or set(value['roles']) != set(ROLES):
         raise ValueError('Configure architect, migrator, reviewer and judge')
     for role, config in value['roles'].items():
-        if not isinstance(config, dict) or set(config) != {'provider', 'model'}:
-            raise ValueError(role + ': expected provider and model only')
+        if (not isinstance(config, dict) or not {'provider', 'model'} <= set(config) or
+                set(config) - {'provider', 'model', 'thinking_effort'}):
+            raise ValueError(role + ': expected provider, model and optional thinking_effort')
+        if 'thinking_effort' in config and config['thinking_effort'] not in ('low', 'medium', 'high'):
+            raise ValueError(role + ': thinking_effort must be low, medium or high')
         for text in config.values():
             if not isinstance(text, str) or not text.strip() or len(text) > 200 or any(ord(c) < 32 for c in text):
                 raise ValueError('Invalid provider/model name')
@@ -55,11 +58,13 @@ def write_config(root, value, expected_revision):
     return config_revision(value)
 
 
-def worker_environment():
+def worker_environment(thinking_effort=None):
     env = os.environ.copy()
     env['DSH_TEST_PYTHON'] = sys.executable
     env['PATH'] = str(Path(sys.executable).parent) + os.pathsep + env.get('PATH', '')
     env['PYTHONIOENCODING'] = 'utf-8'
+    if thinking_effort is not None:
+        env['GOOSE_THINKING_EFFORT'] = thinking_effort
     return env
 
 

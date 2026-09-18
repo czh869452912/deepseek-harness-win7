@@ -332,6 +332,21 @@ def make_review_runner(repo):
     return h
 
 
+def test_review_and_judge_pass_their_own_effort_to_goose(repo, monkeypatch):
+    h = make_review_runner(repo)
+    efforts = []
+    def process(command, root, log, notify, timeout, stream, **kwargs):
+        efforts.append(kwargs['thinking_effort'])
+        raise InterruptedError('pause before request')
+    monkeypatch.setattr(runner, 'run_process', process)
+    for phase in ('review', 'judge', 'integration_review'):
+        with pytest.raises(InterruptedError):
+            h.phase(phase)
+    assert efforts == ['medium', 'high', 'medium']
+    bound = json.loads((h.run_dir / '00-review.start.json').read_text(encoding='utf-8'))
+    assert bound['model_config']['thinking_effort'] == 'medium'
+
+
 @pytest.mark.parametrize('change_scope', [False, True])
 def test_interrupted_phase_resumes_native_session_only_for_same_scope(repo, monkeypatch, change_scope):
     h = make_review_runner(repo)

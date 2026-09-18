@@ -11,11 +11,13 @@
     },
     "reviewer": {
       "provider": "custom_openai_sol",
-      "model": "gpt-5.6-sol"
+      "model": "gpt-5.6-sol",
+      "thinking_effort": "medium"
     },
     "judge": {
       "provider": "custom_openai_sol",
-      "model": "gpt-5.6-sol"
+      "model": "gpt-5.6-sol",
+      "thinking_effort": "high"
     }
   }
 }

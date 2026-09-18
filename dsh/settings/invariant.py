@@ -3,7 +3,7 @@ Package-owned invariant companion for dsh.settings.
 Aligned 1:1 with reference @deepseek-ai/dsh-settings/invariant.
 """
 
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 PACKAGE_NAME = "@deepseek-ai/dsh-settings"
 name = "settings-invariant"
@@ -11,8 +11,16 @@ inject = ["invariants"]
 
 
 def install(ctx: Any, fail: Callable[[str], None]) -> None:
+    """
+    Install the commit-event contract: `settings/updated` fires only for a
+    currently registered namespace, only when the resolved value changed, and
+    only with the service's authoritative resolved value, all judged with the
+    seam's own equality predicate.
+    """
+    from dsh.settings.provider import deep_equal_json
+
     def on_settings_updated(ns: str, next_val: Any, prev_val: Any, source: str) -> None:
-        settings = ctx.get("settings") if hasattr(ctx, "get") else None
+        settings = ctx.get("settings")
         if settings is None:
             fail(f'settings/updated for "{ns}" emitted without a live settings service')
             return
@@ -20,19 +28,20 @@ def install(ctx: Any, fail: Callable[[str], None]) -> None:
         if current is None:
             fail(f'settings/updated for "{ns}" emitted while the namespace is unregistered')
             return
-        from dsh.settings.provider import deep_equal_json
         if not deep_equal_json(current, next_val):
             fail(f'settings/updated for "{ns}" does not match the authoritative resolved value')
             return
         if deep_equal_json(next_val, prev_val):
             fail(f'settings/updated for "{ns}" emitted without a resolved-value change')
-            return
 
-    if hasattr(ctx, "on"):
-        ctx.on("settings/updated", on_settings_updated)
+    ctx.on("settings/updated", on_settings_updated)
 
 
-def apply(ctx: Any) -> Optional[Any]:
-    if hasattr(ctx, "invariants") and hasattr(ctx.invariants, "register"):
-        return ctx.invariants.register(PACKAGE_NAME, install)
-    return None
+def apply(ctx: Any) -> Any:
+    """
+    Register this package's invariant companion.
+
+    :param ctx: Cordis context carrying the invariant service.
+    :returns: the installed registration's disposer after setup succeeds.
+    """
+    return ctx.invariants.register(PACKAGE_NAME, install)

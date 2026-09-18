@@ -1,9 +1,17 @@
 """
 Structural secret redaction for settings values.
 Aligned 1:1 with reference @deepseek-ai/dsh-settings/redact.
+
+Language adaptation: JavaScript `undefined` has no Python value, so the walk
+reads an absent field as the port's undefined sentinel (`dsh.cordis.utils`).
+`RedactedSecret.set` is `value !== undefined` in the reference, so a stored
+JSON `null` counts as set while an absent field does not; only the sentinel can
+tell those apart.
 """
 
 from typing import Any, Dict, List, Optional
+
+from dsh.cordis.utils import _UNDEFINED
 
 
 class RedactedSecret:
@@ -36,106 +44,95 @@ class RedactedValue:
 
 
 def is_record(value: Any) -> bool:
+    """Whether a value is a plain data object the walker may recurse into."""
     return isinstance(value, dict)
 
 
-def _get_node_properties(node: Any) -> Dict[str, Any]:
+def _node_member(node: Any, key: str) -> Any:
+    """Read one structural member of a live schema node (or of its mapping form)."""
     if isinstance(node, dict):
-        return node.get("dict") or node.get("properties") or {}
-    dict_val = getattr(node, "dict", None)
-    if isinstance(dict_val, dict):
-        return dict_val
-    props_val = getattr(node, "properties", None)
-    if isinstance(props_val, dict):
-        return props_val
+        return node.get(key, _UNDEFINED)
+    return getattr(node, key, _UNDEFINED)
+
+
+def _node_role(node: Any) -> Optional[str]:
+    """The node's `meta.role`, when it declares one."""
+    meta = _node_member(node, "meta")
+    if isinstance(meta, dict):
+        role = meta.get("role", _UNDEFINED)
+    else:
+        role = getattr(meta, "role", _UNDEFINED) if meta is not _UNDEFINED else _UNDEFINED
+    if role is _UNDEFINED or role is None:
+        return None
+    return str(role)
+
+
+def _node_type(node: Any) -> Optional[str]:
+    """The node's `type` discriminant."""
+    node_type = _node_member(node, "type")
+    if node_type is _UNDEFINED or node_type is None:
+        return None
+    return str(node_type)
+
+
+def _node_properties(node: Any) -> Dict[str, Any]:
+    """An `object` node's property schemas, keyed by property name."""
+    properties = _node_member(node, "dict")
+    if isinstance(properties, dict):
+        return properties
     return {}
 
 
-def _get_node_role(node: Any) -> Optional[str]:
-    if isinstance(node, dict):
-        meta = node.get("meta")
-        if isinstance(meta, dict) and "role" in meta:
-            return str(meta["role"])
-        if "role" in node:
-            return str(node["role"])
-        return None
-    meta = getattr(node, "meta", None)
-    if meta is not None:
-        role = getattr(meta, "role", None)
-        if role is not None:
-            return str(role)
-        if isinstance(meta, dict) and "role" in meta:
-            return str(meta["role"])
-    role = getattr(node, "role", None)
-    if role is not None:
-        return str(role)
-    return None
-
-
-def _get_node_type(node: Any) -> Optional[str]:
-    if isinstance(node, dict):
-        return node.get("type")
-    return getattr(node, "type", None)
-
-
-def _get_node_inner(node: Any) -> Any:
-    if isinstance(node, dict):
-        return node.get("inner") or node.get("value")
-    return getattr(node, "inner", None) or getattr(node, "value", None)
+def _node_inner(node: Any) -> Any:
+    """A `dict`/`array` node's element schema."""
+    return _node_member(node, "inner")
 
 
 def _walk(node: Any, value: Any, path: List[str], secrets: List[RedactedSecret]) -> Any:
-    role = _get_node_role(node)
-    if role == "secret":
-        secrets.append(RedactedSecret(path=list(path), set_flag=(value is not None and value != "")))
-        return None
+    if node is _UNDEFINED or node is None:
+        return value
+    if _node_role(node) == "secret":
+        secrets.append(RedactedSecret(path=list(path), set_flag=value is not _UNDEFINED))
+        return _UNDEFINED
 
-    node_type = _get_node_type(node)
+    node_type = _node_type(node)
 
-    if node_type == "object" or (node_type is None and is_record(value)):
-        properties = _get_node_properties(node)
-        source = value if is_record(value) else None
+    if node_type == "object":
+        properties = _node_properties(node)
+        source = value if is_record(value) else _UNDEFINED
         rebuilt: Dict[str, Any] = {}
-
-        if source is not None:
+        if source is not _UNDEFINED:
             for key, entry in source.items():
-                if properties and key in properties:
+                if key in properties:
                     continue
-                # Heuristic for secret keys if no explicit schema properties
-                if not properties and key in ("apiKey", "api_key", "secret", "password", "token"):
-                    secrets.append(RedactedSecret(path=path + [str(key)], set_flag=bool(entry)))
-                else:
-                    rebuilt[key] = entry
-
-        if properties:
-            for key, child in properties.items():
-                child_val = source.get(key) if source is not None else None
-                stripped = _walk(child, child_val, path + [str(key)], secrets)
-                if stripped is not None:
-                    rebuilt[key] = stripped
-
-        if source is None and len(rebuilt) == 0:
+                rebuilt[key] = entry
+        for key, child in properties.items():
+            child_value = source.get(key, _UNDEFINED) if source is not _UNDEFINED else _UNDEFINED
+            stripped = _walk(child, child_value, path + [str(key)], secrets)
+            if stripped is not _UNDEFINED:
+                rebuilt[str(key)] = stripped
+        if source is _UNDEFINED and not rebuilt:
             return value
         return rebuilt
 
-    elif node_type == "dict":
+    if node_type == "dict":
         if not is_record(value):
             return value
-        inner = _get_node_inner(node)
+        inner = _node_inner(node)
         rebuilt_dict: Dict[str, Any] = {}
         for key, entry in value.items():
             stripped = _walk(inner, entry, path + [str(key)], secrets)
-            if stripped is not None:
-                rebuilt_dict[key] = stripped
+            if stripped is not _UNDEFINED:
+                rebuilt_dict[str(key)] = stripped
         return rebuilt_dict
 
-    elif node_type == "array":
+    if node_type == "array":
         if not isinstance(value, list):
             return value
-        inner = _get_node_inner(node)
+        inner = _node_inner(node)
         return [
-            _walk(inner, entry, path + [str(i)], secrets)
-            for i, entry in enumerate(value)
+            _walk(inner, entry, path + [str(index)], secrets)
+            for index, entry in enumerate(value)
         ]
 
     return value
@@ -144,8 +141,15 @@ def _walk(node: Any, value: Any, path: List[str], secrets: List[RedactedSecret])
 def redact_secrets(schema: Any, value: Any) -> RedactedValue:
     """
     Remove every role('secret') field a schema declares from a value.
-    The input is never mutated.
-    Returns RedactedValue carrying stripped value and ordered secret positions.
+
+    The walker follows `object`, `dict`, and `array` containers; a secret must
+    be declared directly on a field reachable through those containers. The
+    input is never mutated.
+
+    :param schema: live schemastery schema describing the value.
+    :param value: the value to strip; an absent value yields an absent result
+        with object-property secret slots still enumerated.
+    :returns: the stripped detached value and the ordered secret positions.
     """
     secrets: List[RedactedSecret] = []
     stripped = _walk(schema, value, [], secrets)

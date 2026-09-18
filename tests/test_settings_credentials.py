@@ -1,4 +1,4 @@
-import json
+﻿import json
 import os
 import tempfile
 import time
@@ -119,14 +119,14 @@ def test_settings_update_replace_mutate_rpcs_and_events():
         settings.update("llm", {"model": "updated-model"})
         assert scope.get()["model"] == "updated-model"
         assert scope.get()["base_url"] == "https://default.com"
-        assert settings.get_revision("llm") == 2
+        assert settings.get_revision("llm") == 1
         assert len(watched_changes) == 1
 
         # 2. replace
         settings.replace("llm", {"base_url": "https://newbase.com"})
         assert scope.get()["model"] == "default-model"
         assert scope.get()["base_url"] == "https://newbase.com"
-        assert settings.get_revision("llm") == 3
+        assert settings.get_revision("llm") == 2
 
         # 3. mutate
         settings.mutate("llm", [

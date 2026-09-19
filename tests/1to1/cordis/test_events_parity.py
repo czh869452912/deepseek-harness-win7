@@ -416,4 +416,3 @@ def test_d9_emit_settlement_cancellation_reaches_the_loop_less_listener_cleanup(
     assert bus.join_loopless_settlements(10.0) is True
     assert steps == ["prefix", "finally"]
     assert bus.pending_loopless_settlements() == 0
-

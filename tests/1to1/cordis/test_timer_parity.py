@@ -4,9 +4,11 @@ Authority: reference/vendor/timer/src/index.ts
 """
 
 import asyncio
+import gc
 import pytest
 import threading
 import time
+import warnings
 from dsh.cordis.context import Context
 from dsh.cordis.fiber import FiberState
 from dsh.cordis.loader import Loader
@@ -460,6 +462,41 @@ def test_t5_interval_callback_raising_without_running_loop_keeps_the_interval_ar
     assert timer_effects(ctx) == []
 
 
+def test_t5_interval_callback_without_running_loop_awaits_its_async_body():
+    """ts:index.ts:63-66 - `setInterval` invokes the callback from the runtime timer queue,
+    so an async callback's body continues past its first await even when no loop holds the
+    interval, and the interval effect stays owned until its disposer clears it."""
+    ctx = Context()
+    ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
+    ticks = []
+
+    async def callback():
+        ticks.append("prefix")
+        await asyncio.sleep(0.05)
+        ticks.append("after-await")
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        dispose = ctx.interval(callback, 10)
+        try:
+            deadline = time.monotonic() + 2
+            while "after-await" not in ticks and time.monotonic() < deadline:
+                time.sleep(0.01)
+
+            # The awaited continuation belongs to the callback, not to the interval:
+            # the tick thread keeps the interval effect owned until the disposer runs.
+            assert timer_effects(ctx) == ["ctx.interval()"]
+        finally:
+            dispose()
+            time.sleep(0.05)  # a tick already in flight when the disposer ran lands here
+            gc.collect()
+
+    assert "prefix" in ticks
+    assert ticks.index("prefix") < ticks.index("after-await")
+    assert [str(w.message) for w in caught if "never awaited" in str(w.message)] == []
+    assert timer_effects(ctx) == []
+
+
 @pytest.mark.asyncio
 async def test_t6_interval_iterator_is_its_own_async_iterator_and_waits_for_a_tick():
     """ts:index.ts:71-73 & 99-101 - a tick resolves the waiting consumer; the iterator is its own."""
@@ -745,6 +782,68 @@ def test_t9_throttle_without_running_loop_still_runs_the_trailing_call():
     assert calls == [1, 2]
 
 
+def test_t9_throttle_without_running_loop_awaits_its_async_body():
+    """ts:index.ts:123-135 - `execute` calls the callback unguarded, so both the immediate run
+    and the trailing `setTimeout` run must carry an async callback past its first await when no
+    loop holds the timer."""
+    ctx = Context()
+    ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
+    steps = []
+
+    async def callback(value):
+        steps.append(("prefix", value))
+        await asyncio.sleep(0.02)
+        steps.append(("after-await", value))
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        throttled = ctx.throttle(callback, 60)
+        throttled(1)  # `remaining` is negative, so this runs on the calling thread
+        throttled(2)  # inside the window, so this arms the trailing timer
+        try:
+            deadline = time.monotonic() + 2
+            while len(steps) < 4 and time.monotonic() < deadline:
+                time.sleep(0.01)
+            gc.collect()
+        finally:
+            throttled.dispose()
+
+    assert [entry for entry in steps if entry[0] == "prefix"] == [("prefix", 1), ("prefix", 2)]
+    assert [entry for entry in steps if entry[0] == "after-await"] == [("after-await", 1), ("after-await", 2)]
+    assert [str(w.message) for w in caught if "never awaited" in str(w.message)] == []
+    assert timer_effects(ctx) == []
+
+
+def test_t9_debounce_without_running_loop_awaits_its_async_body():
+    """ts:index.ts:139-143 - the debounced callback runs from `setTimeout`, so its async body
+    continues past its first await without a loop holding the timer."""
+    ctx = Context()
+    ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
+    steps = []
+
+    async def callback(value):
+        steps.append(("prefix", value))
+        await asyncio.sleep(0.02)
+        steps.append(("after-await", value))
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        debounced = ctx.debounce(callback, 30)
+        debounced(1)
+        debounced(2)  # resets the timer, so only the last arguments run
+        try:
+            deadline = time.monotonic() + 2
+            while len(steps) < 2 and time.monotonic() < deadline:
+                time.sleep(0.01)
+            gc.collect()
+        finally:
+            debounced.dispose()
+
+    assert steps == [("prefix", 2), ("after-await", 2)]
+    assert [str(w.message) for w in caught if "never awaited" in str(w.message)] == []
+    assert timer_effects(ctx) == []
+
+
 def test_t9_timeout_callback_without_running_loop_runs_once_per_call():
     """ts:index.ts:34-42 - the callback form fires exactly once per call without a
     loop to hold the timer, and every timer effect is released afterwards."""
@@ -820,4 +919,30 @@ def test_t9_timeout_callback_raising_without_running_loop_escapes_to_the_thread_
     booms = [entry for entry in escaped if str(entry[1]) == "timeout-boom"]
     assert len(booms) == 1
     assert booms[0][0] is RuntimeError
+    assert timer_effects(ctx) == []
+
+
+def test_t9_timeout_callback_without_running_loop_awaits_its_async_body():
+    """ts:index.ts:34-38 - the firing timer invokes the callback unguarded, so an async
+    callback without a loop still runs its body past the first await and leaves no
+    unawaited coroutine behind, while its own effect is released first."""
+    ctx = Context()
+    ctx.plugin(TimerService)  # vendor/timer index.ts:12-16 - the plugin owns the service
+    steps = []
+
+    async def callback():
+        steps.append(("prefix", timer_effects(ctx)))
+        await asyncio.sleep(0.02)
+        steps.append(("after-await", timer_effects(ctx)))
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        ctx.timeout(callback, 0)
+        deadline = time.monotonic() + 2
+        while len(steps) < 2 and time.monotonic() < deadline:
+            time.sleep(0.01)
+        gc.collect()
+
+    assert steps == [("prefix", []), ("after-await", [])]
+    assert [str(w.message) for w in caught if "never awaited" in str(w.message)] == []
     assert timer_effects(ctx) == []

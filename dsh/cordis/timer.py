@@ -12,6 +12,37 @@ from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Tuple, Un
 from dsh.cordis.service import Service
 
 
+def drive_loopless_awaitable(result: Any) -> None:
+    """
+    Execute a timer callback's returned awaitable when no loop can own it.
+
+    `reference/vendor/timer/src/index.ts` invokes every timer callback from the
+    runtime's timer queue (`timeout` at :36-38, `interval` at :64, and
+    `throttle`/`debounce` at :125/:142), so a JavaScript async callback always
+    has a microtask queue to continue on: its synchronous prefix runs inside the
+    timer tick and the live promise settles on the same loop. A synchronous
+    Python caller has no ambient loop, so the same coroutine is driven to
+    completion on a private loop, the mechanism `run_async_setup_sync`
+    (`dsh/cordis/fiber.py:51-70`) and the no-loop branches of `Fiber.effect`
+    disposal (`dsh/cordis/fiber.py:474-488`) and `hmr` refresh
+    (`dsh/cordis/hmr.py:471-475`) already use. Ignoring the awaitable here would
+    instead drop the callback unexecuted and leak
+    `RuntimeWarning: coroutine ... was never awaited`.
+
+    A failing awaitable is not swallowed: the reference reaches the callback
+    unguarded, so its failure escapes to the thread's uncaught handler exactly
+    like a raising synchronous callback, which is also what the in-loop branch
+    (`loop.create_task`) leaves to the loop's exception handler.
+    """
+
+    async def _await() -> Any:
+        # `asyncio.run` only accepts a coroutine, so any awaitable the callback
+        # returned (coroutine, future or custom `__await__`) is adopted first.
+        return await result
+
+    asyncio.run(_await())
+
+
 class _AsyncIntervalIterator:
     """Async iterator for interval ticks matching TS TimerService.interval."""
 
@@ -206,7 +237,7 @@ class TimerService(Service):
                             res_loop = asyncio.get_running_loop()
                             res_loop.create_task(res)
                         except RuntimeError:
-                            pass
+                            drive_loopless_awaitable(res)
 
                 try:
                     loop = asyncio.get_running_loop()
@@ -369,7 +400,7 @@ class TimerService(Service):
                             res_loop = asyncio.get_running_loop()
                             res_loop.create_task(res)
                         except RuntimeError:
-                            pass
+                            drive_loopless_awaitable(res)
 
                 def _cleanup():
                     nonlocal disposed
@@ -470,7 +501,7 @@ class TimerService(Service):
                         loop = asyncio.get_running_loop()
                         loop.create_task(res)
                     except RuntimeError:
-                        pass
+                        drive_loopless_awaitable(res)
 
             if remaining <= 0:
                 if timer_handle is not None:
@@ -545,7 +576,7 @@ class TimerService(Service):
                             loop = asyncio.get_running_loop()
                             loop.create_task(res)
                         except RuntimeError:
-                            pass
+                            drive_loopless_awaitable(res)
 
             try:
                 loop = asyncio.get_running_loop()

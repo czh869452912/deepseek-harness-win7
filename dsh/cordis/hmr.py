@@ -137,6 +137,68 @@ class ConfigRefreshState:
         self.running: Optional[asyncio.Task] = None
 
 
+class ConfigRegistration:
+    """
+    One exact-path config watch, matching `registerConfig` in
+    `reference/vendor/hmr/src/index.ts:60-62,134-187`.
+
+    The registration object is the identity key of its own refresh state:
+    upstream stores that state in `configRefreshes = new WeakMap<object,
+    ConfigRefresh>` (`index.ts:93-95,296-320`), so a module watch disposed for
+    the same path can never retire the live config watch's serialization state.
+    Disposal joins and retires exactly the pass this registration owns
+    (`index.ts:177-181`).
+    """
+
+    def __init__(self, hmr: "ConfigWatcherService", canonical_filename: str,
+                 observed: str, refresh_fn: Callable[[], Any]):
+        self.hmr = hmr
+        self.canonical_filename = canonical_filename
+        # Path handed to the refresh callback and the failure event, matching
+        # the `filename` argument of `refreshConfig` (`index.ts:154,297-312`).
+        self.observed = observed
+        self.refresh = refresh_fn
+        self.state = ConfigRefreshState()
+        self.disposed = False
+        self._task: Optional[asyncio.Task] = None
+
+    def __call__(self) -> Any:
+        # Retire this registration only while it still owns the path, then join
+        # its own running pass (`index.ts:177-181`). Another registration's
+        # refresh state for the same path is left untouched.
+        if self.hmr._configs.get(self.canonical_filename) is self:
+            self.hmr._configs.pop(self.canonical_filename, None)
+        self.hmr._mtimes.pop(self.canonical_filename, None)
+        self.hmr._config_contents.pop(self.canonical_filename, None)
+        state = self.hmr._config_refreshes.get(self)
+
+        async def _run() -> None:
+            if state is not None and state.running and not state.running.done():
+                await asyncio.shield(state.running)
+            if state is not None and self.hmr._config_refreshes.get(self) is state:
+                self.hmr._config_refreshes.pop(self, None)
+            self.disposed = True
+
+        try:
+            loop = asyncio.get_running_loop()
+            self._task = loop.create_task(_run())
+        except RuntimeError:
+            self.disposed = True
+        return self
+
+    def __await__(self) -> Any:
+        if self._task is not None:
+            return self._task.__await__()
+        self.__call__()
+        if self._task is not None:
+            return self._task.__await__()
+
+        async def _dummy() -> None:
+            return None
+
+        return _dummy().__await__()
+
+
 def find_watch_root(filename: str) -> Tuple[str, str, int]:
     filename = os.path.abspath(filename)
     root = os.path.dirname(filename)
@@ -179,10 +241,7 @@ class ConfigWatcherService(Service):
             raise RuntimeError("--expose-internals is required for HMR service")
 
         self.debounce_ms: float = float(self.config.get("debounce", 100))
-        self._configs: Dict[str, Callable[[], Any]] = {}
-        # Canonical registration key -> absolute path observed by HMR, matching the TS
-        # `filename` passed to refreshConfig (resolve(baseDir, filename)).
-        self._config_names: Dict[str, str] = {}
+        self._configs: Dict[str, ConfigRegistration] = {}
         self._modules: Dict[str, Optional[Any]] = {}
         # Config and module watches keep separate staleness entries: the config
         # loop reads a missing entry as an add event, so a shared key would let a
@@ -190,7 +249,12 @@ class ConfigWatcherService(Service):
         self._mtimes: Dict[str, Tuple[float, int]] = {}
         self._module_mtimes: Dict[str, Tuple[float, int]] = {}
         self._config_contents: Dict[str, bytes] = {}
-        self._refreshes: Dict[str, ConfigRefreshState] = {}
+        # Refresh state is keyed by the registration that owns it: config state
+        # by the `ConfigRegistration` object (`index.ts:93-95` WeakMap), module
+        # state by the watched module path. A module registration can therefore
+        # never retire a live config registration's serialization state.
+        self._config_refreshes: Dict[Any, ConfigRefreshState] = {}
+        self._module_refreshes: Dict[str, ConfigRefreshState] = {}
         # One serialized module-reload pass plus its pending changed files, so a
         # change detected mid-pass joins that pass instead of racing it.
         self._module_reload_task: Optional[asyncio.Task] = None
@@ -297,8 +361,8 @@ class ConfigWatcherService(Service):
                 await asyncio.sleep(max(0.02, self.debounce_ms / 1000.0))
 
                 # 1. Check registered config files
-                for filename, refresh_fn in list(self._configs.items()):
-                    observed = self._config_names.get(filename, filename)
+                for filename, registration in list(self._configs.items()):
+                    observed = registration.observed
                     exists = os.path.exists(filename)
                     last_info = self._mtimes.get(filename)
                     last_mtime, last_size = last_info if isinstance(last_info, tuple) else (last_info or 0.0, -1)
@@ -330,12 +394,14 @@ class ConfigWatcherService(Service):
                             except OSError:
                                 pass
                             self._mtimes[filename] = (mtime, size)
-                            self._trigger_config_refresh(filename, refresh_fn, observed)
+                            self._trigger_config_refresh(
+                                registration, filename, registration.refresh, observed)
                     else:
                         if last_mtime > 0.0:  # unlink event
                             self._config_contents.pop(filename, None)
                             self._mtimes[filename] = (0.0, -1)
-                            self._trigger_config_refresh(filename, refresh_fn, observed)
+                            self._trigger_config_refresh(
+                                registration, filename, registration.refresh, observed)
 
                 # 2. Check registered module files
                 for filename, target_plugin in list(self._modules.items()):
@@ -394,7 +460,8 @@ class ConfigWatcherService(Service):
                                                     include = getattr(entry, "subtree", None)
                                                     inc_fn = getattr(include, "filename", None)
                                                     if inc_fn and os.path.realpath(full_path) == os.path.realpath(inc_fn):
-                                                        self._trigger_config_refresh(inc_fn, lambda inc=include: inc.refresh())
+                                                        self._trigger_config_refresh(
+                                                            include, inc_fn, lambda inc=include: inc.refresh())
                                                         matched_include = True
                                                         break
                                             if matched_include:
@@ -429,12 +496,35 @@ class ConfigWatcherService(Service):
                 if hasattr(self.ctx, "logger"):
                     self.ctx.logger("hmr").warn("Exception in poll loop: %s", e)
 
-    def _trigger_config_refresh(self, filename: str, refresh_fn: Callable[[], Any],
+    def _config_refresh_state(self, key: Any) -> ConfigRefreshState:
+        """
+        Return the refresh state owned by `key`, creating it on first use.
+
+        A `ConfigRegistration` owns the state object its disposer joins and
+        retires (`index.ts:93-95,177-181`); a loader include entry keys its own
+        state the same way (`index.ts:252,297-299`).
+        """
+        state = self._config_refreshes.get(key)
+        if state is None:
+            state = getattr(key, "state", None)
+            if not isinstance(state, ConfigRefreshState):
+                state = ConfigRefreshState()
+            self._config_refreshes[key] = state
+        return state
+
+    def _trigger_config_refresh(self, key: Any, filename: str, refresh_fn: Callable[[], Any],
                                 observed: Optional[str] = None) -> None:
-        """Run a refresh keyed by `filename`, broadcasting `observed` as the watched path."""
+        """
+        Run one registration's serialized refresh pass.
+
+        `reference/vendor/hmr/src/index.ts:296-324` keys the state by the
+        registration object, marks it dirty, and returns while a pass runs, so
+        later events coalesce into that pass instead of starting a second
+        callback for the same registration.
+        """
         if observed is None:
             observed = filename
-        state = self._refreshes.setdefault(filename, ConfigRefreshState())
+        state = self._config_refresh_state(key)
         state.dirty = True
         if state.running and not state.running.done():
             return
@@ -493,7 +583,7 @@ class ConfigWatcherService(Service):
         passes would reload one runtime twice and roll back only their own slice:
         the multi-file rollback would leave the other file on its replacement.
         """
-        refresh_state = self._refreshes.setdefault(filename, ConfigRefreshState())
+        refresh_state = self._module_refreshes.setdefault(filename, ConfigRefreshState())
         refresh_state.dirty = True
         self._module_changes[os.path.abspath(filename)] = target_plugin
         if self._module_reload_task is not None and not self._module_reload_task.done():
@@ -639,20 +729,27 @@ class ConfigWatcherService(Service):
                     self.ctx.logger("hmr").warn("Module reload at %s failed: %s", filename, reason)
 
         async def _run() -> None:
-            while self._module_changes:
-                pending = list(self._module_changes.items())
-                self._module_changes.clear()
-                for changed_file, changed_target in pending:
-                    state = self._refreshes.get(changed_file)
-                    if state is not None:
-                        state.dirty = False
-                    await _reload_one(changed_file, changed_target)
+            try:
+                while self._module_changes:
+                    pending = list(self._module_changes.items())
+                    self._module_changes.clear()
+                    for changed_file, changed_target in pending:
+                        state = self._module_refreshes.get(changed_file)
+                        if state is not None:
+                            state.dirty = False
+                        await _reload_one(changed_file, changed_target)
+            finally:
+                # The pass drops its own serialization state in its `finally`
+                # (`index.ts:318-321`), so a settled pass is never a join target.
+                for owned in self._module_refreshes.values():
+                    if owned.running is task:
+                        owned.running = None
 
         try:
             loop = asyncio.get_running_loop()
             task = loop.create_task(_run())
             self._module_reload_task = task
-            for state in self._refreshes.values():
+            for state in self._module_refreshes.values():
                 if state.dirty:
                     state.running = task
             self._refresh_tasks.add(task)
@@ -672,7 +769,10 @@ class ConfigWatcherService(Service):
         canonical_filename, canonical_root, depth = find_watch_root(filename)
         if canonical_filename in self._configs:
             raise ValueError(f"config path already registered: {filename}")
-        self._config_names[canonical_filename] = filename
+
+        # `index.ts:149-155`: the registration owns the watch, the observed path
+        # and the serialization state before the first refresh is scheduled.
+        registration = ConfigRegistration(self, canonical_filename, filename, refresh_fn)
 
         if os.path.exists(canonical_filename):
             try:
@@ -683,54 +783,16 @@ class ConfigWatcherService(Service):
             except OSError:
                 self._mtimes[canonical_filename] = (0.0, -1)
             # Present file at registration: trigger refresh once matching TS ignoreInitial: false
-            self._trigger_config_refresh(canonical_filename, refresh_fn, filename)
+            self._trigger_config_refresh(
+                registration, canonical_filename, refresh_fn, filename)
         else:
             self._mtimes[canonical_filename] = (0.0, -1)
 
-        self._configs[canonical_filename] = refresh_fn
+        self._configs[canonical_filename] = registration
 
-        class ConfigDisposer:
-            def __init__(self, hmr_svc: Any, c_filename: str):
-                self.hmr = hmr_svc
-                self.canonical_filename = c_filename
-                self.disposed = False
-                self._task = None
-
-            def __call__(self) -> Any:
-                self.hmr._configs.pop(self.canonical_filename, None)
-                self.hmr._config_names.pop(self.canonical_filename, None)
-                self.hmr._mtimes.pop(self.canonical_filename, None)
-                self.hmr._config_contents.pop(self.canonical_filename, None)
-                state = self.hmr._refreshes.get(self.canonical_filename)
-
-                async def _run() -> None:
-                    if state and state.running and not state.running.done():
-                        await asyncio.shield(state.running)
-                    self.hmr._refreshes.pop(self.canonical_filename, None)
-                    self.disposed = True
-
-                try:
-                    loop = asyncio.get_running_loop()
-                    self._task = loop.create_task(_run())
-                except RuntimeError:
-                    self.disposed = True
-                return self
-
-            def __await__(self) -> Any:
-                if self._task is not None:
-                    return self._task.__await__()
-                self.__call__()
-                if self._task is not None:
-                    return self._task.__await__()
-
-                async def _dummy() -> None:
-                    return None
-
-                return _dummy().__await__()
-
-        disposer = ConfigDisposer(self, canonical_filename)
         if hasattr(self.ctx, "effect"):
-            self.ctx.effect(lambda: disposer, label=f"hmr.registerConfig('{canonical_filename}')")
+            self.ctx.effect(lambda: registration,
+                            label=f"hmr.registerConfig('{canonical_filename}')")
 
         class RegistrationPromise:
             def __init__(self, disp: Any):
@@ -748,7 +810,7 @@ class ConfigWatcherService(Service):
             def __getattr__(self, name: str) -> Any:
                 return getattr(self._disp, name)
 
-        return RegistrationPromise(disposer)
+        return RegistrationPromise(registration)
 
     registerConfig = register_config
 
@@ -775,7 +837,10 @@ class ConfigWatcherService(Service):
         def unregister() -> None:
             self._modules.pop(abs_path, None)
             self._module_mtimes.pop(abs_path, None)
-            state = self._refreshes.pop(abs_path, None)
+            # Module refresh state is module-owned: disposing it must never
+            # retire the config registration's serialization state for this path
+            # (`index.ts:93-95,177-181`).
+            state = self._module_refreshes.pop(abs_path, None)
             if state and state.running and not state.running.done():
                 async def _wait():
                     try:
@@ -808,7 +873,10 @@ class ConfigWatcherService(Service):
             self._poll_task.cancel()
         if self._poll_task is not None:
             await asyncio.gather(self._poll_task, return_exceptions=True)
-        running_tasks = [s.running for s in self._refreshes.values() if s and s.running and not s.running.done()]
+        running_tasks = [s.running for s in self._config_refreshes.values()
+                         if s and s.running and not s.running.done()]
+        running_tasks.extend([s.running for s in self._module_refreshes.values()
+                              if s and s.running and not s.running.done()])
         running_tasks.extend([t for t in self._refresh_tasks if not t.done()])
         if running_tasks:
             try:
@@ -816,11 +884,12 @@ class ConfigWatcherService(Service):
             except Exception:
                 pass
         self._configs.clear()
-        self._config_names.clear()
         self._modules.clear()
         self._mtimes.clear()
         self._module_mtimes.clear()
         self._root_mtimes.clear()
+        self._config_refreshes.clear()
+        self._module_refreshes.clear()
 
     def teardown(self) -> Optional[asyncio.Task]:
         """

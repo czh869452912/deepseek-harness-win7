@@ -308,39 +308,87 @@ async def test_teardown_settlement_is_joined_when_the_caller_drops_it():
 
 
 
+GATE_PLUGIN_SOURCE = '''\
+from dsh.cordis.plugin import Plugin
+
+
+class GatePlugin(Plugin):
+    id = "gate-plugin"
+    def apply(self, ctx):
+        gate = self.config["gate"]
+
+        async def cleanup():
+            gate["entered"].set()
+            await gate["release"].wait()
+
+        ctx.effect(lambda: cleanup, label="gate-cleanup")
+'''
+
+
 @pytest.mark.asyncio
 async def test_module_registration_disposal_owns_its_join_of_the_running_pass(tmp_path):
-    """Disposing a module registration joins the in-flight pass through its owner.
+    """Disposing a module registration joins its own in-flight pass through its owner.
 
-    `register_module`'s disposer awaits a refresh pass still running for the
-    same path before it retires the module. CPython drives that join only
-    while a task holds it, so the fiber records it -- the same contract as
-    the HMR teardown settlement.
+    `reference/vendor/hmr/src/index.ts:177-181` awaits a registration's running
+    refresh before retiring it, and CPython drives that join only while a task
+    holds it, so the fiber records it -- the same contract as the HMR teardown
+    settlement. The pass belongs to the module watch: a live config
+    registration for the same path keeps its own serialization state
+    (`index.ts:93-95`).
     """
+    import importlib.util
+
     ctx = Context()
     hmr = ConfigWatcherService(ctx, {"debounce": 10})
     module = tmp_path / "watched.py"
-    module.write_text("x = 1\n", encoding="utf-8")
-    started, release = asyncio.Event(), asyncio.Event()
+    module.write_text(GATE_PLUGIN_SOURCE, encoding="utf-8")
+    gate = {"entered": asyncio.Event(), "release": asyncio.Event()}
+    config_calls = []
 
     async def refresh():
-        started.set()
-        await release.wait()
+        config_calls.append(1)
 
-    await hmr.register_config(str(module), refresh)
-    await asyncio.wait_for(started.wait(), 2)
-    canonical = list(hmr._refreshes)[0]
-    registration = hmr.register_module(canonical, None)
+    # A live config registration for the same path owns its state independently.
+    config_registration = hmr.register_config(str(module), refresh)
+    await asyncio.sleep(0.05)
+    assert config_calls == [1]
+    canonical = list(hmr._configs)[0]
+    config_owner = hmr._configs[canonical]
+    config_state = hmr._config_refreshes.get(config_owner)
+    assert config_state is not None
+
+    spec = importlib.util.spec_from_file_location("watched_gate_module", str(module))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    plugin_cls = mod.GatePlugin
+    await ctx.plugin(plugin_cls, {"gate": gate})
+
+    registration = hmr.register_module(canonical, plugin_cls)
+    # Bump the watched file so the poll loop starts a genuine module pass, which
+    # blocks in the replaced fiber's asynchronous cleanup.
+    bumped = os.path.getmtime(str(module)) + 2.0
+    module.write_text(GATE_PLUGIN_SOURCE, encoding="utf-8")
+    os.utime(str(module), (bumped, bumped))
+    await asyncio.wait_for(gate["entered"].wait(), 3)
 
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         registration()
 
-        # The join of the running pass is owned before it settles.
+        # The join of the module pass is owned before it settles.
         assert len(ctx.fiber.settlement_tasks()) == 1
-        release.set()
+        # The live config registration keeps the serialization state it owns.
+        assert hmr._config_refreshes.get(config_owner) is config_state
+
+        gate["release"].set()
         await ctx.fiber.await_settled()
         assert ctx.fiber.settlement_tasks() == []
+
+        disposal = config_registration()
+        await disposal
+        assert disposal.disposed
+        assert hmr._config_refreshes == {}
+
         settlement = hmr.teardown()
         if settlement is not None:
             await settlement
@@ -353,7 +401,7 @@ async def test_module_registration_disposal_owns_its_join_of_the_running_pass(tm
     assert pending == []
     assert [str(w.message) for w in caught if "never awaited" in str(w.message)] == []
     assert hmr._modules == {}
-    assert hmr._refreshes == {}
+    assert hmr._module_refreshes == {}
 
 @pytest.mark.asyncio
 async def test_module_registration_disposal_leaves_a_live_config_watch_armed_once(tmp_path):
@@ -378,7 +426,7 @@ async def test_module_registration_disposal_leaves_a_live_config_watch_armed_onc
 
     await hmr.register_config(str(module), refresh)
     await asyncio.wait_for(started.wait(), 2)
-    canonical = list(hmr._refreshes)[0]
+    canonical = list(hmr._configs)[0]
     registration = hmr.register_module(canonical, None)
 
     registration()
@@ -391,4 +439,81 @@ async def test_module_registration_disposal_leaves_a_live_config_watch_armed_onc
         await settlement
 
     assert len(calls) == 1
-    assert hmr._refreshes == {}
+    assert hmr._module_refreshes == {}
+    assert hmr._config_refreshes == {}
+
+
+@pytest.mark.asyncio
+async def test_shared_path_live_change_while_refresh_pending(tmp_path):
+    """A disposed module registration must not release a pending config refresh.
+
+    `reference/vendor/hmr/src/index.ts:93-95,296-323` keys the refresh state by
+    the config registration and coalesces a later event into the dirty loop of
+    the pass that is already running. A genuine change on the shared path while
+    the first callback is still blocked must therefore stay dirty work, never a
+    second concurrent callback.
+    """
+    ctx = Context()
+    hmr = ConfigWatcherService(ctx, {"debounce": 10})
+    module = tmp_path / "watched.py"
+    module.write_text("x = 1\n", encoding="utf-8")
+    started, release = asyncio.Event(), asyncio.Event()
+    calls, active, peak = [], [0], [0]
+
+    async def refresh():
+        calls.append(1)
+        active[0] += 1
+        peak[0] = max(peak[0], active[0])
+        started.set()
+        try:
+            await release.wait()
+        finally:
+            active[0] -= 1
+
+    registration = hmr.register_config(str(module), refresh)
+    await asyncio.wait_for(started.wait(), 2)
+    canonical = list(hmr._configs)[0]
+    unregister = hmr.register_module(canonical, None)
+    unregister()
+
+    # A genuine config event while the initial callback is still blocked.
+    bumped = os.path.getmtime(canonical) + 2.0
+    with open(canonical, "w", encoding="utf-8") as f:
+        f.write("x = 2\n")
+    os.utime(canonical, (bumped, bumped))
+    await asyncio.sleep(0.25)
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        # One callback at a time: the pending refresh is still serialized.
+        assert len(calls) == 1
+        assert peak[0] == 1
+
+        release.set()
+        for _ in range(40):
+            if len(calls) == 2 and not hmr._refresh_tasks:
+                break
+            await asyncio.sleep(0.05)
+
+        # The event observed during the pending pass ran serially inside it.
+        assert len(calls) == 2
+        assert peak[0] == 1
+
+        disposal = registration()
+        await disposal
+        assert disposal.disposed
+        assert hmr._config_refreshes == {}
+
+        settlement = hmr.teardown()
+        if settlement is not None:
+            await settlement
+        pending = [
+            task for task in asyncio.all_tasks()
+            if task is not asyncio.current_task() and not task.done()
+        ]
+        gc.collect()
+
+    assert pending == []
+    assert [str(w.message) for w in caught if "never awaited" in str(w.message)] == []
+    assert hmr._module_refreshes == {}
+    assert hmr._config_refreshes == {}

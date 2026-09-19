@@ -355,3 +355,40 @@ async def test_module_registration_disposal_owns_its_join_of_the_running_pass(tm
     assert hmr._modules == {}
     assert hmr._refreshes == {}
 
+@pytest.mark.asyncio
+async def test_module_registration_disposal_leaves_a_live_config_watch_armed_once(tmp_path):
+    """Disposing a module registration must not re-arm the live config watch.
+
+    The config loop reads a missing staleness entry as an add event, so the
+    module registration cannot retire the entry the config watch for the same
+    path still owns: doing so refreshes the config a second time without a
+    change and re-creates the refresh state the disposal just retired.
+    """
+    ctx = Context()
+    hmr = ConfigWatcherService(ctx, {"debounce": 10})
+    module = tmp_path / "watched.py"
+    module.write_text("x = 1\n", encoding="utf-8")
+    calls = []
+    started, release = asyncio.Event(), asyncio.Event()
+
+    async def refresh():
+        calls.append(1)
+        started.set()
+        await release.wait()
+
+    await hmr.register_config(str(module), refresh)
+    await asyncio.wait_for(started.wait(), 2)
+    canonical = list(hmr._refreshes)[0]
+    registration = hmr.register_module(canonical, None)
+
+    registration()
+    release.set()
+    await ctx.fiber.await_settled()
+    # Ten poll ticks at the 20 ms floor: a retired entry reads as an add event.
+    await asyncio.sleep(0.2)
+    settlement = hmr.teardown()
+    if settlement is not None:
+        await settlement
+
+    assert len(calls) == 1
+    assert hmr._refreshes == {}

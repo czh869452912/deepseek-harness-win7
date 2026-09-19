@@ -184,7 +184,11 @@ class ConfigWatcherService(Service):
         # `filename` passed to refreshConfig (resolve(baseDir, filename)).
         self._config_names: Dict[str, str] = {}
         self._modules: Dict[str, Optional[Any]] = {}
-        self._mtimes: Dict[str, float] = {}
+        # Config and module watches keep separate staleness entries: the config
+        # loop reads a missing entry as an add event, so a shared key would let a
+        # disposed module registration re-arm a live config watch.
+        self._mtimes: Dict[str, Tuple[float, int]] = {}
+        self._module_mtimes: Dict[str, Tuple[float, int]] = {}
         self._config_contents: Dict[str, bytes] = {}
         self._refreshes: Dict[str, ConfigRefreshState] = {}
         # One serialized module-reload pass plus its pending changed files, so a
@@ -336,7 +340,7 @@ class ConfigWatcherService(Service):
                 # 2. Check registered module files
                 for filename, target_plugin in list(self._modules.items()):
                     exists = os.path.exists(filename)
-                    last_info = self._mtimes.get(filename)
+                    last_info = self._module_mtimes.get(filename)
                     last_mtime, last_size = last_info if isinstance(last_info, tuple) else (last_info or 0.0, -1)
                     if exists:
                         try:
@@ -345,13 +349,13 @@ class ConfigWatcherService(Service):
                         except OSError:
                             continue
                         if last_mtime != 0.0 and (mtime != last_mtime or size != last_size):  # change event only
-                            self._mtimes[filename] = (mtime, size)
+                            self._module_mtimes[filename] = (mtime, size)
                             self._trigger_module_reload(filename, target_plugin)
                         elif last_mtime == 0.0:
-                            self._mtimes[filename] = (mtime, size)
+                            self._module_mtimes[filename] = (mtime, size)
                     else:
                         if last_mtime > 0.0:
-                            self._mtimes[filename] = (0.0, -1)
+                            self._module_mtimes[filename] = (0.0, -1)
 
                 # 3. Check roots
                 if self.root:
@@ -759,18 +763,18 @@ class ConfigWatcherService(Service):
         if os.path.exists(abs_path):
             try:
                 st = os.stat(abs_path)
-                self._mtimes[abs_path] = (st.st_mtime, st.st_size)
+                self._module_mtimes[abs_path] = (st.st_mtime, st.st_size)
             except OSError:
-                self._mtimes[abs_path] = (0.0, -1)
+                self._module_mtimes[abs_path] = (0.0, -1)
         else:
-            self._mtimes[abs_path] = (0.0, -1)
+            self._module_mtimes[abs_path] = (0.0, -1)
 
         self._modules[abs_path] = plugin_cls
         self.graph.scan_file(abs_path)
 
         def unregister() -> None:
             self._modules.pop(abs_path, None)
-            self._mtimes.pop(abs_path, None)
+            self._module_mtimes.pop(abs_path, None)
             state = self._refreshes.pop(abs_path, None)
             if state and state.running and not state.running.done():
                 async def _wait():
@@ -815,6 +819,7 @@ class ConfigWatcherService(Service):
         self._config_names.clear()
         self._modules.clear()
         self._mtimes.clear()
+        self._module_mtimes.clear()
         self._root_mtimes.clear()
 
     def teardown(self) -> Optional[asyncio.Task]:

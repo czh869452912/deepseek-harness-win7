@@ -260,6 +260,46 @@ def test_finding_ledger_matches_path_spelling_and_keeps_reopened_history():
                                        {'issue_ledger': ledger})
 
 
+def test_current_protocol_failure_is_not_hidden_by_old_gate_log(tmp_path):
+    from review_evidence import continuation_context
+    feedback = {'verification': {'failure_kind': 'RESULT_PROTOCOL', 'invalid_path': 'tests/bad',
+                                 'error': 'missing test path'},
+                'full_suite_failure': 'old IPv6 proxy failure',
+                'contracts': {'unrelated': 'hash'}, 'migration': {'summary': 'old claims'},
+                'integration_attempt': {'input': {'old': 'recursive history'}},
+                'issue_ledger': [{'key': 'keep-evidence'}]}
+    current = continuation_context(feedback, 'integrate', 'same-head', tmp_path / 'evidence.json')
+    assert current['current_work']['mode'] == 'RESULT_PROTOCOL'
+    assert current['current_work']['blockers'][0]['invalid_path'] == 'tests/bad'
+    assert current['issue_ledger'] == feedback['issue_ledger']
+    assert not {'full_suite_failure', 'contracts', 'migration', 'integration_attempt'} & set(current)
+    assert feedback['full_suite_failure'] == 'old IPv6 proxy failure'
+
+
+def test_legacy_root_test_report_does_not_repeat_integration_round(repo, monkeypatch):
+    p = make_project(repo)
+    p.store.apply_plan(plan(task('a')))
+    group = p.store.claim('w')
+    agent = p.task_runner(group)
+    calls = []
+    feedback = {'integration_handoff': {'source_review': accepted_review(),
+                                       'needs_decision': False, 'affected_paths': []}}
+    def phase(worker, name, data=None):
+        calls.append(name)
+        value = accepted_review('READY' if name == 'integrate' else 'PASS')
+        value['test_paths'] = ['tests', 'tests/test_a.py']
+        return value
+    monkeypatch.setattr(p, 'cached_phase', phase)
+    monkeypatch.setattr(agent, 'checkpoint', lambda value: None)
+    monkeypatch.setattr(p, 'merge', lambda *args: calls.append('merge'))
+    head = project.git(agent.root, 'rev-parse', 'HEAD')
+    p.execute_integration(group, agent, feedback)
+    assert calls == ['integrate', 'integration_review', 'merge']
+    assert agent.state['round'] == 1
+    assert p.store.rows()[0]['state'] == 'VERIFIED'
+    assert project.git(agent.root, 'rev-parse', 'HEAD') == head
+
+
 def test_callback_exception_reclassification_triggers_arbitration():
     from review_evidence import update_ledger
     first = dict(id='reference/vendor/timer/src/index.ts#callback-exception-semantics', state='informational')
@@ -1368,6 +1408,31 @@ def test_integration_pause_keeps_implementation_input_stable(repo, monkeypatch):
     p.execute_integration(group, agent, retained)
     assert inputs[0] == inputs[1]
     assert p.store.rows()[0]['state'] == 'VERIFIED'
+
+
+@pytest.mark.parametrize('verdict', ['REVIEWER_CORRECT', 'BLOCKED'])
+def test_uncertain_integration_design_is_adjudicated_before_tests_or_review(repo, monkeypatch, verdict):
+    p = make_project(repo)
+    p.store.apply_plan(plan(task('a')))
+    group = p.store.claim('w')
+    agent = p.task_runner(group)
+    feedback = {'integration_handoff': {'source_review': accepted_review(),
+                                       'needs_decision': False, 'affected_paths': []}}
+    calls = []
+    def phase(worker, name, data=None):
+        calls.append(name)
+        if name == 'integrate':
+            return dict(accepted_review('ESCALATE'), test_paths=[])
+        assert name == 'judge'
+        return dict(status='RESOLVED' if verdict != 'BLOCKED' else 'BLOCKED',
+                    verdict=verdict, summary='source-defined ownership', issues=[])
+    monkeypatch.setattr(p, 'cached_phase', phase)
+    monkeypatch.setattr(agent, 'verify_report', lambda value: pytest.fail('No tests before design decision'))
+    p.execute_integration(group, agent, feedback)
+    assert calls == ['integrate', 'judge']
+    row = p.store.rows()[0]
+    assert row['state'] == ('NEEDS_ARBITRATION' if verdict == 'BLOCKED' else 'INTEGRATION_REPAIR')
+    assert row['feedback']['contract_decision']['verdict'] == verdict
 
 
 def test_integration_routes_plan_proposal(repo, monkeypatch):

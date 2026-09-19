@@ -16,8 +16,9 @@ import time
 from parity_runner import Runner, Stream, git, snapshot, changed, safe_path, save_json, run_process, ROOT, SCHEMA, parse_result, valid_changed_files, judge_verdict, open_issues
 from project_store import Store, digest
 from project_seed import discover
-from console_runtime import load_config, config_revision, append_event
+from console_runtime import load_config, config_revision, append_event, phase_config
 from review_evidence import same_issue, update_ledger, review_context
+from parity_runner import requires_contract_checks, validate_contract_checks
 
 
 def repeated_issues(review, previous):
@@ -460,19 +461,20 @@ class Project:
     def cached_phase(self, agent, phase, feedback=None):
         stem = "%02d-%s" % (agent.state["round"], phase)
         result_path = agent.run_dir / (stem + ".result.json")
-        role = {'migrate': 'migrator', 'integrate': 'migrator', 'review': 'reviewer',
-                'integration_review': 'reviewer', 'judge': 'judge'}[phase]
-        model_config = load_config(self.root)['roles'][role]
+        model_config = phase_config(load_config(self.root), agent.args.unit, phase)
         if result_path.exists():
             binding = agent.run_dir / (stem + ".binding.json")
             if binding.exists():
                 evidence = json.loads(binding.read_text(encoding="utf-8"))
                 if (evidence["files"] == snapshot(agent.root) and evidence["scope"] == agent.args.task_contract and
+                        (not requires_contract_checks(agent.args.unit, phase) or evidence.get('workflow_version') == 2) and
                         evidence.get('model_config') == model_config and
                         evidence.get('feedback_signature') == digest(feedback) and
                         (phase in ('migrate', 'integrate') or evidence.get("head") == git(agent.root, "rev-parse", "HEAD"))):
                     agent.state.update(model_config)
-                    return parse_result(result_path.read_text(encoding="utf-8"), phase)
+                    result = parse_result(result_path.read_text(encoding="utf-8"), phase)
+                    validate_contract_checks(result, agent.args.unit, phase)
+                    return result
             # Current files or acceptance scope changed. Old results are retained, not reused.
             archive = agent.run_dir / (stem + ".stale-" + str(time.time_ns()) + ".json")
             shutil.copyfile(str(result_path), str(archive))
@@ -496,6 +498,7 @@ class Project:
                 same_head = bound.get("head") == git(agent.root, "rev-parse", "HEAD")
                 same_index = bound.get("index") == git(agent.root, "diff", "--cached", "--binary")
                 if (stream.complete and not stream.action_limit_reached and same_head and same_index and
+                        (not requires_contract_checks(agent.args.unit, phase) or bound.get('workflow_version') == 2) and
                         completed == {"files": files, "head": bound["head"], "index": bound["index"]} and
                         bound.get("scope") == agent.args.task_contract and
                         bound.get('model_config') == model_config and
@@ -503,6 +506,7 @@ class Project:
                         (phase in ('migrate', 'integrate') or bound["files"] == files)):
                     try:
                         value = stream.result(phase)
+                        validate_contract_checks(value, agent.args.unit, phase)
                     except ValueError as error:
                         # A retained session can end without a usable result (for
                         # example an interrupted generation). Never re-record the
@@ -518,6 +522,7 @@ class Project:
                         save_json(result_path, value)
                         save_json(agent.run_dir / (stem + ".binding.json"),
                                   {"head": bound["head"], "files": files, "scope": agent.args.task_contract,
+                                   'workflow_version': 2,
                                    'model_config': model_config, 'feedback_signature': digest(feedback)})
                         agent.notify("recovered", "Reused completed protocol result for " + phase)
                         agent.state.update(model_config)
@@ -553,7 +558,7 @@ class Project:
                                   feedback=dict(feedback or {}, scope_handoff={"writers": peers, "paths": touched,
                                       "instruction": "Preserve this checkpoint. Reconcile the shared contract with the integrated provider before further design."}))
                 return
-            ok = agent.verify_chunk(migration)
+            ok = agent.verify_report(migration)
             if ok:
                 agent.checkpoint(migration)
             self.store.update(group, round=agent.state["round"], head=git(agent.root, "rev-parse", "HEAD"))
@@ -571,7 +576,7 @@ class Project:
                 retained = {'review_context': review_context(previous, affected, base_head)}
                 retained['review_context']['full_review_required'] = (
                     previous.get('review_scope') != digest(agent.args.task_contract) or
-                    previous.get('review_model') != load_config(self.root)['roles']['reviewer'])
+                    previous.get('review_model') != phase_config(load_config(self.root), agent.args.unit, 'review'))
             review = self.cached_phase(agent, "review", retained)
             ledger, repeated = update_ledger(previous, review, agent.state['round'])
             feedback = {"migration": migration, "review": review, "targeted_checks_passed": ok,
@@ -722,7 +727,22 @@ class Project:
             self.store.update(group, 'INTEGRATION_REPAIR', feedback=feedback,
                               error='Integration waits for affected writers: ' + ', '.join(peers))
             return
-        ok = agent.verify_chunk(repair)
+        if repair['status'] == 'ESCALATE':
+            # A disputed design needs a contract decision before test selection
+            # correction or implementation review. It is not an attempted PASS.
+            decision = self.cached_phase(agent, 'judge', feedback)
+            feedback['contract_decision'] = decision
+            feedback['integration_judged_round'] = agent.state['round']
+            feedback.setdefault('decisions', []).append({
+                'round': agent.state['round'], 'verdict': judge_verdict(decision),
+                'summary': decision.get('summary', ''), 'issues': decision.get('issues', [])})
+            unresolved = judge_verdict(decision) in (None, 'BLOCKED')
+            self.store.update(group, 'NEEDS_ARBITRATION' if unresolved else 'INTEGRATION_REPAIR',
+                              feedback=feedback, round=agent.state['round'] + int(not unresolved),
+                              error='Contract design unresolved' if unresolved else
+                                    'Implement the adjudicated contract; retained work is not yet accepted')
+            return
+        ok = agent.verify_report(repair)
         if ok:
             agent.checkpoint(repair)
         feedback['verification'] = getattr(agent, 'verification', {})
@@ -733,7 +753,7 @@ class Project:
         context = review_context(dict(feedback, review=prior_review), feedback['affected_paths'])
         context['full_review_required'] = (
             feedback.get('integration_review_scope', feedback.get('review_scope')) != digest(agent.args.task_contract) or
-            feedback.get('integration_review_model', feedback.get('review_model')) != load_config(self.root)['roles']['reviewer'])
+            feedback.get('integration_review_model', feedback.get('review_model')) != phase_config(load_config(self.root), agent.args.unit, 'integration_review'))
         review = self.cached_phase(agent, 'integration_review', {
             'integration_handoff': handoff, 'review_context': context,
             'contract_decision': feedback.get('contract_decision')})
@@ -801,11 +821,13 @@ class Project:
             context = review_context(feedback, retained['affected_paths'], retained['source_head'])
             context['revalidation'] = retained
             context['full_review_required'] = (feedback.get('review_scope') != digest(agent.args.task_contract) or
-                feedback.get('review_model') != load_config(self.root)['roles']['reviewer'])
+                feedback.get('review_model') != phase_config(load_config(self.root), agent.args.unit, 'review'))
             review = self.cached_phase(agent, 'review', {'review_context': context})
             paths = sorted(set(retained['test_paths']) | set(review['test_paths']))
             review = dict(review, test_paths=paths)
-            ok = agent.verify_chunk(dict(review, test_paths=paths, changed_files=retained['affected_paths']))
+            verification_report = dict(review, test_paths=paths, changed_files=retained['affected_paths'])
+            ok = agent.verify_report(verification_report)
+            review['test_paths'] = verification_report['test_paths']
         feedback['revalidation_review'] = review
         feedback['verification'] = getattr(agent, 'verification', {})
         proposal = review.get('work_plan') or {}

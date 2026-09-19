@@ -11,14 +11,28 @@ import uuid
 OUTPUT_LOCK = threading.RLock()
 CONFIG_LOCK = threading.Lock()
 ROLES = ('architect', 'migrator', 'reviewer', 'judge')
+PHASE_ROLES = {'migrate': 'migrator', 'integrate': 'migrator', 'review': 'reviewer',
+               'integration_review': 'reviewer', 'judge': 'judge'}
 
 
 def validate_config(value):
-    if not isinstance(value, dict) or set(value) != {'version', 'roles'} or value['version'] != 1:
+    if (not isinstance(value, dict) or not {'version', 'roles'} <= set(value) or
+            set(value) - {'version', 'roles', 'task_phases'} or value['version'] != 1):
         raise ValueError('Expected version: 1 and roles; credentials are not accepted here')
     if not isinstance(value['roles'], dict) or set(value['roles']) != set(ROLES):
         raise ValueError('Configure architect, migrator, reviewer and judge')
-    for role, config in value['roles'].items():
+    overrides = value.get('task_phases', {})
+    if not isinstance(overrides, dict):
+        raise ValueError('task_phases must map exact task IDs to phase configurations')
+    configs = list(value['roles'].items())
+    for task, phases in overrides.items():
+        if (not isinstance(task, str) or not task.strip() or task != task.strip() or
+                ',' in task or ';' in task or
+                any(ord(c) < 32 for c in task) or not isinstance(phases, dict) or
+                set(phases) - set(PHASE_ROLES)):
+            raise ValueError('Invalid task_phases task or phase')
+        configs.extend((task + ':' + phase, config) for phase, config in phases.items())
+    for role, config in configs:
         if (not isinstance(config, dict) or not {'provider', 'model'} <= set(config) or
                 set(config) - {'provider', 'model', 'thinking_effort'}):
             raise ValueError(role + ': expected provider, model and optional thinking_effort')
@@ -28,6 +42,16 @@ def validate_config(value):
             if not isinstance(text, str) or not text.strip() or len(text) > 200 or any(ord(c) < 32 for c in text):
                 raise ValueError('Invalid provider/model name')
     return value
+
+
+def phase_config(value, unit, phase):
+    """Resolve exact task overrides, also for explicit atomic task groups."""
+    selected = [value.get('task_phases', {}).get(task.strip(), {}).get(phase)
+                for task in unit.replace(';', ',').split(',')]
+    selected = [config for config in selected if config is not None]
+    if selected and any(config != selected[0] for config in selected):
+        raise ValueError('Conflicting task phase configurations in atomic group')
+    return dict(selected[0] if selected else value['roles'][PHASE_ROLES[phase]])
 
 
 def config_revision(value):

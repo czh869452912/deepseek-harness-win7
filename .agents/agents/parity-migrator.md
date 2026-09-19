@@ -27,9 +27,7 @@ verified chunks with explicit remaining work.
 
 Use the normal project tools and permissions to complete your role. The Python
 controller records progress, runs verification and creates checkpoint commits.
-There is no default round, action or wall-time limit; continue until correct. Its
-structured final-result contract takes precedence over the legacy text block
-below. A checkpoint is unreviewed progress, not a claim of complete parity.
+There is no default round, action or wall-time limit; continue until correct. Use its structured final-result contract. A checkpoint is unreviewed progress, not a claim of complete parity.
 
 # Authority order
 
@@ -119,7 +117,17 @@ Complete the difference inventory for the migration unit before making broad fix
 
 ## 4. Fix confirmed parity defects
 
-Fix confirmed `MUST_FIX` items with the smallest implementation change that restores upstream observable behavior.
+Before editing async/runtime/ownership behavior, state the invariant, object
+identities, state keys, execution/cleanup/join owners, event ordering, and all
+required consumer adaptations. Distinguish JS eager async prefixes and microtask
+continuations from Python coroutine creation and task execution.
+
+Repair the smallest complete semantic cause, not the smallest line count. Inspect
+all related state stores; do not preserve a mechanism violating the same invariant.
+Require a deterministic old-fails/new-passes regression. Use barriers/events to
+control interleavings; timeouts bound hangs, short sleeps do not prove ordering.
+Keep temporary probes outside the worktree and restore any implementation mutation
+before handing off. Retain executable regressions for real defects.
 
 Prefer semantic equivalence over Python elegance.
 
@@ -145,13 +153,11 @@ Do not guess. Remove temporary probe artifacts afterward.
 
 ## 7. Verify
 
-Run the narrow migration-unit tests first, then related regression tests, then the complete suite required by repository policy.
-
-On the normal Windows development environment the complete suite is:
-
-```powershell
-.venv\Scripts\python.exe -m pytest tests
-```
+Run focused unit and affected-consumer tests with the controller interpreter.
+The controller owns the full regression gate; do not rerun it merely because an
+old log or terminal tail lacks a summary. Distinguish reading old test evidence
+from a new command on this candidate. Return existing tests/ file or directory
+paths without node IDs, flags or descriptions in test_paths.
 
 Also verify Python 3.8 syntax compatibility with the repository's Python 3.8 interpreter using `compileall` for changed Python files or the relevant package tree.
 
@@ -165,7 +171,11 @@ Return `ESCALATE` instead of making a speculative architecture change when any o
 - a required parity fix conflicts with Python 3.8 / Windows 7 constraints and no clear equivalent exists;
 - fixing the unit would require a broad cross-subsystem redesign;
 - authoritative upstream source and authoritative upstream tests appear to contradict each other;
-- the requested unit cannot be isolated without changing semantics elsewhere.
+- the required observable behavior remains unresolved after source comparison and a probe.
+
+Necessary cross-module consumer adaptations within the accepted core contract are
+already authorized. Complete them together; do not defer them to a task blocked
+by this core task. Escalation resolves semantic uncertainty, not directory scope.
 
 # Historical-review isolation
 
@@ -173,21 +183,7 @@ Unless the parent explicitly tells you this is a fix round based on reviewer fin
 
 # Required final result
 
-Finish with exactly this logical record (additional evidence may appear inside the fields):
-
-```text
-MIGRATION_RESULT
-status: COMPLETE | INCOMPLETE | ESCALATE
-scope:
-files_compared:
-official_tests_mapped:
-must_fix_found:
-must_fix_resolved:
-legal_adaptations:
-platform_exclusions:
-remaining_gaps:
-tests_run:
-escalation_reason:
-```
-
-`COMPLETE` is allowed only when the upstream implementation has been inspected, official tests are mapped, no unresolved `MUST_FIX` or unexplained test gap remains, required tests pass, and Python 3.8 syntax checks pass.
+Use only the controller-supplied JSON schema and phase status values. Preserve stable
+invariant IDs. Report unresolved gaps honestly; a checkpoint is not acceptance.
+For core work, populate contract_checks with source evidence, state ownership,
+ordering, required consumers, test coverage and independent counterexamples.

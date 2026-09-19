@@ -35,3 +35,28 @@ behavior assertions. A broad number of affected tests is not a reason to defer
 this core contract or to weaken it. Run targeted lifecycle/consumer tests and the
 controller's full suite on the combined candidate. A PASS is bound to its tested
 head, source SHA and consumed contract versions, not merely this checklist.
+
+## Runtime repair obligations
+
+Keep the core blocking until its contract and all necessary consumer adaptations
+pass together. A core interface/ordering change must enumerate consumer entry
+points and tests; directory size is not a reason to defer required adaptation.
+
+6. `events.ts#emit-dispatch-stack-before-promise-continuations`: derive ordering
+   from `reference/vendor/cordis/src/events.ts:189-196`. Distinguish listener
+   invocation and eager async prefix from later continuation and final settlement.
+   Test multiple listeners, exception release and owned shutdown. An inline
+   asyncio.run or a free-running background loop is not by itself a parity proof.
+7. `hmr.ts#registration-keyed-config-refresh-serialization`: derive identity and
+   serialization from `reference/vendor/hmr/src/index.ts:296-323`. Same filename
+   does not imply same registration owner. Disposing a module registration must
+   not retire a live config registration's refresh state. Test a real change
+   while the first callback is still blocked, and then serial dirty replay.
+
+Before editing, state invariant, source, state keys and owners, event partial
+order, required consumers and counterexamples. After editing, return these as
+contract_checks with exact tests and evidence. Check all related state stores;
+repair the smallest complete semantic cause rather than the smallest line count.
+Use deterministic gates for ordering; retain the original failure evidence and
+prove the regression distinguishes old and new behavior. Mark reused clauses,
+unresolved gaps and source-backed N/A dimensions explicitly.

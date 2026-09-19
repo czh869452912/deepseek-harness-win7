@@ -38,3 +38,12 @@ contracts. Priority changes require evidence, not speculation about convenience.
 
 Use the existing task graph for scheduling, not as implementation authority.
 Do not quote credentials or include private conversation contents in task plans.
+
+For runtime adaptation or a core interface change, establish the source-backed
+contract before implementation: stable invariant IDs, state identity and storage
+keys, execution/cleanup/join ownership, event partial order, exceptions/cancellation,
+and the JS-to-Python adaptation boundary. Map each interface or behavior change to
+all necessary consumer entry points and discriminating tests. Include unresolved
+questions and the minimal upstream/Python probe that decides them in plan evidence.
+Keep Cordis a blocking provider until its full contract and necessary consumer
+adaptations pass together. A package boundary is not an acceptance boundary.

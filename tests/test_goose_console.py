@@ -41,6 +41,23 @@ def test_config_effort_validation_and_legacy_compatibility():
     validate_config(config)
 
 
+def test_exact_task_phase_override_does_not_change_other_roles_or_tasks():
+    from console_runtime import phase_config, validate_config
+    config = load_config(Path(__file__).resolve().parents[1])
+    assert phase_config(config, 'vendor/cordis', 'integrate')['thinking_effort'] == 'high'
+    assert phase_config(config, 'vendor/cordis', 'integrate')['model'] == 'gpt-5.6-sol'
+    assert phase_config(config, 'vendor/timer', 'integrate') == config['roles']['migrator']
+    assert phase_config(config, 'vendor/cordis', 'migrate') == config['roles']['migrator']
+    assert phase_config(config, 'vendor/cordis', 'integration_review') == config['roles']['reviewer']
+    assert phase_config(config, 'vendor/cordis; vendor/hmr', 'integrate')['model'] == 'gpt-5.6-sol'
+    config['task_phases']['vendor/hmr'] = {'integrate': config['roles']['migrator']}
+    with pytest.raises(ValueError, match='Conflicting'):
+        phase_config(config, 'vendor/cordis; vendor/hmr', 'integrate')
+    config['task_phases']['vendor/hmr'] = {'unknown': config['roles']['migrator']}
+    with pytest.raises(ValueError, match='task_phases'):
+        validate_config(config)
+
+
 def test_parallel_workers_keep_complete_tool_results_and_thinking(tmp_path, monkeypatch):
     monkeypatch.setenv('GOOSE_PROJECT_OUTPUT', 'quiet')
     def worker(name):

@@ -443,8 +443,73 @@ def test_verify_chunk_rejects_malformed_test_paths_as_feedback(repo):
     h.notify = lambda k, m: seen.append((k, m))
     bad = "apps/web/tests (mirrored official lane: 90 *.e2e.ts, snapshots/**)"
     assert h.verify_chunk({"test_paths": [bad], "changed_files": []}) is False
+    assert h.verification['failure_kind'] == 'RESULT_PROTOCOL'
+    assert h.verification['invalid_path'] == bad
+    assert h.verification['error']
     assert any(k == "verification" and "Rejected test path" in m for k, m in seen)
     assert h.verify_chunk({"test_paths": [], "changed_files": []}) is False
+
+
+def test_legacy_tests_root_runs_once_without_a_model_repair(repo, monkeypatch):
+    h = make_review_runner(repo)
+    (repo / 'tests').mkdir()
+    (repo / 'tests/test_unit.py').write_text('def test_ok(): pass\n', encoding='utf-8')
+    calls = []
+    monkeypatch.setattr(h, 'check', lambda name, args: calls.append((name, args)) or True)
+    value = result()
+    value['test_paths'] = ['tests', 'tests/test_unit.py']
+    assert h.verify_report(value)
+    assert calls == [('targeted', ['-m', 'pytest', 'tests/', '-q'])]
+
+
+@pytest.mark.parametrize('alter_verdict', [False, True])
+def test_test_selection_repair_is_tool_free_and_preserves_semantics(repo, monkeypatch, alter_verdict):
+    h = make_review_runner(repo)
+    (repo / 'tests').mkdir()
+    (repo / 'tests/test_unit.py').write_text('def test_ok(): pass\n', encoding='utf-8')
+    value = result()
+    value['test_paths'] = ['tests/missing.py']
+    checks = []
+    monkeypatch.setattr(h, 'check', lambda name, args: checks.append(args) or True)
+    def process(command, root, log, notify, timeout, stream, **kwargs):
+        recipe = json.loads(Path(command[command.index('--recipe') + 1]).read_text(encoding='utf-8'))
+        assert recipe['extensions'] == []
+        assert 'tests/missing.py' in recipe['prompt']
+        corrected = dict(value, test_paths=['tests/test_unit.py'])
+        if alter_verdict:
+            corrected['summary'] = 'substantive claim changed'
+        stream.feed(message('corrected', json.dumps(corrected)))
+        stream.feed({'type': 'complete'})
+        return 0
+    monkeypatch.setattr(runner, 'run_process', process)
+    before = runner.git(repo, 'rev-parse', 'HEAD')
+    if alter_verdict:
+        with pytest.raises(ValueError, match='substantive evidence'):
+            h.verify_report(value)
+        assert checks == []
+    else:
+        assert h.verify_report(value)
+        assert checks == [['-m', 'pytest', 'tests/test_unit.py', '-q']]
+        assert value['test_paths'] == ['tests/test_unit.py']
+    assert runner.git(repo, 'rev-parse', 'HEAD') == before
+
+
+def test_core_phase_requires_evidence_and_uses_its_config(repo, monkeypatch):
+    h = make_review_runner(repo)
+    h.args.unit = 'vendor/cordis'
+    def process(command, root, log, notify, timeout, stream, **kwargs):
+        assert kwargs['thinking_effort'] == 'high'
+        recipe = json.loads(Path(command[command.index('--recipe') + 1]).read_text(encoding='utf-8'))
+        assert recipe['settings']['goose_model'] == 'gpt-5.6-sol'
+        assert 'contract_checks' in recipe['response']['json_schema']['required']
+        raise InterruptedError('inspect only')
+    monkeypatch.setattr(runner, 'run_process', process)
+    with pytest.raises(InterruptedError):
+        h.phase('integrate')
+    with pytest.raises(ValueError, match='contract_checks'):
+        runner.validate_contract_checks(result(), 'vendor/cordis; vendor/hmr', 'integrate')
+    checks = {key: 'source-backed evidence' for key in runner.CONTRACT_FIELDS}
+    runner.validate_contract_checks(dict(result(), contract_checks=[checks]), 'vendor/cordis', 'integrate')
 
 
 def test_migrate_filters_malformed_changed_file_entries(repo):

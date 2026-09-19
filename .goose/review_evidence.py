@@ -5,6 +5,46 @@ import re
 from difflib import SequenceMatcher
 
 
+def continuation_context(feedback, phase, head, archive):
+    """A current work order plus compact evidence; originals remain addressable."""
+    if not feedback:
+        return {}
+    verification = feedback.get('verification', {})
+    review = feedback.get('integration_review') or feedback.get('review') or {}
+    issues = [i for i in review.get('issues', []) if i.get('state', 'open') == 'open']
+    repair = feedback.get('integration_repair', {})
+    if repair.get('status') == 'ESCALATE':
+        decided = feedback.get('contract_decision', {}).get('verdict') not in (None, 'BLOCKED')
+        mode = 'IMPLEMENT_DECIDED_CONTRACT' if decided else 'CONTRACT_AMBIGUITY'
+        blockers = repair.get('issues', [])
+    elif (verification.get('failure_kind') == 'RESULT_PROTOCOL' or
+          (verification.get('check') == 'test_paths' and verification.get('exit_code') is None)):
+        mode, blockers = 'RESULT_PROTOCOL', [verification]
+    elif issues:
+        mode, blockers = 'CONTRACT_REPAIR', issues
+    elif feedback.get('integration_test_exit_code') not in (None, 0, 1):
+        mode, blockers = 'ENVIRONMENT_DIAGNOSIS', feedback.get('failed_integration_cases', [])
+    elif feedback.get('failed_integration_cases'):
+        mode, blockers = 'TEST_FAILURE_DIAGNOSIS', feedback['failed_integration_cases']
+    else:
+        mode, blockers = 'AFFECTED_CONTRACT_VERIFICATION', []
+    view = {k: v for k, v in feedback.items()
+            if k not in ('integration_attempt', 'contracts', 'migration', 'full_suite_failure')}
+    for key in ('review', 'integration_review', 'integration_repair', 'revalidation_review'):
+        if isinstance(view.get(key), dict):
+            report = dict(view[key])
+            report['summary'] = report.get('summary', '')[:1600]
+            view[key] = report
+    view['current_work'] = {
+        'phase': phase, 'candidate_head': head, 'mode': mode, 'blockers': blockers,
+        'original_evidence': str(archive),
+        'rule': 'Fix the current blockers and their complete invariant/consumer closure. '
+                'Reuse unaffected verified clauses. Old failure logs are historical evidence, '
+                'not a fresh failure on this head. Consult the archived fields only as needed. '
+                'A test failure needs diagnosis; retries never erase failure evidence.'}
+    return {'current_work': view.pop('current_work'), **view}
+
+
 def identity(issue):
     value = issue['id'].lower().replace('\\', '/')
     value = re.sub(r'^reference/', '', value)

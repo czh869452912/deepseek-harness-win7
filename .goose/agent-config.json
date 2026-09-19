@@ -19,5 +19,14 @@
       "model": "gpt-5.6-sol",
       "thinking_effort": "high"
     }
+  },
+  "task_phases": {
+    "vendor/cordis": {
+      "integrate": {
+        "provider": "custom_openai_sol",
+        "model": "gpt-5.6-sol",
+        "thinking_effort": "high"
+      }
+    }
   }
 }

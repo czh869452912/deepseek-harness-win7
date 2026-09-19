@@ -50,9 +50,7 @@ verified chunks with explicit remaining work.
 
 Use the normal project tools and permissions to complete your role. The Python
 controller records progress, runs verification and creates checkpoint commits.
-There is no default round, action or wall-time limit; continue until correct. Its
-structured final-result contract takes precedence over the legacy text block
-below. A checkpoint is unreviewed progress, not a claim of complete parity.
+There is no default round, action or wall-time limit; continue until correct. Use its structured final-result contract. A checkpoint is unreviewed progress, not a claim of complete parity.
 
 # Authority order
 
@@ -130,18 +128,22 @@ Return `ESCALATE` when authoritative evidence is ambiguous, contradictory, or re
 
 # Required final result
 
-Finish with:
+Use only the controller-supplied JSON schema and phase status values. Preserve stable
+invariant IDs. Report unresolved gaps honestly; a checkpoint is not acceptance.
+For core work, populate contract_checks with source evidence, state ownership,
+ordering, required consumers, test coverage and independent counterexamples.
 
-```text
-REVIEW_RESULT
-verdict: PASS | MUST_FIX | ESCALATE
-scope:
-files_compared:
-official_tests_checked:
-findings:
-test_gaps:
-legal_adaptations:
-platform_exclusions:
-uncertain_items:
-escalation_reason:
-```
+For each new concurrency or ownership mechanism, independently construct a
+counterexample rather than merely rerunning the implementer's regression. Verify
+that tests distinguish the wrong implementation. Check multiple listeners/instances,
+shared paths with distinct registrations, changes while callbacks remain pending,
+cancellation/errors and local/root teardown; give source-backed reasons for N/A.
+Derive expected event order from upstream, not from the new Python implementation.
+
+Reuse unaffected source-backed evidence on its recorded candidate. Enumerate the
+core interface/behavior delta, every required consumer entry point and its tests.
+Do not defer necessary consumer adaptation or weaken the core gate to unblock work.
+Separate metadata/environment/hygiene findings from product semantic defects. Keep
+read-only probes outside the worktree, and preserve exact reproduction commands.
+contract_checks must include invariant/source/ownership/ordering/consumers/tests/
+counterexample evidence; pass counts alone are never proof of these properties.

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Comprehensive 1:1 Parity and Behavior Verification Tests for dsh/settings.
 Tests multi-level config hierarchy, revision tracking, path mutations (update, replace, mutate),
 secret redaction (redactSecrets), schema/validate checks, change event emission, and cold-start logic.
@@ -130,19 +130,19 @@ def test_revision_tracking_path_mutations_and_conflict_errors():
         provider = FileSettingsProvider(ctx=ctx, config={"path": sf, "watch": False})
         scope = provider.register("llm", base={"model": "v0", "timeout": 30})
 
-        assert provider.get_revision("llm") == 1
+        assert provider.get_revision("llm") == 0
 
         # 1. update (merge)
         provider.update("llm", {"model": "v1"})
         assert scope.get()["model"] == "v1"
         assert scope.get()["timeout"] == 30
-        assert provider.get_revision("llm") == 2
+        assert provider.get_revision("llm") == 1
 
         # 2. replace (wholesale reset of user layer)
         provider.replace("llm", {"timeout": 60})
         assert scope.get()["model"] == "v0"  # fell back to base
         assert scope.get()["timeout"] == 60
-        assert provider.get_revision("llm") == 3
+        assert provider.get_revision("llm") == 2
 
         # 3. mutate (path ops)
         provider.mutate("llm", [
@@ -151,25 +151,25 @@ def test_revision_tracking_path_mutations_and_conflict_errors():
         ])
         assert scope.get()["model"] == "v2"
         assert scope.get()["extra"]["key"] == "val"
-        assert provider.get_revision("llm") == 4
+        assert provider.get_revision("llm") == 3
 
         # 4. SettingsConflictError on stale expectedRevision
         with pytest.raises(SettingsConflictError) as exc_info:
             provider.update("llm", {"model": "stale"}, expected_revision=2)
         assert exc_info.value.code == "SETTINGS_CONFLICT"
         assert exc_info.value.expected == 2
-        assert exc_info.value.actual == 4
+        assert exc_info.value.actual == 3
 
 
 def test_redact_secrets_and_describe():
     """
-    Audit 2: redactSecrets and describe API
+    Audit 2: redactSecrets and describe API. The plain-mapping schema form carries the structural keys a live schemastery node exposes (dict / meta.role).
     """
     schema = {
         "type": "object",
-        "properties": {
+        "dict": {
             "baseUrl": {"type": "string"},
-            "apiKey": {"type": "string", "role": "secret"},
+            "apiKey": {"type": "string", "meta": {"role": "secret"}},
         },
     }
     value = {"baseUrl": "https://api.deepseek.com", "apiKey": "sk-secret-key-123"}

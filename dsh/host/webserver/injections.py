@@ -8,6 +8,18 @@ import json
 import re
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
+# Tail script settling the boot-readiness deferred (`__DSH_BOOT_READY__`) the
+# client entry awaits before reading any injected state. Upstream spells the
+# deferred with `Promise.withResolvers`, which no browser that runs on Windows 7
+# provides (Firefox ESR 115 is the newest); the same deferred is constructed
+# inline below. The served form creates and resolves it in one statement because
+# every row is already in the document text.
+READY_MARKUP = (
+    "<script>(globalThis.__DSH_BOOT_READY__=globalThis.__DSH_BOOT_READY__||(()=>{"
+    "let resolve;const promise=new Promise(r=>{resolve=r});return {promise,resolve}"
+    "})()).resolve()</script>"
+)
+
 IndexInjectionPlacement = Literal["head", "body"]
 
 
@@ -27,7 +39,13 @@ def render_row(row: Dict[str, Any]) -> Tuple[IndexInjectionPlacement, str]:
     if kind == "global":
         name_str = json.dumps(row.get("name", "")).replace("<", "\\u003c")
         val = row.get("value")
-        val_str = "undefined" if val is None else json.dumps(val, ensure_ascii=False).replace("<", "\\u003c")
+        # JSON.stringify spelling: no padding between tokens, and `<` escaped so
+        # a row-controlled string cannot close the script element early.
+        val_str = (
+            "undefined"
+            if val is None
+            else json.dumps(val, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c")
+        )
         return "head", f"<script>globalThis[{name_str}] = {val_str}</script>"
 
     elif kind == "script":
@@ -39,6 +57,10 @@ def render_row(row: Dict[str, Any]) -> Tuple[IndexInjectionPlacement, str]:
         placement: IndexInjectionPlacement = row.get("placement", "head")
         src = escape_html_attribute(row.get("src", ""))
         return placement, f'<script src="{src}"></script>'
+
+    elif kind == "script-preload":
+        src = escape_html_attribute(row.get("src", ""))
+        return "head", f'<link rel="preload" as="script" href="{src}">'
 
     elif kind == "style":
         text = row.get("text", "")
@@ -54,8 +76,9 @@ def render_row(row: Dict[str, Any]) -> Tuple[IndexInjectionPlacement, str]:
 
 def render_index_injections(html: str, rows: List[Dict[str, Any]]) -> str:
     """
-    Render injection rows into an index.html body:
-    Head rows inserted after opening <head>, body rows inserted after opening <body>.
+    Render injection rows into an index.html body: head rows immediately after
+    the opening head tag, body rows immediately after the opening body tag, each
+    group in table order, and the boot-readiness tail after the last body row.
     """
     head_markup = []
     body_markup = []
@@ -67,6 +90,7 @@ def render_index_injections(html: str, rows: List[Dict[str, Any]]) -> str:
         else:
             body_markup.append(markup)
 
+    body_markup.append(READY_MARKUP)
     head_str = "".join(head_markup)
     body_str = "".join(body_markup)
 
@@ -79,12 +103,14 @@ def render_index_injections(html: str, rows: List[Dict[str, Any]]) -> str:
         else:
             out = head_str + out
 
-    if body_str:
-        m = re.search(r"<body(?:\s[^>]*)?>", out, re.IGNORECASE)
-        if m:
-            idx = m.end()
-            out = out[:idx] + body_str + out[idx:]
-        else:
-            out = out + body_str
+    # Body markup is never empty: the boot-readiness tail is always appended, so
+    # a body-less fragment receives the rows at the end, where the HTML parser
+    # has already synthesized a body.
+    m = re.search(r"<body(?:\s[^>]*)?>", out, re.IGNORECASE)
+    if m:
+        idx = m.end()
+        out = out[:idx] + body_str + out[idx:]
+    else:
+        out = out + body_str
 
     return out

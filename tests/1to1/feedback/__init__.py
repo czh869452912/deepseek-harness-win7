@@ -1,1 +1,1 @@
-"""1:1 parity suites for feedback packages."""
+"""Parity suites for command and message feedback packages."""

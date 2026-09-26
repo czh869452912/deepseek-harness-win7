@@ -13,13 +13,21 @@ from dsh.host.apiproxy.api.rpc_map import OFFICIAL_RPC_METHODS as OFFICIAL_METHO
 
 def test_official_rpc_methods_catalog_size():
     """Verify that official RPC methods catalog is registered."""
-    assert len(OFFICIAL_RPC_METHODS) == 55
-    assert len(OFFICIAL_METHODS_CATALOG) == 55
+    # 55 unary method names plus the three `messageFeedback` Remote methods the
+    # shipped Web Host registers
+    # (`reference/packages/api/remotes/src/client/index.ts` imports
+    # `messageFeedbackRemote` into the carrier's Remote assembly).
+    assert len(OFFICIAL_RPC_METHODS) == 58
+    assert len(OFFICIAL_METHODS_CATALOG) == 58
+    assert OFFICIAL_RPC_METHODS == OFFICIAL_METHODS_CATALOG
     assert "session.attachment" in OFFICIAL_RPC_METHODS
     assert "session.updateQueue" in OFFICIAL_RPC_METHODS
     assert "agentPreset.select" in OFFICIAL_RPC_METHODS
     assert "settings.openDocument" in OFFICIAL_RPC_METHODS
     assert "pluginInventory.list" in OFFICIAL_RPC_METHODS
+    assert "messageFeedback.list" in OFFICIAL_RPC_METHODS
+    assert "messageFeedback.put" in OFFICIAL_RPC_METHODS
+    assert "messageFeedback.delete" in OFFICIAL_RPC_METHODS
 
 
 @pytest.mark.asyncio

@@ -14,6 +14,11 @@ from dsh.host.apiproxy.api.goals import GoalsDomainHandler
 from dsh.host.apiproxy.api.host import HostDomainHandler
 from dsh.host.apiproxy.api.jobs import JobsDomainHandler
 from dsh.host.apiproxy.api.llm import LLMDomainHandler
+from dsh.host.apiproxy.api.message_feedback import (
+    METHOD_NAMES as MESSAGE_FEEDBACK_METHOD_NAMES,
+    MessageFeedbackDomainHandler,
+    TypertGatewayError,
+)
 from dsh.host.apiproxy.api.questions import QuestionsDomainHandler
 from dsh.host.apiproxy.api.session_search import SessionSearchDomainHandler
 from dsh.host.apiproxy.api.sessions import SessionsDomainHandler
@@ -36,6 +41,9 @@ __all__ = [
     "HostDomainHandler",
     "JobsDomainHandler",
     "LLMDomainHandler",
+    "MESSAGE_FEEDBACK_METHOD_NAMES",
+    "MessageFeedbackDomainHandler",
+    "TypertGatewayError",
     "QuestionsDomainHandler",
     "SessionSearchDomainHandler",
     "SessionsDomainHandler",

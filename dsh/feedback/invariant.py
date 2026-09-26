@@ -1,25 +1,34 @@
 """
-Package-owned invariant companion for `@deepseek-ai/dsh-command-feedback`.
-1:1 with reference/packages/feedback/command-feedback/src/invariant.ts.
-Python 3.8.10 compatible.
+Package-owned invariant companion for `@deepseek-ai/dsh-message-feedback`.
+Aligned 1:1 with official `packages/feedback/message-feedback/src/invariant.ts`.
+
+No runtime invariant exists: the private typed writer owns current row
+mutations, the domain schema validates rows on reopen, and no second authority
+exists. The companion still reserves the package name so a second registration
+fails loudly.
 """
 
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
-PACKAGE_NAME = "@deepseek-ai/dsh-command-feedback"
-name = "command-feedback-invariant"
+PACKAGE_NAME = "@deepseek-ai/dsh-message-feedback"
+
+#: Cordis companion plugin name.
+name = "message-feedback-invariant"
+
+#: Services required before the companion can reserve and check package ownership.
 inject = ["invariants"]
 
 
-def install(ctx: Any, fail: Callable[[str], None]) -> None:
-    """
-    No runtime invariant: each `feedback/record` is an independent append-only
-    fact with no cross-event or mutable-data relationship.
-    """
+def _install() -> None:
+    """No runtime invariant: see the module docstring."""
 
 
-def apply(ctx: Any) -> Optional[Any]:
-    invariants_svc = ctx.get("invariants") if hasattr(ctx, "get") else None
-    if invariants_svc is not None and hasattr(invariants_svc, "register"):
-        return invariants_svc.register(PACKAGE_NAME, install)
-    return None
+#: `Object.assign(() => {}, { inject: ['messageFeedback'] })`
+_install.inject = ["messageFeedback"]  # type: ignore[attr-defined]
+
+install: Callable[[], None] = _install
+
+
+def apply(ctx: Any) -> Any:
+    """Register this package's invariant companion."""
+    return ctx.invariants.register(PACKAGE_NAME, install)

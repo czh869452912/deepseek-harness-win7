@@ -13,12 +13,15 @@ from dsh.core.agent_loop import AgentLoopPlugin
 from dsh.core.tools import ToolsPlugin
 from dsh.credentials.credentials_local import CredentialsLocalPlugin
 from dsh.extensions.cli_visualizer import CliVisualizerPlugin
+from dsh.feedback.message_feedback import MessageFeedbackPlugin
+from dsh.session.persistence_jsonl import JsonlSessionPersistencePlugin
 from dsh.llm.llm_openai import LLMOpenAIPlugin
 from dsh.llm.token_meter import TokenMeterPlugin
 from dsh.settings.settings_file import SettingsFilePlugin
 from dsh.host.apiproxy.api_proxy import ApiProxyPlugin
 
 from dsh.host.client_modules.registry import ClientModulesPlugin
+from dsh.host.connection.connection import ConnectionPlugin
 from dsh.host.directory_picker.directory_picker import DirectoryPickerAutoPlugin
 from dsh.host.frontend_static.frontend_static import FrontendStaticPlugin
 from dsh.host.plugin_inventory.plugin_inventory import PluginInventoryPlugin
@@ -88,6 +91,12 @@ async def build_harness(
     await ctx.plugin(CommandsPlugin)
     await ctx.plugin(TokenMeterPlugin)
     await ctx.plugin(LLMRetryPlugin)
+    # The base bundle's durable session log row
+    # (`reference/packages/bundle/base/cordis.patch.yml`: `session-persistence-jsonl`
+    # rooted at `dshHomePath('sessions')`). The Web Host's session surfaces and
+    # the message-feedback sidecar inspect this durable log, so the row belongs
+    # to the shared base layer rather than to one surface.
+    await ctx.plugin(JsonlSessionPersistencePlugin, config={"root": dsh_home_path("sessions")})
     if mode != "minimal":
         await ctx.plugin(SessionQueryPlugin, config={"path": ":memory:", "open_at": "never"})
     await ctx.plugin(AgentLoopPlugin)
@@ -113,15 +122,39 @@ async def build_harness(
     install_harness_plugin_classes(loader)
 
     if enable_web:
-        await ctx.plugin(WebServerPlugin, config={"host": web_host, "port": web_port})
+        # The shipped Web composition configures response compression on the
+        # carrier (`reference/packages/bundle/web-app/cordis.patch.yml`: gzip,
+        # level 1, 1024-byte threshold); the served dist rides that fallback.
+        await ctx.plugin(
+            WebServerPlugin,
+            config={
+                "host": web_host,
+                "port": web_port,
+                "compression": "gzip",
+                "compressionLevel": 1,
+                "compressionThresholdBytes": 1024,
+            },
+        )
         await ctx.plugin(ClientModulesPlugin)
         await ctx.plugin(PluginInventoryPlugin)
         await ctx.plugin(DirectoryPickerAutoPlugin)
         await ctx.plugin(ApiProxyPlugin)
+        await ctx.plugin(ConnectionPlugin)
         await ctx.plugin(FrontendStaticPlugin)
+        # The shipped web-app bundle inserts the `message-feedback` row with
+        # `maxNoteBytes: 8192`; the browser's messageFeedback Remote is served
+        # from this host-plane provider.
+        await ctx.plugin(MessageFeedbackPlugin, config={"maxNoteBytes": 8192})
 
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    preset_file = os.path.join(base_dir, "presets", f"{mode}.yaml")
+    # The `web` profile is the standard workspace preset plus the web surface
+    # (`enable_web` mounts WebServer, client-modules, apiproxy, connection and
+    # frontend-static), exactly the shape the reference composes from the base +
+    # web-app bundles. No separate preset file exists for it, so the documented
+    # `dsh --web` / `--profile web` entry resolves here instead of failing to
+    # read a preset that was never shipped.
+    preset_mode = "standard" if mode == "web" else mode
+    preset_file = os.path.join(base_dir, "presets", f"{preset_mode}.yaml")
     if not os.path.isfile(preset_file):
         raise FileNotFoundError(f"dsh: failed to read preset at {preset_file}")
 

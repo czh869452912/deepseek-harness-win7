@@ -348,11 +348,11 @@ class ToolGoalPlugin(Plugin):
         if hasattr(ctx, "has") and ctx.has("systemPrompt"):
             sp = ctx.get("systemPrompt")
             if hasattr(sp, "section"):
-                sp.section(
-                    name="tool:goal",
-                    order=114,
-                    text=guidance(self.blocked_after_consecutive_rounds),
-                )
+                sp.section({
+                    "name": "tool:goal",
+                    "order": 114,
+                    "text": guidance(self.blocked_after_consecutive_rounds),
+                })
 
         tools = ctx.get("tools")
         if not tools:
@@ -445,7 +445,7 @@ class ToolGoalPlugin(Plugin):
         if ctx.has("commands"):
             cmd_svc = ctx.get("commands")
             if hasattr(cmd_svc, "register"):
-                def execute_goal_command(invocation: Any) -> str:
+                def _run_goal_command(invocation: Any) -> str:
                     raw = getattr(invocation, "raw_input", str(invocation))
                     tokens = raw.strip().split(None, 1)
                     sub = tokens[0].lower() if tokens else "show"
@@ -488,11 +488,14 @@ class ToolGoalPlugin(Plugin):
                                 return "No goal is currently set."
                             return f"Status: {g.phase}\nObjective: {g.objective}"
 
-                cmd_svc.register(
-                    name="goal",
-                    description="set or view the goal for a long-running task",
-                    handler=execute_goal_command,
-                )
+                def execute_goal_command(invocation: Any) -> Dict[str, Any]:
+                    return {"kind": "success", "text": _run_goal_command(invocation)}
+
+                cmd_svc.register({
+                    "name": "goal",
+                    "description": "set or view the goal for a long-running task",
+                    "handler": execute_goal_command,
+                })
 
         # Hook /goal command in pre-step for natural input
         ctx.on("agent/pre-step", self._hook_goal_slash_command)

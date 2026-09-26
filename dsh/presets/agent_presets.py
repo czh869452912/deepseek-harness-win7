@@ -23,6 +23,38 @@ from dsh.settings.types import settings_namespace
 SETTINGS_NAMESPACE = "agent-presets"
 
 
+def _config_from_mapping(raw: Dict[str, Any]) -> Config:
+    """
+    Build the preset roster config from a loader row's raw mapping.
+
+    Upstream validates a row's `config` against `AgentPresets.Config`
+    (reference/packages/preset/agent-presets/src/index.ts): `default` required,
+    `roots` empty by default, `includeShippedRoot` and `includeUserRoot` both
+    true. The Python Loader hands the row's mapping straight to the service, so
+    the same defaults are applied here, and the shipped root comes first because
+    an earlier root wins a duplicate id.
+    """
+    roots: List[PresetRoot] = []
+    for entry in raw.get("roots") or []:
+        if isinstance(entry, PresetRoot):
+            roots.append(entry)
+        elif isinstance(entry, dict) and entry.get("path"):
+            roots.append(PresetRoot(path=str(entry["path"]), trust=str(entry.get("trust") or "user")))
+
+    include_shipped = raw.get("includeShippedRoot", raw.get("include_shipped_root", True))
+    if include_shipped:
+        shipped_root = os.path.join(os.getcwd(), "dsh", "presets")
+        if os.path.isdir(shipped_root):
+            roots.insert(0, PresetRoot(path=shipped_root, trust="system"))
+
+    include_user = raw.get("includeUserRoot", raw.get("include_user_root", True))
+    return Config(
+        default=str(raw.get("default") or "standard"),
+        roots=roots,
+        include_user_root=bool(include_user),
+    )
+
+
 class AgentPresets(Service):
     """
     Registry over the deployment's agent presets.
@@ -31,7 +63,10 @@ class AgentPresets(Service):
 
     name = "agentPresets"
 
-    def __init__(self, ctx: Optional[Any] = None, config: Optional[Config] = None):
+    def __init__(self, ctx: Optional[Any] = None, config: Optional[Any] = None):
+        if config is not None and not isinstance(config, Config):
+            config = _config_from_mapping(config if isinstance(config, dict) else {})
+
         if ctx is not None:
             super().__init__(ctx, name="agentPresets")
             self.ctx = ctx

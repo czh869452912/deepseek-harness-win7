@@ -325,17 +325,17 @@ class RegistryService:
             fiber._plugin_cls = plugin_cls_or_instance
             plugin_inst = None
             if hasattr(plugin_cls_or_instance, "inject") and not raw_inject:
-                fiber.inject = Inject.resolve(getattr(plugin_cls_or_instance, "inject", None))
+                Inject.resolve(getattr(plugin_cls_or_instance, "inject", None), fiber.inject)
         elif isinstance(plugin_cls_or_instance, Plugin):
             plugin_inst = plugin_cls_or_instance
             fiber.plugin = plugin_inst
             if hasattr(plugin_inst, "inject") and not raw_inject:
-                fiber.inject = Inject.resolve(getattr(plugin_inst, "inject", None))
+                Inject.resolve(getattr(plugin_inst, "inject", None), fiber.inject)
         else:
             plugin_inst = plugin_cls_or_instance
             fiber.plugin = plugin_inst
             if hasattr(plugin_inst, "inject") and not raw_inject:
-                fiber.inject = Inject.resolve(getattr(plugin_inst, "inject", None))
+                Inject.resolve(getattr(plugin_inst, "inject", None), fiber.inject)
 
         # Collect method-level @inject hooks matching TS @Inject method decorator
         if plugin_inst is not None and not isinstance(plugin_inst, (dict, list, tuple)):

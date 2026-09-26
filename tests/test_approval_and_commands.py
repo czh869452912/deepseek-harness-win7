@@ -2,7 +2,9 @@ import asyncio
 import pytest
 from dsh.cordis.context import Context
 from dsh.interaction.user_approval import UserApprovalService
-from dsh.interaction.commands import CommandRegistry
+from dsh.interaction.commands import CommandsPlugin
+from dsh.core.abort import AbortController
+from dsh.core.scope import create_scope
 
 
 from dsh.core.agent import Agent
@@ -43,16 +45,34 @@ async def test_user_approval_service_policy_and_decision():
 
 @pytest.mark.asyncio
 async def test_command_registry_execution():
+    """
+    The registry registers the canonical `CommandDefinition` and executes a
+    resolved line against the exact receiving agent
+    (`reference/packages/interaction/commands/src/index.ts`).
+    """
     ctx = Context()
-    cmds = CommandRegistry(ctx)
+    await ctx.plugin(SessionStore)
+    await ctx.plugin(CommandsPlugin)
 
-    def handle_compact(args):
-        return f"Compacted with args: {args}"
+    seen = []
 
-    cmds.register("/compact", "Compact conversation", handle_compact)
+    def handle_compact(invocation):
+        seen.append(invocation)
+        return {"kind": "success", "text": f"Compacted with args: {invocation.rawInput.strip()}"}
 
-    res = await cmds.execute("/compact --force")
-    assert res == "Compacted with args: --force"
+    ctx.commands.register({
+        "name": "compact",
+        "description": "Compact conversation",
+        "handler": handle_compact,
+    })
 
-    res_none = await cmds.execute("not a command")
-    assert res_none is None
+    session = ctx.get("sessions").create("compact-session")
+    agent = Agent(session=session, ctx=ctx, agent_id="compact-session")
+
+    execution = await ctx.commands.execute(
+        agent, "/compact --force", [], AbortController().signal
+    )
+    assert dict(execution.result) == {"kind": "success", "text": "Compacted with args: --force"}
+    assert seen[0].rawInput == " --force"
+
+    assert await ctx.commands.execute(agent, "not a command", [], AbortController().signal) is None

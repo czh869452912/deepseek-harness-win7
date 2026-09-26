@@ -6,18 +6,34 @@ from dsh.cordis.plugin import Plugin
 from dsh.fs.fs_local import FsError, FsTarget
 
 
-def _fire_waterfall(ctx: Optional[Any], event_name: str, *args: Any) -> Any:
+async def _fire_waterfall(ctx: Optional[Any], event_name: str, target: Any, actor: Any, default: Any = None) -> Any:
+    """
+    Dispatch one single-slot intent waterfall and return the decider's value.
+
+    Matching the reference tool: the bare default is `undefined`, so a tree
+    without a policy plugin keeps the provider's unconditional behaviour.
+    """
     if not ctx or not hasattr(ctx, "waterfall"):
-        return None
-    res = ctx.waterfall(event_name, *args)
-    if inspect.isawaitable(res):
-        import asyncio
-        try:
-            loop = asyncio.get_running_loop()
-            loop.create_task(res)
-        except RuntimeError:
-            pass
-    return res
+        return default
+    return await ctx.waterfall(event_name, target, actor, lambda: default)
+
+
+def _observation_target(fs: Any, file_path: str) -> FsTarget:
+    """
+    The exact target the observation events and mutations share.
+
+    One target identity per operation keeps the policy's observed-state key
+    (`targetKey`) consistent between the read that records it and the write
+    or edit that guards against it.
+    """
+    resolved_path = fs.resolve_path(file_path) if hasattr(fs, "resolve_path") else file_path
+    return FsTarget(target_key=resolved_path, display_path=resolved_path)
+
+
+def _emit_observed(ctx: Optional[Any], target: FsTarget, observation: Dict[str, Any], actor: Any) -> None:
+    """Record one authoritative presence/absence observation for the actor."""
+    if ctx and hasattr(ctx, "emit"):
+        ctx.emit("fs/observed", target, observation, actor)
 
 
 def format_read_output(display_path: str, offset: int, lines: List[Tuple[int, str]], total_lines: int, truncated_by_bytes: bool = False) -> str:
@@ -77,26 +93,31 @@ class ToolFsPlugin(Plugin):
 
         sp = ctx.get("systemPrompt") if ctx.has("systemPrompt") else (ctx.get("system_prompt") if ctx.has("system_prompt") else None)
         if sp and hasattr(sp, "section"):
-            sp.section(
-                name="tool:read",
-                text="Use the read tool — not shell commands like cat — to inspect text files. Results include line numbers. Use offset and limit to continue reading large files.",
-                order=100,
-            )
-            sp.section(
-                name="tool:write",
-                text="Use the write tool to create files or completely replace file contents. Existing files are overwritten, so read an existing file first (the default fs-observation-policy requires it) and prefer edit for targeted changes.",
-                order=101,
-            )
-            sp.section(
-                name="tool:edit",
-                text="Use the edit tool for targeted changes to existing UTF-8 text files. It replaces literal old_string with new_string; by default old_string must appear exactly once. If old_string appears multiple times, provide a more specific old_string or set replace_all to true. Read the file first (the default fs-observation-policy requires it), unless you just created or edited it in this session.",
-                order=102,
-            )
+            sp.section({
+                "name": "tool:read",
+                "text": "Use the read tool — not shell commands like cat — to inspect text files. Results include line numbers. Use offset and limit to continue reading large files.",
+                "order": 100,
+            })
+            sp.section({
+                "name": "tool:write",
+                "text": "Use the write tool to create files or completely replace file contents. Existing files are overwritten, so read an existing file first (the default fs-observation-policy requires it) and prefer edit for targeted changes.",
+                "order": 101,
+            })
+            sp.section({
+                "name": "tool:edit",
+                "text": "Use the edit tool for targeted changes to existing UTF-8 text files. It replaces literal old_string with new_string; by default old_string must appear exactly once. If old_string appears multiple times, provide a more specific old_string or set replace_all to true. Read the file first (the default fs-observation-policy requires it), unless you just created or edited it in this session.",
+                "order": 102,
+            })
 
         # ----------------------------------------------------
         # 1. READ Tool
         # ----------------------------------------------------
-        async def exec_read(file_path: str, offset: Optional[int] = 1, limit: Optional[int] = None) -> str:
+        async def exec_read(
+            file_path: str,
+            offset: Optional[int] = 1,
+            limit: Optional[int] = None,
+            exec_input: Optional[Any] = None,
+        ) -> str:
             fs = ctx.get("fs")
             if not fs:
                 raise FsError("Filesystem service unavailable", "FS_IO_ERROR")
@@ -113,18 +134,17 @@ class ToolFsPlugin(Plugin):
             if lim > self.read_limit:
                 raise ValueError(f"limit must be less than or equal to {self.read_limit}")
 
-            resolved_path = fs.resolve_path(file_path) if hasattr(fs, "resolve_path") else file_path
-            if hasattr(fs, "exists") and not fs.exists(resolved_path):
-                if ctx and hasattr(ctx, "emit"):
-                    ctx.emit("fs/observed", resolved_path, {"kind": "absent"})
-                raise FsError(f"The path {resolved_path} does not exist.", "FS_NOT_FOUND")
+            target = _observation_target(fs, file_path)
+            info = await fs.stat(target) if hasattr(fs, "stat") else None
+            if info is None:
+                _emit_observed(ctx, target, {"kind": "absent"}, exec_input)
+                raise FsError(f"The path {target.displayPath} does not exist.", "FS_NOT_FOUND")
 
-            if hasattr(fs, "is_file") and not fs.is_file(resolved_path):
-                raise FsError(f'cannot read "{resolved_path}": not a regular file', "FS_NOT_REGULAR_FILE")
+            if info.type != "file":
+                raise FsError(f'cannot read "{target.displayPath}": not a regular file', "FS_NOT_REGULAR_FILE")
 
-            content = fs.read_text(resolved_path) if hasattr(fs, "read_text") else ""
-            if ctx and hasattr(ctx, "emit"):
-                ctx.emit("fs/observed", resolved_path, {"kind": "present", "version": "1"})
+            content = await fs.readText(target) if hasattr(fs, "readText") else fs.read_text(target.targetKey)
+            _emit_observed(ctx, target, {"kind": "present", "version": info.version}, exec_input)
 
             all_lines = content.split("\n")
             total_lines = len(all_lines)
@@ -139,7 +159,7 @@ class ToolFsPlugin(Plugin):
                     for i in range(start_idx, end_idx)
                 ]
 
-            return format_read_output(resolved_path, off, selected_lines, total_lines)
+            return format_read_output(target.displayPath, off, selected_lines, total_lines)
 
         def present_read_call(args: Dict[str, Any]) -> Dict[str, Any]:
             p = args.get("file_path", "")
@@ -182,25 +202,26 @@ class ToolFsPlugin(Plugin):
         # ----------------------------------------------------
         # 2. WRITE Tool
         # ----------------------------------------------------
-        async def exec_write(file_path: str, content: str) -> str:
+        async def exec_write(
+            file_path: str,
+            content: str,
+            exec_input: Optional[Any] = None,
+            signal: Optional[Any] = None,
+        ) -> str:
             fs = ctx.get("fs")
             if not fs:
                 raise FsError("Filesystem service unavailable", "FS_IO_ERROR")
             if not file_path or not file_path.strip():
                 raise ValueError("file_path must be a non-empty string")
 
-            resolved_path = fs.resolve_path(file_path) if hasattr(fs, "resolve_path") else file_path
-            existing = fs.exists(resolved_path) if hasattr(fs, "exists") else False
+            target = _observation_target(fs, file_path)
+            # Single-slot decision: the policy plugin produces createIfAbsent/
+            # replaceIfVersion; the bare default is undefined (unconditional).
+            intent = await _fire_waterfall(ctx, "fs/write-intent", target, exec_input)
+            outcome = await fs.writeText(target, content, intent, signal)
+            _emit_observed(ctx, target, {"kind": "present", "version": outcome.version}, exec_input)
 
-            _fire_waterfall(ctx, "fs/write-intent", resolved_path, lambda: {"kind": "createIfAbsent" if not existing else "replaceIfVersion"})
-
-            if hasattr(fs, "write_text"):
-                fs.write_text(resolved_path, content)
-            if ctx and hasattr(ctx, "emit"):
-                ctx.emit("fs/observed", resolved_path, {"kind": "present", "version": "1"})
-
-            op = "update" if existing else "create"
-            return format_write_output(resolved_path, op)
+            return format_write_output(target.displayPath, outcome.operation)
 
         def present_write_call(args: Dict[str, Any]) -> Dict[str, Any]:
             p = args.get("file_path", "")
@@ -237,7 +258,14 @@ class ToolFsPlugin(Plugin):
         # ----------------------------------------------------
         # 3. EDIT Tool
         # ----------------------------------------------------
-        async def exec_edit(file_path: str, old_string: str, new_string: str, replace_all: Optional[bool] = False) -> str:
+        async def exec_edit(
+            file_path: str,
+            old_string: str,
+            new_string: str,
+            replace_all: Optional[bool] = False,
+            exec_input: Optional[Any] = None,
+            signal: Optional[Any] = None,
+        ) -> str:
             fs = ctx.get("fs")
             if not fs:
                 raise FsError("Filesystem service unavailable", "FS_IO_ERROR")
@@ -248,33 +276,25 @@ class ToolFsPlugin(Plugin):
             if old_string == new_string:
                 raise ValueError("old_string and new_string must differ")
 
-            resolved_path = fs.resolve_path(file_path) if hasattr(fs, "resolve_path") else file_path
-            if hasattr(fs, "exists") and not fs.exists(resolved_path):
-                if ctx and hasattr(ctx, "emit"):
-                    ctx.emit("fs/observed", resolved_path, {"kind": "absent"})
-                raise FsError(f'cannot edit "{resolved_path}": file changed since it was read', "FS_STALE_VERSION")
-
-            if hasattr(fs, "is_file") and not fs.is_file(resolved_path):
-                raise FsError(f'cannot edit "{resolved_path}": not a regular file', "FS_NOT_REGULAR_FILE")
-
-            _fire_waterfall(ctx, "fs/edit-intent", resolved_path, lambda: None)
-
-            before = fs.read_text(resolved_path) if hasattr(fs, "read_text") else ""
-            if old_string not in before:
-                raise FsError(f"No replacement was performed, old_str `{old_string}` did not appear verbatim in {resolved_path}.", "FS_EDIT_NOT_FOUND")
-
+            target = _observation_target(fs, file_path)
+            # The reference edit does not stat and records no absence: the
+            # observed-state record stays whatever the last authoritative
+            # observation was, and the provider raises the stale/not-found code
+            # from inside the atomic edit's own critical section.
+            #
+            # Single-slot decision: the policy plugin rejects an unread edit and
+            # supplies the observed version as the read-match-write basis.
+            intent = await _fire_waterfall(ctx, "fs/edit-intent", target, exec_input)
             r_all = bool(replace_all)
-            if not r_all and before.count(old_string) > 1:
-                raise FsError(f"No replacement was performed. Multiple occurrences of old_str `{old_string}`. Please ensure it is unique", "FS_AMBIGUOUS_EDIT")
+            outcome = await fs.editText(
+                target,
+                {"oldString": old_string, "newString": new_string, "replaceAll": r_all},
+                intent,
+                signal,
+            )
+            _emit_observed(ctx, target, {"kind": "present", "version": outcome.version}, exec_input)
 
-            after = before.replace(old_string, new_string) if r_all else before.replace(old_string, new_string, 1)
-            if hasattr(fs, "write_text"):
-                fs.write_text(resolved_path, after)
-
-            if ctx and hasattr(ctx, "emit"):
-                ctx.emit("fs/observed", resolved_path, {"kind": "present", "version": "1"})
-
-            return format_edit_output(resolved_path, r_all)
+            return format_edit_output(target.displayPath, r_all)
 
         def present_edit_call(args: Dict[str, Any]) -> Dict[str, Any]:
             p = args.get("file_path", "")

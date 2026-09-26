@@ -501,25 +501,22 @@ class SessionsDomainHandler:
             cmd_name = stripped.split()[0].lstrip("/")
             cmd_registry = self.ctx.get("commands") if hasattr(self.ctx, "get") else None
             if cmd_registry:
-                cmd = None
+                # The registry executes against the exact receiving agent, the
+                # same way the reference session controller resolves it from the
+                # session id before dispatching the line.
+                agents_svc = self.ctx.get("agents") if hasattr(self.ctx, "get") else None
+                agent = None
+                if agents_svc is not None and hasattr(agents_svc, "get"):
+                    agent = agents_svc.get(sid)
+                if agent is None:
+                    raise ValueError("unknown-command: {}".format(cmd_name))
                 try:
-                    if hasattr(cmd_registry, "get"):
-                        cmd = cmd_registry.get(cmd_name)
-                except Exception:
-                    cmd = None
-                if cmd:
-                    try:
-                        handler = getattr(cmd, "handler", None) or (cmd.get("handler") if isinstance(cmd, dict) else None)
-                        if handler:
-                            import inspect
-                            res = handler(stripped, self.ctx)
-                            if inspect.isawaitable(res):
-                                res = await res
-                            return {"accepted": True, "command": {"kind": "success", "text": str(res) if res else ""}}
-                        return {"accepted": True, "command": {"kind": "success"}}
-                    except Exception as e:
-                        raise ValueError("command-error: {}".format(e))
-                raise ValueError("unknown-command: {}".format(cmd_name))
+                    execution = await cmd_registry.execute(agent, stripped, [], None)
+                except Exception as e:
+                    raise ValueError("command-error: {}".format(e))
+                if execution is None:
+                    raise ValueError("unknown-command: {}".format(cmd_name))
+                return {"accepted": True, "command": dict(execution.result)}
         if not text_content.strip() and not image_parts:
             raise ValueError("Empty prompt content")
         # IANA timezone validation (minimal)

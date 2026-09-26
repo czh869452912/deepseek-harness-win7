@@ -340,17 +340,294 @@ class SafeASTEvaluator(ast.NodeVisitor):
         return func(*args, **kwargs)
 
 
-def evaluate_expr(ctx: Any, expr: str) -> Any:
-    """
-    Safely evaluate expression string in the given Context matching TS evaluate(ctx, expr).
-    Translates common JS patterns to Python syntax safely using AST analysis.
-    """
-    expr_str = expr.strip()
-    if expr_str.startswith("!!js"):
-        expr_str = expr_str[4:].strip()
+class _JsParseError(Exception):
+    """An expression that is not part of the JavaScript subset evaluate_expr translates."""
 
-    # 1. Normalize JS boolean and comparison operators to Python
-    expr_py = expr_str
+
+# A JavaScript expression tokenizer. Strings keep their quotes so the generated
+# Python literal is the same text; operators are matched longest-first so `===`
+# never becomes `==` plus `=`.
+_JS_TOKEN_RE = re.compile(
+    r"""
+    (?P<ws>\s+)
+  | (?P<string>"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')
+  | (?P<number>\d+\.\d+(?:[eE][+-]?\d+)?|\.\d+(?:[eE][+-]?\d+)?|\d+(?:[eE][+-]?\d+)?)
+  | (?P<name>[A-Za-z_$][A-Za-z0-9_$]*)
+  | (?P<op>\?\?|\?\.|\*\*|===|!==|==|!=|<=|>=|&&|\|\||=>|[-+*/%<>!?:.,()\[\]{}])
+    """,
+    re.VERBOSE,
+)
+
+_PYTHON_KEYWORDS = frozenset((
+    "and", "as", "assert", "async", "await", "break", "class", "continue",
+    "def", "del", "elif", "else", "except", "finally", "for", "from", "global",
+    "if", "import", "in", "is", "lambda", "nonlocal", "not", "or", "pass",
+    "raise", "return", "try", "while", "with", "yield",
+))
+
+
+def _tokenize_js_expression(expr: str) -> List[Any]:
+    """Split a JS expression into (kind, text) tokens, refusing unknown syntax."""
+    tokens: List[Any] = []
+    pos = 0
+    length = len(expr)
+    while pos < length:
+        match = _JS_TOKEN_RE.match(expr, pos)
+        if match is None:
+            raise _JsParseError(f"unsupported character {expr[pos]!r} at {pos}")
+        pos = match.end()
+        kind = match.lastgroup
+        if kind == "ws":
+            continue
+        tokens.append((kind, match.group()))
+    return tokens
+
+
+class _JsExpressionParser:
+    """
+    Translate the JavaScript expression subset the shipped bundles use into a
+    Python expression, with JS operator precedence.
+
+    Upstream evaluates an `!!js` body with the JS engine
+    (`with (ctx) { return eval(expr) }`, reference/vendor/loader/src/config/utils.ts).
+    The Python runtime has no JS engine, so the subset the pinned bundles
+    actually carry is translated here in the same precedence order as JS
+    (conditional, `??`, `||`, `&&`, equality, relational, additive,
+    multiplicative, unary, postfix, primary). Anything outside the subset raises
+    _JsParseError so the caller can fall back to the historical regex
+    translation, which port-authored config expressions rely on.
+    """
+
+    def __init__(self, tokens: List[Any]):
+        self.tokens = tokens
+        self.index = 0
+
+    def peek(self) -> Any:
+        return self.tokens[self.index] if self.index < len(self.tokens) else (None, None)
+
+    def next(self) -> Any:
+        token = self.peek()
+        self.index += 1
+        return token
+
+    def accept(self, text: str) -> bool:
+        if self.peek()[1] == text:
+            self.index += 1
+            return True
+        return False
+
+    def expect(self, text: str) -> None:
+        if not self.accept(text):
+            raise _JsParseError(f"expected {text!r}")
+
+    def parse(self) -> str:
+        value = self.parse_conditional()
+        if self.index != len(self.tokens):
+            raise _JsParseError(f"unexpected token {self.peek()[1]!r}")
+        return value
+
+    def parse_conditional(self) -> str:
+        condition = self.parse_nullish()
+        if self.accept("?"):
+            consequent = self.parse_conditional()
+            self.expect(":")
+            alternate = self.parse_conditional()
+            return f"({consequent} if {condition} else {alternate})"
+        return condition
+
+    def parse_nullish(self) -> str:
+        value = self.parse_logical_or()
+        while self.accept("??"):
+            right = self.parse_logical_or()
+            value = f"_coalesce({value}, {right})"
+        return value
+
+    def parse_logical_or(self) -> str:
+        value = self.parse_logical_and()
+        while self.accept("||"):
+            right = self.parse_logical_and()
+            value = f"({value} or {right})"
+        return value
+
+    def parse_logical_and(self) -> str:
+        value = self.parse_equality()
+        while self.accept("&&"):
+            right = self.parse_equality()
+            value = f"({value} and {right})"
+        return value
+
+    def parse_equality(self) -> str:
+        value = self.parse_relational()
+        while True:
+            op = self.peek()[1]
+            if op not in ("==", "===", "!=", "!=="):
+                return value
+            self.next()
+            right = self.parse_relational()
+            py_op = "==" if op in ("==", "===") else "!="
+            value = f"({value} {py_op} {right})"
+
+    def parse_relational(self) -> str:
+        value = self.parse_additive()
+        while True:
+            op = self.peek()[1]
+            if op not in ("<", "<=", ">", ">="):
+                return value
+            self.next()
+            right = self.parse_additive()
+            value = f"({value} {op} {right})"
+
+    def parse_additive(self) -> str:
+        value = self.parse_multiplicative()
+        while True:
+            op = self.peek()[1]
+            if op not in ("+", "-"):
+                return value
+            self.next()
+            right = self.parse_multiplicative()
+            value = f"({value} {op} {right})"
+
+    def parse_multiplicative(self) -> str:
+        value = self.parse_unary()
+        while True:
+            op = self.peek()[1]
+            if op not in ("*", "/", "%"):
+                return value
+            self.next()
+            right = self.parse_unary()
+            value = f"({value} {op} {right})"
+
+    def parse_unary(self) -> str:
+        op = self.peek()[1]
+        if op == "!":
+            self.next()
+            return f"(not {self.parse_unary()})"
+        if op == "-":
+            self.next()
+            return f"(-{self.parse_unary()})"
+        if op == "+":
+            self.next()
+            return f"(+{self.parse_unary()})"
+        return self.parse_postfix()
+
+    def parse_postfix(self) -> str:
+        value = self.parse_primary()
+        while True:
+            if self.accept("."):
+                kind, name = self.next()
+                if kind != "name":
+                    raise _JsParseError("expected a property name after '.'")
+                value = f"{value}.{name}"
+            elif self.accept("["):
+                index = self.parse_conditional()
+                self.expect("]")
+                value = f"{value}[{index}]"
+            elif self.accept("("):
+                args: List[str] = []
+                if not self.accept(")"):
+                    args.append(self.parse_conditional())
+                    while self.accept(","):
+                        args.append(self.parse_conditional())
+                    self.expect(")")
+                value = f"{value}({', '.join(args)})"
+            else:
+                return value
+
+    def parse_primary(self) -> str:
+        kind, text = self.next()
+        if kind in ("number", "string"):
+            return text
+        if text == "(":
+            value = self.parse_conditional()
+            self.expect(")")
+            return f"({value})"
+        if text == "[":
+            items: List[str] = []
+            if not self.accept("]"):
+                items.append(self.parse_conditional())
+                while self.accept(","):
+                    items.append(self.parse_conditional())
+                self.expect("]")
+            return "[" + ", ".join(items) + "]"
+        if text == "{":
+            pairs: List[str] = []
+            if not self.accept("}"):
+                while True:
+                    key_kind, key = self.next()
+                    if key_kind == "string":
+                        py_key = key
+                    elif key_kind == "name":
+                        py_key = json.dumps(key)
+                    else:
+                        raise _JsParseError("object literal keys must be names or strings")
+                    self.expect(":")
+                    pairs.append(f"{py_key}: {self.parse_conditional()}")
+                    if not self.accept(","):
+                        break
+                self.expect("}")
+            return "{" + ", ".join(pairs) + "}"
+        if kind == "name":
+            if text == "true":
+                return "True"
+            if text == "false":
+                return "False"
+            if text in ("null", "undefined"):
+                return "None"
+            if text == "process":
+                return self.parse_process()
+            if text in _PYTHON_KEYWORDS:
+                raise _JsParseError(f"{text!r} is not part of the JS expression subset")
+            return text
+        raise _JsParseError(f"unexpected token {text!r}")
+
+    def parse_process(self) -> str:
+        """Translate the `process` globals the pinned bundles reference."""
+        if not self.accept("."):
+            return "process"
+        kind, name = self.next()
+        if kind != "name":
+            raise _JsParseError("expected a process member")
+        if name == "env":
+            if self.accept("."):
+                env_kind, env_name = self.next()
+                if env_kind != "name":
+                    raise _JsParseError("expected an environment variable name")
+                return f"env.get({json.dumps(env_name)})"
+            if self.accept("["):
+                key_kind, key = self.next()
+                if key_kind != "string":
+                    raise _JsParseError("environment lookups need a string key")
+                self.expect("]")
+                return f"env.get({key})"
+            return "env"
+        if name == "platform":
+            return "sys.platform"
+        if name == "cwd":
+            self.expect("(")
+            self.expect(")")
+            return "os.getcwd()"
+        if name == "execPath":
+            return "sys.executable"
+        if name == "version":
+            return "sys.version"
+        raise _JsParseError(f"unsupported process member {name!r}")
+
+
+def _translate_js_expression(expr: str) -> str:
+    """Translate a JS expression to Python source, or raise _JsParseError."""
+    tokens = _tokenize_js_expression(expr)
+    if not tokens:
+        raise _JsParseError("empty expression")
+    return _JsExpressionParser(tokens).parse()
+
+
+def _legacy_translate_expression(expr: str) -> str:
+    """
+    The historical regex translation, kept as the fallback for expressions that
+    are not in the JS subset above (port-authored configs carry Python-flavored
+    expression bodies that a JS engine upstream would reject).
+    """
+    expr_py = expr
     expr_py = re.sub(r'===', '==', expr_py)
     expr_py = re.sub(r'!==', '!=', expr_py)
     expr_py = re.sub(r'&&', ' and ', expr_py)
@@ -366,21 +643,71 @@ def evaluate_expr(ctx: Any, expr: str) -> Any:
     expr_py = expr_py.replace("process.env", "env")
     expr_py = re.sub(r'\(\(\)\s*=>\s*\{\s*throw\s+(?:new\s+)?Error\((.*?)\);?\s*\}\)\(\)', r'(_throw(\1))', expr_py)
 
-    # 2. Handle JS nullish coalescing `a ?? b` -> `_coalesce(a, b)` (must precede ternary)
+    # JS nullish coalescing `a ?? b` -> `_coalesce(a, b)` (must precede ternary)
     coalesce_re = re.compile(r'([^?]+)\?\?([^?]+)')
     while coalesce_re.search(expr_py):
         expr_py = coalesce_re.sub(r'(_coalesce(\1, \2))', expr_py)
 
-    # 3. Handle JS ternary expressions `cond ? val1 : val2` -> `(val1 if cond else val2)`
+    # JS ternary expressions `cond ? val1 : val2` -> `(val1 if cond else val2)`
     ternary_re = re.compile(r'([^\?:]+)\?([^\?:]+):([^\?:]+)')
     while ternary_re.search(expr_py):
         expr_py = ternary_re.sub(r'(\2 if \1 else \3)', expr_py)
+    return expr_py
+
+
+def evaluate_expr(ctx: Any, expr: str) -> Any:
+    """
+    Safely evaluate expression string in the given Context matching TS evaluate(ctx, expr).
+    Translates common JS patterns to Python syntax safely using AST analysis.
+    """
+    expr_str = expr.strip()
+    if expr_str.startswith("!!js"):
+        expr_str = expr_str[4:].strip()
+
+    # Self-executing arrow functions that only throw have no Python counterpart;
+    # rewrite the idiom before translating the surrounding expression.
+    expr_str = re.sub(
+        r'\(\(\)\s*=>\s*\{\s*throw\s+(?:new\s+)?Error\((.*?)\);?\s*\}\)\(\)',
+        r'(_throw(\1))',
+        expr_str,
+    )
+
+    try:
+        expr_py = _translate_js_expression(expr_str)
+    except _JsParseError:
+        expr_py = _legacy_translate_expression(expr_str)
 
     def _coalesce(a: Any, b: Any) -> Any:
         return b if a is None else a
 
     def _throw(msg: Any) -> Any:
         raise RuntimeError(str(msg))
+
+    def _js_number(value: Any) -> Any:
+        """JS `Number(value)`: numeric strings, booleans, and null convert; else NaN."""
+        if value is None:
+            return float("nan")
+        if isinstance(value, bool):
+            return 1 if value else 0
+        if isinstance(value, (int, float)):
+            return value
+        text = str(value).strip()
+        if text == "":
+            return 0
+        try:
+            if re.fullmatch(r"[+-]?\d+", text):
+                return int(text)
+            return float(text)
+        except ValueError:
+            return float("nan")
+
+    def _js_string(value: Any) -> str:
+        """JS `String(value)`: null/undefined keep their JS spellings."""
+        if value is None:
+            return "undefined"
+        if isinstance(value, bool):
+            return "true" if value else "false"
+        return str(value)
 
     class _Process:
         platform = "win32" if sys.platform.startswith("win") else sys.platform
@@ -411,6 +738,9 @@ def evaluate_expr(ctx: Any, expr: str) -> Any:
         "min": min,
         "getattr": getattr,
         "hasattr": hasattr,
+        "Number": _js_number,
+        "String": _js_string,
+        "Boolean": bool,
     }
 
     expr_py = expr_py.strip()
@@ -783,12 +1113,75 @@ class GlobalRealm(Realm):
         return f"@{self.label}"
 
 
-def _entry_from_package_json(pkg_json_path: str) -> Optional[str]:
+def _exports_condition_target(value: Any) -> Optional[str]:
+    """Resolve one exports entry (possibly a conditions map) to its relative target."""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dict):
+        for condition in ("import", "default"):
+            inner = value.get(condition)
+            resolved = _exports_condition_target(inner)
+            if resolved is not None:
+                return resolved
+    return None
+
+
+def exports_subpath_target(exports: Any, subpath: str) -> Optional[str]:
+    """
+    Resolve a `./subpath` request through a package's exports map, matching Node's
+    exact-key-then-pattern rule.
+
+    @param exports: the package's `exports` field.
+    @param subpath: the requested subpath without a leading `.`, e.g. `startup`.
+    @returns: the relative target, or None when the map does not export it.
+    """
+    if not isinstance(exports, (dict, str)):
+        return None
+    key = "./" + subpath
+    if isinstance(exports, str):
+        return exports if key == "." else None
+    target = _exports_condition_target(exports.get(key))
+    if target is not None:
+        return target
+    for pattern, value in exports.items():
+        if not isinstance(pattern, str) or "*" not in pattern:
+            continue
+        prefix, _, suffix = pattern.partition("*")
+        if not key.startswith(prefix) or not key.endswith(suffix):
+            continue
+        if len(key) < len(prefix) + len(suffix):
+            continue
+        matched = key[len(prefix): len(key) - len(suffix)]
+        resolved = _exports_condition_target(value)
+        if resolved is not None:
+            return resolved.replace("*", matched)
+    return None
+
+
+def _entry_from_package_json(pkg_json_path: str, subpath: Optional[str] = None) -> Optional[str]:
+    """
+    Resolve one package manifest to the module a request names.
+
+    @param pkg_json_path: absolute path of the package's `package.json`.
+    @param subpath: a `./subpath` request to resolve through the exports map;
+        None asks for the package root entry.
+    @returns: the resolved file path, or None when nothing answers it.
+    """
     try:
         with open(pkg_json_path, "r", encoding="utf-8") as f:
             manifest = json.load(f)
         pkg_dir = os.path.dirname(pkg_json_path)
         exports = manifest.get("exports")
+        if subpath is not None:
+            # The exports map is a path computation: Node resolves `./startup`
+            # to its target without probing the filesystem, and the import that
+            # follows is what fails when the artifact is absent. Keeping that
+            # shape is what lets the Loader classify the row as installation
+            # owned and answer it from the table instead of the shipped JS.
+            target = exports_subpath_target(exports, subpath)
+            if not isinstance(target, str):
+                return None
+            return os.path.normpath(os.path.join(pkg_dir, target))
         if isinstance(exports, str):
             res = os.path.normpath(os.path.join(pkg_dir, exports))
             if os.path.exists(res):
@@ -815,8 +1208,133 @@ def _entry_from_package_json(pkg_json_path: str) -> Optional[str]:
     return None
 
 
-def resolve_module_specifier(name: str, base_dir: str) -> Optional[str]:
-    """Resolve a relative, absolute, or bare module specifier from base_dir matching Node module resolution."""
+def reparse_target(path: str) -> Optional[str]:
+    """Return the target of a symlink or Windows directory junction, or None."""
+    try:
+        if os.path.islink(path):
+            return os.readlink(path)
+        # Python 3.8 reports Windows junctions through the reparse tag; os.readlink
+        # reads them, os.path.islink does not.
+        tag = getattr(os.lstat(path), "st_reparse_tag", 0)
+        if tag:
+            return os.readlink(path)
+    except (OSError, ValueError):
+        return None
+    return None
+
+
+def is_installation_owned_module(path: str, installation_roots: Optional[List[str]] = None) -> bool:
+    """
+    Return whether a resolved module path is a dsh-healed installation fallback entry.
+
+    `healProfilesModuleFallback` publishes the installation's dependency closure at
+    `$DSH_HOME/profiles/node_modules` and projects the packages only selected
+    bundles carry through `<profile>/.dsh-module-fallback/node_modules`
+    (reference/packages/boot/app-boot/src/profile.ts). Node imports whatever those
+    links point at; the Python runtime replaces them with the class table
+    (`dsh/boot/plugin_registry.py`), so an installation-owned path must never
+    answer with the shipped JS artifact.
+
+    @param path: a resolved specifier, e.g. `<...>/node_modules/@deepseek-ai/dsh-tools`.
+    @param installation_roots: the fallback node_modules directories the launcher healed.
+    @returns: whether the path, or the link it is, belongs to the installation.
+    """
+    if not installation_roots or not path:
+        return False
+    roots = [os.path.normcase(os.path.normpath(root)) for root in installation_roots if root]
+
+    def under_installation(candidate: str) -> bool:
+        normalised = os.path.normcase(os.path.normpath(candidate))
+        return any(normalised == root or normalised.startswith(root + os.sep) for root in roots)
+
+    def link_target(candidate: str) -> Optional[str]:
+        target = reparse_target(candidate)
+        if target is None:
+            return None
+        if target.startswith("\\\\?\\"):
+            target = target[4:]
+        if not os.path.isabs(target):
+            target = os.path.join(os.path.dirname(candidate), target)
+        return target
+
+    # A healed fallback entry is either the resolved path itself (the shared
+    # closure) or a link projected into the profile's own node_modules, in which
+    # case the resolved file sits below that link.
+    current = os.path.normpath(path)
+    for _ in range(32):
+        if under_installation(current):
+            return True
+        target = link_target(current)
+        if target is not None and under_installation(target):
+            return True
+        parent = os.path.dirname(current)
+        if parent == current:
+            break
+        current = parent
+    return False
+
+
+def split_package_specifier(name: str) -> Tuple[Optional[str], Optional[str]]:
+    """
+    Split a bare specifier into its package name and requested subpath.
+
+    @param name: a bare specifier, e.g. `@scope/pkg` or `@scope/pkg/startup`.
+    @returns: the package name and the subpath without a leading `.` (None for
+        the package root), or (None, None) when the specifier names no package.
+    """
+    if name.startswith("@"):
+        parts = name.split("/")
+        if len(parts) < 2 or not parts[0] or not parts[1]:
+            return None, None
+        return "/".join(parts[:2]), "/".join(parts[2:]) if len(parts) > 2 else None
+    parts = name.split("/")
+    if not parts[0]:
+        return None, None
+    return parts[0], "/".join(parts[1:]) if len(parts) > 1 else None
+
+
+def module_search_dirs(base_dir: str, module_roots: Optional[List[str]] = None) -> List[str]:
+    """
+    Return every `node_modules`-style directory a bare specifier resolves through.
+
+    Node walks the ancestor chain; the healed installation closure the launcher
+    publishes is installed on the Loader as extra roots, so it is answered here
+    in the same order the Loader's `installation_module_roots` names them.
+
+    @param base_dir: the directory resolution starts from.
+    @param module_roots: additional `node_modules` directories, e.g. the healed
+        `$DSH_HOME/profiles/node_modules` and the profile-owned projection.
+    @returns: the search directories, in resolution order.
+    """
+    dirs: List[str] = []
+    curr = os.path.abspath(base_dir)
+    while True:
+        dirs.append(os.path.join(curr, "node_modules"))
+        parent = os.path.dirname(curr)
+        if parent == curr:
+            break
+        curr = parent
+    for root in module_roots or []:
+        if root and root not in dirs:
+            dirs.append(root)
+    return dirs
+
+
+def resolve_module_specifier(
+    name: str,
+    base_dir: str,
+    module_roots: Optional[List[str]] = None,
+) -> Optional[str]:
+    """
+    Resolve a relative, absolute, or bare module specifier from base_dir matching
+    Node module resolution, including a package subpath through its exports map.
+
+    @param name: the specifier to resolve.
+    @param base_dir: the directory resolution starts from.
+    @param module_roots: additional `node_modules` directories to search after
+        the ancestor chain, e.g. the healed installation fallback.
+    @returns: the resolved file (or package directory) path, or None.
+    """
     if name.startswith(("./", "../", "/", "\\")) or name.startswith("file://") or os.path.isabs(name):
         raw_path = name
         if raw_path.startswith("file://"):
@@ -844,27 +1362,29 @@ def resolve_module_specifier(name: str, base_dir: str) -> Optional[str]:
                     return idx
         return file_path
 
-    # Bare module specifier: walk up node_modules
-    curr = os.path.abspath(base_dir)
-    while True:
-        parts = name.replace("/", os.sep).split(os.sep)
-        cand_dir = os.path.join(curr, "node_modules", *parts)
-        if os.path.isdir(cand_dir):
-            pkg_json = os.path.join(cand_dir, "package.json")
-            if os.path.isfile(pkg_json):
-                entry = _entry_from_package_json(pkg_json)
-                if entry:
-                    return entry
-            for ext in (".mjs", ".js", ".ts", ".py"):
-                idx = os.path.join(cand_dir, "index" + ext)
-                if os.path.isfile(idx):
-                    return idx
-            return cand_dir
-
-        parent = os.path.dirname(curr)
-        if parent == curr:
-            break
-        curr = parent
+    # Bare module specifier: walk up node_modules, then the healed installation
+    # fallback roots Node would reach from this config tree.
+    package_name, subpath = split_package_specifier(name)
+    if package_name is None:
+        return None
+    for modules_dir in module_search_dirs(base_dir, module_roots):
+        cand_dir = os.path.join(modules_dir, *package_name.split("/"))
+        if not os.path.isdir(cand_dir):
+            continue
+        pkg_json = os.path.join(cand_dir, "package.json")
+        if os.path.isfile(pkg_json):
+            if subpath is not None:
+                # A subpath the exports map does not carry has no module to
+                # return; only the package root falls back below.
+                return _entry_from_package_json(pkg_json, subpath)
+            entry = _entry_from_package_json(pkg_json)
+            if entry:
+                return entry
+        for ext in (".mjs", ".js", ".ts", ".py"):
+            idx = os.path.join(cand_dir, "index" + ext)
+            if os.path.isfile(idx):
+                return idx
+        return cand_dir
 
     return None
 
@@ -1125,7 +1645,25 @@ class EntryTree:
                 p = p[1:]
             base_dir = os.path.normpath(p)
 
-        resolved_path = resolve_module_specifier(name, base_dir)
+        is_bare_name = not (
+            name.startswith(("./", "../", "/", "\\"))
+            or name.startswith("file://")
+            or os.path.isabs(name)
+        )
+        resolved_path = resolve_module_specifier(
+            name, base_dir, getattr(loader, "installation_module_roots", None)
+        )
+        if resolved_path is not None and is_bare_name and is_installation_owned_module(
+            resolved_path, getattr(loader, "installation_module_roots", None)
+        ):
+            # The installation ships built JS artifacts for the packages it owns;
+            # the Python implementation of an installation row is the class table,
+            # so an installation-owned path answers with the table or fails loud
+            # rather than loading a JS stand-in.
+            res = (getattr(loader, "harness_plugins", None) or {}).get(name)
+            if res is not None:
+                return res
+            raise ModuleNotFoundError(f"Cannot find module '{name}'")
         if resolved_path is not None:
             if not os.path.exists(resolved_path):
                 if os.path.exists(resolved_path + ".py"):
@@ -1162,6 +1700,14 @@ class EntryTree:
             raise FileNotFoundError(f"Cannot find module '{name}' at {file_path}")
 
         res = resolve_plugin_class(name, reg_map)
+        if res is not None:
+            return res
+
+        # The installation-owned fallback is the last anchor, matching the Node
+        # runtime where the healed profiles/node_modules closure answers only
+        # after the config project does not own the package.
+        harness_map = getattr(loader, "harness_plugins", None) or {}
+        res = harness_map.get(name)
         if res is not None:
             return res
 
@@ -1926,6 +2472,16 @@ class Loader(EntryTree, Service):
         self.registry_map["cordis:group"] = Group
         self.registry_map["@deepseek-ai/cordis-plugin-group"] = Group
         self.registry_map["@deepseek-ai/cordis-plugin-timer"] = TimerService
+        # Installation-owned fallback resolution table: the Python counterpart of
+        # the harness installation module closure a bare row name resolves through
+        # when the config project does not own that package. Populated by
+        # dsh.boot.plugin_registry.install_harness_plugin_classes.
+        self.harness_plugins: Dict[str, Any] = {}
+        # The launcher-healed installation fallback node_modules levels (the shared
+        # $DSH_HOME/profiles/node_modules closure and the profile-owned projection).
+        # A bare name that would resolve through one of them is an installation row,
+        # never a config-project module. Set by dsh.boot.app_boot.boot.
+        self.installation_module_roots: List[str] = []
         self.entries_list: List[Entry] = []
         self._realms: Dict[str, GlobalRealm] = {}
         self._delims: Dict[str, str] = {}
@@ -2076,10 +2632,16 @@ class Loader(EntryTree, Service):
             self.ctx.on("loader/partial-dispose", _on_partial_dispose)
 
             def _on_internal_plugin(fiber: Any) -> None:
-                # 1. set fiber.entry and resolve inject matching TS Loader index.ts:118-123
+                # 1. set fiber.entry and resolve inject matching TS Loader index.ts:118-123.
+                # A fiber created from an entry context already carries that entry, so
+                # `entry.options.inject` is merged the first time the loader sees the
+                # fiber rather than only while it is still unset: it is what keeps a row
+                # whose config reads an injected service PENDING until the provider that
+                # provides it has activated.
                 parent_entry = getattr(getattr(fiber, "parent", None), "_entry", None) or getattr(getattr(fiber, "parent", None), "entry", None)
-                if parent_entry and not getattr(fiber, "entry", None):
+                if parent_entry is not None and not getattr(fiber, "_entry_inject_resolved", False):
                     fiber.entry = parent_entry
+                    fiber._entry_inject_resolved = True
                     from dsh.cordis.registry import Inject
                     opt_inject = getattr(parent_entry, "options", {}).get("inject") if hasattr(parent_entry, "options") else None
                     if opt_inject:
@@ -2304,6 +2866,8 @@ class Loader(EntryTree, Service):
             config = item.get("config", {})
 
             plugin_cls = resolve_plugin_class(plugin_name, self.registry_map)
+            if plugin_cls is None:
+                plugin_cls = (getattr(self, "harness_plugins", None) or {}).get(plugin_name)
             if plugin_cls:
                 fiber = None
                 if isinstance(plugin_cls, type) and issubclass(plugin_cls, Plugin):

@@ -24,14 +24,15 @@ MAX_TIMEOUT_MS = 600000
 MAX_OUTPUT_BYTES = 64000
 
 
-from dsh.cordis.environment import resolve_dsh_home
-
-
-def build_shell_env() -> Dict[str, str]:
-    """Trusted per-execution DSH_* built-ins (TS: shell-env collect built-ins)."""
+def build_shell_env(ctx: Any = None, execution: Any = None) -> Dict[str, str]:
+    """
+    One shell execution's trusted environment: the model-friendly overrides plus
+    the `ctx.shellEnv` snapshot (TS: `ctx.shellEnv.collect(exec)`).
+    """
     env = dict(ENV_OVERRIDES)
-    env["DSH_HOME"] = resolve_dsh_home()
-    env["DSH_SHELL"] = "1"
+    registry = ctx.get("shellEnv") if ctx is not None and hasattr(ctx, "get") else None
+    if registry is not None:
+        env.update(registry.collect(execution))
     return env
 
 
@@ -140,9 +141,9 @@ class ToolPwshPlugin(Plugin):
             ENCODING_PREAMBLE + command,
         ]
 
-    def _spawn_env(self) -> Dict[str, str]:
+    def _spawn_env(self, ctx: Any = None, execution: Any = None) -> Dict[str, str]:
         env = dict(os.environ)
-        env.update(build_shell_env())
+        env.update(build_shell_env(ctx, execution))
         return env
 
     def _spill(self, ctx: Any, data: bytes) -> Optional[str]:
@@ -159,15 +160,25 @@ class ToolPwshPlugin(Plugin):
         if not tools:
             return
 
+        # The tool-pwsh row consumes the shell-env registry for every execution
+        # (TS: `inject = [..., 'shellEnv']`), so a composition without it is a
+        # misconfiguration resolved here rather than a silently missing DSH_*.
+        if ctx.get("shellEnv") is None:
+            raise RuntimeError(
+                "tool-pwsh requires the shell environment registry: load @deepseek-ai/dsh-shell-env"
+            )
+
         if ctx.has("system_prompt"):
             sp = ctx.get("system_prompt")
             if hasattr(sp, "section"):
-                sp.section(
-                    "tool:pwsh",
-                    "Non-zero exits are reported as `[exit code: N]` markers; investigate failures before moving on. "
-                    "On Windows a killed process settles as `[exit code: 1]` without a signal marker; treat a bare exit 1 after an interruption as a termination, not a command failure.",
-                    order=105,
-                )
+                sp.section({
+                    "name": "tool:pwsh",
+                    "text": (
+                        "Non-zero exits are reported as `[exit code: N]` markers; investigate failures before moving on. "
+                        "On Windows a killed process settles as `[exit code: 1]` without a signal marker; treat a bare exit 1 after an interruption as a termination, not a command failure."
+                    ),
+                    "order": 105,
+                })
 
         async def execute_pwsh(
             command: str,
@@ -175,6 +186,7 @@ class ToolPwshPlugin(Plugin):
             timeoutMs: Optional[int] = None,
             workdir: Optional[str] = None,
             run_in_background: bool = False,
+            exec_input: Optional[Any] = None,
         ) -> str:
             # TS validatePwshArgs
             if not command or not command.strip():
@@ -207,7 +219,7 @@ class ToolPwshPlugin(Plugin):
                         proc = await asyncio.create_subprocess_exec(
                             *self._spawn_argv(command),
                             cwd=cwd,
-                            env=self._spawn_env(),
+                            env=self._spawn_env(ctx, exec_input),
                             stdout=asyncio.subprocess.PIPE,
                             stderr=asyncio.subprocess.PIPE,
                         )
@@ -240,7 +252,7 @@ class ToolPwshPlugin(Plugin):
                 proc = await asyncio.create_subprocess_exec(
                     *self._spawn_argv(command),
                     cwd=cwd,
-                    env=self._spawn_env(),
+                    env=self._spawn_env(ctx, exec_input),
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
                 )

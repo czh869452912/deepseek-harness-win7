@@ -108,11 +108,11 @@ class PlanModeController:
         if hasattr(ctx, "has") and ctx.has("systemPrompt"):
             sp = ctx.get("systemPrompt")
             if hasattr(sp, "section"):
-                sp.section(
-                    name="plan:policy",
-                    order=50,
-                    text=lambda context: self.section if self.is_active(context.get("agent") if isinstance(context, dict) else None) else "",
-                )
+                sp.section({
+                    "name": "plan:policy",
+                    "order": 50,
+                    "text": lambda context: self.section if self.is_active(context.get("agent") if isinstance(context, dict) else None) else "",
+                })
 
     def _resolve_session(self, agent: Optional[Any] = None) -> Optional[Session]:
         if agent and hasattr(agent, "session") and agent.session:
@@ -298,8 +298,10 @@ class PlanModePlugin(Plugin):
         if ctx.has("commands"):
             cmd_svc = ctx.get("commands")
             if hasattr(cmd_svc, "register"):
-                def execute_plan_command(session: Any, args: List[str]) -> str:
-                    sub = args[0].lower() if args else "on"
+                def execute_plan_command(invocation: Any) -> str:
+                    raw = getattr(invocation, "raw_input", "") or ""
+                    tokens = raw.strip().split(None, 1)
+                    sub = tokens[0].lower() if tokens else "on"
                     if sub in ("off", "stop", "exit", "0"):
                         res = controller.set_active(False, agent=None)
                         if res == "committed":
@@ -312,11 +314,14 @@ class PlanModePlugin(Plugin):
                         res = controller.set_active(True, agent=None)
                         return "Plan mode on. Use /plan off to leave."
 
-                cmd_svc.register(
-                    name="plan",
-                    description="Enter or leave plan mode",
-                    handler=execute_plan_command,
-                )
+                def plan_command(invocation: Any) -> Dict[str, Any]:
+                    return {"kind": "success", "text": execute_plan_command(invocation)}
+
+                cmd_svc.register({
+                    "name": "plan",
+                    "description": "Enter or leave plan mode",
+                    "handler": plan_command,
+                })
 
         # 3. Register exit_plan_mode tool
         tools = ctx.get("tools")

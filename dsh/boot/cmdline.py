@@ -129,6 +129,17 @@ def exit_on_stdin_end(ctx: Context, label: str) -> None:
 exitOnStdinEnd = exit_on_stdin_end
 
 
+def camel_case(flag_name: str) -> str:
+    """
+    The option attribute name Commander derives from a flag.
+
+    @param flag_name: the long flag without its leading dashes, e.g. `trusted-host`.
+    @returns: the camel-cased name, e.g. `trustedHost`.
+    """
+    parts = flag_name.split("-")
+    return parts[0] + "".join(part[:1].upper() + part[1:] for part in parts[1:])
+
+
 class CommanderError(Exception):
     """
     Control flow exception raised by Command on help, version, or option/argument error.
@@ -152,7 +163,14 @@ class Command:
         self._commands: List[Command] = []
         self._action_handler: Optional[Callable[..., Any]] = None
         self._parsed_opts: Dict[str, Any] = {}
+        # Commander exposes the collected positionals as .args on every
+        # command, empty before a parse.
+        self.args: List[str] = []
         self._exit_override = False
+        self._description = ""
+        self._help_flags = "-h, --help"
+        self._help_description = "display help for command"
+        self._help_text_after = ""
         self._write_out: Callable[[str], Any] = lambda text: internals.stdout.write(text)
         self._write_err: Callable[[str], Any] = lambda text: internals.stderr.write(text)
 
@@ -165,6 +183,26 @@ class Command:
             return self._name
         self._name = val
         return self
+
+    def description(self, text: Optional[str] = None) -> Any:
+        if text is None:
+            return self._description
+        self._description = text
+        return self
+
+    def help_option(self, flags: str = "-h, --help", description: str = "display help for command") -> "Command":
+        self._help_flags = flags
+        self._help_description = description
+        return self
+
+    helpOption = help_option
+
+    def add_help_text(self, position: str, text: str) -> "Command":
+        if position == "after":
+            self._help_text_after = text
+        return self
+
+    addHelpText = add_help_text
 
     def argument(self, name: str, description: str = "") -> "Command":
         self._arguments.append({"name": name, "description": description})
@@ -195,21 +233,33 @@ class Command:
         long_name = None
         short_name = None
         takes_arg = False
+        variadic = False
         for part in parts:
             tokens = part.split()
             flag = tokens[0]
             if len(tokens) > 1 and (tokens[1].startswith("<") or tokens[1].startswith("[")):
                 takes_arg = True
+                # Commander variadic (`--trusted-host <authority...>`): every
+                # following value is collected, and a repeated flag concatenates.
+                variadic = tokens[1].endswith("...>") or tokens[1].endswith("...]")
             if flag.startswith("--"):
                 long_name = flag[2:]
             elif flag.startswith("-"):
                 short_name = flag[1:]
-        opt_name = long_name or short_name or "opt"
+        flag_name = long_name or short_name or "opt"
+        # Commander negation: `--no-open` declares boolean option `open`, absent
+        # meaning true and present meaning false.
+        negate = flag_name.startswith("no-") and not takes_arg
+        # Commander names an option from its long flag with the hyphens dropped
+        # (`--trusted-host` -> `trustedHost`), and the negation prefix removed.
+        opt_name = camel_case(flag_name[3:] if negate else flag_name)
         self._options.append({
             "name": opt_name,
             "long": long_name,
             "short": short_name,
             "takes_arg": takes_arg,
+            "variadic": variadic,
+            "negate": negate,
             "description": description,
         })
         return self
@@ -241,11 +291,24 @@ class Command:
         raise err
 
     def output_help(self) -> None:
+        # Commander renders the usage line with the declared arguments, then
+        # the description, the argument table, the options, and finally the
+        # addHelpText('after') block; the pinned help assertions read the
+        # description and the app name out of this output.
         lines = [f"Usage: {self._name or 'program'} [options]"]
         if self._commands:
             lines[0] += " [command]"
+        for argument in self._arguments:
+            lines[0] += f" {argument['name']}"
+        if self._description:
+            lines.append("")
+            lines.append(self._description)
+        if self._arguments:
+            lines.append("\nArguments:")
+            for argument in self._arguments:
+                lines.append(f"  {argument['name']:<12} {argument['description']}".rstrip())
         lines.append("\nOptions:")
-        lines.append("  -h, --help  display help for command")
+        lines.append(f"  {self._help_flags}  {self._help_description}")
         for opt in self._options:
             flag_str = f"--{opt['long']}" if opt["long"] else f"-{opt['short']}"
             if opt["takes_arg"]:
@@ -255,6 +318,8 @@ class Command:
             lines.append("\nCommands:")
             for cmd in self._commands:
                 lines.append(f"  {cmd._name}")
+        if self._help_text_after:
+            lines.append(self._help_text_after.rstrip("\n"))
         text = "\n".join(lines) + "\n"
         self._write_out(text)
 
@@ -277,6 +342,10 @@ class Command:
 
         idx = 0
         parsed: Dict[str, Any] = {}
+        # A negated boolean defaults to true; `--no-open` inverts it.
+        for opt in self._options:
+            if opt.get("negate"):
+                parsed[opt["name"]] = True
         operands: List[str] = []
         while idx < len(argv):
             arg = argv[idx]
@@ -288,15 +357,22 @@ class Command:
                     self.error(f"error: unknown option '{arg}'")
                 if matching["takes_arg"]:
                     if len(key_val) > 1:
-                        val = key_val[1]
-                    elif idx + 1 < len(argv) and not argv[idx + 1].startswith("-"):
-                        idx += 1
-                        val = argv[idx]
+                        values = [key_val[1]]
                     else:
+                        values = []
+                        while idx + 1 < len(argv) and not argv[idx + 1].startswith("-"):
+                            idx += 1
+                            values.append(argv[idx])
+                            if not matching.get("variadic"):
+                                break
+                    if not values:
                         self.error(f"error: option '{arg}' argument missing")
-                    parsed[matching["name"]] = val
+                    if matching.get("variadic"):
+                        parsed[matching["name"]] = list(parsed.get(matching["name"], [])) + values
+                    else:
+                        parsed[matching["name"]] = values[0]
                 else:
-                    parsed[matching["name"]] = True
+                    parsed[matching["name"]] = not matching.get("negate", False)
             elif arg.startswith("-") and len(arg) > 1:
                 key = arg[1:]
                 matching = next((o for o in self._options if o["short"] == key), None)
@@ -310,7 +386,7 @@ class Command:
                         self.error(f"error: option '{arg}' argument missing")
                     parsed[matching["name"]] = val
                 else:
-                    parsed[matching["name"]] = True
+                    parsed[matching["name"]] = not matching.get("negate", False)
             else:
                 if self._commands:
                     matching_cmd = next((c for c in self._commands if c._name == arg), None)

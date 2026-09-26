@@ -28,6 +28,7 @@ from dsh.cordis.file_lock import with_file_lock
 from dsh.cordis.fiber import FiberState
 from dsh.cordis.include import ConfigFileError, Include
 from dsh.cordis.loader import Entry, EntryGroup, Group, Loader, apply_entry_patches, evaluate_expr, is_js_expr, js_constructor, resolve_module_specifier
+from dsh.boot.plugin_registry import install_harness_plugin_classes, install_installation_module_roots
 
 
 from dsh.boot.profile import (
@@ -777,6 +778,17 @@ async def boot(
         ctx.base_url = path_to_file_url(os.path.dirname(absolute_config_path)) + "/"
         ctx.provide("dshHomePath", lambda sub="": os.path.join(resolve_dsh_home(), sub) if sub else resolve_dsh_home())
         await ctx.plugin(Loader)
+        # Mount the Loader before the config tree so bare rows resolve from the
+        # installation, then hand it the installation-owned resolution table that
+        # stands in for the Node module closure a bare row name walks to.
+        loader = ctx.get("loader")
+        install_harness_plugin_classes(loader)
+        # The launcher heals the installation closure into profiles/node_modules;
+        # a bare row that would resolve through that fallback is an installation
+        # row, so the Loader answers it from the table instead of the shipped JS
+        # artifact the fallback links to.
+        if loader is not None:
+            install_installation_module_roots(loader, absolute_config_path)
         if prepare:
             res = prepare(ctx)
             if asyncio.iscoroutine(res):

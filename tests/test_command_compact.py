@@ -1,7 +1,9 @@
 import pytest
 from dsh.cordis.context import Context
-from dsh.interaction.commands import CommandRegistry
-from dsh.core.session import Session
+from dsh.core.abort import AbortController
+from dsh.core.agent import Agent
+from dsh.interaction.commands import CommandsPlugin
+from dsh.core.session import SessionStore
 
 from dsh.compaction.command_compact import CommandCompactPlugin
 
@@ -18,18 +20,36 @@ class DummyCompactionService:
 @pytest.mark.asyncio
 async def test_command_compact_execution():
     ctx = Context()
-    cmd_svc = CommandRegistry(ctx)
-    ctx.set_service("commands", cmd_svc)
+    await ctx.plugin(SessionStore)
+    await ctx.plugin(CommandsPlugin)
 
     compaction_svc = DummyCompactionService()
     ctx.set_service("compaction", compaction_svc)
 
     await ctx.plugin(CommandCompactPlugin)
-    assert cmd_svc.has("compact")
+    session = ctx.get("sessions").create("test-session")
+    agent = Agent(session=session, ctx=ctx, agent_id="test-session")
+    assert ctx.commands.find(agent, "compact") is not None
 
-    sess = Session("test-session")
-    res = await cmd_svc.execute("compact", sess, [])
-    assert "Compaction completed" in res
-    assert "Shadowed 3 events" in res
+    execution = await ctx.commands.execute(agent, "/compact", [], AbortController().signal)
+    assert "Compaction completed" in execution.result["text"]
+    assert "Shadowed 3 events" in execution.result["text"]
     assert compaction_svc.compact_called
 
+
+@pytest.mark.asyncio
+async def test_command_compact_reports_a_missing_compaction_service():
+    """
+    The registered handler reports the unmounted capability instead of raising,
+    matching `reference/packages/compaction/command-compact/src/index.ts`.
+    """
+    ctx = Context()
+    await ctx.plugin(SessionStore)
+    await ctx.plugin(CommandsPlugin)
+    await ctx.plugin(CommandCompactPlugin)
+    session = ctx.get("sessions").create("no-compaction")
+    agent = Agent(session=session, ctx=ctx, agent_id="no-compaction")
+
+    execution = await ctx.commands.execute(agent, "/compact", [], AbortController().signal)
+    assert execution.result["kind"] == "error"
+    assert "Compaction service is not mounted" in execution.result["text"]

@@ -1,4 +1,5 @@
 from dsh.shell.render import parse_exit_status
+from dsh.shell.shell_env import ShellEnvPlugin, ShellEnvRegistry
 from dsh.shell.terminal import (
     SHELL_RESET_MESSAGE,
     SHELL_RESET_MESSAGE_BASH,
@@ -13,6 +14,8 @@ from dsh.shell.tool_pwsh_persistent import ToolPwshPersistentPlugin
 
 __all__ = [
     "PersistentTerminal",
+    "ShellEnvPlugin",
+    "ShellEnvRegistry",
     "TerminalService",
     "ToolPwshPlugin",
     "ToolPwshPersistentPlugin",

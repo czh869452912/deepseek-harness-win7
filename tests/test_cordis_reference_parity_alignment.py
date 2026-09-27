@@ -182,6 +182,8 @@ async def test_include_plugin_initialization_and_patches():
     ctx = Context()
     from dsh.cordis.loader import Loader
     await ctx.plugin(Loader)
+    ctx.loader.register_plugin_class("plugin-a-pkg", _settle_entry_plugin)
+    ctx.loader.register_plugin_class("plugin-b-pkg", _settle_entry_plugin)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         config_path = os.path.join(tmp_dir, "cordis.yml")
@@ -194,8 +196,7 @@ async def test_include_plugin_initialization_and_patches():
             yaml.safe_dump(initial_entries, f)
 
         # Include with patch overriding plugin-a's config
-        # The probe entries name packages that are not installed; this case covers
-        # the include service's tree and patch result, so only its own mount settles.
+        # Real probe plugins allow the child-tree transaction to commit.
         include_fiber = ctx.plugin(
             Include,
             {
@@ -206,7 +207,7 @@ async def test_include_plugin_initialization_and_patches():
             },
         )
 
-        await asyncio.sleep(0)
+        await include_fiber.await_settled()
         assert include_fiber is not None
         # Root-context attribute access resolves a service the way the reference
         # proxy does for a runtime-less context (`reflect.get(name, false)`).
@@ -224,21 +225,45 @@ async def test_include_plugin_initialization_and_patches():
         await include_service.refresh()
         assert include_service.data is not None
 
-        # tree.ts settlement: the include tree owns the mount's apply and entry
-        # tasks, and the probe entries name packages that are not installed, so
-        # the apply rolls back and the mount fiber fails. Awaiting both leaves no
-        # loader task running when the test's loop closes.
-        await include_service.await_()
-        with pytest.raises(AggregateError) as mount_error:
-            await include_fiber.await_settled()
-        assert "failed to import loader entry plugin-a" in str(mount_error.value)
-        await asyncio.sleep(0)
-        assert include_fiber.state == FiberState.FAILED
+        assert include_fiber.state == FiberState.ACTIVE
         assert include_service.get_tasks() == []
 
         # Clean up
         await include_service.stop()
         await include_service.flush_write()
+        await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
+async def test_include_initial_import_failure_does_not_publish_uncommitted_data(tmp_path):
+    ctx = Context()
+    await ctx.plugin(Loader)
+    captured = {}
+
+    class ObservedInclude(Include):
+        def __init__(self, context, config=None):
+            super().__init__(context, config)
+            captured["include"] = self
+
+    filename = tmp_path / "missing-plugins.json"
+    filename.write_text(json.dumps([
+        {"id": "missing-a", "name": "oracle_missing_package_a"},
+        {"id": "missing-b", "name": "oracle_missing_package_b"},
+    ]), encoding="utf-8")
+    fiber = ctx.plugin(ObservedInclude, {"path": str(filename)})
+    try:
+        with pytest.raises(AggregateError) as error:
+            await fiber.await_settled()
+        assert "failed to import loader entry missing-a" in str(error.value)
+        include = captured["include"]
+        await include.await_()
+        assert include.content is None
+        assert include.data is None
+        assert include.root.data == []
+        assert include.get_tasks() == []
+    finally:
+        await ctx.fiber.dispose()
+    assert fiber.state == FiberState.DISPOSED
 
 
 @pytest.mark.asyncio
@@ -417,12 +442,15 @@ async def test_include_patch_insert_into_nested_group():
     ctx = Context()
     from dsh.cordis.loader import Loader
     await ctx.plugin(Loader)
+    ctx.loader.register_plugin_class("pkg-1", _settle_entry_plugin)
+    ctx.loader.register_plugin_class("pkg-2", _settle_entry_plugin)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         config_path = os.path.join(tmp_dir, "cordis.yml")
         initial_entries = [
             {
                 "id": "my-group",
+                "name": "cordis:group",
                 "group": True,
                 "config": [
                     {"id": "plugin-1", "name": "pkg-1", "config": {}},
@@ -434,8 +462,7 @@ async def test_include_patch_insert_into_nested_group():
             yaml.safe_dump(initial_entries, f)
 
         # Patch that inserts plugin-2 into my-group
-        # The probe entries name packages that are not installed; this case covers
-        # the include service's tree and patch result, so only its own mount settles.
+        # Real probe plugins allow the child-tree transaction to commit.
         include_fiber = ctx.plugin(
             Include,
             {
@@ -451,7 +478,7 @@ async def test_include_patch_insert_into_nested_group():
             },
         )
 
-        await asyncio.sleep(0)
+        await include_fiber.await_settled()
         assert include_fiber is not None
         inc_svc: Include = ctx.include
         assert inc_svc is not None
@@ -461,19 +488,12 @@ async def test_include_patch_insert_into_nested_group():
         assert entry2 is not None
         assert entry2.options.get("config", {}).get("port") == 7777
 
-        # tree.ts settlement: every apply and entry task the include tree started
-        # is awaited before the mount's work is considered finished; the probe
-        # entries cannot be imported, so the apply rolls back and the mount fails.
-        await inc_svc.await_()
-        with pytest.raises(AggregateError) as mount_error:
-            await include_fiber.await_settled()
-        assert "failed to import loader entry plugin-1" in str(mount_error.value)
-        await asyncio.sleep(0)
-        assert include_fiber.state == FiberState.FAILED
+        assert include_fiber.state == FiberState.ACTIVE
         assert inc_svc.get_tasks() == []
 
         await inc_svc.stop()
         await inc_svc.flush_write()
+        await ctx.fiber.dispose()
 
 
 @pytest.mark.asyncio

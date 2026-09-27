@@ -12,7 +12,7 @@ npm.cmd ci --prefix scripts/oracles --ignore-scripts --no-audit --no-fund
 `tsx@4.22.4` 与传递依赖固定在 package-lock.json；本次开发机 Node 为 22.22.2。
 Python 端保持 3.8 语法。`--tsx`、`--node` 可显式指定安装位置，产物记录实际命令。
 
-每个 C1–C36 场景在独立子进程运行，两侧输出 JSON 观测值，比较值、状态和事件
+每个 C1–C45 场景在独立子进程运行，两侧输出 JSON 观测值，比较值、状态和事件
 顺序。只将 JS 的无返回值编码为 JSON null，对应 Python None；不对事件排序、
 删除异常或将未完成的进程算成通过。类型、缺少的字段和数组顺序均参与比较。
 同步函数本体在两侧分别定义，但行为步骤对应；adapter 的一致性仍需代码审阅，
@@ -28,7 +28,7 @@ C13 检查 dispose 调用返回瞬间，C14 检查 LOADING 通知中重入 dispo
 C4/C5 共用依赖激活/失效场景，C3/C21 共用严格与非严格读取场景；21 个 ID
 不代表 21 个独立官方用例，也不代表完整 Cordis 覆盖。
 
-本 runner 覆盖现有 C1–C36 的主要语义，未穷举取消、无 ambient loop、全部
+本 runner 覆盖现有 C1–C45 的主要语义，未穷举取消、无 ambient loop、全部
 EventBus 时序、身份隔离或 Loader/HMR 的双侧交错；这些仍需独立场景和消费者
 回归。普通 pytest 对 runner 的协议及比较规则做验证，不要求 Win7 安装 Node。
 
@@ -52,3 +52,15 @@ Loader/HMR 使用未修改的上游源码；新增 schemastery、loader 源码�
 `--expose-internals` 传入 tsx 启动的子进程，以启用真实 Node ModuleLoader。
 这些依赖和 Node 内部 API 均不进入 Win7 产品。上游模块热替换与失败回滚、
 磁盘 change/unlink 的完整矩阵，以及 refresh 同步前缀调度尚未双侧验证。
+
+C37–C39 使用真实 Include 源码、JSON 文件和 builtin 探针插件，分别验证连续
+刷新、前一刷新失败后的恢复、初次加载期间再次刷新。Include 子类仅保留实例
+引用，不替换生命周期方法。C39 使用 50ms 观察窗口，但最终配置值和完整生命周期
+轨迹也参与比较，不以窗口内没有输出作为唯一通过条件。新增 js-yaml@4.1.0
+仅为加载上游 Include 所需的开发依赖；这些 JSON 场景不证明 YAML 方言覆盖。
+
+C40/C43 观察单个及多个子插件失败后的错误、未提交数据和即时状态；C41/C42
+分别在初次加载与后续刷新期间卸载。C44 隔离重复公共 dispose 的完成边界。
+C45 直接比较 registry 返回对象与 await 后原始 fiber 的身份，以及 update/dispose
+前后的状态。当前 C42/C45 不匹配，保留在默认 runner 中，不排序事件、不删除
+状态或以 xfail 把它们标为通过。离线生命周期回归仅覆盖已匹配的 C40/C41/C43/C44。

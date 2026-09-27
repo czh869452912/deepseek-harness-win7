@@ -30,6 +30,9 @@ async def settled(value):
 
 
 async def scenario(number):
+    if number >= 37:
+        from cordis_include import scenario as include_scenario
+        return await include_scenario(number)
     if number >= 31:
         from cordis_consumers import scenario as consumer_scenario
         return await consumer_scenario(number)

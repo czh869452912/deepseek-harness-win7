@@ -25,6 +25,9 @@
       ],
       "@babel/code-frame": [
         "scripts/oracles/node_modules/@babel/code-frame/lib/index.js"
+      ],
+      "js-yaml": [
+        "scripts/oracles/node_modules/js-yaml/index.js"
       ]
     }
   }

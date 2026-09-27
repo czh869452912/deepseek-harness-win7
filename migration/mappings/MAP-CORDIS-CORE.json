@@ -289,9 +289,81 @@
       "test": "tests/test_cordis_consumer_observations.py::test_consumer_matches_frozen_upstream_observation",
       "status": "indexed-unverified",
       "description": "Old registration cleanup preserves public same-path replacement."
+    },
+    {
+      "id": "CORDIS-C37",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_include_observations.py::test_include_matches_frozen_upstream_observation",
+      "status": "indexed-unverified",
+      "description": "Include serializes a later refresh behind pending apply."
+    },
+    {
+      "id": "CORDIS-C38",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_include_observations.py::test_include_matches_frozen_upstream_observation",
+      "status": "indexed-unverified",
+      "description": "Include executes a later refresh after its predecessor fails."
+    },
+    {
+      "id": "CORDIS-C39",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_include_observations.py::test_include_matches_frozen_upstream_observation",
+      "status": "indexed-unverified",
+      "description": "Include initial apply shares serialization with refresh and cannot overwrite newer config."
+    },
+    {
+      "id": "CORDIS-C40",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_lifecycle_observations.py::test_matched_lifecycle_observation",
+      "status": "indexed-unverified",
+      "description": "Single Include startup failure settles with uncommitted data and FAILED state."
+    },
+    {
+      "id": "CORDIS-C41",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_lifecycle_observations.py::test_matched_lifecycle_observation",
+      "status": "indexed-unverified",
+      "description": "Disposal during initial Include apply waits for startup and cleanup."
+    },
+    {
+      "id": "CORDIS-C42",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "scripts/oracles/cordis_include.py::scenario",
+      "status": "indexed-unverified",
+      "description": "OPEN: Include disposal during refresh completes before gated child upstream, after it in Python."
+    },
+    {
+      "id": "CORDIS-C43",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_lifecycle_observations.py::test_matched_lifecycle_observation",
+      "status": "indexed-unverified",
+      "description": "Aggregate startup failure plus tree await observes LOADING before final root disposal."
+    },
+    {
+      "id": "CORDIS-C44",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_lifecycle_observations.py::test_matched_lifecycle_observation",
+      "status": "indexed-unverified",
+      "description": "Repeated public fiber disposal is a no-op; owned cleanup remains in flight."
+    },
+    {
+      "id": "CORDIS-C45",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "scripts/oracles/cordis_include.py::scenario",
+      "status": "indexed-unverified",
+      "description": "OPEN: registry.plugin handle differs from awaited original upstream; Python conflates them."
     }
   ],
   "official_case_coverage": "not-inventoried",
-  "note": "C1-C36 are local source-derived IDs, not official coverage. C33/C34 are config-refresh component probes; C35/C36 use real watcher registration. No integrated contract acceptance.",
-  "observation_evidence": "RUN-CORDIS-CONSUMERS-20260927"
+  "note": "C1-C45 are local source-derived IDs, not official coverage. C33/C34 are config-refresh component probes; C35/C36 use real watcher registration. No integrated contract acceptance. C37-C39 use real Include JSON files and gated builtin plugins. C42/C45 are confirmed unresolved differences; they remain in the default runner and make it exit 1.",
+  "observation_evidence": "RUN-CORDIS-LIFECYCLE-20260927"
 }

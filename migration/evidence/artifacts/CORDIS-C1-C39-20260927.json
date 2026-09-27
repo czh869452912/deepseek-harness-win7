@@ -1,0 +1,2712 @@
+{
+  "schema_version": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_base": "24691c8d3415c4579f203f79c78f94386107f0de",
+  "python": "3.8.10 (tags/v3.8.10:3d8993a, May  3 2021, 11:48:03) [MSC v.1928 64 bit (AMD64)]",
+  "node": "v22.22.2",
+  "os": "Windows-10-10.0.22000-SP0",
+  "tsx": "4.22.4",
+  "cwd": "D:\\Claude-project\\deepseek-harness-win7",
+  "cases": [
+    {
+      "case": "C1",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "1"
+        ],
+        "stdout": "{\"case\":\"C1\",\"observation\":{\"before\":[2,{\"v\":1}],\"after\":[4,null]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "before": [
+            2,
+            {
+              "v": 1
+            }
+          ],
+          "after": [
+            4,
+            null
+          ]
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "1"
+        ],
+        "stdout": "{\"case\": \"C1\", \"observation\": {\"before\": [2, {\"v\": 1}], \"after\": [4, null]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "before": [
+            2,
+            {
+              "v": 1
+            }
+          ],
+          "after": [
+            4,
+            null
+          ]
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C2",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "2"
+        ],
+        "stdout": "{\"case\":\"C2\",\"observation\":{\"before\":[\"setup\"],\"after\":[\"setup\",\"dispose\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "before": [
+            "setup"
+          ],
+          "after": [
+            "setup",
+            "dispose"
+          ]
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "2"
+        ],
+        "stdout": "{\"case\": \"C2\", \"observation\": {\"before\": [\"setup\"], \"after\": [\"setup\", \"dispose\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "before": [
+            "setup"
+          ],
+          "after": [
+            "setup",
+            "dispose"
+          ]
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C3",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "3"
+        ],
+        "stdout": "{\"case\":\"C3\",\"observation\":{\"pending\":[1,null,\"value\",\"value\"],\"active\":[2,\"value\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": [
+            1,
+            null,
+            "value",
+            "value"
+          ],
+          "active": [
+            2,
+            "value"
+          ]
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "3"
+        ],
+        "stdout": "{\"case\": \"C3\", \"observation\": {\"pending\": [1, null, \"value\", \"value\"], \"active\": [2, \"value\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": [
+            1,
+            null,
+            "value",
+            "value"
+          ],
+          "active": [
+            2,
+            "value"
+          ]
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C4",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "4"
+        ],
+        "stdout": "{\"case\":\"C4\",\"observation\":{\"pending\":0,\"active\":2,\"final\":0,\"log\":[\"apply\",\"dispose\"],\"events\":[[\"provider\",0,1],[\"provider\",1,2],[\"consumer\",0,1],[\"consumer\",1,2],[\"provider\",2,5],[\"consumer\",2,5],[\"consumer\",5,0],[\"provider\",5,4]]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": 0,
+          "active": 2,
+          "final": 0,
+          "log": [
+            "apply",
+            "dispose"
+          ],
+          "events": [
+            [
+              "provider",
+              0,
+              1
+            ],
+            [
+              "provider",
+              1,
+              2
+            ],
+            [
+              "consumer",
+              0,
+              1
+            ],
+            [
+              "consumer",
+              1,
+              2
+            ],
+            [
+              "provider",
+              2,
+              5
+            ],
+            [
+              "consumer",
+              2,
+              5
+            ],
+            [
+              "consumer",
+              5,
+              0
+            ],
+            [
+              "provider",
+              5,
+              4
+            ]
+          ]
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "4"
+        ],
+        "stdout": "{\"case\": \"C4\", \"observation\": {\"pending\": 0, \"active\": 2, \"final\": 0, \"log\": [\"apply\", \"dispose\"], \"events\": [[\"provider\", 0, 1], [\"provider\", 1, 2], [\"consumer\", 0, 1], [\"consumer\", 1, 2], [\"provider\", 2, 5], [\"consumer\", 2, 5], [\"consumer\", 5, 0], [\"provider\", 5, 4]]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": 0,
+          "active": 2,
+          "final": 0,
+          "log": [
+            "apply",
+            "dispose"
+          ],
+          "events": [
+            [
+              "provider",
+              0,
+              1
+            ],
+            [
+              "provider",
+              1,
+              2
+            ],
+            [
+              "consumer",
+              0,
+              1
+            ],
+            [
+              "consumer",
+              1,
+              2
+            ],
+            [
+              "provider",
+              2,
+              5
+            ],
+            [
+              "consumer",
+              2,
+              5
+            ],
+            [
+              "consumer",
+              5,
+              0
+            ],
+            [
+              "provider",
+              5,
+              4
+            ]
+          ]
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C5",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "5"
+        ],
+        "stdout": "{\"case\":\"C5\",\"observation\":{\"pending\":0,\"active\":2,\"final\":0,\"log\":[\"apply\",\"dispose\"],\"events\":[[\"provider\",0,1],[\"provider\",1,2],[\"consumer\",0,1],[\"consumer\",1,2],[\"provider\",2,5],[\"consumer\",2,5],[\"consumer\",5,0],[\"provider\",5,4]]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": 0,
+          "active": 2,
+          "final": 0,
+          "log": [
+            "apply",
+            "dispose"
+          ],
+          "events": [
+            [
+              "provider",
+              0,
+              1
+            ],
+            [
+              "provider",
+              1,
+              2
+            ],
+            [
+              "consumer",
+              0,
+              1
+            ],
+            [
+              "consumer",
+              1,
+              2
+            ],
+            [
+              "provider",
+              2,
+              5
+            ],
+            [
+              "consumer",
+              2,
+              5
+            ],
+            [
+              "consumer",
+              5,
+              0
+            ],
+            [
+              "provider",
+              5,
+              4
+            ]
+          ]
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "5"
+        ],
+        "stdout": "{\"case\": \"C5\", \"observation\": {\"pending\": 0, \"active\": 2, \"final\": 0, \"log\": [\"apply\", \"dispose\"], \"events\": [[\"provider\", 0, 1], [\"provider\", 1, 2], [\"consumer\", 0, 1], [\"consumer\", 1, 2], [\"provider\", 2, 5], [\"consumer\", 2, 5], [\"consumer\", 5, 0], [\"provider\", 5, 4]]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": 0,
+          "active": 2,
+          "final": 0,
+          "log": [
+            "apply",
+            "dispose"
+          ],
+          "events": [
+            [
+              "provider",
+              0,
+              1
+            ],
+            [
+              "provider",
+              1,
+              2
+            ],
+            [
+              "consumer",
+              0,
+              1
+            ],
+            [
+              "consumer",
+              1,
+              2
+            ],
+            [
+              "provider",
+              2,
+              5
+            ],
+            [
+              "consumer",
+              2,
+              5
+            ],
+            [
+              "consumer",
+              5,
+              0
+            ],
+            [
+              "provider",
+              5,
+              4
+            ]
+          ]
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C6",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "6"
+        ],
+        "stdout": "{\"case\":\"C6\",\"observation\":{\"before\":0,\"final\":4,\"log\":[\"drained\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "before": 0,
+          "final": 4,
+          "log": [
+            "drained"
+          ]
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "6"
+        ],
+        "stdout": "{\"case\": \"C6\", \"observation\": {\"before\": 0, \"final\": 4, \"log\": [\"drained\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "before": 0,
+          "final": 4,
+          "log": [
+            "drained"
+          ]
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C7",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "7"
+        ],
+        "stdout": "{\"case\":\"C7\",\"observation\":{\"log\":[[\"apply\",null],[\"hook\",{\"n\":2},false],[\"dispose\"],[\"apply\",{\"n\":2}],[\"hook\",{\"n\":3},false],[\"hook\",{\"n\":3},false],[\"veto\"]],\"config\":{\"n\":2},\"state\":2}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "log": [
+            [
+              "apply",
+              null
+            ],
+            [
+              "hook",
+              {
+                "n": 2
+              },
+              false
+            ],
+            [
+              "dispose"
+            ],
+            [
+              "apply",
+              {
+                "n": 2
+              }
+            ],
+            [
+              "hook",
+              {
+                "n": 3
+              },
+              false
+            ],
+            [
+              "hook",
+              {
+                "n": 3
+              },
+              false
+            ],
+            [
+              "veto"
+            ]
+          ],
+          "config": {
+            "n": 2
+          },
+          "state": 2
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "7"
+        ],
+        "stdout": "{\"case\": \"C7\", \"observation\": {\"log\": [[\"apply\", null], [\"hook\", {\"n\": 2}, false], [\"dispose\"], [\"apply\", {\"n\": 2}], [\"hook\", {\"n\": 3}, false], [\"hook\", {\"n\": 3}, false], [\"veto\"]], \"config\": {\"n\": 2}, \"state\": 2}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "log": [
+            [
+              "apply",
+              null
+            ],
+            [
+              "hook",
+              {
+                "n": 2
+              },
+              false
+            ],
+            [
+              "dispose"
+            ],
+            [
+              "apply",
+              {
+                "n": 2
+              }
+            ],
+            [
+              "hook",
+              {
+                "n": 3
+              },
+              false
+            ],
+            [
+              "hook",
+              {
+                "n": 3
+              },
+              false
+            ],
+            [
+              "veto"
+            ]
+          ],
+          "config": {
+            "n": 2
+          },
+          "state": 2
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C8",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "8"
+        ],
+        "stdout": "{\"case\":\"C8\",\"observation\":{\"root\":\"value\",\"seen\":{\"attribute\":\"value\",\"virtual\":\"intercepted\",\"get\":\"value\"},\"log\":[\"declared\",\"virtual\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "root": "value",
+          "seen": {
+            "attribute": "value",
+            "virtual": "intercepted",
+            "get": "value"
+          },
+          "log": [
+            "declared",
+            "virtual"
+          ]
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "8"
+        ],
+        "stdout": "{\"case\": \"C8\", \"observation\": {\"root\": \"value\", \"seen\": {\"attribute\": \"value\", \"virtual\": \"intercepted\", \"get\": \"value\"}, \"log\": [\"declared\", \"virtual\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "root": "value",
+          "seen": {
+            "attribute": "value",
+            "virtual": "intercepted",
+            "get": "value"
+          },
+          "log": [
+            "declared",
+            "virtual"
+          ]
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C9",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "9"
+        ],
+        "stdout": "{\"case\":\"C9\",\"observation\":{\"before\":[{\"label\":\"ctx.on(\\\"event\\\")\",\"children\":[]}],\"first\":null,\"second\":null,\"after\":[],\"anonymous\":[{\"label\":\"anonymous\",\"children\":[]}]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "before": [
+            {
+              "label": "ctx.on(\"event\")",
+              "children": []
+            }
+          ],
+          "first": null,
+          "second": null,
+          "after": [],
+          "anonymous": [
+            {
+              "label": "anonymous",
+              "children": []
+            }
+          ]
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "9"
+        ],
+        "stdout": "{\"case\": \"C9\", \"observation\": {\"before\": [{\"label\": \"ctx.on(\\\"event\\\")\", \"children\": []}], \"first\": null, \"second\": null, \"after\": [], \"anonymous\": [{\"label\": \"anonymous\", \"children\": []}]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "before": [
+            {
+              "label": "ctx.on(\"event\")",
+              "children": []
+            }
+          ],
+          "first": null,
+          "second": null,
+          "after": [],
+          "anonymous": [
+            {
+              "label": "anonymous",
+              "children": []
+            }
+          ]
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C10",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "10"
+        ],
+        "stdout": "{\"case\":\"C10\",\"observation\":{\"before\":[{\"label\":\"outer\",\"children\":[{\"label\":\"inner\",\"children\":[]}]}],\"after\":[],\"log\":[\"nested-disposed\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "before": [
+            {
+              "label": "outer",
+              "children": [
+                {
+                  "label": "inner",
+                  "children": []
+                }
+              ]
+            }
+          ],
+          "after": [],
+          "log": [
+            "nested-disposed"
+          ]
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "10"
+        ],
+        "stdout": "{\"case\": \"C10\", \"observation\": {\"before\": [{\"label\": \"outer\", \"children\": [{\"label\": \"inner\", \"children\": []}]}], \"after\": [], \"log\": [\"nested-disposed\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "before": [
+            {
+              "label": "outer",
+              "children": [
+                {
+                  "label": "inner",
+                  "children": []
+                }
+              ]
+            }
+          ],
+          "after": [],
+          "log": [
+            "nested-disposed"
+          ]
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C11",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "11"
+        ],
+        "stdout": "{\"case\":\"C11\",\"observation\":{\"before\":[2,[]],\"log\":[\"disposed\"],\"final\":4}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "before": [
+            2,
+            []
+          ],
+          "log": [
+            "disposed"
+          ],
+          "final": 4
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "11"
+        ],
+        "stdout": "{\"case\": \"C11\", \"observation\": {\"before\": [2, []], \"log\": [\"disposed\"], \"final\": 4}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "before": [
+            2,
+            []
+          ],
+          "log": [
+            "disposed"
+          ],
+          "final": 4
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C12",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "12"
+        ],
+        "stdout": "{\"case\":\"C12\",\"observation\":{\"immediate\":[],\"pending\":{\"log\":[\"cleanup-enter\"],\"visible\":null,\"ownerRetains\":true},\"log\":[\"cleanup-enter\",\"cleanup-exit\"],\"final\":0,\"ownerRetains\":false}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "immediate": [],
+          "pending": {
+            "log": [
+              "cleanup-enter"
+            ],
+            "visible": null,
+            "ownerRetains": true
+          },
+          "log": [
+            "cleanup-enter",
+            "cleanup-exit"
+          ],
+          "final": 0,
+          "ownerRetains": false
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "12"
+        ],
+        "stdout": "{\"case\": \"C12\", \"observation\": {\"immediate\": [], \"pending\": {\"log\": [\"cleanup-enter\"], \"visible\": null, \"ownerRetains\": true}, \"log\": [\"cleanup-enter\", \"cleanup-exit\"], \"final\": 0, \"ownerRetains\": false}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "immediate": [],
+          "pending": {
+            "log": [
+              "cleanup-enter"
+            ],
+            "visible": null,
+            "ownerRetains": true
+          },
+          "log": [
+            "cleanup-enter",
+            "cleanup-exit"
+          ],
+          "final": 0,
+          "ownerRetains": false
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C13",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "13"
+        ],
+        "stdout": "{\"case\":\"C13\",\"observation\":{\"immediate\":{\"uidCleared\":true,\"log\":[],\"awaitable\":true},\"final\":4,\"log\":[\"unloaded\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "immediate": {
+            "uidCleared": true,
+            "log": [],
+            "awaitable": true
+          },
+          "final": 4,
+          "log": [
+            "unloaded"
+          ]
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "13"
+        ],
+        "stdout": "{\"case\": \"C13\", \"observation\": {\"immediate\": {\"uidCleared\": true, \"log\": [], \"awaitable\": true}, \"final\": 4, \"log\": [\"unloaded\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "immediate": {
+            "uidCleared": true,
+            "log": [],
+            "awaitable": true
+          },
+          "final": 4,
+          "log": [
+            "unloaded"
+          ]
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C14",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "14"
+        ],
+        "stdout": "{\"case\":\"C14\",\"observation\":{\"immediate\":{\"log\":[],\"uidCleared\":true,\"state\":1},\"log\":[],\"final\":4}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "immediate": {
+            "log": [],
+            "uidCleared": true,
+            "state": 1
+          },
+          "log": [],
+          "final": 4
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "14"
+        ],
+        "stdout": "{\"case\": \"C14\", \"observation\": {\"immediate\": {\"log\": [], \"uidCleared\": true, \"state\": 1}, \"log\": [], \"final\": 4}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "immediate": {
+            "log": [],
+            "uidCleared": true,
+            "state": 1
+          },
+          "log": [],
+          "final": 4
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C15",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "15"
+        ],
+        "stdout": "{\"case\":\"C15\",\"observation\":{\"before\":[2,[]],\"log\":[\"second\",\"first\"],\"final\":4}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "before": [
+            2,
+            []
+          ],
+          "log": [
+            "second",
+            "first"
+          ],
+          "final": 4
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "15"
+        ],
+        "stdout": "{\"case\": \"C15\", \"observation\": {\"before\": [2, []], \"log\": [\"second\", \"first\"], \"final\": 4}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "before": [
+            2,
+            []
+          ],
+          "log": [
+            "second",
+            "first"
+          ],
+          "final": 4
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C16",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "16"
+        ],
+        "stdout": "{\"case\":\"C16\",\"observation\":{\"awaited\":\"setup failed\",\"called\":\"gated failed\",\"effects\":[]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "awaited": "setup failed",
+          "called": "gated failed",
+          "effects": []
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "16"
+        ],
+        "stdout": "{\"case\": \"C16\", \"observation\": {\"awaited\": \"setup failed\", \"called\": \"gated failed\", \"effects\": []}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "awaited": "setup failed",
+          "called": "gated failed",
+          "effects": []
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C17",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "17"
+        ],
+        "stdout": "{\"case\":\"C17\",\"observation\":{\"merged\":{\"root\":1,\"mid\":2},\"inputs\":[[{\"root\":1},{\"mid\":2}]]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "merged": {
+            "root": 1,
+            "mid": 2
+          },
+          "inputs": [
+            [
+              {
+                "root": 1
+              },
+              {
+                "mid": 2
+              }
+            ]
+          ]
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "17"
+        ],
+        "stdout": "{\"case\": \"C17\", \"observation\": {\"merged\": {\"root\": 1, \"mid\": 2}, \"inputs\": [[{\"root\": 1}, {\"mid\": 2}]]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "merged": {
+            "root": 1,
+            "mid": 2
+          },
+          "inputs": [
+            [
+              {
+                "root": 1
+              },
+              {
+                "mid": 2
+              }
+            ]
+          ]
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C18",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "18"
+        ],
+        "stdout": "{\"case\":\"C18\",\"observation\":{\"result\":null,\"errors\":[\"listener failed\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "result": null,
+          "errors": [
+            "listener failed"
+          ]
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "18"
+        ],
+        "stdout": "{\"case\": \"C18\", \"observation\": {\"result\": null, \"errors\": [\"listener failed\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "result": null,
+          "errors": [
+            "listener failed"
+          ]
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C19",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "19"
+        ],
+        "stdout": "{\"case\":\"C19\",\"observation\":{\"result\":\"stop\",\"log\":[1,2],\"afterFalse\":\"value\",\"awaitable\":true,\"resolved\":\"async\"}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "result": "stop",
+          "log": [
+            1,
+            2
+          ],
+          "afterFalse": "value",
+          "awaitable": true,
+          "resolved": "async"
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "19"
+        ],
+        "stdout": "{\"case\": \"C19\", \"observation\": {\"result\": \"stop\", \"log\": [1, 2], \"afterFalse\": \"value\", \"awaitable\": true, \"resolved\": \"async\"}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "result": "stop",
+          "log": [
+            1,
+            2
+          ],
+          "afterFalse": "value",
+          "awaitable": true,
+          "resolved": "async"
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C20",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "20"
+        ],
+        "stdout": "{\"case\":\"C20\",\"observation\":{\"before\":[2,[]],\"log\":[\"second\",\"first\"],\"final\":4}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "before": [
+            2,
+            []
+          ],
+          "log": [
+            "second",
+            "first"
+          ],
+          "final": 4
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "20"
+        ],
+        "stdout": "{\"case\": \"C20\", \"observation\": {\"before\": [2, []], \"log\": [\"second\", \"first\"], \"final\": 4}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "before": [
+            2,
+            []
+          ],
+          "log": [
+            "second",
+            "first"
+          ],
+          "final": 4
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C21",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "21"
+        ],
+        "stdout": "{\"case\":\"C21\",\"observation\":{\"pending\":[1,null,\"value\",\"value\"],\"active\":[2,\"value\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": [
+            1,
+            null,
+            "value",
+            "value"
+          ],
+          "active": [
+            2,
+            "value"
+          ]
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "21"
+        ],
+        "stdout": "{\"case\": \"C21\", \"observation\": {\"pending\": [1, null, \"value\", \"value\"], \"active\": [2, \"value\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": [
+            1,
+            null,
+            "value",
+            "value"
+          ],
+          "active": [
+            2,
+            "value"
+          ]
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C22",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "22"
+        ],
+        "stdout": "{\"case\":\"C22\",\"observation\":{\"immediate\":[\"a-prefix\",\"sync\",\"b-prefix\"],\"log\":[\"a-prefix\",\"sync\",\"b-prefix\",\"a-tail\",\"b-tail\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "immediate": [
+            "a-prefix",
+            "sync",
+            "b-prefix"
+          ],
+          "log": [
+            "a-prefix",
+            "sync",
+            "b-prefix",
+            "a-tail",
+            "b-tail"
+          ]
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "22"
+        ],
+        "stdout": "{\"case\": \"C22\", \"observation\": {\"immediate\": [\"a-prefix\", \"sync\", \"b-prefix\"], \"log\": [\"a-prefix\", \"sync\", \"b-prefix\", \"a-tail\", \"b-tail\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "immediate": [
+            "a-prefix",
+            "sync",
+            "b-prefix"
+          ],
+          "log": [
+            "a-prefix",
+            "sync",
+            "b-prefix",
+            "a-tail",
+            "b-tail"
+          ]
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C23",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "23"
+        ],
+        "stdout": "{\"case\":\"C23\",\"observation\":{\"error\":\"sync failure\",\"log\":[\"first\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "error": "sync failure",
+          "log": [
+            "first"
+          ]
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "23"
+        ],
+        "stdout": "{\"case\": \"C23\", \"observation\": {\"error\": \"sync failure\", \"log\": [\"first\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "error": "sync failure",
+          "log": [
+            "first"
+          ]
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C24",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "24"
+        ],
+        "stdout": "{\"case\":\"C24\",\"observation\":{\"immediate\":[\"prefix\",\"peer\"],\"log\":[\"prefix\",\"peer\"],\"errors\":[\"async failure\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "immediate": [
+            "prefix",
+            "peer"
+          ],
+          "log": [
+            "prefix",
+            "peer"
+          ],
+          "errors": [
+            "async failure"
+          ]
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "24"
+        ],
+        "stdout": "{\"case\": \"C24\", \"observation\": {\"immediate\": [\"prefix\", \"peer\"], \"log\": [\"prefix\", \"peer\"], \"errors\": [\"async failure\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "immediate": [
+            "prefix",
+            "peer"
+          ],
+          "log": [
+            "prefix",
+            "peer"
+          ],
+          "errors": [
+            "async failure"
+          ]
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C25",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "25"
+        ],
+        "stdout": "{\"case\":\"C25\",\"observation\":{\"pending\":{\"log\":[\"cleanup-enter\"],\"ownerDone\":false},\"log\":[\"cleanup-enter\",\"cleanup-exit\"],\"ownerDone\":true,\"cancellation\":null}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": {
+            "log": [
+              "cleanup-enter"
+            ],
+            "ownerDone": false
+          },
+          "log": [
+            "cleanup-enter",
+            "cleanup-exit"
+          ],
+          "ownerDone": true,
+          "cancellation": null
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "25"
+        ],
+        "stdout": "{\"case\": \"C25\", \"observation\": {\"pending\": {\"log\": [\"cleanup-enter\"], \"ownerDone\": false}, \"log\": [\"cleanup-enter\", \"cleanup-exit\"], \"ownerDone\": true, \"cancellation\": null}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": {
+            "log": [
+              "cleanup-enter"
+            ],
+            "ownerDone": false
+          },
+          "log": [
+            "cleanup-enter",
+            "cleanup-exit"
+          ],
+          "ownerDone": true,
+          "cancellation": null
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C26",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "26"
+        ],
+        "stdout": "{\"case\":\"C26\",\"observation\":{\"immediate\":[],\"log\":[\"late-disposed\",\"first-disposed\"],\"final\":4}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "immediate": [],
+          "log": [
+            "late-disposed",
+            "first-disposed"
+          ],
+          "final": 4
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "26"
+        ],
+        "stdout": "{\"case\": \"C26\", \"observation\": {\"immediate\": [], \"log\": [\"late-disposed\", \"first-disposed\"], \"final\": 4}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "immediate": [],
+          "log": [
+            "late-disposed",
+            "first-disposed"
+          ],
+          "final": 4
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C27",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "27"
+        ],
+        "stdout": "{\"case\":\"C27\",\"observation\":{\"pending\":{\"log\":[\"cleanup-enter\"],\"ownerDone\":false},\"log\":[\"cleanup-enter\",\"cleanup-exit\"],\"ownerDone\":true,\"cancellation\":null}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": {
+            "log": [
+              "cleanup-enter"
+            ],
+            "ownerDone": false
+          },
+          "log": [
+            "cleanup-enter",
+            "cleanup-exit"
+          ],
+          "ownerDone": true,
+          "cancellation": null
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "27"
+        ],
+        "stdout": "{\"case\": \"C27\", \"observation\": {\"pending\": {\"log\": [\"cleanup-enter\"], \"ownerDone\": false}, \"log\": [\"cleanup-enter\", \"cleanup-exit\"], \"ownerDone\": true, \"cancellation\": null}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": {
+            "log": [
+              "cleanup-enter"
+            ],
+            "ownerDone": false
+          },
+          "log": [
+            "cleanup-enter",
+            "cleanup-exit"
+          ],
+          "ownerDone": true,
+          "cancellation": null
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C28",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "28"
+        ],
+        "stdout": "{\"case\":\"C28\",\"observation\":{\"result\":\"Context has been disposed\",\"effects\":[],\"final\":4}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "result": "Context has been disposed",
+          "effects": [],
+          "final": 4
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "28"
+        ],
+        "stdout": "{\"case\": \"C28\", \"observation\": {\"result\": \"Context has been disposed\", \"effects\": [], \"final\": 4}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "result": "Context has been disposed",
+          "effects": [],
+          "final": 4
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C29",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "29"
+        ],
+        "stdout": "{\"case\":\"C29\",\"observation\":{\"result\":\"Context has been disposed\",\"effects\":[],\"final\":4}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "result": "Context has been disposed",
+          "effects": [],
+          "final": 4
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "29"
+        ],
+        "stdout": "{\"case\": \"C29\", \"observation\": {\"result\": \"Context has been disposed\", \"effects\": [], \"final\": 4}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "result": "Context has been disposed",
+          "effects": [],
+          "final": 4
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C30",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "30"
+        ],
+        "stdout": "{\"case\":\"C30\",\"observation\":{\"pending\":{\"log\":[\"cleanup-enter\"],\"ownerDone\":false},\"log\":[\"cleanup-enter\",\"cleanup-exit\"],\"ownerDone\":true,\"cancellation\":\"observer cancelled\"}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": {
+            "log": [
+              "cleanup-enter"
+            ],
+            "ownerDone": false
+          },
+          "log": [
+            "cleanup-enter",
+            "cleanup-exit"
+          ],
+          "ownerDone": true,
+          "cancellation": "observer cancelled"
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "30"
+        ],
+        "stdout": "{\"case\": \"C30\", \"observation\": {\"pending\": {\"log\": [\"cleanup-enter\"], \"ownerDone\": false}, \"log\": [\"cleanup-enter\", \"cleanup-exit\"], \"ownerDone\": true, \"cancellation\": \"observer cancelled\"}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": {
+            "log": [
+              "cleanup-enter"
+            ],
+            "ownerDone": false
+          },
+          "log": [
+            "cleanup-enter",
+            "cleanup-exit"
+          ],
+          "ownerDone": true,
+          "cancellation": "observer cancelled"
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C31",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "31"
+        ],
+        "stdout": "{\"case\":\"C31\",\"observation\":{\"sameEntry\":true,\"sameOptions\":true,\"value\":2,\"owner\":true,\"log\":[\"start:1\",\"stop:1\",\"start:2\"],\"after\":[\"start:1\",\"stop:1\",\"start:2\",\"stop:2\"],\"removed\":true}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "sameEntry": true,
+          "sameOptions": true,
+          "value": 2,
+          "owner": true,
+          "log": [
+            "start:1",
+            "stop:1",
+            "start:2"
+          ],
+          "after": [
+            "start:1",
+            "stop:1",
+            "start:2",
+            "stop:2"
+          ],
+          "removed": true
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "31"
+        ],
+        "stdout": "{\"case\": \"C31\", \"observation\": {\"sameEntry\": true, \"sameOptions\": true, \"value\": 2, \"owner\": true, \"log\": [\"start:1\", \"stop:1\", \"start:2\"], \"after\": [\"start:1\", \"stop:1\", \"start:2\", \"stop:2\"], \"removed\": true}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "sameEntry": true,
+          "sameOptions": true,
+          "value": 2,
+          "owner": true,
+          "log": [
+            "start:1",
+            "stop:1",
+            "start:2"
+          ],
+          "after": [
+            "start:1",
+            "stop:1",
+            "start:2",
+            "stop:2"
+          ],
+          "removed": true
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C32",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "32"
+        ],
+        "stdout": "{\"case\":\"C32\",\"observation\":{\"pending\":{\"retained\":true,\"detached\":true,\"log\":[\"start:1\",\"stop:1\"]},\"log\":[\"start:1\",\"stop:1\",\"cleaned\"],\"removed\":true}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": {
+            "retained": true,
+            "detached": true,
+            "log": [
+              "start:1",
+              "stop:1"
+            ]
+          },
+          "log": [
+            "start:1",
+            "stop:1",
+            "cleaned"
+          ],
+          "removed": true
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "32"
+        ],
+        "stdout": "{\"case\": \"C32\", \"observation\": {\"pending\": {\"retained\": true, \"detached\": true, \"log\": [\"start:1\", \"stop:1\"]}, \"log\": [\"start:1\", \"stop:1\", \"cleaned\"], \"removed\": true}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": {
+            "retained": true,
+            "detached": true,
+            "log": [
+              "start:1",
+              "stop:1"
+            ]
+          },
+          "log": [
+            "start:1",
+            "stop:1",
+            "cleaned"
+          ],
+          "removed": true
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C33",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "33"
+        ],
+        "stdout": "{\"case\":\"C33\",\"observation\":{\"pending\":[\"enter:1\"],\"log\":[\"enter:1\",\"exit:1\",\"enter:2\",\"exit:2\"],\"count\":2}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": [
+            "enter:1"
+          ],
+          "log": [
+            "enter:1",
+            "exit:1",
+            "enter:2",
+            "exit:2"
+          ],
+          "count": 2
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "33"
+        ],
+        "stdout": "{\"case\": \"C33\", \"observation\": {\"pending\": [\"enter:1\"], \"log\": [\"enter:1\", \"exit:1\", \"enter:2\", \"exit:2\"], \"count\": 2}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": [
+            "enter:1"
+          ],
+          "log": [
+            "enter:1",
+            "exit:1",
+            "enter:2",
+            "exit:2"
+          ],
+          "count": 2
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C34",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "34"
+        ],
+        "stdout": "{\"case\":\"C34\",\"observation\":{\"pending\":[\"enter:1\",\"other\"],\"log\":[\"enter:1\",\"other\",\"exit:1\",\"enter:2\",\"exit:2\"],\"count\":2}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": [
+            "enter:1",
+            "other"
+          ],
+          "log": [
+            "enter:1",
+            "other",
+            "exit:1",
+            "enter:2",
+            "exit:2"
+          ],
+          "count": 2
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "34"
+        ],
+        "stdout": "{\"case\": \"C34\", \"observation\": {\"pending\": [\"enter:1\", \"other\"], \"log\": [\"enter:1\", \"other\", \"exit:1\", \"enter:2\", \"exit:2\"], \"count\": 2}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": [
+            "enter:1",
+            "other"
+          ],
+          "log": [
+            "enter:1",
+            "other",
+            "exit:1",
+            "enter:2",
+            "exit:2"
+          ],
+          "count": 2
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C35",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "35"
+        ],
+        "stdout": "{\"case\":\"C35\",\"observation\":{\"pending\":{\"done\":false,\"log\":[\"enter:1\"]},\"log\":[\"enter:1\",\"exit:1\"],\"done\":true,\"registrations\":0,\"removed\":true}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": {
+            "done": false,
+            "log": [
+              "enter:1"
+            ]
+          },
+          "log": [
+            "enter:1",
+            "exit:1"
+          ],
+          "done": true,
+          "registrations": 0,
+          "removed": true
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "35"
+        ],
+        "stdout": "{\"case\": \"C35\", \"observation\": {\"pending\": {\"done\": false, \"log\": [\"enter:1\"]}, \"log\": [\"enter:1\", \"exit:1\"], \"done\": true, \"registrations\": 0, \"removed\": true}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": {
+            "done": false,
+            "log": [
+              "enter:1"
+            ]
+          },
+          "log": [
+            "enter:1",
+            "exit:1"
+          ],
+          "done": true,
+          "registrations": 0,
+          "removed": true
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C36",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "36"
+        ],
+        "stdout": "{\"case\":\"C36\",\"observation\":{\"pending\":{\"registrations\":1,\"log\":[\"enter:1\",\"replacement\"]},\"log\":[\"enter:1\",\"replacement\",\"exit:1\"],\"registrations\":1}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": {
+            "registrations": 1,
+            "log": [
+              "enter:1",
+              "replacement"
+            ]
+          },
+          "log": [
+            "enter:1",
+            "replacement",
+            "exit:1"
+          ],
+          "registrations": 1
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "36"
+        ],
+        "stdout": "{\"case\": \"C36\", \"observation\": {\"pending\": {\"registrations\": 1, \"log\": [\"enter:1\", \"replacement\"]}, \"log\": [\"enter:1\", \"replacement\", \"exit:1\"], \"registrations\": 1}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": {
+            "registrations": 1,
+            "log": [
+              "enter:1",
+              "replacement"
+            ]
+          },
+          "log": [
+            "enter:1",
+            "replacement",
+            "exit:1"
+          ],
+          "registrations": 1
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C37",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "37"
+        ],
+        "stdout": "{\"case\":\"C37\",\"observation\":{\"pending\":[\"start:1\",\"ready:1\",\"stop:1\",\"start:2\"],\"after\":[\"start:1\",\"ready:1\",\"stop:1\",\"start:2\",\"ready:2\",\"stop:2\",\"start:3\",\"ready:3\"],\"errors\":[null,null],\"committed\":3,\"disposed\":[\"start:1\",\"ready:1\",\"stop:1\",\"start:2\",\"ready:2\",\"stop:2\",\"start:3\",\"ready:3\",\"stop:3\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": [
+            "start:1",
+            "ready:1",
+            "stop:1",
+            "start:2"
+          ],
+          "after": [
+            "start:1",
+            "ready:1",
+            "stop:1",
+            "start:2",
+            "ready:2",
+            "stop:2",
+            "start:3",
+            "ready:3"
+          ],
+          "errors": [
+            null,
+            null
+          ],
+          "committed": 3,
+          "disposed": [
+            "start:1",
+            "ready:1",
+            "stop:1",
+            "start:2",
+            "ready:2",
+            "stop:2",
+            "start:3",
+            "ready:3",
+            "stop:3"
+          ]
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "37"
+        ],
+        "stdout": "{\"case\": \"C37\", \"observation\": {\"pending\": [\"start:1\", \"ready:1\", \"stop:1\", \"start:2\"], \"after\": [\"start:1\", \"ready:1\", \"stop:1\", \"start:2\", \"ready:2\", \"stop:2\", \"start:3\", \"ready:3\"], \"errors\": [null, null], \"committed\": 3, \"disposed\": [\"start:1\", \"ready:1\", \"stop:1\", \"start:2\", \"ready:2\", \"stop:2\", \"start:3\", \"ready:3\", \"stop:3\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": [
+            "start:1",
+            "ready:1",
+            "stop:1",
+            "start:2"
+          ],
+          "after": [
+            "start:1",
+            "ready:1",
+            "stop:1",
+            "start:2",
+            "ready:2",
+            "stop:2",
+            "start:3",
+            "ready:3"
+          ],
+          "errors": [
+            null,
+            null
+          ],
+          "committed": 3,
+          "disposed": [
+            "start:1",
+            "ready:1",
+            "stop:1",
+            "start:2",
+            "ready:2",
+            "stop:2",
+            "start:3",
+            "ready:3",
+            "stop:3"
+          ]
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C38",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "38"
+        ],
+        "stdout": "{\"case\":\"C38\",\"observation\":{\"pending\":[\"start:1\",\"ready:1\",\"stop:1\",\"start:2\"],\"after\":[\"start:1\",\"ready:1\",\"stop:1\",\"start:2\",\"reject:2\",\"start:1\",\"ready:1\",\"stop:1\",\"start:3\",\"ready:3\"],\"errors\":[\"failed to apply loader entry one (cordis:probe): probe rejected 2\",null],\"committed\":3,\"disposed\":[\"start:1\",\"ready:1\",\"stop:1\",\"start:2\",\"reject:2\",\"start:1\",\"ready:1\",\"stop:1\",\"start:3\",\"ready:3\",\"stop:3\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": [
+            "start:1",
+            "ready:1",
+            "stop:1",
+            "start:2"
+          ],
+          "after": [
+            "start:1",
+            "ready:1",
+            "stop:1",
+            "start:2",
+            "reject:2",
+            "start:1",
+            "ready:1",
+            "stop:1",
+            "start:3",
+            "ready:3"
+          ],
+          "errors": [
+            "failed to apply loader entry one (cordis:probe): probe rejected 2",
+            null
+          ],
+          "committed": 3,
+          "disposed": [
+            "start:1",
+            "ready:1",
+            "stop:1",
+            "start:2",
+            "reject:2",
+            "start:1",
+            "ready:1",
+            "stop:1",
+            "start:3",
+            "ready:3",
+            "stop:3"
+          ]
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "38"
+        ],
+        "stdout": "{\"case\": \"C38\", \"observation\": {\"pending\": [\"start:1\", \"ready:1\", \"stop:1\", \"start:2\"], \"after\": [\"start:1\", \"ready:1\", \"stop:1\", \"start:2\", \"reject:2\", \"start:1\", \"ready:1\", \"stop:1\", \"start:3\", \"ready:3\"], \"errors\": [\"failed to apply loader entry one (cordis:probe): probe rejected 2\", null], \"committed\": 3, \"disposed\": [\"start:1\", \"ready:1\", \"stop:1\", \"start:2\", \"reject:2\", \"start:1\", \"ready:1\", \"stop:1\", \"start:3\", \"ready:3\", \"stop:3\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": [
+            "start:1",
+            "ready:1",
+            "stop:1",
+            "start:2"
+          ],
+          "after": [
+            "start:1",
+            "ready:1",
+            "stop:1",
+            "start:2",
+            "reject:2",
+            "start:1",
+            "ready:1",
+            "stop:1",
+            "start:3",
+            "ready:3"
+          ],
+          "errors": [
+            "failed to apply loader entry one (cordis:probe): probe rejected 2",
+            null
+          ],
+          "committed": 3,
+          "disposed": [
+            "start:1",
+            "ready:1",
+            "stop:1",
+            "start:2",
+            "reject:2",
+            "start:1",
+            "ready:1",
+            "stop:1",
+            "start:3",
+            "ready:3",
+            "stop:3"
+          ]
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    },
+    {
+      "case": "C39",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "39"
+        ],
+        "stdout": "{\"case\":\"C39\",\"observation\":{\"pending\":[\"start:1\"],\"after\":[\"start:1\",\"ready:1\",\"stop:1\",\"start:2\",\"ready:2\"],\"committed\":2,\"disposed\":[\"start:1\",\"ready:1\",\"stop:1\",\"start:2\",\"ready:2\",\"stop:2\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": [
+            "start:1"
+          ],
+          "after": [
+            "start:1",
+            "ready:1",
+            "stop:1",
+            "start:2",
+            "ready:2"
+          ],
+          "committed": 2,
+          "disposed": [
+            "start:1",
+            "ready:1",
+            "stop:1",
+            "start:2",
+            "ready:2",
+            "stop:2"
+          ]
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "39"
+        ],
+        "stdout": "{\"case\": \"C39\", \"observation\": {\"pending\": [\"start:1\"], \"after\": [\"start:1\", \"ready:1\", \"stop:1\", \"start:2\", \"ready:2\"], \"committed\": 2, \"disposed\": [\"start:1\", \"ready:1\", \"stop:1\", \"start:2\", \"ready:2\", \"stop:2\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "pending": [
+            "start:1"
+          ],
+          "after": [
+            "start:1",
+            "ready:1",
+            "stop:1",
+            "start:2",
+            "ready:2"
+          ],
+          "committed": 2,
+          "disposed": [
+            "start:1",
+            "ready:1",
+            "stop:1",
+            "start:2",
+            "ready:2",
+            "stop:2"
+          ]
+        }
+      },
+      "differences": [],
+      "status": "matched"
+    }
+  ],
+  "inputs": [
+    {
+      "path": "dsh/cordis/__init__.py",
+      "sha256": "c44353c21dad0603727420ee072685308046a323c13ebb1b99af211257ba33b2"
+    },
+    {
+      "path": "dsh/cordis/context.py",
+      "sha256": "19621431da94d988c35e290b10bde44f5e14e6cde6dbee95a66bf49ad24ed8b3"
+    },
+    {
+      "path": "dsh/cordis/environment.py",
+      "sha256": "18303b36ea02507e5f43c6b1cfa26eb12fc18a9c5f96d1b27a2436b82db2fd19"
+    },
+    {
+      "path": "dsh/cordis/events.py",
+      "sha256": "fbfe421eee95c8eff95fa218f353224fba337cbaa6b3c0c530a2d8fe6d2dc5f3"
+    },
+    {
+      "path": "dsh/cordis/fiber.py",
+      "sha256": "202337d41112ff789deea5dccebd47c27281df790d64cc1620958158fe40f9cb"
+    },
+    {
+      "path": "dsh/cordis/file_lock.py",
+      "sha256": "1dc5a15e90fc52d7f113dc16723a30741827c75cc05838d0e0a5238f26b1959b"
+    },
+    {
+      "path": "dsh/cordis/hmr.py",
+      "sha256": "69a0f5b9d8ba29ee5b9b5c9cc54f07af486ae1975150ef43a444fe9b8f7f9907"
+    },
+    {
+      "path": "dsh/cordis/include.py",
+      "sha256": "5e20455179bfb3e2585cbc749f5bd15be24458ea205134556b71facc5889ca93"
+    },
+    {
+      "path": "dsh/cordis/loader.py",
+      "sha256": "86212b307c120d714ced06bedf50f058e5b1a7783f61cb432d6bca1deeff1914"
+    },
+    {
+      "path": "dsh/cordis/loader_entry.py",
+      "sha256": "86780dd3da5e2ec6bea291321bebfbc7aab2a42936674f1d81e19454d2cd927b"
+    },
+    {
+      "path": "dsh/cordis/loader_group.py",
+      "sha256": "536b3677050693d380db661119e6758bd99a0004b34b40b330cd39a048f588f4"
+    },
+    {
+      "path": "dsh/cordis/loader_isolate.py",
+      "sha256": "9b16816958ee1ddafbcbde60dc407ec4a63b33eb18a973926e5c6db62e8af802"
+    },
+    {
+      "path": "dsh/cordis/loader_tree.py",
+      "sha256": "f0b850feaa03c9a179d57c9ebf70bbc8d6b5207843325fd23df3377be77bef3e"
+    },
+    {
+      "path": "dsh/cordis/logger.py",
+      "sha256": "99b55c49b4ea640e29ed2b6abf53a41370d32bcee94fb25ebfba0cab1b588ab4"
+    },
+    {
+      "path": "dsh/cordis/plugin.py",
+      "sha256": "56b7cd4d672d3ee94de0773fc329fdd590f2a19a56533052486a41107f447bb5"
+    },
+    {
+      "path": "dsh/cordis/profile.py",
+      "sha256": "4de2af790c7887c2c370ed3624f80d8bec49d0226d5d19990906d5f2ceb4eda2"
+    },
+    {
+      "path": "dsh/cordis/reflect.py",
+      "sha256": "b60ab339ddc1d1b5a2d68109f93eba573bf26ddf862d3590de41dddab71ffc85"
+    },
+    {
+      "path": "dsh/cordis/registry.py",
+      "sha256": "00c1705dfe0cc1d94aadb43ccb9e83bbd86d3660cc1a160434b963bb492c72b7"
+    },
+    {
+      "path": "dsh/cordis/schema.py",
+      "sha256": "f4e012dce51ae78d9ccd17358949bdde31af45d28db040df4d189cfb33cbb408"
+    },
+    {
+      "path": "dsh/cordis/service.py",
+      "sha256": "d2fa2b85605d2f4af9a48099c3998940a8db58fe7dcf4e4a2ae96fb11c9b3103"
+    },
+    {
+      "path": "dsh/cordis/timer.py",
+      "sha256": "37e79028fe50d925a5d904d297c66f9fc15e2efe53b7af64f7def4791987caac"
+    },
+    {
+      "path": "dsh/cordis/utils.py",
+      "sha256": "bd03ffd8ce4dbcc86bb2092f72e7059827af94e333336c8b0ceb8d312f61af2e"
+    },
+    {
+      "path": "reference/vendor/cordis/src/context.ts",
+      "sha256": "96b388162d6013c1898de61e35f28917abb93809de24174980f2a1a348d0b115"
+    },
+    {
+      "path": "reference/vendor/cordis/src/events.ts",
+      "sha256": "96565a2b5fbf35c26b78cbdc785b2b2e3f01fa55a9fd1f6af5355ab35ccc343c"
+    },
+    {
+      "path": "reference/vendor/cordis/src/fiber.ts",
+      "sha256": "750555b47603f88e7ef7a05d1a8d629b355c176a1185af411aac6e3e1e2b7ba3"
+    },
+    {
+      "path": "reference/vendor/cordis/src/index.ts",
+      "sha256": "c2232f082c763488225eafcd33530640ad26af0c7d6ea871a4f7e8ebf0eb3704"
+    },
+    {
+      "path": "reference/vendor/cordis/src/logger.ts",
+      "sha256": "5121e76fd9f55b9b90dfea09d6e60d122e7530246b8b19970ddebd9c35ccf7d8"
+    },
+    {
+      "path": "reference/vendor/cordis/src/reflect.ts",
+      "sha256": "6847b9781044023d65aebb5896a873b9f0a3d777eaf7fa0dd2a7a408eb6b74a6"
+    },
+    {
+      "path": "reference/vendor/cordis/src/registry.ts",
+      "sha256": "34bbd60ae502b4f85201c204afb52a9acabde6878d9278493478c1b2183debd3"
+    },
+    {
+      "path": "reference/vendor/cordis/src/service.ts",
+      "sha256": "614205c6ce7cf1a057b8b352e96aa4fcd734c967a3d2283a126c9c61f268e3be"
+    },
+    {
+      "path": "reference/vendor/cordis/src/utils.ts",
+      "sha256": "8fe273424583d21267ef13f248840e97454d09d836a0ac08323a9482c2069263"
+    },
+    {
+      "path": "reference/vendor/cosmokit/src/array.ts",
+      "sha256": "cf4de899ecffd66a90d8cef6f4c7d127d31f77f776d8e173d41c30d2d7632cf7"
+    },
+    {
+      "path": "reference/vendor/cosmokit/src/index.ts",
+      "sha256": "51dd173c70001d7d7891d3aab7e26594da65f7cb6671253f6d457ac889326b3c"
+    },
+    {
+      "path": "reference/vendor/cosmokit/src/misc.ts",
+      "sha256": "117617943074ea57c15f216905dacd2f6d1c4c2ff16586f97a7a7a87dbf2141f"
+    },
+    {
+      "path": "reference/vendor/cosmokit/src/string.ts",
+      "sha256": "5564272b3e15e49235cbe3a8b453f27306baf282d23a893982841670f65d3c04"
+    },
+    {
+      "path": "reference/vendor/cosmokit/src/time.ts",
+      "sha256": "49957c4608465a1fbd738186a92c47fffcd1fc4ba59dbf89524f8a773fe16fe2"
+    },
+    {
+      "path": "reference/vendor/cosmokit/src/types.ts",
+      "sha256": "09d72a91052105e88500bfb99a8e8ce0c9ebf6f6e7df569053e114bc77aa019c"
+    },
+    {
+      "path": "reference/vendor/hmr/src/error.ts",
+      "sha256": "db29dd32cfbae7199eb1055aac524866d3f06c3f98c6390bff33ad384d617ab6"
+    },
+    {
+      "path": "reference/vendor/hmr/src/index.ts",
+      "sha256": "5d9ea00ede52a1b03abbf10a0df75d886403debe25a2a0495c6814dc6842220b"
+    },
+    {
+      "path": "reference/vendor/include/src/index.ts",
+      "sha256": "a852fd54499b8766c9d7480baab8f09e9297b520ba5fdc8ad57a11d43aa6260d"
+    },
+    {
+      "path": "reference/vendor/loader/src/config/entry.ts",
+      "sha256": "c1a15a12decb49bda43a953787708a9fb6afa2bc056018287d89fcd3a1d2c5fe"
+    },
+    {
+      "path": "reference/vendor/loader/src/config/group.ts",
+      "sha256": "a3079629f907745ddc1e0f2520b66d57711053b4d3715ee8b5983954a6908168"
+    },
+    {
+      "path": "reference/vendor/loader/src/config/isolate.ts",
+      "sha256": "950a6f5e0727cd28bff3df09e8c42c9670fcf1f058d6a64d7572c83b5cd403a9"
+    },
+    {
+      "path": "reference/vendor/loader/src/config/tree.ts",
+      "sha256": "5be2d9c3f2581f6c714380216f6ffd8171a0cbe0405adbaf13c9563ffae0ada9"
+    },
+    {
+      "path": "reference/vendor/loader/src/config/utils.ts",
+      "sha256": "8ff540ba75490ef137546b2b222903478d8451cf422c50c56fb11cff5a181749"
+    },
+    {
+      "path": "reference/vendor/loader/src/index.ts",
+      "sha256": "d535dce0a13e8cbfa39d79722ada8c65606ff207d3ee6946ae11586f378cefd8"
+    },
+    {
+      "path": "reference/vendor/loader/src/internal.ts",
+      "sha256": "6d2e9adc901b39dfacb7ece2e56b1553cee8ecf0405b7c0b8541048958987477"
+    },
+    {
+      "path": "reference/vendor/schemastery/src/index.ts",
+      "sha256": "cf8a4de0481969a1a6d44eac390015f3494be1ce19b84d4fcfb7e93e5072cee5"
+    },
+    {
+      "path": "reference/vendor/timer/src/index.ts",
+      "sha256": "d723fb34a6c5f107c04611c46198c5c860cc661d6e25eee3dd4e1bc091f0d68c"
+    },
+    {
+      "path": "scripts/cordis_oracle.py",
+      "sha256": "af15407c40e3aba56f6d6d826dc25581e9f8052198ba5f90275594b1d533e310"
+    },
+    {
+      "path": "scripts/oracles/cordis.mts",
+      "sha256": "6168a82c7ce06c36809038451c8aba2b4f4665c8c1844988f1edc97409fdfee4"
+    },
+    {
+      "path": "scripts/oracles/cordis_consumers.mts",
+      "sha256": "4fc9a6ebed74af02d5ec8f98b300cd7cba5df0de6eeea4befedb8a1683dfea9d"
+    },
+    {
+      "path": "scripts/oracles/cordis_consumers.py",
+      "sha256": "3b957b3aa42fee55cfd168248b31ccfac50bf250dd589f097e1176586d8729db"
+    },
+    {
+      "path": "scripts/oracles/cordis_include.mts",
+      "sha256": "f02f7f96a80dc1a19735fef702e8588a0ab32a68286f1ed402b7bacdbe2d4286"
+    },
+    {
+      "path": "scripts/oracles/cordis_include.py",
+      "sha256": "c478b405656ae62a98faec55da287e11adf8ac534de4b81076e14ef78fa03040"
+    },
+    {
+      "path": "scripts/oracles/cordis_python.py",
+      "sha256": "6ed5b3f3ead504ab7bfb0ba82009b21894e8d70f6aee74ce6c90e191d3c00a9c"
+    },
+    {
+      "path": "scripts/oracles/package-lock.json",
+      "sha256": "2e25382fdab2f9975219ada5239a24466f222b399328cdd36826313f07afabc7"
+    },
+    {
+      "path": "scripts/oracles/package.json",
+      "sha256": "6c0aa3d2688b74bc96f03945f65295a5f4c1d8796c26334c79b9df69ffb62f63"
+    },
+    {
+      "path": "scripts/oracles/tsconfig.json",
+      "sha256": "7b489053078781d00b9ccfaf4dc36a601691a23febedf78e99714e38068371e1"
+    }
+  ],
+  "normalization": "JSON undefined return -> null; runtime states retain numeric values; no event sorting"
+}

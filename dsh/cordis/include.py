@@ -311,6 +311,24 @@ class _IncludeInitDual:
     def __init__(self, include: "Include"):
         self.include = include
         self.candidate = self._prepare_candidate()
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop is not None:
+            # Initial apply and refresh mutate the same transactional tree.
+            # Own the queued task and publish content only after it commits.
+            async def apply_initial():
+                async with include._apply_lock:
+                    if self.candidate:
+                        patched = include.apply_patches(self.candidate["data"], include.config.get("patches"))
+                        result = include.root.update(patched)
+                        if inspect.isawaitable(result):
+                            await result
+                        self._commit_candidate()
+            self._update_res = include._track(loop.create_task(apply_initial()))
+            include._update_task = self._update_res
+            return
         if self.candidate:
             patched = self.include.apply_patches(self.candidate["data"], self.include.config.get("patches"))
             res = self.include.root.update(patched)
@@ -324,6 +342,7 @@ class _IncludeInitDual:
                 self._update_res = None
         else:
             self._update_res = None
+        self._commit_candidate()
 
     def _prepare_candidate(self) -> Optional[Dict[str, Any]]:
         try:
@@ -337,11 +356,13 @@ class _IncludeInitDual:
                     raise ConfigFileError("read", self.include.filename, FileNotFoundError(f"config file not found: {self.include.filename}"))
             else:
                 raise error
-        if candidate:
-            self.include.content = candidate["content"]
-            self.include.data = candidate["data"]
-            self.include.check_access()
         return candidate
+
+    def _commit_candidate(self) -> None:
+        if self.candidate:
+            self.include.content = self.candidate["content"]
+            self.include.data = self.candidate["data"]
+            self.include.check_access()
 
     def __iter__(self):
         yield self.include.stop

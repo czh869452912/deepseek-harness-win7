@@ -488,8 +488,13 @@ async def test_cancelling_dispose_waiter_does_not_cancel_fiber_disposal():
     with pytest.raises(asyncio.CancelledError):
         await first
 
-    release.set()
+    # A repeated public dispose is a no-op (paired C44). Join the structural
+    # owner while cleanup is pending; cancelling the first observer lost no work.
     await fiber.dispose()
+    assert fiber.state == FiberState.UNLOADING
+    owner = asyncio.create_task(ctx.fiber.dispose())
+    release.set()
+    await owner
     assert fiber.state == FiberState.DISPOSED
 
 

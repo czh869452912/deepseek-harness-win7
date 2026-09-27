@@ -1,16 +1,16 @@
 {
   "id": "MIG-CORDIS-001",
-  "goal": "复核 Cordis C1-C36 与必要消费者的验收闭包",
+  "goal": "复核 Cordis C1-C45 与必要消费者的验收闭包",
   "kind": "verification",
   "state": "review",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
-  "base_product": "a3c4462ca34545f848245ae3355f48c5194ffde5",
+  "base_product": "24691c8d3415c4579f203f79c78f94386107f0de",
   "owner": "current-session-coordinator",
   "requires": [],
   "provides": [
     {
       "contract": "CON-CORDIS-CORE",
-      "revision": 4
+      "revision": 6
     }
   ],
   "acceptance": [
@@ -26,7 +26,9 @@
     "migration"
   ],
   "open_findings": [
-    "CORE-PAIRED-COVERAGE-INCOMPLETE"
+    "CORE-PAIRED-COVERAGE-INCOMPLETE",
+    "CORDIS-C42-REFRESH-DISPOSAL-ORDER",
+    "CORDIS-C45-HANDLE-IDENTITY"
   ],
   "conflicts_with": [],
   "candidate_commit": null,
@@ -34,7 +36,10 @@
   "evidence_ids": [
     "RUN-CORDIS-20260927",
     "RUN-CORDIS-WAVE2-20260927",
-    "RUN-CORDIS-CONSUMERS-20260927"
+    "RUN-CORDIS-CONSUMERS-20260927",
+    "RUN-CORDIS-INCLUDE-20260927",
+    "RUN-CORDIS-LIFECYCLE-20260927"
   ],
-  "next_action": "审阅 Loader/HMR 六组双侧证据；补 Include pending update、模块热替换/回滚和官方集成用例映射，尚不放行下游"
+  "next_action": "优先对齐 registry.plugin 包装对象与原始 fiber 身份及 Loader/Include 消费端；关闭 C42/C45 后再推进模块 HMR",
+  "delivery_commit": "24691c8d3415c4579f203f79c78f94386107f0de"
 }

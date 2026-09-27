@@ -205,7 +205,7 @@ class Fiber:
                 # `dispose()` retires the record so a disposed child is no
                 # longer owned by (or re-disposed through) its parent.
                 self._parent_disposer = parent_fiber.effect(
-                    lambda: (lambda: self.dispose()), label="ctx.plugin()"
+                    lambda: (lambda: self._dispose_owned()), label="ctx.plugin()"
                 )
 
             try:
@@ -1316,8 +1316,18 @@ class Fiber:
                         pass
 
     def dispose(self) -> Any:
+        """Public single-shot disposal; structural owners join through their effect."""
+        if self.runtime is not None and getattr(self, "_disposing", False):
+            async def already_started():
+                # JS returns undefined for repeated public calls. Keep Python's
+                # awaitable spelling, but do not turn this no-op into a join.
+                return None
+            return already_started()
+        return self._dispose_owned()
+
+    def _dispose_owned(self) -> Any:
         """
-        Dispose this fiber and return an awaitable that settles once it is quiescent.
+        Start disposal or join it on behalf of the structural owner.
 
         Mirrors TS `fiber.dispose`, which *is* the parent-owned `ctx.plugin()`
         effect disposer (`fiber.ts` constructor assigns it to `this.dispose`).

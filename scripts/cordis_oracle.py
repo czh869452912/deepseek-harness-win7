@@ -55,12 +55,12 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tsx", type=Path, default=ROOT / "scripts/oracles/node_modules/tsx/dist/cli.mjs")
     parser.add_argument("--node", default="node")
-    parser.add_argument("--cases", type=int, nargs="+", default=list(range(1, 37)))
+    parser.add_argument("--cases", type=int, nargs="+", default=list(range(1, 46)))
     parser.add_argument("--timeout", type=float, default=20)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
-    if not args.tsx.is_file() or any(n not in range(1, 37) for n in args.cases):
-        parser.error("tsx launcher must exist; cases must be within 1..36")
+    if not args.tsx.is_file() or any(n not in range(1, 46) for n in args.cases):
+        parser.error("tsx launcher must exist; cases must be within 1..45")
     tsx_package = json.loads((args.tsx.resolve().parent.parent / "package.json").read_text(encoding="utf-8"))
     if tsx_package.get("version") != "4.22.4":
         parser.error("oracle requires the pinned tsx 4.22.4 launcher")
@@ -80,7 +80,7 @@ def main(argv=None):
     sources = list((ROOT / "scripts/oracles").glob("*.py")) + list((ROOT / "scripts/oracles").glob("*.mts"))
     sources += [Path(__file__).resolve(), ROOT / "scripts/oracles/tsconfig.json",
                 ROOT / "scripts/oracles/package.json", ROOT / "scripts/oracles/package-lock.json"]
-    for directory, pattern in [("reference/vendor/cordis/src", "*.ts"), ("reference/vendor/cosmokit/src", "*.ts"), ("reference/vendor/timer/src", "*.ts"), ("reference/vendor/loader/src", "*.ts"), ("reference/vendor/hmr/src", "*.ts"), ("reference/vendor/schemastery/src", "*.ts"), ("dsh/cordis", "*.py")]:
+    for directory, pattern in [("reference/vendor/cordis/src", "*.ts"), ("reference/vendor/cosmokit/src", "*.ts"), ("reference/vendor/timer/src", "*.ts"), ("reference/vendor/loader/src", "*.ts"), ("reference/vendor/hmr/src", "*.ts"), ("reference/vendor/include/src", "*.ts"), ("reference/vendor/schemastery/src", "*.ts"), ("dsh/cordis", "*.py")]:
         sources.extend((ROOT / directory).rglob(pattern))
     for path in sorted(set(sources)):
         report["inputs"].append({"path": path.relative_to(ROOT).as_posix(), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()})

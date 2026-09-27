@@ -14,9 +14,11 @@ ADAPTER = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(ADAPTER)
 REPORT = json.loads((ROOT / 'migration/evidence/artifacts/CORDIS-C1-C47-20260927.json').read_text(encoding='utf-8'))
 EXPECTED = {row['case']: row['upstream']['observation'] for row in REPORT['cases']}
+RESTART = json.loads((ROOT / 'migration/evidence/artifacts/CORDIS-RESTART-20260927.json').read_text(encoding='utf-8'))
+EXPECTED.update({row['case']: row['upstream']['observation'] for row in RESTART['cases']})
 
 
-@pytest.mark.parametrize('case', [40, 41, 42, 43, 44, 45, 46, 47])
+@pytest.mark.parametrize('case', [40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51])
 def test_matched_lifecycle_observation(case):
     actual = asyncio.run(asyncio.wait_for(ADAPTER.scenario(case), timeout=10))
     assert actual == EXPECTED['C%d' % case]

@@ -38,6 +38,29 @@ async def scenario(number):
         try:
             ctx.baseUrl = Path(directory).as_uri() + '/'
             await ctx.plugin(Loader)
+            if number in (48, 49, 50, 51):
+                class Lifecycle(Plugin):
+                    name = 'handle-lifecycle'
+                    inject = ['gate'] if number >= 50 else []
+                    def apply(self, c, config=None):
+                        log.append('start:' + str(config['value']))
+                        return lambda: log.append('stop:' + str(config['value']))
+                handle = ctx.plugin(Lifecycle, {'value': 1})
+                raw = handle.ctx.fiber
+                target = handle if number in (48, 50) else raw
+                if number < 50:
+                    await handle
+                    await target.restart()
+                else:
+                    target.update({'value': 2})
+                    ctx.provide('gate', True)
+                    await target.await_settled()
+                observation = {'log': log[:], 'states': [handle.state, raw.state],
+                               'configs': [handle.config['value'], raw.config['value']]}
+                await ctx.fiber.dispose()
+                observation['finalLog'] = log[:]
+                observation['disposed'] = [handle.state, raw.state]
+                return observation
             if number in (46, 47):
                 class Recovery(Plugin):
                     name = 'handle-recovery'

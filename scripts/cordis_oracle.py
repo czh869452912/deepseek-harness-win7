@@ -1,4 +1,4 @@
-"""Run isolated, observation-only C1-C47 scenarios against pinned TS and Python.
+"""Run isolated, observation-only C1-C51 scenarios against pinned TS and Python.
 
 Exit 0: all selected observations match; 1: behavioral difference;
 2: runner/source/adapter failure. This does not certify the whole contract.
@@ -55,12 +55,12 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tsx", type=Path, default=ROOT / "scripts/oracles/node_modules/tsx/dist/cli.mjs")
     parser.add_argument("--node", default="node")
-    parser.add_argument("--cases", type=int, nargs="+", default=list(range(1, 48)))
+    parser.add_argument("--cases", type=int, nargs="+", default=list(range(1, 52)))
     parser.add_argument("--timeout", type=float, default=20)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
-    if not args.tsx.is_file() or any(n not in range(1, 48) for n in args.cases):
-        parser.error("tsx launcher must exist; cases must be within 1..47")
+    if not args.tsx.is_file() or any(n not in range(1, 52) for n in args.cases):
+        parser.error("tsx launcher must exist; cases must be within 1..51")
     tsx_package = json.loads((args.tsx.resolve().parent.parent / "package.json").read_text(encoding="utf-8"))
     if tsx_package.get("version") != "4.22.4":
         parser.error("oracle requires the pinned tsx 4.22.4 launcher")

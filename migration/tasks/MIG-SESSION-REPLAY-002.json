@@ -21,6 +21,11 @@
       "task": "MIG-SESSION-LIVE-004",
       "contract": "CON-SESSION-LIVE-WRITES",
       "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-PREPARED-005",
+      "contract": "CON-SESSION-PREPARATIONS",
+      "revision": 1
     }
   ],
   "provides": [],
@@ -33,13 +38,13 @@
     "migration"
   ],
   "open_findings": [
-    "Shared preparation cache/reservation/observer cancellation remain unimplemented.",
-    "Public persistence create/append still need unified coordination with live writes and complete schema/SQLite source verification.",
-    "Cross-process materialization, revision changes during reservation and complete Session projection remain unverified."
+    "Public storage still needs lazy creation, full append cursor/schema validation and source-equivalent adoption.",
+    "Complete inspect/load schema and event vocabulary validation, cross-process atomic materialization and native SQLite baseline remain unverified.",
+    "Configured Agent startup/reload and complete Session projection remain separate downstream closures."
   ],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "Next: shared preparation and public persistence coordination, followed by configured startup/reload and Session projection. Cold recovery and live writes have separate scoped tasks."
+  "next_action": "Shared preparations now have MIG-SESSION-PREPARED-005. Next align public storage schema/lazy creation/adoption, then configured Agent startup/reload and full projection."
 }

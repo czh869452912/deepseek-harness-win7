@@ -1,0 +1,12 @@
+{
+  "result": "passed",
+  "errors": [],
+  "scope": "C1-C67 source-derived Cordis/Loader/Include/HMR/schema observations only",
+  "adaptations": [
+    "PY38-RESOLVED-AWAIT: C58 native divergence retained; C59 explicit checkpoint must match."
+  ],
+  "report": "C:\\Users\\Administrator\\.codex\\worktrees\\release-repro\\deepseek-harness-win7\\.goose\\out\\release-gate\\cordis-raw.json",
+  "report_sha256": "226db82ca429b997c7df8d08da4fb70fe77ebf659102034cf18718918db41675",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "78f35dc2b3880745c58684c6a9df67c837280107"
+}

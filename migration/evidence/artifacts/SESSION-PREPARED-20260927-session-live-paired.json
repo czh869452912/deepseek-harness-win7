@@ -1,0 +1,206 @@
+{
+  "status": "matched",
+  "cases": [
+    {
+      "mode": "unload",
+      "status": "matched",
+      "upstream": {
+        "mode": "unload",
+        "rejected": false,
+        "events": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 1,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "completed"
+              }
+            }
+          }
+        ]
+      },
+      "python": {
+        "mode": "unload",
+        "rejected": false,
+        "events": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 1,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "completed"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "mode": "preexisting",
+      "status": "matched",
+      "upstream": {
+        "mode": "preexisting",
+        "rejected": false,
+        "events": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 1,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "completed"
+              }
+            }
+          }
+        ]
+      },
+      "python": {
+        "mode": "preexisting",
+        "rejected": false,
+        "events": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 1,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "completed"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "mode": "reload-open",
+      "status": "matched",
+      "upstream": {
+        "mode": "reload-open",
+        "rejected": false,
+        "events": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 1,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "completed"
+              }
+            }
+          }
+        ]
+      },
+      "python": {
+        "mode": "reload-open",
+        "rejected": false,
+        "events": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 1,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "completed"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "mode": "collision",
+      "status": "matched",
+      "upstream": {
+        "mode": "collision",
+        "rejected": true,
+        "events": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 1,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "completed"
+              }
+            }
+          }
+        ]
+      },
+      "python": {
+        "mode": "collision",
+        "rejected": true,
+        "events": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 1,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "completed"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc"
+}

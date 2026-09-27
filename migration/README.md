@@ -13,7 +13,13 @@
 
 `check` 校验记录、依赖环、契约 revision、证据哈希、固定上游 checkout 和 manifest 漂移；它不是 parity 测试。`ready` 只列出无阻塞任务，不领取任务、不提供租约。完整 inventory 重建要求固定上游 SHA 与 manifest 集合/内容未漂移。
 
-## Current shared live-write closure
+## Current shared preparation closure
+
+Candidate `78f35dc2`: clean-checkout release gate passed; **3175 passed, 2 skipped, 2 warnings**. Five real JSONL preparation observations match, alongside the prior Agent/cold/live gates. 197 upstream Session assertions establish a source baseline. `CON-SESSION-PREPARATIONS@1` covers the shared pool, exact reservations, cancellation, revision refresh, public write guards and teardown integration in JSONL/SQLite.
+
+See [preparation closure](reviews/SESSION-PREPARED-CLOSURE-20260927.md). Next: public storage lazy creation, full append/read schema and cursor/adoption rules, then configured Agent startup/reload and full projection. Win7 remains deferred. The latest package is in the managed release-repro worktree.
+
+## Previous shared live-write closure
 
 Candidate `3de19a21`: clean-checkout release gate passed; **3142 passed, 2 skipped, 2 warnings**. Four real JSONL live lifecycle observations and seven cold-recovery observations match. The 174 upstream Session assertions establish a source baseline, not 174 Python parity cases. `CON-SESSION-LIVE-WRITES@1` covers bounded writes, failure retention/rollback, drain and tested HMR/retirement ownership in JSONL/SQLite. Shared preparation/public persistence coordination and configured Agent startup/reload remain pending.
 

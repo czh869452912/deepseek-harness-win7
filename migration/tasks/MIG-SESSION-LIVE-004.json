@@ -39,10 +39,11 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "3de19a21c52a75d7af2b551f1b803758c1380e34",
-  "integrated_commit": "3de19a21c52a75d7af2b551f1b803758c1380e34",
+  "candidate_commit": "78f35dc2b3880745c58684c6a9df67c837280107",
+  "integrated_commit": "78f35dc2b3880745c58684c6a9df67c837280107",
   "evidence_ids": [
-    "RUN-SESSION-LIVE-SESSION-LIVE-004-20260927"
+    "RUN-SESSION-LIVE-SESSION-LIVE-004-20260927",
+    "RUN-SESSION-PREPARED-SESSION-LIVE-004-20260927"
   ],
   "next_action": "共享写队列、两个后端 drain/rollback 与限定 HMR/retirement 已验收；继续共享 preparation、公共存储协调和配置恢复闭包。"
 }

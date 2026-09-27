@@ -1,0 +1,46 @@
+[
+  {
+    "mode": "reuse",
+    "same": false,
+    "types": [
+      "turn/start",
+      "turn/end",
+      "session/end-seed"
+    ]
+  },
+  {
+    "mode": "mutated-release",
+    "same": false,
+    "types": [
+      "turn/start",
+      "turn/end",
+      "session/end-seed"
+    ]
+  },
+  {
+    "mode": "reserved-write",
+    "rejected": false,
+    "physical": 3
+  },
+  {
+    "mode": "cancel-wait",
+    "cancelled": false,
+    "same": false
+  },
+  {
+    "mode": "revision",
+    "types": [
+      "turn/start",
+      "turn/end",
+      "turn/start",
+      "turn/end",
+      "session/end-seed"
+    ],
+    "physical": [
+      "turn/start",
+      "turn/end",
+      "turn/start",
+      "turn/end"
+    ]
+  }
+]

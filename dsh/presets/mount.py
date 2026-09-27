@@ -132,6 +132,18 @@ def _load_rows(path: str) -> List[Dict[str, Any]]:
     return copy.deepcopy(rows)
 
 
+def mount_detail(error: Any) -> str:
+    """Preserve aggregate row causes that Loader wrappers omit from their message."""
+    message = getattr(error, "message", None) or str(error)
+    branches = getattr(error, "errors", None)
+    if branches is None:
+        cause = getattr(error, "cause", None) or getattr(error, "__cause__", None)
+        branches = getattr(cause, "errors", ())
+    if not branches:
+        return message
+    return "\n".join([message] + ["- " + mount_detail(branch).replace("\n", "\n  ") for branch in branches])
+
+
 async def mount_preset(agent_ctx: Any, preset: AgentPreset, host_loader: Optional[Loader] = None) -> PresetMount:
     if agent_ctx is None or scope_of(agent_ctx) is None:
         raise RuntimeError(
@@ -176,7 +188,7 @@ async def mount_preset(agent_ctx: Any, preset: AgentPreset, host_loader: Optiona
         return mount
     except BaseException as error:
         await fiber.dispose()
-        detail = str(error)
+        detail = mount_detail(error)
         raise PresetMountError(preset.id, "%s (%s)" % (detail, preset.path), cause=error)
 
 

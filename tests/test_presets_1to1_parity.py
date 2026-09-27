@@ -96,6 +96,7 @@ async def test_agent_presets_service_lifecycle():
         )
 
         ctx = Context()
+        ctx.baseUrl = tmpdir
         svc = AgentPresets(ctx, config=cfg)
 
         assert svc.default_id == "standard"

@@ -100,6 +100,8 @@ class AgentPresets(Service):
     def __init__(self, ctx: Any, config: Any = None):
         super().__init__(ctx, "agentPresets")
         self.self_ctx = ctx
+        if ctx.baseUrl is None:
+            raise RuntimeError("agent-presets: the roster needs `ctx.baseUrl` to resolve composition plugins")
         default, roots, include_user_root = _config_value(config)
         self.preset_config = PresetConfig(default, roots, include_user_root)
         dsh_home = os.environ.get("DSH_HOME") or os.path.join(os.path.expanduser("~"), ".dsh")
@@ -136,7 +138,7 @@ class AgentPresets(Service):
             agent = payload.get("agent") if isinstance(payload, dict) else getattr(payload, "agent", None)
             if agent is None or not self.resolved_roots or self.composed_preset(agent.ctx) is not None:
                 return
-            logger = ctx.get("logger", None)
+            logger = ctx.logger
             if logger is not None and callable(getattr(logger, "warn", None)):
                 logger.warn('agent "%s" was published without joining an agent preset' % agent.id)
 
@@ -261,7 +263,7 @@ class AgentPresets(Service):
         try:
             self.self_ctx.emit("tools/change")
         except Exception as error:
-            logger = self.self_ctx.get("logger", None)
+            logger = self.self_ctx.logger
             if logger is not None:
                 logger.warn("agent-presets: tools/change listener failed after recomposing an Agent: %s" % error)
         return preset

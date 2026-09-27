@@ -78,16 +78,18 @@
       "source": "reference/packages/preset/agent-presets/tests/invariant.spec.ts",
       "line": 41,
       "title": "keeps the standing composition alive across the agents that joined it",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_invariant_official_assertions[41]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/invariant.spec.ts",
       "line": 67,
       "title": "rejects a composition that publishes a process-global service after its audit",
-      "status": "reviewed-invariant-subset",
+      "status": "assertions-ported",
       "python_tests": [
-        "tests/test_agent_presets_invariant.py"
+        "tests/test_agent_presets_official_closure.py::test_invariant_guard_matrix[67]"
       ],
       "limitation": "Companion guards are exercised with real services; derived-home-only and full official fixture matrix remain separate."
     },
@@ -95,16 +97,18 @@
       "source": "reference/packages/preset/agent-presets/tests/invariant.spec.ts",
       "line": 79,
       "title": "stays quiet while every composition keeps its services out of the root realm",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_invariant_official_assertions[79]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/invariant.spec.ts",
       "line": 88,
       "title": "rejects an agent that addresses a model without joining any preset",
-      "status": "reviewed-invariant-subset",
+      "status": "assertions-ported",
       "python_tests": [
-        "tests/test_agent_presets_invariant.py"
+        "tests/test_agent_presets_official_closure.py::test_invariant_guard_matrix[88]"
       ],
       "limitation": "Companion guards are exercised with real services; derived-home-only and full official fixture matrix remain separate."
     },
@@ -112,16 +116,18 @@
       "source": "reference/packages/preset/agent-presets/tests/invariant.spec.ts",
       "line": 100,
       "title": "rejects one just the same when the derived home root is the whole roster",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_invariant_official_assertions[100]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/invariant.spec.ts",
       "line": 112,
       "title": "stays silent for a composition that opted out of every root",
-      "status": "reviewed-invariant-subset",
+      "status": "assertions-ported",
       "python_tests": [
-        "tests/test_agent_presets_invariant.py"
+        "tests/test_agent_presets_official_closure.py::test_invariant_guard_matrix[112]"
       ],
       "limitation": "Companion guards are exercised with real services; derived-home-only and full official fixture matrix remain separate."
     },
@@ -129,9 +135,9 @@
       "source": "reference/packages/preset/agent-presets/tests/invariant.spec.ts",
       "line": 122,
       "title": "admits a joined agent, a scopeless read, and a standing-key read",
-      "status": "reviewed-invariant-subset",
+      "status": "assertions-ported",
       "python_tests": [
-        "tests/test_agent_presets_invariant.py"
+        "tests/test_agent_presets_official_closure.py::test_invariant_guard_matrix[122]"
       ],
       "limitation": "Companion guards are exercised with real services; derived-home-only and full official fixture matrix remain separate."
     },
@@ -139,16 +145,18 @@
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 92,
       "title": "hands an absolute plugin path to Node as a file URL",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_absolute_plugin_import_92"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 109,
       "title": "gives each session only its own preset's tools",
-      "status": "reviewed-scope-subset",
+      "status": "assertions-ported",
       "python_tests": [
-        "tests/test_agent_presets_scope_parity.py"
+        "tests/test_agent_presets_official_closure.py::test_mount_scope_matrix[109]"
       ],
       "limitation": "Shared real scope/Tools/factory assertions cover the scope contract; this is not a verbatim port of every upstream fixture/assertion."
     },
@@ -156,23 +164,27 @@
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 118,
       "title": "scopes prompt sections and assembled schemas to the same session",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[118]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 131,
       "title": "mounts the default preset when the caller names none",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[131]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 137,
       "title": "lets two sessions share one preset without colliding",
-      "status": "reviewed-scope-subset",
+      "status": "assertions-ported",
       "python_tests": [
-        "tests/test_agent_presets_scope_parity.py"
+        "tests/test_agent_presets_official_closure.py::test_mount_scope_matrix[137]"
       ],
       "limitation": "Shared real scope/Tools/factory assertions cover the scope contract; this is not a verbatim port of every upstream fixture/assertion."
     },
@@ -180,16 +192,18 @@
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 145,
       "title": "unwinds one session's composition without touching another's",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[145]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 171,
       "title": "gives the child its parent's tools and prompt sections",
-      "status": "reviewed-scope-subset",
+      "status": "assertions-ported",
       "python_tests": [
-        "tests/test_agent_presets_scope_parity.py"
+        "tests/test_agent_presets_official_closure.py::test_mount_scope_matrix[171]"
       ],
       "limitation": "Shared real scope/Tools/factory assertions cover the scope contract; this is not a verbatim port of every upstream fixture/assertion."
     },
@@ -197,9 +211,9 @@
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 181,
       "title": "joins the parent's own generation rather than remounting its preset",
-      "status": "reviewed-scope-subset",
+      "status": "assertions-ported",
       "python_tests": [
-        "tests/test_agent_presets_scope_parity.py"
+        "tests/test_agent_presets_official_closure.py::test_mount_scope_matrix[181]"
       ],
       "limitation": "Shared real scope/Tools/factory assertions cover the scope contract; this is not a verbatim port of every upstream fixture/assertion."
     },
@@ -207,9 +221,9 @@
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 192,
       "title": "keeps the child composed after its parent is disposed",
-      "status": "reviewed-scope-subset",
+      "status": "assertions-ported",
       "python_tests": [
-        "tests/test_agent_presets_scope_parity.py"
+        "tests/test_agent_presets_official_closure.py::test_mount_scope_matrix[192]"
       ],
       "limitation": "Shared real scope/Tools/factory assertions cover the scope contract; this is not a verbatim port of every upstream fixture/assertion."
     },
@@ -217,9 +231,9 @@
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 206,
       "title": "reports the preset id the child joined, for the durable header",
-      "status": "reviewed-scope-subset",
+      "status": "assertions-ported",
       "python_tests": [
-        "tests/test_agent_presets_scope_parity.py"
+        "tests/test_agent_presets_official_closure.py::test_mount_scope_matrix[206]"
       ],
       "limitation": "Shared real scope/Tools/factory assertions cover the scope contract; this is not a verbatim port of every upstream fixture/assertion."
     },
@@ -227,16 +241,18 @@
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 215,
       "title": "composes nothing when the parent joined no preset",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[215]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 227,
       "title": "refuses to compose an unscoped context",
-      "status": "reviewed-scope-subset",
+      "status": "assertions-ported",
       "python_tests": [
-        "tests/test_agent_presets_scope_parity.py"
+        "tests/test_agent_presets_official_closure.py::test_mount_scope_matrix[227]"
       ],
       "limitation": "Shared real scope/Tools/factory assertions cover the scope contract; this is not a verbatim port of every upstream fixture/assertion."
     },
@@ -244,9 +260,9 @@
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 235,
       "title": "refuses to mount into a context that carries no agent scope",
-      "status": "reviewed-scope-subset",
+      "status": "assertions-ported",
       "python_tests": [
-        "tests/test_agent_presets_scope_parity.py"
+        "tests/test_agent_presets_official_closure.py::test_mount_scope_matrix[235]"
       ],
       "limitation": "Shared real scope/Tools/factory assertions cover the scope contract; this is not a verbatim port of every upstream fixture/assertion."
     },
@@ -254,72 +270,90 @@
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 240,
       "title": "rolls the whole agent back when a row fails to load",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[240]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 247,
       "title": "names every failed row, not just the count",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[247]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 255,
       "title": "names the rows inside a failed group, not the group alone",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[255]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 264,
       "title": "names the unresolved service when a row never activates",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[264]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 269,
       "title": "rejects a row that publishes a process-global service",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[269]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 279,
       "title": "accepts the same provider behind an isolate realm",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[279]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 288,
       "title": "addresses the standing instance of a realm-private service through either agent",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[288]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 305,
       "title": "answers undefined for a service the agent's preset does not mount",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[305]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 315,
       "title": "answers undefined for an agent outside the scope machinery",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[315]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 327,
       "title": "refuses to mount a preset directly into an unscoped context",
-      "status": "reviewed-scope-subset",
+      "status": "assertions-ported",
       "python_tests": [
-        "tests/test_agent_presets_scope_parity.py"
+        "tests/test_agent_presets_official_closure.py::test_mount_scope_matrix[327]"
       ],
       "limitation": "Shared real scope/Tools/factory assertions cover the scope contract; this is not a verbatim port of every upstream fixture/assertion."
     },
@@ -327,86 +361,108 @@
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 335,
       "title": "reports the known ids when a preset is unknown",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[335]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 342,
       "title": "lists every root's presets with the earlier root winning",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_roster_precedence_342"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 352,
       "title": "exposes the configured default id",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[352]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 366,
       "title": "refuses the mount up front with the discovery-reported reason",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_broken_discovery_precedes_mount[366]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 377,
       "title": "refuses the standing key a cold reader would mount by",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_broken_discovery_precedes_mount[377]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 384,
       "title": "still resolves the broken row for the surfaces that manage it",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_broken_discovery_precedes_mount[384]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 393,
       "title": "says so instead of naming an empty list of candidates",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_roster_configuration_guards[393]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 405,
       "title": "refuses at load rather than calling every preset broken",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_roster_configuration_guards[405]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 420,
       "title": "survives a row that disposes itself, which makes the Loader persist a tree",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_self_disposing_row_preserves_input_420"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 474,
       "title": "attributes nothing to a subtree that is already torn down",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[474]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 491,
       "title": "publishes a committed preset selection for remote consumers",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[491]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 503,
       "title": "swaps the agent's tools without touching another session",
-      "status": "reviewed-scope-subset",
+      "status": "assertions-ported",
       "python_tests": [
-        "tests/test_agent_presets_scope_parity.py"
+        "tests/test_agent_presets_official_closure.py::test_mount_scope_matrix[503]"
       ],
       "limitation": "Shared real scope/Tools/factory assertions cover the scope contract; this is not a verbatim port of every upstream fixture/assertion."
     },
@@ -414,65 +470,81 @@
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 518,
       "title": "notifies tool views after reparenting and contains notification failures",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[518]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 539,
       "title": "leaves the agent on its previous composition when the new one is unknown",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[539]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 552,
       "title": "restores the previous composition when the new one fails to mount",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[552]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 566,
       "title": "names an agent that was published without joining any preset",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[566]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 582,
       "title": "says nothing when the composition opts out of every root",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_roster_configuration_guards[582]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 597,
       "title": "composes an agent that had nothing installed",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[597]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 608,
       "title": "refuses a bare agent's broken composition without restoring anything",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[608]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 618,
       "title": "keeps the agent on its standing composition when a switch fails, even with the source deleted",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[618]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 658,
       "title": "refuses an unscoped context",
-      "status": "reviewed-scope-subset",
+      "status": "assertions-ported",
       "python_tests": [
-        "tests/test_agent_presets_scope_parity.py"
+        "tests/test_agent_presets_official_closure.py::test_mount_scope_matrix[658]"
       ],
       "limitation": "Shared real scope/Tools/factory assertions cover the scope contract; this is not a verbatim port of every upstream fixture/assertion."
     },
@@ -480,25 +552,25 @@
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 682,
       "title": "starts a new generation for later sessions while joined ones keep theirs",
-      "status": "reviewed-generation-scenario",
+      "status": "assertions-ported",
       "python_tests": [
-        "tests/test_agent_presets_scope_parity.py::test_racing_edit_shares_new_generation_and_child_keeps_deleted_parent_generation"
+        "tests/test_agent_presets_official_closure.py::test_mount_scope_matrix[682]"
       ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 697,
       "title": "gives two sessions racing the refreshed file one shared new generation",
-      "status": "reviewed-generation-scenario",
+      "status": "assertions-ported",
       "python_tests": [
-        "tests/test_agent_presets_scope_parity.py::test_racing_edit_shares_new_generation_and_child_keeps_deleted_parent_generation"
+        "tests/test_agent_presets_official_closure.py::test_mount_scope_matrix[697]"
       ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 714,
       "title": "keeps a newer generation pointer when a stale refresh loses the swap race",
-      "status": "reviewed-generation-scenario",
+      "status": "assertions-ported",
       "python_tests": [
         "tests/test_agent_presets_scope_parity.py::test_stale_refresh_preserves_winning_generation_pointer"
       ]
@@ -507,22 +579,28 @@
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 742,
       "title": "hands a host reader the standing key without starting an agent",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[742]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 755,
       "title": "refuses to mount a generation it cannot stamp",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[755]"
+      ]
     },
     {
       "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
       "line": 770,
       "title": "keeps serving the mounted generation when the file cannot be statted",
-      "status": "needs-assertion-port",
-      "python_tests": []
+      "status": "assertions-ported",
+      "python_tests": [
+        "tests/test_agent_presets_official_closure.py::test_mount_official_assertions[770]"
+      ]
     },
     {
       "source": "reference/apps/cli/tests/profile-hmr.spec.ts",
@@ -566,9 +644,8 @@
     }
   ],
   "limitations": [
-    "Reviewed subsets are not full case parity acceptance.",
-    "Pending entries are concrete work, not a claim that product behavior necessarily fails.",
-    "Preset scope bug discovered in review is fixed by 0138d18d.",
-    "C58 has a confirmed production consumer: resolved standing Future refresh, fixed by 2a3d8478 with explicit checkpoint; no blanket callback equivalence claimed."
+    "Selected source cases only; package-wide business parity is not inferred.",
+    "Node absolute file-URL imports use Python absolute module paths; errors retain nested causes.",
+    "Native completed-Future divergence is preserved as C58. Framework serial/HMR boundaries and standing-generation consumers use explicit scheduling adaptation."
   ]
 }

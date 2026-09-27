@@ -1,0 +1,475 @@
+......F..........F..F..........F.......                                  [100%]
+================================== FAILURES ===================================
+_____________________ test_mount_official_assertions[255] _____________________
+
+self = <dsh.cordis.loader.Entry object at 0x0000000004AEC850>
+
+    async def _init(self) -> None:
+        if not self.options.get("name"):
+            if self.options.get("group") or self.options.get("id", "").startswith("group"):
+                await self._start(Group)
+            return
+    
+        plugin = None
+        try:
+            tree = getattr(self.parent, "tree", None) or getattr(self.loader, "tree", None) or self.loader
+            raw = tree.import_plugin(self.options.get("name", ""), self.get_outer_stack)
+            if inspect.isawaitable(raw):
+                raw = await raw
+            plugin = getattr(self.loader, "unwrap_exports", lambda x: x)(raw)
+            if hasattr(tree, "_last_loaded_module") and tree._last_loaded_module:
+                self._loaded_module_name = tree._last_loaded_module
+                tree._last_loaded_module = None
+        except Exception as error:
+            from dsh.cordis.loader import Loader
+            if not isinstance(getattr(self, "loader", None), Loader) and getattr(self.ctx, "loader", None) is None:
+                return
+            raise LoaderUpdateError("import", self.options, error)
+    
+        try:
+>           await self._start(plugin)
+
+dsh\cordis\loader.py:2213: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+dsh\cordis\loader.py:2188: in _start
+    raise error
+dsh\cordis\loader.py:2183: in _start
+    await fiber.await_settled()
+dsh\cordis\fiber.py:1637: in await_settled
+    await super().await_settled()
+dsh\cordis\fiber.py:1596: in await_settled
+    raise self._error
+dsh\cordis\fiber.py:985: in _run_async_init
+    async for item in gen:
+dsh\cordis\loader.py:1992: in init
+    await self._update_async(self.config)
+dsh\cordis\loader.py:1934: in _update_async
+    raise error
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <dsh.cordis.loader.Group object at 0x0000000004AF9370>
+config_list = [{'config': {'message': 'inner-first'}, 'id': 'inner-first', 'name': 'fixture:refuses'}, {'config': {'message': 'inner-second'}, 'id': 'inner-second', 'name': 'fixture:refuses'}]
+
+    async def _update_async(self, config_list: List[Dict[str, Any]]) -> None:
+        old_config = list(self.data)
+        seen: Set[str] = set()
+        for opt in config_list:
+            eid = self.tree.ensure_id(opt)
+            if eid in seen:
+                raise DuplicateEntryIdError(f"Duplicate loader entry id: {eid}")
+            seen.add(eid)
+    
+        old_map = {opt["id"]: opt for opt in old_config if "id" in opt}
+        new_map = {opt["id"]: opt for opt in config_list if "id" in opt}
+    
+        try:
+            outcomes = await asyncio.gather(*(self._create_async(opt) for opt in config_list), return_exceptions=True)
+            fiber = getattr(self.ctx, "fiber", None)
+            if fiber is not None and fiber.uid is None:
+                return
+            failures = [o for o in outcomes if isinstance(o, Exception)]
+            if len(failures) == 1:
+                raise failures[0]
+            elif len(failures) > 1:
+>               raise AggregateError(failures, "loader entries failed to apply")
+E               dsh.cordis.loader.AggregateError: loader entries failed to apply: [failed to apply loader entry inner-first (fixture:refuses): inner-first, failed to apply loader entry inner-second (fixture:refuses): inner-second]
+
+dsh\cordis\loader.py:1909: AggregateError
+
+The above exception was the direct cause of the following exception:
+
+agent_ctx = Context <_empty_scope_plugin>
+preset = <dsh.presets.preset.AgentPreset object at 0x0000000004AE4280>
+host_loader = <Extended <Service loader>>
+
+    async def mount_preset(agent_ctx: Any, preset: AgentPreset, host_loader: Optional[Loader] = None) -> PresetMount:
+        if agent_ctx is None or scope_of(agent_ctx) is None:
+            raise RuntimeError(
+                'agent-presets: refusing to mount preset "%s" into an unscoped context; '
+                "its registrations would apply to every agent in the process" % preset.id
+            )
+        loader = host_loader or agent_ctx.get("loader", None)
+        if loader is None:
+            raise RuntimeError("agent-presets: loader service is required")
+    
+        def standing_plugin(_ctx: Any) -> None:
+            return None
+    
+        fiber = agent_ctx.registry.plugin(standing_plugin, {}, parent_ctx=agent_ctx)
+        fiber = await fiber  # Audit ancestry against the raw owner, not its handle.
+        tree = _PresetTree(fiber.ctx, loader, preset.path)
+        try:
+>           await tree.root.update(_load_rows(preset.path))
+
+dsh\presets\mount.py:152: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+dsh\cordis\loader.py:1934: in _update_async
+    raise error
+dsh\cordis\loader.py:1907: in _update_async
+    raise failures[0]
+dsh\cordis\loader.py:1819: in _create_async
+    raise e
+dsh\cordis\loader.py:1813: in _create_async
+    await res
+dsh\cordis\loader.py:2325: in _update_async
+    raise error
+dsh\cordis\loader.py:2320: in _update_async
+    await res
+dsh\cordis\loader.py:2258: in _init_task_runner
+    await self._init_inner_task
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <dsh.cordis.loader.Entry object at 0x0000000004AEC850>
+
+    async def _init(self) -> None:
+        if not self.options.get("name"):
+            if self.options.get("group") or self.options.get("id", "").startswith("group"):
+                await self._start(Group)
+            return
+    
+        plugin = None
+        try:
+            tree = getattr(self.parent, "tree", None) or getattr(self.loader, "tree", None) or self.loader
+            raw = tree.import_plugin(self.options.get("name", ""), self.get_outer_stack)
+            if inspect.isawaitable(raw):
+                raw = await raw
+            plugin = getattr(self.loader, "unwrap_exports", lambda x: x)(raw)
+            if hasattr(tree, "_last_loaded_module") and tree._last_loaded_module:
+                self._loaded_module_name = tree._last_loaded_module
+                tree._last_loaded_module = None
+        except Exception as error:
+            from dsh.cordis.loader import Loader
+            if not isinstance(getattr(self, "loader", None), Loader) and getattr(self.ctx, "loader", None) is None:
+                return
+            raise LoaderUpdateError("import", self.options, error)
+    
+        try:
+            await self._start(plugin)
+        except Exception as error:
+>           raise LoaderUpdateError("apply", self.options, error)
+E           dsh.cordis.loader.LoaderUpdateError: failed to apply loader entry outer (cordis:group): loader entries failed to apply
+
+dsh\cordis\loader.py:2215: LoaderUpdateError
+
+The above exception was the direct cause of the following exception:
+
+harness = namespace(agent=<function harness.<locals>.agent at 0x0000000004A3C820>, ctx=Context <root>, handles=[], mounts=<funct...ministrator/pytest-3198/test_mount_official_assertions6'), rows=<function harness.<locals>.rows at 0x00000000049F4940>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000000004AAC820>
+line = 255
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize('line',[118,131,145,215,240,247,255,264,269,279,288,305,315,335,352,474,491,518,539,552,566,597,608,618,742,755,770])
+    async def test_mount_official_assertions(harness, monkeypatch, line):
+        h=harness;ctx=h.ctx;p=ctx.agentPresets
+        if line==118:
+            a=await h.agent('a');b=await h.agent('b','beta')
+            first=await ctx.systemPrompt.assemble({'agent':a.agent,'scope':scope_of(a.ctx)})
+            second=await ctx.systemPrompt.assemble({'agent':b.agent,'scope':scope_of(b.ctx)})
+            assert 'preset:alpha' in [s['name'] for s in first['sections']]
+            assert 'preset:beta' not in [s['name'] for s in first['sections']]
+            assert 'preset:beta' in [s['name'] for s in second['sections']]
+            assert [t['name'] for t in first['tools']]==['alpha']
+        elif line==131:
+            assert h.names(await h.agent('default',None))==['alpha']
+        elif line==145:
+            gone=await h.agent('gone');survivor=await h.agent('survivor','beta')
+            await gone.dispose()
+            assert ctx.agents.get('gone') is None and h.names(survivor)==['beta'] and h.names()==[]
+        elif line==215:
+            parent=await h.agent('bare',False);child=await h.agent('child',False)
+            assert p.compose_from(child.ctx,parent.ctx) is None
+            assert p.composed_preset(parent.ctx) is None and h.names(child)==[]
+        elif line in (240,247,255,264,269):
+            preset={240:'broken',247:'broken',255:'nested',264:'pending',269:'leaky'}[line]
+            pattern={240:'failed to mount',247:'first-refuses.*second-refuses',255:'outer.*inner-first.*inner-second',264:'waiting for absentService',269:'process-global service.*aaaLeaked, zzzLeaked'}[line]
+>           with pytest.raises(PresetMountError,match=pattern): await h.agent('failed',preset)
+
+tests\test_agent_presets_official_closure.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_agent_presets_official_closure.py:62: in agent
+    handle=await ctx.agents.create(session_id=name,setup=None if preset is False else lambda c: ctx.agentPresets.mount(c,preset))
+dsh\core\agent.py:532: in create
+    return await res
+dsh\core\agent_loop.py:463: in create_agent
+    setup_res = await setup_res
+dsh\presets\agent_presets.py:236: in mount
+    self._bind(agent_ctx, await self._ensure_standing(preset))
+dsh\presets\agent_presets.py:218: in _ensure_standing
+    return await task
+dsh\presets\agent_presets.py:209: in create
+    mount = await mount_preset(scope.ctx, preset, self.self_ctx.get("loader"))
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+agent_ctx = Context <_empty_scope_plugin>
+preset = <dsh.presets.preset.AgentPreset object at 0x0000000004AE4280>
+host_loader = <Extended <Service loader>>
+
+    async def mount_preset(agent_ctx: Any, preset: AgentPreset, host_loader: Optional[Loader] = None) -> PresetMount:
+        if agent_ctx is None or scope_of(agent_ctx) is None:
+            raise RuntimeError(
+                'agent-presets: refusing to mount preset "%s" into an unscoped context; '
+                "its registrations would apply to every agent in the process" % preset.id
+            )
+        loader = host_loader or agent_ctx.get("loader", None)
+        if loader is None:
+            raise RuntimeError("agent-presets: loader service is required")
+    
+        def standing_plugin(_ctx: Any) -> None:
+            return None
+    
+        fiber = agent_ctx.registry.plugin(standing_plugin, {}, parent_ctx=agent_ctx)
+        fiber = await fiber  # Audit ancestry against the raw owner, not its handle.
+        tree = _PresetTree(fiber.ctx, loader, preset.path)
+        try:
+            await tree.root.update(_load_rows(preset.path))
+            await asyncio.sleep(0)
+            while tree.get_tasks():
+                outcomes = await asyncio.gather(*tree.get_tasks(), return_exceptions=True)
+                failures = [outcome for outcome in outcomes if isinstance(outcome, BaseException)]
+                if failures:
+                    raise failures[0]
+            for entry in tree.entries():
+                if entry.fiber is not None and entry.fiber.state == FiberState.ACTIVE:
+                    await entry.fiber
+                elif entry.fiber is not None and entry.fiber.state == FiberState.FAILED:
+                    await entry.fiber
+            unusable = inactive_rows(tree)
+            if unusable:
+                raise RuntimeError("%d row(s) did not activate:\n%s" % (len(unusable), "\n".join(unusable)))
+            leaked = leaked_services(agent_ctx, fiber)
+            if leaked:
+                raise RuntimeError(
+                    "row(s) published process-global service(s) [%s]; a preset service must sit "
+                    "behind an isolate realm or move to the host composition" % ", ".join(leaked)
+                )
+            live_preset_mounts()  # Also prune on the production mount path.
+            mount = PresetMount(preset.id, fiber, scope_of(agent_ctx), tree)
+            _mounts.append(mount)
+            return mount
+        except BaseException as error:
+            await fiber.dispose()
+            detail = str(error)
+>           raise PresetMountError(preset.id, "%s (%s)" % (detail, preset.path), cause=error)
+E           dsh.presets.preset.PresetMountError: agent-presets: preset "nested" failed to mount: failed to apply loader entry outer (cordis:group): loader entries failed to apply (C:\Users\Administrator\AppData\Local\Temp\pytest-of-Administrator\pytest-3198\test_mount_official_assertions6\nested\agent.cordis.yml)
+
+dsh\presets\mount.py:180: PresetMountError
+
+During handling of the above exception, another exception occurred:
+
+harness = namespace(agent=<function harness.<locals>.agent at 0x0000000004A3C820>, ctx=Context <root>, handles=[], mounts=<funct...ministrator/pytest-3198/test_mount_official_assertions6'), rows=<function harness.<locals>.rows at 0x00000000049F4940>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000000004AAC820>
+line = 255
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize('line',[118,131,145,215,240,247,255,264,269,279,288,305,315,335,352,474,491,518,539,552,566,597,608,618,742,755,770])
+    async def test_mount_official_assertions(harness, monkeypatch, line):
+        h=harness;ctx=h.ctx;p=ctx.agentPresets
+        if line==118:
+            a=await h.agent('a');b=await h.agent('b','beta')
+            first=await ctx.systemPrompt.assemble({'agent':a.agent,'scope':scope_of(a.ctx)})
+            second=await ctx.systemPrompt.assemble({'agent':b.agent,'scope':scope_of(b.ctx)})
+            assert 'preset:alpha' in [s['name'] for s in first['sections']]
+            assert 'preset:beta' not in [s['name'] for s in first['sections']]
+            assert 'preset:beta' in [s['name'] for s in second['sections']]
+            assert [t['name'] for t in first['tools']]==['alpha']
+        elif line==131:
+            assert h.names(await h.agent('default',None))==['alpha']
+        elif line==145:
+            gone=await h.agent('gone');survivor=await h.agent('survivor','beta')
+            await gone.dispose()
+            assert ctx.agents.get('gone') is None and h.names(survivor)==['beta'] and h.names()==[]
+        elif line==215:
+            parent=await h.agent('bare',False);child=await h.agent('child',False)
+            assert p.compose_from(child.ctx,parent.ctx) is None
+            assert p.composed_preset(parent.ctx) is None and h.names(child)==[]
+        elif line in (240,247,255,264,269):
+            preset={240:'broken',247:'broken',255:'nested',264:'pending',269:'leaky'}[line]
+            pattern={240:'failed to mount',247:'first-refuses.*second-refuses',255:'outer.*inner-first.*inner-second',264:'waiting for absentService',269:'process-global service.*aaaLeaked, zzzLeaked'}[line]
+>           with pytest.raises(PresetMountError,match=pattern): await h.agent('failed',preset)
+E           AssertionError: Regex pattern did not match.
+E            Regex: 'outer.*inner-first.*inner-second'
+E            Input: 'agent-presets: preset "nested" failed to mount: failed to apply loader entry outer (cordis:group): loader entries failed to apply (C:\\Users\\Administrator\\AppData\\Local\\Temp\\pytest-of-Administrator\\pytest-3198\\test_mount_official_assertions6\\nested\\agent.cordis.yml)'
+
+tests\test_agent_presets_official_closure.py:103: AssertionError
+_____________________ test_mount_official_assertions[518] _____________________
+
+harness = namespace(agent=<function harness.<locals>.agent at 0x0000000004998790>, ctx=Context <root>, handles=[<dsh.core.agent....inistrator/pytest-3198/test_mount_official_assertions17'), rows=<function harness.<locals>.rows at 0x000000000491BF70>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000000004E370D0>
+line = 518
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize('line',[118,131,145,215,240,247,255,264,269,279,288,305,315,335,352,474,491,518,539,552,566,597,608,618,742,755,770])
+    async def test_mount_official_assertions(harness, monkeypatch, line):
+        h=harness;ctx=h.ctx;p=ctx.agentPresets
+        if line==118:
+            a=await h.agent('a');b=await h.agent('b','beta')
+            first=await ctx.systemPrompt.assemble({'agent':a.agent,'scope':scope_of(a.ctx)})
+            second=await ctx.systemPrompt.assemble({'agent':b.agent,'scope':scope_of(b.ctx)})
+            assert 'preset:alpha' in [s['name'] for s in first['sections']]
+            assert 'preset:beta' not in [s['name'] for s in first['sections']]
+            assert 'preset:beta' in [s['name'] for s in second['sections']]
+            assert [t['name'] for t in first['tools']]==['alpha']
+        elif line==131:
+            assert h.names(await h.agent('default',None))==['alpha']
+        elif line==145:
+            gone=await h.agent('gone');survivor=await h.agent('survivor','beta')
+            await gone.dispose()
+            assert ctx.agents.get('gone') is None and h.names(survivor)==['beta'] and h.names()==[]
+        elif line==215:
+            parent=await h.agent('bare',False);child=await h.agent('child',False)
+            assert p.compose_from(child.ctx,parent.ctx) is None
+            assert p.composed_preset(parent.ctx) is None and h.names(child)==[]
+        elif line in (240,247,255,264,269):
+            preset={240:'broken',247:'broken',255:'nested',264:'pending',269:'leaky'}[line]
+            pattern={240:'failed to mount',247:'first-refuses.*second-refuses',255:'outer.*inner-first.*inner-second',264:'waiting for absentService',269:'process-global service.*aaaLeaked, zzzLeaked'}[line]
+            with pytest.raises(PresetMountError,match=pattern): await h.agent('failed',preset)
+            assert ctx.agents.get('failed') is None and ctx.sessions.get('failed') is None
+            assert h.names()==[] and h.mounts()==[]
+            assert not any(getattr(x,'name',None) in ('aaaLeaked','zzzLeaked') for x in ctx.reflect.store.values())
+        elif line in (279,288,305):
+            a=await h.agent('private','isolated');value=p.service_for(a.agent,'privateSvc')
+            assert value is not None and ctx.get('privateSvc',None) is None
+            if line==288:
+                b=await h.agent('shared','isolated');assert p.service_for(b.agent,'privateSvc') is value
+            if line==305:
+                b=await h.agent('other');assert p.service_for(b.agent,'privateSvc') is None
+        elif line==315:
+            loner=create_scope(ctx,ScopeKey('loner'));orphan=create_scope(ctx,ScopeKey('orphan'))
+            bind_scope_parent(scope_of(orphan.ctx),ScopeKey('never-mounted'))
+            for c in (ctx,loner.ctx,orphan.ctx): assert p.service_for(SimpleNamespace(ctx=c),'privateSvc') is None
+        elif line==335:
+            with pytest.raises(ValueError,match='not found.*available:.*alpha'): await p.resolve('unknown')
+        elif line==352:
+            assert p.defaultId=='alpha'
+        elif line==474:
+            a=await h.agent('gone');mount=h.mounts()[0];await a.dispose()
+            assert leaked_services(ctx,mount.fiber)==[]
+        elif line==491:
+            a=await h.agent('selected');seen=[]
+            ctx.on('agent-preset/selected',lambda sid,preset:seen.append((sid,preset)))
+            a.session.append('agent-preset/selected',{'agentPreset':'beta'})
+            assert seen==[('selected','beta')]
+        elif line==518:
+            a=await h.agent('swap');await p.standing_key_for('beta');seen=[];warnings=[]
+            stop=ctx.on('tools/change',lambda:seen.append(p.composed_preset(a.ctx)))
+            await p.recompose(a.ctx,'beta');assert seen==['beta'];stop()
+            monkeypatch.setattr(type(ctx.logger),'warn',lambda self,message,*args:warnings.append(str(message)))
+            def fail(): raise RuntimeError('listener failed')
+            stop=ctx.on('tools/change',fail)
+            assert (await p.recompose(a.ctx,'alpha')).id=='alpha';stop()
+>           assert h.names(a)==['alpha'] and len(warnings)==1 and 'tools/change listener failed' in warnings[0]
+E           AssertionError: assert (['alpha'] == ['alpha']
+E             
+E             Use -v to get more diff and 0 == 1)
+E            +  where 0 = len([])
+
+tests\test_agent_presets_official_closure.py:138: AssertionError
+_____________________ test_mount_official_assertions[566] _____________________
+
+harness = namespace(agent=<function harness.<locals>.agent at 0x00000000048CADC0>, ctx=Context <root>, handles=[<dsh.core.agent....inistrator/pytest-3198/test_mount_official_assertions20'), rows=<function harness.<locals>.rows at 0x00000000049B3550>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000000047FBBB0>
+line = 566
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize('line',[118,131,145,215,240,247,255,264,269,279,288,305,315,335,352,474,491,518,539,552,566,597,608,618,742,755,770])
+    async def test_mount_official_assertions(harness, monkeypatch, line):
+        h=harness;ctx=h.ctx;p=ctx.agentPresets
+        if line==118:
+            a=await h.agent('a');b=await h.agent('b','beta')
+            first=await ctx.systemPrompt.assemble({'agent':a.agent,'scope':scope_of(a.ctx)})
+            second=await ctx.systemPrompt.assemble({'agent':b.agent,'scope':scope_of(b.ctx)})
+            assert 'preset:alpha' in [s['name'] for s in first['sections']]
+            assert 'preset:beta' not in [s['name'] for s in first['sections']]
+            assert 'preset:beta' in [s['name'] for s in second['sections']]
+            assert [t['name'] for t in first['tools']]==['alpha']
+        elif line==131:
+            assert h.names(await h.agent('default',None))==['alpha']
+        elif line==145:
+            gone=await h.agent('gone');survivor=await h.agent('survivor','beta')
+            await gone.dispose()
+            assert ctx.agents.get('gone') is None and h.names(survivor)==['beta'] and h.names()==[]
+        elif line==215:
+            parent=await h.agent('bare',False);child=await h.agent('child',False)
+            assert p.compose_from(child.ctx,parent.ctx) is None
+            assert p.composed_preset(parent.ctx) is None and h.names(child)==[]
+        elif line in (240,247,255,264,269):
+            preset={240:'broken',247:'broken',255:'nested',264:'pending',269:'leaky'}[line]
+            pattern={240:'failed to mount',247:'first-refuses.*second-refuses',255:'outer.*inner-first.*inner-second',264:'waiting for absentService',269:'process-global service.*aaaLeaked, zzzLeaked'}[line]
+            with pytest.raises(PresetMountError,match=pattern): await h.agent('failed',preset)
+            assert ctx.agents.get('failed') is None and ctx.sessions.get('failed') is None
+            assert h.names()==[] and h.mounts()==[]
+            assert not any(getattr(x,'name',None) in ('aaaLeaked','zzzLeaked') for x in ctx.reflect.store.values())
+        elif line in (279,288,305):
+            a=await h.agent('private','isolated');value=p.service_for(a.agent,'privateSvc')
+            assert value is not None and ctx.get('privateSvc',None) is None
+            if line==288:
+                b=await h.agent('shared','isolated');assert p.service_for(b.agent,'privateSvc') is value
+            if line==305:
+                b=await h.agent('other');assert p.service_for(b.agent,'privateSvc') is None
+        elif line==315:
+            loner=create_scope(ctx,ScopeKey('loner'));orphan=create_scope(ctx,ScopeKey('orphan'))
+            bind_scope_parent(scope_of(orphan.ctx),ScopeKey('never-mounted'))
+            for c in (ctx,loner.ctx,orphan.ctx): assert p.service_for(SimpleNamespace(ctx=c),'privateSvc') is None
+        elif line==335:
+            with pytest.raises(ValueError,match='not found.*available:.*alpha'): await p.resolve('unknown')
+        elif line==352:
+            assert p.defaultId=='alpha'
+        elif line==474:
+            a=await h.agent('gone');mount=h.mounts()[0];await a.dispose()
+            assert leaked_services(ctx,mount.fiber)==[]
+        elif line==491:
+            a=await h.agent('selected');seen=[]
+            ctx.on('agent-preset/selected',lambda sid,preset:seen.append((sid,preset)))
+            a.session.append('agent-preset/selected',{'agentPreset':'beta'})
+            assert seen==[('selected','beta')]
+        elif line==518:
+            a=await h.agent('swap');await p.standing_key_for('beta');seen=[];warnings=[]
+            stop=ctx.on('tools/change',lambda:seen.append(p.composed_preset(a.ctx)))
+            await p.recompose(a.ctx,'beta');assert seen==['beta'];stop()
+            monkeypatch.setattr(type(ctx.logger),'warn',lambda self,message,*args:warnings.append(str(message)))
+            def fail(): raise RuntimeError('listener failed')
+            stop=ctx.on('tools/change',fail)
+            assert (await p.recompose(a.ctx,'alpha')).id=='alpha';stop()
+            assert h.names(a)==['alpha'] and len(warnings)==1 and 'tools/change listener failed' in warnings[0]
+        elif line in (539,552,608,618):
+            a=await h.agent('swap',False if line==608 else 'alpha')
+            if line==618: (h.root/'alpha'/'agent.cordis.yml').unlink()
+            with pytest.raises((ValueError,PresetMountError)): await p.recompose(a.ctx,'unknown' if line==539 else 'broken')
+            assert h.names(a)==([] if line==608 else ['alpha'])
+        elif line==566:
+            warnings=[];monkeypatch.setattr(type(ctx.logger),'warn',lambda self,message,*args:warnings.append(str(message)))
+            await h.agent('unjoined',False)
+>           assert len(warnings)==1 and 'unjoined' in warnings[0] and 'without joining' in warnings[0]
+E           assert (0 == 1)
+E            +  where 0 = len([])
+
+tests\test_agent_presets_official_closure.py:147: AssertionError
+____________________ test_roster_configuration_guards[405] ____________________
+
+tmp_path = WindowsPath('C:/Users/Administrator/AppData/Local/Temp/pytest-of-Administrator/pytest-3198/test_roster_configuration_guar1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000000004DE0DF0>
+line = 405
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize('line',[393,405,582])
+    async def test_roster_configuration_guards(tmp_path,monkeypatch,line):
+        ctx=Context()
+        if line!=405: ctx.baseUrl=str(tmp_path)
+        await ctx.plugin(Loader)
+        config={'default':'alpha','roots':[],'includeUserRoot':False,'includeShippedRoot':False}
+        try:
+            if line==405:
+>               with pytest.raises(Exception,match='needs `ctx.baseUrl`'): await ctx.plugin(AgentPresets,config)
+E               Failed: DID NOT RAISE <class 'Exception'>
+
+tests\test_agent_presets_official_closure.py:189: Failed
+=========================== short test summary info ===========================
+FAILED tests/test_agent_presets_official_closure.py::test_mount_official_assertions[255]
+FAILED tests/test_agent_presets_official_closure.py::test_mount_official_assertions[518]
+FAILED tests/test_agent_presets_official_closure.py::test_mount_official_assertions[566]
+FAILED tests/test_agent_presets_official_closure.py::test_roster_configuration_guards[405]
+4 failed, 35 passed in 1.60s
+D:\Claude-project\deepseek-harness-win7\.venv\lib\site-packages\pytest_asyncio\plugin.py:208: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))

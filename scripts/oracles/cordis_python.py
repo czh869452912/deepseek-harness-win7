@@ -30,12 +30,18 @@ async def settled(value):
 
 
 async def scenario(number):
+    if number >= 62:
+        from cordis_schema import scenario as schema_scenario
+        return await schema_scenario(number)
     if number >= 61:
         from cordis_hmr_batch import scenario as batch_scenario
         return await batch_scenario(number)
     if number >= 60:
         from cordis_hmr_complex import scenario as complex_scenario
         return await complex_scenario(number)
+    if number >= 58:
+        from cordis_boundaries import scenario as boundary_scenario
+        return await boundary_scenario(number)
     if number >= 52:
         from cordis_hmr import scenario as hmr_scenario
         return await hmr_scenario(number)

@@ -36,7 +36,7 @@ C22–C24 检查多监听器前缀顺序与同步/异步失败；C25/C27 检查�
 child/root 所有权；C26 检查失效时已经在途的 async iterator yield；C28/C29
 直接运行上游 Timer 的 timeout/interval 卸载路径。C30 比较放弃 JS Promise
 观察者与取消 Python Task 观察者，不声称 JS Promise 存在取消 API。
-已完成 Future 与 JS resolved Promise 的调度、task/context 身份仍待独立覆盖。
+C58/C59 已覆盖已完成 Future 与 JS resolved Promise 的调度差异及显式 checkpoint 适配；task/context 身份仍须按消费者验证。
 `tests/test_cordis_wave2_observations.py` 使用保存的上游观测做离线 Python 回归；
 它不替代重新运行双侧 runner。
 
@@ -50,8 +50,7 @@ C35/C36 使用临时文件和公开 registerConfig，经过真实 chokidar 初�
 Loader/HMR 使用未修改的上游源码；新增 schemastery、loader 源码路径映射，
 以及固定版本 chokidar、picomatch、code-frame 开发依赖。runner 将
 `--expose-internals` 传入 tsx 启动的子进程，以启用真实 Node ModuleLoader。
-这些依赖和 Node 内部 API 均不进入 Win7 产品。上游模块热替换与失败回滚、
-磁盘 change/unlink 的完整矩阵，以及 refresh 同步前缀调度尚未双侧验证。
+这些依赖和 Node 内部 API 均不进入 Win7 产品。C52–C57/C60/C61 已覆盖真实模块替换、失败、缓存、循环依赖和同批事务；官方 hmr-config.spec.ts 的 6 项文件监听测试另有直接执行证据。
 
 C37–C39 使用真实 Include 源码、JSON 文件和 builtin 探针插件，分别验证连续
 刷新、前一刷新失败后的恢复、初次加载期间再次刷新。Include 子类仅保留实例
@@ -62,5 +61,11 @@ C37–C39 使用真实 Include 源码、JSON 文件和 builtin 探针插件，�
 C40/C43 观察单个及多个子插件失败后的错误、未提交数据和即时状态；C41/C42
 分别在初次加载与后续刷新期间卸载。C44 隔离重复公共 dispose 的完成边界。
 C45 直接比较 registry 返回对象与 await 后原始 fiber 的身份，以及 update/dispose
-前后的状态。当前 C42/C45 不匹配，保留在默认 runner 中，不排序事件、不删除
-状态或以 xfail 把它们标为通过。离线生命周期回归仅覆盖已匹配的 C40/C41/C43/C44。
+前后的状态。C42/C45 已修复；C46/C47 覆盖失败恢复，C48–C51 覆盖 restart 与依赖重检。
+
+C58 原生已完成 Future 调度与 JS 不同；C59 使用显式 asyncio.sleep(0) 适配。
+默认 runner 保留 C58 并返回 1，不能通过删除或归一化掩盖差异。C62 检查真实 Schemastery Standard Schema 的默认值与嵌套错误。
+
+官方测试：npm ci --legacy-peer-deps（scripts/oracles/official），然后运行
+node --expose-internals scripts/oracles/official/node_modules/vitest/vitest.mjs run --config scripts/oracles/vitest.core.config.mts。
+

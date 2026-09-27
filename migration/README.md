@@ -13,7 +13,13 @@
 
 `check` 校验记录、依赖环、契约 revision、证据哈希、固定上游 checkout 和 manifest 漂移；它不是 parity 测试。`ready` 只列出无阻塞任务，不领取任务、不提供租约。完整 inventory 重建要求固定上游 SHA 与 manifest 集合/内容未漂移。
 
-## Current public storage closure
+## Current configured Agent closure
+
+Candidate `5131a712`: clean-checkout release gate passed; **3219 passed, 2 skipped, 2 warnings**. Seven real configured Agent observations match alongside all prior paired gates. `CON-AGENT-CONFIG@1` covers configured identity validation/overrides, delayed resume, exact history reload, draining replacement/cancellation and contained startup failures. The Cordis child-disposer ownership fix is included and revalidated.
+
+See [configured Agent closure](reviews/AGENT-CONFIG-CLOSURE-20260927.md). Next: full Session projection and replay contracts before Web consumers, then complete profile journeys after Wire/Tools/Web contracts. Full AgentLoop settings/tool policy and launcher integration are not certified by this bounded closure. Win7 remains deferred. The latest package is in the managed release-repro worktree.
+
+## Previous public storage closure
 
 Candidate `8201d7dc`: clean-checkout release gate passed; **3200 passed, 2 skipped, 2 warnings**. Eight real uncompressed JSONL storage observations match alongside prior Agent/cold/live/preparation gates. `CON-SESSION-STORAGE@1` covers shared lazy creation, batch cursor/adoption, read validation, empty live materialization and tested first-write atomic publication/rollback in both local backends.
 

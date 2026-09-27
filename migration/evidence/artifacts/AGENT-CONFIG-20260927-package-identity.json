@@ -1,0 +1,27 @@
+{
+  "profiles": [
+    {
+      "profile": "minimal",
+      "exit_code": 0
+    },
+    {
+      "profile": "standard",
+      "exit_code": 0
+    },
+    {
+      "profile": "creative",
+      "exit_code": 0
+    },
+    {
+      "profile": "web",
+      "exit_code": 0
+    },
+    {
+      "profile": "headless",
+      "exit_code": 0
+    }
+  ],
+  "python_files_identical": 351,
+  "zip_sha256": "bb53e97cbf4f3c196b2a9d028855b48b0a9db6616b0ee4362ad614872ea22f25",
+  "product_commit": "5131a7129907b036523c6e1e20b50a923b4b631f"
+}

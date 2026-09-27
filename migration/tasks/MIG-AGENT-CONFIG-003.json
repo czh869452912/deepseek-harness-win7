@@ -2,7 +2,7 @@
   "id": "MIG-AGENT-CONFIG-003",
   "goal": "Align configured Agent identity startup, restore and overlapping reload",
   "kind": "implementation",
-  "state": "review",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "0e9e92c5e3c4befc9fef1c05e9a14c998f509f86",
   "owner": "current-session-coordinator",
@@ -44,8 +44,10 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "Finish exact-candidate acceptance; then full Session projection before Web consumers and complete profile journeys."
+  "candidate_commit": "5131a7129907b036523c6e1e20b50a923b4b631f",
+  "integrated_commit": "5131a7129907b036523c6e1e20b50a923b4b631f",
+  "evidence_ids": [
+    "RUN-AGENT-CONFIG-AGENT-CONFIG-003-20260927"
+  ],
+  "next_action": "Configured Agent startup/reload accepted; next complete Session projection before Web consumers and complete profile journeys."
 }

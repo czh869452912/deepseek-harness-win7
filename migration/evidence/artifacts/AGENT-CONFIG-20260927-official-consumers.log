@@ -1,0 +1,9 @@
+
+ RUN  v4.1.8 C:/Users/Administrator/.codex/worktrees/release-repro/deepseek-harness-win7
+
+
+ Test Files  5 passed (5)
+      Tests  80 passed (80)
+   Start at  22:43:53
+   Duration  4.23s (transform 721ms, setup 0ms, import 1.90s, tests 1.75s, environment 0ms)
+

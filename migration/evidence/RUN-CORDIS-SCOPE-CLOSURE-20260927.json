@@ -4,7 +4,7 @@
   "product_commit": "072cbcd68a56d7241b0a1a93581f9d38924c3932",
   "kind": "scoped-observations-and-regression",
   "result": "failed",
-  "validity": "current",
+  "validity": "historical",
   "commands": [
     ".venv\\Scripts\\python.exe -m pytest tests",
     ".venv\\Scripts\\python.exe scripts/cordis_oracle.py --output migration/evidence/artifacts/CORDIS-SCOPE-C1-C62-20260927.json"

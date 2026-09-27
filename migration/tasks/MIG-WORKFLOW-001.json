@@ -23,12 +23,13 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "072cbcd68a56d7241b0a1a93581f9d38924c3932",
-  "integrated_commit": "072cbcd68a56d7241b0a1a93581f9d38924c3932",
+  "candidate_commit": "25f59152523eccb1eb79dc8ae1090481cdee8214",
+  "integrated_commit": "25f59152523eccb1eb79dc8ae1090481cdee8214",
   "evidence_ids": [
     "RUN-WORKFLOW-20260927",
-    "RUN-WORKFLOW-FINAL-ACCEPTANCE-20260927"
+    "RUN-WORKFLOW-FINAL-ACCEPTANCE-20260927",
+    "RUN-WORKFLOW-FINISH-20260927"
   ],
-  "next_action": "第一阶段记录/只读门禁已完成，CLI 与全量回归通过；事务租约和自动调度属于后续阶段，不据此声明已实现。",
+  "next_action": "第一阶段记录与只读依赖门禁通过；共享接口允许跨提供端/消费端变更，分布式调度器不属于本批次。",
   "delivery_commit": "a3c4462ca34545f848245ae3355f48c5194ffde5"
 }

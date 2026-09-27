@@ -6,7 +6,7 @@
   "kind": "acceptance",
   "acceptance_digest": "4083f60cd7cd837eeeefeb1bb12eba1a689871e3cbb97c8be6beb06c6f3bc9ea",
   "result": "passed",
-  "validity": "current",
+  "validity": "historical",
   "exit_code": 0,
   "contract_revisions": {
     "CON-PORTABLE-BOOT": 2

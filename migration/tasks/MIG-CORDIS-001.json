@@ -2,7 +2,7 @@
   "id": "MIG-CORDIS-001",
   "goal": "完成 Cordis 核心、模块 HMR 与必要消费者的验收闭包",
   "kind": "verification",
-  "state": "review",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "777a6693affe28c65e3c58465e971835f4443ca4",
   "owner": "current-session-coordinator",
@@ -27,8 +27,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
+  "candidate_commit": "25f59152523eccb1eb79dc8ae1090481cdee8214",
+  "integrated_commit": "25f59152523eccb1eb79dc8ae1090481cdee8214",
   "evidence_ids": [
     "RUN-CORDIS-20260927",
     "RUN-CORDIS-WAVE2-20260927",
@@ -37,8 +37,9 @@
     "RUN-CORDIS-LIFECYCLE-20260927",
     "RUN-CORDIS-HANDLE-20260927",
     "RUN-CORDIS-CLOSURE-20260927",
-    "RUN-CORDIS-SCOPE-CLOSURE-20260927"
+    "RUN-CORDIS-SCOPE-CLOSURE-20260927",
+    "RUN-CORDIS-FINISH-20260927"
   ],
-  "next_action": "Implementation and source assertion review complete; bind final full regression and raw/adapted observation evidence before integration.",
+  "next_action": "本批次核心/关键消费者闭包已验收；C58 原生 Python 适配按精确签名单独记录，范围外业务模块不据此认证。",
   "delivery_commit": "072cbcd68a56d7241b0a1a93581f9d38924c3932"
 }

@@ -12,7 +12,7 @@ npm.cmd ci --prefix scripts/oracles --ignore-scripts --no-audit --no-fund
 `tsx@4.22.4` 与传递依赖固定在 package-lock.json；本次开发机 Node 为 22.22.2。
 Python 端保持 3.8 语法。`--tsx`、`--node` 可显式指定安装位置，产物记录实际命令。
 
-每个 C1–C45 场景在独立子进程运行，两侧输出 JSON 观测值，比较值、状态和事件
+每个 C1–C67 场景在独立子进程运行，两侧输出 JSON 观测值，比较值、状态和事件
 顺序。只将 JS 的无返回值编码为 JSON null，对应 Python None；不对事件排序、
 删除异常或将未完成的进程算成通过。类型、缺少的字段和数组顺序均参与比较。
 同步函数本体在两侧分别定义，但行为步骤对应；adapter 的一致性仍需代码审阅，
@@ -28,7 +28,7 @@ C13 检查 dispose 调用返回瞬间，C14 检查 LOADING 通知中重入 dispo
 C4/C5 共用依赖激活/失效场景，C3/C21 共用严格与非严格读取场景；21 个 ID
 不代表 21 个独立官方用例，也不代表完整 Cordis 覆盖。
 
-本 runner 覆盖现有 C1–C62 的主要语义，未穷举取消、无 ambient loop、全部
+本 runner 覆盖现有 C1–C67 的主要语义，未穷举取消、无 ambient loop、全部
 EventBus 时序、身份隔离或 Loader/HMR 的双侧交错；这些仍需独立场景和消费者
 回归。普通 pytest 对 runner 的协议及比较规则做验证，不要求 Win7 安装 Node。
 
@@ -69,3 +69,13 @@ C58 原生已完成 Future 调度与 JS 不同；C59 使用显式 asyncio.sleep(
 官方测试：npm ci --legacy-peer-deps（scripts/oracles/official），然后运行
 node --expose-internals scripts/oracles/official/node_modules/vitest/vitest.mjs run --config scripts/oracles/vitest.core.config.mts。
 
+
+C63–C66 覆盖 serial 的同步返回、已完成 Future、立即完成/拒绝的协程；C67 验证 HMR 同步 refresh 在 checkpoint 的 running 状态和重复刷新合并。框架回调使用共享 await 适配器；任意用户协程内部仍遵循 Python 原生语义。
+
+完整关键官方套件使用 `scripts/oracles/vitest.consumers.config.mts`，五个源文件共 80 项。配置只解析工作区包别名和执行上游标准 decorator 转译，未修改 reference 源码。
+
+```powershell
+.venv\Scripts\python.exe scripts/cordis_acceptance.py migration/evidence/artifacts/CORDIS-FINISH-RAW-20260927.json --output .goose/out/cordis-scoped-acceptance.json
+```
+
+该独立门禁要求 C1–C67 完整、观测进程成功、C58 精确匹配已审核原生差异且其余全部相同；不篡改原始 runner 结果，不证明范围外业务模块。

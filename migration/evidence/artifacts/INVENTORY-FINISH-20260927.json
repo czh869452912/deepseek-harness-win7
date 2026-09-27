@@ -1,0 +1,22 @@
+{
+  "result": "passed",
+  "counts": {
+    "manifests": 272,
+    "classifications": {
+      "runtime": 201,
+      "frontend": 48,
+      "platform": 6,
+      "tooling": 9,
+      "example": 1,
+      "fixture": 7
+    },
+    "test_files": 1227,
+    "literal_declarations": 14659,
+    "dynamic_contract_sites": 1346
+  },
+  "reproducible": true,
+  "critical_consumer_instances": 69,
+  "missing_assertion_ports": 0,
+  "record_check": "Migration records and pinned inventory are valid (not a parity certification).\n",
+  "command": "Python inventory regeneration/hash comparison, mapped test AST symbol checks, scripts/migration.py check"
+}

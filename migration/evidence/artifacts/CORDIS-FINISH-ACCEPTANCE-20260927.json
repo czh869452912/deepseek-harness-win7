@@ -1,0 +1,12 @@
+{
+  "result": "passed",
+  "errors": [],
+  "scope": "C1-C67 source-derived Cordis/Loader/Include/HMR/schema observations only",
+  "adaptations": [
+    "PY38-RESOLVED-AWAIT: C58 native divergence retained; C59 explicit checkpoint must match."
+  ],
+  "report": "migration\\evidence\\artifacts\\CORDIS-FINISH-RAW-20260927.json",
+  "report_sha256": "0ad1d542ffca24f011eb07f8bf5e9c37a5e3b183136b5c552a68d92354bdff86",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "25f59152523eccb1eb79dc8ae1090481cdee8214"
+}

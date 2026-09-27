@@ -6,7 +6,7 @@
   "task_id": "MIG-SEARCH-001",
   "acceptance_digest": "6dd904a798b9ed6140d84ebf2d19720b6c539a045d9b511ba5400aecbcdd799e",
   "result": "passed",
-  "validity": "current",
+  "validity": "historical",
   "exit_code": 0,
   "commands": [
     ".venv\\Scripts\\python.exe -m pytest tests"

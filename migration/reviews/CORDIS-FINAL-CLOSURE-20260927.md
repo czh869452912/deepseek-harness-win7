@@ -72,3 +72,18 @@ The port now mirrors the official row-owned late-service effect and explicitly u
 the diagnostic before fixture cleanup. Teardown asserts no mounts from that root
 remain; it never clears the global mount registry to make a test pass. The original
 full failure and 102 passing consumer regressions are retained as separate artifacts.
+
+## Final candidate
+
+Product candidate: `25f59152523eccb1eb79dc8ae1090481cdee8214`.
+Full Python 3.8 suite: 3064 passed, 2 skipped, 2 warnings, exit 0.
+Unmodified upstream critical suites: 80 passed. C1-C67: 66 matched; C58
+native divergence retained, exact-signature scoped acceptance passed.
+Portable rebuilt from this candidate: 341 Python sources match, five profile
+configuration smokes and isolated real boot/shutdown pass. ZIP SHA256:
+`8dc19adf8af3abb66026f53c218e3729c756086faa73a4e84484d5e58ecebead`.
+
+All six active batch tasks bind fresh passing acceptance to this candidate, with
+contract revisions and input/artifact hashes. Final record-only commits do not
+change this tested product candidate. Win7 machine/browser certification remains
+deferred, and whole-project accepted_upstream remains unset.

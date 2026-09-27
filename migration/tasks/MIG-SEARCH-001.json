@@ -24,12 +24,13 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "072cbcd68a56d7241b0a1a93581f9d38924c3932",
-  "integrated_commit": "072cbcd68a56d7241b0a1a93581f9d38924c3932",
+  "candidate_commit": "25f59152523eccb1eb79dc8ae1090481cdee8214",
+  "integrated_commit": "25f59152523eccb1eb79dc8ae1090481cdee8214",
   "evidence_ids": [
     "RUN-BASELINE-20260927",
     "RUN-SEARCH-ACCEPTANCE-20260927",
-    "RUN-SEARCH-FINAL-ACCEPTANCE-20260927"
+    "RUN-SEARCH-FINAL-ACCEPTANCE-20260927",
+    "RUN-SEARCH-FINISH-20260927"
   ],
-  "next_action": "跨盘失败已修复，专项与全量回归通过。"
+  "next_action": "跨盘搜索专项和当前候选全量回归通过。"
 }

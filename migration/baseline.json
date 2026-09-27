@@ -7,10 +7,10 @@
   "recorded_at": "2026-09-27",
   "scope": "All upstream surfaces must be inventoried; only Python 3.8 / Win7 constraints may justify documented deviations.",
   "platform_validation": {
-    "python38": "tested-with-failures",
-    "win7": "not-verified",
-    "portable": "old-artifact-fails",
+    "python38": "passed-current-batch",
+    "win7": "deferred-by-user",
+    "portable": "rebuilt-current-windows-isolated-boot-passed",
     "real_provider": "not-verified",
-    "browser_on_win7": "not-verified"
+    "browser_on_win7": "deferred-by-user"
   }
 }

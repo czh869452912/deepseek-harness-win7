@@ -2,7 +2,7 @@
   "id": "MIG-SPINE-001",
   "goal": "验证 profile 到会话恢复的真实最小流程",
   "kind": "verification",
-  "state": "review",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "449396c008ff7ac817963bc42e80b90561a0e27f",
   "owner": "current-session-coordinator",
@@ -31,12 +31,13 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
+  "candidate_commit": "25f59152523eccb1eb79dc8ae1090481cdee8214",
+  "integrated_commit": "25f59152523eccb1eb79dc8ae1090481cdee8214",
   "evidence_ids": [
     "RUN-CORDIS-CLOSURE-20260927",
-    "RUN-CORDIS-SCOPE-CLOSURE-20260927"
+    "RUN-CORDIS-SCOPE-CLOSURE-20260927",
+    "RUN-SPINE-FINISH-20260927"
   ],
-  "next_action": "Boot/Session identity, ownership, ordering and failure requirements specified; bind real profile recovery evidence after provider acceptance.",
+  "next_action": "真实 profile、工具调用、JSONL 持久化、全树关闭和新 Context 恢复已通过；Boot/Session 契约与提供端依赖已闭合。",
   "delivery_commit": "be234bfa0aa8c37c9e72117a842afdc8db5c2d3a"
 }

@@ -1,0 +1,17 @@
+{
+  "product_commit": "25f59152523eccb1eb79dc8ae1090481cdee8214",
+  "python_sources_compared": 341,
+  "mismatches": [],
+  "zip_bytes": 47136839,
+  "zip_sha256": "8dc19adf8af3abb66026f53c218e3729c756086faa73a4e84484d5e58ecebead",
+  "build_provenance": {
+    "python_builder": "3.8.10",
+    "python_runtime_source": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python38",
+    "ripgrep_package": "@vscode/ripgrep-win32-x64",
+    "ripgrep_version": "1.18.0",
+    "ripgrep_sha256": "f9dde63498b3193f098355dbec97af99dc4f6b8fa0df5ed04114a03012c042cb",
+    "product_commit": "25f59152523eccb1eb79dc8ae1090481cdee8214",
+    "worktree_dirty": true
+  },
+  "win7": "deferred-by-user"
+}

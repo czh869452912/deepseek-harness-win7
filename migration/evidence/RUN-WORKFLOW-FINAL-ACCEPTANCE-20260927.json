@@ -6,7 +6,7 @@
   "task_id": "MIG-WORKFLOW-001",
   "acceptance_digest": "b738176f96d2f79e973d3446e623d7bef6c9ef391339710ebd4b72a37c317533",
   "result": "passed",
-  "validity": "current",
+  "validity": "historical",
   "exit_code": 0,
   "commands": [
     ".venv\\Scripts\\python.exe -m pytest tests"

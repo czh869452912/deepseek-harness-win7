@@ -48,6 +48,10 @@ async def test_agent_presets_domain():
     handler = AgentPresetsDomainHandler(ctx)
 
     lst = await handler.list_presets({})
+    assert ctx.baseUrl is None
+    assert handler._service.self_ctx is not ctx
+    assert handler._service.self_ctx.fiber is ctx.fiber
+    assert handler._service.self_ctx.baseUrl
     assert "presets" in lst
     p_ids = [p["id"] for p in lst["presets"]]
     assert "minimal" in p_ids

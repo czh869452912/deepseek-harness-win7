@@ -63,7 +63,13 @@ class AgentPresetsDomainHandler:
         # still need the deployment roster.  Mirror profile-boot's system
         # root and default instead of creating an empty, detached service.
         shipped_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "presets"))
-        self._service = AgentPresets(self.ctx, config={
+        roster_ctx = self.ctx
+        if roster_ctx.baseUrl is None:
+            # The standalone adapter supplies the same import anchor as boot,
+            # without mutating the caller's Context or weakening roster validation.
+            roster_ctx = self.ctx.extend()
+            roster_ctx.baseUrl = shipped_root
+        self._service = AgentPresets(roster_ctx, config={
             "default": "standard",
             "roots": [{"path": shipped_root, "trust": "system"}],
             "includeUserRoot": True,

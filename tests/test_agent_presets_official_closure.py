@@ -73,6 +73,7 @@ async def harness(tmp_path):
         for handle in handles:
             await handle.dispose()
         await ctx.fiber.dispose()
+        assert mounts() == []
 
 
 @pytest.mark.asyncio
@@ -296,11 +297,25 @@ async def test_mount_scope_matrix(harness,line):
 @pytest.mark.parametrize('line',[67,88,112,122])
 async def test_invariant_guard_matrix(harness,line):
     h=harness;ctx=h.ctx;p=ctx.agentPresets
-    await ctx.plugin(InvariantRegistry);await ctx.plugin(AgentPresetsInvariantPlugin)
+    await ctx.plugin(InvariantRegistry)
+    invariant = await ctx.plugin(AgentPresetsInvariantPlugin)
     if line==67:
-        await h.agent('joined')
-        with pytest.raises(InvariantError,match='published process-global service.*lateService'):
-            h.mounts()[0].fiber.ctx.provide('lateService',object())
+        # Mirror the official late-service fixture: publish from a row-owned
+        # effect so failed setup rolls its registrations back as one transaction.
+        publish = []
+        def late(c):
+            publish.append(lambda: c.effect(lambda: c.provide('lateService', object())))
+        ctx.loader.register_plugin_class('fixture:late', late)
+        h.rows('late', [{'id': 'late', 'name': 'fixture:late'}])
+        await h.agent('joined', 'late')
+        try:
+            with pytest.raises(InvariantError,match='published process-global service.*lateService'):
+                publish[0]()
+        finally:
+            # The upstream negative case intentionally leaves an invalid service
+            # publication. Remove its throwing diagnostic before fixture teardown
+            # emits further service notifications; do not clear global mount data.
+            await invariant.dispose()
     elif line==88:
         bare=await h.agent('bare',False)
         with pytest.raises(InvariantError,match='without joining any agent preset'):

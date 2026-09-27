@@ -60,3 +60,15 @@ error reporting were repaired from reproduced failures. The full Python regressi
 paired probes and fresh portable build will be recorded against the committed
 candidate. Win7 real-machine/browser certification remains deferred by user.
 External paid/model-provider certification is not inferred from mock LLM tests.
+
+## Full-suite consumer follow-up
+
+The first complete run exposed six standalone Web RPC failures: the fallback roster
+was constructed without the newly enforced base URL. The adapter now supplies the
+shipped import anchor on a derived Context that retains the same owner fiber, leaving
+the caller unchanged. The seventh failure was negative-test contamination: intentional
+late global publication left its throwing invariant observer active during teardown.
+The port now mirrors the official row-owned late-service effect and explicitly unloads
+the diagnostic before fixture cleanup. Teardown asserts no mounts from that root
+remain; it never clears the global mount registry to make a test pass. The original
+full failure and 102 passing consumer regressions are retained as separate artifacts.

@@ -1,0 +1,696 @@
+============================= test session starts =============================
+platform win32 -- Python 3.8.10, pytest-8.3.5, pluggy-1.5.0
+rootdir: D:\Claude-project\deepseek-harness-win7
+plugins: asyncio-0.24.0
+asyncio: mode=strict, default_loop_scope=None
+collected 3066 items
+
+tests\1to1\_support\test_agent_loop_testkit.py .                         [  0%]
+tests\1to1\_support\test_llm_mock_server.py ............................ [  0%]
+.................                                                        [  1%]
+tests\1to1\_support\test_session_snapshot_identity.py ...                [  1%]
+tests\1to1\_support\test_session_snapshot_manifest.py .................. [  2%]
+...............                                                          [  2%]
+tests\1to1\_support\test_session_snapshot_normalize.py ................. [  3%]
+.......................................                                  [  4%]
+tests\1to1\_support\test_session_snapshot_workspace.py ...               [  4%]
+tests\1to1\apps_web\test_app_source_contract.py ......                   [  4%]
+tests\1to1\apps_web\test_client_modules_contract.py .................... [  5%]
+.........                                                                [  5%]
+tests\1to1\apps_web\test_connection_auth_contract.py ................... [  6%]
+.                                                                        [  6%]
+tests\1to1\apps_web\test_frontend_static_contract.py .                   [  6%]
+tests\1to1\apps_web\test_message_feedback_protocol.py ........           [  6%]
+tests\1to1\apps_web\test_pwa_manifest.py ..                              [  6%]
+tests\1to1\apps_web\test_served_boot_contract.py .......                 [  6%]
+tests\1to1\apps_web\test_served_dist_contract.py .......                 [  7%]
+tests\1to1\apps_web\test_vite_entry.py ..                                [  7%]
+tests\1to1\apps_web\test_web_package_contract.py ......                  [  7%]
+tests\1to1\apps_web\test_web_profile_boot.py ..                          [  7%]
+tests\1to1\apps_web\test_web_snapshot_corpus.py ...                      [  7%]
+tests\1to1\apps_web\test_webserver_contract.py ....                      [  7%]
+tests\1to1\boot\app_boot\test_app_boot.py .............................. [  8%]
+.........................                                                [  9%]
+tests\1to1\boot\app_boot\test_config_dump.py ......                      [  9%]
+tests\1to1\boot\app_boot\test_config_reload.py ............              [ 10%]
+tests\1to1\boot\app_boot\test_hmr_config.py ......                       [ 10%]
+tests\1to1\boot\app_boot\test_module_fallback_closure.py ........        [ 10%]
+tests\1to1\boot\app_boot\test_module_fallback_node_semantics.py ......   [ 10%]
+tests\1to1\boot\app_boot\test_plugin_registry.py ....................... [ 11%]
+..............................                                           [ 12%]
+tests\1to1\boot\app_boot\test_profile.py ............................... [ 13%]
+........                                                                 [ 13%]
+tests\1to1\boot\app_boot\test_user_patches.py .................          [ 14%]
+tests\1to1\boot\cmdline\test_args.py ......                              [ 14%]
+tests\1to1\boot\cmdline\test_cmdline_spec.py ....................        [ 15%]
+tests\1to1\bundle\headless\test_headless_startup.py ....                 [ 15%]
+tests\1to1\bundle\web_app\test_web_startup.py .....                      [ 15%]
+tests\1to1\cli\test_dump_config_parity.py ....                           [ 15%]
+tests\1to1\cli\test_process_shutdown.py .........                        [ 15%]
+tests\1to1\cli\test_profile_boot_smoke.py ..                             [ 15%]
+tests\1to1\client\test_client_host_halves.py ........................... [ 16%]
+...............                                                          [ 17%]
+tests\1to1\cordis\test_bundle_fail_loud_parity.py .                      [ 17%]
+tests\1to1\cordis\test_context_parity.py ........                        [ 17%]
+tests\1to1\cordis\test_cordis_core_semantics_parity.py ................. [ 18%]
+....                                                                     [ 18%]
+tests\1to1\cordis\test_environment_parity.py .....                       [ 18%]
+tests\1to1\cordis\test_events_parity.py ................                 [ 19%]
+tests\1to1\cordis\test_fiber_parity.py ..............................    [ 19%]
+tests\1to1\cordis\test_harness_parity.py .......                         [ 20%]
+tests\1to1\cordis\test_hmr_parity.py ............                        [ 20%]
+tests\1to1\cordis\test_include_parity.py .....                           [ 20%]
+tests\1to1\cordis\test_loader_deep_equal_parity.py .......               [ 21%]
+tests\1to1\cordis\test_loader_parity.py .......                          [ 21%]
+tests\1to1\cordis\test_logger_parity.py ...........                      [ 21%]
+tests\1to1\cordis\test_plugin_parity.py ......                           [ 21%]
+tests\1to1\cordis\test_profile_parity.py ...                             [ 21%]
+tests\1to1\cordis\test_reflect_parity.py ....                            [ 22%]
+tests\1to1\cordis\test_registry_parity.py ..........                     [ 22%]
+tests\1to1\cordis\test_schema_deep_equal_parity.py .........             [ 22%]
+tests\1to1\cordis\test_schema_parity.py ................................ [ 23%]
+................................................                         [ 25%]
+tests\1to1\cordis\test_service_parity.py .......                         [ 25%]
+tests\1to1\cordis\test_timer_parity.py ................................. [ 26%]
+..........                                                               [ 26%]
+tests\1to1\cordis\test_utils_cosmokit_parity.py ........................ [ 27%]
+..............................................                           [ 29%]
+tests\1to1\core\session\test_chunk_rows.py ............................. [ 30%]
+....                                                                     [ 30%]
+tests\1to1\core\session\test_derived_cache.py ......                     [ 30%]
+tests\1to1\core\session\test_fork.py ..............                      [ 30%]
+tests\1to1\core\session\test_invariant.py .................              [ 31%]
+tests\1to1\core\session\test_json.py ..........                          [ 31%]
+tests\1to1\core\session\test_properties.py ......                        [ 31%]
+tests\1to1\core\session\test_repair.py ...........                       [ 32%]
+tests\1to1\core\session\test_request_header.py .............             [ 32%]
+tests\1to1\core\session\test_scoped.py ............                      [ 33%]
+tests\1to1\core\session\test_seq_ranges.py .........                     [ 33%]
+tests\1to1\core\session\test_session.py ................................ [ 34%]
+............................................                             [ 35%]
+tests\1to1\core\session\test_surface.py ................................ [ 36%]
+............................                                             [ 37%]
+tests\1to1\core\session\test_typert.py .                                 [ 37%]
+tests\1to1\core\system_prompt\test_invariant.py ..........               [ 38%]
+tests\1to1\core\system_prompt\test_scoped.py .............               [ 38%]
+tests\1to1\core\system_prompt\test_system_prompt.py .................... [ 39%]
+.........................                                                [ 40%]
+tests\1to1\core\system_prompt\test_tool_order.py ...............         [ 40%]
+tests\1to1\core\test_abort.py .........                                  [ 40%]
+tests\1to1\feedback\message_feedback\test_message_feedback_contract.py . [ 40%]
+.................                                                        [ 41%]
+tests\1to1\feedback\message_feedback\test_message_feedback_invariant.py . [ 41%]
+                                                                         [ 41%]
+tests\1to1\feedback\message_feedback\test_message_feedback_loader_composition.py . [ 41%]
+                                                                         [ 41%]
+tests\1to1\feedback\test_command_feedback.py ..............              [ 42%]
+tests\1to1\fs\test_fs_observation_policy.py .......................      [ 42%]
+tests\1to1\fs\test_fs_sandbox.py .........................               [ 43%]
+tests\1to1\fs\test_tool_fs_observation_integration.py .................  [ 44%]
+tests\1to1\interaction\test_commands.py ................................ [ 45%]
+........................                                                 [ 45%]
+tests\1to1\interaction\test_commands_invariant.py .......                [ 46%]
+tests\1to1\llm\test_deepseek_api_extensions.py .......                   [ 46%]
+tests\1to1\sandbox\test_sandbox_policy.py ....s.............             [ 46%]
+tests\1to1\sandbox\test_sandbox_policy_invariant.py ......               [ 47%]
+tests\1to1\sandbox\test_sandbox_roots_and_vocabulary.py .......          [ 47%]
+tests\1to1\session\test_session_log_deepseek.py .........                [ 47%]
+tests\1to1\session\test_session_log_deepseek_invariant.py ....           [ 47%]
+tests\1to1\settings\settings\test_invariant.py ....                      [ 47%]
+tests\1to1\settings\settings\test_redact.py ............                 [ 48%]
+tests\1to1\settings\settings\test_settings.py .......................... [ 49%]
+...............................................................          [ 51%]
+tests\1to1\shell\test_shell_env.py .............                         [ 51%]
+tests\test_1to1_core_contracts_strict_parity.py .......                  [ 51%]
+tests\test_1to1_session_and_agent_loop.py .....                          [ 52%]
+tests\test_1to1_tools_parity.py .                                        [ 52%]
+tests\test_acp_1to1.py ......                                            [ 52%]
+tests\test_acp_approval_and_mcp_parity.py ...                            [ 52%]
+tests\test_agent_default_model_upstream_parity.py ...................    [ 53%]
+tests\test_agent_inbox.py .                                              [ 53%]
+tests\test_agent_instructions.py ....                                    [ 53%]
+tests\test_agent_lifecycle.py ...                                        [ 53%]
+tests\test_agent_loop_interception_hooks_1to1.py ...                     [ 53%]
+tests\test_agent_loop_tool_order_1to1.py .                               [ 53%]
+tests\test_agent_loop_upstream_parity.py ..                              [ 53%]
+tests\test_agent_presets_invariant.py ...                                [ 53%]
+tests\test_agent_presets_official_closure.py ........................... [ 54%]
+.............................                                            [ 55%]
+tests\test_agent_presets_scope_parity.py .....                           [ 55%]
+tests\test_agent_presets_upstream_parity.py ...........F                 [ 55%]
+tests\test_agent_team_collaboration.py ..                                [ 56%]
+tests\test_agent_team_full_specs.py ...                                  [ 56%]
+tests\test_apiproxy_1to1_structure.py .F                                 [ 56%]
+tests\test_approval_and_commands.py ..                                   [ 56%]
+tests\test_attachment_and_session_query.py .....                         [ 56%]
+tests\test_block_assembler.py ..                                         [ 56%]
+tests\test_cli.py .                                                      [ 56%]
+tests\test_cli_args_and_shutdown_parity.py ..                            [ 56%]
+tests\test_cli_args_full_specs.py ...                                    [ 56%]
+tests\test_cli_visualizer.py .                                           [ 56%]
+tests\test_client_modules.py ...                                         [ 56%]
+tests\test_command_compact.py ..                                         [ 56%]
+tests\test_compaction.py ...                                             [ 56%]
+tests\test_consumed_work.py ..........                                   [ 57%]
+tests\test_context_injections.py ..                                      [ 57%]
+tests\test_cordis.py .....                                               [ 57%]
+tests\test_cordis_1to1_advanced_improvements.py .....                    [ 57%]
+tests\test_cordis_1to1_advanced_parity.py ......                         [ 57%]
+tests\test_cordis_1to1_advanced_parity_v2.py .......                     [ 58%]
+tests\test_cordis_1to1_advanced_parity_v3.py ......                      [ 58%]
+tests\test_cordis_1to1_advanced_parity_v4.py .....                       [ 58%]
+tests\test_cordis_1to1_final_completeness.py .............               [ 58%]
+tests\test_cordis_1to1_full.py ......                                    [ 59%]
+tests\test_cordis_1to1_lifecycle_specs.py ....                           [ 59%]
+tests\test_cordis_1to1_parity.py .......                                 [ 59%]
+tests\test_cordis_1to1_reference_test_parity.py ..........               [ 59%]
+tests\test_cordis_acceptance_gate.py .......                             [ 60%]
+tests\test_cordis_async_boundary_observations.py .                       [ 60%]
+tests\test_cordis_config_reload_1to1.py ...                              [ 60%]
+tests\test_cordis_config_watcher_1to1.py ..                              [ 60%]
+tests\test_cordis_consumer_observations.py ......                        [ 60%]
+tests\test_cordis_context_effect_ownership.py .............              [ 60%]
+tests\test_cordis_core_exact_parity.py ......                            [ 61%]
+tests\test_cordis_events_upstream_parity.py ...................          [ 61%]
+tests\test_cordis_fiber_barrier_and_persistence_1to1.py .....            [ 61%]
+tests\test_cordis_fiber_upstream_parity.py ............................. [ 62%]
+....                                                                     [ 62%]
+tests\test_cordis_full_specs_parity.py ........                          [ 63%]
+tests\test_cordis_hmr_observations.py ........                           [ 63%]
+tests\test_cordis_include_observations.py ...                            [ 63%]
+tests\test_cordis_inject_decorator_1to1.py ...                           [ 63%]
+tests\test_cordis_injection_service_upstream_parity.py ................. [ 64%]
+                                                                         [ 64%]
+tests\test_cordis_internal_waterfall_callsites.py ........               [ 64%]
+tests\test_cordis_interpolate_1to1.py ....                               [ 64%]
+tests\test_cordis_lifecycle_observations.py ............                 [ 64%]
+tests\test_cordis_lifecycle_reference_1to1.py .....................      [ 65%]
+tests\test_cordis_loader_safe_eval_1to1.py ....                          [ 65%]
+tests\test_cordis_loader_upstream_parity.py ........................     [ 66%]
+tests\test_cordis_oracle_runner.py ........                              [ 66%]
+tests\test_cordis_patches_and_loader_specs.py .......                    [ 67%]
+tests\test_cordis_realm_isolate_1to1.py ....                             [ 67%]
+tests\test_cordis_reference_parity_alignment.py ...............          [ 67%]
+tests\test_cordis_scheduling.py ...                                      [ 67%]
+tests\test_cordis_schema_1to1.py .......                                 [ 67%]
+tests\test_cordis_schemastery_advanced_1to1.py .....                     [ 68%]
+tests\test_cordis_schemastery_standard_schema_1to1.py .....              [ 68%]
+tests\test_cordis_serial_boundary_observations.py .......                [ 68%]
+tests\test_cordis_stage1_parity.py .....                                 [ 68%]
+tests\test_cordis_strict_inject.py ....                                  [ 68%]
+tests\test_cordis_strict_inject_comprehensive.py .......                 [ 69%]
+tests\test_cordis_strict_inject_deep_1to1.py ...                         [ 69%]
+tests\test_cordis_timer_1to1.py ........                                 [ 69%]
+tests\test_cordis_tools_full.py .....                                    [ 69%]
+tests\test_cordis_traceable_and_stack_1to1.py ...                        [ 69%]
+tests\test_cordis_waterfall_and_events_advanced_1to1.py ...              [ 69%]
+tests\test_cordis_wave2_observations.py .........                        [ 70%]
+tests\test_core_1to1_parity_alignment.py .......                         [ 70%]
+tests\test_credentials_parity.py ........                                [ 70%]
+tests\test_dynamic_plugin_loader.py ..                                   [ 70%]
+tests\test_e2e_core_agent_loop_llm_system_prompt_1to1.py ............... [ 71%]
+.................                                                        [ 71%]
+tests\test_e2e_core_spine_strict_parity.py ......                        [ 71%]
+tests\test_environment_layers.py .........                               [ 72%]
+tests\test_fs_local_upstream_parity.py ............................s.... [ 73%]
+........                                                                 [ 73%]
+tests\test_fs_search.py .....                                            [ 73%]
+tests\test_fs_search_packaging_parity.py ...                             [ 73%]
+tests\test_fs_search_scope_parity.py .                                   [ 73%]
+tests\test_fs_tools.py ...                                               [ 73%]
+tests\test_goal.py .....                                                 [ 74%]
+tests\test_goose_console.py ...............                              [ 74%]
+tests\test_goose_launcher.py .....                                       [ 74%]
+tests\test_goose_parity_runner.py ...................................... [ 75%]
+.                                                                        [ 75%]
+tests\test_goose_project.py ............................................ [ 77%]
+.......................................                                  [ 78%]
+tests\test_guard_and_spill.py ..                                         [ 78%]
+tests\test_harness.py ....                                               [ 78%]
+tests\test_host_1to1_modules.py ......                                   [ 79%]
+tests\test_identity_parity.py ....                                       [ 79%]
+tests\test_jobs.py .                                                     [ 79%]
+tests\test_llm_1to1_parity.py ........                                   [ 79%]
+tests\test_loader_entry_transactions_1to1.py ...                         [ 79%]
+tests\test_mcp_1to1.py ........                                          [ 79%]
+tests\test_migration_workflow.py ...........................             [ 80%]
+tests\test_p2_0_cordis_ground_layer_leftovers.py ...................     [ 81%]
+tests\test_persistent_pwsh_protocol.py ..                                [ 81%]
+tests\test_plan_mode.py ...                                              [ 81%]
+tests\test_portable_smoke.py ..........                                  [ 81%]
+tests\test_presets_1to1_parity.py ....                                   [ 81%]
+tests\test_presets_alignment.py ...                                      [ 82%]
+tests\test_profile_and_boot_specs.py .....                               [ 82%]
+tests\test_profile_boot_and_bundles.py ....                              [ 82%]
+tests\test_profile_spine_recovery.py .                                   [ 82%]
+tests\test_pwsh_tools.py .                                               [ 82%]
+tests\test_ralph_and_workflow.py .                                       [ 82%]
+tests\test_reference_api_proxy_specs.py ...                              [ 82%]
+tests\test_reference_app_boot_config_dump_1to1.py ..                     [ 82%]
+tests\test_reference_core_agent_extra_specs.py ...                       [ 82%]
+tests\test_reference_core_agent_initiator_specs.py .....                 [ 82%]
+tests\test_reference_core_agent_loop_1to1_full.py .......                [ 83%]
+tests\test_reference_core_agent_loop_cancel_and_errors.py ...            [ 83%]
+tests\test_reference_core_agent_loop_regressions_specs.py ..             [ 83%]
+tests\test_reference_core_agent_loop_request_reconstruction_specs.py ... [ 83%]
+.                                                                        [ 83%]
+tests\test_reference_core_agent_loop_resume_specs.py ....                [ 83%]
+tests\test_reference_core_agent_loop_specs.py .....                      [ 83%]
+tests\test_reference_core_agent_specs.py .........                       [ 83%]
+tests\test_reference_core_scope_specs.py .....                           [ 84%]
+tests\test_reference_core_session_repair_specs.py .......                [ 84%]
+tests\test_reference_core_session_scoped_specs.py .........              [ 84%]
+tests\test_reference_core_session_specs.py ............................. [ 85%]
+.....                                                                    [ 85%]
+tests\test_reference_core_surface_specs.py ........                      [ 86%]
+tests\test_reference_cosmokit_utils_1to1.py ...                          [ 86%]
+tests\test_reference_goal_specs.py ...                                   [ 86%]
+tests\test_reference_plan_mode_specs.py .......                          [ 86%]
+tests\test_reference_profile_hmr_bundle_1to1.py ......                   [ 86%]
+tests\test_reference_session_persistence_jsonl_specs.py ........         [ 86%]
+tests\test_reference_session_stats_specs.py .....                        [ 87%]
+tests\test_reference_session_title_specs.py ...                          [ 87%]
+tests\test_reference_settings_invariants_1to1.py ...                     [ 87%]
+tests\test_reference_shell_terminal_specs.py ......                      [ 87%]
+tests\test_reference_spec_parity_comprehensive.py ......                 [ 87%]
+tests\test_reference_tool_ask_user_specs.py ......                       [ 87%]
+tests\test_reference_tool_fs_search_specs.py .....                       [ 88%]
+tests\test_reference_tool_skill_specs.py ....                            [ 88%]
+tests\test_reference_tool_str_replace_editor_specs.py .....              [ 88%]
+tests\test_reference_tool_todo_specs.py .....                            [ 88%]
+tests\test_reference_user_approval_specs.py .....                        [ 88%]
+tests\test_reference_util_atomic_write_1to1.py ..                        [ 88%]
+tests\test_reference_util_workspace_path_1to1.py ...                     [ 88%]
+tests\test_reference_web_app_trusted_hosts_1to1.py ..                    [ 88%]
+tests\test_runtime_context_projection_parity.py ...                      [ 88%]
+tests\test_schedule_1to1_parity.py ....                                  [ 89%]
+tests\test_schemastery_advanced.py ....                                  [ 89%]
+tests\test_session_checkpoint_policy_parity.py ...                       [ 89%]
+tests\test_session_checkpoints_and_subagent_parity.py ..                 [ 89%]
+tests\test_session_persistence.py ....                                   [ 89%]
+tests\test_session_projections_seam.py .                                 [ 89%]
+tests\test_session_query_and_repair.py ..                                [ 89%]
+tests\test_session_title_and_stats.py ...                                [ 89%]
+tests\test_session_upstream_parity.py ............                       [ 90%]
+tests\test_settings_1to1_parity.py .........                             [ 90%]
+tests\test_settings_credentials.py .......                               [ 90%]
+tests\test_settings_file_upstream_parity.py .......................      [ 91%]
+tests\test_shell_1to1_parity.py ........                                 [ 91%]
+tests\test_skills.py ..                                                  [ 91%]
+tests\test_sqlite_persistence.py .                                       [ 91%]
+tests\test_storage_and_workspace.py ....                                 [ 91%]
+tests\test_str_replace_editor_full.py ....                               [ 92%]
+tests\test_str_replace_editor_upstream_parity.py .........               [ 92%]
+tests\test_streaming_and_timing.py ..                                    [ 92%]
+tests\test_subagent_delegation.py .                                      [ 92%]
+tests\test_subprocess_1to1_parity.py .....                               [ 92%]
+tests\test_subprocess_local_upstream_parity.py ............              [ 92%]
+tests\test_surface.py .....                                              [ 93%]
+tests\test_system_prompt_reference_1to1.py ..........                    [ 93%]
+tests\test_timer_advanced_specs_1to1.py .....                            [ 93%]
+tests\test_todo_and_ask_user.py ..                                       [ 93%]
+tests\test_token_meter.py ...                                            [ 93%]
+tests\test_tool_fs_search_upstream_parity.py ........................    [ 94%]
+tests\test_tool_result_pruner.py ..                                      [ 94%]
+tests\test_tool_scheduler_and_modes.py ..                                [ 94%]
+tests\test_tool_todo_upstream_parity.py ..............                   [ 95%]
+tests\test_tool_web_upstream_parity.py ......................            [ 95%]
+tests\test_tools.py ...                                                  [ 95%]
+tests\test_tools_execution_mode_classification_1to1.py ......            [ 96%]
+tests\test_tools_upstream_parity.py .................................... [ 97%]
+....................                                                     [ 97%]
+tests\test_trajectory_timing.py ..                                       [ 98%]
+tests\test_user_questions_parity.py .................                    [ 98%]
+tests\test_web_gui_1to1_alignment.py ..F...                              [ 98%]
+tests\test_web_gui_1to1_fixes.py .F..                                    [ 98%]
+tests\test_web_gui_dual_sse_and_questions.py ..F.                        [ 99%]
+tests\test_web_service_upstream_parity.py ............                   [ 99%]
+tests\test_web_tools.py ..                                               [ 99%]
+tests\test_web_ui_1to1_deep_parity.py ...F..                             [ 99%]
+tests\test_webserver.py .F.....                                          [ 99%]
+tests\test_windows_shell_specs.py ..                                     [100%]
+
+================================== FAILURES ===================================
+______ test_roster_fiber_owns_standing_mounts_and_settings_registration _______
+
+tmp_path = WindowsPath('C:/Users/Administrator/AppData/Local/Temp/pytest-of-Administrator/pytest-3204/test_roster_fiber_owns_standin0')
+
+    @pytest.mark.asyncio
+    async def test_roster_fiber_owns_standing_mounts_and_settings_registration(tmp_path):
+        seed(tmp_path, "alpha", "[]\n")
+        ctx = Context()
+        ctx.baseUrl = str(tmp_path)
+        loader_fiber = ctx.registry.plugin(Loader, {"baseUrl": str(tmp_path)})
+        await loader_fiber
+        settings_fiber = ctx.registry.plugin(MemorySettings, {})
+        await settings_fiber
+        preset_fiber = ctx.registry.plugin(
+            AgentPresets,
+            {"default": "alpha", "roots": [{"path": str(tmp_path)}], "includeUserRoot": False},
+        )
+        await preset_fiber
+        presets = ctx.get("agentPresets")
+        await presets.mount(create_scope(ctx, ScopeKey(object())).ctx, "alpha")
+        assert any(mount.preset_id == "alpha" for mount in live_preset_mounts())
+    
+        settings = settings_fiber.ctx.get("settings")
+        await preset_fiber.dispose()
+        assert ctx.get("agentPresets", None) is None
+>       assert not any(mount.preset_id == "alpha" for mount in live_preset_mounts())
+E       assert not True
+E        +  where True = any(<generator object test_roster_fiber_owns_standing_mounts_and_settings_registration.<locals>.<genexpr> at 0x00000000347DEBA0>)
+
+tests\test_agent_presets_upstream_parity.py:268: AssertionError
+______________________ test_apiproxy_all_domain_handlers ______________________
+
+    @pytest.mark.asyncio
+    async def test_apiproxy_all_domain_handlers():
+        """Test dispatching of RPC methods across all domain handlers."""
+        ctx = Context()
+        web_server = WebServerPlugin({"port": 0})
+        api_proxy = ApiProxyPlugin()
+    
+        await ctx.plugin(web_server)
+        await ctx.plugin(api_proxy)
+    
+        assert api_proxy.agent_presets_handler is not None
+        assert api_proxy.sessions_handler is not None
+        assert api_proxy.settings_handler is not None
+        assert api_proxy.host_handler is not None
+        assert api_proxy.workspace_handler is not None
+    
+        # 1. session.attachment
+        att_res = await api_proxy.sessions_handler.add_attachment({"sessionId": "s-1", "name": "doc.pdf"})
+        assert att_res["attached"] is True
+        assert att_res["name"] == "doc.pdf"
+    
+        # 2. session.updateQueue
+        queue_res = await api_proxy.sessions_handler.update_queue({"sessionId": "s-1", "items": ["p1", "p2"]})
+        assert queue_res["accepted"] is True
+    
+        # 3. agentPreset.select
+>       preset_res = await api_proxy.agent_presets_handler.select_preset({"agentPreset": "minimal"})
+
+tests\test_apiproxy_1to1_structure.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+dsh\host\apiproxy\api\agent_presets.py:103: in select_preset
+    service = self._get_service()
+dsh\host\apiproxy\api\agent_presets.py:66: in _get_service
+    self._service = AgentPresets(self.ctx, config={
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Service agentPresets>, ctx = Context <@deepseek-ai/dsh-apiproxy>
+config = {'default': 'standard', 'includeUserRoot': True, 'roots': [{'path': 'D:\\Claude-project\\deepseek-harness-win7\\dsh\\presets', 'trust': 'system'}]}
+
+    def __init__(self, ctx: Any, config: Any = None):
+        super().__init__(ctx, "agentPresets")
+        self.self_ctx = ctx
+        if ctx.baseUrl is None:
+>           raise RuntimeError("agent-presets: the roster needs `ctx.baseUrl` to resolve composition plugins")
+E           RuntimeError: agent-presets: the roster needs `ctx.baseUrl` to resolve composition plugins
+
+dsh\presets\agent_presets.py:104: RuntimeError
+__________________________ test_agent_presets_domain __________________________
+
+    @pytest.mark.asyncio
+    async def test_agent_presets_domain():
+        ctx = Context()
+        handler = AgentPresetsDomainHandler(ctx)
+    
+>       lst = await handler.list_presets({})
+
+tests\test_web_gui_1to1_alignment.py:50: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+dsh\host\apiproxy\api\agent_presets.py:74: in list_presets
+    service = self._get_service()
+dsh\host\apiproxy\api\agent_presets.py:66: in _get_service
+    self._service = AgentPresets(self.ctx, config={
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Service agentPresets>, ctx = Context <root>
+config = {'default': 'standard', 'includeUserRoot': True, 'roots': [{'path': 'D:\\Claude-project\\deepseek-harness-win7\\dsh\\presets', 'trust': 'system'}]}
+
+    def __init__(self, ctx: Any, config: Any = None):
+        super().__init__(ctx, "agentPresets")
+        self.self_ctx = ctx
+        if ctx.baseUrl is None:
+>           raise RuntimeError("agent-presets: the roster needs `ctx.baseUrl` to resolve composition plugins")
+E           RuntimeError: agent-presets: the roster needs `ctx.baseUrl` to resolve composition plugins
+
+dsh\presets\agent_presets.py:104: RuntimeError
+_______________________ test_agent_presets_1to1_schemas _______________________
+
+    @pytest.mark.asyncio
+    async def test_agent_presets_1to1_schemas():
+        """Verify agentPreset.* RPC methods conform 1:1 to TS agent-presets.ts contract."""
+        ctx = Context()
+        web_server = WebServerPlugin({"port": 0})
+        api_proxy = ApiProxyPlugin()
+        await ctx.plugin(web_server)
+        await ctx.plugin(api_proxy)
+    
+        handler = api_proxy.agent_presets_handler
+    
+        # 1. list
+>       res_list = await handler.list_presets({})
+
+tests\test_web_gui_1to1_fixes.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+dsh\host\apiproxy\api\agent_presets.py:74: in list_presets
+    service = self._get_service()
+dsh\host\apiproxy\api\agent_presets.py:66: in _get_service
+    self._service = AgentPresets(self.ctx, config={
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Service agentPresets>, ctx = Context <@deepseek-ai/dsh-apiproxy>
+config = {'default': 'standard', 'includeUserRoot': True, 'roots': [{'path': 'D:\\Claude-project\\deepseek-harness-win7\\dsh\\presets', 'trust': 'system'}]}
+
+    def __init__(self, ctx: Any, config: Any = None):
+        super().__init__(ctx, "agentPresets")
+        self.self_ctx = ctx
+        if ctx.baseUrl is None:
+>           raise RuntimeError("agent-presets: the roster needs `ctx.baseUrl` to resolve composition plugins")
+E           RuntimeError: agent-presets: the roster needs `ctx.baseUrl` to resolve composition plugins
+
+dsh\presets\agent_presets.py:104: RuntimeError
+____________ test_get_post_settings_models_sessions_rpc_endpoints _____________
+
+    @pytest.mark.asyncio
+    async def test_get_post_settings_models_sessions_rpc_endpoints():
+        """Verify GET and POST routes for /api/settings, /api/models, /api/sessions, and /api/agent/..."""
+        ctx = Context()
+        web_server = WebServerPlugin({"port": 0})
+        api_proxy = ApiProxyPlugin()
+    
+        await ctx.registry.plugin(web_server, parent_ctx=ctx)
+        await ctx.registry.plugin(api_proxy, parent_ctx=ctx)
+    
+        server: WebServerService = ctx.get("web_server")
+        route = server.match("/api/settings")
+        assert route is not None
+    
+        # 1. GET /api/settings
+        req_get_settings = {
+            "method": "GET",
+            "path": "/api/settings",
+            "query": "",
+            "headers": {},
+            "body": b"",
+        }
+        w1 = MockWriter()
+        await route.handler(req_get_settings, HttpResponseWriter(w1))
+        res1 = w1.get_json()
+        assert "namespaces" in res1
+    
+        # 2. GET /api/models
+        req_get_models = {
+            "method": "GET",
+            "path": "/api/models",
+            "query": "",
+            "headers": {},
+            "body": b"",
+        }
+        w2 = MockWriter()
+        await route.handler(req_get_models, HttpResponseWriter(w2))
+        res2 = w2.get_json()
+        assert "current" in res2 or "groups" in res2
+    
+        # 3. GET /api/sessions
+        req_get_sessions = {
+            "method": "GET",
+            "path": "/api/sessions",
+            "query": "",
+            "headers": {},
+            "body": b"",
+        }
+        w3 = MockWriter()
+        await route.handler(req_get_sessions, HttpResponseWriter(w3))
+        res3 = w3.get_json()
+        assert "items" in res3
+    
+        # 4. POST /api/agent/list
+        req_agent_list = {
+            "method": "POST",
+            "path": "/api/agent/list",
+            "query": "",
+            "headers": {},
+            "body": json.dumps({
+                "type": "client-request",
+                "rpcId": "rpc-preset-1",
+                "method": "agentPreset.list",
+                "payload": {},
+            }).encode("utf-8"),
+        }
+        w4 = MockWriter()
+        await route.handler(req_agent_list, HttpResponseWriter(w4))
+        res4 = w4.get_json()
+        assert res4["type"] == "server-response"
+>       assert res4["result"]["ok"] is True
+E       assert False is True
+
+tests\test_web_gui_dual_sse_and_questions.py:161: AssertionError
+______________ test_agent_preset_select_and_projection_broadcast ______________
+
+    @pytest.mark.asyncio
+    async def test_agent_preset_select_and_projection_broadcast():
+        """Test agentPreset.select returns preset ID string and projects to session."""
+        ctx = Context()
+        sessions = SessionStore(ctx)
+        ctx.set_service("sessions", sessions)
+        s = sessions.create("s-preset-test")
+    
+        events = []
+        async def mock_broadcast(msg):
+            events.append(msg)
+    
+        handler = AgentPresetsDomainHandler(ctx)
+        # mock broadcast
+        api_proxy = ApiProxyPlugin()
+        api_proxy._broadcast_mux = mock_broadcast
+        ctx.set_service("api_proxy", api_proxy)
+    
+>       res = await handler.select_preset({"sessionId": "s-preset-test", "agentPreset": "minimal"})
+
+tests\test_web_ui_1to1_deep_parity.py:137: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+dsh\host\apiproxy\api\agent_presets.py:103: in select_preset
+    service = self._get_service()
+dsh\host\apiproxy\api\agent_presets.py:66: in _get_service
+    self._service = AgentPresets(self.ctx, config={
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Service agentPresets>, ctx = Context <root>
+config = {'default': 'standard', 'includeUserRoot': True, 'roots': [{'path': 'D:\\Claude-project\\deepseek-harness-win7\\dsh\\presets', 'trust': 'system'}]}
+
+    def __init__(self, ctx: Any, config: Any = None):
+        super().__init__(ctx, "agentPresets")
+        self.self_ctx = ctx
+        if ctx.baseUrl is None:
+>           raise RuntimeError("agent-presets: the roster needs `ctx.baseUrl` to resolve composition plugins")
+E           RuntimeError: agent-presets: the roster needs `ctx.baseUrl` to resolve composition plugins
+
+dsh\presets\agent_presets.py:104: RuntimeError
+_________________________ test_api_status_and_presets _________________________
+
+web_ctx = Context <root>
+
+    @pytest.mark.asyncio
+    async def test_api_status_and_presets(web_ctx):
+        server: WebServerService = web_ctx.get("web_server")
+        route = server.match("/api/status")
+        assert route is not None
+    
+        class MockWriter:
+            def __init__(self):
+                self.data = bytearray()
+            def write(self, b):
+                self.data.extend(b)
+            async def drain(self):
+                pass
+            def get_json(self):
+                parts = self.data.split(b"\r\n\r\n", 1)
+                return json.loads(parts[1].decode("utf-8")) if len(parts) > 1 else {}
+            def write_header(self, k, v): pass
+            def write_body(self, b): self.data.extend(b)
+            async def finish(self): pass
+            async def send_headers(self): pass
+    
+        # Test /api/status
+        req_status = {"method": "GET", "path": "/api/status", "query": "", "headers": {}, "body": b""}
+        writer = MockWriter()
+        await route.handler(req_status, HttpResponseWriter(writer))
+        resp = writer.get_json()
+        assert resp["status"] == "ready"
+        assert "planMode" in resp
+    
+        # Test /api/presets/list
+        req_presets = {"method": "GET", "path": "/api/presets/list", "query": "", "headers": {}, "body": b""}
+        writer_presets = MockWriter()
+        await route.handler(req_presets, HttpResponseWriter(writer_presets))
+        presets_resp = writer_presets.get_json()
+>       assert "presets" in presets_resp
+E       AssertionError: assert 'presets' in {'code': 'internal', 'error': 'agent-presets: the roster needs `ctx.baseUrl` to resolve composition plugins', 'result'...details': {}, 'message': 'agent-presets: the roster needs `ctx.baseUrl` to resolve composition plugins'}, 'ok': False}}
+
+tests\test_webserver.py:84: AssertionError
+============================== warnings summary ===============================
+tests/1to1/apps_web/test_webserver_contract.py::test_fails_the_fiber_when_the_port_is_already_taken
+  D:\Claude-project\deepseek-harness-win7\.venv\lib\site-packages\_pytest\unraisableexception.py:85: PytestUnraisableExceptionWarning: Exception ignored in: <function _ProactorBasePipeTransport.__del__ at 0x0000000003758A60>
+  
+  Traceback (most recent call last):
+    File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\asyncio\proactor_events.py", line 116, in __del__
+      self.close()
+    File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\asyncio\proactor_events.py", line 108, in close
+      self._loop.call_soon(self._call_connection_lost, None)
+    File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\asyncio\base_events.py", line 719, in call_soon
+      self._check_closed()
+    File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\asyncio\base_events.py", line 508, in _check_closed
+      raise RuntimeError('Event loop is closed')
+  RuntimeError: Event loop is closed
+  
+    warnings.warn(pytest.PytestUnraisableExceptionWarning(msg))
+
+tests/test_ralph_and_workflow.py::test_ralph_and_workflow_tools
+  D:\Claude-project\deepseek-harness-win7\.venv\lib\site-packages\_pytest\unraisableexception.py:85: PytestUnraisableExceptionWarning: Exception ignored in: <function _ProactorBasePipeTransport.__del__ at 0x0000000003758A60>
+  
+  Traceback (most recent call last):
+    File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\asyncio\proactor_events.py", line 115, in __del__
+      _warn(f"unclosed transport {self!r}", ResourceWarning, source=self)
+    File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\asyncio\proactor_events.py", line 79, in __repr__
+      info.append(f'fd={self._sock.fileno()}')
+    File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\asyncio\windows_utils.py", line 102, in fileno
+      raise ValueError("I/O operation on closed pipe")
+  ValueError: I/O operation on closed pipe
+  
+    warnings.warn(pytest.PytestUnraisableExceptionWarning(msg))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_agent_presets_upstream_parity.py::test_roster_fiber_owns_standing_mounts_and_settings_registration
+FAILED tests/test_apiproxy_1to1_structure.py::test_apiproxy_all_domain_handlers
+FAILED tests/test_web_gui_1to1_alignment.py::test_agent_presets_domain - Runt...
+FAILED tests/test_web_gui_1to1_fixes.py::test_agent_presets_1to1_schemas - Ru...
+FAILED tests/test_web_gui_dual_sse_and_questions.py::test_get_post_settings_models_sessions_rpc_endpoints
+FAILED tests/test_web_ui_1to1_deep_parity.py::test_agent_preset_select_and_projection_broadcast
+FAILED tests/test_webserver.py::test_api_status_and_presets - AssertionError:...
+====== 7 failed, 3057 passed, 2 skipped, 2 warnings in 185.99s (0:03:05) ======
+D:\Claude-project\deepseek-harness-win7\.venv\lib\site-packages\pytest_asyncio\plugin.py:208: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+----------------------------------------
+Exception happened during processing of request from ('::1', 56122, 0, 0)
+Traceback (most recent call last):
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\socketserver.py", line 747, in __init__
+    self.handle()
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\http\server.py", line 429, in handle
+    self.handle_one_request()
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\http\server.py", line 395, in handle_one_request
+    self.raw_requestline = self.rfile.readline(65537)
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\socket.py", line 669, in readinto
+    return self._sock.recv_into(b)
+ConnectionAbortedError: [WinError 10053] 你的主机中的软件中止了一个已建立的连接。
+----------------------------------------

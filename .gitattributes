@@ -5,3 +5,5 @@ snapshots/** -text
 # Evidence hashes must survive checkout on Windows and POSIX.
 migration/** text eol=lf
 migration/evidence/artifacts/** -text
+# Preserve diagnostic whitespace in archived command output.
+migration/evidence/artifacts/*.txt -whitespace

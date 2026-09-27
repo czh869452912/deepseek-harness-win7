@@ -1,6 +1,6 @@
 {
   "id": "CON-CORDIS-CORE",
-  "revision": 1,
+  "revision": 4,
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "status": "draft",
   "source_paths": [
@@ -8,23 +8,45 @@
     "reference/vendor/cordis/src/reflect.ts",
     "reference/vendor/cordis/src/fiber.ts",
     "reference/vendor/cordis/src/events.ts",
-    "reference/vendor/cordis/src/service.ts"
+    "reference/vendor/cordis/src/service.ts",
+    "reference/vendor/loader/src/config/entry.ts",
+    "reference/vendor/loader/src/config/group.ts",
+    "reference/vendor/hmr/src/index.ts"
   ],
   "invariants": [
     "Service declaration, active-provider resolution and caller binding are distinct.",
     "Injection loss unloads consumers and drains owned effects with upstream ordering.",
     "Dispatch synchronous prefixes, async continuations, failures and cancellation must match upstream observable semantics.",
-    "Context ancestry, plugin fiber and agent scope must retain distinct identities."
+    "Context ancestry, plugin fiber and agent scope must retain distinct identities.",
+    "On an ambient loop, dispose clears uid at the call site but even synchronous unload callbacks run after a checkpoint.",
+    "LOADING inertia exists before internal/status observers run; reentrant disposal invalidates the epoch and joins the load.",
+    "Publication rollback settlement remains owned and awaitable; a single asyncio.sleep(0) is not a completion contract.",
+    "Ambient-loop emit enters each async listener before invoking the next listener; asynchronous failure is reported without stopping peer dispatch.",
+    "An async iterator next already in flight transfers its yielded disposer even after epoch invalidation; do not request another next.",
+    "Cancelling a Python dispose observer does not cancel owned cleanup or retire the parent effect before settlement.",
+    "Loader update retains entry/options identity; remove detaches the fiber but retains the store row until cleanup settles.",
+    "HMR refresh serialization is keyed by registration identity; pending events coalesce, different identities may run independently.",
+    "An old config registration disposal joins its own refresh and must not remove the replacement registration at the same path."
   ],
   "consumers": [
     "dsh/cordis/timer.py",
     "dsh/cordis/loader.py",
+    "dsh/cordis/loader_entry.py",
+    "dsh/cordis/hmr.py",
+    "dsh/boot/app_boot.py",
     "dsh/core/tools.py",
-    "dsh/core/session.py"
+    "dsh/core/session/session.py"
   ],
   "open_questions": [
-    "Recover or rerun executable oracle evidence for C1-C21; comments alone are not accepted evidence.",
-    "Inventory consumers via dynamic service resolution and events, not only imports.",
-    "Specify identities, ownership, transition table and event partial orders before revision is specified."
-  ]
+    "Inventory upstream integration test cases; C1-C36 are source-derived local scenario IDs, not official coverage.",
+    "Add paired module HMR replacement/rollback and Include pending-update paths; C33/C34 only probe config-refresh state.",
+    "Probe already-resolved awaitables, refresh synchronous prefixes and context/task identity; current matches do not establish universal JS microtask equivalence.",
+    "Expand nested teardown, failure during cancellation, and loopless dispatch coverage."
+  ],
+  "identity": "Context ancestry, fiber ownership and service isolation labels are distinct; C1-C21 observe fiber states and declared service identities, not generated uid values. C31 preserves Loader entry/options identity. C34 uses distinct object keys for one filename; C36 exercises public same-path re-registration.",
+  "ownership": "Parent fiber owns ctx.plugin effect; child owns startup disposers and registrations. Loader Entry awaits target.dispose; publication rollback is registered among detached settlements. C32 retains the Loader store row through pending cleanup. C35 stops the watcher before joining refresh; C36 late old-registration cleanup preserves replacement.",
+  "ordering": "C13: clear uid / publish disposal synchronously, callback after checkpoint, terminal state after cleanup. C14: assign load inertia before LOADING notification, then re-check invalidated epoch before executing body. C12: hide global service, await consumer cleanup, drop owner store entry. C22: each async prefix precedes the following listener. C26: collect an in-flight late yield before unloading in reverse effect order. C33 coalesces two changes arriving during one config refresh into one additional pass.",
+  "errors": "C16 preserves setup failure through await/call. C18 aggregates listener failures. Publication failures propagate while rollback is owned. Broader logger/cancellation interactions remain to be probed. C23 synchronous listener failure aborts dispatch; C24 asynchronous prefix failure reports once without aborting peers.",
+  "cancellation": "C25/C27 repeat effect disposal while cleanup is pending; child/root ownership waits. C30 abandons a JS Promise observer and cancels the analogous Python Task observer; cleanup still completes under root ownership. JS Promise itself has no cancellation API. C28/C29 owner disposal rejects Timer timeout/interval operations.",
+  "adaptation": "Python Task starts at a loop checkpoint instead of JS synchronous async prefix. Register inertia before notifications; defer actual unload callbacks. Loopless Python keeps existing synchronous adapter and is covered only by local regressions in this batch. Python ambient emit eagerly enters the coroutine in a copied contextvars context, then schedules its continuation. Disposal uses a shared owner Task with shielded observers; task cancellation models observer abandonment, not a nonexistent JS Promise.cancel."
 }

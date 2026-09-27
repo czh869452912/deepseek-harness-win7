@@ -169,8 +169,129 @@
       "test": "tests/1to1/cordis/test_cordis_core_semantics_parity.py::test_c21_context_get_second_positional_parameter_is_strict",
       "status": "indexed-unverified",
       "description": "C21: `ctx.get(name, strict)` follows the reference parameter order."
+    },
+    {
+      "id": "CORDIS-C22",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_wave2_observations.py::test_python_matches_frozen_upstream_observation",
+      "status": "indexed-unverified",
+      "description": "Mixed asynchronous prefixes and synchronous listener ordering."
+    },
+    {
+      "id": "CORDIS-C23",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_wave2_observations.py::test_python_matches_frozen_upstream_observation",
+      "status": "indexed-unverified",
+      "description": "Synchronous failure stops dispatch."
+    },
+    {
+      "id": "CORDIS-C24",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_wave2_observations.py::test_python_matches_frozen_upstream_observation",
+      "status": "indexed-unverified",
+      "description": "Async prefix rejection reports once while peers execute."
+    },
+    {
+      "id": "CORDIS-C25",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_wave2_observations.py::test_python_matches_frozen_upstream_observation",
+      "status": "indexed-unverified",
+      "description": "Repeated effect disposal remains owned by child."
+    },
+    {
+      "id": "CORDIS-C26",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_wave2_observations.py::test_python_matches_frozen_upstream_observation",
+      "status": "indexed-unverified",
+      "description": "In-flight async iterator yield transfers late disposer after invalidation."
+    },
+    {
+      "id": "CORDIS-C27",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_wave2_observations.py::test_python_matches_frozen_upstream_observation",
+      "status": "indexed-unverified",
+      "description": "Root waits for pending repeated effect disposal."
+    },
+    {
+      "id": "CORDIS-C28",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_wave2_observations.py::test_python_matches_frozen_upstream_observation",
+      "status": "indexed-unverified",
+      "description": "Owner disposal rejects pending Timer timeout."
+    },
+    {
+      "id": "CORDIS-C29",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_wave2_observations.py::test_python_matches_frozen_upstream_observation",
+      "status": "indexed-unverified",
+      "description": "Owner disposal rejects pending Timer interval next."
+    },
+    {
+      "id": "CORDIS-C30",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_wave2_observations.py::test_python_matches_frozen_upstream_observation",
+      "status": "indexed-unverified",
+      "description": "Observer abandonment/cancellation preserves owned teardown."
+    },
+    {
+      "id": "CORDIS-C31",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_consumer_observations.py::test_consumer_matches_frozen_upstream_observation",
+      "status": "indexed-unverified",
+      "description": "Loader config update preserves entry/options identity and lifecycle ordering."
+    },
+    {
+      "id": "CORDIS-C32",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_consumer_observations.py::test_consumer_matches_frozen_upstream_observation",
+      "status": "indexed-unverified",
+      "description": "Loader remove retains store row until pending cleanup settles."
+    },
+    {
+      "id": "CORDIS-C33",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_consumer_observations.py::test_consumer_matches_frozen_upstream_observation",
+      "status": "indexed-unverified",
+      "description": "HMR config refresh coalesces repeated events for one identity."
+    },
+    {
+      "id": "CORDIS-C34",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_consumer_observations.py::test_consumer_matches_frozen_upstream_observation",
+      "status": "indexed-unverified",
+      "description": "HMR config refresh uses independent identities for the same filename."
+    },
+    {
+      "id": "CORDIS-C35",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_consumer_observations.py::test_consumer_matches_frozen_upstream_observation",
+      "status": "indexed-unverified",
+      "description": "Public HMR registration and watcher shutdown join pending refresh."
+    },
+    {
+      "id": "CORDIS-C36",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_consumer_observations.py::test_consumer_matches_frozen_upstream_observation",
+      "status": "indexed-unverified",
+      "description": "Old registration cleanup preserves public same-path replacement."
     }
   ],
   "official_case_coverage": "not-inventoried",
-  "note": "These C labels are local source-derived scenarios, not claimed upstream test IDs."
+  "note": "C1-C36 are local source-derived IDs, not official coverage. C33/C34 are config-refresh component probes; C35/C36 use real watcher registration. No integrated contract acceptance.",
+  "observation_evidence": "RUN-CORDIS-CONSUMERS-20260927"
 }

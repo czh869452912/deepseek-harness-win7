@@ -28,5 +28,6 @@
   "evidence_ids": [
     "RUN-WORKFLOW-20260927"
   ],
-  "next_action": "审阅未提交工具与记录；明确全量回归的三个基线失败后，再安排提交/集成"
+  "next_action": "已按用户指令提交；保留三个基线失败，未声明整体 parity 验收",
+  "delivery_commit": "a3c4462ca34545f848245ae3355f48c5194ffde5"
 }

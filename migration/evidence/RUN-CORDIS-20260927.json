@@ -1,0 +1,246 @@
+{
+  "id": "RUN-CORDIS-20260927",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "a3c4462ca34545f848245ae3355f48c5194ffde5",
+  "kind": "cordis-observations-and-regression",
+  "result": "failed",
+  "validity": "historical",
+  "commands": [
+    ".venv\\Scripts\\python.exe scripts/cordis_oracle.py --output migration/evidence/artifacts/CORDIS-C1-C21-AFTER.json",
+    ".venv\\Scripts\\python.exe -m pytest tests/1to1/cordis tests/test_cordis_lifecycle_reference_1to1.py tests/test_cordis_oracle_runner.py tests/test_e2e_core_spine_strict_parity.py tests/test_session_checkpoints_and_subagent_parity.py -q --tb=short",
+    ".venv\\Scripts\\python.exe -m pytest tests"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "node": "v22.22.2",
+    "tsx": "4.22.4",
+    "os": "Windows-10-10.0.22000-SP0",
+    "cwd": "D:\\Claude-project\\deepseek-harness-win7",
+    "workspace_state": "uncommitted fiber fix and oracle; product_commit is base, not acceptance candidate"
+  },
+  "contract_revisions": {
+    "CON-CORDIS-CORE": 2
+  },
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/CORDIS-C1-C21-BEFORE.json",
+      "sha256": "19df4c5a28e56e695afcf0ccfa15fc8a7028884dbcda1d4bed8bb0e9b6dd5c1b"
+    },
+    {
+      "path": "migration/evidence/artifacts/CORDIS-C1-C21-AFTER.json",
+      "sha256": "c14eb6ea0747fb8fb78f355f9e0c440136d0ecc6aa927bd444a3efae5078f7ae"
+    },
+    {
+      "path": "migration/evidence/artifacts/CORDIS-CLOSURE-20260927.txt",
+      "sha256": "4d5404c3095f53479dfcac5593ffa0dbc0a521f5c7d9631bb69d4846e4e73d4f"
+    },
+    {
+      "path": "migration/evidence/artifacts/CORDIS-FULL-20260927.txt",
+      "sha256": "1c25e04a1110ba152b146f19399e77d2ff2ff326c4f18c313fe9db87bca8a2d1"
+    }
+  ],
+  "paired_scenarios": {
+    "before": {
+      "matched": 19,
+      "different": [
+        "C13",
+        "C14"
+      ]
+    },
+    "after": {
+      "matched": 21,
+      "different": []
+    }
+  },
+  "closure": {
+    "passed": 399,
+    "exit_code": 0
+  },
+  "full_suite": {
+    "passed": 2926,
+    "failed": 3,
+    "skipped": 2,
+    "warnings": 2,
+    "exit_code": 1,
+    "note": "8 runner unit tests added after collection; covered in final 399-test closure."
+  },
+  "inputs": [
+    {
+      "path": "dsh/cordis/__init__.py",
+      "sha256": "c44353c21dad0603727420ee072685308046a323c13ebb1b99af211257ba33b2"
+    },
+    {
+      "path": "dsh/cordis/context.py",
+      "sha256": "19621431da94d988c35e290b10bde44f5e14e6cde6dbee95a66bf49ad24ed8b3"
+    },
+    {
+      "path": "dsh/cordis/environment.py",
+      "sha256": "18303b36ea02507e5f43c6b1cfa26eb12fc18a9c5f96d1b27a2436b82db2fd19"
+    },
+    {
+      "path": "dsh/cordis/events.py",
+      "sha256": "b3c4529c01d72730591a1b917d9008cb36929783538ed9cc6e428b05e82cbb60"
+    },
+    {
+      "path": "dsh/cordis/fiber.py",
+      "sha256": "d9f95fe810f52152310f110152b546356eb00b1a5bcf04ebdabb8e5acdb932ca"
+    },
+    {
+      "path": "dsh/cordis/file_lock.py",
+      "sha256": "1dc5a15e90fc52d7f113dc16723a30741827c75cc05838d0e0a5238f26b1959b"
+    },
+    {
+      "path": "dsh/cordis/hmr.py",
+      "sha256": "69a0f5b9d8ba29ee5b9b5c9cc54f07af486ae1975150ef43a444fe9b8f7f9907"
+    },
+    {
+      "path": "dsh/cordis/include.py",
+      "sha256": "d567dc61cd481b995b40dda08a6e63b98d671cf3cf6c1a1f9cc583dc06a3b97b"
+    },
+    {
+      "path": "dsh/cordis/loader.py",
+      "sha256": "86212b307c120d714ced06bedf50f058e5b1a7783f61cb432d6bca1deeff1914"
+    },
+    {
+      "path": "dsh/cordis/loader_entry.py",
+      "sha256": "86780dd3da5e2ec6bea291321bebfbc7aab2a42936674f1d81e19454d2cd927b"
+    },
+    {
+      "path": "dsh/cordis/loader_group.py",
+      "sha256": "536b3677050693d380db661119e6758bd99a0004b34b40b330cd39a048f588f4"
+    },
+    {
+      "path": "dsh/cordis/loader_isolate.py",
+      "sha256": "9b16816958ee1ddafbcbde60dc407ec4a63b33eb18a973926e5c6db62e8af802"
+    },
+    {
+      "path": "dsh/cordis/loader_tree.py",
+      "sha256": "f0b850feaa03c9a179d57c9ebf70bbc8d6b5207843325fd23df3377be77bef3e"
+    },
+    {
+      "path": "dsh/cordis/logger.py",
+      "sha256": "99b55c49b4ea640e29ed2b6abf53a41370d32bcee94fb25ebfba0cab1b588ab4"
+    },
+    {
+      "path": "dsh/cordis/plugin.py",
+      "sha256": "56b7cd4d672d3ee94de0773fc329fdd590f2a19a56533052486a41107f447bb5"
+    },
+    {
+      "path": "dsh/cordis/profile.py",
+      "sha256": "4de2af790c7887c2c370ed3624f80d8bec49d0226d5d19990906d5f2ceb4eda2"
+    },
+    {
+      "path": "dsh/cordis/reflect.py",
+      "sha256": "b60ab339ddc1d1b5a2d68109f93eba573bf26ddf862d3590de41dddab71ffc85"
+    },
+    {
+      "path": "dsh/cordis/registry.py",
+      "sha256": "00c1705dfe0cc1d94aadb43ccb9e83bbd86d3660cc1a160434b963bb492c72b7"
+    },
+    {
+      "path": "dsh/cordis/schema.py",
+      "sha256": "f4e012dce51ae78d9ccd17358949bdde31af45d28db040df4d189cfb33cbb408"
+    },
+    {
+      "path": "dsh/cordis/service.py",
+      "sha256": "d2fa2b85605d2f4af9a48099c3998940a8db58fe7dcf4e4a2ae96fb11c9b3103"
+    },
+    {
+      "path": "dsh/cordis/timer.py",
+      "sha256": "37e79028fe50d925a5d904d297c66f9fc15e2efe53b7af64f7def4791987caac"
+    },
+    {
+      "path": "dsh/cordis/utils.py",
+      "sha256": "bd03ffd8ce4dbcc86bb2092f72e7059827af94e333336c8b0ceb8d312f61af2e"
+    },
+    {
+      "path": "reference/vendor/cordis/src/context.ts",
+      "sha256": "96b388162d6013c1898de61e35f28917abb93809de24174980f2a1a348d0b115"
+    },
+    {
+      "path": "reference/vendor/cordis/src/events.ts",
+      "sha256": "96565a2b5fbf35c26b78cbdc785b2b2e3f01fa55a9fd1f6af5355ab35ccc343c"
+    },
+    {
+      "path": "reference/vendor/cordis/src/fiber.ts",
+      "sha256": "750555b47603f88e7ef7a05d1a8d629b355c176a1185af411aac6e3e1e2b7ba3"
+    },
+    {
+      "path": "reference/vendor/cordis/src/index.ts",
+      "sha256": "c2232f082c763488225eafcd33530640ad26af0c7d6ea871a4f7e8ebf0eb3704"
+    },
+    {
+      "path": "reference/vendor/cordis/src/logger.ts",
+      "sha256": "5121e76fd9f55b9b90dfea09d6e60d122e7530246b8b19970ddebd9c35ccf7d8"
+    },
+    {
+      "path": "reference/vendor/cordis/src/reflect.ts",
+      "sha256": "6847b9781044023d65aebb5896a873b9f0a3d777eaf7fa0dd2a7a408eb6b74a6"
+    },
+    {
+      "path": "reference/vendor/cordis/src/registry.ts",
+      "sha256": "34bbd60ae502b4f85201c204afb52a9acabde6878d9278493478c1b2183debd3"
+    },
+    {
+      "path": "reference/vendor/cordis/src/service.ts",
+      "sha256": "614205c6ce7cf1a057b8b352e96aa4fcd734c967a3d2283a126c9c61f268e3be"
+    },
+    {
+      "path": "reference/vendor/cordis/src/utils.ts",
+      "sha256": "8fe273424583d21267ef13f248840e97454d09d836a0ac08323a9482c2069263"
+    },
+    {
+      "path": "reference/vendor/cosmokit/src/array.ts",
+      "sha256": "cf4de899ecffd66a90d8cef6f4c7d127d31f77f776d8e173d41c30d2d7632cf7"
+    },
+    {
+      "path": "reference/vendor/cosmokit/src/index.ts",
+      "sha256": "51dd173c70001d7d7891d3aab7e26594da65f7cb6671253f6d457ac889326b3c"
+    },
+    {
+      "path": "reference/vendor/cosmokit/src/misc.ts",
+      "sha256": "117617943074ea57c15f216905dacd2f6d1c4c2ff16586f97a7a7a87dbf2141f"
+    },
+    {
+      "path": "reference/vendor/cosmokit/src/string.ts",
+      "sha256": "5564272b3e15e49235cbe3a8b453f27306baf282d23a893982841670f65d3c04"
+    },
+    {
+      "path": "reference/vendor/cosmokit/src/time.ts",
+      "sha256": "49957c4608465a1fbd738186a92c47fffcd1fc4ba59dbf89524f8a773fe16fe2"
+    },
+    {
+      "path": "reference/vendor/cosmokit/src/types.ts",
+      "sha256": "09d72a91052105e88500bfb99a8e8ce0c9ebf6f6e7df569053e114bc77aa019c"
+    },
+    {
+      "path": "scripts/cordis_oracle.py",
+      "sha256": "8e2c90c35a6788f865aaffdedc58f6678eb9d89a2a0234738bbe9757caea675a"
+    },
+    {
+      "path": "scripts/oracles/cordis.mts",
+      "sha256": "0cb9b6cc99db82f14bd8e181d880f9d840d513a2a30ead2920a06311818952fa"
+    },
+    {
+      "path": "scripts/oracles/cordis_python.py",
+      "sha256": "3e675737e44761b3dcd99f975cdd8fc8e8003c5290819f9b0b9e184a6b728c54"
+    },
+    {
+      "path": "scripts/oracles/package-lock.json",
+      "sha256": "362da7c52d952dfd1c49e610c5a2ee1269d3ed1bbe01acc32fb0f224f2f4f642"
+    },
+    {
+      "path": "scripts/oracles/package.json",
+      "sha256": "a8f1c3c0a5d1d9a0a96d3f7c25c59a5e78bfc529e20913d5e729e92bede64438"
+    },
+    {
+      "path": "scripts/oracles/tsconfig.json",
+      "sha256": "5523684eab6c5603f799b9b351e0d9fb5afa298e3c0ccc295bc6fd0a74cfadf2"
+    }
+  ],
+  "limitations": [
+    "Not fixed-candidate acceptance; no downstream unlock.",
+    "C1-C21 are local source-derived scenarios, not complete official coverage.",
+    "No Win7 certification, fresh portable build or real provider API run."
+  ]
+}

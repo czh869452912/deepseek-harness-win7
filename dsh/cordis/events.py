@@ -5,6 +5,7 @@ Supports emit, parallel, serial, bail, and waterfall dispatch modes with interna
 
 import asyncio
 import concurrent.futures
+import contextvars
 import inspect
 import sys
 import threading
@@ -243,6 +244,26 @@ def _release_loopless_barrier(barrier: "_LooplessDispatchBarrier") -> None:
         barrier.release()
 
 
+async def _resume_listener(listener: Any, awaited: Any) -> Any:
+    """Continue a coroutine already entered by emit, preserving its suspension."""
+    while True:
+        failure: Optional[BaseException] = None
+        value = None
+        try:
+            if awaited is None:
+                await asyncio.sleep(0)
+            else:
+                if isinstance(awaited, asyncio.Future):
+                    awaited._asyncio_future_blocking = False
+                value = await awaited
+        except BaseException as exc:
+            failure = exc
+        try:
+            awaited = listener.throw(failure) if failure is not None else listener.send(value)
+        except StopIteration as stop:
+            return stop.value
+
+
 def _normalize_event_call(event_name: Any, args: Sequence[Any], default_caller: Any, kwargs: Dict[str, Any]) -> Tuple[str, List[Any], Any]:
     caller_ctx = kwargs.pop("caller_ctx", None)
     if not isinstance(event_name, str) and args and isinstance(args[0], str):
@@ -267,6 +288,7 @@ class EventBus:
         self.ctx = ctx
         self._hooks: Dict[str, List[Hook]] = {}
         self._loopless_settlements: Set[Any] = set()
+        self._emit_settlements: Set[Any] = set()
 
         # 1:1 Built-in internal/listener handler matching TS EventsService
         def _on_internal_listener(name: str, listener: Any, options: Any = None, *args: Any, **kwargs: Any) -> Any:
@@ -500,7 +522,7 @@ class EventBus:
                 if inspect.isawaitable(res):
                     try:
                         loop = asyncio.get_running_loop()
-                        loop.create_task(res)
+                        self._start_emit_listener(res, loop, event_name)
                     except RuntimeError:
                         if barrier is None:
                             barrier = _LooplessDispatchBarrier()
@@ -511,6 +533,38 @@ class EventBus:
             # is left behind when a listener raised out of the dispatch.
             if barrier is not None:
                 _release_loopless_barrier(barrier)
+
+    def _start_emit_listener(self, result: Any, loop: Any, event_name: str) -> None:
+        """Run an async listener's prefix now; retain and report its tail once."""
+        context = contextvars.copy_context()
+        if inspect.iscoroutine(result):
+            try:
+                awaited = context.run(result.send, None)
+            except StopIteration:
+                return
+            except BaseException as exc:
+                # An async body throws into its Promise, not out of emit. The
+                # synchronous listener path above still propagates immediately.
+                future = loop.create_future()
+                future.set_exception(exc)
+                task = future
+            else:
+                task = context.run(loop.create_task, _resume_listener(result, awaited))
+        else:
+            task = asyncio.ensure_future(result)
+        self._emit_settlements.add(task)
+
+        def completed(done):
+            self._emit_settlements.discard(done)
+            if done.cancelled():
+                return
+            error = done.exception()
+            if error is not None:
+                loop.call_exception_handler({
+                    "message": "Listener for '%s' failed" % event_name,
+                    "exception": error, "future": done,
+                })
+        task.add_done_callback(completed)
 
     def _settle_loopless_listener(
         self,

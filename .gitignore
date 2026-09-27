@@ -41,6 +41,7 @@ hello_test.txt
 # Local Goose run transcripts, status, and generated phase recipes
 /.goose/runs/
 /.goose/out/
+/scripts/oracles/node_modules/
 
 # Version the upstream regression corpus despite runtime log exclusion.
 !snapshots/**/*.jsonl

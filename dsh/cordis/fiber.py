@@ -907,16 +907,12 @@ class Fiber:
         runs inline exactly as it did before.
         """
         self.store = dict(self._store)
-        self.set_state(FiberState.LOADING)
-        if self.uid is None or self.epoch != epoch:
-            # A reentrant disposer invalidated this load while the LOADING
-            # status was reported. fiber.ts re-checks the epoch after its
-            # initial microtask and never runs the plugin body; the nested
-            # transition already drove the unload this fiber needs.
-            return
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
+            self.set_state(FiberState.LOADING)
+            if self.uid is None or self.epoch != epoch:
+                return
             self._reload(epoch)
             return
 
@@ -926,7 +922,11 @@ class Fiber:
             # exactly one checkpoint after `ctx.plugin()` reported LOADING.
             self._reload(epoch)
 
+        # The upstream _updateState callback assigns inertia before publishing
+        # LOADING. A reentrant disposer invalidates the epoch but must join this
+        # transition, not start a second unload or report DISPOSED inline.
         self.inertia = loop.create_task(_deferred_reload())
+        self.set_state(FiberState.LOADING)
 
     def _reload(self, epoch: Optional[str] = None) -> None:
         """
@@ -1124,9 +1124,15 @@ class Fiber:
                     # the iterable is drained.
                     async def _collect_async_iter(gen: Any = res) -> None:
                         try:
-                            async for item in gen:
-                                if self.epoch != epoch:
+                            iterator = gen.__aiter__()
+                            while self.epoch == epoch:
+                                try:
+                                    item = await iterator.__anext__()
+                                except StopAsyncIteration:
                                     break
+                                # The in-flight next() still transfers ownership
+                                # after invalidation; check the epoch before the
+                                # next request, never discard an acquired disposer.
                                 self._collect(item)
                             if self.epoch != epoch or self.state in (FiberState.UNLOADING, FiberState.DISPOSED):
                                 self.set_state(FiberState.UNLOADING)
@@ -1183,9 +1189,25 @@ class Fiber:
         return FiberState.PENDING
 
     def _unload(self) -> None:
-        """Execute all disposers and transition state."""
+        """Detach owned effects now, run cleanup after the upstream checkpoint."""
         disposers = self._disposables.clear()
         self._effect_metas.clear()
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            # Preserve the synchronous adapter when there is no ambient loop.
+            self._unload_disposers(disposers)
+            return
+
+        async def _after_checkpoint():
+            # fiber.ts _unload awaits before invoking each disposer, including
+            # synchronous ones; even an empty Promise.all settles asynchronously.
+            self._unload_disposers(disposers)
+
+        self.inertia = loop.create_task(_after_checkpoint())
+
+    def _unload_disposers(self, disposers: List[Callable[..., Any]]) -> None:
+        """Continue the captured unload; async cleanup replaces its inertia."""
         if not disposers:
             self.store = None
             if self.epoch == INACTIVE_EPOCH:
@@ -1300,7 +1322,7 @@ class Fiber:
         Mirrors TS `fiber.dispose`, which *is* the parent-owned `ctx.plugin()`
         effect disposer (`fiber.ts` constructor assigns it to `this.dispose`).
         The teardown body starts at the call site -- clearing the uid,
-        notifying `internal/plugin` observers, and starting disposers -- and
+        notifying `internal/plugin` observers, and scheduling disposers -- and
         the parent-owned registration is retired once that teardown settles,
         exactly like the reference `finalizeDisposal` chain calling
         `removeWrapper()` in its `finally`: the record stays owner-visible
@@ -1312,18 +1334,29 @@ class Fiber:
         registration.
         """
         self._begin_dispose()
-        settled = self._await_quiescent()
         disposer = self._parent_disposer
-        if disposer is None:
-            return settled
 
         async def _retire_when_settled():
             try:
-                await settled
+                await self._await_quiescent()
             finally:
-                disposer.retire()
+                if disposer is not None:
+                    disposer.retire()
 
-        return _retire_when_settled()
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return _retire_when_settled()
+
+        task = getattr(self, "_disposal_task", None)
+        if task is None or (self.runtime is None and task.done()):
+            task = self._disposal_task = loop.create_task(_retire_when_settled())
+
+        async def _observe_settlement():
+            # Cancelling one observer must not cancel the owner's teardown or
+            # retire the parent's registration while cleanup is still running.
+            await asyncio.shield(task)
+        return _observe_settlement()
 
     def schedule_settlement(self, awaitable: Any) -> Any:
         """
@@ -1367,6 +1400,9 @@ class Fiber:
     def settlement_tasks(self) -> List[Any]:
         """Return the lifecycle tasks this fiber still owes before it is quiescent."""
         tasks = [task for task in self._detached_settlements if not task.done()]
+        disposal = getattr(self, "_disposal_task", None)
+        if disposal is not None and not disposal.done():
+            tasks.append(disposal)
         if self.inertia is not None and not self.inertia.done():
             tasks.append(self.inertia)
         return tasks
@@ -1459,7 +1495,7 @@ class Fiber:
         except RuntimeError:
             run_async_setup_sync(_settle())
             return
-        loop.create_task(_settle())
+        self.schedule_settlement(_settle())
 
     def _log_error(self, reason: Any) -> None:
         """Report a teardown failure through the fiber logger, never raising."""
@@ -1538,7 +1574,7 @@ class Fiber:
             pending = self.settlement_tasks()
             if not pending:
                 break
-            await asyncio.gather(*pending, return_exceptions=True)
+            await asyncio.gather(*(asyncio.shield(task) for task in pending), return_exceptions=True)
         if hasattr(self, "_in_flight_effects"):
             for t in list(self._in_flight_effects):
                 if not t.done():

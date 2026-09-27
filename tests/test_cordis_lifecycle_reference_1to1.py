@@ -295,7 +295,9 @@ async def test_rolls_back_publication_failure_with_a_running_loop():
     with pytest.raises(RuntimeError, match="publication failed"):
         ctx.registry.plugin(plugin)
 
-    await asyncio.sleep(0)
+    # Join owned publication rollback instead of guessing the number of loop
+    # turns; synchronous disposers also run after the upstream unload checkpoint.
+    await state["fiber"].await_settled()
     assert ctx.registry.has(plugin) is False
     assert state["fiber"].uid is None
     assert state["fiber"].state == FiberState.DISPOSED

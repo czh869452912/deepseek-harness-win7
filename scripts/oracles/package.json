@@ -1,0 +1,11 @@
+{
+  "name": "cordis-oracle-tools",
+  "private": true,
+  "description": "Development-only pinned source oracle; never part of the portable product",
+  "dependencies": {
+    "@babel/code-frame": "7.29.0",
+    "chokidar": "4.0.3",
+    "picomatch": "4.0.3",
+    "tsx": "4.22.4"
+  }
+}

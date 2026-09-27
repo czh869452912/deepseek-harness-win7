@@ -996,7 +996,10 @@ async def test_t38_dropped_teardown_settlement_is_owned_and_joined():
         warnings.simplefilter("always")
         settlement = ctx.fiber.schedule_settlement(ctx.fiber.dispose())
         assert isinstance(settlement, asyncio.Task)
-        assert ctx.fiber.settlement_tasks() == [settlement, ctx.fiber.inertia]
+        pending = ctx.fiber.settlement_tasks()
+        assert settlement in pending
+        assert ctx.fiber.inertia in pending
+        assert all(not task.done() for task in pending)
 
         joiner = asyncio.ensure_future(ctx.fiber.await_settled())
         await cleanup_started.wait()

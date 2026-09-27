@@ -72,4 +72,12 @@ verified/queued 需要当前候选的有效证据；integrated 必须记录实�
 
 工具门禁回归最终为 **27 passed**。全量回归为 **2924 passed、3 failed、2 skipped、2 warnings**；其后补充了两项历史集成保留测试并重新通过全部 27 项专项测试。三个全量失败与之前记录一致，没有隐藏或跳过。完整结果见 `evidence/RUN-WORKFLOW-20260927.json`。
 
-`MIG-WORKFLOW-001` 停在 review，表示工具与记录已准备好审阅，尚未提交或集成；其回归记录不是固定候选 acceptance。其余任务是接下来工作的入口，不是已经执行完成的迁移。
+`MIG-WORKFLOW-001` 的工具与初始记录已提交于 `a3c4462c`；任务仍停在 review，
+其回归记录不是完整通过的固定候选 acceptance，提交不等于契约门禁集成。
+
+Cordis 已建立直接运行固定上游源码的双侧 runner（见 `scripts/oracles/README.md`），
+覆盖 C1–C36 本地场景，当前契约 revision 4 仍为 draft。
+前两轮观察与修复分别见 `reviews/CORDIS-C1-C21-20260927.md` 和
+`reviews/CORDIS-WAVE2-20260927.md`。Loader/HMR 消费者观察见
+`reviews/CORDIS-CONSUMERS-20260927.md`。模块热替换/回滚、官方用例清单和
+固定候选验收尚未完成，不能据此解除 `MIG-SPINE-001` 的依赖。

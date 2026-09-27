@@ -236,7 +236,6 @@ async def test_projection_activates_late_folds_events_and_unloads_with_plugin():
     assert tools.get("todo_write", fiber.ctx) is not None
 
     projections = SessionProjectionRegistry(ctx)
-    ctx.provide("sessionProjections", projections)
     await asyncio.sleep(0)
     await asyncio.sleep(0)
     assert projections.has("todos") is True

@@ -1,167 +1,216 @@
-"""
-Session Projections Seam (`@deepseek-ai/dsh-session-projection`).
-Provides state-driven event-sourced projections over committed session events.
-"""
+"""Pinned session projection drive; keyword registration adapts older domains."""
+import math
+from typing import Any, Callable, Dict, Optional
+from weakref import WeakKeyDictionary
 
-from typing import Any, Callable, Dict, List, Optional
 from dsh.cordis.plugin import Plugin
-from dsh.core.session import Session
+from dsh.cordis.service import Service
+
+
+def _parse(schema, value):
+    parser = getattr(schema, "parse", None)
+    if parser is not None:
+        return parser(value)
+    if callable(schema):
+        return schema(value)
+    raise TypeError("projection schema must expose parse(value) or be a parser")
+
+
+def _same(a, b):
+    """Object.is for JSON states, including numeric NaN and signed zero."""
+    if type(a) in (int, float) and type(b) in (int, float):
+        if math.isnan(a) and math.isnan(b):
+            return True
+        if a == b == 0:
+            return math.copysign(1, a) == math.copysign(1, b)
+        return a == b
+    if type(a) in (str, bool, type(None)):
+        return type(a) is type(b) and a == b
+    return a is b
 
 
 class ProjectionDefinition:
-    """Definition of a single session projection unit."""
-
-    def __init__(
-        self,
-        key: str,
-        schema: Any,
-        init: Callable[[], Any],
-        apply: Callable[[Any, Any], Any],
-        view: Callable[[Any], Any],
-        state_version: int = 1,
-    ):
-        self.key = key
-        self.schema = schema
-        self.init = init
-        self.apply = apply
-        self.view = view
-        self.state_version = state_version
+    """Compatibility view exposed to existing Python domain consumers."""
+    def __init__(self, key, schema, init, apply, view, state_version=1):
+        self.key, self.schema, self.init = key, schema, init
+        self.apply, self.view, self.state_version = apply, view, state_version
 
 
 class UnitCell:
-    """Per-session per-unit state cell."""
-
-    def __init__(self, state: Any, observed_seq: int = -1):
-        self.state = state
-        self.observed_seq = observed_seq
+    def __init__(self, state, observed_seq=-1):
+        self.state, self.observed_seq = state, observed_seq
 
 
-class SessionProjectionRegistry:
-    """
-    Registry for session projections (`ctx.sessionProjections`).
-    Drives projection units eagerly over committed session events.
-    """
+class Registration:
+    def __init__(self, definition, legacy=None):
+        self.definition = definition
+        self.legacy = legacy
+        self.cells = WeakKeyDictionary()
+        self.refs = 1
 
+
+class SessionProjectionRegistry(Service):
     def __init__(self, ctx: Optional[Any] = None):
-        self.ctx = ctx
-        self._units: Dict[str, ProjectionDefinition] = {}
-        self._cells: Dict[str, Dict[str, UnitCell]] = {}
-        self._listeners: List[Callable[[Session, str, Any, int], None]] = []
+        self._registrations: Dict[str, Registration] = {}
+        self._listeners: Dict[Callable, None] = {}
+        super().__init__(ctx, "sessionProjections")
+        if ctx is not None:
+            ctx.on("session/created", self.on_session_created)
+            ctx.on("session/event", self.on_session_event)
 
-    def register(
-        self,
-        key: str,
-        schema: Any,
-        init: Callable[[], Any],
-        apply: Callable[[Any, Any], Any],
-        view: Callable[[Any], Any],
-        state_version: int = 1,
-    ) -> Callable[[], None]:
-        unit = ProjectionDefinition(
-            key=key,
-            schema=schema,
-            init=init,
-            apply=apply,
-            view=view,
-            state_version=state_version,
-        )
-        self._units[key] = unit
-        if key not in self._cells:
-            self._cells[key] = {}
+    def _effect(self, setup, label):
+        if self.ctx is not None:
+            return self.ctx.effect(setup, label=label)
+        dispose = setup()
+        active = True
 
-        def unregister() -> None:
-            self._units.pop(key, None)
-            self._cells.pop(key, None)
+        def once():
+            nonlocal active
+            if active:
+                active = False
+                dispose()
+        return once
 
-        return unregister
+    def register(self, definition=None, *, key=None, schema=None, init=None,
+                 apply=None, view=None, state_version=1):
+        legacy = None
+        if definition is None:
+            legacy = ProjectionDefinition(key, schema, init, apply, view, state_version)
+            # Older domains supplied descriptive JSON schemas, not state parsers.
+            # Canonical definitions below always use their executable parsers.
+            definition = dict(key=key, stateSchema=lambda value: value,
+                              init=lambda header: init(), apply=apply,
+                              stateVersion=state_version)
+            if view is not None:
+                definition["wire"] = dict(view=view, viewSchema=lambda value: value)
+        definition = dict(definition)
+        key, version = definition["key"], definition["stateVersion"]
+        if type(version) is not int or not 0 <= version <= 9007199254740991:
+            raise ValueError('session projection %r stateVersion must be a non-negative integer' % key)
 
-    def has(self, key: str) -> bool:
-        return key in self._units
+        def setup():
+            registration = self._registrations.get(key)
+            if registration is None:
+                registration = Registration(definition, legacy)
+                self._registrations[key] = registration
+            else:
+                if registration.definition["stateVersion"] != version:
+                    raise ValueError('session projection key %r is already registered at another stateVersion' % key)
+                registration.refs += 1
 
-    def get_unit(self, key: str) -> Optional[ProjectionDefinition]:
-        return self._units.get(key)
+            def remove():
+                registration.refs -= 1
+                if registration.refs == 0:
+                    self._registrations.pop(key, None)
+            return remove
+        return self._effect(setup, "sessionProjections.register()")
 
-    def on_change(self, listener: Callable[[Session, str, Any, int], None]) -> Callable[[], None]:
-        self._listeners.append(listener)
+    def has(self, key):
+        return key in self._registrations
 
-        def remove() -> None:
-            if listener in self._listeners:
-                self._listeners.remove(listener)
+    def get_unit(self, key):
+        registration = self._registrations.get(key)
+        return None if registration is None else registration.legacy or registration.definition
 
-        return remove
+    def on_change(self, listener):
+        def setup():
+            self._listeners[listener] = None
+            return lambda: self._listeners.pop(listener, None)
+        return self._effect(setup, "sessionProjections.onChanged()")
 
-    def _get_cell(self, session: Session, key: str) -> UnitCell:
-        sess_id = getattr(session, "id", str(id(session)))
-        unit = self._units.get(key)
-        if not unit:
-            raise KeyError(f"Unknown projection key: {key}")
+    onChanged = on_change
 
-        if key not in self._cells:
-            self._cells[key] = {}
+    def on_session_created(self, session):
+        if session.seq == 0:
+            for registration in self._registrations.values():
+                if session not in registration.cells:
+                    registration.cells[session] = UnitCell(registration.definition["init"](session.header))
 
-        if sess_id not in self._cells[key]:
-            self._cells[key][sess_id] = UnitCell(state=unit.init(), observed_seq=-1)
+    def _build(self, definition, header, events):
+        state = definition["init"](header)
+        for event in events:
+            state = definition["apply"](state, event)
+        return UnitCell(state, events[-1]["seq"] if events else -1)
 
-        return self._cells[key][sess_id]
-
-    def on_session_event(self, session: Session, event: Any) -> None:
-        seq = event.get("seq", 0) if isinstance(event, dict) else getattr(event, "seq", 0)
-        for key, unit in list(self._units.items()):
-            cell = self._get_cell(session, key)
-            old_state = cell.state
-            new_state = unit.apply(old_state, event)
+    def _advance(self, definition, cell, events, through):
+        for seq in range(cell.observed_seq + 1, through + 1):
+            if seq >= len(events) or events[seq]["seq"] != seq:
+                raise ValueError('session projection %r cannot advance across missing seq %s' % (definition["key"], seq))
+            cell.state = definition["apply"](cell.state, events[seq])
             cell.observed_seq = seq
 
-            if new_state is not old_state:
-                cell.state = new_state
-                view_val = unit.view(new_state)
+    def _cell(self, registration, session):
+        cell = registration.cells.get(session)
+        if cell is None:
+            cell = self._build(registration.definition, session.header, session.events)
+            registration.cells[session] = cell
+        else:
+            self._advance(registration.definition, cell, session.events, session.seq - 1)
+        return cell
+
+    def _materialize(self, session):
+        for registration in self._registrations.values():
+            self._cell(registration, session)
+
+    def _view(self, registration, cell):
+        wire = registration.definition["wire"]
+        return _parse(wire["viewSchema"], wire["view"](cell.state))
+
+    def on_session_event(self, session, event):
+        for registration in list(self._registrations.values()):
+            cell = registration.cells.get(session)
+            seq = event["seq"]
+            if cell is not None and cell.observed_seq >= seq:
+                continue
+            if cell is None:
+                cell = self._build(registration.definition, session.header, session.events[:seq])
+                registration.cells[session] = cell
+            else:
+                self._advance(registration.definition, cell, session.events, seq - 1)
+            state = registration.definition["apply"](cell.state, event)
+            changed = not _same(state, cell.state)
+            cell.state, cell.observed_seq = state, seq
+            if changed and registration.definition.get("wire") is not None and self._listeners:
+                value = self._view(registration, cell)
                 for listener in list(self._listeners):
-                    try:
-                        listener(session, key, view_val, seq)
-                    except Exception:
-                        pass
-                if self.ctx and hasattr(self.ctx, "emit"):
-                    self.ctx.emit("projection/change", {
-                        "sessionId": getattr(session, "id", None),
-                        "key": key,
-                        "value": view_val,
-                        "seq": seq,
-                    })
+                    listener(session, registration.definition["key"], value, seq)
 
-    def snapshot(self, session: Session) -> Dict[str, Any]:
-        as_of_seq = -1
-        values: Dict[str, Any] = {}
+    def state_of(self, session, key):
+        registration = self._registrations.get(key)
+        if registration is None:
+            return None
+        self._materialize(session)
+        return self._cell(registration, session).state
 
-        events = getattr(session, "events", [])
-        for key, unit in self._units.items():
-            cell = self._get_cell(session, key)
-            if cell.observed_seq < len(events) - 1:
-                current_state = cell.state
-                for i in range(cell.observed_seq + 1, len(events)):
-                    evt = events[i]
-                    current_state = unit.apply(current_state, evt)
-                cell.state = current_state
-                cell.observed_seq = len(events) - 1
+    stateOf = state_of
 
-            as_of_seq = max(as_of_seq, cell.observed_seq)
-            values[key] = unit.view(cell.state)
+    def snapshot(self, session, keys=None):
+        self._materialize(session)
+        values = {}
+        for key, registration in self._registrations.items():
+            if registration.definition.get("wire") is not None and (keys is None or key in keys):
+                values[key] = self._view(registration, self._cell(registration, session))
+        return {"asOfSeq": session.seq - 1, "values": values}
 
-        return {
-            "asOfSeq": as_of_seq,
-            "values": values,
-        }
+    def cached_snapshot(self, session, keys=None):
+        values, watermarks = {}, []
+        for key, registration in self._registrations.items():
+            cell = registration.cells.get(session)
+            if cell is not None and registration.definition.get("wire") is not None and (keys is None or key in keys):
+                values[key] = self._view(registration, cell)
+                watermarks.append(cell.observed_seq)
+        return {"asOfSeq": min(watermarks), "values": values} if watermarks else None
+
+    cachedSnapshot = cached_snapshot
 
 
 class SessionProjectionsPlugin(Plugin):
-    """
-    Plugin `@deepseek-ai/dsh-session-projection`: Registers sessionProjections service.
-    """
-
     id = "session-projection"
     name = "@deepseek-ai/dsh-session-projection"
 
-    def apply(self, ctx: Any) -> None:
+    def apply(self, ctx):
         registry = SessionProjectionRegistry(ctx)
-        ctx.set_service("sessionProjections", registry)
-
-        ctx.on("session/event", lambda session, event: registry.on_session_event(session, event))
+        # Existing Web carrier consumes this adapter until its own migration.
+        registry.onChanged(lambda session, key, value, seq: ctx.emit("projection/change", {
+            "sessionId": session.id, "key": key, "value": value, "seq": seq,
+        }))

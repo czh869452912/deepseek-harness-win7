@@ -20,6 +20,8 @@ async function loaded(p: any) {
 }
 
 async function scenario(): Promise<any> {
+  if (id >= 61) return (await import('./cordis_hmr_batch.mts')).scenario(id)
+  if (id >= 60) return (await import('./cordis_hmr_complex.mts')).scenario(id)
   if (id >= 52) return (await import('./cordis_hmr.mts')).scenario(id)
   if (id >= 37) return (await import('./cordis_include.mts')).scenario(id)
   if (id >= 31) return (await import('./cordis_consumers.mts')).scenario(id)

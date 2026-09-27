@@ -7,6 +7,7 @@ dynamic Python module reload, and 'hmr/change', 'hmr/reload', 'hmr/config-update
 import asyncio
 import importlib
 import importlib.util
+import importlib.abc
 import inspect
 import os
 import sys
@@ -60,6 +61,11 @@ class ModuleDependencyGraph:
                         mod_file = self._resolve_relative(mod_name, target_dir)
                         if mod_file:
                             imported_files.add(mod_file)
+                        if not mod_name:
+                            for alias in node.names:
+                                child = self._resolve_relative(alias.name, target_dir)
+                                if child:
+                                    imported_files.add(child)
                     else:
                         mod_file = self._resolve_module(mod_name, cur_dir, base)
                         if mod_file:
@@ -594,33 +600,21 @@ class ConfigWatcherService(Service):
         if self._module_reload_task is not None and not self._module_reload_task.done():
             return
 
-        async def _reload_one(filename: str, target_plugin: Optional[Any]) -> None:
+        async def _reload_batch(changes: List[Tuple[str, Any]]) -> None:
             reloads: Dict[Any, Dict[str, Any]] = {}
-            abs_changed = os.path.abspath(filename)
+            targets = {os.path.abspath(path): plugin for path, plugin in changes}
+            filename = ", ".join(targets)
             try:
-                if hasattr(self.ctx, "emit"):
-                    self.ctx.emit("hmr/change", abs_changed)
-
-                # 1. Update AST dependency graph
-                self.graph.scan_file(abs_changed)
-
-                # 2. Determine all files to reload: changed file + transitive dependents
-                dependents = self.graph.get_transitive_dependents(abs_changed)
-                files_to_reload = [abs_changed] + [f for f in reversed(dependents) if f != abs_changed]
-
+                files_to_reload: List[str] = []
+                for changed in targets:
+                    if hasattr(self.ctx, "emit"):
+                        self.ctx.emit("hmr/change", changed)
+                    self.graph.scan_file(changed)
+                    dependents = self.graph.get_transitive_dependents(changed)
+                    for path in [changed] + list(reversed(dependents)):
+                        if path not in files_to_reload:
+                            files_to_reload.append(path)
                 registry = getattr(self.ctx, "registry", None)
-                prev_runtimes = dict(registry._runtimes) if registry else {}
-                saved_runtimes_state: Dict[Any, Dict[str, Any]] = {}
-                if registry:
-                    for r_key, r_val in registry._runtimes.items():
-                        saved_runtimes_state[r_key] = {
-                            "callback": r_val.callback,
-                            "runtime": r_val,
-                            "fibers": [
-                                (f, getattr(f, "_plugin_cls", None), getattr(f, "plugin", None), getattr(f, "config", None))
-                                for f in list(getattr(r_val, "fibers", []))
-                            ],
-                        }
                 saved_fibers: Dict[Any, List[Any]] = {}
 
                 async def reload_plugin(plugin_target: Any, r_time: Any, old_key: Any = None) -> None:
@@ -644,33 +638,60 @@ class ConfigWatcherService(Service):
                 load_cache = getattr(getattr(loader, "internal", None), "loadCache", {})
                 loader_backup = dict(load_cache)
                 prepared: Dict[str, Any] = {}
+                parent_backup: List[Tuple[Any, str, Any]] = []
                 try:
-                    # Import every replacement before disposing any runtime.
-                    # Reuse canonical module names so from-import consumers see
-                    # the new dependency; compile source to bypass stale pyc.
+                    # Remove the whole accepted module set before importing.
+                    # A temporary source loader supports Python cycles/relative
+                    # imports without stale pyc or references to an old sibling.
                     importlib.invalidate_caches()
+                    names_by_path: Dict[str, List[str]] = {}
+                    paths_by_name: Dict[str, str] = {}
+                    parent_backup: List[Tuple[Any, str, Any]] = []
                     for file_path in files_to_reload:
                         if not os.path.isfile(file_path):
                             raise FileNotFoundError(file_path)
                         aliases = [name for name, module in list(sys.modules.items())
                                    if getattr(module, "__file__", None)
                                    and os.path.realpath(module.__file__) == os.path.realpath(file_path)]
-                        mod_name = aliases[0] if aliases else "hmr_reloaded_%s" % abs(hash(file_path))
-                        mod = types.ModuleType(mod_name)
-                        mod.__file__ = file_path
-                        mod.__package__ = mod_name.rpartition(".")[0]
-                        for name in aliases or [mod_name]:
+                        names_by_path[file_path] = aliases or ["hmr_reloaded_%s" % abs(hash(file_path))]
+                        for name in names_by_path[file_path]:
+                            paths_by_name[name] = file_path
                             if name in sys.modules:
-                                cache_backup[name] = sys.modules[name]
+                                cache_backup[name] = sys.modules.pop(name)
                             else:
                                 new_modules_created.append(name)
-                            sys.modules[name] = mod
-                        with open(file_path, "r", encoding="utf-8") as fp:
-                            code_obj = compile(fp.read(), file_path, "exec")
-                        exec(code_obj, mod.__dict__)
-                        prepared[file_path] = mod
-                        from pathlib import Path
-                        load_cache[Path(os.path.realpath(file_path)).as_uri()] = mod
+                            parent_name, _, child = name.rpartition(".")
+                            parent_module = sys.modules.get(parent_name)
+                            if parent_module is not None and hasattr(parent_module, child):
+                                parent_backup.append((parent_module, child, getattr(parent_module, child)))
+                                delattr(parent_module, child)
+                    class SourceLoader(importlib.abc.MetaPathFinder, importlib.abc.Loader):
+                        def find_spec(self, fullname, path=None, target=None):
+                            filename = paths_by_name.get(fullname)
+                            if filename is None:
+                                return None
+                            return importlib.util.spec_from_file_location(fullname, filename, loader=self,
+                                submodule_search_locations=[os.path.dirname(filename)]
+                                if os.path.basename(filename) == "__init__.py" else None)
+                        def create_module(self, spec):
+                            return None
+                        def exec_module(self, module):
+                            with open(module.__spec__.origin, "r", encoding="utf-8") as stream:
+                                code = compile(stream.read(), module.__spec__.origin, "exec")
+                            exec(code, module.__dict__)
+                    source_loader = SourceLoader()
+                    sys.meta_path.insert(0, source_loader)
+                    try:
+                        for file_path in files_to_reload:
+                            aliases = names_by_path[file_path]
+                            mod = importlib.import_module(aliases[0])
+                            for alias in aliases:
+                                sys.modules[alias] = mod
+                            prepared[file_path] = mod
+                            from pathlib import Path
+                            load_cache[Path(os.path.realpath(file_path)).as_uri()] = mod
+                    finally:
+                        sys.meta_path.remove(source_loader)
                     for file_path in files_to_reload:
                         mod = prepared[file_path]
                         if not registry:
@@ -678,7 +699,7 @@ class ConfigWatcherService(Service):
 
                         # Find all plugin classes in module
                         found_classes: List[Tuple[Any, Any]] = []
-                        tgt = target_plugin if file_path == abs_changed else self._modules.get(file_path)
+                        tgt = targets.get(file_path) or self._modules.get(file_path)
                         if tgt and isinstance(tgt, type):
                             new_cls = getattr(mod, tgt.__name__, None)
                             if new_cls:
@@ -718,6 +739,8 @@ class ConfigWatcherService(Service):
                     for m_name in new_modules_created:
                         sys.modules.pop(m_name, None)
                     sys.modules.update(cache_backup)
+                    for parent_module, child, value in parent_backup:
+                        setattr(parent_module, child, value)
                     load_cache.clear()
                     load_cache.update(loader_backup)
                     if registry:
@@ -760,7 +783,7 @@ class ConfigWatcherService(Service):
                         state = self._module_refreshes.get(changed_file)
                         if state is not None:
                             state.dirty = False
-                        await _reload_one(changed_file, changed_target)
+                    await _reload_batch(pending)
             finally:
                 # The pass drops its own serialization state in its `finally`
                 # (`index.ts:318-321`), so a settled pass is never a join target.
@@ -855,7 +878,21 @@ class ConfigWatcherService(Service):
             self._module_mtimes[abs_path] = (0.0, -1)
 
         self._modules[abs_path] = plugin_cls
-        self.graph.scan_file(abs_path)
+        pending = [abs_path]
+        scanned: Set[str] = set()
+        watch_root = os.path.dirname(abs_path)
+        while pending:
+            path = pending.pop()
+            if path in scanned:
+                continue
+            scanned.add(path)
+            for dependency in self.graph.scan_file(path, watch_root):
+                try:
+                    local = os.path.commonpath([watch_root, dependency]) == watch_root
+                except ValueError:
+                    local = False
+                if local:
+                    pending.append(dependency)
 
         def unregister() -> None:
             self._modules.pop(abs_path, None)

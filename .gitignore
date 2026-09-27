@@ -47,3 +47,5 @@ hello_test.txt
 !snapshots/**/*.jsonl
 
 /scripts/oracles/official/node_modules/
+
+/node_modules/.vite/

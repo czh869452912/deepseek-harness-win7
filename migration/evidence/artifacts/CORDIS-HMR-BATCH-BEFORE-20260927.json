@@ -1,0 +1,377 @@
+{
+  "schema_version": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_base": "8b92a8bcba133b29c3b302c8623af3c0abfaef03",
+  "python": "3.8.10 (tags/v3.8.10:3d8993a, May  3 2021, 11:48:03) [MSC v.1928 64 bit (AMD64)]",
+  "node": "v22.22.2",
+  "os": "Windows-10-10.0.22000-SP0",
+  "tsx": "4.22.4",
+  "cwd": "D:\\Claude-project\\deepseek-harness-win7",
+  "cases": [
+    {
+      "case": "C61",
+      "upstream": {
+        "command": [
+          "node",
+          "D:\\Claude-project\\deepseek-harness-win7\\scripts\\oracles\\node_modules\\tsx\\dist\\cli.mjs",
+          "--expose-internals",
+          "--tsconfig",
+          "scripts/oracles/tsconfig.json",
+          "scripts/oracles/cordis.mts",
+          "61"
+        ],
+        "stdout": "{\"case\":\"C61\",\"observation\":{\"log\":[\"start:a:1\",\"start:b:1\"],\"finalLog\":[\"start:a:1\",\"start:b:1\",\"stop:b:1\",\"stop:a:1\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "log": [
+            "start:a:1",
+            "start:b:1"
+          ],
+          "finalLog": [
+            "start:a:1",
+            "start:b:1",
+            "stop:b:1",
+            "stop:a:1"
+          ]
+        }
+      },
+      "python": {
+        "command": [
+          "D:\\Claude-project\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+          "scripts/oracles/cordis_python.py",
+          "61"
+        ],
+        "stdout": "{\"case\": \"C61\", \"observation\": {\"log\": [\"start:a:1\", \"start:b:1\", \"stop:a:1\", \"start:a:2\"], \"finalLog\": [\"start:a:1\", \"start:b:1\", \"stop:a:1\", \"start:a:2\", \"stop:a:2\", \"stop:b:1\"]}}\n",
+        "stderr": "",
+        "exit_code": 0,
+        "status": "observed",
+        "observation": {
+          "log": [
+            "start:a:1",
+            "start:b:1",
+            "stop:a:1",
+            "start:a:2"
+          ],
+          "finalLog": [
+            "start:a:1",
+            "start:b:1",
+            "stop:a:1",
+            "start:a:2",
+            "stop:a:2",
+            "stop:b:1"
+          ]
+        }
+      },
+      "differences": [
+        {
+          "path": "$.finalLog",
+          "upstream": [
+            "start:a:1",
+            "start:b:1",
+            "stop:b:1",
+            "stop:a:1"
+          ],
+          "python": [
+            "start:a:1",
+            "start:b:1",
+            "stop:a:1",
+            "start:a:2",
+            "stop:a:2",
+            "stop:b:1"
+          ]
+        },
+        {
+          "path": "$.log",
+          "upstream": [
+            "start:a:1",
+            "start:b:1"
+          ],
+          "python": [
+            "start:a:1",
+            "start:b:1",
+            "stop:a:1",
+            "start:a:2"
+          ]
+        }
+      ],
+      "status": "different"
+    }
+  ],
+  "inputs": [
+    {
+      "path": "dsh/cordis/__init__.py",
+      "sha256": "c44353c21dad0603727420ee072685308046a323c13ebb1b99af211257ba33b2"
+    },
+    {
+      "path": "dsh/cordis/context.py",
+      "sha256": "19621431da94d988c35e290b10bde44f5e14e6cde6dbee95a66bf49ad24ed8b3"
+    },
+    {
+      "path": "dsh/cordis/environment.py",
+      "sha256": "18303b36ea02507e5f43c6b1cfa26eb12fc18a9c5f96d1b27a2436b82db2fd19"
+    },
+    {
+      "path": "dsh/cordis/events.py",
+      "sha256": "fbfe421eee95c8eff95fa218f353224fba337cbaa6b3c0c530a2d8fe6d2dc5f3"
+    },
+    {
+      "path": "dsh/cordis/fiber.py",
+      "sha256": "1a4b857149dba8ea195b9799da05428cda49955df5062948901e2a5fd6428546"
+    },
+    {
+      "path": "dsh/cordis/file_lock.py",
+      "sha256": "1dc5a15e90fc52d7f113dc16723a30741827c75cc05838d0e0a5238f26b1959b"
+    },
+    {
+      "path": "dsh/cordis/hmr.py",
+      "sha256": "83f59f6643e33377f5d4cb8448a9a6363e10f038172d9e643efdadfeed117ab4"
+    },
+    {
+      "path": "dsh/cordis/include.py",
+      "sha256": "5e20455179bfb3e2585cbc749f5bd15be24458ea205134556b71facc5889ca93"
+    },
+    {
+      "path": "dsh/cordis/loader.py",
+      "sha256": "86212b307c120d714ced06bedf50f058e5b1a7783f61cb432d6bca1deeff1914"
+    },
+    {
+      "path": "dsh/cordis/loader_entry.py",
+      "sha256": "86780dd3da5e2ec6bea291321bebfbc7aab2a42936674f1d81e19454d2cd927b"
+    },
+    {
+      "path": "dsh/cordis/loader_group.py",
+      "sha256": "536b3677050693d380db661119e6758bd99a0004b34b40b330cd39a048f588f4"
+    },
+    {
+      "path": "dsh/cordis/loader_isolate.py",
+      "sha256": "9b16816958ee1ddafbcbde60dc407ec4a63b33eb18a973926e5c6db62e8af802"
+    },
+    {
+      "path": "dsh/cordis/loader_tree.py",
+      "sha256": "f0b850feaa03c9a179d57c9ebf70bbc8d6b5207843325fd23df3377be77bef3e"
+    },
+    {
+      "path": "dsh/cordis/logger.py",
+      "sha256": "99b55c49b4ea640e29ed2b6abf53a41370d32bcee94fb25ebfba0cab1b588ab4"
+    },
+    {
+      "path": "dsh/cordis/plugin.py",
+      "sha256": "56b7cd4d672d3ee94de0773fc329fdd590f2a19a56533052486a41107f447bb5"
+    },
+    {
+      "path": "dsh/cordis/profile.py",
+      "sha256": "4de2af790c7887c2c370ed3624f80d8bec49d0226d5d19990906d5f2ceb4eda2"
+    },
+    {
+      "path": "dsh/cordis/reflect.py",
+      "sha256": "b60ab339ddc1d1b5a2d68109f93eba573bf26ddf862d3590de41dddab71ffc85"
+    },
+    {
+      "path": "dsh/cordis/registry.py",
+      "sha256": "17d65ef843866dc031024d19391f9fd8b9bc6177e49356eb09317d9c213989ed"
+    },
+    {
+      "path": "dsh/cordis/schema.py",
+      "sha256": "f4e012dce51ae78d9ccd17358949bdde31af45d28db040df4d189cfb33cbb408"
+    },
+    {
+      "path": "dsh/cordis/service.py",
+      "sha256": "d2fa2b85605d2f4af9a48099c3998940a8db58fe7dcf4e4a2ae96fb11c9b3103"
+    },
+    {
+      "path": "dsh/cordis/timer.py",
+      "sha256": "37e79028fe50d925a5d904d297c66f9fc15e2efe53b7af64f7def4791987caac"
+    },
+    {
+      "path": "dsh/cordis/utils.py",
+      "sha256": "bd03ffd8ce4dbcc86bb2092f72e7059827af94e333336c8b0ceb8d312f61af2e"
+    },
+    {
+      "path": "reference/vendor/cordis/src/context.ts",
+      "sha256": "96b388162d6013c1898de61e35f28917abb93809de24174980f2a1a348d0b115"
+    },
+    {
+      "path": "reference/vendor/cordis/src/events.ts",
+      "sha256": "96565a2b5fbf35c26b78cbdc785b2b2e3f01fa55a9fd1f6af5355ab35ccc343c"
+    },
+    {
+      "path": "reference/vendor/cordis/src/fiber.ts",
+      "sha256": "750555b47603f88e7ef7a05d1a8d629b355c176a1185af411aac6e3e1e2b7ba3"
+    },
+    {
+      "path": "reference/vendor/cordis/src/index.ts",
+      "sha256": "c2232f082c763488225eafcd33530640ad26af0c7d6ea871a4f7e8ebf0eb3704"
+    },
+    {
+      "path": "reference/vendor/cordis/src/logger.ts",
+      "sha256": "5121e76fd9f55b9b90dfea09d6e60d122e7530246b8b19970ddebd9c35ccf7d8"
+    },
+    {
+      "path": "reference/vendor/cordis/src/reflect.ts",
+      "sha256": "6847b9781044023d65aebb5896a873b9f0a3d777eaf7fa0dd2a7a408eb6b74a6"
+    },
+    {
+      "path": "reference/vendor/cordis/src/registry.ts",
+      "sha256": "34bbd60ae502b4f85201c204afb52a9acabde6878d9278493478c1b2183debd3"
+    },
+    {
+      "path": "reference/vendor/cordis/src/service.ts",
+      "sha256": "614205c6ce7cf1a057b8b352e96aa4fcd734c967a3d2283a126c9c61f268e3be"
+    },
+    {
+      "path": "reference/vendor/cordis/src/utils.ts",
+      "sha256": "8fe273424583d21267ef13f248840e97454d09d836a0ac08323a9482c2069263"
+    },
+    {
+      "path": "reference/vendor/cosmokit/src/array.ts",
+      "sha256": "cf4de899ecffd66a90d8cef6f4c7d127d31f77f776d8e173d41c30d2d7632cf7"
+    },
+    {
+      "path": "reference/vendor/cosmokit/src/index.ts",
+      "sha256": "51dd173c70001d7d7891d3aab7e26594da65f7cb6671253f6d457ac889326b3c"
+    },
+    {
+      "path": "reference/vendor/cosmokit/src/misc.ts",
+      "sha256": "117617943074ea57c15f216905dacd2f6d1c4c2ff16586f97a7a7a87dbf2141f"
+    },
+    {
+      "path": "reference/vendor/cosmokit/src/string.ts",
+      "sha256": "5564272b3e15e49235cbe3a8b453f27306baf282d23a893982841670f65d3c04"
+    },
+    {
+      "path": "reference/vendor/cosmokit/src/time.ts",
+      "sha256": "49957c4608465a1fbd738186a92c47fffcd1fc4ba59dbf89524f8a773fe16fe2"
+    },
+    {
+      "path": "reference/vendor/cosmokit/src/types.ts",
+      "sha256": "09d72a91052105e88500bfb99a8e8ce0c9ebf6f6e7df569053e114bc77aa019c"
+    },
+    {
+      "path": "reference/vendor/hmr/src/error.ts",
+      "sha256": "db29dd32cfbae7199eb1055aac524866d3f06c3f98c6390bff33ad384d617ab6"
+    },
+    {
+      "path": "reference/vendor/hmr/src/index.ts",
+      "sha256": "5d9ea00ede52a1b03abbf10a0df75d886403debe25a2a0495c6814dc6842220b"
+    },
+    {
+      "path": "reference/vendor/include/src/index.ts",
+      "sha256": "a852fd54499b8766c9d7480baab8f09e9297b520ba5fdc8ad57a11d43aa6260d"
+    },
+    {
+      "path": "reference/vendor/loader/src/config/entry.ts",
+      "sha256": "c1a15a12decb49bda43a953787708a9fb6afa2bc056018287d89fcd3a1d2c5fe"
+    },
+    {
+      "path": "reference/vendor/loader/src/config/group.ts",
+      "sha256": "a3079629f907745ddc1e0f2520b66d57711053b4d3715ee8b5983954a6908168"
+    },
+    {
+      "path": "reference/vendor/loader/src/config/isolate.ts",
+      "sha256": "950a6f5e0727cd28bff3df09e8c42c9670fcf1f058d6a64d7572c83b5cd403a9"
+    },
+    {
+      "path": "reference/vendor/loader/src/config/tree.ts",
+      "sha256": "5be2d9c3f2581f6c714380216f6ffd8171a0cbe0405adbaf13c9563ffae0ada9"
+    },
+    {
+      "path": "reference/vendor/loader/src/config/utils.ts",
+      "sha256": "8ff540ba75490ef137546b2b222903478d8451cf422c50c56fb11cff5a181749"
+    },
+    {
+      "path": "reference/vendor/loader/src/index.ts",
+      "sha256": "d535dce0a13e8cbfa39d79722ada8c65606ff207d3ee6946ae11586f378cefd8"
+    },
+    {
+      "path": "reference/vendor/loader/src/internal.ts",
+      "sha256": "6d2e9adc901b39dfacb7ece2e56b1553cee8ecf0405b7c0b8541048958987477"
+    },
+    {
+      "path": "reference/vendor/schemastery/src/index.ts",
+      "sha256": "cf8a4de0481969a1a6d44eac390015f3494be1ce19b84d4fcfb7e93e5072cee5"
+    },
+    {
+      "path": "reference/vendor/timer/src/index.ts",
+      "sha256": "d723fb34a6c5f107c04611c46198c5c860cc661d6e25eee3dd4e1bc091f0d68c"
+    },
+    {
+      "path": "scripts/cordis_oracle.py",
+      "sha256": "03e1ebe194d695d91c1eeffd326065a2a15112a52f7ce8f111a61da1f8a1cbff"
+    },
+    {
+      "path": "scripts/oracles/cordis.mts",
+      "sha256": "9f2be9d58e1507b974edf4a570a2eb7bc92cc2c1330cab7916579161556b574d"
+    },
+    {
+      "path": "scripts/oracles/cordis_boundaries.mts",
+      "sha256": "880a6ba0b4a42ab779670566d77d280e437c8bcb2edf3e80c75c4a80a0fa29bb"
+    },
+    {
+      "path": "scripts/oracles/cordis_boundaries.py",
+      "sha256": "17977420a8f2ea9b6483f81f4bfd8ec65ee1ef428a0596bf5bd6527d84ec19a9"
+    },
+    {
+      "path": "scripts/oracles/cordis_consumers.mts",
+      "sha256": "4fc9a6ebed74af02d5ec8f98b300cd7cba5df0de6eeea4befedb8a1683dfea9d"
+    },
+    {
+      "path": "scripts/oracles/cordis_consumers.py",
+      "sha256": "3b957b3aa42fee55cfd168248b31ccfac50bf250dd589f097e1176586d8729db"
+    },
+    {
+      "path": "scripts/oracles/cordis_hmr.mts",
+      "sha256": "50cb3779adec5c9144505b1e1b7e489578d9fa4e5b7215449ba480cd56960a26"
+    },
+    {
+      "path": "scripts/oracles/cordis_hmr.py",
+      "sha256": "51a3c05ad2edba3f89dc7b05a07920c3a2ba84ae3096ad33f2118c7a936e031b"
+    },
+    {
+      "path": "scripts/oracles/cordis_hmr_batch.mts",
+      "sha256": "002925c49172c30c055fb9bf4516301948da0313f39a089bf97239d5de149316"
+    },
+    {
+      "path": "scripts/oracles/cordis_hmr_batch.py",
+      "sha256": "d9b1532106f8673a84d539e9220e99fce88ca956da97eadcd08884d2fa44a19c"
+    },
+    {
+      "path": "scripts/oracles/cordis_hmr_complex.mts",
+      "sha256": "70fbd2577e191e9e458a3eba3a945aa78571bf59bf80b6b7fb096c3c0241a587"
+    },
+    {
+      "path": "scripts/oracles/cordis_hmr_complex.py",
+      "sha256": "72711c167c83111a197d8ab2a2bc34734dc61c3ec568d6e7e10549a183a09cca"
+    },
+    {
+      "path": "scripts/oracles/cordis_include.mts",
+      "sha256": "7b70721cfd02017783e1e50977162f3cc3fbafd07c1183ab31e41c725778786a"
+    },
+    {
+      "path": "scripts/oracles/cordis_include.py",
+      "sha256": "66cf16f94963ff4412f7ee41288e38951ee56ec2de2be72e1e3eeddd62984e97"
+    },
+    {
+      "path": "scripts/oracles/cordis_python.py",
+      "sha256": "c83b35c8922543e221e21327cca6feaedc4029077aaa5cfc9b1aa85a41677de1"
+    },
+    {
+      "path": "scripts/oracles/package-lock.json",
+      "sha256": "2e25382fdab2f9975219ada5239a24466f222b399328cdd36826313f07afabc7"
+    },
+    {
+      "path": "scripts/oracles/package.json",
+      "sha256": "6c0aa3d2688b74bc96f03945f65295a5f4c1d8796c26334c79b9df69ffb62f63"
+    },
+    {
+      "path": "scripts/oracles/tsconfig.json",
+      "sha256": "7b489053078781d00b9ccfaf4dc36a601691a23febedf78e99714e38068371e1"
+    },
+    {
+      "path": "scripts/oracles/vitest.core.config.mts",
+      "sha256": "b67c92c7a3a36131ac64362880c0bc30a29f0495de59abd8c4de81585e0b1f59"
+    }
+  ],
+  "normalization": "JSON undefined return -> null; runtime states retain numeric values; no event sorting"
+}

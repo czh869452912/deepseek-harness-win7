@@ -31,14 +31,15 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "0ab68981d5ada7e547354c718280079f37d61f8d",
-  "integrated_commit": "0ab68981d5ada7e547354c718280079f37d61f8d",
+  "candidate_commit": "3de19a21c52a75d7af2b551f1b803758c1380e34",
+  "integrated_commit": "3de19a21c52a75d7af2b551f1b803758c1380e34",
   "evidence_ids": [
     "RUN-CORDIS-CLOSURE-20260927",
     "RUN-CORDIS-SCOPE-CLOSURE-20260927",
     "RUN-SPINE-FINISH-20260927",
     "RUN-NEXT-SPINE-001-20260927",
-    "RUN-SESSION-COLD-SPINE-001-20260927"
+    "RUN-SESSION-COLD-SPINE-001-20260927",
+    "RUN-SESSION-LIVE-SPINE-001-20260927"
   ],
   "next_action": "真实 profile、工具调用、JSONL 持久化、全树关闭和新 Context 恢复已通过；Boot/Session 契约与提供端依赖已闭合。",
   "delivery_commit": "be234bfa0aa8c37c9e72117a842afdc8db5c2d3a"

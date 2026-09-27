@@ -34,10 +34,11 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "0ab68981d5ada7e547354c718280079f37d61f8d",
-  "integrated_commit": "0ab68981d5ada7e547354c718280079f37d61f8d",
+  "candidate_commit": "3de19a21c52a75d7af2b551f1b803758c1380e34",
+  "integrated_commit": "3de19a21c52a75d7af2b551f1b803758c1380e34",
   "evidence_ids": [
-    "RUN-SESSION-COLD-SESSION-COLD-003-20260927"
+    "RUN-SESSION-COLD-SESSION-COLD-003-20260927",
+    "RUN-SESSION-LIVE-SESSION-COLD-003-20260927"
   ],
   "next_action": "JSONL 冷恢复已验收；后续 shared preparation、写队列/失败保留、retirement/HMR adoption 与配置重载仍由 Session/Profile 闭包推进。"
 }

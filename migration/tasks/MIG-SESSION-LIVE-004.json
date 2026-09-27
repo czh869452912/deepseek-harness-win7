@@ -2,7 +2,7 @@
   "id": "MIG-SESSION-LIVE-004",
   "goal": "对齐共享持久化写队列、卸载排空与 live Session HMR 接管",
   "kind": "implementation",
-  "state": "review",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "0d974fbc74d62334d1e37383c0d232dd6d3af934",
   "owner": "current-session-coordinator",
@@ -39,8 +39,10 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "完成精确候选发行门禁后验收；共享 preparation 与配置启动/重载仍是后续范围。"
+  "candidate_commit": "3de19a21c52a75d7af2b551f1b803758c1380e34",
+  "integrated_commit": "3de19a21c52a75d7af2b551f1b803758c1380e34",
+  "evidence_ids": [
+    "RUN-SESSION-LIVE-SESSION-LIVE-004-20260927"
+  ],
+  "next_action": "共享写队列、两个后端 drain/rollback 与限定 HMR/retirement 已验收；继续共享 preparation、公共存储协调和配置恢复闭包。"
 }

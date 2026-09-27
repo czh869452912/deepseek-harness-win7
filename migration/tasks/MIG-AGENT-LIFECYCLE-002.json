@@ -32,11 +32,12 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "0ab68981d5ada7e547354c718280079f37d61f8d",
-  "integrated_commit": "0ab68981d5ada7e547354c718280079f37d61f8d",
+  "candidate_commit": "3de19a21c52a75d7af2b551f1b803758c1380e34",
+  "integrated_commit": "3de19a21c52a75d7af2b551f1b803758c1380e34",
   "evidence_ids": [
     "RUN-NEXT-AGENT-LIFECYCLE-002-20260927",
-    "RUN-SESSION-COLD-AGENT-LIFECYCLE-002-20260927"
+    "RUN-SESSION-COLD-AGENT-LIFECYCLE-002-20260927",
+    "RUN-SESSION-LIVE-AGENT-LIFECYCLE-002-20260927"
   ],
   "next_action": "公共 create/resume 工厂闭包已验收；配置启动/重载与 draining 身份交给 Profile 批次，Session replay 依赖此 revision。"
 }

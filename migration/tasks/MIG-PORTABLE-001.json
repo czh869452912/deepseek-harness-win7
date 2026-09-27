@@ -24,15 +24,16 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "0ab68981d5ada7e547354c718280079f37d61f8d",
-  "integrated_commit": "0ab68981d5ada7e547354c718280079f37d61f8d",
+  "candidate_commit": "3de19a21c52a75d7af2b551f1b803758c1380e34",
+  "integrated_commit": "3de19a21c52a75d7af2b551f1b803758c1380e34",
   "evidence_ids": [
     "RUN-BASELINE-20260927",
     "RUN-PORTABLE-ACCEPTANCE-20260927",
     "RUN-PORTABLE-FINAL-ACCEPTANCE-20260927",
     "RUN-PORTABLE-FINISH-20260927",
     "RUN-NEXT-PORTABLE-001-20260927",
-    "RUN-SESSION-COLD-PORTABLE-001-20260927"
+    "RUN-SESSION-COLD-PORTABLE-001-20260927",
+    "RUN-SESSION-LIVE-PORTABLE-001-20260927"
   ],
   "next_action": "当前候选已重新构建，包内 Python 隔离启动及五个 profile 验证通过；Win7 真机验证按用户要求暂缓。"
 }

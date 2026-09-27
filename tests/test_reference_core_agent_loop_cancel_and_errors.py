@@ -1,3 +1,4 @@
+from dsh.core.agent import AgentPlugin
 """
 1:1 Test Parity Suite for @deepseek-ai/dsh-agent-loop:
 - cancel.spec.ts (F2 leak guard on idle cancel, keepInbox behavior, tool abort before dispatch)
@@ -50,6 +51,7 @@ class MockResponsesLLM:
 async def test_cancel_on_idle_agent_is_noop_f2_leak_guard():
     """Cancel on an idle agent with nothing queued is a no-op; the next prompt runs."""
     ctx = Context()
+    AgentPlugin().apply(ctx)
     sessions = SessionStore(ctx)
     ctx.set_service("sessions", sessions)
 
@@ -81,6 +83,7 @@ async def test_cancel_on_idle_agent_is_noop_f2_leak_guard():
 async def test_cancel_during_tool_execution_aborts_turn_and_sets_aborted_reason():
     """Abort during tool execution ends the turn cleanly."""
     ctx = Context()
+    AgentPlugin().apply(ctx)
     sessions = SessionStore(ctx)
     ctx.set_service("sessions", sessions)
 
@@ -138,6 +141,7 @@ async def test_cancel_during_tool_execution_aborts_turn_and_sets_aborted_reason(
 async def test_agent_request_error_retry_recovery():
     """Verify agent/request-error waterfall allows retry action before turn closes."""
     ctx = Context()
+    AgentPlugin().apply(ctx)
     sessions = SessionStore(ctx)
     ctx.set_service("sessions", sessions)
 

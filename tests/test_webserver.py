@@ -1,3 +1,4 @@
+from dsh.core.agent import AgentPlugin
 import asyncio
 import json
 import pytest
@@ -15,6 +16,7 @@ from dsh.host.apiproxy.api_proxy import ApiProxyPlugin
 @pytest.fixture
 def web_ctx():
     ctx = Context()
+    AgentPlugin().apply(ctx)
     sessions = SessionStore(ctx)
     ctx.set_service("sessions", sessions)
     sessions.create("default-session")

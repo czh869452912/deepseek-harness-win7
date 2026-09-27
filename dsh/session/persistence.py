@@ -76,6 +76,18 @@ class SessionPersistence(ABC):
         """Load an immutable balanced logical view and commit any required cold crash recovery."""
         raise NotImplementedError
 
+    async def prepare(self, session_id: str, signal: Optional[Any] = None):
+        """Own one unpublished restored session for the factory transaction.
+
+        The caller races cancellation and disposes a late preparation. Loading
+        retains the backend's existing recovery rules; it never enters a store.
+        """
+        from dsh.core.session import Session
+        from dsh.core.session.preparation import SessionPreparation
+        inspection = await self.load(session_id)
+        return SessionPreparation.create(Session.from_restore(
+            session_id=session_id, seed=inspection.events, header=inspection.meta, ctx=self.ctx))
+
     @abstractmethod
     async def inspect(self, session_id: str) -> SessionInspection:
         """Inspect an immutable logical session without committing recovery to disk."""

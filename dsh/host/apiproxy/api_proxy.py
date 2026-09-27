@@ -214,9 +214,10 @@ class ApiProxyPlugin(Plugin):
 
         if sessions_svc:
             if "default-session" not in sessions_svc._sessions:
-                s = sessions_svc.create("default-session")
-                s.header.cwd = cwd
-                s.header.agent_preset = "standard"
+                # A factory owns publication once AgentLoop is mounted. The
+                # legacy HTTP shell must not reserve a phantom live session.
+                if ctx.get('agent_loop') is None:
+                    sessions_svc.create('default-session', meta={'cwd': cwd, 'agentPreset': 'standard'})
             else:
                 sessions_svc._sessions["default-session"].header.cwd = cwd
 
@@ -224,7 +225,7 @@ class ApiProxyPlugin(Plugin):
             "workspaceId": ws_id,
             "path": cwd,
             "title": os.path.basename(cwd) or "root",
-            "sessionIds": ["default-session"],
+            "sessionIds": ["default-session"] if sessions_svc and sessions_svc.get('default-session') else [],
             "createdAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "updatedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }

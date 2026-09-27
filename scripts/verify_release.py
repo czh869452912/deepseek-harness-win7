@@ -58,6 +58,10 @@ def main(argv=None):
     run([python, '-m', 'pytest', 'tests', '-ra', '--junitxml=' + str(output / 'pytest.xml')], 'pytest', output)
     run(['node', '--expose-internals', 'scripts/oracles/official/node_modules/vitest/vitest.mjs',
          'run', '--config', 'scripts/oracles/vitest.consumers.config.mts'], 'official-consumers', output)
+    run(['node', '--expose-internals', 'scripts/oracles/official/node_modules/vitest/vitest.mjs',
+         'run', '--config', 'scripts/oracles/vitest.agent-lifecycle.config.mts'], 'official-agent-lifecycle', output)
+    run([python, 'scripts/agent_factory_oracle.py', '--output', str(output / 'agent-factory-paired.json')],
+        'agent-factory-paired', output)
     raw = output / 'cordis-raw.json'
     run([python, 'scripts/cordis_oracle.py', '--output', str(raw)], 'cordis-raw', output, accepted=(0, 1))
     run([python, 'scripts/cordis_acceptance.py', str(raw), '--output', str(output / 'cordis-acceptance.json')],

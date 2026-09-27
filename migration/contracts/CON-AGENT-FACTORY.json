@@ -1,0 +1,32 @@
+{
+  "id": "CON-AGENT-FACTORY",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/core/agent-loop/src/index.ts",
+    "reference/packages/core/agent-loop/tests/resume.spec.ts",
+    "reference/packages/core/agent-loop/tests/scope-lifecycle.spec.ts",
+    "dsh/core/agent_factory.py",
+    "dsh/core/agent_loop.py"
+  ],
+  "consumers": [
+    "dsh/core/agent.py",
+    "dsh/session/persistence.py",
+    "dsh/host/apiproxy/api/sessions.py",
+    "dsh/host/apiproxy/api/workspace.py"
+  ],
+  "invariants": [
+    "Public create/resume holds an exact unpublished preparation until setup and commit succeed.",
+    "Enter both registries before session/created, agent/created and agent/session-start, in that order.",
+    "Caller abort, owner unload and factory unload stop pending load/setup without awaiting an uncooperative provider; late preparations release once.",
+    "A failed or disposed transaction cannot remove a later generation under the same session ID."
+  ],
+  "open_questions": [],
+  "identity": "One exact SessionPreparation.session per transaction; caller seed and signal are forwarded. Publication rejects competing live IDs.",
+  "ownership": "Registry reads retain caller Context through Cordis Service tracing. Caller fiber owns the transaction, factory owns pending wrapper settlement and live teardown; published scope exposes its agent.",
+  "ordering": "prepare -> unpublished scope/setup -> setup commit -> enter session -> enter agent -> session/created -> agent/created -> agent/session-start -> driver. Disposal is memoized and unregisters exact instances.",
+  "errors": "Setup/commit/pre-aborted signal rejects before publication. Publication exceptions unwind entered instances and effects. Legacy HTTP consumers no longer swallow factory failures or pre-publish their session.",
+  "cancellation": "Race caller/fiber/factory signals with load/setup. Abandoned provider result is observed and released; Python observer Task cancellation uses the same cleanup without cancelling the provider operation.",
+  "adaptation": "Python 3.8 Futures and AbortController implement JS Promise races; asynchronous Python commit callbacks remain supported. Nine source-derived paired observations and local edge probes certify this bounded public factory closure, not all 100 official assertions. Configured startup/reload and wider Session persistence/replay remain separate Profile/Session work."
+}

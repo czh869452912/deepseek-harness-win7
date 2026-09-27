@@ -53,13 +53,12 @@ class WorkspaceDomainHandler:
             agent_loop = self.ctx.get("agent_loop")
             sid = f"session-{os.urandom(4).hex()}"
 
-            if sessions_svc:
-                s = sessions_svc.create(sid)
-                s.header.cwd = ws_path
-                s.header.agent_preset = "standard"
             if agent_loop:
-                handle = await agent_loop.create_agent(session_id=sid)
+                handle = await agent_loop.create_agent(session_id=sid,
+                    meta={'cwd': ws_path, 'agentPreset': 'standard'}, owner_ctx=self.ctx)
                 self._active_sessions[sid] = handle
+            elif sessions_svc:
+                sessions_svc.create(sid, meta={'cwd': ws_path, 'agentPreset': 'standard'})
 
             ws_view = {
                 "workspaceId": ws_id,

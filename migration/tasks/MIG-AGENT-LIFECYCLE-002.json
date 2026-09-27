@@ -1,11 +1,11 @@
 {
   "id": "MIG-AGENT-LIFECYCLE-002",
   "goal": "对齐 Agent 创建恢复的 preparation、发布事务、owner 与取消",
-  "kind": "verification",
-  "state": "draft",
+  "kind": "implementation",
+  "state": "running",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "a4ff8ac41fa37b5463b0ce8b7f420d0973e8d840",
-  "owner": null,
+  "owner": "current-session-coordinator",
   "requires": [
     {
       "task": "MIG-CORDIS-001",
@@ -13,9 +13,17 @@
       "revision": 10
     }
   ],
-  "provides": [],
+  "provides": [
+    {
+      "contract": "CON-AGENT-FACTORY",
+      "revision": 1
+    }
+  ],
   "acceptance": [
-    "Specify source-backed contract and required provider revisions before entering ready."
+    "Nine source-derived TS/Python observations match with no missing cases or runner failures.",
+    "Local probes cover pre-abort, setup/commit rejection, three cancellation sources, observer cancellation, late cleanup, seed/owner, concurrent ID reuse and effect retirement.",
+    "Full pytest and existing profile spine plus necessary legacy HTTP creation/fork/workspace consumers pass.",
+    "Four unmodified upstream suites execute all 100 instances; this run establishes a source baseline, not 100-case Python parity."
   ],
   "expected_paths": [
     "dsh",
@@ -27,5 +35,5 @@
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "按已认可研究计划定义契约与依赖；分析可提前，接口实现等待提供端验收。"
+  "next_action": "Finish full regression and input-bound evidence for the public factory closure; configured startup/reload remains explicitly assigned to Profile journeys."
 }

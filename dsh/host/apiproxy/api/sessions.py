@@ -141,20 +141,12 @@ class SessionsDomainHandler:
         else:
             target_cwd = os.getcwd().replace("\\", "/")
 
-        if sessions_svc:
-            try:
-                s = sessions_svc.create(sid)
-            except ValueError:
-                # already exists -> idempotent
-                s = sessions_svc._sessions[sid]
-            s.header.cwd = target_cwd
-            s.header.agent_preset = preset
         if agent_loop and sid not in self._active_sessions:
-            try:
-                handle = await agent_loop.create_agent(session_id=sid)
-                self._active_sessions[sid] = handle
-            except Exception:
-                pass
+            handle = await agent_loop.create_agent(session_id=sid,
+                meta={'cwd': target_cwd, 'agentPreset': preset}, owner_ctx=self.ctx)
+            self._active_sessions[sid] = handle
+        elif sessions_svc and not agent_loop:
+            sessions_svc.create(sid, meta={'cwd': target_cwd, 'agentPreset': preset})
         if target_ws:
             if sid not in target_ws["sessionIds"]:
                 target_ws["sessionIds"].append(sid)
@@ -445,20 +437,15 @@ class SessionsDomainHandler:
                     last_turn_end = i + 1
             if last_turn_end is not None:
                 cut_idx = last_turn_end
-        new_session = sessions_svc.create(new_sid)
-        new_session.header.parent_session = src_sid
-        new_session.header.agent_preset = src_session.header.agent_preset
-        new_session.header.cwd = src_session.header.cwd
         events_to_copy = src_session.events[:cut_idx]
-        for ev in events_to_copy:
-            new_session.append(ev.get("type", "unknown"), ev.get("data", {}))
-        # seed title from source
+        meta = {'parentSession': src_sid, 'agentPreset': src_session.header.agent_preset,
+                'cwd': src_session.header.cwd}
         if agent_loop:
-            try:
-                handle = await agent_loop.create_agent(session_id=new_sid)
-                self._active_sessions[new_sid] = handle
-            except Exception:
-                pass
+            handle = await agent_loop.create_agent(session_id=new_sid, seed=events_to_copy,
+                                                   meta=meta, owner_ctx=self.ctx)
+            self._active_sessions[new_sid] = handle
+        else:
+            sessions_svc.create(new_sid, seed=events_to_copy, meta=meta)
         for ws in self._workspaces.values():
             if src_sid in ws["sessionIds"]:
                 if new_sid not in ws["sessionIds"]:
@@ -539,7 +526,7 @@ class SessionsDomainHandler:
             raise ValueError("AgentLoop service unavailable")
         handle = self._active_sessions.get(sid)
         if not handle:
-            handle = await agent_loop.create_agent(session_id=sid)
+            handle = await agent_loop.create_agent(session_id=sid, owner_ctx=self.ctx)
             self._active_sessions[sid] = handle
         agent = handle.agent
         msg_content = text_content

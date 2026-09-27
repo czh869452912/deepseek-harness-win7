@@ -1,3 +1,4 @@
+from dsh.core.agent import AgentPlugin
 import json
 import pytest
 from dsh.cordis.context import Context
@@ -8,6 +9,7 @@ from dsh.core.agent_loop import AgentLoopService
 
 def test_session_append_with_timing_and_usage():
     ctx = Context()
+    AgentPlugin().apply(ctx)
     session = Session.create("test-session", ctx=ctx)
 
     timing = {
@@ -42,9 +44,9 @@ def test_session_append_with_timing_and_usage():
 @pytest.mark.asyncio
 async def test_agent_loop_with_stream_mock():
     ctx = Context()
+    AgentPlugin().apply(ctx)
     sessions = SessionStore(ctx)
     ctx.set_service("sessions", sessions)
-    session = sessions.create("stream-session")
 
     class MockStreamLLM:
         def __init__(self):
@@ -94,6 +96,7 @@ async def test_agent_loop_with_stream_mock():
     ctx.set_service("agent_loop", agent_loop)
 
     handle = await agent_loop.create_agent("stream-session")
+    session = handle.agent.session
     agent = handle.agent
     agent.followup("Stream test input")
     await agent.when_idle()

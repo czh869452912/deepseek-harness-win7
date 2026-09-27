@@ -1,3 +1,4 @@
+from dsh.core.agent import AgentPlugin
 import pytest
 import time
 from dsh.cordis.context import Context
@@ -8,6 +9,7 @@ from dsh.core.tools import ToolsService
 
 def test_trajectory_tool_timing_and_metrics():
     ctx = Context()
+    AgentPlugin().apply(ctx)
     session = Session.create("test-trajectory-session", ctx=ctx)
 
     # 1. Tool execution timing event
@@ -34,9 +36,9 @@ def test_trajectory_tool_timing_and_metrics():
 @pytest.mark.asyncio
 async def test_agent_loop_tool_execution_timing():
     ctx = Context()
+    AgentPlugin().apply(ctx)
     sessions = SessionStore(ctx)
     ctx.set_service("sessions", sessions)
-    session = sessions.create("test-loop-timing")
 
     tools = ToolsService(ctx)
     ctx.set_service("tools", tools)
@@ -101,6 +103,7 @@ async def test_agent_loop_tool_execution_timing():
     ctx.set_service("agent_loop", agent_loop)
 
     handle = await agent_loop.create_agent("test-loop-timing")
+    session = handle.agent.session
     agent = handle.agent
     agent.followup("Calculate 21 * 2")
     await agent.when_idle()

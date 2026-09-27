@@ -8,6 +8,7 @@ import contextvars
 from typing import Any, Callable, Dict, List, Optional, Union
 from dsh.cordis.context import Context
 from dsh.cordis.plugin import Plugin
+from dsh.cordis.service import Service
 from dsh.core.consumed_work import ConsumedWork, fold_consumed_work
 from dsh.core.inbox import Inbox
 from dsh.core.session import Session, SessionHeader
@@ -274,7 +275,7 @@ class _AgentEntry:
         self.detach_requested = False
 
 
-class AgentRegistry:
+class AgentRegistry(Service):
     """
     Agent Registry mounted at `ctx.agents`.
     Tracks live agents, initiator scopes, and creation factories.
@@ -282,7 +283,7 @@ class AgentRegistry:
     """
 
     def __init__(self, ctx: Optional[Context] = None):
-        self.ctx = ctx
+        super().__init__(ctx, 'agents')
         self._store: Dict[str, _AgentEntry] = {}
         self._factory: Optional[Any] = None
         self._initiator_state: str = "active"  # "active" | "closing" | "disposed"
@@ -499,19 +500,20 @@ class AgentRegistry:
         import inspect
         if isinstance(session_id, dict):
             req = session_id
-            sid = req.get("sessionId") or req.get("session_id")
+            sid = req.get("sessionId", req.get("session_id"))
             opts = req.get("options") or req.get("agentOptions") or req.get("agent_options")
             m = req.get("meta")
             s = req.get("setup")
-            return await self.create(session_id=sid, options=opts, meta=m, setup=s)
+            return await self.create(session_id=sid, options=opts, meta=m, setup=s,
+                                     seed=req.get('seed'), signal=req.get('signal'))
 
-        sid = session_id or kwargs.get("sessionId")
+        sid = session_id if session_id is not None else kwargs.get("sessionId")
         opts_raw = options or kwargs.get("agentOptions") or kwargs.get("agent_options")
         opts = (
             AgentOptions(
                 provider=opts_raw.get("provider"),
                 model=opts_raw.get("model"),
-                max_tokens=opts_raw.get("maxTokens") or opts_raw.get("max_tokens"),
+                max_tokens=opts_raw.get("maxTokens", opts_raw.get("max_tokens")),
                 reasoning_effort=opts_raw.get("reasoningEffort") or opts_raw.get("reasoning_effort"),
             )
             if isinstance(opts_raw, dict)
@@ -527,6 +529,9 @@ class AgentRegistry:
             options=opts,
             meta=m,
             setup=s,
+            seed=kwargs.get('seed'),
+            signal=kwargs.get('signal'),
+            owner_ctx=self.ctx,
         )
         if inspect.isawaitable(res):
             return await res
@@ -541,18 +546,18 @@ class AgentRegistry:
     ) -> AgentHandle:
         if isinstance(resume_session_id, dict):
             req = resume_session_id
-            rsid = req.get("resumeSessionId") or req.get("resume_session_id")
+            rsid = req.get("resumeSessionId", req.get("resume_session_id"))
             opts = req.get("options") or req.get("agentOptions") or req.get("agent_options")
             s = req.get("setup")
-            return await self.resume(resume_session_id=rsid, options=opts, setup=s)
+            return await self.resume(resume_session_id=rsid, options=opts, setup=s, signal=req.get('signal'))
 
-        rsid = resume_session_id or kwargs.get("resumeSessionId")
+        rsid = resume_session_id if resume_session_id is not None else kwargs.get("resumeSessionId")
         opts_raw = options or kwargs.get("agentOptions") or kwargs.get("agent_options")
         opts = (
             AgentOptions(
                 provider=opts_raw.get("provider"),
                 model=opts_raw.get("model"),
-                max_tokens=opts_raw.get("maxTokens") or opts_raw.get("max_tokens"),
+                max_tokens=opts_raw.get("maxTokens", opts_raw.get("max_tokens")),
                 reasoning_effort=opts_raw.get("reasoningEffort") or opts_raw.get("reasoning_effort"),
             )
             if isinstance(opts_raw, dict)
@@ -566,6 +571,8 @@ class AgentRegistry:
             resume_session_id=rsid,
             options=opts,
             setup=s,
+            signal=kwargs.get('signal'),
+            owner_ctx=self.ctx,
         )
 
 

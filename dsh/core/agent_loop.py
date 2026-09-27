@@ -17,6 +17,9 @@ from dsh.core.runtime_context import RuntimeContextProjection
 from dsh.core.session import Session, SessionHeader, SessionStore, canonical_header, header_equals
 from dsh.core.tool_calls import execute_tool_calls
 from dsh.core.tools import ToolsService
+from dsh.core.agent_factory import FactoryTransaction
+from dsh.core.abort import AbortController
+from dsh.core.session.preparation import SessionPreparation
 
 
 def request_proposal(header: Dict[str, Any]) -> Dict[str, Any]:
@@ -407,6 +410,10 @@ class AgentLoopService:
         self.ctx = ctx
         self._turn_counters: Dict[str, int] = {}
         self._active_tasks: List[asyncio.Task] = []
+        self._factory_abort = AbortController()
+        self._accepting = True
+        self._transactions = set()
+        self._wrappers = set()
         self._default_agent: Optional[Agent] = None
         self._request_header_logged: Dict[str, bool] = {}
 
@@ -419,178 +426,109 @@ class AgentLoopService:
                 break
         return last_turn + 1
 
-    async def create_agent(
-        self,
-        session_id: Optional[str] = None,
-        options: Optional[AgentOptions] = None,
-        meta: Optional[Dict[str, Any]] = None,
-        setup: Optional[Callable[[Context], Any]] = None,
-    ) -> AgentHandle:
-        if options is not None:
-            max_t = getattr(options, "max_tokens", None)
-            if max_t is None and hasattr(options, "maxTokens"):
-                max_t = getattr(options, "maxTokens")
-            if max_t is not None:
-                if not isinstance(max_t, int) or isinstance(max_t, bool) or max_t <= 0 or max_t > 9007199254740991:
-                    raise ValueError("agent maxTokens must be a positive safe integer")
+    async def _publish_preparation(self, tx, preparation, options, setup, source):
+        session = preparation.session
+        tx.assert_live()
+        tx.scope = create_scope(self.ctx, ScopeKey({"sessionId": session.id}))
+        tx.agent = Agent(session=session, options=options, ctx=tx.scope.ctx)
+        tx.agent.ctx = tx.scope.ctx.extend({"agent": tx.agent})
+        if setup is not None:
+            result = await tx.race(lambda: setup(tx.agent.ctx))
+            commit = getattr(result, 'commit', None)
+            if callable(commit):
+                await tx.race(commit)
+        tx.assert_live()
+        sessions = tx.agent.ctx.get('sessions')
+        agents = self.ctx.get('agents')
+        tx.detach_session = sessions.enter(session)
+        cursor, owner_agent = tx.owner, None
+        while cursor is not None:
+            if 'agent' in cursor.__dict__:
+                owner_agent = cursor.__dict__['agent']
+                break
+            cursor = cursor.__dict__.get('_parent')
+        tx.detach_agent = agents.enter(tx.agent, owner=owner_agent)
+        sessions.announce(session)
+        tx.assert_live()
+        agents.announce(tx.agent)
+        tx.assert_live()
+        self.ctx.emit('agent/session-start', {'agent': tx.agent, 'source': source})
+        tx.assert_live()
+        tx.driver = asyncio.create_task(self._drive_agent(tx.agent))
+        self._active_tasks.append(tx.driver)
+        tx.agent._driver_task = tx.driver
+        return AgentHandle(agent=tx.agent, disposer=tx.dispose)
 
-        sid = session_id or f"session-{uuid.uuid4().hex[:8]}"
+    @staticmethod
+    def _validate_options(options):
+        max_t = getattr(options, 'max_tokens', None)
+        if max_t is not None and (not isinstance(max_t, int) or isinstance(max_t, bool)
+                                  or max_t <= 0 or max_t > 9007199254740991):
+            raise ValueError('agent maxTokens must be a positive safe integer')
 
-        agents_svc: Optional[AgentRegistry] = self.ctx.get("agents")
-        if agents_svc and agents_svc.get(sid) is not None:
-            raise ValueError(f'agent "{sid}" already exists')
-
-        sessions_svc = self.ctx.get("sessions")
-        prepared_session = False
-        detach_session = None
-        if sessions_svc is not None and hasattr(sessions_svc, "prepare"):
-            session = sessions_svc.get(sid)
-            if session is None:
-                session = sessions_svc.prepare(sid, meta=meta)
-                prepared_session = True
-        elif isinstance(sessions_svc, SessionStore) or (sessions_svc is not None and hasattr(sessions_svc, "create")):
-            session = sessions_svc.get(sid) or sessions_svc.create(sid, meta=meta)
-        else:
-            header = SessionHeader.from_dict({"id": sid, **(meta or {})})
-            session = Session(session_id=sid, header=header, ctx=self.ctx)
-
-        agent_scope = create_scope(self.ctx, ScopeKey({"sessionId": session.id}))
-        agent_ctx = agent_scope.ctx
+    async def create_agent(self, session_id=None, options=None, meta=None, setup=None,
+                           seed=None, signal=None, owner_ctx=None):
+        self._validate_options(options)
+        sid = session_id if session_id is not None else 'session-' + uuid.uuid4().hex[:8]
+        tx = FactoryTransaction(self, owner_ctx or self.ctx, sid, signal)
+        wrapper = asyncio.get_running_loop().create_future()
+        self._wrappers.add(wrapper)
+        preparation = None
         try:
-            if setup:
-                setup_res = setup(agent_ctx)
-                if inspect.isawaitable(setup_res):
-                    setup_res = await setup_res
-                commit = getattr(setup_res, "commit", None)
-                if callable(commit):
-                    committed = commit()
-                    if inspect.isawaitable(committed):
-                        await committed
+            preparation = SessionPreparation.create(self.ctx.get('sessions').prepare(sid, seed=seed, meta=meta))
+            return await self._publish_preparation(tx, preparation, options, setup, 'startup')
         except BaseException:
-            await agent_scope.dispose()
+            await tx.dispose()
             raise
-
-        if prepared_session:
+        finally:
             try:
-                detach_session = sessions_svc.enter(session)
-                sessions_svc.announce(session)
-            except BaseException:
-                if detach_session:
-                    detach_session()
-                await agent_scope.dispose()
-                raise
-
-        agent = Agent(session=session, options=options, ctx=agent_ctx)
-
-        try:
-            self.ctx.emit("agent/session-start", {"agent": agent, "source": "startup"})
-        except Exception as e:
-            if hasattr(self.ctx, "logger"):
-                self.ctx.logger("agent_loop").warn("Exception in agent/session-start: %s", e)
-
-        agents_svc: Optional[AgentRegistry] = self.ctx.get("agents")
-        disposer = None
-        if agents_svc:
-            disposer = agents_svc.register(agent)
-
-        driver_task = asyncio.create_task(self._drive_agent(agent))
-        self._active_tasks.append(driver_task)
-        agent._driver_task = driver_task
-
-        async def teardown() -> None:
-            agent.cancel({"kind": "disposed"})
-            if not driver_task.done():
-                await agent.when_idle()
-                driver_task.cancel()
-            await agent_scope.dispose()
-            if disposer:
-                disposer()
-            if detach_session:
-                detach_session()
-
-        return AgentHandle(agent=agent, disposer=teardown)
+                if preparation is not None:
+                    preparation.dispose()
+            finally:
+                self._wrappers.discard(wrapper)
+                if not wrapper.done():
+                    wrapper.set_result(None)
 
     create = create_agent
 
-    async def resume(
-        self,
-        resume_session_id: str,
-        options: Optional[AgentOptions] = None,
-        setup: Optional[Callable[[Context], Any]] = None,
-    ) -> AgentHandle:
-        sessions_svc: Optional[SessionStore] = self.ctx.get("sessions")
-        if sessions_svc and sessions_svc.get(resume_session_id) is not None:
-            raise RuntimeError(f'cannot resume session "{resume_session_id}" while it is live')
-        agents_svc: Optional[AgentRegistry] = self.ctx.get("agents")
-        if agents_svc and agents_svc.get(resume_session_id) is not None:
-            raise RuntimeError(f'cannot resume session "{resume_session_id}" while it is live')
-
-        persistence = self.ctx.get("session_persistence")
-        if not persistence:
-            raise RuntimeError("no session_persistence service configured for resume")
-
-        inspection = await persistence.load(resume_session_id)
-        session = Session.from_restore(
-            session_id=resume_session_id,
-            seed=inspection.events,
-            header=inspection.meta,
-            ctx=self.ctx,
-        )
-
-        detach_session = None
-        if sessions_svc:
-            detach_session = sessions_svc.enter(session)
-            sessions_svc.announce(session)
-
-        agent_scope = create_scope(self.ctx, ScopeKey({"sessionId": session.id}))
-        agent_ctx = agent_scope.ctx
+    async def resume(self, resume_session_id, options=None, setup=None, signal=None, owner_ctx=None):
+        self._validate_options(options)
+        sid = resume_session_id
+        if self.ctx.get('sessions').get(sid) is not None or self.ctx.get('agents').get(sid) is not None:
+            raise RuntimeError('cannot resume session "%s" while it is live' % sid)
+        persistence = self.ctx.get('session_persistence')
+        if persistence is None:
+            raise RuntimeError('no session_persistence service configured for resume')
+        tx = FactoryTransaction(self, owner_ctx or self.ctx, sid, signal)
+        wrapper = asyncio.get_running_loop().create_future()
+        self._wrappers.add(wrapper)
+        preparation = None
+        async def prepare():
+            method = getattr(persistence, 'prepare', None)
+            if callable(method):
+                result = method(sid, tx.controller.signal)
+                if inspect.isawaitable(result):
+                    result = await result
+                return SessionPreparation.create(result)
+            # Old third-party persistence implementations still expose load.
+            # Their snapshot is wrapped once at this boundary, never published early.
+            inspection = await persistence.load(sid)
+            return SessionPreparation.create(self.ctx.get('sessions').prepare(
+                sid, seed=inspection.events, meta=inspection.meta, seedSource='persistence'))
         try:
-            if setup:
-                setup_res = setup(agent_ctx)
-                if inspect.isawaitable(setup_res):
-                    setup_res = await setup_res
-                commit = getattr(setup_res, "commit", None)
-                if callable(commit):
-                    committed = commit()
-                    if inspect.isawaitable(committed):
-                        await committed
+            preparation = await tx.race(prepare, lambda late: late.dispose())
+            return await self._publish_preparation(tx, preparation, options, setup, 'resume')
         except BaseException:
-            await agent_scope.dispose()
-            if detach_session:
-                detach_session()
+            await tx.dispose()
             raise
-
-        agent = Agent(session=session, options=options, ctx=agent_ctx)
-
-        try:
-            self.ctx.emit("agent/session-start", {"agent": agent, "source": "resume"})
-        except Exception as e:
-            if hasattr(self.ctx, "logger"):
-                self.ctx.logger("agent_loop").warn("Exception in agent/session-start: %s", e)
-
-        disposer = None
-        if agents_svc:
-            disposer = agents_svc.register(agent)
-
-        driver_task = asyncio.create_task(self._drive_agent(agent))
-        self._active_tasks.append(driver_task)
-        agent._driver_task = driver_task
-
-        async def teardown() -> None:
-            agent.cancel({"kind": "disposed"})
-            if not driver_task.done():
-                driver_task.cancel()
-                try:
-                    await driver_task
-                except (asyncio.CancelledError, Exception):
-                    pass
-            await agent_scope.dispose()
-            if disposer:
-                disposer()
-            if detach_session:
-                detach_session()
-
-        return AgentHandle(agent=agent, disposer=teardown)
+        finally:
+            try:
+                if preparation is not None:
+                    preparation.dispose()
+            finally:
+                self._wrappers.discard(wrapper)
+                if not wrapper.done():
+                    wrapper.set_result(None)
 
     async def _drive_agent(self, agent: Agent) -> None:
         """Background driver loop pumping the agent's inbox."""
@@ -1061,11 +999,14 @@ class AgentLoopService:
                         return "".join(texts)
         return ""
 
-    def teardown(self) -> None:
-        for t in self._active_tasks:
-            if not t.done():
-                t.cancel()
-        self._active_tasks.clear()
+    async def teardown(self) -> None:
+        self._accepting = False
+        self._factory_abort.abort(RuntimeError('agent loop is not active'))
+        await asyncio.gather(*(tx.dispose() for tx in list(self._transactions)))
+        wrappers = [task for task in self._wrappers if task is not asyncio.current_task()]
+        if wrappers:
+            await asyncio.gather(*wrappers, return_exceptions=True)
+
 
 
 class AgentLoopPlugin(Plugin):

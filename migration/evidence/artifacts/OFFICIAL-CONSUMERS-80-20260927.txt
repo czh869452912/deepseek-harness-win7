@@ -1,0 +1,9 @@
+
+ RUN  v4.1.8 D:/Claude-project/deepseek-harness-win7
+
+
+ Test Files  5 passed (5)
+      Tests  80 passed (80)
+   Start at  16:57:07
+   Duration  5.32s (transform 995ms, setup 0ms, import 2.93s, tests 1.82s, environment 0ms)
+

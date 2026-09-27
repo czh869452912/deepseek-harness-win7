@@ -1,1 +1,1 @@
-{"name":"cordis-official-tests","private":true,"dependencies":{"@vscode/ripgrep-win32-x64":"1.18.0","vitest":"4.1.8"}}
+{"name":"cordis-official-tests","private":true,"dependencies":{"@vscode/ripgrep-win32-x64":"1.18.0","resolve.exports":"2.0.3","typescript":"6.0.3","vitest":"4.1.8","zod":"4.4.3"}}

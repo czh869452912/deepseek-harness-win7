@@ -188,7 +188,11 @@ class AgentPresets(Service):
     async def _ensure_standing(self, preset: AgentPreset) -> _Standing:
         pending = self._standing.get(preset.id)
         if pending is not None:
+            settled = pending.done()
             mounted = await pending
+            if settled:
+                # JS await still yields for a resolved standing Promise (C58/C59).
+                await asyncio.sleep(0)
             current = _stamp(preset.path)
             if current is None or current == mounted.stamp:
                 return mounted

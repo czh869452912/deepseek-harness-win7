@@ -80,3 +80,44 @@ async def test_real_factory_awaits_preset_setup_and_limits_model_tools(tmp_path)
     finally:
         for handle in handles: await handle.dispose()
         await ctx.fiber.dispose()
+
+@pytest.mark.asyncio
+async def test_stale_refresh_preserves_winning_generation_pointer(tmp_path):
+    import asyncio
+    from dsh.presets.agent_presets import _Standing, _stamp
+    seed(tmp_path,"alpha","[]\n")
+    ctx, _, presets = await boot(tmp_path,{})
+    try:
+        preset=await presets.resolve("alpha")
+        old=await presets._ensure_standing(preset)
+        (tmp_path/"alpha"/"agent.cordis.yml").write_text("[] # changed\n",encoding="utf-8")
+        newer=_Standing(old.mount,_stamp(preset.path))
+        winner=asyncio.get_running_loop().create_future();winner.set_result(newer)
+        refresh=asyncio.create_task(presets._ensure_standing(preset))
+        await asyncio.sleep(0)  # enter refresh through its first JS-compatible await boundary
+        presets._standing[preset.id]=winner
+        assert await refresh is newer
+        assert presets._standing[preset.id] is winner
+    finally:
+        await ctx.fiber.dispose()
+
+@pytest.mark.asyncio
+async def test_racing_edit_shares_new_generation_and_child_keeps_deleted_parent_generation(tmp_path):
+    import asyncio
+    from dsh.presets import live_preset_mounts
+    calls=[]
+    def contribute(ctx, config): calls.append(config["label"])
+    seed(tmp_path,"alpha","- id: c\n  name: fixture:c\n  config:\n    label: first\n")
+    ctx, _, presets=await boot(tmp_path,{"fixture:c":contribute})
+    scopes=[create_scope(ctx,ScopeKey(str(n))) for n in range(4)]
+    try:
+        await presets.mount(scopes[0].ctx,"alpha")
+        seed(tmp_path,"alpha","- id: c\n  name: fixture:c\n  config:\n    label: afterwards\n")
+        await asyncio.gather(*(presets.mount(scopes[n].ctx,"alpha") for n in (1,2)))
+        assert calls==["first","afterwards"]
+        assert scope_parent_of(scope_of(scopes[1].ctx)) is scope_parent_of(scope_of(scopes[2].ctx))
+        (tmp_path/"alpha"/"agent.cordis.yml").unlink()
+        assert presets.compose_from(scopes[3].ctx,scopes[0].ctx)=="alpha"
+        assert scope_parent_of(scope_of(scopes[3].ctx)) is scope_parent_of(scope_of(scopes[0].ctx))
+        assert len([m for m in live_preset_mounts() if m.fiber.ctx.root is ctx])==2
+    finally: await ctx.fiber.dispose()

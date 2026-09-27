@@ -9,3 +9,5 @@
 新增真实 Session/AgentRegistry/AgentLoop/Tools/Preset 测试，仅 mock LLM，验证异步 preset setup、模型工具隔离、失败创建的 agent/session 清理。子 scope 保持同代 composition，父 scope 卸载不回收 standing mount。
 
 专项日志与随后完整回归分开保存。本修复不自动完成 mount.spec.ts 全部 50 项语义验收，剩余的逐项对应仍须如实登记。
+
+官方 mount.spec.ts:714 的确定性竞争用例进一步复现了 C58 的实际影响：已完成 standing Future 的 await 不让出执行，旧刷新提前创建第三代。现在仅当进入 await 前 Future 已完成时增加 checkpoint；等待未完成 Future 不额外让出。竞争方的新指针保留，双会话刷新共享新代，子 scope 继承已删除文件对应的父代。修复前/后日志分别保存。

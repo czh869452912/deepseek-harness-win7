@@ -1,0 +1,23 @@
+{
+  "id": "CON-SESSION-PROJECTION",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/session/session-projection/src/index.ts", "reference/packages/session/session-projection/tests/registry.spec.ts", "dsh/session/projections.py"],
+  "consumers": ["dsh/session/stats.py", "dsh/todo/tool_todo.py", "dsh/plan/plan_mode.py", "dsh/interaction/permission_presets.py", "dsh/host/apiproxy/api_proxy.py"],
+  "invariants": [
+    "Canonical definitions use stateSchema, init(header), apply, optional wire and safe non-negative stateVersion; wire and restored state pass executable parsers.",
+    "Same-version registrations share the first definition until the final calling fiber releases it; mismatched versions reject without changing ownership.",
+    "Cells belong to exact weak Session identities. Late drive folds the preceding prefix; observed events never apply twice and snapshots materialize every unit before selected wire views.",
+    "Host-only units have state/checkpoints but no wire output. cachedSnapshot never folds history and reports the minimum available selected watermark.",
+    "Checkpoint values detach from live cells. restoreFloor includes a one-below anchor; unusable rows on nonzero tails require a full reread, and replay rejects missing sequence positions.",
+    "hydrate reuses exact cuts, installs only non-regressing cells and allows constructor/live suffixes to advance once."
+  ],
+  "open_questions": [],
+  "identity": "Cells use weak exact Session object keys, never reusable string IDs.",
+  "ownership": "Cordis Service rebinding attaches registrations and listeners to each caller's fiber; shared registrations reference-count owners.",
+  "ordering": "History prefix -> current event -> watermark commit -> validated view -> listeners. Read materialization suppresses subsequent duplicate event delivery.",
+  "errors": "Canonical state/view parsers and change listeners fail loud; viewCheckpoint alone skips invalid stored state hints. Failed listener delivery does not undo a committed watermark.",
+  "cancellation": "All operations are synchronous. Disposing registration/listener effects removes ownership; weak cells do not retain dead Session instances.",
+  "adaptation": "Python parser callable or parse(value) replaces Zod. None represents absent optional reads. Existing keyword domain registrations and projection/change Web bridge remain explicit compatibility adapters, outside schema/domain parity certification. Durable projection-cache plugin, cold Web carriers and all domain definitions remain separate work."
+}

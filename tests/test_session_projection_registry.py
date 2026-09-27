@@ -73,7 +73,7 @@ async def test_shared_registration_owned_by_each_calling_fiber():
     assert registry.has("count")
     await two.dispose()
     assert not registry.has("count")
-    ctx.dispose()
+    await ctx.fiber.dispose()
 
 
 @pytest.mark.parametrize("version", [-1, 0.5, True, 9007199254740992])
@@ -139,3 +139,75 @@ def test_equal_primitive_states_do_not_emit_changes():
     registry.onChanged(lambda *args: changes.append(args))
     registry.on_session_event(session, session.append("test/mark", {}))
     assert changes == []
+
+
+def test_checkpoint_detaches_mutable_state_and_includes_host_only_units():
+    registry, session = SessionProjectionRegistry(), Session("s")
+    registry.register(count("host", wire=False))
+    registry.register(count("list", wire=False, init=lambda header: [],
+                            apply=lambda state, event: state + [event["seq"]]))
+    session.append("test/mark", {})
+    rows = registry.checkpoint(session)
+    rows["list"]["val"].append(99)
+    assert registry.stateOf(session, "list") == [0]
+    assert rows["host"] == dict(ver=1, seq=0, val=1)
+    assert registry.snapshot(session)["values"] == {}
+
+
+def test_restore_floor_anchors_below_lowest_matching_row():
+    registry = SessionProjectionRegistry()
+    assert registry.restoreFloor({}) is None
+    registry.register(count())
+    registry.register(count("host", wire=False))
+    rows = dict(count=dict(ver=1, seq=5, val=6), host=dict(ver=1, seq=3, val=4))
+    assert registry.restoreFloor(rows) == 3
+    rows["host"]["ver"] = 2
+    assert registry.restoreFloor(rows) == 0
+    assert registry.restoreFloor({}) == 0
+
+
+def test_restore_suffix_empty_tail_and_truncation_refold():
+    registry, session = SessionProjectionRegistry(), Session("s")
+    registry.register(count())
+    for _ in range(5):
+        session.append("test/mark", {})
+    rows = dict(count=dict(ver=1, seq=2, val=3))
+    restored = registry.restore(rows, session.events[2:], 2, session.header)
+    assert restored == dict(snapshot=dict(asOfSeq=4, values=dict(count=5)),
+                            checkpoint=dict(count=dict(ver=1, seq=4, val=5)))
+    assert registry.restore(restored["checkpoint"], [], 5, session.header) == restored
+    with pytest.raises(ValueError, match="re-read from seq 0"):
+        registry.restore(restored["checkpoint"], [], 4, session.header)
+    rebuilt = registry.restore(restored["checkpoint"], session.events[:2], 0, session.header)
+    assert rebuilt["snapshot"] == dict(asOfSeq=1, values=dict(count=2))
+    with pytest.raises(ValueError, match="missing seq 0"):
+        registry.restore({}, session.events[1:], 0, session.header)
+
+
+def test_state_schema_rejects_restore_but_skips_bad_checkpoint_hint():
+    registry, session = SessionProjectionRegistry(), Session("s")
+    registry.register(count())
+    rows = dict(count=dict(ver=1, seq=-1, val="bad"))
+    assert registry.viewCheckpoint(rows) == {}
+    with pytest.raises(ValueError, match="nonnegative"):
+        registry.restore(rows, [], 0, session.header)
+    rows["count"].update(val=0)
+    assert registry.viewCheckpoint(rows) == dict(count=0)
+    assert registry.viewCheckpoint(rows, []) == {}
+
+
+def test_hydrate_reuses_exact_cut_and_advances_suffix_once_without_rewinding():
+    registry, session = SessionProjectionRegistry(), Session("s")
+    calls = []
+    registry.register(count(apply=lambda state, event: calls.append(event["seq"]) or state + 1))
+    for _ in range(3):
+        session.append("test/mark", {})
+    prefix = session.events[:2]
+    assert registry.hydrate(session, {}, prefix, 0)["values"] == dict(count=2)
+    assert registry.hydrate(session, {}, prefix, 0)["values"] == dict(count=2)
+    assert calls == [0, 1]
+    assert registry.snapshot(session)["values"] == dict(count=3)
+    registry.on_session_event(session, session.events[-1])
+    assert calls == [0, 1, 2]
+    registry.hydrate(session, {}, prefix, 0)
+    assert registry.stateOf(session, "count") == 3

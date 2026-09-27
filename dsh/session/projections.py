@@ -5,6 +5,7 @@ from weakref import WeakKeyDictionary
 
 from dsh.cordis.plugin import Plugin
 from dsh.cordis.service import Service
+from dsh.core.session import snapshot_json_value
 
 
 def _parse(schema, value):
@@ -202,6 +203,82 @@ class SessionProjectionRegistry(Service):
         return {"asOfSeq": min(watermarks), "values": values} if watermarks else None
 
     cachedSnapshot = cached_snapshot
+
+    def checkpoint(self, session):
+        rows = {}
+        for key, registration in self._registrations.items():
+            cell = self._cell(registration, session)
+            rows[key] = dict(ver=registration.definition["stateVersion"],
+                             seq=cell.observed_seq, val=snapshot_json_value(cell.state))
+        return rows
+
+    def restore_floor(self, checkpoint):
+        floor = None
+        for key, registration in self._registrations.items():
+            row = checkpoint.get(key)
+            need = max(row["seq"] + 1, 0) if row is not None and row["ver"] == registration.definition["stateVersion"] else 0
+            floor = need if floor is None else min(floor, need)
+        return None if floor is None else max(floor - 1, 0)
+
+    restoreFloor = restore_floor
+
+    def view_checkpoint(self, checkpoint, keys=None):
+        values = {}
+        for key, registration in self._registrations.items():
+            definition = registration.definition
+            if definition.get("wire") is None or (keys is not None and key not in keys):
+                continue
+            row = checkpoint.get(key)
+            if row is None or row["ver"] != definition["stateVersion"]:
+                continue
+            try:
+                state = _parse(definition["stateSchema"], row["val"])
+            except Exception:
+                continue
+            values[key] = self._view(registration, UnitCell(state))
+        return values
+
+    viewCheckpoint = view_checkpoint
+
+    def restore(self, checkpoint, events, base_seq, header):
+        end_seq = events[-1]["seq"] if events else base_seq - 1
+        values, refreshed = {}, {}
+        for key, registration in self._registrations.items():
+            definition = registration.definition
+            row = checkpoint.get(key)
+            usable = (row is not None and row["ver"] == definition["stateVersion"]
+                      and base_seq - 1 <= row["seq"] <= end_seq)
+            if not usable and base_seq > 0:
+                raise ValueError('session projection %r cannot restore from seq %s: '
+                                 'its checkpoint row is missing, version-mismatched, or beyond '
+                                 'the supplied log end; re-read from seq 0' % (key, base_seq))
+            state = _parse(definition["stateSchema"], row["val"]) if usable else definition["init"](header)
+            start = row["seq"] - base_seq + 1 if usable else 0
+            for index in range(start, len(events)):
+                event = events[index]
+                if event is None or event["seq"] != base_seq + index:
+                    raise ValueError('session projection %r cannot restore across missing seq %s' % (key, base_seq + index))
+                state = definition["apply"](state, event)
+            if definition.get("wire") is not None:
+                values[key] = self._view(registration, UnitCell(state))
+            refreshed[key] = dict(ver=definition["stateVersion"], seq=end_seq, val=state)
+        return dict(snapshot=dict(asOfSeq=end_seq, values=values), checkpoint=refreshed)
+
+    def hydrate(self, session, checkpoint, events, base_seq):
+        end_seq = events[-1]["seq"] if events else base_seq - 1
+        if all(session in registration.cells and registration.cells[session].observed_seq == end_seq
+               for registration in self._registrations.values()):
+            return dict(asOfSeq=end_seq, values={
+                key: self._view(registration, registration.cells[session])
+                for key, registration in self._registrations.items()
+                if registration.definition.get("wire") is not None})
+        restored = self.restore(checkpoint, events, base_seq, session.header)
+        for key, registration in self._registrations.items():
+            row = restored["checkpoint"][key]
+            current = registration.cells.get(session)
+            if current is None or current.observed_seq <= row["seq"]:
+                registration.cells[session] = UnitCell(row["val"], row["seq"])
+        return restored["snapshot"]
 
 
 class SessionProjectionsPlugin(Plugin):

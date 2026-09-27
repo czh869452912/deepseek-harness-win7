@@ -1040,3 +1040,25 @@ async def test_concurrent_root_disposal_preserves_the_active_unload():
         assert ctx.fiber.settlement_tasks() == []
     finally:
         release.set()
+
+@pytest.mark.asyncio
+async def test_returned_child_dispose_is_nested_under_owning_effect():
+    from dsh.cordis.context import Context
+    ctx = Context()
+    disposed = []
+    def parent(scope):
+        def setup():
+            child = scope.inject([], lambda child_ctx: lambda: disposed.append('child'))
+            return child.dispose
+        scope.effect(setup, 'owned deferred child')
+    fiber = await ctx.plugin(parent)
+    try:
+        effects = fiber.get_effects()
+        owner = next(effect for effect in effects if effect['label'] == 'owned deferred child')
+        assert [child['label'] for child in owner['children']] == ['ctx.plugin()']
+        assert not any(effect['label'] == 'ctx.plugin()' for effect in effects)
+        await fiber.dispose()
+        assert disposed == ['child']
+    finally:
+        await ctx.fiber.dispose()
+    assert disposed == ['child']

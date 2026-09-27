@@ -283,6 +283,12 @@ class Fiber:
 
         def collect_disposer(disp: Any) -> None:
             if callable(disp):
+                # TS assigns the parent's effect wrapper directly to dispose.
+                # Python exposes a bound method: collect its exact registered
+                # wrapper so ownership and effect metadata nest identically.
+                owner = getattr(disp, '__self__', None)
+                if isinstance(owner, Fiber) and getattr(disp, '__func__', None) in (Fiber.dispose, FiberHandle.dispose):
+                    disp = owner._parent_disposer or disp
                 disposables.append(disp)
                 # fiber.ts `collect`: this effect takes ownership of a disposer the
                 # fiber list also held (a nested effect), so the fiber no longer

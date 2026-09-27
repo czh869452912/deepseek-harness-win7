@@ -82,9 +82,11 @@ class ConfiguredStartup:
                 result = callback(*args[1:])
                 if inspect.isawaitable(result):
                     async def observe(value):
-                        try: await value
+                        try:
+                            await observe_queued_abort(value, self.factory._factory_abort.signal)
                         except Exception as failure:
-                            self.ctx.logger.warn('agent "{}": config-start-failed listener rejected: {}'.format(label, error_text(failure)))
+                            if not self.factory._factory_abort.signal.aborted:
+                                self.ctx.logger.warn('agent "{}": config-start-failed listener rejected: {}'.format(label, error_text(failure)))
                     self.start(observe(result))
             except Exception as failure:
                 self.ctx.logger.warn('agent "{}": config-start-failed listener threw: {}'.format(label, error_text(failure)))

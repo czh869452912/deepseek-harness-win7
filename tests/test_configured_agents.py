@@ -197,3 +197,19 @@ async def test_configured_reload_continues_real_driver_history(tmp_path):
         assert len([e for e in stored.events if e['type']=='turn/start'])==2
         await second.dispose()
     finally:await ctx.fiber.dispose()
+
+@pytest.mark.asyncio
+async def test_hanging_failure_observer_cannot_block_factory_disposal(tmp_path):
+    ctx=await core(tmp_path);entered=asyncio.Event();pending=asyncio.get_running_loop().create_future()
+    async def listener(value):entered.set();await pending
+    ctx.on('agent-loop/config-start-failed',listener)
+    try:
+        fiber=await ctx.plugin(AgentLoopPlugin,{'agents':[{'id':'main','resumeSessionId':'missing'}]})
+        await asyncio.wait_for(entered.wait(),2)
+        await asyncio.wait_for(fiber.dispose(),2)
+        pending.set_exception(ValueError('late observer failure'))
+        await asyncio.sleep(0);await asyncio.sleep(0)
+        assert ctx.get('agents').get('missing') is None
+    finally:
+        if not pending.done():pending.set_result(None)
+        await ctx.fiber.dispose()

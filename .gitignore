@@ -45,3 +45,5 @@ hello_test.txt
 
 # Version the upstream regression corpus despite runtime log exclusion.
 !snapshots/**/*.jsonl
+
+/scripts/oracles/official/node_modules/

@@ -1,0 +1,46 @@
+{
+  "id": "MIG-SESSION-LIVE-004",
+  "goal": "对齐共享持久化写队列、卸载排空与 live Session HMR 接管",
+  "kind": "implementation",
+  "state": "review",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "0d974fbc74d62334d1e37383c0d232dd6d3af934",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-SESSION-COLD-003",
+      "contract": "CON-SESSION-COLD-RECOVERY",
+      "revision": 1
+    },
+    {
+      "task": "MIG-CORDIS-001",
+      "contract": "CON-CORDIS-CORE",
+      "revision": 10
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-SESSION-LIVE-WRITES",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "Source-derived deterministic write-behind tests cover batching, barriers, tail deadlines, automatic failure pause and large-batch retry.",
+    "Both JSONL and SQLite pass live lifecycle, failed writes, unload drain, pre-existing seed, exact-ID retirement and cancellation probes; storage fault injection verifies rollback.",
+    "Four real upstream/Python JSONL lifecycle observations match selected semantic fields and existing seven cold observations remain matched.",
+    "174 unmodified Session source tests and full Python regression plus portable release gate pass; source-only counts do not certify Python parity."
+  ],
+  "expected_paths": [
+    "dsh/session",
+    "tests",
+    "scripts",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "完成精确候选发行门禁后验收；共享 preparation 与配置启动/重载仍是后续范围。"
+}

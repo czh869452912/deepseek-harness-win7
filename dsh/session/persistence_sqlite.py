@@ -1,7 +1,7 @@
 """
 SQLite durable session-persistence backend for DeepSeek Harness Win7.
 Stores SessionHeader and contiguous SessionEvents in an SQLite database.
-Aligned 1:1 with official `@deepseek-ai/dsh-session-persistence-sqlite`.
+Shares the live write lifecycle with the JSONL backend.
 """
 
 import json
@@ -17,7 +17,7 @@ from dsh.session.persistence import (
     SessionPersistence,
     SessionPersistenceSnapshot,
 )
-from dsh.session.repair import migrate_legacy_event
+from dsh.session.repair import migrate_legacy_event, interrupted_turn_closers
 
 
 class SqliteSessionPersistence(SessionPersistence):
@@ -31,6 +31,7 @@ class SqliteSessionPersistence(SessionPersistence):
         ctx: Optional[Any] = None,
     ):
         super().__init__(ctx=ctx)
+        self._live_writes = None
         self.db_path = os.path.abspath(db_path)
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
@@ -103,57 +104,34 @@ class SqliteSessionPersistence(SessionPersistence):
             meta = SessionHeader(session_id=session_id)
             await self.create(meta)
 
-        for ev in events:
-            seq = ev.get("seq", 0)
-            etype = ev.get("type", "")
-            etime = ev.get("time", int(time.time() * 1000))
-            data = ev.get("data", {})
-            surface_op = ev.get("surfaceOp")
-            source_seqs = ev.get("sourceEventSeqs")
-            ignorable = 1 if ev.get("ignorable") else 0
+        with self._conn:
+            for ev in events:
+                seq = ev.get("seq", 0)
+                etype = ev.get("type", "")
+                etime = ev.get("time", int(time.time() * 1000))
+                data = ev.get("data", {})
+                surface_op = ev.get("surfaceOp")
+                source_seqs = ev.get("sourceEventSeqs")
+                ignorable = 1 if ev.get("ignorable") else 0
 
-            cur.execute(
-                """
-                INSERT OR REPLACE INTO session_events (session_id, seq, event_type, event_time, data_json, surface_op, source_seqs_json, ignorable)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    session_id,
-                    seq,
-                    etype,
-                    etime,
-                    json.dumps(data, ensure_ascii=False),
-                    surface_op,
-                    json.dumps(source_seqs) if source_seqs is not None else None,
-                    ignorable,
-                ),
-            )
-        self._conn.commit()
+                cur.execute(
+                    """
+                    INSERT OR REPLACE INTO session_events (session_id, seq, event_type, event_time, data_json, surface_op, source_seqs_json, ignorable)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        session_id,
+                        seq,
+                        etype,
+                        etime,
+                        json.dumps(data, ensure_ascii=False),
+                        surface_op,
+                        json.dumps(source_seqs) if source_seqs is not None else None,
+                        ignorable,
+                    ),
+                )
 
-    def _check_interrupted_turn(self, session_id: str, events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        open_turn: Optional[int] = None
-        for event in events:
-            etype = event.get("type")
-            if etype == "turn/start":
-                open_turn = event.get("data", {}).get("turn", 1)
-            elif etype == "turn/end":
-                open_turn = None
-
-        if open_turn is not None:
-            closer_event: Dict[str, Any] = {
-                "type": "turn/end",
-                "seq": len(events),
-                "time": int(time.time() * 1000),
-                "session_id": session_id,
-                "data": {
-                    "turn": open_turn,
-                    "reason": {"kind": "interrupted"},
-                },
-            }
-            return [closer_event]
-        return []
-
-    async def load(self, session_id: str) -> SessionInspection:
+    async def read_stored(self, session_id: str) -> SessionInspection:
         cur = self._conn.cursor()
         cur.execute("SELECT meta_json FROM sessions WHERE id = ?", (session_id,))
         row = cur.fetchone()
@@ -179,7 +157,6 @@ class SqliteSessionPersistence(SessionPersistence):
                 "type": r[1],
                 "seq": r[0],
                 "time": r[2],
-                "session_id": session_id,
                 "data": json.loads(r[3]) if r[3] else {},
             }
             if r[4] is not None:
@@ -190,20 +167,47 @@ class SqliteSessionPersistence(SessionPersistence):
                 ev["ignorable"] = True
             events.append(migrate_legacy_event(ev, session_id))
 
-        closers = self._check_interrupted_turn(session_id, events)
-        if closers:
-            await self.append(session_id, closers)
-            events.extend(closers)
-
         return SessionInspection(meta=meta, events=events)
 
+    async def repair_tail(self, session_id: str) -> None:
+        # SQLite transactions commit complete rows; no JSONL byte tail exists.
+        return None
+
+    def _live_session(self, session_id):
+        sessions = self.ctx.get('sessions') if self.ctx is not None else None
+        return sessions.get(session_id) if sessions is not None else None
+
+    async def load(self, session_id: str) -> SessionInspection:
+        live = self._live_session(session_id)
+        if live is not None:
+            events = list(live.events)
+            if self._live_writes is not None:
+                await self._live_writes.flush(live)
+            if interrupted_turn_closers(events):
+                raise ValueError('cannot load session while its live turn is open')
+            if not events:
+                await self.read_stored(session_id)
+            return SessionInspection(live.header, events)
+        inspection = await self.read_stored(session_id)
+        closers = interrupted_turn_closers(inspection.events)
+        if closers:
+            await self.append(session_id, closers)
+            inspection.events.extend(closers)
+        return inspection
+
     async def inspect(self, session_id: str) -> SessionInspection:
-        return await self.load(session_id)
+        live = self._live_session(session_id)
+        if live is not None:
+            return SessionInspection(live.header, list(live.events))
+        inspection = await self.read_stored(session_id)
+        inspection.events.extend(interrupted_turn_closers(inspection.events))
+        return inspection
 
     async def read_from(self, session_id: str, from_seq: int) -> SessionInspection:
-        inspection = await self.inspect(session_id)
-        filtered = [e for e in inspection.events if e.get("seq", 0) >= from_seq]
-        return SessionInspection(meta=inspection.meta, events=filtered)
+        if type(from_seq) is not int or from_seq < 0 or from_seq > 9007199254740991:
+            raise TypeError('readFrom fromSeq must be a non-negative safe integer')
+        inspection = await self.read_stored(session_id)
+        return SessionInspection(inspection.meta, [e for e in inspection.events if e['seq'] >= from_seq])
 
     async def list(self) -> List[SessionHeader]:
         cur = self._conn.cursor()
@@ -252,12 +256,7 @@ class SqliteSessionPersistencePlugin(Plugin):
         persistence = SqliteSessionPersistence(db_path=self.db_path, ctx=ctx)
         ctx.set_service("session_persistence", persistence)
 
-        def on_session_event(session: Any, event: Dict[str, Any]) -> None:
-            sid = session.id if hasattr(session, "id") else event.get("session_id", "default")
-            asyncio.create_task(persistence.append(sid, [event]))
-
-        ctx.on("session/event", on_session_event)
-        if hasattr(ctx, "disposable"):
-            ctx.disposable(persistence.close, label="persistence_sqlite.close")
-        elif hasattr(ctx, "effect"):
-            ctx.effect(lambda: persistence.close)
+        ctx.set_service("sessionPersistence", persistence)
+        from dsh.session.live_persistence import LivePersistence
+        persistence._live_writes = LivePersistence(persistence, ctx, (self.config or {}).get("writeBatchMaxDelayMs", 200))
+        persistence._live_writes.mount()

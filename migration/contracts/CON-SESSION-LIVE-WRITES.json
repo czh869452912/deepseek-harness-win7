@@ -1,0 +1,32 @@
+{
+  "id": "CON-SESSION-LIVE-WRITES",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/session/session-persistence/src/write-behind.ts",
+    "reference/packages/session/session-persistence/src/coordinator.ts",
+    "reference/packages/session/session-persistence-jsonl/src/index.ts",
+    "dsh/session/write_behind.py",
+    "dsh/session/live_persistence.py"
+  ],
+  "consumers": [
+    "dsh/session/persistence_jsonl.py",
+    "dsh/session/persistence_sqlite.py",
+    "dsh/core/session/session.py"
+  ],
+  "invariants": [
+    "A fixed 200ms default window copies pending events; concurrent flush calls share a quiescence barrier.",
+    "Failed batches retain order; automatic retries pause until new admission or explicit flush. JSONL and SQLite roll back failed append batches.",
+    "Live events are serialized per ID and bound to an exact Session; teardown closes listeners before awaiting all writes and closing the backend.",
+    "HMR adopts only matching cwd and stored event prefixes, repairs byte tails without synthesizing interrupted-turn closers, and persists each seed/suffix once.",
+    "Retirement drains the old Session before a replacement claims its ID; cancellation of a Python flush observer does not cancel durability."
+  ],
+  "open_questions": [],
+  "identity": "Live state is keyed by exact Session object; owners, locks and retiring jobs are indexed by ID. Cold shared preparation reservations are not implemented by this layer.",
+  "ownership": "LivePersistence owns initialization tasks, write controllers and retirement jobs. Cordis owns listener cleanup and the final drain. Both storage plugins use the same coordinator.",
+  "ordering": "Initialize/adopt prefix -> persist seed -> queued suffix; same-ID lock serializes live writes. Concurrent flush reaches quiescence including admitted tails. Backend close follows all drains, even on failure.",
+  "errors": "Background failures are reported with retained batches; explicit flush rejects. Mismatched cwd/prefix rejects without overwriting the artifact. SQLite transaction and JSONL truncate/fsync restore old append prefix after write failure.",
+  "cancellation": "Consumer awaits shared barriers through asyncio.shield; cancelling one observer does not cancel initialization or write tasks. Cross-process writer exclusion and shared preparation observer cancellation are outside this contract.",
+  "adaptation": "Python 3.8 call_later implements bounded batching and settled empty flush is synchronous. Local deterministic clock probes cover source write-behind cases; four paired real upstream JSONL journeys compare type/seq/data and rejection boolean (generated timestamps and diagnostic wording are not compared). SQLite runs the same local lifecycle matrix; upstream SQLite native-module parity is not claimed."
+}

@@ -285,7 +285,7 @@ class JsonlSessionPersistence(SessionPersistence):
         super().__init__(ctx=ctx)
         self.root = os.path.abspath(root)
         self.pack_chunks = pack_chunks
-        self._pending: Dict[str, List[Dict[str, Any]]] = {}
+        self._live_writes = None
         self._registered_meta: Dict[str, SessionHeader] = {}
 
     def _log_path(self, cwd: Optional[str], session_id: str) -> str:
@@ -352,12 +352,28 @@ class JsonlSessionPersistence(SessionPersistence):
 
         os.makedirs(os.path.dirname(path), exist_ok=True)
 
-        lines_to_write = self._encode_events(events)
-        with open(path, "a", encoding="utf-8") as f:
-            for line in lines_to_write:
-                f.write(line + "\n")
-            f.flush()
-            os.fsync(f.fileno())
+        content = ("\n".join(self._encode_events(events)) + "\n").encode("utf-8")
+        # A rejected fsync must leave the old prefix, otherwise a retained
+        # write-behind retry would duplicate records already written to disk.
+        with open(path, "ab", buffering=0) as stream:
+            before = os.fstat(stream.fileno()).st_size
+            try:
+                remaining = memoryview(content)
+                while remaining:
+                    count = stream.write(remaining)
+                    if not count:
+                        raise OSError("session append made no progress")
+                    remaining = remaining[count:]
+                os.fsync(stream.fileno())
+            except BaseException as error:
+                try:
+                    stream.truncate(before)
+                    os.fsync(stream.fileno())
+                except BaseException as rollback_error:
+                    failure = RuntimeError('failed to roll back session append: ' + str(error))
+                    failure.errors = [error, rollback_error]
+                    raise failure from error
+                raise
 
     def _encode_events(self, events: List[Dict[str, Any]]) -> List[str]:
         records = pack_chunk_runs(events) if self.pack_chunks else events
@@ -516,26 +532,22 @@ class JsonlSessionPersistence(SessionPersistence):
                 snapshots.append(SessionPersistenceSnapshot(header=header, revision=rev))
         return snapshots
 
-    def on_session_event(self, session: Any, event: Dict[str, Any]) -> None:
-        sid = session.id if hasattr(session, "id") else event.get("session_id", "default")
-        if sid not in self._pending:
-            self._pending[sid] = []
-        self._pending[sid].append(event)
-        if hasattr(session, "header") and session.header:
-            self._registered_meta[sid] = session.header
+    async def read_stored(self, session_id: str) -> SessionInspection:
+        return self._read_stored(session_id)[1]
+
+    async def repair_tail(self, session_id: str) -> None:
+        path, _ = self._read_stored(session_id)
+        with open(path, "r+b") as stream:
+            raw = stream.read()
+            committed = scan_log(raw)["committed_bytes"]
+            if committed < len(raw):
+                stream.truncate(committed)
+                stream.flush()
+                os.fsync(stream.fileno())
 
     async def on_session_flush(self, session: Optional[Any] = None) -> None:
-        if session:
-            sid = session.id if hasattr(session, "id") else getattr(session, "session_id", "default")
-            events = self._pending.pop(sid, [])
-            if events:
-                await self.append(sid, events)
-        else:
-            sids = list(self._pending.keys())
-            for sid in sids:
-                events = self._pending.pop(sid, [])
-                if events:
-                    await self.append(sid, events)
+        if self._live_writes is not None:
+            await self._live_writes.flush(session)
 
 
 class JsonlSessionPersistencePlugin(Plugin):
@@ -565,6 +577,7 @@ class JsonlSessionPersistencePlugin(Plugin):
         # name resolve here too.
         ctx.set_service("sessionPersistence", persistence)
 
-        ctx.on("session/event", persistence.on_session_event)
-        ctx.on("session/flush", persistence.on_session_flush)
+        from dsh.session.live_persistence import LivePersistence
+        persistence._live_writes = LivePersistence(persistence, ctx, (self.config or {}).get("writeBatchMaxDelayMs", 200))
+        persistence._live_writes.mount()
 

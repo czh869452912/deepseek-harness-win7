@@ -5,11 +5,9 @@ Includes crash recovery (closing interrupted turns), packed chunk rows, and Win3
 Cold recovery follows the pinned upstream JSONL format and Session repair seam.
 """
 
-import asyncio
 import hashlib
 import json
 import os
-import time
 import tempfile
 from typing import Any, Dict, List, Optional, Tuple, Union
 from dsh.cordis.plugin import Plugin
@@ -143,34 +141,6 @@ def parse_header_meta(first_line: str) -> Optional[SessionHeader]:
     if not is_header_line(parsed):
         return None
     return from_header_line(parsed)
-
-
-def win32_atomic_write(target_path: str, lines: List[str]) -> None:
-    """
-    Windows-safe atomic write using temporary file and retried os.replace.
-    """
-    tmp_path = f"{target_path}.{int(time.time() * 1000)}.{os.getpid()}.tmp"
-    os.makedirs(os.path.dirname(target_path), exist_ok=True)
-    with open(tmp_path, "w", encoding="utf-8") as f:
-        for line in lines:
-            f.write(line + "\n")
-        f.flush()
-        os.fsync(f.fileno())
-
-    retries = 5
-    for attempt in range(retries):
-        try:
-            os.replace(tmp_path, target_path)
-            return
-        except OSError:
-            if attempt == retries - 1:
-                if os.path.exists(tmp_path):
-                    try:
-                        os.remove(tmp_path)
-                    except OSError:
-                        pass
-                raise
-            time.sleep(0.05 * (2 ** attempt))
 
 
 class SessionLogScanner:

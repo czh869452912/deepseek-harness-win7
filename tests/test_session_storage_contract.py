@@ -1,6 +1,5 @@
 """Public storage cases derived from upstream persistence contract/coordinator."""
 import asyncio
-import copy
 from pathlib import Path
 import pytest
 from dsh.core.session import SessionHeader

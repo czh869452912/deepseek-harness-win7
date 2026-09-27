@@ -29,6 +29,8 @@ class LivePersistence:
             return self.live[session]
         if self.closed:
             raise RuntimeError('persistence write path is closed')
+        if self.backend._prepared is not None:
+            self.backend._prepared.attach(session)
         seed = copy.deepcopy(list(session.events))
         lock = self.locks.setdefault(session.id, asyncio.Lock())
         prior = self.retirements.get(session.id)
@@ -133,6 +135,8 @@ class LivePersistence:
         finally:
             for state in self.live.values():
                 state['writes'].cancel_automatic_wait()
+            if self.backend._prepared is not None:
+                await self.backend._prepared.drain()
             close = getattr(self.backend, 'close', None)
             if close is not None:
                 try:

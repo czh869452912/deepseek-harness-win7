@@ -68,6 +68,8 @@ def main(argv=None):
         'session-recovery-paired', output)
     run([python, 'scripts/session_live_oracle.py', '--output', str(output / 'session-live-paired.json')],
         'session-live-paired', output)
+    run([python, 'scripts/session_prepared_oracle.py', '--output', str(output / 'session-prepared-paired.json')],
+        'session-prepared-paired', output)
     raw = output / 'cordis-raw.json'
     run([python, 'scripts/cordis_oracle.py', '--output', str(raw)], 'cordis-raw', output, accepted=(0, 1))
     run([python, 'scripts/cordis_acceptance.py', str(raw), '--output', str(output / 'cordis-acceptance.json')],

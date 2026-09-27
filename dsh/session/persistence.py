@@ -2,6 +2,7 @@
 Abstract SessionPersistence Seam mounted at `ctx.session_persistence`.
 """
 
+import asyncio
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 from dsh.core.session import SessionHeader
@@ -55,6 +56,9 @@ class SessionPersistence(ABC):
 
     def __init__(self, ctx: Optional[Any] = None):
         self.ctx = ctx
+        self._prepared = None
+        self._storage_locks = {}
+        self.prepared_cache_size = 5
 
     @abstractmethod
     def locate(self, meta: SessionHeader) -> Optional[SessionLocation]:
@@ -76,12 +80,19 @@ class SessionPersistence(ABC):
         """Load an immutable balanced logical view and commit any required cold crash recovery."""
         raise NotImplementedError
 
-    async def prepare(self, session_id: str, signal: Optional[Any] = None):
-        """Own one unpublished restored session for the factory transaction.
+    def storage_lock(self, session_id):
+        return self._storage_locks.setdefault(session_id, asyncio.Lock())
 
-        The caller races cancellation and disposes a late preparation. Loading
-        retains the backend's existing recovery rules; it never enters a store.
-        """
+    def prepared(self):
+        from dsh.session.prepared_persistence import PreparedPersistence
+        if self._prepared is None:
+            self._prepared = PreparedPersistence(self, self.prepared_cache_size)
+        return self._prepared
+
+    async def prepare(self, session_id: str, signal: Optional[Any] = None):
+        if hasattr(self, '_load_unshared'):
+            return await self.prepared().prepare(session_id, signal)
+        # Non-storage test/custom providers retain the minimal preparation seam.
         from dsh.core.session import Session
         from dsh.core.session.preparation import SessionPreparation
         inspection = await self.load(session_id)

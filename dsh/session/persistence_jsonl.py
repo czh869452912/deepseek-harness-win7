@@ -327,6 +327,16 @@ class JsonlSessionPersistence(SessionPersistence):
         }
 
     async def create(self, meta: SessionHeader) -> None:
+        if self._prepared is not None:
+            self._prepared.assert_writable(meta.id)
+        async with self.storage_lock(meta.id):
+            if self._prepared is not None:
+                self._prepared.assert_writable(meta.id)
+            await self._create(meta)
+            if self._prepared is not None:
+                self._prepared.changed(meta.id)
+
+    async def _create(self, meta: SessionHeader) -> None:
         self._registered_meta[meta.id] = meta
         path = self.locate(meta).path
         os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -336,6 +346,28 @@ class JsonlSessionPersistence(SessionPersistence):
             win32_atomic_write(path, [header_line])
 
     async def append(self, session_id: str, events: List[Dict[str, Any]]) -> None:
+        from dsh.core.session.json import snapshot_json_value, UNDEFINED
+        events = snapshot_json_value(events, UNDEFINED)
+        if events is UNDEFINED or not isinstance(events, list):
+            raise TypeError('session event batch is not losslessly JSON-serializable')
+        if not events:
+            return
+        if self._prepared is not None:
+            self._prepared.assert_writable(session_id)
+        async with self.storage_lock(session_id):
+            if self._prepared is not None:
+                self._prepared.assert_writable(session_id)
+            await self._append(session_id, events)
+            if self._prepared is not None:
+                self._prepared.changed(session_id)
+
+    async def inspect(self, session_id: str, signal: Optional[Any] = None) -> SessionInspection:
+        return await self.prepared().inspect(session_id, signal)
+
+    async def load(self, session_id: str) -> SessionInspection:
+        return await self.prepared().load(session_id)
+
+    async def _append(self, session_id: str, events: List[Dict[str, Any]]) -> None:
         if not events:
             return
 
@@ -348,7 +380,7 @@ class JsonlSessionPersistence(SessionPersistence):
             else:
                 if not meta:
                     meta = SessionHeader(session_id=session_id)
-                await self.create(meta)
+                await self._create(meta)
 
         os.makedirs(os.path.dirname(path), exist_ok=True)
 
@@ -444,7 +476,7 @@ class JsonlSessionPersistence(SessionPersistence):
             live = sessions.get(session_id) if sessions is not None and hasattr(sessions, "get") else None
         return live
 
-    async def load(self, session_id: str) -> SessionInspection:
+    async def _load_unshared(self, session_id: str) -> SessionInspection:
         live = self._live_session(session_id)
         if live is not None:
             events = list(live.events)
@@ -467,13 +499,13 @@ class JsonlSessionPersistence(SessionPersistence):
 
         closers = self._check_interrupted_turn(session_id, inspection.events)
         if closers:
-            await self.append(session_id, closers)
+            await self._append(session_id, closers)
             inspection.events.extend(closers)
 
         self._registered_meta[session_id] = inspection.meta
         return inspection
 
-    async def inspect(self, session_id: str) -> SessionInspection:
+    async def _inspect_unshared(self, session_id: str) -> SessionInspection:
         # A live owner answers from memory (reference coordinator `inspect`:
         # `const live = this.ctx.sessions.get(id); if (live !== undefined)
         # return this.inspectLive(live)`), so a session that is live but not yet
@@ -532,6 +564,13 @@ class JsonlSessionPersistence(SessionPersistence):
                 snapshots.append(SessionPersistenceSnapshot(header=header, revision=rev))
         return snapshots
 
+    async def stored_revision(self, session_id: str) -> str:
+        path = self._find_log_path(session_id)
+        if path is None:
+            raise FileNotFoundError(session_id)
+        with open(path, 'rb') as stream:
+            return hashlib.sha256(stream.read()).hexdigest()
+
     async def read_stored(self, session_id: str) -> SessionInspection:
         return self._read_stored(session_id)[1]
 
@@ -578,6 +617,8 @@ class JsonlSessionPersistencePlugin(Plugin):
         ctx.set_service("sessionPersistence", persistence)
 
         from dsh.session.live_persistence import LivePersistence
+        persistence.prepared_cache_size = (self.config or {}).get("preparedSessionCacheSize", 5)
+        persistence.prepared()
         persistence._live_writes = LivePersistence(persistence, ctx, (self.config or {}).get("writeBatchMaxDelayMs", 200))
         persistence._live_writes.mount()
 

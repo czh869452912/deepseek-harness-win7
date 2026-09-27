@@ -1,0 +1,46 @@
+{
+  "id": "MIG-SESSION-PREPARED-005",
+  "goal": "Share cold Session sources and integrate exclusive restore reservations",
+  "kind": "implementation",
+  "state": "review",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "d2ccc891195f02c3f783b13894ebb7e45ac95906",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-SESSION-COLD-003",
+      "contract": "CON-SESSION-COLD-RECOVERY",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-LIVE-004",
+      "contract": "CON-SESSION-LIVE-WRITES",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-SESSION-PREPARATIONS",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "Source-derived pool tests cover sharing, cancellation, pin/LRU, exact reservation ownership, failed/invalidated commit and late observer cleanup.",
+    "Both JSONL and SQLite pass cache revision, mutation release, publication suffix, blocked writes, queued repair cancellation and unload tests.",
+    "Five real upstream/Python preparation observations match selected semantics; previous Agent/cold/live paired gates remain passing.",
+    "197 unmodified upstream Session assertions and final full Python/release gate pass; source counts do not certify equivalent Python parity."
+  ],
+  "expected_paths": [
+    "dsh/session",
+    "tests",
+    "scripts",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "Run final candidate gate; remaining public create/append schema/lazy materialization and configured Agent startup/reload require separate closure."
+}

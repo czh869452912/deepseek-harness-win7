@@ -77,6 +77,16 @@ class SqliteSessionPersistence(SessionPersistence):
         return SessionLocation(kind="sqlite", path=self.db_path)
 
     async def create(self, meta: SessionHeader) -> None:
+        if self._prepared is not None:
+            self._prepared.assert_writable(meta.id)
+        async with self.storage_lock(meta.id):
+            if self._prepared is not None:
+                self._prepared.assert_writable(meta.id)
+            await self._create(meta)
+            if self._prepared is not None:
+                self._prepared.changed(meta.id)
+
+    async def _create(self, meta: SessionHeader) -> None:
         cur = self._conn.cursor()
         cur.execute(
             """
@@ -96,13 +106,35 @@ class SqliteSessionPersistence(SessionPersistence):
         self._conn.commit()
 
     async def append(self, session_id: str, events: List[Dict[str, Any]]) -> None:
+        from dsh.core.session.json import snapshot_json_value, UNDEFINED
+        events = snapshot_json_value(events, UNDEFINED)
+        if events is UNDEFINED or not isinstance(events, list):
+            raise TypeError('session event batch is not losslessly JSON-serializable')
+        if not events:
+            return
+        if self._prepared is not None:
+            self._prepared.assert_writable(session_id)
+        async with self.storage_lock(session_id):
+            if self._prepared is not None:
+                self._prepared.assert_writable(session_id)
+            await self._append(session_id, events)
+            if self._prepared is not None:
+                self._prepared.changed(session_id)
+
+    async def inspect(self, session_id: str, signal: Optional[Any] = None) -> SessionInspection:
+        return await self.prepared().inspect(session_id, signal)
+
+    async def load(self, session_id: str) -> SessionInspection:
+        return await self.prepared().load(session_id)
+
+    async def _append(self, session_id: str, events: List[Dict[str, Any]]) -> None:
         if not events:
             return
         cur = self._conn.cursor()
         cur.execute("SELECT id FROM sessions WHERE id = ?", (session_id,))
         if not cur.fetchone():
             meta = SessionHeader(session_id=session_id)
-            await self.create(meta)
+            await self._create(meta)
 
         with self._conn:
             for ev in events:
@@ -177,7 +209,7 @@ class SqliteSessionPersistence(SessionPersistence):
         sessions = self.ctx.get('sessions') if self.ctx is not None else None
         return sessions.get(session_id) if sessions is not None else None
 
-    async def load(self, session_id: str) -> SessionInspection:
+    async def _load_unshared(self, session_id: str) -> SessionInspection:
         live = self._live_session(session_id)
         if live is not None:
             events = list(live.events)
@@ -191,11 +223,11 @@ class SqliteSessionPersistence(SessionPersistence):
         inspection = await self.read_stored(session_id)
         closers = interrupted_turn_closers(inspection.events)
         if closers:
-            await self.append(session_id, closers)
+            await self._append(session_id, closers)
             inspection.events.extend(closers)
         return inspection
 
-    async def inspect(self, session_id: str) -> SessionInspection:
+    async def _inspect_unshared(self, session_id: str) -> SessionInspection:
         live = self._live_session(session_id)
         if live is not None:
             return SessionInspection(live.header, list(live.events))
@@ -258,5 +290,7 @@ class SqliteSessionPersistencePlugin(Plugin):
 
         ctx.set_service("sessionPersistence", persistence)
         from dsh.session.live_persistence import LivePersistence
+        persistence.prepared_cache_size = (self.config or {}).get("preparedSessionCacheSize", 5)
+        persistence.prepared()
         persistence._live_writes = LivePersistence(persistence, ctx, (self.config or {}).get("writeBatchMaxDelayMs", 200))
         persistence._live_writes.mount()

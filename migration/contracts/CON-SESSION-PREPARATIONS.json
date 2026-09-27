@@ -1,0 +1,32 @@
+{
+  "id": "CON-SESSION-PREPARATIONS",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/session/session-persistence/src/preparations.ts",
+    "reference/packages/session/session-persistence/src/coordinator.ts",
+    "dsh/session/preparations.py",
+    "dsh/session/prepared_persistence.py"
+  ],
+  "consumers": [
+    "dsh/session/persistence_jsonl.py",
+    "dsh/session/persistence_sqlite.py",
+    "dsh/session/live_persistence.py",
+    "dsh/core/agent_loop.py"
+  ],
+  "invariants": [
+    "In-flight and ready cold sources are shared; the default ready LRU capacity is five, pins/reservations are not evicted as ordinary ready entries.",
+    "Observers can cancel without cancelling shared loads or committed work. Commit failures remove entries and wake waiters; invalidated work never resurrects an entry.",
+    "One exact unpublished Session reserves an identity. Reusable release preserves it; setup mutation discards it; live attachment consumes the exact reservation.",
+    "Public nonempty append and create reject reserved identities, snapshot append JSON before waiting and invalidate cached reads after successful writes; load waits for held reservations.",
+    "Cold revision changes cause reload/retry before reserve; repair is durably committed then reread. Unload invalidates entries, wakes waiters and drains active preparation work before backend close."
+  ],
+  "open_questions": [],
+  "identity": "SessionPreparations reserves exact source.session, not a same-ID replacement. Persisted cold inspection is detached from mutable setup state. Session end-seed counts toward the reuse boundary.",
+  "ownership": "PreparedPersistence owns the per-backend pool; LivePersistence consumes exact publication reservations and drains it during owned teardown. A lease releases its pin once.",
+  "ordering": "Shared source -> revision check -> serialized repair commit -> reread changed revision -> reserve -> unpublished setup -> exact live attach -> seed/suffix persistence. Storage locks serialize public writes with repair; empty appends remain no-ops.",
+  "errors": "Preserve exact exception abort reasons; Python wraps non-exception reasons with a .reason field. Reserved writes reject; failed commits discard entries and wake waiters. Invalid or lossy append JSON rejects before disk writes.",
+  "cancellation": "Signal cancellation is observer-local; started durable commit settles before checking cancellation. Python Task cancellation shields shared work and releases late reservations. A queued commit checks its abort after acquiring the storage lock, before repair.",
+  "adaptation": "Python 3.8 futures, OrderedDict and locks replace Promises/Map. JSONL uses content hashes and SQLite detached metadata/event hashes for revision checks. Detached inspection copies substitute immutable reference views. Five real JSONL paired observations compare exact identity outcomes, event types, rejection/cancellation and physical lengths; they do not assert full storage-schema or cross-process parity."
+}

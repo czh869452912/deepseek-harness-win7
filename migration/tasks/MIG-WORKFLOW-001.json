@@ -1,0 +1,32 @@
+{
+  "id": "MIG-WORKFLOW-001",
+  "goal": "建立第一阶段迁移记录、只读门禁及进展视图",
+  "kind": "implementation",
+  "state": "review",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "449396c008ff7ac817963bc42e80b90561a0e27f",
+  "owner": "current-session-coordinator",
+  "requires": [],
+  "provides": [],
+  "acceptance": [
+    "Inventory tracked upstream manifests without certifying module coverage.",
+    "Index C1-C21 and record baseline gaps.",
+    "Validate dependencies, revisions and evidence; preserve historical integration.",
+    "Run CLI regressions and full pytest with all failures recorded."
+  ],
+  "expected_paths": [
+    "migration",
+    "scripts/migration.py",
+    "tests/test_migration_workflow.py",
+    "AGENTS.md",
+    ".gitattributes"
+  ],
+  "open_findings": [],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [
+    "RUN-WORKFLOW-20260927"
+  ],
+  "next_action": "审阅未提交工具与记录；明确全量回归的三个基线失败后，再安排提交/集成"
+}

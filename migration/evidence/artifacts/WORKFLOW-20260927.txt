@@ -1,0 +1,12 @@
+Workflow foundation verification, 2026-09-27
+Product base: 449396c008ff7ac817963bc42e80b90561a0e27f
+Working tree: uncommitted migration tooling and records; no product implementation changes
+Full suite: .venv\Scripts\python.exe -m pytest tests
+Result: 2924 passed, 3 failed, 2 skipped, 2 warnings; 155.89 s; exit 1
+The same failures remain: old portable --profile launcher, glob and grep C/D cross-drive errors.
+Full log: .goose/migration-foundation-20260927-tests.log (local, not versioned)
+After the full suite, two more regression tests for historical integration retention were added.
+Final targeted run: .venv\Scripts\python.exe -m pytest tests/test_migration_workflow.py -q
+Result: 27 passed in 0.13 s; exit 0
+Record check: scripts/migration.py check passed.
+No upstream oracle run, new portable build, Win7 certification, or Git integration is claimed.

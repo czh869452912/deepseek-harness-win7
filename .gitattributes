@@ -1,3 +1,7 @@
 
 # Snapshot bytes are compared with pinned upstream goldens on Windows too.
 snapshots/** -text
+
+# Evidence hashes must survive checkout on Windows and POSIX.
+migration/** text eol=lf
+migration/evidence/artifacts/** -text

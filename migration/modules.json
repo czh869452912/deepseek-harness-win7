@@ -1,0 +1,1673 @@
+{
+  "schema_version": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "scope_note": "Manifest discovery only, not completed module/official-test inventory. Non-package assets also require analysis.",
+  "manifests": [
+    {
+      "path": "reference/apps/cli/package.json",
+      "name": "@deepseek-ai/dsh",
+      "sha256": "8b9dd9481018c948d6c96a837ca16b72764c3d6ce682c1b7199a00ba2ac10387",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/apps/web/package.json",
+      "name": "@deepseek-ai/dsh-web-frontend",
+      "sha256": "d73d37377783372f27971b0518b62c9cd1cbf03177e5ac402bb2c4fe1f42a3ec",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/native/landlock-run/package.json",
+      "name": "@deepseek-ai/node-addon-landlock-run-workspace",
+      "sha256": "974d62ce90d5d54706243ffecccb41b4990b7f166432a5cefec19dcbd51c25cb",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/native/landlock-run/packages/entry/package.json",
+      "name": "@deepseek-ai/node-addon-landlock-run",
+      "sha256": "2c3090be08192a4e8f16ace13007c300c41bb1efbdbaf88ddb574933cf29f826",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/native/landlock-run/packages/linux-arm64/package.json",
+      "name": "@deepseek-ai/node-addon-landlock-run-linux-arm64",
+      "sha256": "3293808848e6465c7ddf9b7e9d150b8d9d27fe857b84da68a9389c7733fd95db",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/native/landlock-run/packages/linux-x64/package.json",
+      "name": "@deepseek-ai/node-addon-landlock-run-linux-x64",
+      "sha256": "0529a3cbf0ded631b4ce202f6c4174a1efd87ef1e24b8106f012c1297255b3d8",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/package.json",
+      "name": "@deepseek-ai/dsh-root",
+      "sha256": "552fe07638754047fb3dfd29d61dde835c2a5a618da8b766a711bc15eaa334e2",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/acp/acp/package.json",
+      "name": "@deepseek-ai/dsh-acp",
+      "sha256": "6817b8831ed8158160d17656b11c0a9060fdf32f7086847288d092a398807964",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/api/gateway/package.json",
+      "name": "@deepseek-ai/dsh-api-gateway",
+      "sha256": "c910b237b9bc4f54965f99887b1c6a56201e73041698326da2a573fd4ff434ae",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/api/remotes/package.json",
+      "name": "@deepseek-ai/dsh-api-remotes",
+      "sha256": "b5e31f6a4dc9290fb09e6030bc4e25ef7240cddbb872a4854c2e6916c1e18b3c",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/api/session-controller/package.json",
+      "name": "@deepseek-ai/dsh-api-session-controller",
+      "sha256": "69c60c440220b2d981bc0c68e5b5a5608cdbcb139c213078849b6c2167d0e5ef",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/api/settings-controller/package.json",
+      "name": "@deepseek-ai/dsh-api-settings-controller",
+      "sha256": "a29b3403886a4d66d12e406754002267279e63dbc392bc447bcca08f282dea76",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/api/workspace-controller/package.json",
+      "name": "@deepseek-ai/dsh-api-workspace-controller",
+      "sha256": "f7c2ca7bc98b18c6cac820ef8c2b329ef0602772c2bd085572da8088e1dc6aca",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/attachment/attachment-local/package.json",
+      "name": "@deepseek-ai/dsh-attachment-local",
+      "sha256": "1d8580497999c688702c5d3585a13f8c6c91f9e422a61593f675977dbccb2608",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/attachment/attachment/package.json",
+      "name": "@deepseek-ai/dsh-attachment",
+      "sha256": "a5f4669a5a3756259e1ef2e94392a0944538ef615132ffcca72684536eb645ca",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/boot/app-boot/package.json",
+      "name": "@deepseek-ai/dsh-app-boot",
+      "sha256": "e64dfec3b68f47bf29977fc70756e14fa33293570cb9a9d74ad18162cc25a35d",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/boot/cmdline/package.json",
+      "name": "@deepseek-ai/dsh-cmdline",
+      "sha256": "5c90f701504debaabce6f7c9964a0241907e3db058db46134b15bf6c6dd12626",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/bundle/acp-app/package.json",
+      "name": "@deepseek-ai/dsh-acp-app",
+      "sha256": "b2f9ebf05e59d00c54afecbd601abf98b4d1f39cc642d299c1667348d3c32d65",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/bundle/base/package.json",
+      "name": "@deepseek-ai/dsh-base",
+      "sha256": "5406e437c92d6f7432014ba4c8e34d08e51a6dd7af6113ba88dbf3eda0b57117",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/bundle/headless/package.json",
+      "name": "@deepseek-ai/dsh-headless",
+      "sha256": "a3df99ba3d45b6e4238418338ef8579994f270dc25b5cb8443612e7cf7cbcaed",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/bundle/sdk-app/package.json",
+      "name": "@deepseek-ai/dsh-sdk-app",
+      "sha256": "9a7bff894077a6ec4e03fc8bcdd958f0f02fee72bbf00bf044d4ad47143d9529",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/bundle/sdk-minimal/package.json",
+      "name": "@deepseek-ai/dsh-sdk-minimal",
+      "sha256": "0270d49f6c7485bc0c1ce11d5d272b245fb4f3d075dd5248da588d1ef2a0af54",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/bundle/web-app/package.json",
+      "name": "@deepseek-ai/dsh-web-app",
+      "sha256": "0e9484ae7424411fd5a9039ae1a3ec0f3fd24db31dbf476d1fd2a44a60860e30",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/connection/package.json",
+      "name": "@deepseek-ai/dsh-client-connection",
+      "sha256": "5f66b5befdffb55434bdaa618d7f42c88ca1b2eea1628c30232aa0d3bff01065",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/hmr/package.json",
+      "name": "@deepseek-ai/dsh-client-hmr",
+      "sha256": "472ece579ea2bf5a64263e362f349b5f514a887eaf664973d56469cc2cc77e6c",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/locale/package.json",
+      "name": "@deepseek-ai/dsh-client-locale",
+      "sha256": "a0e06f5be121ef0dd58834000af04fa161972673e8c16457b0ec70753bc09f7d",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/modules/package.json",
+      "name": "@deepseek-ai/dsh-client-modules",
+      "sha256": "bc023aadf4ef1df6e65c9ee0c1d6e5287c2d32dd9541174e387a352a0aa92101",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/store/package.json",
+      "name": "@deepseek-ai/dsh-client-store",
+      "sha256": "c15a50055b4b28f1038f47b18199e3cf838cd70e4d5455c72e76582fda456a15",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-agent-preset/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-agent-preset",
+      "sha256": "504b7ebe83ecfbba72baa382972313b269c80bb796c1f34497c544588863f862",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-approval/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-approval",
+      "sha256": "7af7173e34750618b208938757c025c352768f0ecf3a029d35401848d0a142e8",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-attachment/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-attachment",
+      "sha256": "b6df9a0f9e61e31738f399b24f732135a4e4aa60531150c0ff0a94308b1bd001",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-brand-official/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-brand-official",
+      "sha256": "de1741bc7b45032d7698fd5bef9084564221f51b759372a3c76d177fead78e46",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-chat/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-chat",
+      "sha256": "dd41e26111d37439a658e03eb637a21c68dc859f2b89f23fcc8758ec5ef1eb17",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-commands/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-commands",
+      "sha256": "8ea8b43830a6334a5ba11620b98327de7b4973455c823c9ca83383d862c81a94",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-conversation/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-conversation",
+      "sha256": "7c5e9f7be84c9385cd2722333c11bff6b04286eebeda305f282c7d364ad6df09",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-deliverables/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-deliverables",
+      "sha256": "3126de556f7f8db80226a2817539d2bb0013f0446649db6c04c214e7b910aa00",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-directory-picker-browse/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-directory-picker-browse",
+      "sha256": "de364bb4431a526b449f4169b24848cc08ec9a15551ed10525953053faefc3e4",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-directory-picker-native/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-directory-picker-native",
+      "sha256": "fcd624a39e2a8f512730f548c9abb2f58c67b467bedd83d4d59379d3b8179f47",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-goal/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-goal",
+      "sha256": "b8318ce1f0e4f784f6686e46fc740a24744f22da59aa4a66f6be3007d5a459b5",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-input-trigger/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-input-trigger",
+      "sha256": "a5156995c7c95a958c23318cf95176f33abac794ad648fb5eee54cf07a8066d4",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-jobs/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-jobs",
+      "sha256": "ab2bc4b69d3884b39b4918bf430a4ff06a69d3087bca0e89125c74c9e9d01eb5",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-layout/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-layout",
+      "sha256": "5ab942a835da02decebe50bb8d44d2bf4a4f384e47bef15a99368a820704410c",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-message-feedback/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-message-feedback",
+      "sha256": "ada603e2c6467e9a86ae5b31059a6234084bdaa0b3c59a9788652f00f99d1153",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-model-selection/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-model-selection",
+      "sha256": "8f64fccc1e8873e720e153d114d4cb97ceb3d8d142c0890786ec9ed211ce9f62",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-permission-presets/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-permission-presets",
+      "sha256": "46baec14ab5e901a260c8a9be68be6bee33fcd6f285e4490271cec7bbf98b72a",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-plan/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-plan",
+      "sha256": "a01d94f5023ff4860ed8e61f71e29ad35b55842a1b7c4d05c47f41bc5080e8a9",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-primitives/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-primitives",
+      "sha256": "5c1e58285221d84615380183a9356189b53e157185bd078b202ebe0b6d9f5424",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-reference/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-reference",
+      "sha256": "5ad36eac2f1d64279fb50fd480c63248a507924e70f6f9ecac188bdd49b661b4",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-renderer/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-renderer",
+      "sha256": "41a111008f5aae3727d5d9ba65918854f4e0d0ce58eed0caa8435398fe99524f",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-session/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-session",
+      "sha256": "c82e2a74ecbf5581bb895ad7b34afbd2e30b6c24f3744c0d2caeb98db2922ce3",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-settings-general/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-settings-general",
+      "sha256": "bb47e402e8961fc02bc64968e445f8f56304f24cd6b8151ad049203651a7abae",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-settings-models/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-settings-models",
+      "sha256": "ef6a99532fd4af56f59d44e07fadf0a3829c6cca4aac8a4405261307a57f2235",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-settings-plugin-inventory/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-settings-plugin-inventory",
+      "sha256": "a5f2aa08119662ce030c3c6d0da88944356b5e3bd62a2118bc95c959bf25311c",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-settings-plugins/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-settings-plugins",
+      "sha256": "7076c3de2857054a67d51e780e4046bb75942c0646ee520eb58a02a78e663c9c",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-settings/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-settings",
+      "sha256": "ec8030826705fbb50c47cf3c99b9565617026850ed5f094b816e9c2403b71338",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-sidebar/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-sidebar",
+      "sha256": "c88e4c67d5f5416cb67d594ce34a503a5e5fde401bf9705bf852763a12e4e6e4",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-skill/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-skill",
+      "sha256": "f9ce4ddc2274c8e99d0a49ce93e216bd26108ff32e6dc1b0ec54f3ba7a4a8b84",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-slots/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-slots",
+      "sha256": "0ff1b2cd4a198d9d052c06efaae3a1e412642d8b8c299d85f02c419d354d2b4d",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-subagent/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-subagent",
+      "sha256": "36d77744c4c8e9de853e725b903c91ff948c4c0ef2af7ba92251a28bf4dcbec4",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-theme/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-theme",
+      "sha256": "a30f00b686733449af44d08a29dbbb0da557ceedc7f13f6f739a6f73c4ac76d1",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-tool/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-tool",
+      "sha256": "316a22a45888b922f2f08edb1150c1d5ccf039f9190cb719d3e65f53f0968919",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-trajectory/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-trajectory",
+      "sha256": "ff2442db19e48a1fd4d74f1d285eb37eb40453237d48d512a91056eecf88c19c",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-user-questions/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-user-questions",
+      "sha256": "66f6b1c4594c9117ed0772f3785e8821fbf9bfa2b26cd114754591e835d4e2a9",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-workflow-run/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-workflow-run",
+      "sha256": "0f0b7e2a9cee2fb417dae87e84a999390ab90365ebc35b39a7d0d06609d3e541",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/ui-workspace/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-workspace",
+      "sha256": "7b651ada5c67cea1b7b7233360316b7922bae86e7f0b7e032c571e31d2be9fac",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/client/web/package.json",
+      "name": "@deepseek-ai/dsh-client-web",
+      "sha256": "bb064b3e03c416304a9c1d529added80fd51ea46673500145a8f92a5f8db69c8",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/code-runtime/code-runtime-python/package.json",
+      "name": "@deepseek-ai/dsh-code-runtime-python",
+      "sha256": "f9e920e2252009c61c70542cb5ed474dce02933596a78aef5cf6ccf16c8c8cca",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/code-runtime/code-runtime-worker-thread/package.json",
+      "name": "@deepseek-ai/dsh-code-runtime-worker-thread",
+      "sha256": "b893d96f2d85f01450dfe75df907845e2b840621c453d8580cfc0131125fa1df",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/code-runtime/code-runtime/package.json",
+      "name": "@deepseek-ai/dsh-code-runtime",
+      "sha256": "60fdd5114b81d5452cc3ddfa31ac56b62a7d014f9d8a9e55dd09bf906d74d27f",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/compaction/command-compact/package.json",
+      "name": "@deepseek-ai/dsh-command-compact",
+      "sha256": "e080de83936fa64b2c02a2a86c8ced5e57f701ca452ba4dcda46ccd5d4400c7d",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/compaction/compaction-basic/package.json",
+      "name": "@deepseek-ai/dsh-compaction-basic",
+      "sha256": "6f3db20e6c332cda36b8413f3a4fd8a43ce821b8d17ccbb112b2c50671d25bc9",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/compaction/compaction-tool-result-pruner/package.json",
+      "name": "@deepseek-ai/dsh-compaction-tool-result-pruner",
+      "sha256": "ca10f2cf51ba90725d2b3713ca44f7254632b4c39ab1cf9f171fb378615b7912",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/compaction/compaction/package.json",
+      "name": "@deepseek-ai/dsh-compaction",
+      "sha256": "fbc744693fc4b2b91ca507d995787ab2d1cadf4593c4dd5ecf4898a198006d8d",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/context/agent-instructions/package.json",
+      "name": "@deepseek-ai/dsh-agent-instructions",
+      "sha256": "99d20ad1d855446567890a849cd5aff8349b5889eeca692fc84002f4f2cc933e",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/context/file-reference-local/package.json",
+      "name": "@deepseek-ai/dsh-file-reference-local",
+      "sha256": "a9257b864b2a69c10661cd55ab3838684f9e113b0a7a7ec713d7e4d09c08aefc",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/context/file-reference/package.json",
+      "name": "@deepseek-ai/dsh-file-reference",
+      "sha256": "2525de3801087dd7410cd2c324f74a2b9830febe28ca131040a196fddcf55dc0",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/context/session-reference/package.json",
+      "name": "@deepseek-ai/dsh-session-reference",
+      "sha256": "fd9c64bf1fa01cc1ce08ccd8c0ca47a0b2f70346931521ffb43312ab10d9e118",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/context/time-context/package.json",
+      "name": "@deepseek-ai/dsh-time-context",
+      "sha256": "1928e9b9468a8addcf6db4a938693ee24dc52580ba83d7ca2749b5ce57a406d0",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/context/tmux-context/package.json",
+      "name": "@deepseek-ai/dsh-tmux-context",
+      "sha256": "258c7e67c6176917118d98496442ada606d9bbf319cf7ff549baa5a5bec2b8f0",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/core/agent-default-model/package.json",
+      "name": "@deepseek-ai/dsh-agent-default-model",
+      "sha256": "7f9b27c69f2cc1bc1270a6d7e577a4bab0f3ad162f8ee5501f3330d144fc1837",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/core/agent-loop/package.json",
+      "name": "@deepseek-ai/dsh-agent-loop",
+      "sha256": "7916ca40f37b49b3a7e365194a176bb1c7203dade35cd4d4f28deb571b65a3a7",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/core/agent-tool-presentation/package.json",
+      "name": "@deepseek-ai/dsh-agent-tool-presentation",
+      "sha256": "23026f1d9caafc9de52d1a370f7496cc341a7ec0a135bfc95bbc0b55aa0074cd",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/core/agent/package.json",
+      "name": "@deepseek-ai/dsh-agent",
+      "sha256": "d0cb557bbb2408605be2d5f0fe00e82958d31d8c2cd0d91ba239524094eb108d",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/core/scope/package.json",
+      "name": "@deepseek-ai/dsh-scope",
+      "sha256": "d839ac8f8c276a57a8720106311522ac5fd394afae9782bda047f8c73ca10304",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/core/session/package.json",
+      "name": "@deepseek-ai/dsh-session",
+      "sha256": "6d6afd41dd55a5554f73dcf8da9fa8ed78626d22bf5d36da7ffa71a64ec404e2",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/core/system-prompt/package.json",
+      "name": "@deepseek-ai/dsh-system-prompt",
+      "sha256": "92ab23705d3653579d4b739abd3ddc96b10f5a20b3939e8f65019fc65ed852f6",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/core/tools/package.json",
+      "name": "@deepseek-ai/dsh-tools",
+      "sha256": "dffd5908e524e37b0ff4eb7e0c2352c299518905a6dc76caa431398e52f2cbbe",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/credentials/authorization/package.json",
+      "name": "@deepseek-ai/dsh-authorization",
+      "sha256": "a72799748dc24f5799e2100441939d867a409a6af2bbbf8e9f7e709b13f14fa6",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/credentials/credentials-local/package.json",
+      "name": "@deepseek-ai/dsh-credentials-local",
+      "sha256": "9703b66cf329784e5899347df39ced5785991032e1f6d0be536933d55b6a1fc2",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/credentials/credentials/package.json",
+      "name": "@deepseek-ai/dsh-credentials",
+      "sha256": "137f8004749bc98f57b8230212a0e19e2ae61b45b97c001bbe2c4bd2e54cd8af",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/e2b/e2b/package.json",
+      "name": "@deepseek-ai/dsh-e2b",
+      "sha256": "7549f417f9ec598103883416352bcfb8e899e449ad2313bc327592cd71f019e1",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/e2b/fs-e2b/package.json",
+      "name": "@deepseek-ai/dsh-fs-e2b",
+      "sha256": "3898bfd60b9b2fd5735dc29e091336ebc0889c8c59f7799ce020b66cafb4478c",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/e2b/subprocess-e2b/package.json",
+      "name": "@deepseek-ai/dsh-subprocess-e2b",
+      "sha256": "62dc7eb333f84f046c7413a80716603e1c65f8c3e2ac249881b91625932dcb5b",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/examples/agent-spine-demo/package.json",
+      "name": "@deepseek-ai/dsh-agent-spine-demo",
+      "sha256": "d5ad4f0db2db7d4f7969912a558d6a67d9b3a4c0db04d258d923260aa21c10f3",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/experimental/agent-team-profile/package.json",
+      "name": "@deepseek-ai/dsh-experimental-agent-team-profile",
+      "sha256": "5646adfa0e3b147ead692f01eb65f382a19a9257eab4ba7b56cebea77d9b560b",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/experimental/agent-team-web-profile/package.json",
+      "name": "@deepseek-ai/dsh-experimental-agent-team-web-profile",
+      "sha256": "7e6def977d74d44c74e39564fb5aa7d7f396f26c047beeb78e7f5e24f7047acd",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/experimental/agent-team/package.json",
+      "name": "@deepseek-ai/dsh-experimental-agent-team",
+      "sha256": "974c271847fe86e4b6a1453ecf0633b1172bb9b504fcf8e2a4e66ddae6efc71f",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/experimental/client-ui-agent-team/package.json",
+      "name": "@deepseek-ai/dsh-experimental-client-ui-agent-team",
+      "sha256": "bcbbdd5e1048ced8e26e58ff5f3a6b6fbd90cc338bca840cf04a6eada8287d00",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/experimental/inspector/package.json",
+      "name": "@deepseek-ai/dsh-experimental-inspector",
+      "sha256": "34d906b4ea439a89ed605bda4d7eac2119b9bd99ec1ec0b6cba10a85e1069281",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/experimental/tool-agent-team/package.json",
+      "name": "@deepseek-ai/dsh-experimental-tool-agent-team",
+      "sha256": "d6f412307347430d88d3745f0db87818992cd58264f987fbf05eb866dde3fda0",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/experimental/webworker-packer/package.json",
+      "name": "@deepseek-ai/dsh-experimental-webworker-packer",
+      "sha256": "cd3aa3fe6423321139274fe6b96c88ffa413f71fe59353379e5445c3d732702e",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/experimental/webworker-runtime/package.json",
+      "name": "@deepseek-ai/dsh-experimental-webworker-runtime",
+      "sha256": "64eafe35aa063543ae10baa8d9c256cad1e2e29baee3646f729099695db637a3",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/extensions/cordis-client-runner/package.json",
+      "name": "@deepseek-ai/dsh-cordis-client-runner",
+      "sha256": "61a0a49137a344c766975f5d78aa629e3ee09b0c5ff5a8384c083a85dc3221a0",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/extensions/cordis-host-runner/package.json",
+      "name": "@deepseek-ai/dsh-cordis-host-runner",
+      "sha256": "00c454099ec7dcb6b452f1d0381e736c88f35f6b1689463e565c4b1058b9490a",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/extensions/tool-cordis/package.json",
+      "name": "@deepseek-ai/dsh-tool-cordis",
+      "sha256": "47621b49ba513623090280a7f39c6d9932c76207246471872abb0a615389e3a4",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/extensions/ui-cordis/package.json",
+      "name": "@deepseek-ai/dsh-client-ui-cordis",
+      "sha256": "61b0eea6deb5c047b0d788b759b5c329910b3bdb03534a15c429acf9f62b9ed1",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/feedback/command-feedback/package.json",
+      "name": "@deepseek-ai/dsh-command-feedback",
+      "sha256": "ca95e2ae2a2484cc644b2b0a5c63c5e0bca6f39e69f121f7602dbd9e0e47c532",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/feedback/message-feedback/package.json",
+      "name": "@deepseek-ai/dsh-message-feedback",
+      "sha256": "79fd891f531e142561a7c4cbdde910f80f406314d2df75658bb62c87aeda0dff",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/fs/fs-local/package.json",
+      "name": "@deepseek-ai/dsh-fs-local",
+      "sha256": "9a4aeb4ba71bd0c4f957f23e56c37c2214665da2e0b8273fc1953ebcf07cca5a",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/fs/fs-observation-policy/package.json",
+      "name": "@deepseek-ai/dsh-fs-observation-policy",
+      "sha256": "3c4518b40e5bfd8cb5850e8926049e574580afe9b5fe7e86ef6cd3002cea1a49",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/fs/fs-sandbox/package.json",
+      "name": "@deepseek-ai/dsh-fs-sandbox",
+      "sha256": "aa55507510b5d2bce2d0b3d7ee0823685d14fc6b26cfe2d0fcf8725e5f4e55c2",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/fs/fs/package.json",
+      "name": "@deepseek-ai/dsh-fs",
+      "sha256": "3dcea9357cee05f4c7cd72590f5e1aab37eba6aadf478aefd1b59cb11cd6270b",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/fs/tool-fs-search/package.json",
+      "name": "@deepseek-ai/dsh-tool-fs-search",
+      "sha256": "92f3e335c6dc275c340c47618d741bd9d47ddde1703d29c6449d8ff1725e3362",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/fs/tool-fs/package.json",
+      "name": "@deepseek-ai/dsh-tool-fs",
+      "sha256": "3db393dfcf0059c5177a9959232543b8cc017c8970440da1a9a68dd0dae10907",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/fs/tool-str-replace-editor/package.json",
+      "name": "@deepseek-ai/dsh-tool-str-replace-editor",
+      "sha256": "bec6e40b327fca7f74046c598aac17ec63a733d076d7c63a1b4dc7637f2702e3",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/goal/command-goal/package.json",
+      "name": "@deepseek-ai/dsh-command-goal",
+      "sha256": "c9b5c284a0092221ace55dfc3b3af24a730c5edddf6349488ab405299271c592",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/goal/goal-round-driver/package.json",
+      "name": "@deepseek-ai/dsh-goal-round-driver",
+      "sha256": "4d9f68453e9b16cdd2e7c0689bf42c313906961b14d11a91ecfdca35c23920d3",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/goal/goal/package.json",
+      "name": "@deepseek-ai/dsh-goal",
+      "sha256": "f161da3c4e985089b898dc56c81bee564e7f7198859dee11111044f208883165",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/goal/tool-goal/package.json",
+      "name": "@deepseek-ai/dsh-tool-goal",
+      "sha256": "280c0ad7f958e49c10509b98d5624d85aa2fdf27bf40a51a0baeb80f6e4af3f1",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/guard/repeat-tool-reminder/package.json",
+      "name": "@deepseek-ai/dsh-repeat-tool-reminder",
+      "sha256": "fdcca6e55b469d683bd8ed9524f060d0a4cbe7383e939350870417228b19c365",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/guard/timeout-policy/package.json",
+      "name": "@deepseek-ai/dsh-tool-call-timeout-policy",
+      "sha256": "acf597c6c416736a9b9a21623098a337827d70b253f7d16bf7b0c4e0b4a29d28",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/hooks/hook-protocol/package.json",
+      "name": "@deepseek-ai/dsh-hook-protocol",
+      "sha256": "970f372ac252f8556618808d4c6693dfb95aeefc6df448924b2f849152d33d44",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/hooks/hooks-claude-code/package.json",
+      "name": "@deepseek-ai/dsh-hooks-claude-code",
+      "sha256": "a1a64ffb71b0cf7de55e2718b33f19a829a6d4fc2de3accf1fc27f10b232f8ba",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/hooks/hooks-codex/package.json",
+      "name": "@deepseek-ai/dsh-hooks-codex",
+      "sha256": "768311c84399720ffc33c13c8adab882f6323749b7d72a9b5b7e7d801bc9d94e",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/host/directory-picker-auto/package.json",
+      "name": "@deepseek-ai/dsh-host-directory-picker-auto",
+      "sha256": "eb2260ab9fc638088132764cfb9edc7a4fb942d4b9b3ede86c60fef6b5460dba",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/host/directory-picker-browse/package.json",
+      "name": "@deepseek-ai/dsh-host-directory-picker-browse",
+      "sha256": "f2155bdc0729d5aa293437b019ea046a34ecc234f9a52588814a169db7b14d3e",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/host/directory-picker-native/package.json",
+      "name": "@deepseek-ai/dsh-host-directory-picker-native",
+      "sha256": "ce61e88ea9ec71e62702d8bf7d0dcf7baaabf519c7dd3505311639924e54f09e",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/host/directory-picker/package.json",
+      "name": "@deepseek-ai/dsh-host-directory-picker",
+      "sha256": "c1e099015b135f1c79ebb76adb35ad75983f47276ebf2d5d2079baf9193c3611",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/host/frontend-static/package.json",
+      "name": "@deepseek-ai/dsh-host-frontend-static",
+      "sha256": "fb5d1fe9f8088be8d5f134841ed8a17fc8798b63cf0f545de3f5c269fd96ce05",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/host/plugin-inventory/package.json",
+      "name": "@deepseek-ai/dsh-host-plugin-inventory",
+      "sha256": "d358becafcf463433c79f913f9c8703e49a378e14210c7adce5015b73aacfdad",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/host/webserver/package.json",
+      "name": "@deepseek-ai/dsh-host-webserver",
+      "sha256": "0490905137eb7a745faa0bdf258a1e850f0dca3b5ed0d6ec4077dae7b054f4f5",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/identity/anonymous-user-id/package.json",
+      "name": "@deepseek-ai/dsh-anonymous-user-id",
+      "sha256": "0779161577e0e58411a93be5a64a7930f95bba0e0dfc566ffb637bef4734e0ac",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/interaction/commands/package.json",
+      "name": "@deepseek-ai/dsh-commands",
+      "sha256": "6e626721a06aa8cd396bd2182cd1b4f72dac692705b8a12d18b19e8466bca320",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/interaction/permission-presets/package.json",
+      "name": "@deepseek-ai/dsh-permission-presets",
+      "sha256": "4cbcd68a86fcadaedadc7d398be22b04ab892bf5c54807369514b1b78c54b0d3",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/interaction/tool-ask-user/package.json",
+      "name": "@deepseek-ai/dsh-tool-ask-user",
+      "sha256": "a525fdb835f58620f72a0ca6a9bea73592ec2fb80c7df563a1784f91379e7268",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/interaction/user-approval/package.json",
+      "name": "@deepseek-ai/dsh-user-approval",
+      "sha256": "4139729a9dbd4fbbf874ef130a3a0add1f1763527f8b7c0d963158235b90501c",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/interaction/user-questions/package.json",
+      "name": "@deepseek-ai/dsh-user-questions",
+      "sha256": "5143734f5104be19387b197bd12b993e5886752beb626d60bfa9497d3d55c7ad",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/jobs/jobs-local/package.json",
+      "name": "@deepseek-ai/dsh-jobs-local",
+      "sha256": "4b8acd83a99d77ceca83b85b7cb03937cb58fe8a7182da305b6eda2d52f4a1f9",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/jobs/jobs/package.json",
+      "name": "@deepseek-ai/dsh-jobs",
+      "sha256": "c54212750c4fd18a8d56332705bb57d13decd86c87c2f330fb8824acf3757eda",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/jobs/tool-jobs/package.json",
+      "name": "@deepseek-ai/dsh-tool-jobs",
+      "sha256": "5e33c5646feac8cbc708c1d2aaf21d851fe7e2655f2500becc69b7929fa2a76a",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/llm/deepseek-llm-api-extensions/package.json",
+      "name": "@deepseek-ai/dsh-deepseek-llm-api-extensions",
+      "sha256": "2071995fc6fb1f0935f8d410ea372fcb4e054eb45329581400a2b026611391a3",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/llm/llm-deepseek/package.json",
+      "name": "@deepseek-ai/dsh-llm-deepseek",
+      "sha256": "79177b22b68403935d1cb2407a3e6fed053f93ead274df707d1237ceac721fed",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/llm/llm-pi-ai/package.json",
+      "name": "@deepseek-ai/dsh-llm-pi-ai",
+      "sha256": "3820ade702e583ab22a621dfd153ec60239fa3f7425c9b233476195ff2b577ab",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/llm/llm-retry/package.json",
+      "name": "@deepseek-ai/dsh-llm-retry",
+      "sha256": "70d1abac803da4043628e705bede5df67de35a391e8b64a651bee7937a9a0af5",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/llm/llm/package.json",
+      "name": "@deepseek-ai/dsh-llm",
+      "sha256": "bff6c5c369cd184ca220bbc956ec554dc5e41899f4516da7124fa6f063dead40",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/llm/plugin-package-inventory-deepseek/package.json",
+      "name": "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
+      "sha256": "f3c80ce04ff3838bfd35bf166eb5879cfd03cdf31acdec0db723e0afe4801b0c",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/llm/token-meter/package.json",
+      "name": "@deepseek-ai/dsh-token-meter",
+      "sha256": "ae08af541c3d1ff12a933af76e7b48e014981d77c9402e8aa9cd5badf25bb2b1",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/lsp/lsp-stdio/package.json",
+      "name": "@deepseek-ai/dsh-lsp-stdio",
+      "sha256": "5a6039693334ff763b186ee22fb681d554f7ec0e7bd192314091796fa3004c44",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/lsp/lsp/package.json",
+      "name": "@deepseek-ai/dsh-lsp",
+      "sha256": "fe5bfa63be144f4857682a7f17668be04b01d3956d292b16e9987e7a2fef0a63",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/lsp/tool-lsp/package.json",
+      "name": "@deepseek-ai/dsh-tool-lsp",
+      "sha256": "dd37b02f2d65483781d6a792dbdc433d4c76d0baac1ba3f85d27b97c6b94126b",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/mcp/mcp-client/package.json",
+      "name": "@deepseek-ai/dsh-mcp-client",
+      "sha256": "9ab523480524febf0b7f57bfd57a0087d5325d943d0ca3e584490473a6816a04",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/plan/plan-mode/package.json",
+      "name": "@deepseek-ai/dsh-plan-mode",
+      "sha256": "07404eb954faae369f25d8ed93a5ebe3cde790ead75b9dda6999f923a220a1da",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/preset/agent-presets/package.json",
+      "name": "@deepseek-ai/dsh-agent-presets",
+      "sha256": "f65322f81ce77d7c4f8451abdf970b55fc5e5b70a1fe1889f659edbc5e201975",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/preset/persona/package.json",
+      "name": "@deepseek-ai/dsh-persona",
+      "sha256": "fb8e982574188330fff2e9bece358e5c84ea3de1dd3a03489b086dc08b1f7417",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/runtime-diagnostics/invariants/package.json",
+      "name": "@deepseek-ai/dsh-invariants",
+      "sha256": "792177bc3af01fbd64d9e3ce102fd3b4a020d1058e5e8d2e02d560631d66b7a3",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/sandbox/sandbox-local/package.json",
+      "name": "@deepseek-ai/dsh-sandbox-local",
+      "sha256": "6bf412b8331db3826ba8e56d80637ce3bf8432dc1c50c3eaa479be01b6177fb1",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/sandbox/sandbox-policy/package.json",
+      "name": "@deepseek-ai/dsh-sandbox-policy",
+      "sha256": "27b403ebe744f7ae0e61be03c2cc9fd71e2b021e450b20766e2f1aff3379aff5",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/sandbox/sandbox-windows-acl/package.json",
+      "name": "@deepseek-ai/dsh-sandbox-windows-acl",
+      "sha256": "66d1bb01f52e4876c0c164bed54a67142f443e24d35cd5dc8d8a8f1060160850",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/sandbox/sandbox/package.json",
+      "name": "@deepseek-ai/dsh-sandbox",
+      "sha256": "6d3794caf9827173a3f14c7862d34c2de453b2fbf9ffb0733758e2cbe93d595f",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/schedule/schedule/package.json",
+      "name": "@deepseek-ai/dsh-schedule",
+      "sha256": "5c21dd8bbca352c172c4d623b14b0059a7239dd4538a2ef97fcc5b5058a5c86e",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/sdk/client/package.json",
+      "name": "@deepseek-ai/dsh-sdk-client",
+      "sha256": "3f4a9a6a5340177a30b24e4be0f2980918ba7dc39e47944a82ef2db39d1cd03e",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/sdk/protocol/package.json",
+      "name": "@deepseek-ai/dsh-sdk-protocol",
+      "sha256": "8ea0bfd5167a044c5f3209c63c6d07059d7975065da202ca2c91a91b1877f3ad",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/sdk/server/package.json",
+      "name": "@deepseek-ai/dsh-sdk-jsonrpc-server",
+      "sha256": "91119f30dcc5a1cc95f4401d7db428c14bf51901ea852615af9e06710dbb70fe",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/session-query/session-log-export/package.json",
+      "name": "@deepseek-ai/dsh-session-log-export",
+      "sha256": "0b76bff515a4c8e2d6fcd83f70e624c9a447436cdaee3e3369692aa48381f405",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/session-query/session-query-sqlite/package.json",
+      "name": "@deepseek-ai/dsh-session-query-sqlite",
+      "sha256": "980e4c3bd8cd8c06efa018abb3aef5662836f8ff580044fb832b4557b59e74c5",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/session-query/session-query/package.json",
+      "name": "@deepseek-ai/dsh-session-query",
+      "sha256": "ce3e38bd094fdcea31b05f97360f039f69a66d90df05ea5bab2a3fdbfe38dd1f",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/session-query/tool-session-query/package.json",
+      "name": "@deepseek-ai/dsh-tool-session-query",
+      "sha256": "ea1272115c645941a334432fd2d8f3ae838d011e3887ed1d3127cbd7dafe8689",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/session/session-checkpoint-policy/package.json",
+      "name": "@deepseek-ai/dsh-session-checkpoint-policy",
+      "sha256": "045f155d2a80185c2ae2231a0ed3d32d8f238abe54a13b7ae2873da9a4b82d53",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/session/session-log-deepseek/package.json",
+      "name": "@deepseek-ai/dsh-session-log-deepseek",
+      "sha256": "cad670cd1afb3b82bc2f153bdde1b081fb30b3c87fdc9823d26d6f4d7117952b",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/session/session-persistence-jsonl/package.json",
+      "name": "@deepseek-ai/dsh-session-persistence-jsonl",
+      "sha256": "8bb2ca6d8d9222459a404ea8508cc57d25ac541fa0fc53d3882a79fc36bf31b1",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/session/session-persistence-sqlite/package.json",
+      "name": "@deepseek-ai/dsh-session-persistence-sqlite",
+      "sha256": "b5325e2599e1c2ea6c67fda9dc513585f711748cae549339ba9cf78b1e589bf7",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/session/session-persistence/package.json",
+      "name": "@deepseek-ai/dsh-session-persistence",
+      "sha256": "8f486d89179bc49ea2a8121e6a46b5e99830f12adfed57c35e08c86b70ed7dcf",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/session/session-projection-cache/package.json",
+      "name": "@deepseek-ai/dsh-session-projection-cache",
+      "sha256": "fab9bda441ab784bf6f8dba0cdc7b641c99a6c64f4e951b5a572321111fb7c95",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/session/session-projection/package.json",
+      "name": "@deepseek-ai/dsh-session-projection",
+      "sha256": "72d7b5e5b52ac1b1aa3843d344129902e5c46b57bf29028079184b02ecce7c9b",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/session/session-stats/package.json",
+      "name": "@deepseek-ai/dsh-session-stats",
+      "sha256": "6be97596e5124647149ca02973031873b7d5094cb00cc0e973cabefb6d47727c",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/session/session-telemetry-otel/package.json",
+      "name": "@deepseek-ai/dsh-session-telemetry-otel",
+      "sha256": "b1f2ae6b9eaae1e3b827fbf8f669ae88392bec9b0420fca4d1b3f9bc6f6893be",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/session/session-telemetry/package.json",
+      "name": "@deepseek-ai/dsh-session-telemetry",
+      "sha256": "5b7ce07985b2bbe7a03440d09b0c27260b5a9e2108608bc2f0a3405b3dceab30",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/session/session-title-all-prompts-llm/package.json",
+      "name": "@deepseek-ai/dsh-session-title-all-prompts-llm",
+      "sha256": "5254713ddb4792110c5adb594e299c73c150302c8219c1dbf349de571f26f619",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/session/session-title-first-prompt-llm/package.json",
+      "name": "@deepseek-ai/dsh-session-title-first-prompt-llm",
+      "sha256": "06d08f23d065d8401b50f410840fc307c316b42a7a4dd85f5187ab4dfd55374b",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/session/session-title-llm/package.json",
+      "name": "@deepseek-ai/dsh-session-title-llm",
+      "sha256": "10fb908db31a7e74b0b0d52e5ef4a91fb01d90570d01ff7efeb1654466ab62f2",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/session/session-title/package.json",
+      "name": "@deepseek-ai/dsh-session-title",
+      "sha256": "b2d016937383bff63ea0db86bc412f365179ae622d21cefac5819a956e096d6f",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/settings/settings-file/package.json",
+      "name": "@deepseek-ai/dsh-settings-file",
+      "sha256": "a0b7b611a13651b6309c70f446bb4fa48dfd44122dd9f801858cb0c39c16a592",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/settings/settings/package.json",
+      "name": "@deepseek-ai/dsh-settings",
+      "sha256": "86b701e35cc0d581e3ebe03a77041b4bb8143ff06f99daf6ab72f3796c5d9f23",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/shell/bash-local/package.json",
+      "name": "@deepseek-ai/dsh-bash-local",
+      "sha256": "6a3a4db451e8056475775ac15a68e216dce4e382fc51861655cba55dcf2f3a89",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/shell/bash-sandbox/package.json",
+      "name": "@deepseek-ai/dsh-bash-sandbox",
+      "sha256": "d985fc873358ffc0fda2bf2a975bf402f08028b7dbd8980880992d0c937a0a9b",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/shell/pwsh-local/package.json",
+      "name": "@deepseek-ai/dsh-pwsh-local",
+      "sha256": "988dc344a29a94cd9fd868aa4e593032ad5f4689531b97cd09bc5abde0a41b21",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/shell/pwsh-sandbox/package.json",
+      "name": "@deepseek-ai/dsh-pwsh-sandbox",
+      "sha256": "4f45ca119c8c76ca46fcbd31b18f3f25866b3fd720df78632a91196f9f16b109",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/shell/shell-env/package.json",
+      "name": "@deepseek-ai/dsh-shell-env",
+      "sha256": "b3712a7efdab6ef07bab2d47dfe2572544d028436e54010b89db4efb25de480e",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/shell/shell/package.json",
+      "name": "@deepseek-ai/dsh-shell",
+      "sha256": "80dc044fbb8d4bd5d0b3ad2f14d1fa135dfc74446282583691fe00770372d2d9",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/shell/tool-bash-persistent/package.json",
+      "name": "@deepseek-ai/dsh-tool-bash-persistent",
+      "sha256": "ab7178e91524d0b6445956249e5abea94b9666e84843db5c2606a68cca5a602b",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/shell/tool-bash/package.json",
+      "name": "@deepseek-ai/dsh-tool-bash",
+      "sha256": "8d624441d06b9b94759818b075efd4b0fc062ad529915245b077ac6ae9f5b48d",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/shell/tool-pwsh-persistent/package.json",
+      "name": "@deepseek-ai/dsh-tool-pwsh-persistent",
+      "sha256": "1005faa0a5fcbf5e23314ff8fa687b6534956f1fd711f60a50e3665c3cd7375d",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/shell/tool-pwsh/package.json",
+      "name": "@deepseek-ai/dsh-tool-pwsh",
+      "sha256": "abb3430e631ae7cfbc367dbd3dcf086a5abf5c9afdc71d880adc5bced7f415fa",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/skill/skill-badge/package.json",
+      "name": "@deepseek-ai/dsh-skill-badge",
+      "sha256": "f2de28dabb3d511f440848c88f73acfac1de8888304a22aaac272e1b28d941ed",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/skill/skill-filesystem/package.json",
+      "name": "@deepseek-ai/dsh-skill-filesystem",
+      "sha256": "22463d9e51036311eb85fe4a80f4909f16d0b5713c75511005f9a441a326738a",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/skill/skill/package.json",
+      "name": "@deepseek-ai/dsh-skill",
+      "sha256": "9be5a3f5610d63413f3fe4eef8ba2617c5c0291258b0cc24b8a3564f68060237",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/skill/tool-skill/package.json",
+      "name": "@deepseek-ai/dsh-tool-skill",
+      "sha256": "47cf7ba6ce7871e71a65b5d17ce8ee1e7a8c03f8f5b10d279fa6a9b9c45f60eb",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/spill/spill-local/package.json",
+      "name": "@deepseek-ai/dsh-spill-local",
+      "sha256": "ff53cfa8ad9719f67b30748a27968263adb0fed8622a4769ea14a0405e579364",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/spill/spill-policy/package.json",
+      "name": "@deepseek-ai/dsh-spill-policy",
+      "sha256": "2d50273ed639b1660c2bd6dab69255b369f2a284fc84b769a8c1e30024cd50af",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/spill/spill/package.json",
+      "name": "@deepseek-ai/dsh-spill",
+      "sha256": "e48337c47350ca154f6b84a8350c5b258514b8d82decb82544157023c0c48ff7",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/storage/storage-domain/package.json",
+      "name": "@deepseek-ai/dsh-storage-domain",
+      "sha256": "d11cb4ffde4ff9bb9ece4eed0098b037a6fdc75da1170b65807b26b79c510cda",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/storage/storage-json/package.json",
+      "name": "@deepseek-ai/dsh-storage-json",
+      "sha256": "87340e324a37db7a380210de77d9056635b882cc6094e58e59caec3df501ccc7",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/storage/storage-sqlite/package.json",
+      "name": "@deepseek-ai/dsh-storage-sqlite",
+      "sha256": "ff00ccfecc8e93daa128e23a630a80b01cf2a2c7e58714db199eb8e5eefb8b3e",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/storage/storage/package.json",
+      "name": "@deepseek-ai/dsh-storage",
+      "sha256": "4382fae0f75648440d084d48f5ca1cae8f21cfa1c2d79a4f14282bf8f1109428",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/subagent/subagent-acp/package.json",
+      "name": "@deepseek-ai/dsh-subagent-acp",
+      "sha256": "81cd63d239444b79a48485adb5067c001bb4e670aa698f6672957067211b9eed",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/subagent/subagent-claude-code/package.json",
+      "name": "@deepseek-ai/dsh-subagent-claude-code",
+      "sha256": "a672deab63566a90aee13e33c6db58de728226e5af5ffb910e61a2611a0b469c",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/subagent/subagent-codex/package.json",
+      "name": "@deepseek-ai/dsh-subagent-codex",
+      "sha256": "6ff189b280d73c8efe52eeb442fbf57cfcbc0be691d9bea68d5af906057958ce",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/subagent/subagent-dsh-sdk/package.json",
+      "name": "@deepseek-ai/dsh-subagent-dsh-sdk",
+      "sha256": "becd0ec603576d2ca3bc318bdadc3e6edc43c2b3919f5a1b5e55227ee25e24ad",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/subagent/subagent-fork-in-process/package.json",
+      "name": "@deepseek-ai/dsh-subagent-fork-in-process",
+      "sha256": "ddd1ed60271a4c5a650a4d0bca0feee8f22da93aae5c00b39631d15022fcac4d",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/subagent/subagent-in-process-driver/package.json",
+      "name": "@deepseek-ai/dsh-subagent-in-process-driver",
+      "sha256": "41b3be76b44ee95e9db8e2bbf5399b76e1d9d58cf5b1182c351d3f06a285e136",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/subagent/subagent-spawn-in-process/package.json",
+      "name": "@deepseek-ai/dsh-subagent-spawn-in-process",
+      "sha256": "6210f9c11a66144407b387699fbbacf1d67c350f61d30027f650ed83af635c2f",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/subagent/subagent/package.json",
+      "name": "@deepseek-ai/dsh-subagent",
+      "sha256": "aed60e6042ec00f0dc0a33065725c444d85a34982f81fee77baf905b570bfdc1",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/subagent/tool-subagent-control/package.json",
+      "name": "@deepseek-ai/dsh-tool-subagent-control",
+      "sha256": "33aa1a9054ade0817a34415520e2cc482646ff9d8273a7676f8f5b71ef1232b8",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/subagent/tool-subagent-report/package.json",
+      "name": "@deepseek-ai/dsh-tool-subagent-report",
+      "sha256": "aadd3f6e5cd9bf88a32309c73ddc9ac767c21be95b4e51670c62ec1c2ef94b10",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/subagent/tool-subagent/package.json",
+      "name": "@deepseek-ai/dsh-tool-subagent",
+      "sha256": "6b7bba819e1281e41d74226535ffbe195f287553b3b25e27386cc17a80e12ba7",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/subprocess/subprocess-local/package.json",
+      "name": "@deepseek-ai/dsh-subprocess-local",
+      "sha256": "d8238b547db87ec564a3a027b0654dc4df9fa997f6fdc304500cb2c7216ee1e5",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/subprocess/subprocess/package.json",
+      "name": "@deepseek-ai/dsh-subprocess",
+      "sha256": "212845da2d4715e473266ec9949b685ccfba0a79c63dad117b0fb765384b09ef",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/subprocess/win32-process/package.json",
+      "name": "@deepseek-ai/dsh-win32-process",
+      "sha256": "ff0079ad03ab61abf98abc45875c48841796044207c4fcd7797bd03090e815d1",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/terminal/terminal-bash/package.json",
+      "name": "@deepseek-ai/dsh-terminal-bash",
+      "sha256": "24095908cc50d42cb3a46ef8248ac7572e4603a10d86b02bfa67c121a4455113",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/terminal/terminal/package.json",
+      "name": "@deepseek-ai/dsh-terminal",
+      "sha256": "7b23ec9769c70293e9fd72905ef3e1f3b1cfd5d3393b2597b54c70a8d92101a1",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/terminal/tool-terminal/package.json",
+      "name": "@deepseek-ai/dsh-tool-terminal",
+      "sha256": "0a803d7859f1a9306d5a90031fef22c22e9edeb1403b48fbe38b3f41fe4331ed",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/test-support/agent-loop-testkit/package.json",
+      "name": "@deepseek-ai/dsh-agent-loop-testkit",
+      "sha256": "b66d9167f09400ed2aa08c9de7215897b2591a5d8a59ba75898be2105d62e121",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/test-support/client-runtime/package.json",
+      "name": "@deepseek-ai/dsh-client-test-runtime",
+      "sha256": "3e57f7fed96561d987a14b362c16b67a6d8aefa76e93dd7734748d26d990182e",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/test-support/llm-mock-server/package.json",
+      "name": "@deepseek-ai/dsh-llm-mock-server",
+      "sha256": "9d2b2d586c80e5fce3f419f3d891aaa80f0c80c1a242875cc5ce9bc11cbf6804",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/test-support/llm-replay/package.json",
+      "name": "@deepseek-ai/dsh-llm-replay",
+      "sha256": "2638370a098b8a57bb7748cd3809f1c3f4320b272d6adf8d427ce169d0a15e1c",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/test-support/loader-smoke/package.json",
+      "name": "@deepseek-ai/dsh-loader-smoke",
+      "sha256": "038154dd4c26edb7ce5c93655f406dbda2b9286ea77690e3ca89e5d3694eda32",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/test-support/session-snapshot/package.json",
+      "name": "@deepseek-ai/dsh-session-snapshot",
+      "sha256": "a36765f6353836c32163a2b71aae8cfc8624dc521741d653b101b11bcef7cccf",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/todo/tool-todo/package.json",
+      "name": "@deepseek-ai/dsh-tool-todo",
+      "sha256": "9564d8865eb390e04784060f4f1ac02d28f9fb783dc10f7e1adc8dc0aca01f90",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/typert/generator/package.json",
+      "name": "@deepseek-ai/dsh-typert-generator",
+      "sha256": "e940c40fc660d4aacd65afc812098fada48f2b115ba82bc9e49bef8f65e06ad3",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/typert/generator/tests/fixtures/remote-model/package.json",
+      "name": "@fixture/remote-workspace",
+      "sha256": "f76d2733a22ad88a873689b64afe8dceaeb2cdf33e99f7ec50ce348801994f99",
+      "classification": "fixture"
+    },
+    {
+      "path": "reference/packages/typert/generator/tests/fixtures/remote-model/packages/domain/package.json",
+      "name": "@fixture/domain",
+      "sha256": "3a8998877d56b57192bc6bdfcc512ef741f284e0d0f03f7ed38c6ec6af97ca60",
+      "classification": "fixture"
+    },
+    {
+      "path": "reference/packages/typert/generator/tests/fixtures/remote-model/packages/remote/package.json",
+      "name": "@fixture/remote",
+      "sha256": "c9e80a4a7ac92c24ba8b89b664eb97c412b26fd4a3997ec6a45779ac51af9f8e",
+      "classification": "fixture"
+    },
+    {
+      "path": "reference/packages/typert/generator/tests/fixtures/type-model/package.json",
+      "name": "@fixture/workspace",
+      "sha256": "89db51b71fd7cd93ce93cb503868e6b74d8c17df8b4d93ce054df2c205cf6b5e",
+      "classification": "fixture"
+    },
+    {
+      "path": "reference/packages/typert/generator/tests/fixtures/type-model/packages/client/package.json",
+      "name": "@fixture/client",
+      "sha256": "d7353bd37a668e58afc54ad50019cf3092be32f76a5ec8dbb8aa0b4ed58b0f05",
+      "classification": "fixture"
+    },
+    {
+      "path": "reference/packages/typert/generator/tests/fixtures/type-model/packages/host/package.json",
+      "name": "@fixture/host",
+      "sha256": "7d49f81db021905cb785b78de6b56acc006cc285f39b0316a1e5c3157584d7d4",
+      "classification": "fixture"
+    },
+    {
+      "path": "reference/packages/typert/generator/tests/fixtures/type-model/packages/write/package.json",
+      "name": "@fixture/write",
+      "sha256": "f0d0a02abe2ad8b3ecc486ee9b7fc35181e1d033e41f6769d10e59a68fad9118",
+      "classification": "fixture"
+    },
+    {
+      "path": "reference/packages/typert/loader/package.json",
+      "name": "@deepseek-ai/dsh-typert-loader",
+      "sha256": "fcf600e6aa97438a68930943a9b6fd75c2c3bc1a3acbfc4a33f0df3506c9f349",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/typert/protocol/package.json",
+      "name": "@deepseek-ai/dsh-typert-protocol",
+      "sha256": "994ad7440068841cbdede487d7ae5581820bdb730bc66408038f2ad000a7bafb",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/typert/registry/package.json",
+      "name": "@deepseek-ai/dsh-typert-registry",
+      "sha256": "0f58c8683f6a4adbe8ac5d1398f56c8fffe6cd8a9819c5a495dd61f3872e66c6",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/util/atomic-write/package.json",
+      "name": "@deepseek-ai/dsh-atomic-write",
+      "sha256": "997c05ae5662960a8b22d772e198e1bd2119cd0dd4ecc72dfef77ea2c8098e5c",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/util/brand/package.json",
+      "name": "@deepseek-ai/dsh-brand",
+      "sha256": "7a5da7faa8382a7f150208a3f395b7265a675086745b7536cde7cb71574e473a",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/util/crypto/package.json",
+      "name": "@deepseek-ai/dsh-util-crypto",
+      "sha256": "b4702720b1492020476c3aadb7dd0b87ff44bad2fce36d49d5289e291f1b12e8",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/util/home-paths/package.json",
+      "name": "@deepseek-ai/dsh-home-paths",
+      "sha256": "a621bf8cd72d95d2f933723e131c19d43775a3352d38ea44c1a8defdf6ee2476",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/util/launch-environment/package.json",
+      "name": "@deepseek-ai/dsh-launch-environment",
+      "sha256": "4a9e0301c2d6dd9d0dd02f5f005ea09961c27863d0a68a5420f3143e74161aa6",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/util/native-command/package.json",
+      "name": "@deepseek-ai/dsh-native-command",
+      "sha256": "6fb5115c32e74326c7603ab7141c3c3997628297c60de9d69aae340806d3c627",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/util/output-retention/package.json",
+      "name": "@deepseek-ai/dsh-output-retention",
+      "sha256": "0959df9c1d67df4b0cc85c158efc6ba7513ec8f73ab2b6f1b68ee97a06ddc466",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/util/timeout/package.json",
+      "name": "@deepseek-ai/dsh-timeout",
+      "sha256": "36ad60cba2876ee10ce5dbb4b213caab2ad4ad29e789f680e6dbbe06ef8dad33",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/util/workspace-path/package.json",
+      "name": "@deepseek-ai/dsh-util-workspace-path",
+      "sha256": "91d973de23f111709c04278ceb17585451775e5102789d4dd3f82830f42ac9a5",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/web/tool-web/package.json",
+      "name": "@deepseek-ai/dsh-tool-web",
+      "sha256": "855baf39f707352adc1c20028ce8d0fc450278036835fd03562505a14f665a49",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/web/web-fetch-http/package.json",
+      "name": "@deepseek-ai/dsh-web-fetch-http",
+      "sha256": "44b7f9198e33099a09e54b66a488cfafbcb71686fef89f4045b0cef8f8fdcdfc",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/web/web-search-deepseek/package.json",
+      "name": "@deepseek-ai/dsh-web-search-deepseek",
+      "sha256": "a371bb840e07c8215b460b5c006d417f93c9f3b0a95b9d2855fa0e3c37123bd0",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/web/web-search-exa/package.json",
+      "name": "@deepseek-ai/dsh-web-search-exa",
+      "sha256": "d2d97448a0e02ce55a9bd984f58297ff5dc1710a2c6bdaf9afcf1ec857bf351d",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/web/web-search-perplexity/package.json",
+      "name": "@deepseek-ai/dsh-web-search-perplexity",
+      "sha256": "3c95254dcf838980496c77aa0808ef921f4d2b8563cbdf5e79d547cec70ac407",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/web/web/package.json",
+      "name": "@deepseek-ai/dsh-web",
+      "sha256": "7c8bcfb76b626fd77cbfff0caf546098b1d946e4642ca3b1fbe91e00b7e5c403",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/webhook/webhook-github/package.json",
+      "name": "@deepseek-ai/dsh-webhook-github",
+      "sha256": "2478be549834896e3780663f7632a7eef91256c5f8ff2864040deb233b915212",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/webhook/webhook/package.json",
+      "name": "@deepseek-ai/dsh-webhook",
+      "sha256": "21f52f58bf617ea5f1b1ac2fec691fb4b314d0b48011adf220f34a8b4432e5e1",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/workflow/tool-ralph/package.json",
+      "name": "@deepseek-ai/dsh-tool-ralph",
+      "sha256": "3271fa82971dc0ec379842a6992805a9b392017c77b5d2451913e1f6d9dac73e",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/workflow/tool-workflow/package.json",
+      "name": "@deepseek-ai/dsh-tool-workflow",
+      "sha256": "0cc68623baac93e4c8696a22df74abb7624348fe1e4532df9e288f6c489b58fd",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/workflow/workflow-worker-thread/package.json",
+      "name": "@deepseek-ai/dsh-workflow-worker-thread",
+      "sha256": "f5b673651e6df6861ee2e743f952b8f8d30c8d7319a7aa5563f1ebf630b6a6a8",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/workflow/workflow/package.json",
+      "name": "@deepseek-ai/dsh-workflow",
+      "sha256": "60f529acf9da9b917a873ad83c1427ed6f0e32e81e69dcef2c4e16b2853b459c",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/packages/workspace/workspace/package.json",
+      "name": "@deepseek-ai/dsh-workspace",
+      "sha256": "3c595596cff864861aa72d5a279c453bbb410731ada98157524b957fc82d6254",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/python/sdk-runtime/package.json",
+      "name": "dsh-python-runtime-closure",
+      "sha256": "78afcb57379735ae653ee834bf15daf7b8df78dc8067c77c668d61b3a97fabdb",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/vendor/cordis/package.json",
+      "name": "@deepseek-ai/cordis",
+      "sha256": "4c9ed665b821f7549cb540f456ce1174b162c3ee4e0711f9526abd266246ecbb",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/vendor/cosmokit/package.json",
+      "name": "@deepseek-ai/cosmokit",
+      "sha256": "8f56e3efd230d6cbe6a145a4e000b08ee4c4cdb4ff6c4c2659ea38778b42dac1",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/vendor/group/package.json",
+      "name": "@deepseek-ai/cordis-plugin-group",
+      "sha256": "b18312f953e8026a8bd30a3cf3ff4fde9f88f3ec4de3289f860a47c2bb43be45",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/vendor/hmr/package.json",
+      "name": "@deepseek-ai/cordis-plugin-hmr",
+      "sha256": "5f508c333b3720d5531b6999da1d929a0bd18dbf05e5fef0f0ba9b474e6f75ba",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/vendor/include/package.json",
+      "name": "@deepseek-ai/cordis-plugin-include",
+      "sha256": "fe55c9ab7ce260cfbfede13cd490fe635dcd7f70606c1137917284acb9b66d01",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/vendor/loader/package.json",
+      "name": "@deepseek-ai/cordis-plugin-loader",
+      "sha256": "40cf4a563afabae89b14199e4c985ce4c07df9202962c5f4b714a9135e126c29",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/vendor/logger-console/package.json",
+      "name": "@deepseek-ai/cordis-plugin-logger-console",
+      "sha256": "5f03adbf71e0cfbea5b5384df71876d30a2238da7e97c2dce74da040758f8ef6",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/vendor/schemastery/package.json",
+      "name": "@deepseek-ai/schemastery",
+      "sha256": "b0905e78e12bad636adaf25f0f3b1f9e70eb9f5640d06be4c17e17838ae4067d",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/vendor/timer/package.json",
+      "name": "@deepseek-ai/cordis-plugin-timer",
+      "sha256": "f0e11480b8518543b01040bf6ed518ca44ea3118286936bf34ee136a9543691c",
+      "classification": "untriaged"
+    },
+    {
+      "path": "reference/website/package.json",
+      "name": "@deepseek-ai/website",
+      "sha256": "d0b5f30448f80c2c119c26b491936bb4b8bcdd81e1a51b706047677106d02a2b",
+      "classification": "untriaged"
+    }
+  ],
+  "non_package_surfaces": [
+    {
+      "path": "reference/scripts",
+      "status": "untriaged"
+    },
+    {
+      "path": "reference/snapshots",
+      "status": "untriaged"
+    },
+    {
+      "path": "reference/patches",
+      "status": "untriaged"
+    },
+    {
+      "path": "reference/docs",
+      "status": "untriaged"
+    },
+    {
+      "path": "reference/native",
+      "status": "untriaged"
+    },
+    {
+      "path": "reference/python",
+      "status": "untriaged"
+    },
+    {
+      "path": "reference/pnpm-lock.yaml",
+      "status": "untriaged"
+    },
+    {
+      "path": "reference/pnpm-workspace.yaml",
+      "status": "untriaged"
+    }
+  ]
+}

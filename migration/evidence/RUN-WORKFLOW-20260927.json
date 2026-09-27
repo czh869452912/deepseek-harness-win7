@@ -1,0 +1,48 @@
+{
+  "id": "RUN-WORKFLOW-20260927",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "449396c008ff7ac817963bc42e80b90561a0e27f",
+  "kind": "workflow-regression",
+  "result": "failed",
+  "validity": "historical",
+  "commands": [
+    ".venv\\Scripts\\python.exe -m pytest tests",
+    ".venv\\Scripts\\python.exe -m pytest tests/test_migration_workflow.py -q",
+    ".venv\\Scripts\\python.exe scripts/migration.py check"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows x64 (not Win7 certified)",
+    "cwd": "D:\\Claude-project\\deepseek-harness-win7",
+    "workspace_state": "uncommitted tooling and records"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/WORKFLOW-20260927.txt",
+      "sha256": "f43ba72090e6fc17ede13cf26c63963518a08d2ad78d42d01484f48aebf3f53d"
+    }
+  ],
+  "full_suite": {
+    "passed": 2924,
+    "failed": 3,
+    "skipped": 2,
+    "warnings": 2,
+    "exit_code": 1
+  },
+  "final_targeted_suite": {
+    "passed": 27,
+    "exit_code": 0
+  },
+  "workspace_inputs": [
+    {
+      "path": "scripts/migration.py",
+      "sha256": "9e014c06d4205605e891e96526f8982adc6573b615218f0f027bf2787d87d580"
+    },
+    {
+      "path": "tests/test_migration_workflow.py",
+      "sha256": "219c69f6588a5b048c7c60ccb12eca80f15a90c14cbf5e15195539c280f3610f"
+    }
+  ],
+  "note": "Full suite preceded the final two historical-integration regressions; targeted suite ran on final tooling. Not candidate acceptance evidence."
+}

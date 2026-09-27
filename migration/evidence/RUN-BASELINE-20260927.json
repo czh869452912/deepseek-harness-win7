@@ -1,0 +1,32 @@
+{
+  "id": "RUN-BASELINE-20260927",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "449396c008ff7ac817963bc42e80b90561a0e27f",
+  "kind": "baseline-regression",
+  "result": "failed",
+  "validity": "historical",
+  "commands": [
+    ".venv\\Scripts\\python.exe -m pytest tests"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows x64 (not Win7 certified)",
+    "cwd": "D:\\Claude-project\\deepseek-harness-win7",
+    "temporary_root": "C:/Users/Administrator/AppData/Local/Temp",
+    "artifact_state": "historical dist present"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/BASELINE-20260927.txt",
+      "sha256": "9cae7fe199ee6dbf5b8543405dd693cc2ed8533cd84737d834c82450edaa61e3"
+    }
+  ],
+  "counts": {
+    "passed": 2899,
+    "failed": 3,
+    "skipped": 2,
+    "warnings": 2
+  },
+  "exit_code": 1
+}

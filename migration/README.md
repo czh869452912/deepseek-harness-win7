@@ -1,0 +1,75 @@
+# 持续对齐记录
+
+本目录是新迁移流程的持久记录入口，设计依据为[持续对齐工作流评估](../docs/research/2026-09-27-continuous-parity-workflow.md)。当前为第一阶段：清单发现、任务记录和只读门禁已落地，尚未启用自动领取、状态推进、多 worker 调度、上游定时观察或完整差分 runner。
+
+## 使用
+
+在仓库根目录执行，使用 Python 3.8 标准库，不增加产品依赖：
+
+```powershell
+.venv\Scripts\python.exe scripts/migration.py check
+.venv\Scripts\python.exe scripts/migration.py ready
+.venv\Scripts\python.exe scripts/migration.py status --write
+.venv\Scripts\python.exe scripts/migration.py inventory
+```
+
+- `check` 校验 JSON、ID/引用、依赖环、revision、来源路径、证据摘要、上游 checkout 及 manifest 漂移。通过只代表记录一致，不表示迁移完成。
+- `ready` 列出 ready 且无显式阻塞、依赖或活跃冲突的任务。它不认领任务、不提供租约，也不能在多个进程中充当调度器。
+- `status` 输出看板；加 `--write` 只写固定的 `migration/status.md`。不要手工维护看板。
+- `inventory` 输出当前 reference 所有 Git 已跟踪 package manifest 的发现结果，不改 target 或覆盖已人工分类的清单。新输出需先分析和合并，不能用它直接覆盖既有信息。hash 为 UTF-8 文本、换行统一为 LF。
+
+当前发现 272 个 manifest，包括 7 个 fixture；其余 265 项仍待分类，不能把它解释为 265 个待迁移产品模块。清单同时登记 scripts/snapshots/native/python 等非 package 表面；官方测试总数、完整动态契约图仍待盘点。
+
+## 单一状态权威
+
+`tasks/*.json` 是持久任务状态，单一协调者编辑。worker 可以提出结果和记录修改，但不能各自依据旧工作树快照决定已领取或已集成。当前人工协调，逐个选择任务；需要并发时先实现事务租约与 checkpoint 恢复，再扩大执行槽位。
+
+任务遵循 `draft → ready → running → review → verified → queued → integrated`。本工具仅检查当前快照，不校验历史状态转换或自动推进状态。未实施的转移校验不能靠 JSON 编辑冒充调度器行为。ready 不要求 owner；进入 running 后必须明确 owner。
+
+`expected_paths` 是预计影响范围，**不是写权限白名单**。必要提供端、消费端和测试可以一起调整。跨模块变更先记录不变式、必要消费者、冲突 owner 和验证闭包；有活跃 writer 时由协调者确定共同交付者，禁止直接编辑对方工作树。
+
+`requires` 绑定任务、契约、revision。消费者可放行须同时满足：提供任务 integrated、契约 specified、有效 passing acceptance 证据与集成提交及 revision 匹配。`conflicts_with` 任一方登记即可阻止与活跃任务同时执行。共同变更先收缩为同一任务，不用互相依赖制造环。
+
+首批四个可选任务为 inventory、Cordis 验证、跨盘搜索分析、portable 输入分析；建议先执行 Cordis 证据复核。`MIG-SPINE-001` 仍为 draft：它的 Boot/Session 依赖尚未完整定义，不能看到 Cordis 完成就直接领取。
+
+## 契约与证据
+
+`contracts` 中 draft 表示还没有完备语义规格；specified 必须补齐身份、所有权、偏序、错误、取消及适配字段。所有语义修订必须增加 revision，同时更新受影响任务引用并安排重验。初始 C1–C21 是本地源码推导场景，不是官方用例 ID，也不是已确认的双侧 oracle 通过。
+
+`mappings` 当前只支持 `indexed-unverified`，用于发现与保存测试入口；验收状态由证据而非映射标签承担。官方案例清单尚未建立，不生成全项目完成率。
+
+acceptance 证据必须包含：
+
+- `task_id`、任务验收摘要 `acceptance_digest`、目标上游 SHA、产品提交、契约 revisions。
+- `commands`、`exit_code`、Python/OS/cwd 环境、result 和 validity。
+- `inputs`：产品代码、必要消费者、测试、fixture、runner 等实际输入的仓库相对路径及 SHA-256。
+- `artifacts`：已保存日志/报告的仓库相对路径及 SHA-256。
+
+摘要由 `scripts/migration.py` 的 `acceptance_digest(task)` 生成。任务目标、依赖、验收要求变化后旧摘要不再满足门禁。输入文件变化或消失会使证据在本次计算中失效；不会自动改写历史记录。artifact 内容不一致属于证据损坏，不能误报产品失败。
+
+verified/queued 需要当前候选的有效证据；integrated 必须记录实际集成提交并具有该提交的通过证据，checkout 检查其为当前 HEAD 的祖先。已集成历史可以保留旧 target/revision 或 stale 证据，但不能再解锁消费者。语义规格变化应建立新 revision/重验任务，旧任务保持原始绑定，不重写为新 revision。
+
+当前校验器只验证已声明输入，**不会自动推导所有消费者或检测未登记环境变化**；输入完整性、独立评审和真实执行仍由协调者负责。无关或伪造的 passing 文本不能成为合格证据。每次接受结果需核对命令输出、候选内容、测试区分能力和输入闭包。此阶段不能无人值守自动合并。
+
+历史 baseline 失败摘要已入库；原始完整日志仍在本机 `.goose/research-workflow-20260927-tests.log`，不将历史摘要作为当前 acceptance。后续长期证据需保存可恢复日志或稳定 artifact，不能只留会过期的 CI 链接。
+
+## 上游与平台边界
+
+`baseline.json` 将 product、target、accepted 和 observed 分开。accepted 为空表示未建立全范围验收版本；observed 为空表示没有登记远端观察，不表示没有新版本。不要因 `reference` 固定了某个 SHA 就填充 accepted。
+
+当前检测要求 reference HEAD 等于 target 且无已跟踪修改。新上游批次应先比较代码、manifest、锁文件、官方用例、快照及生成目录，完成影响分析后再一起更新目标及记录。未记录的新增/删除 manifest 或 hash 变化会让 check 失败。
+
+当前已知基线失败是旧 dist 不支持 `--profile`，以及 glob/grep 跨 C/D 盘路径错误。它们分别进入 `MIG-PORTABLE-001`、`MIG-SEARCH-001`，没有因建立新记录而被关闭。Win7、Win7 浏览器、真实 provider 和新 portable 仍需各自验证。
+
+## 后续建设顺序
+
+1. 复核 Cordis C1–C21 的原 oracle 证据或重建同场景双侧探针，补完整行为模型及必要消费者。
+2. 核对上游官方案例清单，扩大 inventory；修复确认的基线缺口。
+3. 加入带状态前置条件的记录更新、提交绑定及原子领取/租约恢复；补 PR 验证门禁。
+4. 跑通真实纵向流程和一个上游更新批次后，再开放第二个实现 worker。
+
+## 本阶段验证记录
+
+工具门禁回归最终为 **27 passed**。全量回归为 **2924 passed、3 failed、2 skipped、2 warnings**；其后补充了两项历史集成保留测试并重新通过全部 27 项专项测试。三个全量失败与之前记录一致，没有隐藏或跳过。完整结果见 `evidence/RUN-WORKFLOW-20260927.json`。
+
+`MIG-WORKFLOW-001` 停在 review，表示工具与记录已准备好审阅，尚未提交或集成；其回归记录不是固定候选 acceptance。其余任务是接下来工作的入口，不是已经执行完成的迁移。

@@ -100,6 +100,17 @@ To ensure strict Windows 7 and Python 3.8.10 compatibility:
 
 ## 5. Verification & Testing
 
+### Continuous Migration Records
+
+For upstream migration work, start with `migration/README.md` and the generated
+`migration/status.md`. Use `scripts/migration.py check` and `ready` to inspect
+the pinned target, dependencies, and current evidence. Task `expected_paths`
+are advisory impact scope, not edit permissions: include necessary providers,
+consumers, and regression tests in the same contract change. Coordinate active
+writers before overlapping changes. Do not treat a task report, test filename,
+or manifest inventory as proof of upstream parity. The current CLI does not
+provide concurrent task claiming or automatic state transitions.
+
 Before declaring work complete, agents **MUST** execute the test suite:
 
 ```powershell

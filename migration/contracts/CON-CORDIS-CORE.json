@@ -1,0 +1,30 @@
+{
+  "id": "CON-CORDIS-CORE",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "draft",
+  "source_paths": [
+    "reference/vendor/cordis/src/context.ts",
+    "reference/vendor/cordis/src/reflect.ts",
+    "reference/vendor/cordis/src/fiber.ts",
+    "reference/vendor/cordis/src/events.ts",
+    "reference/vendor/cordis/src/service.ts"
+  ],
+  "invariants": [
+    "Service declaration, active-provider resolution and caller binding are distinct.",
+    "Injection loss unloads consumers and drains owned effects with upstream ordering.",
+    "Dispatch synchronous prefixes, async continuations, failures and cancellation must match upstream observable semantics.",
+    "Context ancestry, plugin fiber and agent scope must retain distinct identities."
+  ],
+  "consumers": [
+    "dsh/cordis/timer.py",
+    "dsh/cordis/loader.py",
+    "dsh/core/tools.py",
+    "dsh/core/session.py"
+  ],
+  "open_questions": [
+    "Recover or rerun executable oracle evidence for C1-C21; comments alone are not accepted evidence.",
+    "Inventory consumers via dynamic service resolution and events, not only imports.",
+    "Specify identities, ownership, transition table and event partial orders before revision is specified."
+  ]
+}

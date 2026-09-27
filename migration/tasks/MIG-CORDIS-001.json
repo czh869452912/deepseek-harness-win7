@@ -1,0 +1,34 @@
+{
+  "id": "MIG-CORDIS-001",
+  "goal": "复核 Cordis C1-C21 与必要消费者的验收闭包",
+  "kind": "verification",
+  "state": "ready",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "449396c008ff7ac817963bc42e80b90561a0e27f",
+  "owner": null,
+  "requires": [],
+  "provides": [
+    {
+      "contract": "CON-CORDIS-CORE",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "Recover or rerun same-scenario upstream/Python probes for C1-C21.",
+    "Verify identities, ordering, ownership, errors and cancellation including Timer/Loader consumers.",
+    "Retain pre-fix failure for confirmed defects; fix provider and necessary consumers together.",
+    "Run targeted closure and full pytest, with failures classified and recorded."
+  ],
+  "expected_paths": [
+    "dsh/cordis",
+    "tests/1to1/cordis",
+    "dsh/core",
+    "migration"
+  ],
+  "open_findings": [],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "核对 C1-C21 索引，找到原 oracle 产物或建立可重复的双侧场景"
+}

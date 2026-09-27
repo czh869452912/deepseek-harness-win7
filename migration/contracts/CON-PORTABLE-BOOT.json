@@ -1,0 +1,17 @@
+{
+  "id": "CON-PORTABLE-BOOT",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "draft",
+  "source_paths": [
+    "scripts/build_portable.py",
+    "tests/test_portable_smoke.py"
+  ],
+  "invariants": [
+    "A newly built package starts supported profiles without relying on the developer checkout."
+  ],
+  "consumers": [],
+  "open_questions": [
+    "Confirm source behavior and full acceptance closure."
+  ]
+}

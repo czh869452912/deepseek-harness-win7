@@ -1,0 +1,13 @@
+Historical baseline run, 2026-09-27
+Product: 449396c008ff7ac817963bc42e80b90561a0e27f
+Upstream: cd5ef8148158c3a752a658978873241fdf8e2bbc
+Command: .venv\Scripts\python.exe -m pytest tests
+CWD: D:\Claude-project\deepseek-harness-win7
+Python: 3.8.10, Windows x64
+Result: 2899 passed, 3 failed, 2 skipped, 2 warnings; 165.87 s; exit 1
+Failures:
+- tests/test_portable_smoke.py::test_smoke_dist_portable_directory: old dist rejects --profile minimal
+- tests/test_reference_tool_fs_search_specs.py::test_glob_tool_execution: path on C: while start on D:
+- tests/test_reference_tool_fs_search_specs.py::test_grep_tool_execution: path on C: while start on D:
+Original full log: .goose/research-workflow-20260927-tests.log (local, not versioned)
+This is a durable summary of the previous run, not current acceptance evidence.

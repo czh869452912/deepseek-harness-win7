@@ -1,0 +1,16 @@
+{
+  "id": "CON-SEARCH-CROSS-DRIVE",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "draft",
+  "source_paths": [
+    "reference/packages/fs/tool-fs-search/package.json"
+  ],
+  "invariants": [
+    "Compare explicit search roots on another Windows drive with upstream before selecting an adaptation."
+  ],
+  "consumers": [],
+  "open_questions": [
+    "Confirm source behavior and full acceptance closure."
+  ]
+}

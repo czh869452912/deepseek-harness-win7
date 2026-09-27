@@ -1,0 +1,176 @@
+{
+  "id": "MAP-CORDIS-CORE",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "cases": [
+    {
+      "id": "CORDIS-C1",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/1to1/cordis/test_cordis_core_semantics_parity.py::test_c1_returned_thenable_disposer_is_collected_not_awaited",
+      "status": "indexed-unverified",
+      "description": "C1: `apply` returning a callable-and-awaitable disposer keeps the service alive."
+    },
+    {
+      "id": "CORDIS-C2",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/1to1/cordis/test_cordis_core_semantics_parity.py::test_c2_apply_returning_promise_of_disposer_owns_it",
+      "status": "indexed-unverified",
+      "description": "C2: `apply` may return a promise of a disposer; activation awaits it."
+    },
+    {
+      "id": "CORDIS-C3",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/1to1/cordis/test_cordis_core_semantics_parity.py::test_c3_strict_get_ignores_inactive_provider",
+      "status": "indexed-unverified",
+      "description": "C3: strict `ctx.get` sees only ACTIVE providers; loose/attribute reads differ."
+    },
+    {
+      "id": "CORDIS-C4",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/1to1/cordis/test_cordis_core_semantics_parity.py::test_c4_pending_consumer_activates_when_dependency_provided",
+      "status": "indexed-unverified",
+      "description": "C4: injected dependencies drive LOADING/UNLOADING through composite epochs."
+    },
+    {
+      "id": "CORDIS-C5",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/1to1/cordis/test_cordis_core_semantics_parity.py::test_c5_status_sequence_for_dependency_loss",
+      "status": "indexed-unverified",
+      "description": "C5: `internal/status` reports (fiber, oldState) for every real transition."
+    },
+    {
+      "id": "CORDIS-C6",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/1to1/cordis/test_cordis_core_semantics_parity.py::test_c6_dispose_drains_effects_registered_on_pending_fiber",
+      "status": "indexed-unverified",
+      "description": "C6: a PENDING fiber's pre-activation effects are torn down by `dispose()`."
+    },
+    {
+      "id": "CORDIS-C7",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/1to1/cordis/test_cordis_core_semantics_parity.py::test_c7_fiber_scoped_internal_update_hook_chain",
+      "status": "indexed-unverified",
+      "description": "C7: fiber-scoped `internal/update` hooks chain (config, noSave, next) and veto."
+    },
+    {
+      "id": "CORDIS-C8",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/1to1/cordis/test_cordis_core_semantics_parity.py::test_c8_internal_get_dispatches_only_for_proxy_reads",
+      "status": "indexed-unverified",
+      "description": "C8: `internal/get` runs for plugin-fiber proxy reads only."
+    },
+    {
+      "id": "CORDIS-C9",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/1to1/cordis/test_cordis_core_semantics_parity.py::test_c9_ctx_on_registers_one_labeled_effect",
+      "status": "indexed-unverified",
+      "description": "C9: `ctx.on` adds one effect labeled `ctx.on(\"name\")`; its disposer removes it."
+    },
+    {
+      "id": "CORDIS-C10",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/1to1/cordis/test_cordis_core_semantics_parity.py::test_c10_effect_takes_ownership_of_nested_effect",
+      "status": "indexed-unverified",
+      "description": "C10: an effect that collects another effect owns it and nests its metadata."
+    },
+    {
+      "id": "CORDIS-C11",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/1to1/cordis/test_cordis_core_semantics_parity.py::test_c11_plain_disposer_from_apply_has_no_effect_metadata",
+      "status": "indexed-unverified",
+      "description": "C11: a plain function returned by `apply` is collected without metadata."
+    },
+    {
+      "id": "CORDIS-C12",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/1to1/cordis/test_cordis_core_semantics_parity.py::test_c12_provide_disposer_awaits_dependents_before_dropping_store_entry",
+      "status": "indexed-unverified",
+      "description": "C12: `ctx.provide` teardown wakes dependents, awaits their unload, then drops"
+    },
+    {
+      "id": "CORDIS-C13",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/1to1/cordis/test_cordis_core_semantics_parity.py::test_c13_dispose_starts_teardown_synchronously_and_returns_awaitable",
+      "status": "indexed-unverified",
+      "description": "C13: disposal is an async function whose body starts at the call site."
+    },
+    {
+      "id": "CORDIS-C14",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/1to1/cordis/test_cordis_core_semantics_parity.py::test_c14_reentrant_disposal_during_loading_never_runs_the_plugin_body",
+      "status": "indexed-unverified",
+      "description": "C14: a load invalidated while LOADING was reported never runs `apply`."
+    },
+    {
+      "id": "CORDIS-C15",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/1to1/cordis/test_cordis_core_semantics_parity.py::test_c15_iterable_result_disposers_are_collected_without_metadata",
+      "status": "indexed-unverified",
+      "description": "C15: an iterable returned by `apply` yields bare collected disposers."
+    },
+    {
+      "id": "CORDIS-C16",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/1to1/cordis/test_cordis_core_semantics_parity.py::test_c16_async_effect_setup_failure_propagates_from_the_disposer",
+      "status": "indexed-unverified",
+      "description": "C16: the public disposer reports an async setup failure."
+    },
+    {
+      "id": "CORDIS-C17",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/1to1/cordis/test_cordis_core_semantics_parity.py::test_c17_intercept_config_merges_once_per_ancestor_level",
+      "status": "indexed-unverified",
+      "description": "C17: every intercept level contributes one merge input, root first."
+    },
+    {
+      "id": "CORDIS-C18",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/1to1/cordis/test_cordis_core_semantics_parity.py::test_c18_parallel_resolves_without_results",
+      "status": "indexed-unverified",
+      "description": "C18: `parallel` waits for every listener and resolves with no value."
+    },
+    {
+      "id": "CORDIS-C19",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/1to1/cordis/test_cordis_core_semantics_parity.py::test_c19_bail_dispatches_synchronously",
+      "status": "indexed-unverified",
+      "description": "C19: `bail` runs listeners synchronously until one returns a bail value."
+    },
+    {
+      "id": "CORDIS-C20",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/1to1/cordis/test_cordis_core_semantics_parity.py::test_c20_async_iterable_result_disposers_are_collected_on_the_fiber",
+      "status": "indexed-unverified",
+      "description": "C20: an async-iterable `apply` result is drained onto the fiber."
+    },
+    {
+      "id": "CORDIS-C21",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/1to1/cordis/test_cordis_core_semantics_parity.py::test_c21_context_get_second_positional_parameter_is_strict",
+      "status": "indexed-unverified",
+      "description": "C21: `ctx.get(name, strict)` follows the reference parameter order."
+    }
+  ],
+  "official_case_coverage": "not-inventoried",
+  "note": "These C labels are local source-derived scenarios, not claimed upstream test IDs."
+}

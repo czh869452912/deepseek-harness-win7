@@ -49,7 +49,10 @@ def chat(
         headers["authorization"] = f"Bearer {key}"
     data = (body if body is not None else json.dumps({"model": "mock", "messages": [], "stream": True})).encode("utf-8")
     req = urllib.request.Request(url, data=data, headers=headers, method="POST")
-    return urllib.request.urlopen(req, timeout=timeout)
+    # This fixture addresses an in-process loopback server. In particular,
+    # urllib's IPv6 proxy bypass differs from requests and from system settings.
+    # Never send deterministic mock traffic to a workstation's external proxy.
+    return urllib.request.build_opener(urllib.request.ProxyHandler({})).open(req, timeout=timeout)
 
 
 def raw_chat(server: MockLlmServer, chunks: List[bytes]) -> None:

@@ -7,3 +7,5 @@ migration/** text eol=lf
 migration/evidence/artifacts/** -text
 # Preserve diagnostic whitespace in archived command output.
 migration/evidence/artifacts/*.txt -whitespace
+# Archived JSON preserves original bytes, including Windows CRLF line endings.
+migration/evidence/artifacts/*.json whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

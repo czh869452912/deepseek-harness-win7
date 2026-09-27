@@ -432,8 +432,13 @@ class ConfigWatcherService(Service):
                             continue
                         if os.path.isdir(scan_dir):
                             for root_path, dirs, files in os.walk(scan_dir):
+                                # Large repositories must not starve tool calls,
+                                # reload settlement or cancellation on the loop.
+                                await asyncio.sleep(0)
                                 dirs[:] = [d for d in dirs if not self.is_ignored(os.path.join(root_path, d), scan_dir)]
-                                for f in files:
+                                for file_index, f in enumerate(files):
+                                    if file_index % 128 == 0:
+                                        await asyncio.sleep(0)
                                     full_path = os.path.join(root_path, f)
                                     if self.is_ignored(full_path, scan_dir):
                                         continue

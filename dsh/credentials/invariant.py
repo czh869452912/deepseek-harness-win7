@@ -23,7 +23,7 @@ def install_credentials_invariant(ctx: Any, fail: Callable[[str], None]) -> None
 
 def apply_credentials_invariant(ctx: Any) -> Optional[Any]:
     if hasattr(ctx, "invariants") and hasattr(ctx.invariants, "register"):
-        return ctx.invariants.register(CREDENTIALS_PACKAGE_NAME, install_credentials_invariant)
+        return registration_result(ctx.invariants.register(CREDENTIALS_PACKAGE_NAME, install_credentials_invariant))
     return None
 
 
@@ -48,5 +48,8 @@ def install_authorization_invariant(ctx: Any, fail: Callable[[str], None]) -> No
 
 def apply_authorization_invariant(ctx: Any) -> Optional[Any]:
     if hasattr(ctx, "invariants") and hasattr(ctx.invariants, "register"):
-        return ctx.invariants.register(AUTHORIZATION_PACKAGE_NAME, install_authorization_invariant)
+        return registration_result(ctx.invariants.register(AUTHORIZATION_PACKAGE_NAME, install_authorization_invariant))
     return None
+
+
+from dsh.diagnostics.invariants import registration_result

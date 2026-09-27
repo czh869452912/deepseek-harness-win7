@@ -21,6 +21,8 @@ from dsh.session.session_log_deepseek_invariant import apply as apply_session_lo
 from dsh.session.session_query import SessionQueryPlugin, SessionQueryService, extract_session_event_text
 from dsh.session.stats import SessionStatsPlugin, SessionStatsProjection
 from dsh.session.title import SessionTitlePlugin, SessionTitleService, fallback_session_title, normalize_session_title
+from dsh.session.checkpoint_policy import SessionCheckpointPolicyPlugin, aborted_before_dispatch_result
+from dsh.session import checkpoint_policy_invariant
 
 __all__ = [
     "SessionLocation",
@@ -49,4 +51,7 @@ __all__ = [
     "accepted_through",
     "acceptedThrough",
     "apply_session_log_deepseek_invariant",
+    "SessionCheckpointPolicyPlugin",
+    "aborted_before_dispatch_result",
+    "checkpoint_policy_invariant",
 ]

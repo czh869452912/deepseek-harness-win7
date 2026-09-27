@@ -1,5 +1,6 @@
 import sys
 import json
+import inspect
 from typing import Any, Dict, Optional
 from dsh.cordis.plugin import Plugin
 
@@ -48,7 +49,7 @@ class CliVisualizerPlugin(Plugin):
     def on_step_start(self, step_num: int) -> None:
         _safe_write(f"\n🔹 [Step {step_num}]\n")
 
-    def on_tool_pre_execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def on_tool_pre_execute(self, payload: Dict[str, Any], next_fn: Any = None) -> Dict[str, Any]:
         if self.show_tools:
             name = payload.get("name", "unknown")
             args = payload.get("arguments", {})
@@ -56,9 +57,16 @@ class CliVisualizerPlugin(Plugin):
             if len(args_str) > 120:
                 args_str = args_str[:117] + "..."
             _safe_write(f"   🔧 [Executing Tool] {name}({args_str})\n")
+        # Waterfall listeners must delegate to the next stage.  Keeping a
+        # payload fallback makes direct/unit invocation backwards compatible.
+        if callable(next_fn):
+            result = next_fn()
+            if inspect.isawaitable(result):
+                result = await result
+            return result
         return payload
 
-    def on_tool_post_execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def on_tool_post_execute(self, payload: Dict[str, Any], next_fn: Any = None) -> Dict[str, Any]:
         if self.show_tools:
             name = payload.get("name", "unknown")
             err = payload.get("error")
@@ -70,6 +78,11 @@ class CliVisualizerPlugin(Plugin):
                 if len(res_preview) > 100:
                     res_preview = res_preview[:97] + "..."
                 _safe_write(f"   ✅ [Tool Done] {name} -> {res_preview}\n")
+        if callable(next_fn):
+            result = next_fn()
+            if inspect.isawaitable(result):
+                result = await result
+            return result
         return payload
 
     def on_turn_end(self, final_response: str) -> None:

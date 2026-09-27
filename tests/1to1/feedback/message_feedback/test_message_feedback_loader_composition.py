@@ -29,7 +29,7 @@ from dsh.storage.hub import StorageService
 from .helpers import append_message_fixture
 
 
-def compose(root):
+async def compose(root):
     """One message-feedback composition over the run's durable roots."""
     sessions_root = os.path.join(root, "sessions")
     storage_root = os.path.join(root, "storage")
@@ -38,9 +38,9 @@ def compose(root):
 
     store = SessionStore(ctx)
     store.apply(ctx)
-    ctx.plugin(JsonlSessionPersistencePlugin, config={"root": sessions_root})
+    await ctx.plugin(JsonlSessionPersistencePlugin, config={"root": sessions_root})
     StorageService(ctx, root_dir=storage_root)
-    ctx.plugin(MessageFeedbackPlugin, config={"maxNoteBytes": 32})
+    await ctx.plugin(MessageFeedbackPlugin, config={"maxNoteBytes": 32})
     return ctx
 
 
@@ -48,7 +48,7 @@ def compose(root):
 async def test_persists_a_checkpointed_target_and_its_sidecar_across_a_cold_restart(tmp_path):
     root = str(tmp_path)
 
-    first = compose(root)
+    first = await compose(root)
     assert first.get("messageFeedback") is not None
     assert first.get("messageFeedback").max_note_bytes == 32
     assert {"list", "put", "delete"} == {
@@ -80,7 +80,7 @@ async def test_persists_a_checkpointed_target_and_its_sidecar_across_a_cold_rest
     # second one over the same roots.
     await first.fiber.dispose()
 
-    second = compose(root)
+    second = await compose(root)
     await second.get("messageFeedback").ensure_initialized()
     listed = await second.get("messageFeedback").list({"sessionId": session.id})
     assert listed == {"ok": True, "value": {"items": [committed]}}

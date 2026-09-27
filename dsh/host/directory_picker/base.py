@@ -15,8 +15,12 @@ class DirectoryPickerService:
 
     def __init__(self, ctx: Any):
         self.ctx = ctx
-        ctx.set_service("directory_picker", self)
-        ctx.set_service("directoryPicker", self)
+        for key in ("directory_picker", "directoryPicker"):
+            try:
+                ctx.set_service(key, self)
+            except RuntimeError as exc:
+                if "has been registered" not in str(exc):
+                    raise
 
     def capability(self) -> Dict[str, Any]:
         raise NotImplementedError

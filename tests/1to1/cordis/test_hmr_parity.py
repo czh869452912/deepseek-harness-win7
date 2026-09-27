@@ -1,5 +1,6 @@
 """
 1:1 parity unit test suite for dsh/cordis/hmr.py matching reference/vendor/hmr/src/index.ts.
+These exact-path watch tests disable unrelated recursive repository watches.
 Covers:
 - T1: register_config applies present file immediately once
 - T2: config file creation (add) and deletion (unlink) triggers refresh
@@ -28,7 +29,7 @@ async def test_hmr_fiber_disposal_stops_polling_and_joins_refresh(tmp_path):
     ctx = Context()
     await ctx.plugin(Loader)
     await ctx.plugin(TimerService)
-    fiber = await ctx.plugin(ConfigWatcherService, {"debounce": 10})
+    fiber = await ctx.plugin(ConfigWatcherService, {"debounce": 10, "root": []})
     hmr = ctx.get('hmr')
     polling = hmr._poll_task
     started, release = asyncio.Event(), asyncio.Event()
@@ -59,7 +60,7 @@ async def test_hmr_fiber_disposal_stops_polling_and_joins_refresh(tmp_path):
 async def test_t1_register_config_applies_present_file_once():
     """T1: register_config on existing file immediately runs refresh_fn once."""
     ctx = Context()
-    hmr = ConfigWatcherService(ctx, {"debounce": 10})
+    hmr = ConfigWatcherService(ctx, {"debounce": 10, "root": []})
     ctx.set_service("hmr", hmr)
 
     with tempfile.NamedTemporaryFile(suffix=".yaml", delete=False) as f:
@@ -91,7 +92,7 @@ async def test_t1_register_config_applies_present_file_once():
 async def test_t2_config_file_creation_and_unlink_trigger():
     """T2: creating (add) and deleting (unlink) an uncreated file triggers refresh."""
     ctx = Context()
-    hmr = ConfigWatcherService(ctx, {"debounce": 20})
+    hmr = ConfigWatcherService(ctx, {"debounce": 20, "root": []})
     ctx.set_service("hmr", hmr)
 
     tmp_dir = tempfile.mkdtemp()
@@ -136,7 +137,7 @@ async def test_t2_config_file_creation_and_unlink_trigger():
 def test_t5_register_config_duplicate_raises():
     """T5: register_config with duplicate path raises ValueError."""
     ctx = Context()
-    hmr = ConfigWatcherService(ctx, {"debounce": 10})
+    hmr = ConfigWatcherService(ctx, {"debounce": 10, "root": []})
 
     with tempfile.NamedTemporaryFile(suffix=".yaml", delete=False) as f:
         tmp_path = f.name
@@ -155,7 +156,7 @@ def test_t5_register_config_duplicate_raises():
 def test_t6_register_config_inactive_raises():
     """T6: register_config after teardown raises RuntimeError."""
     ctx = Context()
-    hmr = ConfigWatcherService(ctx, {"debounce": 10})
+    hmr = ConfigWatcherService(ctx, {"debounce": 10, "root": []})
     hmr.teardown()
 
     with pytest.raises(RuntimeError) as exc:
@@ -167,7 +168,7 @@ def test_t6_register_config_inactive_raises():
 async def test_t8_hmr_change_not_emitted_for_config_refresh():
     """T8: config file refresh does not emit hmr/change event."""
     ctx = Context()
-    hmr = ConfigWatcherService(ctx, {"debounce": 10})
+    hmr = ConfigWatcherService(ctx, {"debounce": 10, "root": []})
     ctx.set_service("hmr", hmr)
 
     change_emitted = [False]
@@ -201,7 +202,7 @@ async def test_t9_refresh_disposing_root_does_not_wait_for_its_own_disposer():
     wait for root cleanup, which itself waits for the registration's refresh.
     """
     ctx = Context()
-    hmr = ConfigWatcherService(ctx, {"debounce": 10})
+    hmr = ConfigWatcherService(ctx, {"debounce": 10, "root": []})
     ctx.set_service("hmr", hmr)
 
     cleanup_started = asyncio.Event()
@@ -253,7 +254,7 @@ async def test_teardown_settlement_is_fiber_owned_and_leaves_no_pending_task():
     `loop.create_task` was destroyed with the loop while still pending.
     """
     ctx = Context()
-    hmr = ConfigWatcherService(ctx, {"debounce": 10})
+    hmr = ConfigWatcherService(ctx, {"debounce": 10, "root": []})
     poll = hmr._poll_task
     assert poll is not None and not poll.done()
 
@@ -291,7 +292,7 @@ async def test_teardown_settlement_is_joined_when_the_caller_drops_it():
     disposal.
     """
     ctx = Context()
-    hmr = ConfigWatcherService(ctx, {"debounce": 10})
+    hmr = ConfigWatcherService(ctx, {"debounce": 10, "root": []})
     settlement = hmr.teardown()
 
     assert settlement is not None
@@ -339,7 +340,7 @@ async def test_module_registration_disposal_owns_its_join_of_the_running_pass(tm
     import importlib.util
 
     ctx = Context()
-    hmr = ConfigWatcherService(ctx, {"debounce": 10})
+    hmr = ConfigWatcherService(ctx, {"debounce": 10, "root": []})
     module = tmp_path / "watched.py"
     module.write_text(GATE_PLUGIN_SOURCE, encoding="utf-8")
     gate = {"entered": asyncio.Event(), "release": asyncio.Event()}
@@ -413,7 +414,7 @@ async def test_module_registration_disposal_leaves_a_live_config_watch_armed_onc
     change and re-creates the refresh state the disposal just retired.
     """
     ctx = Context()
-    hmr = ConfigWatcherService(ctx, {"debounce": 10})
+    hmr = ConfigWatcherService(ctx, {"debounce": 10, "root": []})
     module = tmp_path / "watched.py"
     module.write_text("x = 1\n", encoding="utf-8")
     calls = []
@@ -454,7 +455,7 @@ async def test_shared_path_live_change_while_refresh_pending(tmp_path):
     second concurrent callback.
     """
     ctx = Context()
-    hmr = ConfigWatcherService(ctx, {"debounce": 10})
+    hmr = ConfigWatcherService(ctx, {"debounce": 10, "root": []})
     module = tmp_path / "watched.py"
     module.write_text("x = 1\n", encoding="utf-8")
     started, release = asyncio.Event(), asyncio.Event()

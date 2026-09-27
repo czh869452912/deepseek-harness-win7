@@ -125,6 +125,10 @@ async def test_agent_tool_presentation_modes():
     plugin_ptc = AgentToolPresentationPlugin({"mode": "ptc"})
     # `mode: ptc` waits for the code runtime through `ctx.inject`, so the row
     # settles on the loop rather than in the apply call.
-    await ctx.plugin(plugin_ptc)
+    from dsh.core.scope import create_scope
+    scope = create_scope(ctx, object())
+    fiber = await scope.ctx.plugin(plugin_ptc)
     await asyncio.sleep(0)
-    assert getattr(tools, "_presentation_mode", "native") == "ptc"
+    assert tools._mode_for(scope.ctx) == "code"
+    assert tools._mode_for(ctx) == "native"
+    await scope.dispose()

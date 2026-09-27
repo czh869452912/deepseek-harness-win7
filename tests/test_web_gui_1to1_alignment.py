@@ -20,12 +20,26 @@ async def test_llm_domain_models_and_providers():
     assert "providers" in provs
     p_ids = [p["provider"] for p in provs["providers"]]
     assert "deepseek-official" in p_ids or "deepseek" in p_ids
-
     models = await handler.list_models({})
     assert "groups" in models
     assert len(models["groups"]) > 0
     group_ids = [g["id"] for g in models["groups"]]
     assert "deepseek-official" in group_ids or "deepseek" in group_ids
+
+
+@pytest.mark.asyncio
+async def test_session_models_uses_agent_default_selection():
+    from dsh.host.apiproxy.api.sessions import SessionsDomainHandler
+
+    class DefaultModel:
+        def current_selection(self):
+            return {"provider": "openai", "model": "gpt-test", "reasoningEffort": "high"}
+
+    ctx = Context()
+    ctx.set_service("agentDefaultModel", DefaultModel())
+    handler = SessionsDomainHandler(ctx, {}, lambda *_a, **_k: None, lambda *_a, **_k: None, {})
+    result = await handler.get_models({})
+    assert result["current"] == {"provider": "openai", "model": "gpt-test", "reasoningEffort": "high"}
 
 
 @pytest.mark.asyncio

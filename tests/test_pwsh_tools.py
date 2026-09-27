@@ -20,9 +20,9 @@ async def test_tool_pwsh_one_shot_execution():
     # The base bundle mounts shell-env before tool-pwsh; the tool consumes its
     # `ctx.shellEnv` snapshot for every execution.
     await ctx.plugin(ShellEnvPlugin)
-    await ctx.plugin(ToolPwshPlugin)
+    fiber = await ctx.plugin(ToolPwshPlugin)
 
-    tools: ToolsService = ctx.get("tools")
+    tools: ToolsService = fiber.ctx.get("tools")
     assert tools.has("pwsh")
 
     # 1. Foreground command execution

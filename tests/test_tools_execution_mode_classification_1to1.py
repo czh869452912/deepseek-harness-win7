@@ -22,7 +22,7 @@ def test_tool_execution_mode_parallel_only_for_explicit_true():
         is_concurrency_safe=lambda args: True,
     )
 
-    inp = ToolExecutionInput(call_id="c1", name="safe", arguments={})
+    inp = ToolExecutionInput(signal=None, call_id="c1", name="safe", arguments={})
     assert tools.execution_mode(inp) == {"kind": "parallel"}
 
 
@@ -39,7 +39,7 @@ def test_tool_execution_mode_defaults_to_exclusive():
         handler=lambda: "ok",
     )
 
-    inp = ToolExecutionInput(call_id="c1", name="plain", arguments={})
+    inp = ToolExecutionInput(signal=None, call_id="c1", name="plain", arguments={})
     assert tools.execution_mode(inp) == {"kind": "exclusive"}
 
 
@@ -49,7 +49,7 @@ def test_tool_execution_mode_unknown_tool():
     tools = ToolsService(ctx)
     ctx.set_service("tools", tools)
 
-    inp = ToolExecutionInput(call_id="c1", name="nonexistent", arguments={})
+    inp = ToolExecutionInput(signal=None, call_id="c1", name="nonexistent", arguments={})
     assert tools.execution_mode(inp) == {"kind": "exclusive"}
 
 
@@ -67,8 +67,8 @@ def test_tool_execution_mode_dynamic_args_classifier():
         is_concurrency_safe=lambda args: args.get("mode") == "read",
     )
 
-    inp_read = ToolExecutionInput(call_id="c1", name="rw_tool", arguments={"mode": "read"})
-    inp_write = ToolExecutionInput(call_id="c2", name="rw_tool", arguments={"mode": "write"})
+    inp_read = ToolExecutionInput(signal=None, call_id="c1", name="rw_tool", arguments={"mode": "read"})
+    inp_write = ToolExecutionInput(signal=None, call_id="c2", name="rw_tool", arguments={"mode": "write"})
 
     assert tools.execution_mode(inp_read) == {"kind": "parallel"}
     assert tools.execution_mode(inp_write) == {"kind": "exclusive"}
@@ -91,7 +91,7 @@ def test_tool_execution_mode_throwing_classifier_fails_closed():
         is_concurrency_safe=throwing_classifier,
     )
 
-    inp = ToolExecutionInput(call_id="c1", name="thrower", arguments={})
+    inp = ToolExecutionInput(signal=None, call_id="c1", name="thrower", arguments={})
     assert tools.execution_mode(inp) == {"kind": "exclusive"}
 
 

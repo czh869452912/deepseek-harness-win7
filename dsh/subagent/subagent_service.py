@@ -109,7 +109,6 @@ class SubagentRegistry(Service):
         if ctx is not None:
             super().__init__(ctx, "subagents")
             ctx.set_service("subagent", self)
-            ctx.set_service("subagents", self)
         else:
             self.ctx = None
 

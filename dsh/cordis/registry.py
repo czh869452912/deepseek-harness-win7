@@ -239,6 +239,10 @@ class RegistryService:
         for k, v in list(self._runtimes.items()):
             callback(v, k, self)
 
+    def for_each(self, callback: Callable[..., Any]) -> None:
+        for key, value in list(self._runtimes.items()):
+            callback(value, key)
+
     def list_fibers(self) -> List[Fiber]:
         """
         Return the fibers of every registered plugin runtime.

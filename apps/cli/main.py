@@ -134,7 +134,8 @@ async def main_async():
         web_server = ctx.get("web_server")
         if web_server:
             await web_server.start()
-            url = f"http://{args.host}:{web_server.port}"
+            effective_port = getattr(web_server, "listened_port", web_server.port)
+            url = f"http://{args.host}:{effective_port}"
             # The browser reaches the authenticated root URL: the launch token
             # mints the session cookie on the first navigation.
             connection = ctx.get("connection")

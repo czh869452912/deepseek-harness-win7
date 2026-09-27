@@ -419,7 +419,7 @@ def _minted_cookie(service, authority):
 async def test_plugin_fails_the_load_on_a_trusted_hosts_entry_that_is_not_a_bare_authority(tmp_path):
     ctx = Context()
     ctx.set_service("web_server", object())
-    ctx.plugin(CredentialsLocalPlugin, config={"path": str(tmp_path / ".credentials.yaml"), "watch": False})
+    await ctx.plugin(CredentialsLocalPlugin, config={"path": str(tmp_path / ".credentials.yaml"), "watch": False})
     plugin = ConnectionPlugin(config={"trustedHosts": ["harness.internal/path"]})
     with pytest.raises(ValueError, match=r"not a bare host\[:port\] authority"):
         plugin.apply(ctx)
@@ -434,7 +434,7 @@ async def test_shipped_api_route_refuses_untrusted_and_unauthenticated_requests_
     """
     from dsh.harness import build_harness
 
-    ctx = build_harness(mode="standard", enable_web=True)
+    ctx = await build_harness(mode="standard", enable_web=True)
     server = ctx.get("web_server")
     route = server.match("/api/pluginInventory.list")
     assert route is not None and route.path == "/api"

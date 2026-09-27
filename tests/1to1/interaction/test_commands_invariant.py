@@ -27,7 +27,7 @@ class _Companion:
     inject = ["invariants"]
 
     def apply(self, ctx: Any) -> None:
-        apply_commands_invariant(ctx)
+        return apply_commands_invariant(ctx)
 
 
 async def mount(install_companion: bool = True) -> Dict[str, Any]:
@@ -113,9 +113,9 @@ async def test_attributes_an_invalid_durable_prefix_during_late_companion_loadin
     # installation failure on the fiber, which `assert_active(check_error=True)`
     # re-raises (the same failure surface every other failed plugin install uses).
     fiber = ctx.plugin(_Companion())
-    assert fiber.error is not None
     with pytest.raises(InvariantError) as raised:
-        fiber.assert_active(check_error=True)
+        await fiber
+    assert fiber.error is not None
 
     assert raised.value.code == "INVARIANT"
     assert raised.value.package_name == "@deepseek-ai/dsh-commands"

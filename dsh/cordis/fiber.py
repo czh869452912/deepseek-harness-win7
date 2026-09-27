@@ -133,7 +133,7 @@ class Fiber:
         self.entry: Optional[Any] = None
         if parent_ctx:
             self.entry = getattr(parent_ctx, "entry", None)
-        if self.entry is not None:
+        if self.entry is not None and parent_ctx is getattr(self.entry, "ctx", None):
             self.entry.fiber = self
         self.store: Optional[Dict[str, Any]] = {}
         self._store: Dict[str, Any] = {}
@@ -317,33 +317,44 @@ class Fiber:
                 task.exception()
 
         def rollback_sync() -> None:
-            nonlocal remove_wrapper, wrapper
-            if wrapper is not None:
-                self._effect_metas.pop(wrapper, None)
-            if remove_wrapper is not None:
-                remove_wrapper()
+            nonlocal in_flight_cleanup
             if in_flight_cleanup is not None:
                 return
+            pending = []
             while disposables:
                 disp = disposables.pop()
                 self._disposables.delete(disp)
                 try:
                     res = disp()
                     if inspect.isawaitable(res):
+                        pending.append(res)
+                except Exception as error:
+                    self._log_error(error)
+                except BaseException:
+                    retire_effect()
+                    raise
+
+            async def finish_rollback():
+                try:
+                    for result in pending:
                         try:
-                            loop = asyncio.get_running_loop()
-                            t = loop.create_task(res)
-                            if hasattr(self, "_in_flight_effects"):
-                                self._in_flight_effects.add(t)
-                                t.add_done_callback(retire_in_flight)
-                        except RuntimeError:
-                            # Rollback of a synchronous caller has no loop to
-                            # schedule the async disposer on; run it to
-                            # completion so the rollback reaches quiescence.
-                            run_async_setup_sync(res)
-                except Exception as e:
-                    if self.ctx and hasattr(self.ctx, "logger"):
-                        self.ctx.logger("fiber").error("Exception in effect rollback '%s': %s", label, e)
+                            await result
+                        except Exception as error:
+                            self._log_error(error)
+                finally:
+                    retire_effect()
+
+            if pending:
+                try:
+                    loop = asyncio.get_running_loop()
+                except RuntimeError:
+                    run_async_setup_sync(finish_rollback())
+                else:
+                    in_flight_cleanup = loop.create_task(finish_rollback())
+                    self._in_flight_effects.add(in_flight_cleanup)
+                    in_flight_cleanup.add_done_callback(retire_in_flight)
+            else:
+                retire_effect()
 
         def wait_for_setup() -> Optional[asyncio.Future]:
             nonlocal setup_barrier_future
@@ -380,7 +391,7 @@ class Fiber:
 
         def cancel_effect() -> Any:
             nonlocal disposed, in_flight_cleanup, remove_wrapper, wrapper
-            if disposed:
+            if disposed or in_flight_cleanup is not None:
                 return in_flight_cleanup
             disposed = True
 
@@ -514,7 +525,7 @@ class Fiber:
 
             def __call__(self, *args: Any, **kwargs: Any) -> Any:
                 t = self._get_task()
-                if t is not None and not t.done():
+                if t is not None:
                     async def _call_after():
                         try:
                             await t
@@ -651,13 +662,9 @@ class Fiber:
             except Exception as e:
                 executing = False
                 setup_failed = True
-                self._effect_metas.pop(cancel_effect, None)
-                self._effect_metas.pop(wrapper, None)
                 if setup_barrier_future and not setup_barrier_future.done():
                     setup_barrier_future.set_exception(e)
                 rollback_sync()
-                if self.ctx and hasattr(self.ctx, "logger"):
-                    self.ctx.logger("fiber").error("Exception in effect execution '%s': %s", label, e)
                 raise e
         else:
             raise TypeError("Invalid effect")
@@ -731,7 +738,13 @@ class Fiber:
             if impl.check and callable(impl.check):
                 traceable_val = get_traceable(self.ctx, impl.value)
                 try:
-                    passed = impl.check(traceable_val)
+                    import types
+                    check = impl.check
+                    if inspect.ismethod(check):
+                        check = types.MethodType(check.__func__, traceable_val)
+                        passed = check()
+                    else:
+                        passed = check(traceable_val)
                 except TypeError:
                     passed = impl.check()
                 if not passed:
@@ -861,8 +874,15 @@ class Fiber:
                 inst.ctx = self.ctx
             return inst
 
-        args, kwargs = self._constructor_arguments(init_fn)
-        inst = cls(*args, **kwargs)
+        from dsh.cordis.plugin import Plugin
+        parameters = list(inspect.signature(init_fn).parameters.values())[1:]
+        if issubclass(cls, Plugin) and parameters and parameters[0].name == "config":
+            # The Python Plugin adapter accepts config followed by optional
+            # legacy overrides; service/ordinary class constructors use ctx/config.
+            inst = cls(config=self.config)
+        else:
+            args, kwargs = self._constructor_arguments(init_fn)
+            inst = cls(*args, **kwargs)
         if hasattr(inst, "ctx") and getattr(inst, "ctx", None) is None:
             inst.ctx = self.ctx
         return inst
@@ -1035,6 +1055,10 @@ class Fiber:
                 res = _invoke_apply(self.plugin["apply"])
             elif not isinstance(self.plugin, Service) and callable(self.plugin):
                 res = _invoke_apply(self.plugin)
+
+            from dsh.cordis.plugin import Plugin
+            if isinstance(self.plugin, Plugin) and type(self.plugin).teardown is not Plugin.teardown:
+                self._collect(self.plugin.teardown)
 
             if res is not None:
                 # TS `_execute` tests `typeof effect === 'function'` first, so a returned
@@ -1470,9 +1494,12 @@ class Fiber:
         if hasattr(self.ctx, "waterfall"):
             try:
                 loop = asyncio.get_running_loop()
-                return self.ctx.waterfall("internal/update", resolved_config, no_save, _do_update, caller_ctx=self.ctx)
+                return loop.create_task(self.ctx.waterfall("internal/update", resolved_config, no_save, _do_update, caller_ctx=self.ctx))
             except RuntimeError:
-                return self.ctx.waterfall_sync("internal/update", resolved_config, no_save, _do_update, caller_ctx=self.ctx)
+                result = self.ctx.waterfall_sync("internal/update", resolved_config, no_save, _do_update, caller_ctx=self.ctx)
+                if inspect.isawaitable(result):
+                    return run_async_setup_sync(result)
+                return result
         return _do_update()
 
     def restart(self) -> Any:

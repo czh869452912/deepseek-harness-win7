@@ -123,6 +123,7 @@ def registration_result(registration: Any) -> Any:
     handle itself as the cleanup.
     """
     async def join() -> Any:
-        return await registration
+        import inspect
+        return await registration if inspect.isawaitable(registration) else registration
 
     return join()

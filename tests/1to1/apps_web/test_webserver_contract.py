@@ -423,7 +423,7 @@ async def test_applies_gzip_only_to_eligible_socket_backed_http_responses():
         WebServerService.resolve_config({"host": "127.0.0.1", "port": 0, "compressionLevel": 10})
 
     ctx = Context()
-    ctx.plugin(
+    await ctx.plugin(
         WebServerPlugin,
         config={
             "host": "127.0.0.1",

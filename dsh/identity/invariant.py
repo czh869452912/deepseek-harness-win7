@@ -17,5 +17,8 @@ def install(ctx: Any, fail: Callable[[str], None]) -> None:
 
 def apply(ctx: Any) -> Optional[Any]:
     if hasattr(ctx, "invariants") and hasattr(ctx.invariants, "register"):
-        return ctx.invariants.register(PACKAGE_NAME, install)
+        return registration_result(ctx.invariants.register(PACKAGE_NAME, install))
     return None
+
+
+from dsh.diagnostics.invariants import registration_result

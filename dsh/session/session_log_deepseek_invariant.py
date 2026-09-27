@@ -106,5 +106,8 @@ def apply(ctx: Any) -> Optional[Any]:
     """Register this package's invariant companion."""
     invariants_svc = ctx.get("invariants") if hasattr(ctx, "get") else None
     if invariants_svc is not None and hasattr(invariants_svc, "register"):
-        return invariants_svc.register(PACKAGE_NAME, install)
+        return registration_result(invariants_svc.register(PACKAGE_NAME, install))
     return None
+
+
+from dsh.diagnostics.invariants import registration_result

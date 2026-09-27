@@ -44,4 +44,7 @@ def apply(ctx: Any) -> Any:
     :param ctx: Cordis context carrying the invariant service.
     :returns: the installed registration's disposer after setup succeeds.
     """
-    return ctx.invariants.register(PACKAGE_NAME, install)
+    return registration_result(ctx.invariants.register(PACKAGE_NAME, install))
+
+
+from dsh.diagnostics.invariants import registration_result

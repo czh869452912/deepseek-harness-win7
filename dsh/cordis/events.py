@@ -600,7 +600,7 @@ class EventBus:
             return res
 
         results = await asyncio.gather(*[_run(cb) for cb in listeners], return_exceptions=True)
-        errors = [r for r in results if isinstance(r, Exception)]
+        errors = [r for r in results if isinstance(r, BaseException)]
         if errors:
             raise AggregateError(errors)
         return None
@@ -644,6 +644,8 @@ class EventBus:
             if is_bailed(res):
                 return res
         return None
+
+    bail_sync = bail
 
     def waterfall_sync(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
         """

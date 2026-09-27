@@ -18,15 +18,13 @@ class ToolWorkflowPlugin(Plugin):
     inject = ["tools"]
 
     def apply(self, ctx: Any) -> None:
-        tools = ctx.get("tools") if ctx.has("tools") else None
-        if not tools:
+        tools = ctx.get("tools", strict=False)
+        if tools is None:
             return
 
-        if not ctx.has("workflowEngine"):
+        wf_engine = ctx.get("workflowEngine", strict=False)
+        if wf_engine is None:
             wf_engine = WorkflowEngine(ctx)
-            ctx.set_service("workflowEngine", wf_engine)
-        else:
-            wf_engine: WorkflowEngine = ctx.get("workflowEngine")
 
         async def exec_workflow(script: str, meta: Optional[Dict[str, Any]] = None) -> str:
             res = await wf_engine.run(script, meta=meta)
@@ -46,7 +44,4 @@ class ToolWorkflowPlugin(Plugin):
             "execute": exec_workflow,
         })
 
-        if hasattr(ctx, "disposable"):
-            ctx.disposable(disposer, label="tool_workflow.disposer")
-        elif hasattr(ctx, "effect"):
-            ctx.effect(lambda: disposer)
+        ctx.effect(lambda: disposer)

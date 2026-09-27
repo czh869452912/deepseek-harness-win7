@@ -4,6 +4,8 @@ import tempfile
 import pytest
 from dsh.cordis.context import Context
 from dsh.core.tools import ToolsPlugin
+from dsh.core.system_prompt import SystemPrompt
+from dsh.subprocess import LocalSubprocessRuntime
 from dsh.fs.tool_fs_search import ToolFsSearchPlugin, FsSearchService
 from dsh.fs.tool_fs_search.glob import sample_across_top_level
 from dsh.fs.tool_fs_search.grep import validate_include
@@ -61,8 +63,9 @@ async def test_glob_tool_execution(search_dir):
     ctx = Context()
     tools_plugin = ToolsPlugin()
     tools_plugin.apply(ctx)
-    search_plugin = ToolFsSearchPlugin()
-    search_plugin.apply(ctx)
+    SystemPrompt(ctx)
+    LocalSubprocessRuntime(ctx)
+    await ctx.plugin(ToolFsSearchPlugin, {"sampleOverCapGlobResults": False})
 
     tools_svc = ctx.get("tools")
     res = await tools_svc.execute_tool("glob", {
@@ -77,8 +80,9 @@ async def test_grep_tool_execution(search_dir):
     ctx = Context()
     tools_plugin = ToolsPlugin()
     tools_plugin.apply(ctx)
-    search_plugin = ToolFsSearchPlugin()
-    search_plugin.apply(ctx)
+    SystemPrompt(ctx)
+    LocalSubprocessRuntime(ctx)
+    await ctx.plugin(ToolFsSearchPlugin, {"sampleOverCapGlobResults": False})
 
     tools_svc = ctx.get("tools")
     res = await tools_svc.execute_tool("grep", {

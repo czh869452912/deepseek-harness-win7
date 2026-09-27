@@ -1,0 +1,3 @@
+
+# Snapshot bytes are compared with pinned upstream goldens on Windows too.
+snapshots/** -text

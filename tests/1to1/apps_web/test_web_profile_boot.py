@@ -80,7 +80,7 @@ async def served_index(ctx):
 
 @pytest.mark.asyncio
 async def test_web_profile_entry_boots_the_shipped_web_surface():
-    ctx = build_harness(mode="web", enable_web=True, verbose=False)
+    ctx = await build_harness(mode="web", enable_web=True, verbose=False)
     # Every web surface row the app bundle mounts is present.
     assert ctx.get("web_server") is not None
     assert ctx.get("client_modules") is not None
@@ -103,7 +103,7 @@ async def test_web_profile_entry_boots_the_shipped_web_surface():
 
 @pytest.mark.asyncio
 async def test_web_profile_entry_serves_the_built_dist_not_the_source_document():
-    ctx = build_harness(mode="web", enable_web=True, verbose=False)
+    ctx = await build_harness(mode="web", enable_web=True, verbose=False)
     body = await served_index(ctx)
     assert "/src/" not in body
     assert re.search(r'<script type="module" crossorigin src="\./assets/[^"]+\.js"></script>', body) is not None

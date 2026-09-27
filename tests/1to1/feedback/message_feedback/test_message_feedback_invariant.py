@@ -26,13 +26,13 @@ async def test_removes_its_registry_contribution_when_its_fiber_is_disposed():
     try:
         ctx = harness.ctx
         InvariantRegistry(ctx)
-        fiber = ctx.plugin(message_feedback_invariant)
+        fiber = await ctx.plugin(message_feedback_invariant)
 
         with pytest.raises(ValueError, match="already registered"):
             ctx.invariants.register(PACKAGE_NAME, lambda *args: None)
 
         await fiber.dispose()
-        reloaded = ctx.plugin(message_feedback_invariant)
+        reloaded = await ctx.plugin(message_feedback_invariant)
         assert reloaded is not None
         assert PACKAGE_NAME in ctx.invariants.registrations
     finally:

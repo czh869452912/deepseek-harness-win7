@@ -29,7 +29,6 @@ class ToolResultPruner(Service):
         if ctx is not None:
             super().__init__(ctx, "tool_result_pruner")
             ctx.set_service("toolResultPruner", self)
-            ctx.set_service("tool_result_pruner", self)
         else:
             self.ctx = None
 
@@ -37,17 +36,17 @@ class ToolResultPruner(Service):
         self.threshold_chars = (
             threshold_chars
             if threshold_chars is not None
-            else int(cfg.get("thresholdChars", cfg.get("threshold_chars", 8192)))
+            else int(cfg.get("thresholdChars") if cfg.get("thresholdChars") is not None else cfg.get("threshold_chars", 8192))
         )
         self.head_chars = (
             head_chars
             if head_chars is not None
-            else int(cfg.get("headChars", cfg.get("head_chars", 4096)))
+            else int(cfg.get("headChars") if cfg.get("headChars") is not None else cfg.get("head_chars", 4096))
         )
         self.tail_chars = (
             tail_chars
             if tail_chars is not None
-            else int(cfg.get("tailChars", cfg.get("tail_chars", 1024)))
+            else int(cfg.get("tailChars") if cfg.get("tailChars") is not None else cfg.get("tail_chars", 1024))
         )
 
     def measure_content(self, blocks_or_text: Any) -> int:
@@ -265,17 +264,17 @@ class ToolResultPrunerPlugin(Plugin):
         self.threshold_chars = (
             threshold_chars
             if threshold_chars is not None
-            else int(cfg.get("thresholdChars", cfg.get("threshold_chars", 8192)))
+            else int(cfg.get("thresholdChars") if cfg.get("thresholdChars") is not None else cfg.get("threshold_chars", 8192))
         )
         self.head_chars = (
             head_chars
             if head_chars is not None
-            else int(cfg.get("headChars", cfg.get("head_chars", 4096)))
+            else int(cfg.get("headChars") if cfg.get("headChars") is not None else cfg.get("head_chars", 4096))
         )
         self.tail_chars = (
             tail_chars
             if tail_chars is not None
-            else int(cfg.get("tailChars", cfg.get("tail_chars", 1024)))
+            else int(cfg.get("tailChars") if cfg.get("tailChars") is not None else cfg.get("tail_chars", 1024))
         )
 
     def apply(self, ctx: Any) -> None:
@@ -286,5 +285,3 @@ class ToolResultPrunerPlugin(Plugin):
                 tail_chars=self.tail_chars,
                 ctx=ctx,
             )
-            ctx.set_service("tool_result_pruner", pruner)
-            ctx.set_service("toolResultPruner", pruner)

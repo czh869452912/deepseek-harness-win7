@@ -189,14 +189,14 @@ async def test_locale_host_registers_an_open_locale_preference():
     try:
         ns = settings_namespace(locale_row.LOCALE_SETTINGS_NAMESPACE)
         assert ctx.settings.get(ns) == {}
-        ctx.settings.update(ns, {"preference": "en"})
+        await ctx.settings.update(ns, {"preference": "en"})
         assert ctx.settings.get(ns) == {"preference": "en"}
-        ctx.settings.update(ns, {"preference": "pt-BR"})
+        await ctx.settings.update(ns, {"preference": "pt-BR"})
         assert ctx.settings.get(ns) == {"preference": "pt-BR"}
         with pytest.raises(Exception):
-            ctx.settings.update(ns, {"preference": "bad locale"})
+            await ctx.settings.update(ns, {"preference": "bad locale"})
         with pytest.raises(Exception):
-            ctx.settings.update(ns, {"preference": "123"})
+            await ctx.settings.update(ns, {"preference": "123"})
         await fiber.dispose()
         assert ns not in [row["ns"] for row in ctx.settings.describe()]
     finally:
@@ -213,10 +213,10 @@ async def test_ui_chat_registers_validates_and_disposes_the_transcript_view_name
     ns = settings_namespace(ui_chat.CHAT_SETTINGS_NAMESPACE)
 
     assert ctx.settings.get(ns) == {"transcriptView": ui_chat.DEFAULT_TRANSCRIPT_VIEW_MODE}
-    ctx.settings.update(ns, {"transcriptView": "normal"})
+    await ctx.settings.update(ns, {"transcriptView": "normal"})
     assert ctx.settings.get(ns) == {"transcriptView": "normal"}
     with pytest.raises(Exception):
-        ctx.settings.update(ns, {"transcriptView": "dense"})
+        await ctx.settings.update(ns, {"transcriptView": "dense"})
 
     await fiber.dispose()
     assert ns not in [row["ns"] for row in ctx.settings.describe()]
@@ -240,7 +240,7 @@ async def test_ui_chat_loads_without_a_settings_provider():
 async def test_ui_conversation_node_apply_tail_tolerates_a_host_without_settings():
     """"node apply tail" > "tolerates a Host without settings"."""
     ctx = Context()
-    fiber = ctx.plugin(ui_conversation.ClientUiConversationPlugin)
+    fiber = await ctx.plugin(ui_conversation.ClientUiConversationPlugin)
     try:
         assert ctx.get("settings") is None
         assert fiber.state == FiberState.ACTIVE
@@ -276,14 +276,14 @@ async def test_ui_theme_registers_validates_and_disposes_the_theme_namespace():
     ns = settings_namespace(ui_theme.THEME_SETTINGS_NAMESPACE)
 
     assert ctx.settings.get(ns) == {"preference": ui_theme.DEFAULT_PREFERENCE, "fontSize": 14}
-    ctx.settings.update(ns, {"preference": "dark", "fontSize": 16})
+    await ctx.settings.update(ns, {"preference": "dark", "fontSize": 16})
     assert ctx.settings.get(ns) == {"preference": "dark", "fontSize": 16}
     with pytest.raises(Exception):
-        ctx.settings.update(ns, {"preference": "sepia"})
+        await ctx.settings.update(ns, {"preference": "sepia"})
     with pytest.raises(Exception):
-        ctx.settings.update(ns, {"fontSize": 11})
+        await ctx.settings.update(ns, {"fontSize": 11})
     with pytest.raises(Exception):
-        ctx.settings.update(ns, {"fontSize": 18})
+        await ctx.settings.update(ns, {"fontSize": 18})
 
     await fiber.dispose()
     assert ns not in [row["ns"] for row in ctx.settings.describe()]
@@ -305,7 +305,7 @@ async def test_ui_theme_answers_each_collection_with_the_current_durable_prefere
     assert 'const preference = "system"' in script_text(rows[0])
     assert '"14px"' in script_text(rows[0])
 
-    ctx.settings.update(
+    await ctx.settings.update(
         settings_namespace(ui_theme.THEME_SETTINGS_NAMESPACE), {"preference": "dark", "fontSize": 17}
     )
     assert 'const preference = "dark"' in script_text(index_injections(ctx)[0])
@@ -376,7 +376,6 @@ def test_every_shipped_client_row_has_a_host_half():
     enables, except the two carriers still unimplemented (connection, hmr).
     """
     unimplemented = {
-        "@deepseek-ai/dsh-client-connection",
         "@deepseek-ai/dsh-client-hmr",
     }
     shipped = web_client_rows()
@@ -386,7 +385,7 @@ def test_every_shipped_client_row_has_a_host_half():
     # `dsh-client-modules` is the one client row whose host half is not a
     # per-package surface row (it owns the module table itself).
     assert sorted(client_rows.CLIENT_HOST_HALF_ROWS) == sorted(
-        set(shipped) - unimplemented - {"@deepseek-ai/dsh-client-modules"}
+        set(shipped) - unimplemented - {"@deepseek-ai/dsh-client-modules", "@deepseek-ai/dsh-client-connection"}
     )
     for name, spec in client_rows.CLIENT_HOST_HALF_ROWS.items():
         assert HARNESS_PLUGIN_CLASSES[name] == spec

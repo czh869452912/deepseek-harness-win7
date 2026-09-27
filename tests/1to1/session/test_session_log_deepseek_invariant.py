@@ -30,7 +30,7 @@ class _Companion:
     inject = ["invariants"]
 
     def apply(self, ctx: Any) -> None:
-        apply_session_log_invariant(ctx)
+        return apply_session_log_invariant(ctx)
 
 
 async def setup() -> Dict[str, Any]:

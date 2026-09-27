@@ -1766,7 +1766,7 @@ class EntryGroup:
         is_group = options.get("group", False) or options.get("name") == "cordis:group"
         entry: Entry = existing or Entry(loader=loader_inst, name=options, entry_id=eid, group=is_group)
         if existing is None:
-            entry.options = dict(options)
+            entry.options = options
         if is_group and not entry.subgroup:
             entry.subgroup = Group(entry.ctx, options.get("config", [])) if hasattr(entry, "ctx") and entry.ctx else None
         prev_parent = entry.parent
@@ -1802,7 +1802,7 @@ class EntryGroup:
         loader_inst = getattr(self.tree.ctx, "loader", None) or self.tree
         entry: Entry = existing or Entry(loader=loader_inst, name=options, entry_id=eid)
         if existing is None:
-            entry.options = dict(options)
+            entry.options = options
         prev_parent = entry.parent
         entry.parent = self
         self.tree.store[eid] = entry
@@ -2150,6 +2150,9 @@ class Entry:
         async def _cont():
             if self.parent and hasattr(self.parent, "ctx"):
                 self.ctx.parent = self.parent.ctx
+                self.ctx.baseUrl = self.parent.ctx.baseUrl
+                if self.fiber:
+                    self.fiber.ctx.baseUrl = self.ctx.baseUrl
             if self.fiber and getattr(self.fiber, "uid", None) and ("config" in diff or self.options.get("group")):
                 res = self.fiber.update(self.options.get("config"), no_save=True)
                 if inspect.isawaitable(res):
@@ -2296,6 +2299,8 @@ class Entry:
 
         def commit():
             if create:
+                replace_keys(options, candidate)
+                self.options = options
                 return
             replace_keys(previous_options, candidate)
             self.options = previous_options
@@ -2369,11 +2374,11 @@ class Entry:
                     raw = await raw
                 plugin = getattr(self.loader, "unwrap_exports", lambda x: x)(raw)
             else:
-                plugin = previous.runtime.callback if previous.runtime else getattr(previous, "plugin", None)
+                plugin = getattr(previous, "_plugin_cls", None) or getattr(previous, "plugin", None) or (previous.runtime.callback if previous.runtime else None)
         except Exception as error:
             raise LoaderUpdateError("import", candidate, error)
 
-        previous_plugin = previous.runtime.callback if previous.runtime else getattr(previous, "plugin", None)
+        previous_plugin = getattr(previous, "_plugin_cls", None) or getattr(previous, "plugin", None) or (previous.runtime.callback if previous.runtime else None)
         self.options = candidate
         self.name = self.options.get("name", self.name)
         self.config = self.options.get("config", self.config)
@@ -2555,7 +2560,9 @@ class Loader(EntryTree, Service):
                                 logger("loader").warn("expected service %s to be implemented", name)
                             continue
                         impl_ctx = getattr(impl_fiber, "ctx", None)
-                        impl_delims = getattr(impl_ctx, "_isolate_delims", {}) if impl_ctx else {}
+                        owner_entry = getattr(impl_fiber, "entry", None)
+                        marker_ctx = getattr(owner_entry, "ctx", impl_ctx)
+                        impl_delims = getattr(marker_ctx, "_isolate_delims", {}) if marker_ctx else {}
                         impl_flag = impl_delims.get(delim_k, "")
                         diff[name] = (old_sym, new_sym, entry_flag, impl_flag)
                         if entry_flag != impl_flag:
@@ -2563,6 +2570,8 @@ class Loader(EntryTree, Service):
 
                 # Step 3: Update isolate & intercept maps
                 entry.ctx._isolated_keys = new_map
+                if entry.fiber is not None:
+                    entry.fiber.ctx._isolated_keys = dict(new_map)
                 intercept_opt = entry.options.get("intercept", {})
                 entry.ctx._intercept_map = dict(intercept_opt) if isinstance(intercept_opt, dict) else {}
 
@@ -2586,7 +2595,8 @@ class Loader(EntryTree, Service):
                                 return True
                             sym1, sym2, flag1, flag2 = diff[s_name]
                             sym3 = getattr(target_ctx, "_isolated_keys", {}).get(s_name, "")
-                            target_delims = getattr(target_ctx, "_isolate_delims", {})
+                            target_entry = getattr(getattr(target_ctx, "fiber", None), "entry", None)
+                            target_delims = getattr(getattr(target_entry, "ctx", target_ctx), "_isolate_delims", {})
                             delim_key = self._delims.get(s_name, "")
                             flag3 = target_delims.get(delim_key, "")
                             return (sym1 == sym3 or sym2 == sym3) and (flag1 == flag3) != (flag1 == flag2)
@@ -2839,6 +2849,9 @@ class Loader(EntryTree, Service):
                 entry_id=plugin_id,
                 group=is_group
             )
+            entry.ctx.parent = ctx
+            entry.ctx.baseUrl = ctx.baseUrl
+            mount_ctx = entry.ctx
             if self.store is not None:
                 self.store[entry.id] = entry
             self.entries_list.append(entry)
@@ -2850,7 +2863,7 @@ class Loader(EntryTree, Service):
                 nested_items = item.get("config", [])
                 isolate_config = item.get("isolate", None)
 
-                fiber = ctx.registry.plugin(Group, config=nested_items, get_outer_stack=entry.get_outer_stack)
+                fiber = mount_ctx.registry.plugin(Group, config=nested_items, get_outer_stack=entry.get_outer_stack)
                 if fiber:
                     fiber.entry = entry
                     fiber.state = FiberState.ACTIVE
@@ -2863,19 +2876,21 @@ class Loader(EntryTree, Service):
                     self.load_from_dict(nested_items, ctx)
                 continue
 
-            config = item.get("config", {})
+            config = interpolate(mount_ctx, item.get("config", {}))
 
             plugin_cls = resolve_plugin_class(plugin_name, self.registry_map)
             if plugin_cls is None:
                 plugin_cls = (getattr(self, "harness_plugins", None) or {}).get(plugin_name)
+            if plugin_cls is None:
+                plugin_cls = self.unwrap_exports(self.import_plugin(plugin_name))
             if plugin_cls:
                 fiber = None
                 if isinstance(plugin_cls, type) and issubclass(plugin_cls, Plugin):
                     plugin_instance = plugin_cls(config=config)
                     plugin_instance.id = plugin_id
-                    fiber = ctx.registry.plugin(plugin_instance, config=config, get_outer_stack=entry.get_outer_stack)
-                elif callable(plugin_cls):
-                    fiber = ctx.registry.plugin(plugin_cls, config=config, get_outer_stack=entry.get_outer_stack)
+                    fiber = mount_ctx.registry.plugin(plugin_instance, config=config, get_outer_stack=entry.get_outer_stack)
+                elif callable(plugin_cls) or callable(getattr(plugin_cls, "apply", None)):
+                    fiber = mount_ctx.registry.plugin(plugin_cls, config=config, get_outer_stack=entry.get_outer_stack)
                 else:
                     if ctx and hasattr(ctx, "logger"):
                         ctx.logger("loader").warn("Registered item '%s' is not a valid plugin", plugin_name)
@@ -2916,3 +2931,7 @@ class Loader(EntryTree, Service):
 
 # Backward compatibility alias
 PresetLoader = Loader
+
+
+# Historical public spelling retained for callers of the split Loader modules.
+evaluate = evaluate_expr

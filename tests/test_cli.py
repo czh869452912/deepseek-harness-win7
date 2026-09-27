@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock
 import pytest
-from dsh.harness import build_harness
+from dsh.harness import build_harness, initialize_harness
 
 
 @pytest.mark.asyncio
@@ -33,7 +33,10 @@ async def test_mock_llm_turn_execution():
         }
     ]
 
-    ctx.set_service("llm", mock_llm)
+    # The harness owns the llm service; replace its completion transport
+    # instead of registering a duplicate service (Cordis rejects shadowing).
+    llm = ctx.get("llm")
+    llm.chat_completion = mock_llm.chat_completion
 
     agent_loop = ctx.get("agent_loop")
     response = await agent_loop.run_turn("Please view the current directory.")

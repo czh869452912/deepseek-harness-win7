@@ -63,5 +63,8 @@ def apply(ctx: Any) -> Optional[Any]:
     """Register this package's invariant companion."""
     registry = ctx.get("invariants") if hasattr(ctx, "get") else None
     if registry is not None and hasattr(registry, "register"):
-        return registry.register(PACKAGE_NAME, install)
+        return registration_result(registry.register(PACKAGE_NAME, install))
     return None
+
+
+from dsh.diagnostics.invariants import registration_result

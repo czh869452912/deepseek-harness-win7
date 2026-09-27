@@ -102,7 +102,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-api-session-controller",
         "@deepseek-ai/dsh-api-settings-controller",
         "@deepseek-ai/dsh-api-workspace-controller",
-        "@deepseek-ai/dsh-client-connection",
         "@deepseek-ai/dsh-client-hmr",
         "@deepseek-ai/dsh-code-runtime-worker-thread",
         "@deepseek-ai/dsh-cordis-client-runner",
@@ -112,7 +111,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-jobs-local",
         "@deepseek-ai/dsh-llm-deepseek",
         "@deepseek-ai/dsh-llm-pi-ai",
-        "@deepseek-ai/dsh-message-feedback",
         "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
@@ -515,7 +513,7 @@ async def test_a_config_project_module_still_wins_over_the_installation_fallback
             # ...while the installation row below the healed fallback answers from
             # the table instead of the JS artifact beside it.
             assert ctx.get("toolsArtifactLoaded") is None
-            assert type(ctx.get("tools")).__name__ == "ToolsService"
+            assert ctx.get("tools").__class__.__name__ == "ToolsService"
         finally:
             await ctx.fiber.dispose()
     finally:
@@ -678,7 +676,7 @@ def test_the_frozen_gap_is_the_union_of_every_shipped_profile():
 
             collect(patch)
     assert union <= shipped_names
-    assert len(union) == 44
+    assert len(union) == 42
 
 
 # --- boot installs and consults the table ------------------------------------
@@ -805,10 +803,11 @@ async def test_install_through_the_service_proxy_reaches_the_loader_the_entries_
         await ctx.fiber.dispose()
 
 
-def test_build_harness_preset_rows_resolve_through_the_table():
+@pytest.mark.asyncio
+async def test_build_harness_preset_rows_resolve_through_the_table():
     from dsh.harness import build_harness
 
-    ctx = build_harness(mode="minimal")
+    ctx = await build_harness(mode="minimal")
     loader = ctx.get("loader")
     assert loader.harness_plugins
     # A preset-only row name (`dsh-cordis-manager`) and a plain row both resolve.

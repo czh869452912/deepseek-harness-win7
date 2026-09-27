@@ -303,6 +303,11 @@ class SessionsDomainHandler:
         catalog = await build_model_catalog(self.ctx)
         sid = payload.get("sessionId")
         current_selection = catalog.get("default", {"provider": "deepseek-official", "model": "deepseek-chat"})
+        default_model = self.ctx.get("agentDefaultModel")
+        if default_model is not None:
+            selection = default_model.current_selection()
+            if selection:
+                current_selection = selection
         if sid:
             handle = self._active_sessions.get(sid)
             if handle and hasattr(handle, "agent"):

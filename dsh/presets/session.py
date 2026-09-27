@@ -12,7 +12,8 @@ def resolve_session_preset(session: Any) -> Optional[str]:
     The preset a session actually runs, newest selection winning.
     Reconstruction reads resolve_session_preset, never the header alone.
     """
-    events = getattr(session, "events", []) or []
+    events = (session.get("events", []) if isinstance(session, dict)
+              else getattr(session, "events", [])) or []
     for index in range(len(events) - 1, -1, -1):
         event = events[index]
         if isinstance(event, dict):
@@ -27,7 +28,7 @@ def resolve_session_preset(session: Any) -> Optional[str]:
             if p:
                 return p
 
-    header = getattr(session, "header", None)
+    header = session.get("header") if isinstance(session, dict) else getattr(session, "header", None)
     if header is not None:
         if isinstance(header, dict):
             return header.get("agentPreset") or header.get("agent_preset")

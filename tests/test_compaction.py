@@ -95,7 +95,6 @@ async def test_automatic_pressure_compaction():
     ctx.set_service("token_meter", meter)
 
     pruner = ToolResultPruner(ctx=ctx)
-    ctx.set_service("tool_result_pruner", pruner)
 
     llm = MockLlmService()
     ctx.set_service("llm", llm)
@@ -106,7 +105,6 @@ async def test_automatic_pressure_compaction():
 
     # Set very low threshold (e.g. 50 tokens) to trigger compaction
     engine = BasicCompactionEngine(threshold_tokens=50, retain_tokens=20, auto=False, ctx=ctx)
-    ctx.set_service("compaction", engine)
 
     session.append_user_message("Prompt 1 with some text to consume tokens")
     session.append_assistant_message({"role": "assistant", "content": "Response 1 with text"})

@@ -149,7 +149,7 @@ async def run_group(
             append_tool_result(session, turn, step, call.block, result, call_seqs[committed])
             if accept_context and result.additional_contexts:
                 for ctx_item in result.additional_contexts:
-                    accept_context(ctx_item)
+                    accept_context(json.loads(json.dumps(ctx_item, ensure_ascii=False)))
             if result.concludes_turn:
                 concluded = True
             committed += 1
@@ -326,7 +326,7 @@ def append_tool_result(
     if hasattr(session, "append"):
         session.append(
             "tool/result",
-            payload,
+            json.loads(json.dumps(payload, ensure_ascii=False)),
             surface_op="append",
             source_event_seqs=[call_seq],
         )

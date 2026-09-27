@@ -27,7 +27,7 @@ class _Companion:
     inject = ["invariants"]
 
     def apply(self, ctx: Any) -> None:
-        apply_sandbox_policy_invariant(ctx)
+        return apply_sandbox_policy_invariant(ctx)
 
 
 async def setup() -> Context:

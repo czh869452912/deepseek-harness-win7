@@ -19,6 +19,25 @@ class MockLlmDriver:
             "content": f"Response {self.call_count} for task.",
         }
 
+    def chat_completion_stream(self, messages, tools=None, model=None, provider=None):
+        self.call_count += 1
+        yield {
+            "type": "block-start",
+            "index": 0,
+            "blockType": "text",
+        }
+        yield {
+            "type": "text-delta",
+            "index": 0,
+            "text": f"Response {self.call_count} for task.",
+        }
+        yield {
+            "type": "block-end",
+            "index": 0,
+            "block": {"type": "text", "text": f"Response {self.call_count} for task."},
+        }
+        yield {"type": "finish", "reason": {"kind": "stop"}}
+
 
 def test_agent_initiator_scope():
     registry = AgentRegistry()

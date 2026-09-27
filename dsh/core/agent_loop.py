@@ -765,7 +765,13 @@ class AgentLoopService:
             }
         )
 
-        proposed_config = await self.ctx.waterfall("agent/request", seed_config)
+        request_context = dict(seed_config)
+        request_context.update(turn=turn, step=step, signal=getattr(agent, "signal", None))
+        proposed_config = await self.ctx.waterfall(
+            "agent/request", request_context, lambda *_args: dict(seed_config))
+        config_fields = ("provider", "model", "reasoningEffort", "maxTokens", "temperature", "stop")
+        effective_config = {key: value for key, value in (proposed_config or seed_config).items()
+                            if key in config_fields}
         if isinstance(proposed_config, dict):
             provider_name = str(proposed_config.get("provider", provider_name))
             model_name = str(proposed_config.get("model", model_name))
@@ -773,9 +779,11 @@ class AgentLoopService:
         header_data = canonical_header({
             "system": system_prompt,
             "tools": tool_schemas,
-            "config": {"provider": provider_name, "model": model_name},
+            "config": dict(effective_config, provider=provider_name, model=model_name),
         })
 
+        # Projection dict subclasses must cross the durable-log boundary as plain JSON.
+        header_data = json.loads(json.dumps(header_data, ensure_ascii=False))
         surface_gen = session.surface.replace_generation
         last_gen = getattr(agent, "_last_surface_gen", None)
         surface_changed = (last_gen is not None and last_gen != surface_gen)
@@ -809,6 +817,8 @@ class AgentLoopService:
         chunk_seqs: List[int] = []
 
         request_obj = {
+            **effective_config,
+            "sessionId": session.id,
             "messages": messages,
             "provider": provider_name,
             "model": model_name,
@@ -823,13 +833,13 @@ class AgentLoopService:
             used_stream = False
             if stream_fn and callable(stream_fn):
                 try:
-                    stream_iter = _invoke_llm_callable(
-                        stream_fn,
-                        messages=messages,
-                        tools=tool_schemas if tool_schemas else None,
-                        system=system_prompt if system_prompt else None,
-                        request=request_obj,
-                    )
+                    def open_stream(*_args):
+                        return _invoke_llm_callable(
+                            stream_fn, messages=request_obj["messages"],
+                            tools=request_obj.get("tools"), system=request_obj.get("system"),
+                            request=request_obj)
+
+                    stream_iter = await self.ctx.waterfall("llm/stream", request_obj, open_stream)
                     async for chunk in _async_iter_chunks(stream_iter, cancel_check=agent.is_cancelled):
                         # TS port yields StreamChunk dict; legacy tuple (ev_type, ev_payload) also supported
                         if isinstance(chunk, (list, tuple)) and len(chunk) == 2:

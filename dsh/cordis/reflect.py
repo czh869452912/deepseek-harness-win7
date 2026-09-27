@@ -273,7 +273,12 @@ class ReflectService:
                 # wait is asynchronous.
                 if key in self.store and self.store[key] == impl:
                     del self.store[key]
-                if hasattr(target_store, "_services") and name in target_store._services:
+                elif key in self.store:
+                    # A newer provider owns this name; keep its cache coherent.
+                    if hasattr(target_store, "_services"):
+                        target_store._services[name] = self.store[key].value
+                        setattr(target_store, name, self.store[key].value)
+                if self.store.get(key) is None and hasattr(target_store, "_services") and name in target_store._services:
                     del target_store._services[name]
                     if hasattr(target_store, name):
                         try:

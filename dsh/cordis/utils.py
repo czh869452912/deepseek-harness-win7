@@ -2392,6 +2392,10 @@ class TracedProxy:
             return object.__getattribute__(self, name)
         target = object.__getattribute__(self, "_target")
         attr = getattr(target, name)
+        tracker = object.__getattribute__(self, "_tracker")
+        if inspect.ismethod(attr) and getattr(attr, "__self__", None) is target and not tracker.get("noShadow"):
+            import types
+            attr = types.MethodType(attr.__func__, self)
         if callable(attr):
             @functools.wraps(attr)
             def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -2525,7 +2529,9 @@ def get_traceable(ctx: Any, value: Any) -> Any:
 
     from dsh.cordis.service import Service
     if isinstance(value, Service):
-        return value._extend({"ctx": effective_ctx})
+        proxy = value._extend({"ctx": effective_ctx})
+        proxy.__dict__["_trace_writes"] = True
+        return proxy
     if hasattr(value, "_extend") and not hasattr(value, "_mock_return_value") and callable(getattr(value, "_extend")):
         return value._extend({"ctx": effective_ctx})
     if tracker and not hasattr(value, "_mock_return_value"):
@@ -2960,3 +2966,13 @@ def map_values(source: Dict[str, Any], callback: Callable[..., Any]) -> Dict[str
 mapValues = map_values
 value_map = map_values
 valueMap = map_values
+
+
+class Tracker(dict):
+    """Compatibility constructor for the canonical mapping-based tracker."""
+
+    def __init__(self, associate=None, property_name=None, no_shadow=False):
+        super().__init__(associate=associate, property=property_name, noShadow=no_shadow)
+        self.associate = associate
+        self.property = property_name
+        self.no_shadow = no_shadow

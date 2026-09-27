@@ -29,10 +29,12 @@ from dsh.host.webserver.webserver import WebServerPlugin
 from dsh.interaction.commands import CommandsPlugin
 from dsh.interaction.permission_presets import PermissionPresetsPlugin
 from dsh.interaction.user_approval import UserApprovalPlugin
+from dsh.interaction.user_questions import UserQuestionsPlugin
 from dsh.llm.llm_retry import LLMRetryPlugin
 from dsh.session.session_query import SessionQueryPlugin
 from dsh.storage.storage import StoragePlugin
 from dsh.workspace.workspace import WorkspacePlugin
+from dsh.presets.agent_presets import AgentPresets
 
 
 async def build_harness(
@@ -81,6 +83,10 @@ async def build_harness(
 
     # Mount base infrastructure plugins
     await ctx.plugin(TimerService)
+    from dsh.core.system_prompt import SystemPrompt
+    from dsh.subprocess.local import LocalSubprocessRuntime
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(LocalSubprocessRuntime)
     await ctx.plugin(ToolsPlugin)
     await ctx.plugin(CredentialsLocalPlugin)
     await ctx.plugin(SettingsFilePlugin)
@@ -222,3 +228,15 @@ async def build_harness(
         raise RuntimeError(f"dsh: plugin tree failed to load: {exc}") from exc
 
     return ctx
+
+
+async def initialize_harness(ctx: Context) -> Context:
+    """Settle fibers added after the asynchronous harness construction."""
+    from dsh.boot.app_boot import settle_fibers
+    await settle_fibers(ctx)
+    return ctx
+
+
+async def build_harness_async(*args: Any, **kwargs: Any) -> Context:
+    """Compatibility alias for the canonical asynchronous constructor."""
+    return await build_harness(*args, **kwargs)

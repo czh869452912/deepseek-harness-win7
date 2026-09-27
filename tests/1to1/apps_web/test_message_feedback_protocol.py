@@ -227,7 +227,7 @@ async def launch_served_host(tmp_path):
     carrier, the connection service, the frontend-static fallback owner and the
     message-feedback row.
     """
-    ctx = build_harness(mode="web", enable_web=True, verbose=False, web_port=0)
+    ctx = await build_harness(mode="web", enable_web=True, verbose=False, web_port=0)
     service = ctx.get("messageFeedback")
     assert service is not None, "the shipped web composition mounted no messageFeedback provider"
     # The plugin opens its domain as a task on the active loop.

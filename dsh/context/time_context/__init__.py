@@ -29,10 +29,10 @@ class TimeContextPlugin(Plugin):
         self._last_injection_time: Dict[str, float] = {}
 
     def apply(self, ctx: Any) -> None:
-        async def hook_time_context(payload: Dict[str, Any]) -> Dict[str, Any]:
+        async def hook_time_context(payload: Dict[str, Any], next_fn: Any = None) -> Dict[str, Any]:
             messages = payload.get("messages", [])
             if not messages:
-                return payload
+                return await next_fn() if callable(next_fn) else payload
 
             now = time.time()
             session_id = payload.get("session_id", "default")
@@ -42,7 +42,7 @@ class TimeContextPlugin(Plugin):
             last_time = self._last_injection_time.get(session_id, 0)
             if self.refresh_interval_ms > 0 and last_time > 0:
                 if (now - last_time) * 1000.0 < self.refresh_interval_ms:
-                    return payload
+                    return await next_fn() if callable(next_fn) else payload
 
             self._last_injection_time[session_id] = now
 
@@ -65,7 +65,7 @@ class TimeContextPlugin(Plugin):
                         msg["content"] = f"{time_text}\n{msg['content']}"
                     break
 
-            return payload
+            return await next_fn() if callable(next_fn) else payload
 
         ctx.on("agent/pre-step", hook_time_context)
 

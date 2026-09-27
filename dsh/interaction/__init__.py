@@ -13,7 +13,12 @@ from dsh.interaction.invariant import apply as apply_commands_invariant
 from dsh.interaction.permission_presets import PermissionPresetsPlugin
 from dsh.interaction.tool_ask_user import ToolAskUserPlugin
 from dsh.interaction.user_approval import UserApprovalPlugin
-from dsh.interaction.user_questions import UserQuestionsPlugin
+from dsh.interaction.user_questions import (
+    UserQuestionError,
+    UserQuestionProvider,
+    UserQuestionService,
+    UserQuestionsPlugin,
+)
 
 __all__ = [
     "CommandDefinition",
@@ -25,6 +30,9 @@ __all__ = [
     "PermissionPresetsPlugin",
     "ToolAskUserPlugin",
     "UserApprovalPlugin",
+    "UserQuestionError",
+    "UserQuestionProvider",
+    "UserQuestionService",
     "UserQuestionsPlugin",
     "apply_commands_invariant",
     "normalize_definition",

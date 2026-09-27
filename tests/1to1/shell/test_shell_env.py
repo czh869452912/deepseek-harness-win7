@@ -216,7 +216,7 @@ def test_rejects_non_string_values_returned_by_a_contributor():
 async def test_removes_an_effect_scoped_contributor_when_its_plugin_is_disposed():
     """Upstream: 'removes an effect-scoped contributor when its plugin is disposed'."""
     ctx = Context()
-    ctx.plugin(ShellEnvPlugin)
+    await ctx.plugin(ShellEnvPlugin)
     registry: ShellEnvRegistry = ctx.get("shellEnv")
 
     from dsh.cordis.plugin import Plugin
@@ -231,7 +231,7 @@ async def test_removes_an_effect_scoped_contributor_when_its_plugin_is_disposed(
                 "resolve": lambda _exec: {"DSH_TEMPORARY": "present"},
             })
 
-    fiber = ctx.plugin(TemporaryContributor)
+    fiber = await ctx.plugin(TemporaryContributor)
 
     assert registry.collect(execution())["DSH_TEMPORARY"] == "present"
     await fiber.dispose()
@@ -256,7 +256,7 @@ def test_returns_an_explicit_contributor_disposer():
 async def test_the_plugin_registers_the_service_and_the_persistence_contributor_on_load():
     """Upstream: 'the plugin registers the service and the persistence contributor on load'."""
     ctx = Context()
-    ctx.plugin(ShellEnvPlugin)
+    await ctx.plugin(ShellEnvPlugin)
     registry = ctx.get("shellEnv")
     assert isinstance(registry, ShellEnvRegistry)
     assert registry.list() == [
@@ -272,7 +272,7 @@ async def test_the_plugin_registers_the_service_and_the_persistence_contributor_
 async def test_the_persistence_contributor_resolves_dsh_session_jsonl_only_for_a_jsonl_backend():
     """Upstream: 'the persistence contributor resolves DSH_SESSION_JSONL only for a jsonl backend'."""
     ctx = Context()
-    ctx.plugin(ShellEnvPlugin)
+    await ctx.plugin(ShellEnvPlugin)
     ctx.provide("sessionPersistence", _Persistence("jsonl", "C:\\sessions\\s.jsonl"))
     assert ctx.get("shellEnv").collect(execution("sess-p"))[DSH_SESSION_JSONL_KEY] == "C:\\sessions\\s.jsonl"
 
@@ -281,7 +281,7 @@ async def test_the_persistence_contributor_resolves_dsh_session_jsonl_only_for_a
 async def test_the_persistence_contributor_omits_the_variable_for_a_non_jsonl_backend():
     """Upstream: 'the persistence contributor omits the variable for a non-jsonl backend'."""
     ctx = Context()
-    ctx.plugin(ShellEnvPlugin)
+    await ctx.plugin(ShellEnvPlugin)
     ctx.provide("sessionPersistence", _Persistence("sqlite", "C:\\sessions\\s.db"))
     assert DSH_SESSION_JSONL_KEY not in ctx.get("shellEnv").collect(execution("sess-p"))
 
@@ -290,5 +290,5 @@ async def test_the_persistence_contributor_omits_the_variable_for_a_non_jsonl_ba
 async def test_the_persistence_contributor_omits_the_variable_without_a_persistence_backend():
     """Upstream: 'the persistence contributor omits the variable without a persistence backend'."""
     ctx = Context()
-    ctx.plugin(ShellEnvPlugin)
+    await ctx.plugin(ShellEnvPlugin)
     assert DSH_SESSION_JSONL_KEY not in ctx.get("shellEnv").collect(execution("sess-p"))

@@ -27,7 +27,6 @@ def test_credentials_service(monkeypatch):
         creds_file = os.path.join(tmpdir, "credentials.json")
         ctx = Context()
         creds = CredentialsService(ctx=ctx, credentials_file=creds_file)
-        ctx.set_service("credentials", creds)
 
         creds.set_credential("DEEPSEEK_API_KEY", "sk-test-creds-key")
         assert creds.resolve("DEEPSEEK_API_KEY") == "sk-test-creds-key"
@@ -62,7 +61,6 @@ def test_llm_per_request_dynamic_resolution(monkeypatch):
     with tempfile.TemporaryDirectory() as tmpdir:
         ctx = Context()
         creds = CredentialsService(ctx=ctx, credentials_file=os.path.join(tmpdir, "credentials.json"))
-        ctx.set_service("credentials", creds)
 
         settings = SettingsService(settings_file=os.path.join(tmpdir, "settings.json"))
         ctx.set_service("settings", settings)
@@ -144,7 +142,7 @@ def test_settings_update_replace_mutate_rpcs_and_events():
         assert any(e[0] == "doc_updated" for e in events_received)
 
         # Persistence check
-        settings2 = SettingsService(ctx=ctx, settings_file=settings_file)
+        settings2 = SettingsService(ctx=Context(), settings_file=settings_file)
         assert settings2.get_section("llm")["model"] == "mutated-model"
 
 

@@ -251,7 +251,7 @@ class SessionInvariantPlugin(Plugin):
             # The registration disposer is the companion fiber's cleanup: the
             # reference companion RETURNS it, so disposing the companion removes
             # every listener the registration installed.
-            return invariants_svc.register(PACKAGE_NAME, installer)
+            return registration_result(invariants_svc.register(PACKAGE_NAME, installer))
         return None
 
 
@@ -259,3 +259,6 @@ class SessionInvariantPlugin(Plugin):
 def apply(ctx: Any) -> Any:
     plugin = SessionInvariantPlugin()
     return plugin.apply(ctx)
+
+
+from dsh.diagnostics.invariants import registration_result

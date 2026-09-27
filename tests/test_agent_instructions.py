@@ -45,7 +45,7 @@ async def test_instructions_prompt_assembly_injection(temp_workspace):
     orig_cwd = os.getcwd()
     os.chdir(temp_workspace)
     try:
-        assembled = await ctx.waterfall("agent/prompt-assemble", "Base prompt")
+        assembled = await ctx.waterfall("agent/prompt-assemble", "Base prompt", lambda value: value)
         assert "Base prompt" in assembled
         assert "# Project Workspace Instructions" in assembled
         assert "Rule 1: Strict Python 3.8" in assembled
@@ -62,7 +62,7 @@ async def test_instructions_suppressed_in_minimal_mode(temp_workspace):
     orig_cwd = os.getcwd()
     os.chdir(temp_workspace)
     try:
-        assembled = await ctx.waterfall("agent/prompt-assemble", "Base prompt")
+        assembled = await ctx.waterfall("agent/prompt-assemble", "Base prompt", lambda value: value)
         assert assembled == "Exclusive prompt."
         assert "Project Workspace Instructions" not in assembled
     finally:

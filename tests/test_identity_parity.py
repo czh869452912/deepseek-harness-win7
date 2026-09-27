@@ -75,7 +75,8 @@ def test_user_identity_and_author_resolution(monkeypatch):
     assert len(sys_user) > 0
 
 
-def test_anonymous_user_id_invariant():
+@pytest.mark.asyncio
+async def test_anonymous_user_id_invariant():
     ctx = Context()
     registered = []
 
@@ -85,5 +86,5 @@ def test_anonymous_user_id_invariant():
             return lambda: None
 
     ctx.set_service("invariants", MockInvariants())
-    apply_anonymous_user_id_invariant(ctx)
+    await apply_anonymous_user_id_invariant(ctx)
     assert "@deepseek-ai/dsh-anonymous-user-id" in registered

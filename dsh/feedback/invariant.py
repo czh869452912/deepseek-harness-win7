@@ -19,7 +19,7 @@ name = "message-feedback-invariant"
 inject = ["invariants"]
 
 
-def _install() -> None:
+def _install(ctx: Any, fail: Any) -> None:
     """No runtime invariant: see the module docstring."""
 
 
@@ -31,4 +31,7 @@ install: Callable[[], None] = _install
 
 def apply(ctx: Any) -> Any:
     """Register this package's invariant companion."""
-    return ctx.invariants.register(PACKAGE_NAME, install)
+    return registration_result(ctx.invariants.register(PACKAGE_NAME, install))
+
+
+from dsh.diagnostics.invariants import registration_result

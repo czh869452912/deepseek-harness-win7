@@ -50,11 +50,13 @@ class _ServiceExtendedProxy:
     def __setattr__(self, name: str, value: Any) -> None:
         if "_props" in self.__dict__ and name in self.__dict__["_props"]:
             self.__dict__["_props"][name] = value
+        elif self.__dict__.get("_trace_writes"):
+            setattr(self.__dict__["_target"], name, value)
         else:
             self.__dict__[name] = value
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        return self.__dict__["_target"](*args, **kwargs)
+        return Service.__call__(self, *args, **kwargs)
 
     @property
     def __class__(self) -> Any:

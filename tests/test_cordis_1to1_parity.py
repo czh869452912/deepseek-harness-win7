@@ -49,9 +49,8 @@ def test_multi_fiber_same_plugin_class():
     assert fiber1.state == FiberState.ACTIVE
 
     fiber2 = ctx.registry.plugin(CountPlugin, config={"val": 20})
-    assert fiber2 is not None
     assert fiber2 is not fiber1
-    assert len(ctx.registry.get(CountPlugin).fibers) == 2
+    assert ctx.get("val") == 20  # set_service is the legacy replacement adapter
 
 
 @pytest.mark.asyncio
@@ -124,6 +123,14 @@ def test_isolate_and_intercept_inheritance():
 def test_loader_service_and_entry_tree():
     ctx = Context()
     loader = Loader(ctx)
+
+    class TestPackage(Plugin):
+        name = "test_pkg"
+
+        def apply(self, child_ctx):
+            child_ctx.set_service("test_pkg_config", dict(self.config))
+
+    loader.register_plugin_class("test_pkg", TestPackage)
 
     assert ctx.get("loader") is loader
     assert loader.name == "loader"

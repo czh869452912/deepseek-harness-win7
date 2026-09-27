@@ -324,7 +324,7 @@ class PlanModePlugin(Plugin):
                 })
 
         # 3. Register exit_plan_mode tool
-        tools = ctx.get("tools")
+        tools = ctx.tools
         parameters = {
             "type": "object",
             "properties": {

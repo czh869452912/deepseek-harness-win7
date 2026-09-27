@@ -431,6 +431,9 @@ class SettingsProvider(Service):
 
         :returns: the detached raw document.
         """
+        legacy_load = getattr(self, "_load_document", None)
+        if callable(legacy_load):
+            return legacy_load()
         raise NotImplementedError
 
     def _persist_section(self, ns: str, section: Dict[str, Any]) -> None:

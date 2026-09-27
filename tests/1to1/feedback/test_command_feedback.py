@@ -304,6 +304,7 @@ async def test_boots_cordis_yml_and_records_feedback_without_model_visible_outpu
     with open(config_path, "w", encoding="utf-8") as handle:
         handle.write(
             "- name: '@deepseek-ai/dsh-agent'\n"
+            "- name: '@deepseek-ai/dsh-typert-registry'\n"
             "- name: '@deepseek-ai/dsh-session'\n"
             "- name: '@deepseek-ai/dsh-commands'\n"
             "- name: '@deepseek-ai/dsh-command-feedback'\n"

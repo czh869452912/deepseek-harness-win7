@@ -24,7 +24,7 @@ async def test_file_reference_local_injection(tmp_path):
         ]
     }
 
-    result = await ctx.waterfall("agent/pre-step", payload)
+    result = await ctx.waterfall("agent/pre-step", payload, lambda value: value)
     user_msg = payload["messages"][0]["content"]
 
     assert "@sample.py content" in user_msg
@@ -43,7 +43,7 @@ async def test_time_context_injection():
         ]
     }
 
-    await ctx.waterfall("agent/pre-step", payload)
+    await ctx.waterfall("agent/pre-step", payload, lambda value: value)
     user_msg = payload["messages"][0]["content"]
 
     assert "Time sampled while preparing turn" in user_msg

@@ -76,7 +76,7 @@ def test_apply_path_op_and_clone_json_shaped():
         clone_json_shaped({"fn": lambda: None}, lambda msg, p: TypeError(msg))
 
 
-def test_multi_level_config_hierarchy():
+def test_settings_file_uses_one_document_over_the_registered_base():
     """
     Audit 1: Multi-level hierarchy:
     Schema defaults -> Preset Base -> User Settings -> Project Settings (.dsh/settings.yaml)
@@ -114,8 +114,9 @@ def test_multi_level_config_hierarchy():
             assert resolved["temperature"] == 0.5
             # 2. User settings (model: user-model) over preset base
             assert resolved["model"] == "user-model"
-            # 3. Project settings (.dsh/settings.yaml base_url) over user settings
-            assert resolved["base_url"] == "https://project.api.com"
+            # Pinned settings-file owns one user document. Project composition,
+            # when desired, is supplied by the Loader rather than discovered here.
+            assert resolved["base_url"] == "https://schema.api.com"
         finally:
             os.chdir(old_cwd)
 

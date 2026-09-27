@@ -78,7 +78,7 @@ def apply(ctx: Context) -> Any:
     invariants_svc = ctx.get("invariants")
     if invariants_svc is None:
         raise RuntimeError("invariants service required")
-    return invariants_svc.register(PACKAGE_NAME, install)
+    return registration_result(invariants_svc.register(PACKAGE_NAME, install))
 
 
 class SystemPromptInvariantPlugin:
@@ -89,3 +89,6 @@ class SystemPromptInvariantPlugin:
     @staticmethod
     def apply(ctx: Context) -> Any:
         return apply(ctx)
+
+
+from dsh.diagnostics.invariants import registration_result

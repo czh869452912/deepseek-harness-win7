@@ -27,8 +27,8 @@ def setup_todo_ctx():
 
 
 def test_requires_allow_parallel_in_progress_config():
-    with pytest.raises(ValueError, match="allowParallelInProgress is required"):
-        ToolTodoPlugin({})
+    with pytest.raises(TypeError, match="allowParallelInProgress missing required value"):
+        ToolTodoPlugin({}).apply(Context())
 
 
 @pytest.mark.asyncio

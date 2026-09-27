@@ -23,11 +23,13 @@ class ToolAskUserPlugin(Plugin):
         self.handler: Optional[Callable[[List[Dict[str, Any]]], Any]] = None
 
     def apply(self, ctx: Any) -> None:
-        tools = ctx.get("tools")
-        if not tools:
+        # `tools` is an injected service; use the caller-bound proxy so this
+        # plugin registers into its preset fiber scope.
+        tools = ctx.tools
+        if tools is None:
             return
 
-        async def exec_ask(args: Any = None, agent: Optional[Any] = None, signal: Optional[Any] = None, exec_input: Optional[Any] = None, **kwargs: Any) -> Any:
+        async def exec_ask(args: Any = None, exec_input: Optional[Any] = None, agent: Optional[Any] = None, signal: Optional[Any] = None, **kwargs: Any) -> Any:
             if isinstance(args, dict):
                 questions_arg = args.get("questions", [])
             elif "questions" in kwargs:
@@ -127,6 +129,10 @@ class ToolAskUserPlugin(Plugin):
                 "required": ["questions"],
             },
             "execute": exec_ask,
+            "output": {
+                "schema": {"type": "string"},
+                "render": lambda _args, value: [{"type": "text", "text": str(value)}],
+            },
         })
 
         if hasattr(ctx, "disposable"):

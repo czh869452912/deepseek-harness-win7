@@ -80,7 +80,7 @@ async def test_session_checkpoint_policy_plugin():
     payload = {"agent": agent}
 
     # Test pre-step waterfall
-    await ctx.waterfall("agent/pre-step", payload)
+    await ctx.waterfall("agent/pre-step", payload, lambda *_args: None)
     assert flush_called is True
 
 
@@ -105,7 +105,7 @@ async def test_persistence_coordinator(tmp_path):
 
 
 def test_plugin_inject_declarations():
-    assert SessionCheckpointPolicyPlugin.inject == ["sessions"]
+    assert SessionCheckpointPolicyPlugin.inject == ["llm", "sessionPersistence", "sessions", "tools"]
     assert SessionStatsPlugin.inject == ["sessionProjections"]
     assert SessionTitlePlugin.inject == []
 

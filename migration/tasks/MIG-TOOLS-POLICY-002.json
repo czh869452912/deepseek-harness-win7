@@ -6,7 +6,13 @@
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "a4ff8ac41fa37b5463b0ce8b7f420d0973e8d840",
   "owner": null,
-  "requires": [],
+  "requires": [
+    {
+      "task": "MIG-AGENT-LIFECYCLE-002",
+      "contract": "CON-AGENT-FACTORY",
+      "revision": 1
+    }
+  ],
   "provides": [],
   "acceptance": [
     "Specify source-backed contract and required provider revisions before entering ready."

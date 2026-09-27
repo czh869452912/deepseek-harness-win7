@@ -1,0 +1,25 @@
+{
+  "id": "MIG-WEB-PROTOCOL-DISCOVERY-002",
+  "goal": "核定当前上游 Connection/Gateway/Remote 的传输归属与分阶段依赖",
+  "kind": "analysis",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "a4ff8ac41fa37b5463b0ce8b7f420d0973e8d840",
+  "owner": "current-session-coordinator",
+  "requires": [],
+  "provides": [],
+  "acceptance": [
+    "Source map names current Connection HTTP/RPC ownership, Gateway WebSocket and Remote event result protocol, with local gaps and dependencies.",
+    "Four unchanged upstream protocol/trust suites pass 71 tests; report is explicitly not Python or browser parity."
+  ],
+  "expected_paths": [
+    "docs/research/2026-09-27-web-transport-discovery.md",
+    "scripts/oracles/vitest.web-protocol.config.mts"
+  ],
+  "open_findings": [],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "Bind source map and 71-test official baseline to candidate evidence; implementation remains MIG-WEB-CONNECTION-002."
+}

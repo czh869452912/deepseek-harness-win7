@@ -6,7 +6,18 @@
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "a4ff8ac41fa37b5463b0ce8b7f420d0973e8d840",
   "owner": null,
-  "requires": [],
+  "requires": [
+    {
+      "task": "MIG-AGENT-LIFECYCLE-002",
+      "contract": "CON-AGENT-FACTORY",
+      "revision": 1
+    },
+    {
+      "task": "MIG-REPRO-GATE-002",
+      "contract": "CON-REPRO-RELEASE",
+      "revision": 1
+    }
+  ],
   "provides": [],
   "acceptance": [
     "Specify source-backed contract and required provider revisions before entering ready."
@@ -21,5 +32,5 @@
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "按已认可研究计划定义契约与依赖；分析可提前，接口实现等待提供端验收。"
+  "next_action": "先对照 config-session-id 的配置启动/重载及 draining 身份；公开 factory 通过不代表该配置层已对齐。其他完整 profile journeys 等待 Session/Wire/Tools/Web 各契约。"
 }

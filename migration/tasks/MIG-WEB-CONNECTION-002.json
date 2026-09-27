@@ -6,7 +6,13 @@
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "a4ff8ac41fa37b5463b0ce8b7f420d0973e8d840",
   "owner": null,
-  "requires": [],
+  "requires": [
+    {
+      "task": "MIG-AGENT-LIFECYCLE-002",
+      "contract": "CON-AGENT-FACTORY",
+      "revision": 1
+    }
+  ],
   "provides": [],
   "acceptance": [
     "Specify source-backed contract and required provider revisions before entering ready."
@@ -21,5 +27,6 @@
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "按已认可研究计划定义契约与依赖；分析可提前，接口实现等待提供端验收。"
+  "next_action": "按已盘点的 Connection -> Typert/Gateway -> Remote controller -> browser 顺序定义契约；Session replay/projection 未验收前不迁移页面消费者。",
+  "discovery_task": "MIG-WEB-PROTOCOL-DISCOVERY-002"
 }

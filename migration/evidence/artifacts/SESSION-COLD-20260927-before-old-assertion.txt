@@ -1,0 +1,128 @@
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  6%]
+........................................................................ [  9%]
+........................................................................ [ 11%]
+........................................................................ [ 13%]
+........................................................................ [ 16%]
+........................................................................ [ 18%]
+........................................................................ [ 20%]
+........................................................................ [ 23%]
+........................................................................ [ 25%]
+........................................................................ [ 27%]
+........................................................................ [ 30%]
+........................................................................ [ 32%]
+........................................................................ [ 34%]
+........................................................................ [ 37%]
+........................................................................ [ 39%]
+........................................................................ [ 41%]
+........................................................................ [ 43%]
+...........................................................s............ [ 46%]
+........................................................................ [ 48%]
+........................................................................ [ 50%]
+........................................................................ [ 53%]
+........................................................................ [ 55%]
+........................................................................ [ 57%]
+........................................................................ [ 60%]
+........................................................................ [ 62%]
+........................................................................ [ 64%]
+........................................................................ [ 67%]
+........................................................................ [ 69%]
+........................................................................ [ 71%]
+........................s............................................... [ 74%]
+........................................................................ [ 76%]
+........................................................................ [ 78%]
+........................................................................ [ 80%]
+........................................................................ [ 83%]
+........................................................................ [ 85%]
+........................................................................ [ 87%]
+....................................................F................... [ 90%]
+........................................................................ [ 92%]
+........................................................................ [ 94%]
+........................................................................ [ 97%]
+........................................................................ [ 99%]
+.................                                                        [100%]
+================================== FAILURES ===================================
+_________________________ test_session_crash_recovery _________________________
+
+temp_session_dir = 'C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\dsh_session_test_9awyb5ab'
+
+    @pytest.mark.asyncio
+    async def test_session_crash_recovery(temp_session_dir):
+        persistence = JsonlSessionPersistence(root=temp_session_dir)
+    
+        header = SessionHeader(session_id="test-crashed-session", cwd=temp_session_dir)
+        await persistence.create(header)
+    
+        # An interrupted turn (turn/start without turn/end)
+        events = [
+            {"seq": 0, "type": "turn/start", "data": {"turn": 1}},
+            {"seq": 1, "type": "user/message", "surfaceOp": "append", "data": {"content": "Do task"}},
+            {"seq": 2, "type": "step/start", "data": {"turn": 1, "step": 1}},
+        ]
+        await persistence.append("test-crashed-session", events)
+    
+        # 1. Inspect: should synthesize turn/end in memory without modifying file
+        inspect_result = await persistence.inspect("test-crashed-session")
+>       assert len(inspect_result.events) == 4
+E       AssertionError: assert 5 == 4
+E        +  where 5 = len([{'data': {'turn': 1}, 'seq': 0, 'type': 'turn/start'}, {'data': {'content': 'Do task'}, 'seq': 1, 'surfaceOp': 'appen...'type': 'step/end'}, {'data': {'reason': {'kind': 'interrupted'}, 'turn': 1}, 'seq': 4, 'time': 0, 'type': 'turn/end'}])
+E        +    where [{'data': {'turn': 1}, 'seq': 0, 'type': 'turn/start'}, {'data': {'content': 'Do task'}, 'seq': 1, 'surfaceOp': 'appen...'type': 'step/end'}, {'data': {'reason': {'kind': 'interrupted'}, 'turn': 1}, 'seq': 4, 'time': 0, 'type': 'turn/end'}] = <dsh.session.persistence.SessionInspection object at 0x00000000372E49A0>.events
+
+tests\test_session_persistence.py:79: AssertionError
+============================== warnings summary ===============================
+tests/1to1/apps_web/test_webserver_contract.py::test_applies_gzip_only_to_eligible_socket_backed_http_responses
+  D:\Claude-project\deepseek-harness-win7\.venv\lib\site-packages\_pytest\unraisableexception.py:85: PytestUnraisableExceptionWarning: Exception ignored in: <function _ProactorBasePipeTransport.__del__ at 0x0000000003B57A60>
+  
+  Traceback (most recent call last):
+    File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\asyncio\proactor_events.py", line 116, in __del__
+      self.close()
+    File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\asyncio\proactor_events.py", line 108, in close
+      self._loop.call_soon(self._call_connection_lost, None)
+    File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\asyncio\base_events.py", line 719, in call_soon
+      self._check_closed()
+    File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\asyncio\base_events.py", line 508, in _check_closed
+      raise RuntimeError('Event loop is closed')
+  RuntimeError: Event loop is closed
+  
+    warnings.warn(pytest.PytestUnraisableExceptionWarning(msg))
+
+tests/test_ralph_and_workflow.py::test_ralph_and_workflow_tools
+  D:\Claude-project\deepseek-harness-win7\.venv\lib\site-packages\_pytest\unraisableexception.py:85: PytestUnraisableExceptionWarning: Exception ignored in: <function _ProactorBasePipeTransport.__del__ at 0x0000000003B57A60>
+  
+  Traceback (most recent call last):
+    File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\asyncio\proactor_events.py", line 115, in __del__
+      _warn(f"unclosed transport {self!r}", ResourceWarning, source=self)
+    File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\asyncio\proactor_events.py", line 79, in __repr__
+      info.append(f'fd={self._sock.fileno()}')
+    File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\asyncio\windows_utils.py", line 102, in fileno
+      raise ValueError("I/O operation on closed pipe")
+  ValueError: I/O operation on closed pipe
+  
+    warnings.warn(pytest.PytestUnraisableExceptionWarning(msg))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+- generated xml file: D:\Claude-project\deepseek-harness-win7\.goose\out\session-recovery-pytest.xml -
+=========================== short test summary info ===========================
+FAILED tests/test_session_persistence.py::test_session_crash_recovery - Asser...
+1 failed, 3110 passed, 2 skipped, 2 warnings in 181.14s (0:03:01)
+D:\Claude-project\deepseek-harness-win7\.venv\lib\site-packages\pytest_asyncio\plugin.py:208: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+----------------------------------------
+Exception happened during processing of request from ('::1', 49570, 0, 0)
+Traceback (most recent call last):
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\socketserver.py", line 747, in __init__
+    self.handle()
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\http\server.py", line 429, in handle
+    self.handle_one_request()
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\http\server.py", line 395, in handle_one_request
+    self.raw_requestline = self.rfile.readline(65537)
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\socket.py", line 669, in readinto
+    return self._sock.recv_into(b)
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。

@@ -1,0 +1,338 @@
+{
+  "status": "matched",
+  "cases": [
+    {
+      "mode": "success",
+      "status": "matched",
+      "upstream": {
+        "mode": "success",
+        "before": {
+          "session": false,
+          "agent": false,
+          "events": []
+        },
+        "after": {
+          "rejected": false,
+          "exact": true,
+          "events": [
+            "session/created",
+            "agent/created",
+            "agent/session-start"
+          ],
+          "releases": 1,
+          "committed": 1
+        },
+        "clean": true
+      },
+      "python": {
+        "mode": "success",
+        "before": {
+          "session": false,
+          "agent": false,
+          "events": []
+        },
+        "after": {
+          "rejected": false,
+          "exact": true,
+          "events": [
+            "session/created",
+            "agent/created",
+            "agent/session-start"
+          ],
+          "releases": 1,
+          "committed": 1
+        },
+        "clean": true
+      }
+    },
+    {
+      "mode": "reject",
+      "status": "matched",
+      "upstream": {
+        "mode": "reject",
+        "before": {
+          "session": false,
+          "agent": false,
+          "events": []
+        },
+        "after": {
+          "rejected": true,
+          "exact": false,
+          "events": [],
+          "releases": 1,
+          "committed": 0
+        },
+        "clean": true
+      },
+      "python": {
+        "mode": "reject",
+        "before": {
+          "session": false,
+          "agent": false,
+          "events": []
+        },
+        "after": {
+          "rejected": true,
+          "exact": false,
+          "events": [],
+          "releases": 1,
+          "committed": 0
+        },
+        "clean": true
+      }
+    },
+    {
+      "mode": "commit",
+      "status": "matched",
+      "upstream": {
+        "mode": "commit",
+        "before": {
+          "session": false,
+          "agent": false,
+          "events": []
+        },
+        "after": {
+          "rejected": true,
+          "exact": false,
+          "events": [],
+          "releases": 1,
+          "committed": 0
+        },
+        "clean": true
+      },
+      "python": {
+        "mode": "commit",
+        "before": {
+          "session": false,
+          "agent": false,
+          "events": []
+        },
+        "after": {
+          "rejected": true,
+          "exact": false,
+          "events": [],
+          "releases": 1,
+          "committed": 0
+        },
+        "clean": true
+      }
+    },
+    {
+      "mode": "caller-load",
+      "status": "matched",
+      "upstream": {
+        "mode": "caller-load",
+        "before": {
+          "session": false,
+          "agent": false,
+          "events": []
+        },
+        "after": {
+          "rejected": true,
+          "exact": false,
+          "events": [],
+          "releases": 1,
+          "committed": 0
+        },
+        "clean": true
+      },
+      "python": {
+        "mode": "caller-load",
+        "before": {
+          "session": false,
+          "agent": false,
+          "events": []
+        },
+        "after": {
+          "rejected": true,
+          "exact": false,
+          "events": [],
+          "releases": 1,
+          "committed": 0
+        },
+        "clean": true
+      }
+    },
+    {
+      "mode": "owner-load",
+      "status": "matched",
+      "upstream": {
+        "mode": "owner-load",
+        "before": {
+          "session": false,
+          "agent": false,
+          "events": []
+        },
+        "after": {
+          "rejected": true,
+          "exact": false,
+          "events": [],
+          "releases": 1,
+          "committed": 0
+        },
+        "clean": true
+      },
+      "python": {
+        "mode": "owner-load",
+        "before": {
+          "session": false,
+          "agent": false,
+          "events": []
+        },
+        "after": {
+          "rejected": true,
+          "exact": false,
+          "events": [],
+          "releases": 1,
+          "committed": 0
+        },
+        "clean": true
+      }
+    },
+    {
+      "mode": "factory-load",
+      "status": "matched",
+      "upstream": {
+        "mode": "factory-load",
+        "before": {
+          "session": false,
+          "agent": false,
+          "events": []
+        },
+        "after": {
+          "rejected": true,
+          "exact": false,
+          "events": [],
+          "releases": 1,
+          "committed": 0
+        },
+        "clean": true
+      },
+      "python": {
+        "mode": "factory-load",
+        "before": {
+          "session": false,
+          "agent": false,
+          "events": []
+        },
+        "after": {
+          "rejected": true,
+          "exact": false,
+          "events": [],
+          "releases": 1,
+          "committed": 0
+        },
+        "clean": true
+      }
+    },
+    {
+      "mode": "caller-setup",
+      "status": "matched",
+      "upstream": {
+        "mode": "caller-setup",
+        "before": {
+          "session": false,
+          "agent": false,
+          "events": []
+        },
+        "after": {
+          "rejected": true,
+          "exact": false,
+          "events": [],
+          "releases": 1,
+          "committed": 0
+        },
+        "clean": true
+      },
+      "python": {
+        "mode": "caller-setup",
+        "before": {
+          "session": false,
+          "agent": false,
+          "events": []
+        },
+        "after": {
+          "rejected": true,
+          "exact": false,
+          "events": [],
+          "releases": 1,
+          "committed": 0
+        },
+        "clean": true
+      }
+    },
+    {
+      "mode": "owner-setup",
+      "status": "matched",
+      "upstream": {
+        "mode": "owner-setup",
+        "before": {
+          "session": false,
+          "agent": false,
+          "events": []
+        },
+        "after": {
+          "rejected": true,
+          "exact": false,
+          "events": [],
+          "releases": 1,
+          "committed": 0
+        },
+        "clean": true
+      },
+      "python": {
+        "mode": "owner-setup",
+        "before": {
+          "session": false,
+          "agent": false,
+          "events": []
+        },
+        "after": {
+          "rejected": true,
+          "exact": false,
+          "events": [],
+          "releases": 1,
+          "committed": 0
+        },
+        "clean": true
+      }
+    },
+    {
+      "mode": "factory-setup",
+      "status": "matched",
+      "upstream": {
+        "mode": "factory-setup",
+        "before": {
+          "session": false,
+          "agent": false,
+          "events": []
+        },
+        "after": {
+          "rejected": true,
+          "exact": false,
+          "events": [],
+          "releases": 1,
+          "committed": 0
+        },
+        "clean": true
+      },
+      "python": {
+        "mode": "factory-setup",
+        "before": {
+          "session": false,
+          "agent": false,
+          "events": []
+        },
+        "after": {
+          "rejected": true,
+          "exact": false,
+          "events": [],
+          "releases": 1,
+          "committed": 0
+        },
+        "clean": true
+      }
+    }
+  ],
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc"
+}

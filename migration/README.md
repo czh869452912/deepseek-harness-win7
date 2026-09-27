@@ -13,7 +13,13 @@
 
 `check` 校验记录、依赖环、契约 revision、证据哈希、固定上游 checkout 和 manifest 漂移；它不是 parity 测试。`ready` 只列出无阻塞任务，不领取任务、不提供租约。完整 inventory 重建要求固定上游 SHA 与 manifest 集合/内容未漂移。
 
-## 本批次闭包
+## 当前 Session 冷恢复闭包
+
+候选 `0ab68981` 在干净检出完成发行门禁：3111 passed、2 skipped、2 warnings；七组真实 JSONL 双侧观察全部匹配，Session 原样测试 164 项通过。已验收范围为 `CON-SESSION-COLD-RECOVERY@1`，不是整个 Session 或配置重载完成。Core/Agent/Spine/Portable 在此候选重新验收；其他任务如显示 historical integration，表示本次没有重新签发其专项证据，不代表删除历史成果。
+
+待完成实测问题与后续顺序见 [本次审阅](reviews/SESSION-COLD-CLOSURE-20260927.md) 及 `MIG-SESSION-REPLAY-002`。共享 preparation、写队列、卸载/HMR adoption 先稳定，再迁移配置恢复和 Web replay 消费者。
+
+## 历史 Cordis 基础闭包
 
 - 272 个 manifest 已全部分类：201 runtime、48 frontend、9 tooling、7 fixture、6 platform、1 example。分类是职责，不是模块完成计数。
 - `upstream-test-inventory.json` 登记 1,227 个官方测试源文件、14,659 个字面声明，并保留参数化工厂位置；不把字面声明当成实际执行数。
@@ -23,7 +29,7 @@
 - C1–C67 是源码推导的本地场景 ID。C58 保留 Python 已完成 Future 的原生调度差异；C59 和框架侧适配场景必须匹配。原始 runner 保留失败退出码，独立 `cordis_acceptance.py` 只允许已审核的精确 C58 签名。
 - Win7 真机及其浏览器验证由用户暂缓。当前 Windows / Python 3.8 验证不能替代 Win7 认证；mock LLM 不能替代真实远程模型认证。
 
-最终产品提交 `25f59152`：全量 **3064 passed、2 skipped、2 warnings，0 failed**；关键上游原样测试 **80 passed**；双侧观察 **66 matched + C58 原生语言差异**，精确适配门禁通过。六个活动任务均已 integrated，Win7 真机验证暂缓。
+当时产品提交 `25f59152`：全量 **3064 passed、2 skipped、2 warnings，0 failed**；关键上游原样测试 **80 passed**；双侧观察 **66 matched + C58 原生语言差异**，精确适配门禁通过。六个活动任务均已 integrated，Win7 真机验证暂缓。
 
 最终回归、便携包和精确候选验收见 `evidence/*FINISH*`；完整审阅说明见 [本批次闭包](reviews/CORDIS-FINAL-CLOSURE-20260927.md)。历史失败日志保留用于追溯，不代表当前仍失败。旧失效发行物和启动器已退役；新便携包使用自己的 Python 3.8 运行时。
 

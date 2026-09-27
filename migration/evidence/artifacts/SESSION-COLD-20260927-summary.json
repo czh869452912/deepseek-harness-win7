@@ -1,0 +1,8 @@
+{
+  "result": "passed",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "0ab68981d5ada7e547354c718280079f37d61f8d",
+  "python": "3.8.10 (tags/v3.8.10:3d8993a, May  3 2021, 11:48:03) [MSC v.1928 64 bit (AMD64)]",
+  "platform": "win32",
+  "scope": "Current Windows release gate; Win7 machine/browser deferred; frontend uses versioned byte-checked inputs."
+}

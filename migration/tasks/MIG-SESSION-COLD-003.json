@@ -2,7 +2,7 @@
   "id": "MIG-SESSION-COLD-003",
   "goal": "对齐 JSONL 冷恢复、物理读取与有效字节边界",
   "kind": "implementation",
-  "state": "review",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "a4ff8ac41fa37b5463b0ce8b7f420d0973e8d840",
   "owner": "current-session-coordinator",
@@ -34,8 +34,10 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "完成精确候选回归及发行门禁后验收；共享 preparation/写队列/退休生命周期和配置重载仍需后续闭包。"
+  "candidate_commit": "0ab68981d5ada7e547354c718280079f37d61f8d",
+  "integrated_commit": "0ab68981d5ada7e547354c718280079f37d61f8d",
+  "evidence_ids": [
+    "RUN-SESSION-COLD-SESSION-COLD-003-20260927"
+  ],
+  "next_action": "JSONL 冷恢复已验收；后续 shared preparation、写队列/失败保留、retirement/HMR adoption 与配置重载仍由 Session/Profile 闭包推进。"
 }

@@ -27,7 +27,12 @@
     "tests",
     "migration"
   ],
-  "open_findings": [],
+  "open_findings": [
+    "受控 append 失败后 JSONL pending 从 2 条变 0；缺少保留/重试协调。",
+    "持久化插件卸载后未落盘缓冲事件；需要注册 drain 与 retirement 生命周期。",
+    "SQLite 仍使用简化 turn/end 修复，inspect 会调用 load 写盘；共享协调层应一并对齐后端消费者。",
+    "共享 preparation reservation/cancellation、HMR live adoption 和完整 Session projection 尚未认证。"
+  ],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,

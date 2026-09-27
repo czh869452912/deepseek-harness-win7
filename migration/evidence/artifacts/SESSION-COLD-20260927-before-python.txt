@@ -1,0 +1,20 @@
+Traceback (most recent call last):
+  File "scripts/oracles/session_recovery_python.py", line 33, in <module>
+    Path(sys.argv[1]).write_text(json.dumps(asyncio.run(observe()), indent=2)+'\n', encoding='utf-8')
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\asyncio\runners.py", line 44, in run
+    return loop.run_until_complete(main)
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python38\lib\asyncio\base_events.py", line 616, in run_until_complete
+    return future.result()
+  File "scripts/oracles/session_recovery_python.py", line 27, in observe
+    after = await p.read_from(meta.id, 0)
+  File "D:\Claude-project\deepseek-harness-win7\dsh\session\persistence_jsonl.py", line 477, in read_from
+    inspection = await self.inspect(session_id)
+  File "D:\Claude-project\deepseek-harness-win7\dsh\session\persistence_jsonl.py", line 468, in inspect
+    inspection = self._read_raw_file(path)
+  File "D:\Claude-project\deepseek-harness-win7\dsh\session\persistence_jsonl.py", line 401, in _read_raw_file
+    scanned = scan_log(raw_bytes)
+  File "D:\Claude-project\deepseek-harness-win7\dsh\session\persistence_jsonl.py", line 267, in scan_log
+    scanner.write(buffer[header_end + 1:])
+  File "D:\Claude-project\deepseek-harness-win7\dsh\session\persistence_jsonl.py", line 235, in write
+    raise self._issue
+ValueError: corrupt session log: unparsable committed event at line 3

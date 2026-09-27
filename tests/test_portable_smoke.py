@@ -63,7 +63,8 @@ def test_smoke_dump_config_legacy_mode_flag():
     assert "str-replace-editor" in res.stdout
 
 
-def test_smoke_dist_portable_directory():
+@pytest.mark.parametrize("profile", ["minimal", "standard", "creative", "web", "headless"])
+def test_smoke_dist_portable_directory(profile):
     """If dist/dsh-win7-portable exists, verify it executes cleanly."""
     root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     dist_dir = os.path.join(root_dir, "dist", "dsh-win7-portable")
@@ -72,9 +73,11 @@ def test_smoke_dist_portable_directory():
         pytest.skip("dist/dsh-win7-portable not built yet")
 
     env = dict(os.environ)
-    env["PYTHONPATH"] = f"{dist_dir};{os.path.join(dist_dir, 'lib')}"
+    env.pop("PYTHONPATH", None)
+    bundled_python = os.path.join(dist_dir, "python.exe")
+    assert os.path.isfile(bundled_python), "portable must carry its own Python runtime"
     res = subprocess.run(
-        [sys.executable, dist_dsh_py, "--profile", "minimal", "--dump-config"],
+        [bundled_python, "-I", dist_dsh_py, "--profile", profile, "--dump-config"],
         cwd=dist_dir,
         capture_output=True,
         encoding="utf-8",
@@ -83,4 +86,9 @@ def test_smoke_dist_portable_directory():
         timeout=30,
     )
     assert res.returncode == 0
-    assert "str-replace-editor" in res.stdout
+    assert res.stdout.strip()
+    imported = subprocess.run([bundled_python, "-I", "-c", "import dsh; print(dsh.__file__)"],
+                              cwd=dist_dir, env=env, capture_output=True, encoding="utf-8", timeout=30)
+    assert imported.returncode == 0
+    assert os.path.normcase(os.path.abspath(imported.stdout.strip())).startswith(os.path.normcase(dist_dir + os.sep))
+

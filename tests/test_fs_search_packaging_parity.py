@@ -75,17 +75,27 @@ def test_portable_stages_pinned_rg_and_zip_path_matches_runtime_resolver(tmp_pat
     (fixture_root / "dsh.py").write_text("", encoding="utf-8")
     (fixture_root / "README.md").write_text("fixture", encoding="utf-8")
 
-    pinned = fixture_root / "reference" / "deepseek-harness" / "node_modules" / ".pnpm"
+    pinned = fixture_root / "reference" / "node_modules" / ".pnpm"
     pinned = pinned / "@vscode+ripgrep-win32-x64@1.18.0" / "node_modules" / "@vscode"
     pinned = pinned / "ripgrep-win32-x64" / "bin" / "rg.exe"
     pinned.parent.mkdir(parents=True)
     expected_binary = b"fixture-pinned-ripgrep-binary"  # staging test, independent of local node_modules
     pinned.write_bytes(expected_binary)
+    (pinned.parent.parent / "package.json").write_text(
+        '{"name":"@vscode/ripgrep-win32-x64","version":"1.18.0"}', encoding="utf-8")
 
     build.ROOT_DIR = str(fixture_root)
     build.DIST_DIR = str(dist)
     build.ZIP_OUTPUT = str(fixture_root / "dist" / "portable.zip")
-    build.build_portable()
+    runtime = fixture_root / "runtime"
+    (runtime / "Lib").mkdir(parents=True)
+    (runtime / "python.exe").write_bytes(b"runtime-exe")
+    (runtime / "python38.dll").write_bytes(b"runtime-dll")
+    (runtime / "Lib" / "os.py").write_text("# stdlib fixture", encoding="utf-8")
+    build.build_portable(runtime_dir=str(runtime))
+    assert (dist / "python.exe").read_bytes() == b"runtime-exe"
+    assert '"%~dp0python.exe"' in (dist / "dsh.bat").read_text(encoding="utf-8")
+    assert '--profile web' in (dist / "dsh-web.bat").read_text(encoding="utf-8")
 
     staged = dist / "dsh" / "fs" / "tool_fs_search" / "bin" / "rg.exe"
     assert staged.read_bytes() == expected_binary

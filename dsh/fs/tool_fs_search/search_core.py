@@ -56,7 +56,7 @@ async def resolve_rg_path() -> str:
     package_name = _ripgrep_package_name()
     if package_name is not None:
         candidates.append(os.path.join(
-            repo_root, "reference", "deepseek-harness", "node_modules", "@vscode",
+            repo_root, "reference", "node_modules", "@vscode",
             package_name, "bin", binary,
         ))
     on_path = shutil.which("rg")

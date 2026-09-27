@@ -1,0 +1,574 @@
+{
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "scope": "Five explicitly selected critical test files; 65 literal declarations plus 4 expanded profile modes, not all consumers.",
+  "cases": [
+    {
+      "source": "reference/apps/cli/tests/profile-hmr.spec.ts",
+      "line": 36,
+      "title": "requires an explicit later layer to enable source-module reload",
+      "status": "reviewed-scenario",
+      "python_tests": [
+        "tests/test_reference_profile_hmr_bundle_1to1.py::test_requires_an_explicit_later_layer_to_enable_source_module_reload"
+      ]
+    },
+    {
+      "source": "reference/apps/cli/tests/profile-hmr.spec.ts",
+      "line": 43,
+      "title": "keeps the standalone sdk-minimal tree free of module HMR",
+      "status": "reviewed-scenario",
+      "python_tests": [
+        "tests/test_reference_profile_hmr_bundle_1to1.py::test_keeps_the_standalone_sdk_minimal_tree_free_of_module_hmr"
+      ]
+    },
+    {
+      "source": "reference/packages/boot/app-boot/tests/hmr-config.spec.ts",
+      "line": 35,
+      "title": "observes module changes when its watch base is a filesystem alias",
+      "status": "reviewed-scenario",
+      "python_tests": [
+        "tests/1to1/boot/app_boot/test_hmr_config.py::test_observes_module_changes_when_watch_base_is_filesystem_alias"
+      ]
+    },
+    {
+      "source": "reference/packages/boot/app-boot/tests/hmr-config.spec.ts",
+      "line": 70,
+      "title": "collapses filesystem aliases before registering an exact watch",
+      "status": "reviewed-scenario",
+      "python_tests": [
+        "tests/1to1/boot/app_boot/test_hmr_config.py::test_collapses_filesystem_aliases_before_registering_exact_watch"
+      ]
+    },
+    {
+      "source": "reference/packages/boot/app-boot/tests/hmr-config.spec.ts",
+      "line": 86,
+      "title": "observes add, change, and unlink outside its module roots",
+      "status": "reviewed-scenario",
+      "python_tests": [
+        "tests/1to1/boot/app_boot/test_hmr_config.py::test_observes_add_change_and_unlink_outside_module_roots"
+      ]
+    },
+    {
+      "source": "reference/packages/boot/app-boot/tests/hmr-config.spec.ts",
+      "line": 112,
+      "title": "observes creation when the config parent did not exist at registration",
+      "status": "reviewed-scenario",
+      "python_tests": [
+        "tests/1to1/boot/app_boot/test_hmr_config.py::test_observes_creation_when_config_parent_did_not_exist_at_registration"
+      ]
+    },
+    {
+      "source": "reference/packages/boot/app-boot/tests/hmr-config.spec.ts",
+      "line": 130,
+      "title": "serializes refreshes and waits for them during disposal",
+      "status": "reviewed-scenario",
+      "python_tests": [
+        "tests/1to1/boot/app_boot/test_hmr_config.py::test_serializes_refreshes_and_waits_for_them_during_disposal"
+      ]
+    },
+    {
+      "source": "reference/packages/boot/app-boot/tests/hmr-config.spec.ts",
+      "line": 171,
+      "title": "normalizes refresh failures and broadcasts them without escaping the watcher",
+      "status": "reviewed-scenario",
+      "python_tests": [
+        "tests/1to1/boot/app_boot/test_hmr_config.py::test_normalizes_refresh_failures_and_broadcasts_them_without_escaping_watcher"
+      ]
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/invariant.spec.ts",
+      "line": 41,
+      "title": "keeps the standing composition alive across the agents that joined it",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/invariant.spec.ts",
+      "line": 67,
+      "title": "rejects a composition that publishes a process-global service after its audit",
+      "status": "reviewed-invariant-subset",
+      "python_tests": [
+        "tests/test_agent_presets_invariant.py"
+      ],
+      "limitation": "Companion guards are exercised with real services; derived-home-only and full official fixture matrix remain separate."
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/invariant.spec.ts",
+      "line": 79,
+      "title": "stays quiet while every composition keeps its services out of the root realm",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/invariant.spec.ts",
+      "line": 88,
+      "title": "rejects an agent that addresses a model without joining any preset",
+      "status": "reviewed-invariant-subset",
+      "python_tests": [
+        "tests/test_agent_presets_invariant.py"
+      ],
+      "limitation": "Companion guards are exercised with real services; derived-home-only and full official fixture matrix remain separate."
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/invariant.spec.ts",
+      "line": 100,
+      "title": "rejects one just the same when the derived home root is the whole roster",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/invariant.spec.ts",
+      "line": 112,
+      "title": "stays silent for a composition that opted out of every root",
+      "status": "reviewed-invariant-subset",
+      "python_tests": [
+        "tests/test_agent_presets_invariant.py"
+      ],
+      "limitation": "Companion guards are exercised with real services; derived-home-only and full official fixture matrix remain separate."
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/invariant.spec.ts",
+      "line": 122,
+      "title": "admits a joined agent, a scopeless read, and a standing-key read",
+      "status": "reviewed-invariant-subset",
+      "python_tests": [
+        "tests/test_agent_presets_invariant.py"
+      ],
+      "limitation": "Companion guards are exercised with real services; derived-home-only and full official fixture matrix remain separate."
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 92,
+      "title": "hands an absolute plugin path to Node as a file URL",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 109,
+      "title": "gives each session only its own preset's tools",
+      "status": "reviewed-scope-subset",
+      "python_tests": [
+        "tests/test_agent_presets_scope_parity.py"
+      ],
+      "limitation": "Shared real scope/Tools/factory assertions cover the scope contract; this is not a verbatim port of every upstream fixture/assertion."
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 118,
+      "title": "scopes prompt sections and assembled schemas to the same session",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 131,
+      "title": "mounts the default preset when the caller names none",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 137,
+      "title": "lets two sessions share one preset without colliding",
+      "status": "reviewed-scope-subset",
+      "python_tests": [
+        "tests/test_agent_presets_scope_parity.py"
+      ],
+      "limitation": "Shared real scope/Tools/factory assertions cover the scope contract; this is not a verbatim port of every upstream fixture/assertion."
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 145,
+      "title": "unwinds one session's composition without touching another's",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 171,
+      "title": "gives the child its parent's tools and prompt sections",
+      "status": "reviewed-scope-subset",
+      "python_tests": [
+        "tests/test_agent_presets_scope_parity.py"
+      ],
+      "limitation": "Shared real scope/Tools/factory assertions cover the scope contract; this is not a verbatim port of every upstream fixture/assertion."
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 181,
+      "title": "joins the parent's own generation rather than remounting its preset",
+      "status": "reviewed-scope-subset",
+      "python_tests": [
+        "tests/test_agent_presets_scope_parity.py"
+      ],
+      "limitation": "Shared real scope/Tools/factory assertions cover the scope contract; this is not a verbatim port of every upstream fixture/assertion."
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 192,
+      "title": "keeps the child composed after its parent is disposed",
+      "status": "reviewed-scope-subset",
+      "python_tests": [
+        "tests/test_agent_presets_scope_parity.py"
+      ],
+      "limitation": "Shared real scope/Tools/factory assertions cover the scope contract; this is not a verbatim port of every upstream fixture/assertion."
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 206,
+      "title": "reports the preset id the child joined, for the durable header",
+      "status": "reviewed-scope-subset",
+      "python_tests": [
+        "tests/test_agent_presets_scope_parity.py"
+      ],
+      "limitation": "Shared real scope/Tools/factory assertions cover the scope contract; this is not a verbatim port of every upstream fixture/assertion."
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 215,
+      "title": "composes nothing when the parent joined no preset",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 227,
+      "title": "refuses to compose an unscoped context",
+      "status": "reviewed-scope-subset",
+      "python_tests": [
+        "tests/test_agent_presets_scope_parity.py"
+      ],
+      "limitation": "Shared real scope/Tools/factory assertions cover the scope contract; this is not a verbatim port of every upstream fixture/assertion."
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 235,
+      "title": "refuses to mount into a context that carries no agent scope",
+      "status": "reviewed-scope-subset",
+      "python_tests": [
+        "tests/test_agent_presets_scope_parity.py"
+      ],
+      "limitation": "Shared real scope/Tools/factory assertions cover the scope contract; this is not a verbatim port of every upstream fixture/assertion."
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 240,
+      "title": "rolls the whole agent back when a row fails to load",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 247,
+      "title": "names every failed row, not just the count",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 255,
+      "title": "names the rows inside a failed group, not the group alone",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 264,
+      "title": "names the unresolved service when a row never activates",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 269,
+      "title": "rejects a row that publishes a process-global service",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 279,
+      "title": "accepts the same provider behind an isolate realm",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 288,
+      "title": "addresses the standing instance of a realm-private service through either agent",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 305,
+      "title": "answers undefined for a service the agent's preset does not mount",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 315,
+      "title": "answers undefined for an agent outside the scope machinery",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 327,
+      "title": "refuses to mount a preset directly into an unscoped context",
+      "status": "reviewed-scope-subset",
+      "python_tests": [
+        "tests/test_agent_presets_scope_parity.py"
+      ],
+      "limitation": "Shared real scope/Tools/factory assertions cover the scope contract; this is not a verbatim port of every upstream fixture/assertion."
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 335,
+      "title": "reports the known ids when a preset is unknown",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 342,
+      "title": "lists every root's presets with the earlier root winning",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 352,
+      "title": "exposes the configured default id",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 366,
+      "title": "refuses the mount up front with the discovery-reported reason",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 377,
+      "title": "refuses the standing key a cold reader would mount by",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 384,
+      "title": "still resolves the broken row for the surfaces that manage it",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 393,
+      "title": "says so instead of naming an empty list of candidates",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 405,
+      "title": "refuses at load rather than calling every preset broken",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 420,
+      "title": "survives a row that disposes itself, which makes the Loader persist a tree",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 474,
+      "title": "attributes nothing to a subtree that is already torn down",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 491,
+      "title": "publishes a committed preset selection for remote consumers",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 503,
+      "title": "swaps the agent's tools without touching another session",
+      "status": "reviewed-scope-subset",
+      "python_tests": [
+        "tests/test_agent_presets_scope_parity.py"
+      ],
+      "limitation": "Shared real scope/Tools/factory assertions cover the scope contract; this is not a verbatim port of every upstream fixture/assertion."
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 518,
+      "title": "notifies tool views after reparenting and contains notification failures",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 539,
+      "title": "leaves the agent on its previous composition when the new one is unknown",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 552,
+      "title": "restores the previous composition when the new one fails to mount",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 566,
+      "title": "names an agent that was published without joining any preset",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 582,
+      "title": "says nothing when the composition opts out of every root",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 597,
+      "title": "composes an agent that had nothing installed",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 608,
+      "title": "refuses a bare agent's broken composition without restoring anything",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 618,
+      "title": "keeps the agent on its standing composition when a switch fails, even with the source deleted",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 658,
+      "title": "refuses an unscoped context",
+      "status": "reviewed-scope-subset",
+      "python_tests": [
+        "tests/test_agent_presets_scope_parity.py"
+      ],
+      "limitation": "Shared real scope/Tools/factory assertions cover the scope contract; this is not a verbatim port of every upstream fixture/assertion."
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 682,
+      "title": "starts a new generation for later sessions while joined ones keep theirs",
+      "status": "reviewed-generation-scenario",
+      "python_tests": [
+        "tests/test_agent_presets_scope_parity.py::test_racing_edit_shares_new_generation_and_child_keeps_deleted_parent_generation"
+      ]
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 697,
+      "title": "gives two sessions racing the refreshed file one shared new generation",
+      "status": "reviewed-generation-scenario",
+      "python_tests": [
+        "tests/test_agent_presets_scope_parity.py::test_racing_edit_shares_new_generation_and_child_keeps_deleted_parent_generation"
+      ]
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 714,
+      "title": "keeps a newer generation pointer when a stale refresh loses the swap race",
+      "status": "reviewed-generation-scenario",
+      "python_tests": [
+        "tests/test_agent_presets_scope_parity.py::test_stale_refresh_preserves_winning_generation_pointer"
+      ]
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 742,
+      "title": "hands a host reader the standing key without starting an agent",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 755,
+      "title": "refuses to mount a generation it cannot stamp",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/packages/preset/agent-presets/tests/mount.spec.ts",
+      "line": 770,
+      "title": "keeps serving the mounted generation when the file cannot be statted",
+      "status": "needs-assertion-port",
+      "python_tests": []
+    },
+    {
+      "source": "reference/apps/cli/tests/profile-hmr.spec.ts",
+      "line": 25,
+      "title": "web-app inherits the disabled base row without a mode override",
+      "parameter": "web-app",
+      "status": "reviewed-scenario",
+      "python_tests": [
+        "tests/test_reference_profile_hmr_bundle_1to1.py::test_mode_bundle_inherits_the_disabled_base_row_without_a_mode_override"
+      ]
+    },
+    {
+      "source": "reference/apps/cli/tests/profile-hmr.spec.ts",
+      "line": 25,
+      "title": "headless inherits the disabled base row without a mode override",
+      "parameter": "headless",
+      "status": "reviewed-scenario",
+      "python_tests": [
+        "tests/test_reference_profile_hmr_bundle_1to1.py::test_mode_bundle_inherits_the_disabled_base_row_without_a_mode_override"
+      ]
+    },
+    {
+      "source": "reference/apps/cli/tests/profile-hmr.spec.ts",
+      "line": 25,
+      "title": "sdk-app inherits the disabled base row without a mode override",
+      "parameter": "sdk-app",
+      "status": "reviewed-scenario",
+      "python_tests": [
+        "tests/test_reference_profile_hmr_bundle_1to1.py::test_mode_bundle_inherits_the_disabled_base_row_without_a_mode_override"
+      ]
+    },
+    {
+      "source": "reference/apps/cli/tests/profile-hmr.spec.ts",
+      "line": 25,
+      "title": "acp-app inherits the disabled base row without a mode override",
+      "parameter": "acp-app",
+      "status": "reviewed-scenario",
+      "python_tests": [
+        "tests/test_reference_profile_hmr_bundle_1to1.py::test_mode_bundle_inherits_the_disabled_base_row_without_a_mode_override"
+      ]
+    }
+  ],
+  "limitations": [
+    "Reviewed subsets are not full case parity acceptance.",
+    "Pending entries are concrete work, not a claim that product behavior necessarily fails.",
+    "Preset scope bug discovered in review is fixed by 0138d18d.",
+    "C58 has a confirmed production consumer: resolved standing Future refresh, fixed by 2a3d8478 with explicit checkpoint; no blanket callback equivalence claimed."
+  ]
+}

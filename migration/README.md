@@ -104,3 +104,12 @@ dispose 与结构所有者等待混用的问题；新发现的 registry 返回�
 - 跨盘搜索和新 portable 的有限范围验收已集成。发行物约 45 MiB，构建输入、ZIP 摘要和隔离 boot 证据已保存。Win7 暂缓不阻塞本批次，也不等于已认证。
 
 完整 Cordis 验收尚有两个明确工作项：逐项审核官方必要消费者（包括动态参数展开），检查迁移回调对已完成 await 的可观察让出点。更广泛的模块分类、调度器原子领取/租约和上游更新演练也没有被本次测试计数替代。看板由任务记录生成，禁止把交付提交自动等同于全项目 parity。
+
+
+## 消费者审核追加修复
+
+0138d18d 修复 standing scope/agent scope 绑定和真实 AgentLoop 异步 setup；2a3d8478 按官方竞争用例修复已完成 Future 缺少 checkpoint 导致的版本指针覆盖；072cbcd6 修正 create 别名的旧同步测试。核心契约现为 revision 9。
+
+`cordis-consumer-audit.json` 将 65 个字面声明与 4 个 profile 参数实例展开为 69 项，保留逐项来源、已验证子集和待补断言。当前仍有 39 项需要断言级验证，不能标记全部待完成项已清空。Scope、AgentLoop 与 Preset 必须作为共同闭包验证；expected_paths 不限制必要的跨端修改。
+
+最新完整回归：072cbcd6，**2994 passed、2 skipped、2 warnings、0 failed**；日志 ALL-CLOSURE-FINAL-20260927.txt。配对探针依然保留 C58 原生差异，consumer 修复不篡改它。新 portable 构建/隔离启动与输入摘要见 PORTABLE-SCOPE-*。第一阶段 WORKFLOW、SEARCH、PORTABLE 的有限验收均已绑定当前产品提交；Cordis/SPINE 总门禁仍未关闭。

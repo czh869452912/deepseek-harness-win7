@@ -1,0 +1,12 @@
+{
+  "command": [
+    "D:\\Claude-project\\deepseek-harness-win7\\dist\\dsh-win7-portable\\python.exe",
+    "-I",
+    "-c",
+    "import asyncio, tempfile, pathlib, json, sys\nfrom dsh.boot.profile import init_profile\nfrom dsh.boot.profile_boot import run_profile\nasync def main():\n    with tempfile.TemporaryDirectory() as directory:\n        profile=pathlib.Path(directory)/'profiles'/'portable'\n        init_profile(str(profile), [], 'startup')\n        boot=await run_profile({'profile':'portable','dsh_home':directory,'wait_for_exit':False})\n        boot['shutdown'].shutdown(0)\n        await boot['shutdown'].wait()\n        print(json.dumps({'boot':'passed','python':sys.version,'prefix':sys.prefix}))\nasyncio.run(main())\n"
+  ],
+  "cwd": "D:\\Claude-project\\deepseek-harness-win7\\dist\\dsh-win7-portable",
+  "exit_code": 0,
+  "stdout": "{\"boot\": \"passed\", \"python\": \"3.8.10 (tags/v3.8.10:3d8993a, May  3 2021, 11:48:03) [MSC v.1928 64 bit (AMD64)]\", \"prefix\": \"D:\\\\Claude-project\\\\deepseek-harness-win7\\\\dist\\\\dsh-win7-portable\"}\n",
+  "stderr": ""
+}

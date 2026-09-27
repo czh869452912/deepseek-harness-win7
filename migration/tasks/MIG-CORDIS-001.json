@@ -10,7 +10,7 @@
   "provides": [
     {
       "contract": "CON-CORDIS-CORE",
-      "revision": 8
+      "revision": 9
     }
   ],
   "acceptance": [
@@ -39,8 +39,9 @@
     "RUN-CORDIS-INCLUDE-20260927",
     "RUN-CORDIS-LIFECYCLE-20260927",
     "RUN-CORDIS-HANDLE-20260927",
-    "RUN-CORDIS-CLOSURE-20260927"
+    "RUN-CORDIS-CLOSURE-20260927",
+    "RUN-CORDIS-SCOPE-CLOSURE-20260927"
   ],
-  "next_action": "C1-C62: 61 matched, C58 native language difference retained; HMR cycles/relative imports/batch rollback, preset invariant and real profile recovery are implemented. Complete semantic audit of official necessary consumers and migrated async callbacks before whole-contract acceptance.",
-  "delivery_commit": "a7e65ba903810d3da1594920962a5cfb626e9dd2"
+  "next_action": "Scope provider/AgentLoop consumer and resolved-await generation race repaired in 0138d18d/2a3d8478. Finish remaining 39 assertion-level consumer entries and callback boundary audit; whole-contract acceptance remains open.",
+  "delivery_commit": "072cbcd68a56d7241b0a1a93581f9d38924c3932"
 }

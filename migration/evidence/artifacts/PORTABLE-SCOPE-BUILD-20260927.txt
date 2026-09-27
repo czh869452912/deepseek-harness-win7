@@ -1,0 +1,5 @@
+[Build Portable] Creating portable release directory at: D:\Claude-project\deepseek-harness-win7\dist\dsh-win7-portable
+[Build Portable] Bundling dependencies from virtualenv site-packages...
+[Build Portable] Successfully built Portable Release directory at: D:\Claude-project\deepseek-harness-win7\dist\dsh-win7-portable
+[Build Portable] Creating ZIP release package at: D:\Claude-project\deepseek-harness-win7\dist\dsh-win7-portable-v0.1.0.zip
+[Build Portable] Created Portable Release ZIP v0.1.0: D:\Claude-project\deepseek-harness-win7\dist\dsh-win7-portable-v0.1.0.zip (44.95 MB)

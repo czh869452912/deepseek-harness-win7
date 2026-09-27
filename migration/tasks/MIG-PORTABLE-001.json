@@ -24,11 +24,12 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "a7e65ba903810d3da1594920962a5cfb626e9dd2",
-  "integrated_commit": "a7e65ba903810d3da1594920962a5cfb626e9dd2",
+  "candidate_commit": "072cbcd68a56d7241b0a1a93581f9d38924c3932",
+  "integrated_commit": "072cbcd68a56d7241b0a1a93581f9d38924c3932",
   "evidence_ids": [
     "RUN-BASELINE-20260927",
-    "RUN-PORTABLE-ACCEPTANCE-20260927"
+    "RUN-PORTABLE-ACCEPTANCE-20260927",
+    "RUN-PORTABLE-FINAL-ACCEPTANCE-20260927"
   ],
   "next_action": "本批次实现和当前 Windows 验证已完成；Win7 真机验证暂缓。"
 }

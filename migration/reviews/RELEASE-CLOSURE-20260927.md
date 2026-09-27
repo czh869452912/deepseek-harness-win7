@@ -7,3 +7,5 @@
 跨盘搜索修复保留异卷绝对路径，与 Node Windows path.relative 语义对齐。旧基线三个失败已经消除；历史证据保留原结果。
 
 Cordis 61/62 源码探针对齐，C58 原生 await 调度差异保留；C59 是显式 checkpoint 适配。所有已实施 HMR、Preset 和 profile 恢复工作都有单独提交，但完整必要消费者逐项审核尚未完成。不得把本批次成功回归当成全范围 1:1 认证。
+
+后续消费者审核又修复了 Preset scope 与 AgentLoop setup 接口，以及已完成 await 引发的版本指针竞争（0138d18d、2a3d8478，调用方测试修正 072cbcd6）。发行包已据此再次重建，最新证据使用 PORTABLE-SCOPE-*，不会覆盖上面的历史构建日志。

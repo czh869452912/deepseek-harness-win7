@@ -1,6 +1,6 @@
 {
   "id": "CON-CORDIS-CORE",
-  "revision": 8,
+  "revision": 9,
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "status": "draft",
   "source_paths": [
@@ -35,7 +35,10 @@
     "Registry handle identity differs from Context.fiber and runtime.fibers. Method await first settles the handle, then assimilates its then closure to the original, including original startup errors.",
     "Module import failure retains old runtime and restores dependency caches; apply failure remains on the new FAILED fiber and does not imply import rollback.",
     "Subsequent module changes resolve the current replacement runtime; raw old fibers are never mutated into replacements.",
-    "A multi-module reload imports every changed module before disposing old runtimes; dependency cache restoration includes package attributes and cyclic relative imports."
+    "A multi-module reload imports every changed module before disposing old runtimes; dependency cache restoration includes package attributes and cyclic relative imports.",
+    "Preset composition binds an agent scope key to a standing scope key; it must not change Context or fiber ancestry.",
+    "Agent factory awaits setup before publication; prompt sections and model tool schemas resolve the same agent scope.",
+    "A resolved standing Future must yield before guarded generation-pointer replacement, matching the upstream Promise checkpoint."
   ],
   "consumers": [
     "dsh/cordis/timer.py",
@@ -46,11 +49,14 @@
     "dsh/core/tools.py",
     "dsh/core/session/session.py",
     "dsh/cordis/include.py",
-    "dsh/presets/mount.py"
+    "dsh/presets/mount.py",
+    "dsh/presets/agent_presets.py",
+    "dsh/core/agent_loop.py",
+    "dsh/core/scope.py"
   ],
   "open_questions": [
-    "Complete semantic review of official necessary-consumer cases identified by cordis-inventory.json.",
-    "C58 native Python completed-Future await does not yield like JS resolved Promise; C59 explicit checkpoint matches. Audit migrated async callbacks before acceptance."
+    "Complete assertion-level coverage of the remaining 39 entries in cordis-consumer-audit.json; reviewed subsets are not whole-case certification.",
+    "C58 native completed-Future scheduling remains a language difference. Preset generation consumer is adapted and regression-tested; remaining migrated async callbacks need per-boundary audit."
   ],
   "identity": "Context ancestry, fiber ownership and service isolation labels are distinct; C1-C21 observe fiber states and declared service identities, not generated uid values. C31 preserves Loader entry/options identity. C34 uses distinct object keys for one filename; C36 exercises public same-path re-registration. C45 aligned: registry.plugin returns a distinct inheriting handle; update shadows state/config while epoch and effect resources remain shared. Await and dispose resolve to the original. C46/C47 distinguish handle-only and raw failure recovery.",
   "ownership": "Parent fiber owns ctx.plugin effect; child owns startup disposers and registrations. Loader Entry awaits target.dispose; publication rollback is registered among detached settlements. C32 retains the Loader store row through pending cleanup. C35 stops the watcher before joining refresh; C36 late old-registration cleanup preserves replacement. The Python initial Include apply task is tracked by its EntryTree and awaited by Service.init. Preset mount audit stores the raw subtree owner so ancestry checks detect global service leaks after handle separation.",

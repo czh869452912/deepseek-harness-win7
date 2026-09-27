@@ -522,3 +522,16 @@ async def test_raw_output_budget_fails_instead_of_returning_partial_value(tmp_pa
         assert result.value is None
     finally:
         await fiber.dispose()
+
+
+@pytest.mark.parametrize("path, workdir, expected", [
+    (r"C:\outside\a.py", r"D:\workspace", r"C:\outside\a.py"),
+    (r"D:\workspace\src\a.py", r"D:\workspace", r"src\a.py"),
+    (r"D:\outside\a.py", r"D:\workspace", r"D:\outside\a.py"),
+    (r"\\server\other\a.py", r"\\server\work", r"\\server\other\a.py"),
+])
+def test_windows_search_display_paths_across_volumes(monkeypatch, path, workdir, expected):
+    import ntpath
+    from dsh.fs.tool_fs_search import search_core
+    monkeypatch.setattr(search_core.os, "path", ntpath)
+    assert search_core.to_workdir_relative(path, workdir) == expected

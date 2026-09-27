@@ -2,10 +2,10 @@
   "id": "MIG-SEARCH-001",
   "goal": "定位 C/D 跨盘搜索失败并对照上游",
   "kind": "analysis",
-  "state": "ready",
+  "state": "review",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "449396c008ff7ac817963bc42e80b90561a0e27f",
-  "owner": null,
+  "owner": "current-session-coordinator",
   "requires": [],
   "provides": [
     {
@@ -22,14 +22,12 @@
     "dsh/fs/tool_fs_search",
     "tests/test_reference_tool_fs_search_specs.py"
   ],
-  "open_findings": [
-    "BASELINE-SEARCH-CROSS-DRIVE"
-  ],
+  "open_findings": [],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [
     "RUN-BASELINE-20260927"
   ],
-  "next_action": "固定 C 盘临时目录与 D 盘 cwd 复现，并核对上游路径语义"
+  "next_action": "Cross-volume adapter fixed; 29 targeted tests pass. Bind the full-suite log and candidate acceptance after baseline cleanup."
 }

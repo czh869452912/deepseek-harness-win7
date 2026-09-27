@@ -180,7 +180,12 @@ def workdir_from_exec(exec_context: Any, fallback: Optional[str] = None) -> str:
 def to_workdir_relative(path: str, workdir: str) -> str:
     if not os.path.isabs(path):
         return path
-    rel = os.path.relpath(path, workdir)
+    try:
+        rel = os.path.relpath(path, workdir)
+    except ValueError:
+        # node:path.relative retains absolute paths across Windows volumes.
+        # Python raises instead, so preserve the original search result.
+        return path
     if rel == ".":
         return "."
     if rel == ".." or rel.startswith(".." + os.sep):

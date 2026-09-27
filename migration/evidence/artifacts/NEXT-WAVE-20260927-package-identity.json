@@ -1,0 +1,9 @@
+{
+  "candidate": "54ee782560e56ea5ec4e7942384bd4e378ceb9c6",
+  "source_python_files": 342,
+  "mismatched_files": [],
+  "archive_bytes": 46760284,
+  "archive_sha256": "52c0134e83017e0c0e9d58130b84a8f99da373374ad36bffc6e82e3ef4cebf64",
+  "worktree_tracked_clean": true,
+  "scope": "Build provenance and Python byte identity only; test gate result recorded separately."
+}

@@ -2,7 +2,7 @@
   "id": "MIG-AGENT-LIFECYCLE-002",
   "goal": "对齐 Agent 创建恢复的 preparation、发布事务、owner 与取消",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "a4ff8ac41fa37b5463b0ce8b7f420d0973e8d840",
   "owner": "current-session-coordinator",
@@ -32,8 +32,10 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "Finish full regression and input-bound evidence for the public factory closure; configured startup/reload remains explicitly assigned to Profile journeys."
+  "candidate_commit": "54ee782560e56ea5ec4e7942384bd4e378ceb9c6",
+  "integrated_commit": "54ee782560e56ea5ec4e7942384bd4e378ceb9c6",
+  "evidence_ids": [
+    "RUN-NEXT-AGENT-LIFECYCLE-002-20260927"
+  ],
+  "next_action": "公共 create/resume 工厂闭包已验收；配置启动/重载与 draining 身份交给 Profile 批次，Session replay 依赖此 revision。"
 }

@@ -1,0 +1,70 @@
+FFF                                                                      [100%]
+================================== FAILURES ===================================
+_________ test_resume_setup_is_unpublished_and_uses_exact_preparation _________
+
+    @pytest.mark.asyncio
+    async def test_resume_setup_is_unpublished_and_uses_exact_preparation():
+        ctx, storage = harness()
+        entered, release = asyncio.Event(), asyncio.Event()
+        observations = []
+        for event in ('session/created', 'agent/created', 'agent/session-start'):
+            ctx.on(event, lambda *args, event=event: observations.append(event))
+        async def setup(scope):
+            entered.set()
+            await release.wait()
+        job = asyncio.create_task(ctx.get('agents').resume({'resumeSessionId': 'restored', 'setup': setup}))
+        handle = None
+        try:
+            await asyncio.wait_for(entered.wait(), 1)
+>           assert ctx.get('sessions').get('restored') is None
+E           AssertionError: assert <dsh.core.session.session.Session object at 0x00000000047BF760> is None
+E            +  where <dsh.core.session.session.Session object at 0x00000000047BF760> = get('restored')
+E            +    where get = <Service sessions>.get
+E            +      where <Service sessions> = get('sessions')
+E            +        where get = Context <root>.get
+
+tests\test_agent_factory_transactions.py:52: AssertionError
+________ test_rejected_setup_never_publishes_and_releases_preparation _________
+
+    @pytest.mark.asyncio
+    async def test_rejected_setup_never_publishes_and_releases_preparation():
+        ctx, storage = harness()
+        seen = []
+        ctx.on('session/created', lambda *args: seen.append('published'))
+        def setup(scope):
+            raise ValueError('setup failed')
+        try:
+            with pytest.raises(ValueError, match='setup failed'):
+                await ctx.get('agents').resume({'resumeSessionId': 'restored', 'setup': setup})
+>           assert seen == []
+E           AssertionError: assert ['published'] == []
+E             
+E             Left contains one more item: 'published'
+E             Use -v to get more diff
+
+tests\test_agent_factory_transactions.py:78: AssertionError
+______ test_registry_forwards_pre_aborted_signal_without_starting_setup _______
+
+    @pytest.mark.asyncio
+    async def test_registry_forwards_pre_aborted_signal_without_starting_setup():
+        ctx, storage = harness()
+        controller = AbortController()
+        error = RuntimeError('caller stopped')
+        controller.abort(error)
+        seen = []
+        try:
+            with pytest.raises(RuntimeError, match='caller stopped') as raised:
+>               await ctx.get('agents').create({'sessionId': 'aborted', 'signal': controller.signal,
+                                               'setup': lambda scope: seen.append('setup')})
+E                                              Failed: DID NOT RAISE <class 'RuntimeError'>
+
+tests\test_agent_factory_transactions.py:94: Failed
+=========================== short test summary info ===========================
+FAILED tests/test_agent_factory_transactions.py::test_resume_setup_is_unpublished_and_uses_exact_preparation
+FAILED tests/test_agent_factory_transactions.py::test_rejected_setup_never_publishes_and_releases_preparation
+FAILED tests/test_agent_factory_transactions.py::test_registry_forwards_pre_aborted_signal_without_starting_setup
+3 failed in 0.18s
+D:\Claude-project\deepseek-harness-win7\.venv\lib\site-packages\pytest_asyncio\plugin.py:208: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))

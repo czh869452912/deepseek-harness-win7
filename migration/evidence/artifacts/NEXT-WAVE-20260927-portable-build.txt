@@ -1,0 +1,4 @@
+[Build Portable] Creating portable release directory at: C:\Users\Administrator\.codex\worktrees\release-repro\deepseek-harness-win7\dist\dsh-win7-portable
+[Build Portable] Successfully built Portable Release directory at: C:\Users\Administrator\.codex\worktrees\release-repro\deepseek-harness-win7\dist\dsh-win7-portable
+[Build Portable] Creating ZIP release package at: C:\Users\Administrator\.codex\worktrees\release-repro\deepseek-harness-win7\dist\dsh-win7-portable-v0.1.0.zip
+[Build Portable] Created Portable Release ZIP v0.1.0: C:\Users\Administrator\.codex\worktrees\release-repro\deepseek-harness-win7\dist\dsh-win7-portable-v0.1.0.zip (44.59 MB)

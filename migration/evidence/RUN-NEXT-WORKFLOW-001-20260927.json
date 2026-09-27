@@ -1,0 +1,152 @@
+{
+  "id": "RUN-NEXT-WORKFLOW-001-20260927",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "54ee782560e56ea5ec4e7942384bd4e378ceb9c6",
+  "kind": "acceptance",
+  "task_id": "MIG-WORKFLOW-001",
+  "acceptance_digest": "b738176f96d2f79e973d3446e623d7bef6c9ef391339710ebd4b72a37c317533",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [
+    "python scripts/verify_release.py --prepare (clean managed checkout; process-local HTTP proxy for installation; loopback mock transport is direct)",
+    "node --expose-internals scripts/oracles/official/node_modules/vitest/vitest.mjs run --config scripts/oracles/vitest.web-protocol.config.mts",
+    "Python inventory byte-regeneration comparison and pytest collection validation of 69 parameterized critical consumer mappings"
+  ],
+  "environment": {
+    "python": "3.8.10 (tags/v3.8.10:3d8993a, May  3 2021, 11:48:03) [MSC v.1928 64 bit (AMD64)]",
+    "os": "Windows-10-10.0.22000-SP0",
+    "cwd": "C:\\Users\\Administrator\\.codex\\worktrees\\release-repro\\deepseek-harness-win7",
+    "input_hash_checkout": "D:\\Claude-project\\deepseek-harness-win7"
+  },
+  "contract_revisions": {},
+  "inputs": [
+    {
+      "path": ".gitattributes",
+      "sha256": "f7751f90833a6fecb6e948aab46e9e75765f53379f7f33a772c8f2bef66d1efb"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "717ba6119f5dd14469304913d8fa5144ad97281b52b8d4a46c433c3a04e2754e"
+    },
+    {
+      "path": "migration/baseline.json",
+      "sha256": "44c235ccc09de1cf1f5460470171d581ddbd5e2e764ccfb51cb7d8242c0c4626"
+    },
+    {
+      "path": "migration/cordis-consumer-audit.json",
+      "sha256": "6ec430201008054343bc5371cac1607377738b4a3f86a459668362bc5d6921f2"
+    },
+    {
+      "path": "migration/dynamic-contract-inventory.json",
+      "sha256": "9fc41f48be336632ee209bd2543c13e67cfd3facdf6f5125bb14f67d7d9818cb"
+    },
+    {
+      "path": "migration/mappings/MAP-CORDIS-CORE.json",
+      "sha256": "90990102af68256584d5d670859b3a8b4340f3ddfdd9e6f22b206cea71b47544"
+    },
+    {
+      "path": "migration/modules.json",
+      "sha256": "f596e766c63f98fc4652524e33388083ee5f2ef6d66838b6f7cf67b40c26cae8"
+    },
+    {
+      "path": "migration/upstream-test-inventory.json",
+      "sha256": "4649f07df1d7da064eb0ef5d0368b4cb74832fede0ba8f2a5e46b547c257090b"
+    },
+    {
+      "path": "scripts/migration.py",
+      "sha256": "9e014c06d4205605e891e96526f8982adc6573b615218f0f027bf2787d87d580"
+    },
+    {
+      "path": "scripts/migration_inventory.py",
+      "sha256": "905a56ffddd8376d21f572d42141e8331e4a8e7e7d02c7027d7d7946117f1d52"
+    },
+    {
+      "path": "tests/test_migration_workflow.py",
+      "sha256": "219c69f6588a5b048c7c60ccb12eca80f15a90c14cbf5e15195539c280f3610f"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-migration-records.txt",
+      "sha256": "2f29d0244ed3e685def099fcaa44ebe3d108cdec49a07b857b91777bfcdb5c31"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-portable-build.txt",
+      "sha256": "b0fcdf7a011e8cb067cab8bfffe132f17b94969103d2115cb7ec84ef0dad00e5"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-pytest.txt",
+      "sha256": "8c95107f6ae9527572a349e1118bb7898502f8003e35000f720ff8f7b8548a59"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-official-consumers.txt",
+      "sha256": "51ac04488ccc134dd9dea3beff17630bcb96a735e3b11d1df4f1d095268f2638"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-official-agent-lifecycle.txt",
+      "sha256": "f410751f44649083633e1edc649519395fa1b51e59e4421053084b7cbe1908b3"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-agent-factory-paired.json",
+      "sha256": "f6c6c34e8285133478da3ea806d97d569280adfc10f523ac3f42f0ed2cc392c2"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-cordis-raw.json",
+      "sha256": "cc23c161c89d6b7397c90663d36ac711897b70ee8e6f6e65e7c969ecd659e9b3"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-cordis-acceptance.json",
+      "sha256": "73025a6ca7fc857be0f5ccc85e3db39eec9d7f3b36bdffaa27abe5fed0aaa46b"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-portable-isolated-boot.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-summary.json",
+      "sha256": "5a6fe414c33611d39b5f03a1fb22fa39b78c6106d72a981b717379674298a71b"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-python-dependencies.txt",
+      "sha256": "981e50151c9b1d590a6a2575a930c5ea83657a6617a6934617d1c3be812c6934"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-node-oracles.txt",
+      "sha256": "06971528452a5e51999bd9f3a2732889dc9828367276cc101e8f9c77dfe9d18d"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-node-official.txt",
+      "sha256": "f4f3534a4131eb2c8c3f8d4ca687f38764bd1f3a60c23eed980d930c19ab76f2"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-provenance.json",
+      "sha256": "cb6fba9837c04600da248efdede45e4b7a8fcfb47c0ed8f5f36f723cbd913374"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-package-identity.json",
+      "sha256": "39e2f9fcfdf76fc7cd06656cf618ee93b278317539f0087841b54b724d49aca2"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-inventory.json",
+      "sha256": "e33f4b4ab3c1279a67dc14dc9a813f12e92dbc1178172c713a5bd379ea59b8af"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-web-protocol-official.txt",
+      "sha256": "2c7f6d1b1a0ed8d84c336fae7425f667e1909cf096e5a83b1df57eed28ae3fb3"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-agent-factory-before.txt",
+      "sha256": "83b7b15d48b4e63b483b313cd28a5bd4df26d8bc1da0909481ed107230cd7b6d"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-settings-contention-main-observation.txt",
+      "sha256": "c0af336c17ef71d1db837f40c7ca96ffeefc883fa877337ba1cc0c414f433c90"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-settings-contention-clean-before.txt",
+      "sha256": "79e602d489d423aaed4eea924d35e93700c486b936a82fe78adfcbbf46211b52"
+    }
+  ],
+  "scope": "Bounded task acceptance at the same Git candidate. Main and clean checkout tracked source are Git-equivalent; input freshness hashes use the main checkout bytes. Prior scoped contracts revalidated by full regression, C1-C67 and official consumer reruns; unchanged inventory and mapped parameters checked separately. C58 remains raw different and is accepted only by its exact signature. Public Agent factory is 9 paired scenarios, not 100-case Python parity. Frontend remains versioned prebuilt; remote Actions and Win7/browser certification are not claimed."
+}

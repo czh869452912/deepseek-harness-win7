@@ -1,0 +1,22 @@
+{
+  "result": "passed",
+  "counts": {
+    "manifests": 272,
+    "classifications": {
+      "runtime": 201,
+      "frontend": 48,
+      "platform": 6,
+      "tooling": 9,
+      "example": 1,
+      "fixture": 7
+    },
+    "test_files": 1227,
+    "literal_declarations": 14659,
+    "dynamic_contract_sites": 1346
+  },
+  "inventory_bytes_unchanged": true,
+  "mapped_cases": 67,
+  "missing_symbols": [],
+  "critical_consumer_instances": 69,
+  "missing_assertion_ports": []
+}

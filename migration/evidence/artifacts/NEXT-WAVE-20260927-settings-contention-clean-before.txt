@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "<string>", line 177, in write
+  File "C:\Users\Administrator\.codex\worktrees\release-repro\deepseek-harness-win7\dsh\settings\provider.py", line 362, in update
+    return self._provider.update(self._registration.ns, patch)
+  File "C:\Users\Administrator\.codex\worktrees\release-repro\deepseek-harness-win7\dsh\settings\provider.py", line 601, in update
+    return self._write(ns, patch, "merge", expected_revision)
+  File "C:\Users\Administrator\.codex\worktrees\release-repro\deepseek-harness-win7\dsh\settings\provider.py", line 649, in _write
+    settled = self._execute_write(ns, registration, mode, verb, snapshot, expected_revision)
+  File "C:\Users\Administrator\.codex\worktrees\release-repro\deepseek-harness-win7\dsh\settings\provider.py", line 765, in _execute_write
+    persisted = self._persist_section(ns, section)
+  File "C:\Users\Administrator\.codex\worktrees\release-repro\deepseek-harness-win7\dsh\settings\settings_file.py", line 415, in _persist_section
+    with _WriterLock(self.lock_path):
+  File "C:\Users\Administrator\.codex\worktrees\release-repro\deepseek-harness-win7\dsh\settings\settings_file.py", line 125, in __enter__
+    self.fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+PermissionError: [Errno 13] Permission denied: 'C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\tmpgsye7uqa\\settings.yaml.lock'
+Traceback (most recent call last):
+  File "<stdin>", line 7, in <module>
+  File "<string>", line 187, in test_cross_instance_writes_keep_both_namespaces
+AssertionError

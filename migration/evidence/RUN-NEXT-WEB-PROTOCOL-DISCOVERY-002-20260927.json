@@ -1,0 +1,240 @@
+{
+  "id": "RUN-NEXT-WEB-PROTOCOL-DISCOVERY-002-20260927",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "54ee782560e56ea5ec4e7942384bd4e378ceb9c6",
+  "kind": "acceptance",
+  "task_id": "MIG-WEB-PROTOCOL-DISCOVERY-002",
+  "acceptance_digest": "9604979d6e64e2426355658d0e37a117bb85f8416b2f1fa22341cb7bf993791e",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [
+    "python scripts/verify_release.py --prepare (clean managed checkout; process-local HTTP proxy for installation; loopback mock transport is direct)",
+    "node --expose-internals scripts/oracles/official/node_modules/vitest/vitest.mjs run --config scripts/oracles/vitest.web-protocol.config.mts",
+    "Python inventory byte-regeneration comparison and pytest collection validation of 69 parameterized critical consumer mappings"
+  ],
+  "environment": {
+    "python": "3.8.10 (tags/v3.8.10:3d8993a, May  3 2021, 11:48:03) [MSC v.1928 64 bit (AMD64)]",
+    "os": "Windows-10-10.0.22000-SP0",
+    "cwd": "C:\\Users\\Administrator\\.codex\\worktrees\\release-repro\\deepseek-harness-win7",
+    "input_hash_checkout": "D:\\Claude-project\\deepseek-harness-win7"
+  },
+  "contract_revisions": {},
+  "inputs": [
+    {
+      "path": "docs/research/2026-09-27-web-transport-discovery.md",
+      "sha256": "9b9244a3a54354a0c225d47f6c89ce647af0b01e40777d469e112135aa4024d9"
+    },
+    {
+      "path": "migration/baseline.json",
+      "sha256": "44c235ccc09de1cf1f5460470171d581ddbd5e2e764ccfb51cb7d8242c0c4626"
+    },
+    {
+      "path": "scripts/oracles/README.md",
+      "sha256": "5fee825431f333017b56003af5168804244b242df7678306bd2483540641694e"
+    },
+    {
+      "path": "scripts/oracles/agent-factory.spec.ts",
+      "sha256": "a28dc24a04fa1181a1a888b606ce1cfe3a6d7f1def8ed2b2e5f309dcc67e6427"
+    },
+    {
+      "path": "scripts/oracles/agent_factory_python.py",
+      "sha256": "e693c132c08c5b69a07f42ca14f86c522993fc701daac9b4ef1a0da4865003dc"
+    },
+    {
+      "path": "scripts/oracles/cordis.mts",
+      "sha256": "ea8181722cd47fd30af67958e5807ce4c920def977fef7e928e9455a9ac513f9"
+    },
+    {
+      "path": "scripts/oracles/cordis_boundaries.mts",
+      "sha256": "880a6ba0b4a42ab779670566d77d280e437c8bcb2edf3e80c75c4a80a0fa29bb"
+    },
+    {
+      "path": "scripts/oracles/cordis_boundaries.py",
+      "sha256": "17977420a8f2ea9b6483f81f4bfd8ec65ee1ef428a0596bf5bd6527d84ec19a9"
+    },
+    {
+      "path": "scripts/oracles/cordis_consumers.mts",
+      "sha256": "4fc9a6ebed74af02d5ec8f98b300cd7cba5df0de6eeea4befedb8a1683dfea9d"
+    },
+    {
+      "path": "scripts/oracles/cordis_consumers.py",
+      "sha256": "3b957b3aa42fee55cfd168248b31ccfac50bf250dd589f097e1176586d8729db"
+    },
+    {
+      "path": "scripts/oracles/cordis_hmr.mts",
+      "sha256": "50cb3779adec5c9144505b1e1b7e489578d9fa4e5b7215449ba480cd56960a26"
+    },
+    {
+      "path": "scripts/oracles/cordis_hmr.py",
+      "sha256": "51a3c05ad2edba3f89dc7b05a07920c3a2ba84ae3096ad33f2118c7a936e031b"
+    },
+    {
+      "path": "scripts/oracles/cordis_hmr_batch.mts",
+      "sha256": "002925c49172c30c055fb9bf4516301948da0313f39a089bf97239d5de149316"
+    },
+    {
+      "path": "scripts/oracles/cordis_hmr_batch.py",
+      "sha256": "d9b1532106f8673a84d539e9220e99fce88ca956da97eadcd08884d2fa44a19c"
+    },
+    {
+      "path": "scripts/oracles/cordis_hmr_complex.mts",
+      "sha256": "70fbd2577e191e9e458a3eba3a945aa78571bf59bf80b6b7fb096c3c0241a587"
+    },
+    {
+      "path": "scripts/oracles/cordis_hmr_complex.py",
+      "sha256": "72711c167c83111a197d8ab2a2bc34734dc61c3ec568d6e7e10549a183a09cca"
+    },
+    {
+      "path": "scripts/oracles/cordis_include.mts",
+      "sha256": "7b70721cfd02017783e1e50977162f3cc3fbafd07c1183ab31e41c725778786a"
+    },
+    {
+      "path": "scripts/oracles/cordis_include.py",
+      "sha256": "66cf16f94963ff4412f7ee41288e38951ee56ec2de2be72e1e3eeddd62984e97"
+    },
+    {
+      "path": "scripts/oracles/cordis_python.py",
+      "sha256": "abe61c084099784ca23847991f2daf8c4b5f86af8c8f6d6ecec1a3d621119f66"
+    },
+    {
+      "path": "scripts/oracles/cordis_schema.mts",
+      "sha256": "8d51dbe5a6a38db73af11d03aa2f158d76cdcb3e7f54c9f07357b48de902f30d"
+    },
+    {
+      "path": "scripts/oracles/cordis_schema.py",
+      "sha256": "fe60829d15e977f92c44d581268735bc9d1611991125d15dbf8a9d186f41494a"
+    },
+    {
+      "path": "scripts/oracles/cordis_serial_boundaries.mts",
+      "sha256": "2fc0f35e2c6ffa69f50405fe11e54810de01df38d6302ca6f5754591210b8954"
+    },
+    {
+      "path": "scripts/oracles/cordis_serial_boundaries.py",
+      "sha256": "bd90e90759c927a5638bb9335a3773d90d16dc77725be3947b93716e1a4abfef"
+    },
+    {
+      "path": "scripts/oracles/official/package-lock.json",
+      "sha256": "412d35073c254fc4d12274d90453f13051ab8227c6e0d8b97fd7f977af947e3d"
+    },
+    {
+      "path": "scripts/oracles/official/package.json",
+      "sha256": "23ea1beadc029141c5255465208305dc669eeddaecb93523d73af5b867f5ec61"
+    },
+    {
+      "path": "scripts/oracles/package-lock.json",
+      "sha256": "2e25382fdab2f9975219ada5239a24466f222b399328cdd36826313f07afabc7"
+    },
+    {
+      "path": "scripts/oracles/package.json",
+      "sha256": "6c0aa3d2688b74bc96f03945f65295a5f4c1d8796c26334c79b9df69ffb62f63"
+    },
+    {
+      "path": "scripts/oracles/tsconfig.json",
+      "sha256": "7b489053078781d00b9ccfaf4dc36a601691a23febedf78e99714e38068371e1"
+    },
+    {
+      "path": "scripts/oracles/vitest.agent-lifecycle.config.mts",
+      "sha256": "1f781c93abe83d7fed3815becbacdf8b639601fae31242baf476e8314508055e"
+    },
+    {
+      "path": "scripts/oracles/vitest.agent-probe.config.mts",
+      "sha256": "bc8fac3ebb38eb2b254d96f6e021fa33e0ab9b9b8c5470f7a8844013ebce1585"
+    },
+    {
+      "path": "scripts/oracles/vitest.consumers.config.mts",
+      "sha256": "bfb7e0339fd2502967458b29a9c617a61bdf4cb456a3309d0d007fee602501cb"
+    },
+    {
+      "path": "scripts/oracles/vitest.core.config.mts",
+      "sha256": "b67c92c7a3a36131ac64362880c0bc30a29f0495de59abd8c4de81585e0b1f59"
+    },
+    {
+      "path": "scripts/oracles/vitest.web-protocol.config.mts",
+      "sha256": "63e17a6bb2070bcb34309b742b676a2213105810af49d4c0abac3054b3f540bb"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-migration-records.txt",
+      "sha256": "2f29d0244ed3e685def099fcaa44ebe3d108cdec49a07b857b91777bfcdb5c31"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-portable-build.txt",
+      "sha256": "b0fcdf7a011e8cb067cab8bfffe132f17b94969103d2115cb7ec84ef0dad00e5"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-pytest.txt",
+      "sha256": "8c95107f6ae9527572a349e1118bb7898502f8003e35000f720ff8f7b8548a59"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-official-consumers.txt",
+      "sha256": "51ac04488ccc134dd9dea3beff17630bcb96a735e3b11d1df4f1d095268f2638"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-official-agent-lifecycle.txt",
+      "sha256": "f410751f44649083633e1edc649519395fa1b51e59e4421053084b7cbe1908b3"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-agent-factory-paired.json",
+      "sha256": "f6c6c34e8285133478da3ea806d97d569280adfc10f523ac3f42f0ed2cc392c2"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-cordis-raw.json",
+      "sha256": "cc23c161c89d6b7397c90663d36ac711897b70ee8e6f6e65e7c969ecd659e9b3"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-cordis-acceptance.json",
+      "sha256": "73025a6ca7fc857be0f5ccc85e3db39eec9d7f3b36bdffaa27abe5fed0aaa46b"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-portable-isolated-boot.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-summary.json",
+      "sha256": "5a6fe414c33611d39b5f03a1fb22fa39b78c6106d72a981b717379674298a71b"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-python-dependencies.txt",
+      "sha256": "981e50151c9b1d590a6a2575a930c5ea83657a6617a6934617d1c3be812c6934"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-node-oracles.txt",
+      "sha256": "06971528452a5e51999bd9f3a2732889dc9828367276cc101e8f9c77dfe9d18d"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-node-official.txt",
+      "sha256": "f4f3534a4131eb2c8c3f8d4ca687f38764bd1f3a60c23eed980d930c19ab76f2"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-provenance.json",
+      "sha256": "cb6fba9837c04600da248efdede45e4b7a8fcfb47c0ed8f5f36f723cbd913374"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-package-identity.json",
+      "sha256": "39e2f9fcfdf76fc7cd06656cf618ee93b278317539f0087841b54b724d49aca2"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-inventory.json",
+      "sha256": "e33f4b4ab3c1279a67dc14dc9a813f12e92dbc1178172c713a5bd379ea59b8af"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-web-protocol-official.txt",
+      "sha256": "2c7f6d1b1a0ed8d84c336fae7425f667e1909cf096e5a83b1df57eed28ae3fb3"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-agent-factory-before.txt",
+      "sha256": "83b7b15d48b4e63b483b313cd28a5bd4df26d8bc1da0909481ed107230cd7b6d"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-settings-contention-main-observation.txt",
+      "sha256": "c0af336c17ef71d1db837f40c7ca96ffeefc883fa877337ba1cc0c414f433c90"
+    },
+    {
+      "path": "migration/evidence/artifacts/NEXT-WAVE-20260927-settings-contention-clean-before.txt",
+      "sha256": "79e602d489d423aaed4eea924d35e93700c486b936a82fe78adfcbbf46211b52"
+    }
+  ],
+  "scope": "Bounded task acceptance at the same Git candidate. Main and clean checkout tracked source are Git-equivalent; input freshness hashes use the main checkout bytes. Prior scoped contracts revalidated by full regression, C1-C67 and official consumer reruns; unchanged inventory and mapped parameters checked separately. C58 remains raw different and is accepted only by its exact signature. Public Agent factory is 9 paired scenarios, not 100-case Python parity. Frontend remains versioned prebuilt; remote Actions and Win7/browser certification are not claimed."
+}

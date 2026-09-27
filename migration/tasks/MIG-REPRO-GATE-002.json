@@ -2,7 +2,7 @@
   "id": "MIG-REPRO-GATE-002",
   "goal": "从干净 Windows checkout 复现固定输入、完整验证及便携包门禁",
   "kind": "verification",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "a4ff8ac41fa37b5463b0ce8b7f420d0973e8d840",
   "owner": "current-session-coordinator",
@@ -28,8 +28,10 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "Run the gate locally and in a fresh checkout; keep fresh frontend source build as explicit Web batch scope."
+  "candidate_commit": "54ee782560e56ea5ec4e7942384bd4e378ceb9c6",
+  "integrated_commit": "54ee782560e56ea5ec4e7942384bd4e378ceb9c6",
+  "evidence_ids": [
+    "RUN-NEXT-REPRO-GATE-002-20260927"
+  ],
+  "next_action": "固定输入在干净检出完成安装、构建和全部门禁；远程 Actions 未运行，目标源码前端重建归 Web 批次，Win7 暂缓。"
 }

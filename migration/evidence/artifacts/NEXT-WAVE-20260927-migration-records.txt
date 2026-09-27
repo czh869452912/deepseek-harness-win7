@@ -1,0 +1,1 @@
+Migration records and pinned inventory are valid (not a parity certification).

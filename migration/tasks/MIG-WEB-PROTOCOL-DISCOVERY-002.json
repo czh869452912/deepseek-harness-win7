@@ -2,7 +2,7 @@
   "id": "MIG-WEB-PROTOCOL-DISCOVERY-002",
   "goal": "核定当前上游 Connection/Gateway/Remote 的传输归属与分阶段依赖",
   "kind": "analysis",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "a4ff8ac41fa37b5463b0ce8b7f420d0973e8d840",
   "owner": "current-session-coordinator",
@@ -18,8 +18,10 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "Bind source map and 71-test official baseline to candidate evidence; implementation remains MIG-WEB-CONNECTION-002."
+  "candidate_commit": "54ee782560e56ea5ec4e7942384bd4e378ceb9c6",
+  "integrated_commit": "54ee782560e56ea5ec4e7942384bd4e378ceb9c6",
+  "evidence_ids": [
+    "RUN-NEXT-WEB-PROTOCOL-DISCOVERY-002-20260927"
+  ],
+  "next_action": "源码传输归属及 71 项官方协议基准已核定；按 Connection -> Gateway/Remote -> browser 逐层定义和实现，不据此认证本地 Web。"
 }

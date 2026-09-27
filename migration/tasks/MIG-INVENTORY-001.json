@@ -19,10 +19,11 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "25f59152523eccb1eb79dc8ae1090481cdee8214",
-  "integrated_commit": "25f59152523eccb1eb79dc8ae1090481cdee8214",
+  "candidate_commit": "54ee782560e56ea5ec4e7942384bd4e378ceb9c6",
+  "integrated_commit": "54ee782560e56ea5ec4e7942384bd4e378ceb9c6",
   "evidence_ids": [
-    "RUN-INVENTORY-FINISH-20260927"
+    "RUN-INVENTORY-FINISH-20260927",
+    "RUN-NEXT-INVENTORY-001-20260927"
   ],
   "next_action": "全部 manifest、非 package 表面、官方测试来源及动态契约位置已盘点；发现记录不等于模块 parity。"
 }

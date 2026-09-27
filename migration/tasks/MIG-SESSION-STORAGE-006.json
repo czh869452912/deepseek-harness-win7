@@ -2,7 +2,7 @@
   "id": "MIG-SESSION-STORAGE-006",
   "goal": "Align shared public storage creation, cursor adoption and read boundaries",
   "kind": "implementation",
-  "state": "review",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "145f418bd455f88c77c2bd7f970321dee279e426",
   "owner": "current-session-coordinator",
@@ -39,8 +39,10 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "Finish exact-candidate release acceptance, then configured Agent startup/reload and full Session projection."
+  "candidate_commit": "8201d7dc23251387bd9094539d81b856f12f4bfd",
+  "integrated_commit": "8201d7dc23251387bd9094539d81b856f12f4bfd",
+  "evidence_ids": [
+    "RUN-SESSION-STORAGE-SESSION-STORAGE-006-20260927"
+  ],
+  "next_action": "Public storage closure accepted; continue configured Agent startup/reload, then full Session projection and Web consumers."
 }

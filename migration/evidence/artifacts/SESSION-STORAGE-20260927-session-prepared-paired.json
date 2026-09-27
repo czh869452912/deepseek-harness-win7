@@ -1,0 +1,114 @@
+{
+  "status": "matched",
+  "cases": [
+    {
+      "mode": "reuse",
+      "status": "matched",
+      "upstream": {
+        "mode": "reuse",
+        "same": true,
+        "types": [
+          "turn/start",
+          "turn/end",
+          "session/end-seed"
+        ]
+      },
+      "python": {
+        "mode": "reuse",
+        "same": true,
+        "types": [
+          "turn/start",
+          "turn/end",
+          "session/end-seed"
+        ]
+      }
+    },
+    {
+      "mode": "mutated-release",
+      "status": "matched",
+      "upstream": {
+        "mode": "mutated-release",
+        "same": false,
+        "types": [
+          "turn/start",
+          "turn/end",
+          "session/end-seed"
+        ]
+      },
+      "python": {
+        "mode": "mutated-release",
+        "same": false,
+        "types": [
+          "turn/start",
+          "turn/end",
+          "session/end-seed"
+        ]
+      }
+    },
+    {
+      "mode": "reserved-write",
+      "status": "matched",
+      "upstream": {
+        "mode": "reserved-write",
+        "rejected": true,
+        "physical": 2
+      },
+      "python": {
+        "mode": "reserved-write",
+        "rejected": true,
+        "physical": 2
+      }
+    },
+    {
+      "mode": "cancel-wait",
+      "status": "matched",
+      "upstream": {
+        "mode": "cancel-wait",
+        "cancelled": true,
+        "same": true
+      },
+      "python": {
+        "mode": "cancel-wait",
+        "cancelled": true,
+        "same": true
+      }
+    },
+    {
+      "mode": "revision",
+      "status": "matched",
+      "upstream": {
+        "mode": "revision",
+        "types": [
+          "turn/start",
+          "turn/end",
+          "turn/start",
+          "turn/end",
+          "session/end-seed"
+        ],
+        "physical": [
+          "turn/start",
+          "turn/end",
+          "turn/start",
+          "turn/end"
+        ]
+      },
+      "python": {
+        "mode": "revision",
+        "types": [
+          "turn/start",
+          "turn/end",
+          "turn/start",
+          "turn/end",
+          "session/end-seed"
+        ],
+        "physical": [
+          "turn/start",
+          "turn/end",
+          "turn/start",
+          "turn/end"
+        ]
+      }
+    }
+  ],
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc"
+}

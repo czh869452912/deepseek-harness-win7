@@ -1,0 +1,126 @@
+{
+  "status": "matched",
+  "cases": [
+    {
+      "mode": "lazy",
+      "status": "matched",
+      "upstream": {
+        "mode": "lazy",
+        "before": 0,
+        "createdAt": 1
+      },
+      "python": {
+        "mode": "lazy",
+        "before": 0,
+        "createdAt": 1
+      }
+    },
+    {
+      "mode": "duplicate",
+      "status": "matched",
+      "upstream": {
+        "mode": "duplicate",
+        "rejected": true,
+        "physical": 0
+      },
+      "python": {
+        "mode": "duplicate",
+        "rejected": true,
+        "physical": 0
+      }
+    },
+    {
+      "mode": "cursor",
+      "status": "matched",
+      "upstream": {
+        "mode": "cursor",
+        "rejected": 3,
+        "seqs": [
+          0
+        ]
+      },
+      "python": {
+        "mode": "cursor",
+        "rejected": 3,
+        "seqs": [
+          0
+        ]
+      }
+    },
+    {
+      "mode": "legacy",
+      "status": "matched",
+      "upstream": {
+        "mode": "legacy",
+        "rejected": 3,
+        "physical": 0
+      },
+      "python": {
+        "mode": "legacy",
+        "rejected": 3,
+        "physical": 0
+      }
+    },
+    {
+      "mode": "unknown",
+      "status": "matched",
+      "upstream": {
+        "mode": "unknown",
+        "rejected": 3,
+        "physical": 1
+      },
+      "python": {
+        "mode": "unknown",
+        "rejected": 3,
+        "physical": 1
+      }
+    },
+    {
+      "mode": "cold-adopt",
+      "status": "matched",
+      "upstream": {
+        "mode": "cold-adopt",
+        "types": [
+          "turn/start",
+          "turn/end",
+          "session/end-seed"
+        ]
+      },
+      "python": {
+        "mode": "cold-adopt",
+        "types": [
+          "turn/start",
+          "turn/end",
+          "session/end-seed"
+        ]
+      }
+    },
+    {
+      "mode": "materialize",
+      "status": "matched",
+      "upstream": {
+        "mode": "materialize",
+        "events": 0
+      },
+      "python": {
+        "mode": "materialize",
+        "events": 0
+      }
+    },
+    {
+      "mode": "invalid-read",
+      "status": "matched",
+      "upstream": {
+        "mode": "invalid-read",
+        "rejected": 2,
+        "physical": 1
+      },
+      "python": {
+        "mode": "invalid-read",
+        "rejected": 2,
+        "physical": 1
+      }
+    }
+  ],
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc"
+}

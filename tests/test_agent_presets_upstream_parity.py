@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 import pytest
+from dsh.core.scope import create_scope, ScopeKey, scope_of, scope_parent_of
 
 from dsh.cordis.context import Context
 from dsh.cordis.loader import Loader
@@ -54,15 +55,15 @@ async def test_real_loader_mount_is_single_flight_shared_and_recomposable(tmp_pa
     seed(tmp_path, "alpha", "- id: alpha\n  name: fixture:contribute\n  config:\n    label: alpha\n")
     seed(tmp_path, "beta", "- id: beta\n  name: fixture:contribute\n  config:\n    label: beta\n")
     ctx, _fiber, presets = await boot(tmp_path, {"fixture:contribute": contribute})
-    first = ctx.extend()
-    second = ctx.extend()
+    first = create_scope(ctx, ScopeKey(object())).ctx
+    second = create_scope(ctx, ScopeKey(object())).ctx
 
     await presets.mount(first, "alpha")
     await presets.mount(second, "alpha")
     assert calls == ["alpha"]
     assert presets.composed_preset(first) == "alpha"
     assert presets.composed_preset(second) == "alpha"
-    assert first._parent is second._parent
+    assert scope_parent_of(scope_of(first)) is scope_parent_of(scope_of(second))
 
     await presets.recompose(first, "beta")
     assert calls == ["alpha", "beta"]
@@ -76,7 +77,7 @@ async def test_failed_recompose_keeps_previous_generation(tmp_path):
     seed(tmp_path, "alpha", "[]\n")
     seed(tmp_path, "broken", "- id: missing\n  name: fixture:missing\n")
     ctx, _fiber, presets = await boot(tmp_path, {})
-    agent_ctx = ctx.extend()
+    agent_ctx = create_scope(ctx, ScopeKey(object())).ctx
     await presets.mount(agent_ctx, "alpha")
 
     with pytest.raises(PresetMountError):
@@ -178,7 +179,7 @@ async def test_pending_dependency_is_rejected_without_hanging(tmp_path):
     seed(tmp_path, "alpha", "- id: pending\n  name: fixture:pending\n")
     ctx, _fiber, presets = await boot(tmp_path, {"fixture:pending": Pending()})
     with pytest.raises(PresetMountError, match="waiting for neverAvailable"):
-        await presets.mount(ctx.extend(), "alpha")
+        await presets.mount(create_scope(ctx, ScopeKey(object())).ctx, "alpha")
     await ctx.fiber.dispose()
 
 
@@ -199,7 +200,7 @@ async def test_relative_python_plugin_and_file_edit_start_new_generation(tmp_pat
         % str(calls_file).replace("\\", "/"),
     )
     ctx, _fiber, presets = await boot(tmp_path, {})
-    first = ctx.extend()
+    first = create_scope(ctx, ScopeKey(object())).ctx
     await presets.mount(first, "alpha")
     composition = tmp_path / "alpha" / "agent.cordis.yml"
     composition.write_text(
@@ -207,11 +208,11 @@ async def test_relative_python_plugin_and_file_edit_start_new_generation(tmp_pat
         % str(calls_file).replace("\\", "/"),
         encoding="utf-8",
     )
-    second = ctx.extend()
+    second = create_scope(ctx, ScopeKey(object())).ctx
     await presets.mount(second, "alpha")
     assert calls_file.read_text(encoding="utf-8").splitlines() == ["first", "second-generation"]
     assert presets.composed_preset(first) == "alpha"
-    assert first._parent is not second._parent
+    assert scope_parent_of(scope_of(first)) is not scope_parent_of(scope_of(second))
     await ctx.fiber.dispose()
 
 
@@ -233,9 +234,9 @@ async def test_global_service_leak_rejected_and_isolated_service_addressable(tmp
     )
     ctx, _fiber, presets = await boot(tmp_path, {"fixture:provider": provider})
     with pytest.raises(PresetMountError, match="process-global service.*leakedSvc"):
-        await presets.mount(ctx.extend(), "leaky")
+        await presets.mount(create_scope(ctx, ScopeKey(object())).ctx, "leaky")
 
-    agent_ctx = ctx.extend()
+    agent_ctx = create_scope(ctx, ScopeKey(object())).ctx
     await presets.mount(agent_ctx, "isolated")
     agent = type("Agent", (), {"ctx": agent_ctx})()
     assert ctx.get("privateSvc", None) is None
@@ -258,7 +259,7 @@ async def test_roster_fiber_owns_standing_mounts_and_settings_registration(tmp_p
     )
     await preset_fiber
     presets = ctx.get("agentPresets")
-    await presets.mount(ctx.extend(), "alpha")
+    await presets.mount(create_scope(ctx, ScopeKey(object())).ctx, "alpha")
     assert any(mount.preset_id == "alpha" for mount in live_preset_mounts())
 
     settings = settings_fiber.ctx.get("settings")

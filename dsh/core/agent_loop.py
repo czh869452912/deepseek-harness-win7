@@ -4,6 +4,7 @@ Concrete Agent Loop Driver and Factory Service mounted at `ctx.agent_loop`.
 """
 
 import asyncio
+import inspect
 import json
 import time
 import uuid
@@ -11,6 +12,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 from dsh.cordis.context import Context
 from dsh.cordis.plugin import Plugin
 from dsh.core.agent import Agent, AgentHandle, AgentOptions, AgentRegistry
+from dsh.core.scope import create_scope, ScopeKey, scope_of
 from dsh.core.runtime_context import RuntimeContextProjection
 from dsh.core.session import Session, SessionHeader, SessionStore, canonical_header, header_equals
 from dsh.core.tool_calls import execute_tool_calls
@@ -417,7 +419,7 @@ class AgentLoopService:
                 break
         return last_turn + 1
 
-    def create_agent(
+    async def create_agent(
         self,
         session_id: Optional[str] = None,
         options: Optional[AgentOptions] = None,
@@ -439,21 +441,44 @@ class AgentLoopService:
             raise ValueError(f'agent "{sid}" already exists')
 
         sessions_svc = self.ctx.get("sessions")
-        if isinstance(sessions_svc, SessionStore) or (sessions_svc is not None and hasattr(sessions_svc, "create")):
+        prepared_session = False
+        detach_session = None
+        if sessions_svc is not None and hasattr(sessions_svc, "prepare"):
+            session = sessions_svc.get(sid)
+            if session is None:
+                session = sessions_svc.prepare(sid, meta=meta)
+                prepared_session = True
+        elif isinstance(sessions_svc, SessionStore) or (sessions_svc is not None and hasattr(sessions_svc, "create")):
             session = sessions_svc.get(sid) or sessions_svc.create(sid, meta=meta)
         else:
             header = SessionHeader.from_dict({"id": sid, **(meta or {})})
             session = Session(session_id=sid, header=header, ctx=self.ctx)
 
-        agent_ctx = self.ctx.extend()
-        commit_fn = None
-        if setup:
-            setup_res = setup(agent_ctx)
-            if hasattr(setup_res, "commit") and callable(getattr(setup_res, "commit")):
-                commit_fn = setup_res.commit
+        agent_scope = create_scope(self.ctx, ScopeKey({"sessionId": session.id}))
+        agent_ctx = agent_scope.ctx
+        try:
+            if setup:
+                setup_res = setup(agent_ctx)
+                if inspect.isawaitable(setup_res):
+                    setup_res = await setup_res
+                commit = getattr(setup_res, "commit", None)
+                if callable(commit):
+                    committed = commit()
+                    if inspect.isawaitable(committed):
+                        await committed
+        except BaseException:
+            await agent_scope.dispose()
+            raise
 
-        if commit_fn:
-            commit_fn()
+        if prepared_session:
+            try:
+                detach_session = sessions_svc.enter(session)
+                sessions_svc.announce(session)
+            except BaseException:
+                if detach_session:
+                    detach_session()
+                await agent_scope.dispose()
+                raise
 
         agent = Agent(session=session, options=options, ctx=agent_ctx)
 
@@ -477,9 +502,11 @@ class AgentLoopService:
             if not driver_task.done():
                 await agent.when_idle()
                 driver_task.cancel()
-            agent_ctx.teardown()
+            await agent_scope.dispose()
             if disposer:
                 disposer()
+            if detach_session:
+                detach_session()
 
         return AgentHandle(agent=agent, disposer=teardown)
 
@@ -515,15 +542,23 @@ class AgentLoopService:
             detach_session = sessions_svc.enter(session)
             sessions_svc.announce(session)
 
-        agent_ctx = self.ctx.extend()
-        commit_fn = None
-        if setup:
-            setup_res = setup(agent_ctx)
-            if hasattr(setup_res, "commit") and callable(getattr(setup_res, "commit")):
-                commit_fn = setup_res.commit
-
-        if commit_fn:
-            commit_fn()
+        agent_scope = create_scope(self.ctx, ScopeKey({"sessionId": session.id}))
+        agent_ctx = agent_scope.ctx
+        try:
+            if setup:
+                setup_res = setup(agent_ctx)
+                if inspect.isawaitable(setup_res):
+                    setup_res = await setup_res
+                commit = getattr(setup_res, "commit", None)
+                if callable(commit):
+                    committed = commit()
+                    if inspect.isawaitable(committed):
+                        await committed
+        except BaseException:
+            await agent_scope.dispose()
+            if detach_session:
+                detach_session()
+            raise
 
         agent = Agent(session=session, options=options, ctx=agent_ctx)
 
@@ -549,7 +584,7 @@ class AgentLoopService:
                     await driver_task
                 except (asyncio.CancelledError, Exception):
                     pass
-            agent_ctx.teardown()
+            await agent_scope.dispose()
             if disposer:
                 disposer()
             if detach_session:
@@ -626,7 +661,7 @@ class AgentLoopService:
                     assembly = await sp_svc.assemble({
                         "agent": agent,
                         "session": session,
-                        "scope": agent.ctx.get("scope") if hasattr(agent.ctx, "get") else None,
+                        "scope": scope_of(agent.ctx),
                     })
                     system_prompt = render_prompt(assembly)
                     if assembly.get("contexts") and step_num == 1:
@@ -744,7 +779,7 @@ class AgentLoopService:
         llm_service = self.ctx.get("llm")
         if tool_schemas is None:
             tools_service = self.ctx.get("tools")
-            tool_schemas = tools_service.schemas() if (tools_service and hasattr(tools_service, "schemas")) else (tools_service.get_schemas() if tools_service else [])
+            tool_schemas = tools_service.schemas(scope_of(agent.ctx)) if (tools_service and hasattr(tools_service, "schemas")) else (tools_service.get_schemas() if tools_service else [])
 
         raw_provider = agent.options.provider or getattr(llm_service, "provider", "openai")
         raw_model = agent.options.model or getattr(llm_service, "model", "deepseek-chat")

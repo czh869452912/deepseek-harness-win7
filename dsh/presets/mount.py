@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 
 import yaml
 
+from dsh.core.scope import scope_of, scope_parent_of
 from dsh.cordis.fiber import FiberState
 from dsh.cordis.loader import Loader
 from dsh.cordis.loader import EntryTree
@@ -56,10 +57,11 @@ def leaked_services(ctx: Any, mount_fiber: Any) -> List[str]:
 
 
 def standing_mount_for(agent_ctx: Any) -> Optional[PresetMount]:
-    standing = getattr(agent_ctx, "_agent_preset_standing", None)
-    if standing is None or getattr(standing.fiber, "uid", None) is None:
+    key = scope_of(agent_ctx) if agent_ctx is not None else None
+    parent = scope_parent_of(key) if key is not None else None
+    if parent is None:
         return None
-    return standing
+    return next((mount for mount in live_preset_mounts() if mount.key is parent), None)
 
 
 def service_for_agent(ctx: Any, agent: Any, name: str) -> Any:
@@ -131,7 +133,7 @@ def _load_rows(path: str) -> List[Dict[str, Any]]:
 
 
 async def mount_preset(agent_ctx: Any, preset: AgentPreset, host_loader: Optional[Loader] = None) -> PresetMount:
-    if agent_ctx is None or getattr(agent_ctx, "_parent", None) is None:
+    if agent_ctx is None or scope_of(agent_ctx) is None:
         raise RuntimeError(
             'agent-presets: refusing to mount preset "%s" into an unscoped context; '
             "its registrations would apply to every agent in the process" % preset.id
@@ -168,7 +170,8 @@ async def mount_preset(agent_ctx: Any, preset: AgentPreset, host_loader: Optiona
                 "row(s) published process-global service(s) [%s]; a preset service must sit "
                 "behind an isolate realm or move to the host composition" % ", ".join(leaked)
             )
-        mount = PresetMount(preset.id, fiber, {"agentPreset": preset.id}, tree)
+        live_preset_mounts()  # Also prune on the production mount path.
+        mount = PresetMount(preset.id, fiber, scope_of(agent_ctx), tree)
         _mounts.append(mount)
         return mount
     except BaseException as error:

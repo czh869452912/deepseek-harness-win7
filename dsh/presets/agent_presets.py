@@ -7,9 +7,10 @@ import weakref
 from typing import Any, Dict, List, Optional, Tuple
 
 from dsh.cordis.service import Service
+from dsh.core.scope import create_scope, ScopeKey, scope_of, bind_scope_parent
 from dsh.presets.authoring import copy_composition, delete_composition, read_composition
 from dsh.presets.discovery import USER_PRESET_DIR, discover_presets
-from dsh.presets.mount import mount_preset, service_for_agent
+from dsh.presets.mount import mount_preset, service_for_agent, standing_mount_for
 from dsh.presets.preset import (
     AgentPreset, Config as PresetConfig, PresetExistsError, PresetMountError,
     PresetRoot, UnknownPresetError,
@@ -199,9 +200,13 @@ class AgentPresets(Service):
             stamp = _stamp(preset.path)
             if stamp is None:
                 raise PresetMountError(preset.id, "composition file is unreadable: %s" % preset.path)
-            scope_ctx = self.self_ctx.extend()
-            mount = await mount_preset(scope_ctx, preset, self.self_ctx.get("loader"))
-            return _Standing(mount, stamp)
+            scope = create_scope(self.self_ctx, ScopeKey({"agentPreset": preset.id}))
+            try:
+                mount = await mount_preset(scope.ctx, preset, self.self_ctx.get("loader"))
+                return _Standing(mount, stamp)
+            except BaseException:
+                await scope.dispose()
+                raise
 
         task = asyncio.ensure_future(create())
         self._standing[preset.id] = task
@@ -212,40 +217,49 @@ class AgentPresets(Service):
                 self._standing.pop(preset.id, None)
             raise
 
-    def _bind(self, agent_ctx: Any, standing: _Standing) -> None:
-        agent_ctx._parent = standing.mount.fiber.ctx
-        agent_ctx._agent_preset_standing = standing.mount
-        self._bindings[agent_ctx] = standing
+    def _bind(self, agent_ctx: Any, standing: Any, rebind: bool = False) -> None:
+        key = scope_of(agent_ctx)
+        binding = self._bindings.get(key) if rebind else None
+        if binding is None:
+            self._bindings[key] = bind_scope_parent(key, standing.key)
+        else:
+            binding.rebind(standing.key)
 
     async def mount(self, agent_ctx: Any, id_str: Optional[str] = None) -> AgentPreset:
-        if agent_ctx is self.self_ctx.root or getattr(agent_ctx, "_parent", None) is None:
+        if scope_of(agent_ctx) is None:
             raise RuntimeError("agent-presets: refusing to compose an unscoped context")
         preset = await self.resolve_mountable(id_str)
         self._bind(agent_ctx, await self._ensure_standing(preset))
         return preset
 
     def compose_from(self, agent_ctx: Any, parent_ctx: Any) -> Optional[str]:
-        if agent_ctx is self.self_ctx.root or getattr(agent_ctx, "_parent", None) is None:
+        if scope_of(agent_ctx) is None:
             raise RuntimeError("agent-presets: refusing to compose an unscoped context")
-        standing = self._bindings.get(parent_ctx)
+        standing = standing_mount_for(parent_ctx)
         if standing is None:
             return None
         self._bind(agent_ctx, standing)
-        return standing.mount.preset_id
+        return standing.preset_id
 
     composeFrom = compose_from
 
     def composed_preset(self, agent_ctx: Any) -> Optional[str]:
-        standing = self._bindings.get(agent_ctx)
-        return standing.mount.preset_id if standing is not None else None
+        standing = standing_mount_for(agent_ctx)
+        return standing.preset_id if standing is not None else None
 
     composedPreset = composed_preset
 
     async def recompose(self, agent_ctx: Any, id_str: str) -> AgentPreset:
-        if agent_ctx is self.self_ctx.root or getattr(agent_ctx, "_parent", None) is None:
+        if scope_of(agent_ctx) is None:
             raise RuntimeError("agent-presets: refusing to recompose an unscoped context")
         preset = await self.resolve_mountable(id_str)
-        self._bind(agent_ctx, await self._ensure_standing(preset))
+        self._bind(agent_ctx, await self._ensure_standing(preset), rebind=True)
+        try:
+            self.self_ctx.emit("tools/change")
+        except Exception as error:
+            logger = self.self_ctx.get("logger", None)
+            if logger is not None:
+                logger.warn("agent-presets: tools/change listener failed after recomposing an Agent: %s" % error)
         return preset
 
     async def standing_key_for(self, id_str: Optional[str] = None) -> Dict[str, str]:

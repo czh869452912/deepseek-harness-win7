@@ -1,6 +1,7 @@
 """Pinned agent-presets invariant consumer contracts using real mounted presets."""
 from types import SimpleNamespace
 import pytest
+from dsh.core.scope import create_scope, ScopeKey, scope_of, scope_parent_of
 from dsh.cordis.context import Context
 from dsh.cordis.loader import Loader
 from dsh.core.system_prompt import SystemPrompt
@@ -21,7 +22,7 @@ async def boot(tmp_path, roots=True):
 async def test_late_global_service_is_rejected_and_companion_disposes(tmp_path):
     ctx,companion=await boot(tmp_path)
     try:
-        presets=ctx.get('agentPresets');agent_ctx=ctx.extend()
+        presets=ctx.get('agentPresets');agent_ctx=create_scope(ctx, ScopeKey(object())).ctx
         await presets.mount(agent_ctx,'standard')
         mount=next(m for m in live_preset_mounts() if m.fiber.ctx.root is ctx)
         with pytest.raises(InvariantError,match='published process-global service'):
@@ -35,7 +36,7 @@ async def test_unjoined_agent_rejected_but_joined_and_cold_reads_allowed(tmp_pat
     ctx,_=await boot(tmp_path)
     try:
         prompt=ctx.get('system_prompt');presets=ctx.get('agentPresets')
-        agent=SimpleNamespace(id='unjoined',ctx=ctx.extend())
+        agent=SimpleNamespace(id='unjoined',ctx=create_scope(ctx, ScopeKey(object())).ctx)
         with pytest.raises(InvariantError,match='without joining any agent preset'):
             await prompt.assemble({'agent':agent})
         await presets.mount(agent.ctx,'standard')
@@ -48,5 +49,5 @@ async def test_unjoined_agent_rejected_but_joined_and_cold_reads_allowed(tmp_pat
 async def test_empty_roster_does_not_require_joining(tmp_path):
     ctx,_=await boot(tmp_path,False)
     try:
-        await ctx.get('system_prompt').assemble({'agent':SimpleNamespace(id='bare',ctx=ctx.extend())})
+        await ctx.get('system_prompt').assemble({'agent':SimpleNamespace(id='bare',ctx=create_scope(ctx, ScopeKey(object())).ctx)})
     finally: await ctx.fiber.dispose()

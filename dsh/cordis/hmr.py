@@ -4,6 +4,7 @@ Provides safe configuration and module watching, debouncing, serialized refreshe
 dynamic Python module reload, and 'hmr/change', 'hmr/reload', 'hmr/config-update-failed' events.
 """
 
+from dsh.cordis.awaiting import await_callback_result
 import asyncio
 import importlib
 import importlib.util
@@ -545,8 +546,7 @@ class ConfigWatcherService(Service):
                 state.dirty = False
                 try:
                     res = refresh_fn()
-                    if inspect.isawaitable(res):
-                        await res
+                    await await_callback_result(res)
                     if hasattr(self.ctx, "logger"):
                         self.ctx.logger("hmr").info("Reloaded config file %s", observed)
                 except asyncio.CancelledError:

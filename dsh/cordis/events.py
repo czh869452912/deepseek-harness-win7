@@ -3,6 +3,7 @@ Cordis Event Bus matching reference/vendor/cordis/src/events.ts
 Supports emit, parallel, serial, bail, and waterfall dispatch modes with internal/listener interception.
 """
 
+from dsh.cordis.awaiting import resume_coroutine as _resume_listener, await_callback_result
 import asyncio
 import concurrent.futures
 import contextvars
@@ -242,26 +243,6 @@ def _release_loopless_barrier(barrier: "_LooplessDispatchBarrier") -> None:
     except RuntimeError:
         # The owned loop is closing, so release inline rather than hold the continuations.
         barrier.release()
-
-
-async def _resume_listener(listener: Any, awaited: Any) -> Any:
-    """Continue a coroutine already entered by emit, preserving its suspension."""
-    while True:
-        failure: Optional[BaseException] = None
-        value = None
-        try:
-            if awaited is None:
-                await asyncio.sleep(0)
-            else:
-                if isinstance(awaited, asyncio.Future):
-                    awaited._asyncio_future_blocking = False
-                value = await awaited
-        except BaseException as exc:
-            failure = exc
-        try:
-            awaited = listener.throw(failure) if failure is not None else listener.send(value)
-        except StopIteration as stop:
-            return stop.value
 
 
 def _normalize_event_call(event_name: Any, args: Sequence[Any], default_caller: Any, kwargs: Dict[str, Any]) -> Tuple[str, List[Any], Any]:
@@ -667,8 +648,7 @@ class EventBus:
         listeners = self._dispatch_hooks("serial", event_name, actual_args, caller_ctx)
         for listener in listeners:
             res = listener(*actual_args, **kwargs)
-            if inspect.isawaitable(res):
-                res = await res
+            res = await await_callback_result(res)
             if is_bailed(res):
                 return res
         return None

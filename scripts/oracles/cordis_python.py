@@ -30,6 +30,9 @@ async def settled(value):
 
 
 async def scenario(number):
+    if number >= 63:
+        from cordis_serial_boundaries import scenario as serial_scenario
+        return await serial_scenario(number)
     if number >= 62:
         from cordis_schema import scenario as schema_scenario
         return await schema_scenario(number)

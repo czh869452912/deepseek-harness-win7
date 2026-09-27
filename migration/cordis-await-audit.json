@@ -1,0 +1,925 @@
+{
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "adaptation": "PY38-RESOLVED-AWAIT",
+  "scope": "Foundation plus selected migrated Preset/AgentLoop consumers; classify observable ownership/state boundaries, not all possible coroutine schedules.",
+  "files": [
+    {
+      "path": "dsh/cordis/events.py",
+      "family": "dispatch",
+      "coverage": "C18,C22-C25,C58-C66",
+      "decision": "emit eagerly enters coroutine prefixes; serial uses await_callback_result; parallel owns gathered settlements; waterfall retains synchronous next-chain semantics. emit_async and loopless bridges are Python extensions, not JS microtask identity claims.",
+      "await_sites": [
+        {
+          "line": 129,
+          "function": "wait",
+          "expression": "await asyncio.wrap_future(self._gate, loop=asyncio.get_running_loop())"
+        },
+        {
+          "line": 155,
+          "function": "_enter_then_settle",
+          "expression": "await barrier.wait()"
+        },
+        {
+          "line": 157,
+          "function": "_enter_then_settle",
+          "expression": "await result"
+        },
+        {
+          "line": 171,
+          "function": "_enter_then_settle",
+          "expression": "await _drive_loopless_settlement(result, awaited, event_name, ctx, barrier)"
+        },
+        {
+          "line": 202,
+          "function": "_drive_loopless_settlement",
+          "expression": "await barrier.wait()"
+        },
+        {
+          "line": 209,
+          "function": "_drive_loopless_settlement",
+          "expression": "await asyncio.sleep(0)"
+        },
+        {
+          "line": 216,
+          "function": "_drive_loopless_settlement",
+          "expression": "await awaited"
+        },
+        {
+          "line": 218,
+          "function": "_drive_loopless_settlement",
+          "expression": "await awaited"
+        },
+        {
+          "line": 619,
+          "function": "emit_async",
+          "expression": "await res"
+        },
+        {
+          "line": 634,
+          "function": "parallel._run",
+          "expression": "await res"
+        },
+        {
+          "line": 637,
+          "function": "parallel",
+          "expression": "await asyncio.gather(*[_run(cb) for cb in listeners], return_exceptions=True)"
+        },
+        {
+          "line": 651,
+          "function": "serial",
+          "expression": "await await_callback_result(res)"
+        },
+        {
+          "line": 780,
+          "function": "waterfall.next_fn",
+          "expression": "await res"
+        },
+        {
+          "line": 785,
+          "function": "waterfall.next_fn",
+          "expression": "await res"
+        },
+        {
+          "line": 791,
+          "function": "waterfall.next_fn",
+          "expression": "await res"
+        },
+        {
+          "line": 811,
+          "function": "waterfall.next_fn",
+          "expression": "await res"
+        },
+        {
+          "line": 816,
+          "function": "waterfall",
+          "expression": "await next_fn()"
+        }
+      ]
+    },
+    {
+      "path": "dsh/cordis/fiber.py",
+      "family": "lifecycle",
+      "coverage": "C1-C30,C40-C51",
+      "decision": "Inertia and epochs are published before callbacks; pending startup/teardown is owned and shielded. Completed joins need no new state transition; callback-internal completed awaits remain the explicit C58 language adaptation.",
+      "await_sites": [
+        {
+          "line": 341,
+          "function": "effect.rollback_sync.finish_rollback",
+          "expression": "await result"
+        },
+        {
+          "line": 404,
+          "function": "effect.cancel_effect._dispose_after_barrier",
+          "expression": "await barrier"
+        },
+        {
+          "line": 413,
+          "function": "effect.cancel_effect._dispose_after_barrier",
+          "expression": "await r"
+        },
+        {
+          "line": 463,
+          "function": "effect.cancel_effect._run_cleanup",
+          "expression": "await setup_task"
+        },
+        {
+          "line": 468,
+          "function": "effect.cancel_effect._run_cleanup",
+          "expression": "await r"
+        },
+        {
+          "line": 531,
+          "function": "effect.__call__._call_after",
+          "expression": "await t"
+        },
+        {
+          "line": 535,
+          "function": "effect.__call__._call_after",
+          "expression": "await res"
+        },
+        {
+          "line": 539,
+          "function": "effect.__call__._call_after",
+          "expression": "await res"
+        },
+        {
+          "line": 551,
+          "function": "effect.__await__._await_wrapper",
+          "expression": "await t"
+        },
+        {
+          "line": 577,
+          "function": "effect._await_async_setup",
+          "expression": "await res"
+        },
+        {
+          "line": 1012,
+          "function": "_reload._run_coro_init",
+          "expression": "await coro"
+        },
+        {
+          "line": 1072,
+          "function": "_reload._async_wait_res",
+          "expression": "await res"
+        },
+        {
+          "line": 1130,
+          "function": "_reload._collect_async_iter",
+          "expression": "await iterator.__anext__()"
+        },
+        {
+          "line": 1249,
+          "function": "_unload_disposers._run_gather",
+          "expression": "await asyncio.gather(*async_disposers, return_exceptions=True)"
+        },
+        {
+          "line": 1351,
+          "function": "_dispose_owned._retire_when_settled",
+          "expression": "await self._await_quiescent()"
+        },
+        {
+          "line": 1368,
+          "function": "_dispose_owned._observe_settlement",
+          "expression": "await asyncio.shield(task)"
+        },
+        {
+          "line": 1454,
+          "function": "_await_quiescent",
+          "expression": "await self.inertia"
+        },
+        {
+          "line": 1462,
+          "function": "_await_quiescent",
+          "expression": "await t"
+        },
+        {
+          "line": 1472,
+          "function": "_await_quiescent",
+          "expression": "await self.inertia"
+        },
+        {
+          "line": 1499,
+          "function": "_rollback_failed_publication._settle",
+          "expression": "await settled"
+        },
+        {
+          "line": 1558,
+          "function": "restart._do_restart",
+          "expression": "await self.await_settled()"
+        },
+        {
+          "line": 1587,
+          "function": "await_settled",
+          "expression": "await asyncio.gather(*(asyncio.shield(task) for task in pending), return_exceptions=True)"
+        },
+        {
+          "line": 1592,
+          "function": "await_settled",
+          "expression": "await t"
+        },
+        {
+          "line": 1637,
+          "function": "await_settled",
+          "expression": "await super().await_settled()"
+        },
+        {
+          "line": 1638,
+          "function": "await_settled",
+          "expression": "await self._original_fiber.await_settled()"
+        }
+      ]
+    },
+    {
+      "path": "dsh/cordis/registry.py",
+      "family": "lifecycle",
+      "coverage": "C45-C51",
+      "decision": "Delete awaits owned disposal before replacement; handle assimilation joins original state.",
+      "await_sites": [
+        {
+          "line": 226,
+          "function": "delete_async",
+          "expression": "await fiber.dispose()"
+        },
+        {
+          "line": 448,
+          "function": "unload_plugin",
+          "expression": "await self.delete_async(callback)"
+        },
+        {
+          "line": 453,
+          "function": "unload_plugin",
+          "expression": "await self.delete_async(runtime.callback)"
+        },
+        {
+          "line": 457,
+          "function": "unload_plugin",
+          "expression": "await self.delete_async(runtime.callback)"
+        }
+      ]
+    },
+    {
+      "path": "dsh/cordis/include.py",
+      "family": "configuration-transaction",
+      "coverage": "C37-C43",
+      "decision": "Serialized queue covers read, apply and commit; startup tracked by service/tree, failed predecessors do not poison queue. Synchronous filesystem operations are the Python adapter; no per-I/O microtask equivalence claimed.",
+      "await_sites": [
+        {
+          "line": 117,
+          "function": "__init__._on_update",
+          "expression": "await res"
+        },
+        {
+          "line": 127,
+          "function": "__init__._on_update",
+          "expression": "await res"
+        },
+        {
+          "line": 189,
+          "function": "stop",
+          "expression": "await res"
+        },
+        {
+          "line": 190,
+          "function": "stop",
+          "expression": "await self.flush_write()"
+        },
+        {
+          "line": 195,
+          "function": "refresh",
+          "expression": "await self.read()"
+        },
+        {
+          "line": 201,
+          "function": "refresh",
+          "expression": "await res"
+        },
+        {
+          "line": 267,
+          "function": "_write_file_async",
+          "expression": "await asyncio.sleep(WRITE_RETRY_DELAY_SEC * (retry + 1))"
+        },
+        {
+          "line": 283,
+          "function": "write_file._run_flush",
+          "expression": "await self.flush_write()"
+        },
+        {
+          "line": 299,
+          "function": "flush_write",
+          "expression": "await self._write_task"
+        },
+        {
+          "line": 302,
+          "function": "flush_write",
+          "expression": "await self._write_file_async(config_data)"
+        },
+        {
+          "line": 327,
+          "function": "__init__.apply_initial",
+          "expression": "await result"
+        },
+        {
+          "line": 373,
+          "function": "__aiter__",
+          "expression": "await self._update_res"
+        }
+      ]
+    },
+    {
+      "path": "dsh/cordis/hmr.py",
+      "family": "reload",
+      "coverage": "C33-C36,C52-C57,C60-C61,C67",
+      "decision": "Registration-keyed running state spans awaited callback completion including settled returns; module transaction imports before unloading; teardown joins refresh tasks.",
+      "await_sites": [
+        {
+          "line": 184,
+          "function": "__call__._run",
+          "expression": "await asyncio.shield(state.running)"
+        },
+        {
+          "line": 368,
+          "function": "_poll_loop",
+          "expression": "await asyncio.sleep(max(0.02, self.debounce_ms / 1000.0))"
+        },
+        {
+          "line": 444,
+          "function": "_poll_loop",
+          "expression": "await asyncio.sleep(0)"
+        },
+        {
+          "line": 448,
+          "function": "_poll_loop",
+          "expression": "await asyncio.sleep(0)"
+        },
+        {
+          "line": 549,
+          "function": "_trigger_config_refresh._run",
+          "expression": "await await_callback_result(res)"
+        },
+        {
+          "line": 561,
+          "function": "_trigger_config_refresh._run",
+          "expression": "await self.ctx.parallel(\"hmr/config-update-failed\", observed, error)"
+        },
+        {
+          "line": 725,
+          "function": "_trigger_module_reload._reload_batch",
+          "expression": "await registry.delete_async(old_key)"
+        },
+        {
+          "line": 731,
+          "function": "_trigger_module_reload._reload_batch",
+          "expression": "await reload_plugin(new_cls, runtime, old_key)"
+        },
+        {
+          "line": 754,
+          "function": "_trigger_module_reload._reload_batch",
+          "expression": "await registry.delete_async(attempt)"
+        },
+        {
+          "line": 755,
+          "function": "_trigger_module_reload._reload_batch",
+          "expression": "await reload_plugin(old_key, runtime, old_key)"
+        },
+        {
+          "line": 786,
+          "function": "_trigger_module_reload._run",
+          "expression": "await _reload_batch(pending)"
+        },
+        {
+          "line": 907,
+          "function": "register_module.unregister._wait",
+          "expression": "await state.running"
+        },
+        {
+          "line": 935,
+          "function": "_async_teardown",
+          "expression": "await asyncio.gather(self._poll_task, return_exceptions=True)"
+        },
+        {
+          "line": 943,
+          "function": "_async_teardown",
+          "expression": "await asyncio.gather(*running_tasks, return_exceptions=True)"
+        }
+      ]
+    },
+    {
+      "path": "dsh/cordis/loader_entry.py",
+      "family": "entry-transaction",
+      "coverage": "C31-C32,C37-C47",
+      "decision": "Entry/options identities persist through update; raw ownership retained until disposal settles; persistence happens after next-chain completion. Callback-internal completed-await timing follows PY38-RESOLVED-AWAIT.",
+      "await_sites": [
+        {
+          "line": 88,
+          "function": "apply.persist_update",
+          "expression": "await result"
+        },
+        {
+          "line": 93,
+          "function": "apply.persist_update",
+          "expression": "await write_result"
+        },
+        {
+          "line": 197,
+          "function": "_patch_context.apply_patch",
+          "expression": "await value"
+        },
+        {
+          "line": 198,
+          "function": "_patch_context.apply_patch",
+          "expression": "await self.fiber"
+        },
+        {
+          "line": 200,
+          "function": "_patch_context",
+          "expression": "await self.context.waterfall(\"loader/patch-context\", self, apply_patch)"
+        },
+        {
+          "line": 209,
+          "function": "refresh",
+          "expression": "await self.init()"
+        },
+        {
+          "line": 219,
+          "function": "_dispose",
+          "expression": "await target.dispose()"
+        },
+        {
+          "line": 257,
+          "function": "update",
+          "expression": "await self.init()"
+        },
+        {
+          "line": 267,
+          "function": "update",
+          "expression": "await self._dispose(previous_fiber)"
+        },
+        {
+          "line": 279,
+          "function": "update",
+          "expression": "await self._patch_context(diff)"
+        },
+        {
+          "line": 283,
+          "function": "update",
+          "expression": "await self._patch_context(diff)"
+        },
+        {
+          "line": 300,
+          "function": "update",
+          "expression": "await self._dispose(previous_fiber)"
+        },
+        {
+          "line": 305,
+          "function": "update",
+          "expression": "await self._start(plugin)"
+        },
+        {
+          "line": 309,
+          "function": "update",
+          "expression": "await self._start(previous_plugin)"
+        },
+        {
+          "line": 323,
+          "function": "init",
+          "expression": "await self._init_task"
+        },
+        {
+          "line": 328,
+          "function": "init",
+          "expression": "await self._await_fiber()"
+        },
+        {
+          "line": 334,
+          "function": "_await_fiber",
+          "expression": "await self.fiber"
+        },
+        {
+          "line": 344,
+          "function": "_init",
+          "expression": "await self._start(plugin)"
+        },
+        {
+          "line": 369,
+          "function": "_start",
+          "expression": "await self._patch_context([])"
+        },
+        {
+          "line": 380,
+          "function": "_start.update",
+          "expression": "await result"
+        },
+        {
+          "line": 387,
+          "function": "_start",
+          "expression": "await fiber"
+        },
+        {
+          "line": 389,
+          "function": "_start",
+          "expression": "await self._dispose(fiber)"
+        }
+      ]
+    },
+    {
+      "path": "dsh/cordis/loader_group.py",
+      "family": "entry-transaction",
+      "coverage": "C31-C43",
+      "decision": "Children are updated sequentially and stop gathers owned settlements; no independent replacement owners.",
+      "await_sites": [
+        {
+          "line": 40,
+          "function": "create",
+          "expression": "await entry.update(options, create=True, force=True)"
+        },
+        {
+          "line": 60,
+          "function": "remove",
+          "expression": "await entry._dispose()"
+        },
+        {
+          "line": 78,
+          "function": "update",
+          "expression": "await asyncio.gather(*tasks, return_exceptions=True)"
+        },
+        {
+          "line": 89,
+          "function": "update",
+          "expression": "await self.remove(entry_id, True)"
+        },
+        {
+          "line": 97,
+          "function": "update",
+          "expression": "await self.remove(entry_id, True)"
+        },
+        {
+          "line": 102,
+          "function": "update",
+          "expression": "await self.create(options)"
+        },
+        {
+          "line": 112,
+          "function": "stop",
+          "expression": "await self.remove(options[\"id\"], True)"
+        },
+        {
+          "line": 131,
+          "function": "apply",
+          "expression": "await self.group.update(self.rows)"
+        }
+      ]
+    },
+    {
+      "path": "dsh/cordis/timer.py",
+      "family": "owned-timer",
+      "coverage": "C28-C30",
+      "decision": "Callbacks are scheduled by timer service, cancellation rejects outstanding operation; callback await internals are native Python, not globally rewritten.",
+      "await_sites": [
+        {
+          "line": 41,
+          "function": "drive_loopless_awaitable._await",
+          "expression": "await result"
+        },
+        {
+          "line": 87,
+          "function": "_tick_loop",
+          "expression": "await asyncio.sleep(first_delay_sec)"
+        },
+        {
+          "line": 92,
+          "function": "_tick_loop",
+          "expression": "await asyncio.sleep(self.delay_sec)"
+        },
+        {
+          "line": 122,
+          "function": "__anext__",
+          "expression": "await fut"
+        },
+        {
+          "line": 333,
+          "function": "timeout._fallback_sleep",
+          "expression": "await waiter"
+        },
+        {
+          "line": 365,
+          "function": "timeout._wait_future",
+          "expression": "await future"
+        }
+      ]
+    },
+    {
+      "path": "dsh/presets/agent_presets.py",
+      "family": "standing-generation",
+      "coverage": "official mount.spec.ts/invariant.spec.ts; C58-C59",
+      "decision": "Completed standing future explicitly checkpoints before guarded map updates; published scope bindings are separate from Context ancestry; mount failure cleans scope.",
+      "await_sites": [
+        {
+          "line": 178,
+          "function": "resolve",
+          "expression": "await self.list()"
+        },
+        {
+          "line": 185,
+          "function": "resolve_mountable",
+          "expression": "await self.resolve(id_str)"
+        },
+        {
+          "line": 194,
+          "function": "_ensure_standing",
+          "expression": "await pending"
+        },
+        {
+          "line": 197,
+          "function": "_ensure_standing",
+          "expression": "await asyncio.sleep(0)"
+        },
+        {
+          "line": 203,
+          "function": "_ensure_standing",
+          "expression": "await self._ensure_standing(preset)"
+        },
+        {
+          "line": 211,
+          "function": "_ensure_standing.create",
+          "expression": "await mount_preset(scope.ctx, preset, self.self_ctx.get(\"loader\"))"
+        },
+        {
+          "line": 214,
+          "function": "_ensure_standing.create",
+          "expression": "await scope.dispose()"
+        },
+        {
+          "line": 220,
+          "function": "_ensure_standing",
+          "expression": "await task"
+        },
+        {
+          "line": 237,
+          "function": "mount",
+          "expression": "await self.resolve_mountable(id_str)"
+        },
+        {
+          "line": 238,
+          "function": "mount",
+          "expression": "await self._ensure_standing(preset)"
+        },
+        {
+          "line": 261,
+          "function": "recompose",
+          "expression": "await self.resolve_mountable(id_str)"
+        },
+        {
+          "line": 262,
+          "function": "recompose",
+          "expression": "await self._ensure_standing(preset)"
+        },
+        {
+          "line": 272,
+          "function": "standing_key_for",
+          "expression": "await self.resolve_mountable(id_str)"
+        },
+        {
+          "line": 273,
+          "function": "standing_key_for",
+          "expression": "await self._ensure_standing(preset)"
+        },
+        {
+          "line": 283,
+          "function": "read",
+          "expression": "await self.resolve(id_str)"
+        },
+        {
+          "line": 286,
+          "function": "copy",
+          "expression": "await self.resolve(from_id)"
+        },
+        {
+          "line": 287,
+          "function": "copy",
+          "expression": "await self.list()"
+        },
+        {
+          "line": 293,
+          "function": "remove",
+          "expression": "await self.resolve(id_str)"
+        },
+        {
+          "line": 301,
+          "function": "remove",
+          "expression": "await result"
+        }
+      ]
+    },
+    {
+      "path": "dsh/presets/mount.py",
+      "family": "standing-generation",
+      "coverage": "official mount.spec.ts/invariant.spec.ts",
+      "decision": "Subtree activation and child errors settled before service-leak audit; failed mounts dispose raw owner, retain nested errors.",
+      "await_sites": [
+        {
+          "line": 161,
+          "function": "mount_preset",
+          "expression": "await fiber"
+        },
+        {
+          "line": 164,
+          "function": "mount_preset",
+          "expression": "await tree.root.update(_load_rows(preset.path))"
+        },
+        {
+          "line": 165,
+          "function": "mount_preset",
+          "expression": "await asyncio.sleep(0)"
+        },
+        {
+          "line": 167,
+          "function": "mount_preset",
+          "expression": "await asyncio.gather(*tree.get_tasks(), return_exceptions=True)"
+        },
+        {
+          "line": 173,
+          "function": "mount_preset",
+          "expression": "await entry.fiber"
+        },
+        {
+          "line": 175,
+          "function": "mount_preset",
+          "expression": "await entry.fiber"
+        },
+        {
+          "line": 190,
+          "function": "mount_preset",
+          "expression": "await fiber.dispose()"
+        }
+      ]
+    },
+    {
+      "path": "dsh/core/agent_loop.py",
+      "family": "factory-and-spine",
+      "coverage": "test_agent_presets_scope_parity.py; test_profile_spine_recovery.py",
+      "decision": "Factory setup finishes before session/agent publication; failed setup disposes scope. Driver owns wake/turn/flush; resume detaches session on failure. Network/tool internals outside this Cordis contract are separate business behavior.",
+      "await_sites": [
+        {
+          "line": 64,
+          "function": "_async_iter_chunks",
+          "expression": "await asyncio.sleep(0.01)"
+        },
+        {
+          "line": 463,
+          "function": "create_agent",
+          "expression": "await setup_res"
+        },
+        {
+          "line": 468,
+          "function": "create_agent",
+          "expression": "await committed"
+        },
+        {
+          "line": 470,
+          "function": "create_agent",
+          "expression": "await agent_scope.dispose()"
+        },
+        {
+          "line": 480,
+          "function": "create_agent",
+          "expression": "await agent_scope.dispose()"
+        },
+        {
+          "line": 503,
+          "function": "create_agent.teardown",
+          "expression": "await agent.when_idle()"
+        },
+        {
+          "line": 505,
+          "function": "create_agent.teardown",
+          "expression": "await agent_scope.dispose()"
+        },
+        {
+          "line": 532,
+          "function": "resume",
+          "expression": "await persistence.load(resume_session_id)"
+        },
+        {
+          "line": 551,
+          "function": "resume",
+          "expression": "await setup_res"
+        },
+        {
+          "line": 556,
+          "function": "resume",
+          "expression": "await committed"
+        },
+        {
+          "line": 558,
+          "function": "resume",
+          "expression": "await agent_scope.dispose()"
+        },
+        {
+          "line": 584,
+          "function": "resume.teardown",
+          "expression": "await driver_task"
+        },
+        {
+          "line": 587,
+          "function": "resume.teardown",
+          "expression": "await agent_scope.dispose()"
+        },
+        {
+          "line": 599,
+          "function": "_drive_agent",
+          "expression": "await agent._wake_event.wait()"
+        },
+        {
+          "line": 610,
+          "function": "_drive_agent",
+          "expression": "await agents_svc.with_initiator_async(agent, self._kick(agent))"
+        },
+        {
+          "line": 612,
+          "function": "_drive_agent",
+          "expression": "await self._kick(agent)"
+        },
+        {
+          "line": 629,
+          "function": "_kick",
+          "expression": "await self._turn(agent)"
+        },
+        {
+          "line": 661,
+          "function": "_turn",
+          "expression": "await sp_svc.assemble({\n                        \"agent\": agent,\n                        \"session\": session,\n                        \"scope\": scope_of(agent.ctx),\n                    })"
+        },
+        {
+          "line": 679,
+          "function": "_turn",
+          "expression": "await self.ctx.waterfall(\"system-prompt/assemble\", system_prompt)"
+        },
+        {
+          "line": 680,
+          "function": "_turn",
+          "expression": "await self.ctx.waterfall(\"agent/prompt-assemble\", system_prompt)"
+        },
+        {
+          "line": 682,
+          "function": "_turn",
+          "expression": "await self.ctx.waterfall(\"agent/runtime-context\", \"\")"
+        },
+        {
+          "line": 694,
+          "function": "_turn",
+          "expression": "await self.ctx.waterfall(\"agent/pre-step\", request_payload)"
+        },
+        {
+          "line": 729,
+          "function": "_turn",
+          "expression": "await self._step(agent, turn_num, step_num, system_prompt, starts_series=starts_series, tool_schemas=tools_to_pass)"
+        },
+        {
+          "line": 741,
+          "function": "_turn",
+          "expression": "await self.ctx.serial(\"agent/turn-stopping\", {\"turn\": turn_num, \"agent\": agent})"
+        },
+        {
+          "line": 763,
+          "function": "_turn",
+          "expression": "await session.flush()"
+        },
+        {
+          "line": 805,
+          "function": "_step",
+          "expression": "await self.ctx.waterfall(\n            \"agent/request\", request_context, lambda *_args: dict(seed_config))"
+        },
+        {
+          "line": 877,
+          "function": "_step",
+          "expression": "await self.ctx.waterfall(\"llm/stream\", request_obj, open_stream)"
+        },
+        {
+          "line": 983,
+          "function": "_step",
+          "expression": "await self.ctx.waterfall(\n                \"agent/request-error\",\n                {\n                    \"agent\": agent,\n                    \"error\": str(e),\n                    \"failure\": failure_payload,\n                    \"provider\": provider_name,\n                    \"turn\": turn,\n                    \"step\": step,\n                },\n            )"
+        },
+        {
+          "line": 995,
+          "function": "_step",
+          "expression": "await self._step(agent, turn, step, system_prompt)"
+        },
+        {
+          "line": 1030,
+          "function": "_step",
+          "expression": "await execute_tool_calls(\n            ctx=self.ctx,\n            agent=agent,\n            turn=turn,\n            step=step,\n            tool_calls=tool_calls,\n            signal=getattr(agent, \"_cancel_event\", None),\n            accept_context=lambda ctx_item: agent.inbox.splice(\"next-step\", len(agent.inbox.next_step), 0, [ctx_item]),\n        )"
+        },
+        {
+          "line": 1045,
+          "function": "run_turn",
+          "expression": "await self.create_agent(\"default-session\")"
+        },
+        {
+          "line": 1050,
+          "function": "run_turn",
+          "expression": "await agent.when_idle()"
+        }
+      ]
+    }
+  ]
+}

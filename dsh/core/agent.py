@@ -389,11 +389,20 @@ class AgentRegistry(Service):
 
     def set_factory(self, factory: Any) -> Callable[[], None]:
         if self._factory is not None:
-            raise RuntimeError("an agent factory is already registered")
+            previous_ctx = getattr(self._factory, 'ctx', None)
+            if previous_ctx is None:
+                raise RuntimeError("an agent factory is already registered")
+            try:
+                previous_ctx.fiber.assert_active()
+            except RuntimeError:
+                pass
+            else:
+                raise RuntimeError("an agent factory is already registered")
         self._factory = factory
 
         def disposer():
-            self._factory = None
+            if self._factory is factory:
+                self._factory = None
 
         if self.ctx:
             self.ctx.disposable(disposer, label="agentRegistry.setFactory")

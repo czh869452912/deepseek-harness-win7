@@ -1,0 +1,51 @@
+{
+  "id": "MIG-AGENT-CONFIG-003",
+  "goal": "Align configured Agent identity startup, restore and overlapping reload",
+  "kind": "implementation",
+  "state": "review",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "0e9e92c5e3c4befc9fef1c05e9a14c998f509f86",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-AGENT-LIFECYCLE-002",
+      "contract": "CON-AGENT-FACTORY",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-STORAGE-006",
+      "contract": "CON-SESSION-STORAGE",
+      "revision": 1
+    },
+    {
+      "task": "MIG-CORDIS-001",
+      "contract": "CON-CORDIS-CORE",
+      "revision": 10
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-AGENT-CONFIG",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "Source-derived configured startup tests cover launcher overrides, validation-before-publication, fresh/exact/resume identities, delayed persistence and labeled child ownership.",
+    "Real JSONL history survives AgentLoop-only reload; overlapping drain waits, cancellation prevents replacement, old factory cleanup cannot clear the new factory.",
+    "Startup/observer failures including unrenderable exceptions are contained; uncooperative preparation/index work cannot block disposal or publish late.",
+    "Seven real upstream/Python configured observations match, previous paired gates and final full Python/clean-checkout release gate pass with exact evidence hashes."
+  ],
+  "expected_paths": [
+    "dsh/core",
+    "dsh/cordis",
+    "tests",
+    "scripts",
+    "migration"
+  ],
+  "open_findings": [],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "Finish exact-candidate acceptance; then full Session projection before Web consumers and complete profile journeys."
+}

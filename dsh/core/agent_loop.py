@@ -20,6 +20,7 @@ from dsh.core.tools import ToolsService
 from dsh.core.agent_factory import FactoryTransaction
 from dsh.core.abort import AbortController
 from dsh.core.session.preparation import SessionPreparation
+from dsh.core.configured_agents import ConfiguredStartup, configured_agents, CONFIGURED_AGENT_IDENTITIES_KEY
 
 
 def request_proposal(header: Dict[str, Any]) -> Dict[str, Any]:
@@ -414,6 +415,7 @@ class AgentLoopService:
         self._accepting = True
         self._transactions = set()
         self._wrappers = set()
+        self._configured = ConfiguredStartup(self)
         self._default_agent: Optional[Agent] = None
         self._request_header_logged: Dict[str, bool] = {}
 
@@ -491,12 +493,13 @@ class AgentLoopService:
 
     create = create_agent
 
-    async def resume(self, resume_session_id, options=None, setup=None, signal=None, owner_ctx=None):
+    async def resume(self, resume_session_id, options=None, setup=None, signal=None, owner_ctx=None, persistence=None):
         self._validate_options(options)
         sid = resume_session_id
         if self.ctx.get('sessions').get(sid) is not None or self.ctx.get('agents').get(sid) is not None:
             raise RuntimeError('cannot resume session "%s" while it is live' % sid)
-        persistence = self.ctx.get('session_persistence')
+        if persistence is None:
+            persistence = self.ctx.get('sessionPersistence') or self.ctx.get('session_persistence')
         if persistence is None:
             raise RuntimeError('no session_persistence service configured for resume')
         tx = FactoryTransaction(self, owner_ctx or self.ctx, sid, signal)
@@ -1002,6 +1005,7 @@ class AgentLoopService:
     async def teardown(self) -> None:
         self._accepting = False
         self._factory_abort.abort(RuntimeError('agent loop is not active'))
+        await self._configured.drain()
         await asyncio.gather(*(tx.dispose() for tx in list(self._transactions)))
         wrappers = [task for task in self._wrappers if task is not asyncio.current_task()]
         if wrappers:
@@ -1018,6 +1022,7 @@ class AgentLoopPlugin(Plugin):
     name = "@deepseek-ai/dsh-agent-loop"
 
     def apply(self, ctx: Context) -> None:
+        rows = configured_agents(self.config, ctx.get(CONFIGURED_AGENT_IDENTITIES_KEY))
         if not ctx.has("tools"):
             ctx.set_service("tools", ToolsService(ctx))
 
@@ -1030,7 +1035,9 @@ class AgentLoopPlugin(Plugin):
             ctx.set_service("agents", registry)
 
         agent_loop = AgentLoopService(ctx)
+        agent_loop.config = dict(self.config, agents=rows)
         ctx.set_service("agent_loop", agent_loop)
+        ctx.set_service("agentLoop", agent_loop)
 
         registry = ctx.get("agents")
         if registry:
@@ -1040,6 +1047,7 @@ class AgentLoopPlugin(Plugin):
             ctx.disposable(agent_loop.teardown, label="agent_loop.teardown")
         elif hasattr(ctx, "effect"):
             ctx.effect(lambda: agent_loop.teardown)
+        return agent_loop._configured.mount(rows)
 
 
 AgentLoop = AgentLoopPlugin

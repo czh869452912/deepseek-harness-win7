@@ -16,6 +16,11 @@
       "task": "MIG-REPRO-GATE-002",
       "contract": "CON-REPRO-RELEASE",
       "revision": 1
+    },
+    {
+      "task": "MIG-AGENT-CONFIG-003",
+      "contract": "CON-AGENT-CONFIG",
+      "revision": 1
     }
   ],
   "provides": [],
@@ -32,5 +37,5 @@
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "先对照 config-session-id 的配置启动/重载及 draining 身份；公开 factory 通过不代表该配置层已对齐。其他完整 profile journeys 等待 Session/Wire/Tools/Web 各契约。"
+  "next_action": "Configured startup/reload is tracked by MIG-AGENT-CONFIG-003; next complete Session projection and its replay consumers, then full profile journeys after Wire/Tools/Web contracts."
 }

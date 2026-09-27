@@ -1,0 +1,32 @@
+{
+  "id": "CON-AGENT-CONFIG",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/core/agent-loop/src/index.ts",
+    "reference/packages/core/agent-loop/tests/config-session-id.spec.ts",
+    "dsh/core/configured_agents.py"
+  ],
+  "consumers": [
+    "dsh/core/agent_loop.py",
+    "dsh/core/agent.py",
+    "dsh/cordis/fiber.py",
+    "dsh/session/prepared_persistence.py"
+  ],
+  "invariants": [
+    "Validate the complete configured array before publishing; reject empty exact IDs, mutually exclusive fresh/resume IDs and duplicate exact identities.",
+    "Launcher configuredAgentIdentities replaces both identity keys only on matching config labels. Fresh identities use label-session-UUID; explicit resume waits for sessionPersistence.",
+    "Exact IDs restore existing materialized history or create only after absence is confirmed. A same-ID lifecycle must leave both registries before replacement.",
+    "The labeled agentLoop.resume effect owns the exact deferred child disposer. Disposing a factory aborts startup observers; late prepared values release without publication.",
+    "An inactive old factory can be replaced; its cleanup only clears its own registry binding.",
+    "Startup errors and sync/async observer errors are contained, preserving the original error object and tolerating unrenderable string conversions."
+  ],
+  "open_questions": [],
+  "identity": "Configured row label is distinct from exact Session/Agent identity. Owner and replacement are exact factory instances.",
+  "ownership": "ConfiguredStartup tracks asynchronous work; FactoryTransaction owns unpublished preparation and live lifetime. Returned Fiber/FiberHandle.dispose is resolved to the exact registered parent effect wrapper.",
+  "ordering": "Validate/override -> create or deferred resume -> reservation/setup -> paired registry publication -> driver. Reload waits for both registry removals and persistence retirement.",
+  "errors": "Missing explicit resume reports failure and never creates; exact restore only falls back after list confirms no stored ID. Existing corruption and index failures report config-start-failed. Reports cease once factory ownership is inactive.",
+  "cancellation": "Factory abort stops drain/index observers without cancelling external work. Existing transaction races observe/release late preparations. Listener removal happens in finally.",
+  "adaptation": "Python 3.8 startup tasks replace JS Promise tracking; a fresh configured create completes through plugin async initialization. Seven paired scenarios compare selected identity, history, failure and effect-tree outcomes, not all AgentLoop behavior or full driver transcript parity. Full settings/maxParallelToolCalls policy, system-prompt variable integration and complete profile/launcher journeys remain outside this bounded contract."
+}

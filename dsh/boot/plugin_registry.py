@@ -72,6 +72,7 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     "@deepseek-ai/dsh-file-reference-local": "dsh.context.file_reference_local:FileReferenceLocalPlugin",
     "@deepseek-ai/dsh-time-context": "dsh.context.time_context:TimeContextPlugin",
     "@deepseek-ai/dsh-tmux-context": "dsh.context.tmux_context:TmuxContextPlugin",
+    "@deepseek-ai/dsh-agent-presets/invariant": "dsh.presets.invariant:AgentPresetsInvariantPlugin",
     "@deepseek-ai/dsh-agent-presets": "dsh.presets.agent_presets:AgentPresets",
     # LLM capability and providers.
     "@deepseek-ai/dsh-llm": "dsh.llm.llm_service:LlmRuntime",

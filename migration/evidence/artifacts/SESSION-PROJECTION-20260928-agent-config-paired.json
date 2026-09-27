@@ -1,0 +1,130 @@
+{
+  "status": "matched",
+  "cases": [
+    {
+      "mode": "identity",
+      "status": "matched",
+      "upstream": {
+        "mode": "identity",
+        "chosen": true,
+        "unchanged": true,
+        "ignored": false
+      },
+      "python": {
+        "mode": "identity",
+        "chosen": true,
+        "unchanged": true,
+        "ignored": false
+      }
+    },
+    {
+      "mode": "invalid",
+      "status": "matched",
+      "upstream": {
+        "mode": "invalid",
+        "rejected": 3,
+        "published": 0
+      },
+      "python": {
+        "mode": "invalid",
+        "rejected": 3,
+        "published": 0
+      }
+    },
+    {
+      "mode": "missing",
+      "status": "matched",
+      "upstream": {
+        "mode": "missing",
+        "failed": "missing",
+        "published": 0,
+        "stored": 0
+      },
+      "python": {
+        "mode": "missing",
+        "failed": "missing",
+        "published": 0,
+        "stored": 0
+      }
+    },
+    {
+      "mode": "reload",
+      "status": "matched",
+      "upstream": {
+        "mode": "reload",
+        "retained": true,
+        "replaced": true,
+        "types": [
+          "session/title",
+          "session/end-seed"
+        ],
+        "history": true
+      },
+      "python": {
+        "mode": "reload",
+        "retained": true,
+        "replaced": true,
+        "types": [
+          "session/title",
+          "session/end-seed"
+        ],
+        "history": true
+      }
+    },
+    {
+      "mode": "overlap",
+      "status": "matched",
+      "upstream": {
+        "mode": "overlap",
+        "retained": true,
+        "replaced": true,
+        "types": [
+          "session/title",
+          "session/end-seed"
+        ],
+        "history": true
+      },
+      "python": {
+        "mode": "overlap",
+        "retained": true,
+        "replaced": true,
+        "types": [
+          "session/title",
+          "session/end-seed"
+        ],
+        "history": true
+      }
+    },
+    {
+      "mode": "cancel",
+      "status": "matched",
+      "upstream": {
+        "mode": "cancel",
+        "published": 0
+      },
+      "python": {
+        "mode": "cancel",
+        "published": 0
+      }
+    },
+    {
+      "mode": "deferred",
+      "status": "matched",
+      "upstream": {
+        "mode": "deferred",
+        "children": [
+          "ctx.plugin()"
+        ],
+        "published": 0
+      },
+      "python": {
+        "mode": "deferred",
+        "children": [
+          "ctx.plugin()"
+        ],
+        "published": 0
+      }
+    }
+  ],
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc"
+}

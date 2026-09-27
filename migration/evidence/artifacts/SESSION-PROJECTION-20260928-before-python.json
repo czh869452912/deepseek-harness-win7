@@ -1,0 +1,16 @@
+{
+  "product_commit": "ab60c7dccf5bb783e1bca3c679d010bf01713050",
+  "late_count": {
+    "asOfSeq": 1,
+    "values": {
+      "count": 1
+    }
+  },
+  "recreated_id": {
+    "asOfSeq": 1,
+    "values": {
+      "count": 1
+    }
+  },
+  "survives_first_owner_release": false
+}

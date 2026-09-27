@@ -1,0 +1,318 @@
+{
+  "status": "matched",
+  "cases": [
+    {
+      "mode": "late",
+      "status": "matched",
+      "upstream": {
+        "mode": "late",
+        "snapshot": {
+          "asOfSeq": 1,
+          "values": {
+            "probe": 2
+          }
+        },
+        "changes": [
+          {
+            "key": "probe",
+            "value": 2,
+            "seq": 1
+          }
+        ]
+      },
+      "python": {
+        "mode": "late",
+        "snapshot": {
+          "asOfSeq": 1,
+          "values": {
+            "probe": 2
+          }
+        },
+        "changes": [
+          {
+            "key": "probe",
+            "value": 2,
+            "seq": 1
+          }
+        ]
+      }
+    },
+    {
+      "mode": "shared",
+      "status": "matched",
+      "upstream": {
+        "mode": "shared",
+        "snapshot": {
+          "asOfSeq": 1,
+          "values": {
+            "probe": 2
+          }
+        }
+      },
+      "python": {
+        "mode": "shared",
+        "snapshot": {
+          "asOfSeq": 1,
+          "values": {
+            "probe": 2
+          }
+        }
+      }
+    },
+    {
+      "mode": "identity",
+      "status": "matched",
+      "upstream": {
+        "mode": "identity",
+        "snapshot": {
+          "asOfSeq": -1,
+          "values": {
+            "probe": 0
+          }
+        }
+      },
+      "python": {
+        "mode": "identity",
+        "snapshot": {
+          "asOfSeq": -1,
+          "values": {
+            "probe": 0
+          }
+        }
+      }
+    },
+    {
+      "mode": "selected",
+      "status": "matched",
+      "upstream": {
+        "mode": "selected",
+        "snapshot": {
+          "asOfSeq": 1,
+          "values": {}
+        },
+        "checkpoint": {
+          "probe": {
+            "ver": 1,
+            "seq": 1,
+            "val": 2
+          },
+          "host": {
+            "ver": 1,
+            "seq": 1,
+            "val": 2
+          }
+        }
+      },
+      "python": {
+        "mode": "selected",
+        "snapshot": {
+          "asOfSeq": 1,
+          "values": {}
+        },
+        "checkpoint": {
+          "probe": {
+            "ver": 1,
+            "seq": 1,
+            "val": 2
+          },
+          "host": {
+            "ver": 1,
+            "seq": 1,
+            "val": 2
+          }
+        }
+      }
+    },
+    {
+      "mode": "detached",
+      "status": "matched",
+      "upstream": {
+        "mode": "detached",
+        "snapshot": {
+          "asOfSeq": 1,
+          "values": {
+            "probe": 2
+          }
+        },
+        "floor": 1
+      },
+      "python": {
+        "mode": "detached",
+        "snapshot": {
+          "asOfSeq": 1,
+          "values": {
+            "probe": 2
+          }
+        },
+        "floor": 1
+      }
+    },
+    {
+      "mode": "restore",
+      "status": "matched",
+      "upstream": {
+        "mode": "restore",
+        "snapshot": {
+          "asOfSeq": 1,
+          "values": {
+            "probe": 2
+          }
+        },
+        "checkpoint": {
+          "probe": {
+            "ver": 1,
+            "seq": 1,
+            "val": 2
+          },
+          "host": {
+            "ver": 1,
+            "seq": 1,
+            "val": 2
+          }
+        },
+        "empty": {
+          "snapshot": {
+            "asOfSeq": 1,
+            "values": {
+              "probe": 2
+            }
+          },
+          "checkpoint": {
+            "probe": {
+              "ver": 1,
+              "seq": 1,
+              "val": 2
+            },
+            "host": {
+              "ver": 1,
+              "seq": 1,
+              "val": 2
+            }
+          }
+        }
+      },
+      "python": {
+        "mode": "restore",
+        "snapshot": {
+          "asOfSeq": 1,
+          "values": {
+            "probe": 2
+          }
+        },
+        "checkpoint": {
+          "probe": {
+            "ver": 1,
+            "seq": 1,
+            "val": 2
+          },
+          "host": {
+            "ver": 1,
+            "seq": 1,
+            "val": 2
+          }
+        },
+        "empty": {
+          "snapshot": {
+            "asOfSeq": 1,
+            "values": {
+              "probe": 2
+            }
+          },
+          "checkpoint": {
+            "probe": {
+              "ver": 1,
+              "seq": 1,
+              "val": 2
+            },
+            "host": {
+              "ver": 1,
+              "seq": 1,
+              "val": 2
+            }
+          }
+        }
+      }
+    },
+    {
+      "mode": "guards",
+      "status": "matched",
+      "upstream": {
+        "mode": "guards",
+        "truncated": true,
+        "invalid": true,
+        "hints": {}
+      },
+      "python": {
+        "mode": "guards",
+        "truncated": true,
+        "invalid": true,
+        "hints": {}
+      }
+    },
+    {
+      "mode": "hydrate",
+      "status": "matched",
+      "upstream": {
+        "mode": "hydrate",
+        "hydrated": {
+          "asOfSeq": 0,
+          "values": {
+            "probe": 1
+          }
+        },
+        "again": {
+          "asOfSeq": 0,
+          "values": {
+            "probe": 1
+          }
+        },
+        "snapshot": {
+          "asOfSeq": 1,
+          "values": {
+            "probe": 2
+          }
+        }
+      },
+      "python": {
+        "mode": "hydrate",
+        "hydrated": {
+          "asOfSeq": 0,
+          "values": {
+            "probe": 1
+          }
+        },
+        "again": {
+          "asOfSeq": 0,
+          "values": {
+            "probe": 1
+          }
+        },
+        "snapshot": {
+          "asOfSeq": 1,
+          "values": {
+            "probe": 2
+          }
+        }
+      }
+    },
+    {
+      "mode": "unregistered",
+      "status": "matched",
+      "upstream": {
+        "mode": "unregistered",
+        "snapshot": {
+          "asOfSeq": 1,
+          "values": {}
+        }
+      },
+      "python": {
+        "mode": "unregistered",
+        "snapshot": {
+          "asOfSeq": 1,
+          "values": {}
+        }
+      }
+    }
+  ],
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc"
+}

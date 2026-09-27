@@ -1,0 +1,50 @@
+[
+  {
+    "mode": "identity",
+    "chosen": true,
+    "unchanged": true,
+    "ignored": false
+  },
+  {
+    "mode": "invalid",
+    "rejected": 3,
+    "published": 0
+  },
+  {
+    "mode": "missing",
+    "failed": "missing",
+    "published": 0,
+    "stored": 0
+  },
+  {
+    "mode": "reload",
+    "retained": true,
+    "replaced": true,
+    "types": [
+      "session/title",
+      "session/end-seed"
+    ],
+    "history": true
+  },
+  {
+    "mode": "overlap",
+    "retained": true,
+    "replaced": true,
+    "types": [
+      "session/title",
+      "session/end-seed"
+    ],
+    "history": true
+  },
+  {
+    "mode": "cancel",
+    "published": 0
+  },
+  {
+    "mode": "deferred",
+    "children": [
+      "ctx.plugin()"
+    ],
+    "published": 0
+  }
+]

@@ -1,0 +1,140 @@
+[
+  {
+    "mode": "late",
+    "snapshot": {
+      "asOfSeq": 1,
+      "values": {
+        "probe": 2
+      }
+    },
+    "changes": [
+      {
+        "key": "probe",
+        "value": 2,
+        "seq": 1
+      }
+    ]
+  },
+  {
+    "mode": "shared",
+    "snapshot": {
+      "asOfSeq": 1,
+      "values": {
+        "probe": 2
+      }
+    }
+  },
+  {
+    "mode": "identity",
+    "snapshot": {
+      "asOfSeq": -1,
+      "values": {
+        "probe": 0
+      }
+    }
+  },
+  {
+    "mode": "selected",
+    "snapshot": {
+      "asOfSeq": 1,
+      "values": {}
+    },
+    "checkpoint": {
+      "probe": {
+        "ver": 1,
+        "seq": 1,
+        "val": 2
+      },
+      "host": {
+        "ver": 1,
+        "seq": 1,
+        "val": 2
+      }
+    }
+  },
+  {
+    "mode": "detached",
+    "snapshot": {
+      "asOfSeq": 1,
+      "values": {
+        "probe": 2
+      }
+    },
+    "floor": 1
+  },
+  {
+    "mode": "restore",
+    "snapshot": {
+      "asOfSeq": 1,
+      "values": {
+        "probe": 2
+      }
+    },
+    "checkpoint": {
+      "probe": {
+        "ver": 1,
+        "seq": 1,
+        "val": 2
+      },
+      "host": {
+        "ver": 1,
+        "seq": 1,
+        "val": 2
+      }
+    },
+    "empty": {
+      "snapshot": {
+        "asOfSeq": 1,
+        "values": {
+          "probe": 2
+        }
+      },
+      "checkpoint": {
+        "probe": {
+          "ver": 1,
+          "seq": 1,
+          "val": 2
+        },
+        "host": {
+          "ver": 1,
+          "seq": 1,
+          "val": 2
+        }
+      }
+    }
+  },
+  {
+    "mode": "guards",
+    "truncated": true,
+    "invalid": true,
+    "hints": {}
+  },
+  {
+    "mode": "hydrate",
+    "hydrated": {
+      "asOfSeq": 0,
+      "values": {
+        "probe": 1
+      }
+    },
+    "again": {
+      "asOfSeq": 0,
+      "values": {
+        "probe": 1
+      }
+    },
+    "snapshot": {
+      "asOfSeq": 1,
+      "values": {
+        "probe": 2
+      }
+    }
+  },
+  {
+    "mode": "unregistered",
+    "snapshot": {
+      "asOfSeq": 1,
+      "values": {}
+    }
+  }
+]

@@ -1,0 +1,3508 @@
+{
+  "status": "matched",
+  "cases": [
+    {
+      "mode": "open-turn",
+      "status": "matched",
+      "upstream": {
+        "mode": "open-turn",
+        "inspected": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 1,
+            "time": 100,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "before": [],
+        "untouched": true,
+        "loaded": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 1,
+            "time": 100,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "again": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 1,
+            "time": 100,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "after": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 1,
+            "time": 100,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ]
+      },
+      "python": {
+        "mode": "open-turn",
+        "inspected": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 1,
+            "time": 100,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "before": [],
+        "untouched": true,
+        "loaded": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 1,
+            "time": 100,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "again": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 1,
+            "time": 100,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "after": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 1,
+            "time": 100,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "mode": "open-step",
+      "status": "matched",
+      "upstream": {
+        "mode": "open-step",
+        "inspected": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "before": [
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          }
+        ],
+        "untouched": true,
+        "loaded": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "again": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "after": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ]
+      },
+      "python": {
+        "mode": "open-step",
+        "inspected": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "before": [
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          }
+        ],
+        "untouched": true,
+        "loaded": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "again": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "after": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "mode": "tool-not-started",
+      "status": "matched",
+      "upstream": {
+        "mode": "tool-not-started",
+        "inspected": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "assistant/message",
+            "seq": 2,
+            "time": 102,
+            "surfaceOp": "append",
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "assistant-1",
+                "role": "assistant",
+                "source": {
+                  "kind": "model",
+                  "provider": "mock",
+                  "model": "mock"
+                },
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "id": "call-1",
+                    "name": "read",
+                    "arguments": {}
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "tool/result",
+            "seq": 3,
+            "time": 102,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "interrupted-tool-result-call-1-3",
+                "role": "user",
+                "source": {
+                  "kind": "tool",
+                  "callId": "call-1"
+                },
+                "content": [
+                  {
+                    "type": "tool-result",
+                    "toolCallId": "call-1",
+                    "isError": true,
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "The tool call was interrupted before the Harness recorded it as started. Retry it if it is still needed."
+                      }
+                    ]
+                  }
+                ]
+              },
+              "error": {
+                "name": "ToolNotStartedError",
+                "code": "TOOL_NOT_STARTED"
+              }
+            },
+            "surfaceOp": "append"
+          },
+          {
+            "type": "step/end",
+            "seq": 4,
+            "time": 102,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 5,
+            "time": 102,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "before": [
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "assistant/message",
+            "seq": 2,
+            "time": 102,
+            "surfaceOp": "append",
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "assistant-1",
+                "role": "assistant",
+                "source": {
+                  "kind": "model",
+                  "provider": "mock",
+                  "model": "mock"
+                },
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "id": "call-1",
+                    "name": "read",
+                    "arguments": {}
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "untouched": true,
+        "loaded": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "assistant/message",
+            "seq": 2,
+            "time": 102,
+            "surfaceOp": "append",
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "assistant-1",
+                "role": "assistant",
+                "source": {
+                  "kind": "model",
+                  "provider": "mock",
+                  "model": "mock"
+                },
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "id": "call-1",
+                    "name": "read",
+                    "arguments": {}
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "tool/result",
+            "seq": 3,
+            "time": 102,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "interrupted-tool-result-call-1-3",
+                "role": "user",
+                "source": {
+                  "kind": "tool",
+                  "callId": "call-1"
+                },
+                "content": [
+                  {
+                    "type": "tool-result",
+                    "toolCallId": "call-1",
+                    "isError": true,
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "The tool call was interrupted before the Harness recorded it as started. Retry it if it is still needed."
+                      }
+                    ]
+                  }
+                ]
+              },
+              "error": {
+                "name": "ToolNotStartedError",
+                "code": "TOOL_NOT_STARTED"
+              }
+            },
+            "surfaceOp": "append"
+          },
+          {
+            "type": "step/end",
+            "seq": 4,
+            "time": 102,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 5,
+            "time": 102,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "again": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "assistant/message",
+            "seq": 2,
+            "time": 102,
+            "surfaceOp": "append",
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "assistant-1",
+                "role": "assistant",
+                "source": {
+                  "kind": "model",
+                  "provider": "mock",
+                  "model": "mock"
+                },
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "id": "call-1",
+                    "name": "read",
+                    "arguments": {}
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "tool/result",
+            "seq": 3,
+            "time": 102,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "interrupted-tool-result-call-1-3",
+                "role": "user",
+                "source": {
+                  "kind": "tool",
+                  "callId": "call-1"
+                },
+                "content": [
+                  {
+                    "type": "tool-result",
+                    "toolCallId": "call-1",
+                    "isError": true,
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "The tool call was interrupted before the Harness recorded it as started. Retry it if it is still needed."
+                      }
+                    ]
+                  }
+                ]
+              },
+              "error": {
+                "name": "ToolNotStartedError",
+                "code": "TOOL_NOT_STARTED"
+              }
+            },
+            "surfaceOp": "append"
+          },
+          {
+            "type": "step/end",
+            "seq": 4,
+            "time": 102,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 5,
+            "time": 102,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "after": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "assistant/message",
+            "seq": 2,
+            "time": 102,
+            "surfaceOp": "append",
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "assistant-1",
+                "role": "assistant",
+                "source": {
+                  "kind": "model",
+                  "provider": "mock",
+                  "model": "mock"
+                },
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "id": "call-1",
+                    "name": "read",
+                    "arguments": {}
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "tool/result",
+            "seq": 3,
+            "time": 102,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "interrupted-tool-result-call-1-3",
+                "role": "user",
+                "source": {
+                  "kind": "tool",
+                  "callId": "call-1"
+                },
+                "content": [
+                  {
+                    "type": "tool-result",
+                    "toolCallId": "call-1",
+                    "isError": true,
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "The tool call was interrupted before the Harness recorded it as started. Retry it if it is still needed."
+                      }
+                    ]
+                  }
+                ]
+              },
+              "error": {
+                "name": "ToolNotStartedError",
+                "code": "TOOL_NOT_STARTED"
+              }
+            },
+            "surfaceOp": "append"
+          },
+          {
+            "type": "step/end",
+            "seq": 4,
+            "time": 102,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 5,
+            "time": 102,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ]
+      },
+      "python": {
+        "mode": "tool-not-started",
+        "inspected": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "assistant/message",
+            "seq": 2,
+            "time": 102,
+            "surfaceOp": "append",
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "assistant-1",
+                "role": "assistant",
+                "source": {
+                  "kind": "model",
+                  "provider": "mock",
+                  "model": "mock"
+                },
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "id": "call-1",
+                    "name": "read",
+                    "arguments": {}
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "tool/result",
+            "seq": 3,
+            "time": 102,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "interrupted-tool-result-call-1-3",
+                "role": "user",
+                "source": {
+                  "kind": "tool",
+                  "callId": "call-1"
+                },
+                "content": [
+                  {
+                    "type": "tool-result",
+                    "toolCallId": "call-1",
+                    "isError": true,
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "The tool call was interrupted before the Harness recorded it as started. Retry it if it is still needed."
+                      }
+                    ]
+                  }
+                ]
+              },
+              "error": {
+                "name": "ToolNotStartedError",
+                "code": "TOOL_NOT_STARTED"
+              }
+            },
+            "surfaceOp": "append"
+          },
+          {
+            "type": "step/end",
+            "seq": 4,
+            "time": 102,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 5,
+            "time": 102,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "before": [
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "assistant/message",
+            "seq": 2,
+            "time": 102,
+            "surfaceOp": "append",
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "assistant-1",
+                "role": "assistant",
+                "source": {
+                  "kind": "model",
+                  "provider": "mock",
+                  "model": "mock"
+                },
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "id": "call-1",
+                    "name": "read",
+                    "arguments": {}
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "untouched": true,
+        "loaded": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "assistant/message",
+            "seq": 2,
+            "time": 102,
+            "surfaceOp": "append",
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "assistant-1",
+                "role": "assistant",
+                "source": {
+                  "kind": "model",
+                  "provider": "mock",
+                  "model": "mock"
+                },
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "id": "call-1",
+                    "name": "read",
+                    "arguments": {}
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "tool/result",
+            "seq": 3,
+            "time": 102,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "interrupted-tool-result-call-1-3",
+                "role": "user",
+                "source": {
+                  "kind": "tool",
+                  "callId": "call-1"
+                },
+                "content": [
+                  {
+                    "type": "tool-result",
+                    "toolCallId": "call-1",
+                    "isError": true,
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "The tool call was interrupted before the Harness recorded it as started. Retry it if it is still needed."
+                      }
+                    ]
+                  }
+                ]
+              },
+              "error": {
+                "name": "ToolNotStartedError",
+                "code": "TOOL_NOT_STARTED"
+              }
+            },
+            "surfaceOp": "append"
+          },
+          {
+            "type": "step/end",
+            "seq": 4,
+            "time": 102,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 5,
+            "time": 102,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "again": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "assistant/message",
+            "seq": 2,
+            "time": 102,
+            "surfaceOp": "append",
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "assistant-1",
+                "role": "assistant",
+                "source": {
+                  "kind": "model",
+                  "provider": "mock",
+                  "model": "mock"
+                },
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "id": "call-1",
+                    "name": "read",
+                    "arguments": {}
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "tool/result",
+            "seq": 3,
+            "time": 102,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "interrupted-tool-result-call-1-3",
+                "role": "user",
+                "source": {
+                  "kind": "tool",
+                  "callId": "call-1"
+                },
+                "content": [
+                  {
+                    "type": "tool-result",
+                    "toolCallId": "call-1",
+                    "isError": true,
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "The tool call was interrupted before the Harness recorded it as started. Retry it if it is still needed."
+                      }
+                    ]
+                  }
+                ]
+              },
+              "error": {
+                "name": "ToolNotStartedError",
+                "code": "TOOL_NOT_STARTED"
+              }
+            },
+            "surfaceOp": "append"
+          },
+          {
+            "type": "step/end",
+            "seq": 4,
+            "time": 102,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 5,
+            "time": 102,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "after": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "assistant/message",
+            "seq": 2,
+            "time": 102,
+            "surfaceOp": "append",
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "assistant-1",
+                "role": "assistant",
+                "source": {
+                  "kind": "model",
+                  "provider": "mock",
+                  "model": "mock"
+                },
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "id": "call-1",
+                    "name": "read",
+                    "arguments": {}
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "tool/result",
+            "seq": 3,
+            "time": 102,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "interrupted-tool-result-call-1-3",
+                "role": "user",
+                "source": {
+                  "kind": "tool",
+                  "callId": "call-1"
+                },
+                "content": [
+                  {
+                    "type": "tool-result",
+                    "toolCallId": "call-1",
+                    "isError": true,
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "The tool call was interrupted before the Harness recorded it as started. Retry it if it is still needed."
+                      }
+                    ]
+                  }
+                ]
+              },
+              "error": {
+                "name": "ToolNotStartedError",
+                "code": "TOOL_NOT_STARTED"
+              }
+            },
+            "surfaceOp": "append"
+          },
+          {
+            "type": "step/end",
+            "seq": 4,
+            "time": 102,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 5,
+            "time": 102,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "mode": "tool-outcome-unknown",
+      "status": "matched",
+      "upstream": {
+        "mode": "tool-outcome-unknown",
+        "inspected": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "assistant/message",
+            "seq": 2,
+            "time": 102,
+            "surfaceOp": "append",
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "assistant-1",
+                "role": "assistant",
+                "source": {
+                  "kind": "model",
+                  "provider": "mock",
+                  "model": "mock"
+                },
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "id": "call-1",
+                    "name": "read",
+                    "arguments": {}
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "tool/call",
+            "seq": 3,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "callId": "call-1",
+              "name": "read",
+              "arguments": {}
+            }
+          },
+          {
+            "type": "tool/result",
+            "seq": 4,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "interrupted-tool-result-call-1-4",
+                "role": "user",
+                "source": {
+                  "kind": "tool",
+                  "callId": "call-1"
+                },
+                "content": [
+                  {
+                    "type": "tool-result",
+                    "toolCallId": "call-1",
+                    "isError": true,
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "The tool call was interrupted after it was recorded, but no result was durably recorded. Its outcome is unknown. Decide whether to retry from the tool semantics: retry only if the operation is read-only or idempotent; if it may have side effects, first verify external state or ask the user. Do not retry blindly."
+                      }
+                    ]
+                  }
+                ]
+              },
+              "error": {
+                "name": "ToolOutcomeUnknownError",
+                "code": "TOOL_OUTCOME_UNKNOWN"
+              }
+            },
+            "surfaceOp": "append",
+            "sourceEventSeqs": [
+              3
+            ]
+          },
+          {
+            "type": "step/end",
+            "seq": 5,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 6,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "before": [
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "assistant/message",
+            "seq": 2,
+            "time": 102,
+            "surfaceOp": "append",
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "assistant-1",
+                "role": "assistant",
+                "source": {
+                  "kind": "model",
+                  "provider": "mock",
+                  "model": "mock"
+                },
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "id": "call-1",
+                    "name": "read",
+                    "arguments": {}
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "tool/call",
+            "seq": 3,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "callId": "call-1",
+              "name": "read",
+              "arguments": {}
+            }
+          }
+        ],
+        "untouched": true,
+        "loaded": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "assistant/message",
+            "seq": 2,
+            "time": 102,
+            "surfaceOp": "append",
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "assistant-1",
+                "role": "assistant",
+                "source": {
+                  "kind": "model",
+                  "provider": "mock",
+                  "model": "mock"
+                },
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "id": "call-1",
+                    "name": "read",
+                    "arguments": {}
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "tool/call",
+            "seq": 3,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "callId": "call-1",
+              "name": "read",
+              "arguments": {}
+            }
+          },
+          {
+            "type": "tool/result",
+            "seq": 4,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "interrupted-tool-result-call-1-4",
+                "role": "user",
+                "source": {
+                  "kind": "tool",
+                  "callId": "call-1"
+                },
+                "content": [
+                  {
+                    "type": "tool-result",
+                    "toolCallId": "call-1",
+                    "isError": true,
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "The tool call was interrupted after it was recorded, but no result was durably recorded. Its outcome is unknown. Decide whether to retry from the tool semantics: retry only if the operation is read-only or idempotent; if it may have side effects, first verify external state or ask the user. Do not retry blindly."
+                      }
+                    ]
+                  }
+                ]
+              },
+              "error": {
+                "name": "ToolOutcomeUnknownError",
+                "code": "TOOL_OUTCOME_UNKNOWN"
+              }
+            },
+            "surfaceOp": "append",
+            "sourceEventSeqs": [
+              3
+            ]
+          },
+          {
+            "type": "step/end",
+            "seq": 5,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 6,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "again": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "assistant/message",
+            "seq": 2,
+            "time": 102,
+            "surfaceOp": "append",
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "assistant-1",
+                "role": "assistant",
+                "source": {
+                  "kind": "model",
+                  "provider": "mock",
+                  "model": "mock"
+                },
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "id": "call-1",
+                    "name": "read",
+                    "arguments": {}
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "tool/call",
+            "seq": 3,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "callId": "call-1",
+              "name": "read",
+              "arguments": {}
+            }
+          },
+          {
+            "type": "tool/result",
+            "seq": 4,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "interrupted-tool-result-call-1-4",
+                "role": "user",
+                "source": {
+                  "kind": "tool",
+                  "callId": "call-1"
+                },
+                "content": [
+                  {
+                    "type": "tool-result",
+                    "toolCallId": "call-1",
+                    "isError": true,
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "The tool call was interrupted after it was recorded, but no result was durably recorded. Its outcome is unknown. Decide whether to retry from the tool semantics: retry only if the operation is read-only or idempotent; if it may have side effects, first verify external state or ask the user. Do not retry blindly."
+                      }
+                    ]
+                  }
+                ]
+              },
+              "error": {
+                "name": "ToolOutcomeUnknownError",
+                "code": "TOOL_OUTCOME_UNKNOWN"
+              }
+            },
+            "surfaceOp": "append",
+            "sourceEventSeqs": [
+              3
+            ]
+          },
+          {
+            "type": "step/end",
+            "seq": 5,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 6,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "after": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "assistant/message",
+            "seq": 2,
+            "time": 102,
+            "surfaceOp": "append",
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "assistant-1",
+                "role": "assistant",
+                "source": {
+                  "kind": "model",
+                  "provider": "mock",
+                  "model": "mock"
+                },
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "id": "call-1",
+                    "name": "read",
+                    "arguments": {}
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "tool/call",
+            "seq": 3,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "callId": "call-1",
+              "name": "read",
+              "arguments": {}
+            }
+          },
+          {
+            "type": "tool/result",
+            "seq": 4,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "interrupted-tool-result-call-1-4",
+                "role": "user",
+                "source": {
+                  "kind": "tool",
+                  "callId": "call-1"
+                },
+                "content": [
+                  {
+                    "type": "tool-result",
+                    "toolCallId": "call-1",
+                    "isError": true,
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "The tool call was interrupted after it was recorded, but no result was durably recorded. Its outcome is unknown. Decide whether to retry from the tool semantics: retry only if the operation is read-only or idempotent; if it may have side effects, first verify external state or ask the user. Do not retry blindly."
+                      }
+                    ]
+                  }
+                ]
+              },
+              "error": {
+                "name": "ToolOutcomeUnknownError",
+                "code": "TOOL_OUTCOME_UNKNOWN"
+              }
+            },
+            "surfaceOp": "append",
+            "sourceEventSeqs": [
+              3
+            ]
+          },
+          {
+            "type": "step/end",
+            "seq": 5,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 6,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ]
+      },
+      "python": {
+        "mode": "tool-outcome-unknown",
+        "inspected": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "assistant/message",
+            "seq": 2,
+            "time": 102,
+            "surfaceOp": "append",
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "assistant-1",
+                "role": "assistant",
+                "source": {
+                  "kind": "model",
+                  "provider": "mock",
+                  "model": "mock"
+                },
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "id": "call-1",
+                    "name": "read",
+                    "arguments": {}
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "tool/call",
+            "seq": 3,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "callId": "call-1",
+              "name": "read",
+              "arguments": {}
+            }
+          },
+          {
+            "type": "tool/result",
+            "seq": 4,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "interrupted-tool-result-call-1-4",
+                "role": "user",
+                "source": {
+                  "kind": "tool",
+                  "callId": "call-1"
+                },
+                "content": [
+                  {
+                    "type": "tool-result",
+                    "toolCallId": "call-1",
+                    "isError": true,
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "The tool call was interrupted after it was recorded, but no result was durably recorded. Its outcome is unknown. Decide whether to retry from the tool semantics: retry only if the operation is read-only or idempotent; if it may have side effects, first verify external state or ask the user. Do not retry blindly."
+                      }
+                    ]
+                  }
+                ]
+              },
+              "error": {
+                "name": "ToolOutcomeUnknownError",
+                "code": "TOOL_OUTCOME_UNKNOWN"
+              }
+            },
+            "surfaceOp": "append",
+            "sourceEventSeqs": [
+              3
+            ]
+          },
+          {
+            "type": "step/end",
+            "seq": 5,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 6,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "before": [
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "assistant/message",
+            "seq": 2,
+            "time": 102,
+            "surfaceOp": "append",
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "assistant-1",
+                "role": "assistant",
+                "source": {
+                  "kind": "model",
+                  "provider": "mock",
+                  "model": "mock"
+                },
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "id": "call-1",
+                    "name": "read",
+                    "arguments": {}
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "tool/call",
+            "seq": 3,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "callId": "call-1",
+              "name": "read",
+              "arguments": {}
+            }
+          }
+        ],
+        "untouched": true,
+        "loaded": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "assistant/message",
+            "seq": 2,
+            "time": 102,
+            "surfaceOp": "append",
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "assistant-1",
+                "role": "assistant",
+                "source": {
+                  "kind": "model",
+                  "provider": "mock",
+                  "model": "mock"
+                },
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "id": "call-1",
+                    "name": "read",
+                    "arguments": {}
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "tool/call",
+            "seq": 3,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "callId": "call-1",
+              "name": "read",
+              "arguments": {}
+            }
+          },
+          {
+            "type": "tool/result",
+            "seq": 4,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "interrupted-tool-result-call-1-4",
+                "role": "user",
+                "source": {
+                  "kind": "tool",
+                  "callId": "call-1"
+                },
+                "content": [
+                  {
+                    "type": "tool-result",
+                    "toolCallId": "call-1",
+                    "isError": true,
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "The tool call was interrupted after it was recorded, but no result was durably recorded. Its outcome is unknown. Decide whether to retry from the tool semantics: retry only if the operation is read-only or idempotent; if it may have side effects, first verify external state or ask the user. Do not retry blindly."
+                      }
+                    ]
+                  }
+                ]
+              },
+              "error": {
+                "name": "ToolOutcomeUnknownError",
+                "code": "TOOL_OUTCOME_UNKNOWN"
+              }
+            },
+            "surfaceOp": "append",
+            "sourceEventSeqs": [
+              3
+            ]
+          },
+          {
+            "type": "step/end",
+            "seq": 5,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 6,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "again": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "assistant/message",
+            "seq": 2,
+            "time": 102,
+            "surfaceOp": "append",
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "assistant-1",
+                "role": "assistant",
+                "source": {
+                  "kind": "model",
+                  "provider": "mock",
+                  "model": "mock"
+                },
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "id": "call-1",
+                    "name": "read",
+                    "arguments": {}
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "tool/call",
+            "seq": 3,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "callId": "call-1",
+              "name": "read",
+              "arguments": {}
+            }
+          },
+          {
+            "type": "tool/result",
+            "seq": 4,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "interrupted-tool-result-call-1-4",
+                "role": "user",
+                "source": {
+                  "kind": "tool",
+                  "callId": "call-1"
+                },
+                "content": [
+                  {
+                    "type": "tool-result",
+                    "toolCallId": "call-1",
+                    "isError": true,
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "The tool call was interrupted after it was recorded, but no result was durably recorded. Its outcome is unknown. Decide whether to retry from the tool semantics: retry only if the operation is read-only or idempotent; if it may have side effects, first verify external state or ask the user. Do not retry blindly."
+                      }
+                    ]
+                  }
+                ]
+              },
+              "error": {
+                "name": "ToolOutcomeUnknownError",
+                "code": "TOOL_OUTCOME_UNKNOWN"
+              }
+            },
+            "surfaceOp": "append",
+            "sourceEventSeqs": [
+              3
+            ]
+          },
+          {
+            "type": "step/end",
+            "seq": 5,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 6,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "after": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "assistant/message",
+            "seq": 2,
+            "time": 102,
+            "surfaceOp": "append",
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "assistant-1",
+                "role": "assistant",
+                "source": {
+                  "kind": "model",
+                  "provider": "mock",
+                  "model": "mock"
+                },
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "id": "call-1",
+                    "name": "read",
+                    "arguments": {}
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "tool/call",
+            "seq": 3,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "callId": "call-1",
+              "name": "read",
+              "arguments": {}
+            }
+          },
+          {
+            "type": "tool/result",
+            "seq": 4,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1,
+              "message": {
+                "id": "interrupted-tool-result-call-1-4",
+                "role": "user",
+                "source": {
+                  "kind": "tool",
+                  "callId": "call-1"
+                },
+                "content": [
+                  {
+                    "type": "tool-result",
+                    "toolCallId": "call-1",
+                    "isError": true,
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "The tool call was interrupted after it was recorded, but no result was durably recorded. Its outcome is unknown. Decide whether to retry from the tool semantics: retry only if the operation is read-only or idempotent; if it may have side effects, first verify external state or ask the user. Do not retry blindly."
+                      }
+                    ]
+                  }
+                ]
+              },
+              "error": {
+                "name": "ToolOutcomeUnknownError",
+                "code": "TOOL_OUTCOME_UNKNOWN"
+              }
+            },
+            "surfaceOp": "append",
+            "sourceEventSeqs": [
+              3
+            ]
+          },
+          {
+            "type": "step/end",
+            "seq": 5,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 6,
+            "time": 103,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "mode": "torn-tail",
+      "status": "matched",
+      "upstream": {
+        "mode": "torn-tail",
+        "inspected": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "before": [
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          }
+        ],
+        "untouched": true,
+        "loaded": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "again": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "after": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ]
+      },
+      "python": {
+        "mode": "torn-tail",
+        "inspected": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "before": [
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          }
+        ],
+        "untouched": true,
+        "loaded": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "again": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "after": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "mode": "invalid-row",
+      "status": "matched",
+      "upstream": {
+        "mode": "invalid-row",
+        "inspected": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "before": [
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          }
+        ],
+        "untouched": true,
+        "loaded": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "again": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "after": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ]
+      },
+      "python": {
+        "mode": "invalid-row",
+        "inspected": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "before": [
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          }
+        ],
+        "untouched": true,
+        "loaded": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "again": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "after": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "mode": "seq-gap",
+      "status": "matched",
+      "upstream": {
+        "mode": "seq-gap",
+        "inspected": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "before": [
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          }
+        ],
+        "untouched": true,
+        "loaded": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "again": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "after": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ]
+      },
+      "python": {
+        "mode": "seq-gap",
+        "inspected": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "before": [
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          }
+        ],
+        "untouched": true,
+        "loaded": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "again": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ],
+        "after": [
+          {
+            "type": "turn/start",
+            "seq": 0,
+            "time": 100,
+            "data": {
+              "turn": 1
+            }
+          },
+          {
+            "type": "step/start",
+            "seq": 1,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "step/end",
+            "seq": 2,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "step": 1
+            }
+          },
+          {
+            "type": "turn/end",
+            "seq": 3,
+            "time": 101,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "interrupted"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc"
+}

@@ -1,0 +1,46 @@
+[
+  {
+    "mode": "lazy",
+    "before": 0,
+    "createdAt": 1
+  },
+  {
+    "mode": "duplicate",
+    "rejected": true,
+    "physical": 0
+  },
+  {
+    "mode": "cursor",
+    "rejected": 3,
+    "seqs": [
+      0
+    ]
+  },
+  {
+    "mode": "legacy",
+    "rejected": 3,
+    "physical": 0
+  },
+  {
+    "mode": "unknown",
+    "rejected": 3,
+    "physical": 1
+  },
+  {
+    "mode": "cold-adopt",
+    "types": [
+      "turn/start",
+      "turn/end",
+      "session/end-seed"
+    ]
+  },
+  {
+    "mode": "materialize",
+    "events": 0
+  },
+  {
+    "mode": "invalid-read",
+    "rejected": 2,
+    "physical": 1
+  }
+]

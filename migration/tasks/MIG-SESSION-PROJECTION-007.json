@@ -2,25 +2,45 @@
   "id": "MIG-SESSION-PROJECTION-007",
   "goal": "Align Session projection registry drive, ownership and checkpoint restoration",
   "kind": "implementation",
-  "state": "review",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "ab60c7dccf5bb783e1bca3c679d010bf01713050",
   "owner": "current-session-coordinator",
   "requires": [
-    {"task": "MIG-CORDIS-001", "contract": "CON-CORDIS-CORE", "revision": 10},
-    {"task": "MIG-SESSION-PREPARED-005", "contract": "CON-SESSION-PREPARATIONS", "revision": 1}
+    {
+      "task": "MIG-CORDIS-001",
+      "contract": "CON-CORDIS-CORE",
+      "revision": 10
+    },
+    {
+      "task": "MIG-SESSION-PREPARED-005",
+      "contract": "CON-SESSION-PREPARATIONS",
+      "revision": 1
+    }
   ],
-  "provides": [{"contract": "CON-SESSION-PROJECTION", "revision": 1}],
+  "provides": [
+    {
+      "contract": "CON-SESSION-PROJECTION",
+      "revision": 1
+    }
+  ],
   "acceptance": [
     "Regressions cover late history drive, duplicate delivery, exact weak identities, caller-owned shared registrations and versions, host-only/selected/cached views, parser errors and Object.is primitive behavior.",
     "Checkpoint and restore tests cover detached state, anchored floors, missing sequence/truncated logs, invalid state hints, exact hydrate reuse and non-regressing cells.",
     "Nine real upstream/Python observations match; the 100 unchanged upstream projection/core Session assertions and complete clean-checkout release gate pass with exact evidence hashes."
   ],
-  "expected_paths": ["dsh/session", "tests", "scripts", "migration"],
+  "expected_paths": [
+    "dsh/session",
+    "tests",
+    "scripts",
+    "migration"
+  ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "Run clean-checkout acceptance, then migrate executable domain definitions and durable projection-cache before cold Web carriers."
+  "candidate_commit": "7720cf0351082b6ffff8e3df463000b9b1dee16f",
+  "integrated_commit": "7720cf0351082b6ffff8e3df463000b9b1dee16f",
+  "evidence_ids": [
+    "RUN-SESSION-PROJECTION-SESSION-PROJECTION-007-20260928"
+  ],
+  "next_action": "Registry accepted; next executable domain definitions and durable projection-cache, then cold Web consumers and complete profile journeys."
 }

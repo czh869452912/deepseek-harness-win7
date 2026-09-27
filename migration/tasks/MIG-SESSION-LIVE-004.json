@@ -39,13 +39,14 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "5131a7129907b036523c6e1e20b50a923b4b631f",
-  "integrated_commit": "5131a7129907b036523c6e1e20b50a923b4b631f",
+  "candidate_commit": "7720cf0351082b6ffff8e3df463000b9b1dee16f",
+  "integrated_commit": "7720cf0351082b6ffff8e3df463000b9b1dee16f",
   "evidence_ids": [
     "RUN-SESSION-LIVE-SESSION-LIVE-004-20260927",
     "RUN-SESSION-PREPARED-SESSION-LIVE-004-20260927",
     "RUN-SESSION-STORAGE-SESSION-LIVE-004-20260927",
-    "RUN-AGENT-CONFIG-SESSION-LIVE-004-20260927"
+    "RUN-AGENT-CONFIG-SESSION-LIVE-004-20260927",
+    "RUN-SESSION-PROJECTION-SESSION-LIVE-004-20260928"
   ],
   "next_action": "Bounded contract revalidated with CON-AGENT-CONFIG@1; next full Session projection/replay before Web consumers and complete profile journeys."
 }

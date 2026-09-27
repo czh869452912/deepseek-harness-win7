@@ -13,7 +13,13 @@
 
 `check` 校验记录、依赖环、契约 revision、证据哈希、固定上游 checkout 和 manifest 漂移；它不是 parity 测试。`ready` 只列出无阻塞任务，不领取任务、不提供租约。完整 inventory 重建要求固定上游 SHA 与 manifest 集合/内容未漂移。
 
-## Current configured Agent closure
+## Current Session projection registry closure
+
+Candidate `7720cf03`: clean-checkout release gate passed; **3235 passed, 2 skipped, 2 warnings**. Nine real registry observations match; 100 unchanged upstream projection/core Session assertions establish the source baseline. `CON-SESSION-PROJECTION@1` covers exact weak Session cells, prefix catch-up and duplicate suppression, caller-owned shared registrations, host/selected/cached reads, detached checkpoints, anchored restore and hydrate.
+
+See [registry closure](reviews/SESSION-PROJECTION-CLOSURE-20260928.md). Next: executable domain definitions, then storageDomain and durable projection-cache, then cold Web/listing carriers. Existing keyword domain registrations and Web bridge remain compatibility adapters, not certified domain parity. Win7 remains deferred. The rebuilt package is in the managed release-repro worktree.
+
+## Previous configured Agent closure
 
 Candidate `5131a712`: clean-checkout release gate passed; **3219 passed, 2 skipped, 2 warnings**. Seven real configured Agent observations match alongside all prior paired gates. `CON-AGENT-CONFIG@1` covers configured identity validation/overrides, delayed resume, exact history reload, draining replacement/cancellation and contained startup failures. The Cordis child-disposer ownership fix is included and revalidated.
 

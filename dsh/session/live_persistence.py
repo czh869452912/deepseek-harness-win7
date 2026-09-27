@@ -42,6 +42,9 @@ class LivePersistence:
                 owner = self.owners.get(session.id)
                 if owner is not None and owner is not session:
                     raise ValueError('session id collision: ' + session.id)
+                tracked = self.backend.storage().states.get(session.id)
+                if tracked is not None and tracked['meta'].cwd != session.header.cwd:
+                    raise ValueError('persisted session cwd collision: ' + session.id)
                 try:
                     stored = await self.backend.read_stored(session.id)
                 except FileNotFoundError:
@@ -52,6 +55,9 @@ class LivePersistence:
                     await self.backend.repair_tail(session.id)
                     state['cursor'] = len(stored.events)
                     state['materialized'] = True
+                    self.backend.storage().adopted(stored)
+                elif session.id not in self.backend.storage().states:
+                    await self.backend.create(session.header)
                 self.owners[session.id] = session
                 if seed[state['cursor']:]:
                     await persist(seed[state['cursor']:])
@@ -60,10 +66,8 @@ class LivePersistence:
                 return
             if [e['seq'] for e in events] != list(range(state['cursor'], state['cursor'] + len(events))):
                 raise ValueError('non-contiguous live session write: ' + session.id)
-            if not state['materialized']:
-                await self.backend.create(session.header)
-                state['materialized'] = True
             await self.backend.append(session.id, events)
+            state['materialized'] = True
             state['cursor'] += len(events)
         async def write(batch):
             await asyncio.shield(state['init'])
@@ -113,6 +117,7 @@ class LivePersistence:
             self.live.pop(session, None)
             if self.owners.get(session.id) is session:
                 self.owners.pop(session.id, None)
+                self.backend.storage().states.pop(session.id, None)
         job = asyncio.ensure_future(drain())
         self.retirements[session.id] = job
         def settled(task):

@@ -77,20 +77,22 @@ class SqliteSessionPersistence(SessionPersistence):
         return SessionLocation(kind="sqlite", path=self.db_path)
 
     async def create(self, meta: SessionHeader) -> None:
-        if self._prepared is not None:
-            self._prepared.assert_writable(meta.id)
-        async with self.storage_lock(meta.id):
-            if self._prepared is not None:
-                self._prepared.assert_writable(meta.id)
-            await self._create(meta)
-            if self._prepared is not None:
-                self._prepared.changed(meta.id)
+        await self.storage().create(meta)
+
+    async def ensure_materialized(self, session) -> None:
+        await self.storage().ensure_materialized(session)
+
+    ensureMaterialized = ensure_materialized
 
     async def _create(self, meta: SessionHeader) -> None:
+        with self._conn:
+            self._insert_header(meta)
+
+    def _insert_header(self, meta):
         cur = self._conn.cursor()
         cur.execute(
             """
-            INSERT OR REPLACE INTO sessions (id, version, created_at, cwd, parent_session, seed_length, meta_json)
+            INSERT INTO sessions (id, version, created_at, cwd, parent_session, seed_length, meta_json)
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             (
@@ -103,23 +105,15 @@ class SqliteSessionPersistence(SessionPersistence):
                 json.dumps(meta.to_dict(), ensure_ascii=False),
             ),
         )
-        self._conn.commit()
+
+    async def append_batch(self, meta, events, materialized):
+        with self._conn:
+            if not materialized:
+                self._insert_header(meta)
+            self._insert_events(meta.id, events)
 
     async def append(self, session_id: str, events: List[Dict[str, Any]]) -> None:
-        from dsh.core.session.json import snapshot_json_value, UNDEFINED
-        events = snapshot_json_value(events, UNDEFINED)
-        if events is UNDEFINED or not isinstance(events, list):
-            raise TypeError('session event batch is not losslessly JSON-serializable')
-        if not events:
-            return
-        if self._prepared is not None:
-            self._prepared.assert_writable(session_id)
-        async with self.storage_lock(session_id):
-            if self._prepared is not None:
-                self._prepared.assert_writable(session_id)
-            await self._append(session_id, events)
-            if self._prepared is not None:
-                self._prepared.changed(session_id)
+        await self.storage().append(session_id, events)
 
     async def inspect(self, session_id: str, signal: Optional[Any] = None) -> SessionInspection:
         return await self.prepared().inspect(session_id, signal)
@@ -128,40 +122,36 @@ class SqliteSessionPersistence(SessionPersistence):
         return await self.prepared().load(session_id)
 
     async def _append(self, session_id: str, events: List[Dict[str, Any]]) -> None:
-        if not events:
-            return
-        cur = self._conn.cursor()
-        cur.execute("SELECT id FROM sessions WHERE id = ?", (session_id,))
-        if not cur.fetchone():
-            meta = SessionHeader(session_id=session_id)
-            await self._create(meta)
-
         with self._conn:
-            for ev in events:
-                seq = ev.get("seq", 0)
-                etype = ev.get("type", "")
-                etime = ev.get("time", int(time.time() * 1000))
-                data = ev.get("data", {})
-                surface_op = ev.get("surfaceOp")
-                source_seqs = ev.get("sourceEventSeqs")
-                ignorable = 1 if ev.get("ignorable") else 0
+            self._insert_events(session_id, events)
 
-                cur.execute(
-                    """
-                    INSERT OR REPLACE INTO session_events (session_id, seq, event_type, event_time, data_json, surface_op, source_seqs_json, ignorable)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        session_id,
-                        seq,
-                        etype,
-                        etime,
-                        json.dumps(data, ensure_ascii=False),
-                        surface_op,
-                        json.dumps(source_seqs) if source_seqs is not None else None,
-                        ignorable,
-                    ),
-                )
+    def _insert_events(self, session_id, events):
+        cur = self._conn.cursor()
+        for ev in events:
+            seq = ev.get("seq", 0)
+            etype = ev.get("type", "")
+            etime = ev.get("time", int(time.time() * 1000))
+            data = ev.get("data", {})
+            surface_op = ev.get("surfaceOp")
+            source_seqs = ev.get("sourceEventSeqs")
+            ignorable = 1 if ev.get("ignorable") else 0
+
+            cur.execute(
+                """
+                INSERT INTO session_events (session_id, seq, event_type, event_time, data_json, surface_op, source_seqs_json, ignorable)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    session_id,
+                    seq,
+                    etype,
+                    etime,
+                    json.dumps(data, ensure_ascii=False),
+                    surface_op,
+                    json.dumps(source_seqs) if source_seqs is not None else None,
+                    ignorable,
+                ),
+            )
 
     async def read_stored(self, session_id: str) -> SessionInspection:
         cur = self._conn.cursor()
@@ -170,7 +160,11 @@ class SqliteSessionPersistence(SessionPersistence):
         if not row:
             raise FileNotFoundError(f'persisted session "{session_id}" not found in SQLite db')
 
-        meta = SessionHeader.from_dict(json.loads(row[0]))
+        raw_meta = json.loads(row[0])
+        if raw_meta.get('version') != SESSION_FORMAT_VERSION or type(raw_meta.get('version')) is not int:
+            from dsh.session.persistence import SessionFormatUnsupportedError
+            raise SessionFormatUnsupportedError('session "{}" uses log format v{} (raw log: {})'.format(session_id, raw_meta.get('version'), self.db_path))
+        meta = SessionHeader.from_dict(raw_meta)
 
         cur.execute(
             """
@@ -199,7 +193,8 @@ class SqliteSessionPersistence(SessionPersistence):
                 ev["ignorable"] = True
             events.append(migrate_legacy_event(ev, session_id))
 
-        return SessionInspection(meta=meta, events=events)
+        from dsh.session.coordinator import validate_stored
+        return validate_stored(SessionInspection(meta=meta, events=events), session_id, self.db_path)
 
     async def repair_tail(self, session_id: str) -> None:
         # SQLite transactions commit complete rows; no JSONL byte tail exists.
@@ -235,11 +230,8 @@ class SqliteSessionPersistence(SessionPersistence):
         inspection.events.extend(interrupted_turn_closers(inspection.events))
         return inspection
 
-    async def read_from(self, session_id: str, from_seq: int) -> SessionInspection:
-        if type(from_seq) is not int or from_seq < 0 or from_seq > 9007199254740991:
-            raise TypeError('readFrom fromSeq must be a non-negative safe integer')
-        inspection = await self.read_stored(session_id)
-        return SessionInspection(inspection.meta, [e for e in inspection.events if e['seq'] >= from_seq])
+    async def read_from(self, session_id: str, from_seq: int, signal=None) -> SessionInspection:
+        return await self.storage().read_from(session_id, from_seq, signal)
 
     async def list(self) -> List[SessionHeader]:
         cur = self._conn.cursor()

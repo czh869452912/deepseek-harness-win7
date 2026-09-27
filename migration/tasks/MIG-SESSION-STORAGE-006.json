@@ -1,0 +1,46 @@
+{
+  "id": "MIG-SESSION-STORAGE-006",
+  "goal": "Align shared public storage creation, cursor adoption and read boundaries",
+  "kind": "implementation",
+  "state": "review",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "145f418bd455f88c77c2bd7f970321dee279e426",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-SESSION-PREPARED-005",
+      "contract": "CON-SESSION-PREPARATIONS",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-LIVE-004",
+      "contract": "CON-SESSION-LIVE-WRITES",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-SESSION-STORAGE",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "Both backends pass lazy/detached creation, duplicate identities, batch cursor rejection, cold adoption, explicit empty materialization, read abort and failed first-batch rollback tests.",
+    "Eight real JSONL upstream/Python observations match; prior Agent/cold/live/preparation paired gates remain passing.",
+    "Cold inspection and adoption validate through Session before repair; retired vocabulary rejects writes and unknown event types fail closed on reads.",
+    "Final full Python suite and clean-checkout release gate pass, with exact commit and artifact hashes; native upstream SQLite and whole-project parity are not inferred."
+  ],
+  "expected_paths": [
+    "dsh/session",
+    "tests",
+    "scripts",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "Finish exact-candidate release acceptance, then configured Agent startup/reload and full Session projection."
+}

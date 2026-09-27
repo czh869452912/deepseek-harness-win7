@@ -85,12 +85,12 @@ async def test_jsonl_persistence_lifecycle_and_read_raw():
 
         # Create
         await persistence.create(meta)
-        assert os.path.exists(loc.path) is True
+        assert os.path.exists(loc.path) is False
 
         # Append events
         events = [
             {'type': 'turn/start', 'seq': 0, 'time': 1000, 'data': {'turn': 1}},
-            {'type': 'user/message', 'seq': 1, 'time': 1001, 'data': {'role': 'user', 'content': 'Hello'}},
+            {'type': 'user/message', 'seq': 1, 'time': 1001, 'surfaceOp': 'append', 'data': {'id': 'u1', 'role': 'user', 'source': {'kind': 'user'}, 'content': [{'type': 'text', 'text': 'Hello'}]}},
             {'type': 'turn/end', 'seq': 2, 'time': 1002, 'data': {'turn': 1, 'reason': {'kind': 'completed'}}},
         ]
         await persistence.append('sess-raw-test', events)

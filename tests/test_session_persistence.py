@@ -21,12 +21,12 @@ async def test_session_create_and_append(temp_session_dir):
     await persistence.create(header)
 
     loc = persistence.locate(header)
-    assert os.path.exists(loc.path)
+    assert not os.path.exists(loc.path)
 
     events = [
-        {"seq": 0, "type": "turn/start", "data": {"turn": 1}},
-        {"seq": 1, "type": "user/message", "surfaceOp": "append", "data": {"content": "Hello"}},
-        {"seq": 2, "type": "turn/end", "data": {"turn": 1, "reason": {"kind": "completed"}}},
+        {"time": 1, "seq": 0, "type": "turn/start", "data": {"turn": 1}},
+        {"time": 1, "seq": 1, "type": "user/message", "surfaceOp": "append", "data": {"id": "u1", "role": "user", "source": {"kind": "user"}, "content": [{"type": "text", "text": "Hello"}]}},
+        {"time": 1, "seq": 2, "type": "turn/end", "data": {"turn": 1, "reason": {"kind": "completed"}}},
     ]
 
     await persistence.append("test-session-1", events)
@@ -34,7 +34,7 @@ async def test_session_create_and_append(temp_session_dir):
     inspection = await persistence.load("test-session-1")
     assert inspection.meta.id == "test-session-1"
     assert len(inspection.events) == 3
-    assert inspection.events[1]["data"]["content"] == "Hello"
+    assert inspection.events[1]["data"]["content"][0]["text"] == "Hello"
 
 
 @pytest.mark.asyncio
@@ -43,6 +43,8 @@ async def test_session_packed_chunks(temp_session_dir):
 
     header = SessionHeader(session_id="test-session-packed", cwd=temp_session_dir)
     await persistence.create(header)
+
+    await persistence._create(header)  # Physical backend fixture, not public lazy create.
 
     # Write a packed text-chunks row directly into the file to test unpack
     path = persistence.locate(header).path
@@ -68,9 +70,9 @@ async def test_session_crash_recovery(temp_session_dir):
 
     # An interrupted turn (turn/start without turn/end)
     events = [
-        {"seq": 0, "type": "turn/start", "data": {"turn": 1}},
-        {"seq": 1, "type": "user/message", "surfaceOp": "append", "data": {"content": "Do task"}},
-        {"seq": 2, "type": "step/start", "data": {"turn": 1, "step": 1}},
+        {"time": 1, "seq": 0, "type": "turn/start", "data": {"turn": 1}},
+        {"time": 1, "seq": 1, "type": "user/message", "surfaceOp": "append", "data": {"id": "u1", "role": "user", "source": {"kind": "user"}, "content": [{"type": "text", "text": "Do task"}]}},
+        {"time": 1, "seq": 2, "type": "step/start", "data": {"turn": 1, "step": 1}},
     ]
     await persistence.append("test-crashed-session", events)
 
@@ -97,6 +99,9 @@ async def test_session_list_and_snapshots(temp_session_dir):
     await persistence.create(h1)
     await persistence.create(h2)
 
+    assert await persistence.list() == []
+    await persistence.append(h1.id, [{"type": "session/end-seed", "seq": 0, "time": 1, "data": {}}])
+    await persistence.append(h2.id, [{"type": "session/end-seed", "seq": 0, "time": 1, "data": {}}])
     headers = await persistence.list()
     ids = [h.id for h in headers]
     assert "session-a" in ids

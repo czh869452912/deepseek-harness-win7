@@ -41,8 +41,10 @@ class PreparedPersistence:
             inspection = await self.backend._inspect_unshared(sid)
             after = await self.revision(sid)
             if before == after:
-                return SimpleNamespace(session=None, inspection=inspection, revision=after,
-                                       length=len(inspection.events))
+                session = Session.from_restore(session_id=sid, seed=copy.deepcopy(inspection.events),
+                                               header=inspection.meta, ctx=self.backend.ctx)
+                return SimpleNamespace(session=session, inspection=inspection, revision=after,
+                                       length=len(session.events))
 
     async def inspect(self, sid, signal=None):
         while True:
@@ -71,6 +73,7 @@ class PreparedPersistence:
         await self.backend._load_unshared(sid)
         if source.revision != await self.revision(sid):
             return None
+        self.backend.storage().adopted(source.inspection)
         return {'source': source, 'state': {'owner': None}}
 
     async def load(self, sid):

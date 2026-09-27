@@ -57,6 +57,7 @@ class SessionPersistence(ABC):
     def __init__(self, ctx: Optional[Any] = None):
         self.ctx = ctx
         self._prepared = None
+        self._storage = None
         self._storage_locks = {}
         self.prepared_cache_size = 5
 
@@ -67,7 +68,7 @@ class SessionPersistence(ABC):
 
     @abstractmethod
     async def create(self, meta: SessionHeader) -> None:
-        """Register/materialize a new session's metadata."""
+        """Register detached metadata; materialize on the first append."""
         raise NotImplementedError
 
     @abstractmethod
@@ -82,6 +83,12 @@ class SessionPersistence(ABC):
 
     def storage_lock(self, session_id):
         return self._storage_locks.setdefault(session_id, asyncio.Lock())
+
+    def storage(self):
+        from dsh.session.coordinator import PersistenceCoordinator
+        if self._storage is None:
+            self._storage = PersistenceCoordinator(self)
+        return self._storage
 
     def prepared(self):
         from dsh.session.prepared_persistence import PreparedPersistence

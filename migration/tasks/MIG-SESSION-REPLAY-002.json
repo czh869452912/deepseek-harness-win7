@@ -26,6 +26,11 @@
       "task": "MIG-SESSION-PREPARED-005",
       "contract": "CON-SESSION-PREPARATIONS",
       "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-STORAGE-006",
+      "contract": "CON-SESSION-STORAGE",
+      "revision": 1
     }
   ],
   "provides": [],
@@ -38,13 +43,12 @@
     "migration"
   ],
   "open_findings": [
-    "Public storage still needs lazy creation, full append cursor/schema validation and source-equivalent adoption.",
-    "Complete inspect/load schema and event vocabulary validation, cross-process atomic materialization and native SQLite baseline remain unverified.",
+    "Native upstream SQLite, cross-process/multi-cwd concurrency and complete historical migration/projection parity remain unverified.",
     "Configured Agent startup/reload and complete Session projection remain separate downstream closures."
   ],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "Shared preparations now have MIG-SESSION-PREPARED-005. Next align public storage schema/lazy creation/adoption, then configured Agent startup/reload and full projection."
+  "next_action": "Public storage is tracked by MIG-SESSION-STORAGE-006. Next establish configured Agent startup/reload, then complete Session projection before Web replay consumers."
 }

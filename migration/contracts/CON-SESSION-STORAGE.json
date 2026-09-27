@@ -1,0 +1,32 @@
+{
+  "id": "CON-SESSION-STORAGE",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/session/session-persistence/src/coordinator.ts",
+    "reference/packages/session/session-persistence/tests/contract.ts",
+    "dsh/session/coordinator.py"
+  ],
+  "consumers": [
+    "dsh/session/persistence_jsonl.py",
+    "dsh/session/persistence_sqlite.py",
+    "dsh/session/live_persistence.py",
+    "dsh/session/prepared_persistence.py"
+  ],
+  "invariants": [
+    "create records detached intent only; duplicate tracked/prepared/persisted IDs reject, including another cwd.",
+    "One storage cursor serializes the full batch and advances only after commit. Gaps, rewrites and lossy JSON reject. Missing IDs cannot be silently invented by append.",
+    "Cold append uses the same validated source/revision/repair commit as restore; live adoption retains open turns and verifies cwd/prefix. Retirement drops the owner cursor.",
+    "ensure_materialized flushes exact live state, persists an empty header once and invents no event.",
+    "Retired request/header-delta, mode/set and fallback headers reject writes. Unknown event types remain writable but reject on reads with artifact diagnostics.",
+    "Cold inspect/load validate current envelopes, message/request shape, header and surface rules via Session before durable repair. read_from remains a stored-prefix read and observes retirement/serialization/abort."
+  ],
+  "open_questions": [],
+  "identity": "The session ID is shared by creation intent, cursor, reservation and exact live identity. Cwd is checked before live claims.",
+  "ownership": "PersistenceCoordinator replaces the unused legacy queue facade. Backend methods own physical append/materialization; shared live/prepared layers own lifecycle and reservations.",
+  "ordering": "Detach batch before awaiting the ID lock; validate cursor for the entire batch; commit header+first batch atomically; then advance cursor and invalidate cached source.",
+  "errors": "First JSONL publication uses fsynced staging plus exclusive write-through MoveFileExW on Windows, or link/directory-fsync on POSIX. Missing Windows directories publish through the same write-through operation. SQLite uses a transaction and INSERT rather than replacement. Failed writes retain cursor and can retry.",
+  "cancellation": "Queued read cancellation preserves the caller reason and does not cancel writers. Cold preparation cancellation retains its prior shared-work guarantees.",
+  "adaptation": "Python 3.8 async methods snapshot when execution starts before waiting for the storage lock. ctypes calls the same Win7-compatible MoveFileExW API as upstream Windows publication. Two independent backend objects test exclusive publication, not arbitrary cross-process/multi-cwd coordination or power-loss behavior. SQLite shares local tests, without native upstream SQLite certification. Win7 machine validation remains deferred."
+}

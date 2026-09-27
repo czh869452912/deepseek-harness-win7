@@ -165,7 +165,7 @@ async def test_sqlite_failed_batch_rolls_back_before_retry(tmp_path):
     events=[dict(type='turn/start',seq=n,time=n,data=dict(turn=n+1)) for n in range(2)]
     try:
         with pytest.raises(Exception,match='controlled failure'): await p.append('s',events)
-        assert (await p.read_stored('s')).events == []
+        with pytest.raises(FileNotFoundError): await p.read_stored('s')
         p._conn.execute('DROP TRIGGER fail_second')
         await p.append('s',events)
         assert (await p.read_stored('s')).events == events
@@ -183,6 +183,8 @@ async def test_jsonl_fsync_failure_rolls_back_then_retry_writes_once(tmp_path, m
     from dsh.core.session import SessionHeader
     p=JsonlSessionPersistence(str(tmp_path))
     header=SessionHeader(session_id='s');await p.create(header)
+    await p._create(header)  # Exercise rollback of an existing physical header.
+    p.storage().states['s']['materialized'] = True
     path=Path(p.locate(header).path);before=path.read_bytes()
     fsync=os.fsync;calls=[]
     def fail_once(fd):

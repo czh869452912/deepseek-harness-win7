@@ -17,7 +17,7 @@ async def test_sqlite_session_persistence_lifecycle():
 
             events = [
                 {"seq": 0, "type": "turn/start", "time": 1000, "data": {"turn": 1}},
-                {"seq": 1, "type": "user/message", "time": 1010, "data": {"content": "Hello SQL"}},
+                {"seq": 1, "type": "user/message", "time": 1010, "surfaceOp": "append", "data": {"id": "u1", "role": "user", "source": {"kind": "user"}, "content": [{"type": "text", "text": "Hello SQL"}]}},
                 {"seq": 2, "type": "turn/end", "time": 1020, "data": {"turn": 1, "reason": {"kind": "completed"}}},
             ]
             await persistence.append("sqlite-session-1", events)
@@ -25,7 +25,7 @@ async def test_sqlite_session_persistence_lifecycle():
             inspection = await persistence.load("sqlite-session-1")
             assert inspection.meta.id == "sqlite-session-1"
             assert len(inspection.events) == 3
-            assert inspection.events[1]["data"]["content"] == "Hello SQL"
+            assert inspection.events[1]["data"]["content"][0]["text"] == "Hello SQL"
 
             snapshots = await persistence.list_snapshots()
             assert len(snapshots) == 1

@@ -10,6 +10,7 @@ import hashlib
 import json
 import os
 import time
+import tempfile
 from typing import Any, Dict, List, Optional, Tuple, Union
 from dsh.cordis.plugin import Plugin
 from dsh.core.session import SessionHeader, SESSION_FORMAT_VERSION
@@ -25,6 +26,7 @@ from dsh.session.persistence import (
 )
 from dsh.session.chunk_rows import decode_storage_record, pack_chunk_runs
 from dsh.session.seq_ranges import decode_seq_ranges, encode_seq_ranges
+from dsh.session.durable_publish import ensure_durable_directory, publish_new_file, discard_staging
 
 
 def encode_segment(raw: str) -> str:
@@ -327,39 +329,38 @@ class JsonlSessionPersistence(SessionPersistence):
         }
 
     async def create(self, meta: SessionHeader) -> None:
-        if self._prepared is not None:
-            self._prepared.assert_writable(meta.id)
-        async with self.storage_lock(meta.id):
-            if self._prepared is not None:
-                self._prepared.assert_writable(meta.id)
-            await self._create(meta)
-            if self._prepared is not None:
-                self._prepared.changed(meta.id)
+        await self.storage().create(meta)
+
+    async def ensure_materialized(self, session) -> None:
+        await self.storage().ensure_materialized(session)
+
+    ensureMaterialized = ensure_materialized
 
     async def _create(self, meta: SessionHeader) -> None:
+        await self.append_batch(meta, [], False)
+
+    async def append_batch(self, meta, events, materialized):
+        if materialized:
+            await self._append(meta.id, events)
+            return
         self._registered_meta[meta.id] = meta
         path = self.locate(meta).path
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        if not os.path.exists(path):
-            header_dict = to_header_line(meta)
-            header_line = json.dumps(header_dict, ensure_ascii=False)
-            win32_atomic_write(path, [header_line])
+        ensure_durable_directory(os.path.dirname(path))
+        # Publish header and first batch together, without replacing another
+        # writer's artifact. Win32 uses write-through exclusive publication.
+        fd, temporary = tempfile.mkstemp(prefix='.session-', suffix='.tmp', dir=os.path.dirname(path))
+        try:
+            with os.fdopen(fd, 'w', encoding='utf-8', newline='\n') as stream:
+                for line in [json.dumps(to_header_line(meta), ensure_ascii=False)] + self._encode_events(events):
+                    stream.write(line + '\n')
+                stream.flush()
+                os.fsync(stream.fileno())
+            publish_new_file(temporary, path)
+        finally:
+            discard_staging(temporary)
 
     async def append(self, session_id: str, events: List[Dict[str, Any]]) -> None:
-        from dsh.core.session.json import snapshot_json_value, UNDEFINED
-        events = snapshot_json_value(events, UNDEFINED)
-        if events is UNDEFINED or not isinstance(events, list):
-            raise TypeError('session event batch is not losslessly JSON-serializable')
-        if not events:
-            return
-        if self._prepared is not None:
-            self._prepared.assert_writable(session_id)
-        async with self.storage_lock(session_id):
-            if self._prepared is not None:
-                self._prepared.assert_writable(session_id)
-            await self._append(session_id, events)
-            if self._prepared is not None:
-                self._prepared.changed(session_id)
+        await self.storage().append(session_id, events)
 
     async def inspect(self, session_id: str, signal: Optional[Any] = None) -> SessionInspection:
         return await self.prepared().inspect(session_id, signal)
@@ -455,7 +456,8 @@ class JsonlSessionPersistence(SessionPersistence):
         # like this port's sqlite read path.
         meta = scanned["meta"]
         events = [migrate_legacy_event(ev, meta.id) for ev in scanned["events"]]
-        return SessionInspection(meta=meta, events=events)
+        from dsh.session.coordinator import validate_stored
+        return validate_stored(SessionInspection(meta=meta, events=events), meta.id, path)
 
     def _check_interrupted_turn(self, session_id: str, events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         return interrupted_turn_closers(events)
@@ -523,12 +525,8 @@ class JsonlSessionPersistence(SessionPersistence):
 
         return inspection
 
-    async def read_from(self, session_id: str, from_seq: int) -> SessionInspection:
-        if type(from_seq) is not int or from_seq < 0 or from_seq > 9007199254740991:
-            raise TypeError("readFrom fromSeq must be a non-negative safe integer")
-        _, inspection = self._read_stored(session_id)
-        filtered = [e for e in inspection.events if e.get("seq", 0) >= from_seq]
-        return SessionInspection(meta=inspection.meta, events=filtered)
+    async def read_from(self, session_id: str, from_seq: int, signal=None) -> SessionInspection:
+        return await self.storage().read_from(session_id, from_seq, signal)
 
     async def list(self) -> List[SessionHeader]:
         headers: List[SessionHeader] = []

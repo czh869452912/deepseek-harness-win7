@@ -7,7 +7,6 @@ import os
 import tempfile
 import time
 import threading
-import time
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import yaml
@@ -126,9 +125,15 @@ class _WriterLock:
                 os.write(self.fd, ("%d\n" % os.getpid()).encode("ascii"))
                 return self
             except OSError as error:
-                if error.errno != errno.EEXIST:
+                # Windows CRT can report EACCES while another writer's lock
+                # is delete-pending. Retry within the same bounded deadline;
+                # a real permission denial still propagates unchanged.
+                deleting = os.name == 'nt' and error.errno == errno.EACCES
+                if error.errno != errno.EEXIST and not deleting:
                     raise
                 if time.monotonic() >= deadline:
+                    if deleting:
+                        raise
                     raise TimeoutError("settings-file: timed out waiting for the writer lock %s" % self.path)
                 time.sleep(0.025)
 

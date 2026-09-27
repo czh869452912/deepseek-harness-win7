@@ -10,7 +10,7 @@
   "provides": [
     {
       "contract": "CON-CORDIS-CORE",
-      "revision": 9
+      "revision": 10
     }
   ],
   "acceptance": [
@@ -25,10 +25,7 @@
     "dsh/core",
     "migration"
   ],
-  "open_findings": [
-    "CORE-PAIRED-COVERAGE-INCOMPLETE",
-    "CORDIS-C58-RESOLVED-AWAIT-SCHEDULING"
-  ],
+  "open_findings": [],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
@@ -42,6 +39,6 @@
     "RUN-CORDIS-CLOSURE-20260927",
     "RUN-CORDIS-SCOPE-CLOSURE-20260927"
   ],
-  "next_action": "Scope provider/AgentLoop consumer and resolved-await generation race repaired in 0138d18d/2a3d8478. Finish remaining 39 assertion-level consumer entries and callback boundary audit; whole-contract acceptance remains open.",
+  "next_action": "Implementation and source assertion review complete; bind final full regression and raw/adapted observation evidence before integration.",
   "delivery_commit": "072cbcd68a56d7241b0a1a93581f9d38924c3932"
 }

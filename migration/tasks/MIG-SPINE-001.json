@@ -2,18 +2,23 @@
   "id": "MIG-SPINE-001",
   "goal": "验证 profile 到会话恢复的真实最小流程",
   "kind": "verification",
-  "state": "draft",
+  "state": "review",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "449396c008ff7ac817963bc42e80b90561a0e27f",
-  "owner": null,
+  "owner": "current-session-coordinator",
   "requires": [
     {
       "task": "MIG-CORDIS-001",
       "contract": "CON-CORDIS-CORE",
-      "revision": 9
+      "revision": 10
     }
   ],
-  "provides": [],
+  "provides": [
+    {
+      "contract": "CON-BOOT-SESSION-SPINE",
+      "revision": 1
+    }
+  ],
   "acceptance": [
     "Start actual profile, run mock LLM and tool, persist session, restart and recover.",
     "Specify Boot/Session requirements before ready; no replacement providers to claim integration."
@@ -32,6 +37,6 @@
     "RUN-CORDIS-CLOSURE-20260927",
     "RUN-CORDIS-SCOPE-CLOSURE-20260927"
   ],
-  "next_action": "Real run_profile -> mock LLM/tool -> JSONL flush -> new Context -> resume test implemented in be234bfa; full suite passes. Keep draft gate until Boot/Session requirements and provider contract acceptance are specified.",
+  "next_action": "Boot/Session identity, ownership, ordering and failure requirements specified; bind real profile recovery evidence after provider acceptance.",
   "delivery_commit": "be234bfa0aa8c37c9e72117a842afdc8db5c2d3a"
 }

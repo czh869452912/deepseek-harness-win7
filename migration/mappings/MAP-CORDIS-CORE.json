@@ -497,9 +497,49 @@
       "test": "scripts/oracles/cordis_schema.py::scenario",
       "status": "indexed-unverified",
       "description": "Standard Schema defaults and nested issues"
+    },
+    {
+      "id": "CORDIS-C63",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_serial_boundary_observations.py::test_serial_await_boundary_matches_upstream",
+      "status": "indexed-unverified",
+      "description": "Serial synchronous result checkpoint"
+    },
+    {
+      "id": "CORDIS-C64",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_serial_boundary_observations.py::test_serial_await_boundary_matches_upstream",
+      "status": "indexed-unverified",
+      "description": "Serial resolved Future checkpoint"
+    },
+    {
+      "id": "CORDIS-C65",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_serial_boundary_observations.py::test_serial_await_boundary_matches_upstream",
+      "status": "indexed-unverified",
+      "description": "Serial immediate coroutine checkpoint"
+    },
+    {
+      "id": "CORDIS-C66",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_serial_boundary_observations.py::test_serial_await_boundary_matches_upstream",
+      "status": "indexed-unverified",
+      "description": "Serial rejected coroutine checkpoint"
+    },
+    {
+      "id": "CORDIS-C67",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_serial_boundary_observations.py::test_serial_await_boundary_matches_upstream",
+      "status": "indexed-unverified",
+      "description": "HMR settled refresh coalescing checkpoint"
     }
   ],
-  "official_case_coverage": "Discovery in migration/cordis-inventory.json; 11 core and 65 necessary-consumer literal declarations. Parameter expansions and semantic review remain separate.",
-  "note": "C1-C62 are local source-derived IDs. 61 matched; native scheduling C58 differs, explicit checkpoint C59 matches. Official lifecycle11 + HMR6 passed separately. No full-contract acceptance inferred.",
+  "official_case_coverage": "Critical source assertions: 11 lifecycle + 69 necessary-consumer instances (57 preset, 6 boot HMR, 6 profile HMR). Unmodified official suites execute 80 tests. Inventory remains discovery only.",
+  "note": "C1-C67 require fresh paired report. C58 is retained native Python language divergence, with separate exact-signature scoped acceptance and C59 checkpoint adaptation.",
   "observation_evidence": "RUN-CORDIS-CLOSURE-20260927"
 }

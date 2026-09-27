@@ -232,18 +232,18 @@ async def test_t10_registry_inspection_drops_a_fiber_on_its_own_disposal():
 
     fiber = ctx.registry.plugin(LateServicePlugin)
     assert fiber.state == FiberState.PENDING
-    assert fiber in ctx.registry.list_fibers()
+    assert fiber.ctx.fiber in ctx.registry.list_fibers()
 
     ctx.set_service("t10_service", {"value": 1})
     await fiber.await_settled()
     assert fiber.state == FiberState.ACTIVE
-    assert fiber in ctx.registry.list_fibers()
+    assert fiber.ctx.fiber in ctx.registry.list_fibers()
 
     await fiber.dispose()
 
     assert fiber.state == FiberState.DISPOSED
     assert ctx.registry.has(LateServicePlugin) is False
-    assert fiber not in ctx.registry.list_fibers()
+    assert fiber.ctx.fiber not in ctx.registry.list_fibers()
     assert ctx.registry.list_fibers() == []
 
 
@@ -261,16 +261,16 @@ async def test_t11_disposed_fiber_of_a_live_runtime_is_not_reported():
 
     first = ctx.registry.plugin(TwinPlugin)
     second = ctx.registry.plugin(TwinPlugin)
-    assert first in ctx.registry.list_fibers()
-    assert second in ctx.registry.list_fibers()
+    assert first.ctx.fiber in ctx.registry.list_fibers()
+    assert second.ctx.fiber in ctx.registry.list_fibers()
 
     await first.dispose()
 
     runtime = ctx.registry.get(TwinPlugin)
     assert runtime is not None
-    assert runtime.fibers == [second]
-    assert first not in ctx.registry.list_fibers()
-    assert second in ctx.registry.list_fibers()
+    assert runtime.fibers == [second.ctx.fiber]
+    assert first.ctx.fiber not in ctx.registry.list_fibers()
+    assert second.ctx.fiber in ctx.registry.list_fibers()
 
     await second.dispose()
 

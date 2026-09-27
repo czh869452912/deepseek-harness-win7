@@ -665,7 +665,7 @@ async def test_internal_plugin_associates_active_child_before_uid_guard():
     assert child.entry is loader.resolve("parent")
     assert child.inject["gate"] == {"scope": "entry"}
     assert publications == [(
-        child,
+        child.ctx.fiber,
         child.uid,
         FiberState.PENDING,
         parent_contexts[0],

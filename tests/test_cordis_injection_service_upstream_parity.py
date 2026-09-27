@@ -53,7 +53,7 @@ async def test_service_check_runs_for_consumer_context_and_controls_activation()
     await asyncio.sleep(0)
     assert fiber.state == FiberState.PENDING
 
-    service.allowed_fiber = fiber
+    service.allowed_fiber = fiber.ctx.fiber
     ctx.reflect.notify(["checked"])
     await fiber
     assert calls == [fiber.uid]

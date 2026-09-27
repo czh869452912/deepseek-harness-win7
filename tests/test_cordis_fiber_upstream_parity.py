@@ -152,7 +152,7 @@ async def test_function_object_and_class_plugins_receive_context_and_config():
         {"kind": "object"},
         {"kind": "class"},
     ]
-    assert all(entry[1].fiber is fiber for entry, fiber in zip(
+    assert all(entry[1].fiber is fiber.ctx.fiber for entry, fiber in zip(
         calls, (function_fiber, object_fiber, class_fiber)
     ))
 
@@ -665,7 +665,9 @@ async def test_update_recovers_failed_fiber_with_new_config():
         if config["value"] == "invalid":
             raise RuntimeError("invalid initial config")
 
-    fiber = ctx.registry.plugin(plugin, {"value": "invalid"})
+    handle = ctx.registry.plugin(plugin, {"value": "invalid"})
+    fiber = handle.ctx.fiber  # Raw lifecycle recovery; handle updates shadow state.
+    assert fiber is not handle
     with pytest.raises(RuntimeError, match="invalid initial config"):
         await fiber
     assert fiber.state == FiberState.FAILED
@@ -692,7 +694,8 @@ async def test_update_rechecks_pending_fiber_dependencies():
         def apply(self, _plugin_ctx, config):
             calls.append(config["value"])
 
-    fiber = ctx.registry.plugin(Consumer(), {"value": "old"})
+    handle = ctx.registry.plugin(Consumer(), {"value": "old"})
+    fiber = handle.ctx.fiber
     assert fiber.state == FiberState.PENDING
 
     available[0] = True
@@ -734,6 +737,9 @@ async def test_plugin_publication_has_owned_uid_before_initial_refresh_and_dispo
         parent_ctx=parent_ctx,
     )
 
+    handle = fiber
+    fiber = handle.ctx.fiber
+    assert handle is not fiber
     assert events == [(fiber, fiber.uid, FiberState.PENDING, parent_ctx)]
     await fiber
     assert len([event for event in events if event[0] is fiber]) == 1

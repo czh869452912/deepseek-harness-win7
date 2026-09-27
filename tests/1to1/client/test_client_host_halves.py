@@ -229,7 +229,7 @@ async def test_ui_chat_loads_without_a_settings_provider():
     ctx = Context()
     fiber = ctx.plugin(ui_chat.ClientUiChatPlugin)
     try:
-        assert await fiber.await_() is fiber
+        assert await fiber.await_() is fiber.ctx.fiber
         assert ctx.get("settings") is None
         assert fiber.state == FiberState.ACTIVE
     finally:

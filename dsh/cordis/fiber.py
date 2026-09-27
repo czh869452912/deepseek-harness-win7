@@ -1600,3 +1600,41 @@ class Fiber:
 
     def __repr__(self) -> str:
         return f"<Fiber {self.name} uid={self.uid} state={self.state} epoch={self.epoch}>"
+
+
+class FiberHandle(Fiber):
+    """Registry's Object.create(fiber) view, distinct from its awaited original.
+
+    Unwritten instance fields inherit from the original; method assignments
+    shadow them on this handle. Mutable resource collections remain shared.
+    Upstream epoch lives in the shared _runner, while dispose/then are closures
+    over the original, so those three operations explicitly retain that owner.
+    """
+
+    def __init__(self, original: Fiber):
+        self._original_fiber = original
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(object.__getattribute__(self, "_original_fiber"), name)
+
+    @property
+    def epoch(self) -> str:
+        return self._original_fiber.epoch
+
+    @epoch.setter
+    def epoch(self, value: str) -> None:
+        self._original_fiber.epoch = value
+
+    def dispose(self) -> Any:
+        return self._original_fiber.dispose()
+
+    def __await__(self):
+        return self._original_fiber.await_settled().__await__()
+
+    async def await_settled(self) -> Fiber:
+        # JS async return-this assimilates the inherited then closure, which
+        # resolves the original after this handle's own lifecycle settles.
+        await super().await_settled()
+        return await self._original_fiber.await_settled()
+
+    await_ = await_settled

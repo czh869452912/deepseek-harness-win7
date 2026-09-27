@@ -1,4 +1,4 @@
-"""Matched lifecycle scenarios; C42 remains an explicit differential finding."""
+"""Lifecycle and handle scenarios frozen from the pinned upstream."""
 import asyncio
 import importlib.util
 import json
@@ -12,11 +12,11 @@ SPEC = importlib.util.spec_from_file_location(
 )
 ADAPTER = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(ADAPTER)
-REPORT = json.loads((ROOT / 'migration/evidence/artifacts/CORDIS-LIFECYCLE-PUBLIC-BEFORE-20260927.json').read_text(encoding='utf-8'))
+REPORT = json.loads((ROOT / 'migration/evidence/artifacts/CORDIS-C1-C47-20260927.json').read_text(encoding='utf-8'))
 EXPECTED = {row['case']: row['upstream']['observation'] for row in REPORT['cases']}
 
 
-@pytest.mark.parametrize('case', [40, 41, 43, 44])
+@pytest.mark.parametrize('case', [40, 41, 42, 43, 44, 45, 46, 47])
 def test_matched_lifecycle_observation(case):
     actual = asyncio.run(asyncio.wait_for(ADAPTER.scenario(case), timeout=10))
     assert actual == EXPECTED['C%d' % case]

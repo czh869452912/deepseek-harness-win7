@@ -8,7 +8,7 @@ import functools
 import inspect
 import sys
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-from dsh.cordis.fiber import Fiber, FiberState, resolve_config
+from dsh.cordis.fiber import Fiber, FiberHandle, FiberState, resolve_config
 from dsh.cordis.utils import SharedCounter
 
 
@@ -399,7 +399,7 @@ class RegistryService:
                 fiber._checkImpl(name)
             fiber._refresh()
 
-        return fiber
+        return FiberHandle(fiber)
 
     def inject(self, deps: Any, callback: Callable[..., Any]) -> Fiber:
         """

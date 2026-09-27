@@ -1,0 +1,589 @@
+{
+  "id": "RUN-CORDIS-HANDLE-20260927",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "777a6693affe28c65e3c58465e971835f4443ca4",
+  "kind": "cordis-observations-and-regression",
+  "result": "failed",
+  "validity": "historical",
+  "commands": [
+    ".venv\\Scripts\\python.exe scripts/cordis_oracle.py --output migration/evidence/artifacts/CORDIS-C1-C47-20260927.json",
+    ".venv\\Scripts\\python.exe -m pytest tests"
+  ],
+  "environment": {
+    "python": "3.8.10 (tags/v3.8.10:3d8993a, May  3 2021, 11:48:03) [MSC v.1928 64 bit (AMD64)]",
+    "node": "v22.22.2",
+    "tsx": "4.22.4",
+    "os": "Windows-10-10.0.22000-SP0",
+    "cwd": "D:\\Claude-project\\deepseek-harness-win7"
+  },
+  "contract_revisions": {
+    "CON-CORDIS-CORE": 7
+  },
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/CORDIS-C1-C47-20260927.json",
+      "sha256": "c395b99408598a795e23f6a42df2e7b38ff0d1c607400822a5fab4c8852f3a94"
+    },
+    {
+      "path": "migration/evidence/artifacts/CORDIS-HANDLE-FULL-INITIAL-20260927.txt",
+      "sha256": "a90370d3ec051afb6866975bd81a9ffaf530866279f46068b049e80fc5910829"
+    },
+    {
+      "path": "migration/evidence/artifacts/CORDIS-HANDLE-FULL-20260927.txt",
+      "sha256": "3db235a029265d3ea28b1e7ac41b032c47dec15df7bebf266586fd67f13ed3ff"
+    }
+  ],
+  "inputs": [
+    {
+      "path": "dsh/cordis/__init__.py",
+      "sha256": "c44353c21dad0603727420ee072685308046a323c13ebb1b99af211257ba33b2"
+    },
+    {
+      "path": "dsh/cordis/context.py",
+      "sha256": "19621431da94d988c35e290b10bde44f5e14e6cde6dbee95a66bf49ad24ed8b3"
+    },
+    {
+      "path": "dsh/cordis/environment.py",
+      "sha256": "18303b36ea02507e5f43c6b1cfa26eb12fc18a9c5f96d1b27a2436b82db2fd19"
+    },
+    {
+      "path": "dsh/cordis/events.py",
+      "sha256": "fbfe421eee95c8eff95fa218f353224fba337cbaa6b3c0c530a2d8fe6d2dc5f3"
+    },
+    {
+      "path": "dsh/cordis/fiber.py",
+      "sha256": "1a4b857149dba8ea195b9799da05428cda49955df5062948901e2a5fd6428546"
+    },
+    {
+      "path": "dsh/cordis/file_lock.py",
+      "sha256": "1dc5a15e90fc52d7f113dc16723a30741827c75cc05838d0e0a5238f26b1959b"
+    },
+    {
+      "path": "dsh/cordis/hmr.py",
+      "sha256": "69a0f5b9d8ba29ee5b9b5c9cc54f07af486ae1975150ef43a444fe9b8f7f9907"
+    },
+    {
+      "path": "dsh/cordis/include.py",
+      "sha256": "5e20455179bfb3e2585cbc749f5bd15be24458ea205134556b71facc5889ca93"
+    },
+    {
+      "path": "dsh/cordis/loader.py",
+      "sha256": "86212b307c120d714ced06bedf50f058e5b1a7783f61cb432d6bca1deeff1914"
+    },
+    {
+      "path": "dsh/cordis/loader_entry.py",
+      "sha256": "86780dd3da5e2ec6bea291321bebfbc7aab2a42936674f1d81e19454d2cd927b"
+    },
+    {
+      "path": "dsh/cordis/loader_group.py",
+      "sha256": "536b3677050693d380db661119e6758bd99a0004b34b40b330cd39a048f588f4"
+    },
+    {
+      "path": "dsh/cordis/loader_isolate.py",
+      "sha256": "9b16816958ee1ddafbcbde60dc407ec4a63b33eb18a973926e5c6db62e8af802"
+    },
+    {
+      "path": "dsh/cordis/loader_tree.py",
+      "sha256": "f0b850feaa03c9a179d57c9ebf70bbc8d6b5207843325fd23df3377be77bef3e"
+    },
+    {
+      "path": "dsh/cordis/logger.py",
+      "sha256": "99b55c49b4ea640e29ed2b6abf53a41370d32bcee94fb25ebfba0cab1b588ab4"
+    },
+    {
+      "path": "dsh/cordis/plugin.py",
+      "sha256": "56b7cd4d672d3ee94de0773fc329fdd590f2a19a56533052486a41107f447bb5"
+    },
+    {
+      "path": "dsh/cordis/profile.py",
+      "sha256": "4de2af790c7887c2c370ed3624f80d8bec49d0226d5d19990906d5f2ceb4eda2"
+    },
+    {
+      "path": "dsh/cordis/reflect.py",
+      "sha256": "b60ab339ddc1d1b5a2d68109f93eba573bf26ddf862d3590de41dddab71ffc85"
+    },
+    {
+      "path": "dsh/cordis/registry.py",
+      "sha256": "17d65ef843866dc031024d19391f9fd8b9bc6177e49356eb09317d9c213989ed"
+    },
+    {
+      "path": "dsh/cordis/schema.py",
+      "sha256": "f4e012dce51ae78d9ccd17358949bdde31af45d28db040df4d189cfb33cbb408"
+    },
+    {
+      "path": "dsh/cordis/service.py",
+      "sha256": "d2fa2b85605d2f4af9a48099c3998940a8db58fe7dcf4e4a2ae96fb11c9b3103"
+    },
+    {
+      "path": "dsh/cordis/timer.py",
+      "sha256": "37e79028fe50d925a5d904d297c66f9fc15e2efe53b7af64f7def4791987caac"
+    },
+    {
+      "path": "dsh/cordis/utils.py",
+      "sha256": "bd03ffd8ce4dbcc86bb2092f72e7059827af94e333336c8b0ceb8d312f61af2e"
+    },
+    {
+      "path": "reference/vendor/cordis/src/context.ts",
+      "sha256": "96b388162d6013c1898de61e35f28917abb93809de24174980f2a1a348d0b115"
+    },
+    {
+      "path": "reference/vendor/cordis/src/events.ts",
+      "sha256": "96565a2b5fbf35c26b78cbdc785b2b2e3f01fa55a9fd1f6af5355ab35ccc343c"
+    },
+    {
+      "path": "reference/vendor/cordis/src/fiber.ts",
+      "sha256": "750555b47603f88e7ef7a05d1a8d629b355c176a1185af411aac6e3e1e2b7ba3"
+    },
+    {
+      "path": "reference/vendor/cordis/src/index.ts",
+      "sha256": "c2232f082c763488225eafcd33530640ad26af0c7d6ea871a4f7e8ebf0eb3704"
+    },
+    {
+      "path": "reference/vendor/cordis/src/logger.ts",
+      "sha256": "5121e76fd9f55b9b90dfea09d6e60d122e7530246b8b19970ddebd9c35ccf7d8"
+    },
+    {
+      "path": "reference/vendor/cordis/src/reflect.ts",
+      "sha256": "6847b9781044023d65aebb5896a873b9f0a3d777eaf7fa0dd2a7a408eb6b74a6"
+    },
+    {
+      "path": "reference/vendor/cordis/src/registry.ts",
+      "sha256": "34bbd60ae502b4f85201c204afb52a9acabde6878d9278493478c1b2183debd3"
+    },
+    {
+      "path": "reference/vendor/cordis/src/service.ts",
+      "sha256": "614205c6ce7cf1a057b8b352e96aa4fcd734c967a3d2283a126c9c61f268e3be"
+    },
+    {
+      "path": "reference/vendor/cordis/src/utils.ts",
+      "sha256": "8fe273424583d21267ef13f248840e97454d09d836a0ac08323a9482c2069263"
+    },
+    {
+      "path": "reference/vendor/cosmokit/src/array.ts",
+      "sha256": "cf4de899ecffd66a90d8cef6f4c7d127d31f77f776d8e173d41c30d2d7632cf7"
+    },
+    {
+      "path": "reference/vendor/cosmokit/src/index.ts",
+      "sha256": "51dd173c70001d7d7891d3aab7e26594da65f7cb6671253f6d457ac889326b3c"
+    },
+    {
+      "path": "reference/vendor/cosmokit/src/misc.ts",
+      "sha256": "117617943074ea57c15f216905dacd2f6d1c4c2ff16586f97a7a7a87dbf2141f"
+    },
+    {
+      "path": "reference/vendor/cosmokit/src/string.ts",
+      "sha256": "5564272b3e15e49235cbe3a8b453f27306baf282d23a893982841670f65d3c04"
+    },
+    {
+      "path": "reference/vendor/cosmokit/src/time.ts",
+      "sha256": "49957c4608465a1fbd738186a92c47fffcd1fc4ba59dbf89524f8a773fe16fe2"
+    },
+    {
+      "path": "reference/vendor/cosmokit/src/types.ts",
+      "sha256": "09d72a91052105e88500bfb99a8e8ce0c9ebf6f6e7df569053e114bc77aa019c"
+    },
+    {
+      "path": "reference/vendor/hmr/src/error.ts",
+      "sha256": "db29dd32cfbae7199eb1055aac524866d3f06c3f98c6390bff33ad384d617ab6"
+    },
+    {
+      "path": "reference/vendor/hmr/src/index.ts",
+      "sha256": "5d9ea00ede52a1b03abbf10a0df75d886403debe25a2a0495c6814dc6842220b"
+    },
+    {
+      "path": "reference/vendor/include/src/index.ts",
+      "sha256": "a852fd54499b8766c9d7480baab8f09e9297b520ba5fdc8ad57a11d43aa6260d"
+    },
+    {
+      "path": "reference/vendor/loader/src/config/entry.ts",
+      "sha256": "c1a15a12decb49bda43a953787708a9fb6afa2bc056018287d89fcd3a1d2c5fe"
+    },
+    {
+      "path": "reference/vendor/loader/src/config/group.ts",
+      "sha256": "a3079629f907745ddc1e0f2520b66d57711053b4d3715ee8b5983954a6908168"
+    },
+    {
+      "path": "reference/vendor/loader/src/config/isolate.ts",
+      "sha256": "950a6f5e0727cd28bff3df09e8c42c9670fcf1f058d6a64d7572c83b5cd403a9"
+    },
+    {
+      "path": "reference/vendor/loader/src/config/tree.ts",
+      "sha256": "5be2d9c3f2581f6c714380216f6ffd8171a0cbe0405adbaf13c9563ffae0ada9"
+    },
+    {
+      "path": "reference/vendor/loader/src/config/utils.ts",
+      "sha256": "8ff540ba75490ef137546b2b222903478d8451cf422c50c56fb11cff5a181749"
+    },
+    {
+      "path": "reference/vendor/loader/src/index.ts",
+      "sha256": "d535dce0a13e8cbfa39d79722ada8c65606ff207d3ee6946ae11586f378cefd8"
+    },
+    {
+      "path": "reference/vendor/loader/src/internal.ts",
+      "sha256": "6d2e9adc901b39dfacb7ece2e56b1553cee8ecf0405b7c0b8541048958987477"
+    },
+    {
+      "path": "reference/vendor/schemastery/src/index.ts",
+      "sha256": "cf8a4de0481969a1a6d44eac390015f3494be1ce19b84d4fcfb7e93e5072cee5"
+    },
+    {
+      "path": "reference/vendor/timer/src/index.ts",
+      "sha256": "d723fb34a6c5f107c04611c46198c5c860cc661d6e25eee3dd4e1bc091f0d68c"
+    },
+    {
+      "path": "scripts/cordis_oracle.py",
+      "sha256": "8ff7602b57d726bc1e1c94db46faf2d733237f8d515285d8776d36a16aa86e34"
+    },
+    {
+      "path": "scripts/oracles/cordis.mts",
+      "sha256": "6168a82c7ce06c36809038451c8aba2b4f4665c8c1844988f1edc97409fdfee4"
+    },
+    {
+      "path": "scripts/oracles/cordis_consumers.mts",
+      "sha256": "4fc9a6ebed74af02d5ec8f98b300cd7cba5df0de6eeea4befedb8a1683dfea9d"
+    },
+    {
+      "path": "scripts/oracles/cordis_consumers.py",
+      "sha256": "3b957b3aa42fee55cfd168248b31ccfac50bf250dd589f097e1176586d8729db"
+    },
+    {
+      "path": "scripts/oracles/cordis_include.mts",
+      "sha256": "d7b32dad1397ede98bc20cb32815d83286478b550dbf39568d72bbc578a98bd7"
+    },
+    {
+      "path": "scripts/oracles/cordis_include.py",
+      "sha256": "bc132315ba28e22c6c02d414d542d90e7858787216b9688755580973db7c22cd"
+    },
+    {
+      "path": "scripts/oracles/cordis_python.py",
+      "sha256": "6ed5b3f3ead504ab7bfb0ba82009b21894e8d70f6aee74ce6c90e191d3c00a9c"
+    },
+    {
+      "path": "scripts/oracles/package-lock.json",
+      "sha256": "2e25382fdab2f9975219ada5239a24466f222b399328cdd36826313f07afabc7"
+    },
+    {
+      "path": "scripts/oracles/package.json",
+      "sha256": "6c0aa3d2688b74bc96f03945f65295a5f4c1d8796c26334c79b9df69ffb62f63"
+    },
+    {
+      "path": "scripts/oracles/tsconfig.json",
+      "sha256": "7b489053078781d00b9ccfaf4dc36a601691a23febedf78e99714e38068371e1"
+    },
+    {
+      "path": "tests/test_cordis.py",
+      "sha256": "346beda340babb96089006b80ea33d299d9d3757101e9550b174244a57fb13f2"
+    },
+    {
+      "path": "tests/test_cordis_1to1_advanced_improvements.py",
+      "sha256": "d5b3d718fccc84fcfc5d5547483de5650b76212e5a979a3b4ea93945a21ef788"
+    },
+    {
+      "path": "tests/test_cordis_1to1_advanced_parity.py",
+      "sha256": "fb3f3d03ad699e3f3d1c0ce386557fcd497243bd023aed2a56ec32d187be7d3c"
+    },
+    {
+      "path": "tests/test_cordis_1to1_advanced_parity_v2.py",
+      "sha256": "bd1ad69e1b9f1155ad8a34e60872eded87b4b783af91339480e93f62f97abee2"
+    },
+    {
+      "path": "tests/test_cordis_1to1_advanced_parity_v3.py",
+      "sha256": "843765f8be776dc5cd1a943b90a43c064aca3d115329911b11e87095d7d1cc12"
+    },
+    {
+      "path": "tests/test_cordis_1to1_advanced_parity_v4.py",
+      "sha256": "b26f9d81e4304dbe02033d495087467ab5ab2b8f1462e92d59c2d1ba009273c2"
+    },
+    {
+      "path": "tests/test_cordis_1to1_final_completeness.py",
+      "sha256": "3863e6035c61eee28338e089fb725d05c64198469d039cf02d05cda1bcf78aa8"
+    },
+    {
+      "path": "tests/test_cordis_1to1_full.py",
+      "sha256": "4adec25806578b28c54cc1e66277c9d75c9c83a2203e68ff7c83d4fea20820e9"
+    },
+    {
+      "path": "tests/test_cordis_1to1_lifecycle_specs.py",
+      "sha256": "96a6f7de85d55a62f78ac2f04dec8929fb32b162a048d39e7201405d8cbe4e24"
+    },
+    {
+      "path": "tests/test_cordis_1to1_parity.py",
+      "sha256": "80881689b9590632d02cca1d688e36dad05b47cdb8c78010d62486aaa050a39a"
+    },
+    {
+      "path": "tests/test_cordis_1to1_reference_test_parity.py",
+      "sha256": "cdb13f5579d4c9fdfa04d48b5a23d0bca5ed0a9288fc9fdc7aced0e56ae488cd"
+    },
+    {
+      "path": "tests/test_cordis_config_reload_1to1.py",
+      "sha256": "38772e678f8543e386da08686d2f81560283eed73f47d57b765d4f221ff671bb"
+    },
+    {
+      "path": "tests/test_cordis_config_watcher_1to1.py",
+      "sha256": "3bb4528a5d313cc3268f5953c78d16628494f5f1852c30e8a7216bc40d644128"
+    },
+    {
+      "path": "tests/test_cordis_consumer_observations.py",
+      "sha256": "25e06963214fee581fd87d07924ba5999b62b62d1363edbb9c2616362024ac2a"
+    },
+    {
+      "path": "tests/test_cordis_context_effect_ownership.py",
+      "sha256": "86833a2c38167fa551f42f24f467b0a516a12fec497f5e63bbfafea8152ffb20"
+    },
+    {
+      "path": "tests/test_cordis_core_exact_parity.py",
+      "sha256": "b1ed93a48e85049053ea7d9bbbcba38ff38b5ee63ffd23604ae316e7edaebe1f"
+    },
+    {
+      "path": "tests/test_cordis_events_upstream_parity.py",
+      "sha256": "b51eeaf96a4d9da7ad3faae07616a81b95783b698342cb312e19288260ba6e9a"
+    },
+    {
+      "path": "tests/test_cordis_fiber_barrier_and_persistence_1to1.py",
+      "sha256": "716f9c376324136a97d3e1273f1ff54754e301e8334ffe9dc2c7147a956b4909"
+    },
+    {
+      "path": "tests/test_cordis_fiber_upstream_parity.py",
+      "sha256": "4ea101b236548b7c901a126e509685a7ab67aebd06fb5db86b8cc82d3fd4486a"
+    },
+    {
+      "path": "tests/test_cordis_full_specs_parity.py",
+      "sha256": "7b042e01d1b7b0ff05d94b7ee0c3b757fbac76d695be50b9c4758cdf7db1d37f"
+    },
+    {
+      "path": "tests/test_cordis_include_observations.py",
+      "sha256": "1a33a1aad02f38050dc6aefa4eda7859f2aa37edf6f1cb1915beca05d151e9c2"
+    },
+    {
+      "path": "tests/test_cordis_inject_decorator_1to1.py",
+      "sha256": "2845f76eaf2b5aef45b2eade961a65f68cd6d3f746e4841b5d2f911451f21989"
+    },
+    {
+      "path": "tests/test_cordis_injection_service_upstream_parity.py",
+      "sha256": "2eed43c50ee00174b04ff00be5db68f54ca113bd45060bb956935006ee776aaa"
+    },
+    {
+      "path": "tests/test_cordis_internal_waterfall_callsites.py",
+      "sha256": "dc0d0642da7c542eb79bda4d28ba61e369be091026d8c26fdd17ca2ca8d05a82"
+    },
+    {
+      "path": "tests/test_cordis_interpolate_1to1.py",
+      "sha256": "d6bf7d76d26209cc07877b9f7e332a8dd02fa36bf98666bf1bffd7d62c91f65c"
+    },
+    {
+      "path": "tests/test_cordis_lifecycle_observations.py",
+      "sha256": "df5595affe3e2ef4f9bb03dbb3270c4acec926d4c6f168a3d2bdc7b4335f6bba"
+    },
+    {
+      "path": "tests/test_cordis_lifecycle_reference_1to1.py",
+      "sha256": "0f2b82f61391e49c5c359055dff2d91f2b56d522b75fea5dd58f4efa2ceecc6f"
+    },
+    {
+      "path": "tests/test_cordis_loader_safe_eval_1to1.py",
+      "sha256": "7a250935f76a69f2d8df0a670115eedeb979cab8e25e912496a524fa36ec9c78"
+    },
+    {
+      "path": "tests/test_cordis_loader_upstream_parity.py",
+      "sha256": "83b786f4648684ddc87a3d7a139fba23635c6604464c1187421223168d259fb8"
+    },
+    {
+      "path": "tests/test_cordis_oracle_runner.py",
+      "sha256": "8b35e2c9dbf84dba9873ae985142f8a0d8137d7bb0027e8ab993d870cafffaf0"
+    },
+    {
+      "path": "tests/test_cordis_patches_and_loader_specs.py",
+      "sha256": "2f7ad9b5771148017dfe219290f55f534e5e733ab7570e1f86b0e3254f3f6225"
+    },
+    {
+      "path": "tests/test_cordis_realm_isolate_1to1.py",
+      "sha256": "2a0dcae62197ad91e807ad3be47c263c84f73d250f759864bbcf5246051c25fb"
+    },
+    {
+      "path": "tests/test_cordis_reference_parity_alignment.py",
+      "sha256": "c7b8f2b23788187fae301d75bde85fae352ab90940d033d0873efd82af695194"
+    },
+    {
+      "path": "tests/test_cordis_scheduling.py",
+      "sha256": "5969096b2bc9bf90c3ff055c80aea0011f952b08db012cfd0a6d57f479907e79"
+    },
+    {
+      "path": "tests/test_cordis_schema_1to1.py",
+      "sha256": "c927b1e3d58cd72eb8d6e555a5db5bb1c6e6b72198074713ac1b20800ab0d51f"
+    },
+    {
+      "path": "tests/test_cordis_schemastery_advanced_1to1.py",
+      "sha256": "4f28a9b882f960093a94e6686cea2b2f2ec7749749a70d275c14cacc62e59635"
+    },
+    {
+      "path": "tests/test_cordis_schemastery_standard_schema_1to1.py",
+      "sha256": "2d6b8f9b8aec054a68844c3a8a5bb3654ee408cc2a3ffd63bf980f3afa14b75b"
+    },
+    {
+      "path": "tests/test_cordis_stage1_parity.py",
+      "sha256": "46f33ee655950c521df63faf35f5531b6bef54c4bb27fe57e3a67120041cfb82"
+    },
+    {
+      "path": "tests/test_cordis_strict_inject.py",
+      "sha256": "9008c8df31bffa3572bd74289581fa6e40d829895a53c26110ccc55522d52755"
+    },
+    {
+      "path": "tests/test_cordis_strict_inject_comprehensive.py",
+      "sha256": "945157dcc5295d2d10d0471cfd7a4e44bae39a0814b47bf4143ddaa0e099762c"
+    },
+    {
+      "path": "tests/test_cordis_strict_inject_deep_1to1.py",
+      "sha256": "03f53248502c56367e4bbc9ab8e32b4b7bf92467c0c253c0d20bee71868b3f94"
+    },
+    {
+      "path": "tests/test_cordis_timer_1to1.py",
+      "sha256": "f7b1ce9f65aa437497fc3f6cc89f396f0841c99a811b590c3ad122602c0a67da"
+    },
+    {
+      "path": "tests/test_cordis_tools_full.py",
+      "sha256": "7d7026932251d8b67d9a4d0a99493cad9dc3eb1f1a4318a732a5133259990e0b"
+    },
+    {
+      "path": "tests/test_cordis_traceable_and_stack_1to1.py",
+      "sha256": "f58b0ee8131ddf6e6383489c51f9e2abc409da4656220c86ebcaeb8e6a1dff22"
+    },
+    {
+      "path": "tests/test_cordis_waterfall_and_events_advanced_1to1.py",
+      "sha256": "e64914543577df4d8388b454683af79cdaa86a468868afadf7ce37d97aaafea5"
+    },
+    {
+      "path": "tests/test_cordis_wave2_observations.py",
+      "sha256": "560cca96e3c56e843f4c2f8940874c06169be50fefb22af26a3a4faf06c61496"
+    },
+    {
+      "path": "tests/1to1/cordis/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tests/1to1/cordis/test_bundle_fail_loud_parity.py",
+      "sha256": "1cc1276d490e1c8ec8435cd327ca59a64c80d973d2985ad7cfa62b02ead06df2"
+    },
+    {
+      "path": "tests/1to1/cordis/test_context_parity.py",
+      "sha256": "d0d324dc2800d4784c8f6d68f0dae4feb4bed2548340eb29451357f6713be7ea"
+    },
+    {
+      "path": "tests/1to1/cordis/test_cordis_core_semantics_parity.py",
+      "sha256": "7a041c5e8ad23e16615cce9d7522009db257ee255fe5d521b9f24c852f296258"
+    },
+    {
+      "path": "tests/1to1/cordis/test_environment_parity.py",
+      "sha256": "12f4906afaf7025f2991cee59933699a9753a956e3f6200098d4494b85a2892a"
+    },
+    {
+      "path": "tests/1to1/cordis/test_events_parity.py",
+      "sha256": "0ed46d6de3fb491fca112cd2988a0b39627c5a0154f976c5286211f93a1869af"
+    },
+    {
+      "path": "tests/1to1/cordis/test_fiber_parity.py",
+      "sha256": "f1a3149bfb77740d062139706fba8e60eef34557cb07741ba5b0855ee7f69e57"
+    },
+    {
+      "path": "tests/1to1/cordis/test_harness_parity.py",
+      "sha256": "6326a9865a521d4b567e2b8c2f42ae571a35941c73b36bbe7a673db28503d254"
+    },
+    {
+      "path": "tests/1to1/cordis/test_hmr_parity.py",
+      "sha256": "3e6be6cf0ae0e4882c65a5c6e276739870f17d1b34c3a4966e7bcdd3d6c42eee"
+    },
+    {
+      "path": "tests/1to1/cordis/test_include_parity.py",
+      "sha256": "9b61256397367300650d9e7dfd7456700ac2a1d9035bebe5360b94df8cb7a3fe"
+    },
+    {
+      "path": "tests/1to1/cordis/test_loader_deep_equal_parity.py",
+      "sha256": "897c735f5d258b96ece5f2e7b5756633becd6c5f6aefa0ba49a164395c2d121a"
+    },
+    {
+      "path": "tests/1to1/cordis/test_loader_parity.py",
+      "sha256": "26c17b261fd8a7ecf1ebabe1da77e4a96982fb9190d61f347b665b7315121c0b"
+    },
+    {
+      "path": "tests/1to1/cordis/test_logger_parity.py",
+      "sha256": "c2bd0047be83084c8d85d07c79e0408bf57846a8435099475ae8a03c0f90aa2e"
+    },
+    {
+      "path": "tests/1to1/cordis/test_plugin_parity.py",
+      "sha256": "3ddcbf06962a503f1f27323997be31567b0e3ccd4ad570a42ec06aab7a8b6243"
+    },
+    {
+      "path": "tests/1to1/cordis/test_profile_parity.py",
+      "sha256": "15d3e64280cc3051291567eb7bfdfabe672affee3b972c4449b1654ef5fde8a2"
+    },
+    {
+      "path": "tests/1to1/cordis/test_reflect_parity.py",
+      "sha256": "132ff71a02ad5811897f7020d454444269fcd14fbf62a9d6993e9aa9192edf65"
+    },
+    {
+      "path": "tests/1to1/cordis/test_registry_parity.py",
+      "sha256": "caf1522ff4f28f8db806fd664dc53fa50c968bf6a3c51f8d048699c8407de3fb"
+    },
+    {
+      "path": "tests/1to1/cordis/test_schema_deep_equal_parity.py",
+      "sha256": "55862191b05bb2ad4f66851a376403ddc30d2573cf77cc02be29d01971153d4d"
+    },
+    {
+      "path": "tests/1to1/cordis/test_schema_parity.py",
+      "sha256": "4d25b0efff4649b9aa60f01ed869c395a44ada6e7c80374a318ea99a73486b59"
+    },
+    {
+      "path": "tests/1to1/cordis/test_service_parity.py",
+      "sha256": "bca227a766e4a4587713b5cbba8337651f2d862ef6c415736ac8ff475e8407d7"
+    },
+    {
+      "path": "tests/1to1/cordis/test_timer_parity.py",
+      "sha256": "c2f389fe85743c5a5a6f2d141a61a8bfed18b680e0755b59117952cdbaf64723"
+    },
+    {
+      "path": "tests/1to1/cordis/test_utils_cosmokit_parity.py",
+      "sha256": "76779085568588be22abdd566791da701d7415f298c78adce9ad9d3e5a136478"
+    },
+    {
+      "path": "dsh/presets/mount.py",
+      "sha256": "f9712ba2d9d1692fba087bb83bd591a6191eebd51c6b36ad5ed5101fa824eaf9"
+    },
+    {
+      "path": "reference/packages/preset/agent-presets/src/mount.ts",
+      "sha256": "bb879525e52360a9b59f62665ea61d1c28ca87e43c7f02226c7ee7f5099c9ef9"
+    },
+    {
+      "path": "tests/test_agent_presets_upstream_parity.py",
+      "sha256": "4aee342c75dc75c1aae887d857d3f86d94d34f653c7a3c4aeaf19ff03137ccc9"
+    },
+    {
+      "path": "tests/1to1/client/test_client_host_halves.py",
+      "sha256": "a1946a420a7471f3ed110b94b3073c9d5c71d99eb41f822ce349aede0c04b15d"
+    }
+  ],
+  "paired_scenarios": {
+    "matched": 47,
+    "different": [],
+    "exit_code": 0
+  },
+  "limitations": [
+    "Worktree observations, not fixed-candidate acceptance.",
+    "Local scenarios do not certify complete official coverage, Win7 or portable release."
+  ],
+  "initial_full_suite": {
+    "passed": 2956,
+    "failed": 8,
+    "skipped": 2,
+    "warnings": 2,
+    "exit_code": 1,
+    "seconds": 160.65,
+    "classification": "3 baseline failures, 4 identity assumptions, 1 real Preset mount audit consumer regression; fixed raw owner storage without relaxing leak detection."
+  },
+  "full_suite": {
+    "passed": 2961,
+    "failed": 3,
+    "skipped": 2,
+    "warnings": 2,
+    "seconds": 167.96,
+    "exit_code": 1,
+    "classification": "Only the established baseline failures: old portable dist rejects --profile; glob/grep cross-drive paths. No new failing tests."
+  }
+}

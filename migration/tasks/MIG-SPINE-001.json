@@ -10,7 +10,7 @@
     {
       "task": "MIG-CORDIS-001",
       "contract": "CON-CORDIS-CORE",
-      "revision": 6
+      "revision": 7
     }
   ],
   "provides": [],

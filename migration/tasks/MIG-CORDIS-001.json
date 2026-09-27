@@ -1,16 +1,16 @@
 {
   "id": "MIG-CORDIS-001",
-  "goal": "复核 Cordis C1-C45 与必要消费者的验收闭包",
+  "goal": "复核 Cordis C1-C47 与必要消费者的验收闭包",
   "kind": "verification",
   "state": "review",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
-  "base_product": "24691c8d3415c4579f203f79c78f94386107f0de",
+  "base_product": "777a6693affe28c65e3c58465e971835f4443ca4",
   "owner": "current-session-coordinator",
   "requires": [],
   "provides": [
     {
       "contract": "CON-CORDIS-CORE",
-      "revision": 6
+      "revision": 7
     }
   ],
   "acceptance": [
@@ -26,9 +26,7 @@
     "migration"
   ],
   "open_findings": [
-    "CORE-PAIRED-COVERAGE-INCOMPLETE",
-    "CORDIS-C42-REFRESH-DISPOSAL-ORDER",
-    "CORDIS-C45-HANDLE-IDENTITY"
+    "CORE-PAIRED-COVERAGE-INCOMPLETE"
   ],
   "conflicts_with": [],
   "candidate_commit": null,
@@ -38,8 +36,9 @@
     "RUN-CORDIS-WAVE2-20260927",
     "RUN-CORDIS-CONSUMERS-20260927",
     "RUN-CORDIS-INCLUDE-20260927",
-    "RUN-CORDIS-LIFECYCLE-20260927"
+    "RUN-CORDIS-LIFECYCLE-20260927",
+    "RUN-CORDIS-HANDLE-20260927"
   ],
-  "next_action": "优先对齐 registry.plugin 包装对象与原始 fiber 身份及 Loader/Include 消费端；关闭 C42/C45 后再推进模块 HMR",
-  "delivery_commit": "24691c8d3415c4579f203f79c78f94386107f0de"
+  "next_action": "完成 handle/raw restart 与依赖重检双端覆盖，再推进实际模块 HMR 替换、缓存失效和失败回滚；仍不放行上层迁移",
+  "delivery_commit": "777a6693affe28c65e3c58465e971835f4443ca4"
 }

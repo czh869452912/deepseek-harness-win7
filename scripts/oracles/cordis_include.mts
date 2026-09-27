@@ -28,6 +28,24 @@ export async function scenario(id: number) {
   try {
     ctx.baseUrl = pathToFileURL(directory + '/').href
     await ctx.plugin(Loader).await()
+    if (id === 46 || id === 47) {
+      const handle = ctx.plugin({ name: 'handle-recovery', apply(_c: any, config: any) {
+        log.push(config.value)
+        if (config.value === 'bad') throw new Error('bad config')
+      } }, { value: 'bad' })
+      const errorOf = async (operation: any) => { try { await operation; return null } catch (error: any) { return error.message } }
+      const initial = await errorOf(handle)
+      const raw = handle.ctx.fiber
+      const target = id === 46 ? handle : raw
+      target.update({ value: 'good' })
+      const recovered = await errorOf(target.await())
+      const original = await errorOf(handle)
+      const methodError = await errorOf(handle.await())
+      const observation = { initial, recovered, original, methodError, log: [...log],
+        states: [handle.state, raw.state], configs: [handle.config.value, raw.config.value] }
+      await ctx.fiber.dispose()
+      return { ...observation, disposed: [handle.state, raw.state] }
+    }
     if (id === 45) {
       const handle = ctx.plugin({ name: 'handle-identity', async apply(_c: any, config: any) {
         if (config.value === 2) { entered.release(); await finish.promise }

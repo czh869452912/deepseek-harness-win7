@@ -334,9 +334,9 @@
       "id": "CORDIS-C42",
       "origin": "source-derived",
       "contract": "CON-CORDIS-CORE",
-      "test": "scripts/oracles/cordis_include.py::scenario",
+      "test": "tests/test_cordis_lifecycle_observations.py::test_matched_lifecycle_observation",
       "status": "indexed-unverified",
-      "description": "OPEN: Include disposal during refresh completes before gated child upstream, after it in Python."
+      "description": "Include disposal during refresh matches upstream completion before the gated child settles; handle/raw ownership retained."
     },
     {
       "id": "CORDIS-C43",
@@ -358,12 +358,28 @@
       "id": "CORDIS-C45",
       "origin": "source-derived",
       "contract": "CON-CORDIS-CORE",
-      "test": "scripts/oracles/cordis_include.py::scenario",
+      "test": "tests/test_cordis_lifecycle_observations.py::test_matched_lifecycle_observation",
       "status": "indexed-unverified",
-      "description": "OPEN: registry.plugin handle differs from awaited original upstream; Python conflates them."
+      "description": "Registry returns a distinct inheriting handle; await and disposal target the original fiber, while update shadows handle state."
+    },
+    {
+      "id": "CORDIS-C46",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_lifecycle_observations.py::test_matched_lifecycle_observation",
+      "status": "indexed-unverified",
+      "description": "Handle-only recovery preserves the original startup error through thenable assimilation."
+    },
+    {
+      "id": "CORDIS-C47",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_lifecycle_observations.py::test_matched_lifecycle_observation",
+      "status": "indexed-unverified",
+      "description": "Raw fiber recovery clears the original error and updates inherited handle fields."
     }
   ],
   "official_case_coverage": "not-inventoried",
-  "note": "C1-C45 are local source-derived IDs, not official coverage. C33/C34 are config-refresh component probes; C35/C36 use real watcher registration. No integrated contract acceptance. C37-C39 use real Include JSON files and gated builtin plugins. C42/C45 are confirmed unresolved differences; they remain in the default runner and make it exit 1.",
-  "observation_evidence": "RUN-CORDIS-LIFECYCLE-20260927"
+  "note": "C1-C47 are local source-derived IDs, not official coverage. All 47 paired observations match in RUN-CORDIS-HANDLE-20260927; indexed-unverified retains the distinction from integrated contract acceptance. C33/C34 cover config refresh; C35/C36 real watcher registration; C37-C43 Include lifecycle; C45-C47 handle identity/recovery. Module HMR and official case inventory remain open.",
+  "observation_evidence": "RUN-CORDIS-HANDLE-20260927"
 }

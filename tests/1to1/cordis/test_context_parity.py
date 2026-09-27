@@ -210,9 +210,9 @@ def test_t8_derived_contexts_resolve_the_root_registry_state():
 
     # The child published the fiber into the one shared runtime table.
     assert root.registry.get(TreePlugin) is extended.registry.get(TreePlugin)
-    assert fiber in root.registry.list_fibers()
-    assert fiber in isolated.registry.list_fibers()
-    assert fiber in intercepted.registry.list_fibers()
+    assert fiber.ctx.fiber in root.registry.list_fibers()
+    assert fiber.ctx.fiber in isolated.registry.list_fibers()
+    assert fiber.ctx.fiber in intercepted.registry.list_fibers()
 
     # ... and the shared allocator kept issuing strictly increasing uids.
     assert isolated.registry.counter == fiber.uid + 1

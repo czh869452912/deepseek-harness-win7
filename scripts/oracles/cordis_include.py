@@ -38,6 +38,34 @@ async def scenario(number):
         try:
             ctx.baseUrl = Path(directory).as_uri() + '/'
             await ctx.plugin(Loader)
+            if number in (46, 47):
+                class Recovery(Plugin):
+                    name = 'handle-recovery'
+                    def apply(self, c, config=None):
+                        log.append(config['value'])
+                        if config['value'] == 'bad':
+                            raise RuntimeError('bad config')
+                handle = ctx.plugin(Recovery, {'value': 'bad'})
+                async def error_of(operation):
+                    try:
+                        await operation
+                    except Exception as error:
+                        return str(error)
+                    return None
+                initial = await error_of(handle)
+                raw = handle.ctx.fiber
+                target = handle if number == 46 else raw
+                target.update({'value': 'good'})
+                recovered = await error_of(target.await_settled())
+                original = await error_of(handle)
+                method_error = await error_of(handle.await_settled())
+                observation = {'initial': initial, 'recovered': recovered, 'original': original,
+                               'methodError': method_error, 'log': log[:],
+                               'states': [handle.state, raw.state],
+                               'configs': [handle.config['value'], raw.config['value']]}
+                await ctx.fiber.dispose()
+                observation['disposed'] = [handle.state, raw.state]
+                return observation
             if number == 45:
                 class HandleIdentity(Plugin):
                     name = 'handle-identity'

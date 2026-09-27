@@ -245,7 +245,8 @@ async def test_loader_mounts_plugin_under_target_derived_context():
 
     assert fiber.parent is entry.ctx
     assert entry.ctx._parent is target
-    assert fiber.ctx.fiber is fiber
+    assert fiber.ctx.fiber is await fiber
+    assert fiber.ctx.fiber is not fiber
 
 
 def test_registry_plugin_mounts_synchronously_without_a_running_loop():

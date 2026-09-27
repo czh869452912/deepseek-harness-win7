@@ -606,7 +606,7 @@ class ConfigWatcherService(Service):
 
                 # 2. Determine all files to reload: changed file + transitive dependents
                 dependents = self.graph.get_transitive_dependents(abs_changed)
-                files_to_reload = [abs_changed] + [f for f in dependents if f != abs_changed]
+                files_to_reload = [abs_changed] + [f for f in reversed(dependents) if f != abs_changed]
 
                 registry = getattr(self.ctx, "registry", None)
                 prev_runtimes = dict(registry._runtimes) if registry else {}
@@ -631,39 +631,48 @@ class ConfigWatcherService(Service):
                         parent = getattr(old_fiber, "parent", None) or self.ctx
                         reg = getattr(parent, "registry", None) or getattr(self.ctx, "registry", None)
                         new_fiber = reg.plugin(plugin_target, getattr(old_fiber, "config", None))
-                        # The mount returns while the replacement fiber is
-                        # LOADING; the swap below needs its instantiated plugin
-                        # and must observe an apply failure to trigger rollback.
-                        await_fn = getattr(new_fiber, "await_settled", None) or getattr(new_fiber, "await_", None)
-                        if await_fn is not None:
-                            await await_fn()
-                        err = getattr(new_fiber, "_error", None) or getattr(new_fiber, "error", None)
-                        if err is not None:
-                            raise err
+                        # Upstream HMR registers replacements without awaiting
+                        # startup. Apply rejection is a FAILED replacement, not
+                        # a synchronous registration failure requiring rollback.
                         new_fiber.entry = getattr(old_fiber, "entry", None)
                         if new_fiber.entry:
                             new_fiber.entry.fiber = new_fiber
-                        old_fiber._plugin_cls = plugin_target
-                        old_fiber.plugin = new_fiber.plugin
 
                 new_modules_created: List[str] = []
+                cache_backup: Dict[str, Any] = {}
+                loader = self.ctx.get("loader", None)
+                load_cache = getattr(getattr(loader, "internal", None), "loadCache", {})
+                loader_backup = dict(load_cache)
+                prepared: Dict[str, Any] = {}
                 try:
+                    # Import every replacement before disposing any runtime.
+                    # Reuse canonical module names so from-import consumers see
+                    # the new dependency; compile source to bypass stale pyc.
+                    importlib.invalidate_caches()
                     for file_path in files_to_reload:
                         if not os.path.isfile(file_path):
-                            continue
-
-                        # Dynamic reload Python module
-                        importlib.invalidate_caches()
-                        mod_name = f"hmr_reloaded_{abs(hash(file_path))}_{int(time.time() * 1000)}"
+                            raise FileNotFoundError(file_path)
+                        aliases = [name for name, module in list(sys.modules.items())
+                                   if getattr(module, "__file__", None)
+                                   and os.path.realpath(module.__file__) == os.path.realpath(file_path)]
+                        mod_name = aliases[0] if aliases else "hmr_reloaded_%s" % abs(hash(file_path))
                         mod = types.ModuleType(mod_name)
                         mod.__file__ = file_path
-                        sys.modules[mod_name] = mod
-                        new_modules_created.append(mod_name)
+                        mod.__package__ = mod_name.rpartition(".")[0]
+                        for name in aliases or [mod_name]:
+                            if name in sys.modules:
+                                cache_backup[name] = sys.modules[name]
+                            else:
+                                new_modules_created.append(name)
+                            sys.modules[name] = mod
                         with open(file_path, "r", encoding="utf-8") as fp:
-                            source_code = fp.read()
-                        code_obj = compile(source_code, file_path, "exec")
+                            code_obj = compile(fp.read(), file_path, "exec")
                         exec(code_obj, mod.__dict__)
-
+                        prepared[file_path] = mod
+                        from pathlib import Path
+                        load_cache[Path(os.path.realpath(file_path)).as_uri()] = mod
+                    for file_path in files_to_reload:
+                        mod = prepared[file_path]
                         if not registry:
                             continue
 
@@ -708,6 +717,9 @@ class ConfigWatcherService(Service):
                 except Exception as step_err:
                     for m_name in new_modules_created:
                         sys.modules.pop(m_name, None)
+                    sys.modules.update(cache_backup)
+                    load_cache.clear()
+                    load_cache.update(loader_backup)
                     if registry:
                         for old_key, info in reloads.items():
                             runtime = info.get("runtime")
@@ -723,6 +735,12 @@ class ConfigWatcherService(Service):
                                     self.ctx.logger("hmr").warn("failed during rollback of %s: %s", old_key, err)
                     raise step_err
 
+                # Future changes must target the replacement runtime, not the
+                # disposed class retained by the original watch registration.
+                for old_key, info in reloads.items():
+                    path = info["filename"]
+                    if self._modules.get(path) is old_key:
+                        self._modules[path] = info["attempt"]
                 if reloads and hasattr(self.ctx, "emit"):
                     self.ctx.emit("hmr/reload", reloads)
 

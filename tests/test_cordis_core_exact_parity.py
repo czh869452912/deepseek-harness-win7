@@ -6,6 +6,7 @@ import time
 import pytest
 
 from dsh.cordis.context import Context
+from dsh.cordis.fiber import FiberState
 from dsh.cordis.plugin import Plugin
 from dsh.cordis.service import Service
 from dsh.cordis.loader import Loader, Entry
@@ -188,17 +189,18 @@ async def test_hmr_dynamic_module_reload_and_fiber_restart():
 
         assert len(changes) >= 1
         assert len(reloads) >= 1
-        new_fiber = reloads[0][plugin_cls]["runtime"].fibers[0]
+        new_fiber = ctx.registry.get(reloads[0][plugin_cls]["attempt"]).fibers[0]
         assert new_fiber.plugin.version == 2
-        assert fiber.plugin.version == 2
+        assert fiber.plugin.version == 1
+        assert fiber.state == FiberState.DISPOSED
         settlement = hmr.teardown()
         if settlement is not None:
             await settlement
 
 
 @pytest.mark.asyncio
-async def test_hmr_dynamic_module_reload_failure_triggers_rollback():
-    """R4 test: Module reload failure triggers deep rollback restoring previous plugin and fiber state."""
+async def test_hmr_apply_failure_retains_failed_replacement():
+    """C54: apply failure belongs to the new fiber; it is not import rollback."""
     with tempfile.TemporaryDirectory() as tmpdir:
         mod_file = os.path.join(tmpdir, 'failing_plugin.py')
         with open(mod_file, 'w', encoding='utf-8') as f:
@@ -249,22 +251,20 @@ async def test_hmr_dynamic_module_reload_failure_triggers_rollback():
         await asyncio.sleep(0.1)
 
         assert len(changes) >= 1
-        # Previous plugin was restored on rollback:
-        # X5 discriminating assertions: verify old_cls remains registered in registry and its active fiber is restored
-        assert ctx.registry.has(plugin_cls)
-        restored_runtime = ctx.registry.get(plugin_cls)
-        assert restored_runtime is not None
-        assert len(restored_runtime.fibers) >= 1
-        assert restored_runtime.fibers[0].plugin.version == 1
-        assert fiber.plugin.version == 1
+        assert not ctx.registry.has(plugin_cls)
+        replacements = [f for f in ctx.registry.list_fibers() if f.name == fiber.name]
+        assert len(replacements) == 1
+        assert replacements[0].state == FiberState.FAILED
+        assert str(replacements[0]._error) == "boom on reload"
+        assert fiber.state == FiberState.DISPOSED
         settlement = hmr.teardown()
         if settlement is not None:
             await settlement
 
 
 @pytest.mark.asyncio
-async def test_hmr_multi_file_reload_failure_triggers_rollback_all():
-    """X2 test: Multi-file reload failure rolls back all affected modules and restores all previous fibers."""
+async def test_hmr_multi_file_apply_failure_keeps_successful_peer():
+    """Apply failure does not roll back successfully registered peer plugins."""
     with tempfile.TemporaryDirectory() as tmpdir:
         file_a = os.path.join(tmpdir, 'plugin_a.py')
         file_b = os.path.join(tmpdir, 'plugin_b.py')
@@ -347,17 +347,15 @@ async def test_hmr_multi_file_reload_failure_triggers_rollback_all():
         await asyncio.sleep(0.15)
         assert len(changes) >= 1
 
-        # X2 verification: BOTH plugin A and plugin B are restored to version 1 in ctx.registry
-        assert ctx.registry.has(cls_a)
-        runtime_a = ctx.registry.get(cls_a)
-        assert runtime_a is not None and len(runtime_a.fibers) >= 1
-        assert runtime_a.fibers[0].plugin.version == 1
-
-        assert ctx.registry.has(cls_b)
-        runtime_b = ctx.registry.get(cls_b)
-        assert runtime_b is not None and len(runtime_b.fibers) >= 1
-        assert runtime_b.fibers[0].plugin.version == 1
-
+        assert not ctx.registry.has(cls_a)
+        assert not ctx.registry.has(cls_b)
+        replacements = {f.name: f for f in ctx.registry.list_fibers()}
+        replacement_a = replacements[fiber_a.name]
+        replacement_b = replacements[fiber_b.name]
+        assert replacement_a.state == FiberState.ACTIVE
+        assert replacement_a.plugin.version == 2
+        assert replacement_b.state == FiberState.FAILED
+        assert "boom in plugin_b reload" in str(replacement_b._error)
         settlement = hmr.teardown()
         if settlement is not None:
             await settlement

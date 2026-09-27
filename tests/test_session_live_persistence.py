@@ -195,3 +195,15 @@ async def test_jsonl_fsync_failure_rolls_back_then_retry_writes_once(tmp_path, m
     assert path.read_bytes()==before
     await p.append('s',events)
     assert (await p.read_from('s',0)).events==events
+
+@pytest.mark.asyncio
+async def test_retirement_and_backend_unload_share_exact_drain_state(backend):
+    ctx,fiber,p=await mount(backend)
+    store=ctx.get('sessions');session=store.prepare('s')
+    detach=store.enter(session);store.announce(session);turn(session)
+    await session.flush()
+    detach()
+    try:
+        await p._live_writes.dispose()
+        assert not p._live_writes.live
+    finally: await ctx.fiber.dispose()

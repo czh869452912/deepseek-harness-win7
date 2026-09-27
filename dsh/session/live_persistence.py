@@ -82,14 +82,18 @@ class LivePersistence:
 
     async def flush(self, session=None):
         if session is None:
-            results = await asyncio.gather(*(self.flush(s) for s in list(self.live)), return_exceptions=True)
+            # Capture exact state before scheduling coroutines: retirement may
+            # remove the Session before Python starts a child coroutine.
+            results = await asyncio.gather(*(self._flush_state(state) for state in list(self.live.values())), return_exceptions=True)
             errors = [r for r in results if isinstance(r, BaseException)]
             if errors:
                 error = RuntimeError('persistence drain failed: ' + '; '.join(str(e) for e in errors))
                 error.errors = errors
                 raise error
             return
-        state = self._init(session)
+        await self._flush_state(self._init(session))
+
+    async def _flush_state(self, state):
         writes = state['writes']
         writes.cancel_automatic_wait()
         try:

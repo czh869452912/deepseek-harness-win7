@@ -36,7 +36,7 @@
 
 `contracts` 中 draft 表示还没有完备语义规格；specified 必须补齐身份、所有权、偏序、错误、取消及适配字段。所有语义修订必须增加 revision，同时更新受影响任务引用并安排重验。初始 C1–C21 是本地源码推导场景，不是官方用例 ID，也不是已确认的双侧 oracle 通过。
 
-`mappings` 当前只支持 `indexed-unverified`，用于发现与保存测试入口；验收状态由证据而非映射标签承担。官方案例清单尚未建立，不生成全项目完成率。
+`mappings` 当前只支持 `indexed-unverified`，用于发现与保存测试入口；验收状态由证据而非映射标签承担。Cordis 官方直接消费者清单已建立于 cordis-inventory.json；仍不生成全项目完成率。
 
 acceptance 证据必须包含：
 
@@ -59,7 +59,7 @@ verified/queued 需要当前候选的有效证据；integrated 必须记录实�
 
 当前检测要求 reference HEAD 等于 target 且无已跟踪修改。新上游批次应先比较代码、manifest、锁文件、官方用例、快照及生成目录，完成影响分析后再一起更新目标及记录。未记录的新增/删除 manifest 或 hash 变化会让 check 失败。
 
-当前已知基线失败是旧 dist 不支持 `--profile`，以及 glob/grep 跨 C/D 盘路径错误。它们分别进入 `MIG-PORTABLE-001`、`MIG-SEARCH-001`，没有因建立新记录而被关闭。Win7、Win7 浏览器、真实 provider 和新 portable 仍需各自验证。
+旧 dist 与跨盘搜索的三个基线失败已通过实际修复和重建消除；MIG-PORTABLE-001、MIG-SEARCH-001 已有固定产品提交的通过证据。新 portable 包含自己的 Python 3.8 与固定 ripgrep，当前 Windows 隔离启动已验证。Win7/Win7 浏览器按用户指令暂缓；真实 provider 不由 mock 测试认证。
 
 ## 后续建设顺序
 
@@ -68,7 +68,7 @@ verified/queued 需要当前候选的有效证据；integrated 必须记录实�
 3. 加入带状态前置条件的记录更新、提交绑定及原子领取/租约恢复；补 PR 验证门禁。
 4. 跑通真实纵向流程和一个上游更新批次后，再开放第二个实现 worker。
 
-## 本阶段验证记录
+## 历史阶段验证记录（不代表当前失败）
 
 工具门禁回归最终为 **27 passed**。全量回归为 **2924 passed、3 failed、2 skipped、2 warnings**；其后补充了两项历史集成保留测试并重新通过全部 27 项专项测试。三个全量失败与之前记录一致，没有隐藏或跳过。完整结果见 `evidence/RUN-WORKFLOW-20260927.json`。
 
@@ -90,3 +90,17 @@ Cordis 已建立直接运行固定上游源码的双侧 runner（见 `scripts/or
 最新生命周期验证见 `reviews/CORDIS-LIFECYCLE-20260927.md`。已修复公共重复
 dispose 与结构所有者等待混用的问题；新发现的 registry 返回包装对象/原始 fiber
 身份差异须优先处理，Loader/Include 与对应消费者应纳入同一修复闭包。
+
+
+## 2026-09-27 最新收尾
+
+产品提交 a7e65ba9：全量 **2989 passed、2 skipped、2 warnings，0 failed**。
+旧的失败日志作为历史证据保留，不删除或改写；它们不表示当前回归仍失败。
+
+- C1–C62 双侧源码探针：61 matched，C58 为已完成 Future / resolved Promise 的原生语言调度差异。C59 显式 checkpoint 适配匹配；默认 runner 仍返回 1，不隐藏差异。
+- handle/raw restart、依赖恢复、真实模块 HMR、循环相对导入和同批失败回滚已完成。契约 revision 8 记录新的行为边界。
+- 官方生命周期 11 + Boot HMR 6 项原测试通过；直接消费者 inventory 已入库，标题匹配不是语义验收。
+- Preset invariant companion 与真实 profile → 工具 → JSONL → 全树重启恢复已实现。后者专项通过，但整体 SPINE 门禁仍等待 Boot/Session 完整契约与 Cordis 提供端验收。
+- 跨盘搜索和新 portable 的有限范围验收已集成。发行物约 45 MiB，构建输入、ZIP 摘要和隔离 boot 证据已保存。Win7 暂缓不阻塞本批次，也不等于已认证。
+
+完整 Cordis 验收尚有两个明确工作项：逐项审核官方必要消费者（包括动态参数展开），检查迁移回调对已完成 await 的可观察让出点。更广泛的模块分类、调度器原子领取/租约和上游更新演练也没有被本次测试计数替代。看板由任务记录生成，禁止把交付提交自动等同于全项目 parity。

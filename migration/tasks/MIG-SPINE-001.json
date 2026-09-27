@@ -10,7 +10,7 @@
     {
       "task": "MIG-CORDIS-001",
       "contract": "CON-CORDIS-CORE",
-      "revision": 7
+      "revision": 8
     }
   ],
   "provides": [],
@@ -28,6 +28,9 @@
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "完成 Boot/Session 契约盘点后补全依赖，当前不能领取"
+  "evidence_ids": [
+    "RUN-CORDIS-CLOSURE-20260927"
+  ],
+  "next_action": "Real run_profile -> mock LLM/tool -> JSONL flush -> new Context -> resume test implemented in be234bfa; full suite passes. Keep draft gate until Boot/Session requirements and provider contract acceptance are specified.",
+  "delivery_commit": "be234bfa0aa8c37c9e72117a842afdc8db5c2d3a"
 }

@@ -1,8 +1,8 @@
 {
   "id": "MIG-PORTABLE-001",
-  "goal": "核对新 portable 构建输入与 Win7 验证条件",
-  "kind": "analysis",
-  "state": "review",
+  "goal": "重建独立 portable 并完成当前 Windows 启动验证；Win7 按用户要求暂缓",
+  "kind": "verification",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "449396c008ff7ac817963bc42e80b90561a0e27f",
   "owner": "current-session-coordinator",
@@ -10,13 +10,13 @@
   "provides": [
     {
       "contract": "CON-PORTABLE-BOOT",
-      "revision": 1
+      "revision": 2
     }
   ],
   "acceptance": [
-    "Inventory pinned ripgrep/runtime/frontend build inputs and provenance.",
-    "Retire obsolete dist output and build fresh releases from current sources.",
-    "Separate modern Windows smoke from Win7 runtime/browser validation."
+    "Pinned ripgrep/runtime/frontend inputs and build provenance are recorded.",
+    "Old dist is retired; fresh release uses adjacent Python with isolated imports.",
+    "Five profiles dump config and fresh profile boots/shuts down on current Windows; Win7 validation deferred by user."
   ],
   "expected_paths": [
     "scripts/build_portable.py",
@@ -24,10 +24,11 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
+  "candidate_commit": "a7e65ba903810d3da1594920962a5cfb626e9dd2",
+  "integrated_commit": "a7e65ba903810d3da1594920962a5cfb626e9dd2",
   "evidence_ids": [
-    "RUN-BASELINE-20260927"
+    "RUN-BASELINE-20260927",
+    "RUN-PORTABLE-ACCEPTANCE-20260927"
   ],
-  "next_action": "User removed obsolete dist folder and zip after tool policy blocked deletion; verified absent. Fresh portable input and Win7 validation remain required."
+  "next_action": "本批次实现和当前 Windows 验证已完成；Win7 真机验证暂缓。"
 }

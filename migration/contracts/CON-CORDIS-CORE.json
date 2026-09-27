@@ -1,6 +1,6 @@
 {
   "id": "CON-CORDIS-CORE",
-  "revision": 7,
+  "revision": 8,
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "status": "draft",
   "source_paths": [
@@ -32,7 +32,10 @@
     "An old config registration disposal joins its own refresh and must not remove the replacement registration at the same path.",
     "Include initial apply and subsequent refreshes share serialization; publish content/data only after the child-tree transaction commits. A failed predecessor does not block the next refresh.",
     "Repeated public plugin-fiber dispose is a no-op; the structural parent still joins shared cleanup through its owned effect. Root disposal remains restartable.",
-    "Registry handle identity differs from Context.fiber and runtime.fibers. Method await first settles the handle, then assimilates its then closure to the original, including original startup errors."
+    "Registry handle identity differs from Context.fiber and runtime.fibers. Method await first settles the handle, then assimilates its then closure to the original, including original startup errors.",
+    "Module import failure retains old runtime and restores dependency caches; apply failure remains on the new FAILED fiber and does not imply import rollback.",
+    "Subsequent module changes resolve the current replacement runtime; raw old fibers are never mutated into replacements.",
+    "A multi-module reload imports every changed module before disposing old runtimes; dependency cache restoration includes package attributes and cyclic relative imports."
   ],
   "consumers": [
     "dsh/cordis/timer.py",
@@ -46,13 +49,13 @@
     "dsh/presets/mount.py"
   ],
   "open_questions": [
-    "Inventory official integration cases; C1-C47 are local IDs, not official coverage.",
-    "Add module HMR replacement/rollback; resolved awaitables, refresh prefixes, context identity and loopless cases remain open."
+    "Complete semantic review of official necessary-consumer cases identified by cordis-inventory.json.",
+    "C58 native Python completed-Future await does not yield like JS resolved Promise; C59 explicit checkpoint matches. Audit migrated async callbacks before acceptance."
   ],
   "identity": "Context ancestry, fiber ownership and service isolation labels are distinct; C1-C21 observe fiber states and declared service identities, not generated uid values. C31 preserves Loader entry/options identity. C34 uses distinct object keys for one filename; C36 exercises public same-path re-registration. C45 aligned: registry.plugin returns a distinct inheriting handle; update shadows state/config while epoch and effect resources remain shared. Await and dispose resolve to the original. C46/C47 distinguish handle-only and raw failure recovery.",
   "ownership": "Parent fiber owns ctx.plugin effect; child owns startup disposers and registrations. Loader Entry awaits target.dispose; publication rollback is registered among detached settlements. C32 retains the Loader store row through pending cleanup. C35 stops the watcher before joining refresh; C36 late old-registration cleanup preserves replacement. The Python initial Include apply task is tracked by its EntryTree and awaited by Service.init. Preset mount audit stores the raw subtree owner so ancestry checks detect global service leaks after handle separation.",
   "ordering": "C13: clear uid / publish disposal synchronously, callback after checkpoint, terminal state after cleanup. C14: assign load inertia before LOADING notification, then re-check invalidated epoch before executing body. C12: hide global service, await consumer cleanup, drop owner store entry. C22: each async prefix precedes the following listener. C26: collect an in-flight late yield before unloading in reverse effect order. C33 coalesces two changes arriving during one config refresh into one additional pass. C37 queues refresh behind a pending refresh; C38 continues after failed apply; C39 queues refresh behind initial apply, preserving the later file content. C42 now matches upstream Include unload completion before gated refreshed-child settlement through handle/raw ownership, without cancelling cleanup.",
   "errors": "C16 preserves setup failure through await/call. C18 aggregates listener failures. Publication failures propagate while rollback is owned. Broader logger/cancellation interactions remain to be probed. C23 synchronous listener failure aborts dispatch; C24 asynchronous prefix failure reports once without aborting peers. C40 gated single startup failure settles FAILED; C43 aggregate child failure followed by tree await observes LOADING in both runtimes, then DISPOSED after root teardown.",
   "cancellation": "C25/C27 repeat effect disposal while cleanup is pending; child/root ownership waits. C30 abandons a JS Promise observer and cancels the analogous Python Task observer; cleanup still completes under root ownership. JS Promise itself has no cancellation API. C28/C29 owner disposal rejects Timer timeout/interval operations. C44 public repeated disposal returns immediately while cleanup remains pending; Python preserves an immediately completed awaitable as its spelling adaptation. Parent effects call the owned disposal join path.",
-  "adaptation": "Python Task starts at a loop checkpoint instead of JS synchronous async prefix. Register inertia before notifications; defer actual unload callbacks. Loopless Python keeps existing synchronous adapter and is covered only by local regressions in this batch. Python ambient emit eagerly enters the coroutine in a copied contextvars context, then schedules its continuation. Disposal uses a shared owner Task with shielded observers; task cancellation models observer abandonment, not a nonexistent JS Promise.cancel."
+  "adaptation": "Python Task starts at a loop checkpoint instead of JS synchronous async prefix. Register inertia before notifications; defer actual unload callbacks. Loopless Python keeps existing synchronous adapter and is covered only by local regressions in this batch. Python ambient emit eagerly enters the coroutine in a copied contextvars context, then schedules its continuation. Disposal uses a shared owner Task with shielded observers; task cancellation models observer abandonment, not a nonexistent JS Promise.cancel. C58 documents native completed-Future scheduling divergence. A migrated callback must use an explicit checkpoint for JS resolved-Promise yields; C59 verifies this adaptation. This is not a global interception of arbitrary Python coroutines."
 }

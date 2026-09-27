@@ -28,7 +28,7 @@ C13 检查 dispose 调用返回瞬间，C14 检查 LOADING 通知中重入 dispo
 C4/C5 共用依赖激活/失效场景，C3/C21 共用严格与非严格读取场景；21 个 ID
 不代表 21 个独立官方用例，也不代表完整 Cordis 覆盖。
 
-本 runner 覆盖现有 C1–C45 的主要语义，未穷举取消、无 ambient loop、全部
+本 runner 覆盖现有 C1–C62 的主要语义，未穷举取消、无 ambient loop、全部
 EventBus 时序、身份隔离或 Loader/HMR 的双侧交错；这些仍需独立场景和消费者
 回归。普通 pytest 对 runner 的协议及比较规则做验证，不要求 Win7 安装 Node。
 

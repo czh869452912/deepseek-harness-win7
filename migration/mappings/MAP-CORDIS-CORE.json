@@ -377,9 +377,129 @@
       "test": "tests/test_cordis_lifecycle_observations.py::test_matched_lifecycle_observation",
       "status": "indexed-unverified",
       "description": "Raw fiber recovery clears the original error and updates inherited handle fields."
+    },
+    {
+      "id": "CORDIS-C48",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_lifecycle_observations.py::test_matched_lifecycle_observation",
+      "status": "indexed-unverified",
+      "description": "Handle restart preserves raw identity"
+    },
+    {
+      "id": "CORDIS-C49",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_lifecycle_observations.py::test_matched_lifecycle_observation",
+      "status": "indexed-unverified",
+      "description": "Raw restart updates lifecycle state"
+    },
+    {
+      "id": "CORDIS-C50",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_lifecycle_observations.py::test_matched_lifecycle_observation",
+      "status": "indexed-unverified",
+      "description": "Handle dependency recovery"
+    },
+    {
+      "id": "CORDIS-C51",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_lifecycle_observations.py::test_matched_lifecycle_observation",
+      "status": "indexed-unverified",
+      "description": "Raw dependency recovery"
+    },
+    {
+      "id": "CORDIS-C52",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_hmr_observations.py::test_module_reload_matches_upstream",
+      "status": "indexed-unverified",
+      "description": "Module replacement"
+    },
+    {
+      "id": "CORDIS-C53",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_hmr_observations.py::test_module_reload_matches_upstream",
+      "status": "indexed-unverified",
+      "description": "Module import failure retains old runtime"
+    },
+    {
+      "id": "CORDIS-C54",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_hmr_observations.py::test_module_reload_matches_upstream",
+      "status": "indexed-unverified",
+      "description": "Apply failure retains failed replacement"
+    },
+    {
+      "id": "CORDIS-C55",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_hmr_observations.py::test_module_reload_matches_upstream",
+      "status": "indexed-unverified",
+      "description": "Repeated replacement uses current runtime"
+    },
+    {
+      "id": "CORDIS-C56",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_hmr_observations.py::test_module_reload_matches_upstream",
+      "status": "indexed-unverified",
+      "description": "Dependency cache invalidation"
+    },
+    {
+      "id": "CORDIS-C57",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_hmr_observations.py::test_module_reload_matches_upstream",
+      "status": "indexed-unverified",
+      "description": "Import rollback restores caches"
+    },
+    {
+      "id": "CORDIS-C58",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "scripts/oracles/cordis_boundaries.py::scenario",
+      "status": "indexed-unverified",
+      "description": "Completed Future native scheduling divergence"
+    },
+    {
+      "id": "CORDIS-C59",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "scripts/oracles/cordis_boundaries.py::scenario",
+      "status": "indexed-unverified",
+      "description": "Explicit checkpoint adaptation"
+    },
+    {
+      "id": "CORDIS-C60",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_hmr_observations.py::test_module_reload_matches_upstream",
+      "status": "indexed-unverified",
+      "description": "Cyclic package-relative dependency reload"
+    },
+    {
+      "id": "CORDIS-C61",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "tests/test_cordis_hmr_observations.py::test_module_reload_matches_upstream",
+      "status": "indexed-unverified",
+      "description": "Multi-file import transaction rollback"
+    },
+    {
+      "id": "CORDIS-C62",
+      "origin": "source-derived",
+      "contract": "CON-CORDIS-CORE",
+      "test": "scripts/oracles/cordis_schema.py::scenario",
+      "status": "indexed-unverified",
+      "description": "Standard Schema defaults and nested issues"
     }
   ],
-  "official_case_coverage": "not-inventoried",
-  "note": "C1-C47 are local source-derived IDs, not official coverage. All 47 paired observations match in RUN-CORDIS-HANDLE-20260927; indexed-unverified retains the distinction from integrated contract acceptance. C33/C34 cover config refresh; C35/C36 real watcher registration; C37-C43 Include lifecycle; C45-C47 handle identity/recovery. Module HMR and official case inventory remain open.",
-  "observation_evidence": "RUN-CORDIS-HANDLE-20260927"
+  "official_case_coverage": "Discovery in migration/cordis-inventory.json; 11 core and 65 necessary-consumer literal declarations. Parameter expansions and semantic review remain separate.",
+  "note": "C1-C62 are local source-derived IDs. 61 matched; native scheduling C58 differs, explicit checkpoint C59 matches. Official lifecycle11 + HMR6 passed separately. No full-contract acceptance inferred.",
+  "observation_evidence": "RUN-CORDIS-CLOSURE-20260927"
 }

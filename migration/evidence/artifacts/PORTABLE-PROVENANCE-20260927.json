@@ -1,0 +1,1379 @@
+{
+  "python_builder": "3.8.10",
+  "python_runtime_source": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python38",
+  "ripgrep_package": "@vscode/ripgrep-win32-x64",
+  "ripgrep_version": "1.18.0",
+  "ripgrep_sha256": "f9dde63498b3193f098355dbec97af99dc4f6b8fa0df5ed04114a03012c042cb",
+  "product_commit": "a7e65ba903810d3da1594920962a5cfb626e9dd2",
+  "worktree_dirty": true,
+  "archive": {
+    "path": "dist/dsh-win7-portable-v0.1.0.zip",
+    "sha256": "a36113bda376f8a9ba811528ab2a5095a82b13ef5cf4602771d8debd7b758f50",
+    "bytes": 47135200
+  },
+  "validation_platform": "Windows-10-10.0.22000-SP0",
+  "win7_validation": "Deferred by explicit user instruction; no Win7 certification.",
+  "dirty_explanation": "Tracked modifications at build time were migration records only; product and build code match product_commit.",
+  "staged_product_inputs": [
+    {
+      "path": "dsh/__init__.py",
+      "sha256": "af32ce70975f927244a1a02f58fab22d94a9f1325dd15a54e2856fe214b15722"
+    },
+    {
+      "path": "dsh/acp/__init__.py",
+      "sha256": "05fb15a82e7cc18b5169d17160d815acf304a321a3cf8bd02698a1fc75eea5e7"
+    },
+    {
+      "path": "dsh/acp/codec.py",
+      "sha256": "5ec86f0d86c7158a077ecbcf5bba1a445ef824d9710f5681607e415b03500119"
+    },
+    {
+      "path": "dsh/acp/content.py",
+      "sha256": "5ad7b76cb9e6a86b30ef221d16915303d4238451194816d691f6197123b22664"
+    },
+    {
+      "path": "dsh/acp/server.py",
+      "sha256": "fab8e1d9c1a37689b8ed3a76f98be283afc091a9a341f397a32380d8df4a8902"
+    },
+    {
+      "path": "dsh/attachment/__init__.py",
+      "sha256": "202275f99e65339d1e2863c7740fd653042f76f6199427557f02135b3effe7c1"
+    },
+    {
+      "path": "dsh/attachment/admission.py",
+      "sha256": "5df910106da30903f339b54fd69d9a2f56b726be5bd35debbef3c0124eced7b8"
+    },
+    {
+      "path": "dsh/attachment/brand.py",
+      "sha256": "e0e04d0d513a7e6824119c512006747fe5d2076793324377355ac06ec8f1e713"
+    },
+    {
+      "path": "dsh/attachment/error.py",
+      "sha256": "67c444f7c9803753a14421ce6e061efdc5e03bd23d20122ca40195c67a2735d6"
+    },
+    {
+      "path": "dsh/attachment/local.py",
+      "sha256": "847ce490972dd06070a409897bf904418dfca61ed5874772f88ba55a8496264c"
+    },
+    {
+      "path": "dsh/attachment/store.py",
+      "sha256": "f2a85a330da97ba7f335ebec2fda3b0240544520d25468d209da950b139c7e41"
+    },
+    {
+      "path": "dsh/attachment/types.py",
+      "sha256": "21e9c5f459aec93db7e08a856892850215cddd5e5cff7efbad266865d6707581"
+    },
+    {
+      "path": "dsh/boot/__init__.py",
+      "sha256": "d467533b3a42812c979e59f9e95d3df7149a77b506e0e661dee2fcd709dedec1"
+    },
+    {
+      "path": "dsh/boot/app_boot.py",
+      "sha256": "b1527194d2304b621c6fc02a22e5b3aee57672ae2bfeafc02b4e88eb03a8fd08"
+    },
+    {
+      "path": "dsh/boot/cmdline.py",
+      "sha256": "23a09a5efc427919439d3481de998cbcb18dc2609a449177000b8104a4d35976"
+    },
+    {
+      "path": "dsh/boot/dump_config.py",
+      "sha256": "17a070e6c0f9bde13d93534f1e3bab1424b8476bb758ca6c81868db54ee10bb2"
+    },
+    {
+      "path": "dsh/boot/plugin_registry.py",
+      "sha256": "4e5e61ac6be6c0f7393a9edf1eed1698857c6fe18c033c6a63e854c9858f27f1"
+    },
+    {
+      "path": "dsh/boot/process_shutdown.py",
+      "sha256": "fc1bdecfdfe00acddcad9ed44d6c3b7bfaa5173ab94dc7e889fa233f2b7fe6e3"
+    },
+    {
+      "path": "dsh/boot/profile.py",
+      "sha256": "5a629511adeea4dd11cac9a97df273d6497a6a962d5e7be83b1a9d8b2906c995"
+    },
+    {
+      "path": "dsh/boot/profile_boot.py",
+      "sha256": "94655fb1793777e5a244a01ba366df1b3e15f9465978cd50d1fbe9733c927be7"
+    },
+    {
+      "path": "dsh/bundle/__init__.py",
+      "sha256": "0d3a27e83b3967d83d289f37a3ea5807bd2c571ad4c5157bd3e2b54777042109"
+    },
+    {
+      "path": "dsh/bundle/headless/__init__.py",
+      "sha256": "b9c3f491d917733c6a4cb664c7d33aa4262074b4cb2d2355e7b0e59f0579a6a8"
+    },
+    {
+      "path": "dsh/bundle/headless/startup.py",
+      "sha256": "db6dee5c659a54883ca5f2287f4d272e9c3dad3ad4a0c9c2ac1db3b7ba8cc8e8"
+    },
+    {
+      "path": "dsh/bundle/web_app/__init__.py",
+      "sha256": "9c2471cbc928fbf2bc7d25c7f73201b63c06500fced4e80ca7bb437c92fe7c8d"
+    },
+    {
+      "path": "dsh/bundle/web_app/startup.py",
+      "sha256": "7ba18bf3420d11208d416109ee3baa7038d229306419d642da692d7c3f261bb4"
+    },
+    {
+      "path": "dsh/client/__init__.py",
+      "sha256": "aba9a99b2a81e5fc2c4ff1fd3ca2abd46671d4d9e985c3051920f192fc6ace52"
+    },
+    {
+      "path": "dsh/client/locale.py",
+      "sha256": "308a0a965db0bd1b60aac29458adf5a069fc1cafe6b14a0abd15ac605d0d75cf"
+    },
+    {
+      "path": "dsh/client/rows.py",
+      "sha256": "037cff3a9b88d56c395dc2358f7ffccf1c0fffc1c647e13d3711fdf96a45214c"
+    },
+    {
+      "path": "dsh/client/surfaces.py",
+      "sha256": "7c5b57a1d578201a27ce48921ef2607ec19b26df686042ade0f18406806dfd1b"
+    },
+    {
+      "path": "dsh/client/ui_chat.py",
+      "sha256": "1ef494c6ec33127fafa7d7c97d48ff7cc0e408daec7251c01a0e1efa0a58f677"
+    },
+    {
+      "path": "dsh/client/ui_conversation.py",
+      "sha256": "4dc8b2ab8a73ab2d27b89b9c8307c806a45d19001404f317c44ab15ec90c99f7"
+    },
+    {
+      "path": "dsh/client/ui_deliverables.py",
+      "sha256": "99b3843e7054523d55f92618711b9b0427af10c2f1fd85ad0852b648d3d0035b"
+    },
+    {
+      "path": "dsh/client/ui_settings_general.py",
+      "sha256": "ab29ee73c5c6c7d4607cc7814fc1fae092b0118773b4a4a938d40588cab4cf37"
+    },
+    {
+      "path": "dsh/client/ui_theme.py",
+      "sha256": "2a7c84eb779494974db93ebcffa11309af0fd6423a2d007043f85348580e9bf8"
+    },
+    {
+      "path": "dsh/compaction/__init__.py",
+      "sha256": "8717db9bbaaff88915051dfe7bbb6c048017e407aca7fa239bab256989f11d0c"
+    },
+    {
+      "path": "dsh/compaction/command_compact.py",
+      "sha256": "9ae1db134b0604f654217b1c1093b4be778102b3689711a246e1899cf73d9a92"
+    },
+    {
+      "path": "dsh/compaction/compaction_basic/__init__.py",
+      "sha256": "c34bea35882f839368c58d28b3761ec8f31f6518ef3868558dc7a31182c688a1"
+    },
+    {
+      "path": "dsh/compaction/compaction_basic/config.py",
+      "sha256": "cc5cb6c234dff894a8e4d28014e4aaa34ee44787ac0f614448a2fffd5e0e49ad"
+    },
+    {
+      "path": "dsh/compaction/compaction_basic/region.py",
+      "sha256": "bef60752f0726487c6d2da8bb39de17b6a9669c4d0055d4b338bd9c6cbc8e0c1"
+    },
+    {
+      "path": "dsh/compaction/compaction_basic/summarizer.py",
+      "sha256": "b42a5718e705ddfa32b49716d4031c189a58b0a0e00361d45b4f4aefe512398e"
+    },
+    {
+      "path": "dsh/compaction/engine.py",
+      "sha256": "19db58d796705d02b676da457f1e3b1fc2154140a3fe4e31733761193710932e"
+    },
+    {
+      "path": "dsh/compaction/pruner.py",
+      "sha256": "789c50d72b03cef838d1ee9276e45921cba6229a673242cfdadfd00a9bd5bed1"
+    },
+    {
+      "path": "dsh/compaction/tool_pairing.py",
+      "sha256": "9fd4dadb060e68075dce4631e35d6add3d361f32b12c606465dc9701bd7a392b"
+    },
+    {
+      "path": "dsh/context/__init__.py",
+      "sha256": "8f7fa2a1b325f4888dd0d1fbca4aa8f0105e521bba7bed037797fd6632d8d5e1"
+    },
+    {
+      "path": "dsh/context/agent_instructions/__init__.py",
+      "sha256": "1d7cec7b39c8add8c01b58d1784da5f5da934f6c5dbe69d33faf2e01ce48bbc6"
+    },
+    {
+      "path": "dsh/context/agent_instructions/config.py",
+      "sha256": "996986337abefb1ee940d68de63ebc1527eb7264d9aea67c2c0b141b48ab0d42"
+    },
+    {
+      "path": "dsh/context/agent_instructions/digest.py",
+      "sha256": "70fa7fc92c566f0f4ebbf0dcbac053d07b6b97bddd489ba8ca98b7c7ba2762e6"
+    },
+    {
+      "path": "dsh/context/agent_instructions/files.py",
+      "sha256": "cc5ef00eb1b9fdb147e56f0239d7d1600dddd0b3e9454272ae0354526718e2ba"
+    },
+    {
+      "path": "dsh/context/agent_instructions/render.py",
+      "sha256": "3821edf5b645a3ae0e0c2f29e7ba6b0f6d0745f24302d55c1d5015daae328929"
+    },
+    {
+      "path": "dsh/context/agent_instructions/state.py",
+      "sha256": "0db2f10dbc486a2f4ea9bea10988fb10094dc2b026307309681eb346e57ae4f9"
+    },
+    {
+      "path": "dsh/context/file_reference_local/__init__.py",
+      "sha256": "598e4702e689699911789d83f89202039b6ce61da4f0e7b4af7a5d1e6cad5d39"
+    },
+    {
+      "path": "dsh/context/file_reference_local/grammar.py",
+      "sha256": "73440e8ddeb6626eba3c3f0d2150e7f0111f8b7371319f2bb04cddec4eb698b1"
+    },
+    {
+      "path": "dsh/context/file_reference_local/search.py",
+      "sha256": "4bdd47dc5d788e9c099b1736fd8bbe7855c9bd47ab999d0218e4d39d0d71cd1f"
+    },
+    {
+      "path": "dsh/context/time_context/__init__.py",
+      "sha256": "4a7ca29638dcc1a1428f943b25efda6c4c0936a5086f643c92e6dc2d8d60fceb"
+    },
+    {
+      "path": "dsh/context/time_context/request_zone.py",
+      "sha256": "f4a616fd35600792874a0fa4578e7803bfe01db5e57e6d16c7f77c7c3503cca4"
+    },
+    {
+      "path": "dsh/context/time_context/timestamp.py",
+      "sha256": "0b6585a5dcd49052c7a2765aaaf25c0bbc5bd53313e661f8faef6553a5102a76"
+    },
+    {
+      "path": "dsh/context/tmux_context/__init__.py",
+      "sha256": "5311c318dcc7a12547f9b198d48050ebccb4b983c3ff100127ebb197a3824779"
+    },
+    {
+      "path": "dsh/cordis/__init__.py",
+      "sha256": "c44353c21dad0603727420ee072685308046a323c13ebb1b99af211257ba33b2"
+    },
+    {
+      "path": "dsh/cordis/context.py",
+      "sha256": "19621431da94d988c35e290b10bde44f5e14e6cde6dbee95a66bf49ad24ed8b3"
+    },
+    {
+      "path": "dsh/cordis/environment.py",
+      "sha256": "18303b36ea02507e5f43c6b1cfa26eb12fc18a9c5f96d1b27a2436b82db2fd19"
+    },
+    {
+      "path": "dsh/cordis/events.py",
+      "sha256": "fbfe421eee95c8eff95fa218f353224fba337cbaa6b3c0c530a2d8fe6d2dc5f3"
+    },
+    {
+      "path": "dsh/cordis/fiber.py",
+      "sha256": "1a4b857149dba8ea195b9799da05428cda49955df5062948901e2a5fd6428546"
+    },
+    {
+      "path": "dsh/cordis/file_lock.py",
+      "sha256": "1dc5a15e90fc52d7f113dc16723a30741827c75cc05838d0e0a5238f26b1959b"
+    },
+    {
+      "path": "dsh/cordis/hmr.py",
+      "sha256": "b973fc1a45d6804783d1b5a585d5fca7c17cd2170a1dd2b9298725477dcc317c"
+    },
+    {
+      "path": "dsh/cordis/include.py",
+      "sha256": "5e20455179bfb3e2585cbc749f5bd15be24458ea205134556b71facc5889ca93"
+    },
+    {
+      "path": "dsh/cordis/loader.py",
+      "sha256": "86212b307c120d714ced06bedf50f058e5b1a7783f61cb432d6bca1deeff1914"
+    },
+    {
+      "path": "dsh/cordis/loader_entry.py",
+      "sha256": "86780dd3da5e2ec6bea291321bebfbc7aab2a42936674f1d81e19454d2cd927b"
+    },
+    {
+      "path": "dsh/cordis/loader_group.py",
+      "sha256": "536b3677050693d380db661119e6758bd99a0004b34b40b330cd39a048f588f4"
+    },
+    {
+      "path": "dsh/cordis/loader_isolate.py",
+      "sha256": "9b16816958ee1ddafbcbde60dc407ec4a63b33eb18a973926e5c6db62e8af802"
+    },
+    {
+      "path": "dsh/cordis/loader_tree.py",
+      "sha256": "f0b850feaa03c9a179d57c9ebf70bbc8d6b5207843325fd23df3377be77bef3e"
+    },
+    {
+      "path": "dsh/cordis/logger.py",
+      "sha256": "99b55c49b4ea640e29ed2b6abf53a41370d32bcee94fb25ebfba0cab1b588ab4"
+    },
+    {
+      "path": "dsh/cordis/plugin.py",
+      "sha256": "56b7cd4d672d3ee94de0773fc329fdd590f2a19a56533052486a41107f447bb5"
+    },
+    {
+      "path": "dsh/cordis/profile.py",
+      "sha256": "4de2af790c7887c2c370ed3624f80d8bec49d0226d5d19990906d5f2ceb4eda2"
+    },
+    {
+      "path": "dsh/cordis/reflect.py",
+      "sha256": "b60ab339ddc1d1b5a2d68109f93eba573bf26ddf862d3590de41dddab71ffc85"
+    },
+    {
+      "path": "dsh/cordis/registry.py",
+      "sha256": "17d65ef843866dc031024d19391f9fd8b9bc6177e49356eb09317d9c213989ed"
+    },
+    {
+      "path": "dsh/cordis/schema.py",
+      "sha256": "f4e012dce51ae78d9ccd17358949bdde31af45d28db040df4d189cfb33cbb408"
+    },
+    {
+      "path": "dsh/cordis/service.py",
+      "sha256": "d2fa2b85605d2f4af9a48099c3998940a8db58fe7dcf4e4a2ae96fb11c9b3103"
+    },
+    {
+      "path": "dsh/cordis/timer.py",
+      "sha256": "37e79028fe50d925a5d904d297c66f9fc15e2efe53b7af64f7def4791987caac"
+    },
+    {
+      "path": "dsh/cordis/utils.py",
+      "sha256": "bd03ffd8ce4dbcc86bb2092f72e7059827af94e333336c8b0ceb8d312f61af2e"
+    },
+    {
+      "path": "dsh/core/__init__.py",
+      "sha256": "cac353cc3fbc26ecb6bd1547c91189edfadfb3373aa41340bcfd691369942cb9"
+    },
+    {
+      "path": "dsh/core/abort.py",
+      "sha256": "9c8d849e17d014d0b24e31697d4de1da2ed3b569e599fc8821820d6aceeac7ff"
+    },
+    {
+      "path": "dsh/core/agent.py",
+      "sha256": "6b51a132b631ca53c3e9f52d67cbd949927c23504065edd8c265245ade845354"
+    },
+    {
+      "path": "dsh/core/agent_default_model.py",
+      "sha256": "2c05c46a981781d50ae9ab41e09b3922fac99b3c4593a0662bd7d0add7ddf495"
+    },
+    {
+      "path": "dsh/core/agent_default_model_invariant.py",
+      "sha256": "24939b6f6e7e99380541718cf57193f0b11c67e867963d9c38e2abd110e854ca"
+    },
+    {
+      "path": "dsh/core/agent_loop.py",
+      "sha256": "653df9bc0fce6ccd949a6a552445f7114804bb38e3f67654e2a6ccd2b6aeff56"
+    },
+    {
+      "path": "dsh/core/agent_tool_presentation.py",
+      "sha256": "52d47ac4363f46d7082000ad9b3657fd89d2ce9d1ac289d6a6d89ba05108cb2d"
+    },
+    {
+      "path": "dsh/core/consumed_work.py",
+      "sha256": "c2127c5dd09a9184bf380bd4b598e65d11c7fc9c520f1b59b775db01fc40c1e9"
+    },
+    {
+      "path": "dsh/core/inbox.py",
+      "sha256": "cb6ad4f23a1689637270ea18da6bbf6e07472a16a5232b5ce790824d0aea629f"
+    },
+    {
+      "path": "dsh/core/model_selection.py",
+      "sha256": "2543b5d07a894e196a4b492cd14ab0d917e8c53d6af2beb74152b898995b7b54"
+    },
+    {
+      "path": "dsh/core/persona.py",
+      "sha256": "655bfcea371aeb67b15eea5860c787a4525d173a3e61aa189cda8f1399099d28"
+    },
+    {
+      "path": "dsh/core/runtime_context.py",
+      "sha256": "1ae9f545ae20aa24b50090c001383af02152ae793e356d25db469572f3946d54"
+    },
+    {
+      "path": "dsh/core/scope.py",
+      "sha256": "8bd72f48b3966c3ee294ed193899f36ade92b0fa336f8586c093ca3230216ef9"
+    },
+    {
+      "path": "dsh/core/session/__init__.py",
+      "sha256": "de6c0ff802f648157221a7802adbd5120ae4f4e02a3248a3831717e781b0bbe7"
+    },
+    {
+      "path": "dsh/core/session/chunk_rows.py",
+      "sha256": "7e8806183c30fac0798fae3f71895fd97451c7de0e948d6c868a678b61a768f7"
+    },
+    {
+      "path": "dsh/core/session/invariant.py",
+      "sha256": "a8e032b80c79cfa60ca58a7e049d09729c6844c76693534ae84c617bd628814b"
+    },
+    {
+      "path": "dsh/core/session/json.py",
+      "sha256": "a62684fe2713d5c02997a7b50315bd17c30166ed590328fedb8578d858eba3e5"
+    },
+    {
+      "path": "dsh/core/session/known_event_types.py",
+      "sha256": "42d1f8250272191869eb33033082da2e07b86e78c7247c812c9579ef4f32718e"
+    },
+    {
+      "path": "dsh/core/session/preparation.py",
+      "sha256": "d95ca75eba1641f0a02f760c8ede4ee4b1ef936f8ed6c4311d7126e5dbf7966a"
+    },
+    {
+      "path": "dsh/core/session/repair.py",
+      "sha256": "820786251de8f66142b80a718d9e6ed5a630d63613d2b6a82c8505ca886e930e"
+    },
+    {
+      "path": "dsh/core/session/request_header.py",
+      "sha256": "4a10eef501e9a083780aa255ded08ba8c81fa26b2686354d5793d64c9c365ab5"
+    },
+    {
+      "path": "dsh/core/session/seq_ranges.py",
+      "sha256": "c961a00d32cc46b9da75da2a53bdda973a41771c5bb6ff9e019ec0cbd3069e8b"
+    },
+    {
+      "path": "dsh/core/session/session.py",
+      "sha256": "5de1e18fe524b40922fb546881ec58a93467cbc105ca54c3ac2d3fe62091ae53"
+    },
+    {
+      "path": "dsh/core/session/surface.py",
+      "sha256": "9ac9b784a4e8b3859f64ddafbf6e6e88d45dd0776c6b41d3b6dbfbcc6c5c461f"
+    },
+    {
+      "path": "dsh/core/session/types.py",
+      "sha256": "02b8f62fabd7885eda5c2ffe30f4a24c26b2d5e69bf6cf0382f3270b81ddd659"
+    },
+    {
+      "path": "dsh/core/surface.py",
+      "sha256": "37ddc5915a1586dcf91acc89b67f546571797406af409aea7d1db3e999830a59"
+    },
+    {
+      "path": "dsh/core/system_prompt/__init__.py",
+      "sha256": "a56e0e391d67e7684bbea887a6edab5d2227112040d82d01262b8e226eb7b14a"
+    },
+    {
+      "path": "dsh/core/system_prompt/invariant.py",
+      "sha256": "239cda63e363f6f460a6a00ad381c5d74c572c16e718421db6824f45f65cf70d"
+    },
+    {
+      "path": "dsh/core/system_prompt/layer.py",
+      "sha256": "18d88da39f203731337bd4efec2531a4447aead734ad714678b00d61b722d3d7"
+    },
+    {
+      "path": "dsh/core/system_prompt/service.py",
+      "sha256": "df9f64b2107c799826ac95527ffbd363304dd3b0d76f9739e8f331a466c039aa"
+    },
+    {
+      "path": "dsh/core/system_prompt/types.py",
+      "sha256": "4f673f14e8fbccd6f4d12a6445fd6acac137fa2793d08f79ba8e9dbbd1fb0bb8"
+    },
+    {
+      "path": "dsh/core/system_prompt.py",
+      "sha256": "a4a1840afa4fe563582815a266d895d0a98baa9f1dfc4e40f6702db27565f832"
+    },
+    {
+      "path": "dsh/core/tool_calls.py",
+      "sha256": "9a415ebaafff8f4b208c49562f288d02ec914c79b3af779810cf5b14bf50a0b4"
+    },
+    {
+      "path": "dsh/core/tools.py",
+      "sha256": "a2ec903463f36e07b0e40d70437bb1fbed2d11e42e09e9b0aaebe2397b01c6db"
+    },
+    {
+      "path": "dsh/credentials/__init__.py",
+      "sha256": "5efbb0043ecb407b667c1a1fe58df8ed01f0e151aa3a6669ff7743b9cbeb2377"
+    },
+    {
+      "path": "dsh/credentials/authorization.py",
+      "sha256": "7939d286f065045f60840d6e505191a75bda378fac495f3783d49d990c7ca315"
+    },
+    {
+      "path": "dsh/credentials/credentials.py",
+      "sha256": "aec6330e72f743127e5f504fcb0564d275cd93a9e3f34b111d9eabd9c3df37a0"
+    },
+    {
+      "path": "dsh/credentials/credentials_local.py",
+      "sha256": "e871ac667ccc179051e857ab7de4ab2803a7563a6cf5224278998193f1a2d733"
+    },
+    {
+      "path": "dsh/credentials/invariant.py",
+      "sha256": "c6f427f14854fd2d23285cd8e66ab00075018c5f2f261566ea403e44e1e2713f"
+    },
+    {
+      "path": "dsh/credentials/types.py",
+      "sha256": "40d007962e90ad9678ae58258b06cfe2151c77ef6c625343ea34a2d4fc66a514"
+    },
+    {
+      "path": "dsh/diagnostics/__init__.py",
+      "sha256": "5ada1a49078955bc864b87b38150c0d93b835faa0198889bb5e9024a2c221774"
+    },
+    {
+      "path": "dsh/diagnostics/invariants.py",
+      "sha256": "4d14056f10ae5a9d08e538a7fe989c7fb752c7e0aa0e40f7b1ff769ee1f6e65e"
+    },
+    {
+      "path": "dsh/extensions/cli_visualizer.py",
+      "sha256": "1e6a6434d41bc05efb75c161aa785639d87b8fdb7caad119e4a4579559914821"
+    },
+    {
+      "path": "dsh/extensions/cordis_manager.py",
+      "sha256": "d0b6f43f79699ea56a0ea83dfd317d8486416a39a29faaf8c0335536f6c9e2d7"
+    },
+    {
+      "path": "dsh/feedback/__init__.py",
+      "sha256": "6d577ece236fdcde874856d6f25a2e863b8248d43c5ad5f48602584fe9fea586"
+    },
+    {
+      "path": "dsh/feedback/command_feedback.py",
+      "sha256": "9de95be784a6660f04945a270b1698adf012f84a8072af960893d6b08b1d6db7"
+    },
+    {
+      "path": "dsh/feedback/command_invariant.py",
+      "sha256": "cb850ab264ad9d0d60df4feaec4b0dc50345dac811dc60b8a031da9054f703bf"
+    },
+    {
+      "path": "dsh/feedback/invariant.py",
+      "sha256": "79e5018a9e5432163d47129ff5d73814c1d2ae0c713d18959820963c3979e20c"
+    },
+    {
+      "path": "dsh/feedback/message_feedback.py",
+      "sha256": "76ec14bd5fda23a9c4f99a1de19557aa2277e23d2440d992474f535d6c7d9a30"
+    },
+    {
+      "path": "dsh/feedback/message_feedback_spec.py",
+      "sha256": "89c1842be16bba07af66cf9bb1756360b350b922d5068c3becf34fb1d19d80a2"
+    },
+    {
+      "path": "dsh/fs/fs_local.py",
+      "sha256": "a93314b3a9112ba9ee116e0ce7f9c3c597ced0683414ad38133fb27ff40dc3a9"
+    },
+    {
+      "path": "dsh/fs/fs_observation_policy.py",
+      "sha256": "9cecca9c6a1459e02521f0578c790ed7f5ad49b885d5b9faa867ede1fc5d31d0"
+    },
+    {
+      "path": "dsh/fs/fs_sandbox.py",
+      "sha256": "445a22552faf65cfa0b60ea86a0bdd4b611ff3810fdd2c4d17332c4963ad5169"
+    },
+    {
+      "path": "dsh/fs/tool_fs.py",
+      "sha256": "d682c14fa638feac0ffb468647352a0518b98bda2c77db6820154541fd10afef"
+    },
+    {
+      "path": "dsh/fs/tool_fs_search/__init__.py",
+      "sha256": "21fbf21e051611a5f0b254d52f8d88c4f9367e36399f24694e2ec6c4fdba5ac2"
+    },
+    {
+      "path": "dsh/fs/tool_fs_search/glob.py",
+      "sha256": "162ea07a59c69ed6277e5e304ae67df118e3d0cfb85960309d040ac835fcbf33"
+    },
+    {
+      "path": "dsh/fs/tool_fs_search/grep.py",
+      "sha256": "e99ed4d5000652bc3f0e4162b7fda82199f0bcfdd38ecd0423b874d0c8ea04c4"
+    },
+    {
+      "path": "dsh/fs/tool_fs_search/search_core.py",
+      "sha256": "fea47e730c05f78487f5b0dc4dfc992a76e0d3923e6f87a6dc8ee50d5a903d39"
+    },
+    {
+      "path": "dsh/fs/tool_str_replace_editor.py",
+      "sha256": "85f867d6f2aaeab55882a842e2152b7f1edd75794dde5aac8fa61599e0405d34"
+    },
+    {
+      "path": "dsh/goal/__init__.py",
+      "sha256": "514a232387e258c8bbb28df51a9a8e3b8ac29a23b36940af3ebe8f26e2779f87"
+    },
+    {
+      "path": "dsh/goal/tool_goal/__init__.py",
+      "sha256": "002964208d09da64ebb2f08c028818f0da81d4d0275af5eb29b16e0feefcec9e"
+    },
+    {
+      "path": "dsh/goal/tool_goal/authority.py",
+      "sha256": "1a78b0f613b8e2b0bbb5a444c5c316a0af2a4ae1de04c3bc3f70a288415db0f4"
+    },
+    {
+      "path": "dsh/goal/tool_goal/wrapup.py",
+      "sha256": "21008872b46793356169ef62599de166336a7d7e8d4d42903c35f1eac4d53337"
+    },
+    {
+      "path": "dsh/guard/__init__.py",
+      "sha256": "8e5a1e939e805d199e4135650fc84c37715b26dc27ab3385f5425f440ef34c46"
+    },
+    {
+      "path": "dsh/guard/repeat_tool_reminder.py",
+      "sha256": "169d648bd86073aff6e6fa1247b2daec50c77de413696c5cad7597a017a9cd1e"
+    },
+    {
+      "path": "dsh/guard/timeout_policy.py",
+      "sha256": "413b148875864e1f57446f4be67b245bd557a2742f43aa488e5cdbfdb735e7c3"
+    },
+    {
+      "path": "dsh/harness.py",
+      "sha256": "f4832721632a5d96bcb941108e58922698051718322793c9518c905242480daa"
+    },
+    {
+      "path": "dsh/host/__init__.py",
+      "sha256": "3b9ca11dd3d386afd84e21fe642624d0bad0cdc0c92c59e731a5ad44aa83e0bf"
+    },
+    {
+      "path": "dsh/host/apiproxy/__init__.py",
+      "sha256": "ef34c780cb5408151086a1ae9dd1873b64a4622f465b871bf4f230433041131f"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/__init__.py",
+      "sha256": "ebf06e55a1313365414e7c9a3ba95c6e49e39c35a9dd2c26149a0e59809f15f8"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/agent_presets.py",
+      "sha256": "e620be7e7745c5de46edd956178076ef7424b6cb1394a823f8207c1fb4e6697c"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/agent_presets_schema.py",
+      "sha256": "0c6ced0f31ee0b70928fac416ca77315604e27bee4a488678f050dec0c88630b"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/approvals.py",
+      "sha256": "cab2067b692f8200067798c0286dc02f7b91d66477254af989e8c5080355dcca"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/approvals_schema.py",
+      "sha256": "97c789c10f1128097f6fdee97e1d0b5fbaa6127fb3273ae4dd27769ea3e5c778"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/credentials.py",
+      "sha256": "b24d61e6b63f86dec7e409ccfd940fb06b90a7e96583d868162a07ac4285f533"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/credentials_schema.py",
+      "sha256": "9c5a3b63531255c3e55df9022d470aebfa2652c72ac1e044d66c502523a5f95a"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/downloads.py",
+      "sha256": "542204450db18e8afc012ddb09a4535d12bb037ce38c0920c2d9c35ba2fb08b0"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/downloads_schema.py",
+      "sha256": "e42c477df4a4f097f04da04ed27440967cd75ba0d960bd90933f5ccf696bf60d"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/events.py",
+      "sha256": "fb011cadedb268a6e9936dccf1c16c17db4a5a9fe3b7d2fdf7361be4ecee1be4"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/events_schema.py",
+      "sha256": "abd89a6608cbd09c21608b3d58671f9e03510cb4c34c315e161a654419d37bcc"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/goals.py",
+      "sha256": "6c7844dbb6526c33082140352b1d7c6f2d1f4449decba836b7fef54b41e79f09"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/goals_schema.py",
+      "sha256": "7a31debf5bbcfadc1c13f10a05a05d89edde2659d17d7d06c9159db5e26f044c"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/host.py",
+      "sha256": "2f73b0ddc6e343556f7d602cb0e1269a05f2da133bf88630737729b9d36f00e1"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/host_schema.py",
+      "sha256": "419077254018cadfce62be6f76fdf8860cb12f3a2505c3e8a08495aa53956df3"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/jobs.py",
+      "sha256": "767bce0946e2c65577a39e336e1d1b09079b6efde0d413b2caae3b0311d47a9d"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/jobs_schema.py",
+      "sha256": "138684d09abdf3978e20aa429ed4671652dcfc3363a55e0253787f09278c8264"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/llm.py",
+      "sha256": "3ce7822d96a13a8636e53d625434c25c116d98c81b540861ff981c70900f7eb8"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/llm_schema.py",
+      "sha256": "15c953c16e7479f4d49ab3b8c6685323aaec8bc25f13d48025a5562a8e977194"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/message_feedback.py",
+      "sha256": "ee6b04b8b6de09c378bcdf6ed84853c06da3cbd5c0e0fcfe9086b4e64febf5b7"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/questions.py",
+      "sha256": "08ff9f4cbfdd13f95a79a563d14c52ea71b5017cf057a60bebb87da8d1b2c0bb"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/questions_schema.py",
+      "sha256": "166cc64ff124788bdec29e3c7de2981d6773f8347a017dec2d6c68127ea4b048"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/rpc.py",
+      "sha256": "da0058c2640abcfa5159d009b8b95616713831929ebae27501ba73f9cf590d9a"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/rpc_map.py",
+      "sha256": "d5fb9e0ad3da15527de34373a6f29485ba94243570fbe34211f26bfb1c332029"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/rpc_schema.py",
+      "sha256": "d065ad4e17e4c05d041e0eb707d2a70e485423bc0e44e44cdc8b08e278f175a0"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/session_search.py",
+      "sha256": "a723eecb4b106d52e26cc71271e1211107023c612629f2a41a8645bff2042428"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/sessions.py",
+      "sha256": "345cfe44d8656afe533da3ac8c790435046fb2c28935accf7a76263bd58e82a0"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/sessions_schema.py",
+      "sha256": "03623fe9e6af959e70425dd552462079a662bca1591a00ff165e576e456d241d"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/settings.py",
+      "sha256": "b9de50a9c3e88b492fcc3ccc683c67885cb00bd82de5688cddc8979e2e4f6190"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/settings_schema.py",
+      "sha256": "72dcd3abe5ae28cdbf2c4e900f16377744c64380b9999a6d92fe90e01b5dd58b"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/skills.py",
+      "sha256": "a095e4c05ce0defc1a2b896a4eab423277adce273d1350980ab742f7ce0f61c4"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/skills_schema.py",
+      "sha256": "91058cc43a0b6a104bca1e9fcdcfeccd8769feff7c8b5076a6253206c67ce5ab"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/subagents.py",
+      "sha256": "6b3b2ce3fcbda918d7af2f35168c846638a34ee336c2a42c1f06515ea759176a"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/subagents_schema.py",
+      "sha256": "a8b6cbb00467fb1ffc6a5ad413bcb6b140d3dec11ba25ae362ebc0801417a83e"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/workspace.py",
+      "sha256": "f622c26342033b34b0ff984cd0614207ad23ac968c36386a6261ce7f53e2d259"
+    },
+    {
+      "path": "dsh/host/apiproxy/api/workspace_schema.py",
+      "sha256": "e2545eaa3bfbc36bb78f2f734824bfe01b5e56203f05bf69d8b1ff7ed35d0707"
+    },
+    {
+      "path": "dsh/host/apiproxy/api_proxy.py",
+      "sha256": "6e2cab515dab298c40fedc242bbcc4f3c2793e95fabbe2aa9474af835df5fefb"
+    },
+    {
+      "path": "dsh/host/apiproxy/fetch/__init__.py",
+      "sha256": "40033017850369c36b7d798018d64320e92ad312ea5428a92b237d1c75ca718e"
+    },
+    {
+      "path": "dsh/host/apiproxy/fetch/client.py",
+      "sha256": "d47c56649df1cf7a6e79c472d20b0c067a4f2d5d77e7693f53a2d48ee8c488c6"
+    },
+    {
+      "path": "dsh/host/apiproxy/fetch/handler.py",
+      "sha256": "85743b2c685ede8f5e28ccc39f31b81c81e6e6b4182d3761dabf63780931d0c1"
+    },
+    {
+      "path": "dsh/host/apiproxy/fetch_handler.py",
+      "sha256": "b0e1ebc936180970b2e23c02752dd63645f01d94ed9e56ab8786f305fee9f2a1"
+    },
+    {
+      "path": "dsh/host/apiproxy/native_path_opener.py",
+      "sha256": "a03e82ff6fb8de59444d4ea65dd980452c3d452c04a5a11edf9df652734d4fd2"
+    },
+    {
+      "path": "dsh/host/apiproxy/session_export.py",
+      "sha256": "957a87b9c5b495051e6e8760d815683fe38b963b49a27a12afefd4a5c03d5874"
+    },
+    {
+      "path": "dsh/host/client_modules/__init__.py",
+      "sha256": "67692a837eee6b6cdc86ba4e346ab5ceac513da103f39460a880fcf5abce7f0b"
+    },
+    {
+      "path": "dsh/host/client_modules/registry.py",
+      "sha256": "cc1e9d26d1e4e0e6f85d6c72ed774224876d157495585a530b8336af953799e8"
+    },
+    {
+      "path": "dsh/host/connection/__init__.py",
+      "sha256": "5db61f2d8a836b7728b2f75c4b5a405d81a3e7a6bff72933f6d08b01b15bee3d"
+    },
+    {
+      "path": "dsh/host/connection/api_trust.py",
+      "sha256": "180a58b519aef0832eab6eb13cff097222e70fc79eb93a31019c01acffea793b"
+    },
+    {
+      "path": "dsh/host/connection/browser_auth.py",
+      "sha256": "29c2d57b002f0276e0098d38b86fa0ff487b506730768de8e0776f27e58e6b8e"
+    },
+    {
+      "path": "dsh/host/connection/connection.py",
+      "sha256": "738519ad24d31549a3a307eacf4392b63300014d70ea035efb1cadffebc3f7bb"
+    },
+    {
+      "path": "dsh/host/directory_picker/__init__.py",
+      "sha256": "d0eadc3c812fae6db7a1d7cb337a0e818c22370750dee7ca4668471e2f1e2a7a"
+    },
+    {
+      "path": "dsh/host/directory_picker/auto.py",
+      "sha256": "f7b543a92dce9f684640cf177c7d6be63739481014f85858c688f0522569cbee"
+    },
+    {
+      "path": "dsh/host/directory_picker/base.py",
+      "sha256": "1acd913865f5559e39ff6990f8e1acd071c8e37c808b0cefcd73c2683ad94492"
+    },
+    {
+      "path": "dsh/host/directory_picker/browse.py",
+      "sha256": "ad5aa85f3b93aff0e3e45d2fee319f61175bde88304b27f60da06d3234dc3ce3"
+    },
+    {
+      "path": "dsh/host/directory_picker/directory_picker.py",
+      "sha256": "3eb1af14be55db5b6dcf1f3cdf1c27dd86b1ac184a12041b559b3607f06e8f49"
+    },
+    {
+      "path": "dsh/host/directory_picker/native.py",
+      "sha256": "8b06eef979b028edf9e62505b82a5c17139dd651dd8e3b91321eb281635bf568"
+    },
+    {
+      "path": "dsh/host/frontend_static/__init__.py",
+      "sha256": "3c759f1ba4e940f81f25f167f77054890ee68d067d1f882435b4529f121cfac3"
+    },
+    {
+      "path": "dsh/host/frontend_static/frontend_static.py",
+      "sha256": "5c83f719a575000126174884806079fe3bb8c25f0897f4df4bfbe240fc58ddef"
+    },
+    {
+      "path": "dsh/host/plugin_inventory/__init__.py",
+      "sha256": "5345340a43b6b3941baecbff5a446c76dc736f5a92a8f69d314247ea88285866"
+    },
+    {
+      "path": "dsh/host/plugin_inventory/plugin_inventory.py",
+      "sha256": "8781c297996b388f5aebf9eb1773906c023fa7bcaf6e30876754c95283b86dba"
+    },
+    {
+      "path": "dsh/host/plugin_inventory/types.py",
+      "sha256": "06959eae0e159169fde9de080fabe03dc1a09f21b173ea144198d9b174717d30"
+    },
+    {
+      "path": "dsh/host/webserver/__init__.py",
+      "sha256": "0ab840de5f0c18013900b0e1530d60da78efc0eec7af873b34faf7bce39a1b63"
+    },
+    {
+      "path": "dsh/host/webserver/injections.py",
+      "sha256": "d8471a62fb5065bf676690283fc7dbb38c60928c2e4044fd9f2d3a45cfa375bd"
+    },
+    {
+      "path": "dsh/host/webserver/webserver.py",
+      "sha256": "3c1ab700e29ebb07de9024252a39d40f47762338dccc06bbec6b8bec363eddbc"
+    },
+    {
+      "path": "dsh/identity/__init__.py",
+      "sha256": "6eeb2d09b078020b5a06e7cdfc9b2e6463e5fda930dd01a43205bfc8cfce9fe1"
+    },
+    {
+      "path": "dsh/identity/anonymous_user_id.py",
+      "sha256": "38466d8905ad67b649f19317bc6ed238468c4d8fdb9d4af61381f8cf45d6a511"
+    },
+    {
+      "path": "dsh/identity/invariant.py",
+      "sha256": "2c6557a0804469e138e86f0b88f41cda8ad50898b0685ac22c1e72a962e3893c"
+    },
+    {
+      "path": "dsh/identity/user_identity.py",
+      "sha256": "b5c468e81577c686d600b5062028602e84e42dd76b5d70bb2b406c0687e6e357"
+    },
+    {
+      "path": "dsh/interaction/__init__.py",
+      "sha256": "883d621a8bed147d326e2b26e50087776ad22b4fe28f5f38866d41e4f9592fb6"
+    },
+    {
+      "path": "dsh/interaction/commands.py",
+      "sha256": "db15079307a2f147807605e54debce85453ccca7ca541c628c984e09c65de92c"
+    },
+    {
+      "path": "dsh/interaction/invariant.py",
+      "sha256": "2b5b40a393095b4658e6ff9017cc5e154f077ae825692e8342fb76444889eba4"
+    },
+    {
+      "path": "dsh/interaction/permission_presets.py",
+      "sha256": "26b4147dc2ad5d6d7206d9aac3456fb954f372c332229e306d2b3d7e1b81c083"
+    },
+    {
+      "path": "dsh/interaction/tool_ask_user.py",
+      "sha256": "974149f077e742515570f44957440b8613dde1a4e4e55cb1d7fb641202f8950a"
+    },
+    {
+      "path": "dsh/interaction/user_approval.py",
+      "sha256": "c61b43da6abc4a88a604e632690757e1dce77d52520f4945858177841f12c539"
+    },
+    {
+      "path": "dsh/interaction/user_questions.py",
+      "sha256": "fb5c08f9f5fbf851f2880f6b08ae9df0a40f40e8698bda896b993d4ad8030c0b"
+    },
+    {
+      "path": "dsh/jobs/__init__.py",
+      "sha256": "4e55c108f9c01f5397446600130bcd1e617e41b97d68ab8eb0bf9597012893e0"
+    },
+    {
+      "path": "dsh/jobs/jobs_service.py",
+      "sha256": "10f45e39af063d5fb53a2f1218a997c085b0a372450cba6c5140c8ad41078e7a"
+    },
+    {
+      "path": "dsh/jobs/tool_jobs.py",
+      "sha256": "926971113b9c0560cf41c3e533366d7df08b701216252d8f3ce8617bfcf6d084"
+    },
+    {
+      "path": "dsh/llm/deepseek_api_extensions.py",
+      "sha256": "6d60b51f51c3e161a9e8003db0f01102c69500cfea5f7722f07a6677c9011565"
+    },
+    {
+      "path": "dsh/llm/error.py",
+      "sha256": "16a2c69e6cb4f02f281ad5b524a27b78a38f4b28bb17976e67ede5f9b5f669e6"
+    },
+    {
+      "path": "dsh/llm/llm_openai.py",
+      "sha256": "c85f1e09915b1c4449fcb391f852f1739318c129ad856c3eb67a37a1e1900591"
+    },
+    {
+      "path": "dsh/llm/llm_retry.py",
+      "sha256": "645f8d970c2c4f600186614e9ebbb7b92d1f09f3dd818910dd06306875edf025"
+    },
+    {
+      "path": "dsh/llm/llm_service.py",
+      "sha256": "344346ddb8c5f200713491d21e6bdd4da0a34d42644b9f04ec6e137dc8b6f926"
+    },
+    {
+      "path": "dsh/llm/message.py",
+      "sha256": "dc8b45cd68997d75aaeb87c0ed640d0a24f0361d5b37f88befbf4dffb048d085"
+    },
+    {
+      "path": "dsh/llm/token_meter.py",
+      "sha256": "1bbeb358fff0b61ab28398a009507a4255a734cec97983d1b02af086bb1ac3de"
+    },
+    {
+      "path": "dsh/mcp/__init__.py",
+      "sha256": "42498e61fbeba2fde3e902212b7a39ca1c9e9347a3ee6391a0ae1c4f01ac7eee"
+    },
+    {
+      "path": "dsh/mcp/client.py",
+      "sha256": "d0b3751843aea9bb5490d2645d9ccecba4e57fa5b068872295c2743272bb775d"
+    },
+    {
+      "path": "dsh/mcp/connection.py",
+      "sha256": "9821cefd359322c1d100f214ee516d2a73169a5e52c90c294b02273ff521737c"
+    },
+    {
+      "path": "dsh/mcp/tools.py",
+      "sha256": "f39f56615456fe89dd89a170cd0e2b98a375c445e61b0e702a3de60becc2b292"
+    },
+    {
+      "path": "dsh/mcp/transport.py",
+      "sha256": "e5fbe5ffc12faf70970586a43af9b4bc2c93ef37a091cc71f2e5ac54542fb2f7"
+    },
+    {
+      "path": "dsh/plan/plan_mode.py",
+      "sha256": "a7282acf2ae2fa7bdb1b5a19ab4b6bff10721581937107024e316af114222197"
+    },
+    {
+      "path": "dsh/presets/__init__.py",
+      "sha256": "d4fd679132cc0bbce1345e570d02126512fb699a1271185eace40a96405e5666"
+    },
+    {
+      "path": "dsh/presets/agent_presets.py",
+      "sha256": "e9f06d55f6a284673fed879f1a8179cdcf378ac431d5f9c25be5614b1af4a1bc"
+    },
+    {
+      "path": "dsh/presets/authoring.py",
+      "sha256": "f43f570aecff784854234b865a27e397b6b80b4a36d6439e9f2578fb967b3d15"
+    },
+    {
+      "path": "dsh/presets/discovery.py",
+      "sha256": "b9278aa47b8442ff8c5ea961ec67a6bedac430299a0e97ac1058fc1d0264a4d7"
+    },
+    {
+      "path": "dsh/presets/invariant.py",
+      "sha256": "78cd914dbe9c268b88c443cb9b27023439430f1907e74cfa79b1f21cc68206c2"
+    },
+    {
+      "path": "dsh/presets/metadata.py",
+      "sha256": "bc28abd12a6827b5477bbc0e15955af9f85ec7abac283152613740b333df2b5e"
+    },
+    {
+      "path": "dsh/presets/mount.py",
+      "sha256": "f9712ba2d9d1692fba087bb83bd591a6191eebd51c6b36ad5ed5101fa824eaf9"
+    },
+    {
+      "path": "dsh/presets/preset.py",
+      "sha256": "72d39e5482d4eb8df11091d47512e0f7703d398344d9307baa3be5ba4cce0442"
+    },
+    {
+      "path": "dsh/presets/session.py",
+      "sha256": "ce4c6f1977f86b582326bddd1305eb737b2b1a146cc178f46448b32f2049df98"
+    },
+    {
+      "path": "dsh/sandbox/__init__.py",
+      "sha256": "76d0aff622a42acde806de7ad36554539a4be57e9a6d45e2891d30abc7d86abc"
+    },
+    {
+      "path": "dsh/sandbox/roots.py",
+      "sha256": "0ca1f86c88c90631644127ff38ea83e72f63a250384a0e7bb157e3aa01d4c051"
+    },
+    {
+      "path": "dsh/sandbox/sandbox_policy.py",
+      "sha256": "68cd2dc1f3ce8b30d43e519c9da851c6d2c34710e70c240f8d17f90afdf68704"
+    },
+    {
+      "path": "dsh/sandbox/sandbox_policy_invariant.py",
+      "sha256": "a188a0476dc4374886b575eaae4e60c66f02cab157be155a5cf0d5b535dd4420"
+    },
+    {
+      "path": "dsh/sandbox/vocabulary.py",
+      "sha256": "bb03dcdf387a12be5005ae06c73c9a4439a3ca2cce2ae0bc18c0d465b9857c79"
+    },
+    {
+      "path": "dsh/schedule/__init__.py",
+      "sha256": "2c77011c56ceb5db096500cc32d32f8b5555a4fc0790301a5d792f60aef96fd8"
+    },
+    {
+      "path": "dsh/schedule/domain.py",
+      "sha256": "17196ddc9480fd573bf82e120a2cc53616d50e77df2305838d883c7a63d4105d"
+    },
+    {
+      "path": "dsh/schedule/persistence.py",
+      "sha256": "9ab7e773562bcf74128890550d336653f3a789eb3c8e56a64212087265fa54a4"
+    },
+    {
+      "path": "dsh/schedule/runtime.py",
+      "sha256": "549548b0b308c6759a93b2b64da45efe2360ff68e22f168f8a952f27d1dc59cc"
+    },
+    {
+      "path": "dsh/schedule/tools.py",
+      "sha256": "f251de62168251a73cb4500e7c8cde556e1a39c0a663ea1164537d2e741dacb2"
+    },
+    {
+      "path": "dsh/schedule/transaction.py",
+      "sha256": "25505845a00cf0f78561ccbd1188cd71769eef9f1f0ea680404ba26fe875e303"
+    },
+    {
+      "path": "dsh/schedule/types.py",
+      "sha256": "d3f86c3562a820f93ecac6ff8811126b796cf844e041e741a30177e7fa32ce44"
+    },
+    {
+      "path": "dsh/session/__init__.py",
+      "sha256": "041f891d62fe06378d17cb9ed0920c614d47d56a6fc93a792b22788d844880a6"
+    },
+    {
+      "path": "dsh/session/checkpoint_policy.py",
+      "sha256": "4e14bf61055e25a06335169484755a204e34e5472df548ad945e307a94853f3f"
+    },
+    {
+      "path": "dsh/session/checkpoint_policy_invariant.py",
+      "sha256": "688ab52032fe0e16d8e5ebb9848eb0ea921af3e0c9145ccd3d3da8cccc859c96"
+    },
+    {
+      "path": "dsh/session/chunk_rows.py",
+      "sha256": "ca9deb7623e33745e882cc5682d2890a158de509bbcea427e93f5e5990d31aac"
+    },
+    {
+      "path": "dsh/session/coordinator.py",
+      "sha256": "777e209359024be76b07217e4b29a024c607ae2b95699fd175110295359220c6"
+    },
+    {
+      "path": "dsh/session/persistence.py",
+      "sha256": "c8b58da58fd2419ab2606daf358a58fe3a9b203f51ebd68e86384aa0f86a9006"
+    },
+    {
+      "path": "dsh/session/persistence_jsonl.py",
+      "sha256": "656f66ad8228d907ceee70c81f92ff6f6c91229a27c35e462e9f8f4f0bc21d3d"
+    },
+    {
+      "path": "dsh/session/persistence_sqlite.py",
+      "sha256": "364ab31ee5851da32ab27fd0aead5084b92e34876820657d5890b37b153fae3f"
+    },
+    {
+      "path": "dsh/session/projections.py",
+      "sha256": "b558ab20254865ea2eaa26ab276d6cd7fc109db9bd1cf74570ffae90de01ab01"
+    },
+    {
+      "path": "dsh/session/repair.py",
+      "sha256": "cb0e73852a76a265b79cedd33b0b0603b0fb6c526b836528c2066cb87277e561"
+    },
+    {
+      "path": "dsh/session/seq_ranges.py",
+      "sha256": "622da87aa89150c461f96fd52f22e4d46fc759a07a2a2c51e4598e8772a81060"
+    },
+    {
+      "path": "dsh/session/session_log_deepseek.py",
+      "sha256": "83becd6c45f1c3ef120088981a05ea5537e78ae1b7ed6c9820bbe96a5cc32c1c"
+    },
+    {
+      "path": "dsh/session/session_log_deepseek_invariant.py",
+      "sha256": "3a27821f2240de0cd899d1de5cd43b10ff923d78405e89f5da3e4fa674d2b460"
+    },
+    {
+      "path": "dsh/session/session_query.py",
+      "sha256": "b953c5d67b0b0e52a6e76745ce6398cf7a66ff11443fd6baf96774bf0688a121"
+    },
+    {
+      "path": "dsh/session/stats.py",
+      "sha256": "f1daf41c962351c52306d3d85f3cbc5f9d6bdf4f7edce197baf55804085be209"
+    },
+    {
+      "path": "dsh/session/title.py",
+      "sha256": "ffc096d9348ab5d0169a5d8bc66fd321fab656d1aa60c3a00e4972c220d6c86c"
+    },
+    {
+      "path": "dsh/settings/__init__.py",
+      "sha256": "6d1b06a4e66c7ef78a9c7ba9d0a247ae4309a043cfc58634b8bb1ef3ecb1d35c"
+    },
+    {
+      "path": "dsh/settings/invariant.py",
+      "sha256": "251e708cd698195831d6c4b6fab9a2d957496221424e6dd8ffdded4a0f321163"
+    },
+    {
+      "path": "dsh/settings/provider.py",
+      "sha256": "c8ec104efebeaaf1d1c64bf9e48c22b7539c27a24d8db6891c55189d674edd99"
+    },
+    {
+      "path": "dsh/settings/redact.py",
+      "sha256": "573231cf64bf1fa00a0a4d372d4e92db7e0197248114927d3528c71eadd88c0f"
+    },
+    {
+      "path": "dsh/settings/settings_file.py",
+      "sha256": "2485bf010a4d1c18152dd23eff67014ce3d0bfbefc08a6c3c35671c86cbd9b31"
+    },
+    {
+      "path": "dsh/settings/types.py",
+      "sha256": "9e1cf8f35c6d5b168595b9e6fcb13eb46d93f7c5d88f2659c616a687419051fc"
+    },
+    {
+      "path": "dsh/shell/__init__.py",
+      "sha256": "6ba71868971e0d1d3ac8fcdd560484d3dd3dd8c742060628b8721bb0de90403c"
+    },
+    {
+      "path": "dsh/shell/invariant.py",
+      "sha256": "59d2aee56d4304dd2fbe57e5e5c8dda76e603a5d9a7d4bab29e39d539ce2255a"
+    },
+    {
+      "path": "dsh/shell/render.py",
+      "sha256": "ddbe80911e07f7976d6ce11917d84d3b57c93785da249dc66c9eb426618c4a93"
+    },
+    {
+      "path": "dsh/shell/shell_env.py",
+      "sha256": "dbfe819cdaa3cd0eee3628a285ba4c6280eca2a6509311d1f3cd7ee43e98bf11"
+    },
+    {
+      "path": "dsh/shell/subprocess.py",
+      "sha256": "c8049a00ffcccf05ad182204bcd96838c97437999294d1c7559d1f429486737b"
+    },
+    {
+      "path": "dsh/shell/terminal.py",
+      "sha256": "6874cbfbfb37cbf69565af44bfd9c6ec6f72187d68a9c9e27981b735d95d9012"
+    },
+    {
+      "path": "dsh/shell/tool_pwsh.py",
+      "sha256": "6343cf56e266a205b9cb1d73aa759dd257a618a3f7833cabf21fcbbb4516e739"
+    },
+    {
+      "path": "dsh/shell/tool_pwsh_persistent.py",
+      "sha256": "b26dab5a2efd3536c0bdc7b481ecbaff5885018b06a1cf8682bb55d2153c473a"
+    },
+    {
+      "path": "dsh/skill/skill_filesystem.py",
+      "sha256": "6ac9805aedd76a74841094c0aa442e9ee28537d6bb0571e48064cce764098bac"
+    },
+    {
+      "path": "dsh/skill/skill_service.py",
+      "sha256": "c425a2ed0e2e5010345de53e9e5c332dfb6b727c4ac7f357fab281fcd15a426d"
+    },
+    {
+      "path": "dsh/skill/tool_skill.py",
+      "sha256": "f0e10c72760de958d85101e39be484a176b4471bd04a4a1c8b814a2f70be4804"
+    },
+    {
+      "path": "dsh/spill/__init__.py",
+      "sha256": "b17e226487053426f451e4442d61a67e389f190b945ee8b33fb875dfc8747ce2"
+    },
+    {
+      "path": "dsh/spill/spill_policy.py",
+      "sha256": "68e065bc4327d81e03138b48c36afcf42ce110b18a647ce43dfe65774dc2f4a1"
+    },
+    {
+      "path": "dsh/spill/spill_store.py",
+      "sha256": "d3d78c7310b2788f77d04ebbdc547e0b3287f53c582d8d1bd843356b9577044f"
+    },
+    {
+      "path": "dsh/storage/__init__.py",
+      "sha256": "90bbfaea61300abee92a4583313893a533ae49220b5291b91096f4cc08ea48df"
+    },
+    {
+      "path": "dsh/storage/backend.py",
+      "sha256": "987575ccb2da7146ad5d6b0e8b750dac4c548e4247e857107e862166050446e0"
+    },
+    {
+      "path": "dsh/storage/domain_error.py",
+      "sha256": "fc0d58d1a1c7ed8659c694061c8ede88274b29d6d00cf82c773c362b54dca372"
+    },
+    {
+      "path": "dsh/storage/domain_events.py",
+      "sha256": "a17c98a181701be6687d7331a0d07cab9fafdf2a3353e8a3670f9848111c4689"
+    },
+    {
+      "path": "dsh/storage/domain_impl.py",
+      "sha256": "fc673e17921707c03d596bee69428d6daddb56c7da2cc86d9b476f1e69598b8d"
+    },
+    {
+      "path": "dsh/storage/domain_spec.py",
+      "sha256": "31bc88ba9bc7d614d951b5513b9a45fc4bd607b3aaa3e51a85c88014b4b51ac1"
+    },
+    {
+      "path": "dsh/storage/error.py",
+      "sha256": "e4a41e8c174487d85337713747509cde76e0f83d0fd1e3ff2458a369d563da96"
+    },
+    {
+      "path": "dsh/storage/hub.py",
+      "sha256": "286f13f3cf37b38bdd08f4470995a9ad831a36ffe19d128170598ad247df6510"
+    },
+    {
+      "path": "dsh/storage/registry.py",
+      "sha256": "2c28878b61e4a908cdee848b25df4c036922ad439d12ab4e127cb6624ee1ac90"
+    },
+    {
+      "path": "dsh/storage/storage.py",
+      "sha256": "708caac172806e28b3798f7b709661515f545519583ae01957fbc8dc35644f38"
+    },
+    {
+      "path": "dsh/storage/storage_json.py",
+      "sha256": "e1797471c3e573d24e045e43adcb5f7767b5186f2e88fd3a2f5334c0866271e9"
+    },
+    {
+      "path": "dsh/storage/storage_sqlite.py",
+      "sha256": "df3d5ce5115a381b5eda9218e2f6dd7a8397fc29bf6eb1302358f0bea6f7894c"
+    },
+    {
+      "path": "dsh/subagent/__init__.py",
+      "sha256": "fdacce5e180e8ea34a11086a24958d51d2635acc1dcb4946e281a43a57924d4d"
+    },
+    {
+      "path": "dsh/subagent/subagent_service.py",
+      "sha256": "b49d673de1a0545411a5631d657862e71ac2c5689fe78699d5107b54ad130e0a"
+    },
+    {
+      "path": "dsh/subagent/tool_subagent.py",
+      "sha256": "1a353e709ab6056ed8c887958ef881276c437f040875dae7be6a2eb9f66f9c1b"
+    },
+    {
+      "path": "dsh/subprocess/__init__.py",
+      "sha256": "cc90421ee5d61a5e43784ff0040c8d197ae59869e79da61cca466087ffff5387"
+    },
+    {
+      "path": "dsh/subprocess/collector.py",
+      "sha256": "7a253f3f290b9b776dc80ebb11f77ad0b7524c836b49838fb8e999f508c63ee8"
+    },
+    {
+      "path": "dsh/subprocess/local.py",
+      "sha256": "37bc2ca8ac38a22771465a842b336a27155b9582e9c673428050d31cc59cecb1"
+    },
+    {
+      "path": "dsh/subprocess/service.py",
+      "sha256": "98c824f780a38be4cb956bd226bcdc5991a83dbb868e238a782266ad8e30388b"
+    },
+    {
+      "path": "dsh/subprocess/types.py",
+      "sha256": "acd8efa4e49c4a1b584b8fb430880d097acb9f87ea276c6070464eaa0a637a3f"
+    },
+    {
+      "path": "dsh/team/__init__.py",
+      "sha256": "25acdcf0358770da84a35e8b0ba43dc654c5f43e8c923826b477423707a948e8"
+    },
+    {
+      "path": "dsh/team/agent_team.py",
+      "sha256": "aaaddda6daf638cd9ce0fc34b9b979f73fc9af0527f44754955719c4195bdc86"
+    },
+    {
+      "path": "dsh/team/tool_agent_team.py",
+      "sha256": "4ffe24efe267421cd00d3c7cabff5448460930d7178bcf06952f83052b9ea9ca"
+    },
+    {
+      "path": "dsh/team/types.py",
+      "sha256": "dccf33fe7154a61b29db8bfdbf33613b067c32de44ebb09489f6b651544a3d0e"
+    },
+    {
+      "path": "dsh/todo/__init__.py",
+      "sha256": "e17fd8c1466ec0173572c6755079cfe7e4f7876d92dad8270133ea3c1a38b386"
+    },
+    {
+      "path": "dsh/todo/tool_todo.py",
+      "sha256": "586c691836296e24f6d5d7b9ac7f9dd636490c038a7adfaf41def51bc7738fdb"
+    },
+    {
+      "path": "dsh/typert/__init__.py",
+      "sha256": "5cf4b3c55d3c2f073ffc6e862e216bc6edbb0a2d1a0cb2b642a28368e73fe07f"
+    },
+    {
+      "path": "dsh/typert/protocol.py",
+      "sha256": "0d90052ccc6aabdcaa8d3f6368895d5ef746599eeb667b67d7d51ce2dbf436a4"
+    },
+    {
+      "path": "dsh/typert/registry.py",
+      "sha256": "8ebaec2c8bcd8d6c7d3b518dbc18c8f0997170f5de064bcb15bb0bce07befbdb"
+    },
+    {
+      "path": "dsh/web/__init__.py",
+      "sha256": "4f20106385bc87e6c57c96bd5ade2bdbb6bd579b1c829a94a8e99fc0f57e0632"
+    },
+    {
+      "path": "dsh/web/tool_web/__init__.py",
+      "sha256": "22931a82f4afc0f1188fdc1ebf8096dfc90b70c25bf9a2c08b59f4864890f02c"
+    },
+    {
+      "path": "dsh/web/tool_web/fetch.py",
+      "sha256": "9eabee1c23a986ae9257ce91a2ad3215068a1892cb444c5a979b8cc5063a2527"
+    },
+    {
+      "path": "dsh/web/tool_web/search.py",
+      "sha256": "90f7eb1521c83a5056cad2044dde654b95474c0cb05e1fe17d3a73913912baac"
+    },
+    {
+      "path": "dsh/web/web_fetch_http.py",
+      "sha256": "f0469f5141c16ecd535c5c936c6679447a34c768d59e5419266918deeff82d64"
+    },
+    {
+      "path": "dsh/web/web_search_deepseek.py",
+      "sha256": "c53ce8397af902f286ead4677792d9471afb37d4dfca31c5c8c672bced833280"
+    },
+    {
+      "path": "dsh/web/web_service.py",
+      "sha256": "80c1aa556d7811b47831a82a5ec191fd6c615daf846cf6bca00518de17a039fb"
+    },
+    {
+      "path": "dsh/workflow/__init__.py",
+      "sha256": "876c394565b258c7f0b7a444b972d274bb481c24f3ccfffb230df2d1b3740ab0"
+    },
+    {
+      "path": "dsh/workflow/tool_ralph.py",
+      "sha256": "8f4ac942b5477c65a03d31f9b58f302d8e5cc49732e06fc8203fba5e2be7c334"
+    },
+    {
+      "path": "dsh/workflow/tool_workflow.py",
+      "sha256": "8fdcee38a52d0636af7c49d634118ad7d7c9510e54f03b8f97116a5060ebd2d7"
+    },
+    {
+      "path": "dsh/workflow/workflow_service.py",
+      "sha256": "7ffbd3eb3c941a8b73781d76524f26c5e04cefa527db5c43f7c1afea3e317f4f"
+    },
+    {
+      "path": "dsh/workspace/__init__.py",
+      "sha256": "75b0a83cc94da86a7827f2afcae88bff375857b6a2e0a6f7e8314992e8650242"
+    },
+    {
+      "path": "dsh/workspace/entity.py",
+      "sha256": "f41b18d3784856041a163ae88211684fba87292179be3083e22aa821ae65f38a"
+    },
+    {
+      "path": "dsh/workspace/paths.py",
+      "sha256": "c57061ecce5454c355accdbabf85a3bd0ae0993069a1b3c8e631c5ee8ff0e11b"
+    },
+    {
+      "path": "dsh/workspace/spec.py",
+      "sha256": "3f5eb612e277954db1675b62bbd2467dcbbe0991db91589bfcab436d190ebeba"
+    },
+    {
+      "path": "dsh/workspace/workspace.py",
+      "sha256": "7215a395b53faf26b94c5e14d87ab29b34e8b6ae194e00994d6a9c5aad2be7a1"
+    }
+  ]
+}

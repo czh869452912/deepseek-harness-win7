@@ -1,0 +1,6 @@
+{
+  "exit_code": 0,
+  "stdout": "{\"boot\": \"passed\", \"python\": \"3.8.10 (tags/v3.8.10:3d8993a, May  3 2021, 11:48:03) [MSC v.1928 64 bit (AMD64)]\", \"prefix\": \"D:\\\\Claude-project\\\\deepseek-harness-win7\\\\dist\\\\dsh-win7-portable\"}\n",
+  "stderr": "",
+  "runtime": "D:\\Claude-project\\deepseek-harness-win7\\dist\\dsh-win7-portable\\python.exe"
+}

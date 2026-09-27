@@ -1,6 +1,6 @@
 {
   "id": "MIG-CORDIS-001",
-  "goal": "复核 Cordis C1-C47 与必要消费者的验收闭包",
+  "goal": "完成 Cordis 核心、模块 HMR 与必要消费者的验收闭包",
   "kind": "verification",
   "state": "review",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
@@ -10,7 +10,7 @@
   "provides": [
     {
       "contract": "CON-CORDIS-CORE",
-      "revision": 7
+      "revision": 8
     }
   ],
   "acceptance": [
@@ -26,7 +26,8 @@
     "migration"
   ],
   "open_findings": [
-    "CORE-PAIRED-COVERAGE-INCOMPLETE"
+    "CORE-PAIRED-COVERAGE-INCOMPLETE",
+    "CORDIS-C58-RESOLVED-AWAIT-SCHEDULING"
   ],
   "conflicts_with": [],
   "candidate_commit": null,
@@ -37,8 +38,9 @@
     "RUN-CORDIS-CONSUMERS-20260927",
     "RUN-CORDIS-INCLUDE-20260927",
     "RUN-CORDIS-LIFECYCLE-20260927",
-    "RUN-CORDIS-HANDLE-20260927"
+    "RUN-CORDIS-HANDLE-20260927",
+    "RUN-CORDIS-CLOSURE-20260927"
   ],
-  "next_action": "完成 handle/raw restart 与依赖重检双端覆盖，再推进实际模块 HMR 替换、缓存失效和失败回滚；仍不放行上层迁移",
-  "delivery_commit": "777a6693affe28c65e3c58465e971835f4443ca4"
+  "next_action": "C1-C62: 61 matched, C58 native language difference retained; HMR cycles/relative imports/batch rollback, preset invariant and real profile recovery are implemented. Complete semantic audit of official necessary consumers and migrated async callbacks before whole-contract acceptance.",
+  "delivery_commit": "a7e65ba903810d3da1594920962a5cfb626e9dd2"
 }

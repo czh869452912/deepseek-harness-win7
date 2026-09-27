@@ -1,16 +1,20 @@
 {
   "id": "CON-SEARCH-CROSS-DRIVE",
-  "revision": 1,
+  "revision": 2,
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
-  "status": "draft",
+  "status": "specified",
   "source_paths": [
     "reference/packages/fs/tool-fs-search/package.json"
   ],
   "invariants": [
-    "Compare explicit search roots on another Windows drive with upstream before selecting an adaptation."
+    "Cross-drive glob and grep must retain usable absolute Windows result paths."
   ],
   "consumers": [],
-  "open_questions": [
-    "Confirm source behavior and full acceptance closure."
-  ]
+  "open_questions": [],
+  "identity": "Same-volume results remain workdir-relative; different-drive/UNC-volume results retain absolute identity.",
+  "ownership": "Search owns path formatting; no global cwd mutation.",
+  "ordering": "Format after search without altering match ordering.",
+  "errors": "Catch only relpath ValueError for incompatible roots; other errors propagate.",
+  "cancellation": "No added tasks or cancellation behavior; search lifecycle unchanged.",
+  "adaptation": "Python ntpath.relpath raises across drives where Node path.win32.relative returns an absolute path; retain the input path."
 }

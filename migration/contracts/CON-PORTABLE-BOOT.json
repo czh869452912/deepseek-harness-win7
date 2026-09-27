@@ -1,17 +1,22 @@
 {
   "id": "CON-PORTABLE-BOOT",
-  "revision": 1,
+  "revision": 2,
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
-  "status": "draft",
+  "status": "specified",
   "source_paths": [
     "scripts/build_portable.py",
     "tests/test_portable_smoke.py"
   ],
   "invariants": [
-    "A newly built package starts supported profiles without relying on the developer checkout."
+    "Own Python 3.8 runtime, pinned ripgrep 1.18.0, bundled framework and GUI; all five profiles dump configuration with isolated packaged interpreter.",
+    "Fresh profile boot and shutdown work outside host Python import paths."
   ],
   "consumers": [],
-  "open_questions": [
-    "Confirm source behavior and full acceptance closure."
-  ]
+  "open_questions": [],
+  "identity": "Portable launchers select adjacent Python 3.8 and dsh.py, independent of PATH.",
+  "ownership": "Build owns generated dist folder/zip; source checkout remains development input.",
+  "ordering": "Resolve pinned ripgrep metadata and Python DLL before replacing output; stage runtime, framework, frontend and dependencies, then zip.",
+  "errors": "Missing pinned ripgrep or Python runtime fails loudly; packaged smoke must fail rather than fall back to host Python.",
+  "cancellation": "Build is synchronous; interrupted output is not a validated release.",
+  "adaptation": "Only current Windows runtime smoke is specified here. Win7 SP1/browser validation is explicitly deferred by user; no certification inferred."
 }

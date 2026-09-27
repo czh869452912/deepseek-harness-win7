@@ -126,7 +126,7 @@ async def test_agent_loop_rejects_invalid_max_tokens():
 
     for invalid_val in [0, -1, 1.5, 9007199254740992]:
         with pytest.raises(ValueError, match="max_tokens must be a positive safe integer|maxTokens"):
-            loop_svc.create("invalid-tokens", options=AgentOptions(max_tokens=invalid_val))
+            await loop_svc.create("invalid-tokens", options=AgentOptions(max_tokens=invalid_val))
 
 
 @pytest.mark.asyncio
@@ -135,7 +135,7 @@ async def test_agent_loop_seeds_valid_max_tokens_into_request():
     ctx = await setup_harness(adapter)
     loop_svc: AgentLoopService = ctx.get("agent_loop")
 
-    agent = loop_svc.create("valid-max-tokens", options=AgentOptions(max_tokens=256))
+    agent = await loop_svc.create("valid-max-tokens", options=AgentOptions(max_tokens=256))
     send(agent, "use the configured output limit")
     await agent.when_idle()
 
@@ -149,7 +149,7 @@ async def test_agent_loop_seeds_reasoning_effort_into_request():
     ctx = await setup_harness(adapter)
     loop_svc: AgentLoopService = ctx.get("agent_loop")
 
-    agent = loop_svc.create("valid-effort", options=AgentOptions(reasoning_effort="high"))
+    agent = await loop_svc.create("valid-effort", options=AgentOptions(reasoning_effort="high"))
     send(agent, "use reasoning")
     await agent.when_idle()
 
@@ -167,7 +167,7 @@ async def test_agent_loop_cancels_queued_wakeup_work_together_with_maintenance()
     ctx = await setup_harness(adapter)
     loop_svc: AgentLoopService = ctx.get("agent_loop")
 
-    agent = loop_svc.create("cancel-maint", options=AgentOptions(provider="mock", model="mock"))
+    agent = await loop_svc.create("cancel-maint", options=AgentOptions(provider="mock", model="mock"))
     started = asyncio.Event()
 
     async def long_maintenance(signal):
@@ -196,7 +196,7 @@ async def test_agent_loop_replays_wake_latched_behind_maintenance():
     ctx = await setup_harness(adapter)
     loop_svc: AgentLoopService = ctx.get("agent_loop")
 
-    agent = loop_svc.create("maint-replay", options=AgentOptions(provider="mock", model="mock"))
+    agent = await loop_svc.create("maint-replay", options=AgentOptions(provider="mock", model="mock"))
     started = asyncio.Event()
     finish = asyncio.Event()
 
@@ -225,7 +225,7 @@ async def test_agent_loop_ordered_events_turn_and_step_nesting():
     adapter = MockLlmAdapter([text_response("hello there")])
     ctx = await setup_harness(adapter)
     loop_svc: AgentLoopService = ctx.get("agent_loop")
-    agent = loop_svc.create("a1", options=AgentOptions(provider="mock", model="mock"))
+    agent = await loop_svc.create("a1", options=AgentOptions(provider="mock", model="mock"))
 
     order = []
     def on_session_event(session, event):
@@ -284,7 +284,7 @@ async def test_agent_loop_tool_call_round_trip():
     )
 
     loop_svc: AgentLoopService = ctx.get("agent_loop")
-    agent = loop_svc.create("a-tool", options=AgentOptions(provider="mock", model="mock"))
+    agent = await loop_svc.create("a-tool", options=AgentOptions(provider="mock", model="mock"))
 
     send(agent, "use the tool")
     await agent.when_idle()

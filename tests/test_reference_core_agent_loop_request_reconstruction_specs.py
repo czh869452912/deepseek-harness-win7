@@ -112,7 +112,7 @@ async def test_step_requests_within_turn_append_extends_previous_and_one_initial
     tools.register(name="echo", description="echo back", parameters={"text": {"type": "string"}}, handler=echo_tool)
 
     loop_svc: AgentLoopService = ctx.get("agent_loop")
-    agent = loop_svc.create("a1", options=AgentOptions(provider="mock", model="mock"))
+    agent = await loop_svc.create("a1", options=AgentOptions(provider="mock", model="mock"))
 
     send(agent, "go")
     await agent.when_idle()
@@ -131,7 +131,7 @@ async def test_later_turn_append_extends_previous_turn():
     adapter = MockLlmAdapter([text_response("one"), text_response("two")])
     ctx = await setup_harness(adapter)
     loop_svc: AgentLoopService = ctx.get("agent_loop")
-    agent = loop_svc.create("a1", options=AgentOptions(provider="mock", model="mock"))
+    agent = await loop_svc.create("a1", options=AgentOptions(provider="mock", model="mock"))
 
     send(agent, "first")
     await agent.when_idle()
@@ -149,7 +149,7 @@ async def test_starts_new_request_series_when_admitted_step_asks_for_one():
     adapter = MockLlmAdapter([text_response("one"), text_response("two")])
     ctx = await setup_harness(adapter)
     loop_svc: AgentLoopService = ctx.get("agent_loop")
-    agent = loop_svc.create("a1", options=AgentOptions(provider="mock", model="mock"))
+    agent = await loop_svc.create("a1", options=AgentOptions(provider="mock", model="mock"))
 
     async def pre_step_hook(payload, next_fn=None):
         turn = payload.get("turn", 1)
@@ -174,7 +174,7 @@ async def test_retains_explicit_series_boundary_when_request_also_changes_header
     adapter = MockLlmAdapter([text_response("one"), text_response("two")])
     ctx = await setup_harness(adapter)
     loop_svc: AgentLoopService = ctx.get("agent_loop")
-    agent = loop_svc.create("a1", options=AgentOptions(provider="mock", model="mock"))
+    agent = await loop_svc.create("a1", options=AgentOptions(provider="mock", model="mock"))
 
     async def pre_step_hook(payload, next_fn=None):
         turn = payload.get("turn", 1)

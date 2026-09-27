@@ -89,7 +89,7 @@ async def test_assistant_replay_state_recorded_with_assembled_assistant_content(
     ])
     ctx = await setup_harness(adapter)
     loop_svc: AgentLoopService = ctx.get("agent_loop")
-    agent = loop_svc.create("replay-state", options=AgentOptions(provider="mock", model="next-model"))
+    agent = await loop_svc.create("replay-state", options=AgentOptions(provider="mock", model="next-model"))
 
     send(agent, "go")
     await agent.when_idle()
@@ -139,7 +139,7 @@ async def test_parks_context_finalized_after_tool_step_abort_until_another_wakeu
     tools.register(name="aborter", description="abort helper", parameters={}, handler=aborter_tool)
 
     loop_svc: AgentLoopService = ctx.get("agent_loop")
-    agent = loop_svc.create("a-abort-injection", options=AgentOptions(provider="mock", model="mock"))
+    agent = await loop_svc.create("a-abort-injection", options=AgentOptions(provider="mock", model="mock"))
 
     send(agent, "initial question")
     await agent.when_idle()

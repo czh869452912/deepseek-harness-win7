@@ -74,21 +74,17 @@ async def test_session_crash_recovery(temp_session_dir):
     ]
     await persistence.append("test-crashed-session", events)
 
-    # 1. Inspect: should synthesize turn/end in memory without modifying file
+    # Pinned repair.spec.ts closes both the open step and its turn.
     inspect_result = await persistence.inspect("test-crashed-session")
-    assert len(inspect_result.events) == 4
-    last_event = inspect_result.events[-1]
-    assert last_event["type"] == "turn/end"
-    assert last_event["data"]["reason"]["kind"] == "interrupted"
+    assert [e["type"] for e in inspect_result.events[-2:]] == ["step/end", "turn/end"]
+    assert len(inspect_result.events) == 5
+    assert inspect_result.events[-1]["data"]["reason"]["kind"] == "interrupted"
+    assert len((await persistence.read_from("test-crashed-session", 0)).events) == 3
 
-    # 2. Load: should commit the synthetic turn/end durably
     load_result = await persistence.load("test-crashed-session")
-    assert len(load_result.events) == 4
-    assert load_result.events[-1]["data"]["reason"]["kind"] == "interrupted"
-
-    # Re-reading raw file should now contain 4 events
-    inspection_again = await persistence.inspect("test-crashed-session")
-    assert len(inspection_again.events) == 4
+    assert load_result.events == inspect_result.events
+    assert (await persistence.read_from("test-crashed-session", 0)).events == load_result.events
+    assert (await persistence.load("test-crashed-session")).events == load_result.events
 
 
 @pytest.mark.asyncio

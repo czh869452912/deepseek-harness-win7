@@ -2,7 +2,7 @@
 JSONL durable session-persistence backend for DeepSeek Harness Win7.
 Stores SessionHeader on line 1, followed by contiguous SessionEvent lines.
 Includes crash recovery (closing interrupted turns), packed chunk rows, and Win32 atomic write protections.
-1:1 aligned with official `@deepseek-ai/dsh-session-persistence-jsonl`.
+Cold recovery follows the pinned upstream JSONL format and Session repair seam.
 """
 
 import asyncio
@@ -13,7 +13,7 @@ import time
 from typing import Any, Dict, List, Optional, Tuple, Union
 from dsh.cordis.plugin import Plugin
 from dsh.core.session import SessionHeader, SESSION_FORMAT_VERSION
-from dsh.session.repair import migrate_legacy_event
+from dsh.session.repair import migrate_legacy_event, interrupted_turn_closers
 from dsh.session.persistence import (
     SessionFormatUnsupportedError,
     SessionInspection,
@@ -188,7 +188,7 @@ class SessionLogScanner:
         if isinstance(parsed, dict):
             ver = parsed.get("version")
             sid = str(parsed.get("id", ""))
-            if isinstance(ver, int) and ver != SESSION_FORMAT_VERSION and ver > 1:
+            if isinstance(ver, int) and ver > SESSION_FORMAT_VERSION:
                 raise SessionFormatUnsupportedError(session_format_version_refusal(sid, ver))
 
         if not is_header_line(parsed):
@@ -207,6 +207,7 @@ class SessionLogScanner:
         if self._finished:
             raise RuntimeError("cannot write to a finished session log scanner")
         self.input_bytes += len(chunk)
+        byte_offset = self.input_bytes - len(chunk) - len(self._fragments)
         data = self._fragments + chunk
         self._fragments = bytearray()
 
@@ -215,9 +216,8 @@ class SessionLogScanner:
         complete_lines = lines[:-1]
 
         for line_bytes in complete_lines:
-            line_str = line_bytes.decode("utf-8").strip()
-            if not line_str:
-                continue
+            byte_offset += len(line_bytes) + 1
+            line_str = line_bytes.decode("utf-8", errors="replace").strip()
             self._event_line += 1
             try:
                 parsed_rec = json.loads(line_str)
@@ -248,7 +248,8 @@ class SessionLogScanner:
                     break
                 self.events.append(ev)
 
-        self.committed_bytes = self.input_bytes - len(self._fragments)
+            if self._issue is None:
+                self.committed_bytes = byte_offset
 
     def finish(self) -> Dict[str, Any]:
         self._finished = True
@@ -390,7 +391,7 @@ class JsonlSessionPersistence(SessionPersistence):
         if isinstance(parsed_header, dict):
             file_ver = parsed_header.get("version")
             sid = str(parsed_header.get("id", ""))
-            if isinstance(file_ver, int) and file_ver > 1:
+            if isinstance(file_ver, int) and file_ver > SESSION_FORMAT_VERSION:
                 raise SessionFormatUnsupportedError(
                     f'session "{sid}" uses log format v{file_ver}, which was written by a newer harness build; upgrade the harness to read this session (raw log: {path})'
                 )
@@ -409,36 +410,44 @@ class JsonlSessionPersistence(SessionPersistence):
         return SessionInspection(meta=meta, events=events)
 
     def _check_interrupted_turn(self, session_id: str, events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        open_turn: Optional[int] = None
-        for event in events:
-            etype = event.get("type")
-            if etype == "turn/start":
-                open_turn = event.get("data", {}).get("turn", 1)
-            elif etype == "turn/end":
-                open_turn = None
+        return interrupted_turn_closers(events)
 
-        if open_turn is not None:
-            closer_event: Dict[str, Any] = {
-                "type": "turn/end",
-                "seq": len(events),
-                "time": int(time.time() * 1000),
-                "session_id": session_id,
-                "data": {
-                    "turn": open_turn,
-                    "reason": {"kind": "interrupted"},
-                },
-            }
-            return [closer_event]
-        return []
-
-    async def load(self, session_id: str) -> SessionInspection:
+    def _read_stored(self, session_id: str) -> Tuple[str, SessionInspection]:
         path = self._find_log_path(session_id)
         if not path:
             raise FileNotFoundError(f'persisted session "{session_id}" not found')
-
         inspection = self._read_raw_file(path)
         if inspection.meta.id != session_id:
             raise ValueError(f'requested id "{session_id}" does not match header id "{inspection.meta.id}"')
+        return path, inspection
+
+    def _live_session(self, session_id: str) -> Optional[Any]:
+        live = None
+        if self.ctx is not None and hasattr(self.ctx, "get"):
+            sessions = self.ctx.get("sessions")
+            live = sessions.get(session_id) if sessions is not None and hasattr(sessions, "get") else None
+        return live
+
+    async def load(self, session_id: str) -> SessionInspection:
+        live = self._live_session(session_id)
+        if live is not None:
+            events = list(live.events)
+            await self.on_session_flush(live)
+            if interrupted_turn_closers(events):
+                raise ValueError(f'cannot load session "{session_id}" while its live turn is open; use the live Session or wait for the turn to close')
+            if not events and not self._find_log_path(session_id):
+                raise FileNotFoundError(f'persisted session "{session_id}" not found')
+            return SessionInspection(meta=live.header, events=events)
+        path, inspection = self._read_stored(session_id)
+        # Commit only a valid contiguous prefix. No await separates this read
+        # and truncate, so another task on this event loop cannot interleave.
+        with open(path, "r+b") as stream:
+            raw = stream.read()
+            committed = scan_log(raw)["committed_bytes"]
+            if committed < len(raw):
+                stream.truncate(committed)
+                stream.flush()
+                os.fsync(stream.fileno())
 
         closers = self._check_interrupted_turn(session_id, inspection.events)
         if closers:
@@ -454,18 +463,11 @@ class JsonlSessionPersistence(SessionPersistence):
         # return this.inspectLive(live)`), so a session that is live but not yet
         # materialized on disk still inspects. `read_from` stays a physical
         # durable-prefix read on purpose.
-        live = None
-        if self.ctx is not None and hasattr(self.ctx, "get"):
-            sessions = self.ctx.get("sessions")
-            live = sessions.get(session_id) if sessions is not None and hasattr(sessions, "get") else None
+        live = self._live_session(session_id)
         if live is not None:
             return SessionInspection(meta=live.header, events=list(live.events))
 
-        path = self._find_log_path(session_id)
-        if not path:
-            raise FileNotFoundError(f'persisted session "{session_id}" not found')
-
-        inspection = self._read_raw_file(path)
+        _, inspection = self._read_stored(session_id)
         closers = self._check_interrupted_turn(session_id, inspection.events)
         if closers:
             events_copy = list(inspection.events) + closers
@@ -474,7 +476,9 @@ class JsonlSessionPersistence(SessionPersistence):
         return inspection
 
     async def read_from(self, session_id: str, from_seq: int) -> SessionInspection:
-        inspection = await self.inspect(session_id)
+        if type(from_seq) is not int or from_seq < 0 or from_seq > 9007199254740991:
+            raise TypeError("readFrom fromSeq must be a non-negative safe integer")
+        _, inspection = self._read_stored(session_id)
         filtered = [e for e in inspection.events if e.get("seq", 0) >= from_seq]
         return SessionInspection(meta=inspection.meta, events=filtered)
 

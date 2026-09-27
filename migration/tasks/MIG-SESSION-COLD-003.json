@@ -1,0 +1,41 @@
+{
+  "id": "MIG-SESSION-COLD-003",
+  "goal": "对齐 JSONL 冷恢复、物理读取与有效字节边界",
+  "kind": "implementation",
+  "state": "review",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "a4ff8ac41fa37b5463b0ce8b7f420d0973e8d840",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-CORDIS-001",
+      "contract": "CON-CORDIS-CORE",
+      "revision": 10
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-SESSION-COLD-RECOVERY",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "Seven real-source JSONL paired observations match without normalization or missing cases.",
+    "Local regressions verify safe offsets, live-turn refusal, identity/version refusal, chunked scanning, committed corruption and repeat recovery.",
+    "164 unmodified upstream tests establish the source baseline; full Python regression and real profile persistence/resume pass.",
+    "The release gate runs the recovery baseline and paired observations, and rebuilds the portable product with Python 3.8.10."
+  ],
+  "expected_paths": [
+    "dsh/session",
+    "tests",
+    "scripts",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "完成精确候选回归及发行门禁后验收；共享 preparation/写队列/退休生命周期和配置重载仍需后续闭包。"
+}

@@ -11,6 +11,11 @@
       "task": "MIG-AGENT-LIFECYCLE-002",
       "contract": "CON-AGENT-FACTORY",
       "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-COLD-003",
+      "contract": "CON-SESSION-COLD-RECOVERY",
+      "revision": 1
     }
   ],
   "provides": [],
@@ -27,5 +32,5 @@
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "按已认可研究计划定义契约与依赖；分析可提前，接口实现等待提供端验收。"
+  "next_action": "冷恢复拆分为 MIG-SESSION-COLD-003；继续 shared preparation、写入队列/失败保留、retirement/HMR adoption 和 Session projection，再开展配置恢复/重载消费者。"
 }

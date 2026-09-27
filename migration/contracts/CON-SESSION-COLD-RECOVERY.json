@@ -1,0 +1,31 @@
+{
+  "id": "CON-SESSION-COLD-RECOVERY",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/session/session-persistence/src/coordinator.ts",
+    "reference/packages/session/session-persistence-jsonl/src/format.ts",
+    "reference/packages/core/session/src/repair.ts",
+    "dsh/session/persistence_jsonl.py"
+  ],
+  "consumers": [
+    "dsh/core/agent_loop.py",
+    "dsh/session/persistence.py",
+    "tests/test_profile_spine_recovery.py"
+  ],
+  "invariants": [
+    "Cold inspect synthesizes deterministic missing tool/step/turn boundaries without changing stored bytes.",
+    "read_from returns only the physical contiguous stored suffix, never in-memory events or synthetic closers.",
+    "Cold load truncates incomplete or invalid uncommitted bytes before durable repair; reopening the artifact is idempotent.",
+    "Damage followed by a committed turn/end, mismatched identity and future format are refused without changing bytes.",
+    "An active open live turn is flushed and refused by load, never cold-repaired."
+  ],
+  "open_questions": [],
+  "identity": "Requested ID must match the stored header for every physical read. Synthetic tool results preserve call identity and source sequence.",
+  "ownership": "Cold reads own detached event graphs; live inspect borrows the Session snapshot. This bounded contract does not certify shared preparation reservations or persistence retirement ownership.",
+  "ordering": "Inspect/read_from leave bytes unchanged. Load scans and truncates to the last valid contiguous record, fsyncs, then appends tool results, step/end and turn/end. Read-back and second load see the same balanced graph.",
+  "errors": "Invalid from_seq rejects before storage access. A bad row or sequence gap before a later turn/end is committed corruption; an uncommitted tail is recoverable. v1 is already future relative to pinned v0.",
+  "cancellation": "Synchronous Python filesystem work cannot interleave on one event loop. Cross-process writers and cancellable shared preparation coordination are outside this cold recovery contract; public Agent cancellation remains CON-AGENT-FACTORY.",
+  "adaptation": "Python 3.8/Win7 uses JSONL without Zstandard. Seven exact TS/Python observations run the real upstream JSONL service and local backend; 164 unmodified upstream assertions are a source baseline, not 164 Python parity claims."
+}

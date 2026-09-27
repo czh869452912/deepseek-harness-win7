@@ -1,0 +1,25 @@
+{
+  "id": "MIG-UPSTREAM-DELTA-002",
+  "goal": "执行只读上游差分观察与影响分析演练",
+  "kind": "verification",
+  "state": "draft",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "a4ff8ac41fa37b5463b0ce8b7f420d0973e8d840",
+  "owner": null,
+  "requires": [],
+  "provides": [],
+  "acceptance": [
+    "Specify source-backed contract and required provider revisions before entering ready."
+  ],
+  "expected_paths": [
+    "dsh",
+    "tests",
+    "migration"
+  ],
+  "open_findings": [],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "按已认可研究计划定义契约与依赖；分析可提前，接口实现等待提供端验收。"
+}

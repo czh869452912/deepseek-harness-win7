@@ -1,0 +1,31 @@
+{
+  "id": "MIG-AGENT-LIFECYCLE-002",
+  "goal": "对齐 Agent 创建恢复的 preparation、发布事务、owner 与取消",
+  "kind": "verification",
+  "state": "draft",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "a4ff8ac41fa37b5463b0ce8b7f420d0973e8d840",
+  "owner": null,
+  "requires": [
+    {
+      "task": "MIG-CORDIS-001",
+      "contract": "CON-CORDIS-CORE",
+      "revision": 10
+    }
+  ],
+  "provides": [],
+  "acceptance": [
+    "Specify source-backed contract and required provider revisions before entering ready."
+  ],
+  "expected_paths": [
+    "dsh",
+    "tests",
+    "migration"
+  ],
+  "open_findings": [],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "按已认可研究计划定义契约与依赖；分析可提前，接口实现等待提供端验收。"
+}

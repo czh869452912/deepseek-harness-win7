@@ -1,4 +1,6 @@
 import asyncio
+import json
+import hashlib
 import importlib.util
 import os
 import sys
@@ -92,7 +94,28 @@ def test_portable_stages_pinned_rg_and_zip_path_matches_runtime_resolver(tmp_pat
     (runtime / "python.exe").write_bytes(b"runtime-exe")
     (runtime / "python38.dll").write_bytes(b"runtime-dll")
     (runtime / "Lib" / "os.py").write_text("# stdlib fixture", encoding="utf-8")
+    web = fixture_root / 'apps/web/dist'
+    web.mkdir(parents=True)
+    (web / 'index.html').write_bytes(b'<html>fixture</html>')
+    (fixture_root / 'scripts').mkdir()
+    (fixture_root / 'migration').mkdir()
+    (fixture_root / 'reference/apps/cli').mkdir(parents=True)
+    (fixture_root / 'reference/apps/cli/package.json').write_text('{}', encoding='utf-8')
+    (fixture_root / 'migration/baseline.json').write_text('{"target_upstream":"fixture"}', encoding='utf-8')
+    (fixture_root / 'scripts/frontend-inputs.json').write_text(json.dumps({
+        'target_upstream':'fixture', 'files':[{'path':'apps/web/dist/index.html',
+        'sha256':hashlib.sha256((web/'index.html').read_bytes()).hexdigest()}]}), encoding='utf-8')
+    (fixture_root / 'requirements-runtime.lock').write_text('FixtureRuntime==1.0\n', encoding='utf-8')
+    site = fixture_root / '.venv/Lib/site-packages'
+    metadata = site / 'FixtureRuntime-1.0.dist-info'
+    metadata.mkdir(parents=True)
+    (site / 'fixture_runtime.py').write_text('# runtime', encoding='utf-8')
+    (metadata / 'METADATA').write_text('Name: FixtureRuntime\nVersion: 1.0\n', encoding='utf-8')
+    (metadata / 'RECORD').write_text('fixture_runtime.py,,\nFixtureRuntime-1.0.dist-info/METADATA,,\n', encoding='utf-8')
+    (site / 'unreviewed_dev_tool.py').write_text('# must not ship', encoding='utf-8')
     build.build_portable(runtime_dir=str(runtime))
+    assert (dist / 'lib/fixture_runtime.py').is_file()
+    assert not (dist / 'lib/unreviewed_dev_tool.py').exists()
     assert (dist / "python.exe").read_bytes() == b"runtime-exe"
     assert '"%~dp0python.exe"' in (dist / "dsh.bat").read_text(encoding="utf-8")
     assert '--profile web' in (dist / "dsh-web.bat").read_text(encoding="utf-8")

@@ -1,35 +1,28 @@
-name: Release Portable Package
-
+name: Release verified portable
 on:
   push:
     tags:
       - 'v*'
-
+permissions:
+  contents: read
 jobs:
-  build-and-release:
-    runs-on: windows-latest
+  verify:
+    uses: ./.github/workflows/verify.yml
+  publish:
+    needs: verify
+    runs-on: windows-2022
+    permissions:
+      contents: write
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v5
+      - uses: actions/download-artifact@v4
         with:
-          python-version: '3.8'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Build Portable Release
-        run: |
-          python scripts/build_portable.py
-
-      - name: Create GitHub Release
+          name: verified-portable
+          path: dist
+      - name: Publish the exact archive that passed verification
         uses: softprops/action-gh-release@v2
         with:
           files: dist/dsh-win7-portable-v*.zip
+          fail_on_unmatched_files: true
           draft: false
           prerelease: false
         env:

@@ -1,0 +1,26 @@
+{
+  "id": "CON-REPRO-RELEASE",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "scripts/build_portable.py",
+    "scripts/verify_release.py",
+    ".github/workflows/verify.yml",
+    ".github/workflows/release.yml"
+  ],
+  "consumers": [
+    ".github/workflows/release.yml"
+  ],
+  "invariants": [
+    "A clean Windows checkout resolves only versioned and pinned inputs before replacing a release.",
+    "Publishing consumes the exact archive produced by a successful reusable verification job."
+  ],
+  "open_questions": [],
+  "identity": "Candidate Git commit and pinned reference SHA identify the gate; frontend bytes are separately pinned prebuilt inputs.",
+  "ownership": "Verification owns build directory, dependency environment and reports. Publish job consumes uploaded archive and never rebuilds it.",
+  "ordering": "Resolve runtime, locked dependencies and frontend manifest before replacing dist; build, full pytest, upstream consumer tests, raw Cordis oracle, scoped acceptance, isolated boot, then artifact upload.",
+  "errors": "Missing or changed inputs fail before overwriting the previous distribution; any test/runner failure blocks archive publication. C58 raw exit 1 is accepted only by the exact-signature gate.",
+  "cancellation": "Interrupted validation produces no success summary or verified archive for publication.",
+  "adaptation": "Current Windows/Python 3.8.10 gate. Frontend is the exact checked-in build, not a fresh target-source rebuild; Web Connection batch owns source/protocol alignment. Win7 is deferred."
+}

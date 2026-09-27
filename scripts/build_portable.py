@@ -7,6 +7,8 @@ import os
 import shutil
 import sys
 import zipfile
+import importlib.metadata
+from pathlib import Path
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIST_DIR = os.path.join(ROOT_DIR, "dist", "dsh-win7-portable")
@@ -63,9 +65,59 @@ def bundle_python_runtime(dist_dir, runtime_dir):
         stream.write(".\nlib\nDLLs\nimport site\n")
 
 
-def build_portable(runtime_dir=None, ripgrep_source=None):
+def checked_inputs(root_dir, site_packages):
+    """Resolve all external inputs before touching the last successful release."""
+    root = Path(root_dir)
+    manifest = json.loads((root / 'scripts/frontend-inputs.json').read_text(encoding='utf-8'))
+    baseline = json.loads((root / 'migration/baseline.json').read_text(encoding='utf-8'))
+    if manifest['target_upstream'] != baseline['target_upstream']:
+        raise ValueError('frontend input target differs from pinned upstream')
+    expected = {row['path']: row['sha256'] for row in manifest['files']}
+    actual = {p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+              for p in (root / 'apps/web/dist').rglob('*') if p.is_file()}
+    if not expected or expected != actual or 'apps/web/dist/index.html' not in actual:
+        raise ValueError('versioned frontend inputs missing or changed; rebuild and review their manifest')
+    if not (root / 'reference/apps/cli/package.json').is_file():
+        raise FileNotFoundError('pinned reference CLI package metadata is missing; initialize submodules')
+    distributions = {d.metadata['Name'].lower().replace('_', '-'): d
+                     for d in importlib.metadata.distributions(path=[str(site_packages)])}
+    selected = []
+    for line in (root / 'requirements-runtime.lock').read_text(encoding='utf-8').splitlines():
+        if not line or line.startswith('#'):
+            continue
+        name, version = line.split('==')
+        dist = distributions.get(name.lower().replace('_', '-'))
+        if dist is None or dist.version != version or not dist.files:
+            raise ValueError('runtime dependency missing or unpinned: ' + line)
+        for relative in dist.files:
+            if relative.suffix != '.pyc' and '..' not in relative.parts:
+                if not Path(dist.locate_file(relative)).is_file():
+                    raise FileNotFoundError('runtime distribution file missing: ' + str(relative))
+        selected.append(dist)
+    if not selected:
+        raise ValueError('runtime dependency lock is empty')
+    return manifest, selected
+
+
+def bundle_dependencies(distributions, destination):
+    """Copy only locked runtime distributions, never the development environment."""
+    for dist in distributions:
+        for relative in dist.files:
+            if relative.suffix == '.pyc' or '..' in relative.parts:
+                continue  # entrypoint scripts and cache files are not runtime modules
+            source = Path(dist.locate_file(relative))
+            if not source.is_file():
+                raise FileNotFoundError('runtime distribution file missing: ' + str(source))
+            target = Path(destination) / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(str(source), str(target))
+
+
+def build_portable(runtime_dir=None, ripgrep_source=None, site_packages=None):
     # Resolve before replacing an existing release so a missing pinned build input fails safely.
     ripgrep_source = ripgrep_source or resolve_pinned_ripgrep_source(ROOT_DIR)
+    if not os.path.isfile(ripgrep_source):
+        raise FileNotFoundError('pinned ripgrep binary is missing: ' + str(ripgrep_source))
     metadata_path = os.path.join(os.path.dirname(os.path.dirname(ripgrep_source)), "package.json")
     with open(metadata_path, "r", encoding="utf-8") as stream:
         metadata = json.load(stream)
@@ -74,6 +126,11 @@ def build_portable(runtime_dir=None, ripgrep_source=None):
     runtime_dir = runtime_dir or sys.base_prefix
     if not os.path.isfile(os.path.join(runtime_dir, "python38.dll")):
         raise FileNotFoundError("Python 3.8 Windows runtime is required before staging")
+    for name in ('python.exe', 'python38.dll', 'Lib/os.py'):
+        if not os.path.isfile(os.path.join(runtime_dir, name)):
+            raise FileNotFoundError('Python 3.8 runtime input missing: ' + name)
+    site_packages = site_packages or os.path.join(ROOT_DIR, '.venv', 'Lib', 'site-packages')
+    frontend, dependencies = checked_inputs(ROOT_DIR, site_packages)
     print(f"[Build Portable] Creating portable release directory at: {DIST_DIR}")
     if os.path.exists(DIST_DIR):
         shutil.rmtree(DIST_DIR)
@@ -86,7 +143,9 @@ def build_portable(runtime_dir=None, ripgrep_source=None):
         ripgrep_digest = hashlib.sha256(stream.read()).hexdigest()
     provenance = {"python_builder": platform.python_version(), "python_runtime_source": runtime_dir,
                   "ripgrep_package": metadata["name"], "ripgrep_version": metadata["version"],
-                  "ripgrep_sha256": ripgrep_digest}
+                  "ripgrep_sha256": ripgrep_digest,
+                  "frontend": frontend,
+                  "runtime_dependencies": {d.metadata['Name']: d.version for d in dependencies}}
     try:
         provenance["product_commit"] = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT_DIR, encoding="utf-8").strip()
         provenance["worktree_dirty"] = bool(subprocess.check_output(["git", "status", "--porcelain", "--untracked-files=no"], cwd=ROOT_DIR, encoding="utf-8").strip())
@@ -111,12 +170,6 @@ def build_portable(runtime_dir=None, ripgrep_source=None):
         shutil.copy(ref_cli_pkg, os.path.join(DIST_DIR, "package.json"))
     if os.path.exists(os.path.join(ROOT_DIR, "apps", "web")):
         shutil.copytree(os.path.join(ROOT_DIR, "apps", "web", "dist"), os.path.join(DIST_DIR, "apps", "web", "dist"))
-    # Copy official compiled web dist and client packages
-    ref_web_dist = os.path.join(ROOT_DIR, "reference", "apps", "web", "dist")
-    if os.path.exists(ref_web_dist):
-        os.makedirs(os.path.join(DIST_DIR, "apps", "web", "dist"), exist_ok=True)
-        shutil.copytree(ref_web_dist, os.path.join(DIST_DIR, "apps", "web", "dist"), dirs_exist_ok=True)
-
     ref_pkgs = os.path.join(ROOT_DIR, "packages")
     if not os.path.exists(ref_pkgs):
         ref_pkgs = os.path.join(ROOT_DIR, "reference", "packages")
@@ -136,21 +189,8 @@ def build_portable(runtime_dir=None, ripgrep_source=None):
     if os.path.exists(os.path.join(ROOT_DIR, "dsh-web.bat")):
         shutil.copy(os.path.join(ROOT_DIR, "dsh-web.bat"), os.path.join(DIST_DIR, "dsh-web.bat"))
 
-    # 2. Bundle python site-packages from virtualenv
-    venv_site_packages = os.path.join(ROOT_DIR, ".venv", "Lib", "site-packages")
-    dist_lib_dir = os.path.join(DIST_DIR, "lib")
-    if os.path.exists(venv_site_packages):
-        print("[Build Portable] Bundling dependencies from virtualenv site-packages...")
-        os.makedirs(dist_lib_dir, exist_ok=True)
-        for item in os.listdir(venv_site_packages):
-            if item.startswith('_pytest') or item.startswith('pytest'):
-                continue
-            s = os.path.join(venv_site_packages, item)
-            d = os.path.join(dist_lib_dir, item)
-            if os.path.isdir(s):
-                shutil.copytree(s, d)
-            else:
-                shutil.copy(s, d)
+    # Copy exactly the reviewed production dependencies, excluding pytest/pip/dev tooling.
+    bundle_dependencies(dependencies, os.path.join(DIST_DIR, 'lib'))
 
     # 3. Create Windows batch launcher script dsh.bat
     for launcher, arguments in (("dsh.bat", "%*"), ("dsh-web.bat", "--profile web %*")):
@@ -180,5 +220,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--python-runtime", default=sys.base_prefix)
     parser.add_argument("--ripgrep-source")
+    parser.add_argument("--site-packages")
     args = parser.parse_args()
-    build_portable(args.python_runtime, args.ripgrep_source)
+    build_portable(args.python_runtime, args.ripgrep_source, args.site_packages)

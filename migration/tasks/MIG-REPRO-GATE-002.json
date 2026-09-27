@@ -1,0 +1,35 @@
+{
+  "id": "MIG-REPRO-GATE-002",
+  "goal": "从干净 Windows checkout 复现固定输入、完整验证及便携包门禁",
+  "kind": "verification",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "a4ff8ac41fa37b5463b0ce8b7f420d0973e8d840",
+  "owner": "current-session-coordinator",
+  "requires": [],
+  "provides": [
+    {
+      "contract": "CON-REPRO-RELEASE",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "A checkout without .venv or node_modules installs pinned dependencies and passes scripts/verify_release.py --prepare.",
+    "Missing runtime/frontend/dependency inputs fail before replacing a successful portable.",
+    "Release workflow publishes the gate artifact without rebuilding or bypassing tests."
+  ],
+  "expected_paths": [
+    "scripts",
+    "requirements.txt",
+    "requirements-runtime.lock",
+    "requirements-dev.lock",
+    ".github/workflows",
+    "tests"
+  ],
+  "open_findings": [],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "Run the gate locally and in a fresh checkout; keep fresh frontend source build as explicit Web batch scope."
+}

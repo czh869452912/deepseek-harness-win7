@@ -1,0 +1,38 @@
+name: Verify Python 3.8 portable
+on:
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: windows-2022
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.8.10'
+          architecture: x64
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.2'
+      - name: Prepare pinned inputs, build, and verify
+        run: python scripts/verify_release.py --prepare
+      - name: Preserve raw observations and regression diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parity-diagnostics
+          path: .goose/out/release-gate/
+          include-hidden-files: true
+      - name: Upload verified portable
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-portable
+          path: dist/dsh-win7-portable-v*.zip
+          if-no-files-found: error

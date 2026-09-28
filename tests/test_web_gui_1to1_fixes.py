@@ -91,6 +91,8 @@ async def test_sessions_1to1_schemas_and_projections():
     ctx = Context()
     sessions_svc = SessionStore(ctx)
     ctx.set_service("sessions", sessions_svc)
+    from dsh.session.projections import SessionProjectionsPlugin
+    await ctx.plugin(SessionProjectionsPlugin)
 
     web_server = WebServerPlugin({"port": 0})
     api_proxy = ApiProxyPlugin()
@@ -108,8 +110,9 @@ async def test_sessions_1to1_schemas_and_projections():
     assert "items" in list_res
     s_item = next(i for i in list_res["items"] if i["sessionId"] == "session-test-1")
     assert s_item["blank"] is True
-    assert s_item["agentPreset"] == "creative"
     assert "projections" in s_item
+    assert s_item["projections"]["values"]["sessionListMetadata"]["blank"] is True
+    assert "agentPreset" not in s_item
 
     # 3. history
     hist_res = await handler.get_history({"sessionId": "session-test-1"})

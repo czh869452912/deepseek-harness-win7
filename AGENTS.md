@@ -84,7 +84,7 @@ To ensure strict Windows 7 and Python 3.8.10 compatibility:
   - Includes full tool suite plus `@deepseek-ai/dsh-cordis-manager`.
   - Exposes runtime Cordis tools: `cordis_list_plugins`, `cordis_inspect_context`, `cordis_unload_plugin`, `cordis_dump_config`.
 
-- **Web GUI Mode (`dsh.py --web` / `dsh-web.bat` / `dsh --profile web`)**:
+- **Web GUI Mode (`dsh-web.bat` / `dsh --profile web`)**:
   - Automatically loads `WebServerPlugin`, `ClientModulesPlugin`, `ApiProxyPlugin`, and `FrontendStaticPlugin`.
   - Serves official React 18 frontend from `apps/web/dist` and 40 client plugins from `packages/client/`.
 
@@ -93,7 +93,7 @@ To ensure strict Windows 7 and Python 3.8.10 compatibility:
   ```powershell
   dsh --profile <minimal|standard|creative|web|headless> [--patch <path>] [--dump-config]
   ```
-- Legacy CLI flags (`--mode <name>`, `-m`, `-p`, `--prompt`, `--web`) remain fully backward compatible via `apps/cli/main.py` routing into `parse_dsh_args` and `run_profile`.
+- The canonical launcher is `apps/cli/main.py` → `parse_dsh_args` → `run_profile`. The legacy launcher flags (`--mode`, `-m`, `-p`, `--prompt`, `--web`) and interactive fallback are retired by explicit product decision. App arguments after the launcher prefix belong to the selected app; never inspect them to switch boot runtimes.
 - Dual-track retirement: `dsh/cordis/profile.py` delegates all profile directory resolution, compose, heal, and manifest operations to canonical `dsh.boot.app_boot` / `dsh.boot.profile_boot`. `build_harness` enforces canonical `assert_entries_activated` and `DSH_TELEMETRY_DISABLED` privacy filtering.
 
 ---

@@ -83,15 +83,20 @@ def main(argv=None):
     run([python, 'scripts/cordis_acceptance.py', str(raw), '--output', str(output / 'cordis-acceptance.json')],
         'cordis-acceptance', output)
     portable = ROOT / 'dist/dsh-win7-portable'
-    boot = """import asyncio, tempfile, pathlib
-from dsh.boot.profile import init_profile
+    boot = """import asyncio, tempfile, os
 from dsh.boot.profile_boot import run_profile
 async def main():
     with tempfile.TemporaryDirectory() as directory:
-        init_profile(str(pathlib.Path(directory)/'profiles'/'gate'), [], 'startup')
-        result = await run_profile({'profile':'gate','dsh_home':directory,'wait_for_exit':False})
-        result['shutdown'].shutdown(0)
-        await result['shutdown'].wait()
+        os.environ['DSH_HOME'] = directory
+        os.environ['DSH_TELEMETRY_DISABLED'] = '1'
+        # Real unmodified product assemblies. Empty ad-hoc profiles and config
+        # dumps are not evidence that the shipped application can boot.
+        for profile, args in [('headless', ['release assembly probe']),
+                              ('web', ['--port', '0', '--no-open'])]:
+            result = await run_profile({'profile':profile,'dsh_home':directory,
+                                        'args':args,'wait_for_exit':False})
+            result['shutdown'].shutdown(0)
+            await result['shutdown'].wait()
 asyncio.run(main())
 """
     run([str(portable / 'python.exe'), '-I', '-c', boot], 'portable-isolated-boot', output)

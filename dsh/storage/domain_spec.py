@@ -61,12 +61,14 @@ class DomainSpec:
         version: int,
         tables: Dict[str, DomainTableSpec],
         global_spec: Optional[DomainGlobalSpec] = None,
+        layout: str = "single",
     ):
         self.name = name
         self.version = version
         self.tables = tables
         self.global_spec = global_spec
         self.global_ = global_spec
+        self.layout = layout
 
     @property
     def global_attr(self) -> Optional[DomainGlobalSpec]:
@@ -114,7 +116,12 @@ def define_domain(*args: Any, **kwargs: Any) -> DomainSpec:
                 "null is the medium's \"never written\" sentinel, so a stored null could not round-trip"
             )
 
-    return DomainSpec(name=name, version=version, tables=tables_dict, global_spec=global_spec)
+    layout = (getattr(args[0], "layout", "single") if len(args) == 1 and isinstance(args[0], DomainSpec)
+              else args[0].get("layout", "single") if len(args) == 1 and isinstance(args[0], dict)
+              else kwargs.get("layout", "single"))
+    if layout not in ("single", "per-record"):
+        raise ValueError("unknown domain layout: " + layout)
+    return DomainSpec(name=name, version=version, tables=tables_dict, global_spec=global_spec, layout=layout)
 
 
 defineDomain = define_domain
@@ -127,6 +134,7 @@ def descriptor_of(spec: DomainSpec) -> KvUnitDescriptor:
         version=spec.version,
         tables=list(spec.tables.keys()),
         has_global=has_g,
+        layout=spec.layout,
     )
 
 

@@ -1,4 +1,8 @@
+import asyncio
+import functools
+import threading
 from typing import Any, Dict, Optional
+from weakref import WeakKeyDictionary
 from dsh.cordis.plugin import Plugin
 from dsh.shell.terminal import TerminalService
 
@@ -54,6 +58,7 @@ class ToolPwshPersistentPlugin(Plugin):
         tool_name = str(self.config.get("tool_name", "pwsh"))
         default_description = DEFAULT_BASH_DESCRIPTION if tool_name == "bash" else DEFAULT_PWSH_DESCRIPTION
         self.description: str = str(self.config.get("description", default_description))
+        self._owned_terminals = WeakKeyDictionary()
 
         if len(self.backend_type.strip()) == 0:
             raise ValueError("tool-pwsh-persistent: backendType must be non-empty")
@@ -78,6 +83,7 @@ class ToolPwshPersistentPlugin(Plugin):
         if not ctx.has("terminals"):
             terminals = TerminalService(shell_type=shell_type)
             ctx.set_service("terminals", terminals)
+            ctx.effect(lambda: terminals.close)
         else:
             terminals = ctx.get("terminals")
         if not ctx.has("terminal"):
@@ -100,13 +106,46 @@ class ToolPwshPersistentPlugin(Plugin):
             "name": tool_name,
             "description": self.description,
             "parameters": parameters,
-            "execute": lambda args, _exec: self.handle_pwsh(**args),
+            "execute": lambda args, execution: self.execute_owned(ctx, args, execution, shell_type),
             "output": {
                 "schema": {"type": "string"},
                 "render": lambda _args, value: [{"type": "text", "text": str(value)}],
             },
         })
         ctx.effect(lambda: disposer)
+
+    async def execute_owned(self, ctx, args, execution, shell_type):
+        agent = getattr(execution, "agent", None)
+        if agent is None:
+            terminal = ctx.get("terminals") or ctx.get("terminal")
+        else:
+            terminal = self._owned_terminals.get(agent)
+            if terminal is None:
+                terminal = TerminalService(cwd=agent.session.header.cwd, shell_type=shell_type)
+                self._owned_terminals[agent] = terminal
+                agent.ctx.effect(lambda: terminal.close)
+        if terminal is None:
+            raise RuntimeError("Terminal service unavailable")
+        cancelled = threading.Event()
+        loop = asyncio.get_running_loop()
+        operation = loop.run_in_executor(None, functools.partial(
+            terminal.run_command, args["command"],
+            timeout_seconds=max(1, self.timeout_ms // 1000), cancelled=cancelled))
+        signal = getattr(execution, "signal", None)
+        try:
+            while not operation.done():
+                is_set = getattr(signal, "is_set", None)
+                if (is_set() if callable(is_set) else getattr(signal, "aborted", False)):
+                    cancelled.set()
+                await asyncio.wait([operation], timeout=0.05)
+            result = operation.result()
+        except asyncio.CancelledError:
+            cancelled.set()
+            await asyncio.shield(operation)
+            raise
+        output = maybe_truncate(result.get("output", ""), self.max_output_chars)
+        status = result.get("exit_code", 0)
+        return append_status_marker(output, "[exit code: {}]".format(status) if status and result.get("completed") else None)
 
     def handle_pwsh(
         self,

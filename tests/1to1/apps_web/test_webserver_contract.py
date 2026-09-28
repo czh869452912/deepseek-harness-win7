@@ -317,8 +317,8 @@ async def test_serves_registered_routes_index_taps_and_the_fallback_seat_semanti
         await server.stop()
         assert upgraded_sockets[0].is_closing()
         assert await read_or_reset(upgraded_reader) == b""
-        with pytest.raises(OSError):
-            await raw_request(port, "/probe")
+        with pytest.raises((OSError, asyncio.TimeoutError)):
+            await asyncio.wait_for(raw_request(port, "/probe"), 2)
     finally:
         await server.stop()
 

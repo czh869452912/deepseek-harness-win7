@@ -2,7 +2,7 @@ import io
 import sys
 import pytest
 from dsh.cordis.context import Context
-from dsh.core.tools import ToolsService
+from dsh.core.tools import ToolsService, ToolExecutionInput, ToolExecutionResult
 from dsh.extensions.cli_visualizer import CliVisualizerPlugin
 
 
@@ -23,8 +23,9 @@ async def test_cli_visualizer_plugin_events():
         payload = {"name": "test_tool", "arguments": {"path": "test.txt"}}
         await ctx.waterfall("tools/pre-execute", payload, lambda *_args: payload)
 
-        res_payload = {"name": "test_tool", "result": "Success Content", "error": None}
-        await ctx.waterfall("tools/post-execute", res_payload, lambda *_args: res_payload)
+        execution = ToolExecutionInput("call-1", "test_tool", {}, signal=None)
+        result = ToolExecutionResult([{ "type": "text", "text": "Success Content"}])
+        await ctx.waterfall("tools/post-execute", execution, result, lambda *_args: {"kind": "accept"})
 
         ctx.emit("turn/end", "Test Final Response")
     finally:

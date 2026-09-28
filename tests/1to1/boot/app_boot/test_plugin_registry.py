@@ -109,25 +109,20 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-goal",
         "@deepseek-ai/dsh-goal-round-driver",
         "@deepseek-ai/dsh-jobs-local",
-        "@deepseek-ai/dsh-llm-deepseek",
         "@deepseek-ai/dsh-llm-pi-ai",
         "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
         "@deepseek-ai/dsh-session-log-export",
-        "@deepseek-ai/dsh-session-projection-cache",
         "@deepseek-ai/dsh-session-reference",
         "@deepseek-ai/dsh-session-telemetry-otel",
         "@deepseek-ai/dsh-session-title-first-prompt-llm",
         "@deepseek-ai/dsh-skill",
-        "@deepseek-ai/dsh-storage-domain",
-        "@deepseek-ai/dsh-storage-json",
         "@deepseek-ai/dsh-subagent-fork-in-process",
         "@deepseek-ai/dsh-subagent-spawn-in-process",
         "@deepseek-ai/dsh-tool-subagent-report",
         "@deepseek-ai/dsh-tool-subagent/model-selection-settings",
         "@deepseek-ai/dsh-typert-loader",
-        "@deepseek-ai/dsh-web",
         "@deepseek-ai/dsh-web-app",
     ],
     "standard": [
@@ -136,26 +131,20 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-command-goal",
         "@deepseek-ai/dsh-goal",
         "@deepseek-ai/dsh-goal-round-driver",
-        "@deepseek-ai/dsh-headless",
         "@deepseek-ai/dsh-jobs-local",
-        "@deepseek-ai/dsh-llm-deepseek",
         "@deepseek-ai/dsh-llm-pi-ai",
         "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
-        "@deepseek-ai/dsh-session-projection-cache",
         "@deepseek-ai/dsh-session-telemetry-otel",
         "@deepseek-ai/dsh-session-title-first-prompt-llm",
         "@deepseek-ai/dsh-skill",
-        "@deepseek-ai/dsh-storage-domain",
-        "@deepseek-ai/dsh-storage-json",
         "@deepseek-ai/dsh-subagent-fork-in-process",
         "@deepseek-ai/dsh-subagent-spawn-in-process",
         "@deepseek-ai/dsh-tool-subagent-control",
         "@deepseek-ai/dsh-tool-subagent-control/list-agents",
         "@deepseek-ai/dsh-tool-subagent-report",
         "@deepseek-ai/dsh-typert-loader",
-        "@deepseek-ai/dsh-web",
     ],
     "headless": [
         "@deepseek-ai/dsh-api-gateway",
@@ -163,26 +152,20 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-command-goal",
         "@deepseek-ai/dsh-goal",
         "@deepseek-ai/dsh-goal-round-driver",
-        "@deepseek-ai/dsh-headless",
         "@deepseek-ai/dsh-jobs-local",
-        "@deepseek-ai/dsh-llm-deepseek",
         "@deepseek-ai/dsh-llm-pi-ai",
         "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
-        "@deepseek-ai/dsh-session-projection-cache",
         "@deepseek-ai/dsh-session-telemetry-otel",
         "@deepseek-ai/dsh-session-title-first-prompt-llm",
         "@deepseek-ai/dsh-skill",
-        "@deepseek-ai/dsh-storage-domain",
-        "@deepseek-ai/dsh-storage-json",
         "@deepseek-ai/dsh-subagent-fork-in-process",
         "@deepseek-ai/dsh-subagent-spawn-in-process",
         "@deepseek-ai/dsh-tool-subagent-control",
         "@deepseek-ai/dsh-tool-subagent-control/list-agents",
         "@deepseek-ai/dsh-tool-subagent-report",
         "@deepseek-ai/dsh-typert-loader",
-        "@deepseek-ai/dsh-web",
     ],
     "creative": [
         "@deepseek-ai/dsh-api-gateway",
@@ -190,26 +173,20 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-command-goal",
         "@deepseek-ai/dsh-goal",
         "@deepseek-ai/dsh-goal-round-driver",
-        "@deepseek-ai/dsh-headless",
         "@deepseek-ai/dsh-jobs-local",
-        "@deepseek-ai/dsh-llm-deepseek",
         "@deepseek-ai/dsh-llm-pi-ai",
         "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
-        "@deepseek-ai/dsh-session-projection-cache",
         "@deepseek-ai/dsh-session-telemetry-otel",
         "@deepseek-ai/dsh-session-title-first-prompt-llm",
         "@deepseek-ai/dsh-skill",
-        "@deepseek-ai/dsh-storage-domain",
-        "@deepseek-ai/dsh-storage-json",
         "@deepseek-ai/dsh-subagent-fork-in-process",
         "@deepseek-ai/dsh-subagent-spawn-in-process",
         "@deepseek-ai/dsh-tool-subagent-control",
         "@deepseek-ai/dsh-tool-subagent-control/list-agents",
         "@deepseek-ai/dsh-tool-subagent-report",
         "@deepseek-ai/dsh-typert-loader",
-        "@deepseek-ai/dsh-web",
     ],
     "acp": [
         "@deepseek-ai/dsh-acp-app",
@@ -218,23 +195,18 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-goal",
         "@deepseek-ai/dsh-goal-round-driver",
         "@deepseek-ai/dsh-jobs-local",
-        "@deepseek-ai/dsh-llm-deepseek",
         "@deepseek-ai/dsh-llm-pi-ai",
         "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
-        "@deepseek-ai/dsh-session-projection-cache",
         "@deepseek-ai/dsh-session-telemetry-otel",
         "@deepseek-ai/dsh-skill",
-        "@deepseek-ai/dsh-storage-domain",
-        "@deepseek-ai/dsh-storage-json",
         "@deepseek-ai/dsh-subagent-fork-in-process",
         "@deepseek-ai/dsh-subagent-spawn-in-process",
         "@deepseek-ai/dsh-tool-subagent-control",
         "@deepseek-ai/dsh-tool-subagent-control/list-agents",
         "@deepseek-ai/dsh-tool-subagent-report",
         "@deepseek-ai/dsh-typert-loader",
-        "@deepseek-ai/dsh-web",
     ],
     "sdk": [
         "@deepseek-ai/dsh-api-gateway",
@@ -242,29 +214,23 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-goal",
         "@deepseek-ai/dsh-goal-round-driver",
         "@deepseek-ai/dsh-jobs-local",
-        "@deepseek-ai/dsh-llm-deepseek",
         "@deepseek-ai/dsh-llm-pi-ai",
         "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
         "@deepseek-ai/dsh-sdk-app",
         "@deepseek-ai/dsh-sdk-jsonrpc-server",
-        "@deepseek-ai/dsh-session-projection-cache",
         "@deepseek-ai/dsh-session-telemetry-otel",
         "@deepseek-ai/dsh-skill",
-        "@deepseek-ai/dsh-storage-domain",
-        "@deepseek-ai/dsh-storage-json",
         "@deepseek-ai/dsh-subagent-fork-in-process",
         "@deepseek-ai/dsh-subagent-spawn-in-process",
         "@deepseek-ai/dsh-tool-subagent-control",
         "@deepseek-ai/dsh-tool-subagent-control/list-agents",
         "@deepseek-ai/dsh-tool-subagent-report",
         "@deepseek-ai/dsh-typert-loader",
-        "@deepseek-ai/dsh-web",
     ],
     "minimal": [
         "@deepseek-ai/dsh-agent-spine-demo",
-        "@deepseek-ai/dsh-llm-deepseek",
         "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
         "@deepseek-ai/dsh-sandbox-local",
         "@deepseek-ai/dsh-sdk-app",
@@ -425,7 +391,7 @@ def test_installation_rows_are_answered_by_the_table_not_by_the_shipped_artifact
     home = tmp()
     try:
         _stage_healed_installation(home, "@deepseek-ai/dsh-tools", "tools")
-        _stage_healed_installation(home, "@deepseek-ai/dsh-web", "web")
+        _stage_healed_installation(home, "@deepseek-ai/dsh-api-gateway", "web")
         profile_dir = os.path.join(home, "profiles", "standard")
         os.makedirs(profile_dir, exist_ok=True)
         config = os.path.join(profile_dir, "cordis.yml")
@@ -443,8 +409,8 @@ def test_installation_rows_are_answered_by_the_table_not_by_the_shipped_artifact
 
         assert loader.import_plugin("@deepseek-ai/dsh-tools") is resolve_harness_plugin("@deepseek-ai/dsh-tools")
         with pytest.raises(ModuleNotFoundError) as raised:
-            loader.import_plugin("@deepseek-ai/dsh-web")
-        assert str(raised.value) == "Cannot find module '@deepseek-ai/dsh-web'"
+            loader.import_plugin("@deepseek-ai/dsh-api-gateway")
+        assert str(raised.value) == "Cannot find module '@deepseek-ai/dsh-api-gateway'"
     finally:
         safe_rmtree(home)
 
@@ -676,7 +642,7 @@ def test_the_frozen_gap_is_the_union_of_every_shipped_profile():
 
             collect(patch)
     assert union <= shipped_names
-    assert len(union) == 42
+    assert len(union) == 36
 
 
 # --- boot installs and consults the table ------------------------------------
@@ -747,13 +713,30 @@ async def test_boot_rejects_a_config_naming_an_unimplemented_shipped_row():
     with open(os.path.join(d, "cordis.yml"), "w", encoding="utf-8") as f:
         f.write(
             "- id: timer\n  name: '@deepseek-ai/cordis-plugin-timer'\n"
-            "- id: web\n  name: '@deepseek-ai/dsh-web'\n"
+            "- id: gateway\n  name: '@deepseek-ai/dsh-api-gateway'\n"
         )
     with pytest.raises(RuntimeError) as raised:
         await boot(NAME, os.path.join(d, "cordis.yml"))
     message = str(raised.value)
     assert message.startswith(f"{NAME}: plugin tree failed to load")
-    assert "failed to import loader entry web (@deepseek-ai/dsh-web): Cannot find module '@deepseek-ai/dsh-web'" in message
+    assert "failed to import loader entry gateway (@deepseek-ai/dsh-api-gateway): Cannot find module '@deepseek-ai/dsh-api-gateway'" in message
+
+
+@pytest.mark.asyncio
+async def test_web_row_mounts_the_real_provider_selecting_service(tmp_path):
+    config = tmp_path / "cordis.yml"
+    config.write_text("- id: web\n  name: '@deepseek-ai/dsh-web'\n", encoding="utf-8")
+    ctx = await boot(NAME, str(config))
+    try:
+        from dsh.web.web_service import WebError
+        web = ctx.get("web")
+        assert web is not None
+        with pytest.raises(WebError) as failure:
+            await web.search({"query": "unconfigured"})
+        assert failure.value.code == "WEB_PROVIDER_UNAVAILABLE"
+    finally:
+        await ctx.fiber.dispose()
+    assert ctx.get("web") is None
 
 
 @pytest.mark.asyncio

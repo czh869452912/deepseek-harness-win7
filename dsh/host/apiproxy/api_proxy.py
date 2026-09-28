@@ -190,6 +190,7 @@ class ApiProxyPlugin(Plugin):
         return ApiProxyUserQuestionProvider()
 
     def apply(self, ctx: Any) -> None:
+        self.ctx = ctx
         ctx.set_service("api_proxy", self)
         ctx.set_service("apiProxy", self)
         ctx.set_service("apiproxy", self)

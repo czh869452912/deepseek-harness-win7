@@ -4,10 +4,12 @@
 
 [README.md](README.md) | [AGENTS.md](AGENTS.md)
 
-**DeepSeek Harness Win7** 是针对 Windows 7 及以上系统打造的开源 Agent Harness（智能体框架）Python 实现，集成了原汁原味的 **Cordis in Browser + React 18 + TSX + CSS Modules** 现代化 Web GUI 与完整 CLI。
+> 当前仍在迁移中，默认 profile 与完整 Web/portable 尚未通过产品验收。详见 [当前状态审查](docs/research/2026-09-28-current-state-mvp-audit.md) 和 [入口切换实施记录](docs/research/2026-09-28-canonical-entry-progress.md)。CLI 已统一到正式 profile 入口，旧 CLI 分流不再保留。
+
+**DeepSeek Harness Win7** 是面向 Windows 7 及以上系统的开源 Agent Harness（智能体框架）Python 迁移工程，目标包含 **Cordis in Browser + React 18 + TSX + CSS Modules** Web GUI 与正式 profile CLI。浏览器协议和默认应用装配仍待完成。
 
 本项目基于 **Python 3.8.10**，忠实复刻了 DeepSeek Harness 原生的 **Cordis（万物皆插件）** 架构。项目的核心目标是：
-1. **Windows 7 完美兼容**：无缝运行在 Win7 SP1 / Win10 / Win11 及 Windows Server 环境中。
+1. **Windows 7 兼容目标**：使用 Python 3.8.10；当前 Windows 回归不能替代 Win7 真机认证。
 2. **极简模式与创造模式**：支持原生 DeepSeek Harness 的双关键模式（Minimal & Creative Presets）。
 3. **1:1 官方 Web GUI**：提供基于 Cordis in Browser 微内核与 40 个官方 Client 插件的全功能 Web 界面。
 4. **零依赖 Portable Release**：提供脱离 Python 全局环境依赖的开箱即用便携版。
@@ -38,7 +40,7 @@
 - **上下文容器 (`Context`)**：服务（Service）统一绑在 `ctx` 上，插件之间通过 Key 进行依赖查找而非强耦合导入。
 - **依赖声明 (`inject`)**：插件通过 `inject` 字段声明所需服务，等待服务就绪后触发 `apply(ctx)`。
 - **可逆副作用 (`effect`)**：所有的工具注册、事件监听均注册为可撤销 effect，插件卸载/重载时自动清理资源。
-- **四象限双流网关 (`ApiProxy`)**：
+- **旧兼容实现 (`ApiProxy`，不是固定上游的正式浏览器协议)**：正式路径需要迁移到 Connection → Gateway → Remote；下列旧路由仍存在于内部兼容代码，不代表 Web profile 已可用。
   - `/api/events/mux`：分发增量 Token 流、问答请求 (`question/requested`)、审批请求 (`approval/requested`)、目标投影 (`session/projection`)。
   - `/api/events/host`：分发会话生命周期、多工作区状态与背景作业。
   - `POST /api/respond`：异步应答唤醒挂起的工具协程。
@@ -96,20 +98,23 @@ git submodule update --init --recursive
    $env:DEEPSEEK_BASE_URL="https://api.deepseek.com" # 或 OpenAI 兼容 Endpoint
    ```
 
-3. 启动 CLI 或 Web GUI：
+3. 正式入口语法（默认组合的可用性以产品验收为准）：
    ```powershell
-   # 启动 Web GUI (在浏览器打开 http://127.0.0.1:8080)
-   .venv\Scripts\python.exe dsh.py --web
+   # 查看启动器帮助
+   .venv\Scripts\python.exe dsh.py --help
 
-   # 启动 CLI 交互模式 (标准模式)
-   .venv\Scripts\python.exe dsh.py --mode standard
+   # Web profile
+   .venv\Scripts\python.exe dsh.py --profile web
 
-   # 启动 CLI 交互模式 (极简模式)
-   .venv\Scripts\python.exe dsh.py --mode minimal
+   # 单次任务：应用读取任务位置参数
+   .venv\Scripts\python.exe dsh.py --profile headless "检查当前项目"
 
-   # 启动 CLI 交互模式 (创造模式)
-   .venv\Scripts\python.exe dsh.py --mode creative
+   # 查看组合配置，不代表完成实际启动验收
+   .venv\Scripts\python.exe dsh.py --profile headless --dump-config
    ```
+
+`--mode`、`-m`、`--prompt`、`-p`、`--web` 和无参数交互回退已移除。
+模型、端点等配置由 profile patch、settings 和 credentials 服务提供；启动器不再通过这些参数切换旧运行时。
 
 ---
 
@@ -123,7 +128,7 @@ git submodule update --init --recursive
 
 构建产物将放置在 `dist/dsh-win7-portable/` 并打包为 `dist/dsh-win7-portable-v0.1.0.zip`：
 - 双击 **`dsh-web.bat`**：一键启动 Web GUI 并在浏览器中打开。
-- 双击 **`dsh.bat`**：一键启动 CLI 控制台交互模式。
+- **`dsh.bat --profile headless "任务"`**：通过正式入口执行单次任务。
 
 ---
 
@@ -133,7 +138,7 @@ git submodule update --init --recursive
 ```powershell
 .venv\Scripts\python.exe -m pytest tests
 ```
-目前包含 **78 项单元与集成测试（100% 通过）**。
+测试数量和结果以当前检出的实际运行日志为准；历史通过记录不证明新默认 profile 或 Web 协议已经完成迁移。
 
 ---
 

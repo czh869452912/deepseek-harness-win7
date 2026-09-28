@@ -66,11 +66,11 @@ class CliVisualizerPlugin(Plugin):
             return result
         return payload
 
-    async def on_tool_post_execute(self, payload: Dict[str, Any], next_fn: Any = None) -> Dict[str, Any]:
+    async def on_tool_post_execute(self, execution: Any, result: Any, next_fn: Any) -> Dict[str, Any]:
         if self.show_tools:
-            name = payload.get("name", "unknown")
-            err = payload.get("error")
-            res = payload.get("result")
+            name = execution.name
+            err = result.error
+            res = result.content
             if err:
                 _safe_write(f"   ❌ [Tool Error] {name}: {err}\n")
             else:
@@ -83,7 +83,7 @@ class CliVisualizerPlugin(Plugin):
             if inspect.isawaitable(result):
                 result = await result
             return result
-        return payload
+        return {"kind": "accept"}
 
     def on_turn_end(self, final_response: str) -> None:
         _safe_write(f"\n🏁 [Turn Complete]\n")

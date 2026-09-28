@@ -39,72 +39,11 @@ class SessionsDomainHandler:
         self._broadcast_mux = broadcast_mux
         self._broadcast_host = broadcast_host
         self._workspaces = workspaces
+        from dsh.session.listing import SessionListing
+        self._listing = SessionListing(ctx)
 
     async def list_sessions(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        sessions_svc = None
-        if hasattr(self.ctx, "get"):
-            try:
-                sessions_svc = self.ctx.get("sessions")
-            except Exception:
-                pass
-        result = []
-        if sessions_svc:
-            for sid, s in sessions_svc._sessions.items():
-                is_blank = _is_blank(s.events)
-                last_prompt = _last_prompt_at(s.events)
-                created_at = getattr(s.header, "created_at", int(time.time()*1000))
-                updated_at = max(created_at, last_prompt) if last_prompt is not None else created_at
-                # handle header.cwd fallback
-                session_cwd = (s.header.cwd or os.getcwd()).replace("\\", "/")
-                # title via projection or last title event
-                title = None
-                for ev in s.events:
-                    if isinstance(ev, dict) and ev.get("type") == "session/title" and isinstance(ev.get("data"), dict):
-                        title = ev["data"].get("title")
-                current_preset = s.header.agent_preset or "standard"
-                current_model_selection = {
-                    "lastUsed": None,
-                    "next": {"provider": "deepseek-official", "model": "deepseek-chat"}
-                }
-                handle = self._active_sessions.get(sid)
-                running = False
-                if handle and hasattr(handle, "agent"):
-                    if hasattr(handle.agent, "status"):
-                        try:
-                            running = (handle.agent.status == "running")
-                        except Exception:
-                            running = False
-                    sel = getattr(handle.agent, "_model_selection", None)
-                    if isinstance(sel, dict) and sel.get("provider"):
-                        current_model_selection["next"] = {
-                            "provider": sel["provider"],
-                            "model": sel.get("model", "deepseek-chat"),
-                            **({"reasoningEffort": sel["reasoningEffort"]} if sel.get("reasoningEffort") else {})
-                        }
-                summary = {
-                    "sessionId": sid,
-                    "updatedAt": int(updated_at),
-                    "running": running,
-                    "blank": is_blank,
-                    "cwd": session_cwd,
-                    "agentPreset": current_preset,
-                    "projections": {
-                        "asOfSeq": len(s.events) - 1,
-                        "values": {
-                            "sessionListMetadata": {"blank": is_blank, "lastPromptAt": last_prompt},
-                            "agentPreset": current_preset,
-                            "modelSelection": current_model_selection,
-                        },
-                    }
-                }
-                if s.header.parent_session:
-                    summary["parentSessionId"] = s.header.parent_session
-                if getattr(s.header, "origin", None):
-                    summary["origin"] = s.header.origin
-                result.append(summary)
-            # sort descending by updatedAt (1:1 with TS)
-            result.sort(key=lambda x: x["updatedAt"], reverse=True)
-        return {"items": result}
+        return {"items": await self._listing.list()}
 
     async def create_session(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         sid = payload.get("sessionId") or ("session-" + str(uuid.uuid4()))

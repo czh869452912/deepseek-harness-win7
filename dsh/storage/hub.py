@@ -18,7 +18,7 @@ class Storage:
     Backends register under `backend`; data forms mount under `forms` and are reached as `ctx.storage.<form>`.
     """
 
-    def __init__(self, ctx: Any = None, root_dir: Optional[str] = None):
+    def __init__(self, ctx: Any = None, root_dir: Optional[str] = None, mount_defaults: bool = True):
         self.ctx = ctx
         if self.ctx and hasattr(self.ctx, "set_service"):
             self.ctx.set_service("storage", self)
@@ -26,6 +26,9 @@ class Storage:
         self.backend = BackendRegistry()
         self._forms: Dict[str, Any] = {}
         self.root_dir = root_dir or os.path.join(resolve_dsh_home(), "storages")
+
+        if not mount_defaults:
+            return
 
         # Register default JSON backend
         from dsh.storage.storage_json import JsonStorageBackend
@@ -94,4 +97,4 @@ class StoragePlugin(Plugin):
 
     def apply(self, ctx: Any) -> None:
         root_dir = self.config.get("root") if self.config else None
-        svc = Storage(ctx, root_dir=root_dir)
+        Storage(ctx, root_dir=root_dir, mount_defaults=False)

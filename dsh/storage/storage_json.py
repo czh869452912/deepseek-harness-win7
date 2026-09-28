@@ -190,6 +190,12 @@ class JsonStorageBackend(StorageBackend):
                 raise ValueError(f"unit '{descriptor.name}' is already open; a unit has exactly one live handle")
 
             os.makedirs(self.outer.root, exist_ok=True)
+            if descriptor.layout == "per-record":
+                from dsh.storage.per_record_json import PerRecordJsonUnit
+                unit = PerRecordJsonUnit(descriptor, self.outer.root,
+                                         lambda: self.outer._open_units.pop(descriptor.name, None))
+                self.outer._open_units[descriptor.name] = unit
+                return unit
             unit_path = os.path.join(self.outer.root, f"{descriptor.name}.json")
 
             text: Optional[str] = None

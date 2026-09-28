@@ -1,46 +1,30 @@
-from unittest.mock import MagicMock
+"""Canonical launcher dispatch; legacy flags never select a second runtime."""
+from types import SimpleNamespace
+import sys
+from unittest.mock import AsyncMock
+
 import pytest
-from dsh.harness import build_harness, initialize_harness
+from apps.cli import main as cli
 
 
-@pytest.mark.asyncio
-async def test_mock_llm_turn_execution():
-    # Build harness with mock LLM
-    ctx = await build_harness(mode="minimal")
+def test_only_profile_boot_receives_app_arguments(monkeypatch):
+    runner = AsyncMock(return_value={"shutdown": SimpleNamespace(exit_code=7)})
+    monkeypatch.setattr(cli, "run_profile", runner)
+    monkeypatch.setattr(cli, "load_layered_env", lambda _: "environment")
+    monkeypatch.setattr(sys, "argv", ["dsh", "--profile", "headless", "--model", "app-owned"])
+    with pytest.raises(SystemExit) as exit:
+        cli.main()
+    assert exit.value.code == 7
+    assert runner.call_args.args[0]["args"] == ["--model", "app-owned"]
+    assert runner.call_args.args[0]["profile"] == "headless"
 
-    mock_llm = MagicMock()
-    # Step 1: LLM decides to call tool 'str_replace_editor' command 'view'
-    mock_llm.chat_completion.side_effect = [
-        {
-            "role": "assistant",
-            "content": None,
-            "tool_calls": [
-                {
-                    "id": "call_1",
-                    "type": "function",
-                    "function": {
-                        "name": "str_replace_editor",
-                        "arguments": '{"command": "view", "path": "."}'
-                    }
-                }
-            ]
-        },
-        # Step 2: LLM returns final text response
-        {
-            "role": "assistant",
-            "content": "I have inspected the directory contents.",
-            "tool_calls": None
-        }
-    ]
 
-    # The harness owns the llm service; replace its completion transport
-    # instead of registering a duplicate service (Cordis rejects shadowing).
-    llm = ctx.get("llm")
-    llm.chat_completion = mock_llm.chat_completion
-
-    agent_loop = ctx.get("agent_loop")
-    response = await agent_loop.run_turn("Please view the current directory.")
-
-    assert response == "I have inspected the directory contents."
-    assert mock_llm.chat_completion.call_count == 2
-    ctx.teardown()
+@pytest.mark.parametrize("args", [[], ["--mode", "minimal"], ["--web"], ["-p", "hello"]])
+def test_legacy_launcher_invocations_are_rejected(monkeypatch, args):
+    runner = AsyncMock()
+    monkeypatch.setattr(cli, "run_profile", runner)
+    monkeypatch.setattr(sys, "argv", ["dsh"] + args)
+    with pytest.raises(SystemExit) as exit:
+        cli.main()
+    assert exit.value.code == 1
+    runner.assert_not_called()

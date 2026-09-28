@@ -33,6 +33,8 @@ from dsh.interaction.user_questions import UserQuestionsPlugin
 from dsh.llm.llm_retry import LLMRetryPlugin
 from dsh.session.session_query import SessionQueryPlugin
 from dsh.storage.storage import StoragePlugin
+from dsh.storage.plugins import StorageJsonPlugin, StorageDomainPlugin
+from dsh.cordis.environment import resolve_dsh_home
 from dsh.workspace.workspace import WorkspacePlugin
 from dsh.presets.agent_presets import AgentPresets
 
@@ -91,6 +93,8 @@ async def build_harness(
     await ctx.plugin(CredentialsLocalPlugin)
     await ctx.plugin(SettingsFilePlugin)
     await ctx.plugin(StoragePlugin)
+    await ctx.plugin(StorageJsonPlugin, config={"root": os.path.join(resolve_dsh_home(), "storages")})
+    await ctx.plugin(StorageDomainPlugin, config={"backend": "json"})
     await ctx.plugin(WorkspacePlugin)
     await ctx.plugin(UserApprovalPlugin)
     await ctx.plugin(PermissionPresetsPlugin)

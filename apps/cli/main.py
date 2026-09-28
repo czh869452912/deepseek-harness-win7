@@ -1,225 +1,39 @@
-import argparse
+"""The sole executable entry: parse launcher options, then boot a profile."""
 import asyncio
-import os
 import sys
-import yaml
 
-if hasattr(sys.stdout, 'reconfigure'):
-    try:
-        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
-    except Exception:
-        pass
+from dsh import __version__
 
-from dsh.harness import build_harness
-from dsh.cordis.profile import dump_config
-from dsh.boot.app_boot import install_fail_loud, load_layered_env
+from apps.cli.args import parse_dsh_args
+from dsh.boot.app_boot import load_layered_env
 from dsh.boot.profile_boot import run_profile
 from dsh.boot.dump_config import run_dump_config
-from apps.cli.args import parse_dsh_args
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="DeepSeek Harness Win7 - Cordis Architecture CLI (Python 3.8.10)"
-    )
-    parser.add_argument(
-        "--profile",
-        default=None,
-        help="Profile name to boot (web, headless, standard, minimal, creative, sdk, acp)"
-    )
-    parser.add_argument(
-        "-m", "--mode",
-        choices=["minimal", "standard", "creative", "web", "headless", "sdk", "acp", "sdk-minimal", "极简模式", "标准模式", "创造模式"],
-        default="standard",
-        help="Agent preset mode or profile alias"
-    )
-    parser.add_argument(
-        "--api-key",
-        default=None,
-        help="LLM API Key (or DEEPSEEK_API_KEY / OPENAI_API_KEY env / ~/.dsh/credentials.json)"
-    )
-    parser.add_argument(
-        "--base-url",
-        default=None,
-        help="LLM Base URL (or DEEPSEEK_BASE_URL env / ~/.dsh/settings.json)"
-    )
-    parser.add_argument(
-        "--model",
-        default=None,
-        help="LLM Model name (or DEEPSEEK_MODEL env / ~/.dsh/settings.json)"
-    )
-    parser.add_argument(
-        "--web",
-        action="store_true",
-        help="Launch DeepSeek Harness Web GUI in browser"
-    )
-    parser.add_argument(
-        "--port",
-        type=int,
-        default=8080,
-        help="Web GUI server port (default: 8080)"
-    )
-    parser.add_argument(
-        "--host",
-        default="127.0.0.1",
-        help="Web GUI server bind host (default: 127.0.0.1)"
-    )
-    parser.add_argument(
-        "--no-open",
-        action="store_true",
-        help="Do not automatically open browser on Web GUI launch"
-    )
-    parser.add_argument(
-        "--dump-config",
-        action="store_true",
-        help="Dump mounted Cordis configuration tree and exit"
-    )
-    parser.add_argument(
-        "--patch",
-        help="Path to custom cordis.patch.yml file overlay"
-    )
-    parser.add_argument(
-        "-p", "--prompt",
-        help="Single input prompt to process (non-interactive mode)"
-    )
-    return parser.parse_args()
-
-
-async def main_async():
-    # Install fail-loud error handler on the active running loop created by asyncio.run
-    install_fail_loud("dsh")
-    args = parse_args()
-    selected_profile = args.profile or ("web" if args.web else args.mode)
-    if selected_profile in ("极简模式",):
-        selected_profile = "minimal"
-    elif selected_profile in ("标准模式",):
-        selected_profile = "standard"
-    elif selected_profile in ("创造模式",):
-        selected_profile = "creative"
-
-    if args.dump_config:
-        patches = [args.patch] if args.patch else []
-        output = dump_config(selected_profile, patch_files=patches)
-        print(output)
-        return
-
-    # Build Cordis context
-    ctx = await build_harness(
-        mode=selected_profile,
-        api_key=args.api_key,
-        base_url=args.base_url,
-        model=args.model,
-        patch_file=args.patch,
-        enable_web=args.web or (selected_profile == "web"),
-        web_host=args.host,
-        web_port=args.port,
-    )
-
-
-    llm_svc = ctx.get("llm")
-    effective_base_url = llm_svc.resolve_base_url() if llm_svc else args.base_url
-    effective_model = llm_svc.resolve_model(args.model) if llm_svc else args.model
-
-    print(f"=== DeepSeek Harness Win7 (Mode: {args.mode}) ===")
-    print(f"Base URL: {effective_base_url}")
-    print(f"Model: {effective_model}")
-    print(f"Loaded plugins: {[p['id'] for p in ctx.list_plugins()]}")
-    print(f"Registered tools: {[t.name for t in ctx.tools.list_tools()]}")
-    print("---------------------------------------------------------")
-
-    agent_loop = ctx.get("agent_loop")
-
-    if args.web:
-        web_server = ctx.get("web_server")
-        if web_server:
-            await web_server.start()
-            effective_port = getattr(web_server, "listened_port", web_server.port)
-            url = f"http://{args.host}:{effective_port}"
-            # The browser reaches the authenticated root URL: the launch token
-            # mints the session cookie on the first navigation.
-            connection = ctx.get("connection")
-            if connection is not None:
-                url = connection.authenticated_url(url)
-            print(f"\n[DeepSeek Harness Web] GUI is running at: {url}")
-            print("Press Ctrl+C to stop the Web server.\n")
-            if not args.no_open:
-                import webbrowser
-                try:
-                    webbrowser.open(url)
-                except Exception:
-                    pass
-            stop_event = asyncio.Event()
-            try:
-                await stop_event.wait()
-            except (asyncio.CancelledError, KeyboardInterrupt):
-                print("\n[DeepSeek Harness Web] Stopping Web GUI server...")
-            finally:
-                await web_server.stop()
-        return
-
-    if args.prompt:
-        # Run single turn
-        print(f"\nUser: {args.prompt}")
-        response = await agent_loop.run_turn(args.prompt)
-        print(f"\nAssistant:\n{response}")
-        return
-
-    # Interactive REPL mode
-    print("Type your message below (or type 'exit' / 'quit' to quit):\n")
-    while True:
-        try:
-            user_input = input("dsh> ").strip()
-            if not user_input:
-                continue
-            if user_input.lower() in ("exit", "quit", ":q"):
-                print("Exiting DeepSeek Harness.")
-                break
-
-            print("\nProcessing...")
-            response = await agent_loop.run_turn(user_input)
-            print(f"\nAssistant:\n{response}\n")
-        except (KeyboardInterrupt, EOFError):
-            print("\nExiting.")
-            break
-        except Exception as e:
-            print(f"\n[Error]: {e}\n")
 
 
 def main():
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     try:
-        argv = sys.argv[1:]
-        has_legacy = any(
-            arg in ("-m", "--mode", "-p", "--prompt", "--api-key", "--base-url", "--model", "--port", "--host", "--no-open")
-            or arg.startswith(("-m=", "--mode=", "-p=", "--prompt=", "--api-key=", "--base-url=", "--model=", "--port=", "--host="))
-            for arg in argv
-        )
-        if not has_legacy and argv:
-            invocation = parse_dsh_args(argv)
-            if invocation["mode"] == "dump-config":
-                dump_text = run_dump_config(invocation["profile"], invocation["defaultOnly"], invocation["patches"])
-                sys.stdout.write(dump_text)
-                return
-            elif invocation["mode"] == "plugin":
-                sys.stderr.write("dsh: 'plugin' command is not supported in portable release\n")
-                sys.exit(1)
-            elif invocation["mode"] == "profile":
-                boot_res = asyncio.run(run_profile({
-                    "environment": load_layered_env("dsh"),
-                    "profile": invocation["profile"],
-                    "patchFiles": invocation["patches"],
-                    "args": invocation["args"],
-                }))
-                shutdown_ctrl = boot_res.get("shutdown") if isinstance(boot_res, dict) else None
-                code = shutdown_ctrl.exit_code if shutdown_ctrl is not None else 0
-                sys.exit(code)
-
-        asyncio.run(main_async())
+        invocation = parse_dsh_args(sys.argv[1:], __version__)
+        if invocation["mode"] == "dump-config":
+            sys.stdout.write(run_dump_config(invocation["profile"], invocation["defaultOnly"], invocation["patches"]))
+            return
+        if invocation["mode"] == "plugin":
+            from apps.cli.plugin import run_plugin
+            raise SystemExit(run_plugin(invocation["profile"], invocation["args"]))
+        result = asyncio.run(run_profile({
+            "environment": load_layered_env("dsh"),
+            "profile": invocation["profile"],
+            "patchFiles": invocation["patches"],
+            "args": invocation["args"],
+        }))
+        raise SystemExit(result["shutdown"].exit_code)
     except KeyboardInterrupt:
-        sys.exit(130)
-    except RuntimeError as err:
-        sys.stderr.write(f"{err}\n")
-        sys.exit(1)
+        raise SystemExit(130)
+    except (RuntimeError, ValueError, OSError) as error:
+        sys.stderr.write("dsh: {}\n".format(error))
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

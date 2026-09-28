@@ -57,10 +57,10 @@ def test_smoke_dump_config_standard_profile():
 
 
 def test_smoke_dump_config_legacy_mode_flag():
-    """Verify backward compatible --mode minimal --dump-config works."""
+    """Retired flags must not silently launch a different runtime."""
     res = _run_dsh("--mode", "minimal", "--dump-config")
-    assert res.returncode == 0
-    assert "str-replace-editor" in res.stdout
+    assert res.returncode != 0
+    assert not res.stdout.strip()
 
 
 @pytest.mark.parametrize("profile", ["minimal", "standard", "creative", "web", "headless"])

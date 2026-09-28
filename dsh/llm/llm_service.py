@@ -171,7 +171,7 @@ class LLMService:
 
         ref_name = "{}_API_KEY".format(provider.upper().replace("-", "_")) if provider else self.api_key_env
         raise LlmError(
-            "LLM API Key missing for '{}'. Please provide --api-key, export DEEPSEEK_API_KEY environment variable, or configure ~/.dsh/.credentials.yaml.".format(ref_name),
+            "LLM API Key missing for '{}'. Export DEEPSEEK_API_KEY or configure the credentials service.".format(ref_name),
             "MISSING_CREDENTIAL"
         )
 
@@ -740,231 +740,67 @@ class LLMService:
             raise LlmError(f"LLM API Request Error: {e}", "UNKNOWN")
 
     def chat_completion_stream(
-        self,
-        messages,
-        tools=None,
-        model=None,
-        temperature=0.0,
-        provider=None,
-        system=None,
-        **kwargs,
+        self, messages, tools=None, model=None, temperature=None,
+        provider=None, system=None, **kwargs,
     ):
+        request = dict(kwargs.get("request", kwargs))
+        request.update(messages=messages, model=model, provider=provider)
+        for key, value in (("tools", tools), ("system", system), ("temperature", temperature)):
+            if value is not None:
+                request[key] = value
         if provider and provider in self._adapters:
             adapter = self._adapters[provider]["adapter"]
-            fn = getattr(adapter, "chat_completion_stream", getattr(adapter, "stream", None))
-            if fn and callable(fn):
+            fn = getattr(adapter, "chat_completion_stream", None) or getattr(adapter, "stream", None)
+            if callable(fn):
                 import inspect
-                sig = inspect.signature(fn)
-                kw = {}
-                if "messages" in sig.parameters:
-                    kw["messages"] = messages
-                if "tools" in sig.parameters:
-                    kw["tools"] = tools
-                if "model" in sig.parameters:
-                    kw["model"] = model
-                if "temperature" in sig.parameters:
-                    kw["temperature"] = temperature
-                if "provider" in sig.parameters:
-                    kw["provider"] = provider
-                if "system" in sig.parameters:
-                    kw["system"] = system
-                if "request" in sig.parameters:
-                    kw["request"] = kwargs.get("request", {
-                        "messages": messages, "tools": tools, "model": model, "provider": provider, "system": system
-                    })
-                if "options" in sig.parameters:
-                    kw["options"] = kwargs.get("options", {
-                        "messages": messages, "tools": tools, "model": model, "provider": provider, "system": system
-                    })
-                if not kw and len(sig.parameters) == 1:
-                    return fn({
-                        "messages": messages, "tools": tools, "model": model, "provider": provider, "system": system
-                    })
-                return fn(**kw)
-
+                parameters = inspect.signature(fn).parameters
+                if "request" in parameters and "messages" not in parameters:
+                    return fn(request=request)
+                if "options" in parameters and "messages" not in parameters:
+                    return fn(options=request)
+                if any(p.kind == inspect.Parameter.VAR_KEYWORD for p in parameters.values()):
+                    return fn(**request)
+                selected = {key: value for key, value in request.items() if key in parameters}
+                if "request" in parameters:
+                    selected["request"] = request
+                if not selected and len(parameters) == 1:
+                    return fn(request)
+                return fn(**selected)
         return self._default_chat_completion_stream(
-            messages=messages,
-            tools=tools,
-            model=model,
-            temperature=temperature,
-            provider=provider,
-            system=system,
-        )
+            messages=messages, tools=tools, model=model, temperature=temperature,
+            provider=provider, system=system, options=request)
 
     def _default_chat_completion_stream(
-        self,
-        messages,
-        tools=None,
-        model=None,
-        temperature=0.0,
-        provider=None,
-        system=None,
+        self, messages, tools=None, model=None, temperature=None,
+        provider=None, system=None, options=None,
     ):
-        import time
+        from dsh.llm.deepseek_wire import serialize_request, parse_sse, translate
         api_key = self.resolve_api_key(provider)
         base_url = self.resolve_base_url(provider)
-        selected_model = self.resolve_model(model, provider)
-        url = "{}/chat/completions".format(base_url)
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer {}".format(api_key),
-            "Accept": "text/event-stream"
-        }
-        formatted_messages = list(messages)
-        if system and not any(isinstance(m, dict) and m.get("role") == "system" for m in formatted_messages):
-            formatted_messages = [{"role": "system", "content": system}] + formatted_messages
-        payload = {
-            "model": selected_model,
-            "messages": formatted_messages,
-            "temperature": temperature,
-            "stream": True,
-            "stream_options": {"include_usage": True}
-        }
-        if tools:
-            payload["tools"] = tools
-            payload["tool_choice"] = "auto"
-        data_bytes = json.dumps(payload).encode("utf-8")
-        req = urllib.request.Request(url, data=data_bytes, headers=headers, method="POST")
-        accumulated_content = []
-        accumulated_reasoning = []
-        accumulated_tool_calls = {}
-        usage_data = {}
-        finish_reason_raw = None
-        text_block_started = False
-        reasoning_block_started = False
+        request = dict(options or {})
+        request.update(messages=messages, tools=tools, system=system,
+                       model=self.resolve_model(model, provider))
+        if temperature is not None:
+            request["temperature"] = temperature
+        payload = serialize_request(request)
+        req = urllib.request.Request(
+            "{}/chat/completions".format(base_url.rstrip("/")),
+            data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+            headers={"Content-Type": "application/json", "Authorization": "Bearer {}".format(api_key),
+                     "Accept": "text/event-stream"}, method="POST")
         try:
-            with urllib.request.urlopen(req, timeout=120) as resp:
-                for raw_line in resp:
-                    line = raw_line.decode("utf-8", errors="ignore").strip()
-                    if not line or not line.startswith("data:"):
-                        continue
-                    data_str = line[5:].strip()
-                    if data_str == "[DONE]":
-                        break
-                    try:
-                        chunk_json = json.loads(data_str)
-                    except Exception:
-                        continue
-                    if "usage" in chunk_json and chunk_json["usage"]:
-                        raw_u = chunk_json["usage"]
-                        if isinstance(raw_u, dict):
-                            c_details = raw_u.get("prompt_tokens_details") or {}
-                            cache_read = c_details.get("cached_tokens") if isinstance(c_details, dict) else None
-                            if cache_read is None:
-                                cache_read = raw_u.get("prompt_cache_hit_tokens")
-                            p_tok = raw_u.get("prompt_tokens", 0)
-                            comp_tok = raw_u.get("completion_tokens", 0)
-                            u_out = {
-                                "inputTokens": max(0, p_tok - (cache_read or 0)),
-                                "outputTokens": comp_tok,
-                            }
-                            if cache_read is not None:
-                                u_out["cacheReadTokens"] = cache_read
-                            r_details = raw_u.get("completion_tokens_details") or {}
-                            r_tok = r_details.get("reasoning_tokens") if isinstance(r_details, dict) else None
-                            if r_tok is not None:
-                                u_out["reasoningTokens"] = r_tok
-                            usage_data = u_out
-                    choices = chunk_json.get("choices")
-                    if not choices or len(choices) == 0:
-                        continue
-                    choice = choices[0]
-                    fr = choice.get("finish_reason")
-                    if fr:
-                        finish_reason_raw = fr
-                    delta = choice.get("delta", {})
-                    reasoning_chunk = delta.get("reasoning_content") or delta.get("reasoning")
-                    if reasoning_chunk:
-                        if not reasoning_block_started:
-                            reasoning_block_started = True
-                            yield {"type": "block-start", "index": 1, "blockType": "reasoning"}
-                        accumulated_reasoning.append(reasoning_chunk)
-                        yield {"type": "reasoning-delta", "index": 1, "text": reasoning_chunk}
-                    content_chunk = delta.get("content")
-                    if content_chunk:
-                        if not text_block_started:
-                            text_block_started = True
-                            yield {"type": "block-start", "index": 0, "blockType": "text"}
-                        accumulated_content.append(content_chunk)
-                        yield {"type": "text-delta", "index": 0, "text": content_chunk}
-                    tool_calls_chunk = delta.get("tool_calls")
-                    if tool_calls_chunk:
-                        for tc_delta in tool_calls_chunk:
-                            idx = tc_delta.get("index", 0)
-                            block_idx = 10 + idx
-                            if idx not in accumulated_tool_calls:
-                                accumulated_tool_calls[idx] = {
-                                    "id": tc_delta.get("id", "call_{}_{}".format(idx, int(time.time()*1000))),
-                                    "name": "",
-                                    "arguments": "",
-                                    "started": False,
-                                }
-                            if "id" in tc_delta and tc_delta["id"]:
-                                accumulated_tool_calls[idx]["id"] = tc_delta["id"]
-                            fn = tc_delta.get("function", {}) if "function" in tc_delta else tc_delta
-                            name_part = fn.get("name", "")
-                            args_part = fn.get("arguments", "")
-                            if name_part:
-                                accumulated_tool_calls[idx]["name"] += name_part
-                            if args_part:
-                                accumulated_tool_calls[idx]["arguments"] += args_part
-                            if not accumulated_tool_calls[idx]["started"]:
-                                accumulated_tool_calls[idx]["started"] = True
-                                yield {"type": "block-start", "index": block_idx, "blockType": "tool-call"}
-                            yield {
-                                "type": "tool-call-delta",
-                                "index": block_idx,
-                                "id": accumulated_tool_calls[idx]["id"],
-                                "name": accumulated_tool_calls[idx]["name"],
-                                "argumentsDelta": args_part,
-                            }
-        except Exception as stream_err:
-            if not accumulated_content and not accumulated_reasoning and not accumulated_tool_calls:
-                msg = self.chat_completion(messages, tools, model, temperature, provider)
-                content = msg.get("content", "")
-                if content:
-                    yield {"type": "block-start", "index": 0, "blockType": "text"}
-                    yield {"type": "text-delta", "index": 0, "text": content}
-                    yield {"type": "block-end", "index": 0, "block": {"type": "text", "text": content}}
-                tcalls = msg.get("tool_calls", [])
-                if tcalls:
-                    for idx, tc in enumerate(tcalls):
-                        func = tc.get("function", {}) if "function" in tc else tc
-                        cid = tc.get("id", "call_{}".format(idx))
-                        cname = func.get("name", "")
-                        cargs = func.get("arguments", "")
-                        yield {"type": "block-start", "index": 10 + idx, "blockType": "tool-call"}
-                        yield {"type": "tool-call-delta", "index": 10 + idx, "id": cid, "name": cname, "argumentsDelta": cargs}
-                        yield {"type": "block-end", "index": 10 + idx, "block": {"type": "tool-call", "id": cid, "name": cname, "arguments": cargs}}
-                yield {"type": "usage", "usage": {"inputTokens": 0, "outputTokens": 0}}
-                yield {"type": "finish", "reason": {"kind": "tool-calls" if tcalls else "stop"}}
-                return
-            else:
-                raise stream_err
-        if reasoning_block_started:
-            yield {"type": "block-end", "index": 1, "block": {"type": "reasoning", "text": "".join(accumulated_reasoning)}}
-        if text_block_started:
-            yield {"type": "block-end", "index": 0, "block": {"type": "text", "text": "".join(accumulated_content)}}
-        for idx, tc in sorted(accumulated_tool_calls.items()):
-            block_idx = 10 + idx
-            yield {"type": "block-end", "index": block_idx, "block": {
-                "type": "tool-call",
-                "id": tc["id"],
-                "name": tc["name"],
-                "arguments": tc["arguments"],
-            }}
-        final_usage = usage_data or {
-            "inputTokens": len(json.dumps(messages)) // 4,
-            "outputTokens": (len("".join(accumulated_content)) + len("".join(accumulated_reasoning))) // 4
-        }
-        yield {"type": "usage", "usage": final_usage}
-        if finish_reason_raw == "length":
-            kind = "max-tokens"
-        elif finish_reason_raw == "tool_calls" or bool(accumulated_tool_calls):
-            kind = "tool-calls"
-        else:
-            kind = "stop"
-        yield {"type": "finish", "reason": {"kind": kind}}
+            with urllib.request.urlopen(req, timeout=120) as response:
+                yield from translate(parse_sse(response))
+        except urllib.error.HTTPError as error:
+            status = error.code
+            body = error.read().decode("utf-8", errors="replace")
+            code = ("AUTH" if status in (401, 403) else "RATE_LIMIT" if status == 429
+                    else "CONTEXT_WINDOW_EXCEEDED" if status in (400, 413) and "context" in body.lower()
+                    else "INVALID_REQUEST" if status in (400, 413) else "SERVER" if status >= 500
+                    else "HTTP_{}".format(status))
+            raise LlmError("LLM API HTTP Error ({}): {}".format(status, body), code, status=status) from error
+        except (urllib.error.URLError, OSError) as error:
+            raise LlmError("LLM API Network Error: {}".format(error), "TRANSPORT") from error
 
     # alias for 1:1 naming used by apiproxy handler
     def list_providers(self):

@@ -76,6 +76,7 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     "@deepseek-ai/dsh-agent-presets": "dsh.presets.agent_presets:AgentPresets",
     # LLM capability and providers.
     "@deepseek-ai/dsh-llm": "dsh.llm.llm_service:LlmRuntime",
+    "@deepseek-ai/dsh-llm-deepseek": "dsh.llm.llm_deepseek:LLMDeepSeekPlugin",
     "@deepseek-ai/dsh-deepseek-llm-api-extensions": "dsh.llm.deepseek_api_extensions:DeepSeekLlmApiExtensionRegistry",
     "@deepseek-ai/dsh-llm-openai": "dsh.llm.llm_openai:LLMOpenAIPlugin",
     "@deepseek-ai/dsh-llm-retry": "dsh.llm.llm_retry:LLMRetryPlugin",
@@ -84,12 +85,15 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     "@deepseek-ai/dsh-session-persistence-jsonl": "dsh.session.persistence_jsonl:JsonlSessionPersistencePlugin",
     "@deepseek-ai/dsh-session-persistence-sqlite": "dsh.session.persistence_sqlite:SqliteSessionPersistencePlugin",
     "@deepseek-ai/dsh-session-projection": "dsh.session.projections:SessionProjectionsPlugin",
+    "@deepseek-ai/dsh-session-projection-cache": "dsh.session.projection_cache:SessionProjectionCachePlugin",
     "@deepseek-ai/dsh-session-query-sqlite": "dsh.session.session_query:SessionQueryPlugin",
     "@deepseek-ai/dsh-session-checkpoint-policy": "dsh.session.checkpoint_policy:SessionCheckpointPolicyPlugin",
     "@deepseek-ai/dsh-session-log-deepseek": "dsh.session.session_log_deepseek:SessionLogDeepSeekPlugin",
     "@deepseek-ai/dsh-session-stats": "dsh.session.stats:SessionStatsPlugin",
     "@deepseek-ai/dsh-session-title": "dsh.session.title:SessionTitlePlugin",
     "@deepseek-ai/dsh-storage": "dsh.storage.hub:StoragePlugin",
+    "@deepseek-ai/dsh-storage-json": "dsh.storage.plugins:StorageJsonPlugin",
+    "@deepseek-ai/dsh-storage-domain": "dsh.storage.plugins:StorageDomainPlugin",
     "@deepseek-ai/dsh-settings-file": "dsh.settings.settings_file:SettingsFilePlugin",
     "@deepseek-ai/dsh-credentials-local": "dsh.credentials.credentials_local:CredentialsLocalPlugin",
     "@deepseek-ai/dsh-workspace": "dsh.workspace.workspace:WorkspacePlugin",
@@ -138,6 +142,7 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     "@deepseek-ai/dsh-repeat-tool-reminder": "dsh.guard.repeat_tool_reminder:RepeatToolReminderPlugin",
     "@deepseek-ai/dsh-tool-call-timeout-policy": "dsh.guard.timeout_policy:ToolCallTimeoutPolicyPlugin",
     # Web capability.
+    "@deepseek-ai/dsh-web": "dsh.web.web_service:WebService",
     "@deepseek-ai/dsh-web-search-deepseek": "dsh.web.web_search_deepseek:WebSearchDeepSeekPlugin",
     "@deepseek-ai/dsh-web-fetch-http": "dsh.web.web_fetch_http:WebFetchHttpPlugin",
     "@deepseek-ai/dsh-tool-web": "dsh.web.tool_web:ToolWebPlugin",
@@ -159,6 +164,7 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     # service that app's own runner row injects.
     "@deepseek-ai/dsh-web-app/startup": "dsh.bundle.web_app.startup:WebStartupPlugin",
     "@deepseek-ai/dsh-headless/startup": "dsh.bundle.headless.startup:HeadlessStartupPlugin",
+    "@deepseek-ai/dsh-headless": "dsh.bundle.headless.runner:HeadlessRunnerPlugin",
     # The self-inspection toolset publishes itself as `dsh-tool-cordis`; profiles
     # composed before that rename name the `dsh-cordis-manager` row.
     "@deepseek-ai/dsh-tool-cordis": "dsh.extensions.cordis_manager:CordisManagerPlugin",

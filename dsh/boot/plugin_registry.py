@@ -123,6 +123,7 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     "@deepseek-ai/dsh-tool-jobs": "dsh.jobs.tool_jobs:ToolJobsPlugin",
     "@deepseek-ai/dsh-tool-todo": "dsh.todo.tool_todo:ToolTodoPlugin",
     "@deepseek-ai/dsh-tool-goal": "dsh.goal.tool_goal:ToolGoalPlugin",
+    "@deepseek-ai/dsh-goal": "dsh.goal.service:GoalService",
     "@deepseek-ai/dsh-message-feedback": "dsh.feedback.message_feedback:MessageFeedbackPlugin",
     "@deepseek-ai/dsh-client-connection": "dsh.host.connection.canonical:CanonicalConnectionPlugin",
     "@deepseek-ai/dsh-command-feedback": "dsh.feedback.command_feedback:CommandFeedbackPlugin",

@@ -27,6 +27,9 @@
 
 - 本批次：正式 SessionTitle 服务与 first-prompt LLM provider；日志持有标题、revision 防止旧结果覆盖、精确 AgentLoop 主请求触发、用户重命名取消、provider 卸载等待收尾，以及有界辅助 LLM 请求。新增 9 个契约场景；旧标题实现不再用于正式包名。
 
+- `0b4ce7b6`：原生 DeepSeek 请求持久匿名 ID、session/compaction headers，文本及扩展两条 HTTP 链测试。
+- `b07779e8` 及本批 Loader：原子 reflection/schema/invocation 注册、调用方持有的 lookup/Context resolver、卸载保留声明历史；Loader 增量加载真实 generated host artifacts，Python 执行严格 schema，项目本地覆盖优先，坏包失败隔离。13 份自带 artifact 可读；Gateway 的 carrier 与调用消费者仍在迁移，不代表 RPC 全链完成。
+
 这些提交均有对应回归或 loopback HTTP 测试；尚未据此签发新的上游验收或发行认证。
 
 ## 验证
@@ -45,7 +48,7 @@
 
 原始本机证据位于忽略目录 `.goose/out/current-review/`，没有伪装为已提交的正式验收证据。Node 当前为 22.20.0，不是 release gate 要求的 22.22.2；本次未运行完整官方 Node oracle 或构建便携包。Win7 真机与浏览器尚未验证。
 
-最近完整测试：会话标题批次后的 `title-full.xml` 为 **3377 passed、11 skipped、1 warning**（282.17 秒），已覆盖前述图片计价和错误诊断。migration check 通过；不代表 parity 认证。既有 Windows asyncio transport 清理警告尚未消除。
+最近完整测试：会话标题批次后的 `typert-full.xml` 为 **3392 passed、11 skipped、1 warning**（283.39 秒），已覆盖前述图片计价和错误诊断。migration check 通过；不代表 parity 认证。既有 Windows asyncio transport 清理警告尚未消除。
 
 ## 正式 profile 仍失败
 
@@ -57,12 +60,12 @@
 | web | 26 |
 | minimal | 7 |
 
-证据：`canonical-profile-probes.json`。初始全部七类 profile 的冻结缺口并集为 36 个 package 名（包含其他 app 和遥测配置），不是 36 个同等工作量模块。jobs、inventory、skill 和首条提示 LLM 标题 provider 落地后并集为 32；仍需继续补齐并重跑真实默认入口。`test_plugin_registry.py` 故意验证这些缺失会明确报错；该测试通过不表示应用可启动。
+证据：`canonical-profile-probes.json`。初始全部七类 profile 的冻结缺口并集为 36 个 package 名（包含其他 app 和遥测配置），不是 36 个同等工作量模块。jobs、inventory、skill、首条提示 LLM 标题 provider 和 Typert Loader 落地后并集为 31；仍需继续补齐并重跑真实默认入口。`test_plugin_registry.py` 故意验证这些缺失会明确报错；该测试通过不表示应用可启动。
 
 ## 剩余工作与完成标准
 
 1. **默认装配**：实现 Typert loader/Gateway、sandbox/terminal、jobs/goal、skill、subagent providers/control、其他 LLM provider、inventory/title/code runtime 等必要 rows；minimal 另需 SDK app/stdio JSON-RPC/terminal 组合。不得以 no-op、别名或删除必需 rows 让启动变绿。
-2. **完整模型边界**：图片附件、Files API、完整 settings 校验/last-good、超时/取消和 retry-policy 已有上述实现与回归；还需补齐请求身份 headers、核对剩余跨层边界，并完成配对观察。不能把本地 HTTP 用例当成所有 provider 行为已与上游逐项等价。
+2. **完整模型边界**：图片附件、Files API、完整 settings 校验/last-good、超时/取消和 retry-policy 已有上述实现与回归；还需核对剩余跨层边界，并完成配对观察。不能把本地 HTTP 用例当成所有 provider 行为已与上游逐项等价。
 3. **正式 Web**：Connection 必须接管路由所有权，完成 Gateway/Remote controllers、stream/request/error/cancellation 生命周期、host/client runners 与应用启动；随后切换前端消费者，再删除旧 ApiProxy carrier。当前冷列表是可复用的服务能力，仍通过旧 handler 接入，不能代替 Remote 控制器迁移。
 4. **数据消费者**：补齐业务投影的可执行 schema、完整 sessionQuery/历史读取与 Web replay，验证缓存失败降级、服务替换和热重载。当前 storageDomain provider 使用 JSON backend 依赖；其他 backend 组合仍需处理。
 5. **发行**：真实默认 headless 完成工具往返、会话落盘与新进程恢复；真实 Web 浏览器完成创建、响应流、工具、取消、冷恢复；固定 Node/前端重建/官方配对观察；便携包隔离启动及上述旅程；最后才是 Win7 真机认证。

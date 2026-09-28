@@ -118,7 +118,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-subagent-spawn-in-process",
         "@deepseek-ai/dsh-tool-subagent-report",
         "@deepseek-ai/dsh-tool-subagent/model-selection-settings",
-        "@deepseek-ai/dsh-typert-loader",
         "@deepseek-ai/dsh-web-app",
     ],
     "standard": [
@@ -136,7 +135,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-tool-subagent-control",
         "@deepseek-ai/dsh-tool-subagent-control/list-agents",
         "@deepseek-ai/dsh-tool-subagent-report",
-        "@deepseek-ai/dsh-typert-loader",
     ],
     "headless": [
         "@deepseek-ai/dsh-api-gateway",
@@ -153,7 +151,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-tool-subagent-control",
         "@deepseek-ai/dsh-tool-subagent-control/list-agents",
         "@deepseek-ai/dsh-tool-subagent-report",
-        "@deepseek-ai/dsh-typert-loader",
     ],
     "creative": [
         "@deepseek-ai/dsh-api-gateway",
@@ -170,7 +167,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-tool-subagent-control",
         "@deepseek-ai/dsh-tool-subagent-control/list-agents",
         "@deepseek-ai/dsh-tool-subagent-report",
-        "@deepseek-ai/dsh-typert-loader",
     ],
     "acp": [
         "@deepseek-ai/dsh-acp-app",
@@ -187,7 +183,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-tool-subagent-control",
         "@deepseek-ai/dsh-tool-subagent-control/list-agents",
         "@deepseek-ai/dsh-tool-subagent-report",
-        "@deepseek-ai/dsh-typert-loader",
     ],
     "sdk": [
         "@deepseek-ai/dsh-api-gateway",
@@ -205,7 +200,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-tool-subagent-control",
         "@deepseek-ai/dsh-tool-subagent-control/list-agents",
         "@deepseek-ai/dsh-tool-subagent-report",
-        "@deepseek-ai/dsh-typert-loader",
     ],
     "minimal": [
         "@deepseek-ai/dsh-agent-spine-demo",
@@ -619,7 +613,7 @@ def test_the_frozen_gap_is_the_union_of_every_shipped_profile():
 
             collect(patch)
     assert union <= shipped_names
-    assert len(union) == 32
+    assert len(union) == 31
 
 
 # --- boot installs and consults the table ------------------------------------

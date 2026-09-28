@@ -93,6 +93,7 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     "@deepseek-ai/dsh-session-stats": "dsh.session.stats:SessionStatsPlugin",
     "@deepseek-ai/dsh-session-title": "dsh.session.canonical_title:SessionTitleService",
     "@deepseek-ai/dsh-session-title-first-prompt-llm": "dsh.session.title_llm:FirstPromptTitlePlugin",
+    "@deepseek-ai/dsh-typert-loader": "dsh.typert.loader:TypertLoader",
     "@deepseek-ai/dsh-storage": "dsh.storage.hub:StoragePlugin",
     "@deepseek-ai/dsh-storage-json": "dsh.storage.plugins:StorageJsonPlugin",
     "@deepseek-ai/dsh-storage-domain": "dsh.storage.plugins:StorageDomainPlugin",

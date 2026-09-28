@@ -107,7 +107,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-cordis-host-runner",
         "@deepseek-ai/dsh-llm-pi-ai",
         "@deepseek-ai/dsh-pwsh-sandbox",
-        "@deepseek-ai/dsh-sandbox-local",
         "@deepseek-ai/dsh-session-log-export",
         "@deepseek-ai/dsh-session-reference",
         "@deepseek-ai/dsh-session-telemetry-otel",
@@ -117,41 +116,35 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-code-runtime-worker-thread",
         "@deepseek-ai/dsh-llm-pi-ai",
         "@deepseek-ai/dsh-pwsh-sandbox",
-        "@deepseek-ai/dsh-sandbox-local",
         "@deepseek-ai/dsh-session-telemetry-otel",
     ],
     "headless": [
         "@deepseek-ai/dsh-code-runtime-worker-thread",
         "@deepseek-ai/dsh-llm-pi-ai",
         "@deepseek-ai/dsh-pwsh-sandbox",
-        "@deepseek-ai/dsh-sandbox-local",
         "@deepseek-ai/dsh-session-telemetry-otel",
     ],
     "creative": [
         "@deepseek-ai/dsh-code-runtime-worker-thread",
         "@deepseek-ai/dsh-llm-pi-ai",
         "@deepseek-ai/dsh-pwsh-sandbox",
-        "@deepseek-ai/dsh-sandbox-local",
         "@deepseek-ai/dsh-session-telemetry-otel",
     ],
     "acp": [
         "@deepseek-ai/dsh-acp-app",
         "@deepseek-ai/dsh-llm-pi-ai",
         "@deepseek-ai/dsh-pwsh-sandbox",
-        "@deepseek-ai/dsh-sandbox-local",
         "@deepseek-ai/dsh-session-telemetry-otel",
     ],
     "sdk": [
         "@deepseek-ai/dsh-llm-pi-ai",
         "@deepseek-ai/dsh-pwsh-sandbox",
-        "@deepseek-ai/dsh-sandbox-local",
         "@deepseek-ai/dsh-sdk-app",
         "@deepseek-ai/dsh-sdk-jsonrpc-server",
         "@deepseek-ai/dsh-session-telemetry-otel",
     ],
     "minimal": [
         "@deepseek-ai/dsh-agent-spine-demo",
-        "@deepseek-ai/dsh-sandbox-local",
         "@deepseek-ai/dsh-sdk-app",
         "@deepseek-ai/dsh-sdk-jsonrpc-server",
         "@deepseek-ai/dsh-terminal",
@@ -561,7 +554,7 @@ def test_the_frozen_gap_is_the_union_of_every_shipped_profile():
 
             collect(patch)
     assert union <= shipped_names
-    assert len(union) == 21
+    assert len(union) == 20
 
 
 # --- boot installs and consults the table ------------------------------------

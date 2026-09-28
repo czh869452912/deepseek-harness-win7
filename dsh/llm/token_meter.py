@@ -13,7 +13,7 @@ BLOCK_OVERHEAD = 4
 ROLE_OVERHEAD = 4
 
 
-def estimate_content(content: Any) -> int:
+def estimate_content(content: Any, image_prices=None) -> int:
     """
     Price content blocks recursively under fixed density heuristic.
     """
@@ -45,7 +45,10 @@ def estimate_content(content: Any) -> int:
                     )
                 elif btype == "tool-result":
                     res_content = block.get("content", "")
-                    tokens += estimate_content(res_content) + BLOCK_OVERHEAD
+                    tokens += estimate_content(res_content, image_prices) + BLOCK_OVERHEAD
+                elif btype == "image" and image_prices is not None:
+                    price = next(image_prices)
+                    tokens += price["visualTokens"] + estimate_content([{"type": "text", "text": price["text"]}])
                 else:
                     raw_str = json.dumps(block, ensure_ascii=False)
                     tokens += math.ceil(len(raw_str) / CHARS_PER_TOKEN) + BLOCK_OVERHEAD
@@ -58,7 +61,7 @@ def estimate_content(content: Any) -> int:
     return math.ceil(len(str(content)) / CHARS_PER_TOKEN) + BLOCK_OVERHEAD
 
 
-def estimate_message(message: Dict[str, Any]) -> int:
+def estimate_message(message: Dict[str, Any], image_prices=None) -> int:
     """
     Heuristically price one model-visible message.
     """
@@ -68,7 +71,7 @@ def estimate_message(message: Dict[str, Any]) -> int:
     tokens = 0
     content = message.get("content")
     if content:
-        tokens += estimate_content(content)
+        tokens += estimate_content(content, image_prices)
 
     tool_calls = message.get("tool_calls")
     if tool_calls:
@@ -139,6 +142,27 @@ class TokenMeter:
         header = session.request_header() if hasattr(session, "request_header") else None
         header_tokens = estimate_header(header)
 
+        def message_for(event):
+            data = event.get("data", {})
+            kind = event.get("type")
+            if kind == "user/message":
+                return data if "role" in data else {"role": "user", "content": data.get("content", "")}
+            if kind == "assistant/message":
+                return data.get("message", data)
+            if kind == "tool/result":
+                return data.get("message", {"role": "tool", "content": data.get("result", "")})
+            return None
+        image_prices = None
+        llm = self.ctx.get("llm") if self.ctx else None
+        route = (header or {}).get("config", {})
+        if llm is not None and hasattr(llm, "image_request_pricing"):
+            pricing = llm.image_request_pricing(route.get("provider"), route.get("model"))
+            if pricing is not None:
+                from dsh.llm.image_content import images
+                refs = [block["attachment"] for seq in nodes if seq < len(events)
+                        for block in images((message_for(events[seq]) or {}).get("content"))]
+                image_prices = iter(pricing.priceImages(refs))
+
         priced_nodes: List[Dict[str, int]] = []
         surface_tokens = 0
 
@@ -149,12 +173,12 @@ class TokenMeter:
                 edata = event.get("data", {})
 
                 if etype == "user/message":
-                    t = estimate_message(edata if "role" in edata else {"role": "user", "content": edata.get("content", "")})
+                    t = estimate_message(edata if "role" in edata else {"role": "user", "content": edata.get("content", "")}, image_prices)
                 elif etype == "assistant/message":
                     msg = edata.get("message", edata)
-                    t = estimate_message(msg)
+                    t = estimate_message(msg, image_prices)
                 elif etype == "tool/result":
-                    t = estimate_message(edata.get("message", {"role": "tool", "content": edata.get("result", "")}))
+                    t = estimate_message(edata.get("message", {"role": "tool", "content": edata.get("result", "")}), image_prices)
                 else:
                     t = 0
 

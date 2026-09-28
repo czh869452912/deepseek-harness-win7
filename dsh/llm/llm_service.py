@@ -625,6 +625,13 @@ class LLMService:
     def retry_policy(self, provider):
         return copy.deepcopy(self._adapters.get(provider, {}).get("retryPolicy"))
 
+    def image_request_pricing(self, provider, model):
+        adapter = self._adapters.get(provider, {}).get("adapter")
+        method = getattr(adapter, "image_request_pricing", None) or getattr(adapter, "imageRequestPricing", None)
+        return method(provider, model) if method else None
+
+    imageRequestPricing = image_request_pricing
+
     async def prepare_adapter_call(self, provider, model, signal=None):
         adapter = self._adapters.get(provider, {}).get("adapter")
         method = getattr(adapter, "prepare_call", None)

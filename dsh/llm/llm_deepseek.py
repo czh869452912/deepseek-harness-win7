@@ -37,6 +37,18 @@ class DeepSeekAdapter:
     def provider_retry_policy(self, provider):
         return self.options()["retryPolicy"]
 
+    def image_request_pricing(self, provider, model):
+        from dsh.llm.deepseek_image_pricing import request_pricing
+        def access(ref):
+            attachments, fs = self.ctx.get("attachments"), self.ctx.get("fs")
+            location = getattr(attachments, "imageHostPath", None)
+            mapping = getattr(fs, "processPathFromHostPath", None)
+            path = location(ref) if location else None
+            return mapping(path) if mapping and path is not None else None
+        return request_pricing(self.options(), model, access)
+
+    imageRequestPricing = image_request_pricing
+
     async def list_models(self, provider):
         options = self.options()
         models = options.get("models", [

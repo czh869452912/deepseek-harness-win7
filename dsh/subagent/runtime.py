@@ -8,12 +8,43 @@ from dsh.core.tools import _assert_supported_schema
 from dsh.subagent.composition import valid_depth
 from dsh.subagent.descriptor import snapshot_descriptor
 from dsh.subagent.errors import SubagentError
+from dsh.cordis.plugin import Plugin
+from dsh.subagent.setup_registry import SetupRegistry
 
 
 class SubagentRuntime(TypertRemoteService):
     def __init__(self, ctx):
         super().__init__(ctx, "subagents")
         self.providers = {}
+        self.activation_setups = SetupRegistry()
+        self.continuations = None
+
+    def continuation_manager(self):
+        if self.continuations is None:
+            from dsh.subagent.continuation import ContinuationManager
+            self.continuations = ContinuationManager(self.ctx, self, self.activation_setups)
+        return self.continuations
+
+    def activationSetup(self, contribution):
+        return self.ctx.effect(lambda: self.activation_setups.register(contribution), 'subagents.activationSetup()')
+
+    async def startContinuable(self, spec):
+        return await self.continuation_manager().start(spec)
+
+    async def followup(self, parent, child_id, content, options=None):
+        return await self.continuation_manager().followup(parent, child_id, content, options)
+
+    def reportFrom(self, child, content, options=None):
+        return self.continuation_manager().report(child, content, options)
+
+    def interrupt(self, child_id, authority):
+        self.continuation_manager().interrupt(child_id, authority)
+
+    async def drainContinuableDescendants(self, parents):
+        await self.continuation_manager().drain_descendants(parents)
+
+    async def drainContinuableChildren(self, parent, child_ids):
+        await self.continuation_manager().drain_children(parent, child_ids)
 
     def registerProvider(self, provider):
         def setup():
@@ -88,3 +119,13 @@ async def settle_run(run):
     except Exception as error:
         return {"status": "failed", "detail": (outcome["detail"] + "; " if "detail" in outcome else "") + "dispose failed: " + str(error)}
     return outcome
+
+
+class SubagentPlugin(Plugin):
+    id = 'subagent'
+    inject = ['agents']
+
+    def apply(self, ctx):
+        service = SubagentRuntime(ctx)
+        service.continuation_manager()
+        ctx.set_service('subagents', service)

@@ -111,10 +111,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-session-log-export",
         "@deepseek-ai/dsh-session-reference",
         "@deepseek-ai/dsh-session-telemetry-otel",
-        "@deepseek-ai/dsh-subagent-fork-in-process",
-        "@deepseek-ai/dsh-subagent-spawn-in-process",
-        "@deepseek-ai/dsh-tool-subagent-report",
-        "@deepseek-ai/dsh-tool-subagent/model-selection-settings",
         "@deepseek-ai/dsh-web-app",
     ],
     "standard": [
@@ -123,11 +119,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
         "@deepseek-ai/dsh-session-telemetry-otel",
-        "@deepseek-ai/dsh-subagent-fork-in-process",
-        "@deepseek-ai/dsh-subagent-spawn-in-process",
-        "@deepseek-ai/dsh-tool-subagent-control",
-        "@deepseek-ai/dsh-tool-subagent-control/list-agents",
-        "@deepseek-ai/dsh-tool-subagent-report",
     ],
     "headless": [
         "@deepseek-ai/dsh-code-runtime-worker-thread",
@@ -135,11 +126,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
         "@deepseek-ai/dsh-session-telemetry-otel",
-        "@deepseek-ai/dsh-subagent-fork-in-process",
-        "@deepseek-ai/dsh-subagent-spawn-in-process",
-        "@deepseek-ai/dsh-tool-subagent-control",
-        "@deepseek-ai/dsh-tool-subagent-control/list-agents",
-        "@deepseek-ai/dsh-tool-subagent-report",
     ],
     "creative": [
         "@deepseek-ai/dsh-code-runtime-worker-thread",
@@ -147,11 +133,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
         "@deepseek-ai/dsh-session-telemetry-otel",
-        "@deepseek-ai/dsh-subagent-fork-in-process",
-        "@deepseek-ai/dsh-subagent-spawn-in-process",
-        "@deepseek-ai/dsh-tool-subagent-control",
-        "@deepseek-ai/dsh-tool-subagent-control/list-agents",
-        "@deepseek-ai/dsh-tool-subagent-report",
     ],
     "acp": [
         "@deepseek-ai/dsh-acp-app",
@@ -159,11 +140,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
         "@deepseek-ai/dsh-session-telemetry-otel",
-        "@deepseek-ai/dsh-subagent-fork-in-process",
-        "@deepseek-ai/dsh-subagent-spawn-in-process",
-        "@deepseek-ai/dsh-tool-subagent-control",
-        "@deepseek-ai/dsh-tool-subagent-control/list-agents",
-        "@deepseek-ai/dsh-tool-subagent-report",
     ],
     "sdk": [
         "@deepseek-ai/dsh-llm-pi-ai",
@@ -172,11 +148,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-sdk-app",
         "@deepseek-ai/dsh-sdk-jsonrpc-server",
         "@deepseek-ai/dsh-session-telemetry-otel",
-        "@deepseek-ai/dsh-subagent-fork-in-process",
-        "@deepseek-ai/dsh-subagent-spawn-in-process",
-        "@deepseek-ai/dsh-tool-subagent-control",
-        "@deepseek-ai/dsh-tool-subagent-control/list-agents",
-        "@deepseek-ai/dsh-tool-subagent-report",
     ],
     "minimal": [
         "@deepseek-ai/dsh-agent-spine-demo",
@@ -590,7 +561,7 @@ def test_the_frozen_gap_is_the_union_of_every_shipped_profile():
 
             collect(patch)
     assert union <= shipped_names
-    assert len(union) == 27
+    assert len(union) == 21
 
 
 # --- boot installs and consults the table ------------------------------------

@@ -761,6 +761,9 @@ class AgentLoopService:
             provider_name = str(proposed_config.get("provider", provider_name))
             model_name = str(proposed_config.get("model", model_name))
 
+        prepare = getattr(llm_service, "prepare_adapter_call", None)
+        prepared_adapter = await prepare(provider_name, model_name, getattr(agent, "_cancel_event", None)) if callable(prepare) else None
+
         header_data = canonical_header({
             "system": system_prompt,
             "tools": tool_schemas,
@@ -802,6 +805,8 @@ class AgentLoopService:
         chunk_seqs: List[int] = []
         retry_policy = (llm_service.retry_policy(provider_name)
                         if callable(getattr(llm_service, "retry_policy", None)) else None)
+        if prepared_adapter is not None:
+            retry_policy = prepared_adapter.get("retryPolicy")
 
         request_obj = {
             **effective_config,
@@ -821,6 +826,8 @@ class AgentLoopService:
             if stream_fn and callable(stream_fn):
                 try:
                     def open_stream(*_args):
+                        if prepared_adapter is not None:
+                            return prepared_adapter["stream"](dict(request_obj, signal=getattr(agent, "_cancel_event", None)))
                         return _invoke_llm_callable(
                             stream_fn, messages=request_obj["messages"],
                             tools=request_obj.get("tools"), system=request_obj.get("system"),

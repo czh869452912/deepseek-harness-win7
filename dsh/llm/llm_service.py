@@ -625,10 +625,16 @@ class LLMService:
     def retry_policy(self, provider):
         return copy.deepcopy(self._adapters.get(provider, {}).get("retryPolicy"))
 
+    async def prepare_adapter_call(self, provider, model, signal=None):
+        adapter = self._adapters.get(provider, {}).get("adapter")
+        method = getattr(adapter, "prepare_call", None)
+        return await method(provider, model, signal) if callable(method) else None
+
     async def prepare_call(self, config: Dict[str, Any], signal: Any = None) -> Dict[str, Any]:
         provider_id = config.get("provider") or getattr(self, "provider", "openai")
         model_id = config.get("model") or getattr(self, "model", "deepseek-chat")
-        model_info = await self.resolve_model_info(provider_id, model_id, signal=signal)
+        prepared = await self.prepare_adapter_call(provider_id, model_id, signal)
+        model_info = prepared["model"] if prepared else await self.resolve_model_info(provider_id, model_id, signal=signal)
 
         cfg_max_tokens = config.get("maxTokens") if "maxTokens" in config else config.get("max_tokens")
         cfg_reasoning_effort = config.get("reasoningEffort") if "reasoningEffort" in config else config.get("reasoning_effort")
@@ -664,6 +670,7 @@ class LLMService:
             "maxTokens": max_tokens,
             "reasoningEffort": reasoning_effort,
             "adapterDefaults": defaults,
+            **({"stream": prepared["stream"], "retryPolicy": prepared.get("retryPolicy")} if prepared else {}),
         }
 
     async def prepareCall(self, config: Dict[str, Any], signal: Any = None) -> Dict[str, Any]:

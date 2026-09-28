@@ -844,8 +844,11 @@ class LLMService:
             except (ValueError, TypeError, OverflowError):
                 delay = None
             request_id = error.headers.get("x-request-id") or error.headers.get("x-deepseek-request-id")
-            raise LlmError("LLM API HTTP Error ({}): {}".format(status, body), code, status=status,
-                           providerRetryAfterMs=delay, requestId=request_id or None) from error
+            message = detail.get("message") if isinstance(detail, dict) else None
+            failure = LlmError(message if isinstance(message, str) and message else "DeepSeek API error (HTTP {})".format(status),
+                               code, status=status, providerRetryAfterMs=delay, requestId=request_id or None)
+            failure.provider_detail = " ".join(detail[key] for key in ("code", "type", "message") if isinstance(detail.get(key), str)) if isinstance(detail, dict) else ""
+            raise failure from error
         except (urllib.error.URLError, OSError) as error:
             raise LlmError("LLM API Network Error: {}".format(error), "TRANSPORT") from error
 

@@ -141,7 +141,7 @@ async def request_stream(adapter, transport, request, options):
                     state.update(waiting=True, since=time.monotonic())
                 return
             except LlmError as error:
-                detail = str(error)
+                detail = getattr(error, "provider_detail", str(error))
                 stale = used and error.status is not None and re.search(r"\bfile(?:[_ -]?(?:id|api))?", detail, re.I) and (
                     re.search(r"expired|not[_ -]?found|deleted|do(?:es)? not exist|not created under (?:this|your) account", detail, re.I)
                     or re.search(r"invalid.{0,20}file[_ -]?(?:id|api)|file[_ -]?(?:id|api).{0,20}invalid", detail, re.I))
@@ -153,6 +153,21 @@ async def request_stream(adapter, transport, request, options):
                     if file_attempt == 0:
                         file_attempt += 1
                         continue
+                if used and error.status == 400 and re.search(
+                        r"(?:unsupported|invalid|cannot read|failed to (?:decode|process)).{0,40}image|image.{0,40}(?:unsupported|invalid|cannot be decoded)", detail, re.I):
+                    def facts(row):
+                        version, location = row["version"], row["location"]
+                        ref = version["attachment"]
+                        return '"{}" at message {}, image {} ({}, 8-bit {}, {}x{})'.format(
+                            ref.get("name", ref["attachmentId"]), location["message"], location["image"],
+                            version["mediaType"], "sRGBA" if version["hasAlpha"] else "sRGB", version["width"], version["height"])
+                    exact = next((row for row in used if re.search(r"(?<![\w-])" + re.escape(row["fileId"]) + r"(?![\w-])", detail)), None)
+                    target = exact or (used[0] if len(used) == 1 else None)
+                    message = ("DeepSeek rejected normalized image {}: {}. ".format(facts(target), error.failure["message"]) if target else
+                        "DeepSeek rejected a normalized request image: {}. Candidate images: {}. ".format(error.failure["message"], "; ".join(dict.fromkeys(facts(row) for row in used))))
+                    message += "The provider rejected bytes already normalized by the harness; PNG, JPEG, WebP, and GIF remain supported input formats."
+                    raise LlmError(message, error.code, status=error.status,
+                        providerRetryAfterMs=error.providerRetryAfterMs, requestId=error.requestId) from error
                 raise
             finally:
                 await reader.aclose()

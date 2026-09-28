@@ -84,6 +84,14 @@ class DeepSeekAdapter:
                 "stream": lambda request: self.stream_with_options(request, options)}
 
     def stream_with_options(self, request, options):
+        from dsh.llm.image_content import images
+        has_images = any(any(images(message.get("content"))) for message in request["messages"])
+        if has_images:
+            model = next((row for row in options["models"] if row["id"] == request["model"]), {})
+            if "image" not in model.get("inputModalities", []):
+                raise LlmError("This DeepSeek model does not accept image input", "UNSUPPORTED_CONTENT")
+            if self.ctx.get("attachments") is None:
+                raise LlmError("DeepSeek image conversion requires the durable attachment service", "UNSUPPORTED_CONTENT")
         ref = options.get("apiKeyEnv", "DEEPSEEK_API_KEY")
         credentials = self.ctx.get("credentials")
         hit = credentials.resolve(ref) if credentials is not None else None
@@ -103,9 +111,7 @@ class DeepSeekAdapter:
         resolved["streamIdleTimeoutMs"] = options["streamIdleTimeoutMs"]
         if options.get("thinking") == "disabled" and resolved["reasoningEffort"] != "off":
             raise LlmError("This DeepSeek deployment disables thinking", "UNSUPPORTED_REASONING_EFFORT")
-        from dsh.llm.image_content import images
-        if self.ctx.get("deepseekLlmApiExtensions") is not None or any(
-                any(images(message.get("content"))) for message in resolved["messages"]):
+        if self.ctx.get("deepseekLlmApiExtensions") is not None or has_images:
             from dsh.llm.deepseek_request import request_stream
             return request_stream(self, transport, resolved, options)
         from dsh.llm.stream_bridge import OwnedStream

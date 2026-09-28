@@ -47,6 +47,9 @@ def endpoint(tmp_path, monkeypatch):
             if state["mode"] == "reject":
                 self.reply(400, {"error": {"message": "bad request"}})
                 return
+            if state["mode"] == "invalid-image":
+                self.reply(400, {"error": {"message": "unsupported image in file-1"}})
+                return
             body = b'data: {"choices":[{"delta":{"content":"image understood"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n'
             self.send_response(200)
             self.send_header("Content-Length", str(len(body)))
@@ -118,6 +121,23 @@ async def test_normalized_image_handle_uses_execution_world_mapping(tmp_path, en
         assert "read-only" in text and '"/sandbox/read-only/red.png"' in text
         assert "Copy to a writable path ending in .png" in text
         assert calls == [ctx.get("attachments").image_host_path(ref)]
+    finally:
+        await adapter.close()
+        await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
+async def test_normalized_image_rejection_reports_exact_request_facts(tmp_path, endpoint):
+    url, state = endpoint
+    state["mode"] = "invalid-image"
+    ctx, adapter, ref = await setup(tmp_path, url)
+    try:
+        with pytest.raises(LlmError, match="8-bit sRGB, 20x20") as caught:
+            _ = [chunk async for chunk in adapter.stream({"model": "vision", "messages": [
+                {"role": "user", "content": [{"type": "image", "attachment": ref}]}]})]
+        assert caught.value.code == "INVALID_REQUEST"
+        assert "message 1, image 1" in str(caught.value)
+        assert len(state["uploads"]) == len(state["chats"]) == 1
     finally:
         await adapter.close()
         await ctx.fiber.dispose()

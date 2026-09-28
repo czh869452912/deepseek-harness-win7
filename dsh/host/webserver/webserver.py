@@ -508,7 +508,11 @@ class WebServerService:
 
             content_length = int(headers.get("content-length", "0"))
             body = b""
-            if content_length > 0:
+            parsed = urlparse(raw_url)
+            pathname = parsed.path or "/"
+            route = self.match(pathname)
+            deferred = route is not None and getattr(route.handler, "defer_body", False)
+            if content_length > 0 and not deferred:
                 body = await reader.readexactly(content_length)
 
             parsed = urlparse(raw_url)
@@ -522,6 +526,7 @@ class WebServerService:
                 "headers": headers,
                 "body": body,
                 "reader": reader,
+                "body_deferred": deferred,
             }
 
             # A request-level upgrade is dispatched before any HTTP response

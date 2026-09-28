@@ -71,7 +71,12 @@ class DeepSeekAdapter:
         info.setdefault("contextWindow", options["defaultContextWindow"])
         info.setdefault("name", model)
         info["defaultMaxTokens"] = info.get("maxTokens", options["maxTokens"])
-        info["reasoning"] = {"supported": True, "efforts": ["off"] if options.get("thinking") == "disabled" else ["off", "low", "high", "max"],
+        efforts = [dict(id=key, name=name, description=description) for key, name, description in (
+            ('off', 'Off', 'Use for simple tasks that do not need reasoning.'),
+            ('low', 'Low', 'Prefer for routine or latency-sensitive tasks.'),
+            ('high', 'High', 'The default balance for most tasks.'),
+            ('max', 'Max', 'Reserve for the hardest quality-first tasks.'))]
+        info["reasoning"] = {"efforts": efforts[:1] if options.get("thinking") == "disabled" else efforts,
                              "defaultEffort": options.get("reasoningEffort", "off" if options.get("thinking") == "disabled" else "high")}
         return info
 

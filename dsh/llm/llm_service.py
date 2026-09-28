@@ -696,6 +696,7 @@ class LLMService:
                 reasoning_effort = reasoning_meta.get("defaultEffort")
             allowed_efforts = reasoning_meta.get("efforts")
             if reasoning_effort is not None and isinstance(allowed_efforts, list):
+                allowed_efforts = [effort.get("id") if isinstance(effort, dict) else effort for effort in allowed_efforts]
                 if reasoning_effort not in allowed_efforts:
                     raise LlmError(
                         f'Model "{model_id}" does not support reasoning effort "{reasoning_effort}"; allowed: {allowed_efforts}',
@@ -718,6 +719,16 @@ class LLMService:
 
     async def prepareCall(self, config: Dict[str, Any], signal: Any = None) -> Dict[str, Any]:
         return await self.prepare_call(config, signal=signal)
+
+    async def resolveCallConfig(self, config, signal=None):
+        if config['provider'] not in self._adapters:
+            raise LlmError('LLM provider is not registered: ' + config['provider'], 'NO_ADAPTER')
+        prepared = await self.prepare_call(config, signal)
+        resolved = dict(config)
+        for field in ('maxTokens', 'reasoningEffort'):
+            if prepared.get(field) is not None:
+                resolved[field] = prepared[field]
+        return resolved
 
     # backward compat alias
     def list_configurable_providers_sync(self):

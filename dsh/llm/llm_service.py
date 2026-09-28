@@ -784,6 +784,7 @@ class LLMService:
     ):
         from dsh.llm.deepseek_wire import serialize_request, parse_sse, translate
         from dsh.llm.http_stream import open_stream
+        from dsh.llm.attribution import attribution_headers
         api_key = self.resolve_api_key(provider)
         base_url = self.resolve_base_url(provider)
         request = dict(options or {})
@@ -795,7 +796,7 @@ class LLMService:
         req = urllib.request.Request(
             "{}/chat/completions".format(base_url.rstrip("/")),
             data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-            headers={"Content-Type": "application/json", "Authorization": "Bearer {}".format(api_key),
+            headers={**attribution_headers(), "Content-Type": "application/json", "Authorization": "Bearer {}".format(api_key),
                      "Accept": "text/event-stream"}, method="POST")
         try:
             with open_stream(req, request.get("signal"), request.get("streamIdleTimeoutMs", 300000)) as (response, chunks):

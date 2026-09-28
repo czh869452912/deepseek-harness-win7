@@ -1021,6 +1021,7 @@ class AgentLoopPlugin(Plugin):
             store = SessionStore(ctx=ctx)
             ctx.set_service("sessions", store)
 
+        registry = ctx.get("agents")
         if not ctx.has("agents"):
             registry = AgentRegistry(ctx=ctx)
             ctx.set_service("agents", registry)
@@ -1030,8 +1031,7 @@ class AgentLoopPlugin(Plugin):
         ctx.set_service("agent_loop", agent_loop)
         ctx.set_service("agentLoop", agent_loop)
 
-        registry = ctx.get("agents")
-        if registry:
+        if registry is not None:
             registry.set_factory(agent_loop)
 
         if hasattr(ctx, "disposable"):

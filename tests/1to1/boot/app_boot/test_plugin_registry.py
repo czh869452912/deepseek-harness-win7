@@ -105,7 +105,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-code-runtime-worker-thread",
         "@deepseek-ai/dsh-cordis-client-runner",
         "@deepseek-ai/dsh-cordis-host-runner",
-        "@deepseek-ai/dsh-goal-round-driver",
         "@deepseek-ai/dsh-llm-pi-ai",
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
@@ -121,7 +120,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
     "standard": [
         "@deepseek-ai/dsh-code-runtime-worker-thread",
         "@deepseek-ai/dsh-command-goal",
-        "@deepseek-ai/dsh-goal-round-driver",
         "@deepseek-ai/dsh-llm-pi-ai",
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
@@ -135,7 +133,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
     "headless": [
         "@deepseek-ai/dsh-code-runtime-worker-thread",
         "@deepseek-ai/dsh-command-goal",
-        "@deepseek-ai/dsh-goal-round-driver",
         "@deepseek-ai/dsh-llm-pi-ai",
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
@@ -149,7 +146,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
     "creative": [
         "@deepseek-ai/dsh-code-runtime-worker-thread",
         "@deepseek-ai/dsh-command-goal",
-        "@deepseek-ai/dsh-goal-round-driver",
         "@deepseek-ai/dsh-llm-pi-ai",
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
@@ -163,7 +159,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
     "acp": [
         "@deepseek-ai/dsh-acp-app",
         "@deepseek-ai/dsh-command-goal",
-        "@deepseek-ai/dsh-goal-round-driver",
         "@deepseek-ai/dsh-llm-pi-ai",
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
@@ -176,7 +171,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
     ],
     "sdk": [
         "@deepseek-ai/dsh-command-goal",
-        "@deepseek-ai/dsh-goal-round-driver",
         "@deepseek-ai/dsh-llm-pi-ai",
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
@@ -601,7 +595,7 @@ def test_the_frozen_gap_is_the_union_of_every_shipped_profile():
 
             collect(patch)
     assert union <= shipped_names
-    assert len(union) == 29
+    assert len(union) == 28
 
 
 # --- boot installs and consults the table ------------------------------------

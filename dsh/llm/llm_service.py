@@ -1,4 +1,5 @@
 import json
+import copy
 import math
 import os
 import urllib.request
@@ -321,11 +322,8 @@ class LLMService:
                 raise LlmError('adapter metadata for provider "{}" must preserve its id and have a non-empty name'.format(p), "INVALID_ADAPTER")
             unique.add(p)
             retry = None
-            try:
-                retry_fn = getattr(adapter, "provider_retry_policy", getattr(adapter, "providerRetryPolicy", None))
-                retry = retry_fn(p) if retry_fn else None
-            except Exception:
-                retry = None
+            retry_fn = getattr(adapter, "provider_retry_policy", getattr(adapter, "providerRetryPolicy", None))
+            retry = copy.deepcopy(retry_fn(p)) if retry_fn else None
             regs.append({"adapter": adapter, "provider": {"id": info["id"], "name": info["name"]}, "retryPolicy": retry})
         for r in regs:
             self._adapters[r["provider"]["id"]] = r
@@ -361,7 +359,7 @@ class LLMService:
                     raise LlmError('adapter metadata for provider "{}" must preserve its id and have a non-empty name'.format(p), "INVALID_ADAPTER")
                 uniq2.add(p)
                 retry_fn = getattr(adapter, "provider_retry_policy", getattr(adapter, "providerRetryPolicy", None))
-                retry = retry_fn(p) if retry_fn else None
+                retry = copy.deepcopy(retry_fn(p)) if retry_fn else None
                 regs2.append({"adapter": adapter, "provider": {"id": info["id"], "name": info["name"]}, "retryPolicy": retry})
             for pp in list(owned):
                 self._adapters.pop(pp, None)
@@ -623,6 +621,9 @@ class LLMService:
                 except Exception as e:
                     raise LlmError(str(e), "INVALID_MODEL_INFO")
         return {"provider": provider_id, "id": model_id, "name": model_id}
+
+    def retry_policy(self, provider):
+        return copy.deepcopy(self._adapters.get(provider, {}).get("retryPolicy"))
 
     async def prepare_call(self, config: Dict[str, Any], signal: Any = None) -> Dict[str, Any]:
         provider_id = config.get("provider") or getattr(self, "provider", "openai")

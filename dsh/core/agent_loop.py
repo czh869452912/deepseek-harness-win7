@@ -707,7 +707,16 @@ class AgentLoopService:
             return False
         return agent.inbox.has_pending
 
-    async def _step(
+    async def _step(self, agent, turn, step, system_prompt, starts_series=False, tool_schemas=None):
+        while True:
+            result = await self._step_once(agent, turn, step, system_prompt, starts_series, tool_schemas)
+            if result != {"kind": "retry"}:
+                return result
+            if agent.is_cancelled():
+                raise asyncio.CancelledError()
+            starts_series = False
+
+    async def _step_once(
         self,
         agent: Agent,
         turn: int,
@@ -791,6 +800,8 @@ class AgentLoopService:
 
         assembler = BlockAssembler()
         chunk_seqs: List[int] = []
+        retry_policy = (llm_service.retry_policy(provider_name)
+                        if callable(getattr(llm_service, "retry_policy", None)) else None)
 
         request_obj = {
             **effective_config,
@@ -917,10 +928,10 @@ class AgentLoopService:
         except asyncio.CancelledError:
             raise
         except Exception as e:
-            failure_payload = {
+            failure_payload = dict(getattr(e, "failure", None) or {
                 "message": str(e),
                 "code": getattr(e, "code", "UNKNOWN"),
-            }
+            })
             recovery = await self.ctx.waterfall(
                 "agent/request-error",
                 {
@@ -930,10 +941,14 @@ class AgentLoopService:
                     "provider": provider_name,
                     "turn": turn,
                     "step": step,
+                    "retryPolicy": retry_policy,
+                    "signal": getattr(agent, "_cancel_event", None),
                 },
             )
             if isinstance(recovery, dict) and recovery.get("kind") == "retry":
-                return await self._step(agent, turn, step, system_prompt)
+                return {"kind": "retry"}
+            if agent.is_cancelled():
+                raise asyncio.CancelledError()
             raise
 
         blocks = assembler.blocks()

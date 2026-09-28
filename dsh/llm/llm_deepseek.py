@@ -22,7 +22,8 @@ class DeepSeekAdapter:
         return {"id": provider, "name": "DeepSeek"}
 
     def provider_retry_policy(self, provider):
-        return self.options().get("retryPolicy")
+        from dsh.llm.retry_policy import resolve_retry_policy
+        return resolve_retry_policy(self.options().get("retryPolicy"))
 
     async def list_models(self, provider):
         options = self.options()

@@ -2,6 +2,11 @@ import json
 import re
 from typing import Any, Dict, List, Optional
 
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
+
 IANA_TIME_ZONE_REGEX = re.compile(r"^[A-Za-z][A-Za-z0-9_+.-]*(?:\/[A-Za-z0-9_+.-]+)+$")
 
 
@@ -24,7 +29,6 @@ def browser_time_zone(message: Dict[str, Any]) -> Optional[str]:
         )
 
     try:
-        from zoneinfo import ZoneInfo
         zi = ZoneInfo(value)
         canonical = zi.key
     except Exception as e:

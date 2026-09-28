@@ -6,7 +6,7 @@ from typing import Optional
 try:
     import zoneinfo
 except ImportError:
-    zoneinfo = None  # Python < 3.9 fallback if needed
+    from backports import zoneinfo
 
 
 def format_duration(elapsed_ms: float) -> str:

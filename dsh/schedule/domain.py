@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 try:
     import zoneinfo
 except ImportError:
-    zoneinfo = None
+    from backports import zoneinfo
 
 from dsh.schedule.types import (
     AfterScheduleRecord,

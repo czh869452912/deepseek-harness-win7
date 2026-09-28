@@ -15,7 +15,7 @@ def test_real_frontend_and_runtime_lock_are_resolvable():
     frontend, dependencies = BUILD.checked_inputs(ROOT, ROOT/'.venv/Lib/site-packages')
     assert frontend['kind'] == 'versioned-prebuilt-input'
     assert {d.metadata['Name'].lower() for d in dependencies} == {
-        'pyyaml','requests','certifi','charset-normalizer','idna','urllib3','pillow','wsproto','h11'}
+        'pyyaml','requests','certifi','charset-normalizer','idna','urllib3','pillow','wsproto','h11','backports.zoneinfo','tzdata'}
 
 
 def test_portable_dependency_copy_preserves_native_image_codecs(tmp_path):

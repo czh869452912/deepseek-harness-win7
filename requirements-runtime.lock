@@ -7,3 +7,5 @@ urllib3==2.2.3
 Pillow==10.4.0
 wsproto==1.2.0
 h11==0.16.0
+backports.zoneinfo==0.2.1
+tzdata==2025.2

@@ -632,6 +632,23 @@ class LLMService:
 
     imageRequestPricing = image_request_pricing
 
+    async def stream(self, options):
+        """Auxiliary plugin calls use the same route and stream hooks as agents."""
+        from dsh.llm.stream_bridge import iter_chunks
+        prepared = await self.prepare_adapter_call(options["provider"], options["model"], options.get("signal"))
+        def open_stream(*_args):
+            if prepared:
+                return prepared["stream"](options)
+            return self.chat_completion_stream(options["messages"], tools=options.get("tools"),
+                model=options["model"], provider=options["provider"], system=options.get("system"), request=options)
+        stream = await self.ctx.waterfall("llm/stream", options, open_stream) if self.ctx else open_stream()
+        reader = iter_chunks(stream)
+        try:
+            async for chunk in reader:
+                yield chunk
+        finally:
+            await reader.aclose()
+
     async def prepare_adapter_call(self, provider, model, signal=None):
         adapter = self._adapters.get(provider, {}).get("adapter")
         method = getattr(adapter, "prepare_call", None)

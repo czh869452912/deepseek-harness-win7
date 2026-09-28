@@ -783,6 +783,8 @@ class AgentLoopService:
             **({"reasoningEffort": agent.options.reasoning_effort, "reasoning_effort": agent.options.reasoning_effort} if getattr(agent.options, "reasoning_effort", None) is not None else {}),
         }
 
+        from dsh.llm.agent_request import mark_agent_loop_request
+        request_obj = mark_agent_loop_request(request_obj)
         try:
             stream_fn = getattr(llm_service, "chat_completion_stream", None) or getattr(llm_service, "stream", None)
             used_stream = False

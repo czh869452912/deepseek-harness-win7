@@ -1,6 +1,6 @@
 # 正式入口切换：实施与未完成边界
 
-日期：2026-09-28。基于 `675520bd` 的未提交工作树；固定上游仍为 `cd5ef8148158c3a752a658978873241fdf8e2bbc`。本记录承接同日审查，不签发新的 migration acceptance，也不推进 accepted_upstream。
+更新：2026-09-29。初始修复已提交为 `83385bea`，后续按独立边界分批提交；固定上游仍为 `cd5ef8148158c3a752a658978873241fdf8e2bbc`。本记录承接同日审查，不签发新的 migration acceptance，也不推进 accepted_upstream。
 
 **状态：已实施并验证一批基础修复；用户要求的全部迁移尚未完成，当前不是最小可用发行基线。**
 
@@ -14,6 +14,20 @@
 - release gate 的 isolated boot 从空 profile 改为真实 headless/Web 组合。默认装配缺失时不允许借空配置通过发行门禁。该检查仍只是装配检查，不等于浏览器端到端验收。
 
 旧 `dsh.harness`、ApiProxy 和相关测试仍作为内部兼容代码存在；公开 CLI 已不走旧 harness。完整旧 Web 实现尚未删除，不能将本次描述为“所有旧实现都已清除”。
+
+## 2026-09-29 后续实施
+
+- `9fd5b04e`、`5dc9d625`：provider retry policy、可取消重试与日志记录、完整 DeepSeek 配置校验和 last-good，以及每请求固定模型/重试事实。
+- `c6d5a02f`、`b36b7a57`、`ee71c27e`、`78ea5eeb`：HTTP 空闲超时、DNS/连接/TLS 取消、消费者关闭后的 reader 收尾，以及逐字节活动更新。
+- `4c49dd99`、`ef163e73`、`4bc0b3da`：Files API 校验和共享上传存储、Pillow 图像归一化及有界投影缓存、实际 HTTP 图片请求/过期 file-id 恢复/inline fallback/扩展接受事务。
+- `dd5e80cc`、`2964f83b`、`71a232da`、`6cb379a9`：正式设置 schema、错误分类、执行环境中的只读图片路径、模型路由图片计价，以及保留错误事实的图片拒绝诊断。图片计价接入不等于完整 token-meter/replay 迁移。
+- `4e959a86`：正式 local jobs provider 与工具/background shell 消费者。
+- `f215e4b4`：当前活动 Loader 条目的包清单 provider，忽略 disabled/group/无包身份条目，支持精确卸载。
+- `cde9ce51`：正式 scoped SkillRegistry、基于 ctx.fs 的文件系统 provider、失效/缓存/卸载和工具消费者；目录提示按 Agent 日志去重。
+
+- 本批次：正式 SessionTitle 服务与 first-prompt LLM provider；日志持有标题、revision 防止旧结果覆盖、精确 AgentLoop 主请求触发、用户重命名取消、provider 卸载等待收尾，以及有界辅助 LLM 请求。新增 9 个契约场景；旧标题实现不再用于正式包名。
+
+这些提交均有对应回归或 loopback HTTP 测试；尚未据此签发新的上游验收或发行认证。
 
 ## 验证
 
@@ -31,9 +45,11 @@
 
 原始本机证据位于忽略目录 `.goose/out/current-review/`，没有伪装为已提交的正式验收证据。Node 当前为 22.20.0，不是 release gate 要求的 22.22.2；本次未运行完整官方 Node oracle 或构建便携包。Win7 真机与浏览器尚未验证。
 
+最近完整测试：会话标题批次后的 `title-full.xml` 为 **3377 passed、11 skipped、1 warning**（282.17 秒），已覆盖前述图片计价和错误诊断。migration check 通过；不代表 parity 认证。既有 Windows asyncio transport 清理警告尚未消除。
+
 ## 正式 profile 仍失败
 
-最后一次探针使用独立临时 DSH_HOME、关闭遥测、移除模型 key，且 base URL 指向无服务的 loopback 地址。产品都在模型调用前因装配失败退出 1：
+初始探针（以下数字不代表后续 provider 提交后的当前数量）使用独立临时 DSH_HOME、关闭遥测、移除模型 key，且 base URL 指向无服务的 loopback 地址。产品都在模型调用前因装配失败退出 1：
 
 | profile | 缺失的唯一 package 名数 |
 |---|---:|
@@ -41,12 +57,12 @@
 | web | 26 |
 | minimal | 7 |
 
-证据：`canonical-profile-probes.json`。全部七类 profile 的冻结缺口并集为 36 个 package 名（包含其他 app 和遥测配置），不是 36 个同等工作量模块。`test_plugin_registry.py` 故意验证这些缺失会明确报错；该测试通过不表示应用可启动。
+证据：`canonical-profile-probes.json`。初始全部七类 profile 的冻结缺口并集为 36 个 package 名（包含其他 app 和遥测配置），不是 36 个同等工作量模块。jobs、inventory、skill 和首条提示 LLM 标题 provider 落地后并集为 32；仍需继续补齐并重跑真实默认入口。`test_plugin_registry.py` 故意验证这些缺失会明确报错；该测试通过不表示应用可启动。
 
 ## 剩余工作与完成标准
 
 1. **默认装配**：实现 Typert loader/Gateway、sandbox/terminal、jobs/goal、skill、subagent providers/control、其他 LLM provider、inventory/title/code runtime 等必要 rows；minimal 另需 SDK app/stdio JSON-RPC/terminal 组合。不得以 no-op、别名或删除必需 rows 让启动变绿。
-2. **完整模型边界**：当前 native DeepSeek 实现是文本范围；图像附件、完整 settings 校验与 last-good 更新、超时/取消、上游 retry-policy 的精确等价还未闭合。明确拒绝 image 不等于已支持 image。
+2. **完整模型边界**：图片附件、Files API、完整 settings 校验/last-good、超时/取消和 retry-policy 已有上述实现与回归；还需补齐请求身份 headers、核对剩余跨层边界，并完成配对观察。不能把本地 HTTP 用例当成所有 provider 行为已与上游逐项等价。
 3. **正式 Web**：Connection 必须接管路由所有权，完成 Gateway/Remote controllers、stream/request/error/cancellation 生命周期、host/client runners 与应用启动；随后切换前端消费者，再删除旧 ApiProxy carrier。当前冷列表是可复用的服务能力，仍通过旧 handler 接入，不能代替 Remote 控制器迁移。
 4. **数据消费者**：补齐业务投影的可执行 schema、完整 sessionQuery/历史读取与 Web replay，验证缓存失败降级、服务替换和热重载。当前 storageDomain provider 使用 JSON backend 依赖；其他 backend 组合仍需处理。
 5. **发行**：真实默认 headless 完成工具往返、会话落盘与新进程恢复；真实 Web 浏览器完成创建、响应流、工具、取消、冷恢复；固定 Node/前端重建/官方配对观察；便携包隔离启动及上述旅程；最后才是 Win7 真机认证。

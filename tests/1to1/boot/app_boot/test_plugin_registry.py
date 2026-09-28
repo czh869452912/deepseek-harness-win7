@@ -114,7 +114,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-session-log-export",
         "@deepseek-ai/dsh-session-reference",
         "@deepseek-ai/dsh-session-telemetry-otel",
-        "@deepseek-ai/dsh-session-title-first-prompt-llm",
         "@deepseek-ai/dsh-subagent-fork-in-process",
         "@deepseek-ai/dsh-subagent-spawn-in-process",
         "@deepseek-ai/dsh-tool-subagent-report",
@@ -132,7 +131,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
         "@deepseek-ai/dsh-session-telemetry-otel",
-        "@deepseek-ai/dsh-session-title-first-prompt-llm",
         "@deepseek-ai/dsh-subagent-fork-in-process",
         "@deepseek-ai/dsh-subagent-spawn-in-process",
         "@deepseek-ai/dsh-tool-subagent-control",
@@ -150,7 +148,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
         "@deepseek-ai/dsh-session-telemetry-otel",
-        "@deepseek-ai/dsh-session-title-first-prompt-llm",
         "@deepseek-ai/dsh-subagent-fork-in-process",
         "@deepseek-ai/dsh-subagent-spawn-in-process",
         "@deepseek-ai/dsh-tool-subagent-control",
@@ -168,7 +165,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
         "@deepseek-ai/dsh-session-telemetry-otel",
-        "@deepseek-ai/dsh-session-title-first-prompt-llm",
         "@deepseek-ai/dsh-subagent-fork-in-process",
         "@deepseek-ai/dsh-subagent-spawn-in-process",
         "@deepseek-ai/dsh-tool-subagent-control",
@@ -623,7 +619,7 @@ def test_the_frozen_gap_is_the_union_of_every_shipped_profile():
 
             collect(patch)
     assert union <= shipped_names
-    assert len(union) == 33
+    assert len(union) == 32
 
 
 # --- boot installs and consults the table ------------------------------------

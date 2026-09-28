@@ -628,7 +628,16 @@ class LLMService:
     async def prepare_adapter_call(self, provider, model, signal=None):
         adapter = self._adapters.get(provider, {}).get("adapter")
         method = getattr(adapter, "prepare_call", None)
-        return await method(provider, model, signal) if callable(method) else None
+        if not callable(method):
+            return None
+        prepared = await method(provider, model, signal)
+        if "image" not in prepared["model"].get("inputModalities", []):
+            from dsh.llm.image_content import project_text_only
+            original_stream = prepared["stream"]
+            def stream(request):
+                return original_stream(dict(request, messages=project_text_only(request["messages"])))
+            prepared = dict(prepared, stream=stream)
+        return prepared
 
     async def prepare_call(self, config: Dict[str, Any], signal: Any = None) -> Dict[str, Any]:
         provider_id = config.get("provider") or getattr(self, "provider", "openai")
@@ -792,7 +801,9 @@ class LLMService:
                        model=self.resolve_model(model, provider))
         if temperature is not None:
             request["temperature"] = temperature
-        payload = serialize_request(request)
+        payload = request.get("_wire_payload")
+        if payload is None:
+            payload = serialize_request(request)
         req = urllib.request.Request(
             "{}/chat/completions".format(base_url.rstrip("/")),
             data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
@@ -800,6 +811,8 @@ class LLMService:
                      "Accept": "text/event-stream"}, method="POST")
         try:
             with open_stream(req, request.get("signal"), request.get("streamIdleTimeoutMs", 300000)) as (response, chunks):
+                if request.get("_on_accepted") is not None:
+                    request["_on_accepted"]()
                 yield from translate(parse_sse(chunks))
         except urllib.error.HTTPError as error:
             status = error.code

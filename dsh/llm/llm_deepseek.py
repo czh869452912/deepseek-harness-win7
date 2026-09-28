@@ -14,6 +14,7 @@ class DeepSeekAdapter:
         self.ctx, self.config = ctx, copy.deepcopy(config)
         self.source = lambda: self.config
         self.last_raw, self.last_good = None, None
+        self.files = None
         self.options()
 
     def options(self):
@@ -90,10 +91,19 @@ class DeepSeekAdapter:
         resolved["streamIdleTimeoutMs"] = options["streamIdleTimeoutMs"]
         if options.get("thinking") == "disabled" and resolved["reasoningEffort"] != "off":
             raise LlmError("This DeepSeek deployment disables thinking", "UNSUPPORTED_REASONING_EFFORT")
+        from dsh.llm.image_content import images
+        if self.ctx.get("deepseekLlmApiExtensions") is not None or any(
+                any(images(message.get("content"))) for message in resolved["messages"]):
+            from dsh.llm.deepseek_request import request_stream
+            return request_stream(self, transport, resolved, options)
         from dsh.llm.stream_bridge import OwnedStream
         return OwnedStream(lambda signal: transport._default_chat_completion_stream(
             resolved["messages"], tools=resolved.get("tools"), model=resolved["model"],
             system=resolved.get("system"), temperature=resolved.get("temperature"), options=dict(resolved, signal=signal)), resolved.get("signal"))
+
+    async def close(self):
+        if self.files is not None:
+            await self.files.close()
 
 
 
@@ -104,6 +114,7 @@ class LLMDeepSeekPlugin(Plugin):
     def apply(self, ctx):
         llm = ctx.get("llm")
         adapter = DeepSeekAdapter(ctx, self.config)
+        ctx.effect(lambda: adapter.close, "DeepSeek upload teardown")
         dispose_route = llm.register_adapter(["deepseek-official"], adapter)
         dispose_directory = llm.register_configurable_providers([
             {"provider": "deepseek-official", "displayName": "DeepSeek", "settingsNs": "llm-deepseek", "settingsPath": []}])

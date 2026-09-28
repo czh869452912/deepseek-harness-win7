@@ -210,3 +210,23 @@ async def test_stopping_consumer_drains_reader_without_cancelling_caller(server,
             await asyncio.wait_for(pending, 1)
     assert not caller.is_set()
     assert not any(t.name in ("dsh-model-reader", "dsh-http-cancellation") for t in threading.enumerate())
+
+
+@pytest.mark.asyncio
+async def test_idle_timeout_excludes_consumer_backpressure(server):
+    import asyncio
+    from dsh.llm.stream_bridge import OwnedStream, iter_chunks
+    llm, state = server
+    state["mode"] = "progress"
+    reader = iter_chunks(OwnedStream(lambda signal: llm.chat_completion_stream(
+        [], model="test", signal=signal, streamIdleTimeoutMs=80)))
+    try:
+        assert (await reader.__anext__())["type"] == "block-start"
+        await asyncio.sleep(0.15)
+        assert (await reader.__anext__())["type"] == "text-delta"
+        # Only the next demanded network read starts the idle deadline.
+        with pytest.raises(LlmError) as caught:
+            await reader.__anext__()
+        assert caught.value.code == "TIMEOUT"
+    finally:
+        await reader.aclose()

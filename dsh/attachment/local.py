@@ -377,6 +377,8 @@ class LocalAttachmentStore(AttachmentStore):
         for value in list(self.normalization_policy.values()) + [v for v in self._image_limits.values() if not isinstance(v, list)]:
             if type(value) is not int or not 1 <= value <= 9007199254740991:
                 raise ValueError("attachment limits must be positive safe integers")
+        if ctx is not None:
+            ctx.set_service("attachments", self)
 
     @property
     def image_limits(self) -> Dict[str, Any]:

@@ -67,3 +67,15 @@ def test_small_clean_image_is_byte_identical_and_tiny_byte_target_uses_smallest_
     assert projected["width"] == 10 and projected["height"] == 10
     assert projected["mediaType"] == "image/jpeg"
     assert projected["bytes"] > 1  # Upstream retains smallest quality; route enforces hard byte cap.
+
+
+@pytest.mark.asyncio
+async def test_attachment_provider_publishes_and_withdraws_its_service(tmp_path):
+    from dsh.cordis.context import Context
+    from dsh.boot.plugin_registry import resolve_harness_plugin
+    ctx = Context()
+    fiber = await ctx.plugin(resolve_harness_plugin("@deepseek-ai/dsh-attachment-local"), config={"dshHome": str(tmp_path)})
+    assert ctx.get("attachments") is not None
+    await fiber.dispose()
+    assert ctx.get("attachments") is None
+    await ctx.fiber.dispose()

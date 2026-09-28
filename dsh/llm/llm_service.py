@@ -783,6 +783,7 @@ class LLMService:
         provider=None, system=None, options=None,
     ):
         from dsh.llm.deepseek_wire import serialize_request, parse_sse, translate
+        from dsh.llm.http_stream import open_stream
         api_key = self.resolve_api_key(provider)
         base_url = self.resolve_base_url(provider)
         request = dict(options or {})
@@ -797,16 +798,30 @@ class LLMService:
             headers={"Content-Type": "application/json", "Authorization": "Bearer {}".format(api_key),
                      "Accept": "text/event-stream"}, method="POST")
         try:
-            with urllib.request.urlopen(req, timeout=120) as response:
-                yield from translate(parse_sse(response))
+            with open_stream(req, request.get("signal"), request.get("streamIdleTimeoutMs", 300000)) as (response, chunks):
+                yield from translate(parse_sse(chunks))
         except urllib.error.HTTPError as error:
             status = error.code
-            body = error.read().decode("utf-8", errors="replace")
+            try:
+                body = (error._dsh_body if hasattr(error, "_dsh_body") else error.read()).decode("utf-8", errors="replace")
+            finally:
+                error.close()
             code = ("AUTH" if status in (401, 403) else "RATE_LIMIT" if status == 429
                     else "CONTEXT_WINDOW_EXCEEDED" if status in (400, 413) and "context" in body.lower()
                     else "INVALID_REQUEST" if status in (400, 413) else "SERVER" if status >= 500
                     else "HTTP_{}".format(status))
-            raise LlmError("LLM API HTTP Error ({}): {}".format(status, body), code, status=status) from error
+            from email.utils import parsedate_to_datetime
+            import time
+            raw_delay = error.headers.get("retry-after", "")
+            try:
+                delay = float(raw_delay) * 1000 if raw_delay.isdigit() else (parsedate_to_datetime(raw_delay).timestamp() - time.time()) * 1000
+                if not math.isfinite(delay) or delay <= 0:
+                    delay = None
+            except (ValueError, TypeError, OverflowError):
+                delay = None
+            request_id = error.headers.get("x-request-id") or error.headers.get("x-deepseek-request-id")
+            raise LlmError("LLM API HTTP Error ({}): {}".format(status, body), code, status=status,
+                           providerRetryAfterMs=delay, requestId=request_id or None) from error
         except (urllib.error.URLError, OSError) as error:
             raise LlmError("LLM API Network Error: {}".format(error), "TRANSPORT") from error
 

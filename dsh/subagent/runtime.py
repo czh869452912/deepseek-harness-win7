@@ -2,7 +2,7 @@
 import asyncio
 import uuid
 
-from dsh.typert.remote import TypertRemoteService
+from dsh.typert.remote import TypertRemoteService, Remote
 from dsh.core.notifications import emit_contained
 from dsh.core.tools import _assert_supported_schema
 from dsh.subagent.composition import valid_depth
@@ -67,6 +67,21 @@ class SubagentRuntime(TypertRemoteService):
             yield cleanup
             self.ctx.emit("subagent/provider-added", provider)
         return self.ctx.effect(setup, "subagents.registerProvider()")
+
+    @Remote('list')
+    async def remoteExportList(self, parentSessionId, signal):
+        from dsh.subagent.remote_control import catalog
+        return await catalog(self, parentSessionId, signal)
+
+    @Remote
+    async def prompt(self, request, signal):
+        from dsh.subagent.remote_control import prompt
+        return await prompt(self, request, signal)
+
+    @Remote
+    def interruptByParent(self, childSessionId, parentSessionId, mode):
+        from dsh.subagent.remote_control import interrupt
+        return interrupt(self, childSessionId, parentSessionId, mode)
 
     def getProvider(self, name):
         return self.providers.get(name)

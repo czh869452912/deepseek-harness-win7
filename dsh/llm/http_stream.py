@@ -3,8 +3,11 @@ import contextlib
 import http.client
 import io
 import math
+import errno
+import queue
 import select
 import socket
+import ssl
 import threading
 import time
 import urllib.request
@@ -26,6 +29,57 @@ def open_stream(request, signal=None, idle_timeout_ms=300000):
         if code:
             raise LlmError("Model request aborted" if code == "ABORTED" else "Model stream idle timeout", code)
 
+    def wait_socket(sock, write=False):
+        while True:
+            check()
+            ready = select.select([] if write else [sock], [sock] if write else [], [], 0.02)
+            if ready[1 if write else 0]:
+                return
+
+    def connect_socket(address, timeout=None, source_address=None):
+        # getaddrinfo has no cancellable API on Python 3.8/Win7. Bound the
+        # caller's wait; an abandoned DNS worker owns no transport sockets.
+        resolved = queue.Queue(maxsize=1)
+        def resolve():
+            try:
+                resolved.put(socket.getaddrinfo(address[0], address[1], 0, socket.SOCK_STREAM))
+            except Exception as error:
+                resolved.put(error)
+        resolver = threading.Thread(target=resolve, name="dsh-http-dns", daemon=True)
+        resolver.start()
+        while True:
+            check()
+            try:
+                addresses = resolved.get(timeout=0.02)
+                break
+            except queue.Empty:
+                pass
+        if isinstance(addresses, Exception):
+            raise addresses
+        last_error = None
+        for family, kind, protocol, _, target in addresses:
+            check()
+            sock = socket.socket(family, kind, protocol)
+            try:
+                sock.setblocking(False)
+                if source_address:
+                    sock.bind(source_address)
+                result = sock.connect_ex(target)
+                if result not in (0, errno.EINPROGRESS, errno.EWOULDBLOCK, errno.EALREADY, 10035, 10036, 10037):
+                    raise OSError(result, "connection failed")
+                if result:
+                    wait_socket(sock, write=True)
+                    failure = sock.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
+                    if failure:
+                        raise OSError(failure, "connection failed")
+                return sock
+            except BaseException as error:
+                sock.close()
+                if not isinstance(error, OSError):
+                    raise
+                last_error = error
+        raise last_error or OSError("DNS returned no connection addresses")
+
     def factory(connection_type):
         class CheckedRaw(io.RawIOBase):
             def __init__(self, sock):
@@ -42,12 +96,15 @@ def open_stream(request, signal=None, idle_timeout_ms=300000):
             def readinto(self, buffer):
                 while True:
                     check()
-                    if callable(getattr(self._sock, "pending", None)) and self._sock.pending():
-                        break
-                    if select.select([self._sock], [], [], 0.02)[0]:
-                        break
-                check()
-                return self.source.readinto(buffer)
+                    try:
+                        count = self._sock.recv_into(buffer)
+                        if count:
+                            state["since"] = time.monotonic()
+                        return count
+                    except (BlockingIOError, ssl.SSLWantReadError):
+                        wait_socket(self._sock)
+                    except ssl.SSLWantWriteError:
+                        wait_socket(self._sock, write=True)
 
         class SocketView:
             def __init__(self, sock):
@@ -63,9 +120,49 @@ def open_stream(request, signal=None, idle_timeout_ms=300000):
         class OwnedConnection(connection_type):
             response_class = CheckedResponse
 
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self._create_connection = connect_socket
+
             def connect(self):
-                super().connect()
-                self.sock.settimeout(None)
+                http.client.HTTPConnection.connect(self)
+                if connection_type is http.client.HTTPSConnection:
+                    hostname = self._tunnel_host or self.host
+                    self.sock = self._context.wrap_socket(self.sock, server_hostname=hostname,
+                                                          do_handshake_on_connect=False)
+                    while True:
+                        check()
+                        try:
+                            self.sock.do_handshake()
+                            break
+                        except ssl.SSLWantReadError:
+                            wait_socket(self.sock)
+                        except ssl.SSLWantWriteError:
+                            wait_socket(self.sock, write=True)
+
+            def send(self, data):
+                if self.sock is None:
+                    self.connect()
+                if hasattr(data, "read"):
+                    while True:
+                        chunk = data.read(self.blocksize)
+                        if not chunk:
+                            return
+                        self.send(chunk.encode("iso-8859-1") if isinstance(chunk, str) else chunk)
+                else:
+                    pending = memoryview(data)
+                    while pending:
+                        check()
+                        try:
+                            sent = self.sock.send(pending)
+                            if not sent:
+                                raise OSError("connection closed during request write")
+                            pending = pending[sent:]
+                            state["since"] = time.monotonic()
+                        except (BlockingIOError, ssl.SSLWantWriteError):
+                            wait_socket(self.sock, write=True)
+                        except ssl.SSLWantReadError:
+                            wait_socket(self.sock)
         def create(*args, **kwargs):
             connection = OwnedConnection(*args, **kwargs)
             connections.append(connection)

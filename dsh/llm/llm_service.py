@@ -7,6 +7,7 @@ import urllib.error
 from typing import Any, Dict, List, Optional
 
 from dsh.cordis.environment import LaunchEnvironmentSnapshot
+from dsh.typert.remote import Remote, bind_typert_remote, TypertRemoteFailure
 
 
 class LlmError(RuntimeError):
@@ -85,6 +86,7 @@ class LLMService:
         api_key_env="DEEPSEEK_API_KEY"
     ):
         self.ctx = ctx
+        self.typertRemote = bind_typert_remote(self, "llm")
         self.static_api_key = api_key if (api_key and api_key.strip()) else None
         self.static_base_url = base_url if (base_url and base_url.strip()) else None
         self.static_search_base_url = search_base_url if (search_base_url and search_base_url.strip()) else None
@@ -474,7 +476,7 @@ class LLMService:
     def list_configurable_providers(self):
         return [dict(provider=v["provider"], displayName=v["displayName"], settingsNs=v["settingsNs"], settingsPath=list(v["settingsPath"]), **({"declared": v["declared"]} if "declared" in v and v["declared"] is not None else {})) for v in self._directory.values()]
 
-    async def discover_models(self, settings_ns, options):
+    async def discover_models(self, settings_ns, options, signal=None):
         discover = self._discoveries.get(settings_ns)
         if discover is None:
             raise LlmError('no model discovery is registered for "{}"'.format(settings_ns), "NO_DISCOVERY")
@@ -484,7 +486,15 @@ class LLMService:
             raise LlmError("model discovery needs a provider route or a baseURL", "INVALID_DISCOVERY")
         # call discovery
         import inspect as _ins
-        res = discover(options)
+        if signal is not None:
+            try:
+                _ins.signature(discover).bind(options, signal)
+            except (ValueError, TypeError):
+                res = discover(options)
+            else:
+                res = discover(options, signal)
+        else:
+            res = discover(options)
         if _ins.isawaitable(res):
             res = await res
         seen = set()
@@ -868,6 +878,24 @@ class LLMService:
             raise failure from error
         except (urllib.error.URLError, OSError) as error:
             raise LlmError("LLM API Network Error: {}".format(error), "TRANSPORT") from error
+
+    @Remote
+    def listProviders(self):
+        return [dict(value["provider"]) for value in self._adapters.values()]
+
+    @Remote
+    def listConfigurableProviders(self):
+        return [dict(value, settingsPath=list(value["settingsPath"])) for value in self._directory.values()]
+
+    @Remote("discoverModels")
+    async def remoteDiscoverModels(self, settingsNs, request, signal):
+        try:
+            return await self.discover_models(settingsNs, request, signal)
+        except Exception as error:
+            details = {"settingsNs": settingsNs}
+            if "baseURL" in request:
+                details["baseURL"] = request["baseURL"]
+            raise TypertRemoteFailure({"code": "model-discovery-failed", "message": str(error), "details": details}) from error
 
     # alias for 1:1 naming used by apiproxy handler
     def list_providers(self):

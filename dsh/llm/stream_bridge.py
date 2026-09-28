@@ -36,13 +36,29 @@ class OwnedStream:
 
 async def iter_chunks(stream, cancel_check=None):
     if hasattr(stream, "__aiter__"):
+        iterator = stream.__aiter__()
+        pending = None
         try:
-            async for item in stream:
+            while True:
                 if cancel_check and cancel_check():
                     raise asyncio.CancelledError("cancelled")
+                pending = asyncio.ensure_future(iterator.__anext__())
+                while not pending.done():
+                    await asyncio.wait([pending], timeout=0.02)
+                    if cancel_check and cancel_check():
+                        raise asyncio.CancelledError("cancelled")
+                try:
+                    item = pending.result()
+                except StopAsyncIteration:
+                    return
+                pending = None
                 yield item
         finally:
-            close = getattr(stream, "aclose", None)
+            if pending is not None:
+                if not pending.done():
+                    pending.cancel()
+                await asyncio.gather(pending, return_exceptions=True)
+            close = getattr(iterator, "aclose", None)
             if close:
                 await close()
         return

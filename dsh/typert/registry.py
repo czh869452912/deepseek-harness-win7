@@ -1,91 +1,114 @@
-"""
-Minimal Typert registry service (`ctx.typert`).
-
-Ported from reference `packages/typert/registry/src/service.ts`, restricted to
-the dependency-inversion surface that `@deepseek-ai/dsh-session` consumes:
-`ctx.typert.lookups.register(key, provider)` / `.get(key)` with fiber-scoped
-withdrawal. The Remote/Context/generation layers of the reference registry are
-out of this migration unit's boundary and are not ported.
-
-Compatible with Python 3.8.10 and Windows 7 SP1.
-"""
-
-from typing import Any, Callable, Dict, List, Optional
+"""Cordis-owned Typert reflection, invocation, lookup and Context registry."""
+import copy
 
 from dsh.cordis.service import Service
-from dsh.typert.protocol import (
-    TypertDisposer,
-    TypertLookupDefinition,
-    TypertLookupProvider,
+from dsh.typert.protocol import TypertDisposer, TypertLookupProvider
+from dsh.typert.stores import (
+    DescriptorStore, DescriptorView, LookupStore, LookupView, ContextStore,
+    ContextView, segment,
 )
 
 
-class LookupRegistry:
-    """
-    Runtime registry for Host object lookup providers, 1:1 with reference
-    `TypertLookupRegistry` (protocol/types.ts:465-509) for the minimal surface:
-
-    - `register(key, provider)` returns a disposer withdrawing the exact
-      provider (a later provider for the same key is not withdrawn by an older
-      disposer);
-    - `get(key)` returns the live provider or `None` (`undefined`);
-    - `keys()` is a snapshot of registered provider keys;
-    - `definitions()` are the lookup declarations observed during the registry's
-      lifetime — the declaration survives provider withdrawal, exactly like the
-      reference `TypertLookupDefinition` contract.
-    """
-
-    def __init__(self) -> None:
-        self._providers: Dict[str, TypertLookupProvider] = {}
-        self._definitions: List[TypertLookupDefinition] = []
-
-    def register(self, key: str, provider: TypertLookupProvider) -> TypertDisposer:
-        self._providers[key] = provider
-        if not any(d.key == key for d in self._definitions):
-            self._definitions.append(TypertLookupDefinition.from_provider(key, provider))
-
-        def dispose() -> None:
-            # Withdraw THIS registration only: a provider registered later under
-            # the same key stays live.
-            if self._providers.get(key) is provider:
-                del self._providers[key]
-
-        return dispose
-
-    def get(self, key: str) -> Optional[TypertLookupProvider]:
-        return self._providers.get(key)
-
-    def has(self, key: str) -> bool:
-        return key in self._providers
-
-    def keys(self) -> List[str]:
-        return list(self._providers.keys())
-
-    def definitions(self) -> List[TypertLookupDefinition]:
-        return list(self._definitions)
+class LookupRegistry(LookupView):
+    """Standalone registry facade; registrations require an owning Context."""
+    def __init__(self, ctx):
+        super().__init__(ctx, LookupStore())
 
 
 class TypertRegistry(Service):
-    """
-    The Typert Service mounted at `ctx.typert`
-    (`@deepseek-ai/dsh-typert-registry`).
-    """
-
     id = "typert"
     name = "@deepseek-ai/dsh-typert-registry"
 
-    def __init__(self, ctx: Any = None) -> None:
+    def __init__(self, ctx):
         super().__init__(ctx, "typert")
-        # `lookups` is the live Host object lookup registry consumed through
-        # dependency inversion (`ctx.inject(['typert'], ...)`).
-        self.lookups = LookupRegistry()
+        self.schemas, self.packages, self.remote_packages = {}, {}, {}
+        self.local_store, self.remote_store = DescriptorStore("local"), DescriptorStore("remote")
+        self.lookup_store, self.context_store = LookupStore(), ContextStore()
+        self.__dict__.update(self._views(ctx))
 
-    def apply(self, ctx: Any = None) -> None:
-        target_ctx = ctx or self.ctx
-        if target_ctx and not target_ctx.has("typert"):
-            target_ctx.set_service("typert", self)
+    def _views(self, ctx):
+        return {"local": DescriptorView(ctx, self.local_store),
+                "remotes": DescriptorView(ctx, self.remote_store, self.remote_packages),
+                "lookups": LookupView(ctx, self.lookup_store),
+                "contexts": ContextView(ctx, self.context_store)}
+
+    def _extend(self, props=None):
+        # Service getters in JS execute with the calling receiver. Python's
+        # proxy eagerly evaluates properties, so bind the nested views here.
+        props = dict(props or {})
+        props.update(self._views(props.get("ctx", self.ctx)))
+        return super()._extend(props)
+
+    def register(self, contribution):
+        package, face = contribution["package"], contribution["face"]
+        segment("package name", package)
+        if face not in ("host", "client"):
+            raise ValueError("typert: face must be host or client")
+        key = package + "#" + face
+        if key in self.packages:
+            raise ValueError("typert: package face already registered: " + key)
+        package_record = {"package": package, "face": face, "key": key, "model": contribution["model"]}
+        records, batch = [], set()
+        for schema in contribution["schemas"]:
+            segment("schema name", schema["name"])
+            schema_key = package + "#" + schema["name"]
+            if schema_key in batch or schema_key in self.schemas:
+                raise ValueError("typert: schema already registered: " + schema_key)
+            batch.add(schema_key)
+            records.append(dict(schema, package=package, face=face, key=schema_key))
+        descriptors = contribution["invocations"]
+        self.local_store.validate(descriptors)
+        owner = object()
+        def setup():
+            self.packages[key] = package_record
+            for record in records:
+                self.schemas[record["key"]] = record
+            self.local_store.commit(owner, descriptors)
+            def dispose():
+                if self.packages.get(key) is package_record:
+                    del self.packages[key]
+                for record in records:
+                    if self.schemas.get(record["key"]) is record:
+                        del self.schemas[record["key"]]
+                self.local_store.withdraw(owner, descriptors)
+            return dispose
+        return self.ctx.effect(setup, "typert.register()")
+
+    def get(self, key):
+        return self.schemas.get(key)
+
+    def resolve(self, key):
+        record = self.schemas.get(key)
+        if record is not None:
+            return record
+        package, separator, name = key.partition("#")
+        if not package or not separator or not name:
+            raise ValueError("typert: invalid schema key; expected <package>#<name>")
+        if any(row["package"] == package for row in self.packages.values()):
+            raise ValueError("typert: package registered but contributes no schema named " + name)
+        raise ValueError("typert: package has no registered contribution: " + package)
+
+    def list(self, filter=None):
+        return self._filtered(self.schemas, filter)
+
+    @staticmethod
+    def _filtered(table, filter):
+        selected = filter or {}
+        return [row for row in table.values() if all(key not in selected or row[key] == selected[key] for key in ("package", "face"))]
+
+    def getPackage(self, package, face="host"):
+        return self.packages.get(package + "#" + face)
+
+    def listPackages(self, filter=None):
+        return self._filtered(self.packages, filter)
+
+    def toJSONSchema(self, key, params=None):
+        schema = self.resolve(key)["schema"]
+        project = getattr(schema, "to_json_schema", None) or getattr(schema, "toJSONSchema", None)
+        if project is None:
+            raise ValueError("typert: schema has no JSON Schema projector")
+        return copy.deepcopy(project(params) if params is not None else project())
 
 
 default = TypertRegistry
-
 __all__ = ["LookupRegistry", "TypertRegistry", "default", "TypertDisposer", "TypertLookupProvider"]

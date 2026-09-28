@@ -90,9 +90,11 @@ class DeepSeekAdapter:
         resolved["streamIdleTimeoutMs"] = options["streamIdleTimeoutMs"]
         if options.get("thinking") == "disabled" and resolved["reasoningEffort"] != "off":
             raise LlmError("This DeepSeek deployment disables thinking", "UNSUPPORTED_REASONING_EFFORT")
-        return transport._default_chat_completion_stream(
+        from dsh.llm.stream_bridge import OwnedStream
+        return OwnedStream(lambda signal: transport._default_chat_completion_stream(
             resolved["messages"], tools=resolved.get("tools"), model=resolved["model"],
-            system=resolved.get("system"), temperature=resolved.get("temperature"), options=resolved)
+            system=resolved.get("system"), temperature=resolved.get("temperature"), options=dict(resolved, signal=signal)), resolved.get("signal"))
+
 
 
 class LLMDeepSeekPlugin(Plugin):

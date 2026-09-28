@@ -34,44 +34,7 @@ def request_proposal(header: Dict[str, Any]) -> Dict[str, Any]:
     return config
 
 
-async def _async_iter_chunks(stream_iter: Any, cancel_check: Optional[Callable[[], bool]] = None):
-    """Run synchronous stream iterator in worker thread or handle async generator with cancellation checking."""
-    if hasattr(stream_iter, "__aiter__"):
-        async for item in stream_iter:
-            if cancel_check and cancel_check():
-                raise asyncio.CancelledError("cancelled")
-            yield item
-    else:
-        import queue
-        import threading
-        q: queue.Queue = queue.Queue()
-        sentinel = object()
-
-        def worker():
-            try:
-                for item in stream_iter:
-                    q.put(item)
-            except Exception as ex:
-                q.put(ex)
-            finally:
-                q.put(sentinel)
-
-        t = threading.Thread(target=worker, daemon=True)
-        t.start()
-
-        while True:
-            if cancel_check and cancel_check():
-                raise asyncio.CancelledError("cancelled")
-            try:
-                item = q.get_nowait()
-            except queue.Empty:
-                await asyncio.sleep(0.01)
-                continue
-            if item is sentinel:
-                break
-            if isinstance(item, Exception):
-                raise item
-            yield item
+from dsh.llm.stream_bridge import iter_chunks as _async_iter_chunks
 
 
 class PartialBlock:
@@ -834,41 +797,45 @@ class AgentLoopService:
                             request=request_obj)
 
                     stream_iter = await self.ctx.waterfall("llm/stream", request_obj, open_stream)
-                    async for chunk in _async_iter_chunks(stream_iter, cancel_check=agent.is_cancelled):
-                        # TS port yields StreamChunk dict; legacy tuple (ev_type, ev_payload) also supported
-                        if isinstance(chunk, (list, tuple)) and len(chunk) == 2:
-                            ev_type, ev_payload = chunk
-                            if ev_type == "chunk":
-                                ev_payload = ev_payload
-                            elif ev_type == "finish":
-                                assembler.push(ev_payload)
-                                used_stream = True
-                                continue
+                    reader = _async_iter_chunks(stream_iter, cancel_check=agent.is_cancelled)
+                    try:
+                        async for chunk in reader:
+                            # TS port yields StreamChunk dict; legacy tuple (ev_type, ev_payload) also supported
+                            if isinstance(chunk, (list, tuple)) and len(chunk) == 2:
+                                ev_type, ev_payload = chunk
+                                if ev_type == "chunk":
+                                    ev_payload = ev_payload
+                                elif ev_type == "finish":
+                                    assembler.push(ev_payload)
+                                    used_stream = True
+                                    continue
+                                else:
+                                    ev_payload = chunk
                             else:
                                 ev_payload = chunk
-                        else:
-                            ev_payload = chunk
-                        # Treat every StreamChunk dict as a chunk
-                        if not isinstance(ev_payload, dict):
-                            continue
-                        chunk_payload = {
-                            "turn": turn,
-                            "step": step,
-                            "chunk": ev_payload,
-                            **ev_payload,
-                        }
-                        chunk_ev = session.append(
-                            "assistant/chunk",
-                            chunk_payload,
-                            ignorable=True,
-                        )
-                        seq = chunk_ev.get("seq", 0) if isinstance(chunk_ev, dict) else getattr(chunk_ev, "seq", 0)
-                        chunk_seqs.append(seq)
-                        assembler.push(ev_payload)
-                        self.ctx.emit("session/chunk", session, chunk_ev)
-                        self.ctx.emit("assistant/chunk", chunk_ev)
-                        if ev_payload.get("type") == "finish":
-                            used_stream = True
+                            # Treat every StreamChunk dict as a chunk
+                            if not isinstance(ev_payload, dict):
+                                continue
+                            chunk_payload = {
+                                "turn": turn,
+                                "step": step,
+                                "chunk": ev_payload,
+                                **ev_payload,
+                            }
+                            chunk_ev = session.append(
+                                "assistant/chunk",
+                                chunk_payload,
+                                ignorable=True,
+                            )
+                            seq = chunk_ev.get("seq", 0) if isinstance(chunk_ev, dict) else getattr(chunk_ev, "seq", 0)
+                            chunk_seqs.append(seq)
+                            assembler.push(ev_payload)
+                            self.ctx.emit("session/chunk", session, chunk_ev)
+                            self.ctx.emit("assistant/chunk", chunk_ev)
+                            if ev_payload.get("type") == "finish":
+                                used_stream = True
+                    finally:
+                        await reader.aclose()
                     if chunk_seqs or assembler._order:
                         used_stream = True
                 except asyncio.CancelledError:

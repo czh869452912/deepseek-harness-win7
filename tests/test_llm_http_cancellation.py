@@ -33,6 +33,8 @@ def server():
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream")
             self.end_headers()
+            if state["mode"] == "progress":
+                self.wfile.write(b'data: {"choices":[{"delta":{"content":"partial"}}]}\n\n')
             self.wfile.flush()
             state["release"].wait(2)
 
@@ -184,3 +186,27 @@ def test_cancellation_bounds_dns_wait_without_leaving_a_transport(monkeypatch):
         for thread in threading.enumerate():
             if thread.name == "dsh-http-dns":
                 thread.join(1)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("explicit_close", [False, True])
+async def test_stopping_consumer_drains_reader_without_cancelling_caller(server, explicit_close):
+    import asyncio
+    from dsh.llm.stream_bridge import OwnedStream, iter_chunks
+    llm, state = server
+    caller = threading.Event()
+    state["mode"] = "progress"
+    stream = OwnedStream(lambda signal: llm.chat_completion_stream([], model="test", signal=signal), caller)
+    reader = iter_chunks(stream)
+    assert (await reader.__anext__())["type"] == "block-start"
+    assert (await reader.__anext__())["type"] == "text-delta"
+    if explicit_close:
+        await asyncio.wait_for(reader.aclose(), 1)
+    else:
+        pending = asyncio.create_task(reader.__anext__())
+        await asyncio.sleep(0.03)
+        pending.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await asyncio.wait_for(pending, 1)
+    assert not caller.is_set()
+    assert not any(t.name in ("dsh-model-reader", "dsh-http-cancellation") for t in threading.enumerate())

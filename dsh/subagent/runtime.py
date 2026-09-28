@@ -28,6 +28,16 @@ class SubagentRuntime(TypertRemoteService):
     def activationSetup(self, contribution):
         return self.ctx.effect(lambda: self.activation_setups.register(contribution), 'subagents.activationSetup()')
 
+    registerContinuableSetup = activationSetup
+
+    async def listChildren(self, parent_session_id, signal=None):
+        from dsh.subagent.listing import list_children
+        return await list_children(self.ctx, parent_session_id, signal)
+
+    async def listDescendants(self, root_session_id, signal=None):
+        from dsh.subagent.listing import list_children
+        return await list_children(self.ctx, root_session_id, signal, descendants=True)
+
     async def startContinuable(self, spec):
         return await self.continuation_manager().start(spec)
 
@@ -129,3 +139,8 @@ class SubagentPlugin(Plugin):
         service = SubagentRuntime(ctx)
         service.continuation_manager()
         ctx.set_service('subagents', service)
+        def projections(child_ctx):
+            from dsh.subagent.projections import IDENTITY, TIMING
+            child_ctx.get('sessionProjections').register(IDENTITY)
+            child_ctx.get('sessionProjections').register(TIMING)
+        ctx.inject(['sessionProjections'], projections)

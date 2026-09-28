@@ -15,6 +15,7 @@ class DeepSeekAdapter:
         self.source = lambda: self.config
         self.last_raw, self.last_good = None, None
         self.files = None
+        self.user_id = None
         self.options()
 
     def options(self):
@@ -109,6 +110,14 @@ class DeepSeekAdapter:
         resolved.setdefault("reasoningEffort", options.get("reasoningEffort", "off" if options.get("thinking") == "disabled" else "high"))
         resolved.setdefault("maxTokens", self.model_info(options, resolved["provider"], resolved["model"])["defaultMaxTokens"])
         resolved["streamIdleTimeoutMs"] = options["streamIdleTimeoutMs"]
+        from dsh.identity.anonymous_user_id import get_or_create_anonymous_user_id
+        if self.user_id is None:
+            self.user_id = get_or_create_anonymous_user_id()
+        resolved["_provider_headers"] = {"x-deepseek-harness-user-id": str(self.user_id)}
+        if resolved.get("sessionId") is not None:
+            resolved["_provider_headers"]["x-deepseek-harness-session-id"] = str(resolved["sessionId"])
+        if resolved.get("purpose") == "compaction":
+            resolved["_provider_headers"]["x-deepseek-harness-compact"] = "1"
         if options.get("thinking") == "disabled" and resolved["reasoningEffort"] != "off":
             raise LlmError("This DeepSeek deployment disables thinking", "UNSUPPORTED_REASONING_EFFORT")
         if self.ctx.get("deepseekLlmApiExtensions") is not None or has_images:

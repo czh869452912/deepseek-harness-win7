@@ -831,7 +831,7 @@ class LLMService:
         req = urllib.request.Request(
             "{}/chat/completions".format(base_url.rstrip("/")),
             data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-            headers={**attribution_headers(), "Content-Type": "application/json", "Authorization": "Bearer {}".format(api_key),
+            headers={**attribution_headers(), **request.get("_provider_headers", {}), "Content-Type": "application/json", "Authorization": "Bearer {}".format(api_key),
                      "Accept": "text/event-stream"}, method="POST")
         try:
             with open_stream(req, request.get("signal"), request.get("streamIdleTimeoutMs", 300000), request.get("_on_activity")) as (response, chunks):

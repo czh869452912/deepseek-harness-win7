@@ -23,7 +23,7 @@ from dsh.llm.llm_service import LlmError
 @pytest.fixture
 def endpoint(tmp_path, monkeypatch):
     monkeypatch.setenv("DSH_HOME", str(tmp_path))
-    state = {"uploads": [], "chats": [], "mode": "normal"}
+    state = {"uploads": [], "chats": [], "headers": [], "mode": "normal"}
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
             pass
@@ -41,6 +41,7 @@ def endpoint(tmp_path, monkeypatch):
                                  "purpose": "user_data", "filename": part.get_filename(), "created_at": now, "expires_at": now + 604800})
                 return
             state["chats"].append(json.loads(data))
+            state["headers"].append({key.lower(): value for key, value in self.headers.items()})
             if state["mode"] == "stale" and len(state["chats"]) == 1:
                 self.reply(400, {"error": {"message": "file_id file-1 expired"}})
                 return
@@ -89,6 +90,34 @@ async def setup(tmp_path, url):
     ref = store.save_image({"data": output.getvalue(), "mediaType": "image/png", "name": "red.png"})
     adapter = DeepSeekAdapter(ctx, {"baseURL": url, "models": [{"id": "vision", "inputModalities": ["text", "image"]}]})
     return ctx, adapter, ref
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("extensions", [False, True])
+async def test_native_request_identity_headers_are_stable_and_purpose_scoped(tmp_path, endpoint, extensions):
+    from dsh.llm.stream_bridge import iter_chunks
+    url, state = endpoint
+    ctx = Context()
+    ctx.set_service("launchEnvironment", LaunchEnvironmentSnapshot([{"source": "process", "values": {"DEEPSEEK_API_KEY": "local-only"}}]))
+    if extensions:
+        await ctx.plugin(DeepSeekLlmApiExtensionRegistry)
+    adapter = DeepSeekAdapter(ctx, {"baseURL": url})
+    try:
+        for extra in ({"sessionId": "s1", "purpose": "compaction"}, {"sessionId": "s2", "purpose": "session-title"}, {}):
+            chunks = [chunk async for chunk in iter_chunks(adapter.stream(dict(extra, model="deepseek-v4-flash", messages=[])))]
+            assert chunks[-1]["type"] == "finish"
+        headers = state["headers"]
+        persisted = (tmp_path / ".anonymous-user-id").read_text(encoding="utf-8").strip()
+        assert all(row["x-deepseek-harness-user-id"] == persisted for row in headers)
+        assert headers[0]["x-deepseek-harness-session-id"] == "s1"
+        assert headers[0]["x-deepseek-harness-compact"] == "1"
+        assert headers[1]["x-deepseek-harness-session-id"] == "s2"
+        assert "x-deepseek-harness-compact" not in headers[1]
+        assert "x-deepseek-harness-session-id" not in headers[2]
+        assert "x-deepseek-harness-compact" not in headers[2]
+    finally:
+        await adapter.close()
+        await ctx.fiber.dispose()
 
 
 @pytest.mark.asyncio

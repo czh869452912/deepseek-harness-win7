@@ -77,6 +77,7 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     # LLM capability and providers.
     "@deepseek-ai/dsh-llm": "dsh.llm.llm_service:LlmRuntime",
     "@deepseek-ai/dsh-llm-deepseek": "dsh.llm.llm_deepseek:LLMDeepSeekPlugin",
+    "@deepseek-ai/dsh-plugin-package-inventory-deepseek": "dsh.llm.plugin_package_inventory:PluginPackageInventoryDeepSeek",
     "@deepseek-ai/dsh-deepseek-llm-api-extensions": "dsh.llm.deepseek_api_extensions:DeepSeekLlmApiExtensionRegistry",
     "@deepseek-ai/dsh-llm-openai": "dsh.llm.llm_openai:LLMOpenAIPlugin",
     "@deepseek-ai/dsh-llm-retry": "dsh.llm.llm_retry:LLMRetryPlugin",

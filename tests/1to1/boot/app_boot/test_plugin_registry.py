@@ -109,7 +109,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-goal",
         "@deepseek-ai/dsh-goal-round-driver",
         "@deepseek-ai/dsh-llm-pi-ai",
-        "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
         "@deepseek-ai/dsh-session-log-export",
@@ -131,7 +130,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-goal",
         "@deepseek-ai/dsh-goal-round-driver",
         "@deepseek-ai/dsh-llm-pi-ai",
-        "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
         "@deepseek-ai/dsh-session-telemetry-otel",
@@ -151,7 +149,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-goal",
         "@deepseek-ai/dsh-goal-round-driver",
         "@deepseek-ai/dsh-llm-pi-ai",
-        "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
         "@deepseek-ai/dsh-session-telemetry-otel",
@@ -171,7 +168,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-goal",
         "@deepseek-ai/dsh-goal-round-driver",
         "@deepseek-ai/dsh-llm-pi-ai",
-        "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
         "@deepseek-ai/dsh-session-telemetry-otel",
@@ -191,7 +187,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-goal",
         "@deepseek-ai/dsh-goal-round-driver",
         "@deepseek-ai/dsh-llm-pi-ai",
-        "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
         "@deepseek-ai/dsh-session-telemetry-otel",
@@ -209,7 +204,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-goal",
         "@deepseek-ai/dsh-goal-round-driver",
         "@deepseek-ai/dsh-llm-pi-ai",
-        "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
         "@deepseek-ai/dsh-pwsh-sandbox",
         "@deepseek-ai/dsh-sandbox-local",
         "@deepseek-ai/dsh-sdk-app",
@@ -225,7 +219,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
     ],
     "minimal": [
         "@deepseek-ai/dsh-agent-spine-demo",
-        "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
         "@deepseek-ai/dsh-sandbox-local",
         "@deepseek-ai/dsh-sdk-app",
         "@deepseek-ai/dsh-sdk-jsonrpc-server",
@@ -636,7 +629,7 @@ def test_the_frozen_gap_is_the_union_of_every_shipped_profile():
 
             collect(patch)
     assert union <= shipped_names
-    assert len(union) == 35
+    assert len(union) == 34
 
 
 # --- boot installs and consults the table ------------------------------------

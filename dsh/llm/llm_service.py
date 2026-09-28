@@ -820,10 +820,13 @@ class LLMService:
                 body = (error._dsh_body if hasattr(error, "_dsh_body") else error.read()).decode("utf-8", errors="replace")
             finally:
                 error.close()
-            code = ("AUTH" if status in (401, 403) else "RATE_LIMIT" if status == 429
-                    else "CONTEXT_WINDOW_EXCEEDED" if status in (400, 413) and "context" in body.lower()
-                    else "INVALID_REQUEST" if status in (400, 413) else "SERVER" if status >= 500
-                    else "HTTP_{}".format(status))
+            from dsh.llm.provider_errors import http_error_code
+            try:
+                parsed = json.loads(body)
+                detail = parsed.get("error") if isinstance(parsed, dict) else None
+            except ValueError:
+                detail = None
+            code = http_error_code(status, detail)
             from email.utils import parsedate_to_datetime
             import time
             raw_delay = error.headers.get("retry-after", "")

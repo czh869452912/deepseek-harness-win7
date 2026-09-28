@@ -3,15 +3,13 @@ import asyncio
 import queue
 import threading
 
-from dsh.core.cancellation import aborted
-
-
 class ConsumerSignal:
     def __init__(self, caller=None):
         self.caller, self.stopped = caller, threading.Event()
 
     @property
     def aborted(self):
+        from dsh.core.cancellation import aborted
         return self.stopped.is_set() or aborted(self.caller)
 
 

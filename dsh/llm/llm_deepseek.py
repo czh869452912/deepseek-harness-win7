@@ -135,7 +135,8 @@ class LLMDeepSeekPlugin(Plugin):
                 dispose_route.replace(["deepseek-official"])
                 registered_policy[0] = policy
 
-        install_settings_section(ctx, "llm-deepseek", None, self.config, {
+        from dsh.llm.deepseek_schema import config_schema
+        install_settings_section(ctx, "llm-deepseek", config_schema(), self.config, {
             "setSource": lambda source: setattr(adapter, "source", source), "onChange": changed,
             "validate": lambda raw: resolve_options(raw, launch_environment_of(ctx)),
         })

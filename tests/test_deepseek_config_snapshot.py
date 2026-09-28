@@ -8,6 +8,7 @@ from dsh.cordis.context import Context
 from dsh.llm.llm_deepseek import DeepSeekAdapter, LLMDeepSeekPlugin
 from dsh.llm.llm_service import LLMService, LlmRuntime
 from dsh.settings.provider import SettingsProvider
+from dsh.cordis.schema import ValidationError
 
 
 def environment():
@@ -56,6 +57,12 @@ async def test_live_settings_replace_route_atomically_and_invalid_generation_kee
     await ctx.plugin(LLMDeepSeekPlugin, config={"baseURL": "http://old", "apiKeyEnv": "OLD_KEY"})
     try:
         llm, settings = ctx.get("llm"), ctx.get("settings")
+        descriptor = next(row for row in settings.describe() if row["ns"] == "llm-deepseek")
+        from dsh.cordis.schema import Schema
+        schema = Schema.fromJSON(descriptor["schema"])
+        defaults = schema({})
+        assert defaults["apiKeyEnv"] == "DEEPSEEK_API_KEY" and defaults["maxTokens"] == 256000
+        assert schema.dict["apiKeyEnv"].meta["role"] == "credential-ref"
         snapshots = []
         ctx.on("llm/adapters-updated", lambda: snapshots.append(llm.list_providers()))
         await settings.replace("llm-deepseek", {"baseURL": "http://new", "apiKeyEnv": "NEW_KEY", "retryPolicy": {"mode": "always"}})
@@ -63,7 +70,7 @@ async def test_live_settings_replace_route_atomically_and_invalid_generation_kee
         adapter = llm._adapters["deepseek-official"]["adapter"]
         assert llm.retry_policy("deepseek-official")["mode"] == "always"
         assert snapshots and all([row["id"] for row in snap] == ["deepseek-official"] for snap in snapshots)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             await settings.replace("llm-deepseek", {"baseURL": "http://bad", "apiKeyEnv": "BAD_KEY", "maxTokens": -1})
         assert adapter.options()["baseURL"] == "http://new"
         assert adapter.options()["apiKeyEnv"] == "NEW_KEY"

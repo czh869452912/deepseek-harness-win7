@@ -104,6 +104,8 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     # Filesystem, shell, subprocess, sandbox policy.
     "@deepseek-ai/dsh-sandbox-policy": "dsh.sandbox.sandbox_policy:SandboxPolicyService",
     "@deepseek-ai/dsh-sandbox-local": "dsh.sandbox.local:LocalSandboxProvider",
+    "@deepseek-ai/dsh-pwsh-local": "dsh.shell.pwsh_executor:PwshLocalExecutor",
+    "@deepseek-ai/dsh-pwsh-sandbox": "dsh.shell.pwsh_executor:SandboxPwshExecutor",
     "@deepseek-ai/dsh-fs-local": "dsh.fs.fs_local:FsLocalPlugin",
     "@deepseek-ai/dsh-fs-sandbox": "dsh.fs.fs_sandbox:SandboxedFileSystem",
     "@deepseek-ai/dsh-fs-observation-policy": "dsh.fs.fs_observation_policy:FsObservationPolicyPlugin",

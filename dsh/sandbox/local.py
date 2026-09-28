@@ -73,7 +73,8 @@ class LocalSandboxProvider(Service):
                 extra = ["--write-sid", capability_sid(policy["workspaceRoot"]), "--temp-write-sid", sid]
             invocation += ["--workspace", policy["workspaceRoot"], "--temp", temp, "--mode", mode] + extra
             return self.result(invocation + ["--"] + list(argv), "partial",
-                               ["access is denied", "access to the path", "permission denied"],
+                               ["access is denied", "access to the path", "permission denied",
+                                "unauthorizedaccessexception", "permissiondenied"],
                                [{"allowedExitCodes": [127], "fatalSignatures": ["windows-acl-run: "]}])
         if sys.platform == "darwin":
             profile = '(version 1) (allow default) (deny file-write*) (allow file-write* (literal "/dev/null"))'

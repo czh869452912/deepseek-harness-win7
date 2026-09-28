@@ -17,7 +17,7 @@ from dsh.core.cancellation import aborted
 
 
 @contextlib.contextmanager
-def open_stream(request, signal=None, idle_timeout_ms=300000):
+def open_stream(request, signal=None, idle_timeout_ms=300000, on_activity=None):
     from dsh.llm.llm_service import LlmError
     if type(idle_timeout_ms) not in (int, float) or not math.isfinite(idle_timeout_ms) or not 0 < idle_timeout_ms <= 2147483647:
         raise ValueError("streamIdleTimeoutMs must be a positive bounded timer")
@@ -100,6 +100,8 @@ def open_stream(request, signal=None, idle_timeout_ms=300000):
                         count = self._sock.recv_into(buffer)
                         if count:
                             state["since"] = time.monotonic()
+                            if on_activity is not None:
+                                on_activity()
                         return count
                     except (BlockingIOError, ssl.SSLWantReadError):
                         wait_socket(self._sock)
@@ -159,6 +161,8 @@ def open_stream(request, signal=None, idle_timeout_ms=300000):
                                 raise OSError("connection closed during request write")
                             pending = pending[sent:]
                             state["since"] = time.monotonic()
+                            if on_activity is not None:
+                                on_activity()
                         except (BlockingIOError, ssl.SSLWantWriteError):
                             wait_socket(self.sock, write=True)
                         except ssl.SSLWantReadError:

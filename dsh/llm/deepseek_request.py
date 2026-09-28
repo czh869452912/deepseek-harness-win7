@@ -120,7 +120,8 @@ async def request_stream(adapter, transport, request, options):
                     if isinstance(error, LlmError):
                         raise
                     raise LlmError("DeepSeek request extension acceptance failed", "REQUEST_EXTENSION") from error
-            resolved = dict(request, _wire_payload=body, _on_accepted=accepted)
+            resolved = dict(request, _wire_payload=body, _on_accepted=accepted,
+                            _on_activity=lambda: state.update(since=time.monotonic()))
             stream = OwnedStream(lambda owned: transport._default_chat_completion_stream(
                 resolved["messages"], tools=resolved.get("tools"), model=resolved["model"],
                 system=resolved.get("system"), options=dict(resolved, signal=owned)), signal)

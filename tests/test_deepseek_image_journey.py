@@ -50,6 +50,12 @@ def endpoint(tmp_path, monkeypatch):
             self.send_response(200)
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
+            if state["mode"] == "slow-bytes":
+                for offset in range(0, len(body), 8):
+                    self.wfile.write(body[offset:offset + 8])
+                    self.wfile.flush()
+                    time.sleep(0.04)
+                return
             self.wfile.write(body)
         def reply(self, status, value):
             body = json.dumps(value).encode("utf-8")
@@ -79,6 +85,20 @@ async def setup(tmp_path, url):
     ref = store.save_image({"data": output.getvalue(), "mediaType": "image/png", "name": "red.png"})
     adapter = DeepSeekAdapter(ctx, {"baseURL": url, "models": [{"id": "vision", "inputModalities": ["text", "image"]}]})
     return ctx, adapter, ref
+
+
+@pytest.mark.asyncio
+async def test_extension_request_idle_watchdog_tracks_partial_wire_activity(tmp_path, endpoint):
+    url, state = endpoint
+    state["mode"] = "slow-bytes"
+    ctx, adapter, _ = await setup(tmp_path, url)
+    adapter.config["streamIdleTimeoutMs"] = 250
+    try:
+        chunks = [chunk async for chunk in adapter.stream({"model": "vision", "messages": []})]
+        assert chunks[-1]["type"] == "finish"
+    finally:
+        await adapter.close()
+        await ctx.fiber.dispose()
 
 
 @pytest.mark.asyncio

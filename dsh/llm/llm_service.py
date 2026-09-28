@@ -810,7 +810,7 @@ class LLMService:
             headers={**attribution_headers(), "Content-Type": "application/json", "Authorization": "Bearer {}".format(api_key),
                      "Accept": "text/event-stream"}, method="POST")
         try:
-            with open_stream(req, request.get("signal"), request.get("streamIdleTimeoutMs", 300000)) as (response, chunks):
+            with open_stream(req, request.get("signal"), request.get("streamIdleTimeoutMs", 300000), request.get("_on_activity")) as (response, chunks):
                 if request.get("_on_accepted") is not None:
                     request["_on_accepted"]()
                 yield from translate(parse_sse(chunks))

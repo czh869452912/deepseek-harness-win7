@@ -87,8 +87,10 @@ async def build_harness(
     await ctx.plugin(TimerService)
     from dsh.core.system_prompt import SystemPrompt
     from dsh.subprocess.local import LocalSubprocessRuntime
+    from dsh.jobs.local import LocalJobRegistry
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(LocalSubprocessRuntime)
+    await ctx.plugin(LocalJobRegistry)
     await ctx.plugin(ToolsPlugin)
     await ctx.plugin(CredentialsLocalPlugin)
     await ctx.plugin(SettingsFilePlugin)

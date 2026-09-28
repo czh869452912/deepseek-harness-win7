@@ -4,7 +4,8 @@ import sys
 import pytest
 from dsh.cordis.context import Context
 from dsh.core.tools import ToolsService
-from dsh.jobs.jobs_service import JobsService
+from dsh.jobs.local import LocalJobRegistry
+from dsh.subprocess.local import LocalSubprocessRuntime
 from dsh.shell.shell_env import ShellEnvPlugin
 from dsh.shell.tool_pwsh import ToolPwshPlugin
 
@@ -16,7 +17,9 @@ async def test_tool_pwsh_one_shot_execution():
 
     ctx = Context()
     ctx.set_service("tools", ToolsService(ctx))
-    ctx.set_service("jobs", JobsService())
+    await ctx.plugin(LocalJobRegistry)
+    await ctx.plugin(LocalSubprocessRuntime)
+    ctx.get("jobs").attach_controller("test")
     # The base bundle mounts shell-env before tool-pwsh; the tool consumes its
     # `ctx.shellEnv` snapshot for every execution.
     await ctx.plugin(ShellEnvPlugin)
@@ -35,4 +38,7 @@ async def test_tool_pwsh_one_shot_execution():
         "run_in_background": True,
     })
     assert "Started background job" in bg_res
-    await asyncio.sleep(0.05)
+    job_id = bg_res.split()[3]
+    await ctx.get("jobs").wait(job_id, 5000)
+    assert "Done" in ctx.get("jobs").read(job_id)["text"]
+    await ctx.fiber.dispose()

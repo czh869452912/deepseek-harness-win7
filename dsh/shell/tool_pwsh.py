@@ -3,7 +3,7 @@ import os
 from typing import Any, Dict, List, Optional
 
 from dsh.cordis.plugin import Plugin
-from dsh.jobs.jobs_service import JobsService
+from dsh.subprocess.types import SubprocessSpawnSpec, SubprocessStdio, SubprocessCollect
 
 # UTF-8 output pinning prepended to every command (TS: pwsh-local ENCODING_PREAMBLE).
 ENCODING_PREAMBLE = (
@@ -116,7 +116,7 @@ class ToolPwshPlugin(Plugin):
     """
     Plugin `@deepseek-ai/dsh-tool-pwsh`: Exposes one-shot PowerShell execution tool `pwsh`.
     Supports foreground execution with timeout, CWD override, and `run_in_background: true`
-    which offloads long-running commands to the JobsService.
+    which submits owned background work through the jobs service.
     """
 
     id = "tool-pwsh"
@@ -210,42 +210,42 @@ class ToolPwshPlugin(Plugin):
             if run_in_background:
                 if not self.enable_run_in_background:
                     return "Error: run_in_background is disabled for this deployment (enableRunInBackground: false)"
-                jobs: Optional[JobsService] = ctx.get("jobs")
-                if not jobs:
-                    return "Error: background jobs unavailable: load @deepseek-ai/dsh-jobs and @deepseek-ai/dsh-tool-jobs"
+                jobs, runtime = ctx.get("jobs"), ctx.get("subprocess")
+                if jobs is None or runtime is None:
+                    return "Error: background jobs require jobs-local, subprocess and tool-jobs"
 
-                async def bg_runner() -> str:
-                    try:
-                        proc = await asyncio.create_subprocess_exec(
-                            *self._spawn_argv(command),
-                            cwd=cwd,
-                            env=self._spawn_env(ctx, exec_input),
-                            stdout=asyncio.subprocess.PIPE,
-                            stderr=asyncio.subprocess.PIPE,
-                        )
-                        stdout_bytes, stderr_bytes = await proc.communicate()
-                        out_text, out_trunc = tail_bytes(stdout_bytes, self.max_output_bytes)
-                        err_text, err_trunc = tail_bytes(stderr_bytes, self.max_output_bytes)
-                        return render_pwsh_result(
-                            out_text,
-                            out_trunc,
-                            err_text,
-                            err_trunc,
-                            proc.returncode,
-                            False,
-                            eff_timeout_ms,
-                            self._spill(ctx, stdout_bytes) if out_trunc else None,
-                            self._spill(ctx, stderr_bytes) if err_trunc else None,
-                        )
-                    except Exception as e:
-                        return f"Error executing background command: {e}"
+                def start_background():
+                    handle = runtime.spawn(SubprocessSpawnSpec(
+                        argv=self._spawn_argv(command), cwd=cwd,
+                        env=self._spawn_env(ctx, exec_input), grace_ms=1000,
+                        stdio=SubprocessStdio("ignore", SubprocessCollect(self.max_output_bytes),
+                                             SubprocessCollect(self.max_output_bytes))))
+                    cancelled = [False]
 
-                job = jobs.submit_job(
-                    name=description or command[:40],
-                    task_coro=bg_runner(),
-                    metadata={"command": command, "workdir": cwd},
-                )
-                return f"Started background job {job.id} (collect with job_output, stop with job_kill)"
+                    def cancel(reason):
+                        handle.terminate()
+                        cancelled[0] = True
+
+                    async def complete():
+                        timed_out = False
+                        try:
+                            outcome = await asyncio.wait_for(asyncio.shield(handle.done), eff_timeout_ms / 1000.0)
+                        except asyncio.TimeoutError:
+                            timed_out = True
+                            handle.terminate()
+                            outcome = await handle.done
+                        out = handle.collected.stdout.read_from(0)
+                        err = handle.collected.stderr.read_from(0)
+                        text = render_pwsh_result(out.text, out.lossy, err.text, err.lossy,
+                            outcome.exitCode, timed_out, eff_timeout_ms, out.spillPath, err.spillPath)
+                        return {"status": "killed" if cancelled[0] else "completed", "output": text}
+
+                    return {"done": asyncio.create_task(complete()), "cancel": cancel}
+
+                job_id = jobs.start({"kind": "shell", "label": description or command[:40],
+                    "owner": getattr(exec_input, "agent", None), "outputLimitBytes": self.max_output_bytes,
+                    "run": start_background})
+                return "Started background job {} (collect with job_output, stop with job_kill)".format(job_id)
 
             # Foreground execution with timeout
             try:

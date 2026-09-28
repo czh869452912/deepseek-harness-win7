@@ -10,7 +10,7 @@ import time
 import urllib.request
 import urllib.error
 
-from dsh.llm.llm_retry import aborted
+from dsh.core.cancellation import aborted
 
 
 @contextlib.contextmanager

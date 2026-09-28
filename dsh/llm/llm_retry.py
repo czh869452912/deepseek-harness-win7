@@ -7,6 +7,7 @@ import random
 import uuid
 
 from dsh.cordis.plugin import Plugin
+from dsh.core.cancellation import aborted
 
 
 def policy_key(policy):
@@ -15,11 +16,6 @@ def policy_key(policy):
         values.extend([policy["maxRetries"], sorted(policy["retryableCodes"])])
     values.extend(policy[k] for k in ("initialDelayMs", "maxDelayMs", "jitterRatio"))
     return json.dumps(values, ensure_ascii=False, separators=(",", ":"))
-
-
-def aborted(signal):
-    return bool(signal is not None and (getattr(signal, "aborted", False) or
-                (callable(getattr(signal, "is_set", None)) and signal.is_set())))
 
 
 class LLMRetryPlugin(Plugin):

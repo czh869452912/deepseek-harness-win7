@@ -4,6 +4,7 @@ import io
 import json
 import threading
 import time
+from types import SimpleNamespace
 from email import policy
 from email.parser import BytesParser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -96,6 +97,27 @@ async def test_extension_request_idle_watchdog_tracks_partial_wire_activity(tmp_
     try:
         chunks = [chunk async for chunk in adapter.stream({"model": "vision", "messages": []})]
         assert chunks[-1]["type"] == "finish"
+    finally:
+        await adapter.close()
+        await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
+async def test_normalized_image_handle_uses_execution_world_mapping(tmp_path, endpoint):
+    url, state = endpoint
+    ctx, adapter, ref = await setup(tmp_path, url)
+    calls = []
+    def mapping(path):
+        calls.append(path)
+        return "/sandbox/read-only/red.png"
+    ctx.set_service("fs", SimpleNamespace(processPathFromHostPath=mapping))
+    try:
+        _ = [chunk async for chunk in adapter.stream({"model": "vision", "messages": [
+            {"role": "user", "content": [{"type": "image", "attachment": ref}]}]})]
+        text = state["chats"][0]["messages"][0]["content"][0]["text"]
+        assert "read-only" in text and '"/sandbox/read-only/red.png"' in text
+        assert "Copy to a writable path ending in .png" in text
+        assert calls == [ctx.get("attachments").image_host_path(ref)]
     finally:
         await adapter.close()
         await ctx.fiber.dispose()

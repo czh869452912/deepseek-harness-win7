@@ -425,6 +425,11 @@ class LocalAttachmentStore(AttachmentStore):
 
         return {"ref": ref, "data": data}
 
+    def image_host_path(self, ref: Dict[str, Any]) -> str:
+        return object_path(self.root, ensure_reference(ref))
+
+    imageHostPath = image_host_path
+
     def read_image_request(
         self, ref: Dict[str, Any], policy: Dict[str, Any], signal: Any = None
     ) -> Dict[str, Any]:

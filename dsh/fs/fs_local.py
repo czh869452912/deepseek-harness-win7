@@ -273,6 +273,11 @@ class FsService:
     def process_path(self, target: FsTarget) -> str:
         return self.processPath(target)
 
+    def processPathFromHostPath(self, host_path: str) -> Optional[str]:
+        return os.path.abspath(host_path) if os.path.isabs(host_path) else None
+
+    process_path_from_host_path = processPathFromHostPath
+
     def fileUrl(self, target: FsTarget) -> str:
         return pathlib.Path(target.targetKey).as_uri()
 

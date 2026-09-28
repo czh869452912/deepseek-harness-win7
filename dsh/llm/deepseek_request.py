@@ -36,6 +36,14 @@ async def request_stream(adapter, transport, request, options):
         versions = {}
         has_images = any(any(images(message.get("content"))) for message in request["messages"])
         attachments = adapter.ctx.get("attachments") if has_images else None
+        def access(ref):
+            fs = adapter.ctx.get("fs")
+            location = getattr(attachments, "imageHostPath", None)
+            mapping = getattr(fs, "processPathFromHostPath", None)
+            if location is None or mapping is None:
+                return None
+            host_path = location(ref)
+            return mapping(host_path) if host_path is not None else None
         model = next((row for row in options["models"] if row["id"] == request["model"]), {})
         if has_images:
             if "image" not in model.get("inputModalities", []):
@@ -44,7 +52,7 @@ async def request_stream(adapter, transport, request, options):
                 raise LlmError("DeepSeek image conversion requires the durable attachment service", "UNSUPPORTED_CONTENT")
             request = dict(request, messages=offload(request["messages"], options["maxRequestFilesBytes"],
                 options["maxImagesPerRequest"], options["imageOffloadByteQuantum"], options["imageOffloadCountQuantum"],
-                lambda ref: min(ref["bytes"], model["imageMaxBytes"])))
+                lambda ref: min(ref["bytes"], model["imageMaxBytes"]), access=access))
             refs = {block["attachment"]["attachmentId"]: block["attachment"]
                     for message in request["messages"] for block in images(message.get("content"))}
             policy = {"maxPixels": model["imagePixelBudget"], "maxBytes": model["imageMaxBytes"]}
@@ -78,9 +86,9 @@ async def request_stream(adapter, transport, request, options):
             if has_images:
                 messages = offload(request["messages"], options["maxInlineRequestImageBytes"] if inline else options["maxRequestFilesBytes"],
                     options["maxImagesPerRequest"], options["inlineImageOffloadByteQuantum"] if inline else options["imageOffloadByteQuantum"],
-                    options["imageOffloadCountQuantum"], lambda ref: versions[ref["attachmentId"]]["bytes"], base64=inline)
+                    options["imageOffloadCountQuantum"], lambda ref: versions[ref["attachmentId"]]["bytes"], base64=inline, access=access)
                 try:
-                    body = await serialize_images(dict(request, messages=messages), versions, None if inline else resolve)
+                    body = await serialize_images(dict(request, messages=messages), versions, None if inline else resolve, access=access)
                 except FileResolutionFailure:
                     inline = True
                     continue

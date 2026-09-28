@@ -19,11 +19,21 @@ def identity(ref):
     return str(ref["attachmentId"]) if "name" not in ref else "{} ({})".format(json.dumps(ref["name"], ensure_ascii=False), ref["attachmentId"])
 
 
-def handle(ref, version):
+def access_text(ref, path):
+    extension = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp", "image/gif": ".gif"}[ref["mediaType"]]
+    return " Normalized copy (read-only; may be resized or re-encoded): {} ({}x{}px, {}). Source dimensions, format, and byte size may differ. Copy to a writable path ending in {} before editing.".format(
+        json.dumps(path, ensure_ascii=False), ref["width"], ref["height"], ref["mediaType"], extension)
+
+
+def handle(ref, version, access=None):
+    if access:
+        return "Image {}; request preview {}x{}px.".format(identity(ref), version["width"], version["height"]) + access_text(ref, access)
     return "Image {}; request preview {}x{}px. It may be resized or re-encoded; source dimensions, format, and byte size may differ.".format(identity(ref), version["width"], version["height"])
 
 
-def omitted(ref):
+def omitted(ref, access=None):
+    if access:
+        return "[image omitted to fit request image limits; {}.{}]".format(identity(ref), access_text(ref, access))
     return "[image omitted to fit request image limits; {}. No local normalized image path is available; ask the user to attach it again if needed.]".format(identity(ref))
 
 
@@ -44,7 +54,7 @@ def project_text_only(messages):
     return [dict(message, content=project(message.get("content"))) for message in messages]
 
 
-def offload(messages, max_bytes, max_images, byte_quantum, count_quantum, length, base64=False):
+def offload(messages, max_bytes, max_images, byte_quantum, count_quantum, length, base64=False, access=None):
     lengths = [length(block["attachment"]) for message in messages for block in images(message.get("content"))]
     if base64:
         lengths = [math.ceil(size / 3) * 4 for size in lengths]
@@ -66,7 +76,7 @@ def offload(messages, max_bytes, max_images, byte_quantum, count_quantum, length
         for block in blocks(content):
             if block.get("type") == "image" and remaining[0]:
                 remaining[0] -= 1
-                result.append({"type": "text", "text": omitted(block["attachment"])})
+                result.append({"type": "text", "text": omitted(block["attachment"], access(block["attachment"]) if access else None)})
             elif block.get("type") == "tool-result":
                 result.append(dict(block, content=project(block.get("content"))))
             else:
@@ -75,7 +85,7 @@ def offload(messages, max_bytes, max_images, byte_quantum, count_quantum, length
     return [dict(message, content=project(message.get("content"))) for message in messages]
 
 
-async def serialize_images(request, versions, resolve_file=None):
+async def serialize_images(request, versions, resolve_file=None, access=None):
     import base64
     from dsh.llm.deepseek_wire import serialize_request
     from dsh.llm.llm_service import LlmError
@@ -97,7 +107,7 @@ async def serialize_images(request, versions, resolve_file=None):
                 version = versions.get(ref["attachmentId"])
                 if version is None:
                     raise LlmError("DeepSeek request image was not prepared", "INVALID_REQUEST")
-                result.append({"type": "text", "text": ("\n" if result else "") + handle(ref, version)})
+                result.append({"type": "text", "text": ("\n" if result else "") + handle(ref, version, access(ref) if access else None)})
                 if resolve_file is not None:
                     result.append({"type": "file", "file_id": await resolve_file(version, {"message": message_number, "image": ordinal[0]})})
                 else:

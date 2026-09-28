@@ -91,6 +91,8 @@ async def build_harness(
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(LocalSubprocessRuntime)
     await ctx.plugin(LocalJobRegistry)
+    from dsh.skill.registry import SkillRegistry
+    await ctx.plugin(SkillRegistry)
     await ctx.plugin(ToolsPlugin)
     await ctx.plugin(CredentialsLocalPlugin)
     await ctx.plugin(SettingsFilePlugin)

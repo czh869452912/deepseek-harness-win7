@@ -66,7 +66,7 @@ def render_resource_hint(provider: str, resource_base: Optional[Union[str, Dict[
 def render_skill_content(skill: Any) -> str:
     name = getattr(skill, "name", skill.get("name") if isinstance(skill, dict) else "")
     provider = getattr(skill, "provider", skill.get("provider") if isinstance(skill, dict) else "filesystem")
-    resource_base = getattr(skill, "resource_base", skill.get("resource_base") if isinstance(skill, dict) else None)
+    resource_base = getattr(skill, "resource_base", skill.get("resourceBase", skill.get("resource_base")) if isinstance(skill, dict) else None)
     content = getattr(skill, "content", skill.get("content") if isinstance(skill, dict) else "")
 
     resource_hint = render_resource_hint(provider, resource_base)

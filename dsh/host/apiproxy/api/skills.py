@@ -12,5 +12,5 @@ class SkillsDomainHandler:
 
     async def list_skills(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         skills_svc = self.ctx.get("skills")
-        items = skills_svc.list_skills() if skills_svc and hasattr(skills_svc, "list_skills") else []
+        items = await skills_svc.list({"cwd": payload.get("cwd")}) if skills_svc is not None else []
         return {"skills": items, "items": items}

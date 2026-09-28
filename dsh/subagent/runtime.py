@@ -7,12 +7,7 @@ from dsh.core.notifications import emit_contained
 from dsh.core.tools import _assert_supported_schema
 from dsh.subagent.composition import valid_depth
 from dsh.subagent.descriptor import snapshot_descriptor
-
-
-class SubagentError(RuntimeError):
-    def __init__(self, message, code):
-        super().__init__(message)
-        self.code = code
+from dsh.subagent.errors import SubagentError
 
 
 class SubagentRuntime(TypertRemoteService):

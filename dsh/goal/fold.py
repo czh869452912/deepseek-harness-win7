@@ -6,9 +6,9 @@ MAX_SAFE_INTEGER = 9007199254740991
 
 
 def integer(value, minimum=0):
-    if type(value) is not int or not minimum <= value <= MAX_SAFE_INTEGER:
+    if type(value) not in (int, float) or not minimum <= value <= MAX_SAFE_INTEGER or int(value) != value:
         raise ValueError("goal value must be a safe integer >= {}".format(minimum))
-    return value
+    return int(value)
 
 
 def exact(value, keys):

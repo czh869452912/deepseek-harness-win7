@@ -30,6 +30,8 @@
 - `0b4ce7b6`：原生 DeepSeek 请求持久匿名 ID、session/compaction headers，文本及扩展两条 HTTP 链测试。
 - `b07779e8` 、`bc2e511e` Loader：原子 reflection/schema/invocation 注册、调用方持有的 lookup/Context resolver、卸载保留声明历史；Loader 增量加载真实 generated host artifacts，Python 执行严格 schema，项目本地覆盖优先，坏包失败隔离。13 份自带 artifact 可读；新增 strict/SRC Remote dispatcher（`0536353f`）、Connection 持有的鉴权/有界 RPC carrier（`03573780`），以及本批 Gateway WebSocket 多流复用、取消收尾、心跳、唯一事件源和多客户端 waterfall。业务 Remote controllers 仍需迁移，不代表正式 Web 全链完成。
 
+- `90b49d2d`、`797236cf` 及本批工具/命令：正式 Goal 日志域、严格 CAS/恢复回放、零轮创建、重启撤权；轮次驱动的持久检查点、过期提示拒绝、取消暂停和卸载收尾；模型工具核验真实 driver/人类/当前 Goal 轮次权限，`/goal` 支持目标附件。通知逐监听者隔离异常。
+
 这些提交均有对应回归或 loopback HTTP 测试；尚未据此签发新的上游验收或发行认证。
 
 ## 验证
@@ -48,7 +50,7 @@
 
 原始本机证据位于忽略目录 `.goose/out/current-review/`，没有伪装为已提交的正式验收证据。Node 当前为 22.20.0，不是 release gate 要求的 22.22.2；本次未运行完整官方 Node oracle 或构建便携包。Win7 真机与浏览器尚未验证。
 
-最近完整测试：Gateway 批次的 `gateway-full.xml` 为 **3410 passed、11 skipped、1 warning**（286.38 秒），已覆盖前述图片计价和错误诊断。migration check 通过；不代表 parity 认证。既有 Windows asyncio transport 清理警告尚未消除。
+最近完整测试：Goal 批次的 `goal-full.xml` 为 **3426 passed、11 skipped、1 warning**（286.23 秒）；随后通知异常隔离补丁的 13 项 Goal 回归通过，已覆盖前述图片计价和错误诊断。migration check 通过；不代表 parity 认证。既有 Windows asyncio transport 清理警告尚未消除。
 
 ## 正式 profile 仍失败
 
@@ -60,11 +62,11 @@
 | web | 26 |
 | minimal | 7 |
 
-证据：`canonical-profile-probes.json`。初始全部七类 profile 的冻结缺口并集为 36 个 package 名（包含其他 app 和遥测配置），不是 36 个同等工作量模块。jobs、inventory、skill、首条提示 LLM 标题 provider 和 Typert Loader/Gateway 落地后并集为 30；仍需继续补齐并重跑真实默认入口。`test_plugin_registry.py` 故意验证这些缺失会明确报错；该测试通过不表示应用可启动。
+证据：`canonical-profile-probes.json`。初始全部七类 profile 的冻结缺口并集为 36 个 package 名（包含其他 app 和遥测配置），不是 36 个同等工作量模块。jobs、inventory、skill、首条提示 LLM 标题 provider 和 Typert Loader/Gateway、Goal 服务/轮次驱动/命令落地后并集为 27；仍需继续补齐并重跑真实默认入口。`test_plugin_registry.py` 故意验证这些缺失会明确报错；该测试通过不表示应用可启动。
 
 ## 剩余工作与完成标准
 
-1. **默认装配**：实现 Typert loader/Gateway、sandbox/terminal、jobs/goal、skill、subagent providers/control、其他 LLM provider、inventory/title/code runtime 等必要 rows；minimal 另需 SDK app/stdio JSON-RPC/terminal 组合。不得以 no-op、别名或删除必需 rows 让启动变绿。
+1. **默认装配**：继续实现 sandbox/terminal、subagent providers/control、其他 LLM provider、code runtime 等必要 rows；minimal 另需 SDK app/stdio JSON-RPC/terminal 组合。不得以 no-op、别名或删除必需 rows 让启动变绿。
 2. **完整模型边界**：图片附件、Files API、完整 settings 校验/last-good、超时/取消和 retry-policy 已有上述实现与回归；还需核对剩余跨层边界，并完成配对观察。不能把本地 HTTP 用例当成所有 provider 行为已与上游逐项等价。
 3. **正式 Web**：Connection 必须接管路由所有权，完成 Gateway/Remote controllers、stream/request/error/cancellation 生命周期、host/client runners 与应用启动；随后切换前端消费者，再删除旧 ApiProxy carrier。当前冷列表是可复用的服务能力，仍通过旧 handler 接入，不能代替 Remote 控制器迁移。
 4. **数据消费者**：补齐业务投影的可执行 schema、完整 sessionQuery/历史读取与 Web replay，验证缓存失败降级、服务替换和热重载。当前 storageDomain provider 使用 JSON backend 依赖；其他 backend 组合仍需处理。

@@ -6,6 +6,7 @@ import uuid
 import weakref
 
 from dsh.typert.remote import TypertRemoteService, Remote
+from dsh.core.notifications import emit_contained
 from dsh.goal.fold import (integer, empty_goal_state, apply_goal_event, goal_ref,
                            apply_goal_projection, projection_schema)
 
@@ -104,7 +105,7 @@ class GoalService(TypertRemoteService):
         notification = {"operation": change["operation"], "ref": ref}
         if view is not None:
             notification["goal"] = view
-        self.ctx.emit("goal/changed", {"agent": agent, "change": notification})
+        emit_contained(self.ctx, "goal/changed", {"agent": agent, "change": notification}, agent)
         return view
 
     def _snapshot(self, agent, cache, operation, goal, activation, new=False):

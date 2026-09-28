@@ -68,6 +68,9 @@
     - id: plan-mode
       name: "@deepseek-ai/dsh-plan-mode"
 
+- id: goals
+  name: "@deepseek-ai/dsh-goal"
+
 - id: tool-goal
   name: "@deepseek-ai/dsh-tool-goal"
 

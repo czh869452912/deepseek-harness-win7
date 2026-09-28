@@ -38,12 +38,12 @@ from dsh.attachment import (
 
 # Helper to generate minimal valid PNG bytes
 def make_dummy_png(width=10, height=10):
-    header = b"\x89PNG\r\n\x1a\n"
-    ihdr_data = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
-    ihdr_crc = b"\x00\x00\x00\x00"  # mock crc
-    ihdr_chunk = struct.pack(">I", 13) + b"IHDR" + ihdr_data + ihdr_crc
-    iend_chunk = struct.pack(">I", 0) + b"IEND" + b"\xae\x42\x60\x82"
-    return header + ihdr_chunk + iend_chunk
+    import io
+    from PIL import Image
+    output = io.BytesIO()
+    Image.new("RGB", (width, height)).save(output, format="PNG")
+    return output.getvalue()
+
 
 
 def test_extract_session_event_text_parity():

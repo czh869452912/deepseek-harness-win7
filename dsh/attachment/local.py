@@ -21,7 +21,8 @@ DEFAULT_MAX_IMAGES_PER_MESSAGE = 20
 DEFAULT_MAX_MESSAGE_IMAGE_BYTES = 200 * 1024 * 1024
 DEFAULT_MAX_IMAGE_PIXELS = 64_000_000
 DEFAULT_MAX_IMAGE_DIMENSION = 8192
-DEFAULT_NORMALIZED_IMAGE_MAX_DIMENSION = 2048
+DEFAULT_NORMALIZED_IMAGE_MAX_PIXELS = 2048 * 2048
+DEFAULT_NORMALIZED_IMAGE_MAX_DIMENSION = 8192
 DEFAULT_NORMALIZED_IMAGE_MAX_BYTES = 4 * 1024 * 1024
 DEFAULT_IMAGE_COMPRESSION_CONCURRENCY = 2
 MAX_IMAGE_COMPRESSION_CONCURRENCY = 8
@@ -196,7 +197,8 @@ def detect_image(data: bytes, limits: Optional[Dict[str, int]] = None) -> Dict[s
         if max_dim is not None and max(width, height) > max_dim:
             raise AttachmentError("Image exceeds the configured per-side pixel limit.", "IMAGE_DIMENSION_TOO_LARGE")
 
-    return metadata
+    from dsh.attachment.image_codec import metadata as decoded_metadata
+    return decoded_metadata(data, metadata)
 
 
 def inspect_metadata(
@@ -232,6 +234,7 @@ def can_pass_through_normalization(
         and not detected.get("carriesMetadata", False)
         and detected.get("depth") == "uchar"
         and detected.get("space") == "srgb"
+        and detected["width"] * detected["height"] <= policy.get("maxPixels", DEFAULT_NORMALIZED_IMAGE_MAX_PIXELS)
         and bytes_len <= policy.get("maxBytes", DEFAULT_NORMALIZED_IMAGE_MAX_BYTES)
         and max(detected["width"], detected["height"]) <= policy.get("maxDimension", DEFAULT_NORMALIZED_IMAGE_MAX_DIMENSION)
     )
@@ -251,6 +254,20 @@ def prepare_image_file(
     declared_type = input_data.get("mediaType", "image/png")
     detected = inspect_metadata(data, declared_type, limits)
 
+    source_dimensions = {"width": detected["width"], "height": detected["height"]}
+    if not can_pass_through_normalization(detected, len(data), policy):
+        from dsh.attachment.image_codec import dimensions, encode
+        width, height = dimensions(detected["width"], detected["height"], policy.get("maxPixels", DEFAULT_NORMALIZED_IMAGE_MAX_PIXELS))
+        scale = min(1, policy.get("maxDimension", DEFAULT_NORMALIZED_IMAGE_MAX_DIMENSION) / max(width, height))
+        # Rotation is applied before fitting; swap the bounding box for EXIF orientation.
+        from dsh.attachment.image_codec import decode
+        if decode(data).getexif().get(274) in (5, 6, 7, 8):
+            width, height = height, width
+        encoded = encode(data, max(1, int(width * scale)), max(1, int(height * scale)), policy.get("maxBytes", DEFAULT_NORMALIZED_IMAGE_MAX_BYTES))
+        data = encoded["data"]
+        detected = detect_image(data)
+        if detected["depth"] != "uchar" or detected["space"] != "srgb":
+            raise AttachmentError("Normalization did not produce 8-bit sRGB pixels.", "ATTACHMENT_WRITE_FAILED")
     sha256 = digest_bytes(data)
     name = display_name(input_data.get("name"))
 
@@ -261,6 +278,8 @@ def prepare_image_file(
         "height": detected["height"],
         "bytes": len(data),
     }
+    if source_dimensions != {"width": ref["width"], "height": ref["height"]}:
+        ref["originalDimensions"] = source_dimensions
     if name is not None:
         ref["name"] = name
 
@@ -320,7 +339,8 @@ def commit_prepared_image_file(root: str, prepared: Dict[str, Any]) -> Dict[str,
 def request_image_variant_id(ref: Dict[str, Any], policy: Dict[str, Any]) -> str:
     """Compute deterministic variant ID for model request."""
     desc = json.dumps({
-        "transformVersion": "request-image-v4",
+        "transformVersion": "request-image-pillow-10.4-v1",
+        "encoding": {"qualities": [85, 75, 60], "webpEffort": 0, "colourspace": "srgb"},
         "attachmentId": ref.get("attachmentId"),
         "routePixelBudget": policy.get("maxPixels", 64_000_000),
         "encodedByteBudget": policy.get("maxBytes", 4 * 1024 * 1024),
@@ -350,9 +370,13 @@ class LocalAttachmentStore(AttachmentStore):
             max_image_dimension=cfg.get("maxImageDimension", DEFAULT_MAX_IMAGE_DIMENSION),
         )
         self.normalization_policy = {
+            "maxPixels": cfg.get("normalizedImageMaxPixels", DEFAULT_NORMALIZED_IMAGE_MAX_PIXELS),
             "maxDimension": cfg.get("normalizedImageMaxDimension", DEFAULT_NORMALIZED_IMAGE_MAX_DIMENSION),
             "maxBytes": cfg.get("normalizedImageMaxBytes", DEFAULT_NORMALIZED_IMAGE_MAX_BYTES),
         }
+        for value in list(self.normalization_policy.values()) + [v for v in self._image_limits.values() if not isinstance(v, list)]:
+            if type(value) is not int or not 1 <= value <= 9007199254740991:
+                raise ValueError("attachment limits must be positive safe integers")
 
     @property
     def image_limits(self) -> Dict[str, Any]:
@@ -367,6 +391,11 @@ class LocalAttachmentStore(AttachmentStore):
     def save_image(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         prepared = prepare_image_file(input_data, self.image_limits, self.normalization_policy)
         return commit_prepared_image_file(self.root, prepared)
+
+    def save_images(self, inputs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        self.validate_image_batch(inputs)
+        prepared = [prepare_image_file(item, self.image_limits, self.normalization_policy) for item in inputs]
+        return [commit_prepared_image_file(self.root, item) for item in prepared]
 
     def read_image(self, ref: Dict[str, Any], signal: Any = None) -> Dict[str, Any]:
         sha256 = ensure_reference(ref)
@@ -397,18 +426,48 @@ class LocalAttachmentStore(AttachmentStore):
     def read_image_request(
         self, ref: Dict[str, Any], policy: Dict[str, Any], signal: Any = None
     ) -> Dict[str, Any]:
+        from dsh.core.cancellation import aborted
+        from dsh.attachment.image_codec import dimensions, encode
+        if aborted(signal):
+            raise AttachmentError("Image preparation cancelled.", "ABORTED")
+        for key in ("maxPixels", "maxBytes"):
+            if type(policy.get(key)) is not int or not 1 <= policy[key] <= 9007199254740991:
+                raise AttachmentError("Invalid image request policy.", "INVALID_ATTACHMENT_REF")
         variant_id = request_image_variant_id(ref, policy)
         stored = self.read_image(ref, signal=signal)
-
-        return {
-            "variantId": variant_id,
-            "attachment": ref,
-            "data": stored["data"],
-            "mediaType": ref["mediaType"],
-            "bytes": len(stored["data"]),
-            "width": ref["width"],
-            "height": ref["height"],
-            "depth": "uchar",
-            "space": "srgb",
-            "hasAlpha": probe_image(stored["data"]).get("hasAlpha", False),
-        }
+        width, height = dimensions(ref["width"], ref["height"], policy["maxPixels"])
+        data = stored["data"]
+        if (width, height) != (ref["width"], ref["height"]) or len(data) > policy["maxBytes"]:
+            digest = str(variant_id)[7:]
+            cache = os.path.join(self.root, "request-images", digest[:2], digest)
+            source_alpha = detect_image(data)["hasAlpha"]
+            candidate = None
+            try:
+                with open(cache, "rb") as stream:
+                    cached = stream.read()
+                facts = detect_image(cached)
+                if (facts["width"] <= width and facts["height"] <= height and facts["hasAlpha"] == source_alpha
+                        and facts["depth"] == "uchar" and facts["space"] == "srgb"):
+                    candidate = cached
+            except (OSError, AttachmentError):
+                pass
+            if candidate is None:
+                candidate = encode(data, width, height, policy["maxBytes"])["data"]
+                os.makedirs(os.path.dirname(cache), exist_ok=True)
+                temporary = cache + "." + uuid.uuid4().hex + ".tmp"
+                try:
+                    with open(temporary, "xb") as stream:
+                        stream.write(candidate)
+                        stream.flush()
+                        os.fsync(stream.fileno())
+                    os.replace(temporary, cache)
+                finally:
+                    if os.path.exists(temporary):
+                        os.unlink(temporary)
+            data = candidate
+        if aborted(signal):
+            raise AttachmentError("Image preparation cancelled.", "ABORTED")
+        facts = detect_image(data)
+        return {"variantId": variant_id, "attachment": ref, "data": data,
+                "mediaType": facts["mediaType"], "bytes": len(data), "width": facts["width"],
+                "height": facts["height"], "depth": "uchar", "space": "srgb", "hasAlpha": facts["hasAlpha"]}

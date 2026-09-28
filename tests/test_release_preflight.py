@@ -15,7 +15,17 @@ def test_real_frontend_and_runtime_lock_are_resolvable():
     frontend, dependencies = BUILD.checked_inputs(ROOT, ROOT/'.venv/Lib/site-packages')
     assert frontend['kind'] == 'versioned-prebuilt-input'
     assert {d.metadata['Name'].lower() for d in dependencies} == {
-        'pyyaml','requests','certifi','charset-normalizer','idna','urllib3'}
+        'pyyaml','requests','certifi','charset-normalizer','idna','urllib3','pillow'}
+
+
+def test_portable_dependency_copy_preserves_native_image_codecs(tmp_path):
+    _, dependencies = BUILD.checked_inputs(ROOT, ROOT/'.venv/Lib/site-packages')
+    pillow = next(dist for dist in dependencies if dist.metadata['Name'].lower() == 'pillow')
+    destination = tmp_path / 'lib'
+    BUILD.bundle_dependencies([pillow], destination)
+    native = [path for path in pillow.files if path.suffix.lower() in ('.pyd', '.dll')]
+    assert native
+    assert all((destination / path).is_file() for path in native)
 
 
 @pytest.mark.parametrize('damage', ['missing-frontend','extra-frontend','wrong-target','missing-runtime'])

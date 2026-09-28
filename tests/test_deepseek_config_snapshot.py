@@ -41,6 +41,20 @@ def test_catalog_and_policy_are_detached_and_environment_is_used():
     assert resolve_options({}, environment())["models"][-1]["inputModalities"] == ["text", "image"]
 
 
+@pytest.mark.asyncio
+async def test_resolved_model_uses_canonical_context_and_detached_catalog_fields():
+    adapter = DeepSeekAdapter(Context(), {'models': [{'id': 'custom', 'maxTokens': 200, 'contextWindow': 64000}]})
+    model = await adapter.resolve_model('deepseek-official', 'custom')
+    assert model['context'] == {'contextWindow': 64000}
+    assert model['defaultMaxTokens'] == 200
+    assert 'contextWindow' not in model and 'maxTokens' not in model
+    assert (await adapter.resolve_model('deepseek-official', 'unlisted'))['inputModalities'] == ['text']
+    catalog = await adapter.list_models('deepseek-official')
+    assert catalog == [{'provider': 'deepseek-official', 'id': 'custom', 'name': 'custom', 'inputModalities': ['text']}]
+    catalog[0]['inputModalities'].append('image')
+    assert (await adapter.list_models('deepseek-official'))[0]['inputModalities'] == ['text']
+
+
 class MemorySettings(SettingsProvider):
     def _load_document(self):
         return copy.deepcopy(self._document)

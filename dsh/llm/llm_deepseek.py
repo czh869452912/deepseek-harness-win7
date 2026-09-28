@@ -52,12 +52,15 @@ class DeepSeekAdapter:
 
     async def list_models(self, provider):
         options = self.options()
-        models = options.get("models", [
-            {"id": "deepseek-v4-flash", "name": "DeepSeek-V4-Flash"},
-            {"id": "deepseek-v4-pro", "name": "DeepSeek-V4-Pro"}])
-        return [dict(copy.deepcopy(model), provider=provider,
-                     contextWindow=model.get("contextWindow", options.get("defaultContextWindow", 1000000)))
-                for model in models]
+        return [self.catalog_info(provider, model) for model in options['models']]
+
+    @staticmethod
+    def catalog_info(provider, model):
+        info = dict(provider=provider, id=model['id'], name=model.get('name', model['id']),
+                    inputModalities=copy.deepcopy(model.get('inputModalities', ['text'])))
+        if 'description' in model:
+            info['description'] = model['description']
+        return info
 
     async def resolve_model(self, provider, model, signal=None):
         options = self.options()
@@ -65,12 +68,10 @@ class DeepSeekAdapter:
 
     @staticmethod
     def model_info(options, provider, model):
-        info = next((dict(row, provider=provider) for row in options["models"] if row["id"] == model),
-                    {"provider": provider, "id": model, "name": model,
-                     "contextWindow": options.get("defaultContextWindow", 1000000)})
-        info.setdefault("contextWindow", options["defaultContextWindow"])
-        info.setdefault("name", model)
-        info["defaultMaxTokens"] = info.get("maxTokens", options["maxTokens"])
+        configured = next((row for row in options['models'] if row['id'] == model), {'id': model})
+        info = DeepSeekAdapter.catalog_info(provider, configured)
+        info['context'] = {'contextWindow': configured.get('contextWindow', options['defaultContextWindow'])}
+        info["defaultMaxTokens"] = configured.get("maxTokens", options["maxTokens"])
         efforts = [dict(id=key, name=name, description=description) for key, name, description in (
             ('off', 'Off', 'Use for simple tasks that do not need reasoning.'),
             ('low', 'Low', 'Prefer for routine or latency-sensitive tasks.'),

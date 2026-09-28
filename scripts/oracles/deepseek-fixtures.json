@@ -1,0 +1,293 @@
+[
+  {
+    "id": "effort-off",
+    "kind": "serialize",
+    "options": {
+      "model": "deepseek-v4-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "你好"
+            }
+          ]
+        }
+      ],
+      "reasoningEffort": "off"
+    },
+    "defaults": {
+      "thinking": "enabled"
+    }
+  },
+  {
+    "id": "effort-low",
+    "kind": "serialize",
+    "options": {
+      "model": "deepseek-v4-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "你好"
+            }
+          ]
+        }
+      ],
+      "reasoningEffort": "low"
+    },
+    "defaults": {
+      "thinking": "enabled"
+    }
+  },
+  {
+    "id": "effort-high",
+    "kind": "serialize",
+    "options": {
+      "model": "deepseek-v4-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "你好"
+            }
+          ]
+        }
+      ],
+      "reasoningEffort": "high"
+    },
+    "defaults": {
+      "thinking": "enabled"
+    }
+  },
+  {
+    "id": "effort-max",
+    "kind": "serialize",
+    "options": {
+      "model": "deepseek-v4-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "你好"
+            }
+          ]
+        }
+      ],
+      "reasoningEffort": "max"
+    },
+    "defaults": {
+      "thinking": "enabled"
+    }
+  },
+  {
+    "id": "title",
+    "kind": "serialize",
+    "options": {
+      "model": "deepseek-v4-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "你好"
+            }
+          ]
+        }
+      ],
+      "purpose": "session-title",
+      "reasoningEffort": "max"
+    },
+    "defaults": {
+      "thinking": "enabled"
+    }
+  },
+  {
+    "id": "disabled-effort",
+    "kind": "serialize",
+    "options": {
+      "model": "deepseek-v4-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "你好"
+            }
+          ]
+        }
+      ],
+      "reasoningEffort": "high"
+    },
+    "defaults": {
+      "thinking": "disabled"
+    }
+  },
+  {
+    "id": "tool-history",
+    "kind": "serialize",
+    "options": {
+      "model": "deepseek-v4-flash",
+      "messages": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "reasoning",
+              "text": "plan"
+            },
+            {
+              "type": "tool-call",
+              "id": "c1",
+              "name": "pwsh",
+              "arguments": "{}"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "continue"
+            },
+            {
+              "type": "tool-result",
+              "toolCallId": "c1",
+              "content": []
+            }
+          ]
+        }
+      ],
+      "system": "engineer",
+      "tools": [
+        {
+          "name": "pwsh",
+          "description": "shell",
+          "parameters": {
+            "type": "object",
+            "properties": {}
+          }
+        }
+      ],
+      "maxTokens": 123,
+      "temperature": 0,
+      "stop": [
+        "end"
+      ]
+    }
+  },
+  {
+    "id": "cache",
+    "kind": "usage",
+    "usage": {
+      "prompt_tokens": 10,
+      "completion_tokens": 4,
+      "prompt_cache_hit_tokens": 3
+    }
+  },
+  {
+    "id": "detail-cache",
+    "kind": "usage",
+    "usage": {
+      "prompt_tokens": 10,
+      "completion_tokens": 4,
+      "prompt_cache_hit_tokens": 3,
+      "prompt_tokens_details": {
+        "cached_tokens": 5
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 2
+      }
+    }
+  },
+  {
+    "id": "inexact-total",
+    "kind": "usage",
+    "usage": {
+      "prompt_tokens": 10,
+      "completion_tokens": 4,
+      "total_tokens": 99
+    }
+  },
+  {
+    "id": "utf8-bytewise",
+    "kind": "stream",
+    "stride": 1,
+    "sse": "﻿: ping\r\n\r\ndata: {\"choices\": [{\"delta\": {\"reasoning_content\": \"思考\"}, \"finish_reason\": null}]}\r\n\r\ndata: {\"choices\": [{\"delta\": {\"content\": \"你好\"}, \"finish_reason\": \"stop\"}]}\r\n\r\ndata: {\"choices\": [], \"usage\": {\"prompt_tokens\": 10, \"completion_tokens\": 4, \"prompt_cache_hit_tokens\": 3}}\r\n\r\ndata: [DONE]\r\n\r\n"
+  },
+  {
+    "id": "empty",
+    "kind": "stream",
+    "stride": 7,
+    "sse": "data: [DONE]\n\n"
+  },
+  {
+    "id": "truncated",
+    "kind": "stream",
+    "stride": 2,
+    "sse": "data: {\"choices\": [{\"delta\": {\"content\": \"partial\"}}]}\r\n\r\n"
+  },
+  {
+    "id": "malformed",
+    "kind": "stream",
+    "stride": 1,
+    "sse": "data: {oops}\n\n"
+  },
+  {
+    "id": "unterminated",
+    "kind": "stream",
+    "stride": 3,
+    "sse": "data: [DONE]"
+  },
+  {
+    "id": "tool-fragments",
+    "kind": "stream",
+    "stride": 11,
+    "sse": "data: {\"choices\": [{\"delta\": {\"tool_calls\": [{\"index\": 0, \"id\": \"c1\", \"function\": {\"name\": \"pwsh\", \"arguments\": \"{\"}}]}}]}\r\n\r\ndata: {\"choices\": [{\"delta\": {\"tool_calls\": [{\"index\": 0, \"function\": {\"arguments\": \"}\"}}]}, \"finish_reason\": \"tool_calls\"}]}\r\n\r\ndata: [DONE]\n\n"
+  },
+  {
+    "id": "model-default",
+    "kind": "model",
+    "config": {},
+    "model": "deepseek-v4-flash"
+  },
+  {
+    "id": "model-unlisted",
+    "kind": "model",
+    "config": {},
+    "model": "private"
+  },
+  {
+    "id": "model-disabled",
+    "kind": "model",
+    "config": {
+      "thinking": "disabled"
+    },
+    "model": "private"
+  },
+  {
+    "id": "model-custom",
+    "kind": "model",
+    "config": {
+      "models": [
+        {
+          "id": "custom",
+          "name": "Custom",
+          "contextWindow": 64000,
+          "maxTokens": 200
+        }
+      ]
+    },
+    "model": "custom"
+  }
+]

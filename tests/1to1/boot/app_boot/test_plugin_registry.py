@@ -97,7 +97,6 @@ PROFILES: List[str] = ["web", "standard", "headless", "creative", "acp", "sdk", 
 # together with the provider that lands.
 SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
     "web": [
-        "@deepseek-ai/dsh-api-gateway",
         "@deepseek-ai/dsh-api-remotes",
         "@deepseek-ai/dsh-api-session-controller",
         "@deepseek-ai/dsh-api-settings-controller",
@@ -121,7 +120,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-web-app",
     ],
     "standard": [
-        "@deepseek-ai/dsh-api-gateway",
         "@deepseek-ai/dsh-code-runtime-worker-thread",
         "@deepseek-ai/dsh-command-goal",
         "@deepseek-ai/dsh-goal",
@@ -137,7 +135,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-tool-subagent-report",
     ],
     "headless": [
-        "@deepseek-ai/dsh-api-gateway",
         "@deepseek-ai/dsh-code-runtime-worker-thread",
         "@deepseek-ai/dsh-command-goal",
         "@deepseek-ai/dsh-goal",
@@ -153,7 +150,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-tool-subagent-report",
     ],
     "creative": [
-        "@deepseek-ai/dsh-api-gateway",
         "@deepseek-ai/dsh-code-runtime-worker-thread",
         "@deepseek-ai/dsh-command-goal",
         "@deepseek-ai/dsh-goal",
@@ -170,7 +166,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
     ],
     "acp": [
         "@deepseek-ai/dsh-acp-app",
-        "@deepseek-ai/dsh-api-gateway",
         "@deepseek-ai/dsh-command-goal",
         "@deepseek-ai/dsh-goal",
         "@deepseek-ai/dsh-goal-round-driver",
@@ -185,7 +180,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-tool-subagent-report",
     ],
     "sdk": [
-        "@deepseek-ai/dsh-api-gateway",
         "@deepseek-ai/dsh-command-goal",
         "@deepseek-ai/dsh-goal",
         "@deepseek-ai/dsh-goal-round-driver",
@@ -362,7 +356,7 @@ def test_installation_rows_are_answered_by_the_table_not_by_the_shipped_artifact
     home = tmp()
     try:
         _stage_healed_installation(home, "@deepseek-ai/dsh-tools", "tools")
-        _stage_healed_installation(home, "@deepseek-ai/dsh-api-gateway", "web")
+        _stage_healed_installation(home, "@deepseek-ai/dsh-api-remotes", "web")
         profile_dir = os.path.join(home, "profiles", "standard")
         os.makedirs(profile_dir, exist_ok=True)
         config = os.path.join(profile_dir, "cordis.yml")
@@ -380,8 +374,8 @@ def test_installation_rows_are_answered_by_the_table_not_by_the_shipped_artifact
 
         assert loader.import_plugin("@deepseek-ai/dsh-tools") is resolve_harness_plugin("@deepseek-ai/dsh-tools")
         with pytest.raises(ModuleNotFoundError) as raised:
-            loader.import_plugin("@deepseek-ai/dsh-api-gateway")
-        assert str(raised.value) == "Cannot find module '@deepseek-ai/dsh-api-gateway'"
+            loader.import_plugin("@deepseek-ai/dsh-api-remotes")
+        assert str(raised.value) == "Cannot find module '@deepseek-ai/dsh-api-remotes'"
     finally:
         safe_rmtree(home)
 
@@ -613,7 +607,7 @@ def test_the_frozen_gap_is_the_union_of_every_shipped_profile():
 
             collect(patch)
     assert union <= shipped_names
-    assert len(union) == 31
+    assert len(union) == 30
 
 
 # --- boot installs and consults the table ------------------------------------
@@ -684,13 +678,13 @@ async def test_boot_rejects_a_config_naming_an_unimplemented_shipped_row():
     with open(os.path.join(d, "cordis.yml"), "w", encoding="utf-8") as f:
         f.write(
             "- id: timer\n  name: '@deepseek-ai/cordis-plugin-timer'\n"
-            "- id: gateway\n  name: '@deepseek-ai/dsh-api-gateway'\n"
+            "- id: gateway\n  name: '@deepseek-ai/dsh-api-remotes'\n"
         )
     with pytest.raises(RuntimeError) as raised:
         await boot(NAME, os.path.join(d, "cordis.yml"))
     message = str(raised.value)
     assert message.startswith(f"{NAME}: plugin tree failed to load")
-    assert "failed to import loader entry gateway (@deepseek-ai/dsh-api-gateway): Cannot find module '@deepseek-ai/dsh-api-gateway'" in message
+    assert "failed to import loader entry gateway (@deepseek-ai/dsh-api-remotes): Cannot find module '@deepseek-ai/dsh-api-remotes'" in message
 
 
 @pytest.mark.asyncio

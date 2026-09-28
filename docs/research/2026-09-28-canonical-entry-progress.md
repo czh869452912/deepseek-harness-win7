@@ -25,10 +25,10 @@
 - `f215e4b4`：当前活动 Loader 条目的包清单 provider，忽略 disabled/group/无包身份条目，支持精确卸载。
 - `cde9ce51`：正式 scoped SkillRegistry、基于 ctx.fs 的文件系统 provider、失效/缓存/卸载和工具消费者；目录提示按 Agent 日志去重。
 
-- 本批次：正式 SessionTitle 服务与 first-prompt LLM provider；日志持有标题、revision 防止旧结果覆盖、精确 AgentLoop 主请求触发、用户重命名取消、provider 卸载等待收尾，以及有界辅助 LLM 请求。新增 9 个契约场景；旧标题实现不再用于正式包名。
+- `b13f3906`：正式 SessionTitle 服务与 first-prompt LLM provider；日志持有标题、revision 防止旧结果覆盖、精确 AgentLoop 主请求触发、用户重命名取消、provider 卸载等待收尾，以及有界辅助 LLM 请求。新增 9 个契约场景；旧标题实现不再用于正式包名。
 
 - `0b4ce7b6`：原生 DeepSeek 请求持久匿名 ID、session/compaction headers，文本及扩展两条 HTTP 链测试。
-- `b07779e8` 及本批 Loader：原子 reflection/schema/invocation 注册、调用方持有的 lookup/Context resolver、卸载保留声明历史；Loader 增量加载真实 generated host artifacts，Python 执行严格 schema，项目本地覆盖优先，坏包失败隔离。13 份自带 artifact 可读；Gateway 的 carrier 与调用消费者仍在迁移，不代表 RPC 全链完成。
+- `b07779e8` 、`bc2e511e` Loader：原子 reflection/schema/invocation 注册、调用方持有的 lookup/Context resolver、卸载保留声明历史；Loader 增量加载真实 generated host artifacts，Python 执行严格 schema，项目本地覆盖优先，坏包失败隔离。13 份自带 artifact 可读；新增 strict/SRC Remote dispatcher（`0536353f`）、Connection 持有的鉴权/有界 RPC carrier（`03573780`），以及本批 Gateway WebSocket 多流复用、取消收尾、心跳、唯一事件源和多客户端 waterfall。业务 Remote controllers 仍需迁移，不代表正式 Web 全链完成。
 
 这些提交均有对应回归或 loopback HTTP 测试；尚未据此签发新的上游验收或发行认证。
 
@@ -48,7 +48,7 @@
 
 原始本机证据位于忽略目录 `.goose/out/current-review/`，没有伪装为已提交的正式验收证据。Node 当前为 22.20.0，不是 release gate 要求的 22.22.2；本次未运行完整官方 Node oracle 或构建便携包。Win7 真机与浏览器尚未验证。
 
-最近完整测试：会话标题批次后的 `typert-full.xml` 为 **3392 passed、11 skipped、1 warning**（283.39 秒），已覆盖前述图片计价和错误诊断。migration check 通过；不代表 parity 认证。既有 Windows asyncio transport 清理警告尚未消除。
+最近完整测试：Gateway 批次的 `gateway-full.xml` 为 **3410 passed、11 skipped、1 warning**（286.38 秒），已覆盖前述图片计价和错误诊断。migration check 通过；不代表 parity 认证。既有 Windows asyncio transport 清理警告尚未消除。
 
 ## 正式 profile 仍失败
 
@@ -60,7 +60,7 @@
 | web | 26 |
 | minimal | 7 |
 
-证据：`canonical-profile-probes.json`。初始全部七类 profile 的冻结缺口并集为 36 个 package 名（包含其他 app 和遥测配置），不是 36 个同等工作量模块。jobs、inventory、skill、首条提示 LLM 标题 provider 和 Typert Loader 落地后并集为 31；仍需继续补齐并重跑真实默认入口。`test_plugin_registry.py` 故意验证这些缺失会明确报错；该测试通过不表示应用可启动。
+证据：`canonical-profile-probes.json`。初始全部七类 profile 的冻结缺口并集为 36 个 package 名（包含其他 app 和遥测配置），不是 36 个同等工作量模块。jobs、inventory、skill、首条提示 LLM 标题 provider 和 Typert Loader/Gateway 落地后并集为 30；仍需继续补齐并重跑真实默认入口。`test_plugin_registry.py` 故意验证这些缺失会明确报错；该测试通过不表示应用可启动。
 
 ## 剩余工作与完成标准
 

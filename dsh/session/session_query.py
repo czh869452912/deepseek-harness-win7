@@ -31,7 +31,10 @@ class SessionQueryError(HarnessError):
     """
 
     def __init__(self, message: str, code: str, cause: Optional[Exception] = None) -> None:
-        super().__init__(message, code, cause=cause)
+        super().__init__(message, code)
+        self.cause = cause
+        if isinstance(cause, BaseException):
+            self.__cause__ = cause
 
 
 def SessionSearchCursor(value: str) -> str:
@@ -440,6 +443,10 @@ class SessionQueryService:
         if self.open_at != "never":
             self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
             self._init_db()
+
+    async def observeSession(self, session_id, options=None):
+        from dsh.session.observation import SessionObservationReader
+        return await SessionObservationReader(self.ctx).read(session_id, options)
 
     def _init_db(self) -> None:
         cur = self._conn.cursor()

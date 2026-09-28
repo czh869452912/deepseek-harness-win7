@@ -59,6 +59,46 @@ class PreparedPersistence:
             if self.pool.discard_ready(sid, source) == 'retained':
                 return copy.deepcopy(source.inspection)
 
+    async def borrow(self, sid, signal=None):
+        from dsh.session.persistence import SessionInspection
+        def live_view(live):
+            return SimpleNamespace(source='live', inspection=SessionInspection(
+                live.header, tuple(live.events)), dispose=lambda: None)
+        while True:
+            await self._retired(sid, signal)
+            live = self._live(sid)
+            if live is not None:
+                return live_view(live)
+            lease = await self.pool.borrow(sid, lambda: self._source(sid), signal)
+            try:
+                throw_aborted(signal)
+                if self.closed:
+                    raise RuntimeError("session preparation provider is closed")
+                live = self._live(sid)
+                if live is not None:
+                    lease.dispose()
+                    return live_view(live)
+                source = lease.source
+                async with self.backend.storage_lock(sid):
+                    throw_aborted(signal)
+                    current = source.revision == await self.revision(sid)
+                live = self._live(sid)
+                if live is not None:
+                    lease.dispose()
+                    return live_view(live)
+                if current or self.pool.discard_ready(sid, source) == 'retained':
+                    return SimpleNamespace(source='prepared', inspection=source.inspection,
+                                           preparedSession=source.session, revision=source.revision,
+                                           dispose=lease.dispose)
+            except BaseException:
+                lease.dispose()
+                throw_aborted(signal)
+                live = self._live(sid)
+                if live is not None:
+                    return live_view(live)
+                raise
+            lease.dispose()
+
     async def _commit(self, sid, source, signal=None):
         async with self.backend.storage_lock(sid):
             throw_aborted(signal)

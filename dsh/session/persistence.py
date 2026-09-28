@@ -106,6 +106,9 @@ class SessionPersistence(ABC):
         return SessionPreparation.create(Session.from_restore(
             session_id=session_id, seed=inspection.events, header=inspection.meta, ctx=self.ctx))
 
+    async def borrowSession(self, session_id, signal=None):
+        return await self.prepared().borrow(session_id, signal)
+
     @abstractmethod
     async def inspect(self, session_id: str) -> SessionInspection:
         """Inspect an immutable logical session without committing recovery to disk."""

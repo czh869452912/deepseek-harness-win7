@@ -113,3 +113,31 @@ async def test_agent_scoped_model_selection_samples_setting_once():
     finally:
         await parent.dispose()
         await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
+async def test_background_one_shot_is_admitted_by_jobs_before_child_start():
+    from dsh.jobs.local import LocalJobRegistry
+    ctx, model, parent = await setup()
+    await ctx.plugin(SubagentPlugin)
+    await ctx.plugin(SpawnInProcess)
+    await ctx.plugin(LocalJobRegistry)
+    await ctx.plugin(CanonicalToolSubagent, {'provider': 'spawn'})
+    try:
+        tool = ctx.get('tools').get('subagent', scope_of(parent.agent.ctx))
+        args = dict(description='job child', prompt='real work', run_in_background=True)
+        execution = SimpleNamespace(agent=parent.agent, signal=AbortController().signal)
+        with pytest.raises(ValueError, match='controller'):
+            await tool.execute(args, execution)
+        assert not model.requests and ctx.get('agents').list() == [parent.agent]
+        jobs = ctx.get('jobs')
+        jobs.attach_controller('test')
+        result = await tool.execute(args, execution)
+        assert result['kind'] == 'background'
+        completed = await jobs.wait(result['jobId'], 3000, parent.agent)
+        assert completed['status'] == 'completed'
+        assert ctx.get('agents').list() == [parent.agent]
+        assert len(model.requests) == 1
+    finally:
+        await parent.dispose()
+        await ctx.fiber.dispose()

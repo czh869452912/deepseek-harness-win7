@@ -92,8 +92,14 @@
   isolate:
     workflowEngine: true
   config:
+    - id: subagents
+      name: "@deepseek-ai/dsh-subagent"
+    - id: subagent-spawn
+      name: "@deepseek-ai/dsh-subagent-spawn-in-process"
     - id: tool-subagent
       name: "@deepseek-ai/dsh-tool-subagent"
+      config:
+        provider: spawn
     - id: tool-ralph
       name: "@deepseek-ai/dsh-tool-ralph"
 

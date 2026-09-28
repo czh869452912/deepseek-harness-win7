@@ -134,6 +134,6 @@ async def serialize_images(request, versions, resolve_file=None, access=None):
             wire.append({"role": "tool", "tool_call_id": result["toolCallId"], "content": text or "(no output)"})
             pending.extend(part for part in nested if part["type"] != "text")
     flush()
-    payload = serialize_request(dict(request, messages=[]))
+    payload = serialize_request(dict(request, messages=[]), request.get('_request_defaults'))
     payload["messages"].extend(wire)
     return payload

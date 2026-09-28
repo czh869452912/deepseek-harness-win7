@@ -30,7 +30,7 @@ def http_error_code(status, error=None):
     fields = error if isinstance(error, dict) else {}
     detail = " ".join(fields[key] for key in ("code", "type", "message") if isinstance(fields.get(key), str))
     if is_quota_exceeded(detail):
-        return "QUOTA_EXCEEDED"
+        return "QUOTA"
     if status == 429:
         return "RATE_LIMIT"
     if status == 400:

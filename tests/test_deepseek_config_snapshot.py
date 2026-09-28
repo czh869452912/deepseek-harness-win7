@@ -104,16 +104,18 @@ async def test_prepared_stream_pins_whole_generation_and_model_token_cap(monkeyp
     adapter.source = lambda: current
     captured = []
     def transport(self, messages, **kwargs):
-        captured.append((self.resolve_base_url(), self.resolve_api_key(), kwargs["options"]["maxTokens"]))
+        captured.append((self.resolve_base_url(), self.resolve_api_key(), kwargs["options"].get("maxTokens")))
         return iter([])
     monkeypatch.setattr(LLMService, "_default_chat_completion_stream", transport)
     prepared = await adapter.prepare_call("deepseek-official", "model")
     current = {"baseURL": "http://new", "apiKeyEnv": "NEW_KEY", "maxTokens": 99}
-    list(prepared["stream"]({"model": "model", "messages": []}))
+    assert prepared['model']['defaultMaxTokens'] == 7
+    list(prepared["stream"]({"model": "model", "messages": [], 'maxTokens': prepared['model']['defaultMaxTokens']}))
     list(adapter.stream({"model": "model", "messages": []}))
-    assert captured == [("http://old", "old-secret", 7), ("http://new", "new-secret", 99)]
+    assert captured == [("http://old", "old-secret", 7), ("http://new", "new-secret", None)]
+    assert (await adapter.resolve_model('deepseek-official', 'model'))['defaultMaxTokens'] == 99
     current = {"baseURL": "http://invalid", "apiKeyEnv": "INVALID_KEY", "maxTokens": 0}
     list(adapter.stream({"model": "model", "messages": []}))
     list(adapter.stream({"model": "model", "messages": []}))
-    assert captured[-1] == captured[-2] == ("http://new", "new-secret", 99)
+    assert captured[-1] == captured[-2] == ("http://new", "new-secret", None)
     assert caplog.text.count("Keeping the last good configuration") == 1

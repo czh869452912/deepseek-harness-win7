@@ -9,6 +9,7 @@ sys.path.insert(0, str(ROOT))
 from dsh.llm.deepseek_wire import serialize_request, translate, parse_sse, map_usage
 from dsh.llm.deepseek_config import resolve_options
 from dsh.llm.llm_deepseek import DeepSeekAdapter
+from deepseek_http_python import observe
 
 
 def main():
@@ -17,6 +18,8 @@ def main():
         row = {'id': fixture['id']}
         try:
             kind = fixture['kind']
+            if kind == 'http':
+                row['value'] = asyncio.run(observe(fixture))
             if kind == 'serialize':
                 row['value'] = serialize_request(fixture['options'], fixture.get('defaults'))
             elif kind == 'usage':

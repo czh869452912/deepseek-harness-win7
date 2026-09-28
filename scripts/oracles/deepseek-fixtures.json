@@ -289,5 +289,76 @@
       ]
     },
     "model": "custom"
+  },
+  {
+    "id": "http-success",
+    "kind": "http"
+  },
+  {
+    "id": "http-truncated",
+    "kind": "http",
+    "sse": "data: {\"choices\":[{\"delta\":{\"content\":\"partial\"}}]}\n\n"
+  },
+  {
+    "id": "http-extension",
+    "kind": "http",
+    "extension": "accepted"
+  },
+  {
+    "id": "http-collision",
+    "kind": "http",
+    "extension": "collision"
+  },
+  {
+    "id": "http-accept-failed",
+    "kind": "http",
+    "extension": "accept-failed"
+  },
+  {
+    "id": "http-rejected-extension",
+    "kind": "http",
+    "extension": "accepted",
+    "status": 400
+  },
+  {
+    "id": "http-rate-limit",
+    "kind": "http",
+    "status": 429,
+    "headers": {
+      "Retry-After": "2",
+      "X-Request-Id": "req-fixture"
+    }
+  },
+  {
+    "id": "http-quota",
+    "kind": "http",
+    "status": 429,
+    "error": {
+      "code": "insufficient_quota",
+      "message": "quota exceeded"
+    }
+  },
+  {
+    "id": "http-context",
+    "kind": "http",
+    "status": 400,
+    "error": {
+      "message": "maximum context length exceeded"
+    }
+  },
+  {
+    "id": "http-auth",
+    "kind": "http",
+    "status": 401
+  },
+  {
+    "id": "http-idle",
+    "kind": "http",
+    "behavior": "idle"
+  },
+  {
+    "id": "http-cancel",
+    "kind": "http",
+    "behavior": "cancel"
   }
 ]

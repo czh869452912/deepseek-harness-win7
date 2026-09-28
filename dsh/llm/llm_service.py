@@ -848,7 +848,7 @@ class LLMService:
             request["temperature"] = temperature
         payload = request.get("_wire_payload")
         if payload is None:
-            payload = serialize_request(request)
+            payload = serialize_request(request, request.get('_request_defaults'))
         req = urllib.request.Request(
             "{}/chat/completions".format(base_url.rstrip("/")),
             data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),

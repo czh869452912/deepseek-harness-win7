@@ -93,7 +93,7 @@ async def request_stream(adapter, transport, request, options):
                     inline = True
                     continue
             else:
-                body = serialize_request(request)
+                body = serialize_request(request, request.get('_request_defaults'))
             extensions = adapter.ctx.get("deepseekLlmApiExtensions")
             prepared = None
             if extensions is not None:

@@ -4,6 +4,7 @@ import { serializeRequest } from '../../reference/packages/llm/llm-deepseek/src/
 import { parseSse } from '../../reference/packages/llm/llm-deepseek/src/sse.ts'
 import { translate, mapUsage } from '../../reference/packages/llm/llm-deepseek/src/translate.ts'
 import { DeepSeekAdapter, resolveAdapterOptions } from '../../reference/packages/llm/llm-deepseek/src/index.ts'
+import { observeHttp } from './deepseek-http.ts'
 
 it('records actual pinned DeepSeek boundary observations', async () => {
   const fixtures = JSON.parse(readFileSync('scripts/oracles/deepseek-fixtures.json', 'utf8'))
@@ -11,6 +12,7 @@ it('records actual pinned DeepSeek boundary observations', async () => {
   for (const fixture of fixtures) {
     const row: any = { id: fixture.id }
     try {
+      if (fixture.kind === 'http') row.value = await observeHttp(fixture)
       if (fixture.kind === 'serialize') row.value = serializeRequest(fixture.options, fixture.defaults)
       if (fixture.kind === 'usage') row.value = mapUsage(fixture.usage)
       if (fixture.kind === 'stream') {

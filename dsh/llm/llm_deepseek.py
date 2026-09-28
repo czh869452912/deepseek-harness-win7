@@ -113,8 +113,9 @@ class DeepSeekAdapter:
         transport = LLMService(api_key=assert_usable_api_key(value, "llm-deepseek", ref), base_url=base_url)
         resolved = dict(request)
         resolved.setdefault("provider", "deepseek-official")
-        resolved.setdefault("reasoningEffort", options.get("reasoningEffort", "off" if options.get("thinking") == "disabled" else "high"))
-        resolved.setdefault("maxTokens", self.model_info(options, resolved["provider"], resolved["model"])["defaultMaxTokens"])
+        # The LLM runtime owns call defaulting. A direct adapter stream must
+        # not invent request knobs that the caller did not send.
+        resolved['_request_defaults'] = {key: options[key] for key in ('thinking', 'reasoningEffort') if key in options}
         resolved["streamIdleTimeoutMs"] = options["streamIdleTimeoutMs"]
         from dsh.identity.anonymous_user_id import get_or_create_anonymous_user_id
         if self.user_id is None:
@@ -124,7 +125,7 @@ class DeepSeekAdapter:
             resolved["_provider_headers"]["x-deepseek-harness-session-id"] = str(resolved["sessionId"])
         if resolved.get("purpose") == "compaction":
             resolved["_provider_headers"]["x-deepseek-harness-compact"] = "1"
-        if options.get("thinking") == "disabled" and resolved["reasoningEffort"] != "off":
+        if options.get("thinking") == "disabled" and resolved.get("reasoningEffort") not in (None, "off") and resolved.get('purpose') != 'session-title':
             raise LlmError("This DeepSeek deployment disables thinking", "UNSUPPORTED_REASONING_EFFORT")
         if self.ctx.get("deepseekLlmApiExtensions") is not None or has_images:
             from dsh.llm.deepseek_request import request_stream

@@ -37,8 +37,8 @@ def main():
         report.update(target_upstream=target, candidate=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=str(ROOT), encoding='utf-8').strip(),
                       node=subprocess.check_output([args.node, '--version'], encoding='utf-8').strip(), python=sys.version)
         sources = list((ROOT / 'reference/packages/llm/llm-deepseek/src').glob('*.ts'))
-        sources += [ROOT / 'dsh/llm' / name for name in ('deepseek_wire.py', 'deepseek_config.py', 'llm_deepseek.py')]
-        sources += [ROOT / 'scripts/oracles' / name for name in ('deepseek-fixtures.json', 'deepseek.spec.ts', 'deepseek_python.py', 'vitest.deepseek-probe.config.mts')]
+        sources += list((ROOT / 'dsh/llm').glob('*.py'))
+        sources += [ROOT / 'scripts/oracles' / name for name in ('deepseek-fixtures.json', 'deepseek.spec.ts', 'deepseek_python.py', 'deepseek-http.ts', 'deepseek_http_python.py', 'vitest.deepseek-probe.config.mts')]
         before = {str(path.relative_to(ROOT)): digest(path) for path in sources}
         paths = [output.with_suffix('.ts.json'), output.with_suffix('.python.json')]
         commands = [[args.node, '--expose-internals', 'scripts/oracles/official/node_modules/vitest/vitest.mjs',

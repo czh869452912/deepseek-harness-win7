@@ -3,6 +3,7 @@ import asyncio
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import threading
+from types import SimpleNamespace
 
 from dsh.cordis.context import Context
 from dsh.cordis.environment import LaunchEnvironmentSnapshot
@@ -14,6 +15,7 @@ from dsh.core.abort import AbortController
 
 async def observe(fixture):
     requests, accepted = [], []
+    reads, uploads = [], []
     controller = AbortController()
     loop = asyncio.get_running_loop()
     mode = fixture.get('behavior', 'success')
@@ -66,10 +68,28 @@ async def observe(fixture):
     if extension:
         ctx.get('deepseekLlmApiExtensions').register('model' if extension == 'collision' else 'fixture_extension',
             {'prepare': lambda request: {'value': {'version': 1}, 'accept': accept}})
-    adapter = DeepSeekAdapter(ctx, dict(baseURL='http://127.0.0.1:{}'.format(server.server_port), streamIdleTimeoutMs=150 if mode == 'idle' else 3000))
+    def read_image(ref, policy, signal):
+        reads.append(dict(id=ref['attachmentId'], policy=policy))
+        return dict(attachment=ref, variantId=ref['attachmentId'], data=bytes(ref['bytes']),
+                    mediaType=ref['mediaType'], bytes=ref['bytes'], width=ref['width'], height=ref['height'],
+                    depth='uchar', space='srgb', hasAlpha=True)
+    async def upload(version, connection, policy, signal):
+        uploads.append(version['attachment']['attachmentId'])
+        if fixture.get('filesFail') and len(uploads) >= fixture['filesFail']:
+            raise RuntimeError('fixture files unavailable')
+        return dict(record=dict(fileId='fixture-file-{}'.format(len(uploads))), uploaded=True)
+    async def close_files():
+        pass
+    if fixture.get('images'):
+        ctx.set_service('attachments', SimpleNamespace(read_image_request=read_image, imageHostPath=lambda ref: None))
+    adapter = DeepSeekAdapter(ctx, dict(fixture.get('config', {}), baseURL='http://127.0.0.1:{}'.format(server.server_port), streamIdleTimeoutMs=150 if mode == 'idle' else 3000))
+    if fixture.get('images'):
+        adapter.files = SimpleNamespace(ensure_uploaded=upload, close=close_files)
     adapter.user_id = 'fixture-user'
     result = dict(chunks=[], requests=requests, accepted=accepted)
-    request = dict(model='model', messages=[dict(role='user', content=[dict(type='text', text='hello')])],
+    if fixture.get('images'):
+        result.update(reads=reads, uploads=uploads)
+    request = dict(model=fixture.get('model', 'model'), messages=fixture.get('messages', [dict(role='user', content=[dict(type='text', text='hello')])]),
                    sessionId='fixture-session', purpose='compaction', signal=controller.signal)
     try:
         reader = iter_chunks(adapter.stream(request))

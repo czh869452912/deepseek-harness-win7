@@ -360,5 +360,463 @@
     "id": "http-cancel",
     "kind": "http",
     "behavior": "cancel"
+  },
+  {
+    "id": "http-image-file",
+    "kind": "http",
+    "images": true,
+    "model": "vision",
+    "config": {
+      "models": [
+        {
+          "id": "vision",
+          "inputModalities": [
+            "text",
+            "image"
+          ]
+        }
+      ]
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "describe "
+          },
+          {
+            "type": "image",
+            "attachment": {
+              "attachmentId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "mediaType": "image/png",
+              "bytes": 3,
+              "width": 1,
+              "height": 1
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "http-image-inline",
+    "kind": "http",
+    "images": true,
+    "model": "vision",
+    "config": {
+      "models": [
+        {
+          "id": "vision",
+          "inputModalities": [
+            "text",
+            "image"
+          ]
+        }
+      ]
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "image",
+            "attachment": {
+              "attachmentId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "mediaType": "image/png",
+              "bytes": 3,
+              "width": 1,
+              "height": 1
+            }
+          }
+        ]
+      }
+    ],
+    "filesFail": 1
+  },
+  {
+    "id": "http-image-partial-fallback",
+    "kind": "http",
+    "images": true,
+    "model": "vision",
+    "config": {
+      "models": [
+        {
+          "id": "vision",
+          "inputModalities": [
+            "text",
+            "image"
+          ]
+        }
+      ]
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "image",
+            "attachment": {
+              "attachmentId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "mediaType": "image/png",
+              "bytes": 3,
+              "width": 1,
+              "height": 1
+            }
+          },
+          {
+            "type": "image",
+            "attachment": {
+              "attachmentId": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "mediaType": "image/png",
+              "bytes": 3,
+              "width": 1,
+              "height": 1
+            }
+          }
+        ]
+      }
+    ],
+    "filesFail": 2
+  },
+  {
+    "id": "http-image-tool-result",
+    "kind": "http",
+    "images": true,
+    "model": "vision",
+    "config": {
+      "models": [
+        {
+          "id": "vision",
+          "inputModalities": [
+            "text",
+            "image"
+          ]
+        }
+      ]
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "tool-result",
+            "toolCallId": "call-1",
+            "content": [
+              {
+                "type": "text",
+                "text": "output"
+              },
+              {
+                "type": "image",
+                "attachment": {
+                  "attachmentId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "mediaType": "image/png",
+                  "bytes": 3,
+                  "width": 1,
+                  "height": 1
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "http-image-reject-system",
+    "kind": "http",
+    "images": true,
+    "model": "vision",
+    "config": {
+      "models": [
+        {
+          "id": "vision",
+          "inputModalities": [
+            "text",
+            "image"
+          ]
+        }
+      ]
+    },
+    "messages": [
+      {
+        "role": "system",
+        "content": [
+          {
+            "type": "image",
+            "attachment": {
+              "attachmentId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "mediaType": "image/png",
+              "bytes": 3,
+              "width": 1,
+              "height": 1
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "http-image-reject-offloaded-system",
+    "kind": "http",
+    "images": true,
+    "model": "vision",
+    "config": {
+      "models": [
+        {
+          "id": "vision",
+          "inputModalities": [
+            "text",
+            "image"
+          ]
+        }
+      ],
+      "maxImagesPerRequest": 1,
+      "imageOffloadCountQuantum": 1
+    },
+    "messages": [
+      {
+        "role": "system",
+        "content": [
+          {
+            "type": "image",
+            "attachment": {
+              "attachmentId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "mediaType": "image/png",
+              "bytes": 3,
+              "width": 1,
+              "height": 1
+            }
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "image",
+            "attachment": {
+              "attachmentId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "mediaType": "image/png",
+              "bytes": 3,
+              "width": 1,
+              "height": 1
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "http-image-count-budget",
+    "kind": "http",
+    "images": true,
+    "model": "vision",
+    "config": {
+      "models": [
+        {
+          "id": "vision",
+          "inputModalities": [
+            "text",
+            "image"
+          ]
+        }
+      ],
+      "maxImagesPerRequest": 2,
+      "imageOffloadCountQuantum": 1
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "image",
+            "attachment": {
+              "attachmentId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "mediaType": "image/png",
+              "bytes": 3,
+              "width": 1,
+              "height": 1
+            }
+          },
+          {
+            "type": "image",
+            "attachment": {
+              "attachmentId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "mediaType": "image/png",
+              "bytes": 3,
+              "width": 1,
+              "height": 1
+            }
+          },
+          {
+            "type": "image",
+            "attachment": {
+              "attachmentId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "mediaType": "image/png",
+              "bytes": 3,
+              "width": 1,
+              "height": 1
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "files-upload",
+    "kind": "files",
+    "operation": "upload",
+    "response": {
+      "id": "file-1",
+      "object": "file",
+      "bytes": 3,
+      "created_at": 100,
+      "expires_at": 3700,
+      "filename": "fixture.png",
+      "purpose": "user_data"
+    }
+  },
+  {
+    "id": "files-upload-no-expiry",
+    "kind": "files",
+    "operation": "upload",
+    "response": {
+      "id": "file-1",
+      "object": "file",
+      "bytes": 3,
+      "created_at": 100,
+      "filename": "fixture.png",
+      "purpose": "user_data"
+    }
+  },
+  {
+    "id": "files-expiry-rejected",
+    "kind": "files",
+    "operation": "upload",
+    "response": {
+      "id": "file-1",
+      "object": "file",
+      "bytes": 3,
+      "created_at": 100,
+      "expires_at": 3700,
+      "filename": "fixture.png",
+      "purpose": "user_data"
+    },
+    "expiry": 3599
+  },
+  {
+    "id": "files-retrieve",
+    "kind": "files",
+    "operation": "retrieve",
+    "response": {
+      "id": "file-1",
+      "object": "file",
+      "bytes": 3,
+      "created_at": 100,
+      "expires_at": 3700,
+      "filename": "fixture.png",
+      "purpose": "user_data"
+    },
+    "fileId": "a/b c"
+  },
+  {
+    "id": "files-invalid-bytes",
+    "kind": "files",
+    "operation": "retrieve",
+    "response": {
+      "id": "file-1",
+      "object": "file",
+      "bytes": -1,
+      "created_at": 100,
+      "expires_at": 3700,
+      "filename": "fixture.png",
+      "purpose": "user_data"
+    },
+    "fileId": "file-1"
+  },
+  {
+    "id": "files-page",
+    "kind": "files",
+    "operation": "list",
+    "response": {
+      "object": "list",
+      "data": [
+        {
+          "id": "file-1",
+          "object": "file",
+          "bytes": 3,
+          "created_at": 100,
+          "expires_at": 3700,
+          "filename": "fixture.png",
+          "purpose": "user_data"
+        }
+      ],
+      "first_id": "file-1",
+      "last_id": "file-1",
+      "has_more": true
+    },
+    "options": {
+      "after": "a/b c",
+      "limit": 2,
+      "order": "asc"
+    }
+  },
+  {
+    "id": "files-invalid-page",
+    "kind": "files",
+    "operation": "list",
+    "response": {
+      "object": "list",
+      "data": [],
+      "has_more": 1
+    }
+  },
+  {
+    "id": "files-delete",
+    "kind": "files",
+    "operation": "delete",
+    "response": {
+      "id": "file-1",
+      "object": "file",
+      "deleted": true
+    },
+    "fileId": "file-1"
+  },
+  {
+    "id": "files-delete-mismatch",
+    "kind": "files",
+    "operation": "delete",
+    "response": {
+      "id": "other",
+      "object": "file",
+      "deleted": true
+    },
+    "fileId": "file-1"
+  },
+  {
+    "id": "files-quota",
+    "kind": "files",
+    "operation": "upload",
+    "response": {
+      "error": {
+        "code": "storage_quota",
+        "message": "too many files"
+      }
+    },
+    "status": 429
+  },
+  {
+    "id": "files-auth",
+    "kind": "files",
+    "operation": "retrieve",
+    "response": {
+      "error": {
+        "message": "denied"
+      }
+    },
+    "status": 401,
+    "fileId": "file-1"
   }
 ]

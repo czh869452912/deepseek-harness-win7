@@ -10,6 +10,7 @@ from dsh.llm.deepseek_wire import serialize_request, translate, parse_sse, map_u
 from dsh.llm.deepseek_config import resolve_options
 from dsh.llm.llm_deepseek import DeepSeekAdapter
 from deepseek_http_python import observe
+from deepseek_files_python import observe_files
 
 
 def main():
@@ -18,6 +19,8 @@ def main():
         row = {'id': fixture['id']}
         try:
             kind = fixture['kind']
+            if kind == 'files':
+                row['value'] = observe_files(fixture)
             if kind == 'http':
                 row['value'] = asyncio.run(observe(fixture))
             if kind == 'serialize':

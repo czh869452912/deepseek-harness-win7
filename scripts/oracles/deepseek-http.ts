@@ -3,6 +3,7 @@ import { DeepSeekAdapter, resolveAdapterOptions } from '../../reference/packages
 
 export async function observeHttp(fixture: any) {
   const requests: any[] = [], accepted: string[] = []
+  const reads: any[] = [], uploads: string[] = []
   const controller = new AbortController()
   const mode = fixture.behavior ?? 'success'
   const server = createServer(async (req, res) => {
@@ -27,15 +28,27 @@ export async function observeHttp(fixture: any) {
   })
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
   const port = (server.address() as any).port
-  const adapter = new DeepSeekAdapter({options: () => resolveAdapterOptions({baseURL: `http://127.0.0.1:${port}`, streamIdleTimeoutMs: mode === 'idle' ? 150 : 3000}),
+  const adapter = new DeepSeekAdapter({options: () => resolveAdapterOptions({...fixture.config, baseURL: `http://127.0.0.1:${port}`, streamIdleTimeoutMs: mode === 'idle' ? 150 : 3000}),
     resolveApiKey: async () => 'fixture-key', resolveUserId: () => 'fixture-user' as any,
+    resolveAttachments: () => fixture.images ? {readImageRequest: async (ref: any, policy: any) => {
+      reads.push({id: ref.attachmentId, policy})
+      return {attachment: ref, variantId: ref.attachmentId, data: new Uint8Array(ref.bytes),
+        mediaType: ref.mediaType, bytes: ref.bytes, width: ref.width, height: ref.height,
+        depth: 'uchar', space: 'srgb', hasAlpha: true}
+    }, imageHostPath: () => undefined} as any : undefined,
+    resolveFiles: () => ({ensureUploaded: async (version: any) => {
+      uploads.push(version.attachment.attachmentId)
+      if (fixture.filesFail && uploads.length >= fixture.filesFail) throw new Error('fixture files unavailable')
+      return {record: {fileId: `fixture-file-${uploads.length}`}, uploaded: true}
+    }}) as any,
     prepareExtensions: async () => ({fields: fixture.extension ? {[fixture.extension === 'collision' ? 'model' : 'fixture_extension']: {version: 1}} : {},
       accept: async () => { if (fixture.extension) accepted.push('accepted'); if (fixture.extension === 'accept-failed') throw new Error('fixture acceptance failed') }}),
   })
   const result: any = {chunks: [], requests, accepted}
+  if (fixture.images) Object.assign(result, {reads, uploads})
   try {
-    for await (const chunk of adapter.stream({provider: 'deepseek-official', model: 'model',
-      messages: [{role: 'user', content: [{type: 'text', text: 'hello'}]}],
+    for await (const chunk of adapter.stream({provider: 'deepseek-official', model: fixture.model ?? 'model',
+      messages: fixture.messages ?? [{role: 'user', content: [{type: 'text', text: 'hello'}]}],
       sessionId: 'fixture-session' as any, purpose: 'compaction', signal: controller.signal})) result.chunks.push(chunk)
   } catch (error: any) {
     result.error = {}

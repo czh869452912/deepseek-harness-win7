@@ -1409,7 +1409,7 @@ class ToolsService:
         wrapper_signal = exec_input.signal
         fused_signal = (exec_input._caller_signal if wrapper_signal is exec_input._caller_signal
                         else _FusedSignal(exec_input._caller_signal, wrapper_signal))
-        if fused_signal.is_set():
+        if self._is_aborted(fused_signal):
             return self._aborted_before_result()
         exec_input.signal = fused_signal
         tool = self.get_tool(exec_input.name, exec_input.agent)
@@ -1436,7 +1436,7 @@ class ToolsService:
                     meta = _json_snapshot(projector(exec_input.arguments, value))
                 result = ToolExecutionResult(content=content, value=value, meta=meta)
                 result._execution_token = exec_input.token
-                result = self._aborted_result(result) if fused_signal.is_set() else result
+                result = self._aborted_result(result) if self._is_aborted(fused_signal) else result
                 return result.freeze()
             except Exception as error:
                 if not isinstance(error, ToolOutputError):

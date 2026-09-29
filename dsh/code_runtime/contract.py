@@ -123,7 +123,8 @@ class OutputLedger:
             if remaining < 2:
                 break
             piece = truncate_string(text, remaining)
-            retained.append(piece)
+            if piece or not text:
+                retained.append(piece)
             if piece != text:
                 break
         return dict(logs=retained, error=dict(kind='output-limit', message=message))

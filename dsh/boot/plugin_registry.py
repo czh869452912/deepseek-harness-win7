@@ -105,6 +105,10 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     "@deepseek-ai/dsh-sandbox-policy": "dsh.sandbox.sandbox_policy:SandboxPolicyService",
     "@deepseek-ai/dsh-sandbox-local": "dsh.sandbox.local:LocalSandboxProvider",
     "@deepseek-ai/dsh-pwsh-local": "dsh.shell.pwsh_executor:PwshLocalExecutor",
+    # Win7 platform adaptation: the portable codeRuntime contract advertises
+    # Python/process capabilities; it does not pretend to execute TypeScript.
+    "@deepseek-ai/dsh-code-runtime-worker-thread": "dsh.code_runtime.process:PythonProcessRuntime",
+    "@deepseek-ai/dsh-code-runtime-python-process": "dsh.code_runtime.process:PythonProcessRuntime",
     "@deepseek-ai/dsh-pwsh-sandbox": "dsh.shell.pwsh_executor:SandboxPwshExecutor",
     "@deepseek-ai/dsh-fs-local": "dsh.fs.fs_local:FsLocalPlugin",
     "@deepseek-ai/dsh-fs-sandbox": "dsh.fs.fs_sandbox:SandboxedFileSystem",

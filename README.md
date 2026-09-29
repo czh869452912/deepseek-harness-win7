@@ -11,7 +11,7 @@
 本项目基于 **Python 3.8.10**，忠实复刻了 DeepSeek Harness 原生的 **Cordis（万物皆插件）** 架构。项目的核心目标是：
 1. **Windows 7 兼容目标**：使用 Python 3.8.10；当前 Windows 回归不能替代 Win7 真机认证。
 2. **极简模式与创造模式**：支持原生 DeepSeek Harness 的双关键模式（Minimal & Creative Presets）。
-3. **1:1 官方 Web GUI**：提供基于 Cordis in Browser 微内核与 40 个官方 Client 插件的全功能 Web 界面。
+3. **1:1 官方 Web GUI**：复用固定上游的 Cordis in Browser 前端，Client 插件由实际启用的 Loader 配置派生。
 4. **零依赖 Portable Release**：提供脱离 Python 全局环境依赖的开箱即用便携版。
 
 ---
@@ -63,11 +63,13 @@
 
 该补丁只改变插件装配，不修改原版前端。测试演示使用隔离的 DSH_HOME 和本地模拟模型；它不是生产模型配置。
 
+设置中的“插件列表”显示宿主 Loader 条目。原版默认关闭宿主 HMR，Web 的多数模型工具由会话预设按需挂载，因此宿主同名工具显示“已停用”不代表会话缺少工具；浏览器 `client-hmr` 是另一条独立启用的插件。“插件配置”只显示已注册设置且提供原版配置卡片的插件，不是所有插件的配置编辑器。设置目录、模型提供方和预设工具的验证见 [设置专项验收](docs/research/2026-09-30-web-settings-acceptance.md)。更新代码后需要重启 Web 服务再刷新页面。
+
 ## Web GUI (Cordis in Browser)
 
 Web 端基于官方 **React 18 + TSX + CSS Modules** 架构，使用浏览器端 Cordis 微内核实现动态插件插拔：
 
-- **37 个官方 Client 插件**：`ui-layout`、`ui-sidebar`、`ui-conversation`、`ui-composer`、`ui-user-questions`、`ui-permission-presets`、`ui-goal`、`ui-plan`、`ui-trajectory`、`ui-settings` 等。
+- **官方 Client 插件组合**：`ui-layout`、`ui-sidebar`、`ui-conversation`、`ui-composer`、`ui-user-questions`、`ui-permission-presets`、`ui-goal`、`ui-plan`、`ui-trajectory`、`ui-settings` 等，以固定上游 bundle 和实际启用条目为准。
 - **三栏响应式布局 (`AppFrame`)**：侧边栏工作区树、中央对话流、右侧轨迹与性能指标折叠栏。
 - **丰富的交互视图**：
   - **ReasoningRow**：DeepSeek R1 / V3 深度思考折叠卡与实时打字机输出。

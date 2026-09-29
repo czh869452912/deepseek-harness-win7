@@ -15,13 +15,25 @@ class DummyDbService(Service):
         self.url = url
 
 
+def test_symbol_identity_is_not_its_description():
+    first = LocalRealm(Entry(loader=None, name='one', entry_id='delegation'))
+    second = LocalRealm(Entry(loader=None, name='two', entry_id='delegation'))
+    a = first.access('workflowEngine', create=True)
+    b = second.access('workflowEngine', create=True)
+    assert a != b
+    assert first.access('workflowEngine') == a
+    first.delete('workflowEngine')
+    assert first.access('workflowEngine') != first.access('workflowEngine')
+    assert first.access('workflowEngine', create=True) != a
+
+
 def test_local_and_global_realms():
     """Verify LocalRealm and GlobalRealm symbol generation."""
     entry = Entry(loader=None, name="test-entry", entry_id="abc1234")
     local_realm = LocalRealm(entry)
     assert local_realm.suffix == "#abc1234"
-    assert local_realm.access("db", create=True) == "db#abc1234"
-    assert local_realm.access("db", create=False) == "db#abc1234"
+    assert local_realm.access("db", create=True).startswith("db#abc1234:")
+    assert local_realm.access("db", create=False) == local_realm.access("db", create=True)
     assert local_realm.size == 1
 
     local_realm.delete("db")
@@ -29,7 +41,7 @@ def test_local_and_global_realms():
 
     global_realm = GlobalRealm("shared-cluster")
     assert global_realm.suffix == "@shared-cluster"
-    assert global_realm.access("cache", create=True) == "cache@shared-cluster"
+    assert global_realm.access("cache", create=True).startswith("cache@shared-cluster:")
     assert global_realm.size == 1
 
 
@@ -49,7 +61,7 @@ def test_loader_patch_context_local_isolation():
     assert called == [True]
 
     assert "db" in entry.ctx._isolated_keys
-    assert entry.ctx._isolated_keys["db"] == "db#iso1"
+    assert entry.ctx._isolated_keys["db"].startswith("db#iso1:")
 
     # In isolated context, root db is hidden
     assert entry.ctx.get_service("db") is None
@@ -69,8 +81,8 @@ def test_loader_patch_context_global_shared_realm():
     ctx.emit("loader/patch-context", entry1, lambda: None)
     ctx.emit("loader/patch-context", entry2, lambda: None)
 
-    assert entry1.ctx._isolated_keys["cache"] == "cache@redis-cluster"
-    assert entry2.ctx._isolated_keys["cache"] == "cache@redis-cluster"
+    assert entry1.ctx._isolated_keys["cache"].startswith("cache@redis-cluster:")
+    assert entry2.ctx._isolated_keys["cache"].startswith("cache@redis-cluster:")
     assert entry1.ctx._isolated_keys["cache"] == entry2.ctx._isolated_keys["cache"]
 
 

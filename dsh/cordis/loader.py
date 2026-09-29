@@ -15,6 +15,7 @@ import random
 import re
 import sys
 import time
+import uuid
 from typing import Any, Callable, Dict, Iterator, List, Optional, Set, Tuple, Union
 import yaml
 
@@ -1087,11 +1088,16 @@ class Realm:
         raise NotImplementedError
 
     def access(self, key: str, create: bool = False) -> str:
-        if create:
-            if key not in self.store:
-                self.store[key] = f"{key}{self.suffix}"
+        if key in self.store:
             return self.store[key]
-        return self.store.get(key, f"{key}{self.suffix}")
+        # JS Symbol descriptions are diagnostic labels, not identity. Separate
+        # preset trees routinely contain the same local entry ids. Give every
+        # new symbol its own token, including non-creating probes and recreation
+        # after delete; only a retained realm registration may share identity.
+        symbol = f"{key}{self.suffix}:{uuid.uuid4().hex}"
+        if create:
+            self.store[key] = symbol
+        return symbol
 
     def delete(self, key: str) -> None:
         self.store.pop(key, None)

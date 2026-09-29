@@ -98,7 +98,6 @@ PROFILES: List[str] = ["web", "standard", "headless", "creative", "acp", "sdk", 
 SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
     "web": [
         "@deepseek-ai/dsh-api-session-controller",
-        "@deepseek-ai/dsh-api-workspace-controller",
         "@deepseek-ai/dsh-cordis-host-runner",
         "@deepseek-ai/dsh-session-log-export",
         "@deepseek-ai/dsh-session-reference",
@@ -526,7 +525,7 @@ def test_the_frozen_gap_is_the_union_of_every_shipped_profile():
 
             collect(patch)
     assert union <= shipped_names
-    assert len(union) == 7
+    assert len(union) == 6
 
 
 # --- boot installs and consults the table ------------------------------------

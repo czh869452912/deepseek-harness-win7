@@ -29,7 +29,7 @@ async def test_formal_web_profile_fails_cleanly_on_remaining_providers(tmp_path,
     with pytest.raises(RuntimeError, match='plugin tree failed to load') as raised:
         await asyncio.wait_for(run_profile(dict(profile='web', dshHome=str(tmp_path),
             args=['--no-open', '--port', '0'], waitForExit=False)), 30)
-    for package in ('api-session-controller', 'api-workspace-controller',
+    for package in ('api-session-controller',
                     'cordis-host-runner', 'session-reference', 'session-log-export'):
         assert "Cannot find module '@deepseek-ai/dsh-%s'" % package in str(raised.value)
     assert ("Cannot find module '@deepseek-ai/dsh-session-telemetry-otel'" in str(raised.value)) is (not telemetry_disabled)

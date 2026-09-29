@@ -6,6 +6,12 @@ Aligned 1:1 with reference `directory-picker/src/index.ts`.
 from typing import Any, Dict
 
 
+class DirectoryPickerError(Exception):
+    def __init__(self, code, path, message):
+        super().__init__(message)
+        self.code, self.path = code, path
+
+
 class DirectoryPickerService:
     """
     Abstract directory picker service definition mounted on `ctx.directoryPicker`.

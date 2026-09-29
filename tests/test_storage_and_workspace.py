@@ -44,49 +44,49 @@ def test_storage_domain_json_persistence():
         assert len(dom2.list_keys()) == 0
 
 
-def test_workspace_registry_operations():
+async def workspace_context(tmp_path, headers=None):
+    from dsh.storage.hub import Storage
     ctx = Context()
-    events = []
+    Storage(ctx, root_dir=str(tmp_path / 'storage'))
+    class Persistence:
+        async def list(self):
+            return headers or []
+    ctx.set_service('sessionPersistence', Persistence())
+    reg = WorkspaceRegistry(ctx)
+    await reg.init()
+    ctx.set_service('workspaceRegistry', reg)
+    return ctx, reg
 
-    def on_event(name):
-        return lambda data: events.append((name, data))
 
-    ctx.on("workspace:created", on_event("created"))
-    ctx.on("workspace:session-bound", on_event("bound"))
-    ctx.on("workspace:session-unbound", on_event("unbound"))
-    ctx.on("workspace:deleted", on_event("deleted"))
-
-    ws_svc = WorkspaceService(ctx)
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        ws = ws_svc.create(tmpdir, title="My Workspace")
-        assert ws.workspace_id.startswith("ws-")
-        assert ws.title == "My Workspace"
-
-        by_path = ws_svc.get_by_path(tmpdir)
-        assert by_path is not None
-        assert by_path.workspace_id == ws.workspace_id
-
-        ws_svc.bind_session(ws.workspace_id, "session-123")
-        assert "session-123" in ws.session_ids
-
-        all_ws = ws_svc.list_workspaces()
-        assert len(all_ws) == 1
-        assert all_ws[0].workspace_id == ws.workspace_id
-
-        ws_svc.unbind_session(ws.workspace_id, "session-123")
-        assert "session-123" not in ws.session_ids
-
-        ws_svc.touch(ws.workspace_id)
-        ws_svc.delete(ws.workspace_id)
-        assert ws_svc.get(ws.workspace_id) is None
-        assert len(ws_svc.list_workspaces()) == 0
-
-        event_names = [e[0] for e in events]
-        assert "created" in event_names
-        assert "bound" in event_names
-        assert "unbound" in event_names
-        assert "deleted" in event_names
+@pytest.mark.asyncio
+async def test_workspace_registry_operations(tmp_path):
+    path = tmp_path / 'project'
+    path.mkdir()
+    headers = [dict(id='session-123', cwd=str(path), createdAt=1000)]
+    ctx, reg = await workspace_context(tmp_path, headers)
+    try:
+        ws = await reg.create(str(path), title='My Workspace')
+        await ws.setTitle('My Workspace')
+        assert (await reg.resolveByPath(str(path))).id == ws.id
+        await ws.attachSession('session-123')
+        assert ws.sessionIds == ['session-123']
+        await ws.detachSession('session-123')
+        assert ws.sessionIds == []
+        await ws.attachSession('session-123')
+        await reg.archiveSession('session-123')
+        identity = ws.id
+    finally:
+        await ctx.fiber.dispose()
+    ctx, reg = await workspace_context(tmp_path, headers)
+    try:
+        ws = reg.get(identity)
+        assert ws.title == 'My Workspace'
+        assert ws.sessionIds == ['session-123']
+        assert reg.archivedSessionIds == ['session-123']
+        assert await reg.delete(identity)
+        assert reg.list() == []
+    finally:
+        await ctx.fiber.dispose()
 
 
 @pytest.mark.asyncio
@@ -128,10 +128,8 @@ async def test_domain_spec_and_sqlite_backend_1to1():
 
 
 @pytest.mark.asyncio
-async def test_workspace_insert_before_and_archive_1to1():
-    ctx = Context()
-    reg = WorkspaceRegistry(ctx)
-    await reg.init()
+async def test_workspace_insert_before_and_archive_1to1(tmp_path):
+    ctx, reg = await workspace_context(tmp_path)
 
     with tempfile.TemporaryDirectory() as tmpdir1, tempfile.TemporaryDirectory() as tmpdir2:
         ws1 = await reg.create(tmpdir1, title="WS 1")
@@ -152,3 +150,5 @@ async def test_workspace_insert_before_and_archive_1to1():
         # Unknown session archive raises WorkspaceUnknownSessionError
         with pytest.raises(WorkspaceUnknownSessionError):
             await reg.archive_session("nonexistent-session")
+
+    await ctx.fiber.dispose()

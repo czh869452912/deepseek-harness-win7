@@ -1,444 +1,266 @@
-"""
-Workspace entity registry (`ctx.workspaceRegistry` / `ctx.workspaces`).
-Aligned 1:1 with official `@deepseek-ai/dsh-workspace/src/index`.
-"""
-
+"""Durable Workspace registry, initialized before its service is published."""
 import asyncio
+from datetime import datetime, timezone
+import logging
 import os
-import time
 import uuid
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+
 from dsh.cordis.plugin import Plugin
-from dsh.workspace.entity import AwaitableResult, WorkspaceEntity, WorkspaceEntityHost, WorkspaceMoveInvalidError
+from dsh.workspace.entity import WorkspaceEntity, WorkspaceEntityHost, WorkspaceMoveInvalidError, field, now_iso
 from dsh.workspace.paths import realpath_normalize
 from dsh.workspace.spec import workspace_domain_spec
 
 
 class WorkspaceUnknownSessionError(Exception):
-    """An archiveSession request named a session neither live nor in session persistence."""
-
-    def __init__(self, session_id: str):
-        super().__init__(f"cannot archive session '{session_id}': live sessions and session persistence hold no such session")
+    def __init__(self, session_id):
+        super().__init__("cannot archive session '%s': live sessions and session persistence hold no such session" % session_id)
         self.session_id = session_id
-        self.name = "WorkspaceUnknownSessionError"
 
 
 class WorkspaceOrderInvalidError(Exception):
-    """A workspace reorder named a source or anchor absent from the durable registry order."""
-
-    def __init__(self, workspace_id: str):
-        super().__init__(f"cannot reorder unknown workspace '{workspace_id}'")
+    def __init__(self, workspace_id):
+        super().__init__("cannot reorder unknown workspace '%s'" % workspace_id)
         self.workspace_id = workspace_id
-        self.name = "WorkspaceOrderInvalidError"
 
 
 class WorkspaceRegistry:
-    """
-    Durable workspace registry mounted at `ctx.workspaceRegistry` and `ctx.workspaces`.
-    """
-
-    inject = ["storageDomain", "sessionPersistence"]
-
-    def __init__(self, ctx: Any = None):
+    def __init__(self, ctx):
         self.ctx = ctx
-        self._table: Any = None
-        self._global: Any = None
-        self._state: Optional[Dict[str, Any]] = None
-        self._entities: Dict[str, WorkspaceEntity] = {}
-        self._headers: Dict[str, Any] = {}
-        self._session_paths: Dict[str, str] = {}
-        self._invalid_session_paths: Dict[str, str] = {}
+        self._state, self._table, self._global = None, None, None
+        self._entities, self._headers, self._session_paths, self._invalid_session_paths = {}, {}, {}, {}
+        self._lock = asyncio.Lock()
+        self._host = WorkspaceEntityHost(lambda: self._table, lambda sid: self._session_paths.get(sid),
+                                         self._read_session_header, self._remember_session_path)
 
-        self._in_memory_workspaces: Dict[str, WorkspaceEntity] = {}
-        self._in_memory_order: List[str] = []
-        self._in_memory_archived: Set[str] = set()
+    async def init(self):
+        domain = await self.ctx.get('storageDomain').open(workspace_domain_spec)
+        self.ctx.effect(lambda: domain.close)
+        self._table, self._global = domain.table('workspaces'), domain.global_handle
+        self._state = self._global.get()
+        await self._recover_pending_mutation()
+        self._validate_stored_state()
+        if not self._state['initialized'] or self._table.size:
+            await self._index_headers(await self.ctx.get('sessionPersistence').list())
+        if not self._state['initialized']:
+            await self._bootstrap()
+        sessions = self.ctx.get('sessions')
+        if sessions is not None:
+            await self._index_headers([session.header for session in sessions.list()])
+        self._validate_stored_state()
+        for identity in self._state['workspaceIds']:
+            self._entities[identity] = WorkspaceEntity(self._host, identity, self._table.get(identity))
 
-        self._host = WorkspaceEntityHost(
-            table_fn=self._require_table,
-            session_path_fn=lambda sid: self._session_paths.get(sid),
-            read_session_header_fn=self._read_session_header,
-            remember_session_path_fn=self._remember_session_path,
-        )
+    async def _set_state(self, state):
+        await self._global.set(state)
+        self._state = state
 
-    def _require_table(self) -> Any:
-        if self._table is not None:
-            return self._table
+    async def _recover_pending_mutation(self):
+        pending = self._state.get('pendingMutation')
+        if pending is None:
+            return
+        identity = pending['workspaceId']
+        if identity in self._state['workspaceIds']:
+            raise ValueError("workspace domain is inconsistent: pending workspace '%s' is still present in registry order" % identity)
+        await self._table.delete(identity)
+        await self._set_state(dict(self._state, pendingMutation=None))
 
-        class DummyTable:
-            def __init__(self, registry: "WorkspaceRegistry"):
-                self.reg = registry
+    def _validate_stored_state(self):
+        order = self._state['workspaceIds']
+        if len(order) != len(set(order)):
+            raise ValueError('workspace domain is inconsistent: registry order repeats workspace')
+        if any(self._table.get(identity) is None for identity in order):
+            raise ValueError('workspace domain is inconsistent: registry order references missing workspace')
+        if self._state['initialized'] and set(order) != set(self._table.keys()):
+            raise ValueError('workspace domain is inconsistent: workspace is absent from registry order')
+        paths, accounted = set(), set()
+        for identity, record in self._table.entries():
+            if record['path'] in paths:
+                raise ValueError('workspace domain is inconsistent: path is claimed by multiple workspaces')
+            paths.add(record['path'])
+            for sid in record['sessionIds']:
+                if sid in accounted:
+                    raise ValueError('workspace domain is inconsistent: session is accounted by multiple workspaces')
+                accounted.add(sid)
 
-            async def update(self, key: str, fn: Callable[[Dict[str, Any]], Dict[str, Any]]) -> Dict[str, Any]:
-                entity = self.reg._entities.get(key)
-                if not entity:
-                    raise KeyError(key)
-                next_rec = fn(entity._record)
-                entity._record = next_rec
-                return next_rec
+    async def create(self, path, title=None):
+        canonical = realpath_normalize(path)
+        if not os.path.isdir(canonical):
+            raise ValueError("cannot create a workspace at '%s': path is not a directory" % canonical)
+        async with self._lock:
+            await self._recover_pending_mutation()
+            for entity in self._entities.values():
+                if entity.path == canonical:
+                    return entity
+            identity, now = str(uuid.uuid4()), now_iso()
+            record = dict(path=canonical, title=title if title is not None else os.path.basename(canonical), sessionIds=[], createdAt=now, updatedAt=now)
+            entity = WorkspaceEntity(self._host, identity, record)
+            state = self._state
+            self._entities[identity] = entity
+            try:
+                await self._set_state(dict(state, pendingMutation=dict(operation='create', workspaceId=identity)))
+            except BaseException:
+                self._entities.pop(identity, None)
+                raise
+            try:
+                await self._table.put(identity, record)
+                await self._set_state(dict(state, initialized=True, workspaceIds=[identity] + state['workspaceIds'], pendingMutation=None))
+            except BaseException:
+                self._entities.pop(identity, None)
+                await self._table.delete(identity)
+                await self._set_state(state)
+                raise
+            return entity
 
-        return DummyTable(self)
+    def get(self, identity):
+        return self._entities.get(identity)
 
-    def _remember_session_path(self, sid: str, path: str) -> None:
+    def list(self):
+        return [self._entities[identity] for identity in self._state['workspaceIds']]
+
+    list_workspaces = list
+
+    async def resolveByPath(self, path):
+        canonical = realpath_normalize(path)
+        return next((entity for entity in self._entities.values() if entity.path == canonical), None)
+
+    resolve_by_path = resolveByPath
+    get_by_path = resolveByPath
+
+    async def delete(self, identity):
+        async with self._lock:
+            await self._recover_pending_mutation()
+            entity = self.get(identity)
+            if entity is None:
+                return False
+            state = self._state
+            next_state = dict(state, workspaceIds=[key for key in state['workspaceIds'] if key != identity], pendingMutation=None)
+            await self._set_state(dict(next_state, pendingMutation=dict(operation='delete', workspaceId=identity)))
+            self._entities.pop(identity)
+            try:
+                await self._table.delete(identity)
+            except BaseException:
+                self._entities[identity] = entity
+                try:
+                    await self._set_state(state)
+                except BaseException:
+                    self._entities.pop(identity, None)
+                    raise
+                raise
+            try:
+                await self._set_state(next_state)
+            except Exception as error:
+                logging.getLogger('workspace').warning('deleted workspace pending marker cleanup failed: %s', error)
+            return True
+
+    async def insertBefore(self, identity, before_id=None):
+        async with self._lock:
+            await self._recover_pending_mutation()
+            order = self._state['workspaceIds']
+            for key in (identity, before_id):
+                if key is not None and key not in order:
+                    raise WorkspaceOrderInvalidError(key)
+            if identity == before_id:
+                return list(order)
+            moved = [key for key in order if key != identity]
+            moved.insert(len(moved) if before_id is None else moved.index(before_id), identity)
+            if moved != order:
+                await self._set_state(dict(self._state, workspaceIds=moved))
+            return moved
+
+    insert_before = insertBefore
+
+    @property
+    def archivedSessionIds(self):
+        return list(self._state['archivedSessionIds'])
+
+    archived_session_ids = archivedSessionIds
+
+    async def archiveSession(self, sid):
+        async with self._lock:
+            await self._recover_pending_mutation()
+            if sid in self.archivedSessionIds:
+                return
+            sessions = self.ctx.get('sessions')
+            if not (sessions is not None and sessions.get(sid) is not None) and sid not in self._headers:
+                await self._index_headers(await self.ctx.get('sessionPersistence').list())
+                if sid not in self._headers:
+                    raise WorkspaceUnknownSessionError(sid)
+            await self._set_state(dict(self._state, archivedSessionIds=self.archivedSessionIds + [sid]))
+
+    archive_session = archiveSession
+
+    def _remember_session_path(self, sid, path):
         self._session_paths[sid] = path
         self._invalid_session_paths.pop(sid, None)
 
-    def _read_session_header(self, sid: str) -> Any:
-        sessions_svc = self.ctx.get("sessions") if self.ctx and hasattr(self.ctx, "get") else None
-        if sessions_svc:
-            live = sessions_svc.get(sid) if hasattr(sessions_svc, "get") else None
-            if live:
-                hdr = getattr(live, "header", live)
-                self._headers[sid] = hdr
-                return hdr
-
-        cached = self._headers.get(sid)
-        if cached:
-            return cached
-
-        persistence = self.ctx.get("sessionPersistence") if self.ctx and hasattr(self.ctx, "get") else None
-        if persistence and hasattr(persistence, "list"):
+    async def _index_headers(self, headers):
+        for header in headers:
+            sid, cwd = field(header, 'id'), field(header, 'cwd')
+            self._headers[sid] = header
+            self._session_paths.pop(sid, None)
             try:
-                headers = persistence.list()
-                for h in headers:
-                    h_id = getattr(h, "id", None) or (h.get("id") if isinstance(h, dict) else None)
-                    if h_id:
-                        self._headers[h_id] = h
-                if sid in self._headers:
-                    return self._headers[sid]
-            except Exception:
-                pass
+                canonical = realpath_normalize(cwd) if cwd is not None else None
+                if canonical is None or not os.path.isdir(canonical):
+                    raise ValueError('cwd is not a directory')
+                self._remember_session_path(sid, canonical)
+            except (OSError, ValueError, TypeError) as error:
+                self._invalid_session_paths[sid] = str(error)
 
-        raise ValueError(f"cannot validate session '{sid}': session persistence holds no such session")
+    async def _read_session_header(self, sid):
+        sessions = self.ctx.get('sessions')
+        live = sessions.get(sid) if sessions is not None else None
+        if live is not None:
+            self._headers[sid] = live.header
+            return live.header
+        if sid not in self._headers:
+            await self._index_headers(await self.ctx.get('sessionPersistence').list())
+        if sid not in self._headers:
+            raise ValueError("cannot validate session '%s': session persistence holds no such session" % sid)
+        return self._headers[sid]
 
-    async def init(self) -> None:
-        storage_domain = self.ctx.get("storageDomain") if self.ctx and hasattr(self.ctx, "get") else None
-        if storage_domain and hasattr(storage_domain, "open"):
-            try:
-                domain = await storage_domain.open(workspace_domain_spec)
-                self._table = domain.table("workspaces")
-                self._global = domain.global_handle
-                self._state = self._global.get()
-                await self._recover_pending_mutation()
-                self._validate_stored_state(self._state)
-
-                persistence = self.ctx.get("sessionPersistence") if hasattr(self.ctx, "get") else None
-                headers = await persistence.list() if persistence and hasattr(persistence, "list") else []
-
-                if not self._state.get("initialized"):
-                    await self._replace_header_index(headers)
-                    await self._bootstrap(headers)
-                elif self._table.size > 0:
-                    await self._replace_header_index(headers)
-
-                await self._index_live_sessions()
-                self._rebuild_entities()
-                return
-            except Exception:
-                pass
-
-        if self._state is None:
-            self._state = {
-                "initialized": True,
-                "workspaceIds": [],
-                "archivedSessionIds": [],
-                "pendingMutation": None,
-            }
-
-    def create(self, path: str, title: Optional[str] = None) -> Any:
-        canonical = realpath_normalize(path)
-        if not os.path.isdir(canonical):
-            raise ValueError(f"cannot create a workspace at '{canonical}': path is not a directory")
-
-        for entity in self._entities.values():
-            if entity.path == canonical:
-                return AwaitableResult(entity)
-
-        for entity in self._in_memory_workspaces.values():
-            if entity.path == canonical:
-                if title:
-                    entity.title = title
-                return AwaitableResult(entity)
-
-        ws_id = f"ws-{uuid.uuid4().hex[:8]}"
-        ws_name = title or os.path.basename(canonical) or "workspace"
-        now_str = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-
-        record = {
-            "path": canonical,
-            "title": ws_name,
-            "sessionIds": [],
-            "createdAt": now_str,
-            "updatedAt": now_str,
-        }
-
-        entity = WorkspaceEntity(self._host, ws_id, record)
-        self._entities[ws_id] = entity
-        self._in_memory_workspaces[ws_id] = entity
-
-        if self._state is not None:
-            w_ids = [ws_id] + [wid for wid in self._state.get("workspaceIds", []) if wid != ws_id]
-            self._state["workspaceIds"] = w_ids
-            self._state["initialized"] = True
-            if self._global:
-                try:
-                    loop = asyncio.get_running_loop()
-                    loop.create_task(self._global.set(dict(self._state)))
-                except RuntimeError:
-                    pass
-        if ws_id not in self._in_memory_order:
-            self._in_memory_order.insert(0, ws_id)
-
-        if self._table and hasattr(self._table, "put"):
-            try:
-                loop = asyncio.get_running_loop()
-                loop.create_task(self._table.put(ws_id, record))
-            except RuntimeError:
-                pass
-
-        if self.ctx and hasattr(self.ctx, "emit"):
-            try:
-                self.ctx.emit("workspace:created", entity.to_dict())
-            except Exception:
-                pass
-
-        return AwaitableResult(entity)
-
-    def get(self, ws_id: str) -> Optional[WorkspaceEntity]:
-        return self._entities.get(ws_id) or self._in_memory_workspaces.get(ws_id)
-
-    def resolve_by_path(self, path: str) -> Optional[WorkspaceEntity]:
-        try:
-            canonical = realpath_normalize(path)
-        except Exception:
-            return None
-        for entity in list(self._entities.values()) + list(self._in_memory_workspaces.values()):
-            if entity.path == canonical:
-                return entity
-        return None
-
-    def get_by_path(self, path: str) -> Optional[WorkspaceEntity]:
-        return self.resolve_by_path(path)
-
-    def resolveByPath(self, path: str) -> Optional[WorkspaceEntity]:
-        return self.resolve_by_path(path)
-
-    def list(self) -> List[WorkspaceEntity]:
-        order = self._state.get("workspaceIds", []) if self._state else self._in_memory_order
-        res = []
-        for wid in order:
-            ent = self.get(wid)
-            if ent:
-                res.append(ent)
-        return res
-
-    def list_workspaces(self) -> List[WorkspaceEntity]:
-        return self.list()
-
-    def delete(self, ws_id: str) -> Any:
-        entity = self.get(ws_id)
-        if not entity:
-            return AwaitableResult(False)
-
-        self._entities.pop(ws_id, None)
-        self._in_memory_workspaces.pop(ws_id, None)
-        if ws_id in self._in_memory_order:
-            self._in_memory_order.remove(ws_id)
-
-        if self._state is not None:
-            w_ids = [wid for wid in self._state.get("workspaceIds", []) if wid != ws_id]
-            self._state["workspaceIds"] = w_ids
-            if self._global:
-                try:
-                    loop = asyncio.get_running_loop()
-                    loop.create_task(self._global.set(dict(self._state)))
-                except RuntimeError:
-                    pass
-
-        if self._table and hasattr(self._table, "delete"):
-            try:
-                loop = asyncio.get_running_loop()
-                loop.create_task(self._table.delete(ws_id))
-            except RuntimeError:
-                pass
-
-        if self.ctx and hasattr(self.ctx, "emit"):
-            try:
-                self.ctx.emit("workspace:deleted", {"workspaceId": ws_id})
-            except Exception:
-                pass
-
-        return AwaitableResult(True)
-
-    def insert_before(self, ws_id: str, before_id: Optional[str] = None) -> Any:
-        order = list(self._state.get("workspaceIds", []) if self._state else self._in_memory_order)
-        if ws_id not in order:
-            raise WorkspaceOrderInvalidError(ws_id)
-        if before_id is not None and before_id not in order:
-            raise WorkspaceOrderInvalidError(before_id)
-        if before_id == ws_id:
-            return AwaitableResult(order)
-
-        without = [wid for wid in order if wid != ws_id]
-        at = len(without) if before_id is None else without.index(before_id)
-        new_order = without[:at] + [ws_id] + without[at:]
-
-        if self._state is not None:
-            self._state["workspaceIds"] = new_order
-            if self._global:
-                try:
-                    loop = asyncio.get_running_loop()
-                    loop.create_task(self._global.set(dict(self._state)))
-                except RuntimeError:
-                    pass
-        self._in_memory_order = new_order
-        return AwaitableResult(new_order)
-
-    def insertBefore(self, ws_id: str, before_id: Optional[str] = None) -> Any:
-        return self.insert_before(ws_id, before_id)
-
-    @property
-    def archived_session_ids(self) -> List[str]:
-        if self._state:
-            return list(self._state.get("archivedSessionIds", []))
-        return list(self._in_memory_archived)
-
-    @property
-    def archivedSessionIds(self) -> List[str]:
-        return self.archived_session_ids
-
-    def archive_session(self, session_id: str) -> Any:
-        archived = self.archived_session_ids
-        if session_id in archived:
-            return AwaitableResult(None)
-
-        if not self._session_known(session_id):
-            raise WorkspaceUnknownSessionError(session_id)
-
-        if self._state is not None:
-            self._state["archivedSessionIds"] = archived + [session_id]
-            if self._global:
-                try:
-                    loop = asyncio.get_running_loop()
-                    loop.create_task(self._global.set(dict(self._state)))
-                except RuntimeError:
-                    pass
-        self._in_memory_archived.add(session_id)
-        return AwaitableResult(None)
-
-    def archiveSession(self, session_id: str) -> Any:
-        return self.archive_session(session_id)
-
-    def bind_session(self, ws_id: str, session_id: str) -> None:
-        ws = self.get(ws_id)
-        if ws:
-            if session_id not in ws._record.get("sessionIds", []):
-                ws._record["sessionIds"].append(session_id)
-                ws.updated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-                if self.ctx and hasattr(self.ctx, "emit"):
-                    try:
-                        self.ctx.emit("workspace:session-bound", {"workspaceId": ws_id, "sessionId": session_id})
-                    except Exception:
-                        pass
-
-    def unbind_session(self, ws_id: str, session_id: str) -> None:
-        ws = self.get(ws_id)
-        if ws:
-            if session_id in ws._record.get("sessionIds", []):
-                ws._record["sessionIds"].remove(session_id)
-                ws.updated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-                if self.ctx and hasattr(self.ctx, "emit"):
-                    try:
-                        self.ctx.emit("workspace:session-unbound", {"workspaceId": ws_id, "sessionId": session_id})
-                    except Exception:
-                        pass
-
-    def touch(self, ws_id: str) -> None:
-        ws = self.get(ws_id)
-        if ws:
-            ws.updated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-
-    def _session_known(self, session_id: str) -> bool:
-        sessions_svc = self.ctx.get("sessions") if self.ctx and hasattr(self.ctx, "get") else None
-        if sessions_svc and hasattr(sessions_svc, "get") and sessions_svc.get(session_id) is not None:
-            return True
-        if session_id in self._headers:
-            return True
-        return False
-
-    async def _recover_pending_mutation(self) -> None:
-        if not self._state:
-            return
-        pending = self._state.get("pendingMutation")
-        if not pending:
-            return
-        ws_id = pending.get("workspaceId")
-        if ws_id in self._state.get("workspaceIds", []):
-            raise ValueError(f"workspace domain is inconsistent: pending {pending.get('operation')} workspace '{ws_id}' is still present in registry order")
-        if self._table and hasattr(self._table, "delete"):
-            await self._table.delete(ws_id)
-        self._state["pendingMutation"] = None
-        if self._global:
-            await self._global.set(dict(self._state))
-
-    def _validate_stored_state(self, state: Dict[str, Any]) -> None:
-        order = set()
-        for wid in state.get("workspaceIds", []):
-            if wid in order:
-                raise ValueError(f"workspace domain is inconsistent: registry order repeats workspace '{wid}'")
-            order.add(wid)
-
-    def _rebuild_entities(self) -> None:
-        self._entities.clear()
-        if not self._state or not self._table:
-            return
-        for wid in self._state.get("workspaceIds", []):
-            rec = self._table.get(wid) if hasattr(self._table, "get") else None
-            if rec:
-                self._entities[wid] = WorkspaceEntity(self._host, wid, rec)
-
-    async def _replace_header_index(self, headers: List[Any]) -> None:
-        self._headers.clear()
-        self._session_paths.clear()
-        self._invalid_session_paths.clear()
-        for h in headers:
-            h_id = getattr(h, "id", None) or (h.get("id") if isinstance(h, dict) else None)
-            cwd = getattr(h, "cwd", None) or (h.get("cwd") if isinstance(h, dict) else None)
-            if h_id:
-                self._headers[h_id] = h
-                if cwd and os.path.isdir(cwd):
-                    try:
-                        norm = realpath_normalize(cwd)
-                        self._session_paths[h_id] = norm
-                    except Exception:
-                        pass
-
-    async def _bootstrap(self, headers: List[Any]) -> None:
-        if not self._state:
-            return
-        self._state["initialized"] = True
-        if self._global:
-            await self._global.set(dict(self._state))
-
-    async def _index_live_sessions(self) -> None:
-        sessions_svc = self.ctx.get("sessions") if self.ctx and hasattr(self.ctx, "get") else None
-        if sessions_svc and hasattr(sessions_svc, "list"):
-            headers = [getattr(s, "header", s) for s in sessions_svc.list()]
-            await self._replace_header_index(headers)
+    async def _bootstrap(self):
+        groups = {}
+        for sid, path in self._session_paths.items():
+            groups.setdefault(path, []).append(self._headers[sid])
+        for headers in groups.values():
+            headers.sort(key=lambda h: (-field(h, 'createdAt', 0), field(h, 'id')))
+        by_path = {record['path']: identity for identity, record in self._table.entries()}
+        accounted = {sid: identity for identity, record in self._table.entries() for sid in record['sessionIds']}
+        for path, headers in sorted(groups.items(), key=lambda item: (-field(item[1][0], 'createdAt', 0), item[0])):
+            identity = by_path.get(path)
+            ids = [field(h, 'id') for h in headers if field(h, 'id') not in accounted or identity is not None and accounted[field(h, 'id')] == identity]
+            if identity is None:
+                if not ids:
+                    continue
+                identity = str(uuid.uuid4())
+                now = datetime.fromtimestamp(field(headers[0], 'createdAt', 0) / 1000, timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
+                await self._table.put(identity, dict(path=path, title=os.path.basename(path), sessionIds=ids, createdAt=now, updatedAt=now))
+            else:
+                record = self._table.get(identity)
+                ids += [sid for sid in record['sessionIds'] if sid not in ids]
+                if ids != record['sessionIds']:
+                    await self._table.update(identity, lambda record: dict(record, sessionIds=ids, updatedAt=now_iso()))
+            for sid in ids:
+                accounted[sid] = identity
+        ranks = {path: field(headers[0], 'createdAt', 0) for path, headers in groups.items()}
+        prior = {identity: i for i, identity in enumerate(self._state['workspaceIds'])}
+        rows = sorted(self._table.entries(), key=lambda row: (-ranks.get(row[1]['path'], datetime.fromisoformat(row[1]['createdAt'].replace('Z', '+00:00')).timestamp() * 1000), prior.get(row[0], float('inf')), row[0]))
+        order = [row[0] for row in rows]
+        if order != self._state['workspaceIds']:
+            await self._set_state(dict(self._state, workspaceIds=order))
+        await self._set_state(dict(self._state, initialized=True))
 
 
-# Alias for Service
 WorkspaceService = WorkspaceRegistry
 
 
 class WorkspacePlugin(Plugin):
-    """
-    Plugin `@deepseek-ai/dsh-workspace`: Mounts `ctx.workspaceRegistry` / `ctx.workspaces` service.
-    """
+    id = 'workspace'
+    name = '@deepseek-ai/dsh-workspace'
+    inject = ['storageDomain', 'sessionPersistence']
 
-    id = "workspace"
-    name = "@deepseek-ai/dsh-workspace"
-
-    def apply(self, ctx: Any) -> None:
-        svc = WorkspaceRegistry(ctx)
-        ctx.set_service("workspaceRegistry", svc)
-        ctx.set_service("workspaces", svc)
+    async def apply(self, ctx):
+        service = WorkspaceRegistry(ctx)
+        await service.init()
+        ctx.set_service('workspaceRegistry', service)
+        ctx.set_service('workspaces', service)

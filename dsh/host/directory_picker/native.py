@@ -1,82 +1,46 @@
-"""
-Native Directory Picker (`@deepseek-ai/dsh-host-directory-picker-native`).
-Aligned 1:1 with reference `directory-picker-native/src/index.ts`.
-"""
-
-import asyncio
+"""Native directory chooser whose child process belongs to the caller."""
 import os
-import subprocess
+import shutil
 import sys
-from typing import Any, Dict, Optional
-
 from dsh.cordis.plugin import Plugin
+from dsh.core.abort import NEVER_ABORTED
 from dsh.host.directory_picker.base import DirectoryPickerService
+from dsh.host.native_command import run_native
 
 
 class NativeDirectoryPickerService(DirectoryPickerService):
-    """
-    Native directory chooser on host display.
-    """
+    def __init__(self, ctx):
+        super().__init__(ctx)
+        self._capability = dict(kind='native', pick=self.pick_native)
 
-    def capability(self) -> Dict[str, Any]:
-        return {
-            "kind": "native",
-            "pick": self.pick_native,
-        }
+    def capability(self):
+        return self._capability
 
-    async def pick_native(self) -> Optional[str]:
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self._pick_native_sync)
-
-    def _pick_native_sync(self) -> Optional[str]:
-        # Try Python standard library tkinter first (zero external dependencies)
-        try:
-            import tkinter as tk
-            from tkinter import filedialog
-
-            root = tk.Tk()
-            root.withdraw()
-            root.attributes("-topmost", True)
-            selected = filedialog.askdirectory(title="Select Workspace Directory")
-            root.destroy()
-            return os.path.normpath(selected) if selected else None
-        except Exception:
-            pass
-
-        # Fallback to PowerShell FolderBrowserDialog on Windows
-        if sys.platform == "win32" or os.name == "nt":
+    async def pick_native(self, signal=NEVER_ABORTED):
+        if sys.platform == 'win32':
+            # System WinForms is available on Windows 7; no Tk runtime or
+            # detached UI thread can survive cancellation of this child.
+            script = "[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding; Add-Type -AssemblyName System.Windows.Forms; $f = New-Object System.Windows.Forms.FolderBrowserDialog; try { if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::Write($f.SelectedPath) } } finally { $f.Dispose() }"
+            output = await run_native('powershell.exe', ['-NoProfile', '-STA', '-Command', script], signal)
+        elif sys.platform == 'darwin':
+            output = await run_native('osascript', ['-e', 'try\nPOSIX path of (choose folder)\non error number -128\nreturn ""\nend try'], signal)
+        else:
+            command = 'zenity' if shutil.which('zenity') else 'kdialog'
+            args = ['--file-selection', '--directory'] if command == 'zenity' else ['--getexistingdirectory', os.path.expanduser('~')]
             try:
-                ps_script = (
-                    "Add-Type -AssemblyName System.Windows.Forms; "
-                    "$f = New-Object System.Windows.Forms.FolderBrowserDialog; "
-                    "$f.Description = 'Select Workspace Directory'; "
-                    "$f.ShowNewFolderButton = $true; "
-                    "if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $f.SelectedPath }"
-                )
-                res = subprocess.run(
-                    ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", ps_script],
-                    capture_output=True,
-                    text=True,
-                    timeout=60,
-                )
-                out = res.stdout.strip()
-                return os.path.normpath(out) if out else None
-            except Exception:
-                pass
-
-        return None
+                output = await run_native(command, args, signal)
+            except RuntimeError as error:
+                signal.throw_if_aborted()
+                if str(error) == command + ' exited with 1':
+                    return None
+                raise
+        selected = output.rstrip('\r\n')
+        return os.path.normpath(selected) if selected else None
 
 
 class NativeDirectoryPickerPlugin(Plugin):
-    id = "host-directory-picker-native"
-    name = "@deepseek-ai/dsh-host-directory-picker-native"
+    id = 'host-directory-picker-native'
+    name = '@deepseek-ai/dsh-host-directory-picker-native'
 
-    def apply(self, ctx: Any) -> None:
-        if ctx.get("directoryPicker") is not None:
-            return
-        try:
-            service = NativeDirectoryPickerService(ctx)
-        except RuntimeError as exc:
-            if "has been registered" not in str(exc):
-                raise
-            return
+    def apply(self, ctx):
+        NativeDirectoryPickerService(ctx)

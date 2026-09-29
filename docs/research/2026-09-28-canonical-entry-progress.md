@@ -11,7 +11,7 @@
 - `af62f475`：默认 standard、creative 的相同旅程通过。三种 pi-ai 协议也各自经完整默认 headless、真实文件工具和持久 replay 完成两次模型请求；仅配置 loopback 端点、凭据和模型，没有关闭默认业务插件。
 - 默认组合暴露并修复了子 Agent 提示上下文、AgentLoop `cwd` 变量、Goal 卸载、压缩误触发/非表面事件边界，以及重复工具提醒未继续 waterfall 的问题。
 
-上述证明了短会话的可运行 CLI 基线，**没有证明默认组合的全部能力已与上游等价**。compaction 已移除固定占位摘要：通过真实 LLM stream 复用请求前缀，检查摘要缩小、工具配对与历史稳定性，记录 start/summary/end 事务；手动压缩进入 Agent maintenance 并等待持久化，失败关闭只尝试一次。19 项定向测试包含真实 HTTP → 摘要 → JSONL。按模型容量的压力策略、溢出重试和完整上游配对仍待闭合，因此尚未验收完整长会话行为。Web / ACP 不属于已跑通入口。
+上述证明了短会话的可运行 CLI 基线，**没有证明默认组合的全部能力已与上游等价**。`808eceba`：compaction 已移除固定占位摘要：通过真实 LLM stream 复用请求前缀，检查摘要缩小、工具配对与历史稳定性，记录 start/summary/end 事务；手动压缩进入 Agent maintenance 并等待持久化，失败关闭只尝试一次。19 项定向测试包含真实 HTTP → 摘要 → JSONL。按模型容量的压力策略、溢出重试和完整上游配对仍待闭合，因此尚未验收完整长会话行为。Web / ACP 不属于已跑通入口。
 
 ## 工作 2：原生模型边界
 
@@ -21,7 +21,7 @@
 
 `49c06729` 修复 settings provider 注册时被关闭的问题。schema 合法但 resolver 不可用的配置允许写入，adapter 保持整个 last-good 代次；实际文件测试覆盖保存、回退和卸载。
 
-固定上游 Node / Python **76 个同输入配对观察一致**。`56c8e891` 新增真实 HTTP adapter → retry middleware → Session 场景：服务错误恢复、认证失败拒绝重试、次数耗尽、过长 Retry-After 和 always 策略。此处重试调度循环为探针，不冒充完整 AgentLoop。
+固定上游 Node / Python **76 个同输入配对观察一致**。`56c8e891` 新增真实 HTTP adapter → retry middleware → Session 场景：服务错误恢复、认证失败拒绝重试、次数耗尽、过长 Retry-After 和 always 策略。此处重试调度循环为探针，不冒充完整 AgentLoop。另由 `a31613b4` 的四个默认 headless 子进程测试，直接验证真实 AgentLoop 的 503 恢复、401 不重试、次数耗尽和过长 Retry-After；检查单个 turn、同一 step 的持久重试编号、最终结果与退出码。
 
 ### pi-ai
 
@@ -46,9 +46,20 @@
 ## 验证环境与证据
 
 - 本机 Python 3.8.10 `.venv`，Windows NT 10.0.26200；Node 22.20.0，不是 release gate 指定的 22.22.2。
-- 全量 `native-baseline-final.xml`：**3583 passed、11 skipped、1 warning，336.99 秒**，覆盖 `af62f475` 的全部实现；凭据/图片定向 10 passed，默认 profile 与三协议 Agent 旅程 8 passed。
+- 最终全量 `native-and-compaction-final.xml`：**3600 passed、11 skipped、1 warning，390.32 秒**，覆盖代码提交至 `a31613b4`，包含默认组合、三种 pi-ai 协议、DeepSeek 真实 AgentLoop 重试和压缩事务/HTTP 用例。
 - 压缩事务主体全量 `compaction-transaction-full.xml`：3595 passed、11 skipped、1 warning，343.42 秒；随后完成错误字段/取消接线与真实 HTTP 用例，压缩定向 19 passed。
 - pi-ai 配对报告：`.goose/out/current-review/pi-three-protocol-paired.json`，322 matched。DeepSeek：`deepseek-retry-paired.json`，76 matched。
 - `migration.py check` 通过；此门禁校验记录与固定 inventory，不证明功能等价。
 - 仍有既有 Windows asyncio transport 清理 warning 和 HTTP 测试连接关闭 stderr，不记为无警告验收。
 - 没有调用收费 API。原始报告在忽略目录 `.goose/out/current-review/`；WinPTY 仅声明 `inferred_idle`，sandbox Windows ACL 仅部分隔离，code runtime 为 `python/process`。没有用当前 Windows 验证替代 Win7 认证。
+## 本机复现 CLI 基线
+
+已准备 Python 3.8.10 的 `.venv`。从仓库根目录运行，模型 key 请通过自己的环境配置提供：
+
+```powershell
+$env:DSH_TELEMETRY_DISABLED = '1'
+$env:DEEPSEEK_API_KEY = '<your-key>'
+.venv\Scripts\python.exe dsh.py --profile headless '检查当前工作目录并说明项目结构'
+```
+
+这里的实际模型调用会使用自己的服务配额；本记录的自动验证只使用本地 HTTP fixture。standard、creative 使用同一正式 profile 参数。minimal 是 SDK/stdio 组合，不是旧交互 CLI；不要恢复旧 `--mode` 或 `--web` 分流来绕过装配。

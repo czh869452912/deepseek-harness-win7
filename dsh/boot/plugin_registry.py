@@ -180,6 +180,7 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     "@deepseek-ai/dsh-attachment-local": "dsh.attachment.local:LocalAttachmentStore",
     "@deepseek-ai/dsh-typert-registry": "dsh.typert.registry:TypertRegistry",
     "@deepseek-ai/dsh-api-remotes": "dsh.typert.api_remotes:ApiRemotesPlugin",
+    "@deepseek-ai/dsh-api-settings-controller": "dsh.api.settings:SettingsController",
     "@deepseek-ai/dsh-acp": "dsh.acp.server:AcpPlugin",
     "@deepseek-ai/dsh-apiproxy": "dsh.host.apiproxy.api_proxy:ApiProxyPlugin",
     "@deepseek-ai/dsh-client-modules": "dsh.host.client_modules.registry:ClientModulesPlugin",

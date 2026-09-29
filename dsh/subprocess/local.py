@@ -630,6 +630,19 @@ class LocalSubprocessRuntime(SubprocessRuntime):
             raise ValueError("subprocess-local: terminal argv must contain a program")
         if _signal_aborted(spec.signal):
             raise RuntimeError("terminal allocation aborted")
+        if sys.platform == 'win32':
+            from dsh.subprocess.winpty import WinPtyTerminalHandle
+            handle = WinPtyTerminalHandle(spec, child_env(spec.env))
+            self.terminals.add(handle)
+            terminate = handle.terminate
+            async def release_native():
+                await terminate()
+                self.terminals.discard(handle)
+            handle.terminate = release_native
+            if _signal_aborted(spec.signal):
+                await handle.terminate()
+                raise RuntimeError('terminal allocation aborted')
+            return handle
         handle = LocalTerminalHandle(spec)
         self.terminals.add(handle)
 

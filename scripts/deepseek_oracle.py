@@ -38,6 +38,7 @@ def main():
                       node=subprocess.check_output([args.node, '--version'], encoding='utf-8').strip(), python=sys.version)
         sources = list((ROOT / 'reference/packages/llm/llm-deepseek/src').glob('*.ts'))
         sources += list((ROOT / 'dsh/llm').glob('*.py'))
+        sources += [ROOT / 'scripts/oracles/deepseek-settings.ts', ROOT / 'scripts/oracles/deepseek_settings_python.py']
         sources += [ROOT / 'scripts/oracles' / name for name in ('deepseek-fixtures.json', 'deepseek.spec.ts', 'deepseek_python.py', 'deepseek-http.ts', 'deepseek_http_python.py', 'deepseek-files.ts', 'deepseek_files_python.py', 'vitest.deepseek-probe.config.mts')]
         before = {str(path.relative_to(ROOT)): digest(path) for path in sources}
         paths = [output.with_suffix('.ts.json'), output.with_suffix('.python.json')]

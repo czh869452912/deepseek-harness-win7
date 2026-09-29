@@ -1000,5 +1000,117 @@
     "environment": {
       "DEEPSEEK_BASE_URL": "http://fixture-env/v1"
     }
+  },
+  {
+    "id": "settings-last-good-duplicate",
+    "kind": "settings",
+    "config": {
+      "models": [
+        {
+          "id": "base"
+        }
+      ]
+    },
+    "updates": [
+      {
+        "models": [
+          {
+            "id": "good"
+          }
+        ]
+      },
+      {
+        "models": [
+          {
+            "id": "bad"
+          },
+          {
+            "id": "bad"
+          }
+        ]
+      },
+      {
+        "models": [
+          {
+            "id": "recovered"
+          }
+        ],
+        "retryPolicy": {
+          "mode": "always"
+        }
+      }
+    ]
+  },
+  {
+    "id": "settings-last-good-schema",
+    "kind": "settings",
+    "config": {
+      "models": [
+        {
+          "id": "base"
+        }
+      ]
+    },
+    "updates": [
+      {
+        "models": [
+          {
+            "id": "good"
+          }
+        ]
+      },
+      {
+        "maxTokens": -1
+      },
+      {
+        "models": [
+          {
+            "id": "recovered"
+          }
+        ],
+        "retryPolicy": {
+          "mode": "always"
+        }
+      }
+    ]
+  },
+  {
+    "id": "settings-last-good-retry",
+    "kind": "settings",
+    "config": {
+      "models": [
+        {
+          "id": "base"
+        }
+      ]
+    },
+    "updates": [
+      {
+        "models": [
+          {
+            "id": "good"
+          }
+        ]
+      },
+      {
+        "retryPolicy": {
+          "mode": "normal",
+          "backoff": {
+            "initialDelayMs": 100,
+            "maxDelayMs": 1
+          }
+        }
+      },
+      {
+        "models": [
+          {
+            "id": "recovered"
+          }
+        ],
+        "retryPolicy": {
+          "mode": "always"
+        }
+      }
+    ]
   }
 ]

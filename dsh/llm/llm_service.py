@@ -542,7 +542,7 @@ class LLMService:
                         if not isinstance(m, dict) or m.get("provider") != provider_id or not m.get("id") or not m.get("name") or m["id"] in seen:
                             raise LlmError('adapter returned invalid or duplicate model metadata for provider "{}"'.format(provider_id), "INVALID_CATALOG")
                         seen.add(m["id"])
-                        item = {"id": m["id"], "name": m["name"]}
+                        item = {"provider": provider_id, "id": m["id"], "name": m["name"]}
                         if m.get("description"):
                             item["description"] = m["description"]
                         if m.get("inputModalities"):

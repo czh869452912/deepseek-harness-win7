@@ -11,6 +11,7 @@ from dsh.llm.deepseek_config import resolve_options
 from dsh.llm.llm_deepseek import DeepSeekAdapter
 from deepseek_http_python import observe
 from deepseek_files_python import observe_files
+from deepseek_settings_python import observe_settings
 
 
 def main():
@@ -26,6 +27,8 @@ def main():
             continue
         try:
             kind = fixture['kind']
+            if kind == 'settings':
+                row['value'] = asyncio.run(observe_settings(fixture))
             if kind == 'files':
                 row['value'] = observe_files(fixture)
             if kind == 'http':

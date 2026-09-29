@@ -554,7 +554,7 @@ class SettingsFilePlugin(Plugin):
 
     def apply(self, ctx: Any) -> None:
         service = FileSettingsProvider(ctx=ctx, config=self.config or {})
-        ctx.effect(service.close, label="settings-file.close")
+        ctx.effect(lambda: service.close, label="settings-file.close")
         ctx.emit("settings/ready", service)
 
 

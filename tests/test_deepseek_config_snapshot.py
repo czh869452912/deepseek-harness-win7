@@ -64,6 +64,32 @@ class MemorySettings(SettingsProvider):
 
 
 @pytest.mark.asyncio
+async def test_actual_file_settings_remains_writable_until_unload_and_preserves_last_good(tmp_path):
+    from dsh.settings.settings_file import SettingsFilePlugin
+    ctx = Context()
+    await ctx.plugin(LlmRuntime)
+    fiber = await ctx.plugin(SettingsFilePlugin, dict(path=str(tmp_path / 'settings.yaml'), watch=False))
+    await ctx.plugin(LLMDeepSeekPlugin, dict(models=[dict(id='base')], baseURL='http://base', apiKeyEnv='BASE_KEY'))
+    settings, llm = ctx.get('settings'), ctx.get('llm')
+    try:
+        await settings.update('llm-deepseek', dict(models=[dict(id='good')], baseURL='http://good', apiKeyEnv='GOOD_KEY'))
+        assert (await llm.list_models('deepseek-official'))[0] == dict(provider='deepseek-official', id='good', name='good', inputModalities=['text'])
+        await settings.update('llm-deepseek', dict(models=[dict(id='bad'), dict(id='bad')], baseURL='http://bad', apiKeyEnv='BAD_KEY'))
+        adapter = llm._adapters['deepseek-official']['adapter']
+        assert adapter.options()['baseURL'] == 'http://good'
+        assert adapter.options()['apiKeyEnv'] == 'GOOD_KEY'
+        assert (await llm.list_models('deepseek-official'))[0]['id'] == 'good'
+        assert 'bad' in (tmp_path / 'settings.yaml').read_text(encoding='utf-8')
+        await fiber.dispose()
+        assert adapter.options()['baseURL'] == 'http://base'
+        assert settings._stopped
+        with pytest.raises(ValueError, match='not registered'):
+            await settings.update('llm-deepseek', dict(maxTokens=1))
+    finally:
+        await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
 async def test_live_settings_replace_route_atomically_and_invalid_generation_keeps_endpoint_and_ref():
     ctx = Context()
     await ctx.plugin(LlmRuntime)

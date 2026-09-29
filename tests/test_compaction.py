@@ -13,11 +13,11 @@ class MockLlmService:
     def __init__(self):
         self.model = "deepseek-chat"
 
-    def chat_completion(self, messages, tools=None):
-        return {
-            "role": "assistant",
-            "content": "This is a condensed summary of the previous conversation steps.",
-        }
+    async def stream(self, request):
+        assert request['purpose'] == 'compaction'
+        assert request['messages'][0]['content']
+        yield {'type': 'text-delta', 'index': 0, 'text': 'condensed summary'}
+        yield {'type': 'finish', 'reason': {'kind': 'stop'}}
 
 
 def test_select_compactable_range():
@@ -53,6 +53,7 @@ def test_select_compactable_range():
 async def test_pressure_compaction_ignores_non_surface_events_and_preserves_short_history():
     ctx = Context()
     engine = BasicCompactionEngine(ctx=ctx)
+    ctx.set_service('token_meter', TokenMeter(ctx))
     session = Session(session_id='short', ctx=ctx)
     session.append('turn/start', dict(turn=1))
     session.append_user_message('keep this')
@@ -72,10 +73,10 @@ async def test_compact_surface_region():
     llm = MockLlmService()
     ctx.set_service("llm", llm)
 
-    engine = BasicCompactionEngine(ctx=ctx)
+    engine = BasicCompactionEngine(config={"summarizationProvider": "test", "summarizationModel": "test"}, ctx=ctx)
     session = Session(session_id="compact-region-test", ctx=ctx)
 
-    session.append_user_message("Step 1: start project")
+    session.append_user_message("Step 1: start project" * 100)
     session.append_assistant_message({"role": "assistant", "content": "Started"})
     session.append_user_message("Step 2: build code")
     session.append_assistant_message({"role": "assistant", "content": "Built"})
@@ -83,11 +84,11 @@ async def test_compact_surface_region():
     assert session.surface.nodes == [0, 1, 2, 3]
 
     # Compact range [0, 1]
-    result = await engine.compact_surface_region(session, start=0, end=1)
+    result = await engine.compact_surface_region(session, start=0, end=1, manual=True)
     assert result["startSeq"] is not None
     assert result["summarySeq"] is not None
     assert result["endSeq"] is not None
-    assert "condensed summary" in result["summary"]
+    assert "condensed summary" in str(result["summary"])
 
     # Surface should now contain the replacement user message in place of [0, 1]
     assert session.surface.replace_generation == 1
@@ -100,7 +101,7 @@ async def test_compact_surface_region():
     # Derived messages should start with the summary
     messages = session.derive_messages()
     assert len(messages) == 3
-    assert "<summary>" in str(messages[0]["content"])
+    assert "<compacted-summary>" in str(messages[0]["content"])
 
 
 @pytest.mark.asyncio
@@ -119,9 +120,10 @@ async def test_automatic_pressure_compaction():
     session = store.create("pressure-session")
 
     # Set very low threshold (e.g. 50 tokens) to trigger compaction
-    engine = BasicCompactionEngine(threshold_tokens=50, retain_tokens=20, auto=False, ctx=ctx)
+    engine = BasicCompactionEngine(config={"summarizationProvider": "test", "summarizationModel": "test"}, threshold_tokens=50, retain_tokens=20, auto=False, ctx=ctx)
 
-    session.append_user_message("Prompt 1 with some text to consume tokens")
+    session.append("turn/start", {"turn": 1})
+    session.append_user_message("Prompt 1 with some text to consume tokens" * 100)
     session.append_assistant_message({"role": "assistant", "content": "Response 1 with text"})
     session.append_user_message("Prompt 2 with some text to consume tokens")
     session.append_assistant_message({"role": "assistant", "content": "Response 2 with text"})

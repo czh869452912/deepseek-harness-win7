@@ -33,6 +33,9 @@ def select_compactable_range(
     if not nodes:
         return None
 
+    if [node["seq"] for node in nodes] != list(session.surface.nodes):
+        raise ValueError("compaction: token-meter surface does not match the current session surface")
+
     accumulated = 0
     retain_start_idx = 0
     for i in range(len(nodes) - 1, -1, -1):
@@ -42,6 +45,11 @@ def select_compactable_range(
             break
 
     if retain_start_idx <= 0:
+        return None
+
+    while retain_start_idx > 0 and not tool_pairing_balanced_before(session, nodes[retain_start_idx]["seq"]):
+        retain_start_idx -= 1
+    if retain_start_idx == 0:
         return None
 
     compactable_nodes = nodes[:retain_start_idx]
@@ -79,7 +87,7 @@ class CompactionEngine(Service):
         self.threshold_tokens = threshold_tokens if threshold_tokens is not None else self.resolved_config.threshold_tokens
         self.retain_tokens = retain_tokens if retain_tokens is not None else self.resolved_config.retain_tokens
         self.keep_recent_messages = keep_recent_messages if keep_recent_messages is not None else self.resolved_config.keep_recent_messages
-        self.auto = auto
+        self.auto = (config or {}).get("auto", auto)
 
     def estimate_tokens(self, messages: List[Dict[str, Any]]) -> int:
         total_chars = sum(len(str(m.get("content", ""))) for m in messages)
@@ -121,42 +129,10 @@ class CompactionEngine(Service):
         if not target_session:
             raise RuntimeError("Compaction target session is missing")
 
-        # Edge checks for tool-pairing balance
-        if hasattr(target_session, "surface"):
-            if not tool_pairing_balanced_before(target_session, start):
-                raise ValueError(f"Unbalanced tool pairing before seq {start}")
-            if not tool_pairing_balanced_after(target_session, end):
-                raise ValueError(f"Unbalanced tool pairing after seq {end}")
-
-        llm = self.ctx.get("llm") if self.ctx and hasattr(self.ctx, "has") and self.ctx.has("llm") else None
-        summary_text = "This is a condensed summary of the previous conversation steps."
-        if llm and hasattr(llm, "chat_completion"):
-            try:
-                res = llm.chat_completion([])
-                if isinstance(res, dict):
-                    summary_text = res.get("content", summary_text)
-            except Exception:
-                pass
-
-        summary_content = f"<summary>\n{summary_text}\n</summary>"
-        shadowed_seqs = list(range(start, end + 1))
-        evt = target_session.append_user_message(
-            summary_content,
-            surface_op={"op": "replace", "start": start, "end": end},
-            source_event_seqs=shadowed_seqs,
-        )
-        summary_seq = evt.get("seq", len(target_session.events) - 1) if isinstance(evt, dict) else getattr(evt, "seq", len(target_session.events) - 1)
-
-        return {
-            "compactionId": f"comp-{start}-{end}",
-            "startSeq": start,
-            "endSeq": end,
-            "summarySeq": summary_seq,
-            "summary": summary_text,
-            "shadowedRange": {"start": start, "end": end},
-            "shadowedSeqs": shadowed_seqs,
-            "shadowedTokenCount": len(shadowed_seqs) * 50,
-        }
+        from dsh.compaction.transaction import compact
+        return await compact(self, target_session, start, end, agent=agent,
+                             signal=kwargs.get("signal"), manual=kwargs.get("manual", False),
+                             source_command_id=kwargs.get("source_command_id"), flush=kwargs.get("flush"))
 
     compact_surface_region = compact_region
     compactRegion = compact_region
@@ -177,14 +153,30 @@ class CompactionEngine(Service):
         if not session:
             return None
 
-        measurement = {
-            "nodes": [{"seq": evt.get("seq", idx), "tokens": len(str(evt.get("data", ""))) // 4 + 10} for idx, evt in enumerate(session.events)]
-        }
-        rng = select_compactable_range(session, measurement, retain_tokens=0)
-        if not rng:
-            return None
+        if agent is None:
+            raise ManualCompactionError("busy", "manual compaction requires an idle agent")
 
-        return await self.compact_region(start=rng["start"], end=rng["end"], session=session)
+        from dsh.core.cancellation import aborted
+        class CombinedSignal:
+            @property
+            def aborted(self):
+                return aborted(signal) or aborted(self.maintenance)
+
+        async def perform(maintenance):
+            combined = CombinedSignal()
+            combined.maintenance = maintenance
+            from dsh.compaction.transaction import check_cancel
+            check_cancel(combined)
+            measurement = self.ctx.get("token_meter").measure(session)
+            rng = select_compactable_range(session, measurement, retain_tokens=0)
+            if not rng:
+                return None
+            return await self.compact_region(start=rng["start"], end=rng["end"], session=session,
+                                             agent=agent, signal=combined, manual=True,
+                                             source_command_id=source_command_id, flush=session.flush)
+        if agent.status != "idle":
+            raise ManualCompactionError("busy", "manual compaction requires an idle agent")
+        return await agent.run_maintenance(perform)
 
     compactNow = compact_now
 
@@ -206,23 +198,25 @@ class CompactionEngine(Service):
                 if not target_session and hasattr(store, "_sessions") and store._sessions:
                     target_session = next(iter(store._sessions.values()))
 
-        if self.ctx and hasattr(self.ctx, "has") and self.ctx.has("tool_result_pruner") and target_session:
-            pruner = self.ctx.get("tool_result_pruner")
-            if hasattr(pruner, "prune_session"):
-                pruner.prune_session(target_session)
-
-        if target_session and (trigger in ("pressure", "context-overflow")):
-            measurement = {
-                "nodes": [{"seq": seq, "tokens": len(str(target_session.events[seq].get("data", ""))) // 4 + 10}
-                          for seq in target_session.surface.nodes]
-            }
-            if trigger == "pressure" and sum(node["tokens"] for node in measurement["nodes"]) <= self.threshold_tokens:
+        if target_session and trigger in ("pressure", "context-overflow"):
+            meter = self.ctx.get("token_meter")
+            if meter is None:
+                raise RuntimeError("compaction requires token_meter")
+            measurement = meter.measure(target_session)
+            if trigger == "pressure" and measurement["total_tokens"] <= self.threshold_tokens:
                 return {"status": "no_compaction_needed"}
+            pruner = self.ctx.get("tool_result_pruner")
+            if pruner is not None:
+                pruner.prune_session(target_session)
+                measurement = meter.measure(target_session)
+                if trigger == "pressure" and measurement["total_tokens"] <= self.threshold_tokens:
+                    return {"status": "no_compaction_needed"}
             retain = 0 if trigger == "context-overflow" else self.retain_tokens
             rng = select_compactable_range(target_session, measurement, retain_tokens=retain)
             if rng:
-                res = await self.compact_region(start=rng["start"], end=rng["end"], session=target_session)
-                return res
+                return await self.compact_region(start=rng["start"], end=rng["end"], session=target_session,
+                                                 agent=agent, signal=signal)
+            return {"status": "no_compaction_needed"}
 
         target_msgs = messages
         if target_msgs is None and target_session and hasattr(target_session, "events"):
@@ -286,7 +280,7 @@ class CompactionBasicPlugin(Plugin):
             agent = payload.get("agent")
             if agent is not None and self.engine.auto:
                 try:
-                    await self.engine.compact_if_needed(agent=agent)
+                    await self.engine.compact_if_needed(agent=agent, signal=payload.get("signal") or getattr(agent, "_cancel_event", None))
                 except Exception:
                     logging.getLogger("compaction-basic").warning("step compaction failed; continuing the turn", exc_info=True)
             return await next_fn() if next_fn is not None else payload

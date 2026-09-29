@@ -2,6 +2,17 @@
 
 更新：2026-09-29。固定上游 `cd5ef8148158c3a752a658978873241fdf8e2bbc`。本记录不签发 migration acceptance，也不推进 accepted_upstream。
 
+## 最新增量（覆盖下文较早的计数和缺口）
+
+- `b309a47c`：正式 pi-ai provider 已注册；原生 Completions HTTP、动态 settings、凭据隔离、有界模型发现、准备请求代次、卸载取消已验证。当前仅支持 `openai-completions`，未实现的协议明确拒绝配置；Responses / Anthropic / 云专用协议和 OAuth 仍待完成。
+- `d516c1b1`：默认 headless 已完成 launcher → HTTP → 文件工具 → 后续模型响应 → JSONL → 正常退出。新进程重新装配默认 headless，经公开 Agent resume 恢复同一会话并继续模型轮次；该探针没有启动一次性 runner，也不表示 CLI 新增 `--resume`。
+- 默认组合中修复了子 Agent 提示上下文、AgentLoop `cwd` 变量、Goal 卸载、压缩误触发/非表面事件边界和重复工具提醒 waterfall 透传。完整上游压缩事务仍未移植，不能据短会话成功宣布长会话等价。
+- `56c8e891`：DeepSeek 配对增至 **76 项**，新增真实 HTTP adapter → retry middleware → Session 观察；重试调度循环是探针，不冒充完整 AgentLoop。
+- pi-ai 已有 **219 项配对一致**，包括 21 个实际 Completions HTTP 场景；其后的 Responses 历史转换仍在推进，尚未接入正式请求。
+- 包名缺口并集降至 **12**。minimal 为零；headless / standard / creative / sdk 的剩余包为隐私开关禁用的 telemetry。包名映射不代表所有协议和业务消费者完成。
+- 最新全量 `.venv\Scripts\python.exe -m pytest tests -q --tb=short --junitxml=.goose/out/current-review/default-headless-full.xml`：**3567 passed、11 skipped、1 warning，349.32 秒**，覆盖 `d516c1b1` 产品代码。`migration.py check` 通过，未签发新的 parity acceptance。
+- 本轮工作 1、2 仍未全部完成。未推送、未调用收费 API；Win7 真机、正式 Web 和便携发行验证状态不变。
+
 **用户指定的剩余工作 1（默认装配）和 2（完整模型边界）仍在推进，尚未全部完成；不能据测试全绿宣布达到最小可用发行基线。** 每个已验证的独立部分均作本地提交，未推送。
 
 ## 正式入口与已完成装配

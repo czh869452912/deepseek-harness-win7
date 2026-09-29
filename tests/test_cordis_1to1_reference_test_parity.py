@@ -207,13 +207,18 @@ def test_loader_realm_scoped_access_and_gc():
     e1 = Entry(loader=loader, name="test-entry-1", entry_id="entry_alpha")
     realm1 = LocalRealm(e1)
     k1 = realm1.access("database", create=True)
-    assert k1 == "database#entry_alpha"
+    assert k1.startswith("database#entry_alpha:")
+    assert realm1.access("database") == k1
 
-    # Global Realm shares same key for same label (@<label>)
+    # Loader pools a single realm per label. Two independently constructed
+    # realms still mint distinct Symbols, even with identical descriptions.
     g1 = GlobalRealm("tenant_a")
     g2 = GlobalRealm("tenant_a")
-    assert g1.access("mq", create=True) == "mq@tenant_a"
-    assert g2.access("mq", create=False) == "mq@tenant_a"
+    key = g1.access("mq", create=True)
+    assert key.startswith("mq@tenant_a:")
+    assert g1.access("mq") == key
+    assert g2.access("mq", create=False) != key
+    assert g2.size == 0
 
     # Clean up
     g1.delete("mq")

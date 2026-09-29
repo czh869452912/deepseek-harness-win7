@@ -168,7 +168,10 @@ def test_loader_realms_and_partial_dispose():
     assert local_r.access("tools", create=True).startswith("tools#")
 
     global_r = GlobalRealm("custom_scope")
-    assert global_r.access("fs", create=True) == "fs@custom_scope"
+    symbol = global_r.access("fs", create=True)
+    assert symbol.startswith("fs@custom_scope:")
+    assert global_r.access("fs") == symbol
     assert global_r.size == 1
     global_r.delete("fs")
     assert global_r.size == 0
+    assert global_r.access("fs", create=True) != symbol

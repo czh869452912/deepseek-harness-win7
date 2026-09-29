@@ -1,0 +1,1407 @@
+[
+  {
+    "id": "native-projection",
+    "kind": "replay",
+    "message": {
+      "role": "assistant",
+      "api": "anthropic-messages",
+      "provider": "test",
+      "model": "model",
+      "responseId": "response-1",
+      "stopReason": "toolUse",
+      "usage": {
+        "input": 10,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 0,
+        "totalTokens": 15
+      },
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "reason",
+          "thinkingSignature": "signed"
+        },
+        {
+          "type": "text",
+          "text": "hello",
+          "textSignature": "native"
+        },
+        {
+          "type": "toolCall",
+          "id": "call",
+          "name": "calculate",
+          "arguments": {
+            "x": 1
+          },
+          "thoughtSignature": "thought"
+        }
+      ]
+    }
+  },
+  {
+    "id": "native-replay",
+    "kind": "assistant",
+    "message": {
+      "role": "assistant",
+      "source": {
+        "kind": "model",
+        "provider": "test",
+        "model": "model",
+        "replayState": {
+          "response": {
+            "kind": "pi-ai",
+            "version": 2,
+            "api": "anthropic-messages",
+            "provider": "test",
+            "model": "model",
+            "responseId": "response-1",
+            "stopReason": "toolUse"
+          },
+          "blocks": [
+            {
+              "type": "reasoning",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "textSignature": "native"
+            },
+            {
+              "type": "tool-call",
+              "thoughtSignature": "thought"
+            }
+          ]
+        }
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "reason"
+        },
+        {
+          "type": "text",
+          "text": "hello"
+        },
+        {
+          "type": "tool-call",
+          "id": "call",
+          "name": "calculate",
+          "arguments": "{\"x\":1}"
+        }
+      ]
+    }
+  },
+  {
+    "id": "replay-version",
+    "kind": "assistant",
+    "message": {
+      "role": "assistant",
+      "source": {
+        "kind": "model",
+        "provider": "test",
+        "model": "model",
+        "replayState": {
+          "response": {
+            "kind": "pi-ai",
+            "version": 1,
+            "api": "anthropic-messages",
+            "provider": "test",
+            "model": "model",
+            "responseId": "response-1",
+            "stopReason": "toolUse"
+          },
+          "blocks": [
+            {
+              "type": "reasoning",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "textSignature": "native"
+            },
+            {
+              "type": "tool-call",
+              "thoughtSignature": "thought"
+            }
+          ]
+        }
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "reason"
+        },
+        {
+          "type": "text",
+          "text": "hello"
+        },
+        {
+          "type": "tool-call",
+          "id": "call",
+          "name": "calculate",
+          "arguments": "{\"x\":1}"
+        }
+      ]
+    }
+  },
+  {
+    "id": "replay-provider",
+    "kind": "assistant",
+    "message": {
+      "role": "assistant",
+      "source": {
+        "kind": "model",
+        "provider": "foreign",
+        "model": "model",
+        "replayState": {
+          "response": {
+            "kind": "pi-ai",
+            "version": 2,
+            "api": "anthropic-messages",
+            "provider": "test",
+            "model": "model",
+            "responseId": "response-1",
+            "stopReason": "toolUse"
+          },
+          "blocks": [
+            {
+              "type": "reasoning",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "textSignature": "native"
+            },
+            {
+              "type": "tool-call",
+              "thoughtSignature": "thought"
+            }
+          ]
+        }
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "reason"
+        },
+        {
+          "type": "text",
+          "text": "hello"
+        },
+        {
+          "type": "tool-call",
+          "id": "call",
+          "name": "calculate",
+          "arguments": "{\"x\":1}"
+        }
+      ]
+    }
+  },
+  {
+    "id": "replay-blockcount",
+    "kind": "assistant",
+    "message": {
+      "role": "assistant",
+      "source": {
+        "kind": "model",
+        "provider": "test",
+        "model": "model",
+        "replayState": {
+          "response": {
+            "kind": "pi-ai",
+            "version": 2,
+            "api": "anthropic-messages",
+            "provider": "test",
+            "model": "model",
+            "responseId": "response-1",
+            "stopReason": "toolUse"
+          },
+          "blocks": [
+            {
+              "type": "reasoning",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "textSignature": "native"
+            },
+            {
+              "type": "tool-call",
+              "thoughtSignature": "thought"
+            }
+          ]
+        }
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "reason"
+        },
+        {
+          "type": "text",
+          "text": "hello"
+        }
+      ]
+    }
+  },
+  {
+    "id": "replay-signature",
+    "kind": "assistant",
+    "message": {
+      "role": "assistant",
+      "source": {
+        "kind": "model",
+        "provider": "test",
+        "model": "model",
+        "replayState": {
+          "response": {
+            "kind": "pi-ai",
+            "version": 2,
+            "api": "anthropic-messages",
+            "provider": "test",
+            "model": "model",
+            "responseId": "response-1",
+            "stopReason": "toolUse"
+          },
+          "blocks": [
+            {
+              "type": "reasoning",
+              "thinkingSignature": 42
+            },
+            {
+              "type": "text",
+              "textSignature": "native"
+            },
+            {
+              "type": "tool-call",
+              "thoughtSignature": "thought"
+            }
+          ]
+        }
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "reason"
+        },
+        {
+          "type": "text",
+          "text": "hello"
+        },
+        {
+          "type": "tool-call",
+          "id": "call",
+          "name": "calculate",
+          "arguments": "{\"x\":1}"
+        }
+      ]
+    }
+  },
+  {
+    "id": "replay-foreign",
+    "kind": "assistant",
+    "message": {
+      "role": "assistant",
+      "source": {
+        "kind": "model",
+        "provider": "test",
+        "model": "model"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "reason"
+        },
+        {
+          "type": "text",
+          "text": "hello"
+        },
+        {
+          "type": "tool-call",
+          "id": "call",
+          "name": "calculate",
+          "arguments": "{\"x\":1}"
+        }
+      ]
+    }
+  },
+  {
+    "id": "replay-bad-arguments",
+    "kind": "assistant",
+    "message": {
+      "role": "assistant",
+      "source": {
+        "kind": "model",
+        "provider": "test",
+        "model": "model",
+        "replayState": {
+          "response": {
+            "kind": "pi-ai",
+            "version": 2,
+            "api": "anthropic-messages",
+            "provider": "test",
+            "model": "model",
+            "responseId": "response-1",
+            "stopReason": "toolUse"
+          },
+          "blocks": [
+            {
+              "type": "reasoning",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "textSignature": "native"
+            },
+            {
+              "type": "tool-call",
+              "thoughtSignature": "thought"
+            }
+          ]
+        }
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "reason"
+        },
+        {
+          "type": "text",
+          "text": "hello"
+        },
+        {
+          "type": "tool-call",
+          "id": "call",
+          "name": "calculate",
+          "arguments": "[1]"
+        }
+      ]
+    }
+  },
+  {
+    "id": "stream-blocks",
+    "kind": "stream",
+    "events": [
+      {
+        "type": "start",
+        "partial": {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ]
+        }
+      },
+      {
+        "type": "thinking_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "thinking_delta",
+        "contentIndex": 0,
+        "delta": "reason"
+      },
+      {
+        "type": "thinking_end",
+        "contentIndex": 0,
+        "content": "reason"
+      },
+      {
+        "type": "text_start",
+        "contentIndex": 1
+      },
+      {
+        "type": "text_delta",
+        "contentIndex": 1,
+        "delta": "hello"
+      },
+      {
+        "type": "text_end",
+        "contentIndex": 1,
+        "content": "hello"
+      },
+      {
+        "type": "toolcall_start",
+        "contentIndex": 2,
+        "partial": {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ]
+        }
+      },
+      {
+        "type": "toolcall_delta",
+        "contentIndex": 2,
+        "delta": "{\"x\":1}"
+      },
+      {
+        "type": "toolcall_end",
+        "contentIndex": 2,
+        "toolCall": {
+          "type": "toolCall",
+          "id": "call",
+          "name": "calculate",
+          "arguments": {
+            "x": 1
+          },
+          "thoughtSignature": "thought"
+        }
+      },
+      {
+        "type": "done",
+        "message": {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "stream-truncated",
+    "kind": "stream",
+    "events": [
+      {
+        "type": "start",
+        "partial": {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ]
+        }
+      },
+      {
+        "type": "thinking_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "thinking_delta",
+        "contentIndex": 0,
+        "delta": "reason"
+      },
+      {
+        "type": "thinking_end",
+        "contentIndex": 0,
+        "content": "reason"
+      },
+      {
+        "type": "text_start",
+        "contentIndex": 1
+      },
+      {
+        "type": "text_delta",
+        "contentIndex": 1,
+        "delta": "hello"
+      },
+      {
+        "type": "text_end",
+        "contentIndex": 1,
+        "content": "hello"
+      },
+      {
+        "type": "toolcall_start",
+        "contentIndex": 2,
+        "partial": {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ]
+        }
+      },
+      {
+        "type": "toolcall_delta",
+        "contentIndex": 2,
+        "delta": "{\"x\":1}"
+      },
+      {
+        "type": "toolcall_end",
+        "contentIndex": 2,
+        "toolCall": {
+          "type": "toolCall",
+          "id": "call",
+          "name": "calculate",
+          "arguments": {
+            "x": 1
+          },
+          "thoughtSignature": "thought"
+        }
+      }
+    ]
+  },
+  {
+    "id": "stop-stop",
+    "kind": "stream",
+    "events": [
+      {
+        "type": "done",
+        "message": {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "stop",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": []
+        }
+      }
+    ]
+  },
+  {
+    "id": "stop-length",
+    "kind": "stream",
+    "events": [
+      {
+        "type": "done",
+        "message": {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "length",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": []
+        }
+      }
+    ]
+  },
+  {
+    "id": "stop-pending",
+    "kind": "stream",
+    "events": [
+      {
+        "type": "done",
+        "message": {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "pending",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": []
+        }
+      }
+    ]
+  },
+  {
+    "id": "stop-deferred",
+    "kind": "stream",
+    "events": [
+      {
+        "type": "done",
+        "message": {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "deferred",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": []
+        }
+      }
+    ]
+  },
+  {
+    "id": "stop-aborted",
+    "kind": "stream",
+    "events": [
+      {
+        "type": "error",
+        "error": {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "aborted",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": []
+        }
+      }
+    ]
+  },
+  {
+    "id": "error-auth",
+    "kind": "stream",
+    "events": [
+      {
+        "type": "error",
+        "error": {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "error",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ],
+          "errorMessage": "401 denied"
+        }
+      }
+    ]
+  },
+  {
+    "id": "error-quota",
+    "kind": "stream",
+    "events": [
+      {
+        "type": "error",
+        "error": {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "error",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ],
+          "errorMessage": "insufficient_quota"
+        }
+      }
+    ]
+  },
+  {
+    "id": "error-rate",
+    "kind": "stream",
+    "events": [
+      {
+        "type": "error",
+        "error": {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "error",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ],
+          "errorMessage": "429 rate limit"
+        }
+      }
+    ]
+  },
+  {
+    "id": "error-size",
+    "kind": "stream",
+    "events": [
+      {
+        "type": "error",
+        "error": {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "error",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ],
+          "errorMessage": "413 payload too large"
+        }
+      }
+    ]
+  },
+  {
+    "id": "error-server",
+    "kind": "stream",
+    "events": [
+      {
+        "type": "error",
+        "error": {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "error",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ],
+          "errorMessage": "503 unavailable"
+        }
+      }
+    ]
+  },
+  {
+    "id": "error-timeout",
+    "kind": "stream",
+    "events": [
+      {
+        "type": "error",
+        "error": {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "error",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ],
+          "errorMessage": "request timed out"
+        }
+      }
+    ]
+  },
+  {
+    "id": "error-transport",
+    "kind": "stream",
+    "events": [
+      {
+        "type": "error",
+        "error": {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "error",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ],
+          "errorMessage": "stream ended without finish_reason"
+        }
+      }
+    ]
+  },
+  {
+    "id": "error-unknown",
+    "kind": "stream",
+    "events": [
+      {
+        "type": "error",
+        "error": {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "error",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ],
+          "errorMessage": "mysterious failure"
+        }
+      }
+    ]
+  },
+  {
+    "id": "error-overflow",
+    "kind": "stream",
+    "events": [
+      {
+        "type": "error",
+        "error": {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "error",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ],
+          "errorMessage": "prompt is too long"
+        }
+      }
+    ]
+  },
+  {
+    "id": "error-throttled",
+    "kind": "stream",
+    "events": [
+      {
+        "type": "error",
+        "error": {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "error",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ],
+          "errorMessage": "Throttling error: Too many tokens, please wait"
+        }
+      }
+    ]
+  },
+  {
+    "id": "caller-aborted-error",
+    "kind": "stream",
+    "aborted": true,
+    "events": [
+      {
+        "type": "error",
+        "error": {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "error",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ],
+          "errorMessage": "Throttling error: Too many tokens, please wait"
+        }
+      }
+    ]
+  },
+  {
+    "id": "overflow-stop",
+    "kind": "stream",
+    "contextWindow": 100,
+    "events": [
+      {
+        "type": "done",
+        "message": {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "stop",
+          "usage": {
+            "input": 101,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "overflow-length",
+    "kind": "stream",
+    "contextWindow": 100,
+    "events": [
+      {
+        "type": "done",
+        "message": {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "length",
+          "usage": {
+            "input": 99,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

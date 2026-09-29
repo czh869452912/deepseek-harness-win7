@@ -4,7 +4,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
 
-from dsh.compaction.engine import CompactionEngine
+from dsh.compaction.engine import CompactionEngine, ManualCompactionError
 from dsh.cordis.context import Context
 from dsh.cordis.environment import LaunchEnvironmentSnapshot
 from dsh.core.agent import Agent, AgentOptions
@@ -15,7 +15,8 @@ from dsh.llm.token_meter import TokenMeter
 
 
 @pytest.mark.asyncio
-async def test_real_auxiliary_http_summary_reuses_prefix_and_flushes_checkpoint(tmp_path):
+@pytest.mark.parametrize('interrupt_first', [False, True])
+async def test_real_auxiliary_http_summary_reuses_prefix_and_flushes_checkpoint(tmp_path, interrupt_first):
     requests = []
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *args):
@@ -27,6 +28,15 @@ async def test_real_auxiliary_http_summary_reuses_prefix_and_flushes_checkpoint(
             raw = ('data: ' + json.dumps(payload) + '\n\ndata: [DONE]\n\n').encode('utf-8')
             self.send_response(200)
             self.send_header('Content-Type', 'text/event-stream')
+            if interrupt_first and len(requests) == 1:
+                self.send_header('Transfer-Encoding', 'chunked')
+                self.end_headers()
+                partial = b'data: {"choices":[{"delta":{"content":"incomplete checkpoint"}}]}\n\n'
+                self.wfile.write(('%x\r\n' % len(partial)).encode('ascii') + partial + b'\r\n')
+                self.wfile.flush()
+                # Deliberately omit the terminating HTTP chunk and SSE DONE.
+                self.close_connection = True
+                return
             self.send_header('Content-Length', str(len(raw)))
             self.end_headers()
             self.wfile.write(raw)
@@ -51,9 +61,20 @@ async def test_real_auxiliary_http_summary_reuses_prefix_and_flushes_checkpoint(
     def persist(current):
         durable.write_text('\n'.join(json.dumps(event, ensure_ascii=False) for event in current.events), encoding='utf-8')
     ctx.on('session/flush', persist)
+    engine = CompactionEngine(ctx=ctx)
     try:
-        result = await CompactionEngine(ctx=ctx).compact_now(agent)
-        assert len(requests) == 1
+        if interrupt_first:
+            before = session.derive_messages()
+            with pytest.raises(ManualCompactionError) as failure:
+                await engine.compact_now(agent)
+            assert failure.value.code == 'summary'
+            assert 'Model HTTP stream interrupted' in str(failure.value)
+            assert session.derive_messages() == before
+            assert not any(event['type'] == 'compaction/summary' for event in session.events)
+            assert len(requests) == 1  # No hidden retry of the auxiliary call.
+            assert session.events[-1]['type'] == 'compaction/end'
+        result = await engine.compact_now(agent)
+        assert len(requests) == (2 if interrupt_first else 1)
         request = requests[0]
         assert request['model'] == 'routed-model'
         assert request['messages'][0] == {'role': 'system', 'content': 'Original system prefix'}

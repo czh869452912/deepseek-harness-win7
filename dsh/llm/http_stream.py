@@ -217,6 +217,12 @@ def open_stream(request, signal=None, idle_timeout_ms=300000, on_activity=None, 
             except socket.timeout:
                 state["code"] = "TIMEOUT"
                 check()
+            except http.client.HTTPException as error:
+                check()
+                # Broken HTTP framing (including truncated chunked bodies) is
+                # a transport failure, not an unclassified model exception.
+                # Never turn a partial response into a completed summary.
+                raise LlmError("Model HTTP stream interrupted: {}".format(error), "TRANSPORT") from error
             except (OSError, ValueError):
                 check()
                 raise

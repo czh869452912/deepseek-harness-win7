@@ -12574,5 +12574,1944 @@
     },
     "options": {},
     "simple": false
+  },
+  {
+    "id": "anthropic-http-text",
+    "kind": "anthropic-http",
+    "model": {
+      "id": "claude-sonnet-4-5",
+      "name": "GPT",
+      "provider": "anthropic",
+      "api": "anthropic-messages",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 32000,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "frames": [
+      {
+        "type": "message_start",
+        "message": {
+          "id": "msg_1",
+          "usage": {
+            "input_tokens": 10,
+            "output_tokens": 1,
+            "cache_read_input_tokens": 2,
+            "cache_creation_input_tokens": 3,
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 1
+            }
+          }
+        }
+      },
+      {
+        "type": "content_block_start",
+        "index": 0,
+        "content_block": {
+          "type": "text",
+          "text": ""
+        }
+      },
+      {
+        "type": "content_block_delta",
+        "index": 0,
+        "delta": {
+          "type": "text_delta",
+          "text": "hello"
+        }
+      },
+      {
+        "type": "content_block_stop",
+        "index": 0
+      },
+      {
+        "type": "message_delta",
+        "delta": {
+          "stop_reason": "end_turn"
+        },
+        "usage": {
+          "output_tokens": 4,
+          "output_tokens_details": {
+            "thinking_tokens": 2
+          }
+        }
+      },
+      {
+        "type": "message_stop"
+      }
+    ]
+  },
+  {
+    "id": "anthropic-http-thinking",
+    "kind": "anthropic-http",
+    "model": {
+      "id": "claude-sonnet-4-5",
+      "name": "GPT",
+      "provider": "anthropic",
+      "api": "anthropic-messages",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 32000,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "frames": [
+      {
+        "type": "message_start",
+        "message": {
+          "id": "msg_1",
+          "usage": {
+            "input_tokens": 10,
+            "output_tokens": 1,
+            "cache_read_input_tokens": 2,
+            "cache_creation_input_tokens": 3,
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 1
+            }
+          }
+        }
+      },
+      {
+        "type": "content_block_start",
+        "index": 0,
+        "content_block": {
+          "type": "thinking",
+          "thinking": "",
+          "signature": ""
+        }
+      },
+      {
+        "type": "content_block_delta",
+        "index": 0,
+        "delta": {
+          "type": "thinking_delta",
+          "thinking": "hmm"
+        }
+      },
+      {
+        "type": "content_block_delta",
+        "index": 0,
+        "delta": {
+          "type": "signature_delta",
+          "signature": "sig"
+        }
+      },
+      {
+        "type": "content_block_stop",
+        "index": 0
+      },
+      {
+        "type": "message_delta",
+        "delta": {
+          "stop_reason": "end_turn"
+        },
+        "usage": {
+          "output_tokens": 4,
+          "output_tokens_details": {
+            "thinking_tokens": 2
+          }
+        }
+      },
+      {
+        "type": "message_stop"
+      }
+    ]
+  },
+  {
+    "id": "anthropic-http-redacted",
+    "kind": "anthropic-http",
+    "model": {
+      "id": "claude-sonnet-4-5",
+      "name": "GPT",
+      "provider": "anthropic",
+      "api": "anthropic-messages",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 32000,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "frames": [
+      {
+        "type": "message_start",
+        "message": {
+          "id": "msg_1",
+          "usage": {
+            "input_tokens": 10,
+            "output_tokens": 1,
+            "cache_read_input_tokens": 2,
+            "cache_creation_input_tokens": 3,
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 1
+            }
+          }
+        }
+      },
+      {
+        "type": "content_block_start",
+        "index": 0,
+        "content_block": {
+          "type": "redacted_thinking",
+          "data": "opaque"
+        }
+      },
+      {
+        "type": "content_block_stop",
+        "index": 0
+      },
+      {
+        "type": "message_delta",
+        "delta": {
+          "stop_reason": "end_turn"
+        },
+        "usage": {
+          "output_tokens": 4,
+          "output_tokens_details": {
+            "thinking_tokens": 2
+          }
+        }
+      },
+      {
+        "type": "message_stop"
+      }
+    ]
+  },
+  {
+    "id": "anthropic-http-tool",
+    "kind": "anthropic-http",
+    "model": {
+      "id": "claude-sonnet-4-5",
+      "name": "GPT",
+      "provider": "anthropic",
+      "api": "anthropic-messages",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 32000,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "frames": [
+      {
+        "type": "message_start",
+        "message": {
+          "id": "msg_1",
+          "usage": {
+            "input_tokens": 10,
+            "output_tokens": 1,
+            "cache_read_input_tokens": 2,
+            "cache_creation_input_tokens": 3,
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 1
+            }
+          }
+        }
+      },
+      {
+        "type": "content_block_start",
+        "index": 0,
+        "content_block": {
+          "type": "tool_use",
+          "id": "call_1",
+          "name": "read",
+          "input": {}
+        }
+      },
+      {
+        "type": "content_block_delta",
+        "index": 0,
+        "delta": {
+          "type": "input_json_delta",
+          "partial_json": "{\"path\":"
+        }
+      },
+      {
+        "type": "content_block_delta",
+        "index": 0,
+        "delta": {
+          "type": "input_json_delta",
+          "partial_json": "\"a\"}"
+        }
+      },
+      {
+        "type": "content_block_stop",
+        "index": 0
+      },
+      {
+        "type": "message_delta",
+        "delta": {
+          "stop_reason": "tool_use"
+        },
+        "usage": {
+          "output_tokens": 4,
+          "output_tokens_details": {
+            "thinking_tokens": 2
+          }
+        }
+      },
+      {
+        "type": "message_stop"
+      }
+    ]
+  },
+  {
+    "id": "anthropic-http-tool-initial-input",
+    "kind": "anthropic-http",
+    "model": {
+      "id": "claude-sonnet-4-5",
+      "name": "GPT",
+      "provider": "anthropic",
+      "api": "anthropic-messages",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 32000,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "frames": [
+      {
+        "type": "message_start",
+        "message": {
+          "id": "msg_1",
+          "usage": {
+            "input_tokens": 10,
+            "output_tokens": 1,
+            "cache_read_input_tokens": 2,
+            "cache_creation_input_tokens": 3,
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 1
+            }
+          }
+        }
+      },
+      {
+        "type": "content_block_start",
+        "index": 0,
+        "content_block": {
+          "type": "tool_use",
+          "id": "call_1",
+          "name": "read",
+          "input": {
+            "path": "a"
+          }
+        }
+      },
+      {
+        "type": "content_block_stop",
+        "index": 0
+      },
+      {
+        "type": "message_delta",
+        "delta": {
+          "stop_reason": "tool_use"
+        },
+        "usage": {
+          "output_tokens": 4,
+          "output_tokens_details": {
+            "thinking_tokens": 2
+          }
+        }
+      },
+      {
+        "type": "message_stop"
+      }
+    ]
+  },
+  {
+    "id": "anthropic-http-missing-stop",
+    "kind": "anthropic-http",
+    "model": {
+      "id": "claude-sonnet-4-5",
+      "name": "GPT",
+      "provider": "anthropic",
+      "api": "anthropic-messages",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 32000,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "frames": [
+      {
+        "type": "message_start",
+        "message": {
+          "id": "msg_1",
+          "usage": {
+            "input_tokens": 10,
+            "output_tokens": 1,
+            "cache_read_input_tokens": 2,
+            "cache_creation_input_tokens": 3,
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 1
+            }
+          }
+        }
+      },
+      {
+        "type": "content_block_start",
+        "index": 0,
+        "content_block": {
+          "type": "text",
+          "text": ""
+        }
+      },
+      {
+        "type": "content_block_delta",
+        "index": 0,
+        "delta": {
+          "type": "text_delta",
+          "text": "hello"
+        }
+      },
+      {
+        "type": "content_block_stop",
+        "index": 0
+      },
+      {
+        "type": "message_delta",
+        "delta": {
+          "stop_reason": "end_turn"
+        },
+        "usage": {
+          "output_tokens": 4,
+          "output_tokens_details": {
+            "thinking_tokens": 2
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "anthropic-http-missing-reason",
+    "kind": "anthropic-http",
+    "model": {
+      "id": "claude-sonnet-4-5",
+      "name": "GPT",
+      "provider": "anthropic",
+      "api": "anthropic-messages",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 32000,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "frames": [
+      {
+        "type": "message_start",
+        "message": {
+          "id": "msg_1",
+          "usage": {
+            "input_tokens": 10,
+            "output_tokens": 1,
+            "cache_read_input_tokens": 2,
+            "cache_creation_input_tokens": 3,
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 1
+            }
+          }
+        }
+      },
+      {
+        "type": "content_block_start",
+        "index": 0,
+        "content_block": {
+          "type": "text",
+          "text": ""
+        }
+      },
+      {
+        "type": "content_block_delta",
+        "index": 0,
+        "delta": {
+          "type": "text_delta",
+          "text": "hello"
+        }
+      },
+      {
+        "type": "content_block_stop",
+        "index": 0
+      },
+      {
+        "type": "message_stop"
+      }
+    ]
+  },
+  {
+    "id": "anthropic-http-no-start",
+    "kind": "anthropic-http",
+    "model": {
+      "id": "claude-sonnet-4-5",
+      "name": "GPT",
+      "provider": "anthropic",
+      "api": "anthropic-messages",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 32000,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "frames": [
+      {
+        "type": "content_block_start",
+        "index": 0,
+        "content_block": {
+          "type": "text",
+          "text": ""
+        }
+      },
+      {
+        "type": "content_block_delta",
+        "index": 0,
+        "delta": {
+          "type": "text_delta",
+          "text": "hello"
+        }
+      },
+      {
+        "type": "content_block_stop",
+        "index": 0
+      },
+      {
+        "type": "message_delta",
+        "delta": {
+          "stop_reason": "end_turn"
+        },
+        "usage": {
+          "output_tokens": 4,
+          "output_tokens_details": {
+            "thinking_tokens": 2
+          }
+        }
+      },
+      {
+        "type": "message_stop"
+      }
+    ]
+  },
+  {
+    "id": "anthropic-http-initial-usage-only",
+    "kind": "anthropic-http",
+    "model": {
+      "id": "claude-sonnet-4-5",
+      "name": "GPT",
+      "provider": "anthropic",
+      "api": "anthropic-messages",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 32000,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "frames": [
+      {
+        "type": "message_start",
+        "message": {
+          "id": "msg_1",
+          "usage": {
+            "input_tokens": 10,
+            "output_tokens": 1,
+            "cache_read_input_tokens": 2,
+            "cache_creation_input_tokens": 3,
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 1
+            }
+          }
+        }
+      },
+      {
+        "type": "content_block_start",
+        "index": 0,
+        "content_block": {
+          "type": "text",
+          "text": ""
+        }
+      },
+      {
+        "type": "content_block_delta",
+        "index": 0,
+        "delta": {
+          "type": "text_delta",
+          "text": "hello"
+        }
+      },
+      {
+        "type": "content_block_stop",
+        "index": 0
+      },
+      {
+        "type": "message_delta",
+        "delta": {
+          "stop_reason": "end_turn"
+        }
+      },
+      {
+        "type": "message_stop"
+      }
+    ]
+  },
+  {
+    "id": "anthropic-http-error",
+    "kind": "anthropic-http",
+    "model": {
+      "id": "claude-sonnet-4-5",
+      "name": "GPT",
+      "provider": "anthropic",
+      "api": "anthropic-messages",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 32000,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "frames": [
+      {
+        "type": "message_start",
+        "message": {
+          "id": "msg_1",
+          "usage": {
+            "input_tokens": 10,
+            "output_tokens": 1,
+            "cache_read_input_tokens": 2,
+            "cache_creation_input_tokens": 3,
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 1
+            }
+          }
+        }
+      },
+      {
+        "type": "error",
+        "error": {
+          "type": "overloaded_error",
+          "message": "529 server overloaded"
+        }
+      }
+    ]
+  },
+  {
+    "id": "anthropic-http-empty",
+    "kind": "anthropic-http",
+    "model": {
+      "id": "claude-sonnet-4-5",
+      "name": "GPT",
+      "provider": "anthropic",
+      "api": "anthropic-messages",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 32000,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "frames": [
+      {
+        "type": "message_start",
+        "message": {
+          "id": "msg_1",
+          "usage": {
+            "input_tokens": 10,
+            "output_tokens": 1,
+            "cache_read_input_tokens": 2,
+            "cache_creation_input_tokens": 3,
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 1
+            }
+          }
+        }
+      },
+      {
+        "type": "message_delta",
+        "delta": {
+          "stop_reason": "end_turn"
+        },
+        "usage": {
+          "output_tokens": 4,
+          "output_tokens_details": {
+            "thinking_tokens": 2
+          }
+        }
+      },
+      {
+        "type": "message_stop"
+      }
+    ]
+  },
+  {
+    "id": "anthropic-http-unknown-event",
+    "kind": "anthropic-http",
+    "model": {
+      "id": "claude-sonnet-4-5",
+      "name": "GPT",
+      "provider": "anthropic",
+      "api": "anthropic-messages",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 32000,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "frames": [
+      {
+        "type": "message_start",
+        "message": {
+          "id": "msg_1",
+          "usage": {
+            "input_tokens": 10,
+            "output_tokens": 1,
+            "cache_read_input_tokens": 2,
+            "cache_creation_input_tokens": 3,
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 1
+            }
+          }
+        }
+      },
+      {
+        "type": "ping"
+      },
+      {
+        "type": "content_block_start",
+        "index": 0,
+        "content_block": {
+          "type": "text",
+          "text": ""
+        }
+      },
+      {
+        "type": "content_block_delta",
+        "index": 0,
+        "delta": {
+          "type": "text_delta",
+          "text": "hello"
+        }
+      },
+      {
+        "type": "content_block_stop",
+        "index": 0
+      },
+      {
+        "type": "message_delta",
+        "delta": {
+          "stop_reason": "end_turn"
+        },
+        "usage": {
+          "output_tokens": 4,
+          "output_tokens_details": {
+            "thinking_tokens": 2
+          }
+        }
+      },
+      {
+        "type": "message_stop"
+      }
+    ]
+  },
+  {
+    "id": "anthropic-http-max_tokens",
+    "kind": "anthropic-http",
+    "model": {
+      "id": "claude-sonnet-4-5",
+      "name": "GPT",
+      "provider": "anthropic",
+      "api": "anthropic-messages",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 32000,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "frames": [
+      {
+        "type": "message_start",
+        "message": {
+          "id": "msg_1",
+          "usage": {
+            "input_tokens": 10,
+            "output_tokens": 1,
+            "cache_read_input_tokens": 2,
+            "cache_creation_input_tokens": 3,
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 1
+            }
+          }
+        }
+      },
+      {
+        "type": "content_block_start",
+        "index": 0,
+        "content_block": {
+          "type": "text",
+          "text": ""
+        }
+      },
+      {
+        "type": "content_block_delta",
+        "index": 0,
+        "delta": {
+          "type": "text_delta",
+          "text": "hello"
+        }
+      },
+      {
+        "type": "content_block_stop",
+        "index": 0
+      },
+      {
+        "type": "message_delta",
+        "delta": {
+          "stop_reason": "max_tokens"
+        },
+        "usage": {
+          "output_tokens": 4,
+          "output_tokens_details": {
+            "thinking_tokens": 2
+          }
+        }
+      },
+      {
+        "type": "message_stop"
+      }
+    ]
+  },
+  {
+    "id": "anthropic-http-refusal",
+    "kind": "anthropic-http",
+    "model": {
+      "id": "claude-sonnet-4-5",
+      "name": "GPT",
+      "provider": "anthropic",
+      "api": "anthropic-messages",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 32000,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "frames": [
+      {
+        "type": "message_start",
+        "message": {
+          "id": "msg_1",
+          "usage": {
+            "input_tokens": 10,
+            "output_tokens": 1,
+            "cache_read_input_tokens": 2,
+            "cache_creation_input_tokens": 3,
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 1
+            }
+          }
+        }
+      },
+      {
+        "type": "content_block_start",
+        "index": 0,
+        "content_block": {
+          "type": "text",
+          "text": ""
+        }
+      },
+      {
+        "type": "content_block_delta",
+        "index": 0,
+        "delta": {
+          "type": "text_delta",
+          "text": "hello"
+        }
+      },
+      {
+        "type": "content_block_stop",
+        "index": 0
+      },
+      {
+        "type": "message_delta",
+        "delta": {
+          "stop_reason": "refusal"
+        },
+        "usage": {
+          "output_tokens": 4,
+          "output_tokens_details": {
+            "thinking_tokens": 2
+          }
+        }
+      },
+      {
+        "type": "message_stop"
+      }
+    ]
+  },
+  {
+    "id": "anthropic-http-sensitive",
+    "kind": "anthropic-http",
+    "model": {
+      "id": "claude-sonnet-4-5",
+      "name": "GPT",
+      "provider": "anthropic",
+      "api": "anthropic-messages",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 32000,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "frames": [
+      {
+        "type": "message_start",
+        "message": {
+          "id": "msg_1",
+          "usage": {
+            "input_tokens": 10,
+            "output_tokens": 1,
+            "cache_read_input_tokens": 2,
+            "cache_creation_input_tokens": 3,
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 1
+            }
+          }
+        }
+      },
+      {
+        "type": "content_block_start",
+        "index": 0,
+        "content_block": {
+          "type": "text",
+          "text": ""
+        }
+      },
+      {
+        "type": "content_block_delta",
+        "index": 0,
+        "delta": {
+          "type": "text_delta",
+          "text": "hello"
+        }
+      },
+      {
+        "type": "content_block_stop",
+        "index": 0
+      },
+      {
+        "type": "message_delta",
+        "delta": {
+          "stop_reason": "sensitive"
+        },
+        "usage": {
+          "output_tokens": 4,
+          "output_tokens_details": {
+            "thinking_tokens": 2
+          }
+        }
+      },
+      {
+        "type": "message_stop"
+      }
+    ]
+  },
+  {
+    "id": "anthropic-http-pause_turn",
+    "kind": "anthropic-http",
+    "model": {
+      "id": "claude-sonnet-4-5",
+      "name": "GPT",
+      "provider": "anthropic",
+      "api": "anthropic-messages",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 32000,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "frames": [
+      {
+        "type": "message_start",
+        "message": {
+          "id": "msg_1",
+          "usage": {
+            "input_tokens": 10,
+            "output_tokens": 1,
+            "cache_read_input_tokens": 2,
+            "cache_creation_input_tokens": 3,
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 1
+            }
+          }
+        }
+      },
+      {
+        "type": "content_block_start",
+        "index": 0,
+        "content_block": {
+          "type": "text",
+          "text": ""
+        }
+      },
+      {
+        "type": "content_block_delta",
+        "index": 0,
+        "delta": {
+          "type": "text_delta",
+          "text": "hello"
+        }
+      },
+      {
+        "type": "content_block_stop",
+        "index": 0
+      },
+      {
+        "type": "message_delta",
+        "delta": {
+          "stop_reason": "pause_turn"
+        },
+        "usage": {
+          "output_tokens": 4,
+          "output_tokens_details": {
+            "thinking_tokens": 2
+          }
+        }
+      },
+      {
+        "type": "message_stop"
+      }
+    ]
+  },
+  {
+    "id": "anthropic-http-stop_sequence",
+    "kind": "anthropic-http",
+    "model": {
+      "id": "claude-sonnet-4-5",
+      "name": "GPT",
+      "provider": "anthropic",
+      "api": "anthropic-messages",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 32000,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "frames": [
+      {
+        "type": "message_start",
+        "message": {
+          "id": "msg_1",
+          "usage": {
+            "input_tokens": 10,
+            "output_tokens": 1,
+            "cache_read_input_tokens": 2,
+            "cache_creation_input_tokens": 3,
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 1
+            }
+          }
+        }
+      },
+      {
+        "type": "content_block_start",
+        "index": 0,
+        "content_block": {
+          "type": "text",
+          "text": ""
+        }
+      },
+      {
+        "type": "content_block_delta",
+        "index": 0,
+        "delta": {
+          "type": "text_delta",
+          "text": "hello"
+        }
+      },
+      {
+        "type": "content_block_stop",
+        "index": 0
+      },
+      {
+        "type": "message_delta",
+        "delta": {
+          "stop_reason": "stop_sequence"
+        },
+        "usage": {
+          "output_tokens": 4,
+          "output_tokens_details": {
+            "thinking_tokens": 2
+          }
+        }
+      },
+      {
+        "type": "message_stop"
+      }
+    ]
+  },
+  {
+    "id": "anthropic-http-future_reason",
+    "kind": "anthropic-http",
+    "model": {
+      "id": "claude-sonnet-4-5",
+      "name": "GPT",
+      "provider": "anthropic",
+      "api": "anthropic-messages",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 32000,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "frames": [
+      {
+        "type": "message_start",
+        "message": {
+          "id": "msg_1",
+          "usage": {
+            "input_tokens": 10,
+            "output_tokens": 1,
+            "cache_read_input_tokens": 2,
+            "cache_creation_input_tokens": 3,
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 1
+            }
+          }
+        }
+      },
+      {
+        "type": "content_block_start",
+        "index": 0,
+        "content_block": {
+          "type": "text",
+          "text": ""
+        }
+      },
+      {
+        "type": "content_block_delta",
+        "index": 0,
+        "delta": {
+          "type": "text_delta",
+          "text": "hello"
+        }
+      },
+      {
+        "type": "content_block_stop",
+        "index": 0
+      },
+      {
+        "type": "message_delta",
+        "delta": {
+          "stop_reason": "future_reason"
+        },
+        "usage": {
+          "output_tokens": 4,
+          "output_tokens_details": {
+            "thinking_tokens": 2
+          }
+        }
+      },
+      {
+        "type": "message_stop"
+      }
+    ]
+  },
+  {
+    "id": "anthropic-http-status-401",
+    "kind": "anthropic-http",
+    "model": {
+      "id": "claude-sonnet-4-5",
+      "name": "GPT",
+      "provider": "anthropic",
+      "api": "anthropic-messages",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 32000,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "frames": [],
+    "status": 401
+  },
+  {
+    "id": "anthropic-http-status-429",
+    "kind": "anthropic-http",
+    "model": {
+      "id": "claude-sonnet-4-5",
+      "name": "GPT",
+      "provider": "anthropic",
+      "api": "anthropic-messages",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 32000,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "frames": [],
+    "status": 429
+  },
+  {
+    "id": "anthropic-http-status-500",
+    "kind": "anthropic-http",
+    "model": {
+      "id": "claude-sonnet-4-5",
+      "name": "GPT",
+      "provider": "anthropic",
+      "api": "anthropic-messages",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 32000,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "frames": [],
+    "status": 500
   }
 ]

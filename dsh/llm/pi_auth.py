@@ -17,6 +17,7 @@ ENV_KEYS = dict(ant_ling='ANT_LING_API_KEY', baseten='BASETEN_API_KEY', cerebras
     xiaomi_token_plan_cn='XIAOMI_TOKEN_PLAN_CN_API_KEY', xiaomi_token_plan_ams='XIAOMI_TOKEN_PLAN_AMS_API_KEY',
     xai='XAI_API_KEY', vercel_ai_gateway='AI_GATEWAY_API_KEY', together='TOGETHER_API_KEY', radius='RADIUS_API_KEY')
 ENV_KEYS = {key.replace('_', '-'): value for key, value in ENV_KEYS.items()}
+ENV_KEYS.update(anthropic='ANTHROPIC_API_KEY', **{'kimi-coding': 'KIMI_API_KEY'})
 
 
 def _value(hit):

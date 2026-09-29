@@ -34,9 +34,9 @@ async def test_dormant_provider_settings_activate_replace_reject_and_unload(tmp_
         assert llm.list_providers()[0]['name'] == 'Renamed'
         assert llm._adapters['gateway']['retryPolicy']['mode'] == 'always'
         with pytest.raises(Exception):
-            await settings.replace('llm-pi-ai', dict(providers=dict(gateway=dict(api='anthropic-messages', baseURL='http://localhost', models=[dict(id='m')]))))
+            await settings.replace('llm-pi-ai', dict(providers=dict(google={})))
         assert (await llm.list_models('gateway'))[0]['id'] == 'next'
-        assert 'anthropic-messages' not in (tmp_path / 'settings.yaml').read_text(encoding='utf-8')
+        assert 'google' not in (tmp_path / 'settings.yaml').read_text(encoding='utf-8')
         await settings.replace('llm-pi-ai', dict(providers={}))
         assert llm.list_providers() == []
         await plugin.dispose()
@@ -61,7 +61,7 @@ async def test_explicit_missing_credential_never_uses_ambient_other_key():
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('api', ['openai-completions', 'openai-responses'])
+@pytest.mark.parametrize('api', ['openai-completions', 'openai-responses', 'anthropic-messages'])
 async def test_prepared_request_keeps_endpoint_model_and_credential_generation(tmp_path, api):
     requests = []
 
@@ -71,11 +71,15 @@ async def test_prepared_request_keeps_endpoint_model_and_credential_generation(t
 
         def do_POST(self):
             body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
-            requests.append((self.path, body['model'], self.headers['Authorization']))
+            requests.append((self.path, body['model'], self.headers.get('Authorization') or self.headers.get('x-api-key')))
             self.send_response(200)
             self.send_header('Content-Type', 'text/event-stream')
             self.end_headers()
-            if api == 'openai-responses':
+            if api == 'anthropic-messages':
+                self.wfile.write(b'event: content_block_start\ndata: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":"done"}}\n\n')
+                self.wfile.write(b'event: content_block_stop\ndata: {"type":"content_block_stop","index":0}\n\n')
+                self.wfile.write(b'event: message_delta\ndata: {"type":"message_delta","delta":{"stop_reason":"end_turn"}}\n\n')
+            elif api == 'openai-responses':
                 self.wfile.write(b'data: {"type":"response.output_item.done","output_index":0,"item":{"type":"message","id":"msg","content":[{"type":"output_text","text":"done"}]}}\n\n')
                 self.wfile.write(b'data: {"type":"response.completed","response":{"id":"resp","status":"completed"}}\n\n')
             else:
@@ -100,8 +104,9 @@ async def test_prepared_request_keeps_endpoint_model_and_credential_generation(t
         assert chunks[-1]['reason'] == dict(kind='stop')
         chunks = [chunk async for chunk in adapter.stream(dict(request, model='new-model'))]
         assert chunks[-1]['reason'] == dict(kind='stop')
-        path = '/responses' if api == 'openai-responses' else '/chat/completions'
-        assert requests == [('/old' + path, 'old-model', 'Bearer old'), ('/new' + path, 'new-model', 'Bearer new')]
+        path = '/v1/messages' if api == 'anthropic-messages' else '/responses' if api == 'openai-responses' else '/chat/completions'
+        prefix = '' if api == 'anthropic-messages' else 'Bearer '
+        assert requests == [('/old' + path, 'old-model', prefix + 'old'), ('/new' + path, 'new-model', prefix + 'new')]
     finally:
         await ctx.fiber.dispose()
         server.shutdown()

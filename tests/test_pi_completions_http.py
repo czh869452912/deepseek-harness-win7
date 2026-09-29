@@ -11,6 +11,7 @@ from dsh.llm.deepseek_wire import parse_sse
 from dsh.llm.llm_service import LlmError
 from dsh.llm.pi_completions_stream import completions_events
 from dsh.llm.pi_responses_stream import responses_events
+from dsh.llm.pi_anthropic_stream import anthropic_events
 from dsh.llm.pi_stream import to_stream_chunks
 from dsh.llm.stream_bridge import OwnedStream, iter_chunks
 from scripts.oracles.pi_http_python import observe_pi_http
@@ -40,7 +41,7 @@ def test_deepseek_requires_done_while_pi_completions_owns_its_finish_validation(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('protocol', ['completions', 'responses'])
+@pytest.mark.parametrize('protocol', ['completions', 'responses', 'anthropic'])
 @pytest.mark.parametrize('mode', ['cancel', 'idle-timeout', 'header-timeout'])
 async def test_stalled_http_stream_is_cancelled_or_times_out_and_reader_closes(mode, protocol):
     opened, release = threading.Event(), threading.Event()
@@ -71,7 +72,7 @@ async def test_stalled_http_stream_is_cancelled_or_times_out_and_reader_closes(m
     options = dict(apiKey='oracle', streamIdleTimeoutMs=60 if mode == 'idle-timeout' else 5000)
     if mode == 'header-timeout':
         options['timeoutMs'] = 60
-    events = responses_events if protocol == 'responses' else completions_events
+    events = anthropic_events if protocol == 'anthropic' else responses_events if protocol == 'responses' else completions_events
     source = iter_chunks(OwnedStream(lambda signal: events(model, fixture['context'], options, signal), controller.signal))
 
     async def collect():

@@ -1,6 +1,7 @@
 import { createServer } from 'node:http'
 import { streamSimple } from './official/node_modules/@earendil-works/pi-ai/dist/api/openai-completions.js'
 import { streamSimple as responsesSimple } from './official/node_modules/@earendil-works/pi-ai/dist/api/openai-responses.js'
+import { streamSimple as anthropicSimple } from './official/node_modules/@earendil-works/pi-ai/dist/api/anthropic-messages.js'
 import { toStreamChunks } from '../../reference/packages/llm/llm-pi-ai/src/stream.ts'
 
 export async function observePiHttp(fixture: any) {
@@ -8,12 +9,13 @@ export async function observePiHttp(fixture: any) {
   const server = createServer(async (req, res) => {
     const buffers: Buffer[] = []
     for await (const data of req) buffers.push(Buffer.from(data))
-    requests.push({path: req.url, authorization: req.headers.authorization,
+    requests.push({path: req.url, authorization: req.headers.authorization ?? req.headers['x-api-key'],
+      ...(fixture.kind === 'anthropic-http' ? {anthropicVersion: req.headers['anthropic-version'], beta: req.headers['anthropic-beta'] ?? null} : {}),
       body: JSON.parse(Buffer.concat(buffers).toString('utf8'))})
     res.writeHead(fixture.status ?? 200, {'content-type': fixture.status ? 'application/json' : 'text/event-stream'})
     if (fixture.status) res.end(JSON.stringify(fixture.errorBody ?? {error: {message: 'fixture error'}}))
     else {
-      for (const frame of fixture.frames) res.write(`data: ${JSON.stringify(frame)}\n\n`)
+      for (const frame of fixture.frames) res.write(`${fixture.kind === 'anthropic-http' ? `event: ${frame.type}\n` : ''}data: ${JSON.stringify(frame)}\n\n`)
       if (!fixture.omitDone) res.write('data: [DONE]\n\n')
       res.end()
     }
@@ -22,7 +24,7 @@ export async function observePiHttp(fixture: any) {
   try {
     const address: any = server.address()
     const model = {...fixture.model, baseUrl: `http://127.0.0.1:${address.port}/v1`}
-    const source = fixture.kind === 'responses-http' ? responsesSimple : streamSimple
+    const source = fixture.kind === 'anthropic-http' ? anthropicSimple : fixture.kind === 'responses-http' ? responsesSimple : streamSimple
     const events = source(model, fixture.context, {...fixture.options, apiKey: 'oracle', maxRetries: 0, env: {}})
     const chunks: any[] = []
     for await (const chunk of toStreamChunks(events, model.contextWindow)) {

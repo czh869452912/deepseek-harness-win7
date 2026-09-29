@@ -26,3 +26,12 @@
 - 新增 client-hmr：按 artifact baseline stat polling；提供原版 `/plugins/events` 的 graph / rebuilt 帧，文件短暂缺失后重试；释放连接、路由、监听与轮询任务。
 - 定向验证：事件桥、RemoteEvents、插件注册 61 passed；真实 SSE 与 client-modules 契约 31 passed。全量测试正在运行，最终结果另记。
 - 这里没有证明 Web 全链路可用。模块表仍需从固定 roster 切换为 Loader 的活跃来源；业务 controllers 尚未接入。
+
+## 第三部分：正式入口的失败边界与验证校正
+
+- 正式 `run_profile(web)` 分别验证遥测默认启用/显式禁用：缺失真实 provider 时明确报错，不公告可用 URL，已绑定端口和连接全部释放。删除将旧 `build_harness(enable_web=True)` 静态页面当作正式 Web 验收的两项测试。
+- 遗留组件测试改用随机端口并释放 Context；修正仍同步调用异步 WebServer 激活的 fixture。这些保留的旧组件测试不作为新入口的可用性证据，旧 carrier 的彻底删除仍待正式业务链替换。
+- 新增 `scripts/oracles/vitest.web-lifecycle.config.mts`；上游未修改的 HMR / api-remotes 两个测试文件共 10 passed。它们确定参考行为，不等于 10 项 Python 双侧 parity 已完成。
+- 前端输入核对：排除 lib/dist/node_modules 后，apps/web 的 107 个、packages/client 的 1095 个 TS/TSX/CSS/HTML/JSON 文件与固定 reference 一致（仅归一化换行）；预构建清单的 119 个文件 SHA-256 全部匹配。没有将其声明为新的源码重建结果。
+
+下一闭包按依赖推进：先把 client-modules 的固定 roster/目录扫描替换为 Loader 活跃来源与增量卸载，再实现 Workspace / Session / Settings（含 Credentials）Remote controller。session-reference 要保留精确快照、预算、持久上下文及取消；session-log-export 要保留原始日志、附件、子会话 ZIP 流及取消；不能用旧 HTTP handler 或空类注册充数。动态 host runner 与其执行能力仍是独立实质缺口。

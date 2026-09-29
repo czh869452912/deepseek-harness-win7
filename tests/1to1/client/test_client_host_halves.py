@@ -373,19 +373,17 @@ async def test_ui_user_questions_node_plugin_mounts_no_model_facing_tool(tmp_pat
 def test_every_shipped_client_row_has_a_host_half():
     """
     The row table answers every `dsh-client-*` row the shipped Web bundle patch
-    enables, except the two carriers still unimplemented (connection, hmr).
+    enables, including the Connection and HMR transport owners.
     """
-    unimplemented = {
-        "@deepseek-ai/dsh-client-hmr",
-    }
+    unimplemented = set()
     shipped = web_client_rows()
     assert sorted(name for name in shipped if name in HARNESS_PLUGIN_CLASSES) == sorted(
         set(shipped) - unimplemented
     )
-    # `dsh-client-modules` is the one client row whose host half is not a
-    # per-package surface row (it owns the module table itself).
+    # Transport owners are registered separately from per-package surfaces;
+    # the Cordis client runner is a surface outside the dsh-client-* prefix.
     assert sorted(client_rows.CLIENT_HOST_HALF_ROWS) == sorted(
-        set(shipped) - unimplemented - {"@deepseek-ai/dsh-client-modules", "@deepseek-ai/dsh-client-connection"}
+        (set(shipped) | {"@deepseek-ai/dsh-cordis-client-runner"}) - unimplemented - {"@deepseek-ai/dsh-client-modules", "@deepseek-ai/dsh-client-connection", "@deepseek-ai/dsh-client-hmr"}
     )
     for name, spec in client_rows.CLIENT_HOST_HALF_ROWS.items():
         assert HARNESS_PLUGIN_CLASSES[name] == spec

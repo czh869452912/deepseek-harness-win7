@@ -434,56 +434,59 @@ async def test_shipped_api_route_refuses_untrusted_and_unauthenticated_requests_
     """
     from dsh.harness import build_harness
 
-    ctx = await build_harness(mode="standard", enable_web=True)
-    server = ctx.get("web_server")
-    route = server.match("/api/pluginInventory.list")
-    assert route is not None and route.path == "/api"
+    ctx = await build_harness(mode="standard", enable_web=True, web_port=0)
+    try:
+        server = ctx.get("web_server")
+        route = server.match("/api/pluginInventory.list")
+        assert route is not None and route.path == "/api"
 
-    async def call(headers, cookie=None):
-        response = RecordingResponse()
+        async def call(headers, cookie=None):
+            response = RecordingResponse()
 
-        async def finish():
-            pass
+            async def finish():
+                pass
 
-        response.finish = finish
-        request_facts = {
-            "method": "POST",
-            "path": "/api/pluginInventory.list",
-            "query": "",
-            "headers": dict(headers),
-            "body": json.dumps(
-                {"type": "client-request", "rpcId": "r1", "method": "pluginInventory.list", "payload": {}}
-            ).encode("utf-8"),
-        }
-        if cookie is not None:
-            request_facts["headers"]["cookie"] = cookie
-        await route.handler(request_facts, response)
-        return response
+            response.finish = finish
+            request_facts = {
+                "method": "POST",
+                "path": "/api/pluginInventory.list",
+                "query": "",
+                "headers": dict(headers),
+                "body": json.dumps(
+                    {"type": "client-request", "rpcId": "r1", "method": "pluginInventory.list", "payload": {}}
+                ).encode("utf-8"),
+            }
+            if cookie is not None:
+                request_facts["headers"]["cookie"] = cookie
+            await route.handler(request_facts, response)
+            return response
 
-    rejected = await call({"host": "evil.example:3080"})
-    assert rejected.status == 403
-    assert bytes(rejected.body) == b"forbidden"
+        rejected = await call({"host": "evil.example:3080"})
+        assert rejected.status == 403
+        assert bytes(rejected.body) == b"forbidden"
 
-    unauthenticated = await call({"host": "127.0.0.1:3080"})
-    assert unauthenticated.status == 401
-    assert bytes(unauthenticated.body) == b"unauthorized"
+        unauthenticated = await call({"host": "127.0.0.1:3080"})
+        assert unauthenticated.status == 401
+        assert bytes(unauthenticated.body) == b"unauthorized"
 
-    # A browser session minted by the index exchange passes the fence.
-    exchange = RecordingResponse()
-    ctx.get("connection").authorize_index(
-        {
-            "method": "GET",
-            "path": "/",
-            "query": "token=" + ctx.get("connection").browser_auth.launch_token,
-            "raw_url": "/?token=" + ctx.get("connection").browser_auth.launch_token,
-            "headers": {"host": "127.0.0.1:3080"},
-        },
-        exchange,
-    )
-    cookie = exchange.headers["set-cookie"].split(";", 1)[0]
-    dispatched = await call({"host": "127.0.0.1:3080"}, cookie=cookie)
-    assert dispatched.status == 200
-    payload = json.loads(bytes(dispatched.body).decode("utf-8"))
-    assert payload["type"] == "server-response"
-    assert payload["rpcId"] == "r1"
-    assert payload["result"]["ok"] is True
+        # A browser session minted by the index exchange passes the fence.
+        exchange = RecordingResponse()
+        ctx.get("connection").authorize_index(
+            {
+                "method": "GET",
+                "path": "/",
+                "query": "token=" + ctx.get("connection").browser_auth.launch_token,
+                "raw_url": "/?token=" + ctx.get("connection").browser_auth.launch_token,
+                "headers": {"host": "127.0.0.1:3080"},
+            },
+            exchange,
+        )
+        cookie = exchange.headers["set-cookie"].split(";", 1)[0]
+        dispatched = await call({"host": "127.0.0.1:3080"}, cookie=cookie)
+        assert dispatched.status == 200
+        payload = json.loads(bytes(dispatched.body).decode("utf-8"))
+        assert payload["type"] == "server-response"
+        assert payload["rpcId"] == "r1"
+        assert payload["result"]["ok"] is True
+    finally:
+        await ctx.fiber.dispose()

@@ -1,6 +1,7 @@
 ﻿import asyncio
 import json
 import pytest
+import pytest_asyncio
 from dsh.cordis.context import Context
 from dsh.core.session import SessionStore, SessionPlugin
 from dsh.host.apiproxy.api_proxy import ApiProxyPlugin, format_sse_frame
@@ -26,16 +27,18 @@ def test_format_sse_frame():
     assert "rpc-100" in sse_text
 
 
-@pytest.fixture
-def api_ctx():
+@pytest_asyncio.fixture
+async def api_ctx():
     ctx = Context()
     sess_plugin = SessionPlugin()
     sess_plugin.apply(ctx)
-    web_plugin = WebServerPlugin({"port": 0})
-    web_plugin.apply(ctx)
+    await ctx.plugin(WebServerPlugin, config={"port": 0})
     api_plugin = ApiProxyPlugin()
     api_plugin.apply(ctx)
-    return ctx
+    try:
+        yield ctx
+    finally:
+        await ctx.fiber.dispose()
 
 
 @pytest.mark.asyncio

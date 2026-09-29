@@ -97,11 +97,9 @@ PROFILES: List[str] = ["web", "standard", "headless", "creative", "acp", "sdk", 
 # together with the provider that lands.
 SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
     "web": [
-        "@deepseek-ai/dsh-api-remotes",
         "@deepseek-ai/dsh-api-session-controller",
         "@deepseek-ai/dsh-api-settings-controller",
         "@deepseek-ai/dsh-api-workspace-controller",
-        "@deepseek-ai/dsh-client-hmr",
         "@deepseek-ai/dsh-cordis-host-runner",
         "@deepseek-ai/dsh-session-log-export",
         "@deepseek-ai/dsh-session-reference",
@@ -278,7 +276,7 @@ def test_installation_rows_are_answered_by_the_table_not_by_the_shipped_artifact
     home = tmp()
     try:
         _stage_healed_installation(home, "@deepseek-ai/dsh-tools", "tools")
-        _stage_healed_installation(home, "@deepseek-ai/dsh-api-remotes", "web")
+        _stage_healed_installation(home, "@deepseek-ai/dsh-acp-app", "web")
         profile_dir = os.path.join(home, "profiles", "standard")
         os.makedirs(profile_dir, exist_ok=True)
         config = os.path.join(profile_dir, "cordis.yml")
@@ -296,8 +294,8 @@ def test_installation_rows_are_answered_by_the_table_not_by_the_shipped_artifact
 
         assert loader.import_plugin("@deepseek-ai/dsh-tools") is resolve_harness_plugin("@deepseek-ai/dsh-tools")
         with pytest.raises(ModuleNotFoundError) as raised:
-            loader.import_plugin("@deepseek-ai/dsh-api-remotes")
-        assert str(raised.value) == "Cannot find module '@deepseek-ai/dsh-api-remotes'"
+            loader.import_plugin("@deepseek-ai/dsh-acp-app")
+        assert str(raised.value) == "Cannot find module '@deepseek-ai/dsh-acp-app'"
     finally:
         safe_rmtree(home)
 
@@ -529,7 +527,7 @@ def test_the_frozen_gap_is_the_union_of_every_shipped_profile():
 
             collect(patch)
     assert union <= shipped_names
-    assert len(union) == 10
+    assert len(union) == 8
 
 
 # --- boot installs and consults the table ------------------------------------
@@ -600,13 +598,13 @@ async def test_boot_rejects_a_config_naming_an_unimplemented_shipped_row():
     with open(os.path.join(d, "cordis.yml"), "w", encoding="utf-8") as f:
         f.write(
             "- id: timer\n  name: '@deepseek-ai/cordis-plugin-timer'\n"
-            "- id: gateway\n  name: '@deepseek-ai/dsh-api-remotes'\n"
+            "- id: gateway\n  name: '@deepseek-ai/dsh-acp-app'\n"
         )
     with pytest.raises(RuntimeError) as raised:
         await boot(NAME, os.path.join(d, "cordis.yml"))
     message = str(raised.value)
     assert message.startswith(f"{NAME}: plugin tree failed to load")
-    assert "failed to import loader entry gateway (@deepseek-ai/dsh-api-remotes): Cannot find module '@deepseek-ai/dsh-api-remotes'" in message
+    assert "failed to import loader entry gateway (@deepseek-ai/dsh-acp-app): Cannot find module '@deepseek-ai/dsh-acp-app'" in message
 
 
 @pytest.mark.asyncio

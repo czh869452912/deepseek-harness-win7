@@ -789,7 +789,25 @@ class ClientModuleRegistry:
 
     def flush(self) -> Dict[str, Any]:
         """Recompose the served graph from the current scan."""
-        return self.compose()
+        graph = self.compose()
+        self.notify_graph_changed()
+        return graph
+
+    def on_graph_changed(self, listener):
+        self._listeners.append(listener)
+        def dispose():
+            if listener in self._listeners:
+                self._listeners.remove(listener)
+        return dispose
+
+    def notify_graph_changed(self):
+        for listener in list(self._listeners):
+            try:
+                listener()
+            except Exception as error:
+                self._log_warn(error)
+
+    onGraphChanged = on_graph_changed
 
     def graph(self) -> Dict[str, Any]:
         """Return the current composed WebBootGraph (window.__DSH_BOOT__)."""
@@ -810,7 +828,7 @@ class ClientModuleRegistry:
     def artifact_baseline(self, pkg_id: str) -> Optional[Dict[str, Any]]:
         """Filesystem baseline captured before the row's current bytes were read."""
         record = self._table.get(pkg_id)
-        return dict(record["baseline"]) if record is not None else None
+        return dict(record["baseline"]) if record is not None and record.get("baseline") is not None else None
 
     def rebuilt(self, pkg_id: str) -> Optional[str]:
         """
@@ -839,6 +857,7 @@ class ClientModuleRegistry:
                 listener(pkg_id, rev)
             except Exception as error:
                 self._log_warn(error)
+        self.notify_graph_changed()
         return rev
 
     def client_path(self, pkg_id: str) -> Optional[str]:

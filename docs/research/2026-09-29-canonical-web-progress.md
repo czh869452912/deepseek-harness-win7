@@ -19,3 +19,10 @@
 5. 正式 profile 的浏览器旅程：创建、响应流、工具、取消、问题/审批、历史恢复、断线重连；全量回归与便携包验证。
 
 当前不是已验收的可用 Web 入口。migration check / ready 已运行；固定记录有效不等于本批次 parity 认证。不推进 accepted_upstream，不复用旧 acceptance 为新代码背书。Win7 真机与目标浏览器验证仍单列。
+
+## 第二部分：前端 HMR 与应用事件桥
+
+- 新增正式 api-remotes：按上游白名单转发事件；有 Agent scope 的问题/审批交给 Gateway，由客户端 result/next 决定返回或继续 waterfall。源在启动窗口卸载也会释放监听。
+- 新增 client-hmr：按 artifact baseline stat polling；提供原版 `/plugins/events` 的 graph / rebuilt 帧，文件短暂缺失后重试；释放连接、路由、监听与轮询任务。
+- 定向验证：事件桥、RemoteEvents、插件注册 61 passed；真实 SSE 与 client-modules 契约 31 passed。全量测试正在运行，最终结果另记。
+- 这里没有证明 Web 全链路可用。模块表仍需从固定 roster 切换为 Loader 的活跃来源；业务 controllers 尚未接入。

@@ -62,6 +62,7 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     # Core spine.
     "@deepseek-ai/dsh-system-prompt": "dsh.core.system_prompt.service:SystemPrompt",
     "@deepseek-ai/dsh-sdk-app": "dsh.bundle.sdk_app:SdkAppStartup",
+    "@deepseek-ai/dsh-sdk-jsonrpc-server": "dsh.sdk.plugin:SdkJsonRpcPlugin",
     "@deepseek-ai/dsh-session": "dsh.core.session.session:SessionPlugin",
     "@deepseek-ai/dsh-agent": "dsh.core.agent:AgentPlugin",
     "@deepseek-ai/dsh-agent-loop": "dsh.core.agent_loop:AgentLoopPlugin",

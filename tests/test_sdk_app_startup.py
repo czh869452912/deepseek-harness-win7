@@ -16,6 +16,8 @@ class Stdin:
         assert event == 'end'
         self.listeners.append(callback)
 
+    on = once
+
     def off(self, event, callback):
         if callback in self.listeners:
             self.listeners.remove(callback)

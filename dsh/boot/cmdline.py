@@ -82,7 +82,7 @@ def provide_cmdline(ctx: Context, host: Any) -> None:
 provideCmdline = provide_cmdline
 
 
-def exit_on_stdin_end(ctx: Context, label: str) -> None:
+def exit_on_stdin_end(ctx: Context, label: str, stdin: Any = None) -> None:
     """
     Make stdin EOF request launcher bounded successful shutdown after AppReady commits.
     """
@@ -91,7 +91,7 @@ def exit_on_stdin_end(ctx: Context, label: str) -> None:
     if exit_fn is None or ready is None:
         raise RuntimeError("stdio app: the launcher must provide ctx.appExit and ctx.appReady before the tree mounts")
 
-    stdin = internals.stdin
+    stdin = internals.stdin if stdin is None else stdin
     active = [True]
     ended = [False]
     cancel_ready = [lambda: None]

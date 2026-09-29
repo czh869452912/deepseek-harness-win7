@@ -129,12 +129,10 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
     ],
     "sdk": [
         "@deepseek-ai/dsh-llm-pi-ai",
-        "@deepseek-ai/dsh-sdk-jsonrpc-server",
         "@deepseek-ai/dsh-session-telemetry-otel",
     ],
     "minimal": [
         "@deepseek-ai/dsh-agent-spine-demo",
-        "@deepseek-ai/dsh-sdk-jsonrpc-server",
         "@deepseek-ai/dsh-terminal",
         "@deepseek-ai/dsh-terminal-bash",
     ],
@@ -542,7 +540,7 @@ def test_the_frozen_gap_is_the_union_of_every_shipped_profile():
 
             collect(patch)
     assert union <= shipped_names
-    assert len(union) == 17
+    assert len(union) == 16
 
 
 # --- boot installs and consults the table ------------------------------------

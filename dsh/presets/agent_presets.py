@@ -7,6 +7,7 @@ import weakref
 from typing import Any, Dict, List, Optional, Tuple
 
 from dsh.cordis.service import Service
+from dsh.cordis.schema import Schema
 from dsh.typert.remote import TypertRemoteService, Remote, TypertRemoteFailure
 from dsh.typert.artifact import UNDEFINED
 from dsh.cordis.environment import resolve_dsh_home
@@ -50,21 +51,7 @@ class _ConfigSchema:
         return {"value": parsed, "issues": issues}
 
 
-class _SettingsSchema:
-    def __call__(self, value: Any) -> Dict[str, Any]:
-        if value is None:
-            return {}
-        if not isinstance(value, dict):
-            raise TypeError("agent-presets settings must be an object")
-        if value.get("default") is not None and not isinstance(value.get("default"), str):
-            raise TypeError("agent-presets default must be a string")
-        return value
-
-    def to_json(self) -> Dict[str, Any]:
-        return {"type": "object", "properties": {"default": {"type": "string"}}}
-
-
-AGENT_PRESET_SETTINGS_SCHEMA = _SettingsSchema()
+AGENT_PRESET_SETTINGS_SCHEMA = Schema.object({"default": Schema.string()})
 
 
 def _config_value(config: Any) -> Tuple[str, List[PresetRoot], bool]:

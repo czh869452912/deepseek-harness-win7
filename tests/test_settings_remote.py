@@ -1,4 +1,5 @@
 import json
+import asyncio
 
 import pytest
 
@@ -10,6 +11,53 @@ from dsh.typert.registry import TypertRegistry
 from dsh.typert.artifact import UNDEFINED, read_generated_artifact
 from dsh.typert.dispatch import RemoteDispatcher
 from dsh.typert.remote import TypertRemoteFailure
+from canonical_web_fixture import web_context, close_web_context
+
+
+@pytest.mark.asyncio
+async def test_formal_web_settings_over_authenticated_http(tmp_path):
+    """Exercise serialization of every shipped namespace, not a fixture schema."""
+    ctx = await web_context(tmp_path)
+    try:
+        async def request(method, path, body=b'', cookie=b''):
+            reader, writer = await asyncio.open_connection('127.0.0.1', ctx.get('webServer').port)
+            headers = ('%s %s HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n'
+                       'Content-Type: application/json\r\nContent-Length: %s\r\n' %
+                       (method, path, len(body))).encode('ascii')
+            writer.write(headers + b'Cookie: ' + cookie + b'\r\n\r\n' + body)
+            await writer.drain()
+            response = await reader.read()
+            writer.close()
+            await writer.wait_closed()
+            return response
+
+        login = await request('GET', '/?token=' + ctx.get('connection').browser_auth.launch_token)
+        cookie = next(line.split(b': ', 1)[1].split(b';', 1)[0] for line in login.split(b'\r\n')
+                      if line.lower().startswith(b'set-cookie:'))
+
+        async def call(method, payload):
+            body = json.dumps(dict(type='client-request', rpcId='settings-test', method='settings/' + method,
+                                   payload={'args': payload})).encode('utf-8')
+            response = await request('POST', '/api/settings/' + method, body, cookie)
+            assert b'200 OK' in response.split(b'\r\n', 1)[0], response
+            result = json.loads(response.split(b'\r\n\r\n', 1)[1])['result']
+            assert result['ok'], result
+            return result['value']
+
+        directory = await call('describe', {})
+        rows = {row['ns']: row for row in directory['namespaces']}
+        assert {'agent-presets', 'llm-deepseek', 'llm-pi-ai', 'shell', 'subagent-model-selection'} <= rows.keys()
+        from dsh.cordis.schema import Schema
+        schema = Schema(rows['agent-presets']['schema'])
+        assert schema({'default': 'minimal'}) == {'default': 'minimal'}
+        with pytest.raises(Exception):
+            schema({'default': 123})
+        updated = await call('update', dict(ns='agent-presets', patch={'default': 'minimal'},
+                                           expectedRevision=rows['agent-presets']['revision']))
+        assert updated['value']['default'] == ctx.get('agentPresets').default_id == 'minimal'
+        assert (await call('describe', {}))['namespaces']
+    finally:
+        await close_web_context(ctx)
 
 
 @pytest.mark.asyncio

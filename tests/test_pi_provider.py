@@ -61,6 +61,51 @@ async def test_explicit_missing_credential_never_uses_ambient_other_key():
 
 
 @pytest.mark.asyncio
+async def test_stored_pi_key_precedes_reference_and_grant_does_not_fall_back(tmp_path):
+    from dsh.credentials.credentials_local import CredentialsService
+    from dsh.credentials.credentials import credential_key
+
+    ctx = Context()
+    ctx.set_service('launchEnvironment', LaunchEnvironmentSnapshot([dict(source='process', values=dict(OPENAI_API_KEY='ambient'))]))
+    credentials = CredentialsService(ctx, credentials_file=str(tmp_path / 'credentials.yaml'))
+    ctx.set_service('credentials', credentials)
+    try:
+        credentials.set('OPENAI_API_KEY', 'reference')
+        assert await resolve_api_key(ctx, 'openai', {}) == 'reference'
+        key = credential_key('llm-pi-ai', 'openai')
+        credentials.modify_record(key, lambda _: dict(kind='api-key', key='stored'))
+        assert await resolve_api_key(ctx, 'openai', {}) == 'stored'
+        assert await resolve_api_key(ctx, 'openai', {}, ambient=False) is None
+        assert await resolve_api_key(ctx, 'openai', dict(apiKeyEnv='OPENAI_API_KEY')) == 'reference'
+        credentials.modify_record(key, lambda _: dict(kind='grant', payload=dict(type='oauth', access='expired', expires=1)))
+        with pytest.raises(LlmError) as error:
+            await resolve_api_key(ctx, 'openai', {})
+        assert error.value.code == 'UNSUPPORTED_AUTH'
+        assert await resolve_api_key(ctx, 'openai', dict(apiKeyEnv='OPENAI_API_KEY')) == 'reference'
+    finally:
+        await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('modalities', [['text'], ['text', 'image']])
+async def test_adapter_rejects_images_without_model_capability_or_durable_store(modalities):
+    from dsh.llm.pi_adapter import PiAiAdapter, native_profiles
+    ctx = Context()
+    adapter = PiAiAdapter(ctx, native_profiles(dict(providers=dict(gateway=dict(api='openai-completions',
+        baseURL='http://localhost:1', models=[dict(id='m', input=modalities)])))))
+    request = dict(provider='gateway', model='m', messages=[dict(role='user', content=[dict(type='image', attachment=dict(attachmentId='missing'))])])
+    try:
+        with pytest.raises(LlmError) as error:
+            async for _ in adapter.stream(request):
+                pass
+        assert error.value.code == 'UNSUPPORTED_CONTENT'
+        assert adapter.active == {}
+    finally:
+        await adapter.close()
+        await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize('api', ['openai-completions', 'openai-responses', 'anthropic-messages'])
 async def test_prepared_request_keeps_endpoint_model_and_credential_generation(tmp_path, api):
     requests = []

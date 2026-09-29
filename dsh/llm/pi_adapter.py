@@ -76,6 +76,10 @@ class PiAiAdapter:
             on_degrade = lambda reason: logging.getLogger('llm-pi-ai').warning('Unusable replay for %s/%s: %s', profile['provider'], model['id'], reason)
             attachments = self.ctx.get('attachments')
             has_images = any(any(images(message['content'])) for message in request['messages'])
+            if has_images and 'image' not in model['input']:
+                raise LlmError('pi-ai model "{}" does not support image input'.format(model['id']), 'UNSUPPORTED_CONTENT')
+            if has_images and attachments is None:
+                raise LlmError('pi-ai image input requires the durable attachment service', 'UNSUPPORTED_CONTENT')
             if has_images and attachments is not None:
                 def access(ref):
                     location = getattr(attachments, 'imageHostPath', None)

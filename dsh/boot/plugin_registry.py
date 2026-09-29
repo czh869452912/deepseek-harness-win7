@@ -120,7 +120,9 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     "@deepseek-ai/dsh-tool-str-replace-editor": "dsh.fs.tool_str_replace_editor:StrReplaceEditorPlugin",
     "@deepseek-ai/dsh-shell-env": "dsh.shell.shell_env:ShellEnvPlugin",
     "@deepseek-ai/dsh-tool-pwsh": "dsh.shell.canonical_tool_pwsh:CanonicalToolPwsh",
-    "@deepseek-ai/dsh-tool-pwsh-persistent": "dsh.shell.tool_pwsh_persistent:ToolPwshPersistentPlugin",
+    "@deepseek-ai/dsh-tool-pwsh-persistent": "dsh.terminal.persistent_pwsh:PersistentPwshPlugin",
+    "@deepseek-ai/dsh-terminal": "dsh.terminal.service:TerminalSessionService",
+    "@deepseek-ai/dsh-terminal-bash": "dsh.terminal.local:LocalTerminalPlugin",
     "@deepseek-ai/dsh-subprocess-local": "dsh.subprocess.local:LocalSubprocessRuntime",
     # Interaction, jobs, delegation, skills, schedules.
     "@deepseek-ai/dsh-commands": "dsh.interaction.commands:CommandsPlugin",

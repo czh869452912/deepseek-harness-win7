@@ -234,6 +234,9 @@ async def test_terminal_ownership_survives_top_level_exit_until_quiescence():
 
     handle.terminate = controlled_terminate
     await handle.done
+    # Native WinPTY retains pipe ownership until its reader has drained EOF;
+    # root disposal remains the fallback when there is no session consumer.
+    teardown = asyncio.create_task(runtime._dispose_managed_processes()) if sys.platform == 'win32' else None
     await asyncio.sleep(0.02)
 
     try:
@@ -241,11 +244,13 @@ async def test_terminal_ownership_survives_top_level_exit_until_quiescence():
         assert handle in runtime.terminals
     finally:
         release_terminate.set()
+        if teardown is not None:
+            await teardown
         deadline = asyncio.get_event_loop().time() + 1
         while handle in runtime.terminals:
             assert asyncio.get_event_loop().time() < deadline
             await asyncio.sleep(0.01)
-        if handle._proc.stdin is not None:
+        if hasattr(handle, '_proc') and handle._proc.stdin is not None:
             handle._proc.stdin.close()
         if handle.output is not None:
             handle.output.close()

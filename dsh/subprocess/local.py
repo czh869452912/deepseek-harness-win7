@@ -502,7 +502,9 @@ class LocalSubprocessRuntime(SubprocessRuntime):
                 pass
         for t in list(self.terminals):
             try:
-                if t.pid > 0:
+                if hasattr(t, 'terminate_for_host_exit'):
+                    t.terminate_for_host_exit()
+                elif t.pid > 0:
                     signal_tree(t.pid, "SIGKILL")
             except Exception:
                 pass

@@ -132,7 +132,14 @@ class WinPtyTerminalHandle:
                     if not size.value:
                         raise RuntimeError('WinPTY write made no progress')
                     offset += size.value
-            await asyncio.get_running_loop().run_in_executor(None, write_all)
+            writing = asyncio.get_running_loop().run_in_executor(None, write_all)
+            try:
+                await asyncio.shield(writing)
+            except asyncio.CancelledError:
+                # Cancellation cannot release the handle while its OS write
+                # still runs in the executor. Job termination unblocks it.
+                await asyncio.gather(writing, return_exceptions=True)
+                raise
 
     async def inspect_foreground(self):
         return None
@@ -144,6 +151,10 @@ class WinPtyTerminalHandle:
 
     async def interrupt(self):
         await self.write('\x03')
+
+    def terminate_for_host_exit(self):
+        if self.job:
+            self.api.kernel.TerminateJobObject(self.job, 1)
 
     def close_native(self):
         if self.job:

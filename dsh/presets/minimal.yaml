@@ -18,11 +18,24 @@
   config:
     maxOutputChars: 16000
 
+- id: sandbox-policy
+  name: "@deepseek-ai/dsh-sandbox-policy"
+  config:
+    mode: danger-full-access
+
+- id: terminals
+  name: "@deepseek-ai/dsh-terminal"
+
+- id: terminal-pwsh
+  name: "@deepseek-ai/dsh-terminal-bash"
+  disabled: !!js process.platform !== 'win32'
+  config:
+    shellDialect: pwsh
+
 - id: persistent-pwsh
   name: "@deepseek-ai/dsh-tool-pwsh-persistent"
   disabled: !!js process.platform !== 'win32'
   config:
-    tool_name: pwsh
     timeoutMs: 300000
 
 - id: persistent-bash

@@ -447,7 +447,9 @@ class AgentRegistry(Service):
         if not entry.announced:
             return
         if self.ctx:
-            entry.agent.ctx.emit("agent/disposed", {"agent": entry.agent})
+            from dsh.core.scope import scope_target, scope_of
+            self.ctx.emit("agent/disposed", {"agent": entry.agent},
+                          caller_ctx=scope_target(self.ctx, scope_of(entry.agent.ctx)))
 
     def announce(self, agent: Agent) -> None:
         entry = self._store.get(agent.id)
@@ -460,7 +462,9 @@ class AgentRegistry(Service):
         entry.announced = True
         try:
             if self.ctx:
-                entry.agent.ctx.emit("agent/created", {"agent": entry.agent})
+                from dsh.core.scope import scope_target, scope_of
+                self.ctx.emit("agent/created", {"agent": entry.agent},
+                              caller_ctx=scope_target(self.ctx, scope_of(entry.agent.ctx)))
         finally:
             entry.announcing = False
             if entry.detach_requested:

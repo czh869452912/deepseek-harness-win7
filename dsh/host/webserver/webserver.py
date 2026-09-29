@@ -252,6 +252,7 @@ class WebServerService:
         # Sockets handed to an upgrade handler: node leaves upgraded sockets out
         # of `closeAllConnections()`, so the service owns them explicitly.
         self._upgraded_sockets: List[asyncio.StreamWriter] = []
+        self._connections: Dict[Any, Any] = {}
 
     @staticmethod
     def resolve_config(config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -368,7 +369,16 @@ class WebServerService:
             return
 
         async def _client_connected_cb(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
-            await self._handle_http_connection(reader, writer)
+            self._connections[writer] = asyncio.current_task()
+            try:
+                await self._handle_http_connection(reader, writer)
+            finally:
+                self._connections.pop(writer, None)
+                writer.close()
+                try:
+                    await writer.wait_closed()
+                except (ConnectionError, OSError):
+                    pass
 
         # Bind to port (or find free port if 0). A listen failure rejects
         # activation: the composition reports the failed fiber instead of
@@ -392,10 +402,12 @@ class WebServerService:
                 pass
             raise
 
-        self._server = await asyncio.start_server(
-            _client_connected_cb,
-            sock=sock,
-        )
+        try:
+            self._server = await asyncio.start_server(_client_connected_cb, sock=sock)
+        except BaseException:
+            sock.close()
+            raise
+        self.port = self.listened_port
         self._is_running = True
 
     async def stop(self) -> None:
@@ -404,6 +416,12 @@ class WebServerService:
             self._server.close()
             await self._server.wait_closed()
             self._server = None
+        connections = list(self._connections.items())
+        for writer, task in connections:
+            writer.close()
+            if task is not asyncio.current_task():
+                task.cancel()
+        await asyncio.gather(*(task for _, task in connections if task is not asyncio.current_task()), return_exceptions=True)
         upgraded = list(self._upgraded_sockets)
         self._upgraded_sockets = []
         for writer in upgraded:
@@ -736,7 +754,7 @@ class WebServerPlugin(Plugin):
         super().__init__(config)
         cfg = dict(config or {})
         cfg.setdefault("host", "127.0.0.1")
-        cfg.setdefault("port", 8080)
+        cfg.setdefault("port", 0)
         resolved = resolve_web_server_config(cfg)
         self.host = resolved["host"]
         self.port = resolved["port"]
@@ -745,7 +763,7 @@ class WebServerPlugin(Plugin):
         self.compression_threshold_bytes = resolved["compressionThresholdBytes"]
         self.server_svc: Optional[WebServerService] = None
 
-    def apply(self, ctx: Any) -> None:
+    async def apply(self, ctx: Any) -> None:
         self.server_svc = WebServerService(
             ctx,
             host=self.host,
@@ -754,11 +772,7 @@ class WebServerPlugin(Plugin):
             compression_level=self.compression_level,
             compression_threshold_bytes=self.compression_threshold_bytes,
         )
+        ctx.effect(lambda: self.server_svc.stop, "webServer.listen")
+        await self.server_svc.start()
         ctx.set_service("web_server", self.server_svc)
         ctx.set_service("webServer", self.server_svc)
-
-        async def _init_server():
-            await self.server_svc.start()
-
-        if hasattr(ctx, "effect"):
-            ctx.effect(lambda: lambda: asyncio.create_task(self.server_svc.stop()))

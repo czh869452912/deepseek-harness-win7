@@ -191,6 +191,7 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     # Bundle entry rows: each shipped app's command-line provider provides the
     # service that app's own runner row injects.
     "@deepseek-ai/dsh-web-app/startup": "dsh.bundle.web_app.startup:WebStartupPlugin",
+    "@deepseek-ai/dsh-web-app": "dsh.bundle.web_app.runtime:WebRuntimePlugin",
     "@deepseek-ai/dsh-headless/startup": "dsh.bundle.headless.startup:HeadlessStartupPlugin",
     "@deepseek-ai/dsh-headless": "dsh.bundle.headless.runner:HeadlessRunnerPlugin",
     # The self-inspection toolset publishes itself as `dsh-tool-cordis`; profiles

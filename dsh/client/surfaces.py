@@ -51,6 +51,10 @@ def _empty_host_half(class_name: str, package_name: str, upstream: str) -> type:
 # Class name -> (package name, reference source). Each class is bound below
 # under its own name, so the row table can name it as a module attribute.
 EMPTY_HOST_HALVES: Dict[str, Tuple[str, str]] = {
+    "CordisClientRunnerPlugin": (
+        "@deepseek-ai/dsh-cordis-client-runner",
+        "packages/extensions/cordis-client-runner/src/index.ts",
+    ),
     "ClientUiAgentPresetPlugin": (
         "@deepseek-ai/dsh-client-ui-agent-preset",
         "packages/client/ui-agent-preset/src/index.ts",

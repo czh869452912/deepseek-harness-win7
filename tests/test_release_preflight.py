@@ -15,7 +15,16 @@ def test_real_frontend_and_runtime_lock_are_resolvable():
     frontend, dependencies = BUILD.checked_inputs(ROOT, ROOT/'.venv/Lib/site-packages')
     assert frontend['kind'] == 'versioned-prebuilt-input'
     assert {d.metadata['Name'].lower() for d in dependencies} == {
-        'pyyaml','requests','certifi','charset-normalizer','idna','urllib3','pillow','wsproto','h11','backports.zoneinfo','tzdata'}
+        'pyyaml','requests','certifi','charset-normalizer','idna','urllib3','pillow','wsproto','h11','backports.zoneinfo','tzdata','pywinpty'}
+
+
+def test_portable_dependency_copy_preserves_winpty_agent_and_native_dll(tmp_path):
+    _, dependencies = BUILD.checked_inputs(ROOT, ROOT/'.venv/Lib/site-packages')
+    winpty = next(dist for dist in dependencies if dist.metadata['Name'].lower() == 'pywinpty')
+    destination = tmp_path / 'lib'
+    BUILD.bundle_dependencies([winpty], destination)
+    assert (destination / 'winpty/winpty.dll').is_file()
+    assert (destination / 'winpty/winpty-agent.exe').is_file()
 
 
 def test_portable_dependency_copy_preserves_native_image_codecs(tmp_path):

@@ -38,6 +38,7 @@ def main():
                       node=subprocess.check_output([args.node, '--version'], encoding='utf-8').strip(), python=sys.version)
         sources = list((ROOT / 'reference/packages/llm/llm-pi-ai/src').glob('*.ts'))
         sources += list((ROOT / 'dsh/llm').glob('*.py'))
+        sources += [ROOT / 'dsh/llm/pi_catalog.json', ROOT / 'scripts/oracles/export-pi-catalog.mjs']
         sources += [ROOT / 'scripts/oracles' / name for name in ('pi-fixtures.json', 'pi.spec.ts', 'pi_python.py', 'vitest.pi-probe.config.mts', 'official/package-lock.json')]
         before = {str(path.relative_to(ROOT)): digest(path) for path in sources}
         paths = [output.with_suffix('.ts.json'), output.with_suffix('.python.json')]

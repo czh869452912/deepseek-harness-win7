@@ -9,6 +9,8 @@ sys.path.insert(0, str(ROOT))
 from dsh.llm.pi_replay import replay_state, to_pi_assistant
 from dsh.llm.pi_stream import to_stream_chunks
 from dsh.llm.pi_context import to_pi_context, to_pi_context_with_images
+from dsh.llm.pi_config import resolve_profiles
+from dsh.llm.pi_model import model_info
 from dsh.core.abort import AbortController
 
 
@@ -17,6 +19,12 @@ async def main():
     for fixture in json.loads((ROOT / 'scripts/oracles/pi-fixtures.json').read_text(encoding='utf-8')):
         row = dict(id=fixture['id'])
         try:
+            if fixture['kind'] == 'catalog':
+                row['value'] = []
+                for identity, profile in resolve_profiles(fixture.get('providers')).items():
+                    row['value'].append(dict(id=identity, info=[model_info(profile, model['id']) for model in profile['models']],
+                        **{key: profile[key] for key in ('displayName', 'models', 'configuredMaxTokens',
+                           'streamIdleTimeoutMs', 'maxRequestImageBytes', 'requestImagePixelBudget', 'requestImageMaxBytes', 'retryPolicy')}))
             if fixture['kind'] == 'context':
                 degraded, reads = [], []
                 if 'images' in fixture:
@@ -47,7 +55,8 @@ async def main():
                 async for chunk in to_stream_chunks(events(), fixture.get('contextWindow'), controller.signal):
                     row['value'].append(chunk)
         except Exception as error:
-            row['error'] = dict(code=getattr(error, 'code', type(error).__name__))
+            row['error'] = dict(code='Error' if fixture['kind'] == 'catalog' and isinstance(error, ValueError)
+                               else getattr(error, 'code', type(error).__name__))
         rows.append(row)
     Path(sys.argv[1]).write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding='utf-8')
 

@@ -3,6 +3,8 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { toPiReplayState, toPiAssistant } from '../../reference/packages/llm/llm-pi-ai/src/replay.ts'
 import { toStreamChunks } from '../../reference/packages/llm/llm-pi-ai/src/stream.ts'
 import { toPiContext } from '../../reference/packages/llm/llm-pi-ai/src/context.ts'
+import { resolveProfiles } from '../../reference/packages/llm/llm-pi-ai/src/config.ts'
+import { PiAiAdapter } from '../../reference/packages/llm/llm-pi-ai/src/adapter.ts'
 
 it('observes pinned pi-ai stream and replay boundaries', async () => {
   const fixtures = JSON.parse(readFileSync('scripts/oracles/pi-fixtures.json', 'utf8'))
@@ -10,6 +12,23 @@ it('observes pinned pi-ai stream and replay boundaries', async () => {
   for (const fixture of fixtures) {
     const row: any = {id: fixture.id}
     try {
+      if (fixture.kind === 'catalog') {
+        row.value = []
+        const profiles = resolveProfiles(fixture.providers)
+        const adapter = new PiAiAdapter({profiles: () => profiles} as any)
+        for (const [id, profile] of profiles) {
+          const models = profile.piProvider.getModels()
+          row.value.push({id, displayName: profile.displayName, models,
+            configuredMaxTokens: Object.fromEntries(profile.configuredMaxTokens),
+            streamIdleTimeoutMs: profile.streamIdleTimeoutMs,
+            maxRequestImageBytes: profile.maxRequestImageBytes,
+            requestImagePixelBudget: profile.requestImagePixelBudget,
+            requestImageMaxBytes: profile.requestImageMaxBytes,
+            retryPolicy: profile.retryPolicy,
+            info: await Promise.all(models.map(model => adapter.resolveModel(id, model.id))),
+          })
+        }
+      }
       if (fixture.kind === 'context') {
         let degraded = 0
         const reads: any[] = []

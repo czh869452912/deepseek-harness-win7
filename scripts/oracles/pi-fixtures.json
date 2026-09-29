@@ -1929,5 +1929,764 @@
       }
     },
     "maxBytes": 4
+  },
+  {
+    "id": "catalog-dormant",
+    "kind": "catalog",
+    "providers": {}
+  },
+  {
+    "id": "catalog-deepseek",
+    "kind": "catalog",
+    "providers": {
+      "deepseek": {}
+    }
+  },
+  {
+    "id": "catalog-openai",
+    "kind": "catalog",
+    "providers": {
+      "openai": {}
+    }
+  },
+  {
+    "id": "catalog-anthropic",
+    "kind": "catalog",
+    "providers": {
+      "anthropic": {}
+    }
+  },
+  {
+    "id": "catalog-amazon-bedrock",
+    "kind": "catalog",
+    "providers": {
+      "amazon-bedrock": {}
+    }
+  },
+  {
+    "id": "catalog-google",
+    "kind": "catalog",
+    "providers": {
+      "google": {}
+    }
+  },
+  {
+    "id": "catalog-openai-codex",
+    "kind": "catalog",
+    "providers": {
+      "openai-codex": {}
+    }
+  },
+  {
+    "id": "catalog-hand-declared",
+    "kind": "catalog",
+    "providers": {
+      "gateway": {
+        "api": "openai-completions",
+        "baseURL": "http://localhost/v1",
+        "models": [
+          {
+            "id": "test"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "catalog-explicit-cap",
+    "kind": "catalog",
+    "providers": {
+      "gateway": {
+        "api": "openai-completions",
+        "baseURL": "http://localhost/v1",
+        "models": [
+          {
+            "id": "test",
+            "maxTokens": 64,
+            "contextWindow": 1024,
+            "input": [
+              "text",
+              "image"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "catalog-reasoning",
+    "kind": "catalog",
+    "providers": {
+      "gateway": {
+        "api": "openai-completions",
+        "baseURL": "http://localhost/v1",
+        "models": [
+          {
+            "id": "test",
+            "reasoningEfforts": {
+              "off": null,
+              "high": "deep"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "catalog-bad-profile-reasoning",
+    "kind": "catalog",
+    "providers": {
+      "gateway": {
+        "api": "openai-completions",
+        "baseURL": "http://localhost/v1",
+        "models": [
+          {
+            "id": "test"
+          }
+        ],
+        "reasoning": "max"
+      }
+    }
+  },
+  {
+    "id": "catalog-compat",
+    "kind": "catalog",
+    "providers": {
+      "gateway": {
+        "api": "openai-completions",
+        "baseURL": "http://localhost/v1",
+        "models": [
+          {
+            "id": "test"
+          }
+        ],
+        "compat": {
+          "supportsStore": false,
+          "supportsStrictMode": true
+        }
+      }
+    }
+  },
+  {
+    "id": "catalog-model-compat",
+    "kind": "catalog",
+    "providers": {
+      "gateway": {
+        "api": "openai-completions",
+        "baseURL": "http://localhost/v1",
+        "models": [
+          {
+            "id": "test",
+            "compat": {
+              "supportsStore": true
+            }
+          }
+        ],
+        "compat": {
+          "supportsStore": false
+        }
+      }
+    }
+  },
+  {
+    "id": "catalog-wrong-compat",
+    "kind": "catalog",
+    "providers": {
+      "gateway": {
+        "api": "openai-completions",
+        "baseURL": "http://localhost/v1",
+        "models": [
+          {
+            "id": "test",
+            "compat": {
+              "supportsTemperature": false
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "catalog-unused-compat",
+    "kind": "catalog",
+    "providers": {
+      "gateway": {
+        "api": "openai-completions",
+        "baseURL": "http://localhost/v1",
+        "models": [
+          {
+            "id": "test"
+          }
+        ],
+        "compat": {
+          "supportsTemperature": false
+        }
+      }
+    }
+  },
+  {
+    "id": "catalog-withheld-compat",
+    "kind": "catalog",
+    "providers": {
+      "gateway": {
+        "api": "openai-completions",
+        "baseURL": "http://localhost/v1",
+        "models": [
+          {
+            "id": "test"
+          }
+        ],
+        "compat": {
+          "zaiToolStream": true
+        }
+      }
+    }
+  },
+  {
+    "id": "catalog-empty-models",
+    "kind": "catalog",
+    "providers": {
+      "deepseek": {
+        "models": []
+      }
+    }
+  },
+  {
+    "id": "catalog-missing-models",
+    "kind": "catalog",
+    "providers": {
+      "gateway": {}
+    }
+  },
+  {
+    "id": "catalog-override-unknown",
+    "kind": "catalog",
+    "providers": {
+      "deepseek": {
+        "modelOverrides": {
+          "absent": {}
+        }
+      }
+    }
+  },
+  {
+    "id": "catalog-duplicate-model",
+    "kind": "catalog",
+    "providers": {
+      "gateway": {
+        "api": "openai-completions",
+        "baseURL": "http://localhost/v1",
+        "models": [
+          {
+            "id": "test"
+          },
+          {
+            "id": "test"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "catalog-invalid-0",
+    "kind": "catalog",
+    "providers": {
+      "gateway": {
+        "api": "openai-completions",
+        "baseURL": "http://localhost/v1",
+        "models": [
+          {
+            "id": "test"
+          }
+        ],
+        "defaultInput": []
+      }
+    }
+  },
+  {
+    "id": "catalog-invalid-1",
+    "kind": "catalog",
+    "providers": {
+      "gateway": {
+        "api": "openai-completions",
+        "baseURL": "http://localhost/v1",
+        "models": [
+          {
+            "id": "test"
+          }
+        ],
+        "streamIdleTimeoutMs": 0
+      }
+    }
+  },
+  {
+    "id": "catalog-invalid-2",
+    "kind": "catalog",
+    "providers": {
+      "gateway": {
+        "api": "openai-completions",
+        "baseURL": "http://localhost/v1",
+        "models": [
+          {
+            "id": "test"
+          }
+        ],
+        "requestImageMaxBytes": 0
+      }
+    }
+  },
+  {
+    "id": "catalog-invalid-3",
+    "kind": "catalog",
+    "providers": {
+      "gateway": {
+        "api": "bedrock-converse-stream",
+        "baseURL": "http://localhost/v1",
+        "models": [
+          {
+            "id": "test"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "catalog-invalid-4",
+    "kind": "catalog",
+    "providers": {
+      "gateway": {
+        "api": "openai-completions",
+        "baseURL": "http://localhost/v1",
+        "models": [
+          {
+            "id": "test"
+          }
+        ],
+        "maxRetries": 1
+      }
+    }
+  },
+  {
+    "id": "catalog-invalid-5",
+    "kind": "catalog",
+    "providers": {
+      "gateway": {
+        "api": "openai-completions",
+        "baseURL": "",
+        "models": [
+          {
+            "id": "test"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "catalog-invalid-6",
+    "kind": "catalog",
+    "providers": {
+      "gateway": {
+        "api": "openai-completions",
+        "baseURL": "http://localhost/v1",
+        "models": [
+          {
+            "id": "test"
+          }
+        ],
+        "displayName": ""
+      }
+    }
+  },
+  {
+    "id": "catalog-efforts-0",
+    "kind": "catalog",
+    "providers": {
+      "gateway": {
+        "api": "openai-completions",
+        "baseURL": "http://localhost/v1",
+        "models": [
+          {
+            "id": "test",
+            "reasoningEfforts": false
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "catalog-efforts-1",
+    "kind": "catalog",
+    "providers": {
+      "gateway": {
+        "api": "openai-completions",
+        "baseURL": "http://localhost/v1",
+        "models": [
+          {
+            "id": "test",
+            "reasoningEfforts": {}
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "catalog-efforts-2",
+    "kind": "catalog",
+    "providers": {
+      "gateway": {
+        "api": "openai-completions",
+        "baseURL": "http://localhost/v1",
+        "models": [
+          {
+            "id": "test",
+            "reasoningEfforts": null
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "catalog-efforts-3",
+    "kind": "catalog",
+    "providers": {
+      "gateway": {
+        "api": "openai-completions",
+        "baseURL": "http://localhost/v1",
+        "models": [
+          {
+            "id": "test",
+            "reasoningEfforts": {
+              "off": null
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "catalog-efforts-4",
+    "kind": "catalog",
+    "providers": {
+      "gateway": {
+        "api": "openai-completions",
+        "baseURL": "http://localhost/v1",
+        "models": [
+          {
+            "id": "test",
+            "reasoningEfforts": {
+              "high": null
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "catalog-efforts-5",
+    "kind": "catalog",
+    "providers": {
+      "gateway": {
+        "api": "openai-completions",
+        "baseURL": "http://localhost/v1",
+        "models": [
+          {
+            "id": "test",
+            "reasoningEfforts": {
+              "high": ""
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "catalog-ant-ling",
+    "kind": "catalog",
+    "providers": {
+      "ant-ling": {}
+    }
+  },
+  {
+    "id": "catalog-azure-openai-responses",
+    "kind": "catalog",
+    "providers": {
+      "azure-openai-responses": {}
+    }
+  },
+  {
+    "id": "catalog-baseten",
+    "kind": "catalog",
+    "providers": {
+      "baseten": {}
+    }
+  },
+  {
+    "id": "catalog-cerebras",
+    "kind": "catalog",
+    "providers": {
+      "cerebras": {}
+    }
+  },
+  {
+    "id": "catalog-cloudflare-ai-gateway",
+    "kind": "catalog",
+    "providers": {
+      "cloudflare-ai-gateway": {}
+    }
+  },
+  {
+    "id": "catalog-cloudflare-workers-ai",
+    "kind": "catalog",
+    "providers": {
+      "cloudflare-workers-ai": {}
+    }
+  },
+  {
+    "id": "catalog-fireworks",
+    "kind": "catalog",
+    "providers": {
+      "fireworks": {}
+    }
+  },
+  {
+    "id": "catalog-github-copilot",
+    "kind": "catalog",
+    "providers": {
+      "github-copilot": {}
+    }
+  },
+  {
+    "id": "catalog-google-vertex",
+    "kind": "catalog",
+    "providers": {
+      "google-vertex": {}
+    }
+  },
+  {
+    "id": "catalog-groq",
+    "kind": "catalog",
+    "providers": {
+      "groq": {}
+    }
+  },
+  {
+    "id": "catalog-huggingface",
+    "kind": "catalog",
+    "providers": {
+      "huggingface": {}
+    }
+  },
+  {
+    "id": "catalog-kimi-coding",
+    "kind": "catalog",
+    "providers": {
+      "kimi-coding": {}
+    }
+  },
+  {
+    "id": "catalog-minimax",
+    "kind": "catalog",
+    "providers": {
+      "minimax": {}
+    }
+  },
+  {
+    "id": "catalog-minimax-cn",
+    "kind": "catalog",
+    "providers": {
+      "minimax-cn": {}
+    }
+  },
+  {
+    "id": "catalog-mistral",
+    "kind": "catalog",
+    "providers": {
+      "mistral": {}
+    }
+  },
+  {
+    "id": "catalog-moonshotai",
+    "kind": "catalog",
+    "providers": {
+      "moonshotai": {}
+    }
+  },
+  {
+    "id": "catalog-moonshotai-cn",
+    "kind": "catalog",
+    "providers": {
+      "moonshotai-cn": {}
+    }
+  },
+  {
+    "id": "catalog-nvidia",
+    "kind": "catalog",
+    "providers": {
+      "nvidia": {}
+    }
+  },
+  {
+    "id": "catalog-opencode",
+    "kind": "catalog",
+    "providers": {
+      "opencode": {}
+    }
+  },
+  {
+    "id": "catalog-opencode-go",
+    "kind": "catalog",
+    "providers": {
+      "opencode-go": {}
+    }
+  },
+  {
+    "id": "catalog-openrouter",
+    "kind": "catalog",
+    "providers": {
+      "openrouter": {}
+    }
+  },
+  {
+    "id": "catalog-qwen-token-plan",
+    "kind": "catalog",
+    "providers": {
+      "qwen-token-plan": {}
+    }
+  },
+  {
+    "id": "catalog-qwen-token-plan-cn",
+    "kind": "catalog",
+    "providers": {
+      "qwen-token-plan-cn": {}
+    }
+  },
+  {
+    "id": "catalog-qwen-token-plan-individual",
+    "kind": "catalog",
+    "providers": {
+      "qwen-token-plan-individual": {}
+    }
+  },
+  {
+    "id": "catalog-together",
+    "kind": "catalog",
+    "providers": {
+      "together": {}
+    }
+  },
+  {
+    "id": "catalog-vercel-ai-gateway",
+    "kind": "catalog",
+    "providers": {
+      "vercel-ai-gateway": {}
+    }
+  },
+  {
+    "id": "catalog-xai",
+    "kind": "catalog",
+    "providers": {
+      "xai": {}
+    }
+  },
+  {
+    "id": "catalog-xiaomi",
+    "kind": "catalog",
+    "providers": {
+      "xiaomi": {}
+    }
+  },
+  {
+    "id": "catalog-xiaomi-token-plan-ams",
+    "kind": "catalog",
+    "providers": {
+      "xiaomi-token-plan-ams": {}
+    }
+  },
+  {
+    "id": "catalog-xiaomi-token-plan-cn",
+    "kind": "catalog",
+    "providers": {
+      "xiaomi-token-plan-cn": {}
+    }
+  },
+  {
+    "id": "catalog-xiaomi-token-plan-sgp",
+    "kind": "catalog",
+    "providers": {
+      "xiaomi-token-plan-sgp": {}
+    }
+  },
+  {
+    "id": "catalog-zai",
+    "kind": "catalog",
+    "providers": {
+      "zai": {}
+    }
+  },
+  {
+    "id": "catalog-zai-coding-cn",
+    "kind": "catalog",
+    "providers": {
+      "zai-coding-cn": {}
+    }
+  },
+  {
+    "id": "catalog-override",
+    "kind": "catalog",
+    "providers": {
+      "deepseek": {
+        "modelOverrides": {
+          "deepseek-v4-flash": {
+            "contextWindow": 99,
+            "maxTokens": 10
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "catalog-model-input-empty",
+    "kind": "catalog",
+    "providers": {
+      "deepseek": {
+        "models": [
+          {
+            "id": "deepseek-v4-flash",
+            "input": []
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "catalog-protocol-repoint",
+    "kind": "catalog",
+    "providers": {
+      "deepseek": {
+        "api": "anthropic-messages",
+        "compat": {
+          "supportsTemperature": false
+        }
+      }
+    }
+  },
+  {
+    "id": "catalog-empty-compat-dicts",
+    "kind": "catalog",
+    "providers": {
+      "gateway": {
+        "api": "openai-responses",
+        "baseURL": "http://localhost",
+        "models": [
+          {
+            "id": "m"
+          }
+        ],
+        "compat": {
+          "chatTemplateKwargs": {},
+          "chatTemplateArgs": {}
+        }
+      }
+    }
   }
 ]

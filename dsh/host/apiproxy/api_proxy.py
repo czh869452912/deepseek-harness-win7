@@ -822,7 +822,7 @@ class ApiProxyPlugin(Plugin):
 
             if rpc_method in ("plan/set", "plan.set"):
                 active = bool(req_payload.get("active", False))
-                plan_mode = self.ctx.get("plan_mode")
+                plan_mode = self.ctx.get("planMode")
                 if plan_mode:
                     plan_mode.set_active(active)
                 await send_rpc_success({"success": True, "planMode": active})

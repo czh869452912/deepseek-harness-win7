@@ -80,54 +80,13 @@ def test_native_path_opener():
 
 
 @pytest.mark.asyncio
-async def test_plugin_inventory_rpc_and_harness_web():
-    from dsh.harness import build_harness, initialize_harness
-    from dsh.host.apiproxy.api_proxy import ApiProxyPlugin
-    from dsh.host.plugin_inventory import PluginInventoryPlugin
-
-    # 1. Test build_harness in web mode
-    ctx = await build_harness(enable_web=True, web_port=0)
+async def test_plugin_inventory_canonical_remote(tmp_path):
+    from canonical_web_fixture import web_context, close_web_context
+    from dsh.typert.dispatch import RemoteDispatcher
+    ctx = await web_context(tmp_path)
     try:
-        inv_svc = ctx.get("plugin_inventory") or ctx.get("pluginInventory")
-        assert inv_svc is not None
-        snapshot = inv_svc.list()
-        assert "entries" in snapshot
-        assert isinstance(snapshot["entries"], list)
-
-        # 2. Test ApiProxyPlugin handling pluginInventory.list RPC route
-        api_proxy = ctx.get("apiproxy") or ctx.get("apiProxy")
-        assert api_proxy is not None
-
-        class DummyResponse:
-            def __init__(self):
-                self.status = 200
-                self.headers = {}
-                self.body = b""
-
-            def write_status(self, status):
-                self.status = status
-
-            def write_header(self, k, v):
-                self.headers[k] = v
-
-            def write_body(self, data):
-                self.body += data
-
-            async def finish(self):
-                pass
-
-        req = {
-            "method": "POST",
-            "path": "/api/pluginInventory.list",
-            "body": b'{"type": "client-request", "rpcId": "r1", "method": "pluginInventory.list", "payload": {}}',
-        }
-        resp = DummyResponse()
-        await api_proxy._handle_api_request(req, resp)
-        import json
-        parsed = json.loads(resp.body.decode("utf-8"))
-        assert parsed.get("type") == "server-response"
-        assert parsed.get("rpcId") == "r1"
-        assert parsed["result"]["ok"] is True
-        assert "entries" in parsed["result"]["value"]
+        result = await RemoteDispatcher(ctx).invoke(dict(namespace='pluginInventory', method='list', args={}))
+        assert result['entries']
+        assert all('entryId' in row and 'moduleName' in row for row in result['entries'])
     finally:
-        await ctx.fiber.dispose()
+        await close_web_context(ctx)

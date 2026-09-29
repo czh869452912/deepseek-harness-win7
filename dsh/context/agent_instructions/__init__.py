@@ -64,31 +64,8 @@ class AgentInstructionsPlugin(Plugin):
         self.service = AgentInstructionsService(config)
 
     def apply(self, ctx: Any) -> None:
-        ctx.set_service("agent_instructions", self.service)
-
-        async def prompt_assembler(prompt: str, *args: Any, **kwargs: Any) -> str:
-            # Check if persona was set to complete=True (minimal mode)
-            persona = ctx.get("persona") if ctx.has("persona") else None
-            if persona and getattr(persona, "complete", False):
-                return prompt
-
-            section = self.service.render_section()
-            if section:
-                return f"{prompt}\n{section}"
-            return prompt
-
-        ctx.on("agent/prompt-assemble", prompt_assembler)
-
-        # Listen to tool execution results to refresh instructions when instruction files are edited
-        def on_tool_result(exec_data: Any, result_data: Any = None) -> None:
-            tool_name = exec_data.get("name") if isinstance(exec_data, dict) else getattr(exec_data, "name", "")
-            if tool_name in ("write", "edit", "str_replace_editor"):
-                args = exec_data.get("arguments", {}) if isinstance(exec_data, dict) else getattr(exec_data, "arguments", {})
-                file_path = args.get("file_path") or args.get("path")
-                if file_path and any(candidate in file_path for candidate in DEFAULT_INSTRUCTION_FILE_CANDIDATES):
-                    self.service.state.update_touch(file_path)
-
-        ctx.on("tools/result", on_tool_result)
+        from .runtime import InstructionRuntime
+        InstructionRuntime(ctx, self.service.config)
 
 
 __all__ = [

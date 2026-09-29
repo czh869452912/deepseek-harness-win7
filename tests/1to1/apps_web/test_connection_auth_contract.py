@@ -387,7 +387,7 @@ def test_fails_loud_on_an_invalid_owner_record_instead_of_replacing_it(tmp_path)
     credentials.records[ba.AUTH_RECORD_KEY] = {"kind": "grant", "payload": {"version": 1, "secret": "short"}}
     with pytest.raises(ValueError, match="invalid secret"):
         BrowserAuth.create(object(), credentials, 30)
-    credentials.records[ba.AUTH_RECORD_KEY] = {"kind": "api-key", "payload": {}}
+    credentials.records[ba.AUTH_RECORD_KEY] = {"kind": "api-key", "payload": {"args": {}}}
     with pytest.raises(ValueError, match="unsupported format"):
         BrowserAuth.create(object(), credentials, 30)
 
@@ -432,12 +432,12 @@ async def test_shipped_api_route_refuses_untrusted_and_unauthenticated_requests_
     and authentication before dispatch, exactly as upstream's Connection row
     does for the shared channel.
     """
-    from dsh.harness import build_harness
+    from canonical_web_fixture import web_context
 
-    ctx = await build_harness(mode="standard", enable_web=True, web_port=0)
+    ctx = await web_context(tmp_path / "host")
     try:
-        server = ctx.get("web_server")
-        route = server.match("/api/pluginInventory.list")
+        server = ctx.get("webServer")
+        route = server.match("/api/pluginInventory/list")
         assert route is not None and route.path == "/api"
 
         async def call(headers, cookie=None):
@@ -449,11 +449,11 @@ async def test_shipped_api_route_refuses_untrusted_and_unauthenticated_requests_
             response.finish = finish
             request_facts = {
                 "method": "POST",
-                "path": "/api/pluginInventory.list",
+                "path": "/api/pluginInventory/list",
                 "query": "",
-                "headers": dict(headers),
+                "headers": dict(headers, **{"content-type": "application/json"}),
                 "body": json.dumps(
-                    {"type": "client-request", "rpcId": "r1", "method": "pluginInventory.list", "payload": {}}
+                    {"type": "client-request", "rpcId": "r1", "method": "pluginInventory/list", "payload": {"args": {}}}
                 ).encode("utf-8"),
             }
             if cookie is not None:
@@ -489,4 +489,5 @@ async def test_shipped_api_route_refuses_untrusted_and_unauthenticated_requests_
         assert payload["rpcId"] == "r1"
         assert payload["result"]["ok"] is True
     finally:
-        await ctx.fiber.dispose()
+        from canonical_web_fixture import close_web_context
+        await close_web_context(ctx)

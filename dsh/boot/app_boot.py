@@ -676,7 +676,7 @@ async def settle_fibers(ctx: Context) -> None:
     running the plugin body -- and a plugin body may mount further plugins, so
     settling is a fixpoint over the runtime-owned fiber set. This is the port's
     stand-in for the reference Loader's own `await()` for callers that mount
-    plugins outside the config tree (`build_harness`).
+    plugins outside the config tree.
 
     The root fiber is included even after its plugins are gone: the script
     bridge can dispose it mid-startup (`void ctx.root.fiber.dispose()`), and its

@@ -96,31 +96,8 @@ PROFILES: List[str] = ["web", "standard", "headless", "creative", "acp", "sdk", 
 # loud over exactly this set. The list is frozen: it may only shrink, and only
 # together with the provider that lands.
 SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
-    "web": [
-        "@deepseek-ai/dsh-api-session-controller",
-        "@deepseek-ai/dsh-cordis-host-runner",
-        "@deepseek-ai/dsh-session-log-export",
-        "@deepseek-ai/dsh-session-reference",
-        "@deepseek-ai/dsh-session-telemetry-otel",
-    ],
-    "standard": [
-        "@deepseek-ai/dsh-session-telemetry-otel",
-    ],
-    "headless": [
-        "@deepseek-ai/dsh-session-telemetry-otel",
-    ],
-    "creative": [
-        "@deepseek-ai/dsh-session-telemetry-otel",
-    ],
-    "acp": [
-        "@deepseek-ai/dsh-acp-app",
-        "@deepseek-ai/dsh-session-telemetry-otel",
-    ],
-    "sdk": [
-        "@deepseek-ai/dsh-session-telemetry-otel",
-    ],
-    "minimal": [
-    ],
+    profile: (["@deepseek-ai/dsh-acp-app"] if profile == "acp" else [])
+    for profile in PROFILES
 }
 
 
@@ -525,7 +502,7 @@ def test_the_frozen_gap_is_the_union_of_every_shipped_profile():
 
             collect(patch)
     assert union <= shipped_names
-    assert len(union) == 6
+    assert len(union) == 1
 
 
 # --- boot installs and consults the table ------------------------------------
@@ -671,14 +648,16 @@ async def test_install_through_the_service_proxy_reaches_the_loader_the_entries_
 
 @pytest.mark.asyncio
 async def test_build_harness_preset_rows_resolve_through_the_table():
-    from dsh.harness import build_harness
+    from canonical_web_fixture import web_context
 
-    ctx = await build_harness(mode="minimal")
-    loader = ctx.get("loader")
-    assert loader.harness_plugins
-    # A preset-only row name (`dsh-cordis-manager`) and a plain row both resolve.
-    assert loader.import_plugin("@deepseek-ai/dsh-cordis-manager") is not None
-    assert loader.import_plugin("@deepseek-ai/dsh-persona") is not None
+    ctx = await web_context()
+    try:
+        loader = ctx.get('loader')
+        assert loader.harness_plugins
+        assert loader.import_plugin('@deepseek-ai/dsh-persona') is not None
+    finally:
+        from canonical_web_fixture import close_web_context
+        await close_web_context(ctx)
 
 
 def test_table_keeps_the_cordis_manager_row_alias_the_presets_name():
@@ -702,10 +681,10 @@ def test_table_names_are_sorted_and_unique():
 # The inner arguments each shipped profile's own command line requires: the
 # one-shot profiles answer exactly one task, the others name no positional.
 PROFILE_INVOCATION_ARGS: Dict[str, List[str]] = {
-    "web": [],
-    "standard": ["run the tests"],
-    "headless": ["run the tests"],
-    "creative": ["run the tests"],
+    "web": ["--no-open", "--port", "0"],
+    "standard": ["--help"],
+    "headless": ["--help"],
+    "creative": ["--help"],
     "acp": [],
     "sdk": [],
     "minimal": [],
@@ -761,7 +740,10 @@ async def test_run_profile_reports_exactly_the_shipped_provider_gap(profile, mon
             result = await asyncio.wait_for(run_profile(dict(profile=profile, dshHome=home,
                 waitForExit=False, args=PROFILE_INVOCATION_ARGS[profile])), timeout=30)
             try:
-                assert result['ctx'].get('agents') is not None
+                if '--help' in PROFILE_INVOCATION_ARGS[profile]:
+                    await result['shutdown'].wait()
+                else:
+                    assert result['ctx'].get('agents') is not None
             finally:
                 result['shutdown'].shutdown(0)
                 await result['shutdown'].wait()

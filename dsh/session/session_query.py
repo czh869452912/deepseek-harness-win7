@@ -440,13 +440,59 @@ class SessionQueryService:
         self.db_path = db_path
         self.open_at = open_at
         self._conn = None
-        if self.open_at != "never":
+        if self.open_at not in ("never", "first-search"):
             self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
             self._init_db()
+
+    def ensure_search(self):
+        if self.open_at == 'never':
+            raise SessionQueryError('Search is disabled (openAt: never)', 'SESSION_QUERY_SEARCH_DISABLED')
+        if self._conn is None:
+            self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
+            self._init_db()
+
+    def close(self):
+        if self._conn is not None:
+            self._conn.close()
+            self._conn = None
 
     async def observeSession(self, session_id, options=None):
         from dsh.session.observation import SessionObservationReader
         return await SessionObservationReader(self.ctx).read(session_id, options)
+
+    async def readSurface(self, session_id, options=None):
+        from dsh.core.surface import fold_surface
+        observation = await self.observeSession(session_id, dict(options or {}, projectionMode='none'))
+        try:
+            nodes = fold_surface(list(observation.events)).nodes
+            return dict(session=observation.header, capturedThroughSeq=observation.cursor if observation.cursor >= 0 else None,
+                        events=[observation.events[seq] for seq in nodes])
+        finally:
+            observation.dispose()
+
+    async def traceSession(self, session_id, options=None):
+        records = {row['header'].id: row for row in await self.listSessions((options or {}).get('signal'))}
+        if session_id not in records:
+            raise SessionQueryError('session not found: ' + session_id, 'SESSION_QUERY_SESSION_NOT_FOUND')
+        ancestors, seen, current = [], {session_id}, records[session_id]
+        complete = True
+        while current['header'].parentSession is not None:
+            parent = current['header'].parentSession
+            if parent in seen or parent not in records:
+                complete = False
+                break
+            seen.add(parent)
+            current = records[parent]
+            ancestors.append(current)
+        def descendants(identity, seen):
+            return [dict(session=row, descendants=descendants(row['header'].id, seen | {row['header'].id}))
+                    for row in records.values() if row['header'].parentSession == identity and row['header'].id not in seen]
+        return dict(target=records[session_id], ancestors=ancestors, descendants=descendants(session_id, {session_id}),
+                    complete=complete, root=current)
+
+    async def searchSessions(self, request, options=None):
+        from dsh.session.web_search import search_sessions
+        return await search_sessions(self, request, options or {})
 
     async def listSessions(self, signal=None):
         import copy
@@ -691,6 +737,7 @@ class SessionQueryPlugin(Plugin):
         db_path = self.config.get("path", ":memory:")
         open_at = self.config.get("open_at") or self.config.get("openAt", "immediate")
         service = SessionQueryService(ctx, db_path=db_path, open_at=open_at)
+        ctx.effect(lambda: service.close)
         ctx.set_service("sessionQuery", service)
         ctx.set_service("session_query", service)
 

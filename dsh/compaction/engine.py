@@ -79,7 +79,6 @@ class CompactionEngine(Service):
     ):
         if ctx is not None:
             super().__init__(ctx, "compaction")
-            ctx.set_service("compaction_engine", self)
         else:
             self.ctx = None
 
@@ -205,7 +204,7 @@ class CompactionEngine(Service):
             measurement = meter.measure(target_session)
             if trigger == "pressure" and measurement["total_tokens"] <= self.threshold_tokens:
                 return {"status": "no_compaction_needed"}
-            pruner = self.ctx.get("tool_result_pruner")
+            pruner = self.ctx.get("toolResultPruner")
             if pruner is not None:
                 pruner.prune_session(target_session)
                 measurement = meter.measure(target_session)
@@ -273,7 +272,6 @@ class CompactionBasicPlugin(Plugin):
 
     def apply(self, ctx: Any) -> None:
         self.engine.ctx = ctx
-        ctx.set_service("compaction_engine", self.engine)
         ctx.set_service("compaction", self.engine)
 
         async def hook_pre_step(payload: Dict[str, Any], next_fn=None) -> Dict[str, Any]:

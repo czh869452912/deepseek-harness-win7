@@ -286,7 +286,7 @@ class JsonlSessionPersistence(SessionPersistence):
         path = self._find_log_path(session_id)
         if not path or not os.path.exists(path):
             return None
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8", newline="") as f:
             content = f.read()
         first_line = content.split("\n", 1)[0]
         meta = parse_header_meta(first_line)

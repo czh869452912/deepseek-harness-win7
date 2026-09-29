@@ -19,7 +19,7 @@ class HostDomainHandler:
 
     async def describe_host(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         llm = self.ctx.get("llm")
-        plan_mode = self.ctx.get("plan_mode")
+        plan_mode = self.ctx.get("planMode")
         goals = self.ctx.get("goals")
         sessions_svc: SessionStore = self.ctx.get("sessions")
         effective_model = llm.resolve_model() if llm else "deepseek-chat"

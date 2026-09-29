@@ -189,12 +189,12 @@ class PlanModeController:
             return prompt + f"\n\n[Plan Mode Active]\n{self.section}\n"
         return prompt
 
-    async def on_pre_step(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def on_pre_step(self, payload: Dict[str, Any], next_fn=None) -> Dict[str, Any]:
         """Commit pending plan mode transitions and handle messages."""
         agent = payload.get("agent")
         sess = self._resolve_session(agent)
         if not sess:
-            return payload
+            return await next_fn() if next_fn is not None else payload
 
         pending = self._pending_intents.pop(sess.id, None)
         if pending is not None:
@@ -202,7 +202,7 @@ class PlanModeController:
             if target != fold_plan_mode(sess.events):
                 sess.append("plan/mode", {"active": target}, ignorable=True)
 
-        return payload
+        return await next_fn() if next_fn is not None else payload
 
     async def handle_exit_plan_mode(
         self,
@@ -270,7 +270,6 @@ class PlanModePlugin(Plugin):
         section = cfg.get("section")
         controller = PlanModeController(ctx, section=section)
         ctx.set_service("planMode", controller)
-        ctx.set_service("plan_mode", controller)
 
         # 1. Register session projection if sessionProjections is mounted
         if ctx.has("sessionProjections"):
@@ -362,10 +361,10 @@ class PlanModePlugin(Plugin):
         elif hasattr(ctx, "effect"):
             ctx.effect(lambda: disposer)
 
-    async def _hook_plan_slash_command(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _hook_plan_slash_command(self, payload: Dict[str, Any], next_fn=None) -> Dict[str, Any]:
         messages = payload.get("messages", [])
         if not messages:
-            return payload
+            return await next_fn() if next_fn is not None else payload
 
         last_user_msg = None
         for msg in reversed(messages):
@@ -377,7 +376,7 @@ class PlanModePlugin(Plugin):
             text = last_user_msg["content"].strip()
             if text.startswith("/plan"):
                 tokens = text.split(None, 1)
-                controller: PlanModeController = self.ctx.get("plan_mode")
+                controller: PlanModeController = self.ctx.get("planMode")
                 if controller:
                     if len(tokens) == 1 or tokens[1].lower() in ("on", "start"):
                         controller.set_active(True)
@@ -389,4 +388,4 @@ class PlanModePlugin(Plugin):
                         controller.set_active(True)
                         last_user_msg["content"] = tokens[1] + "\n\n[System Notice: Session switched to Plan Mode.]"
 
-        return payload
+        return await next_fn() if next_fn is not None else payload

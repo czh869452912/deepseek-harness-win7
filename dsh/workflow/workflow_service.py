@@ -39,7 +39,6 @@ class WorkflowEngine(Service):
     def __init__(self, ctx: Optional[Any] = None):
         if ctx is not None:
             super().__init__(ctx, "workflowEngine")
-            ctx.set_service("workflow_engine", self)
         else:
             self.ctx = None
 

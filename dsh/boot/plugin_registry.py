@@ -57,7 +57,12 @@ def _load(package: str, spec: str) -> Any:
 # class where the upstream package mounts a row, or the class the upstream
 # package default-exports. Vendored rows keep their vendored class.
 HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
+    "@deepseek-ai/dsh-session-telemetry-otel": "dsh.session.telemetry:OpenTelemetrySessionBackend",
+    "@deepseek-ai/dsh-cordis-host-runner": "dsh.extensions.host_runner:DynamicCordisRunner",
+    "@deepseek-ai/dsh-session-log-export": "dsh.session.log_export:SessionLogExportPlugin",
+    "@deepseek-ai/dsh-session-reference": "dsh.context.session_reference:SessionReferenceResolver",
     # Vendored Cordis plugins the bundles carry.
+    "@deepseek-ai/cordis-plugin-hmr": "dsh.cordis.hmr:ConfigWatcherService",
     "@deepseek-ai/cordis-plugin-timer": "dsh.cordis.timer:TimerService",
     # Core spine.
     "@deepseek-ai/dsh-agent-spine-demo": "dsh.bundle.agent_spine:AgentSpine",
@@ -180,6 +185,7 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     "@deepseek-ai/dsh-attachment-local": "dsh.attachment.local:LocalAttachmentStore",
     "@deepseek-ai/dsh-typert-registry": "dsh.typert.registry:TypertRegistry",
     "@deepseek-ai/dsh-api-remotes": "dsh.typert.api_remotes:ApiRemotesPlugin",
+    "@deepseek-ai/dsh-api-session-controller": "dsh.api.session:SessionController",
     "@deepseek-ai/dsh-api-settings-controller": "dsh.api.settings:SettingsController",
     "@deepseek-ai/dsh-api-workspace-controller": "dsh.api.workspace:WorkspaceController",
     "@deepseek-ai/dsh-acp": "dsh.acp.server:AcpPlugin",

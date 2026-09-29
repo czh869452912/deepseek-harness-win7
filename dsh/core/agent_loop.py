@@ -600,7 +600,9 @@ class AgentLoopService:
                     "turn": turn_num,
                     "step": step_num,
                 }
-                pre_step_res = await agent.ctx.waterfall("agent/pre-step", request_payload)
+                request_payload['signal'] = getattr(agent, '_cancel_event', None)
+                pre_step_res = await agent.ctx.waterfall("agent/pre-step", request_payload,
+                    lambda *_: {'kind': 'accept', 'messages': decision_messages})
 
                 starts_series = False
                 if isinstance(pre_step_res, dict):

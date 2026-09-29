@@ -48,7 +48,7 @@ import re
 import pytest
 
 from dsh.core.session.types import SessionHeader, SessionId
-from dsh.harness import build_harness
+from canonical_web_fixture import web_context
 from dsh.host.apiproxy.api.message_feedback import (
     MessageFeedbackDomainHandler,
     TypertGatewayError,
@@ -214,7 +214,8 @@ class ServedWebHost:
         return status, json.loads(response.decode("utf-8"))
 
     async def close(self):
-        await self.server.stop()
+        from canonical_web_fixture import close_web_context
+        await close_web_context(self.ctx)
 
 
 async def launch_served_host(tmp_path):
@@ -227,7 +228,7 @@ async def launch_served_host(tmp_path):
     carrier, the connection service, the frontend-static fallback owner and the
     message-feedback row.
     """
-    ctx = await build_harness(mode="web", enable_web=True, verbose=False, web_port=0)
+    ctx = await web_context(tmp_path / "host")
     service = ctx.get("messageFeedback")
     assert service is not None, "the shipped web composition mounted no messageFeedback provider"
     # The plugin opens its domain as a task on the active loop.
@@ -235,7 +236,7 @@ async def launch_served_host(tmp_path):
         await asyncio.sleep(0)
     await seed_session(ctx, str(tmp_path))
 
-    server = ctx.get("web_server")
+    server = ctx.get("webServer")
     await server.start()
     connection = ctx.get("connection")
     launch = connection.authenticated_url("http://127.0.0.1:%d" % server.listened_port)
@@ -438,7 +439,7 @@ async def test_the_served_api_answers_malformed_remote_payloads_with_the_gateway
                 "rpc-payload",
                 "messageFeedback/list",
                 {"invalid": True},
-                "typert gateway: messageFeedback/list: Remote payload must contain exactly "
+                "Remote payload must contain exactly "
                 "one plain-object args field",
             ),
             (

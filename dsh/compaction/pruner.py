@@ -27,7 +27,7 @@ class ToolResultPruner(Service):
         ctx: Optional[Any] = None,
     ):
         if ctx is not None:
-            super().__init__(ctx, "tool_result_pruner")
+            super().__init__(ctx, "toolResultPruner")
             ctx.set_service("toolResultPruner", self)
         else:
             self.ctx = None
@@ -278,7 +278,7 @@ class ToolResultPrunerPlugin(Plugin):
         )
 
     def apply(self, ctx: Any) -> None:
-        if not ctx.has("tool_result_pruner"):
+        if not ctx.has("toolResultPruner"):
             pruner = ToolResultPruner(
                 threshold_chars=self.threshold_chars,
                 head_chars=self.head_chars,

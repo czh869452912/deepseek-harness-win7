@@ -289,6 +289,17 @@ class AgentRegistry(Service):
         self._initiator_state: str = "active"  # "active" | "closing" | "disposed"
         self._active_initiator_runs: int = 0
         self._initiator_drain: Optional[asyncio.Event] = None
+        if ctx is not None:
+            def contribute(type_ctx):
+                registry = type_ctx.get('typert')
+                registry.lookups.register('agent', dict(parameter='agent', wire='agentId',
+                    hostTypeSymbol='@deepseek-ai/dsh-agent#Agent',
+                    wireTypeSymbol='@deepseek-ai/dsh-session/types#SessionId', resolve=self.get))
+                registry.contexts.registerHost('agent', dict(wire='agentId',
+                    wireTypeSymbol='@deepseek-ai/dsh-session/types#SessionId',
+                    identity=lambda candidate: getattr(getattr(candidate, 'agent', None), 'id', None),
+                    resolve=lambda sid: self.get(sid).ctx if self.get(sid) is not None else None))
+            ctx.inject(['typert'], contribute)
 
     def apply(self, ctx: Any = None) -> None:
         target_ctx = ctx or self.ctx

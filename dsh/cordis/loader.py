@@ -664,6 +664,20 @@ def evaluate_expr(ctx: Any, expr: str) -> Any:
     if expr_str.startswith("!!js"):
         expr_str = expr_str[4:].strip()
 
+    # The shipped Cordis preset resolves its own skill directory through node:url.
+    url_path = re.fullmatch(r"process\.getBuiltinModule\(['\"]node:url['\"]\)\.fileURLToPath\(new URL\((['\"])(.*?)\1,\s*baseUrl\)\)", expr_str)
+    if url_path:
+        from urllib.parse import urljoin, urlparse
+        from urllib.request import url2pathname
+        base = getattr(ctx, 'baseUrl', None) or getattr(ctx, 'base_url', None)
+        parsed = urlparse(urljoin(base or '', url_path.group(2)))
+        if parsed.scheme != 'file':
+            raise ValueError('fileURLToPath requires a file URL')
+        path = url2pathname(parsed.path)
+        if parsed.netloc and parsed.netloc != 'localhost':
+            path = '//'+parsed.netloc+path
+        return path
+
     # Self-executing arrow functions that only throw have no Python counterpart;
     # rewrite the idiom before translating the surrounding expression.
     expr_str = re.sub(

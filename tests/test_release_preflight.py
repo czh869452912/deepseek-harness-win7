@@ -15,7 +15,10 @@ def test_real_frontend_and_runtime_lock_are_resolvable():
     frontend, dependencies = BUILD.checked_inputs(ROOT, ROOT/'.venv/Lib/site-packages')
     assert frontend['kind'] == 'versioned-prebuilt-input'
     assert {d.metadata['Name'].lower() for d in dependencies} == {
-        'pyyaml','requests','certifi','charset-normalizer','idna','urllib3','pillow','wsproto','h11','backports.zoneinfo','tzdata','pywinpty'}
+        'pyyaml','requests','certifi','charset-normalizer','idna','urllib3','pillow','wsproto','h11','backports.zoneinfo','tzdata','pywinpty', 'opentelemetry-api', 'opentelemetry-sdk',
+        'opentelemetry-semantic-conventions', 'opentelemetry-exporter-otlp-proto-common',
+        'opentelemetry-exporter-otlp-proto-http', 'opentelemetry-proto', 'protobuf',
+        'googleapis-common-protos', 'deprecated', 'wrapt', 'importlib_metadata', 'zipp', 'typing_extensions'}
 
 
 def test_portable_dependency_copy_preserves_winpty_agent_and_native_dll(tmp_path):

@@ -14,7 +14,7 @@ async def boot(tmp_path, roots=True):
     await ctx.plugin(Loader);await ctx.plugin(SystemPrompt);await ctx.plugin(InvariantRegistry)
     directory=tmp_path/'standard';directory.mkdir()
     (directory/'agent.cordis.yml').write_text('[]\n',encoding='utf-8')
-    await ctx.plugin(AgentPresets,{'default':'standard','roots':[{'path':str(tmp_path)}] if roots else [],'includeUserRoot':False})
+    await ctx.plugin(AgentPresets,{'default':'standard','roots':[{'path':str(tmp_path)}] if roots else [],'includeUserRoot':False,'includeShippedRoot':False})
     companion=await ctx.plugin(AgentPresetsInvariantPlugin)
     return ctx,companion
 

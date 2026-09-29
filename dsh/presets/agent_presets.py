@@ -7,13 +7,16 @@ import weakref
 from typing import Any, Dict, List, Optional, Tuple
 
 from dsh.cordis.service import Service
+from dsh.typert.remote import TypertRemoteService, Remote, TypertRemoteFailure
+from dsh.typert.artifact import UNDEFINED
+from dsh.cordis.environment import resolve_dsh_home
 from dsh.core.scope import create_scope, ScopeKey, scope_of, bind_scope_parent
 from dsh.presets.authoring import copy_composition, delete_composition, read_composition
 from dsh.presets.discovery import USER_PRESET_DIR, discover_presets
 from dsh.presets.mount import mount_preset, service_for_agent, standing_mount_for
 from dsh.presets.preset import (
     AgentPreset, Config as PresetConfig, PresetExistsError, PresetMountError,
-    PresetRoot, UnknownPresetError,
+    PresetRoot, UnknownPresetError, InvalidPresetIdError, PresetNotWritableError,
 )
 from dsh.settings.types import settings_namespace
 
@@ -92,7 +95,7 @@ class _Standing:
         self.stamp = stamp
 
 
-class AgentPresets(Service):
+class AgentPresets(TypertRemoteService):
     inject = ["loader"]
     Config = _ConfigSchema()
     name = "agentPresets"
@@ -104,14 +107,24 @@ class AgentPresets(Service):
             raise RuntimeError("agent-presets: the roster needs `ctx.baseUrl` to resolve composition plugins")
         default, roots, include_user_root = _config_value(config)
         self.preset_config = PresetConfig(default, roots, include_user_root)
-        dsh_home = os.environ.get("DSH_HOME") or os.path.join(os.path.expanduser("~"), ".dsh")
-        self.resolved_roots = list(roots)
+        dsh_home = resolve_dsh_home()
+        shipped = config.get('includeShippedRoot', True) if isinstance(config, dict) else getattr(config, 'include_shipped_root', True)
+        self.resolved_roots = ([PresetRoot(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'packages', 'preset', 'agent-presets', 'presets')), 'system')] if shipped else []) + list(roots)
         if include_user_root:
             self.resolved_roots.append(PresetRoot(os.path.join(dsh_home, USER_PRESET_DIR), "user"))
         self._settings_scope = None
         self._settings_service = None
         self._standing: Dict[str, asyncio.Future] = {}
         self._bindings = weakref.WeakKeyDictionary()
+        self._switches = weakref.WeakKeyDictionary()
+        def preset_schema(value):
+            if value is not None and not isinstance(value, str):
+                raise TypeError('agent preset projection must be a string or null')
+            return value
+        ctx.inject(['sessionProjections'], lambda child: child.get('sessionProjections').register(dict(
+            key='agentPreset', stateVersion=1, stateSchema=preset_schema, init=lambda header: header.agentPreset,
+            apply=lambda state, event: event['data']['agentPreset'] if event['type'] == 'agent-preset/selected' else state,
+            wire=dict(viewSchema=preset_schema, view=lambda value: value))))
 
         def mount_settings(settings_ctx: Any) -> None:
             settings = settings_ctx.get("settings")
@@ -281,6 +294,73 @@ class AgentPresets(Service):
 
     async def read(self, id_str: str) -> str:
         return read_composition(await self.resolve(id_str))
+
+    @Remote('list')
+    async def remoteExportList(self):
+        return dict(authorable=self.authorable, presets=[dict(
+            {key: value for key, value in preset.to_dict().items() if key in ('id', 'trust', 'name', 'description', 'broken')},
+            isDefault=preset.id == self.default_id) for preset in await self.list()])
+
+    def _remote_error(self, error, identity):
+        details = dict(agentPreset=identity)
+        if isinstance(error, UnknownPresetError):
+            code, details = 'agent-preset-not-found', dict(agentPreset=error.preset_id, available=error.available)
+        elif isinstance(error, PresetNotWritableError):
+            code, details = 'agent-preset-read-only', dict(agentPreset=identity, reason=str(error))
+        elif isinstance(error, (PresetMountError, InvalidPresetIdError, PresetExistsError)):
+            code, details = 'agent-preset-invalid', dict(agentPreset=identity, reason=getattr(error, 'reason', str(error)))
+        else:
+            code, details = 'internal', {}
+        return TypertRemoteFailure(dict(code=code, message=str(error), details=details))
+
+    @staticmethod
+    def _validate_id(value, field='agentPreset'):
+        if not value:
+            raise TypertRemoteFailure(dict(code='bad-request', message=field + ' must be a non-empty string', details={}))
+
+    @Remote('read')
+    async def readDocument(self, agentPreset):
+        self._validate_id(agentPreset)
+        try:
+            preset = await self.resolve(agentPreset)
+            return dict(agentPreset=preset.id, trust=preset.trust, content=await self.read(preset.id),
+                        **{key: value for key, value in preset.to_dict().items() if key in ('name', 'description')})
+        except Exception as error:
+            raise self._remote_error(error, agentPreset) from error
+
+    @Remote('copy')
+    async def remoteExportCopy(self, from_, id, name=UNDEFINED):
+        self._validate_id(from_, 'from')
+        self._validate_id(id)
+        try:
+            await self.copy(from_, id, None if name is UNDEFINED else name)
+            return UNDEFINED
+        except Exception as error:
+            raise self._remote_error(error, id) from error
+
+    @Remote('deletePreset')
+    async def remoteExportDelete(self, id):
+        self._validate_id(id)
+        try:
+            await self.remove(id)
+            return UNDEFINED
+        except Exception as error:
+            raise self._remote_error(error, id) from error
+
+    @Remote
+    async def select(self, agent, agentPreset):
+        self._validate_id(agentPreset)
+        lock = self._switches.setdefault(agent, asyncio.Lock())
+        async with lock:
+            if any(event['type'] == 'turn/start' for event in agent.session.events):
+                raise TypertRemoteFailure(dict(code='agent-preset-locked', message='session "%s" has already started; its agent preset is fixed' % agent.id,
+                                              details=dict(sessionId=agent.id, agentPreset=agentPreset)))
+            try:
+                preset = await self.recompose(agent.ctx, agentPreset)
+                agent.session.append('agent-preset/selected', dict(agentPreset=preset.id))
+                return preset.id
+            except Exception as error:
+                raise self._remote_error(error, agentPreset) from error
 
     async def copy(self, from_id: str, id_str: str, name: Optional[str] = None) -> None:
         source = await self.resolve(from_id)

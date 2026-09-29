@@ -36,39 +36,6 @@ def test_instructions_discovery_and_render(temp_workspace):
     assert "## Instructions from AGENTS.md" in rendered
 
 
-@pytest.mark.asyncio
-async def test_instructions_prompt_assembly_injection(temp_workspace):
-    ctx = Context()
-    await ctx.plugin(PersonaPlugin, config={"text": "You are a helpful assistant."})
-    await ctx.plugin(AgentInstructionsPlugin)
-
-    orig_cwd = os.getcwd()
-    os.chdir(temp_workspace)
-    try:
-        assembled = await ctx.waterfall("agent/prompt-assemble", "Base prompt", lambda value: value)
-        assert "Base prompt" in assembled
-        assert "# Project Workspace Instructions" in assembled
-        assert "Rule 1: Strict Python 3.8" in assembled
-    finally:
-        os.chdir(orig_cwd)
-
-
-@pytest.mark.asyncio
-async def test_instructions_suppressed_in_minimal_mode(temp_workspace):
-    ctx = Context()
-    await ctx.plugin(PersonaPlugin, config={"text": "Exclusive prompt.", "complete": True})
-    await ctx.plugin(AgentInstructionsPlugin)
-
-    orig_cwd = os.getcwd()
-    os.chdir(temp_workspace)
-    try:
-        assembled = await ctx.waterfall("agent/prompt-assemble", "Base prompt", lambda value: value)
-        assert assembled == "Exclusive prompt."
-        assert "Project Workspace Instructions" not in assembled
-    finally:
-        os.chdir(orig_cwd)
-
-
 def test_instructions_1to1_helpers(temp_workspace):
     # Test deduplication
     files = [

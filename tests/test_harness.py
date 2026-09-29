@@ -1,72 +1,24 @@
-from dsh.harness import build_harness
-import asyncio
+"""Formal profile startup replaces the retired flat harness."""
+import importlib.util
 import pytest
-
+from canonical_web_fixture import web_context, close_web_context
 from dsh.cordis.fiber import FiberState
 
 
-def test_build_harness_minimal_mode():
-    ctx = asyncio.run(build_harness(mode="minimal"))
-
-    plugins = [p["id"] for p in ctx.list_plugins()]
-    assert "persona" in plugins
-    assert "fs-local" in plugins
-    assert "str-replace-editor" in plugins
-
-    scope = next(f.ctx for f in ctx.registry.list_fibers() if f.name == "@deepseek-ai/dsh-tools")
-    tools = [t.name for t in ctx.tools.list_tools(scope=scope)]
-    assert "str_replace_editor" in tools
-    assert "pwsh" in tools or "bash" in tools
+def test_flat_harness_entry_is_retired():
+    assert importlib.util.find_spec('dsh.harness') is None
 
 
 @pytest.mark.asyncio
-async def test_build_harness_settles_every_loader_task():
-    """
-    boot/harness settlement: after `build_harness` returns, the loader tree owns
-    no pending task and every mounted entry fiber has settled ACTIVE.
-    """
-    ctx = await build_harness(mode="minimal")
-    loader = ctx.get("loader")
-    assert loader is not None
-    assert loader.get_tasks() == []
-
-    for entry in loader.entries():
-        fiber = entry.fiber
-        if fiber is None:
-            continue
-        assert fiber.state == FiberState.ACTIVE
-
-    pending = [
-        task for task in asyncio.all_tasks()
-        if task is not asyncio.current_task() and not task.done()
-    ]
-    assert pending == []
-
-
-def test_build_harness_creative_mode():
-    ctx = asyncio.run(build_harness(mode="creative"))
-
-    plugins = [p["id"] for p in ctx.list_plugins()]
-    assert "cordis-manager" in plugins
-
-    scope = next(f.ctx for f in ctx.registry.list_fibers() if f.name == "@deepseek-ai/dsh-tools")
-    tools = [t.name for t in ctx.tools.list_tools(scope=scope)]
-    assert "cordis_list_plugins" in tools
-    assert "cordis_inspect_context" in tools
-    assert "cordis_unload_plugin" in tools
-    assert "cordis_dump_config" in tools
-
-
-@pytest.mark.asyncio
-async def test_minimal_web_harness_activates_tool_chain_without_system_prompt():
-    ctx = await build_harness(mode="minimal", enable_web=True, verbose=False, web_port=0)
+async def test_formal_web_settles_loader_entries(tmp_path):
+    ctx = await web_context(tmp_path)
     try:
-        tools_fiber = next(
-            fiber for runtime in ctx.registry._runtimes.values()
-            for fiber in runtime.fibers
-            if getattr(fiber, "name", None) == "@deepseek-ai/dsh-tools"
-        )
-        assert tools_fiber.state == FiberState.ACTIVE
-        assert ctx.get("tools") is not None
+        loader = ctx.get('loader')
+        assert loader.get_tasks() == []
+        assert all(e.fiber.state == FiberState.ACTIVE for e in loader.entries() if e.fiber is not None)
+        assert ctx.get('sessionController') is not None
+        assert ctx.get('tools') is not None
     finally:
-        await ctx.fiber.dispose()
+        await close_web_context(ctx)
+    assert ctx.get('sessionController') is None
+    assert ctx.registry.list_fibers() == []

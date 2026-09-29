@@ -25,11 +25,11 @@ def web_ctx():
     goals = GoalService(ctx)
     ctx.set_service("goals", goals)
     plan_mode = PlanModeController(ctx)
-    ctx.set_service("plan_mode", plan_mode)
+    ctx.set_service("planMode", plan_mode)
 
     server_svc = WebServerService(ctx, host="127.0.0.1", port=0)
     ctx.set_service("web_server", server_svc)
-    ctx.plugin(DirectoryPickerAutoPlugin)
+    ctx.plugin(NativeDirectoryPickerPlugin)
     ctx.plugin(ApiProxyPlugin)
     ctx.plugin(FrontendStaticPlugin)
     return ctx
@@ -94,7 +94,7 @@ async def test_api_status_and_presets(web_ctx):
 async def test_api_plan_and_goal_actions(web_ctx):
     server: WebServerService = web_ctx.get("web_server")
     route = server.match("/api/plan/set")
-    plan_mode: PlanModeController = web_ctx.get("plan_mode")
+    plan_mode: PlanModeController = web_ctx.get("planMode")
 
     class MockWriter:
         def __init__(self):
@@ -285,13 +285,15 @@ async def test_api_advanced_endpoints(web_ctx):
 
 
 @pytest.mark.asyncio
-async def test_api_official_rpc_contract(web_ctx):
+async def test_api_official_rpc_contract(web_ctx, monkeypatch):
     server: WebServerService = web_ctx.get("web_server")
     route = server.match("/api/host.pickDirectory")
     assert route is not None
 
     dp = web_ctx.get("directory_picker")
-    dp.pick_native = lambda: "C:/Projects/deepseek"
+    async def pick_native(signal=None):
+        return "C:/Projects/deepseek"
+    dp._capability["pick"] = pick_native
 
     class MockWriter:
         def __init__(self):

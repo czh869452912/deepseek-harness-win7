@@ -159,6 +159,9 @@ async def mount_preset(agent_ctx: Any, preset: AgentPreset, host_loader: Optiona
 
     fiber = agent_ctx.registry.plugin(standing_plugin, {}, parent_ctx=agent_ctx)
     fiber = await fiber  # Audit ancestry against the raw owner, not its handle.
+    from pathlib import Path
+    fiber.ctx.baseUrl = Path(preset.path).resolve().parent.as_uri() + '/'
+    fiber.ctx.base_url = fiber.ctx.baseUrl
     tree = _PresetTree(fiber.ctx, loader, preset.path)
     try:
         await tree.root.update(_load_rows(preset.path))

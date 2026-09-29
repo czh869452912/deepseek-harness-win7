@@ -28,6 +28,9 @@ def resolve_profiles(providers=None):
         if 'api' in source and source['api'] not in PROTOCOLS:
             raise ValueError('llm-pi-ai: unsupported explicit protocol')
         profile = dict(copy.deepcopy(DEFAULTS), **copy.deepcopy(source))
+        if 'apiKeyEnv' in profile:
+            from dsh.credentials.credentials import credential_ref
+            profile['apiKeyEnv'] = credential_ref(profile['apiKeyEnv'])
         idle = profile['streamIdleTimeoutMs']
         if type(idle) not in (int, float) or not math.isfinite(idle) or not 0 < idle <= MAX_TIMER_DELAY_MS:
             raise ValueError('llm-pi-ai: invalid streamIdleTimeoutMs')

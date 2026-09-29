@@ -17,7 +17,7 @@ from dsh.core.cancellation import aborted
 
 
 @contextlib.contextmanager
-def open_stream(request, signal=None, idle_timeout_ms=300000, on_activity=None):
+def open_stream(request, signal=None, idle_timeout_ms=300000, on_activity=None, read_error_body=True):
     from dsh.llm.llm_service import LlmError
     if type(idle_timeout_ms) not in (int, float) or not math.isfinite(idle_timeout_ms) or not 0 < idle_timeout_ms <= 2147483647:
         raise ValueError("streamIdleTimeoutMs must be a positive bounded timer")
@@ -237,7 +237,7 @@ def open_stream(request, signal=None, idle_timeout_ms=300000, on_activity=None):
             response = urllib.request.build_opener(Http(), Https()).open(request, timeout=idle_timeout_ms / 1000)
         except urllib.error.HTTPError as error:
             response = state["response"] = error
-            error._dsh_body = b"".join(read_chunks(error))
+            error._dsh_body = b"".join(read_chunks(error)) if read_error_body else b""
             raise
         except urllib.error.URLError as error:
             if isinstance(error.reason, socket.timeout):

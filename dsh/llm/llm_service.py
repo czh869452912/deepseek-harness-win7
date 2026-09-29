@@ -908,27 +908,6 @@ class LLMService:
                 details["baseURL"] = request["baseURL"]
             raise TypertRemoteFailure({"code": "model-discovery-failed", "message": str(error), "details": details}) from error
 
-    # alias for 1:1 naming used by apiproxy handler
-    def list_providers(self):
-        # if adapters registered, return them; else static fallback for backward compat
-        if self._adapters:
-            return [dict(v["provider"]) for v in self._adapters.values()]
-        return [
-            {"id": "deepseek-official", "name": "DeepSeek"},
-            {"id": "deepseek", "name": "DeepSeek Official"},
-            {"id": "openai", "name": "OpenAI Compatible"}
-        ]
-
-    def list_configurable_providers(self):
-        if self._directory:
-            return [dict(provider=v["provider"], displayName=v["displayName"], settingsNs=v["settingsNs"], settingsPath=list(v["settingsPath"]), **({"declared": v["declared"]} if "declared" in v and v["declared"] is not None else {})) for v in self._directory.values()]
-        return [
-            {"provider": "deepseek-official", "displayName": "DeepSeek", "settingsNs": "llm-deepseek", "settingsPath": []},
-            {"provider": "openai", "displayName": "OpenAI Compatible", "settingsNs": "llm-openai", "settingsPath": []},
-            {"provider": "deepseek", "displayName": "DeepSeek Official", "settingsNs": "llm", "settingsPath": []}
-        ]
-
-
 class LlmRuntime:
     """
     Cordis plugin mounting LLMService on ctx.llm.

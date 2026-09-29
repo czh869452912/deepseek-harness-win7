@@ -3326,5 +3326,955 @@
         "image"
       ]
     }
+  },
+  {
+    "id": "completions-native",
+    "kind": "completions-messages",
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ]
+        }
+      ]
+    },
+    "model": {
+      "provider": "test",
+      "api": "anthropic-messages",
+      "id": "model",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "compat": {}
+  },
+  {
+    "id": "completions-foreign",
+    "kind": "completions-messages",
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ]
+        }
+      ]
+    },
+    "model": {
+      "provider": "test",
+      "api": "anthropic-messages",
+      "id": "other",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "compat": {}
+  },
+  {
+    "id": "completions-supportsDeveloperRole",
+    "kind": "completions-messages",
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
+    },
+    "model": {
+      "provider": "test",
+      "api": "anthropic-messages",
+      "id": "model",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "compat": {
+      "supportsDeveloperRole": true
+    }
+  },
+  {
+    "id": "completions-requiresThinkingAsText",
+    "kind": "completions-messages",
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
+    },
+    "model": {
+      "provider": "test",
+      "api": "anthropic-messages",
+      "id": "model",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "compat": {
+      "requiresThinkingAsText": true
+    }
+  },
+  {
+    "id": "completions-requiresReasoningContentOnAssistantMessages",
+    "kind": "completions-messages",
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
+    },
+    "model": {
+      "provider": "test",
+      "api": "anthropic-messages",
+      "id": "model",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "compat": {
+      "requiresReasoningContentOnAssistantMessages": true
+    }
+  },
+  {
+    "id": "completions-requiresToolResultName",
+    "kind": "completions-messages",
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
+    },
+    "model": {
+      "provider": "test",
+      "api": "anthropic-messages",
+      "id": "model",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "compat": {
+      "requiresToolResultName": true
+    }
+  },
+  {
+    "id": "completions-requiresAssistantAfterToolResult",
+    "kind": "completions-messages",
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
+    },
+    "model": {
+      "provider": "test",
+      "api": "anthropic-messages",
+      "id": "model",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "compat": {
+      "requiresAssistantAfterToolResult": true
+    }
+  },
+  {
+    "id": "completions-id-pipe",
+    "kind": "completions-messages",
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "call|item",
+              "name": "run",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "{}"
+            },
+            {
+              "type": "toolCall",
+              "id": "call|item2",
+              "name": "run",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "{}"
+            }
+          ]
+        },
+        {
+          "role": "toolResult",
+          "toolCallId": "call|item",
+          "toolName": "run",
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ]
+        }
+      ]
+    },
+    "model": {
+      "provider": "openai",
+      "api": "anthropic-messages",
+      "id": "model",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "compat": {}
+  },
+  {
+    "id": "completions-id-long",
+    "kind": "completions-messages",
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "call|idididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididid",
+              "name": "run",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "{}"
+            },
+            {
+              "type": "toolCall",
+              "id": "call|idididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididid2",
+              "name": "run",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "{}"
+            }
+          ]
+        },
+        {
+          "role": "toolResult",
+          "toolCallId": "call|idididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididididid",
+          "toolName": "run",
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ]
+        }
+      ]
+    },
+    "model": {
+      "provider": "openai",
+      "api": "anthropic-messages",
+      "id": "model",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "compat": {}
+  },
+  {
+    "id": "completions-id-emoji",
+    "kind": "completions-messages",
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀",
+              "name": "run",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "{}"
+            },
+            {
+              "type": "toolCall",
+              "id": "call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀2",
+              "name": "run",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "{}"
+            }
+          ]
+        },
+        {
+          "role": "toolResult",
+          "toolCallId": "call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀call|😀",
+          "toolName": "run",
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ]
+        }
+      ]
+    },
+    "model": {
+      "provider": "openai",
+      "api": "anthropic-messages",
+      "id": "model",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "compat": {}
+  },
+  {
+    "id": "completions-id-separate",
+    "kind": "completions-messages",
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "short",
+              "name": "run",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "{}"
+            },
+            {
+              "type": "toolCall",
+              "id": "short2",
+              "name": "run",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "{}"
+            }
+          ]
+        },
+        {
+          "role": "toolResult",
+          "toolCallId": "short",
+          "toolName": "run",
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ]
+        }
+      ]
+    },
+    "model": {
+      "provider": "openai",
+      "api": "anthropic-messages",
+      "id": "model",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "compat": {}
+  },
+  {
+    "id": "completions-tool-images",
+    "kind": "completions-messages",
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "hello",
+              "textSignature": "native"
+            },
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "calculate",
+              "arguments": {
+                "x": 1
+              },
+              "thoughtSignature": "thought"
+            }
+          ]
+        },
+        {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "calculate",
+          "content": [
+            {
+              "type": "text",
+              "text": "a"
+            },
+            {
+              "type": "text",
+              "text": "b"
+            },
+            {
+              "type": "image",
+              "data": "YWJj",
+              "mimeType": "image/png"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "after"
+        }
+      ]
+    },
+    "model": {
+      "provider": "test",
+      "api": "anthropic-messages",
+      "id": "model",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "compat": {
+      "requiresAssistantAfterToolResult": true,
+      "requiresToolResultName": true
+    }
+  },
+  {
+    "id": "completions-user-images",
+    "kind": "completions-messages",
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello"
+            },
+            {
+              "type": "image",
+              "data": "YWJj",
+              "mimeType": "image/png"
+            }
+          ]
+        }
+      ]
+    },
+    "model": {
+      "provider": "test",
+      "api": "anthropic-messages",
+      "id": "model",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "compat": {}
+  },
+  {
+    "id": "completions-empty-assistant",
+    "kind": "completions-messages",
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": []
+        },
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "  "
+            }
+          ]
+        }
+      ]
+    },
+    "model": {
+      "provider": "test",
+      "api": "anthropic-messages",
+      "id": "model",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "compat": {}
+  },
+  {
+    "id": "completions-signed-reasoning",
+    "kind": "completions-messages",
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "reason",
+              "thinkingSignature": "reasoning_content"
+            },
+            {
+              "type": "text",
+              "text": " answer"
+            }
+          ]
+        }
+      ]
+    },
+    "model": {
+      "provider": "test",
+      "api": "anthropic-messages",
+      "id": "model",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "compat": {}
+  },
+  {
+    "id": "completions-tool-thought",
+    "kind": "completions-messages",
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "test",
+          "model": "model",
+          "responseId": "response-1",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 10,
+            "output": 2,
+            "cacheRead": 3,
+            "cacheWrite": 0,
+            "totalTokens": 15
+          },
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "x",
+              "name": "run",
+              "arguments": {},
+              "thoughtSignature": "{}"
+            }
+          ]
+        }
+      ]
+    },
+    "model": {
+      "provider": "test",
+      "api": "anthropic-messages",
+      "id": "model",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "compat": {}
   }
 ]

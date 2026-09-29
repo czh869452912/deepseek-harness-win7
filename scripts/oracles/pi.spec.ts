@@ -6,6 +6,7 @@ import { toPiContext } from '../../reference/packages/llm/llm-pi-ai/src/context.
 import { resolveProfiles } from '../../reference/packages/llm/llm-pi-ai/src/config.ts'
 import { PiAiAdapter } from '../../reference/packages/llm/llm-pi-ai/src/adapter.ts'
 import { transformMessages } from './official/node_modules/@earendil-works/pi-ai/dist/api/transform-messages.js'
+import { convertMessages } from './official/node_modules/@earendil-works/pi-ai/dist/api/openai-completions.js'
 
 it('observes pinned pi-ai stream and replay boundaries', async () => {
   const fixtures = JSON.parse(readFileSync('scripts/oracles/pi-fixtures.json', 'utf8'))
@@ -13,6 +14,7 @@ it('observes pinned pi-ai stream and replay boundaries', async () => {
   for (const fixture of fixtures) {
     const row: any = {id: fixture.id}
     try {
+      if (fixture.kind === 'completions-messages') row.value = convertMessages(fixture.model, fixture.context, fixture.compat)
       if (fixture.kind === 'transform') {
         const clock = vi.spyOn(Date, 'now').mockReturnValue(123)
         try {

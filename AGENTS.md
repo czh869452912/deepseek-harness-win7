@@ -11,7 +11,7 @@ The goal of this repository is to maintain a lightweight, highly extensible **Wi
 ### Core Targets
 1. **Windows 7 SP1 Compatibility**: Must run natively on Windows 7+ without requiring Python 3.9+ runtime dependencies or modern OS API patches.
 2. **Cordis Architecture ("Everything is a Plugin")**: All system capabilities (LLM, tools, filesystem, terminal, sessions, agent loop, Web GUI) must be modular plugins mounted on a unified `Context`.
-3. **1:1 Official Web GUI (Cordis in Browser)**: Provides full React 18 + TSX + CSS Modules Web GUI with 40 official client plugins, dual SSE streams (`/api/events/mux` and `/api/events/host`), and `POST /api/respond` RPC.
+3. **1:1 Official Web GUI (Cordis in Browser)**: Reuse the pinned upstream React 18 + TSX + CSS Modules frontend unchanged. Align the Python host with its Connection / Typert Remote protocol and `/api/remote.mux` WebSocket; `/plugins/events` is the client HMR SSE channel. The old dual business SSE streams and `/api/respond` bridge are not the target architecture. Derive client rows from the upstream bundle and active Loader entries, not a fixed plugin count.
 4. **Preset Support**: Must support Minimal Mode (极简模式), Standard Mode (标准模式), and Creative Mode (创造模式).
 5. **Portable Packaging**: Must support single-folder zero-dependency portable deployment (`dsh.bat` and `dsh-web.bat`).
 
@@ -85,8 +85,9 @@ To ensure strict Windows 7 and Python 3.8.10 compatibility:
   - Exposes runtime Cordis tools: `cordis_list_plugins`, `cordis_inspect_context`, `cordis_unload_plugin`, `cordis_dump_config`.
 
 - **Web GUI Mode (`dsh-web.bat` / `dsh --profile web`)**:
-  - Automatically loads `WebServerPlugin`, `ClientModulesPlugin`, `ApiProxyPlugin`, and `FrontendStaticPlugin`.
-  - Serves official React 18 frontend from `apps/web/dist` and 40 client plugins from `packages/client/`.
+  - Use the canonical Web profile and upstream bundle composition: Web runtime, WebServer, Connection, Typert Gateway, application Remote controllers, ClientModules, HMR and FrontendStatic.
+  - Serve the original frontend from `apps/web/dist` and the bundles declared by active packages. Do not change browser code to accommodate an incompatible host API.
+  - `ApiProxyPlugin` and the legacy harness Web composition still await removal; they are not fallbacks for missing canonical providers or evidence of Web usability. Current implementation and remaining acceptance work are recorded in `docs/research/2026-09-29-canonical-web-progress.md`.
 
 ### Canonical Profile CLI & Legacy Retirement
 - Canonical launcher invocations use profile syntax:

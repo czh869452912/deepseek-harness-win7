@@ -12,7 +12,7 @@
 
 ## 进行中 / 必须完成
 
-1. client HMR 和 api-remotes 事件桥；所有异步资源随插件卸载。
+1. client-modules 改为 Loader 活跃来源、增量图与卸载；HMR / api-remotes 基础接入已完成，真实业务消费者仍待联调。
 2. Session / Workspace / Settings / Credentials controllers，真实类型 artifact、取消、错误及 projection 消费。
 3. session-reference、session-log-export、动态 Cordis host runner。
 4. 原版前端的可重复构建与来源校验；移除旧 Web carrier 及只证明旧入口的测试。
@@ -35,3 +35,9 @@
 - 前端输入核对：排除 lib/dist/node_modules 后，apps/web 的 107 个、packages/client 的 1095 个 TS/TSX/CSS/HTML/JSON 文件与固定 reference 一致（仅归一化换行）；预构建清单的 119 个文件 SHA-256 全部匹配。没有将其声明为新的源码重建结果。
 
 下一闭包按依赖推进：先把 client-modules 的固定 roster/目录扫描替换为 Loader 活跃来源与增量卸载，再实现 Workspace / Session / Settings（含 Credentials）Remote controller。session-reference 要保留精确快照、预算、持久上下文及取消；session-log-export 要保留原始日志、附件、子会话 ZIP 流及取消；不能用旧 HTTP handler 或空类注册充数。动态 host runner 与其执行能力仍是独立实质缺口。
+
+## 本轮全量结果
+
+产品与测试提交 `3135a740`：`.venv\Scripts\python.exe -m pytest tests` 返回 0，**3608 passed、11 skipped、1 warning，354.10s**。warning 为已有 Windows Proactor transport 在事件循环关闭后析构；另有测试 HTTP 服务退出时的连接重置诊断。没有把这些诊断隐藏或称为零警告。上游 HMR / remotes 原样测试 10 passed；`migration.py check` / `ready` 返回 0，记录有效但未签发全项目 parity。
+
+本轮仅交付 Web 基础接入与验证校正。完整可用基线、原版源码重建、业务浏览器旅程、旧 carrier 删除、Win7 真机验收仍未完成。

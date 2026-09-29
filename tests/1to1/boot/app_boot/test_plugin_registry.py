@@ -743,7 +743,7 @@ SHIPPED_ACTIVATION_GAP: Dict[str, List[str]] = {
 
 @pytest.mark.parametrize("profile", PROFILES)
 @pytest.mark.asyncio
-async def test_run_profile_reports_exactly_the_shipped_provider_gap(profile):
+async def test_run_profile_reports_exactly_the_shipped_provider_gap(profile, monkeypatch):
     """
     The acceptance path: `run_profile` for a shipped profile composes and mounts
     every row it can and rejects over exactly the unimplemented provider rows —
@@ -766,6 +766,10 @@ async def test_run_profile_reports_exactly_the_shipped_provider_gap(profile):
     if not os.path.exists(os.path.join(REPOSITORY_ROOT, "reference", "apps", "cli", "package.json")):
         pytest.skip("the pinned reference installation is required to resolve profile bundles")
 
+    from dsh.boot.cmdline import internals
+    read_fd, write_fd = os.pipe()
+    stdin = os.fdopen(read_fd, 'rb', buffering=0)
+    monkeypatch.setattr(internals, 'stdin', stdin)
     home = tmp()
     try:
         with pytest.raises(RuntimeError) as raised:
@@ -803,6 +807,8 @@ async def test_run_profile_reports_exactly_the_shipped_provider_gap(profile):
         )
         assert activation == SHIPPED_ACTIVATION_GAP[profile]
     finally:
+        stdin.close()
+        os.close(write_fd)
         safe_rmtree(home)
 
 

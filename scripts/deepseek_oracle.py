@@ -37,6 +37,7 @@ def main():
         report.update(target_upstream=target, candidate=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=str(ROOT), encoding='utf-8').strip(),
                       node=subprocess.check_output([args.node, '--version'], encoding='utf-8').strip(), python=sys.version)
         sources = list((ROOT / 'reference/packages/llm/llm-deepseek/src').glob('*.ts'))
+        sources += list((ROOT / 'reference/packages/llm/llm-retry/src').glob('*.ts'))
         sources += list((ROOT / 'dsh/llm').glob('*.py'))
         sources += [ROOT / 'scripts/oracles/deepseek-settings.ts', ROOT / 'scripts/oracles/deepseek_settings_python.py']
         sources += [ROOT / 'scripts/oracles' / name for name in ('deepseek-fixtures.json', 'deepseek.spec.ts', 'deepseek_python.py', 'deepseek-http.ts', 'deepseek_http_python.py', 'deepseek-files.ts', 'deepseek_files_python.py', 'vitest.deepseek-probe.config.mts')]
@@ -61,7 +62,7 @@ def main():
         if before != after:
             raise ValueError('oracle inputs changed during observation')
         report.update(sourceHashes=before, commands=commands,
-                      boundary='Exact JSON values and error codes; error prose and timing are not compared. No paid network calls.')
+                      boundary='Exact JSON values and error codes; error prose, generated retry IDs, and timing are not compared. Retry probes compose the real HTTP adapter, retry middleware and Session; the orchestration loop is a probe, not the full AgentLoop. No paid network calls.')
         for left, right in zip(*observations):
             report['cases'].append(dict(id=left['id'], status='matched' if left == right else 'different', upstream=left, python=right))
         report['status'] = 'matched' if all(row['status'] == 'matched' for row in report['cases']) else 'different'

@@ -11,6 +11,8 @@ from dsh.llm.deepseek_api_extensions import DeepSeekLlmApiExtensionRegistry
 from dsh.llm.llm_deepseek import DeepSeekAdapter
 from dsh.llm.stream_bridge import iter_chunks
 from dsh.core.abort import AbortController
+from dsh.core.session import Session
+from dsh.llm.llm_retry import LLMRetryPlugin
 
 
 async def observe(fixture):
@@ -32,7 +34,8 @@ async def observe(fixture):
                 if mode == 'cancel':
                     loop.call_soon_threadsafe(controller.abort, 'fixture cancellation')
                 return  # The outer handler keeps the connection open until release.
-            status = fixture.get('status', 200)
+            statuses = fixture.get('statuses')
+            status = statuses[min(len(requests) - 1, len(statuses) - 1)] if statuses else fixture.get('status', 200)
             payload = fixture.get('sse', 'data: {"choices":[{"delta":{"content":"ok"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n')
             if status != 200:
                 payload = json.dumps(dict(error=fixture.get('error', {'message': 'failed'})))
@@ -87,21 +90,46 @@ async def observe(fixture):
         adapter.files = SimpleNamespace(ensure_uploaded=upload, close=close_files)
     adapter.user_id = 'fixture-user'
     result = dict(chunks=[], requests=requests, accepted=accepted)
+    session = Session('retry-session')
+    if fixture.get('retry'):
+        LLMRetryPlugin().apply(ctx)
+        result['decisions'] = []
     if fixture.get('images'):
         result.update(reads=reads, uploads=uploads)
     request = dict(model=fixture.get('model', 'model'), messages=fixture.get('messages', [dict(role='user', content=[dict(type='text', text='hello')])]),
                    sessionId='fixture-session', purpose='compaction', signal=controller.signal)
     try:
-        reader = iter_chunks(adapter.stream(request))
-        try:
-            async for chunk in reader:
-                result['chunks'].append(chunk)
-        finally:
-            await reader.aclose()
+        for attempt in range(8):
+            try:
+                reader = iter_chunks(adapter.stream(request))
+                try:
+                    async for chunk in reader:
+                        result['chunks'].append(chunk)
+                finally:
+                    await reader.aclose()
+                break
+            except Exception as error:
+                if not fixture.get('retry'):
+                    raise
+                async def no_recovery():
+                    return None
+                decision = await ctx.waterfall('agent/request-error', dict(agent=SimpleNamespace(session=session), turn=1, step=1,
+                    provider='deepseek-official', failure=error.failure, signal=controller.signal,
+                    retryPolicy=adapter.provider_retry_policy('deepseek-official')), no_recovery)
+                result['decisions'].append(decision)
+                if not isinstance(decision, dict) or decision.get('kind') != 'retry':
+                    raise
     except Exception as error:
         result['error'] = {name: getattr(error, name) for name in ('code', 'status', 'providerRetryAfterMs', 'requestId')
                            if getattr(error, name, None) is not None}
     finally:
+        if fixture.get('retry'):
+            result['retryEvents'] = []
+            for event in session.events:
+                data = {key: value for key, value in event['data'].items() if key != 'retryId'}
+                if 'failure' in data:
+                    data['failure'] = {key: value for key, value in data['failure'].items() if key != 'message'}
+                result['retryEvents'].append(dict(type=event['type'], data=data))
         release.set()
         await adapter.close()
         await ctx.fiber.dispose()

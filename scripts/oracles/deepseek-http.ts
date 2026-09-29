@@ -1,5 +1,8 @@
 import { createServer } from 'node:http'
 import { DeepSeekAdapter, resolveAdapterOptions } from '../../reference/packages/llm/llm-deepseek/src/index.ts'
+import { Context } from '@deepseek-ai/cordis'
+import Sessions from '@deepseek-ai/dsh-session'
+import * as Retry from '../../reference/packages/llm/llm-retry/src/index.ts'
 
 export async function observeHttp(fixture: any) {
   const requests: any[] = [], accepted: string[] = []
@@ -19,7 +22,7 @@ export async function observeHttp(fixture: any) {
       if (mode === 'cancel') controller.abort('fixture cancellation')
       return
     }
-    const status = fixture.status ?? 200
+    const status = fixture.statuses?.[Math.min(requests.length - 1, fixture.statuses.length - 1)] ?? fixture.status ?? 200
     const payload = status === 200
       ? fixture.sse ?? 'data: {"choices":[{"delta":{"content":"ok"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n'
       : JSON.stringify({error: fixture.error ?? {message: 'failed'}})
@@ -45,11 +48,31 @@ export async function observeHttp(fixture: any) {
       accept: async () => { if (fixture.extension) accepted.push('accepted'); if (fixture.extension === 'accept-failed') throw new Error('fixture acceptance failed') }}),
   })
   const result: any = {chunks: [], requests, accepted}
+  const ctx = new Context()
+  let session: any
+  if (fixture.retry) {
+    await ctx.plugin(Sessions)
+    session = ctx.sessions.create('retry-session' as any)
+    Retry.apply(ctx)
+    result.decisions = []
+  }
   if (fixture.images) Object.assign(result, {reads, uploads})
   try {
-    for await (const chunk of adapter.stream({provider: 'deepseek-official', model: fixture.model ?? 'model',
-      messages: fixture.messages ?? [{role: 'user', content: [{type: 'text', text: 'hello'}]}],
-      sessionId: 'fixture-session' as any, purpose: 'compaction', signal: controller.signal})) result.chunks.push(chunk)
+    for (let attempt = 0; attempt < 8; attempt++) {
+      try {
+        for await (const chunk of adapter.stream({provider: 'deepseek-official', model: fixture.model ?? 'model',
+          messages: fixture.messages ?? [{role: 'user', content: [{type: 'text', text: 'hello'}]}],
+          sessionId: 'fixture-session' as any, purpose: 'compaction', signal: controller.signal})) result.chunks.push(chunk)
+        break
+      } catch (error: any) {
+        if (!fixture.retry) throw error
+        const decision = await ctx.waterfall('agent/request-error', {agent: {session}, turn: 1, step: 1,
+          provider: 'deepseek-official', failure: error.failure, signal: controller.signal,
+          retryPolicy: adapter.providerRetryPolicy('deepseek-official')}, async () => undefined)
+        result.decisions.push(decision ?? null)
+        if (decision?.kind !== 'retry') throw error
+      }
+    }
   } catch (error: any) {
     result.error = {}
     for (const name of ['code', 'status', 'providerRetryAfterMs', 'requestId']) {
@@ -57,6 +80,12 @@ export async function observeHttp(fixture: any) {
       if (value !== undefined) result.error[name] = value
     }
   } finally {
+    if (fixture.retry) result.retryEvents = session.events.map((event: any) => {
+      const {retryId, failure, ...data} = event.data
+      if (failure) { const {message, ...rest} = failure; data.failure = rest }
+      return {type: event.type, data}
+    })
+    await ctx.fiber.dispose()
     server.closeAllConnections()
     await new Promise<void>(resolve => server.close(() => resolve()))
   }

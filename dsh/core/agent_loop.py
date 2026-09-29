@@ -12,7 +12,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 from dsh.cordis.context import Context
 from dsh.cordis.plugin import Plugin
 from dsh.core.agent import Agent, AgentHandle, AgentOptions, AgentRegistry
-from dsh.core.scope import create_scope, ScopeKey, scope_of
+from dsh.core.scope import create_scope, ScopeKey, scope_of, scope_target
 from dsh.core.runtime_context import RuntimeContextProjection
 from dsh.core.session import Session, SessionHeader, SessionStore, canonical_header, header_equals
 from dsh.core.tool_calls import execute_tool_calls
@@ -395,8 +395,13 @@ class AgentLoopService:
         session = preparation.session
         tx.assert_live()
         tx.scope = create_scope(self.ctx, ScopeKey({"sessionId": session.id}))
+        # This port uses scoped Contexts as agent event carriers. Preserve the
+        # routing predicate as well as the key, so sibling listeners do not
+        # receive each other's agent/tool events.
+        tx.scope.ctx._filter_hook = scope_target(tx.scope.ctx, scope_of(tx.scope.ctx))
         tx.agent = Agent(session=session, options=options, ctx=tx.scope.ctx)
         tx.agent.ctx = tx.scope.ctx.extend({"agent": tx.agent})
+        tx.agent.ctx._filter_hook = scope_target(tx.agent.ctx, scope_of(tx.agent.ctx))
         if setup is not None:
             result = await tx.race(lambda: setup(tx.agent.ctx))
             commit = getattr(result, 'commit', None)
@@ -417,7 +422,7 @@ class AgentLoopService:
         tx.assert_live()
         agents.announce(tx.agent)
         tx.assert_live()
-        self.ctx.emit('agent/session-start', {'agent': tx.agent, 'source': source})
+        tx.agent.ctx.emit('agent/session-start', {'agent': tx.agent, 'source': source})
         tx.assert_live()
         tx.driver = asyncio.create_task(self._drive_agent(tx.agent))
         self._active_tasks.append(tx.driver)
@@ -595,7 +600,7 @@ class AgentLoopService:
                     "turn": turn_num,
                     "step": step_num,
                 }
-                pre_step_res = await self.ctx.waterfall("agent/pre-step", request_payload)
+                pre_step_res = await agent.ctx.waterfall("agent/pre-step", request_payload)
 
                 starts_series = False
                 if isinstance(pre_step_res, dict):
@@ -642,7 +647,7 @@ class AgentLoopService:
                     session.append("step/end", {"turn": turn_num, "step": step_num})
 
                 if turn_ends and len(agent.inbox.next_step) == 0:
-                    await self.ctx.serial("agent/turn-stopping", {"turn": turn_num, "agent": agent})
+                    await agent.ctx.serial("agent/turn-stopping", {"turn": turn_num, "agent": agent})
 
                 if turn_ends and len(agent.inbox.next_step) == 0:
                     break
@@ -714,8 +719,8 @@ class AgentLoopService:
         )
 
         request_context = dict(seed_config)
-        request_context.update(turn=turn, step=step, signal=getattr(agent, "signal", None))
-        proposed_config = await self.ctx.waterfall(
+        request_context.update(agent=agent, turn=turn, step=step, signal=getattr(agent, "signal", None))
+        proposed_config = await agent.ctx.waterfall(
             "agent/request", request_context, lambda *_args: dict(seed_config))
         config_fields = ("provider", "model", "reasoningEffort", "maxTokens", "temperature", "stop")
         effective_config = {key: value for key, value in (proposed_config or seed_config).items()
@@ -908,7 +913,7 @@ class AgentLoopService:
                 "message": str(e),
                 "code": getattr(e, "code", "UNKNOWN"),
             })
-            recovery = await self.ctx.waterfall(
+            recovery = await agent.ctx.waterfall(
                 "agent/request-error",
                 {
                     "agent": agent,

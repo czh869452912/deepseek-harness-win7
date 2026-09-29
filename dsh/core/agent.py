@@ -447,7 +447,7 @@ class AgentRegistry(Service):
         if not entry.announced:
             return
         if self.ctx:
-            self.ctx.emit("agent/disposed", {"agent": entry.agent})
+            entry.agent.ctx.emit("agent/disposed", {"agent": entry.agent})
 
     def announce(self, agent: Agent) -> None:
         entry = self._store.get(agent.id)
@@ -460,7 +460,7 @@ class AgentRegistry(Service):
         entry.announced = True
         try:
             if self.ctx:
-                self.ctx.emit("agent/created", {"agent": entry.agent})
+                entry.agent.ctx.emit("agent/created", {"agent": entry.agent})
         finally:
             entry.announcing = False
             if entry.detach_requested:

@@ -46,6 +46,21 @@ def test_select_compactable_range():
     assert rng is not None
     assert rng["start"] == 0
     assert rng["end"] == 1
+    assert select_compactable_range(session, measurement, retain_tokens=1000) is None
+
+
+@pytest.mark.asyncio
+async def test_pressure_compaction_ignores_non_surface_events_and_preserves_short_history():
+    ctx = Context()
+    engine = BasicCompactionEngine(ctx=ctx)
+    session = Session(session_id='short', ctx=ctx)
+    session.append('turn/start', dict(turn=1))
+    session.append_user_message('keep this')
+    before = list(session.events)
+    result = await engine.compact_if_needed(session=session)
+    assert result == dict(status='no_compaction_needed')
+    assert session.events == before and session.surface.replace_generation == 0
+    await ctx.fiber.dispose()
 
 
 @pytest.mark.asyncio

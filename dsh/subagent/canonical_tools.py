@@ -221,7 +221,7 @@ class CanonicalToolSubagent(Plugin):
                 mount(provider)
             if background and continuable:
                 runtime_ctx.get('systemPrompt').section(dict(name='tool:' + name, order=2800,
-                    text=lambda context: '' if mounted[0] is None or runtime_ctx.get('tools').get(name, context.scope) is None else
+                    text=lambda context: '' if mounted[0] is None or runtime_ctx.get('tools').get(name, context.get('scope')) is None else
                     'Use {} in the background by default. Start independent delegations together and continue useful work. Set run_in_background to false when your next action needs the result.'.format(name)))
 
         if not selection:

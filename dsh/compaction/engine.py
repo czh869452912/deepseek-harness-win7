@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from dsh.cordis.plugin import Plugin
@@ -33,7 +34,7 @@ def select_compactable_range(
         return None
 
     accumulated = 0
-    retain_start_idx = len(nodes)
+    retain_start_idx = 0
     for i in range(len(nodes) - 1, -1, -1):
         accumulated += nodes[i].get("tokens", 0)
         if accumulated >= retain_tokens:
@@ -212,8 +213,11 @@ class CompactionEngine(Service):
 
         if target_session and (trigger in ("pressure", "context-overflow")):
             measurement = {
-                "nodes": [{"seq": evt.get("seq", idx), "tokens": len(str(evt.get("data", ""))) // 4 + 10} for idx, evt in enumerate(target_session.events)]
+                "nodes": [{"seq": seq, "tokens": len(str(target_session.events[seq].get("data", ""))) // 4 + 10}
+                          for seq in target_session.surface.nodes]
             }
+            if trigger == "pressure" and sum(node["tokens"] for node in measurement["nodes"]) <= self.threshold_tokens:
+                return {"status": "no_compaction_needed"}
             retain = 0 if trigger == "context-overflow" else self.retain_tokens
             rng = select_compactable_range(target_session, measurement, retain_tokens=retain)
             if rng:
@@ -278,12 +282,14 @@ class CompactionBasicPlugin(Plugin):
         ctx.set_service("compaction_engine", self.engine)
         ctx.set_service("compaction", self.engine)
 
-        async def hook_pre_step(payload: Dict[str, Any]) -> Dict[str, Any]:
-            messages = payload.get("messages", [])
-            if messages:
-                compacted = await self.engine.compact_if_needed(messages=messages)
-                payload["messages"] = compacted
-            return payload
+        async def hook_pre_step(payload: Dict[str, Any], next_fn=None) -> Dict[str, Any]:
+            agent = payload.get("agent")
+            if agent is not None and self.engine.auto:
+                try:
+                    await self.engine.compact_if_needed(agent=agent)
+                except Exception:
+                    logging.getLogger("compaction-basic").warning("step compaction failed; continuing the turn", exc_info=True)
+            return await next_fn() if next_fn is not None else payload
 
         ctx.on("agent/pre-step", hook_pre_step)
 

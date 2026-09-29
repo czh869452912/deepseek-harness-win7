@@ -1036,6 +1036,16 @@ class AgentLoopPlugin(Plugin):
         ctx.set_service("agent_loop", agent_loop)
         ctx.set_service("agentLoop", agent_loop)
 
+        def prompt_variables(runtime_ctx):
+            prompt = runtime_ctx.get("systemPrompt")
+            for name in ("provider", "model"):
+                prompt.variable(name, lambda context, key=name: getattr(
+                    getattr(context.get("agent"), "options", None), key, None))
+            prompt.variable("cwd", lambda context: getattr(
+                getattr(getattr(context.get("agent"), "session", None), "header", None), "cwd", None))
+
+        ctx.inject(["systemPrompt"], prompt_variables)
+
         if registry is not None:
             registry.set_factory(agent_loop)
 

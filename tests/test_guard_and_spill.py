@@ -39,3 +39,41 @@ def test_spill_store():
     assert recovered == large_text
 
     shutil.rmtree(tmpdir, ignore_errors=True)
+
+
+@pytest.mark.asyncio
+async def test_repeat_guard_preserves_downstream_decision_isolates_agents_and_resets_only_user_input():
+    from dsh.cordis.context import Context
+    from dsh.core.agent import Agent
+    from dsh.core.session import Session
+    from dsh.core.tools import ToolsPlugin
+    from types import SimpleNamespace
+
+    ctx = Context()
+    await ctx.plugin(ToolsPlugin)
+    fiber = await ctx.plugin(RepeatToolReminderPlugin, dict(thresholds=[2]))
+    first, second = Agent(Session('first')), Agent(Session('second'))
+    downstream = dict(kind='block', feedback=[dict(type='text', text='denied')],
+                      additionalContexts=[dict(source=dict(kind='plugin', plugin='later'), content=[])])
+    async def block(*args):
+        return downstream
+    ctx.on('tools/post-execute', block)
+    async def attempt(agent):
+        return await ctx.waterfall('tools/post-execute', SimpleNamespace(agent=agent, name='view', arguments={}), None)
+    try:
+        assert await attempt(first) is downstream
+        assert await attempt(second) is downstream
+        repeat = await attempt(first)
+        assert repeat['kind'] == 'block' and repeat['feedback'] == downstream['feedback']
+        assert len(repeat['additionalContexts']) == 2
+        assert repeat['additionalContexts'][0]['source']['form'] == 'notice'
+        assert repeat['additionalContexts'][1] is downstream['additionalContexts'][0]
+        assert len(downstream['additionalContexts']) == 1
+        await ctx.waterfall('agent/pre-step', dict(agent=second, messages=[dict(source=dict(kind='plugin'))]))
+        assert len((await attempt(second))['additionalContexts']) == 2
+        await ctx.waterfall('agent/pre-step', dict(agent=first, messages=[dict(source=dict(kind='user'))]))
+        assert await attempt(first) is downstream
+        await fiber.dispose()
+        assert await attempt(first) is downstream
+    finally:
+        await ctx.fiber.dispose()

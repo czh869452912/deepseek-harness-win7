@@ -4,6 +4,7 @@ Advisory per-agent repeat-call detector (`@deepseek-ai/dsh-repeat-tool-reminder`
 
 import json
 import re
+import weakref
 from typing import Any, Dict, List, Optional, Set
 from dsh.cordis.plugin import Plugin
 
@@ -122,30 +123,38 @@ class RepeatToolReminderPlugin(Plugin):
 
     def apply(self, ctx: Any) -> None:
         ctx.set_service("repeat_tool_reminder", self)
+        chains = weakref.WeakKeyDictionary()
 
-        def on_post_execute(exec_data: Any, result_data: Any = None) -> None:
+        async def on_post_execute(exec_data: Any, result_data: Any, next_fn: Any) -> Any:
             tool_name = exec_data.get("name", "") if isinstance(exec_data, dict) else getattr(exec_data, "name", "")
             args = exec_data.get("arguments", {}) if isinstance(exec_data, dict) else getattr(exec_data, "arguments", {})
-            session_id = exec_data.get("session_id", "default") if isinstance(exec_data, dict) else "default"
-
-            reminder = self.record_and_check(session_id, tool_name, args)
-            if reminder and ctx.has("agents"):
-                agents_svc = ctx.get("agents")
-                agent = agents_svc.get(session_id) if hasattr(agents_svc, "get") else None
-                if agent and hasattr(agent, "inbox") and hasattr(agent.inbox, "push"):
-                    agent.inbox.push({
-                        "role": "user",
-                        "content": reminder,
-                        "source": {"kind": "plugin", "plugin": "repeat-tool-reminder"},
-                    })
+            agent = exec_data.get("agent") if isinstance(exec_data, dict) else getattr(exec_data, "agent", None)
+            reminder = None
+            if agent is not None and self.tracked(tool_name):
+                canonical = canonicalize(args)
+                key = (tool_name, canonical)
+                old_key, old_count = chains.get(agent, (None, 0))
+                count = old_count + 1 if key == old_key else 1
+                chains[agent] = (key, count)
+                if count in self.threshold_set:
+                    reminder = GENTLE_REMINDER if count == self.thresholds[0] else detailed_reminder(
+                        tool_name, count, preview_arguments(canonical, self.arguments_preview_chars))
+            decision = await next_fn()
+            if reminder is not None:
+                from dsh.llm.message import create_user_message
+                notice = create_user_message(dict(content=[dict(type="text", text=reminder)],
+                    source=dict(kind="plugin", plugin="repeat-tool-reminder", form="notice",
+                                summary="{} × {}".format(tool_name, count))))
+                decision = dict(decision, additionalContexts=[notice] + list(decision.get("additionalContexts", [])))
+            return decision
 
         ctx.on("tools/post-execute", on_post_execute)
 
-        def on_pre_step(payload: Dict[str, Any]) -> None:
+        async def on_pre_step(payload: Dict[str, Any], next_fn: Any) -> Any:
             messages = payload.get("messages", [])
-            session_id = payload.get("session_id", "default")
-            if any(isinstance(m, dict) and m.get("role") == "user" for m in messages):
-                if session_id in self._history:
-                    del self._history[session_id]
+            agent = payload.get("agent")
+            if agent is not None and any(isinstance(m, dict) and (m.get("source") or {}).get("kind") == "user" for m in messages):
+                chains.pop(agent, None)
+            return await next_fn()
 
         ctx.on("agent/pre-step", on_pre_step)

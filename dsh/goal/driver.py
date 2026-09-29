@@ -66,7 +66,8 @@ class GoalRoundDriver(Plugin):
 
     def current(self, state):
         agent = state["agent"]
-        return self.ctx.get("goals").get(agent) if self.ctx.get("agents").get(agent.id) is agent else None
+        goals, agents = self.ctx.get("goals"), self.ctx.get("agents")
+        return goals.get(agent) if goals is not None and agents is not None and agents.get(agent.id) is agent else None
 
     def ready(self, state):
         return (self.ctx.fiber.state == FiberState.ACTIVE and not state["stopping"]

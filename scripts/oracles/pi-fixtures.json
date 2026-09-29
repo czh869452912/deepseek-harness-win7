@@ -8024,5 +8024,1459 @@
     "options": {},
     "frames": [],
     "status": 500
+  },
+  {
+    "id": "responses-messages-basic",
+    "kind": "responses-messages",
+    "model": {
+      "id": "m",
+      "provider": "openai",
+      "api": "openai-responses",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello"
+        }
+      ]
+    },
+    "options": {}
+  },
+  {
+    "id": "responses-messages-images",
+    "kind": "responses-messages",
+    "model": {
+      "id": "m",
+      "provider": "openai",
+      "api": "openai-responses",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "look"
+            },
+            {
+              "type": "image",
+              "mimeType": "image/png",
+              "data": "AA=="
+            }
+          ]
+        }
+      ]
+    },
+    "options": {}
+  },
+  {
+    "id": "responses-messages-no-vision",
+    "kind": "responses-messages",
+    "model": {
+      "id": "m",
+      "provider": "openai",
+      "api": "openai-responses",
+      "input": [
+        "text"
+      ],
+      "reasoning": true
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "image",
+              "mimeType": "image/png",
+              "data": "AA=="
+            },
+            {
+              "type": "image",
+              "mimeType": "image/png",
+              "data": "AA=="
+            }
+          ]
+        }
+      ]
+    },
+    "options": {}
+  },
+  {
+    "id": "responses-messages-empty-user",
+    "kind": "responses-messages",
+    "model": {
+      "id": "m",
+      "provider": "openai",
+      "api": "openai-responses",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": []
+        },
+        {
+          "role": "assistant",
+          "provider": "openai",
+          "api": "openai-responses",
+          "model": "m",
+          "stopReason": "stop",
+          "timestamp": 1,
+          "content": [
+            {
+              "type": "text",
+              "text": "a"
+            },
+            {
+              "type": "text",
+              "text": "b"
+            }
+          ]
+        }
+      ]
+    },
+    "options": {}
+  },
+  {
+    "id": "responses-messages-signature",
+    "kind": "responses-messages",
+    "model": {
+      "id": "m",
+      "provider": "openai",
+      "api": "openai-responses",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "assistant",
+          "provider": "openai",
+          "api": "openai-responses",
+          "model": "m",
+          "stopReason": "stop",
+          "timestamp": 1,
+          "content": [
+            {
+              "type": "text",
+              "text": "a",
+              "textSignature": "{\"v\": 1, \"id\": \"msg_1\", \"phase\": \"final_answer\"}"
+            },
+            {
+              "type": "text",
+              "text": "b",
+              "textSignature": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+            }
+          ]
+        }
+      ]
+    },
+    "options": {}
+  },
+  {
+    "id": "responses-messages-reasoning",
+    "kind": "responses-messages",
+    "model": {
+      "id": "m",
+      "provider": "openai",
+      "api": "openai-responses",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "assistant",
+          "provider": "openai",
+          "api": "openai-responses",
+          "model": "m",
+          "stopReason": "stop",
+          "timestamp": 1,
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "hmm",
+              "thinkingSignature": "{\"type\": \"reasoning\", \"id\": \"rs_1\", \"encrypted_content\": \"secret\"}"
+            },
+            {
+              "type": "text",
+              "text": "answer"
+            }
+          ]
+        }
+      ]
+    },
+    "options": {}
+  },
+  {
+    "id": "responses-messages-tool",
+    "kind": "responses-messages",
+    "model": {
+      "id": "m",
+      "provider": "openai",
+      "api": "openai-responses",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "assistant",
+          "provider": "openai",
+          "api": "openai-responses",
+          "model": "m",
+          "stopReason": "stop",
+          "timestamp": 1,
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "call|fc_item",
+              "name": "tool",
+              "arguments": {
+                "x": 1
+              },
+              "namespace": "ns"
+            }
+          ]
+        },
+        {
+          "role": "toolResult",
+          "toolName": "tool",
+          "toolCallId": "call|fc_item",
+          "content": [
+            {
+              "type": "text",
+              "text": "result"
+            },
+            {
+              "type": "image",
+              "mimeType": "image/png",
+              "data": "AA=="
+            }
+          ],
+          "isError": false,
+          "timestamp": 2
+        }
+      ]
+    },
+    "options": {}
+  },
+  {
+    "id": "responses-messages-different-model",
+    "kind": "responses-messages",
+    "model": {
+      "id": "other",
+      "provider": "openai",
+      "api": "openai-responses",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "assistant",
+          "provider": "openai",
+          "api": "openai-responses",
+          "model": "m",
+          "stopReason": "stop",
+          "timestamp": 1,
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "call|fc_item",
+              "name": "tool",
+              "arguments": {
+                "x": 1
+              },
+              "namespace": "ns"
+            }
+          ]
+        },
+        {
+          "role": "toolResult",
+          "toolName": "tool",
+          "toolCallId": "call|fc_item",
+          "content": [
+            {
+              "type": "text",
+              "text": "result"
+            },
+            {
+              "type": "image",
+              "mimeType": "image/png",
+              "data": "AA=="
+            }
+          ],
+          "isError": false,
+          "timestamp": 2
+        }
+      ]
+    },
+    "options": {}
+  },
+  {
+    "id": "responses-messages-different-provider",
+    "kind": "responses-messages",
+    "model": {
+      "id": "m",
+      "provider": "opencode",
+      "api": "openai-responses",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "assistant",
+          "provider": "openai",
+          "api": "openai-responses",
+          "model": "m",
+          "stopReason": "stop",
+          "timestamp": 1,
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "call|fc_item",
+              "name": "tool",
+              "arguments": {
+                "x": 1
+              },
+              "namespace": "ns"
+            }
+          ]
+        },
+        {
+          "role": "toolResult",
+          "toolName": "tool",
+          "toolCallId": "call|fc_item",
+          "content": [
+            {
+              "type": "text",
+              "text": "result"
+            },
+            {
+              "type": "image",
+              "mimeType": "image/png",
+              "data": "AA=="
+            }
+          ],
+          "isError": false,
+          "timestamp": 2
+        }
+      ]
+    },
+    "options": {}
+  },
+  {
+    "id": "responses-messages-unlisted-provider",
+    "kind": "responses-messages",
+    "model": {
+      "id": "m",
+      "provider": "custom",
+      "api": "openai-responses",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "assistant",
+          "provider": "openai",
+          "api": "openai-responses",
+          "model": "m",
+          "stopReason": "stop",
+          "timestamp": 1,
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "call|fc_item",
+              "name": "tool",
+              "arguments": {
+                "x": 1
+              },
+              "namespace": "ns"
+            }
+          ]
+        },
+        {
+          "role": "toolResult",
+          "toolName": "tool",
+          "toolCallId": "call|fc_item",
+          "content": [
+            {
+              "type": "text",
+              "text": "result"
+            },
+            {
+              "type": "image",
+              "mimeType": "image/png",
+              "data": "AA=="
+            }
+          ],
+          "isError": false,
+          "timestamp": 2
+        }
+      ]
+    },
+    "options": {}
+  },
+  {
+    "id": "responses-messages-missing-tool",
+    "kind": "responses-messages",
+    "model": {
+      "id": "m",
+      "provider": "openai",
+      "api": "openai-responses",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "assistant",
+          "provider": "openai",
+          "api": "openai-responses",
+          "model": "m",
+          "stopReason": "stop",
+          "timestamp": 1,
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "call|fc_item",
+              "name": "tool",
+              "arguments": {
+                "x": 1
+              },
+              "namespace": "ns"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
+    },
+    "options": {}
+  },
+  {
+    "id": "responses-messages-no-system",
+    "kind": "responses-messages",
+    "model": {
+      "id": "m",
+      "provider": "openai",
+      "api": "openai-responses",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello"
+        }
+      ]
+    },
+    "options": {
+      "includeSystemPrompt": false
+    }
+  },
+  {
+    "id": "responses-messages-system-role",
+    "kind": "responses-messages",
+    "model": {
+      "id": "m",
+      "provider": "openai",
+      "api": "openai-responses",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "compat": {
+        "supportsDeveloperRole": false
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello"
+        }
+      ]
+    },
+    "options": {}
+  },
+  {
+    "id": "responses-messages-long-id",
+    "kind": "responses-messages",
+    "model": {
+      "id": "m",
+      "provider": "openai",
+      "api": "openai-responses",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "assistant",
+          "provider": "openai",
+          "api": "openai-responses",
+          "model": "other",
+          "stopReason": "stop",
+          "timestamp": 1,
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "call.😀|item.item.item.item.item.item.item.item.item.item.item.item.item.item.item.item.item.item.item.item.item.item.item.item.item.item.item.item.item.item.",
+              "name": "tool",
+              "arguments": {
+                "x": 1
+              },
+              "namespace": "ns"
+            }
+          ]
+        }
+      ]
+    },
+    "options": {}
+  },
+  {
+    "id": "responses-messages-empty-tool",
+    "kind": "responses-messages",
+    "model": {
+      "id": "m",
+      "provider": "openai",
+      "api": "openai-responses",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "assistant",
+          "provider": "openai",
+          "api": "openai-responses",
+          "model": "m",
+          "stopReason": "stop",
+          "timestamp": 1,
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "call|fc_item",
+              "name": "tool",
+              "arguments": {
+                "x": 1
+              },
+              "namespace": "ns"
+            }
+          ]
+        },
+        {
+          "role": "toolResult",
+          "toolName": "tool",
+          "toolCallId": "call|fc_item",
+          "content": [],
+          "isError": false,
+          "timestamp": 2
+        }
+      ]
+    },
+    "options": {}
+  },
+  {
+    "id": "responses-messages-tool-text-only",
+    "kind": "responses-messages",
+    "model": {
+      "id": "m",
+      "provider": "openai",
+      "api": "openai-responses",
+      "input": [
+        "text"
+      ],
+      "reasoning": true
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "assistant",
+          "provider": "openai",
+          "api": "openai-responses",
+          "model": "m",
+          "stopReason": "stop",
+          "timestamp": 1,
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "call|fc_item",
+              "name": "tool",
+              "arguments": {
+                "x": 1
+              },
+              "namespace": "ns"
+            }
+          ]
+        },
+        {
+          "role": "toolResult",
+          "toolName": "tool",
+          "toolCallId": "call|fc_item",
+          "content": [
+            {
+              "type": "text",
+              "text": "result"
+            },
+            {
+              "type": "image",
+              "mimeType": "image/png",
+              "data": "AA=="
+            }
+          ],
+          "isError": false,
+          "timestamp": 2
+        }
+      ]
+    },
+    "options": {}
+  },
+  {
+    "id": "responses-params-default",
+    "kind": "responses-params",
+    "model": {
+      "id": "gpt-5",
+      "name": "GPT",
+      "provider": "openai",
+      "api": "openai-responses",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 4096,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "options": {},
+    "simple": false
+  },
+  {
+    "id": "responses-params-simple",
+    "kind": "responses-params",
+    "model": {
+      "id": "gpt-5",
+      "name": "GPT",
+      "provider": "openai",
+      "api": "openai-responses",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 4096,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "options": {},
+    "simple": true
+  },
+  {
+    "id": "responses-params-long-cache",
+    "kind": "responses-params",
+    "model": {
+      "id": "gpt-5",
+      "name": "GPT",
+      "provider": "openai",
+      "api": "openai-responses",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 4096,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "options": {
+      "cacheRetention": "long",
+      "sessionId": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    "simple": true
+  },
+  {
+    "id": "responses-params-no-cache",
+    "kind": "responses-params",
+    "model": {
+      "id": "gpt-5",
+      "name": "GPT",
+      "provider": "openai",
+      "api": "openai-responses",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 4096,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "options": {
+      "cacheRetention": "none",
+      "sessionId": "session"
+    },
+    "simple": true
+  },
+  {
+    "id": "responses-params-strict",
+    "kind": "responses-params",
+    "model": {
+      "id": "gpt-5",
+      "name": "GPT",
+      "provider": "openai",
+      "api": "openai-responses",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 4096,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "compat": {
+        "supportsStrictMode": true
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "options": {},
+    "simple": true
+  },
+  {
+    "id": "responses-params-small-cap",
+    "kind": "responses-params",
+    "model": {
+      "id": "gpt-5",
+      "name": "GPT",
+      "provider": "openai",
+      "api": "openai-responses",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 4096,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "options": {
+      "maxTokens": 2,
+      "temperature": 0.3
+    },
+    "simple": true
+  },
+  {
+    "id": "responses-params-reasoning",
+    "kind": "responses-params",
+    "model": {
+      "id": "gpt-5",
+      "name": "GPT",
+      "provider": "openai",
+      "api": "openai-responses",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 4096,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "options": {
+      "reasoning": "high"
+    },
+    "simple": true
+  },
+  {
+    "id": "responses-params-off-mapped",
+    "kind": "responses-params",
+    "model": {
+      "id": "gpt-5",
+      "name": "GPT",
+      "provider": "openai",
+      "api": "openai-responses",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 4096,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "thinkingLevelMap": {
+        "off": "disabled"
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "options": {
+      "reasoning": "off"
+    },
+    "simple": true
+  },
+  {
+    "id": "responses-params-off-null",
+    "kind": "responses-params",
+    "model": {
+      "id": "gpt-5",
+      "name": "GPT",
+      "provider": "openai",
+      "api": "openai-responses",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 4096,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "thinkingLevelMap": {
+        "off": null
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "options": {},
+    "simple": true
+  },
+  {
+    "id": "responses-params-copilot",
+    "kind": "responses-params",
+    "model": {
+      "id": "gpt-5",
+      "name": "GPT",
+      "provider": "github-copilot",
+      "api": "openai-responses",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 4096,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "options": {},
+    "simple": true
+  },
+  {
+    "id": "responses-params-xai",
+    "kind": "responses-params",
+    "model": {
+      "id": "gpt-5",
+      "name": "GPT",
+      "provider": "xai",
+      "api": "openai-responses",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 4096,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "options": {},
+    "simple": true
+  },
+  {
+    "id": "responses-params-direct-options",
+    "kind": "responses-params",
+    "model": {
+      "id": "gpt-5",
+      "name": "GPT",
+      "provider": "openai",
+      "api": "openai-responses",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 4096,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "options": {
+      "reasoningSummary": "concise",
+      "toolChoice": "auto",
+      "serviceTier": "priority"
+    },
+    "simple": false
+  },
+  {
+    "id": "responses-params-context-cap",
+    "kind": "responses-params",
+    "model": {
+      "id": "gpt-5",
+      "name": "GPT",
+      "provider": "openai",
+      "api": "openai-responses",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 4100,
+      "maxTokens": 4096,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "options": {},
+    "simple": true
+  },
+  {
+    "id": "responses-params-sampling",
+    "kind": "responses-params",
+    "model": {
+      "id": "gpt-5",
+      "name": "GPT",
+      "provider": "openai",
+      "api": "openai-responses",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 128000,
+      "maxTokens": 4096,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "samplingParams": {
+        "top_p": 0.9
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "read",
+          "description": "Read",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ]
+    },
+    "options": {
+      "samplingParams": {
+        "temperature": 0.2
+      }
+    },
+    "simple": true
   }
 ]

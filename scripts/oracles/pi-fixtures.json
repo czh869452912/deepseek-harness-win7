@@ -4276,5 +4276,2174 @@
       "reasoning": true
     },
     "compat": {}
+  },
+  {
+    "id": "params-default",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "options": {},
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-simple",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "options": {},
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": true
+  },
+  {
+    "id": "params-simple-capacity",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 4200,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "options": {},
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": true
+  },
+  {
+    "id": "params-openai-False",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "compat": {
+        "thinkingFormat": "openai",
+        "supportsReasoningEffort": true,
+        "chatTemplateKwargs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          },
+          "level": {
+            "$var": "thinking.effort",
+            "omitWhenOff": true
+          }
+        },
+        "chatTemplateArgs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          }
+        }
+      },
+      "thinkingLevelMap": {
+        "high": "deep",
+        "off": "none"
+      }
+    },
+    "options": {},
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-openai-True",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "compat": {
+        "thinkingFormat": "openai",
+        "supportsReasoningEffort": true,
+        "chatTemplateKwargs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          },
+          "level": {
+            "$var": "thinking.effort",
+            "omitWhenOff": true
+          }
+        },
+        "chatTemplateArgs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          }
+        }
+      },
+      "thinkingLevelMap": {
+        "high": "deep",
+        "off": "none"
+      }
+    },
+    "options": {
+      "reasoningEffort": "high"
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-deepseek-False",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "compat": {
+        "thinkingFormat": "deepseek",
+        "supportsReasoningEffort": true,
+        "chatTemplateKwargs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          },
+          "level": {
+            "$var": "thinking.effort",
+            "omitWhenOff": true
+          }
+        },
+        "chatTemplateArgs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          }
+        }
+      },
+      "thinkingLevelMap": {
+        "high": "deep",
+        "off": "none"
+      }
+    },
+    "options": {},
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-deepseek-True",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "compat": {
+        "thinkingFormat": "deepseek",
+        "supportsReasoningEffort": true,
+        "chatTemplateKwargs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          },
+          "level": {
+            "$var": "thinking.effort",
+            "omitWhenOff": true
+          }
+        },
+        "chatTemplateArgs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          }
+        }
+      },
+      "thinkingLevelMap": {
+        "high": "deep",
+        "off": "none"
+      }
+    },
+    "options": {
+      "reasoningEffort": "high"
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-zai-False",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "compat": {
+        "thinkingFormat": "zai",
+        "supportsReasoningEffort": true,
+        "chatTemplateKwargs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          },
+          "level": {
+            "$var": "thinking.effort",
+            "omitWhenOff": true
+          }
+        },
+        "chatTemplateArgs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          }
+        }
+      },
+      "thinkingLevelMap": {
+        "high": "deep",
+        "off": "none"
+      }
+    },
+    "options": {},
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-zai-True",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "compat": {
+        "thinkingFormat": "zai",
+        "supportsReasoningEffort": true,
+        "chatTemplateKwargs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          },
+          "level": {
+            "$var": "thinking.effort",
+            "omitWhenOff": true
+          }
+        },
+        "chatTemplateArgs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          }
+        }
+      },
+      "thinkingLevelMap": {
+        "high": "deep",
+        "off": "none"
+      }
+    },
+    "options": {
+      "reasoningEffort": "high"
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-qwen-False",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "compat": {
+        "thinkingFormat": "qwen",
+        "supportsReasoningEffort": true,
+        "chatTemplateKwargs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          },
+          "level": {
+            "$var": "thinking.effort",
+            "omitWhenOff": true
+          }
+        },
+        "chatTemplateArgs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          }
+        }
+      },
+      "thinkingLevelMap": {
+        "high": "deep",
+        "off": "none"
+      }
+    },
+    "options": {},
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-qwen-True",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "compat": {
+        "thinkingFormat": "qwen",
+        "supportsReasoningEffort": true,
+        "chatTemplateKwargs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          },
+          "level": {
+            "$var": "thinking.effort",
+            "omitWhenOff": true
+          }
+        },
+        "chatTemplateArgs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          }
+        }
+      },
+      "thinkingLevelMap": {
+        "high": "deep",
+        "off": "none"
+      }
+    },
+    "options": {
+      "reasoningEffort": "high"
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-qwen-chat-template-False",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "compat": {
+        "thinkingFormat": "qwen-chat-template",
+        "supportsReasoningEffort": true,
+        "chatTemplateKwargs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          },
+          "level": {
+            "$var": "thinking.effort",
+            "omitWhenOff": true
+          }
+        },
+        "chatTemplateArgs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          }
+        }
+      },
+      "thinkingLevelMap": {
+        "high": "deep",
+        "off": "none"
+      }
+    },
+    "options": {},
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-qwen-chat-template-True",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "compat": {
+        "thinkingFormat": "qwen-chat-template",
+        "supportsReasoningEffort": true,
+        "chatTemplateKwargs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          },
+          "level": {
+            "$var": "thinking.effort",
+            "omitWhenOff": true
+          }
+        },
+        "chatTemplateArgs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          }
+        }
+      },
+      "thinkingLevelMap": {
+        "high": "deep",
+        "off": "none"
+      }
+    },
+    "options": {
+      "reasoningEffort": "high"
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-chat-template-False",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "compat": {
+        "thinkingFormat": "chat-template",
+        "supportsReasoningEffort": true,
+        "chatTemplateKwargs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          },
+          "level": {
+            "$var": "thinking.effort",
+            "omitWhenOff": true
+          }
+        },
+        "chatTemplateArgs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          }
+        }
+      },
+      "thinkingLevelMap": {
+        "high": "deep",
+        "off": "none"
+      }
+    },
+    "options": {},
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-chat-template-True",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "compat": {
+        "thinkingFormat": "chat-template",
+        "supportsReasoningEffort": true,
+        "chatTemplateKwargs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          },
+          "level": {
+            "$var": "thinking.effort",
+            "omitWhenOff": true
+          }
+        },
+        "chatTemplateArgs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          }
+        }
+      },
+      "thinkingLevelMap": {
+        "high": "deep",
+        "off": "none"
+      }
+    },
+    "options": {
+      "reasoningEffort": "high"
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-baseten-False",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "compat": {
+        "thinkingFormat": "baseten",
+        "supportsReasoningEffort": true,
+        "chatTemplateKwargs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          },
+          "level": {
+            "$var": "thinking.effort",
+            "omitWhenOff": true
+          }
+        },
+        "chatTemplateArgs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          }
+        }
+      },
+      "thinkingLevelMap": {
+        "high": "deep",
+        "off": "none"
+      }
+    },
+    "options": {},
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-baseten-True",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "compat": {
+        "thinkingFormat": "baseten",
+        "supportsReasoningEffort": true,
+        "chatTemplateKwargs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          },
+          "level": {
+            "$var": "thinking.effort",
+            "omitWhenOff": true
+          }
+        },
+        "chatTemplateArgs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          }
+        }
+      },
+      "thinkingLevelMap": {
+        "high": "deep",
+        "off": "none"
+      }
+    },
+    "options": {
+      "reasoningEffort": "high"
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-openrouter-False",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "compat": {
+        "thinkingFormat": "openrouter",
+        "supportsReasoningEffort": true,
+        "chatTemplateKwargs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          },
+          "level": {
+            "$var": "thinking.effort",
+            "omitWhenOff": true
+          }
+        },
+        "chatTemplateArgs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          }
+        }
+      },
+      "thinkingLevelMap": {
+        "high": "deep",
+        "off": "none"
+      }
+    },
+    "options": {},
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-openrouter-True",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "compat": {
+        "thinkingFormat": "openrouter",
+        "supportsReasoningEffort": true,
+        "chatTemplateKwargs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          },
+          "level": {
+            "$var": "thinking.effort",
+            "omitWhenOff": true
+          }
+        },
+        "chatTemplateArgs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          }
+        }
+      },
+      "thinkingLevelMap": {
+        "high": "deep",
+        "off": "none"
+      }
+    },
+    "options": {
+      "reasoningEffort": "high"
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-ant-ling-False",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "compat": {
+        "thinkingFormat": "ant-ling",
+        "supportsReasoningEffort": true,
+        "chatTemplateKwargs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          },
+          "level": {
+            "$var": "thinking.effort",
+            "omitWhenOff": true
+          }
+        },
+        "chatTemplateArgs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          }
+        }
+      },
+      "thinkingLevelMap": {
+        "high": "deep",
+        "off": "none"
+      }
+    },
+    "options": {},
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-ant-ling-True",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "compat": {
+        "thinkingFormat": "ant-ling",
+        "supportsReasoningEffort": true,
+        "chatTemplateKwargs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          },
+          "level": {
+            "$var": "thinking.effort",
+            "omitWhenOff": true
+          }
+        },
+        "chatTemplateArgs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          }
+        }
+      },
+      "thinkingLevelMap": {
+        "high": "deep",
+        "off": "none"
+      }
+    },
+    "options": {
+      "reasoningEffort": "high"
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-together-False",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "compat": {
+        "thinkingFormat": "together",
+        "supportsReasoningEffort": true,
+        "chatTemplateKwargs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          },
+          "level": {
+            "$var": "thinking.effort",
+            "omitWhenOff": true
+          }
+        },
+        "chatTemplateArgs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          }
+        }
+      },
+      "thinkingLevelMap": {
+        "high": "deep",
+        "off": "none"
+      }
+    },
+    "options": {},
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-together-True",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "compat": {
+        "thinkingFormat": "together",
+        "supportsReasoningEffort": true,
+        "chatTemplateKwargs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          },
+          "level": {
+            "$var": "thinking.effort",
+            "omitWhenOff": true
+          }
+        },
+        "chatTemplateArgs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          }
+        }
+      },
+      "thinkingLevelMap": {
+        "high": "deep",
+        "off": "none"
+      }
+    },
+    "options": {
+      "reasoningEffort": "high"
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-string-thinking-False",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "compat": {
+        "thinkingFormat": "string-thinking",
+        "supportsReasoningEffort": true,
+        "chatTemplateKwargs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          },
+          "level": {
+            "$var": "thinking.effort",
+            "omitWhenOff": true
+          }
+        },
+        "chatTemplateArgs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          }
+        }
+      },
+      "thinkingLevelMap": {
+        "high": "deep",
+        "off": "none"
+      }
+    },
+    "options": {},
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-string-thinking-True",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "compat": {
+        "thinkingFormat": "string-thinking",
+        "supportsReasoningEffort": true,
+        "chatTemplateKwargs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          },
+          "level": {
+            "$var": "thinking.effort",
+            "omitWhenOff": true
+          }
+        },
+        "chatTemplateArgs": {
+          "enable": {
+            "$var": "thinking.enabled"
+          }
+        }
+      },
+      "thinkingLevelMap": {
+        "high": "deep",
+        "off": "none"
+      }
+    },
+    "options": {
+      "reasoningEffort": "high"
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-provider-deepseek",
+    "kind": "completions-params",
+    "model": {
+      "provider": "deepseek",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "https://api.deepseek.com",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "options": {
+      "maxTokens": 2048,
+      "temperature": 0,
+      "reasoningEffort": "high",
+      "sessionId": "ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss",
+      "cacheRetention": "long"
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-provider-openai",
+    "kind": "completions-params",
+    "model": {
+      "provider": "openai",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "https://api.openai.com/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "options": {
+      "maxTokens": 2048,
+      "temperature": 0,
+      "reasoningEffort": "high",
+      "sessionId": "ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss",
+      "cacheRetention": "long"
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-provider-nvidia",
+    "kind": "completions-params",
+    "model": {
+      "provider": "nvidia",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "https://integrate.api.nvidia.com/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "options": {
+      "maxTokens": 2048,
+      "temperature": 0,
+      "reasoningEffort": "high",
+      "sessionId": "ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss",
+      "cacheRetention": "long"
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-provider-together",
+    "kind": "completions-params",
+    "model": {
+      "provider": "together",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "https://api.together.ai/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "options": {
+      "maxTokens": 2048,
+      "temperature": 0,
+      "reasoningEffort": "high",
+      "sessionId": "ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss",
+      "cacheRetention": "long"
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-provider-openrouter",
+    "kind": "completions-params",
+    "model": {
+      "provider": "openrouter",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "options": {
+      "maxTokens": 2048,
+      "temperature": 0,
+      "reasoningEffort": "high",
+      "sessionId": "ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss",
+      "cacheRetention": "long"
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-cache-anthropic",
+    "kind": "completions-params",
+    "model": {
+      "provider": "openrouter",
+      "api": "openai-completions",
+      "id": "anthropic/claude",
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "options": {
+      "cacheRetention": "long"
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-thinking-budget",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "compat": {
+        "supportsThinkingTokenBudget": true,
+        "maxTokensField": "max_tokens"
+      }
+    },
+    "options": {
+      "maxTokens": 2048,
+      "reasoningEffort": "high"
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": false
+  },
+  {
+    "id": "params-sample-override",
+    "kind": "completions-params",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "samplingParams": {
+        "temperature": 0.5
+      }
+    },
+    "options": {
+      "samplingParams": {
+        "temperature": 0.2
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "simple": true
   }
 ]

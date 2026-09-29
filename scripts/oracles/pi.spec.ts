@@ -2,6 +2,7 @@ import { it, expect } from 'vitest'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { toPiReplayState, toPiAssistant } from '../../reference/packages/llm/llm-pi-ai/src/replay.ts'
 import { toStreamChunks } from '../../reference/packages/llm/llm-pi-ai/src/stream.ts'
+import { toPiContext } from '../../reference/packages/llm/llm-pi-ai/src/context.ts'
 
 it('observes pinned pi-ai stream and replay boundaries', async () => {
   const fixtures = JSON.parse(readFileSync('scripts/oracles/pi-fixtures.json', 'utf8'))
@@ -9,6 +10,21 @@ it('observes pinned pi-ai stream and replay boundaries', async () => {
   for (const fixture of fixtures) {
     const row: any = {id: fixture.id}
     try {
+      if (fixture.kind === 'context') {
+        let degraded = 0
+        const reads: any[] = []
+        const images = fixture.images === undefined ? undefined : {
+          attachments: {readImageRequest: async (ref: any, policy: any) => {
+            reads.push({id: ref.attachmentId, policy})
+            const version = fixture.images[ref.attachmentId]
+            return {...version, data: Buffer.from(version.data, 'base64')}
+          }},
+          resolveImageAccess: (ref: any) => fixture.access?.[ref.attachmentId] === undefined ? undefined : {readonlyPath: fixture.access[ref.attachmentId]},
+          maxRequestImageBytes: fixture.maxBytes,
+          requestImagePolicy: fixture.policy,
+        }
+        row.value = {context: await toPiContext(fixture.options, images as any, () => degraded++), degraded, reads}
+      }
       if (fixture.kind === 'replay') row.value = toPiReplayState(fixture.message)
       if (fixture.kind === 'assistant') {
         let degraded = 0

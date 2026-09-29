@@ -1403,5 +1403,531 @@
         }
       }
     ]
+  },
+  {
+    "id": "context-tool-roundtrip",
+    "kind": "context",
+    "options": {
+      "messages": [
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "historical"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "source": {
+            "kind": "model",
+            "provider": "test",
+            "model": "model",
+            "replayState": {
+              "response": {
+                "kind": "pi-ai",
+                "version": 2,
+                "api": "anthropic-messages",
+                "provider": "test",
+                "model": "model",
+                "responseId": "response-1",
+                "stopReason": "toolUse"
+              },
+              "blocks": [
+                {
+                  "type": "reasoning",
+                  "thinkingSignature": "signed"
+                },
+                {
+                  "type": "text",
+                  "textSignature": "native"
+                },
+                {
+                  "type": "tool-call",
+                  "thoughtSignature": "thought"
+                }
+              ]
+            }
+          },
+          "content": [
+            {
+              "type": "reasoning",
+              "text": "reason"
+            },
+            {
+              "type": "text",
+              "text": "hello"
+            },
+            {
+              "type": "tool-call",
+              "id": "call",
+              "name": "calculate",
+              "arguments": "{\"x\":1}"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "user"
+            },
+            {
+              "type": "tool-result",
+              "toolCallId": "call",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "one"
+                },
+                {
+                  "type": "tool-result",
+                  "toolCallId": "nested",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "two"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "system": "system",
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object"
+          },
+          "extra": "discard"
+        }
+      ]
+    }
+  },
+  {
+    "id": "context-empty-results",
+    "kind": "context",
+    "options": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool-result",
+              "toolCallId": "missing",
+              "content": [],
+              "isError": true
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": []
+        }
+      ],
+      "tools": []
+    }
+  },
+  {
+    "id": "context-missing-store-user",
+    "kind": "context",
+    "options": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "image",
+              "attachment": {
+                "attachmentId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "mediaType": "image/png",
+                "width": 2,
+                "height": 2,
+                "bytes": 3,
+                "name": "demo.png"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "context-image-role-user",
+    "kind": "context",
+    "options": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "image",
+              "attachment": {
+                "attachmentId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "mediaType": "image/png",
+                "width": 2,
+                "height": 2,
+                "bytes": 3,
+                "name": "demo.png"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "images": {
+      "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": {
+        "data": "YWJj",
+        "bytes": 3,
+        "mediaType": "image/png",
+        "width": 2,
+        "height": 2
+      }
+    },
+    "maxBytes": 4
+  },
+  {
+    "id": "context-missing-store-assistant",
+    "kind": "context",
+    "options": {
+      "messages": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "image",
+              "attachment": {
+                "attachmentId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "mediaType": "image/png",
+                "width": 2,
+                "height": 2,
+                "bytes": 3,
+                "name": "demo.png"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "context-image-role-assistant",
+    "kind": "context",
+    "options": {
+      "messages": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "image",
+              "attachment": {
+                "attachmentId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "mediaType": "image/png",
+                "width": 2,
+                "height": 2,
+                "bytes": 3,
+                "name": "demo.png"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "images": {
+      "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": {
+        "data": "YWJj",
+        "bytes": 3,
+        "mediaType": "image/png",
+        "width": 2,
+        "height": 2
+      }
+    },
+    "maxBytes": 0
+  },
+  {
+    "id": "context-missing-store-system",
+    "kind": "context",
+    "options": {
+      "messages": [
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "image",
+              "attachment": {
+                "attachmentId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "mediaType": "image/png",
+                "width": 2,
+                "height": 2,
+                "bytes": 3,
+                "name": "demo.png"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "context-image-role-system",
+    "kind": "context",
+    "options": {
+      "messages": [
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "image",
+              "attachment": {
+                "attachmentId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "mediaType": "image/png",
+                "width": 2,
+                "height": 2,
+                "bytes": 3,
+                "name": "demo.png"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "images": {
+      "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": {
+        "data": "YWJj",
+        "bytes": 3,
+        "mediaType": "image/png",
+        "width": 2,
+        "height": 2
+      }
+    },
+    "maxBytes": 0
+  },
+  {
+    "id": "context-nested-image",
+    "kind": "context",
+    "options": {
+      "messages": [
+        {
+          "role": "assistant",
+          "source": {
+            "kind": "model",
+            "provider": "test",
+            "model": "model",
+            "replayState": {
+              "response": {
+                "kind": "pi-ai",
+                "version": 2,
+                "api": "anthropic-messages",
+                "provider": "test",
+                "model": "model",
+                "responseId": "response-1",
+                "stopReason": "toolUse"
+              },
+              "blocks": [
+                {
+                  "type": "reasoning",
+                  "thinkingSignature": "signed"
+                },
+                {
+                  "type": "text",
+                  "textSignature": "native"
+                },
+                {
+                  "type": "tool-call",
+                  "thoughtSignature": "thought"
+                }
+              ]
+            }
+          },
+          "content": [
+            {
+              "type": "reasoning",
+              "text": "reason"
+            },
+            {
+              "type": "text",
+              "text": "hello"
+            },
+            {
+              "type": "tool-call",
+              "id": "call",
+              "name": "calculate",
+              "arguments": "{\"x\":1}"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool-result",
+              "toolCallId": "call",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "before"
+                },
+                {
+                  "type": "image",
+                  "attachment": {
+                    "attachmentId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "mediaType": "image/png",
+                    "width": 2,
+                    "height": 2,
+                    "bytes": 3,
+                    "name": "demo.png"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": "after"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "images": {
+      "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": {
+        "data": "YWJj",
+        "bytes": 3,
+        "mediaType": "image/png",
+        "width": 2,
+        "height": 2
+      }
+    },
+    "access": {
+      "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "C:/images/demo.png"
+    }
+  },
+  {
+    "id": "context-duplicate-image",
+    "kind": "context",
+    "options": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "image",
+              "attachment": {
+                "attachmentId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "mediaType": "image/png",
+                "width": 2,
+                "height": 2,
+                "bytes": 3,
+                "name": "demo.png"
+              }
+            },
+            {
+              "type": "image",
+              "attachment": {
+                "attachmentId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "mediaType": "image/png",
+                "width": 2,
+                "height": 2,
+                "bytes": 3,
+                "name": "demo.png"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "images": {
+      "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": {
+        "data": "YWJj",
+        "bytes": 3,
+        "mediaType": "image/png",
+        "width": 2,
+        "height": 2
+      }
+    }
+  },
+  {
+    "id": "context-offload-estimate",
+    "kind": "context",
+    "options": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "image",
+              "attachment": {
+                "attachmentId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "mediaType": "image/png",
+                "width": 2,
+                "height": 2,
+                "bytes": 3,
+                "name": "demo.png"
+              }
+            },
+            {
+              "type": "image",
+              "attachment": {
+                "attachmentId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "mediaType": "image/png",
+                "width": 2,
+                "height": 2,
+                "bytes": 3,
+                "name": "demo.png"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "images": {
+      "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": {
+        "data": "YWJj",
+        "bytes": 3,
+        "mediaType": "image/png",
+        "width": 2,
+        "height": 2
+      }
+    },
+    "maxBytes": 4
+  },
+  {
+    "id": "context-offload-exact",
+    "kind": "context",
+    "options": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "image",
+              "attachment": {
+                "attachmentId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "mediaType": "image/png",
+                "width": 2,
+                "height": 2,
+                "bytes": 3,
+                "name": "demo.png"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "images": {
+      "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": {
+        "data": "YWJjZGVm",
+        "bytes": 6,
+        "mediaType": "image/png",
+        "width": 2,
+        "height": 2
+      }
+    },
+    "maxBytes": 4
   }
 ]

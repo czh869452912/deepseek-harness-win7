@@ -82,10 +82,17 @@ def checked_inputs(root_dir, site_packages):
     distributions = {d.metadata['Name'].lower().replace('_', '-'): d
                      for d in importlib.metadata.distributions(path=[str(site_packages)])}
     selected = []
+    from packaging.requirements import Requirement
     for line in (root / 'requirements-runtime.lock').read_text(encoding='utf-8').splitlines():
         if not line or line.startswith('#'):
             continue
-        name, version = line.split('==')
+        requirement = Requirement(line)
+        if requirement.marker is not None and not requirement.marker.evaluate():
+            continue
+        pins = list(requirement.specifier)
+        if len(pins) != 1 or pins[0].operator != '==':
+            raise ValueError('runtime dependency missing or unpinned: ' + line)
+        name, version = requirement.name, pins[0].version
         dist = distributions.get(name.lower().replace('_', '-'))
         if dist is None or dist.version != version or not dist.files:
             raise ValueError('runtime dependency missing or unpinned: ' + line)

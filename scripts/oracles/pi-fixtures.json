@@ -2688,5 +2688,643 @@
         }
       }
     }
+  },
+  {
+    "id": "transform-native-orphan",
+    "kind": "transform",
+    "messages": [
+      {
+        "role": "assistant",
+        "api": "anthropic-messages",
+        "provider": "test",
+        "model": "model",
+        "responseId": "response-1",
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 10,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 15
+        },
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "reason",
+            "thinkingSignature": "signed"
+          },
+          {
+            "type": "text",
+            "text": "hello",
+            "textSignature": "native"
+          },
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "calculate",
+            "arguments": {
+              "x": 1
+            },
+            "thoughtSignature": "thought"
+          }
+        ]
+      }
+    ],
+    "model": {
+      "provider": "test",
+      "api": "anthropic-messages",
+      "id": "model",
+      "input": [
+        "text",
+        "image"
+      ]
+    }
+  },
+  {
+    "id": "transform-foreign",
+    "kind": "transform",
+    "messages": [
+      {
+        "role": "assistant",
+        "api": "anthropic-messages",
+        "provider": "test",
+        "model": "model",
+        "responseId": "response-1",
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 10,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 15
+        },
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "reason",
+            "thinkingSignature": "signed"
+          },
+          {
+            "type": "text",
+            "text": "hello",
+            "textSignature": "native"
+          },
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "calculate",
+            "arguments": {
+              "x": 1
+            },
+            "thoughtSignature": "thought"
+          }
+        ]
+      }
+    ],
+    "model": {
+      "provider": "other",
+      "api": "anthropic-messages",
+      "id": "model",
+      "input": [
+        "text",
+        "image"
+      ]
+    }
+  },
+  {
+    "id": "transform-redacted-native",
+    "kind": "transform",
+    "messages": [
+      {
+        "role": "assistant",
+        "api": "anthropic-messages",
+        "provider": "test",
+        "model": "model",
+        "responseId": "response-1",
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 10,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 15
+        },
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "",
+            "thinkingSignature": "opaque",
+            "redacted": true
+          },
+          {
+            "type": "text",
+            "text": "hello",
+            "textSignature": "sig"
+          }
+        ]
+      }
+    ],
+    "model": {
+      "provider": "test",
+      "api": "anthropic-messages",
+      "id": "model",
+      "input": [
+        "text",
+        "image"
+      ]
+    }
+  },
+  {
+    "id": "transform-redacted-foreign",
+    "kind": "transform",
+    "messages": [
+      {
+        "role": "assistant",
+        "api": "anthropic-messages",
+        "provider": "test",
+        "model": "model",
+        "responseId": "response-1",
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 10,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 15
+        },
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "",
+            "thinkingSignature": "opaque",
+            "redacted": true
+          },
+          {
+            "type": "text",
+            "text": "hello",
+            "textSignature": "sig"
+          }
+        ]
+      }
+    ],
+    "model": {
+      "provider": "test",
+      "api": "anthropic-messages",
+      "id": "other",
+      "input": [
+        "text",
+        "image"
+      ]
+    }
+  },
+  {
+    "id": "transform-signed-empty",
+    "kind": "transform",
+    "messages": [
+      {
+        "role": "assistant",
+        "api": "anthropic-messages",
+        "provider": "test",
+        "model": "model",
+        "responseId": "response-1",
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 10,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 15
+        },
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "",
+            "thinkingSignature": "opaque"
+          }
+        ]
+      }
+    ],
+    "model": {
+      "provider": "test",
+      "api": "anthropic-messages",
+      "id": "model",
+      "input": [
+        "text",
+        "image"
+      ]
+    }
+  },
+  {
+    "id": "transform-normalized-pair",
+    "kind": "transform",
+    "messages": [
+      {
+        "role": "assistant",
+        "api": "anthropic-messages",
+        "provider": "test",
+        "model": "model",
+        "responseId": "response-1",
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 10,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 15
+        },
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "a|b",
+            "name": "run",
+            "arguments": {},
+            "thoughtSignature": "sig"
+          },
+          {
+            "type": "toolCall",
+            "id": "orphan",
+            "name": "run",
+            "arguments": {},
+            "thoughtSignature": "sig"
+          }
+        ]
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "a|b",
+        "toolName": "run",
+        "content": [
+          {
+            "type": "text",
+            "text": "ok"
+          }
+        ],
+        "isError": false,
+        "timestamp": 0
+      },
+      {
+        "role": "user",
+        "content": "next",
+        "timestamp": 0
+      }
+    ],
+    "model": {
+      "provider": "test",
+      "api": "anthropic-messages",
+      "id": "other",
+      "input": [
+        "text",
+        "image"
+      ]
+    },
+    "normalize": true
+  },
+  {
+    "id": "transform-same-model-id",
+    "kind": "transform",
+    "messages": [
+      {
+        "role": "assistant",
+        "api": "anthropic-messages",
+        "provider": "test",
+        "model": "model",
+        "responseId": "response-1",
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 10,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 15
+        },
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "a|b",
+            "name": "run",
+            "arguments": {},
+            "thoughtSignature": "sig"
+          },
+          {
+            "type": "toolCall",
+            "id": "orphan",
+            "name": "run",
+            "arguments": {},
+            "thoughtSignature": "sig"
+          }
+        ]
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "a|b",
+        "toolName": "run",
+        "content": [
+          {
+            "type": "text",
+            "text": "ok"
+          }
+        ],
+        "isError": false,
+        "timestamp": 0
+      }
+    ],
+    "model": {
+      "provider": "test",
+      "api": "anthropic-messages",
+      "id": "model",
+      "input": [
+        "text",
+        "image"
+      ]
+    },
+    "normalize": true
+  },
+  {
+    "id": "transform-consecutive-assistant",
+    "kind": "transform",
+    "messages": [
+      {
+        "role": "assistant",
+        "api": "anthropic-messages",
+        "provider": "test",
+        "model": "model",
+        "responseId": "response-1",
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 10,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 15
+        },
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "a|b",
+            "name": "run",
+            "arguments": {},
+            "thoughtSignature": "sig"
+          },
+          {
+            "type": "toolCall",
+            "id": "orphan",
+            "name": "run",
+            "arguments": {},
+            "thoughtSignature": "sig"
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "api": "anthropic-messages",
+        "provider": "test",
+        "model": "model",
+        "responseId": "response-1",
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 10,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 15
+        },
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "reason",
+            "thinkingSignature": "signed"
+          },
+          {
+            "type": "text",
+            "text": "hello",
+            "textSignature": "native"
+          },
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "calculate",
+            "arguments": {
+              "x": 1
+            },
+            "thoughtSignature": "thought"
+          }
+        ]
+      }
+    ],
+    "model": {
+      "provider": "test",
+      "api": "anthropic-messages",
+      "id": "model",
+      "input": [
+        "text",
+        "image"
+      ]
+    }
+  },
+  {
+    "id": "transform-error",
+    "kind": "transform",
+    "messages": [
+      {
+        "role": "assistant",
+        "api": "anthropic-messages",
+        "provider": "test",
+        "model": "model",
+        "responseId": "response-1",
+        "stopReason": "error",
+        "usage": {
+          "input": 10,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 15
+        },
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "reason",
+            "thinkingSignature": "signed"
+          },
+          {
+            "type": "text",
+            "text": "hello",
+            "textSignature": "native"
+          },
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "calculate",
+            "arguments": {
+              "x": 1
+            },
+            "thoughtSignature": "thought"
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": "next",
+        "timestamp": 0
+      }
+    ],
+    "model": {
+      "provider": "test",
+      "api": "anthropic-messages",
+      "id": "model",
+      "input": [
+        "text",
+        "image"
+      ]
+    }
+  },
+  {
+    "id": "transform-aborted",
+    "kind": "transform",
+    "messages": [
+      {
+        "role": "assistant",
+        "api": "anthropic-messages",
+        "provider": "test",
+        "model": "model",
+        "responseId": "response-1",
+        "stopReason": "aborted",
+        "usage": {
+          "input": 10,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 15
+        },
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "reason",
+            "thinkingSignature": "signed"
+          },
+          {
+            "type": "text",
+            "text": "hello",
+            "textSignature": "native"
+          },
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "calculate",
+            "arguments": {
+              "x": 1
+            },
+            "thoughtSignature": "thought"
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": "next",
+        "timestamp": 0
+      }
+    ],
+    "model": {
+      "provider": "test",
+      "api": "anthropic-messages",
+      "id": "model",
+      "input": [
+        "text",
+        "image"
+      ]
+    }
+  },
+  {
+    "id": "transform-image-downgrade",
+    "kind": "transform",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "image",
+            "data": "YWJj",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "image",
+            "data": "YWJj",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "between"
+          },
+          {
+            "type": "image",
+            "data": "YWJj",
+            "mimeType": "image/png"
+          }
+        ],
+        "timestamp": 0
+      },
+      {
+        "role": "toolResult",
+        "toolCallId": "a|b",
+        "toolName": "run",
+        "content": [
+          {
+            "type": "image",
+            "data": "YWJj",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "image",
+            "data": "YWJj",
+            "mimeType": "image/png"
+          }
+        ],
+        "isError": false,
+        "timestamp": 0
+      }
+    ],
+    "model": {
+      "provider": "test",
+      "api": "anthropic-messages",
+      "id": "model",
+      "input": [
+        "text"
+      ]
+    }
+  },
+  {
+    "id": "transform-null-content",
+    "kind": "transform",
+    "messages": [
+      {
+        "role": "user",
+        "content": null,
+        "timestamp": 0
+      },
+      {
+        "role": "assistant",
+        "api": "anthropic-messages",
+        "provider": "test",
+        "model": "model",
+        "responseId": "response-1",
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 10,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 15
+        },
+        "content": null
+      }
+    ],
+    "model": {
+      "provider": "test",
+      "api": "anthropic-messages",
+      "id": "model",
+      "input": [
+        "text",
+        "image"
+      ]
+    }
   }
 ]

@@ -11,6 +11,7 @@ from dsh.llm.pi_stream import to_stream_chunks
 from dsh.llm.pi_context import to_pi_context, to_pi_context_with_images
 from dsh.llm.pi_config import resolve_profiles
 from dsh.llm.pi_model import model_info
+from dsh.llm.pi_transform import transform_messages
 from dsh.core.abort import AbortController
 
 
@@ -19,6 +20,10 @@ async def main():
     for fixture in json.loads((ROOT / 'scripts/oracles/pi-fixtures.json').read_text(encoding='utf-8')):
         row = dict(id=fixture['id'])
         try:
+            if fixture['kind'] == 'transform':
+                row['value'] = transform_messages(fixture['messages'], fixture['model'],
+                    (lambda identity, _model, _message: identity.replace('|', '_')) if fixture.get('normalize') else None,
+                    now=lambda: 123)
             if fixture['kind'] == 'catalog':
                 row['value'] = []
                 for identity, profile in resolve_profiles(fixture.get('providers')).items():

@@ -1,10 +1,11 @@
-import { it, expect } from 'vitest'
+import { it, expect, vi } from 'vitest'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { toPiReplayState, toPiAssistant } from '../../reference/packages/llm/llm-pi-ai/src/replay.ts'
 import { toStreamChunks } from '../../reference/packages/llm/llm-pi-ai/src/stream.ts'
 import { toPiContext } from '../../reference/packages/llm/llm-pi-ai/src/context.ts'
 import { resolveProfiles } from '../../reference/packages/llm/llm-pi-ai/src/config.ts'
 import { PiAiAdapter } from '../../reference/packages/llm/llm-pi-ai/src/adapter.ts'
+import { transformMessages } from './official/node_modules/@earendil-works/pi-ai/dist/api/transform-messages.js'
 
 it('observes pinned pi-ai stream and replay boundaries', async () => {
   const fixtures = JSON.parse(readFileSync('scripts/oracles/pi-fixtures.json', 'utf8'))
@@ -12,6 +13,13 @@ it('observes pinned pi-ai stream and replay boundaries', async () => {
   for (const fixture of fixtures) {
     const row: any = {id: fixture.id}
     try {
+      if (fixture.kind === 'transform') {
+        const clock = vi.spyOn(Date, 'now').mockReturnValue(123)
+        try {
+          row.value = transformMessages(fixture.messages, fixture.model,
+            fixture.normalize ? id => id.replaceAll('|', '_') : undefined)
+        } finally { clock.mockRestore() }
+      }
       if (fixture.kind === 'catalog') {
         row.value = []
         const profiles = resolveProfiles(fixture.providers)

@@ -75,7 +75,13 @@ def served_web(tmp_path):
     # owns the boot manifest injection, and the frontend seat that owns the
     # authenticated fallback serving the dist.
     ctx.plugin(CredentialsLocalPlugin, config={"path": str(tmp_path / ".credentials.yaml"), "watch": False})
-    ctx.plugin(ClientModulesPlugin)
+    # This fixture tests static artifact rendering, not application activation.
+    from dsh.host.client_modules.registry import ClientModuleRegistry
+    registry = ClientModuleRegistry(ctx, search_dirs=[os.path.join(REPO_ROOT, 'packages')])
+    ctx.set_service('clientModules', registry)
+    ctx.set_service('client_modules', registry)
+    server.register('prefix', '/plugins', registry.handle_plugin_request)
+    ctx.on('webserver/index-inject', lambda rows: rows.extend(registry.boot_injections()))
     ctx.plugin(ConnectionPlugin)
     ctx.plugin(FrontendStaticPlugin)
     return ctx

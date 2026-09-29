@@ -684,7 +684,7 @@ class ClientModuleRegistry:
         # the Loader's entry order). Sorting makes it deterministic on any
         # filesystem enumeration order; dependencies are still placed by
         # `order_by_module_graph`, which only reorders to satisfy edges.
-        for pkg_name in sorted(self._pkg_meta):
+        for pkg_name in self.package_order():
             meta = self._pkg_meta[pkg_name]
             # Only packages on the Web App roster or an active dynamic
             # capability seam are composed into the served graph.
@@ -786,6 +786,9 @@ class ClientModuleRegistry:
             "batches": batches,
         }
         return self._composed
+
+    def package_order(self):
+        return sorted(self._pkg_meta)
 
     def flush(self) -> Dict[str, Any]:
         """Recompose the served graph from the current scan."""
@@ -974,35 +977,12 @@ class ClientModulesPlugin(Plugin):
 
     id = "client-modules"
     name = "@deepseek-ai/dsh-client-modules"
-    inject = ["web_server"]
-
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
-        super().__init__(config)
-        self.search_dirs = (config or {}).get("search_dirs", [])
-        self.registry: Optional[ClientModuleRegistry] = None
+    inject = ["webServer", "loader"]
 
     def apply(self, ctx: Any) -> None:
-        web_server: WebServerService = ctx.get("web_server") or ctx.get("webServer")
-        if not web_server:
-            return
-
-        # Default package search directories. The package tree lives beside the
-        # framework package, not beside whatever directory the process was
-        # launched from: the portable launcher starts `python <app>/dsh.py`
-        # without changing directory, and the served boot graph must not depend
-        # on the caller cwd (an unresolved graph injects no preload and the shell
-        # cannot boot).
-        app_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-        default_dirs: List[str] = []
-        for root in (os.getcwd(), app_root):
-            for rel in (("packages",), ("reference", "deepseek-harness", "packages"),
-                        ("dsh", "client"), ("apps", "web")):
-                candidate = os.path.join(root, *rel)
-                if candidate not in default_dirs:
-                    default_dirs.append(candidate)
-        all_dirs = list(self.search_dirs) + default_dirs
-
-        self.registry = ClientModuleRegistry(ctx, search_dirs=all_dirs)
+        from dsh.host.client_modules.loader_registry import LoaderClientModuleRegistry
+        web_server = ctx.get("webServer")
+        self.registry = LoaderClientModuleRegistry(ctx)
         ctx.set_service("client_modules", self.registry)
         ctx.set_service("clientModules", self.registry)
 

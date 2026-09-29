@@ -11,7 +11,7 @@ Rows whose host half is an empty `apply` (upstream's pure UI plugins) come from
 `dsh/client/surfaces.py`; the settings-backed and prompt-section rows come from
 their own modules. `@deepseek-ai/dsh-client-connection` and
 `@deepseek-ai/dsh-client-hmr` carry real host transport/reload behavior and are
-not implemented yet, so they stay out of this table.
+registered separately, so they stay out of this table.
 
 Compatible with Python 3.8.10 and Windows 7 SP1.
 """

@@ -383,7 +383,7 @@ def test_every_shipped_client_row_has_a_host_half():
     # Transport owners are registered separately from per-package surfaces;
     # the Cordis client runner is a surface outside the dsh-client-* prefix.
     assert sorted(client_rows.CLIENT_HOST_HALF_ROWS) == sorted(
-        (set(shipped) | {"@deepseek-ai/dsh-cordis-client-runner"}) - unimplemented - {"@deepseek-ai/dsh-client-modules", "@deepseek-ai/dsh-client-connection", "@deepseek-ai/dsh-client-hmr"}
+        (set(shipped) | {"@deepseek-ai/dsh-cordis-client-runner", "@deepseek-ai/dsh-client-ui-directory-picker-native", "@deepseek-ai/dsh-client-ui-directory-picker-browse"}) - unimplemented - {"@deepseek-ai/dsh-client-modules", "@deepseek-ai/dsh-client-connection", "@deepseek-ai/dsh-client-hmr"}
     )
     for name, spec in client_rows.CLIENT_HOST_HALF_ROWS.items():
         assert HARNESS_PLUGIN_CLASSES[name] == spec

@@ -43,6 +43,8 @@ def test_order_by_module_graph():
 async def test_client_modules_plugin_and_route():
     ctx = Context()
     await ctx.plugin(WebServerPlugin, config={"host": "127.0.0.1", "port": 9999})
+    from dsh.cordis.loader import Loader
+    Loader(ctx, {'baseUrl': os.getcwd()})
     await ctx.plugin(ClientModulesPlugin)
 
     registry: ClientModuleRegistry = ctx.get("client_modules")

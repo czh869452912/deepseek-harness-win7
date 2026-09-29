@@ -17,6 +17,7 @@ FIBER_PHASE_MAP = {
 
 
 from dsh.cordis.plugin import Plugin
+from dsh.typert.remote import Remote, bind_typert_remote
 
 
 class PluginInventoryGateway:
@@ -27,9 +28,11 @@ class PluginInventoryGateway:
 
     def __init__(self, ctx: Any):
         self.ctx = ctx
+        self.typertRemote = bind_typert_remote(self, "pluginInventory")
         ctx.set_service("plugin_inventory", self)
         ctx.set_service("pluginInventory", self)
 
+    @Remote
     def list(self) -> Dict[str, Any]:
         """
         Read active entries from Cordis loader on every call.

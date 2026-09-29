@@ -86,9 +86,7 @@ async def test_publishes_the_exact_gateway_namespace_and_remote_method_names():
     """
     Upstream asserts `ctx.messageFeedback.typertRemote` publishes serviceKey and
     namespace `messageFeedback` with the three direct methods list/put/delete.
-    The port serves that namespace over `/api` instead of through a Typert Remote
-    binding (that layer is out of the port's boundary), so the case asserts the
-    namespace and the exact method set where they are observable.
+    The canonical Typert Gateway consumes the binding and direct method markers.
     """
     harness = await setup_harness()
     try:
@@ -99,6 +97,11 @@ async def test_publishes_the_exact_gateway_namespace_and_remote_method_names():
         assert {"messageFeedback.list", "messageFeedback.put", "messageFeedback.delete"} <= set(
             OFFICIAL_RPC_METHODS
         )
+        from dsh.typert.remote import remote_methods
+        from dsh.typert.dispatch import binding_of
+        binding = binding_of(harness.service, "messageFeedback", "messageFeedback/list", "messageFeedback")
+        assert binding["service"] is harness.service
+        assert {item["method"] for item in remote_methods(harness.service)} == {"list", "put", "delete"}
         assert harness.service.max_note_bytes == 64
     finally:
         await harness.dispose()

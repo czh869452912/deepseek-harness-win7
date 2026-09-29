@@ -1,6 +1,7 @@
 """Carrier-independent strict/SRC Remote invocation and cancellation boundary."""
 import asyncio
 import inspect
+import json
 import math
 from collections.abc import Mapping
 
@@ -63,7 +64,7 @@ def decode(codec, value, endpoint, key):
         assert_json(value)
         return value
     except Exception as error:
-        raise TypertGatewayError("input-invalid", endpoint, "wire field failed boundary validation", key) from error
+        raise TypertGatewayError("input-invalid", endpoint, "wire field %s failed boundary validation" % json.dumps(key, ensure_ascii=False), key) from error
 
 
 def exact_arguments(args, descriptor, endpoint):
@@ -73,8 +74,17 @@ def exact_arguments(args, descriptor, endpoint):
     if descriptor["invocation"]["kind"] == "context":
         expected.add(descriptor["invocation"]["wire"])
     omissible = {row["wire"] for row in descriptor["parameters"] if row["source"] == "json" and (row.get("acceptsUndefined") is True or row["codec"]["mode"] == "src-json")}
-    if set(args) - expected or expected - set(args) - omissible:
-        raise TypertGatewayError("arguments-invalid", endpoint, "args fields do not match the descriptor")
+    extra = [key for key in args if key not in expected]
+    missing = [row['wire'] for row in descriptor['parameters'] if row['wire'] not in args and row['wire'] not in omissible]
+    if descriptor['invocation']['kind'] == 'context' and descriptor['invocation']['wire'] not in args:
+        missing.append(descriptor['invocation']['wire'])
+    clauses = []
+    if missing:
+        clauses.append('missing ' + ', '.join(json.dumps(key, ensure_ascii=False) for key in missing))
+    if extra:
+        clauses.append('unexpected ' + ', '.join(json.dumps(str(key), ensure_ascii=False) for key in extra))
+    if clauses:
+        raise TypertGatewayError("arguments-invalid", endpoint, "args fields do not match the descriptor: " + '; '.join(clauses))
 
 
 def remote_request(endpoint, payload, signal):

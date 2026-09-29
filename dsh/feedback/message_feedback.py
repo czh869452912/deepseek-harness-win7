@@ -14,6 +14,7 @@ import uuid
 from typing import Any, Callable, Dict, Optional
 
 from dsh.cordis.plugin import Plugin
+from dsh.typert.remote import Remote, bind_typert_remote
 from dsh.core.session.json import deep_freeze
 from dsh.core.surface import derive_event_message, is_append_surface_event
 from dsh.feedback.message_feedback_spec import (
@@ -146,6 +147,7 @@ class MessageFeedbackService:
 
     def __init__(self, ctx: Any, config: Optional[Dict[str, Any]] = None):
         self.ctx = ctx
+        self.typertRemote = bind_typert_remote(self, "messageFeedback")
         cfg = config or {}
         self.max_note_bytes = resolve_max_note_bytes(cfg.get("maxNoteBytes"))
         self._table: Any = None
@@ -203,6 +205,7 @@ class MessageFeedbackService:
 
     # ── Remote surface ─────────────────────────────────────────────────────
 
+    @Remote
     async def list(self, request: Dict[str, Any]) -> Dict[str, Any]:
         """
         Read feedback belonging to the current persisted Session lifecycle.
@@ -219,6 +222,7 @@ class MessageFeedbackService:
             items = EMPTY_ITEMS
         return success(snapshot_list(items))
 
+    @Remote
     async def put(self, request: Dict[str, Any]) -> Dict[str, Any]:
         """
         Create or replace feedback for one derived append-origin assistant
@@ -230,6 +234,7 @@ class MessageFeedbackService:
             return note
         return await self._enqueue(request.get("sessionId"), self._put_operation(request, note["value"]))
 
+    @Remote
     async def delete(self, request: Dict[str, Any]) -> Dict[str, Any]:
         """
         Delete one feedback item. Absence is successful regardless of the

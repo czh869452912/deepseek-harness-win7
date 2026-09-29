@@ -17,6 +17,13 @@ def main():
     rows = []
     for fixture in json.loads((ROOT / 'scripts/oracles/deepseek-fixtures.json').read_text(encoding='utf-8')):
         row = {'id': fixture['id']}
+        if fixture['kind'] == 'config':
+            try:
+                row['value'] = resolve_options(fixture['config'], {key: {'value': value} for key, value in fixture.get('environment', {}).items()})
+            except (ValueError, TypeError):
+                row['error'] = {'code': 'CONFIG_REJECTED'}
+            rows.append(row)
+            continue
         try:
             kind = fixture['kind']
             if kind == 'files':

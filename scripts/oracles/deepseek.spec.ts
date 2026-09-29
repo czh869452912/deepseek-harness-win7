@@ -12,6 +12,16 @@ it('records actual pinned DeepSeek boundary observations', async () => {
   const rows: any[] = []
   for (const fixture of fixtures) {
     const row: any = { id: fixture.id }
+    if (fixture.kind === 'config') {
+      try {
+        const value = resolveAdapterOptions(fixture.config, new Map(Object.entries(fixture.environment ?? {}).map(([key, value]) => [key, {value}])) as any)
+        const {defaults, filePolicy, ...rest} = value
+        row.value = {...rest, ...defaults, fileExpiresAfterSeconds: filePolicy.expiresAfterSeconds,
+          fileRefreshMarginSeconds: filePolicy.refreshMarginSeconds, fileQuotaCleanupBatch: filePolicy.quotaCleanupBatch}
+      } catch { row.error = {code: 'CONFIG_REJECTED'} }
+      rows.push(row)
+      continue
+    }
     try {
       if (fixture.kind === 'http') row.value = await observeHttp(fixture)
       if (fixture.kind === 'files') row.value = await observeFiles(fixture)

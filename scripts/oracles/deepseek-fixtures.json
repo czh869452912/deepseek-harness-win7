@@ -818,5 +818,187 @@
     },
     "status": 401,
     "fileId": "file-1"
+  },
+  {
+    "id": "config-defaults",
+    "kind": "config",
+    "config": {}
+  },
+  {
+    "id": "config-explicit",
+    "kind": "config",
+    "config": {
+      "baseURL": "http://fixture/v1",
+      "thinking": "disabled",
+      "reasoningEffort": "off",
+      "maxTokens": 1,
+      "models": [],
+      "retryPolicy": {
+        "mode": "always",
+        "backoff": {
+          "initialDelayMs": 1,
+          "maxDelayMs": 2,
+          "jitterRatio": 0
+        }
+      }
+    }
+  },
+  {
+    "id": "config-low-image",
+    "kind": "config",
+    "config": {
+      "models": [
+        {
+          "id": "vision",
+          "inputModalities": [
+            "text",
+            "image"
+          ],
+          "imagePixelBudget": "low"
+        }
+      ]
+    }
+  },
+  {
+    "id": "config-contradiction",
+    "kind": "config",
+    "config": {
+      "thinking": "disabled",
+      "reasoningEffort": "max"
+    }
+  },
+  {
+    "id": "config-duplicate-model",
+    "kind": "config",
+    "config": {
+      "models": [
+        {
+          "id": "a"
+        },
+        {
+          "id": "a"
+        }
+      ]
+    }
+  },
+  {
+    "id": "config-text-image-limits",
+    "kind": "config",
+    "config": {
+      "models": [
+        {
+          "id": "a",
+          "imageMaxBytes": 10
+        }
+      ]
+    }
+  },
+  {
+    "id": "config-duplicate-modality",
+    "kind": "config",
+    "config": {
+      "models": [
+        {
+          "id": "a",
+          "inputModalities": [
+            "text",
+            "text"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "config-file-byte-budget",
+    "kind": "config",
+    "config": {
+      "maxRequestFilesBytes": 1
+    }
+  },
+  {
+    "id": "config-inline-byte-budget",
+    "kind": "config",
+    "config": {
+      "maxInlineRequestImageBytes": 1
+    }
+  },
+  {
+    "id": "config-count-budget",
+    "kind": "config",
+    "config": {
+      "maxImagesPerRequest": 1
+    }
+  },
+  {
+    "id": "config-expiry",
+    "kind": "config",
+    "config": {
+      "fileExpiresAfterSeconds": 3599
+    }
+  },
+  {
+    "id": "config-refresh",
+    "kind": "config",
+    "config": {
+      "fileRefreshMarginSeconds": 604800
+    }
+  },
+  {
+    "id": "config-quota-batch",
+    "kind": "config",
+    "config": {
+      "fileQuotaCleanupBatch": 1001
+    }
+  },
+  {
+    "id": "config-timer",
+    "kind": "config",
+    "config": {
+      "streamIdleTimeoutMs": 2147483648
+    }
+  },
+  {
+    "id": "config-retry-backoff",
+    "kind": "config",
+    "config": {
+      "retryPolicy": {
+        "mode": "normal",
+        "backoff": {
+          "initialDelayMs": 100,
+          "maxDelayMs": 1
+        }
+      }
+    }
+  },
+  {
+    "id": "config-retry-unknown",
+    "kind": "config",
+    "config": {
+      "retryPolicy": {
+        "mode": "normal",
+        "unexpected": true
+      }
+    }
+  },
+  {
+    "id": "config-retry-duplicate",
+    "kind": "config",
+    "config": {
+      "retryPolicy": {
+        "mode": "normal",
+        "retryableCodes": [
+          "SERVER",
+          "SERVER"
+        ]
+      }
+    }
+  },
+  {
+    "id": "config-environment",
+    "kind": "config",
+    "config": {},
+    "environment": {
+      "DEEPSEEK_BASE_URL": "http://fixture-env/v1"
+    }
   }
 ]

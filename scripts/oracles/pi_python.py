@@ -15,6 +15,7 @@ from dsh.llm.pi_transform import transform_messages
 from dsh.llm.pi_completions_messages import convert_messages
 from dsh.llm.pi_completions_params import build_params
 from dsh.llm.pi_json import parse_streaming_json, dumps
+from pi_http_python import observe_pi_http
 from dsh.core.abort import AbortController
 
 
@@ -23,6 +24,8 @@ async def main():
     for fixture in json.loads((ROOT / 'scripts/oracles/pi-fixtures.json').read_text(encoding='utf-8')):
         row = dict(id=fixture['id'])
         try:
+            if fixture['kind'] == 'completions-http':
+                row['value'] = await observe_pi_http(fixture)
             if fixture['kind'] == 'partial-json':
                 row['value'] = json.loads(dumps(parse_streaming_json(fixture['raw'])))
             if fixture['kind'] == 'completions-params':

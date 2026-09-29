@@ -8,6 +8,7 @@ import { PiAiAdapter } from '../../reference/packages/llm/llm-pi-ai/src/adapter.
 import { transformMessages } from './official/node_modules/@earendil-works/pi-ai/dist/api/transform-messages.js'
 import { convertMessages, stream, streamSimple } from './official/node_modules/@earendil-works/pi-ai/dist/api/openai-completions.js'
 import { parseStreamingJson } from './official/node_modules/@earendil-works/pi-ai/dist/utils/json-parse.js'
+import { observePiHttp } from './pi-http.ts'
 
 it('observes pinned pi-ai stream and replay boundaries', async () => {
   const fixtures = JSON.parse(readFileSync('scripts/oracles/pi-fixtures.json', 'utf8'))
@@ -15,6 +16,7 @@ it('observes pinned pi-ai stream and replay boundaries', async () => {
   for (const fixture of fixtures) {
     const row: any = {id: fixture.id}
     try {
+      if (fixture.kind === 'completions-http') row.value = await observePiHttp(fixture)
       if (fixture.kind === 'partial-json') row.value = parseStreamingJson(fixture.raw)
       if (fixture.kind === 'completions-params') {
         const source = fixture.simple ? streamSimple : stream

@@ -6580,5 +6580,1449 @@
     "id": "partial-json-26",
     "kind": "partial-json",
     "raw": "{\"x\":\"\\u1234\"}"
+  },
+  {
+    "id": "http-text",
+    "kind": "completions-http",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "options": {},
+    "frames": [
+      {
+        "id": "response-1",
+        "model": "served-model",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "content": "hello"
+            },
+            "finish_reason": null
+          }
+        ]
+      },
+      {
+        "id": "response-1",
+        "model": "served-model",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {},
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 20,
+          "completion_tokens": 4,
+          "prompt_tokens_details": {
+            "cached_tokens": 5,
+            "cache_write_tokens": 2
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "http-thinking",
+    "kind": "completions-http",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "options": {},
+    "frames": [
+      {
+        "id": "response-1",
+        "model": "served-model",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "reasoning_content": "reason",
+              "reasoning": "duplicate"
+            },
+            "finish_reason": null
+          }
+        ]
+      },
+      {
+        "id": "response-1",
+        "model": "served-model",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "content": "answer"
+            },
+            "finish_reason": "stop"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "http-tool",
+    "kind": "completions-http",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "options": {},
+    "frames": [
+      {
+        "id": "response-1",
+        "model": "served-model",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "tool_calls": [
+                {
+                  "index": 0,
+                  "id": "call",
+                  "type": "function",
+                  "function": {
+                    "name": "run",
+                    "arguments": "{\"x\":"
+                  }
+                }
+              ]
+            },
+            "finish_reason": null
+          }
+        ]
+      },
+      {
+        "id": "response-1",
+        "model": "served-model",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "tool_calls": [
+                {
+                  "index": 0,
+                  "function": {
+                    "arguments": "\"yes\"}"
+                  }
+                }
+              ]
+            },
+            "finish_reason": "tool_calls"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "http-tool-interleaved",
+    "kind": "completions-http",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "options": {},
+    "frames": [
+      {
+        "id": "response-1",
+        "model": "served-model",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "tool_calls": [
+                {
+                  "index": 0,
+                  "id": "a",
+                  "function": {
+                    "name": "run",
+                    "arguments": "{\"x\":"
+                  }
+                },
+                {
+                  "index": 1,
+                  "id": "b",
+                  "function": {
+                    "name": "run",
+                    "arguments": "{\"y\":"
+                  }
+                }
+              ]
+            },
+            "finish_reason": null
+          }
+        ]
+      },
+      {
+        "id": "response-1",
+        "model": "served-model",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "tool_calls": [
+                {
+                  "index": 1,
+                  "function": {
+                    "arguments": "1}"
+                  }
+                },
+                {
+                  "index": 0,
+                  "function": {
+                    "arguments": "2}"
+                  }
+                }
+              ]
+            },
+            "finish_reason": "tool_calls"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "http-late-id",
+    "kind": "completions-http",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "options": {},
+    "frames": [
+      {
+        "id": "response-1",
+        "model": "served-model",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "tool_calls": [
+                {
+                  "index": 0,
+                  "function": {
+                    "arguments": "{\"x\":"
+                  }
+                }
+              ]
+            },
+            "finish_reason": null
+          }
+        ]
+      },
+      {
+        "id": "response-1",
+        "model": "served-model",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "tool_calls": [
+                {
+                  "index": 0,
+                  "id": "late",
+                  "function": {
+                    "name": "run",
+                    "arguments": "1}"
+                  }
+                }
+              ]
+            },
+            "finish_reason": "tool_calls"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "http-missing-finish",
+    "kind": "completions-http",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "options": {},
+    "frames": [
+      {
+        "id": "response-1",
+        "model": "served-model",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "content": "partial"
+            },
+            "finish_reason": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "http-missing-done",
+    "kind": "completions-http",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "options": {},
+    "frames": [
+      {
+        "id": "response-1",
+        "model": "served-model",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "content": "complete"
+            },
+            "finish_reason": "stop"
+          }
+        ]
+      }
+    ],
+    "omitDone": true
+  },
+  {
+    "id": "http-inferred-finish",
+    "kind": "completions-http",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "compat": {
+        "supportsFinishReason": false
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "options": {},
+    "frames": [
+      {
+        "id": "response-1",
+        "model": "served-model",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "content": "complete"
+            },
+            "finish_reason": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "http-empty",
+    "kind": "completions-http",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "options": {},
+    "frames": [
+      {
+        "id": "response-1",
+        "model": "served-model",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {},
+            "finish_reason": "stop"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "http-length",
+    "kind": "completions-http",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "options": {},
+    "frames": [
+      {
+        "id": "response-1",
+        "model": "served-model",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "content": "partial"
+            },
+            "finish_reason": "length"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "http-filter",
+    "kind": "completions-http",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "options": {},
+    "frames": [
+      {
+        "id": "response-1",
+        "model": "served-model",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {},
+            "finish_reason": "content_filter"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "http-unknown-finish",
+    "kind": "completions-http",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "options": {},
+    "frames": [
+      {
+        "id": "response-1",
+        "model": "served-model",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {},
+            "finish_reason": "mystery"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "http-tool-invalid-json",
+    "kind": "completions-http",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "options": {},
+    "frames": [
+      {
+        "id": "response-1",
+        "model": "served-model",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "tool_calls": [
+                {
+                  "index": 0,
+                  "id": "call",
+                  "function": {
+                    "name": "run",
+                    "arguments": "{\"x\":\"hello"
+                  }
+                }
+              ]
+            },
+            "finish_reason": "tool_calls"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "http-custom",
+    "kind": "completions-http",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "options": {},
+    "frames": [
+      {
+        "id": "response-1",
+        "model": "served-model",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "tool_calls": [
+                {
+                  "index": 0,
+                  "id": "call",
+                  "custom": {
+                    "name": "run",
+                    "input": "hello"
+                  }
+                }
+              ]
+            },
+            "finish_reason": null
+          }
+        ]
+      },
+      {
+        "id": "response-1",
+        "model": "served-model",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "tool_calls": [
+                {
+                  "index": 0,
+                  "custom": {
+                    "input": " world"
+                  }
+                }
+              ]
+            },
+            "finish_reason": "tool_calls"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "http-signature-before-tool",
+    "kind": "completions-http",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "options": {},
+    "frames": [
+      {
+        "id": "response-1",
+        "model": "served-model",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "reasoning_details": [
+                {
+                  "type": "reasoning.encrypted",
+                  "id": "call",
+                  "data": "opaque"
+                }
+              ]
+            },
+            "finish_reason": null
+          }
+        ]
+      },
+      {
+        "id": "response-1",
+        "model": "served-model",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "tool_calls": [
+                {
+                  "index": 0,
+                  "id": "call",
+                  "function": {
+                    "name": "run",
+                    "arguments": "{}"
+                  }
+                }
+              ]
+            },
+            "finish_reason": "tool_calls"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "http-error-400",
+    "kind": "completions-http",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "options": {},
+    "frames": [],
+    "status": 400
+  },
+  {
+    "id": "http-error-401",
+    "kind": "completions-http",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "options": {},
+    "frames": [],
+    "status": 401
+  },
+  {
+    "id": "http-error-403",
+    "kind": "completions-http",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "options": {},
+    "frames": [],
+    "status": 403
+  },
+  {
+    "id": "http-error-413",
+    "kind": "completions-http",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "options": {},
+    "frames": [],
+    "status": 413
+  },
+  {
+    "id": "http-error-429",
+    "kind": "completions-http",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "options": {},
+    "frames": [],
+    "status": 429
+  },
+  {
+    "id": "http-error-500",
+    "kind": "completions-http",
+    "model": {
+      "provider": "gateway",
+      "api": "openai-completions",
+      "id": "model",
+      "baseUrl": "http://localhost/v1",
+      "input": [
+        "text",
+        "image"
+      ],
+      "reasoning": true,
+      "contextWindow": 32768,
+      "maxTokens": 16384,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      }
+    },
+    "context": {
+      "systemPrompt": "system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": 0
+        }
+      ],
+      "tools": [
+        {
+          "name": "run",
+          "description": "Run",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "options": {},
+    "frames": [],
+    "status": 500
   }
 ]

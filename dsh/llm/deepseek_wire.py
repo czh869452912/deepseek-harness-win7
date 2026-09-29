@@ -74,7 +74,7 @@ def serialize_request(options, defaults=None):
     return payload
 
 
-def parse_sse(chunks):
+def parse_sse(chunks, require_done=True):
     """Decode UTF-8 incrementally and dispatch only complete SSE events."""
     decoder = codecs.getincrementaldecoder("utf-8-sig")("replace")
     line, data, after_cr = "", [], False
@@ -98,7 +98,8 @@ def parse_sse(chunks):
                 value = line[5:]
                 data.append(value[1:] if value.startswith(" ") else value)
             line = ""
-    raise _error("SSE stream ended without [DONE]", "STREAM_CLOSED")
+    if require_done:
+        raise _error("SSE stream ended without [DONE]", "STREAM_CLOSED")
 
 
 def map_usage(usage):

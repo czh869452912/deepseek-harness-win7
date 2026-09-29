@@ -1,5 +1,6 @@
 import { createServer } from 'node:http'
 import { streamSimple } from './official/node_modules/@earendil-works/pi-ai/dist/api/openai-completions.js'
+import { streamSimple as responsesSimple } from './official/node_modules/@earendil-works/pi-ai/dist/api/openai-responses.js'
 import { toStreamChunks } from '../../reference/packages/llm/llm-pi-ai/src/stream.ts'
 
 export async function observePiHttp(fixture: any) {
@@ -21,7 +22,8 @@ export async function observePiHttp(fixture: any) {
   try {
     const address: any = server.address()
     const model = {...fixture.model, baseUrl: `http://127.0.0.1:${address.port}/v1`}
-    const events = streamSimple(model, fixture.context, {...fixture.options, apiKey: 'oracle', maxRetries: 0, env: {}})
+    const source = fixture.kind === 'responses-http' ? responsesSimple : streamSimple
+    const events = source(model, fixture.context, {...fixture.options, apiKey: 'oracle', maxRetries: 0, env: {}})
     const chunks: any[] = []
     for await (const chunk of toStreamChunks(events, model.contextWindow)) {
       if (chunk.type === 'finish' && chunk.reason.failure) delete (chunk.reason.failure as any).message

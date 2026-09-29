@@ -30,7 +30,7 @@ async def main():
                 row['value'] = build_responses_params(fixture['model'], fixture['context'], fixture.get('options'), fixture.get('simple', False))
             if fixture['kind'] == 'responses-messages':
                 row['value'] = convert_responses_messages(fixture['model'], fixture['context'], fixture.get('allowed'), fixture.get('options'))
-            if fixture['kind'] == 'completions-http':
+            if fixture['kind'] in ('completions-http', 'responses-http'):
                 row['value'] = await observe_pi_http(fixture)
             if fixture['kind'] == 'partial-json':
                 row['value'] = json.loads(dumps(parse_streaming_json(fixture['raw'])))

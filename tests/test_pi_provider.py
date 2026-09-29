@@ -13,8 +13,8 @@ from dsh.llm.pi_auth import resolve_api_key
 from dsh.settings.settings_file import SettingsFilePlugin
 
 
-def route(endpoint='http://localhost:1', name='m', **extra):
-    return dict(api='openai-completions', baseURL=endpoint, models=[dict(id=name)], **extra)
+def route(endpoint='http://localhost:1', name='m', api='openai-completions', **extra):
+    return dict(api=api, baseURL=endpoint, models=[dict(id=name)], **extra)
 
 
 @pytest.mark.asyncio
@@ -61,7 +61,8 @@ async def test_explicit_missing_credential_never_uses_ambient_other_key():
 
 
 @pytest.mark.asyncio
-async def test_prepared_request_keeps_endpoint_model_and_credential_generation(tmp_path):
+@pytest.mark.parametrize('api', ['openai-completions', 'openai-responses'])
+async def test_prepared_request_keeps_endpoint_model_and_credential_generation(tmp_path, api):
     requests = []
 
     class Handler(BaseHTTPRequestHandler):
@@ -74,7 +75,11 @@ async def test_prepared_request_keeps_endpoint_model_and_credential_generation(t
             self.send_response(200)
             self.send_header('Content-Type', 'text/event-stream')
             self.end_headers()
-            self.wfile.write(b'data: {"choices":[{"delta":{"content":"done"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n')
+            if api == 'openai-responses':
+                self.wfile.write(b'data: {"type":"response.output_item.done","output_index":0,"item":{"type":"message","id":"msg","content":[{"type":"output_text","text":"done"}]}}\n\n')
+                self.wfile.write(b'data: {"type":"response.completed","response":{"id":"resp","status":"completed"}}\n\n')
+            else:
+                self.wfile.write(b'data: {"choices":[{"delta":{"content":"done"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n')
 
     server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
     worker = threading.Thread(target=lambda: server.serve_forever(poll_interval=.01), daemon=True)
@@ -84,18 +89,19 @@ async def test_prepared_request_keeps_endpoint_model_and_credential_generation(t
     ctx.set_service('launchEnvironment', LaunchEnvironmentSnapshot([dict(source='process', values=dict(OLD_KEY='old', NEW_KEY='new'))]))
     await ctx.plugin(LlmRuntime)
     await ctx.plugin(SettingsFilePlugin, dict(path=str(tmp_path / 'settings.yaml'), watch=False))
-    await ctx.plugin(LLMPiAiPlugin, dict(providers=dict(gateway=route(endpoint + '/old', name='old-model', apiKeyEnv='OLD_KEY'))))
+    await ctx.plugin(LLMPiAiPlugin, dict(providers=dict(gateway=route(endpoint + '/old', name='old-model', apiKeyEnv='OLD_KEY', api=api))))
     try:
         llm, settings = ctx.get('llm'), ctx.get('settings')
         adapter = llm._adapters['gateway']['adapter']
         prepared = await adapter.prepare_call('gateway', 'old-model')
-        await settings.replace('llm-pi-ai', dict(providers=dict(gateway=route(endpoint + '/new', name='new-model', apiKeyEnv='NEW_KEY'))))
+        await settings.replace('llm-pi-ai', dict(providers=dict(gateway=route(endpoint + '/new', name='new-model', apiKeyEnv='NEW_KEY', api=api))))
         request = dict(provider='gateway', model='old-model', messages=[dict(role='user', content=[dict(type='text', text='hello')])])
         chunks = [chunk async for chunk in prepared['stream'](request)]
         assert chunks[-1]['reason'] == dict(kind='stop')
         chunks = [chunk async for chunk in adapter.stream(dict(request, model='new-model'))]
         assert chunks[-1]['reason'] == dict(kind='stop')
-        assert requests == [('/old/chat/completions', 'old-model', 'Bearer old'), ('/new/chat/completions', 'new-model', 'Bearer new')]
+        path = '/responses' if api == 'openai-responses' else '/chat/completions'
+        assert requests == [('/old' + path, 'old-model', 'Bearer old'), ('/new' + path, 'new-model', 'Bearer new')]
     finally:
         await ctx.fiber.dispose()
         server.shutdown()

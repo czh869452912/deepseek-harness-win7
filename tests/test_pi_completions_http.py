@@ -10,6 +10,7 @@ from dsh.core.abort import AbortController
 from dsh.llm.deepseek_wire import parse_sse
 from dsh.llm.llm_service import LlmError
 from dsh.llm.pi_completions_stream import completions_events
+from dsh.llm.pi_responses_stream import responses_events
 from dsh.llm.pi_stream import to_stream_chunks
 from dsh.llm.stream_bridge import OwnedStream, iter_chunks
 from scripts.oracles.pi_http_python import observe_pi_http
@@ -39,8 +40,9 @@ def test_deepseek_requires_done_while_pi_completions_owns_its_finish_validation(
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize('protocol', ['completions', 'responses'])
 @pytest.mark.parametrize('mode', ['cancel', 'idle-timeout', 'header-timeout'])
-async def test_stalled_http_stream_is_cancelled_or_times_out_and_reader_closes(mode):
+async def test_stalled_http_stream_is_cancelled_or_times_out_and_reader_closes(mode, protocol):
     opened, release = threading.Event(), threading.Event()
 
     class Handler(BaseHTTPRequestHandler):
@@ -65,11 +67,12 @@ async def test_stalled_http_stream_is_cancelled_or_times_out_and_reader_closes(m
     worker.start()
     controller = AbortController()
     fixture = next(row for row in FIXTURES if row['id'] == 'http-text')
-    model = dict(fixture['model'], baseUrl='http://127.0.0.1:{}/v1'.format(server.server_port))
+    model = dict(fixture['model'], api='openai-' + protocol, baseUrl='http://127.0.0.1:{}/v1'.format(server.server_port))
     options = dict(apiKey='oracle', streamIdleTimeoutMs=60 if mode == 'idle-timeout' else 5000)
     if mode == 'header-timeout':
         options['timeoutMs'] = 60
-    source = iter_chunks(OwnedStream(lambda signal: completions_events(model, fixture['context'], options, signal), controller.signal))
+    events = responses_events if protocol == 'responses' else completions_events
+    source = iter_chunks(OwnedStream(lambda signal: events(model, fixture['context'], options, signal), controller.signal))
 
     async def collect():
         return [chunk async for chunk in to_stream_chunks(source, model['contextWindow'], controller.signal)]

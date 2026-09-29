@@ -26,7 +26,7 @@ it('observes pinned pi-ai stream and replay boundaries', async () => {
       }
       if (fixture.kind === 'responses-messages') row.value = convertResponsesMessages(fixture.model, fixture.context,
         new Set(fixture.allowed ?? ['openai', 'openai-codex', 'opencode']), fixture.options)
-      if (fixture.kind === 'completions-http') row.value = await observePiHttp(fixture)
+      if (fixture.kind === 'completions-http' || fixture.kind === 'responses-http') row.value = await observePiHttp(fixture)
       if (fixture.kind === 'partial-json') row.value = parseStreamingJson(fixture.raw)
       if (fixture.kind === 'completions-params') {
         const source = fixture.simple ? streamSimple : stream

@@ -3,6 +3,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from dsh.llm.pi_completions_stream import completions_events
+from dsh.llm.pi_responses_stream import responses_events
 from dsh.llm.pi_stream import to_stream_chunks
 from dsh.llm.stream_bridge import OwnedStream, iter_chunks
 
@@ -34,7 +35,8 @@ async def observe_pi_http(fixture):
     try:
         model = dict(fixture['model'], baseUrl='http://127.0.0.1:{}/v1'.format(server.server_port))
         options = dict(fixture.get('options', {}), apiKey='oracle')
-        owned = OwnedStream(lambda signal: completions_events(model, fixture['context'], options, signal))
+        source = responses_events if fixture['kind'] == 'responses-http' else completions_events
+        owned = OwnedStream(lambda signal: source(model, fixture['context'], options, signal))
         events = iter_chunks(owned)
         chunks = []
         try:

@@ -13,7 +13,7 @@ from dsh.llm.pi_model import model_info, resolve_reasoning_level
 from dsh.llm.pi_stream import to_stream_chunks
 from dsh.llm.stream_bridge import OwnedStream, iter_chunks
 
-NATIVE_PROTOCOLS = ('openai-completions',)
+NATIVE_PROTOCOLS = ('openai-completions', 'openai-responses')
 
 
 def native_profiles(config):
@@ -99,7 +99,9 @@ class PiAiAdapter:
             options['headers'] = {key: value for key, value in profile.get('headers', {}).items() if key.lower() not in reserved}
             options['headers'].update(attribution)
             from dsh.llm.pi_completions_stream import completions_events
-            owned = OwnedStream(lambda signal: completions_events(model, context, options, signal), request.get('signal'))
+            from dsh.llm.pi_responses_stream import responses_events
+            source = responses_events if model['api'] == 'openai-responses' else completions_events
+            owned = OwnedStream(lambda signal: source(model, context, options, signal), request.get('signal'))
             events = iter_chunks(owned)
             async for chunk in to_stream_chunks(events, model['contextWindow'], request.get('signal')):
                 yield chunk

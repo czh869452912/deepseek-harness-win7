@@ -4,9 +4,9 @@
 
 [README.md](README.md) | [AGENTS.md](AGENTS.md)
 
-> 当前仍在迁移中，默认 profile 与完整 Web/portable 尚未通过产品验收。详见 [当前状态审查](docs/research/2026-09-28-current-state-mvp-audit.md) 和 [入口切换实施记录](docs/research/2026-09-28-canonical-entry-progress.md)。CLI 已统一到正式 profile 入口，旧 CLI 分流不再保留。
+> Web 核心链路已通过原版前端与本地模拟模型验收（创建工作区、对话、工具执行、恢复、反馈、分支、导出）；完整上游 parity、真实模型和 Win7 真机验收仍未完成。见 [Web 验收记录](docs/research/2026-09-29-web-usable-baseline.md)。历史审查见 [当前状态审查](docs/research/2026-09-28-current-state-mvp-audit.md) 和 [入口切换实施记录](docs/research/2026-09-28-canonical-entry-progress.md)。CLI 已统一到正式 profile 入口，旧 CLI 分流不再保留。
 
-**DeepSeek Harness Win7** 是面向 Windows 7 及以上系统的开源 Agent Harness（智能体框架）Python 迁移工程，目标包含 **Cordis in Browser + React 18 + TSX + CSS Modules** Web GUI 与正式 profile CLI。浏览器协议和默认应用装配仍待完成。
+**DeepSeek Harness Win7** 是面向 Windows 7 及以上系统的开源 Agent Harness（智能体框架）Python 迁移工程，目标包含 **Cordis in Browser + React 18 + TSX + CSS Modules** Web GUI 与正式 profile CLI。正式 Web 路径采用 Connection / Typert Remote 与 WebSocket 流。
 
 本项目基于 **Python 3.8.10**，忠实复刻了 DeepSeek Harness 原生的 **Cordis（万物皆插件）** 架构。项目的核心目标是：
 1. **Windows 7 兼容目标**：使用 Python 3.8.10；当前 Windows 回归不能替代 Win7 真机认证。
@@ -40,12 +40,28 @@
 - **上下文容器 (`Context`)**：服务（Service）统一绑在 `ctx` 上，插件之间通过 Key 进行依赖查找而非强耦合导入。
 - **依赖声明 (`inject`)**：插件通过 `inject` 字段声明所需服务，等待服务就绪后触发 `apply(ctx)`。
 - **可逆副作用 (`effect`)**：所有的工具注册、事件监听均注册为可撤销 effect，插件卸载/重载时自动清理资源。
-- **旧兼容实现 (`ApiProxy`，不是固定上游的正式浏览器协议)**：正式路径需要迁移到 Connection → Gateway → Remote；下列旧路由仍存在于内部兼容代码，不代表 Web profile 已可用。
+- **旧兼容实现 (`ApiProxy`，不是固定上游的正式浏览器协议)**：正式路径需要迁移到 Connection → Gateway → Remote；下列旧路由仅存在于内部兼容代码；正式 Web profile 不使用它们。
   - `/api/events/mux`：分发增量 Token 流、问答请求 (`question/requested`)、审批请求 (`approval/requested`)、目标投影 (`session/projection`)。
   - `/api/events/host`：分发会话生命周期、多工作区状态与背景作业。
   - `POST /api/respond`：异步应答唤醒挂起的工具协程。
 
 ---
+
+## 启动 Web
+
+配置模型凭据后，在仓库目录运行：
+
+```powershell
+.\dsh-web.bat
+```
+
+打开终端打印的带一次性 token 的地址。无法操作系统目录选择框时，可使用原版网页目录选择器：
+
+```powershell
+.\dsh.bat --profile web --patch examples/web-browse.patch.yml --no-open
+```
+
+该补丁只改变插件装配，不修改原版前端。测试演示使用隔离的 DSH_HOME 和本地模拟模型；它不是生产模型配置。
 
 ## Web GUI (Cordis in Browser)
 

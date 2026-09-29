@@ -1,0 +1,8 @@
+# Use the upstream browser directory picker when a native dialog is unsuitable.
+- id: directory-picker
+  disabled: true
+- insert:
+    - id: directory-picker-browse
+      name: '@deepseek-ai/dsh-host-directory-picker-browse'
+    - id: directory-picker-browser
+      name: '@deepseek-ai/dsh-client-ui-directory-picker-browse'

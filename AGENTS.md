@@ -95,7 +95,7 @@ To ensure strict Windows 7 and Python 3.8.10 compatibility:
   dsh --profile <minimal|standard|creative|web|headless> [--patch <path>] [--dump-config]
   ```
 - The canonical launcher is `apps/cli/main.py` → `parse_dsh_args` → `run_profile`. The legacy launcher flags (`--mode`, `-m`, `-p`, `--prompt`, `--web`) and interactive fallback are retired by explicit product decision. App arguments after the launcher prefix belong to the selected app; never inspect them to switch boot runtimes.
-- Dual-track retirement: `dsh/cordis/profile.py` delegates all profile directory resolution, compose, heal, and manifest operations to canonical `dsh.boot.app_boot` / `dsh.boot.profile_boot`. `build_harness` enforces canonical `assert_entries_activated` and `DSH_TELEMETRY_DISABLED` privacy filtering.
+- Dual-track retirement: `dsh/cordis/profile.py` delegates all profile directory resolution, compose, heal, and manifest operations to canonical `dsh.boot.app_boot` / `dsh.boot.profile_boot`. `dsh/harness.py` and its flat `build_harness` entry are retired. Production and integration tests use `run_profile`; activation checks and telemetry privacy filtering belong to canonical boot.
 
 ---
 

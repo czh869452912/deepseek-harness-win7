@@ -1,63 +1,54 @@
-# 正式入口迁移：当前进展与未完成边界
+# 正式入口迁移：可运行基线与剩余差距
 
-更新：2026-09-29。固定上游 `cd5ef8148158c3a752a658978873241fdf8e2bbc`。本记录不签发 migration acceptance，也不推进 accepted_upstream。
+更新：2026-09-29。固定上游 `cd5ef8148158c3a752a658978873241fdf8e2bbc`。本记录不签发 migration acceptance，也不推进 accepted_upstream。每个已验证的独立部分均本地提交，未推送。
 
-## 最新增量（覆盖下文较早的计数和缺口）
+## 工作 1：正式入口与默认组合
 
-- `b309a47c`：正式 pi-ai provider 已注册；原生 Completions HTTP、动态 settings、凭据隔离、有界模型发现、准备请求代次、卸载取消已验证。当前仅支持 `openai-completions`，未实现的协议明确拒绝配置；Responses / Anthropic / 云专用协议和 OAuth 仍待完成。
-- `d516c1b1`：默认 headless 已完成 launcher → HTTP → 文件工具 → 后续模型响应 → JSONL → 正常退出。新进程重新装配默认 headless，经公开 Agent resume 恢复同一会话并继续模型轮次；该探针没有启动一次性 runner，也不表示 CLI 新增 `--resume`。
-- 默认组合中修复了子 Agent 提示上下文、AgentLoop `cwd` 变量、Goal 卸载、压缩误触发/非表面事件边界和重复工具提醒 waterfall 透传。完整上游压缩事务仍未移植，不能据短会话成功宣布长会话等价。
-- `56c8e891`：DeepSeek 配对增至 **76 项**，新增真实 HTTP adapter → retry middleware → Session 观察；重试调度循环是探针，不冒充完整 AgentLoop。
-- pi-ai 已有 **219 项配对一致**，包括 21 个实际 Completions HTTP 场景；其后的 Responses 历史转换仍在推进，尚未接入正式请求。
-- 包名缺口并集降至 **12**。minimal 为零；headless / standard / creative / sdk 的剩余包为隐私开关禁用的 telemetry。包名映射不代表所有协议和业务消费者完成。
-- 最新全量 `.venv\Scripts\python.exe -m pytest tests -q --tb=short --junitxml=.goose/out/current-review/default-headless-full.xml`：**3567 passed、11 skipped、1 warning，349.32 秒**，覆盖 `d516c1b1` 产品代码。`migration.py check` 通过，未签发新的 parity acceptance。
-- 本轮工作 1、2 仍未全部完成。未推送、未调用收费 API；Win7 真机、正式 Web 和便携发行验证状态不变。
+- `83385bea`：唯一公开执行链为 `dsh.py → apps.cli.main → parse_dsh_args → run_profile`。旧 `--mode/-m/-p/--prompt/--web` 形式退出报错；bat 使用正式 profile 链。内部 legacy harness / ApiProxy 仍有存量，正式 Web 切换后还需清理。
+- 已接入 native DeepSeek、pi-ai、headless、jobs、活动 Loader 包清单、SkillRegistry、SessionTitle、Goal、子 Agent、sandbox、PowerShell executor 和 Python code runtime。注册映射本身不作为上游等价证明。
+- SDK 已具备真实 stdio JSON-RPC、取消与 EOF/appReady 退出接线。minimal 实测 launcher → RPC → loopback HTTP → 持久 PowerShell 工具 → assistant → JSONL → 正常退出。
+- `d516c1b1`：默认 headless 实测 launcher → HTTP → 文件工具 → 后续模型请求 → JSONL → 正常退出。新进程重新装配同一默认 profile，通过公开 Agent resume 恢复会话并继续模型轮次；探针不启动一次性 runner，不表示 CLI 新增 `--resume` 参数。
+- `af62f475`：默认 standard、creative 的相同旅程通过。三种 pi-ai 协议也各自经完整默认 headless、真实文件工具和持久 replay 完成两次模型请求；仅配置 loopback 端点、凭据和模型，没有关闭默认业务插件。
+- 默认组合暴露并修复了子 Agent 提示上下文、AgentLoop `cwd` 变量、Goal 卸载、压缩误触发/非表面事件边界，以及重复工具提醒未继续 waterfall 的问题。
 
-**用户指定的剩余工作 1（默认装配）和 2（完整模型边界）仍在推进，尚未全部完成；不能据测试全绿宣布达到最小可用发行基线。** 每个已验证的独立部分均作本地提交，未推送。
+上述证明了短会话的可运行 CLI 基线，**没有证明默认组合的全部能力已与上游等价**。旧 compaction 仍缺少完整的上游摘要调用、稳定性/收敛检查、事务标记和手动维护闭包；目前不能验收长会话。Web / ACP 不属于已跑通入口。
 
-## 正式入口与已完成装配
+## 工作 2：原生模型边界
 
-- `83385bea`：`dsh.py → apps.cli.main → parse_dsh_args → run_profile` 成为唯一公开执行链。旧 `--mode/-m/-p/--prompt/--web` 形式退出报错，bat 使用同一链路。内部 legacy harness / ApiProxy 尚有存量代码，正式 Web 切换后仍需清理。
-- 正式提供者已补 native DeepSeek、headless、jobs、活动 Loader 包清单、SkillRegistry、SessionTitle、Goal、子 Agent、sandbox、PowerShell executor 与 Python code runtime。对应具体边界见 Git 提交及测试，不将包名映射视为实现证据。
-- SDK 已具备真实 stdio JSON-RPC、取消与 EOF/appReady 退出接线。`c695cc25`、`fd778a21`、`9b73a7da`：Windows WinPTY、Job 所有权、Agent 隔离、有界滚屏、持久 PowerShell 工具与内部 preset 依赖。
-- `26c31dd5`、`68c27785`：Agent 请求深冻结、作用域事件投递、registry 所有者事件总线与 spine invariants。
-- `a859f4aa`：正式 minimal 的 agent spine 组合已可运行。实际默认 minimal 经 launcher / stdio RPC / loopback DeepSeek HTTP / 持久 PowerShell 工具往返 / assistant / JSONL / 正常关闭完成旅程。另有定制 headless 旅程，不能代替默认 headless 验收。
-- WinPTY 就绪状态只声明 `inferred_idle`，不声称完整 xterm/前台进程组可验证。当前新 terminal backend 为 Windows 实现；通用 spine 的可选 toolBash 尚未实现，Windows minimal 显式禁用该选项。
-- sandbox 使用 restricted token、能力 SID ACL 与启动前 Job 所有权；Windows ACL 是部分隔离。code runtime 声明 `python/process`，不冒充 TypeScript/V8 worker。
+### DeepSeek
 
-## 模型边界与配对证据
+已有原生 HTTP/SSE、工具消息、usage、截断拒绝、HTTP 错误分类、可取消连接/读取、消费者关闭、provider retry-policy、每请求模型/配置快照、图片预算、Files API 与过期 file-id 恢复、扩展接受事务和请求归因。
 
-### Native DeepSeek
+`49c06729` 修复 settings provider 注册时被关闭的问题。schema 合法但 resolver 不可用的配置允许写入，adapter 保持整个 last-good 代次；实际文件测试覆盖保存、回退和卸载。
 
-已有原生 HTTP/SSE、工具消息、usage、截断拒绝、HTTP 错误分类、可取消连接/读取、消费者关闭、provider retry-policy、每请求模型与配置快照、图片归一化与预算、Files API 与过期 file-id 恢复、扩展接受事务、匿名/session/compaction 请求归因。
+固定上游 Node / Python **76 个同输入配对观察一致**。`56c8e891` 新增真实 HTTP adapter → retry middleware → Session 场景：服务错误恢复、认证失败拒绝重试、次数耗尽、过长 Retry-After 和 always 策略。此处重试调度循环为探针，不冒充完整 AgentLoop。
 
-`49c06729` 修复文件 settings provider 在注册时即被错误关闭的问题。schema 合法但 resolver 不可用的设置按固定上游允许写入，adapter 保持整个 last-good 代次；不同于 pi-ai 的 serviceability 写入拒绝规则。实际文件测试覆盖保存、last-good、卸载与写入生命周期。
+### pi-ai
 
-固定上游 Node 与 Python **71 个同输入配对观察全部一致**，包括文本序列化、流、错误、配置/预算、settings、图片事务与 Files API。真实 loopback HTTP 与模拟附件/上传存储的场景分别标明。仍需完成剩余跨层 retry 观察；这些结果不是所有 provider 的等价认证。
+- 原生 replay version 2、签名/响应身份、坏回放逐消息降级、历史和图片上下文、跨模型工具 ID、增量 JSON 与预算已移植。
+- 目录事实来自锁定 `@earendil-works/pi-ai@0.84.2`，目录能力上限与显式请求上限分开保存。Node 只在开发 oracle 使用，产品运行不依赖 Node。
+- `b309a47c`：正式 provider、动态 settings、路由替换、目录发现、有界 HTTP 模型列表、显式凭据不回退、请求代次与卸载取消。
+- `f0cf3305`、`ab3bcfed`：已实际支持三种显式协议：`openai-completions`、`openai-responses`、`anthropic-messages`。包括工具增量、签名保留/回填、usage、终止/截断、HTTP 错误、首包/空闲超时及调用方取消。
+- `d51d0d8a`：图片模型能力与附件服务预检查；显式凭据 → 已存储 pi-ai key → credential reference / 环境的优先级。遇到未支持的 stored OAuth grant 明确失败，不回退到另一把环境密钥。
+- **322 个配对观察一致**，其中 Completions、Responses、Anthropic 各有 21 个实际 loopback HTTP 场景。比较 JSON 事实和错误码，不比较错误措辞、随机身份和精确时序。
 
-### pi-ai 多 provider
+**完整多 provider 等价仍未完成**：OAuth 登录/刷新、云专用协议（如 Bedrock、Vertex、Azure、Codex）和各 provider 专属认证尚有缺口。目录中的模型不意味着其全部协议可用；未实现协议会在正式配置阶段拒绝。Anthropic OAuth token 传输也明确拒绝，没有伪装为普通 API key。
 
-- `6e09fc41`：version 2 原生 replay envelope、签名/响应身份保留、坏回放逐消息降级、流终止/取消/溢出分类。
-- `b8e8bdbd`：历史与工具结果转换，图片角色预校验、附件去重、预估及精确两阶段 base64 预算，保持持久历史不变。
-- `0db724f2`：从锁定的 `@earendil-works/pi-ai@0.84.2` 提取目录事实；Python 原生配置解析、目录覆盖、兼容字段和 reasoning 能力。目录能力上限与部署显式请求上限分开保存。生成器仅开发使用，产品目录读取不依赖 Node。
-- **110 个配对观察全部一致**：覆盖上述边界与全部目录 provider 的模型描述/配置结果。比较 JSON 事实和错误码，不比较错误措辞与时序。
+## 其他剩余工作
 
-**尚未完成 pi-ai 的真实多协议 HTTP、认证/发现/settings 生命周期和正式 provider 注册。目录、回放与上下文模块已有实现，并不表示这些 provider 已能发起模型调用。** 未借 DeepSeek 别名或空 provider 消除装配缺口。
+1. 长会话压缩契约，以及上面的 OAuth / 云专用模型边界；因此用户指定工作 1、2 的“完整上游对齐”不能记为全部完成。
+2. 正式 Web controllers、host/client runners、应用与前端消费者；旧 ApiProxy 不可替代新架构验收。
+3. 业务 projection schema、完整 sessionQuery / Web replay、缓存失败降级和热替换。
+4. 前端重建、便携包隔离启动、浏览器端到端及 Win7 真机认证；未完成前不宣称可发行。
 
-## 当前缺口
+冻结包名缺口并集为 **12**。minimal 为零；headless / standard / creative / sdk 仅剩被 `DSH_TELEMETRY_DISABLED=1` 禁用的 telemetry 包。该开关是上述旅程的显式运行条件。其余缺失包主要为 Web 与 ACP；计数不是工作量或 parity 百分比。
 
-冻结 provider 缺口并集为 **13**：minimal 已为零；headless / standard / creative 仍有 `llm-pi-ai` 与被隐私配置禁用的 `session-telemetry-otel`。其余为正式 Web controllers / runners / app、session-log-export / reference，以及 ACP app。计数是包名数量，不代表等量工作量。
+## 验证环境与证据
 
-1. **默认装配（本轮范围）**：完成 pi-ai 真实协议与生命周期；验证默认 headless 的工具往返、落盘、新进程恢复及退出。其它默认组合逐项验证，不删必需 rows 以掩盖缺失。
-2. **完整模型边界（本轮范围）**：补跨层 retry 等剩余观察，把目录、配置、图片、replay、流和真实 HTTP 连接起来；验证准备请求后 settings 替换不会混用代次。
-3. **正式 Web**：已有 Gateway / Remote / Connection 基础，但业务 controllers、host/client runners、正式应用及前端消费者仍未完成。旧 ApiProxy 不可充当新架构验收。
-4. **数据消费者**：业务 projection schema、完整 sessionQuery / Web replay、缓存失败降级和热替换仍需闭环。
-5. **发行**：真实默认 CLI 与浏览器旅程、前端重建、便携包隔离启动、Win7 真机认证。未完成前不宣称可发行。
+- 本机 Python 3.8.10 `.venv`，Windows NT 10.0.26200；Node 22.20.0，不是 release gate 指定的 22.22.2。
+- 全量 `native-baseline-final.xml`：**3583 passed、11 skipped、1 warning，336.99 秒**，覆盖 `af62f475` 的全部实现；凭据/图片定向 10 passed，默认 profile 与三协议 Agent 旅程 8 passed。
+- pi-ai 配对报告：`.goose/out/current-review/pi-three-protocol-paired.json`，322 matched。DeepSeek：`deepseek-retry-paired.json`，76 matched。
+- `migration.py check` 通过；此门禁校验记录与固定 inventory，不证明功能等价。
+- 仍有既有 Windows asyncio transport 清理 warning 和 HTTP 测试连接关闭 stderr，不记为无警告验收。
+- 没有调用收费 API。原始报告在忽略目录 `.goose/out/current-review/`；WinPTY 仅声明 `inferred_idle`，sandbox Windows ACL 仅部分隔离，code runtime 为 `python/process`。没有用当前 Windows 验证替代 Win7 认证。
 
-## 本机验证
-
-- Python 3.8.10 `.venv`，Windows NT 10.0.26200；Node 22.20.0，尚非 release gate 要求的 22.22.2。
-- 最新全量：`.venv\Scripts\python.exe -m pytest tests -q --tb=short --junitxml=.goose/out/current-review/pi-context-full.xml`：**3542 passed、11 skipped、1 warning，327.21 秒**。覆盖 `b8e8bdbd` 产品代码；其后目录/配置与上下文定向 **8 passed**，其中目录新增 3 项。
-- pi-ai 配对 110 项通过；native DeepSeek 配对 71 项通过。没有调用收费 API。
-- 全量仍有既有 Windows asyncio transport 清理警告，另有测试 HTTP 连接关闭 stderr；不记为无警告验收。
-- 原始报告位于忽略目录 `.goose/out/current-review/`。正式验收记录未推进；未完成完整便携包构建、浏览器端到端或 Win7 真机验证。

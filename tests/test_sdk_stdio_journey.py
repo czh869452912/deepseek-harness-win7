@@ -9,11 +9,13 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import yaml
+import pytest
 
 from dsh.boot.profile import init_profile
 
 
-def test_sdk_launcher_prompt_notifications_shutdown_and_persistence(tmp_path):
+@pytest.mark.parametrize('default_profile', [False, True])
+def test_sdk_launcher_prompt_notifications_shutdown_and_persistence(tmp_path, default_profile):
     profile = tmp_path / 'home' / 'profiles' / 'sdk-journey'
     init_profile(str(profile), [], 'startup')
     rows = [dict(id=name, name='@deepseek-ai/dsh-' + name) for name in (
@@ -30,6 +32,10 @@ def test_sdk_launcher_prompt_notifications_shutdown_and_persistence(tmp_path):
         def do_POST(self):
             requests.append(json.loads(self.rfile.read(int(self.headers['Content-Length']))))
             body = b'data: {"choices":[{"delta":{"content":"SDK journey complete"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n'
+            if default_profile and len(requests) == 1:
+                chunk = dict(choices=[dict(delta=dict(tool_calls=[dict(index=0, id='shell-call', type='function',
+                    function=dict(name='pwsh', arguments=json.dumps(dict(command="Write-Output ('TOOL' + '-RESULT')"))))]), finish_reason='tool_calls')])
+                body = ('data: ' + json.dumps(chunk) + '\n\ndata: [DONE]\n\n').encode('utf-8')
             self.send_response(200)
             self.send_header('Content-Length', str(len(body)))
             self.end_headers()
@@ -39,7 +45,7 @@ def test_sdk_launcher_prompt_notifications_shutdown_and_persistence(tmp_path):
     thread.start()
     env = dict(os.environ, DSH_HOME=str(tmp_path / 'home'), DSH_TELEMETRY_DISABLED='1',
                DEEPSEEK_API_KEY='fixture-only', DEEPSEEK_BASE_URL='http://127.0.0.1:{}'.format(server.server_port))
-    process = subprocess.Popen([sys.executable, str(Path(__file__).resolve().parents[1] / 'dsh.py'), '--profile', 'sdk-journey'],
+    process = subprocess.Popen([sys.executable, str(Path(__file__).resolve().parents[1] / 'dsh.py'), '--profile', 'minimal' if default_profile else 'sdk-journey'],
         cwd=str(tmp_path), env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         encoding='utf-8', bufsize=1)
     frames, stderr = queue.Queue(), []
@@ -79,7 +85,10 @@ def test_sdk_launcher_prompt_notifications_shutdown_and_persistence(tmp_path):
         assert wait(lambda frame: frame.get('id') == 3)['result'] == {}
         assert process.wait(timeout=10) == 0, stderr
         assert requests[0]['model'] == 'fixture-model'
-        logs = list((tmp_path / 'sessions').rglob('*.jsonl'))
+        if default_profile:
+            assert len(requests) == 2
+            assert any(message.get('role') == 'tool' and 'TOOL-RESULT' in str(message) for message in requests[1]['messages'])
+        logs = list((tmp_path / ('home/sessions' if default_profile else 'sessions')).rglob('*.jsonl'))
         assert len(logs) == 1
         assert 'SDK journey complete' in logs[0].read_text(encoding='utf-8')
         assert any(frame.get('method') == 'session.status' for frame in observed)

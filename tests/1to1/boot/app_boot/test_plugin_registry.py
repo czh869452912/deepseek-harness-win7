@@ -132,7 +132,6 @@ SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
         "@deepseek-ai/dsh-session-telemetry-otel",
     ],
     "minimal": [
-        "@deepseek-ai/dsh-agent-spine-demo",
     ],
 }
 
@@ -538,7 +537,7 @@ def test_the_frozen_gap_is_the_union_of_every_shipped_profile():
 
             collect(patch)
     assert union <= shipped_names
-    assert len(union) == 14
+    assert len(union) == 13
 
 
 # --- boot installs and consults the table ------------------------------------
@@ -770,6 +769,15 @@ async def test_run_profile_reports_exactly_the_shipped_provider_gap(profile, mon
     monkeypatch.setattr(internals, 'stdin', stdin)
     home = tmp()
     try:
+        if not SHIPPED_PROVIDER_GAP[profile]:
+            result = await asyncio.wait_for(run_profile(dict(profile=profile, dshHome=home,
+                waitForExit=False, args=PROFILE_INVOCATION_ARGS[profile])), timeout=30)
+            try:
+                assert result['ctx'].get('agents') is not None
+            finally:
+                result['shutdown'].shutdown(0)
+                await result['shutdown'].wait()
+            return
         with pytest.raises(RuntimeError) as raised:
             await asyncio.wait_for(
                 run_profile(

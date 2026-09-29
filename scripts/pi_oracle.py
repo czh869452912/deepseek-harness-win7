@@ -41,6 +41,8 @@ def main():
         sources += [ROOT / 'dsh/llm/pi_catalog.json', ROOT / 'scripts/oracles/export-pi-catalog.mjs']
         sources += [ROOT / 'scripts/oracles/official/node_modules/@earendil-works/pi-ai/dist/api/transform-messages.js']
         sources += [ROOT / 'scripts/oracles/official/node_modules/@earendil-works/pi-ai/dist/api/openai-completions.js']
+        sources += [ROOT / 'scripts/oracles/official/node_modules/@earendil-works/pi-ai/dist/api' / name for name in
+                    ('openai-responses.js', 'openai-responses-shared.js', 'anthropic-messages.js', 'simple-options.js')]
         sources += [ROOT / 'scripts/oracles/official/node_modules/@earendil-works/pi-ai/dist/utils/json-parse.js',
                     ROOT / 'scripts/oracles/official/node_modules/partial-json/dist/index.js']
         sources += [ROOT / 'scripts/oracles' / name for name in ('pi-fixtures.json', 'pi.spec.ts', 'pi_python.py', 'pi-http.ts', 'pi_http_python.py', 'vitest.pi-probe.config.mts', 'official/package-lock.json')]

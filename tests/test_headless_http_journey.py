@@ -12,7 +12,8 @@ import yaml
 from dsh.boot.profile import init_profile
 
 
-@pytest.mark.parametrize("truncated,default_profile", [(False, False), (True, False), (False, True)])
+@pytest.mark.parametrize("truncated,default_profile", [(False, False), (True, False),
+    (False, 'headless'), (False, 'standard'), (False, 'creative')])
 def test_headless_runner_http_tool_roundtrip_and_exit(tmp_path, truncated, default_profile):
     profile = tmp_path / "home" / "profiles" / "http-journey"
     init_profile(str(profile), [], "startup")
@@ -69,7 +70,7 @@ def test_headless_runner_http_tool_roundtrip_and_exit(tmp_path, truncated, defau
         env = dict(os.environ, DSH_HOME=str(tmp_path / "home"), DSH_TELEMETRY_DISABLED="1",
                    DEEPSEEK_API_KEY="local-test-only", DEEPSEEK_BASE_URL="http://127.0.0.1:{}".format(server.server_port))
         result = subprocess.run([sys.executable, str(Path(__file__).resolve().parents[1] / "dsh.py"),
-                                 "--profile", "headless" if default_profile else "http-journey", "inspect"],
+                                 "--profile", default_profile or "http-journey", "inspect"],
                                 env=env, cwd=str(tmp_path), capture_output=True, encoding="utf-8", timeout=25)
         if truncated:
             assert result.returncode == 1, result.stdout + result.stderr
@@ -89,7 +90,7 @@ def test_headless_runner_http_tool_roundtrip_and_exit(tmp_path, truncated, defau
             logs = list((tmp_path / ("home/sessions" if default_profile else "sessions")).rglob("*.jsonl"))
             assert len(logs) == 1
             assert '"tool/result"' in logs[0].read_text(encoding="utf-8")
-            if default_profile:
+            if default_profile == 'headless':
                 repo = Path(__file__).resolve().parents[1]
                 session_id = json.loads(logs[0].read_text(encoding='utf-8').splitlines()[0])['id']
                 restored = subprocess.run([sys.executable, str(repo / 'tests/headless_resume_process.py'), session_id],

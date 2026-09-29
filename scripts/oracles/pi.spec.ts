@@ -11,6 +11,7 @@ import { parseStreamingJson } from './official/node_modules/@earendil-works/pi-a
 import { observePiHttp } from './pi-http.ts'
 import { convertResponsesMessages } from './official/node_modules/@earendil-works/pi-ai/dist/api/openai-responses-shared.js'
 import { stream as responsesStream, streamSimple as responsesSimple } from './official/node_modules/@earendil-works/pi-ai/dist/api/openai-responses.js'
+import { stream as anthropicStream, streamSimple as anthropicSimple } from './official/node_modules/@earendil-works/pi-ai/dist/api/anthropic-messages.js'
 
 it('observes pinned pi-ai stream and replay boundaries', async () => {
   const fixtures = JSON.parse(readFileSync('scripts/oracles/pi-fixtures.json', 'utf8'))
@@ -18,6 +19,12 @@ it('observes pinned pi-ai stream and replay boundaries', async () => {
   for (const fixture of fixtures) {
     const row: any = {id: fixture.id}
     try {
+      if (fixture.kind === 'anthropic-params') {
+        await (fixture.simple ? anthropicSimple : anthropicStream)(fixture.model, fixture.context, {...fixture.options, apiKey: 'oracle', env: {},
+          onPayload: payload => { row.value = payload; throw new Error('oracle captured before HTTP') },
+        }).result()
+        if (row.value === undefined) throw new Error('payload was not reached')
+      }
       if (fixture.kind === 'responses-params') {
         await (fixture.simple ? responsesSimple : responsesStream)(fixture.model, fixture.context, {...fixture.options, apiKey: 'oracle', env: {},
           onPayload: payload => { row.value = payload; throw new Error('oracle captured before HTTP') },

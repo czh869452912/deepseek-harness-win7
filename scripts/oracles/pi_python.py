@@ -15,6 +15,7 @@ from dsh.llm.pi_transform import transform_messages
 from dsh.llm.pi_completions_messages import convert_messages
 from dsh.llm.pi_responses_messages import convert_responses_messages
 from dsh.llm.pi_responses_params import build_responses_params
+from dsh.llm.pi_anthropic_params import build_anthropic_params
 from dsh.llm.pi_completions_params import build_params
 from dsh.llm.pi_json import parse_streaming_json, dumps
 from pi_http_python import observe_pi_http
@@ -26,6 +27,8 @@ async def main():
     for fixture in json.loads((ROOT / 'scripts/oracles/pi-fixtures.json').read_text(encoding='utf-8')):
         row = dict(id=fixture['id'])
         try:
+            if fixture['kind'] == 'anthropic-params':
+                row['value'] = build_anthropic_params(fixture['model'], fixture['context'], fixture.get('options'), fixture.get('simple', False))
             if fixture['kind'] == 'responses-params':
                 row['value'] = build_responses_params(fixture['model'], fixture['context'], fixture.get('options'), fixture.get('simple', False))
             if fixture['kind'] == 'responses-messages':

@@ -1,12 +1,12 @@
 """Versioned pi-ai replay metadata; durable Harness blocks remain authoritative."""
-import json
+from dsh.llm.pi_json import loads
 
 from dsh.llm.llm_service import LlmError
 
 
 def arguments(raw):
     try:
-        value = json.loads(raw)
+        value = loads(raw)
         return value if isinstance(value, dict) else {}
     except (ValueError, TypeError):
         return {}

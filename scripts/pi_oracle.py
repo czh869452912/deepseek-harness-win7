@@ -41,6 +41,8 @@ def main():
         sources += [ROOT / 'dsh/llm/pi_catalog.json', ROOT / 'scripts/oracles/export-pi-catalog.mjs']
         sources += [ROOT / 'scripts/oracles/official/node_modules/@earendil-works/pi-ai/dist/api/transform-messages.js']
         sources += [ROOT / 'scripts/oracles/official/node_modules/@earendil-works/pi-ai/dist/api/openai-completions.js']
+        sources += [ROOT / 'scripts/oracles/official/node_modules/@earendil-works/pi-ai/dist/utils/json-parse.js',
+                    ROOT / 'scripts/oracles/official/node_modules/partial-json/dist/index.js']
         sources += [ROOT / 'scripts/oracles' / name for name in ('pi-fixtures.json', 'pi.spec.ts', 'pi_python.py', 'vitest.pi-probe.config.mts', 'official/package-lock.json')]
         before = {str(path.relative_to(ROOT)): digest(path) for path in sources}
         paths = [output.with_suffix('.ts.json'), output.with_suffix('.python.json')]

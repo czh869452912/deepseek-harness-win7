@@ -6445,5 +6445,140 @@
       ]
     },
     "simple": true
+  },
+  {
+    "id": "partial-json-0",
+    "kind": "partial-json",
+    "raw": ""
+  },
+  {
+    "id": "partial-json-1",
+    "kind": "partial-json",
+    "raw": " "
+  },
+  {
+    "id": "partial-json-2",
+    "kind": "partial-json",
+    "raw": "{"
+  },
+  {
+    "id": "partial-json-3",
+    "kind": "partial-json",
+    "raw": "{\"x\":"
+  },
+  {
+    "id": "partial-json-4",
+    "kind": "partial-json",
+    "raw": "{\"x\":\"abc"
+  },
+  {
+    "id": "partial-json-5",
+    "kind": "partial-json",
+    "raw": "{\"x\":\"abc\\"
+  },
+  {
+    "id": "partial-json-6",
+    "kind": "partial-json",
+    "raw": "{\"x\":\"a\\q\"}"
+  },
+  {
+    "id": "partial-json-7",
+    "kind": "partial-json",
+    "raw": "{\"x\":\"a\nb\"}"
+  },
+  {
+    "id": "partial-json-8",
+    "kind": "partial-json",
+    "raw": "{\"x\":\"\\u12"
+  },
+  {
+    "id": "partial-json-9",
+    "kind": "partial-json",
+    "raw": "{\"a\":true,\"b\":"
+  },
+  {
+    "id": "partial-json-10",
+    "kind": "partial-json",
+    "raw": "[1,2,"
+  },
+  {
+    "id": "partial-json-11",
+    "kind": "partial-json",
+    "raw": "null"
+  },
+  {
+    "id": "partial-json-12",
+    "kind": "partial-json",
+    "raw": "nul"
+  },
+  {
+    "id": "partial-json-13",
+    "kind": "partial-json",
+    "raw": "false"
+  },
+  {
+    "id": "partial-json-14",
+    "kind": "partial-json",
+    "raw": "fa"
+  },
+  {
+    "id": "partial-json-15",
+    "kind": "partial-json",
+    "raw": "-"
+  },
+  {
+    "id": "partial-json-16",
+    "kind": "partial-json",
+    "raw": "1e"
+  },
+  {
+    "id": "partial-json-17",
+    "kind": "partial-json",
+    "raw": "1,2"
+  },
+  {
+    "id": "partial-json-18",
+    "kind": "partial-json",
+    "raw": "NaN"
+  },
+  {
+    "id": "partial-json-19",
+    "kind": "partial-json",
+    "raw": "{\"x\":Infinity}"
+  },
+  {
+    "id": "partial-json-20",
+    "kind": "partial-json",
+    "raw": "{\"a\":1,\"b\":wrong}"
+  },
+  {
+    "id": "partial-json-21",
+    "kind": "partial-json",
+    "raw": "not json"
+  },
+  {
+    "id": "partial-json-22",
+    "kind": "partial-json",
+    "raw": "{\"x\":\"C:\\work\\file\"}"
+  },
+  {
+    "id": "partial-json-23",
+    "kind": "partial-json",
+    "raw": "{\"x\":[1,{\"y\":\"z"
+  },
+  {
+    "id": "partial-json-24",
+    "kind": "partial-json",
+    "raw": "{\"x\":-2.5e"
+  },
+  {
+    "id": "partial-json-25",
+    "kind": "partial-json",
+    "raw": "{\"x\":trueish}"
+  },
+  {
+    "id": "partial-json-26",
+    "kind": "partial-json",
+    "raw": "{\"x\":\"\\u1234\"}"
   }
 ]

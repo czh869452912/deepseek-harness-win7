@@ -1,6 +1,6 @@
 """pi-ai event translation, including native replay and terminal failures."""
-import json
 import re
+from dsh.llm.pi_json import dumps
 
 from dsh.core.cancellation import aborted
 from dsh.llm.llm_service import LlmError
@@ -95,7 +95,7 @@ async def to_stream_chunks(events, context_window=None, signal=None):
         elif kind == 'toolcall_end':
             block = event['toolCall']
             yield dict(type='block-end', index=index, block=dict(type='tool-call', id=block['id'], name=block['name'],
-                arguments=json.dumps(block['arguments'], ensure_ascii=False, separators=(',', ':'))))
+                arguments=dumps(block['arguments'])))
         elif kind in ('done', 'error'):
             message = event['message' if kind == 'done' else 'error']
             yield dict(type='usage', usage=usage(message['usage']))

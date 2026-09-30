@@ -8,7 +8,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 from dsh.compaction.compaction_basic.config import resolve_config, resolve_target_policy, resolve_compact_spec
-from dsh.compaction.engine import CompactionEngine
+from dsh.compaction.engine import CompactionEngine, ManualCompactionError
+from dsh.compaction.transaction import compact
 from dsh.cordis.context import Context
 from dsh.core.abort import AbortController
 from dsh.core.session import SessionPlugin
@@ -48,10 +49,72 @@ class Owner:
         self.options = SimpleNamespace(provider='fallback', model='fallback')
 
 
+async def transaction(spec):
+    from types import SimpleNamespace
+    ctx = Context()
+    try:
+        await ctx.plugin(SessionPlugin)
+        meter = TokenMeter(ctx)
+        session = ctx.get('sessions').create()
+        session.append_user_message('important facts ' * 300)
+        session.append_user_message('recent question')
+        session.append_request_header(dict(config=dict(provider='old', model='old-model'), system='original prefix'))
+        manual = spec.get('manual', True)
+        if not manual:
+            session.append('turn/start', dict(turn=1))
+        control, reason, inputs, flushed = AbortController(), RuntimeError('caller stopped'), [], []
+        async def summarize(input, agent, signal):
+            if spec.get('action') == 'header':
+                session.append_request_header(dict(config=dict(provider='new', model='new-model'), system='changed prefix'))
+            inputs.append(dict(keys=sorted(input), system=input.get('system'),
+                text=[''.join(block.get('text', '') for block in message['content']) for message in input['messages']],
+                routed=agent.session.request_header()['config'], sameSignal=signal is control.signal))
+            if spec.get('action') == 'outside':
+                session.append_user_message('outside span')
+            if spec.get('action') == 'hook-error':
+                raise ManualCompactionError('busy', 'hook failed')
+            result = dict(summary=[dict(type='text', text='custom checkpoint')], provider='custom', model='template',
+                rawOutput=[dict(type='text', text='raw')], compactionId='spoofed', sourceCommandId='spoofed',
+                extra='private data')
+            if spec['mode'] == 'transaction-private-fields':
+                result['shadowedTokenCount'] = -1
+            if 'marker' in spec:
+                result['llmStreamCall'] = spec['marker']
+            return result
+        async def flush():
+            flushed.append(True)
+            if spec['flush'] == 'cancel':
+                control.abort(reason)
+            if spec['flush'] != 'void':
+                raise RuntimeError('flush failed')
+        try:
+            result = await compact(SimpleNamespace(ctx=ctx, summarize=summarize), session, 0, 0,
+                agent=Owner(session), manual=manual, source_command_id='real-command', signal=control.signal,
+                flush=flush if 'flush' in spec else None)
+            outcome = {key: result[key] for key in ('shadowedSeqs', 'shadowedTokenCount')}
+        except Exception as error:
+            outcome = dict(error=True, code=getattr(error, 'code', None), callerReason=error is reason)
+        opening = next(event for event in session.events if event['type'] == 'compaction/start')
+        summaries = []
+        for event in session.events:
+            if event['type'] == 'compaction/summary':
+                body = {key: value for key, value in event['data'].items() if key != 'compactionId'}
+                body['sameIdentity'] = event['data']['compactionId'] == opening['data']['compactionId']
+                summaries.append(body)
+        return dict(mode=spec['mode'], inputs=inputs, outcome=outcome, summaries=summaries, flushes=len(flushed),
+            generation=session.surface.replace_generation, nodes=list(session.surface.nodes),
+            events=[dict(type=event['type'], error='error' in event['data']) for event in session.events if event['type'].startswith('compaction/')])
+    finally:
+        await ctx.fiber.dispose()
+
+
 async def observe():
     cases = json.loads((ROOT / 'scripts/oracles/compaction-cases.json').read_text(encoding='utf-8'))
     rows = []
     for spec in cases:
+        if spec['kind'] == 'transaction':
+            rows.append(await transaction(spec))
+            continue
         if spec['kind'] == 'config':
             try:
                 config = resolve_config(spec['config'])

@@ -1,4 +1,5 @@
 import pytest
+from types import SimpleNamespace
 from dsh.compaction.engine import (
     BasicCompactionEngine,
     select_compactable_range,
@@ -91,7 +92,8 @@ async def test_compact_surface_region():
     assert session.surface.nodes == [0, 2, 4, 6]
 
     # Compact the first user/assistant pair, whose surface seqs are [0, 2].
-    result = await engine.compact_surface_region(session, start=0, end=2, manual=True)
+    agent = SimpleNamespace(session=session, options=SimpleNamespace(provider='test', model='test'))
+    result = await engine.compact_surface_region(session, start=0, end=2, agent=agent, manual=True)
     assert result["startSeq"] is not None
     assert result["summarySeq"] is not None
     assert result["endSeq"] is not None
@@ -141,6 +143,7 @@ async def test_automatic_pressure_compaction():
     session.append("step/end", dict(turn=1, step=2))
 
     # Check compaction
-    comp_result = await engine.compact_if_needed(session=session, trigger="pressure")
+    agent = SimpleNamespace(session=session, options=SimpleNamespace(provider='test', model='test'))
+    comp_result = await engine.compact_if_needed(agent=agent, trigger="pressure")
     assert comp_result is not None
     assert session.surface.replace_generation >= 1

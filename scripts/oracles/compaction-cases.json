@@ -21,5 +21,14 @@
   {"mode":"overflow-disabled","kind":"run","config":{"retainTokens":0,"maxOverflowRetries":0},"actions":["overflow"]},
   {"mode":"auto-disabled","kind":"run","config":{"auto":false},"actions":["overflow","pre-step"]},
   {"mode":"aborted-hooks","kind":"run","config":{},"aborted":true,"actions":["overflow","pre-step"]},
-  {"mode":"attempt-exhaustion","kind":"run","config":{"auto":false,"thresholdRatio":0.5,"retainTokens":0,"compactionRetries":1},"systemChars":3000,"decreasingSummary":true}
+  {"mode":"attempt-exhaustion","kind":"run","config":{"auto":false,"thresholdRatio":0.5,"retainTokens":0,"compactionRetries":1},"systemChars":3000,"decreasingSummary":true},
+  {"mode":"transaction-snapshot","kind":"transaction","action":"header"},
+  {"mode":"transaction-private-fields","kind":"transaction","marker":false},
+  {"mode":"transaction-marked-output","kind":"transaction","marker":true},
+  {"mode":"transaction-manual-outside","kind":"transaction","action":"outside"},
+  {"mode":"transaction-automatic-outside","kind":"transaction","action":"outside","manual":false},
+  {"mode":"transaction-typed-hook-error","kind":"transaction","action":"hook-error"},
+  {"mode":"transaction-void-flush","kind":"transaction","flush":"void"},
+  {"mode":"transaction-failed-flush","kind":"transaction","flush":"error"},
+  {"mode":"transaction-cancel-after-flush","kind":"transaction","flush":"cancel"}
 ]

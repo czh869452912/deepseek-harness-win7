@@ -168,9 +168,9 @@ class CompactionEngine(Service):
         ctx.on("session/event", session_event)
         ctx.on("agent/request-error", request_error)
 
-    async def summarize(self, session, selected, agent, signal):
+    async def summarize(self, input, agent, signal=None):
         from dsh.compaction.native_summary import summarize
-        return await summarize(self, session, selected, agent, signal)
+        return await summarize(self, input, agent, signal)
 
     async def compact_region(
         self,
@@ -179,6 +179,7 @@ class CompactionEngine(Service):
     ) -> Dict[str, Any]:
         target_session = kwargs.get("session")
         agent = kwargs.get("agent")
+        signal = kwargs.get("signal")
 
         if len(args) >= 1 and hasattr(args[0], "surface"):
             target_session = args[0]
@@ -193,6 +194,8 @@ class CompactionEngine(Service):
                     target_session = agent.session
                 elif hasattr(args[2], "surface"):
                     target_session = args[2]
+            if len(args) >= 4:
+                signal = args[3]
         else:
             start = int(kwargs.get("start", 0))
             end = int(kwargs.get("end", 0))
@@ -200,17 +203,12 @@ class CompactionEngine(Service):
         if not target_session and agent and hasattr(agent, "session"):
             target_session = agent.session
 
-        if not target_session and self.ctx and hasattr(self.ctx, "has") and self.ctx.has("sessions"):
-            store = self.ctx.get("sessions")
-            if hasattr(store, "get"):
-                target_session = store.get("default-session")
-
         if not target_session:
             raise RuntimeError("Compaction target session is missing")
 
         from dsh.compaction.transaction import compact
         return await compact(self, target_session, start, end, agent=agent,
-                             signal=kwargs.get("signal"), manual=kwargs.get("manual", False),
+                             signal=signal, manual=kwargs.get("manual", False),
                              source_command_id=kwargs.get("source_command_id"), flush=kwargs.get("flush"))
 
     compact_surface_region = compact_region
@@ -223,36 +221,41 @@ class CompactionEngine(Service):
         source_command_id: Optional[str] = None,
         **kwargs: Any,
     ) -> Optional[Dict[str, Any]]:
+        from dsh.compaction.transaction import check_cancel
+        check_cancel(signal)
         session = agent.session if agent and hasattr(agent, "session") else None
-        if not session and self.ctx and hasattr(self.ctx, "has") and self.ctx.has("sessions"):
-            store = self.ctx.get("sessions")
-            if hasattr(store, "get"):
-                session = store.get("default-session")
-
-        if not session:
-            return None
-
-        if agent is None:
+        if agent is None or session is None:
             raise ManualCompactionError("busy", "manual compaction requires an idle agent")
 
-        from dsh.core.cancellation import aborted
-        class CombinedSignal:
-            @property
-            def aborted(self):
-                return aborted(signal) or aborted(self.maintenance)
+        from dsh.core.abort import AbortController
+        from dsh.core.cancellation import subscribe_abort
 
         async def perform(maintenance):
-            combined = CombinedSignal()
-            combined.maintenance = maintenance
-            from dsh.compaction.transaction import check_cancel
-            check_cancel(combined)
-            measurement = self.ctx.get("tokenMeter").measure(session)
-            rng = select_compactable_range(session, measurement, retain_tokens=0)
-            if not rng:
-                return None
-            return await self.compact_region(start=rng["start"], end=rng["end"], session=session,
-                                             agent=agent, signal=combined, manual=True,
-                                             source_command_id=source_command_id, flush=session.flush)
+            control = AbortController()
+            origin = []
+            def relay(source, reason):
+                if not control.signal.aborted:
+                    origin.append(source)
+                    control.abort(reason)
+            disposers = [subscribe_abort(maintenance, lambda reason: relay("agent", reason)),
+                         subscribe_abort(signal, lambda reason: relay("caller", reason))]
+            try:
+                check_cancel(control.signal)
+                measurement = self.ctx.get("tokenMeter").measure(session)
+                rng = select_compactable_range(session, measurement, retain_tokens=0)
+                if not rng:
+                    return None
+                return await self.compact_region(start=rng["start"], end=rng["end"], session=session,
+                                                 agent=agent, signal=control.signal, manual=True,
+                                                 source_command_id=source_command_id, flush=session.flush)
+            except BaseException as error:
+                if origin == ["agent"]:
+                    raise ManualCompactionError("cancelled", "manual compaction was cancelled", error) from error
+                check_cancel(control.signal)
+                raise
+            finally:
+                for dispose in disposers:
+                    dispose()
         if agent.status != "idle":
             raise ManualCompactionError("busy", "manual compaction requires an idle agent")
         return await agent.run_maintenance(perform)

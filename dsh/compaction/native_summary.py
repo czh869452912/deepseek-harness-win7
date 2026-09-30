@@ -1,6 +1,8 @@
 """Auxiliary summarization through the mounted LLM, using the routed prefix."""
 from dsh.core.cancellation import aborted
 from dsh.llm.stream_bridge import iter_chunks
+from dsh.llm.image_content import images
+from dsh.cordis.utils import _V8_WHITESPACE_OR_LINE_TERMINATOR
 
 INSTRUCTION = """You are now acting as a compaction engine for this AI coding assistant. Condense the conversation ABOVE into a structured checkpoint that lets another model resume the work with no loss of essential context.
 
@@ -47,12 +49,13 @@ def frame_summary(summary):
         {"type": "text", "text": "</compacted-summary>"}]
 
 
-async def summarize(engine, session, selected, agent, signal):
+async def summarize(engine, input, agent, signal):
     from dsh.core.agent_loop import BlockAssembler
     from dsh.llm.llm_service import LlmError
     from dsh.compaction.compaction_basic.config import resolve_target_policy
     from dsh.compaction.engine import conversation_target
-    policy_target = conversation_target(agent) or ((session.request_header() or {}).get("config"))
+    session = agent.session
+    policy_target = conversation_target(agent)
     cfg = engine.config if not policy_target else resolve_target_policy(engine.config, policy_target)
     header = session.request_header() or {}
     options = getattr(agent, "options", None)
@@ -61,15 +64,14 @@ async def summarize(engine, session, selected, agent, signal):
     target = target or {"provider": getattr(options, "provider", None), "model": getattr(options, "model", None)}
     if not target.get("provider") or not target.get("model"):
         raise ValueError("no provider/model available for summarization")
-    messages = [session.derive_event_message(session.events[seq]) for seq in selected]
-    messages = [message for message in messages if message is not None]
+    messages = list(input["messages"])
     messages.append({"role": "user", "content": [{"type": "text", "text": INSTRUCTION}],
                      "source": {"kind": "plugin", "plugin": "dsh-compaction-basic"}})
     request = dict(provider=target["provider"], model=target["model"], messages=messages,
                    maxTokens=cfg["maxTokens"], sessionId=session.id, purpose="compaction", signal=signal)
     for key in ("system", "tools"):
-        if key in header:
-            request[key] = header[key]
+        if key in input:
+            request[key] = input[key]
     assembler = BlockAssembler()
     reader = iter_chunks(engine.ctx.get("llm").stream(request), lambda: aborted(signal))
     try:
@@ -84,10 +86,10 @@ async def summarize(engine, session, selected, agent, signal):
     if finish["kind"] == "max-tokens":
         raise LlmError("summarization truncated at the token cap", "MAX_TOKENS")
     raw = assembler.blocks()
-    if any(block.get("type") == "image" for block in raw):
+    if any(images(raw)):
         raise LlmError("compaction summary cannot contain image output", "UNSUPPORTED_CONTENT")
     summary = [block for block in raw if block.get("type") == "text"]
-    if not any(block.get("text", "").strip() for block in summary):
+    if not any(any(ord(char) not in _V8_WHITESPACE_OR_LINE_TERMINATOR for char in block.get("text", "")) for block in summary):
         raise ValueError("summarization produced no text summary content")
     result = dict(summary=summary, rawOutput=raw, llmStreamCall=True,
                   provider=request["provider"], model=request["model"], maxTokens=cfg["maxTokens"])

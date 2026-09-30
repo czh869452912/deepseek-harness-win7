@@ -6,6 +6,56 @@ import { LlmRuntime, LlmAdapter, createUserMessage, createMessage } from '@deeps
 import TokenMeter from '@deepseek-ai/dsh-token-meter'
 import BasicCompactionEngine from '@deepseek-ai/dsh-compaction-basic'
 import { resolveConfig, resolveTargetPolicy, resolveCompactSpec } from '../../reference/packages/compaction/compaction-basic/src/config.ts'
+import { compactSurfaceRegion } from '../../reference/packages/compaction/compaction-basic/src/region.ts'
+import { ManualCompactionError } from '@deepseek-ai/dsh-compaction'
+
+async function transaction(spec: any): Promise<any> {
+  const ctx = new Context()
+  try {
+    await ctx.plugin(SessionStore)
+    await ctx.plugin(TokenMeter)
+    const session = ctx.sessions.create()
+    session.append('user/message', createUserMessage({ content: [{ type: 'text', text: 'important facts '.repeat(300) }], source: { kind: 'user' } }), { surfaceOp: 'append' })
+    session.append('user/message', createUserMessage({ content: [{ type: 'text', text: 'recent question' }], source: { kind: 'user' } }), { surfaceOp: 'append' })
+    session.append('request/header', { header: { config: { provider: 'old', model: 'old-model' }, system: 'original prefix' }, reason: 'initial' })
+    const manual = spec.manual !== false
+    if (!manual) session.append('turn/start', { turn: 1 })
+    const control = new AbortController()
+    const reason = new Error('caller stopped')
+    const inputs: any[] = []
+    let flushes = 0
+    const summarize = async (input: any, agent: any, signal: any): Promise<any> => {
+      if (spec.action === 'header') session.append('request/header', { header: { config: { provider: 'new', model: 'new-model' }, system: 'changed prefix' }, reason: 'initial' })
+      inputs.push({ keys: Object.keys(input).sort(), system: input.system,
+        text: input.messages.map((m: any) => m.content.map((b: any) => b.text ?? '').join('')),
+        routed: agent.session.requestHeader().config, sameSignal: signal === control.signal })
+      if (spec.action === 'outside') session.append('user/message', createUserMessage({ content: [{ type: 'text', text: 'outside span' }], source: { kind: 'user' } }), { surfaceOp: 'append' })
+      if (spec.action === 'hook-error') throw new ManualCompactionError('busy', 'hook failed')
+      return { summary: [{ type: 'text', text: 'custom checkpoint' }], provider: 'custom', model: 'template',
+        rawOutput: [{ type: 'text', text: 'raw' }], llmStreamCall: spec.marker,
+        compactionId: 'spoofed', sourceCommandId: 'spoofed', extra: 'private data',
+        ...spec.mode === 'transaction-private-fields' ? { shadowedTokenCount: -1 } : {} }
+    }
+    let outcome: any
+    try {
+      const result = await compactSurfaceRegion({ meter: ctx.tokenMeter, summarize }, session, 0, 0,
+        { session } as any, { owner: manual ? null : 'current-turn', stability: manual ? 'selected-span' : 'whole-surface',
+          sourceCommandId: 'real-command', ...spec.flush === undefined ? {} : { flush: async () => {
+            flushes++
+            if (spec.flush === 'cancel') control.abort(reason)
+            if (spec.flush !== 'void') throw new Error('flush failed')
+          } } }, control.signal)
+      outcome = { shadowedSeqs: result.shadowedSeqs, shadowedTokenCount: result.shadowedTokenCount }
+    } catch (error: any) { outcome = { error: true, code: error.code ?? null, callerReason: error === reason } }
+    const opening = session.events.find(e => e.type === 'compaction/start')!
+    const summaries = session.events.filter(e => e.type === 'compaction/summary').map(e => {
+      const { compactionId, ...body } = e.data
+      return { ...body, sameIdentity: compactionId === opening.data.compactionId }
+    })
+    return { mode: spec.mode, inputs, outcome, summaries, flushes, generation: session.surface.replaceGeneration,
+      nodes: session.surface.nodes, events: session.events.filter(e => e.type.startsWith('compaction/')).map(e => ({ type: e.type, error: 'error' in e.data })) }
+  } finally { await ctx.fiber.dispose() }
+}
 
 class Adapter extends LlmAdapter {
   requests: any[] = []
@@ -29,6 +79,10 @@ it('observes pinned compaction policies and real routed transactions', async () 
   const cases = JSON.parse(await readFile('scripts/oracles/compaction-cases.json', 'utf8'))
   const rows: any[] = []
   for (const spec of cases) {
+    if (spec.kind === 'transaction') {
+      rows.push(await transaction(spec))
+      continue
+    }
     if (spec.kind === 'config') {
       try {
         const config = resolveConfig(spec.config)

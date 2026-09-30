@@ -7,6 +7,10 @@ This implements the request-pressure policy consumer following
 [TokenMeter replay](2026-10-01-token-meter-replay-progress.md). It is not a
 declaration of complete compaction, whole-project parity or Win7 certification.
 
+Later snapshot/provenance/cancellation work and the custom-summary metadata bug
+are recorded in [transaction progress](2026-10-01-compaction-transaction-progress.md).
+Validation below retains this policy record's original baseline and scope.
+
 ## Implemented behavior
 
 - Compaction configuration rejects unknown/retired settings and invalid values

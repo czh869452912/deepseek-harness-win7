@@ -7,6 +7,8 @@ from dsh.cordis.context import Context
 from dsh.core.agent import Agent, AgentOptions
 from dsh.core.session import Session
 from dsh.llm.token_meter import TokenMeter
+from dsh.compaction.transaction import SurfaceChangedError
+from dsh.core.abort import AbortController
 
 
 def setup(stream):
@@ -68,9 +70,8 @@ async def test_surface_stability_and_lock_during_summary(manual):
         assert result['shadowedSeqs'] == [0]
         assert 'new outside' in str(session.derive_messages())
     else:
-        with pytest.raises(ManualCompactionError) as error:
+        with pytest.raises(SurfaceChangedError):
             await pending
-        assert error.value.code == 'changed'
         assert session.surface.replace_generation == 0
     await ctx.fiber.dispose()
 
@@ -125,7 +126,6 @@ async def test_manual_maintenance_flush_and_provenance():
     async def flush():
         assert agent._phase_kind == 'maintenance'
         flushed.append(session.events[-1]['type'])
-        return True
     session.flush = flush
     result = await engine.compact_now(agent, source_command_id='command-1')
     assert agent.status == 'idle' and flushed == ['compaction/end']
@@ -134,6 +134,156 @@ async def test_manual_maintenance_flush_and_provenance():
     assert record['rawOutput'] == record['summary']
     checkpoint = session.events[session.surface.nodes[0]]
     assert checkpoint['data']['source'] == dict(kind='plugin', plugin='compact', compactionId=result['compactionId'], sourceCommandId='command-1')
+    await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
+async def test_summarizer_receives_snapshot_while_route_is_resolved_at_call_time():
+    requests = []
+    async def stream(request):
+        requests.append(request)
+        async for item in good(request):
+            yield item
+    ctx, session, engine, agent = setup(stream)
+    session.append_request_header(dict(config=dict(provider='old', model='old-model'),
+                                       system='original prefix', tools=[dict(name='old-tool')]))
+    async def summarize(input, owner, signal):
+        assert set(input) == {'messages', 'system', 'tools'}
+        assert len(input['messages']) == 1
+        assert owner is agent
+        session.append_request_header(dict(config=dict(provider='new', model='new-model'),
+                                           system='changed prefix', tools=[dict(name='new-tool')]))
+        return await CompactionEngine.summarize(engine, input, owner, signal)
+    engine.summarize = summarize
+    result = await engine.compact_region(session, 0, 0, agent=agent, manual=True)
+    assert result['shadowedSeqs'] == [0]
+    assert requests[0]['system'] == 'original prefix' and requests[0]['tools'] == [dict(name='old-tool')]
+    assert (requests[0]['provider'], requests[0]['model']) == ('new', 'new-model')
+    assert session.request_header()['system'] == 'changed prefix'
+    await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('marker', [None, False, True])
+async def test_custom_summary_provenance_cannot_override_transaction_identity(marker):
+    ctx, session, engine, agent = setup(good)
+    tokens = ctx.get('tokenMeter').measure(session)['nodes'][0]['heuristicTokens']
+    async def summarize(input, owner, signal):
+        assert set(input) == {'messages'}
+        return dict(summary=[dict(type='text', text='custom checkpoint')], provider='custom', model='template',
+                    rawOutput=[dict(type='text', text='raw')], llmStreamCall=marker,
+                    compactionId='spoofed', sourceCommandId='spoofed', extra='private data',
+                    shadowedTokenCount=-1)
+    engine.summarize = summarize
+    result = await engine.compact_region(session, 0, 0, agent=agent, manual=True, source_command_id='real-command')
+    body = session.events[result['summarySeq']]['data']
+    assert body['compactionId'] == result['compactionId'] != 'spoofed'
+    assert body['sourceCommandId'] == 'real-command' and body['shadowedTokenCount'] == tokens
+    assert 'extra' not in body
+    assert body['rawOutput'] == [dict(type='text', text='raw')]
+    assert ('llmStreamCall' in body) == (marker is True)
+    assert 'maxTokens' not in body and 'usage' not in body
+    await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
+async def test_flush_failure_preserves_committed_history_and_classifies_persistence():
+    ctx, session, engine, agent = setup(good)
+    failure = OSError('flush failed')
+    async def flush():
+        raise failure
+    session.flush = flush
+    with pytest.raises(ManualCompactionError) as error:
+        await engine.compact_now(agent)
+    assert error.value.code == 'persistence' and error.value.cause is failure
+    assert session.surface.replace_generation == 1
+    assert session.events[-1]['type'] == 'compaction/end' and agent.status == 'idle'
+    await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
+async def test_caller_abort_reason_wins_after_durable_flush():
+    ctx, session, engine, agent = setup(good)
+    control = AbortController()
+    reason = ValueError('caller stopped')
+    async def flush():
+        control.abort(reason)
+        raise OSError('flush also failed')
+    session.flush = flush
+    with pytest.raises(ValueError) as error:
+        await engine.compact_now(agent, control.signal)
+    assert error.value is reason
+    assert session.surface.replace_generation == 1
+    assert agent.status == 'idle'
+    await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
+async def test_agent_cancel_classifies_manual_maintenance_and_disposes_relays():
+    entered, stopped = asyncio.Event(), asyncio.Event()
+    async def stream(request):
+        try:
+            entered.set()
+            await asyncio.Event().wait()
+            yield None
+        finally:
+            stopped.set()
+    ctx, session, engine, agent = setup(stream)
+    control = AbortController()
+    pending = asyncio.create_task(engine.compact_now(agent, control.signal))
+    await entered.wait()
+    agent.cancel()
+    with pytest.raises(ManualCompactionError) as error:
+        await asyncio.wait_for(pending, 2)
+    assert error.value.code == 'cancelled'
+    assert stopped.is_set() and not control.signal._listeners
+    assert session.events[-1]['type'] == 'compaction/end' and agent.status == 'idle'
+    assert session.surface.replace_generation == 0
+    await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
+async def test_already_cancelled_caller_precedes_busy_validation():
+    ctx, session, engine, agent = setup(good)
+    control = AbortController()
+    reason = RuntimeError('pre-aborted')
+    control.abort(reason)
+    agent.set_phase('running')
+    with pytest.raises(RuntimeError) as error:
+        await engine.compact_now(agent, control.signal)
+    assert error.value is reason and len(session.events) == 2
+    await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
+async def test_automatic_compaction_forwards_signal_without_manual_abort_checks():
+    ctx, session, engine, agent = setup(good)
+    control = AbortController()
+    control.abort(RuntimeError('stopped'))
+    session.append('turn/start', dict(turn=1))
+    async def summarize(input, owner, signal):
+        assert signal is control.signal and signal.aborted
+        return dict(summary=[dict(type='text', text='custom checkpoint')], provider='custom', model='template')
+    engine.summarize = summarize
+    result = await engine.compactRegion(0, 0, agent, control.signal)
+    assert result['shadowedSeqs'] == [0] and session.surface.replace_generation == 1
+    await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('text, accepted', [('\ufeff', False), ('\u0085', True)])
+async def test_summary_empty_text_uses_ecmascript_whitespace(text, accepted):
+    async def stream(request):
+        yield dict(type='text-delta', index=0, text=text)
+        yield dict(type='finish', reason=dict(kind='stop'))
+    ctx, session, engine, agent = setup(stream)
+    if accepted:
+        result = await engine.compact_region(session, 0, 0, agent=agent, manual=True)
+        assert result['summary'] == [dict(type='text', text=text)]
+    else:
+        with pytest.raises(ManualCompactionError) as error:
+            await engine.compact_region(session, 0, 0, agent=agent, manual=True)
+        assert error.value.code == 'summary'
     await ctx.fiber.dispose()
 
 

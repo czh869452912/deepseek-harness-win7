@@ -8,7 +8,26 @@ from dsh.compaction.tool_pairing import tool_pairing_balanced_before, tool_pairi
 
 def check_cancel(signal):
     if aborted(signal):
-        raise asyncio.CancelledError("compaction cancelled")
+        reason = getattr(signal, "reason", None)
+        if isinstance(reason, BaseException):
+            raise reason
+        error = asyncio.CancelledError("compaction cancelled")
+        error.reason = reason
+        raise error
+
+
+class SurfaceChangedError(RuntimeError):
+    pass
+
+
+def summarization_input(session, selected):
+    header = session.request_header() or {}
+    messages = [session.derive_event_message(session.events[seq]) for seq in selected]
+    result = {"messages": [message for message in messages if message is not None]}
+    for key in ("system", "tools"):
+        if key in header:
+            result[key] = header[key]
+    return result
 
 
 def select(session, start, end):
@@ -42,7 +61,8 @@ async def compact(engine, session, start, end, agent=None, signal=None,
                   manual=False, source_command_id=None, flush=None):
     from dsh.compaction.engine import ManualCompactionError
     from dsh.compaction.native_summary import frame_summary
-    check_cancel(signal)
+    if manual:
+        check_cancel(signal)
     selected = select(session, start, end)
     turn, opening = entry_state(session)
     if opening or (manual and turn is not None):
@@ -61,13 +81,15 @@ async def compact(engine, session, start, end, agent=None, signal=None,
             raise RuntimeError("compaction requires token_meter")
         measured = meter.measure(session)["nodes"]
         if [node["seq"] for node in measured] != list(session.surface.nodes):
-            raise RuntimeError("compaction: stale token measurement")
+            raise SurfaceChangedError("compaction: stale token measurement")
         priced = [node for node in measured if node["seq"] in selected]
-        summary = await engine.summarize(session, selected, agent, signal)
-        check_cancel(signal)
+        shadow_tokens = sum(node["heuristicTokens"] for node in priced)
+        summary = await engine.summarize(summarization_input(session, selected), agent, signal)
         checkpoint = frame_summary(summary["summary"])
         if meter.estimate_message({"role": "user", "content": checkpoint}) >= sum(n["tokens"] for n in priced):
             raise ValueError("summary is not smaller than the shadowed content")
+        if manual:
+            check_cancel(signal)
         current = meter.measure(session)["nodes"]
         try:
             stable = (select(session, start, end) == selected and
@@ -75,12 +97,16 @@ async def compact(engine, session, start, end, agent=None, signal=None,
         except ValueError:
             stable = False
         if not stable:
-            raise ManualCompactionError("changed", "compaction: selected surface changed during summarization")
+            raise SurfaceChangedError("compaction: selected surface changed during summarization")
         stage = "commit"
-        # Shadow prices always use the fixed heuristic, independently of route image pricing.
-        shadow_tokens = sum(meter.estimate_message(session.derive_event_message(session.events[seq]) or {}) for seq in selected)
-        body = dict(identity, **summary, shadowedRange={"start": start, "end": end},
-                    shadowedSeqs=selected, shadowedTokenCount=shadow_tokens)
+        body = dict(identity, summary=summary["summary"], provider=summary["provider"], model=summary["model"],
+                    shadowedRange={"start": start, "end": end}, shadowedSeqs=selected,
+                    shadowedTokenCount=shadow_tokens)
+        for key in ("rawOutput", "maxTokens", "usage"):
+            if key in summary:
+                body[key] = summary[key]
+        if summary.get("llmStreamCall") is True:
+            body["llmStreamCall"] = True
         record = session.append("compaction/summary", body)
         session.append_user_message(checkpoint, surface_op={"op": "replace", "start": start, "end": end},
                                     source=dict(identity, kind="plugin", plugin="compact"),
@@ -93,7 +119,10 @@ async def compact(engine, session, start, end, agent=None, signal=None,
                       shadowedSeqs=selected, shadowedTokenCount=shadow_tokens)
     except BaseException as error:
         failure = error
+        if closing:
+            stage = "commit"
         if not closing:
+            closing = True
             try:
                 session.append("compaction/end", dict(lifecycle, error=str(error)))
                 closed = True
@@ -102,14 +131,18 @@ async def compact(engine, session, start, end, agent=None, signal=None,
     flush_failure = None
     if closed and flush is not None:
         try:
-            if not await flush():
-                raise RuntimeError("no persistence listener acknowledged compaction")
+            await flush()
         except Exception as error:
             flush_failure = error
-    check_cancel(signal)
+    if manual:
+        check_cancel(signal)
     if failure is not None:
-        if manual and isinstance(failure, Exception) and not isinstance(failure, ManualCompactionError):
-            raise ManualCompactionError(stage, "manual compaction failed: " + str(failure), failure)
+        if manual:
+            code = "commit" if stage == "commit" else "changed" if isinstance(failure, SurfaceChangedError) else "summary"
+            message = {"commit": "manual compaction did not commit cleanly",
+                       "changed": "the compacted history changed during manual compaction",
+                       "summary": "manual compaction could not produce a smaller summary"}[code]
+            raise ManualCompactionError(code, message, failure) from failure
         raise failure
     if flush_failure is not None:
         raise ManualCompactionError("persistence", "manual compaction durability checkpoint failed", flush_failure)

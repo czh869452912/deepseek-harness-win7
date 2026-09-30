@@ -1,4 +1,4 @@
-"""Compare actual pinned/native compaction, with one exact reviewed route-key bug."""
+"""Compare pinned/native compaction with exact reviewed route/metadata bugs."""
 import argparse
 import copy
 import json
@@ -12,6 +12,7 @@ BUG_TARGET = 'cd5ef8148158c3a752a658978873241fdf8e2bbc'
 BUG_CASE = dict(mode='embedded-nul-routes', kind='config', config=dict(modelPolicies=[
     dict(provider='a\0b', model='c', maxTokens=1), dict(provider='a', model='b\0c', maxTokens=2)]),
     target=dict(provider='a', model='b\0c'), window=1000)
+SUMMARY_BUG_CASE = dict(mode='transaction-private-fields', kind='transaction', marker=False)
 
 
 def wire(value):
@@ -32,6 +33,24 @@ def reviewed_route_key_difference(left, right, spec, target):
     compact.update(contextWindow=1000, thresholdTokens=800, retainTokens=160)
     expected_right = dict(mode='embedded-nul-routes', config=config, policy=policy, compact=compact, frozen=True)
     return wire(left) == wire(expected_left) and wire(right) == wire(expected_right)
+
+
+def reviewed_summary_metadata_difference(left, right, spec, target):
+    if target != BUG_TARGET or spec != SUMMARY_BUG_CASE:
+        return False
+    expected = dict(mode='transaction-private-fields',
+        inputs=[dict(keys=['messages', 'system'], system='original prefix',
+            text=['important facts ' * 300], routed=dict(provider='old', model='old-model'), sameSignal=True)],
+        outcome=dict(shadowedSeqs=[0], shadowedTokenCount=1208),
+        summaries=[dict(sourceCommandId='real-command', summary=[dict(type='text', text='custom checkpoint')],
+            rawOutput=[dict(type='text', text='raw')], shadowedRange=dict(start=0, end=0), shadowedSeqs=[0],
+            shadowedTokenCount=1208, provider='custom', model='template', sameIdentity=True)],
+        flushes=0, generation=1, nodes=[5, 1],
+        events=[dict(type=kind, error=False) for kind in ('compaction/start', 'compaction/summary', 'compaction/end')])
+    expected_left = copy.deepcopy(expected)
+    expected_left['outcome']['shadowedTokenCount'] = -1
+    expected_left['summaries'][0]['shadowedTokenCount'] = -1
+    return wire(left) == wire(expected_left) and wire(right) == wire(expected)
 
 
 def comparable(row, spec):
@@ -75,7 +94,8 @@ def main():
             observations.append(rows)
         for spec, left, right in zip(specs, *observations):
             status = ('matched' if wire(comparable(left, spec)) == wire(comparable(right, spec))
-                else 'reviewed-upstream-bug' if reviewed_route_key_difference(left, right, spec, target) else 'different')
+                else 'reviewed-upstream-bug' if (reviewed_route_key_difference(left, right, spec, target)
+                    or reviewed_summary_metadata_difference(left, right, spec, target)) else 'different')
             report['cases'].append(dict(mode=spec['mode'], status=status, upstream=left, python=right))
         report['status'] = 'passed' if all(row['status'] in ('matched', 'reviewed-upstream-bug') for row in report['cases']) else 'different'
     except (OSError, ValueError, TypeError, KeyError, RuntimeError, subprocess.SubprocessError) as error:

@@ -68,7 +68,7 @@ async def test_real_auxiliary_http_summary_reuses_prefix_and_flushes_checkpoint(
             with pytest.raises(ManualCompactionError) as failure:
                 await engine.compact_now(agent)
             assert failure.value.code == 'summary'
-            assert 'Model HTTP stream interrupted' in str(failure.value)
+            assert 'Model HTTP stream interrupted' in str(failure.value.cause)
             assert session.derive_messages() == before
             assert not any(event['type'] == 'compaction/summary' for event in session.events)
             assert len(requests) == 1  # No hidden retry of the auxiliary call.

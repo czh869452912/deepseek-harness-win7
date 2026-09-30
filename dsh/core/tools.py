@@ -281,15 +281,68 @@ def _deep_freeze(value: Any) -> Any:
 
 class _FusedSignal:
     def __init__(self, caller: Any, wrapper: Any):
+        from dsh.core.abort import AbortController
+        from dsh.core.cancellation import subscribe_abort
         self._caller = caller
         self._wrapper = wrapper
+        self._controller = AbortController()
+        self._relays = []
+        self._disposed = False
+        self._sync_abort()
+        if not self._controller.signal.aborted:
+            try:
+                self._relays.append(subscribe_abort(caller, self._abort))
+                if not self._controller.signal.aborted:
+                    self._relays.append(subscribe_abort(wrapper, self._abort))
+                if self._controller.signal.aborted:
+                    self.dispose()
+            except Exception:
+                self.dispose()
+                raise
+
+    def _abort(self, reason: Any) -> None:
+        self._controller.abort(reason)
+        self.dispose()
+
+    def _sync_abort(self) -> None:
+        if self._disposed or self._controller.signal.aborted:
+            return
+        # The reference gives an already-aborted wrapper priority. Event
+        # adapters also need this check before their async relay gets a tick.
+        for source in (self._wrapper, self._caller):
+            if ToolsService._is_aborted(source):
+                self._abort(getattr(source, "reason", None))
+                return
 
     def is_set(self) -> bool:
-        return ToolsService._is_aborted(self._caller) or ToolsService._is_aborted(self._wrapper)
+        self._sync_abort()
+        return self._controller.signal.aborted
 
     @property
     def aborted(self) -> bool:
         return self.is_set()
+
+    @property
+    def reason(self) -> Any:
+        self._sync_abort()
+        return self._controller.signal.reason
+
+    def add_listener(self, event: str, callback: Callable[..., Any]) -> Callable[[], None]:
+        self._sync_abort()
+        return self._controller.signal.add_listener(event, callback)
+
+    addEventListener = add_listener
+
+    def remove_listener(self, event: str, callback: Callable[..., Any]) -> None:
+        self._controller.signal.remove_listener(event, callback)
+
+    removeEventListener = remove_listener
+
+    def dispose(self) -> None:
+        self._disposed = True
+        relays, self._relays = self._relays, []
+        for detach in relays:
+            detach()
 
 
 class _ToolLayer:
@@ -1410,10 +1463,14 @@ class ToolsService:
         fused_signal = (exec_input._caller_signal if wrapper_signal is exec_input._caller_signal
                         else _FusedSignal(exec_input._caller_signal, wrapper_signal))
         if self._is_aborted(fused_signal):
+            if isinstance(fused_signal, _FusedSignal):
+                fused_signal.dispose()
             return self._aborted_before_result()
         exec_input.signal = fused_signal
         tool = self.get_tool(exec_input.name, exec_input.agent)
         if tool is None:
+            if isinstance(fused_signal, _FusedSignal):
+                fused_signal.dispose()
             exec_input.signal = wrapper_signal
             return _error_result(ToolNotFoundError(exec_input.name))
         try:
@@ -1444,6 +1501,8 @@ class ToolsService:
                         tool.name, ["output projection failed: %s" % _error_message(error)])
                 return _error_result(error).freeze()
         finally:
+            if isinstance(fused_signal, _FusedSignal):
+                fused_signal.dispose()
             exec_input.signal = wrapper_signal
 
     def _normalize_dispatch_result(self, exec_input: ToolRunContext, raw: Any) -> ToolExecutionResult:

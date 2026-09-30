@@ -9,6 +9,8 @@
 
 后续已接通标准库 Python 插件的本地目录/ZIP 安装与真实 Loader 激活，实验描述、进程锁、事务恢复及验证边界见 [本地交付实施记录](2026-09-30-python-plugin-local-delivery.md)。下文关于未实现 ZIP 的陈述保留为本记录原始基线，不代表最新实现状态。
 
+后续已移除 Workflow/Ralph 占位成功，接通真实运行句柄、子代理调度、Session 记录与原生固定 Ralph 编排；通用 JS 脚本仍未完成，具体实施和验证边界见 [Workflow/Ralph 进展](2026-09-30-workflow-native-ralph-progress.md)。下文占位实现描述保留为本记录原始基线。
+
 ## 运行架构
 
 - Host、Cordis 服务、工具和第三方 Host 插件继续采用 Python 3.8.10，保持 Win7 SP1 目标。

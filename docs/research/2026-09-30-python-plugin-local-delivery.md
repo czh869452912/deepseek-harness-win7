@@ -125,6 +125,10 @@ Python 3.8 compileall 与 git diff --check 通过。这些不认证全项目上�
 
 ## 尚未完成
 
+后续 Workflow/Ralph 占位成功已移除，真实运行与原生固定 Ralph 编排的验证见
+[Workflow/Ralph 进展](2026-09-30-workflow-native-ralph-progress.md)。下面保留本批次原始
+状态，通用 JS 脚本合同等未完成项仍须继续迁移。
+
 仍须迁移原版 Workflow 的真实执行和 JS 输入合同、JS Host 动态能力、Inspect/Guard
 及其他尚未验收模块。插件后续还需创造模式源码导出、版本化升级与失败回退、锁定依赖闭包、
 可选 client 的浏览器联合旅程及实际 Portable/Win7 验证。GitHub Release 下载、npm/PyPI

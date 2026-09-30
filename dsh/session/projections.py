@@ -1,4 +1,5 @@
 """Pinned session projection drive; keyword registration adapts older domains."""
+import copy
 import math
 from typing import Any, Callable, Dict, Optional
 from weakref import WeakKeyDictionary
@@ -208,8 +209,14 @@ class SessionProjectionRegistry(Service):
         rows = {}
         for key, registration in self._registrations.items():
             cell = self._cell(registration, session)
+            invalid = object()
+            value = snapshot_json_value(cell.state, default=invalid)
+            if value is invalid:
+                # Keep non-JSON state visible for the cache's lossless boundary;
+                # converting a bad state to null would persist a false value.
+                value = copy.deepcopy(cell.state)
             rows[key] = dict(ver=registration.definition["stateVersion"],
-                             seq=cell.observed_seq, val=snapshot_json_value(cell.state))
+                             seq=cell.observed_seq, val=value)
         return rows
 
     def restore_floor(self, checkpoint):

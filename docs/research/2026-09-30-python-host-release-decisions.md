@@ -5,6 +5,8 @@
 
 本文落实 [Python 插件交付评估](2026-09-30-python-plugin-distribution-assessment.md) 的后续方向，记录本次实际修复和剩余工作。它不替代迁移任务验收，不认证全项目 parity，也不把设计中的安装命令写成现有使用说明。
 
+后续已完成按 backend/routes 的动态注入和缓存写入时刻修复，具体双侧观察及关闭警告边界见 [Storage/cache 对齐记录](2026-09-30-storage-routes-cache-write-points.md)。下文验证结果保留为上一轮的历史范围。
+
 ## 运行架构
 
 - Host、Cordis 服务、工具和第三方 Host 插件继续采用 Python 3.8.10，保持 Win7 SP1 目标。

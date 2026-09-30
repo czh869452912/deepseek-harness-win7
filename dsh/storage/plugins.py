@@ -1,5 +1,6 @@
 """Separately owned storage providers for canonical bundle composition."""
 from dsh.cordis.plugin import Plugin
+from dsh.cordis.schema import Schema
 from dsh.storage.storage_json import JsonStorageBackend
 from dsh.storage.domain_impl import DomainFacility
 
@@ -25,15 +26,24 @@ class StorageJsonPlugin(Plugin):
 
 class StorageDomainPlugin(Plugin):
     id = "storage-domain"
-    inject = ["storage", "storageBackend:json"]
+    inject = ["storage"]
+    Config = Schema.object({
+        "backend": Schema.string().required(),
+        "routes": Schema.dict(Schema.string()).default({}),
+    })
 
-    def apply(self, ctx):
-        facility = DomainFacility(ctx, self.config)
-        unmount = ctx.get("storage").mount("domain", facility)
-        ctx.set_service("storageDomain", facility)
+    async def apply(self, ctx):
+        backends = dict.fromkeys([self.config["backend"]] + list(self.config["routes"].values()))
 
-        async def close():
-            await facility.close_all()
-            unmount()
+        def mount(domain_ctx):
+            facility = DomainFacility(domain_ctx, self.config)
+            unmount = domain_ctx.get("storage").mount("domain", facility)
+            domain_ctx.set_service("storageDomain", facility)
 
-        ctx.effect(lambda: close)
+            async def close():
+                await facility.close_all()
+                unmount()
+
+            domain_ctx.effect(lambda: close)
+
+        await ctx.inject(["storageBackend:" + name for name in backends], mount)

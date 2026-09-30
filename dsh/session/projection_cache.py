@@ -83,17 +83,33 @@ class SessionProjectionCache:
     async def _put(self, header, rows):
         await self.table.put(header.id, _record({"identity": _identity(header), "rows": rows}))
 
-    async def write(self, session):
-        rows = copy.deepcopy(self.ctx.get("sessionProjections").checkpoint(session))
-        self._clean(session)
-        sessions = self.ctx.get("sessions")
-        if sessions.get(session.id) is session:
-            await sessions.flush(session)
-        await self._put(session.header, rows)
+    def write(self, session):
+        # JS async functions capture this cut and reset the counter at call time.
+        try:
+            rows = self.ctx.get("sessionProjections").checkpoint(session)
+            self._clean(session)
+            sessions = self.ctx.get("sessions")
+            live = sessions.get(session.id) is session
+        except Exception as error:
+            async def failed(reason=error):
+                raise reason
+            return asyncio.create_task(failed())
+
+        async def commit():
+            if live:
+                await sessions.flush(session)
+            await self._put(session.header, rows)
+
+        # Enter the event loop at call time so an explicitly awaited write
+        # cannot overtake an earlier fire-and-forget creation checkpoint.
+        return asyncio.create_task(commit())
 
     def _schedule(self, coroutine):
         if self.closed:
-            coroutine.close()
+            if asyncio.isfuture(coroutine):
+                coroutine.cancel()
+            else:
+                coroutine.close()
             return
 
         async def soft():

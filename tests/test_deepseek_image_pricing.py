@@ -38,8 +38,8 @@ async def test_registered_route_prices_text_projection_and_oldest_image_offload(
         message = {"role": "user", "content": [{"type": "image", "attachment": ref} for ref in refs]}
         session.append_user_message(message["content"])
         meter = TokenMeter(ctx)
-        assert meter.measure(session)["surface_tokens"] == estimate_message(message, iter(vision))
+        assert meter.measure(session)["surfaceTokens"] == estimate_message(message, iter(vision))
         session.append_request_header({"config": {"provider": "deepseek-official", "model": "deepseek-v4-flash"}})
-        assert meter.measure(session)["surface_tokens"] == estimate_message(message, iter(text))
+        assert meter.measure(session)["surfaceTokens"] == estimate_message(message, iter(text))
     finally:
         await ctx.fiber.dispose()

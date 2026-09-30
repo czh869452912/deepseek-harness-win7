@@ -4,6 +4,10 @@
 固定上游为 `cd5ef8148158c3a752a658978873241fdf8e2bbc`。环境为当前 Windows 与
 原生 Python 3.8.10；本记录不认证整个 Guard、全项目或 Win7。
 
+后续 TokenMeter 重放、投影和原版输入重复计量缺陷的迁移见
+[TokenMeter 进展](2026-10-01-token-meter-replay-progress.md)。该轮将 JSON 文本 helper
+共享给计量与请求头比较，并重新验证本记录的重复调用检测双侧门禁。
+
 ## 已修复的迁移版偏差
 
 - 参数规范化使用已有 Cordis ECMAScript 数值与键枚举 helpers，输出紧凑 JSON。

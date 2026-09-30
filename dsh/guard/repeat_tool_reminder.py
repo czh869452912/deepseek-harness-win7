@@ -9,12 +9,9 @@ import weakref
 from typing import Any, Dict, List, Optional
 from dsh.cordis.plugin import Plugin
 from dsh.cordis.schema import Schema
-from dsh.cordis.utils import _js_number_to_string, _js_own_enumerable_keys, _js_string_length
+from dsh.cordis.utils import _js_own_enumerable_keys, _js_string_length
+from dsh.cordis.json_text import normalize_json_string as _normalize_string, stringify_json as _stringify
 from dsh.llm.message import create_user_message
-
-
-def _normalize_string(value: str) -> str:
-    return value.encode("utf-16-le", "surrogatepass").decode("utf-16-le", "surrogatepass")
 
 
 def sort_json_value(value: Any) -> Any:
@@ -29,25 +26,6 @@ def sort_json_value(value: Any) -> Any:
             normalized, key=lambda item: item.encode("utf-16-be", "surrogatepass"))}
         return {key: ordered[key] for key in _js_own_enumerable_keys(ordered)}
     return value
-
-
-def _stringify(value: Any) -> str:
-    if value is None:
-        return "null"
-    if isinstance(value, bool):
-        return "true" if value else "false"
-    if isinstance(value, (int, float)):
-        number = _js_number_to_string(value)
-        return "null" if number in ("NaN", "Infinity", "-Infinity") else number
-    if isinstance(value, str):
-        rendered = json.dumps(_normalize_string(value), ensure_ascii=False)
-        return rendered.encode("utf-8", "backslashreplace").decode("utf-8")
-    if isinstance(value, list):
-        return "[" + ",".join(_stringify(item) for item in value) + "]"
-    if isinstance(value, dict):
-        return "{" + ",".join(_stringify(key) + ":" + _stringify(item)
-                              for key, item in value.items()) + "}"
-    raise TypeError("repeat-tool-reminder: arguments must be parsed JSON or a raw string")
 
 
 def canonicalize(args: Any) -> str:

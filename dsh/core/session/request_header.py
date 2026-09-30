@@ -4,7 +4,7 @@ Ported 1:1 from reference packages/core/session/src/request-header.ts.
 Compatible with Python 3.8.10 and Windows 7 SP1.
 """
 
-import json
+from dsh.cordis.json_text import stringify_json
 from typing import Any, Dict, List, Optional, Sequence
 
 
@@ -53,12 +53,10 @@ def _same_schema(a: Any, b: Any) -> bool:
     Mirrors reference `sameSchema` (`JSON.stringify(a) === JSON.stringify(b)`):
     key ORDER is part of the compared text, so two schemas carrying the same
     entries in a different insertion order are NOT equal (JSON.stringify keeps
-    insertion order). `sort_keys` would have normalized that away.
+    insertion order except integer-index keys). Number and UTF-16 string
+    representations follow ECMAScript; sorting every key would lose order.
     """
-    return (
-        json.dumps(a, separators=(",", ":"), ensure_ascii=False)
-        == json.dumps(b, separators=(",", ":"), ensure_ascii=False)
-    )
+    return stringify_json(a) == stringify_json(b)
 
 
 def header_equals(a: Dict[str, Any], b: Dict[str, Any]) -> bool:

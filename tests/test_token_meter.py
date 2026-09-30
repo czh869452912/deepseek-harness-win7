@@ -43,12 +43,14 @@ def test_token_meter_measure_session():
     })
 
     session.append_user_message("Please help me.")
+    session.append("step/start", dict(turn=1, step=1))
     session.append_assistant_message({"role": "assistant", "content": "Sure, what do you need?"})
+    session.append("step/end", dict(turn=1, step=1))
 
     measurement = meter.measure(session)
-    assert measurement["total_tokens"] > 0
-    assert measurement["header_tokens"] > 0
-    assert measurement["surface_tokens"] > 0
+    assert measurement["totalTokens"] > 0
+    assert estimate_header(session.request_header()) > 0
+    assert measurement["surfaceTokens"] > 0
     assert len(measurement["nodes"]) == 2  # 2 surface nodes (user, assistant)
     assert measurement["nodes"][0]["tokens"] > 0
     assert measurement["nodes"][1]["tokens"] > 0

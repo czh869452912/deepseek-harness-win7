@@ -166,7 +166,7 @@ class CompactionEngine(Service):
             combined.maintenance = maintenance
             from dsh.compaction.transaction import check_cancel
             check_cancel(combined)
-            measurement = self.ctx.get("token_meter").measure(session)
+            measurement = self.ctx.get("tokenMeter").measure(session)
             rng = select_compactable_range(session, measurement, retain_tokens=0)
             if not rng:
                 return None
@@ -198,17 +198,17 @@ class CompactionEngine(Service):
                     target_session = next(iter(store._sessions.values()))
 
         if target_session and trigger in ("pressure", "context-overflow"):
-            meter = self.ctx.get("token_meter")
+            meter = self.ctx.get("tokenMeter")
             if meter is None:
                 raise RuntimeError("compaction requires token_meter")
             measurement = meter.measure(target_session)
-            if trigger == "pressure" and measurement["total_tokens"] <= self.threshold_tokens:
+            if trigger == "pressure" and measurement["totalTokens"] <= self.threshold_tokens:
                 return {"status": "no_compaction_needed"}
             pruner = self.ctx.get("toolResultPruner")
             if pruner is not None:
                 pruner.prune_session(target_session)
                 measurement = meter.measure(target_session)
-                if trigger == "pressure" and measurement["total_tokens"] <= self.threshold_tokens:
+                if trigger == "pressure" and measurement["totalTokens"] <= self.threshold_tokens:
                     return {"status": "no_compaction_needed"}
             retain = 0 if trigger == "context-overflow" else self.retain_tokens
             rng = select_compactable_range(target_session, measurement, retain_tokens=retain)

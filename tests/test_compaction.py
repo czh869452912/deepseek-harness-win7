@@ -77,26 +77,30 @@ async def test_compact_surface_region():
     session = Session(session_id="compact-region-test", ctx=ctx)
 
     session.append_user_message("Step 1: start project" * 100)
+    session.append("step/start", dict(turn=1, step=1))
     session.append_assistant_message({"role": "assistant", "content": "Started"})
+    session.append("step/end", dict(turn=1, step=1))
     session.append_user_message("Step 2: build code")
-    session.append_assistant_message({"role": "assistant", "content": "Built"})
+    session.append("step/start", dict(turn=1, step=2))
+    session.append_assistant_message({"role": "assistant", "content": "Built"}, step=2)
+    session.append("step/end", dict(turn=1, step=2))
 
-    assert session.surface.nodes == [0, 1, 2, 3]
+    assert session.surface.nodes == [0, 2, 4, 6]
 
-    # Compact range [0, 1]
-    result = await engine.compact_surface_region(session, start=0, end=1, manual=True)
+    # Compact the first user/assistant pair, whose surface seqs are [0, 2].
+    result = await engine.compact_surface_region(session, start=0, end=2, manual=True)
     assert result["startSeq"] is not None
     assert result["summarySeq"] is not None
     assert result["endSeq"] is not None
     assert "condensed summary" in str(result["summary"])
 
-    # Surface should now contain the replacement user message in place of [0, 1]
+    # Replace the first pair while preserving the second pair.
     assert session.surface.replace_generation == 1
-    # Nodes should be [replacement_seq, 2, 3]
+    # Nodes should be [replacement_seq, 4, 6].
     nodes = session.surface.nodes
     assert len(nodes) == 3
-    assert nodes[1] == 2
-    assert nodes[2] == 3
+    assert nodes[1] == 4
+    assert nodes[2] == 6
 
     # Derived messages should start with the summary
     messages = session.derive_messages()
@@ -124,9 +128,13 @@ async def test_automatic_pressure_compaction():
 
     session.append("turn/start", {"turn": 1})
     session.append_user_message("Prompt 1 with some text to consume tokens" * 100)
+    session.append("step/start", dict(turn=1, step=1))
     session.append_assistant_message({"role": "assistant", "content": "Response 1 with text"})
+    session.append("step/end", dict(turn=1, step=1))
     session.append_user_message("Prompt 2 with some text to consume tokens")
-    session.append_assistant_message({"role": "assistant", "content": "Response 2 with text"})
+    session.append("step/start", dict(turn=1, step=2))
+    session.append_assistant_message({"role": "assistant", "content": "Response 2 with text"}, step=2)
+    session.append("step/end", dict(turn=1, step=2))
 
     # Check compaction
     comp_result = await engine.compact_if_needed(trigger="pressure")

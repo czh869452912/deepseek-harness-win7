@@ -54,7 +54,7 @@ async def compact(engine, session, start, end, agent=None, signal=None,
         identity["sourceCommandId"] = source_command_id
     lifecycle = dict(identity, turn=None if manual else turn)
     opening = session.append("compaction/start", lifecycle)
-    meter = engine.ctx.get("token_meter")
+    meter = engine.ctx.get("tokenMeter")
     closing, closed, failure, stage, result = False, False, None, "summary", None
     try:
         if meter is None:

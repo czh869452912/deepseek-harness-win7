@@ -117,7 +117,7 @@ class ToolResultPruner(Service):
         """
         nodes = list(session.surface.nodes)
         events = session.events
-        meter = self.ctx.get("token_meter") if self.ctx and hasattr(self.ctx, "has") and self.ctx.has("token_meter") else None
+        meter = self.ctx.get("tokenMeter") if self.ctx and hasattr(self.ctx, "has") and self.ctx.has("tokenMeter") else None
 
         pruned_entries: List[Dict[str, Any]] = []
         chars_removed_total = 0

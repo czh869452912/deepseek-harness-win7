@@ -152,6 +152,7 @@ class DomainImpl:
         self._global_handle: Optional[DomainGlobal] = None
 
         self._operation_tail: Optional[asyncio.Future] = None
+        self._disposal: Optional[asyncio.Task] = None
         self._disposing = False
         self._closed = False
 
@@ -234,10 +235,14 @@ class DomainImpl:
         self._operation_tail = task
         return await fut
 
-    async def close(self) -> None:
-        if self._closed:
-            return
-        self._disposing = True
+    def close(self) -> asyncio.Future:
+        if self._disposal is None:
+            self._disposing = True
+            self._disposal = asyncio.create_task(self._run_close())
+        # A cancelled waiter must not cancel the domain-owned drain or release.
+        return asyncio.shield(self._disposal)
+
+    async def _run_close(self) -> None:
         if self._operation_tail:
             try:
                 await self._operation_tail
@@ -404,8 +409,7 @@ class DomainFacility:
         return self._domains.get(name)
 
     async def close_all(self) -> None:
-        for domain in list(self._domains.values()):
-            await domain.close()
+        await asyncio.gather(*(domain.close() for domain in list(self._domains.values())))
 
     def __call__(self, name_or_spec: Any) -> Any:
         if isinstance(name_or_spec, str):

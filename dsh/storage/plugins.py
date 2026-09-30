@@ -33,7 +33,7 @@ class StorageDomainPlugin(Plugin):
         ctx.set_service("storageDomain", facility)
 
         async def close():
-            unmount()
             await facility.close_all()
+            unmount()
 
         ctx.effect(lambda: close)

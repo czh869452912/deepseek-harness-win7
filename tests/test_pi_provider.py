@@ -66,7 +66,7 @@ async def test_stored_pi_key_precedes_reference_and_grant_does_not_fall_back(tmp
     from dsh.credentials.credentials import credential_key
 
     ctx = Context()
-    ctx.set_service('launchEnvironment', LaunchEnvironmentSnapshot([dict(source='process', values=dict(OPENAI_API_KEY='ambient'))]))
+    ctx.set_service('launchEnvironment', LaunchEnvironmentSnapshot([dict(source='project-env', values=dict(OPENAI_API_KEY='ambient'))]))
     credentials = CredentialsService(ctx, credentials_file=str(tmp_path / 'credentials.yaml'))
     ctx.set_service('credentials', credentials)
     try:

@@ -14,7 +14,7 @@ import threading
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 import yaml
 
-from dsh.cordis.environment import LaunchEnvironmentSnapshot, resolve_dsh_home
+from dsh.cordis.environment import LaunchEnvironmentEntry, launch_environment_of, resolve_dsh_home
 from dsh.cordis.file_lock import FileLock
 from dsh.cordis.plugin import Plugin
 from dsh.credentials.credentials import (
@@ -325,26 +325,22 @@ class CredentialsService(CredentialProvider):
     def close(self) -> None:
         self._closed = True
 
+    def _environment_entry(self, ref: str, sources: List[str]) -> Optional[LaunchEnvironmentEntry]:
+        entry = launch_environment_of(self.ctx).get_from(ref, sources)
+        # Canonical boot snapshots return JSON entries; the public helper also
+        # accepts the typed snapshot used by programmatic Context consumers.
+        if isinstance(entry, dict):
+            entry = LaunchEnvironmentEntry(entry["value"], entry["source"], entry.get("path"))
+        return entry if entry is not None and entry.value else None
+
     def _inherited(self, ref: str) -> Optional[str]:
-        """Check process environment for inherited reference value."""
-        if self.ctx and hasattr(self.ctx, "has") and self.ctx.has("launch_environment"):
-            launch_env: LaunchEnvironmentSnapshot = self.ctx.get("launch_environment")
-            entry = launch_env.get_from(ref, ["process"])
-            if entry and entry.value and len(entry.value) > 0:
-                return entry.value
-        val = os.environ.get(ref)
-        if val and len(val) > 0:
-            return val
-        return None
+        """Read only the inherited layer of the launch snapshot."""
+        entry = self._environment_entry(ref, ["process"])
+        return entry.value if entry is not None else None
 
     def _dotenv_fallback(self, ref: str) -> Optional[Any]:
         """Check project and user .env fallbacks."""
-        if self.ctx and hasattr(self.ctx, "has") and self.ctx.has("launch_environment"):
-            launch_env: LaunchEnvironmentSnapshot = self.ctx.get("launch_environment")
-            entry = launch_env.get_from(ref, ["project-env", "user-env"])
-            if entry and entry.value and len(entry.value) > 0:
-                return entry
-        return None
+        return self._environment_entry(ref, ["project-env", "user-env"])
 
     def _assert_unshadowed(self, ref_name: str, verb: str) -> None:
         if self._inherited(ref_name) is not None:

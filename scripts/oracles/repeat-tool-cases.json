@@ -1,0 +1,16 @@
+[
+  {"mode":"numeric-forms","config":{"thresholds":[2,3]},"turns":[[["probe","{\"q\":1}"],["probe","{\"q\":1.0}"],["probe","{\"q\":1e0}"]]]},
+  {"mode":"deep-key-order","config":{"thresholds":[2]},"turns":[[["probe","{\"z\":[{\"b\":2,\"a\":1}],\"a\":0}"],["probe","{\"a\":0,\"z\":[{\"a\":1,\"b\":2}]}"]]]},
+  {"mode":"index-key-order","config":{"thresholds":[2,3]},"turns":[[["probe","{\"10\":1,\"2\":2,\"01\":3}"],["probe","{\"2\":2,\"01\":3,\"10\":1}"],["probe","{\"01\":3,\"10\":1,\"2\":2}"]]]},
+  {"mode":"unicode-preview","config":{"thresholds":[2,3],"argumentsPreviewChars":7},"turns":[[["probe","{\"q\":\"\ud83d\ude00\ud800\"}"],["probe","{\"q\":\"\ud83d\ude00\ud800\"}"],["probe","{\"q\":\"\ud83d\ude00\ud800\"}"]]]},
+  {"mode":"utf16-key-order","config":{"thresholds":[2,3]},"turns":[[["probe","{\"\ue000\":2,\"\ud800\udc00\":1}"],["probe","{\"\ud800\udc00\":1,\"\ue000\":2}"],["probe","{\"\ue000\":2,\"\ud800\udc00\":1}"]]]},
+  {"mode":"excluded-transparent","config":{"thresholds":[2],"exclude":["other"]},"turns":[[["probe","{}"],["other","{}"],["probe","{}"]]]},
+  {"mode":"changed-tracked-reset","config":{"thresholds":[2]},"turns":[[["probe","{}"],["other","{}"],["probe","{}"]]]},
+  {"mode":"custom-threshold","config":{"thresholds":[4,2]},"turns":[[["probe","{}"],["probe","{}"],["probe","{}"],["probe","{}"]]]},
+  {"mode":"default-escalation","config":{},"turns":[[["probe","{\"q\":1}"],["probe","{\"q\":1}"],["probe","{\"q\":1}"],["probe","{\"q\":1}"],["probe","{\"q\":1}"]]]},
+  {"mode":"user-reset","config":{},"turns":[[["probe","{}"],["probe","{}"]],[["probe","{}"]]]},
+  {"mode":"denied-counts","config":{"thresholds":[2]},"policy":"deny","turns":[[["probe","{}"],["probe","{}"]]]},
+  {"mode":"downstream-block","config":{"thresholds":[2]},"policy":"block","turns":[[["probe","{}"],["probe","{}"]]]},
+  {"mode":"downstream-replace","config":{"thresholds":[2]},"policy":"replace","turns":[[["probe","{}"],["probe","{}"]]]},
+  {"mode":"proto-key-loss","config":{"thresholds":[2]},"turns":[[["probe","{\"__proto__\":{\"q\":1},\"ok\":true}"],["probe","{\"__proto__\":{\"q\":2},\"ok\":true}"]]]}
+]

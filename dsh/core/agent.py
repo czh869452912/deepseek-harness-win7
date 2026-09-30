@@ -12,6 +12,7 @@ from dsh.cordis.service import Service
 from dsh.core.consumed_work import ConsumedWork, fold_consumed_work
 from dsh.core.inbox import Inbox
 from dsh.core.session import Session, SessionHeader
+from dsh.llm.message import create_user_message
 
 _CURRENT_INITIATOR: contextvars.ContextVar[Optional["Agent"]] = contextvars.ContextVar(
     "dsh_initiator_agent", default=None
@@ -139,7 +140,7 @@ class Agent:
         """
         Route input to inbox boundary and optionally wake driver.
         """
-        msg_dict = {"role": "user", "content": message} if isinstance(message, str) else dict(message)
+        msg_dict = create_user_message(dict(content=message)) if isinstance(message, str) else dict(message)
         waking_after_abort = wakeup and self._phase_kind != "idle" and self.is_cancelled()
         resolved_target = "next-turn" if waking_after_abort else target
 

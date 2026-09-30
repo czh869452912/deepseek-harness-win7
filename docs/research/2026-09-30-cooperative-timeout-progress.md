@@ -101,6 +101,9 @@ Python 3.8 compileall、git diff --check、migration.py check 通过；ready 退
 原版接收 JSON.parse 数值并通过 JSON.stringify 规范化，两者为相同 Number。
 本轮仅记录这个待修复项，没有把 Repeat Tool Reminder 宣称为已验收。
 
+上述后续偏差现已修复，并补齐真实 AgentLoop 与源端原样测试；同时发现并修正了
+原版 `__proto__` 丢键误报，见 [Repeat Tool Reminder 进展](2026-10-01-repeat-tool-reminder-progress.md)。
+
 发布方向继续遵循 Python 插件交付评估和已有本地交付实现：固定 Python 3.8.10
 Portable，本地目录/ZIP 经 profile 与 Loader 安装，后续完成创造模式导出、升级
 回退、离线依赖闭包与统一获取。Node/Vitest 仅用于开发比较。本轮未构建或发布

@@ -98,6 +98,9 @@ tsx，开发环境在被忽略的 `reference/node_modules/tsx` 下链接已有
 本轮涉及的原版 Tools 源测试后为 221 passed，未修改原版源文件。
 Node/TypeScript/Vitest/tsx 仅用于开发比较，不进入产品 Host 依赖。
 
+后续工具超时已从直接取消 coroutine 改为原版协作 deadline，并与真实 Tools 和
+标准预设进行联合验证；具体范围见 [Cooperative Timeout 进展](2026-09-30-cooperative-timeout-progress.md)。
+
 另执行了实际句柄的取消等待冒烟：让子代理释放等待可控事件，取消首个 dispose 等待者，
 共享释放保持未取消，放行后另一等待者完成，子代理只释放一次。
 

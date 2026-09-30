@@ -22,7 +22,7 @@ Options:
 
 Commands:
   web [options] [args...]    boot the web profile (alias of --profile web); the web app's own flags follow
-  plugin [options] [args...] manage a profile's plugins by forwarding the remaining arguments to pnpm in the profile directory
+  plugin [options] [args...] install local Python directories/ZIPs; other package commands use pnpm
 
 Examples:
   dsh --profile web                          boot the web profile (same as: dsh web)
@@ -31,6 +31,7 @@ Examples:
   dsh --profile tui --resume <session>       arguments after the launcher flags reach the app
   dsh --profile web --help                   the web app's own flags and help
   dsh plugin --profile tui add <package>     install a plugin into the tui profile
+  dsh plugin --profile web add ./plugin.zip  install a Python plugin without Node/pnpm (stop the profile first)
 """
 
 

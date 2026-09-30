@@ -1192,6 +1192,10 @@ def _entry_from_package_json(pkg_json_path: str, subpath: Optional[str] = None) 
             manifest = json.load(f)
         pkg_dir = os.path.dirname(pkg_json_path)
         exports = manifest.get("exports")
+        if subpath is None and isinstance(manifest.get("dsh"), dict) and "python" in manifest["dsh"]:
+            # The manifest identifies the Python entry, including its export.
+            # Validation happens on import and must not fall through to a JS mock.
+            return pkg_json_path
         if subpath is not None:
             # The exports map is a path computation: Node resolves `./startup`
             # to its target without probing the filesystem, and the import that
@@ -1690,6 +1694,16 @@ class EntryTree:
                     resolved_path = resolved_path + ".py"
                 else:
                     raise FileNotFoundError(f"Cannot find module '{name}' at {resolved_path}")
+
+            if os.path.basename(resolved_path) == "package.json":
+                from dsh.boot.python_package import import_package
+                plugin, module = import_package(os.path.dirname(resolved_path))
+                self._last_loaded_module = module.__name__
+                loader_inst = getattr(self.ctx, "loader", None) or self
+                if hasattr(loader_inst, "internal"):
+                    from pathlib import Path
+                    loader_inst.internal.loadCache[Path(os.path.realpath(resolved_path)).as_uri()] = module
+                return plugin
 
             if resolved_path.endswith(".py"):
                 mod_name = f"dynamic_plugin_{abs(hash(resolved_path))}"

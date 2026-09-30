@@ -1,0 +1,16 @@
+{
+  "name": "@example/python-echo",
+  "version": "0.1.0",
+  "license": "MIT",
+  "dsh": {
+    "bundle": {"patch": "cordis.patch.yml"},
+    "python": {
+      "apiVersion": 1,
+      "sourceRoot": "python",
+      "entry": "echo.plugin:EchoPlugin",
+      "minPythonVersion": [3, 8, 10],
+      "minHostVersion": [0, 1, 0],
+      "dependencies": []
+    }
+  }
+}

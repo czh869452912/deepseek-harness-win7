@@ -7,6 +7,8 @@
 
 后续已完成按 backend/routes 的动态注入和缓存写入时刻修复，具体双侧观察及关闭警告边界见 [Storage/cache 对齐记录](2026-09-30-storage-routes-cache-write-points.md)。下文验证结果保留为上一轮的历史范围。
 
+后续已接通标准库 Python 插件的本地目录/ZIP 安装与真实 Loader 激活，实验描述、进程锁、事务恢复及验证边界见 [本地交付实施记录](2026-09-30-python-plugin-local-delivery.md)。下文关于未实现 ZIP 的陈述保留为本记录原始基线，不代表最新实现状态。
+
 ## 运行架构
 
 - Host、Cordis 服务、工具和第三方 Host 插件继续采用 Python 3.8.10，保持 Win7 SP1 目标。

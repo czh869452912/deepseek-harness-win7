@@ -8,6 +8,8 @@
 
 后续采用的发布方向、凭据/存储关闭修复及新回归结果见 [Python Host 发布实施记录](2026-09-30-python-host-release-decisions.md)。本文的历史基线、验证结果和未实施能力仍按当时事实保留。
 
+本地目录/ZIP、实验 Python 入口与 API 的后续实现见 [本地交付实施记录](2026-09-30-python-plugin-local-delivery.md)。下文仍保留原分析基线；当前实现范围和剩余依赖、升级、client 与发行验证以该记录为准。
+
 ## 1. 结论
 
 建议采用 **Python Host 插件为主体、Web 客户端资源可选、统一包描述与 Cordis 装配** 的路线。

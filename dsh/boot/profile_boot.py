@@ -205,7 +205,7 @@ async def compose_profile(
     )
 
 
-async def run_profile(options: Dict[str, Any]) -> Dict[str, Any]:
+async def _run_profile(options: Dict[str, Any]) -> Dict[str, Any]:
     """
     Boot one profile invocation end to end matching TS runProfile.
     """
@@ -269,6 +269,26 @@ async def run_profile(options: Dict[str, Any]) -> Dict[str, Any]:
 
     def host_setup(host_ctx: Context) -> None:
         app["current"] = host_ctx
+        holder = options.get("_python_profile_context")
+        if holder is not None:
+            holder["ctx"] = host_ctx
+        lease = options.get("_python_profile_lease")
+        if lease is not None:
+            def release_after_shutdown():
+                import asyncio
+                settlement = getattr(host_ctx.fiber, "_disposal_task", None)
+                if settlement is not None:
+                    settlement.add_done_callback(lambda _: lease.close())
+                else:
+                    async def release():
+                        try:
+                            await host_ctx.fiber.await_settled()
+                        finally:
+                            lease.close()
+                    # Keep this observer outside the fiber's settlement set.
+                    asyncio.get_running_loop().create_task(release())
+
+            host_ctx.disposable(release_after_shutdown, "python-profile-lease")
         host_ctx.provide(DSH_LAUNCH_ENVIRONMENT_KEY, environment)
         provide_cmdline(host_ctx, {
             "args": args,
@@ -316,6 +336,31 @@ async def run_profile(options: Dict[str, Any]) -> Dict[str, Any]:
         await shutdown.wait()
 
     return {"ctx": ctx, "shutdown": shutdown}
+
+
+async def run_profile(options: Dict[str, Any]) -> Dict[str, Any]:
+    from dsh.boot.profile import resolve_profile_dir
+    from dsh.boot.profile_lease import ProfileLease
+    from dsh.boot.python_plugins import JOURNAL, recover
+
+    directory = resolve_profile_dir(options["profile"], options.get("dshHome", options.get("dsh_home")))
+    if os.path.isfile(os.path.join(directory, JOURNAL)):
+        with ProfileLease(directory, exclusive=True):
+            recover(directory)
+    lease = ProfileLease(directory)
+    holder: Dict[str, Any] = {}
+    try:
+        result = await _run_profile(dict(options, _python_profile_lease=lease, _python_profile_context=holder))
+        return result
+    except BaseException:
+        try:
+            ctx = holder.get("ctx")
+            if ctx is not None:
+                await ctx.fiber.dispose()
+                await ctx.fiber.await_settled()
+        finally:
+            lease.close()
+        raise
 
 
 # CamelCase aliases

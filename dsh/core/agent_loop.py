@@ -792,6 +792,18 @@ class AgentLoopService:
 
         from dsh.llm.agent_request import mark_agent_loop_request
         request_obj = mark_agent_loop_request(request_obj)
+
+        async def recover_request(failure):
+            recovery = await agent.ctx.waterfall(
+                "agent/request-error",
+                {"agent": agent, "error": failure["message"], "failure": failure,
+                 "provider": provider_name, "turn": turn, "step": step,
+                 "retryPolicy": retry_policy, "signal": getattr(agent, "_cancel_event", None)},
+            )
+            if agent.is_cancelled():
+                raise asyncio.CancelledError()
+            return isinstance(recovery, dict) and recovery.get("kind") == "retry"
+
         try:
             stream_fn = getattr(llm_service, "chat_completion_stream", None) or getattr(llm_service, "stream", None)
             used_stream = False
@@ -915,24 +927,18 @@ class AgentLoopService:
                 "message": str(e),
                 "code": getattr(e, "code", "UNKNOWN"),
             })
-            recovery = await agent.ctx.waterfall(
-                "agent/request-error",
-                {
-                    "agent": agent,
-                    "error": str(e),
-                    "failure": failure_payload,
-                    "provider": provider_name,
-                    "turn": turn,
-                    "step": step,
-                    "retryPolicy": retry_policy,
-                    "signal": getattr(agent, "_cancel_event", None),
-                },
-            )
-            if isinstance(recovery, dict) and recovery.get("kind") == "retry":
+            if await recover_request(failure_payload):
                 return {"kind": "retry"}
-            if agent.is_cancelled():
-                raise asyncio.CancelledError()
             raise
+
+        if assembler.finish_kind in ("error", "aborted"):
+            failure = assembler.finish["failure"]
+            if await recover_request(failure):
+                return {"kind": "retry"}
+            from dsh.llm.llm_service import LlmError
+            error = LlmError(failure["message"], failure["code"])
+            error.failure = dict(failure)
+            raise error
 
         blocks = assembler.blocks()
         source = {

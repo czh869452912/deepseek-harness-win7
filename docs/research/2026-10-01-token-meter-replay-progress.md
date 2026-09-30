@@ -128,6 +128,11 @@ cache work before host shutdown. This does not certify general cache shutdown.
 
 ## Remaining migration and release work
 
+Subsequent native routed compaction policy and overflow recovery work is recorded
+in [the compaction follow-up](2026-10-01-compaction-policy-progress.md), including
+the actual-loop in-band failure fix and a reviewed upstream route-key bug. The
+remaining-work list below preserves this document's original checkpoint.
+
 `deriveTurnTokenUsage`, full billing disclosure, complete compaction policy and
 its threshold/routing/retry contracts, all clients and actual browser pressure
 journeys still require migration and joint verification. General JS Workflow

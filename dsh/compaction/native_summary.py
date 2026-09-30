@@ -50,11 +50,14 @@ def frame_summary(summary):
 async def summarize(engine, session, selected, agent, signal):
     from dsh.core.agent_loop import BlockAssembler
     from dsh.llm.llm_service import LlmError
-    cfg = engine.resolved_config
+    from dsh.compaction.compaction_basic.config import resolve_target_policy
+    from dsh.compaction.engine import conversation_target
+    policy_target = conversation_target(agent) or ((session.request_header() or {}).get("config"))
+    cfg = engine.config if not policy_target else resolve_target_policy(engine.config, policy_target)
     header = session.request_header() or {}
     options = getattr(agent, "options", None)
-    target = ({"provider": cfg.summarization_provider, "model": cfg.summarization_model}
-              if cfg.summarization_provider else header.get("config"))
+    target = ({"provider": cfg["summarizationProvider"], "model": cfg["summarizationModel"]}
+              if cfg["summarizationProvider"] else header.get("config"))
     target = target or {"provider": getattr(options, "provider", None), "model": getattr(options, "model", None)}
     if not target.get("provider") or not target.get("model"):
         raise ValueError("no provider/model available for summarization")
@@ -63,7 +66,7 @@ async def summarize(engine, session, selected, agent, signal):
     messages.append({"role": "user", "content": [{"type": "text", "text": INSTRUCTION}],
                      "source": {"kind": "plugin", "plugin": "dsh-compaction-basic"}})
     request = dict(provider=target["provider"], model=target["model"], messages=messages,
-                   maxTokens=cfg.max_tokens, sessionId=session.id, purpose="compaction", signal=signal)
+                   maxTokens=cfg["maxTokens"], sessionId=session.id, purpose="compaction", signal=signal)
     for key in ("system", "tools"):
         if key in header:
             request[key] = header[key]
@@ -87,7 +90,7 @@ async def summarize(engine, session, selected, agent, signal):
     if not any(block.get("text", "").strip() for block in summary):
         raise ValueError("summarization produced no text summary content")
     result = dict(summary=summary, rawOutput=raw, llmStreamCall=True,
-                  provider=request["provider"], model=request["model"], maxTokens=cfg.max_tokens)
+                  provider=request["provider"], model=request["model"], maxTokens=cfg["maxTokens"])
     if assembler.usage is not None:
         result["usage"] = assembler.usage
     return result

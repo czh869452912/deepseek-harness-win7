@@ -41,7 +41,7 @@ def entry_state(session):
 async def compact(engine, session, start, end, agent=None, signal=None,
                   manual=False, source_command_id=None, flush=None):
     from dsh.compaction.engine import ManualCompactionError
-    from dsh.compaction.native_summary import summarize, frame_summary
+    from dsh.compaction.native_summary import frame_summary
     check_cancel(signal)
     selected = select(session, start, end)
     turn, opening = entry_state(session)
@@ -63,7 +63,7 @@ async def compact(engine, session, start, end, agent=None, signal=None,
         if [node["seq"] for node in measured] != list(session.surface.nodes):
             raise RuntimeError("compaction: stale token measurement")
         priced = [node for node in measured if node["seq"] in selected]
-        summary = await summarize(engine, session, selected, agent, signal)
+        summary = await engine.summarize(session, selected, agent, signal)
         check_cancel(signal)
         checkpoint = frame_summary(summary["summary"])
         if meter.estimate_message({"role": "user", "content": checkpoint}) >= sum(n["tokens"] for n in priced):

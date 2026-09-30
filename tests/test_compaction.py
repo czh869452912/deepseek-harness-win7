@@ -19,6 +19,9 @@ class MockLlmService:
         yield {'type': 'text-delta', 'index': 0, 'text': 'condensed summary'}
         yield {'type': 'finish', 'reason': {'kind': 'stop'}}
 
+    async def resolve_model_info(self, provider, model, signal=None):
+        return dict(provider=provider, id=model, name=model, context=dict(contextWindow=1000))
+
 
 def test_select_compactable_range():
     session = Session(session_id="select-range-test")
@@ -59,7 +62,7 @@ async def test_pressure_compaction_ignores_non_surface_events_and_preserves_shor
     session.append_user_message('keep this')
     before = list(session.events)
     result = await engine.compact_if_needed(session=session)
-    assert result == dict(status='no_compaction_needed')
+    assert result is None
     assert session.events == before and session.surface.replace_generation == 0
     await ctx.fiber.dispose()
 
@@ -123,10 +126,11 @@ async def test_automatic_pressure_compaction():
     ctx.set_service("sessions", store)
     session = store.create("pressure-session")
 
-    # Set very low threshold (e.g. 50 tokens) to trigger compaction
-    engine = BasicCompactionEngine(config={"summarizationProvider": "test", "summarizationModel": "test"}, threshold_tokens=50, retain_tokens=20, auto=False, ctx=ctx)
+    engine = BasicCompactionEngine(config={"thresholdRatio": 0.5, "retainTokens": 20,
+        "summarizationProvider": "test", "summarizationModel": "test", "auto": False}, ctx=ctx)
 
     session.append("turn/start", {"turn": 1})
+    session.append("request/header", dict(header=dict(config=dict(provider="test", model="test")), reason="initial"))
     session.append_user_message("Prompt 1 with some text to consume tokens" * 100)
     session.append("step/start", dict(turn=1, step=1))
     session.append_assistant_message({"role": "assistant", "content": "Response 1 with text"})
@@ -137,6 +141,6 @@ async def test_automatic_pressure_compaction():
     session.append("step/end", dict(turn=1, step=2))
 
     # Check compaction
-    comp_result = await engine.compact_if_needed(trigger="pressure")
+    comp_result = await engine.compact_if_needed(session=session, trigger="pressure")
     assert comp_result is not None
     assert session.surface.replace_generation >= 1

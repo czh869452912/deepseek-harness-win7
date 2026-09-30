@@ -1,13 +1,31 @@
 import asyncio
 import logging
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional
+from weakref import WeakKeyDictionary, ref
 
 from dsh.cordis.plugin import Plugin
 from dsh.cordis.service import Service
-from dsh.compaction.compaction_basic.config import ResolvedCompactionConfig
-from dsh.compaction.compaction_basic.region import identify_compaction_region
-from dsh.compaction.compaction_basic.summarizer import summarize_compactable_messages
-from dsh.compaction.tool_pairing import tool_pairing_balanced_before, tool_pairing_balanced_after
+from dsh.compaction.compaction_basic.config import (
+    ResolvedCompactionConfig, TargetPressureConfigError, resolve_target_policy, resolve_compact_spec,
+)
+from dsh.compaction.tool_pairing import tool_pairing_balanced_before
+from dsh.core.cancellation import aborted
+
+
+def routed_target(session):
+    config = (session.request_header() or {}).get("config", {})
+    if not config.get("provider") or not config.get("model"):
+        return None
+    return dict(provider=config["provider"], model=config["model"])
+
+
+def conversation_target(agent):
+    target = routed_target(agent.session) if agent is not None else None
+    if target is not None:
+        return target
+    options = getattr(agent, "options", None)
+    provider, model = getattr(options, "provider", None), getattr(options, "model", None)
+    return dict(provider=provider, model=model) if provider and model else None
 
 
 class ManualCompactionError(Exception):
@@ -71,11 +89,6 @@ class CompactionEngine(Service):
         self,
         config: Optional[Dict[str, Any]] = None,
         ctx: Optional[Any] = None,
-        threshold_tokens: Optional[int] = None,
-        retain_tokens: Optional[int] = None,
-        keep_recent_messages: Optional[int] = None,
-        auto: bool = True,
-        **kwargs: Any,
     ):
         if ctx is not None:
             super().__init__(ctx, "compaction")
@@ -83,14 +96,81 @@ class CompactionEngine(Service):
             self.ctx = None
 
         self.resolved_config = ResolvedCompactionConfig(config)
-        self.threshold_tokens = threshold_tokens if threshold_tokens is not None else self.resolved_config.threshold_tokens
-        self.retain_tokens = retain_tokens if retain_tokens is not None else self.resolved_config.retain_tokens
-        self.keep_recent_messages = keep_recent_messages if keep_recent_messages is not None else self.resolved_config.keep_recent_messages
-        self.auto = (config or {}).get("auto", auto)
+        self.config = self.resolved_config.values
+        self.auto = self.config["auto"]
+        self._warned_pressure_targets = set()
+        self._overflow_retries = WeakKeyDictionary()
+        self._overflow_agents = WeakKeyDictionary()
+        if ctx is not None and self.auto:
+            self.register_automatic_compaction()
 
-    def estimate_tokens(self, messages: List[Dict[str, Any]]) -> int:
-        total_chars = sum(len(str(m.get("content", ""))) for m in messages)
-        return total_chars // 4
+    def register_automatic_compaction(self):
+        ctx = self.ctx
+        logger = logging.getLogger("compaction-basic")
+
+        async def pre_step(payload, next_fn):
+            signal = payload.get("signal")
+            if not aborted(signal):
+                try:
+                    await self.compact_if_needed(payload["agent"], "pressure", signal)
+                except Exception as error:
+                    if isinstance(error, TargetPressureConfigError):
+                        if error.target_key in self._warned_pressure_targets:
+                            return await next_fn()
+                        self._warned_pressure_targets.add(error.target_key)
+                    logger.warning("step compaction failed: %s; continuing the turn", error)
+            return await next_fn()
+
+        def status(payload):
+            if payload["status"] == "idle":
+                self._overflow_retries.pop(payload["agent"], None)
+
+        def session_event(session, event):
+            if event["type"] == "assistant/message":
+                weak_agent = self._overflow_agents.get(session)
+                agent = weak_agent() if weak_agent is not None else None
+                if agent is not None:
+                    self._overflow_retries.pop(agent, None)
+
+        async def request_error(payload, next_fn):
+            signal = payload.get("signal")
+            if payload["failure"]["code"] != "CONTEXT_WINDOW_EXCEEDED" or aborted(signal):
+                return await next_fn()
+            agent = payload["agent"]
+            self._overflow_agents[agent.session] = ref(agent)
+            target = routed_target(agent.session)
+            if target is None:
+                return await next_fn()
+            policy = resolve_target_policy(self.config, target)
+            retries = self._overflow_retries.get(agent, 0)
+            if retries >= policy["maxOverflowRetries"]:
+                return await next_fn()
+            generation = agent.session.surface.replace_generation
+            try:
+                await self.compact_if_needed(agent, "context-overflow", signal)
+            except asyncio.CancelledError:
+                if aborted(signal):
+                    return await next_fn()
+                raise
+            except Exception as error:
+                if not aborted(signal) and agent.session.surface.replace_generation > generation:
+                    logger.warning("context-overflow compaction failed after durable surface progress: %s; retrying from the replacement surface", error)
+                else:
+                    logger.warning("context-overflow compaction failed: %s; preserving the original request error", error)
+                    return await next_fn()
+            if aborted(signal) or agent.session.surface.replace_generation <= generation:
+                return await next_fn()
+            self._overflow_retries[agent] = retries + 1
+            return dict(kind="retry")
+
+        ctx.on("agent/pre-step", pre_step)
+        ctx.on("agent/status", status)
+        ctx.on("session/event", session_event)
+        ctx.on("agent/request-error", request_error)
+
+    async def summarize(self, session, selected, agent, signal):
+        from dsh.compaction.native_summary import summarize
+        return await summarize(self, session, selected, agent, signal)
 
     async def compact_region(
         self,
@@ -184,76 +264,60 @@ class CompactionEngine(Service):
         agent: Optional[Any] = None,
         trigger: str = "pressure",
         signal: Optional[Any] = None,
-        messages: Optional[List[Dict[str, Any]]] = None,
         session: Optional[Any] = None,
         **kwargs: Any,
     ) -> Any:
         target_session = session or (agent.session if agent and hasattr(agent, "session") else None)
 
-        if not target_session and self.ctx and hasattr(self.ctx, "has") and self.ctx.has("sessions"):
-            store = self.ctx.get("sessions")
-            if hasattr(store, "get"):
-                target_session = store.get("default-session")
-                if not target_session and hasattr(store, "_sessions") and store._sessions:
-                    target_session = next(iter(store._sessions.values()))
-
-        if target_session and trigger in ("pressure", "context-overflow"):
-            meter = self.ctx.get("tokenMeter")
-            if meter is None:
-                raise RuntimeError("compaction requires token_meter")
-            measurement = meter.measure(target_session)
-            if trigger == "pressure" and measurement["totalTokens"] <= self.threshold_tokens:
-                return {"status": "no_compaction_needed"}
-            pruner = self.ctx.get("toolResultPruner")
+        target = routed_target(target_session) if target_session is not None else None
+        if target is None:
+            return None
+        policy = resolve_target_policy(self.config, target)
+        meter = self.ctx.get("tokenMeter")
+        if meter is None:
+            raise RuntimeError("compaction requires tokenMeter")
+        measurement = meter.measure(target_session)
+        if trigger not in ("pressure", "context-overflow"):
+            raise ValueError("unknown compaction trigger: " + str(trigger))
+        pruner = self.ctx.get("toolResultPruner")
+        if trigger == "context-overflow":
             if pruner is not None:
                 pruner.prune_session(target_session)
                 measurement = meter.measure(target_session)
-                if trigger == "pressure" and measurement["totalTokens"] <= self.threshold_tokens:
-                    return {"status": "no_compaction_needed"}
-            retain = 0 if trigger == "context-overflow" else self.retain_tokens
-            rng = select_compactable_range(target_session, measurement, retain_tokens=retain)
-            if rng:
-                return await self.compact_region(start=rng["start"], end=rng["end"], session=target_session,
-                                                 agent=agent, signal=signal)
-            return {"status": "no_compaction_needed"}
+            rng = select_compactable_range(target_session, measurement, retain_tokens=0)
+            return (await self.compact_region(start=rng["start"], end=rng["end"], session=target_session,
+                                             agent=agent, signal=signal)) if rng else None
 
-        target_msgs = messages
-        if target_msgs is None and target_session and hasattr(target_session, "events"):
-            target_msgs = target_session.events
-
-        if target_msgs is None:
-            return {"status": "skipped"}
-
-        est_tokens = self.estimate_tokens(target_msgs)
-        if est_tokens <= self.threshold_tokens and trigger != "context-overflow":
-            return target_msgs if messages is not None else {"status": "no_compaction_needed"}
-
-        system_prefix, compactable_region, preserved_tail = identify_compaction_region(
-            target_msgs, keep_recent_messages=self.keep_recent_messages
-        )
-
-        if not compactable_region:
-            return target_msgs if messages is not None else {"status": "no_compaction_needed"}
-
-        summary_text = summarize_compactable_messages(compactable_region)
-        summary_message = {
-            "role": "user",
-            "content": f"[Compaction Summary]:\n{summary_text}",
-        }
-
-        compacted = system_prefix + [summary_message] + preserved_tail
-
-        if self.ctx and hasattr(self.ctx, "emit"):
-            self.ctx.emit("compaction/compacted", {
-                "before_tokens": est_tokens,
-                "after_tokens": self.estimate_tokens(compacted),
-                "messages_reduced": len(target_msgs) - len(compacted),
-            })
-
-        if messages is not None:
-            return compacted
-
-        return {"status": "compacted", "reduced": len(target_msgs) - len(compacted)}
+        info = await self.ctx.get("llm").resolve_model_info(target["provider"], target["model"], signal)
+        from dsh.compaction.transaction import entry_state
+        if entry_state(target_session)[1] is not None:
+            raise ValueError("automatic pressure compaction: session already has active compaction")
+        context = info.get("context")
+        if context is None:
+            key = target["provider"] + "/" + target["model"]
+            raise TargetPressureConfigError(key, "compaction-basic: no context capacity for {}; configure contextWindow on that adapter model".format(key))
+        spec = resolve_compact_spec(policy, context.get("contextWindow"))
+        if measurement["totalTokens"] < spec["thresholdTokens"]:
+            return None
+        if pruner is not None:
+            pruner.prune_session(target_session)
+            measurement = meter.measure(target_session)
+        if measurement["totalTokens"] < spec["thresholdTokens"]:
+            return None
+        result = None
+        for _ in range(int(spec["compactionRetries"]) + 1):
+            rng = select_compactable_range(target_session, measurement, retain_tokens=spec["retainTokens"])
+            if rng is None:
+                if result is None:
+                    return None
+                break
+            result = await self.compact_region(start=rng["start"], end=rng["end"], session=target_session,
+                                             agent=agent, signal=signal)
+            measurement = meter.measure(target_session)
+            if measurement["totalTokens"] < spec["thresholdTokens"]:
+                return result
+        raise RuntimeError("compaction still above threshold after {} compaction attempts ({} estimated tokens >= threshold {})".format(
+            spec["compactionRetries"] + 1, measurement["totalTokens"], spec["thresholdTokens"]))
 
     compactIfNeeded = compact_if_needed
 
@@ -265,6 +329,7 @@ class CompactionBasicPlugin(Plugin):
 
     id = "compaction-basic"
     name = "@deepseek-ai/dsh-compaction-basic"
+    inject = ["llm", "tokenMeter", "sessions"]
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
@@ -273,17 +338,8 @@ class CompactionBasicPlugin(Plugin):
     def apply(self, ctx: Any) -> None:
         self.engine.ctx = ctx
         ctx.set_service("compaction", self.engine)
-
-        async def hook_pre_step(payload: Dict[str, Any], next_fn=None) -> Dict[str, Any]:
-            agent = payload.get("agent")
-            if agent is not None and self.engine.auto:
-                try:
-                    await self.engine.compact_if_needed(agent=agent, signal=payload.get("signal") or getattr(agent, "_cancel_event", None))
-                except Exception:
-                    logging.getLogger("compaction-basic").warning("step compaction failed; continuing the turn", exc_info=True)
-            return await next_fn() if next_fn is not None else payload
-
-        ctx.on("agent/pre-step", hook_pre_step)
+        if self.engine.auto:
+            self.engine.register_automatic_compaction()
 
 
 BasicCompactionEngine = CompactionEngine

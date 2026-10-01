@@ -43,6 +43,10 @@ wheel、原生库、版本范围求解、宿主兼容复用与最终发行继续
 发布方向继续采用 Python Host 与可选预构建 Client；此修复不认证完整动态治理
 或任意原版 JS Host／Workflow 执行能力。
 
+后续原生 approval 的取消／迟到答复、Service／prompt 所有权及 canonical Loader
+审计 companion 对齐见 [审批契约记录](2026-10-02-approval-contract-progress.md)。
+它继续使用 Python 3.8.10，不引入 JS 引擎或改变插件发布、获取方向。
+
 ## 1. 结论
 
 建议采用 **Python Host 插件为主体、Web 客户端资源可选、统一包描述与 Cordis 装配** 的路线。

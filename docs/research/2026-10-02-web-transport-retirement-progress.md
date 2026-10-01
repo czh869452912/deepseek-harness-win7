@@ -88,6 +88,10 @@ question／approval widget 的浏览器旅程。Source 审查还发现 approval 
 answerer 的 signal race／迟到结果丢弃仍需补齐，不能把 Gateway 自己的取消
 验证扩大为整个 approval service 的取消契约已完成。
 
+后续原生审批取消竞速、可逆 prompt 所有权及包独立审计 companion 的修复、
+原版断言和双侧观察见 [审批契约记录](2026-10-02-approval-contract-progress.md)。
+上面的未完成判断保留为本记录当时基线；实际 widget 浏览器旅程仍未由此完成。
+
 完整 helper 退役、通用 JS Workflow／Host、完整 SDK 动态治理、任意 wheel／原生
 依赖、版本范围求解、npm／PyPI 获取及完整上游迁移仍未认证。
 Win7 真机与目标浏览器保留用户暂缓状态。新的源码回归不自动更新旧 Portable。

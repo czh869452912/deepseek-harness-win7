@@ -1,14 +1,17 @@
 """
 Service Definition for the approval capability seam (`ctx.approval`), covering requests, cancellation, audit, and per-session policy.
 Missing answerers fail closed; grants apply only to the requested action.
-Aligned 1:1 with official `@deepseek-ai/dsh-user-approval`.
+Native port of the pinned `@deepseek-ai/dsh-user-approval` service contract.
 """
 
 import asyncio
 import uuid
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 from dsh.cordis.plugin import Plugin
+from dsh.cordis.schema import Schema
+from dsh.cordis.service import Service
 from dsh.core.scope import scope_target
+from dsh.llm.message import create_user_message
 
 
 OUTCOMES = ("allowed-once", "rejected", "cancelled", "unavailable")
@@ -56,24 +59,30 @@ def set_approval_policy(session: Any, policy: str) -> None:
 setApprovalPolicy = set_approval_policy
 
 
-class ApprovalService:
+class ApprovalService(Service):
     """
     Approval service that applies session policy before answerers and logs every
     ask/outcome pair to the requesting session.
     """
 
-    def __init__(self, ctx: Any, config: Optional[Dict[str, Any]] = None):
-        self.ctx = ctx
-        self.config = config or {}
+    Config = Schema.object({'policy': Schema.union(['ask', 'never']).default('ask')})
 
-        if ctx:
-            system_prompt = ctx.get("systemPrompt")
-            if system_prompt and hasattr(system_prompt, "context"):
-                system_prompt.context({
+    def __init__(self, ctx: Any, config: Optional[Dict[str, Any]] = None):
+        self.config = config or {}
+        # Pending answerers remain borrowed after a signal wins, just as the
+        # reference's Promise chain does. Keep tasks alive and consume every
+        # eventual completion without keeping the caller's decision pending.
+        self._answers = set()
+        super().__init__(ctx, 'approval')
+
+        if ctx is not None:
+            def contribute(scope):
+                scope.get('systemPrompt').context({
                     "name": "approval:policy",
                     "order": 115,
                     "text": self._context_text,
                 })
+            ctx.inject(['systemPrompt'], contribute)
 
     def _context_text(self, context: Dict[str, Any]) -> str:
         agent = context.get("agent")
@@ -105,14 +114,13 @@ class ApprovalService:
             return
         set_approval_policy(session, policy)
         if hasattr(agent, "inject"):
-            agent.inject({
-                "role": "user",
+            agent.inject(create_user_message({
                 "content": [{
                     "type": "text",
                     "text": f'The approval policy changed from "{previous}" to "{policy}" (changed by the user).',
                 }],
                 "source": {"kind": "plugin", "plugin": "user-approval"},
-            })
+            }))
 
     setPolicy = set_policy
 
@@ -126,7 +134,7 @@ class ApprovalService:
                 "Ask from inside the turn that needs the decision."
             )
 
-        req_id = f"appr-{uuid.uuid4().hex[:8]}"
+        req_id = str(uuid.uuid4())
         asked_data: Dict[str, Any] = {"id": req_id, "toolName": req.get("toolName", "tool")}
         if "callId" in req:
             asked_data["callId"] = req["callId"]
@@ -140,7 +148,7 @@ class ApprovalService:
 
     async def decide(self, req: Dict[str, Any], session: Any) -> str:
         signal = req.get("signal")
-        if signal and getattr(signal, "aborted", False):
+        if signal is not None and getattr(signal, "aborted", False):
             return "cancelled"
 
         if self.effective_policy(session) == "never":
@@ -149,20 +157,41 @@ class ApprovalService:
         async def no_answerer(*args: Any, **kwargs: Any) -> Any:
             return "unavailable"
 
-        if self.ctx and hasattr(self.ctx, "waterfall"):
+        async def answer():
             try:
                 res = await self.ctx.waterfall("approval/request", req, no_answerer,
                                                caller_ctx=scope_target(req['agent'], req['agent']))
-                outcome = res if res in OUTCOMES else "unavailable"
-            except Exception:
-                outcome = "unavailable"
-        else:
-            outcome = "unavailable"
+                return res if res in OUTCOMES else "unavailable"
+            except (Exception, asyncio.CancelledError):
+                return "unavailable"
 
-        if signal and getattr(signal, "aborted", False):
-            return "cancelled"
+        if signal is None:
+            return await answer()
 
-        return outcome
+        decision = asyncio.get_running_loop().create_future()
+
+        def on_abort(_event):
+            signal.removeEventListener('abort', on_abort)
+            if not decision.done():
+                decision.set_result('cancelled')
+
+        def answered(task):
+            self._answers.discard(task)
+            signal.removeEventListener('abort', on_abort)
+            # result() also consumes a late failure after abort/caller task
+            # cancellation. No second approval/decided append can occur here.
+            outcome = 'unavailable' if task.cancelled() else task.result()
+            if not decision.done():
+                decision.set_result(outcome)
+
+        signal.addEventListener('abort', on_abort, {'once': True})
+        task = asyncio.create_task(answer())
+        self._answers.add(task)
+        task.add_done_callback(answered)
+        try:
+            return await decision
+        finally:
+            signal.removeEventListener('abort', on_abort)
 
 
 UserApprovalService = ApprovalService
@@ -175,11 +204,11 @@ class UserApprovalPlugin(Plugin):
 
     id = "approval"
     name = "@deepseek-ai/dsh-user-approval"
+    Config = ApprovalService.Config
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
 
     def apply(self, ctx: Any) -> None:
-        svc = ApprovalService(ctx, self.config)
-        ctx.set_service("approval", svc)
+        ApprovalService(ctx, self.config)
 

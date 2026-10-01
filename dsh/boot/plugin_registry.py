@@ -135,6 +135,7 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     "@deepseek-ai/dsh-commands": "dsh.interaction.commands:CommandsPlugin",
     "@deepseek-ai/dsh-permission-presets": "dsh.interaction.permission_presets:PermissionPresetsPlugin",
     "@deepseek-ai/dsh-user-approval": "dsh.interaction.user_approval:UserApprovalPlugin",
+    "@deepseek-ai/dsh-user-approval/invariant": "dsh.interaction.approval_invariant:ApprovalInvariantPlugin",
     "@deepseek-ai/dsh-user-questions": "dsh.interaction.user_questions:UserQuestionsPlugin",
     "@deepseek-ai/dsh-tool-ask-user": "dsh.interaction.tool_ask_user:ToolAskUserPlugin",
     "@deepseek-ai/dsh-jobs-local": "dsh.jobs.local:LocalJobRegistry",

@@ -9,37 +9,56 @@ call sites observe is reproduced here:
 
 * `signal.aborted` -- whether the signal settled as aborted;
 * `signal.reason` -- the abort reason the caller supplied;
-* `signal.add_listener("abort", callback)` / `remove_listener` -- notification,
-  including the reference's immediate-notification contract for a listener added
-  after the abort;
+* `addEventListener` follows platform event delivery; `add_listener` is the
+  Python subscription adapter that also observes an already-aborted signal;
 * `signal.wait_aborted()` -- an awaitable that settles when the signal aborts.
 
-`AbortSignal.abort(reason)` mirrors `AbortController.abort(reason)`; the
-no-reason form leaves `reason` unset so a consumer's `abortError()` normalization
-produces its own default failure text, exactly like the reference
-`CommandRuntime.abortError`.
+Omitting an abort reason creates an AbortError; explicit None represents JS null.
+Throwing a non-exception reason uses ThrownValueError without losing its value.
 
-LEGAL_ADAPTATION: the exception type raised by an aborted operation is defined by
-its own consumer (Python has no single platform `Error`); this module only
-carries the signal state.
+LEGAL_ADAPTATION: Python carries non-exception thrown values in ThrownValueError;
+consumers with their own cancellation normalization keep that business contract.
 """
 
 import asyncio
+from types import SimpleNamespace
 from typing import Any, Callable, List, Optional
 
-__all__ = ["AbortSignal", "AbortController", "NEVER_ABORTED"]
+from dsh.cordis.errors import ThrownValueError
+
+__all__ = ["AbortSignal", "AbortController", "AbortError", "abort_reason_error", "NEVER_ABORTED"]
+
+_OMITTED = object()
+
+
+class AbortError(RuntimeError):
+    """Native representation of the default platform DOMException."""
+    name, code = 'AbortError', 20
+
+    def __init__(self):
+        self.message = 'This operation was aborted'
+        super().__init__(self.message)
+
+
+def abort_reason_error(signal, message='operation aborted'):
+    """Preserve exception identity and explicit null/false/zero abort reasons."""
+    reason = getattr(signal, 'reason', _OMITTED)
+    if reason is _OMITTED:
+        return RuntimeError(message)  # Historical Event/external signal adapter.
+    return reason if isinstance(reason, BaseException) else ThrownValueError(reason, message)
 
 
 class AbortSignal:
     """The observable half of the platform abort primitive."""
 
-    __slots__ = ("aborted", "reason", "_listeners", "_waiters")
+    __slots__ = ("aborted", "reason", "_listeners", "_waiters", "_dom_listeners")
 
     def __init__(self) -> None:
         self.aborted = False
         self.reason: Any = None
         self._listeners: List[Callable[..., Any]] = []
         self._waiters: List["asyncio.Future[None]"] = []
+        self._dom_listeners = {}
 
     def add_listener(self, event: str, callback: Callable[..., Any]) -> Callable[[], None]:
         """
@@ -53,8 +72,8 @@ class AbortSignal:
             return lambda: None
         self._listeners.append(callback)
         if self.aborted:
-            # The platform fires `abort` synchronously for a listener added
-            # after the signal aborted.
+            # Python subscriptions intentionally include settled state. Raw
+            # platform addEventListener below does not replay an old event.
             self._fire(callback)
 
         def dispose() -> None:
@@ -63,14 +82,33 @@ class AbortSignal:
 
         return dispose
 
-    #: Reference `AbortSignal` spelling.
-    addEventListener = add_listener
+    def addEventListener(self, event, callback, options=None):
+        """Raw platform notification: no replay; duplicate/capture/once ownership."""
+        if event != 'abort' or not callable(callback):
+            return
+        capture = options if type(options) is bool else bool((options or {}).get('capture', False))
+        key = (event, id(callback), capture)
+        if key in self._dom_listeners:
+            return
+        once = bool((options or {}).get('once', False)) if isinstance(options, dict) else False
+        def wrapped(_reason):
+            if self._dom_listeners.get(key) is not wrapped:
+                return
+            if once:
+                self.removeEventListener(event, callback, capture)
+            callback(SimpleNamespace(type='abort', target=self, currentTarget=self))
+        self._dom_listeners[key] = wrapped
+        self._listeners.append(wrapped)
 
     def remove_listener(self, event: str, callback: Callable[..., Any]) -> None:
         if event == "abort" and callback in self._listeners:
             self._listeners.remove(callback)
 
-    removeEventListener = remove_listener
+    def removeEventListener(self, event, callback, options=None):
+        capture = options if type(options) is bool else bool((options or {}).get('capture', False))
+        wrapped = self._dom_listeners.pop((event, id(callback), capture), None)
+        if wrapped is not None:
+            self.remove_listener(event, wrapped)
 
     async def wait_aborted(self) -> None:
         """Settle once this signal aborts (immediately when already aborted)."""
@@ -84,8 +122,7 @@ class AbortSignal:
             if not future.done():
                 future.set_result(None)
 
-        # A listener added after the abort fires synchronously, so the check
-        # above and this registration cannot together miss an abort.
+        # The Python subscription adapter observes an already settled signal.
         dispose = self.add_listener("abort", _settle)
         try:
             await future
@@ -102,9 +139,9 @@ class AbortSignal:
         return self.aborted
 
     def throw_if_aborted(self) -> None:
-        """Raise `KeyboardInterrupt`-free cancellation: a plain `RuntimeError`."""
+        """Throw the actual first reason, using a carrier for non-exceptions."""
         if self.aborted:
-            raise RuntimeError("operation aborted")
+            raise abort_reason_error(self)
 
     throwIfAborted = throw_if_aborted
 
@@ -116,11 +153,18 @@ class AbortSignal:
             # caller, matching the platform's event dispatch.
             pass
 
-    def _abort(self, reason: Any = None) -> None:
+    @classmethod
+    def abort(cls, reason=_OMITTED):
+        signal = cls()
+        signal._abort(reason)
+        return signal
+
+    def _abort(self, reason: Any = _OMITTED) -> None:
         if self.aborted:
             return
         self.aborted = True
-        self.reason = reason
+        from dsh.core.session.json import UNDEFINED
+        self.reason = AbortError() if reason is _OMITTED or reason is UNDEFINED else reason
         listeners = list(self._listeners)
         self._listeners = []
         for callback in listeners:
@@ -140,7 +184,7 @@ class AbortController:
     def __init__(self) -> None:
         self.signal = AbortSignal()
 
-    def abort(self, reason: Any = None) -> None:
+    def abort(self, reason: Any = _OMITTED) -> None:
         """Abort the owned signal once; later calls are no-ops."""
         self.signal._abort(reason)
 

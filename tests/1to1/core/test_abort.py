@@ -7,8 +7,7 @@ the same observable surface. These cases pin that surface the way the reference
 platform primitive behaves:
 
 * `aborted` / `reason` state, with a repeated abort ignored;
-* listener notification, including the immediate notification a listener added
-  after the abort receives;
+* raw platform notification versus Python settled-state subscriptions;
 * `wait_aborted()` settling for a waiter that is already aborted and one that
   awaits a later abort;
 * listener removal through the returned disposer and `removeEventListener`.
@@ -45,14 +44,14 @@ def test_a_listener_added_before_the_abort_is_notified_once_with_the_reason():
     assert signal.aborted is True
 
 
-def test_a_listener_added_after_the_abort_is_notified_immediately():
+def test_raw_listener_added_after_abort_does_not_replay_the_event():
     signal = AbortSignal()
     signal._abort("already gone")
     seen = []
 
     signal.addEventListener("abort", lambda reason=None: seen.append(reason))
 
-    assert seen == ["already gone"]
+    assert seen == []
 
 
 def test_a_listener_failure_never_interrupts_the_aborting_caller():

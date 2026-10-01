@@ -138,6 +138,7 @@ class _FusedSignal:
         self._caller = caller
         self._wrapper = wrapper
         self._controller = AbortController()
+        self._dom_listeners = {}
         self._relays = []
         self._disposed = False
         self._sync_abort()
@@ -183,12 +184,43 @@ class _FusedSignal:
         self._sync_abort()
         return self._controller.signal.add_listener(event, callback)
 
-    addEventListener = add_listener
+    def addEventListener(self, event, callback, options=None):
+        self._sync_abort()
+        if event != 'abort' or not callable(callback):
+            return
+        capture = options if type(options) is bool else bool((options or {}).get('capture', False))
+        key = (event, id(callback), capture)
+        if key in self._dom_listeners:
+            return
+        once = bool((options or {}).get('once', False)) if isinstance(options, dict) else False
+        def wrapped(_event):
+            from types import SimpleNamespace
+            if once:
+                self.removeEventListener(event, callback, capture)
+            callback(SimpleNamespace(type='abort', target=self, currentTarget=self))
+        self._dom_listeners[key] = wrapped
+        self._controller.signal.addEventListener(event, wrapped, options)
 
     def remove_listener(self, event: str, callback: Callable[..., Any]) -> None:
         self._controller.signal.remove_listener(event, callback)
 
-    removeEventListener = remove_listener
+    def removeEventListener(self, event, callback, options=None):
+        capture = options if type(options) is bool else bool((options or {}).get('capture', False))
+        wrapped = self._dom_listeners.pop((event, id(callback), capture), None)
+        if wrapped is not None:
+            self._controller.signal.removeEventListener(event, wrapped, options)
+
+    def throw_if_aborted(self):
+        self._sync_abort()
+        self._controller.signal.throw_if_aborted()
+
+    throwIfAborted = throw_if_aborted
+
+    async def wait_aborted(self):
+        self._sync_abort()
+        await self._controller.signal.wait_aborted()
+
+    wait = wait_aborted
 
     def dispose(self) -> None:
         self._disposed = True

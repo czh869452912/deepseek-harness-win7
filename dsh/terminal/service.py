@@ -4,7 +4,7 @@ import weakref
 
 from dsh.cordis.events import AggregateError
 from dsh.cordis.service import Service
-from dsh.core.abort import AbortController
+from dsh.core.abort import AbortController, abort_reason_error
 from dsh.core.cancellation import aborted
 
 
@@ -22,8 +22,7 @@ class TerminalBackendCleanupError(AggregateError):
 
 def check_signal(signal):
     if aborted(signal):
-        reason = getattr(signal, 'reason', None)
-        raise reason if isinstance(reason, Exception) else RuntimeError('operation aborted')
+        raise abort_reason_error(signal)
 
 
 class TerminalSessionService(Service):

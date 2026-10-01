@@ -3,9 +3,8 @@ import asyncio
 import inspect
 from types import SimpleNamespace
 
-from dsh.cordis.errors import ThrownValueError
 from dsh.cordis.service import Service
-from dsh.core.abort import NEVER_ABORTED
+from dsh.core.abort import NEVER_ABORTED, abort_reason_error
 from dsh.core.cancellation import aborted, subscribe_abort
 from dsh.core.json_schema import assert_supported_json_schema, validate_json_schema_value
 from dsh.core.session.json import FrozenDict, FrozenList, UNDEFINED, snapshot_json_value
@@ -68,14 +67,7 @@ def _output(platform, provider, method, value):
 def _throw_if_aborted(signal):
     if not aborted(signal):
         return
-    reason = getattr(signal, 'reason', None)
-    if isinstance(reason, BaseException):
-        raise reason
-    if reason is not None:
-        raise ThrownValueError(reason)
-    # Historical Python signals do not distinguish omitted/default DOMException
-    # reasons from None. This adapter boundary is not default-AbortError parity.
-    raise RuntimeError('operation aborted')
+    raise abort_reason_error(signal)
 
 
 class CordisInspectRegistryService(Service):

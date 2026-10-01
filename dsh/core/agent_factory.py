@@ -5,7 +5,7 @@ operation. A late preparation is released exactly once, never published.
 """
 import asyncio
 import inspect
-from dsh.core.abort import AbortController
+from dsh.core.abort import AbortController, abort_reason_error
 
 
 class FactoryTransaction:
@@ -32,12 +32,7 @@ class FactoryTransaction:
 
     def assert_live(self):
         if self.controller.signal.aborted:
-            reason = self.controller.signal.reason
-            if isinstance(reason, BaseException):
-                raise reason
-            error = RuntimeError('agent "%s" creation aborted' % self.sid)
-            error.reason = reason
-            raise error
+            raise abort_reason_error(self.controller.signal, 'agent "%s" creation aborted' % self.sid)
         if not self.factory._accepting:
             raise RuntimeError('agent loop is not active')
         self.factory.ctx.fiber.assert_active()

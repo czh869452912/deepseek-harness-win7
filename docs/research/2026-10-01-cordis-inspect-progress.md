@@ -1,5 +1,8 @@
 # Cordis Inspect 注册、查询与原生 Schema 迁移进展
 
+后续默认/显式 null 取消原因与平台事件偏差修复、真实 Tools 融合信号双侧观察见
+[取消契约进展](2026-10-01-abort-platform-progress.md)。下文取消边界说明保留为历史范围。
+
 后续工具 prompt/presentation、自检、引用与真实 Python Host 更新旅程的实施见
 [Cordis 工具进展](2026-10-01-cordis-tools-progress.md)。下文保留本批次历史范围。
 

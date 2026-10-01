@@ -1,0 +1,816 @@
+{
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "node": "v22.22.2",
+  "source_sha256": {
+    "scripts/oracles/abort.spec.ts": "c2eee4f1c4559a7ef0ad48138038f16781133e489bd7f5e5df1c5d16824ef348",
+    "scripts/oracles/vitest.abort-probe.config.mts": "8f56cc82c77692ef5171690502e93591e7c76bad8e7c498b943f8d8bb3db4d11",
+    "scripts/oracles/vitest.agent-lifecycle.config.mts": "1f781c93abe83d7fed3815becbacdf8b639601fae31242baf476e8314508055e",
+    "scripts/oracles/vitest.consumers.config.mts": "b70704a79f8c14cbccbaa62ac717ca4a48402767893e3e85850f491f6a68108f",
+    "scripts/oracles/vitest.core.config.mts": "1e5c431e8bfb8a36462353049517f01dab46455c95e5184c8ab0e97856977bd1",
+    "reference/packages/extensions/cordis-host-runner/src/inspect-registry.ts": "d0b5a9738f2eb8979ab7ad5148079c56992c5b79324754a40ec1a3c54a24d31b",
+    "reference/packages/core/tools/src/index.ts": "f2a136590d5e286eca44fd58d01185f767ffb8b37d29a9dd0bd8458153f1223b",
+    "reference/packages/guard/timeout-policy/src/index.ts": "d447e54cef81abc7cec4d55dad48a7b4243f107d836c04ee3078bcb36fbdb2a2"
+  },
+  "observations": [
+    {
+      "mode": "platform/omitted",
+      "before": true,
+      "reason": {
+        "name": "AbortError",
+        "message": "This operation was aborted",
+        "code": 20
+      },
+      "raised": {
+        "thrown": {
+          "name": "AbortError",
+          "message": "This operation was aborted",
+          "code": 20
+        }
+      },
+      "same": true,
+      "retained": true,
+      "events": [
+        {
+          "type": "abort",
+          "target": true,
+          "reason": {
+            "name": "AbortError",
+            "message": "This operation was aborted",
+            "code": 20
+          }
+        }
+      ]
+    },
+    {
+      "mode": "host-before/omitted",
+      "result": {
+        "thrown": {
+          "name": "AbortError",
+          "message": "This operation was aborted",
+          "code": 20
+        }
+      },
+      "calls": 0,
+      "events": []
+    },
+    {
+      "mode": "host-after/omitted",
+      "result": {
+        "thrown": {
+          "name": "AbortError",
+          "message": "This operation was aborted",
+          "code": 20
+        }
+      },
+      "calls": 1,
+      "events": []
+    },
+    {
+      "mode": "client-before/omitted",
+      "result": {
+        "thrown": {
+          "name": "AbortError",
+          "message": "This operation was aborted",
+          "code": 20
+        }
+      },
+      "calls": 0,
+      "events": []
+    },
+    {
+      "mode": "client-pending/omitted",
+      "result": {
+        "thrown": {
+          "name": "Error",
+          "message": "probe.read: Client inspect query probe.read was cancelled"
+        }
+      },
+      "calls": 0,
+      "events": [
+        {
+          "request": "inspect-1"
+        },
+        {
+          "resolved": "inspect-1"
+        }
+      ]
+    },
+    {
+      "mode": "tools-fused/omitted",
+      "derived": true,
+      "raised": {
+        "thrown": {
+          "name": "AbortError",
+          "message": "This operation was aborted",
+          "code": 20
+        }
+      },
+      "same": true,
+      "events": [
+        {
+          "type": "abort",
+          "target": true
+        }
+      ],
+      "isError": true,
+      "code": "ABORTED"
+    },
+    {
+      "mode": "platform/undefined",
+      "before": true,
+      "reason": {
+        "name": "AbortError",
+        "message": "This operation was aborted",
+        "code": 20
+      },
+      "raised": {
+        "thrown": {
+          "name": "AbortError",
+          "message": "This operation was aborted",
+          "code": 20
+        }
+      },
+      "same": true,
+      "retained": true,
+      "events": [
+        {
+          "type": "abort",
+          "target": true,
+          "reason": {
+            "name": "AbortError",
+            "message": "This operation was aborted",
+            "code": 20
+          }
+        }
+      ]
+    },
+    {
+      "mode": "host-before/undefined",
+      "result": {
+        "thrown": {
+          "name": "AbortError",
+          "message": "This operation was aborted",
+          "code": 20
+        }
+      },
+      "calls": 0,
+      "events": []
+    },
+    {
+      "mode": "host-after/undefined",
+      "result": {
+        "thrown": {
+          "name": "AbortError",
+          "message": "This operation was aborted",
+          "code": 20
+        }
+      },
+      "calls": 1,
+      "events": []
+    },
+    {
+      "mode": "client-before/undefined",
+      "result": {
+        "thrown": {
+          "name": "AbortError",
+          "message": "This operation was aborted",
+          "code": 20
+        }
+      },
+      "calls": 0,
+      "events": []
+    },
+    {
+      "mode": "client-pending/undefined",
+      "result": {
+        "thrown": {
+          "name": "Error",
+          "message": "probe.read: Client inspect query probe.read was cancelled"
+        }
+      },
+      "calls": 0,
+      "events": [
+        {
+          "request": "inspect-1"
+        },
+        {
+          "resolved": "inspect-1"
+        }
+      ]
+    },
+    {
+      "mode": "tools-fused/undefined",
+      "derived": true,
+      "raised": {
+        "thrown": {
+          "name": "AbortError",
+          "message": "This operation was aborted",
+          "code": 20
+        }
+      },
+      "same": true,
+      "events": [
+        {
+          "type": "abort",
+          "target": true
+        }
+      ],
+      "isError": true,
+      "code": "ABORTED"
+    },
+    {
+      "mode": "platform/null",
+      "before": true,
+      "reason": null,
+      "raised": {
+        "thrown": null
+      },
+      "same": true,
+      "retained": true,
+      "events": [
+        {
+          "type": "abort",
+          "target": true,
+          "reason": null
+        }
+      ]
+    },
+    {
+      "mode": "host-before/null",
+      "result": {
+        "thrown": null
+      },
+      "calls": 0,
+      "events": []
+    },
+    {
+      "mode": "host-after/null",
+      "result": {
+        "thrown": null
+      },
+      "calls": 1,
+      "events": []
+    },
+    {
+      "mode": "client-before/null",
+      "result": {
+        "thrown": null
+      },
+      "calls": 0,
+      "events": []
+    },
+    {
+      "mode": "client-pending/null",
+      "result": {
+        "thrown": {
+          "name": "Error",
+          "message": "probe.read: Client inspect query probe.read was cancelled"
+        }
+      },
+      "calls": 0,
+      "events": [
+        {
+          "request": "inspect-1"
+        },
+        {
+          "resolved": "inspect-1"
+        }
+      ]
+    },
+    {
+      "mode": "tools-fused/null",
+      "derived": true,
+      "raised": {
+        "thrown": null
+      },
+      "same": true,
+      "events": [
+        {
+          "type": "abort",
+          "target": true
+        }
+      ],
+      "isError": true,
+      "code": "ABORTED"
+    },
+    {
+      "mode": "platform/false",
+      "before": true,
+      "reason": false,
+      "raised": {
+        "thrown": false
+      },
+      "same": true,
+      "retained": true,
+      "events": [
+        {
+          "type": "abort",
+          "target": true,
+          "reason": false
+        }
+      ]
+    },
+    {
+      "mode": "host-before/false",
+      "result": {
+        "thrown": false
+      },
+      "calls": 0,
+      "events": []
+    },
+    {
+      "mode": "host-after/false",
+      "result": {
+        "thrown": false
+      },
+      "calls": 1,
+      "events": []
+    },
+    {
+      "mode": "client-before/false",
+      "result": {
+        "thrown": false
+      },
+      "calls": 0,
+      "events": []
+    },
+    {
+      "mode": "client-pending/false",
+      "result": {
+        "thrown": {
+          "name": "Error",
+          "message": "probe.read: Client inspect query probe.read was cancelled"
+        }
+      },
+      "calls": 0,
+      "events": [
+        {
+          "request": "inspect-1"
+        },
+        {
+          "resolved": "inspect-1"
+        }
+      ]
+    },
+    {
+      "mode": "tools-fused/false",
+      "derived": true,
+      "raised": {
+        "thrown": false
+      },
+      "same": true,
+      "events": [
+        {
+          "type": "abort",
+          "target": true
+        }
+      ],
+      "isError": true,
+      "code": "ABORTED"
+    },
+    {
+      "mode": "platform/zero",
+      "before": true,
+      "reason": 0,
+      "raised": {
+        "thrown": 0
+      },
+      "same": true,
+      "retained": true,
+      "events": [
+        {
+          "type": "abort",
+          "target": true,
+          "reason": 0
+        }
+      ]
+    },
+    {
+      "mode": "host-before/zero",
+      "result": {
+        "thrown": 0
+      },
+      "calls": 0,
+      "events": []
+    },
+    {
+      "mode": "host-after/zero",
+      "result": {
+        "thrown": 0
+      },
+      "calls": 1,
+      "events": []
+    },
+    {
+      "mode": "client-before/zero",
+      "result": {
+        "thrown": 0
+      },
+      "calls": 0,
+      "events": []
+    },
+    {
+      "mode": "client-pending/zero",
+      "result": {
+        "thrown": {
+          "name": "Error",
+          "message": "probe.read: Client inspect query probe.read was cancelled"
+        }
+      },
+      "calls": 0,
+      "events": [
+        {
+          "request": "inspect-1"
+        },
+        {
+          "resolved": "inspect-1"
+        }
+      ]
+    },
+    {
+      "mode": "tools-fused/zero",
+      "derived": true,
+      "raised": {
+        "thrown": 0
+      },
+      "same": true,
+      "events": [
+        {
+          "type": "abort",
+          "target": true
+        }
+      ],
+      "isError": true,
+      "code": "ABORTED"
+    },
+    {
+      "mode": "platform/empty",
+      "before": true,
+      "reason": "",
+      "raised": {
+        "thrown": ""
+      },
+      "same": true,
+      "retained": true,
+      "events": [
+        {
+          "type": "abort",
+          "target": true,
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "mode": "host-before/empty",
+      "result": {
+        "thrown": ""
+      },
+      "calls": 0,
+      "events": []
+    },
+    {
+      "mode": "host-after/empty",
+      "result": {
+        "thrown": ""
+      },
+      "calls": 1,
+      "events": []
+    },
+    {
+      "mode": "client-before/empty",
+      "result": {
+        "thrown": ""
+      },
+      "calls": 0,
+      "events": []
+    },
+    {
+      "mode": "client-pending/empty",
+      "result": {
+        "thrown": {
+          "name": "Error",
+          "message": "probe.read: Client inspect query probe.read was cancelled"
+        }
+      },
+      "calls": 0,
+      "events": [
+        {
+          "request": "inspect-1"
+        },
+        {
+          "resolved": "inspect-1"
+        }
+      ]
+    },
+    {
+      "mode": "tools-fused/empty",
+      "derived": true,
+      "raised": {
+        "thrown": ""
+      },
+      "same": true,
+      "events": [
+        {
+          "type": "abort",
+          "target": true
+        }
+      ],
+      "isError": true,
+      "code": "ABORTED"
+    },
+    {
+      "mode": "platform/string",
+      "before": true,
+      "reason": "cancelled",
+      "raised": {
+        "thrown": "cancelled"
+      },
+      "same": true,
+      "retained": true,
+      "events": [
+        {
+          "type": "abort",
+          "target": true,
+          "reason": "cancelled"
+        }
+      ]
+    },
+    {
+      "mode": "host-before/string",
+      "result": {
+        "thrown": "cancelled"
+      },
+      "calls": 0,
+      "events": []
+    },
+    {
+      "mode": "host-after/string",
+      "result": {
+        "thrown": "cancelled"
+      },
+      "calls": 1,
+      "events": []
+    },
+    {
+      "mode": "client-before/string",
+      "result": {
+        "thrown": "cancelled"
+      },
+      "calls": 0,
+      "events": []
+    },
+    {
+      "mode": "client-pending/string",
+      "result": {
+        "thrown": {
+          "name": "Error",
+          "message": "probe.read: Client inspect query probe.read was cancelled"
+        }
+      },
+      "calls": 0,
+      "events": [
+        {
+          "request": "inspect-1"
+        },
+        {
+          "resolved": "inspect-1"
+        }
+      ]
+    },
+    {
+      "mode": "tools-fused/string",
+      "derived": true,
+      "raised": {
+        "thrown": "cancelled"
+      },
+      "same": true,
+      "events": [
+        {
+          "type": "abort",
+          "target": true
+        }
+      ],
+      "isError": true,
+      "code": "ABORTED"
+    },
+    {
+      "mode": "platform/object",
+      "before": true,
+      "reason": {
+        "caller": [
+          "operator",
+          false
+        ]
+      },
+      "raised": {
+        "thrown": {
+          "caller": [
+            "operator",
+            false
+          ]
+        }
+      },
+      "same": true,
+      "retained": true,
+      "events": [
+        {
+          "type": "abort",
+          "target": true,
+          "reason": {
+            "caller": [
+              "operator",
+              false
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "mode": "host-before/object",
+      "result": {
+        "thrown": {
+          "caller": [
+            "operator",
+            false
+          ]
+        }
+      },
+      "calls": 0,
+      "events": []
+    },
+    {
+      "mode": "host-after/object",
+      "result": {
+        "thrown": {
+          "caller": [
+            "operator",
+            false
+          ]
+        }
+      },
+      "calls": 1,
+      "events": []
+    },
+    {
+      "mode": "client-before/object",
+      "result": {
+        "thrown": {
+          "caller": [
+            "operator",
+            false
+          ]
+        }
+      },
+      "calls": 0,
+      "events": []
+    },
+    {
+      "mode": "client-pending/object",
+      "result": {
+        "thrown": {
+          "name": "Error",
+          "message": "probe.read: Client inspect query probe.read was cancelled"
+        }
+      },
+      "calls": 0,
+      "events": [
+        {
+          "request": "inspect-1"
+        },
+        {
+          "resolved": "inspect-1"
+        }
+      ]
+    },
+    {
+      "mode": "tools-fused/object",
+      "derived": true,
+      "raised": {
+        "thrown": {
+          "caller": [
+            "operator",
+            false
+          ]
+        }
+      },
+      "same": true,
+      "events": [
+        {
+          "type": "abort",
+          "target": true
+        }
+      ],
+      "isError": true,
+      "code": "ABORTED"
+    },
+    {
+      "mode": "platform/error",
+      "before": true,
+      "reason": {
+        "name": "Error",
+        "message": "fixture abort"
+      },
+      "raised": {
+        "thrown": {
+          "name": "Error",
+          "message": "fixture abort"
+        }
+      },
+      "same": true,
+      "retained": true,
+      "events": [
+        {
+          "type": "abort",
+          "target": true,
+          "reason": {
+            "name": "Error",
+            "message": "fixture abort"
+          }
+        }
+      ]
+    },
+    {
+      "mode": "host-before/error",
+      "result": {
+        "thrown": {
+          "name": "Error",
+          "message": "fixture abort"
+        }
+      },
+      "calls": 0,
+      "events": []
+    },
+    {
+      "mode": "host-after/error",
+      "result": {
+        "thrown": {
+          "name": "Error",
+          "message": "fixture abort"
+        }
+      },
+      "calls": 1,
+      "events": []
+    },
+    {
+      "mode": "client-before/error",
+      "result": {
+        "thrown": {
+          "name": "Error",
+          "message": "fixture abort"
+        }
+      },
+      "calls": 0,
+      "events": []
+    },
+    {
+      "mode": "client-pending/error",
+      "result": {
+        "thrown": {
+          "name": "Error",
+          "message": "probe.read: Client inspect query probe.read was cancelled"
+        }
+      },
+      "calls": 0,
+      "events": [
+        {
+          "request": "inspect-1"
+        },
+        {
+          "resolved": "inspect-1"
+        }
+      ]
+    },
+    {
+      "mode": "tools-fused/error",
+      "derived": true,
+      "raised": {
+        "thrown": {
+          "name": "Error",
+          "message": "fixture abort"
+        }
+      },
+      "same": true,
+      "events": [
+        {
+          "type": "abort",
+          "target": true
+        }
+      ],
+      "isError": true,
+      "code": "ABORTED"
+    },
+    {
+      "mode": "platform/duplicate-and-removal-during-dispatch",
+      "seen": [
+        "first"
+      ]
+    },
+    {
+      "mode": "platform/static-abort-null",
+      "aborted": true,
+      "result": {
+        "thrown": null
+      }
+    }
+  ]
+}

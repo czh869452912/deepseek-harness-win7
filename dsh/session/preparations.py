@@ -3,16 +3,12 @@ import asyncio
 import inspect
 from collections import OrderedDict
 from types import SimpleNamespace
+from dsh.core.abort import abort_reason_error
 
 
 def throw_aborted(signal):
     if signal is not None and signal.aborted:
-        reason = signal.reason
-        if isinstance(reason, BaseException):
-            raise reason
-        error = RuntimeError('operation aborted')
-        error.reason = reason
-        raise error
+        raise abort_reason_error(signal)
 
 
 async def observe_queued_abort(operation, signal=None, started=lambda: False):

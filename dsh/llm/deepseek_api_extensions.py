@@ -79,13 +79,10 @@ def _abort_error(signal: Any) -> BaseException:
     The failure an aborted prepare raises.
 
     `AbortSignal.throwIfAborted()` throws `signal.reason` whatever it is. Python
-    can raise only `BaseException` instances, so a non-exception reason becomes a
-    `RuntimeError` carrying that reason (LEGAL_ADAPTATION).
+    can raise only BaseException instances; ThrownValueError retains non-errors.
     """
-    reason = getattr(signal, "reason", None)
-    if isinstance(reason, BaseException):
-        return reason
-    return RuntimeError("operation aborted" if reason is None else str(reason))
+    from dsh.core.abort import abort_reason_error
+    return abort_reason_error(signal)
 
 
 def _throw_if_aborted(signal: Any) -> None:

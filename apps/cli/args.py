@@ -32,6 +32,9 @@ Examples:
   dsh --profile web --help                   the web app's own flags and help
   dsh plugin --profile tui add <package>     install a plugin into the tui profile
   dsh plugin --profile web add ./plugin.zip  install a Python plugin without Node/pnpm (stop the profile first)
+  dsh plugin --profile web upgrade ./v2.zip replace a managed Python plugin (stop the profile first)
+  dsh plugin --profile web versions <name>  list current and retained Python source versions as JSON
+  dsh plugin --profile web rollback <name> [version] restore a retained Python version (stop the profile first)
 """
 
 

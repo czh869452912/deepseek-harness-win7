@@ -1,4 +1,5 @@
 """Profile-local package management for the canonical launcher."""
+import json
 import os
 import re
 import shutil
@@ -44,16 +45,28 @@ def reconcile_plugins(before, directory):
 def run_plugin(profile, args):
     directory = resolve_profile_dir(profile)
     from dsh.boot.python_plugins import install, uninstall
+    from dsh.boot.python_plugin_versions import upgrade, rollback, versions
     from dsh.boot.profile_lease import ProfileLease
-    if len(args) == 2 and args[0] == "add" and (
+    if len(args) == 2 and args[0] in ("add", "upgrade") and (
         os.path.exists(args[1]) or args[1].lower().endswith(".zip") or args[1].startswith(("./", "../", ".\\", "..\\"))
     ):
+        if args[0] == 'upgrade' and not os.path.isfile(os.path.join(directory, 'package.json')):
+            raise ValueError('upgrade requires an existing profile and managed Python plugin')
         if not os.path.isfile(os.path.join(directory, "package.json")):
             with ProfileLease(directory, exclusive=True):
                 template = PROFILE_TEMPLATES.get(profile, {})
                 init_profile(directory, template.get("bundles", DEFAULT_PROFILE_BUNDLES), template.get("patchReload", "live"))
-        name = install(directory, args[1], INSTALL_ANCHOR)
-        sys.stdout.write("dsh: installed Python plugin {} into {}\n".format(name, profile))
+        name = (install if args[0] == 'add' else upgrade)(directory, args[1], INSTALL_ANCHOR)
+        sys.stdout.write("dsh: {} Python plugin {} into {}\n".format('installed' if args[0] == 'add' else 'upgraded', name, profile))
+        return 0
+    if args and args[0] in ('rollback', 'versions'):
+        if len(args) not in ((2, 3) if args[0] == 'rollback' else (2,)):
+            raise ValueError('use rollback <package> [version] or versions <package>')
+        if args[0] == 'versions':
+            sys.stdout.write(json.dumps(versions(directory, args[1]), ensure_ascii=True, indent=2) + '\n')
+        else:
+            name = rollback(directory, args[1], args[2] if len(args) == 3 else None)
+            sys.stdout.write('dsh: rolled back Python plugin {} in {}\n'.format(name, profile))
         return 0
     if len(args) == 2 and args[0] in ("remove", "rm") and os.path.isfile(os.path.join(directory, "package.json")):
         manifest = read_profile_manifest("dsh", directory)
@@ -71,7 +84,7 @@ def run_pnpm(profile, directory, args):
         init_profile(directory, template.get("bundles", DEFAULT_PROFILE_BUNDLES), template.get("patchReload", "live"))
     before = read_profile_manifest("dsh", directory)
     if before.get("dsh", {}).get("pythonPlugins") and (not args or args[0] not in ("list", "ls", "why", "outdated")):
-        raise ValueError("pnpm mutations cannot manage this profile's Python snapshots; use Python add/remove commands")
+        raise ValueError("pnpm mutations cannot manage this profile's Python snapshots; use Python add/upgrade/rollback/remove commands")
     executable = shutil.which("pnpm")
     if executable is None:
         sys.stderr.write("dsh: pnpm not found on PATH; install pnpm to manage profile plugins\n")

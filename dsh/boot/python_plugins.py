@@ -162,6 +162,10 @@ def recover(directory):
     if current not in (transaction["before"], transaction["after"]):
         raise RuntimeError("profile changed outside pending plugin transaction; recovery requires inspection")
     committed = current == transaction["after"]
+    if transaction["operation"] == "replace":
+        from dsh.boot.python_plugin_versions import recover_replace
+        recover_replace(directory, transaction, committed)
+        return
     for candidate in (target, stage):
         if os.path.isdir(candidate) and file_hashes(candidate) != transaction["files"]:
             raise RuntimeError("plugin transaction files changed; recovery requires inspection")

@@ -3,6 +3,10 @@
 日期：2026-09-30。产品起点：`059a70ca`；本文对应其后的工作树实现。
 固定参考版本：`cd5ef8148158c3a752a658978873241fdf8e2bbc`。
 
+后续已增加停机升级、保留源码代次、版本查询与显式回退，实际 CLI、Loader 和进程
+中断恢复见 [版本事务进展](2026-10-01-python-plugin-versions-progress.md)。本文仍保留
+首次目录/ZIP 交付的历史验收范围，不把后续能力写成当时已实现。
+
 本批次落实 [Python 插件交付评估](2026-09-30-python-plugin-distribution-assessment.md)
 中的第一阶段。本地交付是 Python/Win7 宿主扩展，不是对原版 JS Host
 插件语义的完整移植，也不建立全项目迁移完成或 Win7 实机认证。

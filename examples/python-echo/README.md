@@ -4,7 +4,7 @@ Experimental API version 1. A standard-library Python tool plugin for the Win7
 host. The `python_echo` tool returns `Python echo: <text>`. Its Cordis `tools`
 injection and caller-owned registration use the existing framework lifecycle.
 
-Stop the selected profile before installation or removal. From the repository:
+Stop the selected profile before installation, replacement or removal. From the repository:
 
 ```powershell
 .venv\Scripts\python.exe dsh.py plugin --profile web add .\examples\python-echo
@@ -33,7 +33,20 @@ Plugin code has the permissions of its host process. Installation validates
 metadata, paths and Python syntax without executing package code; activation
 executes it and may fail.
 
-Dependencies, upgrades, automatic activation rollback, live source reload and
+After publishing a different version of the same package, stop the host and use
+`dsh plugin --profile web upgrade ./python-echo-v2.zip` (a directory also works).
+Run `dsh plugin --profile web versions @example/python-echo` to see the current
+and retained source versions. Restore the most recently replaced version with
+`dsh plugin --profile web rollback @example/python-echo`, or append a retained
+version label. Restart the profile to load the selected source. Versions are
+immutable labels, not ordered PEP 440 constraints. Installation still does not
+execute the plugin; if activation fails, stop the host and explicitly roll back.
+
+Changed installed or archived source files block replacement. Package removal
+keeps historical source snapshots under the profile; it does not remove plugin
+business data stored elsewhere. Source rollback does not reverse data migrations.
+
+Dependencies, automatic activation rollback, live source reload and
 custom browser clients remain separate implementation/acceptance work. API 1
 currently requires an empty dependency list and minimum-version arrays;
 it does not implement PEP 440 constraints. Changed installed files block removal
@@ -41,5 +54,6 @@ so user modifications are not silently deleted. Store user data outside the
 installed package directory.
 
 See `docs/research/2026-09-30-python-plugin-local-delivery.md` for the descriptor,
-transaction boundary and observed validation scope. Win7 real-machine testing
+and `docs/research/2026-10-01-python-plugin-versions-progress.md` for version
+transactions and observed validation scope. Win7 real-machine testing
 is still pending; current Windows tests do not certify it.

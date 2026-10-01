@@ -1,5 +1,6 @@
 """Profile-local package management for the canonical launcher."""
 import json
+import hashlib
 import os
 import re
 import shutil
@@ -56,11 +57,32 @@ def run_plugin(profile, args):
         from dsh.boot.python_plugin_export import pack_project
         name = pack_project(args[1], args[2])
         sys.stdout.write('dsh: packed Python plugin {}\n'.format(name))
+        digest = hashlib.sha256()
+        with open(args[2], 'rb') as archive:
+            for chunk in iter(lambda: archive.read(64 * 1024), b''):
+                digest.update(chunk)
+        sys.stdout.write('dsh: archive SHA-256 {}\n'.format(digest.hexdigest()))
         return 0
     directory = resolve_profile_dir(profile)
     from dsh.boot.python_plugins import install, uninstall
     from dsh.boot.python_plugin_versions import upgrade, rollback, versions
     from dsh.boot.profile_lease import ProfileLease
+    if args and args[0] in ('add', 'upgrade') and (
+        (len(args) > 1 and args[1].lower().startswith(('https:', 'http:'))) or '--sha256' in args
+    ):
+        if len(args) != 4 or args[2] != '--sha256':
+            raise ValueError('use add/upgrade <HTTPS ZIP URL> --sha256 <archive digest>')
+        from dsh.boot.python_plugin_acquisition import downloaded_zip
+        if args[0] == 'upgrade' and not os.path.isfile(os.path.join(directory, 'package.json')):
+            raise ValueError('upgrade requires an existing profile and managed Python plugin')
+        with downloaded_zip(args[1], args[3]) as (source, acquisition):
+            if not os.path.isfile(os.path.join(directory, 'package.json')):
+                with ProfileLease(directory, exclusive=True):
+                    template = PROFILE_TEMPLATES.get(profile, {})
+                    init_profile(directory, template.get('bundles', DEFAULT_PROFILE_BUNDLES), template.get('patchReload', 'live'))
+            name = (install if args[0] == 'add' else upgrade)(directory, source, INSTALL_ANCHOR, acquisition=acquisition)
+        sys.stdout.write('dsh: {} Python plugin {} into {}\n'.format('installed' if args[0] == 'add' else 'upgraded', name, profile))
+        return 0
     if len(args) == 2 and args[0] in ("add", "upgrade") and (
         os.path.exists(args[1]) or args[1].lower().endswith(".zip") or args[1].startswith(("./", "../", ".\\", "..\\"))
     ):

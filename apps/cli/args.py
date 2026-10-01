@@ -22,7 +22,7 @@ Options:
 
 Commands:
   web [options] [args...]    boot the web profile (alias of --profile web); the web app's own flags follow
-  plugin [options] [args...] install local Python directories/ZIPs; other package commands use pnpm
+  plugin [options] [args...] install local Python packages or pinned HTTPS ZIPs; other commands use pnpm
 
 Examples:
   dsh --profile web                          boot the web profile (same as: dsh web)
@@ -37,6 +37,7 @@ Examples:
   dsh plugin --profile web rollback <name> [version] restore a retained Python version (stop the profile first)
   dsh plugin --profile web pack ./project ./plugin.zip pack a reviewed Python project without Node/pnpm
   dsh plugin --profile web build ./project build an exported plain-JS Client for the original browser
+  dsh plugin --profile web add <https-url> --sha256 <digest> fetch and install a pinned release ZIP
 """
 
 

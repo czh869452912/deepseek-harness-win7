@@ -238,11 +238,13 @@ def transact(directory, before, after, name, token, operation):
         recover(directory)
 
 
-def install(directory, source, installation_anchor):
+def install(directory, source, installation_anchor, acquisition=None):
     from dsh.boot.app_boot import load_overlay_patches
+    from dsh.boot.python_plugin_acquisition import verified_record
 
     with ProfileLease(directory, exclusive=True):
         recover(directory)
+        acquisition = verified_record(source, acquisition)
         staging = os.path.join(directory, STAGING)
         os.makedirs(staging, exist_ok=True)
         if reparse(staging):
@@ -276,6 +278,8 @@ def install(directory, source, installation_anchor):
             dsh = after.setdefault("dsh", {})
             dsh.setdefault("profile", {}).setdefault("bundles", []).append(name)
             dsh.setdefault("pythonPlugins", {})[name] = {"version": manifest["version"], "files": hashes}
+            if acquisition is not None:
+                dsh['pythonPlugins'][name]['acquisition'] = acquisition
             transact(directory, before_bytes, after, name, token, "add")
             return name
         finally:

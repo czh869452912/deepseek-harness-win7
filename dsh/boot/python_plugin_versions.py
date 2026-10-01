@@ -147,7 +147,7 @@ def recover_replace(directory, transaction, committed):
     os.unlink(os.path.join(directory, store.JOURNAL))
 
 
-def replace_candidate(directory, before_bytes, before, token, stage, expected_name=None):
+def replace_candidate(directory, before_bytes, before, token, stage, expected_name=None, acquisition=None):
     from dsh.boot.app_boot import load_overlay_patches
     descriptor = store.validate_package(stage)
     name = descriptor['name']
@@ -156,6 +156,8 @@ def replace_candidate(directory, before_bytes, before, token, stage, expected_na
     target, record = managed(directory, name, before)
     load_overlay_patches('dsh', inside(stage, descriptor['dsh']['bundle']['patch']))
     new = dict(version=descriptor['version'], files=store.file_hashes(stage))
+    if acquisition is not None:
+        new['acquisition'] = copy.deepcopy(acquisition)
     if new['version'] == record['version']:
         raise ValueError('replacement must have a different version; published versions are immutable')
     history = copy.deepcopy(record.get('history', []))
@@ -164,6 +166,8 @@ def replace_candidate(directory, before_bytes, before, token, stage, expected_na
         if previous['version'] == new['version'] and previous['files'] != new['files']:
             raise ValueError('this version already has a different recorded source generation')
     old = dict(version=record['version'], files=record['files'])
+    if 'acquisition' in record:
+        old['acquisition'] = copy.deepcopy(record['acquisition'])
     old['generation'] = generation(old)
     history = [previous for previous in history if previous['generation'] not in (generation(new), old['generation'])]
     history.append(old)
@@ -173,9 +177,11 @@ def replace_candidate(directory, before_bytes, before, token, stage, expected_na
     return name
 
 
-def upgrade(directory, source, installation_anchor):
+def upgrade(directory, source, installation_anchor, acquisition=None):
+    from dsh.boot.python_plugin_acquisition import verified_record
     with ProfileLease(directory, exclusive=True):
         store.recover(directory)
+        acquisition = verified_record(source, acquisition)
         token, stage = stage_source(directory, source)
         try:
             descriptor = store.validate_package(stage)
@@ -183,7 +189,7 @@ def upgrade(directory, source, installation_anchor):
             if name.startswith('@deepseek-ai/') or package_dir_from_anchor(installation_anchor, name) is not None:
                 raise ValueError('Python plugins cannot replace installation-owned package identities')
             before_bytes, before = profile_bytes(directory)
-            return replace_candidate(directory, before_bytes, before, token, stage)
+            return replace_candidate(directory, before_bytes, before, token, stage, acquisition=acquisition)
         finally:
             if os.path.isdir(stage) and not os.path.exists(os.path.join(directory, store.JOURNAL)):
                 shutil.rmtree(stage)
@@ -203,7 +209,7 @@ def rollback(directory, name, version=None):
         verify(source, selected['files'])
         token, stage = stage_source(directory, source)
         try:
-            return replace_candidate(directory, before_bytes, before, token, stage, name)
+            return replace_candidate(directory, before_bytes, before, token, stage, name, selected.get('acquisition'))
         finally:
             if os.path.isdir(stage) and not os.path.exists(os.path.join(directory, store.JOURNAL)):
                 shutil.rmtree(stage)
@@ -216,7 +222,11 @@ def versions(directory, name):
         before = read_profile_manifest('dsh', directory)
         _, record = managed(directory, name, before)
         result = [dict(version=record['version'], generation=generation(record), current=True)]
+        if 'acquisition' in record:
+            result[0]['acquisition'] = copy.deepcopy(record['acquisition'])
         for previous in record.get('history', []):
             verify(archive_path(directory, name, previous), previous['files'])
             result.append(dict(version=previous['version'], generation=generation(previous), current=False))
+            if 'acquisition' in previous:
+                result[-1]['acquisition'] = copy.deepcopy(previous['acquisition'])
         return dict(name=name, versions=result)

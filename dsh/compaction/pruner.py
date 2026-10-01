@@ -1,287 +1,167 @@
-"""
-Deterministic Model-Free Tool-Result Pruner Service mounted at `ctx.tool_result_pruner`.
-"""
+"""Replay-safe tool-result pruning, ported from the pinned upstream package."""
 
+import math
 from typing import Any, Dict, List, Optional
+
 from dsh.cordis.plugin import Plugin
+from dsh.cordis.schema import Schema
 from dsh.cordis.service import Service
+from dsh.cordis.utils import js_to_string
+from dsh.core.session.json import deep_freeze
 
 PRUNE_MARKER = "\n\n[... tool result middle pruned ...]\n\n"
+DEFAULTS = deep_freeze(dict(thresholdChars=8192, headChars=4096, tailChars=1024))
+
+
+def _code_points(text: str) -> List[str]:
+    """JS string iteration: astral characters and explicit surrogate pairs count once."""
+    points = []
+    index = 0
+    while index < len(text):
+        size = 1
+        if (0xD800 <= ord(text[index]) <= 0xDBFF and index + 1 < len(text)
+                and 0xDC00 <= ord(text[index + 1]) <= 0xDFFF):
+            size = 2
+        points.append(text[index:index + size])
+        index += size
+    return points
 
 
 def code_point_length(text: str) -> int:
-    return len(text)
+    return len(_code_points(text))
+
+
+def resolve_config(config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    raw = {} if config is None else config
+    for key in raw:
+        if key not in DEFAULTS:
+            raise ValueError('ToolResultPruneConfig: unknown key "{}" '
+                             '(allowed: thresholdChars, headChars, tailChars)'.format(key))
+    resolved = {}
+    for key, default in DEFAULTS.items():
+        value = raw.get(key)
+        if value is None:
+            value = default
+        minimum = 1 if key == 'thresholdChars' else 0
+        valid = type(value) in (int, float)
+        if valid:
+            try:
+                number = float(value)
+                valid = math.isfinite(number) and number.is_integer() and number >= minimum
+            except OverflowError:
+                valid = False
+        if not valid:
+            raise ValueError('ToolResultPruneConfig: {} ({}) must be a {} integer'.format(
+                key, js_to_string(value), 'positive' if minimum else 'non-negative'))
+        resolved[key] = number if number == 0 and math.copysign(1, number) < 0 else int(number)
+    emitted = float(resolved['headChars']) + code_point_length(PRUNE_MARKER) + float(resolved['tailChars'])
+    if emitted > resolved['thresholdChars']:
+        raise ValueError('ToolResultPruneConfig: headChars + marker + tailChars ({}) '
+                         'must be at most thresholdChars ({})'.format(
+                             js_to_string(emitted), js_to_string(resolved['thresholdChars'])))
+    return deep_freeze(resolved)
+
+
+def _python_options(config, threshold_chars, head_chars, tail_chars):
+    """Explicit Python keyword arguments adapt to the canonical config keys."""
+    raw = dict(config) if config is not None else {}
+    for key, value in [('thresholdChars', threshold_chars), ('headChars', head_chars), ('tailChars', tail_chars)]:
+        if value is not None:
+            raw[key] = value
+    return raw
 
 
 class ToolResultPruner(Service):
-    """
-    Deterministic head/middle/tail pruning for tool-result surface nodes.
-    """
+    inject = ['tokenMeter']
+    Config = Schema.object({
+        'thresholdChars': Schema.number().step(1).min(1).default(DEFAULTS['thresholdChars']),
+        'headChars': Schema.number().step(1).min(0).default(DEFAULTS['headChars']),
+        'tailChars': Schema.number().step(1).min(0).default(DEFAULTS['tailChars']),
+    })
 
-    def __init__(
-        self,
-        threshold_chars: Optional[int] = None,
-        head_chars: Optional[int] = None,
-        tail_chars: Optional[int] = None,
-        config: Optional[Dict[str, Any]] = None,
-        ctx: Optional[Any] = None,
-    ):
-        if ctx is not None:
-            super().__init__(ctx, "toolResultPruner")
-            ctx.set_service("toolResultPruner", self)
-        else:
+    def __init__(self, threshold_chars=None, head_chars=None, tail_chars=None,
+                 config=None, ctx=None):
+        self.config = resolve_config(_python_options(config, threshold_chars, head_chars, tail_chars))
+        if ctx is None:
             self.ctx = None
+        else:
+            super().__init__(ctx, 'toolResultPruner')
 
-        cfg = config or {}
-        self.threshold_chars = (
-            threshold_chars
-            if threshold_chars is not None
-            else int(cfg.get("thresholdChars") if cfg.get("thresholdChars") is not None else cfg.get("threshold_chars", 8192))
-        )
-        self.head_chars = (
-            head_chars
-            if head_chars is not None
-            else int(cfg.get("headChars") if cfg.get("headChars") is not None else cfg.get("head_chars", 4096))
-        )
-        self.tail_chars = (
-            tail_chars
-            if tail_chars is not None
-            else int(cfg.get("tailChars") if cfg.get("tailChars") is not None else cfg.get("tail_chars", 1024))
-        )
+    def measure_content(self, blocks):
+        return sum(code_point_length(block['text']) for block in blocks if block['type'] == 'text')
 
-    def measure_content(self, blocks_or_text: Any) -> int:
-        if isinstance(blocks_or_text, str):
-            return code_point_length(blocks_or_text)
-        if isinstance(blocks_or_text, list):
-            chars = 0
-            for block in blocks_or_text:
-                if isinstance(block, dict) and block.get("type") == "text":
-                    chars += code_point_length(str(block.get("text", "")))
-                elif isinstance(block, str):
-                    chars += code_point_length(block)
-            return chars
-        return code_point_length(str(blocks_or_text))
-
-    def prune_content(self, blocks_or_text: Any) -> Optional[Any]:
-        if isinstance(blocks_or_text, str):
-            text = blocks_or_text
-            total_len = code_point_length(text)
-            if total_len <= self.threshold_chars:
-                return None
-            removed_start = self.head_chars
-            removed_end = total_len - self.tail_chars
-            head = text[:removed_start]
-            tail = text[removed_end:] if self.tail_chars > 0 else ""
-            return head + PRUNE_MARKER + tail
-
-        if isinstance(blocks_or_text, list):
-            total_chars = self.measure_content(blocks_or_text)
-            if total_chars <= self.threshold_chars:
-                return None
-            removed_start = self.head_chars
-            removed_end = total_chars - self.tail_chars
-            pruned: List[Dict[str, Any]] = []
-            consumed = 0
-            marker_inserted = False
-
-            for block in blocks_or_text:
-                if not isinstance(block, dict) or block.get("type") != "text":
-                    pruned.append(block)
-                    continue
-
-                b_text = str(block.get("text", ""))
-                b_len = code_point_length(b_text)
-                block_start = consumed
-                block_end = block_start + b_len
-                head_end = max(0, min(b_len, removed_start - block_start))
-                tail_start = max(0, min(b_len, removed_end - block_start))
-                intersects_removed = block_start < removed_end and block_end > removed_start
-
-                marker = PRUNE_MARKER if (intersects_removed and not marker_inserted) else ""
-                if marker:
-                    marker_inserted = True
-
-                new_text = b_text[:head_end] + marker + b_text[tail_start:]
-                if new_text:
-                    pruned.append({**block, "text": new_text})
-                consumed = block_end
-
-            return pruned
-
-        return None
-
-    def prune_session(self, session: Any) -> Dict[str, Any]:
-        """
-        Prune every over-budget tool result from current session surface.
-        Emits compaction/prune shadow-pricing event before each replacement.
-        """
-        nodes = list(session.surface.nodes)
-        events = session.events
-        meter = self.ctx.get("tokenMeter") if self.ctx and hasattr(self.ctx, "has") and self.ctx.has("tokenMeter") else None
-
-        pruned_entries: List[Dict[str, Any]] = []
-        chars_removed_total = 0
-
-        for seq in nodes:
-            if seq >= len(events):
+    def prune_content(self, blocks):
+        total = self.measure_content(blocks)
+        if total <= self.config['thresholdChars']:
+            return None
+        removed_start = int(self.config['headChars'])
+        removed_end = total - int(self.config['tailChars'])
+        pruned, consumed, inserted = [], 0, False
+        for block in blocks:
+            if block['type'] != 'text':
+                pruned.append(block)
                 continue
-            event = events[seq]
-            evt_dict = event if isinstance(event, dict) else (event.to_dict() if hasattr(event, "to_dict") else {})
-            if evt_dict.get("type") != "tool/result":
+            points = _code_points(block['text'])
+            end = consumed + len(points)
+            head_end = min(len(points), max(0, removed_start - consumed))
+            tail_start = min(len(points), max(0, removed_end - consumed))
+            intersects = consumed < removed_end and end > removed_start
+            marker = PRUNE_MARKER if intersects and not inserted else ''
+            if marker:
+                inserted = True
+            text = ''.join(points[:head_end]) + marker + ''.join(points[tail_start:])
+            if text:
+                pruned.append(dict(block, text=text))
+            consumed = end
+        if not inserted:
+            raise RuntimeError('tool-result prune: failed to locate the removed text span')
+        after = self.measure_content(pruned)
+        if after > self.config['thresholdChars'] or after >= total:
+            raise RuntimeError('tool-result prune: replacement must be smaller and within threshold')
+        return pruned
+
+    def prune_session(self, session):
+        candidates = []
+        for seq in list(session.surface.nodes):
+            event = session.events[seq]
+            if event['type'] == 'tool/result':
+                candidates.append((seq, event))
+        pruned, chars_removed = [], 0
+        for seq, event in candidates:
+            original = event['data']['message']
+            result = original['content'][0]
+            content = self.prune_content(result['content'])
+            if content is None:
                 continue
+            before, after = self.measure_content(result['content']), self.measure_content(content)
+            message = deep_freeze(dict(original, content=[dict(result, content=content)]))
+            session.append('compaction/prune', dict(
+                shadowedRange=dict(start=seq, end=seq), shadowedSeqs=[seq],
+                shadowedTokenCount=self.ctx.get('tokenMeter').estimate_message(original)))
+            replacement = session.append('tool/result', dict(event['data'], message=message),
+                surface_op=dict(op='replace', start=seq, end=seq), source_event_seqs=[seq])
+            pruned.append(dict(originalSeq=seq, replacementSeq=replacement['seq'],
+                callId=original['source']['callId'], charsBefore=before, charsAfter=after))
+            chars_removed += before - after
+        return dict(pruned=pruned, charsRemoved=chars_removed)
 
-            edata = evt_dict.get("data", {})
-            msg = edata.get("message")
-            if (
-                isinstance(msg, dict)
-                and isinstance(msg.get("content"), list)
-                and len(msg["content"]) > 0
-                and isinstance(msg["content"][0], dict)
-                and msg["content"][0].get("type") == "tool-result"
-            ):
-                first_result_block = msg["content"][0]
-                raw_blocks = first_result_block.get("content", [])
-                pruned_blocks = self.prune_content(raw_blocks)
-                if pruned_blocks is not None:
-                    chars_before = self.measure_content(raw_blocks)
-                    chars_after = self.measure_content(pruned_blocks)
-                    saved_chars = chars_before - chars_after
-                    chars_removed_total += saved_chars
-
-                    token_price = 0
-                    if meter:
-                        token_price = meter.estimate_message(msg)
-
-                    session.append(
-                        "compaction/prune",
-                        {
-                            "shadowedRange": {"start": seq, "end": seq},
-                            "shadowedSeqs": [seq],
-                            "shadowedTokenCount": token_price,
-                        },
-                    )
-
-                    replacement_message = dict(msg)
-                    replacement_message["content"] = [{**first_result_block, "content": pruned_blocks}]
-                    replacement_data = dict(edata)
-                    replacement_data["message"] = replacement_message
-
-                    replacement = session.append(
-                        "tool/result",
-                        replacement_data,
-                        surface_op={"op": "replace", "start": seq, "end": seq},
-                        source_event_seqs=[seq],
-                    )
-                    repl_seq = replacement.get("seq") if isinstance(replacement, dict) else getattr(replacement, "seq", None)
-                    pruned_entries.append({
-                        "original_seq": seq,
-                        "originalSeq": seq,
-                        "replacement_seq": repl_seq,
-                        "replacementSeq": repl_seq,
-                        "chars_before": chars_before,
-                        "charsAfter": chars_after,
-                    })
-                    continue
-
-            raw_content = edata.get("result", edata.get("content", edata.get("message", {}).get("content", "")))
-            pruned_content = self.prune_content(raw_content)
-
-            if pruned_content is not None:
-                chars_before = self.measure_content(raw_content)
-                chars_after = self.measure_content(pruned_content)
-                saved_chars = chars_before - chars_after
-                chars_removed_total += saved_chars
-
-                token_price = 0
-                if meter:
-                    msg_obj = edata.get("message", {"role": "tool", "content": str(raw_content)})
-                    token_price = meter.estimate_message(msg_obj)
-
-                # 1. Append shadow-price event: compaction/prune
-                session.append(
-                    "compaction/prune",
-                    {
-                        "shadowedRange": {"start": seq, "end": seq},
-                        "shadowedSeqs": [seq],
-                        "shadowedTokenCount": token_price,
-                    },
-                )
-
-                # 2. Append replacement tool/result
-                replacement_data = dict(edata)
-                if isinstance(raw_content, str):
-                    replacement_data["result"] = pruned_content
-                if "message" in replacement_data and isinstance(replacement_data["message"], dict):
-                    replacement_data["message"] = dict(replacement_data["message"])
-                    replacement_data["message"]["content"] = pruned_content
-                elif isinstance(pruned_content, list):
-                    replacement_data["content"] = pruned_content
-
-                replacement = session.append(
-                    "tool/result",
-                    replacement_data,
-                    surface_op={"op": "replace", "start": seq, "end": seq},
-                    source_event_seqs=[seq],
-                )
-
-                repl_seq = replacement.get("seq") if isinstance(replacement, dict) else getattr(replacement, "seq", None)
-
-                pruned_entries.append({
-                    "original_seq": seq,
-                    "originalSeq": seq,
-                    "replacement_seq": repl_seq,
-                    "replacementSeq": repl_seq,
-                    "chars_before": chars_before,
-                    "charsBefore": chars_before,
-                    "chars_after": chars_after,
-                    "charsAfter": chars_after,
-                })
-
-        return {
-            "pruned": pruned_entries,
-            "chars_removed": chars_removed_total,
-            "charsRemoved": chars_removed_total,
-        }
+    measureContent = measure_content
+    pruneContent = prune_content
+    pruneSession = prune_session
 
 
 class ToolResultPrunerPlugin(Plugin):
-    """
-    Plugin `@deepseek-ai/dsh-compaction-tool-result-pruner`: Deterministic tool-result pruner.
-    """
+    id = 'tool-result-pruner'
+    name = '@deepseek-ai/dsh-compaction-tool-result-pruner'
+    inject = ['tokenMeter']
+    Config = ToolResultPruner.Config
 
-    id = "tool-result-pruner"
-    name = "@deepseek-ai/dsh-compaction-tool-result-pruner"
+    def __init__(self, config=None, threshold_chars=None, head_chars=None, tail_chars=None):
+        super().__init__(_python_options(config, threshold_chars, head_chars, tail_chars))
 
-    def __init__(
-        self,
-        config: Optional[Dict[str, Any]] = None,
-        threshold_chars: Optional[int] = None,
-        head_chars: Optional[int] = None,
-        tail_chars: Optional[int] = None,
-    ):
-        super().__init__(config)
-        cfg = config or {}
-        self.threshold_chars = (
-            threshold_chars
-            if threshold_chars is not None
-            else int(cfg.get("thresholdChars") if cfg.get("thresholdChars") is not None else cfg.get("threshold_chars", 8192))
-        )
-        self.head_chars = (
-            head_chars
-            if head_chars is not None
-            else int(cfg.get("headChars") if cfg.get("headChars") is not None else cfg.get("head_chars", 4096))
-        )
-        self.tail_chars = (
-            tail_chars
-            if tail_chars is not None
-            else int(cfg.get("tailChars") if cfg.get("tailChars") is not None else cfg.get("tail_chars", 1024))
-        )
+    def apply(self, ctx):
+        ToolResultPruner(config=self.config, ctx=ctx)
 
-    def apply(self, ctx: Any) -> None:
-        if not ctx.has("toolResultPruner"):
-            pruner = ToolResultPruner(
-                threshold_chars=self.threshold_chars,
-                head_chars=self.head_chars,
-                tail_chars=self.tail_chars,
-                ctx=ctx,
-            )
+
+codePointLength = code_point_length
+resolveConfig = resolve_config

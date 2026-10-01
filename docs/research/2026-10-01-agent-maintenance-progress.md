@@ -4,6 +4,10 @@
 `cd5ef8148158c3a752a658978873241fdf8e2bbc`。验证环境为当前 Windows / 原生
 Python 3.8.10。本文记录实施与限定验证范围，不认证整个 AgentLoop 或全项目完成。
 
+后续工具结果裁剪、真实价格记录与 Loader 生命周期的修复及双侧验证见
+[Tool-result pruner 进展](2026-10-01-tool-result-pruner-progress.md)。下文保留本轮
+维护任务的原始验证范围。
+
 ## 源行为与迁移修复
 
 原版 ReactLoopAgent 的维护 phase 对外显示 idle，但 `activityDone` / `whenIdle`

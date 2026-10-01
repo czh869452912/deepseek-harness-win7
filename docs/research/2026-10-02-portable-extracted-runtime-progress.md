@@ -57,6 +57,12 @@ Node/pnpm、PYTHONPATH 或 API Key。探针由包内 Python `-I` 执行，生产
 最终提交候选及最后的断连步骤分别使用上述 `portable-final-extracted.json` receipt，
 提交和归档 SHA-256 由实际构建与验证输出给出，不靠本记录推断。
 
+首个干净候选 `a751e56b` 已实际通过 **13 个 runtime 检查和 5 个浏览器步骤**，
+包含强制关闭后的同 Host RPC。Host 正常退出 0，runtime 和 Host stderr 均为空。
+观察浏览器以 `SIGTERM` 结束，验证器同时检查 `exitCode` / `signalCode`，避免把
+信号终止误判为仍运行。最终 receipt 保留验证器输入哈希；后续仅观察器/文档提交的
+重建仍以该 receipt 中的实际 provenance 和归档哈希为准。
+
 ## 连接重置修复与原版依据
 
 浏览器失败退出曾触发 WinError 64：mux pump 发送失败帧后，发送关闭帧又失败，

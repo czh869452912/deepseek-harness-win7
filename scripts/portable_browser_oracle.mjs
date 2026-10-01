@@ -18,6 +18,7 @@ report.observedSessionWire = [];
 const privateBrowser = await mkdtemp(join(tmpdir(), 'dsh-portable-cdp-'));
 let host, browser, cdp, hostErrors = '';
 const delay = ms => new Promise(done => setTimeout(done, ms));
+const exited = child => child.exitCode !== null || child.signalCode !== null;
 async function until(read, label, timeout = 25000) {
   const end = Date.now() + timeout;
   while (Date.now() < end) {const value = await read(); if (value) return value; await delay(100);}
@@ -173,7 +174,7 @@ try {
   report.steps.push('installed-original-evaluator-client-calls-extracted-python-remote');
   const cookies = (await cdp.call('Network.getCookies', {urls: [boot.url]})).cookies;
   browser.kill();
-  await until(() => browser.exitCode !== null, 'abrupt original-browser termination');
+  await until(() => exited(browser), 'abrupt original-browser termination');
   const request = {type: 'client-request', rpcId: 'portable-after-browser-close', method: boot.endpoint,
     payload: {args: {method: 'echo', args: {afterBrowserClose: true}}}};
   const response = await fetch(new URL('/api/' + boot.endpoint, boot.url), {method: 'POST',
@@ -187,12 +188,12 @@ try {
   report.passed = true;
 } catch (error) {
   report.failure = String(error.stack ?? error);
-  if (cdp && browser?.exitCode === null) {try {report.pageText = await cdp.evaluate('document.body.innerText');
+  if (cdp && browser && !exited(browser)) {try {report.pageText = await cdp.evaluate('document.body.innerText');
     report.treeItems = await cdp.evaluate("Array.from(document.querySelectorAll('[role=treeitem]')).map(e=>({text:e.textContent,expanded:e.getAttribute('aria-expanded'),selected:e.getAttribute('aria-selected')}))");
     report.bundleProbe = await cdp.evaluate(`(async()=>{const r=await fetch(${JSON.stringify(report.installedClientEntry?.url)});const text=await r.text();return {status:r.status,hasPanel:text.includes('data-portable-panel'),head:text.slice(0,200),tail:text.slice(-200),loaderKeys:Object.keys(window.__ModuleLoader__||{})};})()`);
   } catch {}}
 } finally {
-  if (cdp && browser?.exitCode === null) {try {
+  if (cdp && browser && !exited(browser)) {try {
     await cdp.call('Page.navigate', {url: 'about:blank'});
     await until(() => cdp.evaluate('location.href === "about:blank"'), 'close original page');
   } catch {}}
@@ -204,6 +205,8 @@ try {
   browser?.kill();
   report.hostErrors = hostErrors.replace(/token=[^\s]+/g, 'token=[redacted]');
   report.hostExitCode = host?.exitCode;
+  report.browserExitCode = browser?.exitCode;
+  report.browserSignalCode = browser?.signalCode;
   if (report.passed && (report.hostErrors || report.hostExitCode !== 0)) {report.passed = false; report.failure = 'Host teardown failed';}
   await rm(privateBrowser, {recursive: true, force: true, maxRetries: 5, retryDelay: 100});
   await writeFile(resolve(options.output), JSON.stringify(report, null, 2) + '\n', 'utf8');

@@ -33,6 +33,11 @@ Session Client 所有权、完整动态 runner 治理、依赖与多来源获取
 租约，见 [依赖闭包实施记录](2026-10-01-python-plugin-dependency-closure-progress.md)。
 wheel、原生库、版本范围求解、宿主兼容复用与最终发行继续实施。
 
+后续候选构建保留旧产物、实际运行时身份检查，以及解压 Portable 内的插件交付、
+会话冷恢复和原版浏览器验证见
+[解压运行时门禁记录](2026-10-02-portable-extracted-runtime-progress.md)。
+它不认证 Win7、公开发布、软件更新资产保留或全项目迁移完成。
+
 ## 1. 结论
 
 建议采用 **Python Host 插件为主体、Web 客户端资源可选、统一包描述与 Cordis 装配** 的路线。

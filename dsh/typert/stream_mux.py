@@ -76,6 +76,10 @@ class MuxConnection:
         try:
             if self.codec.state == ConnectionState.OPEN:
                 await self.send_event(CloseConnection(code=code, reason=reason))
+        except ConnectionError:
+            # A reset peer cannot receive a close frame. Physical teardown still
+            # completes; this is not a process-level application failure.
+            pass
         finally:
             self.writer.close()
 
@@ -112,6 +116,9 @@ class MuxConnection:
         controller = AbortController()
         task = asyncio.create_task(self.pump(message, controller))
         self.streams[key] = (controller, task)
+        # Upstream observes both pump settlements with done.then(remove, remove).
+        # A pump may finish before run() gathers active iterators on socket close.
+        task.add_done_callback(lambda done: None if done.cancelled() else done.exception())
 
     async def run(self):
         heartbeat = None
@@ -158,6 +165,10 @@ class MuxConnection:
                         if self.codec.state == ConnectionState.REMOTE_CLOSING:
                             await self.send_event(event.response())
                         return
+        except ConnectionError:
+            # Windows can report EOF as WinError 64/10054 during abrupt browser
+            # teardown. Retire this socket and its streams like ordinary EOF.
+            pass
         finally:
             self.closed = True
             if heartbeat is not None:

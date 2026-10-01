@@ -3,6 +3,8 @@ import importlib.util
 from pathlib import Path
 import subprocess
 import sys
+import json
+from types import SimpleNamespace
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -69,4 +71,105 @@ def test_invalid_input_fails_before_release_replacement(tmp_path, monkeypatch, d
 
 def test_release_cli_exposes_explicit_dependency_directory():
     result=subprocess.run([sys.executable,str(ROOT/'scripts/build_portable.py'),'--help'],capture_output=True,text=True)
-    assert result.returncode==0 and '--site-packages' in result.stdout
+    assert result.returncode==0 and '--site-packages' in result.stdout and '--output-dir' in result.stdout
+
+
+def test_real_runtime_identity_and_hashes_are_observed():
+    identity = BUILD.inspect_runtime(sys.base_prefix)
+    assert identity['version'] == [3, 8, 10] and identity['platform'] == 'win32' and identity['bits'] == 64
+    assert set(identity['files']) == {'python.exe', 'python38.dll'}
+    assert all(len(digest) == 64 for digest in identity['files'].values())
+
+
+@pytest.mark.parametrize('observed', [dict(version=[3, 8, 0], platform='win32', bits=64),
+                                    dict(version=[3, 8, 10], platform='win32', bits=32),
+                                    dict(version=[3, 8, 10], platform='linux', bits=64)])
+def test_runtime_filename_cannot_substitute_for_actual_identity(monkeypatch, observed):
+    monkeypatch.setattr(BUILD.subprocess, 'run', lambda *args, **kwargs:
+                        SimpleNamespace(returncode=0, stdout=json.dumps(observed)))
+    with pytest.raises(ValueError, match='actual Windows x64 Python 3.8.10'):
+        BUILD.inspect_runtime('unused')
+
+
+@pytest.mark.parametrize('failure', ['assembly', 'zip', 'directory-backup', 'zip-backup', 'directory-publish', 'zip-publish'])
+def test_candidate_failure_retains_both_previous_artifacts(tmp_path, monkeypatch, failure):
+    parent = tmp_path / 'output'
+    dist = parent / 'dsh-win7-portable'
+    dist.mkdir(parents=True)
+    (dist / 'previous').write_bytes(b'old directory')
+    archive = parent / 'dsh-win7-portable-v0.1.0.zip'
+    archive.write_bytes(b'old zip')
+    def assemble(directory, output, *args):
+        Path(directory).mkdir()
+        (Path(directory) / 'candidate').write_bytes(b'new directory')
+        if failure == 'assembly':
+            raise OSError('fixture assembly failure')
+        Path(output).write_bytes(b'new zip')
+        if failure == 'zip':
+            raise OSError('fixture ZIP failure')
+    monkeypatch.setattr(BUILD, 'assemble_portable', assemble)
+    real_replace = BUILD.os.replace
+    failed = [False]
+    def replace(source, destination):
+        source, destination = Path(source), Path(destination)
+        selected = ((failure == 'directory-backup' and source == dist) or
+                    (failure == 'zip-backup' and source == archive) or
+                    (failure == 'directory-publish' and destination == dist and source.name == dist.name) or
+                    (failure == 'zip-publish' and destination == archive and source.name == archive.name))
+        if selected and not failed[0]:
+            failed[0] = True
+            raise OSError('fixture publication failure')
+        return real_replace(source, destination)
+    monkeypatch.setattr(BUILD.os, 'replace', replace)
+    with pytest.raises(OSError, match='fixture'):
+        BUILD.build_portable(output_dir=str(parent))
+    assert (dist / 'previous').read_bytes() == b'old directory'
+    assert archive.read_bytes() == b'old zip'
+    assert not list(parent.glob('.dsh-portable-candidate-*'))
+
+
+def test_failed_publication_rollback_keeps_recoverable_backup(tmp_path, monkeypatch):
+    parent = tmp_path / 'output'
+    dist = parent / 'dsh-win7-portable'
+    dist.mkdir(parents=True)
+    (dist / 'previous').write_bytes(b'old directory')
+    archive = parent / 'dsh-win7-portable-v0.1.0.zip'
+    archive.write_bytes(b'old zip')
+    def assemble(directory, output, *args):
+        Path(directory).mkdir()
+        Path(output).write_bytes(b'new zip')
+    monkeypatch.setattr(BUILD, 'assemble_portable', assemble)
+    real_replace = BUILD.os.replace
+    def replace(source, destination):
+        if Path(destination) == archive or Path(source).name.startswith('previous-'):
+            raise OSError('fixture storage failure')
+        return real_replace(source, destination)
+    monkeypatch.setattr(BUILD.os, 'replace', replace)
+    with pytest.raises(OSError, match='fixture storage failure'):
+        BUILD.build_portable(output_dir=str(parent))
+    retained = list(parent.glob('.dsh-portable-candidate-*'))
+    assert len(retained) == 1
+    assert (retained[0] / 'previous-0/previous').read_bytes() == b'old directory'
+    assert (retained[0] / 'previous-1').read_bytes() == b'old zip'
+
+
+def test_isolated_candidate_publication_preserves_default_output(tmp_path, monkeypatch):
+    default = tmp_path / 'default/dsh-win7-portable'
+    default.mkdir(parents=True)
+    (default / 'previous').write_bytes(b'default stays')
+    monkeypatch.setattr(BUILD, 'DIST_DIR', str(default))
+    def assemble(directory, output, *args):
+        Path(directory).mkdir()
+        (Path(directory) / 'candidate').write_bytes(b'new directory')
+        Path(output).write_bytes(b'new zip')
+    monkeypatch.setattr(BUILD, 'assemble_portable', assemble)
+    dist, archive = BUILD.build_portable(output_dir=str(tmp_path / 'isolated'))
+    assert (default / 'previous').read_bytes() == b'default stays'
+    assert (Path(dist) / 'candidate').read_bytes() == b'new directory'
+    assert Path(archive).read_bytes() == b'new zip'
+    assert not list(Path(dist).parent.glob('.dsh-portable-candidate-*'))
+
+
+def test_candidate_outputs_cannot_replace_build_inputs(tmp_path):
+    with pytest.raises(ValueError, match='overlaps a build input'):
+        BUILD.build_portable(output_dir=str(ROOT / 'dsh'))

@@ -113,6 +113,8 @@ def test_portable_stages_pinned_rg_and_zip_path_matches_runtime_resolver(tmp_pat
     (metadata / 'METADATA').write_text('Name: FixtureRuntime\nVersion: 1.0\n', encoding='utf-8')
     (metadata / 'RECORD').write_text('fixture_runtime.py,,\nFixtureRuntime-1.0.dist-info/METADATA,,\n', encoding='utf-8')
     (site / 'unreviewed_dev_tool.py').write_text('# must not ship', encoding='utf-8')
+    # This test observes staging bytes, not execution of its placeholder EXE.
+    monkeypatch.setattr(build, 'inspect_runtime', lambda _: dict(version=[3, 8, 10], platform='win32', bits=64))
     build.build_portable(runtime_dir=str(runtime))
     assert (dist / 'lib/fixture_runtime.py').is_file()
     assert not (dist / 'lib/unreviewed_dev_tool.py').exists()

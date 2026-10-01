@@ -1,0 +1,1124 @@
+{
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "source_sha256": {
+    "scripts/oracles/cordis-guard-cases.json": "1559d466ae75c4ac3c44a9c7e3e0def03378c796d71a6d29e4de0e3de7b16413",
+    "scripts/oracles/cordis-guard.spec.ts": "6c6e1fbc21a89a3a25716a989b4ea098e8543a91c7ab9a70bfd15641d566f22c",
+    "scripts/oracles/vitest.cordis-guard-probe.config.mts": "ba0d91b720bc8faa7dae162b9c32c27bd2572c3a0f19a59760dc20a3e30b225e",
+    "scripts/oracles/vitest.agent-lifecycle.config.mts": "1f781c93abe83d7fed3815becbacdf8b639601fae31242baf476e8314508055e",
+    "scripts/oracles/vitest.consumers.config.mts": "b70704a79f8c14cbccbaa62ac717ca4a48402767893e3e85850f491f6a68108f",
+    "scripts/oracles/vitest.core.config.mts": "1e5c431e8bfb8a36462353049517f01dab46455c95e5184c8ab0e97856977bd1",
+    "reference/packages/extensions/cordis-host-runner/src/guard.ts": "3627aa67e89d65b8d72c8d303f2336e00a23c0f3396048387d15d2125eb9718a",
+    "reference/packages/extensions/cordis-host-runner/tests/helpers.ts": "53b47a4bff82da4c952b33a03df450b26f07c48d30254c4dc6e82143315f5de0",
+    "reference/packages/core/tools/src/schema.ts": "d4db1e17f0c43e52c2a18a56fdb7055dace303f2a1c6d22434161dcc08a885c3",
+    "reference/packages/core/tools/src/json-schema.ts": "d6d3203900c1d31e6a03b5b56a1de02effa4356ee933d274704c5bdfdb9f8784"
+  },
+  "observations": [
+    {
+      "mode": "parameters/valid/0",
+      "value": {
+        "name": "guard_probe",
+        "description": "Actual guard",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": {}
+      }
+    },
+    {
+      "mode": "parameters/valid/1",
+      "value": {
+        "name": "guard_probe",
+        "description": "Actual guard",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "x"
+          ]
+        },
+        "outputSchema": {}
+      }
+    },
+    {
+      "mode": "parameters/valid/2",
+      "value": {
+        "name": "guard_probe",
+        "description": "Actual guard",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "x"
+          ],
+          "description": "root",
+          "default": {}
+        },
+        "outputSchema": {}
+      }
+    },
+    {
+      "mode": "parameters/valid/3",
+      "value": {
+        "name": "guard_probe",
+        "description": "Actual guard",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "x": {},
+            "o": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "y": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "y"
+              ]
+            }
+          },
+          "required": [
+            "x"
+          ]
+        },
+        "outputSchema": {}
+      }
+    },
+    {
+      "mode": "parameters/valid/4",
+      "value": {
+        "name": "guard_probe",
+        "description": "Actual guard",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "x"
+          ]
+        },
+        "outputSchema": {}
+      }
+    },
+    {
+      "mode": "parameters/valid/5",
+      "value": {
+        "name": "guard_probe",
+        "description": "Actual guard",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "y": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "y"
+                ]
+              }
+            }
+          }
+        },
+        "outputSchema": {}
+      }
+    },
+    {
+      "mode": "parameters/valid/6",
+      "value": {
+        "name": "guard_probe",
+        "description": "Actual guard",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "1": {
+              "type": "integer"
+            },
+            "2": {
+              "type": "string"
+            },
+            "z": {
+              "examples": [
+                1
+              ]
+            }
+          },
+          "required": [
+            "1",
+            "2"
+          ]
+        },
+        "outputSchema": {}
+      }
+    },
+    {
+      "mode": "parameters/valid/7",
+      "value": {
+        "name": "guard_probe",
+        "description": "Actual guard",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "constructor": {
+              "type": "string"
+            }
+          }
+        },
+        "outputSchema": {}
+      }
+    },
+    {
+      "mode": "parameters/invalid/0",
+      "error": {
+        "message": "harness.defineTool parameters must be a ParameterSchemaSpec object"
+      }
+    },
+    {
+      "mode": "parameters/invalid/1",
+      "error": {
+        "message": "harness.defineTool parameters must be a ParameterSchemaSpec object"
+      }
+    },
+    {
+      "mode": "parameters/invalid/2",
+      "error": {
+        "message": "harness.defineTool parameters must be a ParameterSchemaSpec object"
+      }
+    },
+    {
+      "mode": "parameters/invalid/3",
+      "error": {
+        "message": "harness.defineTool parameters.x must be a ParameterSchemaSpec property object"
+      }
+    },
+    {
+      "mode": "parameters/invalid/4",
+      "error": {
+        "message": "harness.defineTool parameters.x must declare a valid type: 'string' | 'number' | 'integer' | 'boolean' | 'null' | 'object' | 'array' | 'json' (got undefined)"
+      }
+    },
+    {
+      "mode": "parameters/invalid/5",
+      "error": {
+        "message": "harness.defineTool parameters.x must declare a valid type: 'string' | 'number' | 'integer' | 'boolean' | 'null' | 'object' | 'array' | 'json' (got \"wat\")"
+      }
+    },
+    {
+      "mode": "parameters/invalid/6",
+      "error": {
+        "message": "harness.defineTool parameters.x.required must be true when present"
+      }
+    },
+    {
+      "mode": "parameters/invalid/7",
+      "error": {
+        "message": "harness.defineTool parameters.x.pattern is not supported by the unified schema DSL"
+      }
+    },
+    {
+      "mode": "parameters/invalid/8",
+      "error": {
+        "message": "harness.defineTool parameters.additionalProperties must be true or omitted because the implicit parameter root is open"
+      }
+    },
+    {
+      "mode": "parameters/invalid/9",
+      "error": {
+        "message": "harness.defineTool parameters.properties must be an object of schemas"
+      }
+    },
+    {
+      "mode": "parameters/invalid/10",
+      "error": {
+        "message": "harness.defineTool parameters.x must declare a valid type: 'string' | 'number' | 'integer' | 'boolean' | 'null' | 'object' | 'array' | 'json' (got \"json\")"
+      }
+    },
+    {
+      "mode": "parameters/invalid/11",
+      "error": {
+        "message": "harness.defineTool parameters.x.required belongs to the containing raw object schema"
+      }
+    },
+    {
+      "mode": "parameters/invalid/12",
+      "error": {
+        "message": "harness.defineTool parameters.required names undeclared property \"unknown\""
+      }
+    },
+    {
+      "mode": "parameters/invalid/13",
+      "error": {
+        "message": "harness.defineTool parameters.required must be an array of declared property names"
+      }
+    },
+    {
+      "mode": "parameters/invalid/14",
+      "error": {
+        "message": "harness.defineTool parameters.x.additionalProperties must be explicitly true or false"
+      }
+    },
+    {
+      "mode": "parameters/invalid/15",
+      "error": {
+        "message": "harness.defineTool parameters.x.additionalProperties must be explicitly true or false"
+      }
+    },
+    {
+      "mode": "parameters/invalid/16",
+      "error": {
+        "message": "harness.defineTool parameters.x.properties must be an object of schemas"
+      }
+    },
+    {
+      "mode": "parameters/invalid/17",
+      "error": {
+        "message": "harness.defineTool parameters.x.items must be a ParameterSchemaSpec property object"
+      }
+    },
+    {
+      "mode": "parameters/invalid/18",
+      "error": {
+        "message": "harness.defineTool parameters.x.oneOf must contain at least two schemas"
+      }
+    },
+    {
+      "mode": "parameters/invalid/19",
+      "error": {
+        "message": "harness.defineTool parameters.x.oneOf must contain at least two schemas"
+      }
+    },
+    {
+      "mode": "parameters/invalid/20",
+      "error": {
+        "message": "harness.defineTool parameters.x.type is not supported by the unified schema DSL"
+      }
+    },
+    {
+      "mode": "parameters/invalid/21",
+      "error": {
+        "message": "harness.defineTool parameters.x.enum must be a non-empty array"
+      }
+    },
+    {
+      "mode": "parameters/invalid/22",
+      "error": {
+        "message": "unsupported JSON schema: schema.properties.x.enum must be a non-empty array of string values",
+        "code": "UNSUPPORTED_SCHEMA",
+        "name": "JsonSchemaError",
+        "violations": [
+          "schema.properties.x.enum must be a non-empty array of string values"
+        ]
+      }
+    },
+    {
+      "mode": "parameters/invalid/23",
+      "error": {
+        "message": "unsupported JSON schema: schema.properties.x.const must be a boolean value",
+        "code": "UNSUPPORTED_SCHEMA",
+        "name": "JsonSchemaError",
+        "violations": [
+          "schema.properties.x.const must be a boolean value"
+        ]
+      }
+    },
+    {
+      "mode": "parameters/invalid/24",
+      "error": {
+        "message": "unsupported JSON schema: schema.properties.x.description must be a string",
+        "code": "UNSUPPORTED_SCHEMA",
+        "name": "JsonSchemaError",
+        "violations": [
+          "schema.properties.x.description must be a string"
+        ]
+      }
+    },
+    {
+      "mode": "parameters/invalid/25",
+      "error": {
+        "message": "harness.defineTool parameters.x.required names undeclared property \"z\""
+      }
+    },
+    {
+      "mode": "output/schema/0",
+      "value": {
+        "name": "guard_probe",
+        "description": "Actual guard",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": {}
+      }
+    },
+    {
+      "mode": "output/schema/1",
+      "value": {
+        "name": "guard_probe",
+        "description": "Actual guard",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "x": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "x"
+          ]
+        }
+      }
+    },
+    {
+      "mode": "output/schema/2",
+      "value": {
+        "name": "guard_probe",
+        "description": "Actual guard",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "mode": "output/schema/3",
+      "value": {
+        "name": "guard_probe",
+        "description": "Actual guard",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": {
+          "type": "array",
+          "items": {}
+        }
+      }
+    },
+    {
+      "mode": "output/schema/4",
+      "error": {
+        "message": "unsupported JSON schema: schema.type must be string/number/integer/boolean/null/array/object/json, or use oneOf",
+        "code": "UNSUPPORTED_SCHEMA",
+        "name": "JsonSchemaError",
+        "violations": [
+          "schema.type must be string/number/integer/boolean/null/array/object/json, or use oneOf"
+        ]
+      }
+    },
+    {
+      "mode": "output/schema/5",
+      "error": {
+        "message": "unsupported JSON schema: schema.additionalProperties must be explicitly true or false",
+        "code": "UNSUPPORTED_SCHEMA",
+        "name": "JsonSchemaError",
+        "violations": [
+          "schema.additionalProperties must be explicitly true or false"
+        ]
+      }
+    },
+    {
+      "mode": "output/schema/6",
+      "error": {
+        "message": "unsupported JSON schema: schema.required is not supported by the value schema DSL",
+        "code": "UNSUPPORTED_SCHEMA",
+        "name": "JsonSchemaError",
+        "violations": [
+          "schema.required is not supported by the value schema DSL"
+        ]
+      }
+    },
+    {
+      "mode": "output/schema/7",
+      "error": {
+        "message": "unsupported JSON schema: schema.enum must be a non-empty array of string values",
+        "code": "UNSUPPORTED_SCHEMA",
+        "name": "JsonSchemaError",
+        "violations": [
+          "schema.enum must be a non-empty array of string values"
+        ]
+      }
+    },
+    {
+      "mode": "output/schema/8",
+      "error": {
+        "message": "unsupported JSON schema: schema.const must be a integer value",
+        "code": "UNSUPPORTED_SCHEMA",
+        "name": "JsonSchemaError",
+        "violations": [
+          "schema.const must be a integer value"
+        ]
+      }
+    },
+    {
+      "mode": "output/schema/9",
+      "error": {
+        "message": "unsupported JSON schema: schema.oneOf must be an array of at least two schemas",
+        "code": "UNSUPPORTED_SCHEMA",
+        "name": "JsonSchemaError",
+        "violations": [
+          "schema.oneOf must be an array of at least two schemas"
+        ]
+      }
+    },
+    {
+      "mode": "output/schema/10",
+      "error": {
+        "message": "unsupported JSON schema: schema cannot declare both type and oneOf",
+        "code": "UNSUPPORTED_SCHEMA",
+        "name": "JsonSchemaError",
+        "violations": [
+          "schema cannot declare both type and oneOf"
+        ]
+      }
+    },
+    {
+      "mode": "output/schema/11",
+      "error": {
+        "message": "unsupported JSON schema: schema.items.type must be string/number/integer/boolean/null/array/object/json, or use oneOf",
+        "code": "UNSUPPORTED_SCHEMA",
+        "name": "JsonSchemaError",
+        "violations": [
+          "schema.items.type must be string/number/integer/boolean/null/array/object/json, or use oneOf"
+        ]
+      }
+    },
+    {
+      "mode": "execute/valid",
+      "value": {
+        "nested": [
+          1,
+          null
+        ]
+      }
+    },
+    {
+      "mode": "execute/undefined",
+      "error": {
+        "message": "harness.defineTool execute result must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "execute/nan",
+      "error": {
+        "message": "harness.defineTool execute result must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "execute/negative-zero",
+      "error": {
+        "message": "harness.defineTool execute result must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "execute/function",
+      "error": {
+        "message": "harness.defineTool execute result must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "execute/cycle",
+      "error": {
+        "message": "harness.defineTool execute result.again must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "execute/decorated",
+      "error": {
+        "message": "harness.defineTool execute result must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "execute/nested-undefined",
+      "error": {
+        "message": "harness.defineTool execute result.nested[1].invalid must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "render/valid",
+      "value": [
+        {
+          "type": "future-extension",
+          "data": [
+            1,
+            null
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "render/undefined",
+      "error": {
+        "message": "harness.defineTool output.render result must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "render/nan",
+      "error": {
+        "message": "harness.defineTool output.render result must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "render/negative-zero",
+      "error": {
+        "message": "harness.defineTool output.render result must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "render/function",
+      "error": {
+        "message": "harness.defineTool output.render result must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "render/cycle",
+      "error": {
+        "message": "harness.defineTool output.render result.again must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "render/decorated",
+      "error": {
+        "message": "harness.defineTool output.render result must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "render/nested-undefined",
+      "error": {
+        "message": "harness.defineTool output.render result.nested[1].invalid must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "meta/valid",
+      "value": {
+        "nested": [
+          1,
+          null
+        ]
+      }
+    },
+    {
+      "mode": "meta/undefined",
+      "error": {
+        "message": "harness.defineTool output.presentationMeta result must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "meta/nan",
+      "error": {
+        "message": "harness.defineTool output.presentationMeta result must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "meta/negative-zero",
+      "error": {
+        "message": "harness.defineTool output.presentationMeta result must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "meta/function",
+      "error": {
+        "message": "harness.defineTool output.presentationMeta result must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "meta/cycle",
+      "error": {
+        "message": "harness.defineTool output.presentationMeta result.again must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "meta/decorated",
+      "error": {
+        "message": "harness.defineTool output.presentationMeta result must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "meta/nested-undefined",
+      "error": {
+        "message": "harness.defineTool output.presentationMeta result.nested[1].invalid must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "handler/valid",
+      "value": {
+        "nested": [
+          1,
+          null
+        ]
+      }
+    },
+    {
+      "mode": "handler/undefined",
+      "error": {
+        "message": "harness.handle(\"read\") result must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "handler/nan",
+      "error": {
+        "message": "harness.handle(\"read\") result must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "handler/negative-zero",
+      "error": {
+        "message": "harness.handle(\"read\") result must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "handler/function",
+      "error": {
+        "message": "harness.handle(\"read\") result must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "handler/cycle",
+      "error": {
+        "message": "harness.handle(\"read\") result.again must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "handler/decorated",
+      "error": {
+        "message": "harness.handle(\"read\") result must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "handler/nested-undefined",
+      "error": {
+        "message": "harness.handle(\"read\") result.nested[1].invalid must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) \u2014 not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back."
+      }
+    },
+    {
+      "mode": "render/string",
+      "error": {
+        "message": "output.render returned \"wrong\" \u2014 it must return an ARRAY of content blocks:\n  \u2713 return [{ type: 'text', text: String(value) }]"
+      }
+    },
+    {
+      "mode": "render/null",
+      "error": {
+        "message": "output.render returned null \u2014 it must return an ARRAY of content blocks:\n  \u2713 return [{ type: 'text', text: String(value) }]"
+      }
+    },
+    {
+      "mode": "render/bad-block",
+      "error": {
+        "message": "output.render returned [{\"type\":3}] \u2014 it must return an ARRAY of content blocks:\n  \u2713 return [{ type: 'text', text: String(value) }]"
+      }
+    },
+    {
+      "mode": "render/preview",
+      "error": {
+        "message": "output.render returned [\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\u2026 \u2014 it must return an ARRAY of content blocks:\n  \u2713 return [{ type: 'text', text: String(value) }]"
+      }
+    },
+    {
+      "mode": "render/utf16-preview",
+      "error": {
+        "message": "output.render returned [\"\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\u2026 \u2014 it must return an ARRAY of content blocks:\n  \u2713 return [{ type: 'text', text: String(value) }]"
+      }
+    },
+    {
+      "mode": "options/options",
+      "error": {
+        "message": "harness.defineTool options must be an object"
+      }
+    },
+    {
+      "mode": "options/output",
+      "error": {
+        "message": "harness.defineTool output must declare { schema, render, presentationMeta? }"
+      }
+    },
+    {
+      "mode": "options/render",
+      "error": {
+        "message": "harness.defineTool output.render must be a function"
+      }
+    },
+    {
+      "mode": "options/execute",
+      "error": {
+        "message": "harness.defineTool execute must be a function"
+      }
+    },
+    {
+      "mode": "options/presentationMeta",
+      "error": {
+        "message": "harness.defineTool output.presentationMeta must be a function when present"
+      }
+    },
+    {
+      "mode": "options/timeout",
+      "error": {
+        "message": "defineTool(guard_probe): timeoutMs must be a positive finite number"
+      }
+    },
+    {
+      "mode": "soft/true",
+      "value": {
+        "call": {
+          "title": "call"
+        },
+        "result": {
+          "title": "result"
+        },
+        "concurrency": true
+      }
+    },
+    {
+      "mode": "soft/false",
+      "value": {
+        "call": {
+          "undefined": true
+        },
+        "result": {
+          "undefined": true
+        },
+        "concurrency": false
+      }
+    },
+    {
+      "mode": "marker/real",
+      "value": {
+        "schemas": [
+          {
+            "name": "guard_probe",
+            "description": "Actual guard",
+            "parameters": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        ]
+      }
+    },
+    {
+      "mode": "marker/spread",
+      "error": {
+        "message": "dynamic tool registration must use a tool returned by harness.defineTool(...)"
+      }
+    },
+    {
+      "mode": "marker/raw",
+      "error": {
+        "message": "dynamic tool registration must use a tool returned by harness.defineTool(...)"
+      }
+    },
+    {
+      "mode": "facade/root",
+      "value": {
+        "error": {
+          "message": "sandbox ctx does not expose \"root\". Available: ctx.tools.register / ctx.on / ctx.provide / the timer helpers after injecting timer, and any service you declared in inject. Framework internals (root, fiber, registry, extend, plugin, \u2026) are withheld by design."
+        },
+        "reports": [
+          "sandbox ctx does not expose \"root\". Available: ctx.tools.register / ctx.on / ctx.provide / the timer helpers after injecting timer, and any service you declared in inject. Framework internals (root, fiber, registry, extend, plugin, \u2026) are withheld by design."
+        ]
+      }
+    },
+    {
+      "mode": "facade/fiber",
+      "value": {
+        "error": {
+          "message": "sandbox ctx does not expose \"fiber\". Available: ctx.tools.register / ctx.on / ctx.provide / the timer helpers after injecting timer, and any service you declared in inject. Framework internals (root, fiber, registry, extend, plugin, \u2026) are withheld by design."
+        },
+        "reports": [
+          "sandbox ctx does not expose \"fiber\". Available: ctx.tools.register / ctx.on / ctx.provide / the timer helpers after injecting timer, and any service you declared in inject. Framework internals (root, fiber, registry, extend, plugin, \u2026) are withheld by design."
+        ]
+      }
+    },
+    {
+      "mode": "facade/registry",
+      "value": {
+        "error": {
+          "message": "sandbox ctx does not expose \"registry\". Available: ctx.tools.register / ctx.on / ctx.provide / the timer helpers after injecting timer, and any service you declared in inject. Framework internals (root, fiber, registry, extend, plugin, \u2026) are withheld by design."
+        },
+        "reports": [
+          "sandbox ctx does not expose \"registry\". Available: ctx.tools.register / ctx.on / ctx.provide / the timer helpers after injecting timer, and any service you declared in inject. Framework internals (root, fiber, registry, extend, plugin, \u2026) are withheld by design."
+        ]
+      }
+    },
+    {
+      "mode": "facade/extend",
+      "value": {
+        "error": {
+          "message": "sandbox ctx does not expose \"extend\". Available: ctx.tools.register / ctx.on / ctx.provide / the timer helpers after injecting timer, and any service you declared in inject. Framework internals (root, fiber, registry, extend, plugin, \u2026) are withheld by design."
+        },
+        "reports": [
+          "sandbox ctx does not expose \"extend\". Available: ctx.tools.register / ctx.on / ctx.provide / the timer helpers after injecting timer, and any service you declared in inject. Framework internals (root, fiber, registry, extend, plugin, \u2026) are withheld by design."
+        ]
+      }
+    },
+    {
+      "mode": "facade/_ctx",
+      "value": {
+        "error": {
+          "message": "sandbox ctx does not expose \"_ctx\". Available: ctx.tools.register / ctx.on / ctx.provide / the timer helpers after injecting timer, and any service you declared in inject. Framework internals (root, fiber, registry, extend, plugin, \u2026) are withheld by design."
+        },
+        "reports": [
+          "sandbox ctx does not expose \"_ctx\". Available: ctx.tools.register / ctx.on / ctx.provide / the timer helpers after injecting timer, and any service you declared in inject. Framework internals (root, fiber, registry, extend, plugin, \u2026) are withheld by design."
+        ]
+      }
+    },
+    {
+      "mode": "facade/write",
+      "value": {
+        "error": {
+          "message": "sandbox ctx is read-only; cannot assign \"stash\""
+        },
+        "reports": [
+          "sandbox ctx is read-only; cannot assign \"stash\""
+        ]
+      }
+    },
+    {
+      "mode": "facade/undeclared",
+      "value": {
+        "error": {
+          "message": "service \"directContext\" is not injected. Declare it: inject: ['directContext', \u2026] on your plugin, so cordis parks this dynamic package if the provider later goes away."
+        },
+        "reports": [
+          "service \"directContext\" is not injected. Declare it: inject: ['directContext', \u2026] on your plugin, so cordis parks this dynamic package if the provider later goes away."
+        ]
+      }
+    },
+    {
+      "mode": "facade/optional",
+      "value": {
+        "value": null,
+        "reports": []
+      }
+    },
+    {
+      "mode": "facade/declared",
+      "value": {
+        "value": "ready",
+        "reports": []
+      }
+    },
+    {
+      "mode": "facade/tools-view",
+      "value": {
+        "error": {
+          "message": "cannot get property \"tools\" without inject"
+        },
+        "reports": []
+      }
+    },
+    {
+      "mode": "facade/has",
+      "value": {
+        "value": [
+          true,
+          true,
+          true,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false
+        ],
+        "reports": []
+      }
+    },
+    {
+      "mode": "facade/sync-context",
+      "value": {
+        "error": {
+          "message": "service \"demo\" returned a cordis Context, which the sandbox does not expose. Operate through your own plugin ctx (ctx.on / ctx.provide / ctx.tools.register) and the services you inject \u2014 never another context."
+        },
+        "reports": [
+          "service \"demo\" returned a cordis Context, which the sandbox does not expose. Operate through your own plugin ctx (ctx.on / ctx.provide / ctx.tools.register) and the services you inject \u2014 never another context."
+        ]
+      }
+    },
+    {
+      "mode": "facade/async-context",
+      "value": {
+        "error": {
+          "message": "service \"demo\" returned a cordis Context, which the sandbox does not expose. Operate through your own plugin ctx (ctx.on / ctx.provide / ctx.tools.register) and the services you inject \u2014 never another context."
+        },
+        "reports": [
+          "service \"demo\" returned a cordis Context, which the sandbox does not expose. Operate through your own plugin ctx (ctx.on / ctx.provide / ctx.tools.register) and the services you inject \u2014 never another context."
+        ]
+      }
+    },
+    {
+      "mode": "facade/property-context",
+      "value": {
+        "error": {
+          "message": "service \"demo\" returned a cordis Context, which the sandbox does not expose. Operate through your own plugin ctx (ctx.on / ctx.provide / ctx.tools.register) and the services you inject \u2014 never another context."
+        },
+        "reports": [
+          "service \"demo\" returned a cordis Context, which the sandbox does not expose. Operate through your own plugin ctx (ctx.on / ctx.provide / ctx.tools.register) and the services you inject \u2014 never another context."
+        ]
+      }
+    },
+    {
+      "mode": "facade/direct-context",
+      "value": {
+        "error": {
+          "message": "service \"directContext\" returned a cordis Context, which the sandbox does not expose. Operate through your own plugin ctx (ctx.on / ctx.provide / ctx.tools.register) and the services you inject \u2014 never another context."
+        },
+        "reports": [
+          "service \"directContext\" returned a cordis Context, which the sandbox does not expose. Operate through your own plugin ctx (ctx.on / ctx.provide / ctx.tools.register) and the services you inject \u2014 never another context."
+        ]
+      }
+    },
+    {
+      "mode": "stack-safe/depth",
+      "value": {
+        "depth": 1600,
+        "leaf": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "mode": "facade/tools-declared",
+      "value": {
+        "value": {
+          "get": {
+            "name": "guard_probe",
+            "description": "Actual guard",
+            "parameters": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "schemas": [
+            {
+              "name": "guard_probe",
+              "description": "Actual guard",
+              "parameters": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          ],
+          "execute": false
+        },
+        "reports": []
+      }
+    },
+    {
+      "mode": "facade/callable-data",
+      "value": {
+        "value": "ready",
+        "reports": []
+      }
+    },
+    {
+      "mode": "facade/callable-context",
+      "value": {
+        "value": {
+          "escaped": true
+        },
+        "reports": []
+      }
+    },
+    {
+      "mode": "facade/callable-async-context",
+      "value": {
+        "value": {
+          "escaped": true
+        },
+        "reports": []
+      }
+    },
+    {
+      "mode": "facade/service-write",
+      "value": {
+        "value": "changed",
+        "reports": []
+      }
+    },
+    {
+      "mode": "parameters/proto-data",
+      "value": {
+        "name": "guard_probe",
+        "description": "Actual guard",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "__proto__": {
+              "type": "string"
+            },
+            "constructor": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "__proto__"
+          ]
+        },
+        "outputSchema": {}
+      }
+    },
+    {
+      "mode": "handler/empty-name",
+      "error": {
+        "message": "harness.handle(method, fn) needs a non-empty string method name"
+      }
+    },
+    {
+      "mode": "handler/non-callable",
+      "error": {
+        "message": "harness.handle(\"read\") needs a handler function as its second argument"
+      }
+    },
+    {
+      "mode": "facade/index-context",
+      "value": {
+        "error": {
+          "message": "service \"demo\" returned a cordis Context, which the sandbox does not expose. Operate through your own plugin ctx (ctx.on / ctx.provide / ctx.tools.register) and the services you inject \u2014 never another context."
+        },
+        "reports": [
+          "service \"demo\" returned a cordis Context, which the sandbox does not expose. Operate through your own plugin ctx (ctx.on / ctx.provide / ctx.tools.register) and the services you inject \u2014 never another context."
+        ]
+      }
+    }
+  ]
+}

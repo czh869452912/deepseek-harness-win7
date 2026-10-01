@@ -5,6 +5,9 @@
 3.8.10。本轮继续工具提供端的迁移，保留原版浏览器与 canonical Remote 协议；
 不认证完整 JS Host VM、Guard、任意 JS Workflow、浏览器旅程或全项目 parity。
 
+后续原生 Host 的 Context facade、工具 DSL、JSON 返回边界及函数服务 Context
+泄漏修复见 [Guard 进展](2026-10-01-cordis-guard-progress.md)。下文保留本轮原始范围。
+
 ## 提供端修复
 
 `cordis_runner_state.py` 承担版本、审批、激活、结算及通知；`host_runner.py`

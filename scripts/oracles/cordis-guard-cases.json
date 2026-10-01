@@ -1,0 +1,905 @@
+[
+  {
+    "kind": "parameters",
+    "mode": "parameters/valid/0",
+    "value": {}
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/valid/1",
+    "value": {
+      "x": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/valid/2",
+    "value": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x"
+      ],
+      "description": "root",
+      "default": {}
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/valid/3",
+    "value": {
+      "type": "object",
+      "properties": {
+        "x": {},
+        "o": {
+          "type": "object",
+          "properties": {
+            "y": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "y"
+          ]
+        }
+      },
+      "required": [
+        "x"
+      ]
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/valid/4",
+    "value": {
+      "x": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "required": true
+      }
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/valid/5",
+    "value": {
+      "x": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "y": {
+              "type": "integer",
+              "required": true
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/valid/6",
+    "value": {
+      "1": {
+        "type": "integer",
+        "required": true
+      },
+      "2": {
+        "type": "string",
+        "required": true
+      },
+      "z": {
+        "type": "json",
+        "examples": [
+          1
+        ]
+      }
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/valid/7",
+    "value": {
+      "constructor": {
+        "type": "string"
+      }
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/0",
+    "value": null
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/1",
+    "value": []
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/2",
+    "value": 42
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/3",
+    "value": {
+      "x": "string"
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/4",
+    "value": {
+      "x": {}
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/5",
+    "value": {
+      "x": {
+        "type": "wat"
+      }
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/6",
+    "value": {
+      "x": {
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/7",
+    "value": {
+      "x": {
+        "type": "string",
+        "pattern": "a"
+      }
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/8",
+    "value": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/9",
+    "value": {
+      "type": "object"
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/10",
+    "value": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "json"
+        }
+      }
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/11",
+    "value": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "string",
+          "required": true
+        }
+      }
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/12",
+    "value": {
+      "type": "object",
+      "properties": {
+        "x": {}
+      },
+      "required": [
+        "unknown"
+      ]
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/13",
+    "value": {
+      "type": "object",
+      "properties": {},
+      "required": "x"
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/14",
+    "value": {
+      "x": {
+        "type": "object"
+      }
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/15",
+    "value": {
+      "x": {
+        "type": "object",
+        "additionalProperties": null
+      }
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/16",
+    "value": {
+      "x": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": []
+      }
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/17",
+    "value": {
+      "x": {
+        "type": "array",
+        "items": false
+      }
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/18",
+    "value": {
+      "x": {
+        "oneOf": []
+      }
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/19",
+    "value": {
+      "x": {
+        "oneOf": [
+          {}
+        ]
+      }
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/20",
+    "value": {
+      "x": {
+        "type": "string",
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/21",
+    "value": {
+      "x": {
+        "type": "string",
+        "enum": []
+      }
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/22",
+    "value": {
+      "x": {
+        "type": "string",
+        "enum": [
+          "x",
+          2
+        ]
+      }
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/23",
+    "value": {
+      "x": {
+        "type": "boolean",
+        "const": 1
+      }
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/24",
+    "value": {
+      "x": {
+        "type": "string",
+        "description": 3
+      }
+    }
+  },
+  {
+    "kind": "parameters",
+    "mode": "parameters/invalid/25",
+    "value": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "object",
+          "properties": {},
+          "required": [
+            "z"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "kind": "schema",
+    "mode": "output/schema/0",
+    "value": {
+      "type": "json"
+    }
+  },
+  {
+    "kind": "schema",
+    "mode": "output/schema/1",
+    "value": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "type": "string",
+          "required": true
+        }
+      }
+    }
+  },
+  {
+    "kind": "schema",
+    "mode": "output/schema/2",
+    "value": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "schema",
+    "mode": "output/schema/3",
+    "value": {
+      "type": "array",
+      "items": {
+        "type": "json"
+      }
+    }
+  },
+  {
+    "kind": "schema",
+    "mode": "output/schema/4",
+    "value": {}
+  },
+  {
+    "kind": "schema",
+    "mode": "output/schema/5",
+    "value": {
+      "type": "object"
+    }
+  },
+  {
+    "kind": "schema",
+    "mode": "output/schema/6",
+    "value": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": []
+    }
+  },
+  {
+    "kind": "schema",
+    "mode": "output/schema/7",
+    "value": {
+      "type": "string",
+      "enum": []
+    }
+  },
+  {
+    "kind": "schema",
+    "mode": "output/schema/8",
+    "value": {
+      "type": "integer",
+      "const": 1.5
+    }
+  },
+  {
+    "kind": "schema",
+    "mode": "output/schema/9",
+    "value": {
+      "oneOf": [
+        {
+          "type": "string"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "schema",
+    "mode": "output/schema/10",
+    "value": {
+      "type": "string",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "schema",
+    "mode": "output/schema/11",
+    "value": {
+      "type": "array",
+      "items": {
+        "type": "wat"
+      }
+    }
+  },
+  {
+    "kind": "execute",
+    "mode": "execute/valid",
+    "value": {
+      "nested": [
+        1,
+        null
+      ]
+    }
+  },
+  {
+    "kind": "execute",
+    "mode": "execute/undefined",
+    "value": null,
+    "recipe": "undefined"
+  },
+  {
+    "kind": "execute",
+    "mode": "execute/nan",
+    "value": null,
+    "recipe": "nan"
+  },
+  {
+    "kind": "execute",
+    "mode": "execute/negative-zero",
+    "value": null,
+    "recipe": "negative-zero"
+  },
+  {
+    "kind": "execute",
+    "mode": "execute/function",
+    "value": null,
+    "recipe": "function"
+  },
+  {
+    "kind": "execute",
+    "mode": "execute/cycle",
+    "value": null,
+    "recipe": "cycle"
+  },
+  {
+    "kind": "execute",
+    "mode": "execute/decorated",
+    "value": null,
+    "recipe": "decorated"
+  },
+  {
+    "kind": "execute",
+    "mode": "execute/nested-undefined",
+    "value": null,
+    "recipe": "nested-undefined"
+  },
+  {
+    "kind": "render",
+    "mode": "render/valid",
+    "value": [
+      {
+        "type": "future-extension",
+        "data": [
+          1,
+          null
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "render",
+    "mode": "render/undefined",
+    "value": null,
+    "recipe": "undefined"
+  },
+  {
+    "kind": "render",
+    "mode": "render/nan",
+    "value": null,
+    "recipe": "nan"
+  },
+  {
+    "kind": "render",
+    "mode": "render/negative-zero",
+    "value": null,
+    "recipe": "negative-zero"
+  },
+  {
+    "kind": "render",
+    "mode": "render/function",
+    "value": null,
+    "recipe": "function"
+  },
+  {
+    "kind": "render",
+    "mode": "render/cycle",
+    "value": null,
+    "recipe": "cycle"
+  },
+  {
+    "kind": "render",
+    "mode": "render/decorated",
+    "value": null,
+    "recipe": "decorated"
+  },
+  {
+    "kind": "render",
+    "mode": "render/nested-undefined",
+    "value": null,
+    "recipe": "nested-undefined"
+  },
+  {
+    "kind": "meta",
+    "mode": "meta/valid",
+    "value": {
+      "nested": [
+        1,
+        null
+      ]
+    }
+  },
+  {
+    "kind": "meta",
+    "mode": "meta/undefined",
+    "value": null,
+    "recipe": "undefined"
+  },
+  {
+    "kind": "meta",
+    "mode": "meta/nan",
+    "value": null,
+    "recipe": "nan"
+  },
+  {
+    "kind": "meta",
+    "mode": "meta/negative-zero",
+    "value": null,
+    "recipe": "negative-zero"
+  },
+  {
+    "kind": "meta",
+    "mode": "meta/function",
+    "value": null,
+    "recipe": "function"
+  },
+  {
+    "kind": "meta",
+    "mode": "meta/cycle",
+    "value": null,
+    "recipe": "cycle"
+  },
+  {
+    "kind": "meta",
+    "mode": "meta/decorated",
+    "value": null,
+    "recipe": "decorated"
+  },
+  {
+    "kind": "meta",
+    "mode": "meta/nested-undefined",
+    "value": null,
+    "recipe": "nested-undefined"
+  },
+  {
+    "kind": "handler",
+    "mode": "handler/valid",
+    "value": {
+      "nested": [
+        1,
+        null
+      ]
+    }
+  },
+  {
+    "kind": "handler",
+    "mode": "handler/undefined",
+    "value": null,
+    "recipe": "undefined"
+  },
+  {
+    "kind": "handler",
+    "mode": "handler/nan",
+    "value": null,
+    "recipe": "nan"
+  },
+  {
+    "kind": "handler",
+    "mode": "handler/negative-zero",
+    "value": null,
+    "recipe": "negative-zero"
+  },
+  {
+    "kind": "handler",
+    "mode": "handler/function",
+    "value": null,
+    "recipe": "function"
+  },
+  {
+    "kind": "handler",
+    "mode": "handler/cycle",
+    "value": null,
+    "recipe": "cycle"
+  },
+  {
+    "kind": "handler",
+    "mode": "handler/decorated",
+    "value": null,
+    "recipe": "decorated"
+  },
+  {
+    "kind": "handler",
+    "mode": "handler/nested-undefined",
+    "value": null,
+    "recipe": "nested-undefined"
+  },
+  {
+    "kind": "render",
+    "mode": "render/string",
+    "value": "wrong"
+  },
+  {
+    "kind": "render",
+    "mode": "render/null",
+    "value": null
+  },
+  {
+    "kind": "render",
+    "mode": "render/bad-block",
+    "value": [
+      {
+        "type": 3
+      }
+    ]
+  },
+  {
+    "kind": "render",
+    "mode": "render/preview",
+    "value": null,
+    "recipe": "preview"
+  },
+  {
+    "kind": "render",
+    "mode": "render/utf16-preview",
+    "value": null,
+    "recipe": "unicode-preview"
+  },
+  {
+    "kind": "invalid-option",
+    "mode": "options/options",
+    "value": "options"
+  },
+  {
+    "kind": "invalid-option",
+    "mode": "options/output",
+    "value": "output"
+  },
+  {
+    "kind": "invalid-option",
+    "mode": "options/render",
+    "value": "render"
+  },
+  {
+    "kind": "invalid-option",
+    "mode": "options/execute",
+    "value": "execute"
+  },
+  {
+    "kind": "invalid-option",
+    "mode": "options/presentationMeta",
+    "value": "presentationMeta"
+  },
+  {
+    "kind": "invalid-option",
+    "mode": "options/timeout",
+    "value": "timeout"
+  },
+  {
+    "kind": "soft",
+    "mode": "soft/true",
+    "value": null,
+    "valid": true
+  },
+  {
+    "kind": "soft",
+    "mode": "soft/false",
+    "value": null,
+    "valid": false
+  },
+  {
+    "kind": "marker",
+    "mode": "marker/real",
+    "value": null,
+    "variant": "real"
+  },
+  {
+    "kind": "marker",
+    "mode": "marker/spread",
+    "value": null,
+    "variant": "spread"
+  },
+  {
+    "kind": "marker",
+    "mode": "marker/raw",
+    "value": null,
+    "variant": "raw"
+  },
+  {
+    "kind": "facade",
+    "mode": "facade/root",
+    "value": null,
+    "operation": "root"
+  },
+  {
+    "kind": "facade",
+    "mode": "facade/fiber",
+    "value": null,
+    "operation": "fiber"
+  },
+  {
+    "kind": "facade",
+    "mode": "facade/registry",
+    "value": null,
+    "operation": "registry"
+  },
+  {
+    "kind": "facade",
+    "mode": "facade/extend",
+    "value": null,
+    "operation": "extend"
+  },
+  {
+    "kind": "facade",
+    "mode": "facade/_ctx",
+    "value": null,
+    "operation": "_ctx"
+  },
+  {
+    "kind": "facade",
+    "mode": "facade/write",
+    "value": null,
+    "operation": "write"
+  },
+  {
+    "kind": "facade",
+    "mode": "facade/undeclared",
+    "value": null,
+    "operation": "undeclared"
+  },
+  {
+    "kind": "facade",
+    "mode": "facade/optional",
+    "value": null,
+    "operation": "optional"
+  },
+  {
+    "kind": "facade",
+    "mode": "facade/declared",
+    "value": null,
+    "operation": "declared"
+  },
+  {
+    "kind": "facade",
+    "mode": "facade/tools-view",
+    "value": null,
+    "operation": "tools-view"
+  },
+  {
+    "kind": "facade",
+    "mode": "facade/has",
+    "value": null,
+    "operation": "has"
+  },
+  {
+    "kind": "facade",
+    "mode": "facade/sync-context",
+    "value": null,
+    "operation": "sync-context"
+  },
+  {
+    "kind": "facade",
+    "mode": "facade/async-context",
+    "value": null,
+    "operation": "async-context"
+  },
+  {
+    "kind": "facade",
+    "mode": "facade/property-context",
+    "value": null,
+    "operation": "property-context"
+  },
+  {
+    "kind": "facade",
+    "mode": "facade/direct-context",
+    "value": null,
+    "operation": "direct-context"
+  },
+  {
+    "kind": "depth",
+    "mode": "stack-safe/depth",
+    "value": 1600
+  }
+,
+  {"kind": "facade", "mode": "facade/tools-declared", "operation": "tools-declared"},
+  {"kind": "facade", "mode": "facade/callable-data", "operation": "callable-data"},
+  {"kind": "facade", "mode": "facade/callable-context", "operation": "callable-context"},
+  {"kind": "facade", "mode": "facade/callable-async-context", "operation": "callable-async-context"},
+  {"kind": "facade", "mode": "facade/service-write", "operation": "service-write"},
+  {"kind": "parameters", "mode": "parameters/proto-data", "value": {"__proto__": {"type": "string", "required": true}, "constructor": {"type": "integer"}}},
+  {"kind": "handler", "mode": "handler/empty-name", "method": "", "value": null},
+  {"kind": "handler", "mode": "handler/non-callable", "invalidCallback": true, "value": null},
+  {"kind": "facade", "mode": "facade/index-context", "operation": "index-context"}
+]

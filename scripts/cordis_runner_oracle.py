@@ -20,7 +20,7 @@ SOURCE_INPUTS = ['scripts/oracles/cordis-runner-cases.json', 'scripts/oracles/co
     'reference/packages/extensions/cordis-host-runner/src/lifecycle.ts',
     'reference/packages/extensions/cordis-host-runner/tests/helpers.ts']
 INPUTS = SOURCE_INPUTS + ['scripts/cordis_runner_oracle.py', 'scripts/oracles/cordis_runner_python.py',
-    'dsh/extensions/host_runner.py', 'dsh/extensions/cordis_runner_state.py',
+    'dsh/extensions/host_runner.py', 'dsh/extensions/cordis_runner_state.py', 'dsh/extensions/cordis_guard.py',
     'dsh/extensions/inspect_registry.py', 'dsh/core/tools.py', 'dsh/core/json_schema.py',
     'dsh/llm/message.py', 'dsh/core/abort.py', 'dsh/core/cancellation.py',
     'dsh/cordis/context.py', 'dsh/cordis/fiber.py', 'dsh/cordis/reflect.py',

@@ -13,7 +13,7 @@ import sys
 import time
 from types import SimpleNamespace
 
-from dsh.core.tools import _json_snapshot
+from dsh.extensions.cordis_guard import guarded_plugin, normalize_handler, sandbox_define_tool, sandbox_register_tool
 from dsh.extensions.cordis_runner_state import CordisRunnerState, missing_plugin
 from dsh.core.session.json import UNDEFINED
 from dsh.extensions.inspect_registry import CordisInspectRegistryService, js_trim
@@ -199,29 +199,18 @@ class DynamicCordisRunner(CordisRunnerState, TypertRemoteService):
         """Evaluate native Python and mount a real child of the dynamic group.
 
         This evaluator is deliberately not a JavaScript VM or a malicious-code
-        sandbox. Registration facade/DSL parity remains a separate migration.
+        sandbox. The guarded native facade checks ordinary API/registration use.
         """
         def handle(method, handler):
-            if not isinstance(method, str) or not method:
-                raise ValueError('harness.handle(method, fn) needs a non-empty string method name')
-            if not callable(handler):
-                raise ValueError('harness.handle("{}") needs a handler function as its second argument'.format(method))
-            async def normalized(args):
-                value = handler(args)
-                if inspect.isawaitable(value):
-                    value = await value
-                try:
-                    return _json_snapshot(value)
-                except (TypeError, ValueError):
-                    raise ValueError('harness.handle("{}") result must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) — not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back.'.format(method))
+            method, normalized = normalize_handler(method, handler)
             run['handlers'][method] = normalized
             def dispose():
                 if run['handlers'].get(method) is normalized:
                     del run['handlers'][method]
             run['handlerDisposers'].append(dispose)
             return dispose
-        namespace = dict(harness=SimpleNamespace(handle=handle, defineTool=lambda tool: tool,
-            registerTool=lambda ctx, tool: ctx.get('tools').register(tool)))
+        namespace = dict(harness=SimpleNamespace(handle=handle, defineTool=sandbox_define_tool,
+            registerTool=sandbox_register_tool))
         fiber = None
         try:
             deadline, previous = time.monotonic() + self.timeout / 1000, sys.gettrace()
@@ -234,12 +223,14 @@ class DynamicCordisRunner(CordisRunnerState, TypertRemoteService):
                 exec(compile(source, '<cordis-host>', 'exec'), namespace)
             finally:
                 sys.settrace(previous)
-            if not callable(namespace.get('plugin')):
-                raise ValueError('Python Host code must expose a callable named plugin')
+            native_plugin = namespace.get('plugin')
+            if not callable(native_plugin) and not (isinstance(native_plugin, dict) and callable(native_plugin.get('apply'))):
+                raise ValueError('Python Host code must expose a callable plugin or a plugin dict with apply(ctx)')
             if self._group is None:
                 self._group = self.root_ctx.plugin(dict(name='cordis-dynamic', apply=lambda ctx: None))
             group = await self._group
-            fiber = group.ctx.plugin(namespace['plugin'])
+            fiber = group.ctx.plugin(guarded_plugin(native_plugin,
+                lambda error: self.steer_guard_failure(plugin, run, 'Host', self.error_details(error))))
             try:
                 await fiber
             except BaseException:

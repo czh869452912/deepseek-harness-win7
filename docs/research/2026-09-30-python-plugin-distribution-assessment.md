@@ -38,6 +38,11 @@ wheel、原生库、版本范围求解、宿主兼容复用与最终发行继续
 [解压运行时门禁记录](2026-10-02-portable-extracted-runtime-progress.md)。
 它不认证 Win7、公开发布、软件更新资产保留或全项目迁移完成。
 
+正式 Web 的旧 ApiProxy carrier 退役与原生问题／审批作用域修复见
+[Web 传输退役记录](2026-10-02-web-transport-retirement-progress.md)。
+发布方向继续采用 Python Host 与可选预构建 Client；此修复不认证完整动态治理
+或任意原版 JS Host／Workflow 执行能力。
+
 ## 1. 结论
 
 建议采用 **Python Host 插件为主体、Web 客户端资源可选、统一包描述与 Cordis 装配** 的路线。

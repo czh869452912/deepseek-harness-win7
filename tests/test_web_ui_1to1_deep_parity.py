@@ -1,5 +1,8 @@
 """
-Dedicated 1:1 Parity Tests for Official Web GUI Frontend Integration:
+Historical domain-adapter unit tests, not current Web transport parity.
+The mountable ApiProxy carrier is retired; canonical session/preset/Remote
+journeys are covered in test_web_transport_retirement.py and test_session_remote.py.
+Historical assertions retained here:
 1. credentials.describe flat record format
 2. llm.listProviders and llm.listConfigurableProviders array schemas
 3. session.modelCatalog and session.models ModelCatalog wire schema
@@ -20,7 +23,6 @@ from dsh.core.agent_loop import AgentLoopService
 from dsh.llm.llm_openai import LLMOpenAIPlugin
 from dsh.settings.settings_file import SettingsService
 from dsh.host.webserver.webserver import WebServerService, HttpResponseWriter
-from dsh.host.apiproxy.api_proxy import ApiProxyPlugin
 from dsh.host.apiproxy.api.credentials import CredentialsDomainHandler
 from dsh.host.apiproxy.api.llm import LLMDomainHandler, build_model_catalog
 from dsh.host.apiproxy.api.agent_presets import AgentPresetsDomainHandler
@@ -114,39 +116,6 @@ async def test_session_model_catalog_wire_schema():
     assert isinstance(catalog["groups"], list)
     assert "failures" in catalog
     assert isinstance(catalog["failures"], list)
-
-
-@pytest.mark.asyncio
-async def test_agent_preset_select_and_projection_broadcast():
-    """Test agentPreset.select returns preset ID string and projects to session."""
-    ctx = Context()
-    sessions = SessionStore(ctx)
-    ctx.set_service("sessions", sessions)
-    s = sessions.create("s-preset-test")
-
-    events = []
-    async def mock_broadcast(msg):
-        events.append(msg)
-
-    handler = AgentPresetsDomainHandler(ctx)
-    # mock broadcast
-    api_proxy = ApiProxyPlugin()
-    api_proxy._broadcast_mux = mock_broadcast
-    ctx.set_service("api_proxy", api_proxy)
-
-    res = await handler.select_preset({"sessionId": "s-preset-test", "agentPreset": "minimal"})
-
-    # Check return string
-    assert str(res) == "minimal"
-    assert res == "minimal"
-    assert s.header.agent_preset == "minimal"
-
-    # Check broadcast projection frame
-    assert len(events) >= 1
-    proj = next((e for e in events if e.get("type") == "session/projection" and e.get("key") == "agentPreset"), None)
-    assert proj is not None
-    assert proj["sessionId"] == "s-preset-test"
-    assert proj["value"] == "minimal"
 
 
 @pytest.mark.asyncio

@@ -1,5 +1,10 @@
 # 正式 Web 对齐实施记录
 
+后续 mountable ApiProxy HTTP／双业务 SSE carrier 及旧专用测试已退役，并修复
+原生问题／审批的 Agent carrier identity，见
+[2026-10-02 退役与作用域记录](2026-10-02-web-transport-retirement-progress.md)。
+历史域 helper 和部分旧单元测试仍待迁移，下文保留当时完成范围。
+
 后续动态 Cordis 的实际原版浏览器 / Python Host 审批、JSON 调用、版本更新、失败恢复、刷新挂载及停止/移除证据见 [2026-10-01 联合旅程](2026-10-01-native-web-cordis-browser-progress.md)。下文保留当时基线，不代表最新完成范围。
 
 固定目标：`cd5ef8148158c3a752a658978873241fdf8e2bbc`。目标是直接使用原版 Web 前端，Python 后端按当前 Connection / Typert / Remote / WebSocket 契约提供能力。旧 ApiProxy、双 SSE 业务桥不作为实现后门。仅 Windows 7 / Python 3.8 的宿主适配可以偏离上游实现，必须保留行为验证。

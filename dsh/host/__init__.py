@@ -2,7 +2,6 @@
 `dsh.host` package module exports.
 """
 
-from dsh.host.apiproxy import ApiProxyPlugin
 from dsh.host.client_modules import ClientModulesPlugin
 from dsh.host.directory_picker import DirectoryPickerAutoPlugin
 from dsh.host.frontend_static import FrontendStaticPlugin
@@ -14,7 +13,6 @@ __all__ = [
     "WebServerService",
     "FrontendStaticPlugin",
     "ClientModulesPlugin",
-    "ApiProxyPlugin",
     "DirectoryPickerAutoPlugin",
     "PluginInventoryGateway",
 ]

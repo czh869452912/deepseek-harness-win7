@@ -4,6 +4,7 @@ from typing import Any, Callable, Dict, Optional
 
 from dsh.cordis.plugin import Plugin
 from dsh.cordis.service import Service
+from dsh.core.scope import scope_target
 from dsh.llm.error import HarnessError
 
 
@@ -128,7 +129,11 @@ class UserQuestionService(Service):
 
         if self.ctx and hasattr(self.ctx, "waterfall"):
             try:
-                res = await self.ctx.waterfall("user-questions/request", request, no_answerer)
+                if agent is None:
+                    res = await self.ctx.waterfall("user-questions/request", request, no_answerer)
+                else:
+                    res = await self.ctx.waterfall("user-questions/request", request, no_answerer,
+                                                   caller_ctx=scope_target(agent, agent))
                 return res
             except UserQuestionError:
                 raise

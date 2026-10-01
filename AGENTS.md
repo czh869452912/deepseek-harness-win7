@@ -87,7 +87,7 @@ To ensure strict Windows 7 and Python 3.8.10 compatibility:
 - **Web GUI Mode (`dsh-web.bat` / `dsh --profile web`)**:
   - Use the canonical Web profile and upstream bundle composition: Web runtime, WebServer, Connection, Typert Gateway, application Remote controllers, ClientModules, HMR and FrontendStatic.
   - Serve the original frontend from `apps/web/dist` and the bundles declared by active packages. Do not change browser code to accommodate an incompatible host API.
-  - `ApiProxyPlugin` and the legacy harness Web composition still await removal; they are not fallbacks for missing canonical providers or evidence of Web usability. Current implementation and remaining acceptance work are recorded in `docs/research/2026-09-29-canonical-web-progress.md`.
+  - The legacy harness and mountable `ApiProxyPlugin` HTTP/dual-SSE carrier are retired; they are not fallbacks for missing canonical providers. Historical domain helpers still used by unit tests are not current Web parity evidence. See `docs/research/2026-10-02-web-transport-retirement-progress.md` and the earlier canonical Web records for implementation and remaining acceptance work.
 
 ### Canonical Profile CLI & Legacy Retirement
 - Canonical launcher invocations use profile syntax:

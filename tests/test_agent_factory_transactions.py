@@ -236,28 +236,3 @@ async def test_competing_creates_publish_one_identity_and_retire_owner_effects()
     finally:
         await winner.dispose()
         await ctx.fiber.dispose()
-
-
-@pytest.mark.asyncio
-async def test_legacy_web_session_creation_observes_factory_atomicity():
-    from dsh.host.apiproxy.api.sessions import SessionsDomainHandler
-    from dsh.host.apiproxy.api.workspace import WorkspaceDomainHandler
-    ctx, _ = harness()
-    handles, workspaces, seen = {}, {}, []
-    async def broadcast(event):
-        seen.append(event)
-    sessions = SessionsDomainHandler(ctx, handles, broadcast, broadcast, workspaces)
-    workspace = WorkspaceDomainHandler(ctx, workspaces, [], set(), handles, broadcast)
-    states = []
-    ctx.on('session/created', lambda session: states.append(ctx.get('agents').get(session.id) is not None))
-    try:
-        await sessions.create_session({'sessionId':'web','cwd':'C:/work'})
-        await workspace.create_workspace({'path':'C:/another-work'})
-        fork = await sessions.fork_session({'sourceSessionId':'web'})
-        assert ctx.get('agents').get(fork['sessionId']) is not None
-        assert states == [True, True, True]
-        assert ctx.get('sessions').get('web').header.cwd == 'C:/work'
-    finally:
-        for handle in list(handles.values()):
-            await handle.dispose()
-        await ctx.fiber.dispose()

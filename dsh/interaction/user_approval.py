@@ -8,6 +8,7 @@ import asyncio
 import uuid
 from typing import Any, Callable, Dict, List, Optional, Union
 from dsh.cordis.plugin import Plugin
+from dsh.core.scope import scope_target
 
 
 OUTCOMES = ("allowed-once", "rejected", "cancelled", "unavailable")
@@ -150,7 +151,8 @@ class ApprovalService:
 
         if self.ctx and hasattr(self.ctx, "waterfall"):
             try:
-                res = await self.ctx.waterfall("approval/request", req, no_answerer)
+                res = await self.ctx.waterfall("approval/request", req, no_answerer,
+                                               caller_ctx=scope_target(req['agent'], req['agent']))
                 outcome = res if res in OUTCOMES else "unavailable"
             except Exception:
                 outcome = "unavailable"

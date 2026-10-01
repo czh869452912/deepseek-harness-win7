@@ -10,9 +10,9 @@ bound port** with the browser-session cookie
 and compares a normalized transcript against
 `snapshots/web/message-feedback-protocol/protocol.expected.json`.
 
-This port boots the same shipped composition (`build_harness(mode="web")` mounts
-the webserver, the apiproxy carrier, the connection service, the frontend-static
-fallback owner and the message-feedback row), starts the real carrier, performs
+This port boots the shipped composition (`run_profile(profile="web")` mounts
+WebServer, canonical Connection, Typert Gateway, FrontendStatic and the
+message-feedback row), starts the real carrier, performs
 the same launch-token exchange the browser performs
 (`ctx.connection.authenticatedUrl` -> `GET /?token=...` -> 303 + session
 cookie), and then drives the same seven exchanges as raw HTTP/1.1 requests
@@ -224,9 +224,8 @@ async def launch_served_host(tmp_path):
     the browser's own launch-token exchange over a real socket.
 
     This is `launchWebScaffold` + `seedSession` restricted to what the protocol
-    case needs: the port's `web` composition mounts the webserver, the apiproxy
-    carrier, the connection service, the frontend-static fallback owner and the
-    message-feedback row.
+    case needs: the canonical `web` profile mounts WebServer, Connection, Typert
+    Gateway, FrontendStatic and the message-feedback row.
     """
     ctx = await web_context(tmp_path / "host")
     service = ctx.get("messageFeedback")

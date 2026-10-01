@@ -1,5 +1,9 @@
 # Portable 候选构建与实际解压验证
 
+后续正式 Web 的旧 carrier 退役、问题／审批作用域修复、全量回归及独立候选
+命令见 [Web 传输退役记录](2026-10-02-web-transport-retirement-progress.md)。
+本文件保留 `8a551f37` 候选的历史结果。
+
 日期：2026-10-02。产品起点 `ab9883b2`，固定原版
 `cd5ef8148158c3a752a658978873241fdf8e2bbc`。本批次落实
 [Python 插件交付评估](2026-09-30-python-plugin-distribution-assessment.md) 的实际发行物门禁。

@@ -1,19 +1,11 @@
 """
 Host HTTP bridge for browser-client RPC (`@deepseek-ai/dsh-client-connection`).
 
-1:1 port of the `apply` half of
-`reference/packages/client/connection/src/index.ts`: the `/api` browser-trust
-fence and persistent browser authentication, plus the process launch-token
-exchange behind `authorizeIndex`.
-
-Layout adaptation (recorded): upstream's `connection` row owns the `/api` route
-and bridges it to the API gateway's fetch routes. In this port the API gateway,
-the remotes and the connection bridge are one merged plugin
-(`dsh/host/apiproxy`), which registers `/api`. The fence therefore lives at this
-service and is applied by that route owner, so a deployment still refuses an
-unauthenticated or untrusted `/api` request exactly as upstream does. Every
-other observable — the 401/403 codes, the index exchange and the printed URL —
-is owned here.
+Historical authentication facade retained for standalone auth contract tests.
+Production boot uses CanonicalConnectionPlugin in canonical.py and
+HostConnectionService in rpc_host.py: Connection owns /api, while Typert Gateway
+registers Remote RPC dispatch and the /api/remote.mux WebSocket. The retired
+ApiProxy carrier does not participate in production Web composition.
 """
 
 from typing import Any, Dict, List, Optional

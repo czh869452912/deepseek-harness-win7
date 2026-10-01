@@ -193,7 +193,6 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     "@deepseek-ai/dsh-api-settings-controller": "dsh.api.settings:SettingsController",
     "@deepseek-ai/dsh-api-workspace-controller": "dsh.api.workspace:WorkspaceController",
     "@deepseek-ai/dsh-acp": "dsh.acp.server:AcpPlugin",
-    "@deepseek-ai/dsh-apiproxy": "dsh.host.apiproxy.api_proxy:ApiProxyPlugin",
     "@deepseek-ai/dsh-client-modules": "dsh.host.client_modules.registry:ClientModulesPlugin",
     "@deepseek-ai/dsh-host-webserver": "dsh.host.webserver.webserver:WebServerPlugin",
     "@deepseek-ai/dsh-host-frontend-static": "dsh.host.frontend_static.frontend_static:FrontendStaticPlugin",

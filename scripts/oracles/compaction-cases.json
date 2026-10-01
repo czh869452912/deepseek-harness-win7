@@ -30,5 +30,20 @@
   {"mode":"transaction-typed-hook-error","kind":"transaction","action":"hook-error"},
   {"mode":"transaction-void-flush","kind":"transaction","flush":"void"},
   {"mode":"transaction-failed-flush","kind":"transaction","flush":"error"},
-  {"mode":"transaction-cancel-after-flush","kind":"transaction","flush":"cancel"}
+  {"mode":"transaction-cancel-after-flush","kind":"transaction","flush":"cancel"},
+  {"mode":"command-success","kind":"command"},
+  {"mode":"command-no-history","kind":"command","action":"no-history"},
+  {"mode":"command-arguments","kind":"command","suffix":" now"},
+  {"mode":"command-bom","kind":"command","suffix":" \ufeff\u2028"},
+  {"mode":"command-nel","kind":"command","suffix":" \u0085"},
+  {"mode":"command-busy","kind":"command","failure":"busy"},
+  {"mode":"command-cancelled","kind":"command","failure":"cancelled"},
+  {"mode":"command-changed","kind":"command","failure":"changed"},
+  {"mode":"command-summary","kind":"command","failure":"summary"},
+  {"mode":"command-commit","kind":"command","failure":"commit"},
+  {"mode":"command-persistence","kind":"command","failure":"persistence"},
+  {"mode":"command-unexpected","kind":"command","failure":"unexpected"},
+  {"mode":"command-caller-abort","kind":"command","action":"abort"},
+  {"mode":"command-pre-aborted","kind":"command","action":"pre-aborted"},
+  {"mode":"command-drain","kind":"command","action":"drain"}
 ]

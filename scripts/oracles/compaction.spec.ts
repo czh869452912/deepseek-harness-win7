@@ -7,7 +7,74 @@ import TokenMeter from '@deepseek-ai/dsh-token-meter'
 import BasicCompactionEngine from '@deepseek-ai/dsh-compaction-basic'
 import { resolveConfig, resolveTargetPolicy, resolveCompactSpec } from '../../reference/packages/compaction/compaction-basic/src/config.ts'
 import { compactSurfaceRegion } from '../../reference/packages/compaction/compaction-basic/src/region.ts'
-import { ManualCompactionError } from '@deepseek-ai/dsh-compaction'
+import { ManualCompactionError, CompactionEngine } from '@deepseek-ai/dsh-compaction'
+import CommandRuntime from '@deepseek-ai/dsh-commands'
+import * as commandCompact from '@deepseek-ai/dsh-command-compact'
+
+async function command(spec: any): Promise<any> {
+  const ctx = new Context()
+  try {
+    await ctx.plugin(SessionStore)
+    await ctx.plugin(CommandRuntime)
+    const session = ctx.sessions.create()
+    const agent: any = { session, status: 'idle', options: {} }
+    const control = new AbortController()
+    const reason = new Error('operator cancelled')
+    const calls: any[] = []
+    const entered = Promise.withResolvers<void>()
+    const close = Promise.withResolvers<void>()
+    const closed = Promise.withResolvers<void>()
+    const flush = Promise.withResolvers<void>()
+    const flushed = Promise.withResolvers<void>()
+    class Backend extends CompactionEngine {
+      async compactIfNeeded(): Promise<any> { return null }
+      async compactRegion(): Promise<any> { throw new Error('unused') }
+      async compactNow(owner: any, signal: any, identity?: any): Promise<any> {
+        calls.push({ sameAgent: owner === agent, sameSignal: signal === control.signal,
+          sameCommand: identity === session.events.find(e => e.type === 'command/run')!.data.commandId })
+        if (spec.action === 'abort') { control.abort(reason); throw new ManualCompactionError('summary', 'late failure') }
+        if (spec.action === 'drain') {
+          entered.resolve(); await close.promise; closed.resolve(); await flush.promise; flushed.resolve(); throw reason
+        }
+        if (spec.failure) throw spec.failure === 'unexpected' ? reason : new ManualCompactionError(spec.failure, 'private detail')
+        if (spec.action === 'no-history') return null
+        const provenance = { compactionId: 'fixture', sourceCommandId: identity }
+        session.append('compaction/start', { ...provenance, turn: null } as any)
+        const summary = session.append('compaction/summary', { ...provenance, summary: [{ type: 'text', text: 'summary' }],
+          shadowedRange: { start: 1, end: 7 }, shadowedSeqs: [1, 3, 7], shadowedTokenCount: 42, provider: 'test', model: 'model' } as any)
+        session.append('compaction/end', { ...provenance, turn: null } as any)
+        return { shadowedSeqs: [1, 3, 7], shadowedTokenCount: 42, summarySeq: summary.seq }
+      }
+    }
+    new Backend(ctx)
+    const plugin = await ctx.plugin(commandCompact)
+    if (spec.action === 'pre-aborted') control.abort(reason)
+    const execution = ctx.commands.execute(agent, '/compact' + (spec.suffix ?? ''), [], control.signal)
+    const observed = execution.then(result => ({ result: result!.result }), error => ({ thrown: error.message, sameReason: error === reason }))
+    let drain: any
+    if (spec.action === 'drain') {
+      await entered.promise; control.abort(reason); await observed
+      let disposed = false
+      const disposal = plugin.dispose().then(() => { disposed = true })
+      await new Promise(resolve => setTimeout(resolve, 0))
+      const unregistered = ctx.commands.find(agent, 'compact') === undefined
+      const waitsClose = !disposed
+      close.resolve(); await closed.promise; await new Promise(resolve => setTimeout(resolve, 0))
+      const waitsFlush = !disposed
+      flush.resolve(); await flushed.promise; await disposal
+      drain = { unregistered, waitsClose, waitsFlush, disposed }
+    }
+    const outcome = await observed
+    return { mode: spec.mode, outcome, calls, ...drain === undefined ? {} : { drain },
+      surface: session.surface.nodes,
+      events: session.events.map(event => {
+        const data: any = { ...event.data }
+        if ('commandId' in data) data.commandId = 'command'
+        if ('sourceCommandId' in data) data.sourceCommandId = 'command'
+        return { type: event.type, data }
+      }) }
+  } finally { await ctx.fiber.dispose() }
+}
 
 async function transaction(spec: any): Promise<any> {
   const ctx = new Context()
@@ -79,6 +146,10 @@ it('observes pinned compaction policies and real routed transactions', async () 
   const cases = JSON.parse(await readFile('scripts/oracles/compaction-cases.json', 'utf8'))
   const rows: any[] = []
   for (const spec of cases) {
+    if (spec.kind === 'command') {
+      rows.push(await command(spec))
+      continue
+    }
     if (spec.kind === 'transaction') {
       rows.push(await transaction(spec))
       continue

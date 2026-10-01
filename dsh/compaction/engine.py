@@ -229,8 +229,11 @@ class CompactionEngine(Service):
 
         from dsh.core.abort import AbortController
         from dsh.core.cancellation import subscribe_abort
+        entered = False
 
         async def perform(maintenance):
+            nonlocal entered
+            entered = True
             control = AbortController()
             origin = []
             def relay(source, reason):
@@ -258,7 +261,12 @@ class CompactionEngine(Service):
                     dispose()
         if agent.status != "idle":
             raise ManualCompactionError("busy", "manual compaction requires an idle agent")
-        return await agent.run_maintenance(perform)
+        try:
+            return await agent.run_maintenance(perform)
+        except Exception as error:
+            if not entered:
+                raise ManualCompactionError("busy", "manual compaction requires an idle agent with no waking queued work", error) from error
+            raise
 
     compactNow = compact_now
 

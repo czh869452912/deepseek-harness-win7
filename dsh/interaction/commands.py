@@ -26,7 +26,8 @@ from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 from dsh.attachment.admission import admit_encoded_images
 from dsh.attachment.error import AttachmentError
 from dsh.core.abort import AbortSignal
-from dsh.core.scope import NamedEntries, ScopeLayer, ScopedLayers
+from dsh.core.cancellation import subscribe_abort
+from dsh.core.scope import NamedEntries, ScopeLayer, ScopedLayers, scope_of
 from dsh.core.session.json import FrozenList, deep_freeze
 from dsh.cordis.service import Service
 
@@ -376,30 +377,6 @@ def cancellation_of(signal: Any) -> Optional[BaseException]:
     return None
 
 
-def _abort_waiter(signal: Any) -> Optional[Any]:
-    """
-    Return an awaitable that settles when `signal` aborts, or `None` when the
-    signal exposes no notification surface the port can observe.
-    """
-    waiter = getattr(signal, "wait_aborted", None)
-    if callable(waiter):
-        return waiter()
-    add = getattr(signal, "add_listener", None) or getattr(signal, "addEventListener", None)
-    if not callable(add):
-        return None
-    loop = asyncio.get_event_loop()
-    future: "asyncio.Future[None]" = loop.create_future()
-
-    def _on_abort(*_args: Any) -> None:
-        if not future.done():
-            future.set_result(None)
-
-    add("abort", _on_abort)
-    if getattr(signal, "aborted", False) and not future.done():
-        future.set_result(None)
-    return future
-
-
 async def _with_abort(value: Any, signal: Any) -> Any:
     """
     Stop awaiting an uncooperative handler once its owning UI request aborts.
@@ -413,28 +390,54 @@ async def _with_abort(value: Any, signal: Any) -> Any:
             return await value
         return value
     if getattr(signal, "aborted", False):
+        if isinstance(value, asyncio.Future):
+            value.add_done_callback(_consume_settlement)
         raise abort_error(signal)
     if not inspect.isawaitable(value):
         return value
 
-    waiter_value = _abort_waiter(signal)
-    if waiter_value is None:
+    add = getattr(signal, "add_listener", None) or getattr(signal, "addEventListener", None)
+    wait = getattr(signal, "wait_aborted", None) or getattr(signal, "wait", None)
+    if not callable(add) and not callable(wait):
         return await value
 
     task = asyncio.ensure_future(value)
-    waiter = asyncio.ensure_future(waiter_value)
+    winner = asyncio.get_event_loop().create_future()
+
+    def on_abort(*_args: Any) -> None:
+        # Native abort dispatch is synchronous. Commit its rejection now, before
+        # a handler that aborts and returns in the same turn can settle the race.
+        if not winner.done():
+            winner.set_exception(abort_error(signal))
+
+    def on_settle(settled: "asyncio.Future[Any]") -> None:
+        if settled.cancelled():
+            if not winner.done():
+                winner.cancel()
+            return
+        error = settled.exception()
+        if not winner.done():
+            if error is not None:
+                winner.set_exception(error)
+            else:
+                winner.set_result(settled.result())
+
+    if callable(add):
+        remove = add("abort", on_abort)
+        def dispose() -> None:
+            if callable(remove):
+                remove()
+            else:
+                remover = getattr(signal, "remove_listener", None) or getattr(signal, "removeEventListener", None)
+                if callable(remover):
+                    remover("abort", on_abort)
+    else:
+        dispose = subscribe_abort(signal, on_abort)
+    task.add_done_callback(on_settle)
     try:
-        done, _pending = await asyncio.wait({task, waiter}, return_when=asyncio.FIRST_COMPLETED)
+        return await winner
     finally:
-        if not waiter.done():
-            waiter.cancel()
-        if not task.done():
-            # Detach the handler without cancelling it; its settlement (or
-            # failure) is consumed so the abandoned await stays silent.
-            task.add_done_callback(_consume_settlement)
-    if task in done:
-        return task.result()
-    raise abort_error(signal)
+        dispose()
 
 
 def _consume_settlement(settled: "asyncio.Future[Any]") -> None:
@@ -745,7 +748,9 @@ class CommandRuntime(Service):
 
     def _view(self, agent: Any) -> Dict[str, Any]:
         """Resolve global definitions followed by exact scoped shadows."""
-        return self._layers.merge(agent, lambda layer: layer.commands)
+        # Configured Python agents bind their registration key on their Context.
+        key = scope_of(agent.ctx) if getattr(agent, "ctx", None) is not None else None
+        return self._layers.merge(key if key is not None else agent, lambda layer: layer.commands)
 
     def _notify_change(self) -> None:
         """

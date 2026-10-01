@@ -16,6 +16,87 @@ from dsh.core.session import SessionPlugin
 from dsh.core.session.json import FrozenDict, FrozenList
 from dsh.llm.token_meter import TokenMeter
 from dsh.llm.llm_service import LLMService
+from dsh.compaction.command_compact import CommandCompactPlugin
+from dsh.interaction.commands import CommandsPlugin
+from dsh.core.agent import Agent
+
+
+async def command(spec):
+    ctx = Context()
+    try:
+        await ctx.plugin(SessionPlugin)
+        await ctx.plugin(CommandsPlugin)
+        session = ctx.get('sessions').create()
+        agent = Agent(session, ctx=ctx)
+        control, reason, calls = AbortController(), RuntimeError('operator cancelled'), []
+        entered, close, closed, flush, flushed = [asyncio.Event() for _ in range(5)]
+        class Backend:
+            async def compact_now(self, owner, signal, identity):
+                calls.append(dict(sameAgent=owner is agent, sameSignal=signal is control.signal,
+                    sameCommand=identity == next(event for event in session.events if event['type'] == 'command/run')['data']['commandId']))
+                if spec.get('action') == 'abort':
+                    control.abort(reason)
+                    raise ManualCompactionError('summary', 'late failure')
+                if spec.get('action') == 'drain':
+                    entered.set()
+                    await close.wait()
+                    closed.set()
+                    await flush.wait()
+                    flushed.set()
+                    raise reason
+                if spec.get('failure'):
+                    raise reason if spec['failure'] == 'unexpected' else ManualCompactionError(spec['failure'], 'private detail')
+                if spec.get('action') == 'no-history':
+                    return None
+                provenance = dict(compactionId='fixture', sourceCommandId=identity)
+                session.append('compaction/start', dict(provenance, turn=None))
+                summary = session.append('compaction/summary', dict(provenance, summary=[dict(type='text', text='summary')],
+                    shadowedRange=dict(start=1, end=7), shadowedSeqs=[1, 3, 7], shadowedTokenCount=42, provider='test', model='model'))
+                session.append('compaction/end', dict(provenance, turn=None))
+                return dict(shadowedSeqs=[1, 3, 7], shadowedTokenCount=42, summarySeq=summary['seq'])
+        ctx.set_service('compaction', Backend())
+        plugin = await ctx.plugin(CommandCompactPlugin)
+        if spec.get('action') == 'pre-aborted':
+            control.abort(reason)
+        async def observe_execution():
+            try:
+                result = await ctx.get('commands').execute(agent, '/compact' + spec.get('suffix', ''), [], control.signal)
+                return dict(result=dict(result.result))
+            except Exception as error:
+                return dict(thrown=str(error), sameReason=error is reason)
+        pending = asyncio.create_task(observe_execution())
+        drain = None
+        if spec.get('action') == 'drain':
+            await entered.wait()
+            control.abort(reason)
+            await pending
+            disposal = asyncio.ensure_future(plugin.dispose())
+            for _ in range(50):
+                if ctx.get('commands').find(agent, 'compact') is None:
+                    break
+                await asyncio.sleep(0)
+            unregistered, waits_close = ctx.get('commands').find(agent, 'compact') is None, not disposal.done()
+            close.set()
+            await closed.wait()
+            waits_flush = not disposal.done()
+            flush.set()
+            await flushed.wait()
+            await disposal
+            drain = dict(unregistered=unregistered, waitsClose=waits_close, waitsFlush=waits_flush, disposed=disposal.done())
+        outcome = await pending
+        events = []
+        for event in session.events:
+            data = dict(event['data'])
+            for key in ('commandId', 'sourceCommandId'):
+                if key in data:
+                    data[key] = 'command'
+            events.append(dict(type=event['type'], data=data))
+        result = dict(mode=spec['mode'], outcome=outcome, calls=calls, surface=list(session.surface.nodes), events=events)
+        if drain is not None:
+            result['drain'] = drain
+        return result
+    finally:
+        await ctx.fiber.dispose()
 
 
 class Llm:
@@ -112,6 +193,9 @@ async def observe():
     cases = json.loads((ROOT / 'scripts/oracles/compaction-cases.json').read_text(encoding='utf-8'))
     rows = []
     for spec in cases:
+        if spec['kind'] == 'command':
+            rows.append(await command(spec))
+            continue
         if spec['kind'] == 'transaction':
             rows.append(await transaction(spec))
             continue

@@ -6,6 +6,10 @@ Date: 2026-10-01. Product baseline: `ff49dedd`. Pinned upstream:
 [policy work](2026-10-01-compaction-policy-progress.md). It covers the listed
 transaction behavior, not full compaction, full migration or Win7 certification.
 
+Subsequent command/runtime migration and formal preset restart journeys are
+recorded in [manual command progress](2026-10-01-command-compact-progress.md).
+This report's results and remaining-work list retain their historical scope.
+
 ## Implemented contracts
 
 - The replaceable hook receives `summarize(input, agent, signal)` with selected

@@ -5,12 +5,14 @@ Agent handle, Inbox integration, Initiator ContextVar scoping, and AgentRegistry
 
 import asyncio
 import contextvars
+import inspect
 from typing import Any, Callable, Dict, List, Optional, Union
 from dsh.cordis.context import Context
 from dsh.cordis.plugin import Plugin
 from dsh.cordis.service import Service
 from dsh.core.consumed_work import ConsumedWork, fold_consumed_work
 from dsh.core.inbox import Inbox
+from dsh.core.abort import AbortController, AbortSignal
 from dsh.core.session import Session, SessionHeader
 from dsh.llm.message import create_user_message
 
@@ -95,6 +97,8 @@ class Agent:
         self._idle_futures: List[asyncio.Future] = []
         self._driver_task: Optional[asyncio.Task] = None
         self._wake_requested: bool = False
+        self._maintenance_abort: Optional[AbortController] = None
+        self._maintenance_done: Optional[asyncio.Future] = None
 
     @property
     def status(self) -> str:
@@ -113,7 +117,7 @@ class Agent:
             if self.ctx:
                 self.ctx.emit("agent/status", {"agent": self, "status": current_status})
                 self.ctx.emit("internal/status", {"agent": self, "status": current_status})
-        if current_status == "idle":
+        if self._phase_kind == "idle":
             futures = list(self._idle_futures)
             self._idle_futures.clear()
             for fut in futures:
@@ -129,7 +133,7 @@ class Agent:
             if self.ctx:
                 self.ctx.emit("agent/status", {"agent": self, "status": current_status})
                 self.ctx.emit("internal/status", {"agent": self, "status": current_status})
-        if current_status == "idle":
+        if self._phase_kind == "idle":
             futures = list(self._idle_futures)
             self._idle_futures.clear()
             for fut in futures:
@@ -147,7 +151,8 @@ class Agent:
         msg_id = self.inbox.append(resolved_target, msg_dict)
         if wakeup:
             if self._phase_kind != "idle":
-                if self._phase_kind == "maintenance" or waking_after_abort:
+                if ((self._cancel_cause or {}).get("kind") != "disposed"
+                        and (self._phase_kind == "maintenance" or waking_after_abort)):
                     self._wake_requested = True
             else:
                 self.set_phase("running")
@@ -177,19 +182,17 @@ class Agent:
         Abort active driver and optionally clear inbox.
         """
         should_keep = keep_inbox or (getattr(options, "keep_inbox", False) or getattr(options, "keepInbox", False) if options else False)
-        if self._phase_kind == "idle" and self.inbox.is_empty():
-            if not should_keep:
-                self.inbox.clear()
-            return
-
-        self._cancel_cause = cause or reason or {"kind": "user"}
-        self._cancel_event.set()
-        if hasattr(self, "_maintenance_abort") and self._maintenance_abort is not None:
-            self._maintenance_abort.set()
         if not should_keep:
             self.inbox.clear()
             if self._phase_kind != "idle":
                 self._wake_requested = False
+        if self._phase_kind == "idle":
+            return
+        if self._cancel_cause is None:
+            self._cancel_cause = cause or reason or {"kind": "user"}
+            self._cancel_event.set()
+        if self._maintenance_abort is not None:
+            self._maintenance_abort.abort(self._cancel_cause)
 
     def is_cancelled(self) -> bool:
         return self._cancel_cause is not None
@@ -208,38 +211,62 @@ class Agent:
 
     async def when_idle(self) -> None:
         """Resolve when whole-agent activity reaches idle quiescence."""
-        while self.status != "idle":
+        while True:
+            maintenance = self._maintenance_done
+            if maintenance is not None:
+                await asyncio.shield(maintenance)
+                continue
+            if self._phase_kind == "idle":
+                return
             loop = asyncio.get_running_loop()
             fut = loop.create_future()
             self._idle_futures.append(fut)
-            await fut
+            try:
+                await fut
+            finally:
+                if fut in self._idle_futures:
+                    self._idle_futures.remove(fut)
 
     async def whenIdle(self) -> None:
         return await self.when_idle()
 
-    async def run_maintenance(self, task_fn: Callable[[asyncio.Event], Any]) -> Any:
-        """Run non-turn maintenance task in idle phase."""
+    def run_maintenance(self, task_fn: Callable[[AbortSignal], Any]) -> Any:
+        """Reserve maintenance immediately; idle observation joins its lifetime."""
         if self._phase_kind != "idle":
             raise RuntimeError(f'agent "{self.id}" already has active work')
+        control = AbortController()
+        done = asyncio.get_running_loop().create_future()
+        self._maintenance_abort = control
+        self._maintenance_done = done
+        self._wake_requested = False
         self.set_phase("maintenance")
-        self._maintenance_abort = asyncio.Event()
-        try:
-            res = task_fn(self._maintenance_abort)
-            if asyncio.iscoroutine(res):
-                res = await res
-            return res
-        finally:
-            self._maintenance_abort = None
-            self._cancel_cause = None
-            if self._wake_requested and self.inbox.has_pending:
+        async def perform():
+            try:
+                res = task_fn(control.signal)
+                return await res if inspect.isawaitable(res) else res
+            finally:
+                wake_requested = self._wake_requested
+                self._maintenance_abort = None
+                self._cancel_cause = None
+                self._cancel_event.clear()
                 self._wake_requested = False
-                self.set_phase("running")
-                self._wake_event.set()
-            else:
                 self.set_phase("idle")
+                if wake_requested and self.inbox.has_pending and self._phase_kind == "idle":
+                    self.set_phase("running")
+                    self._wake_event.set()
+                self._maintenance_done = None
+                done.set_result(None)
+        pending = asyncio.create_task(perform())
+        def observe_failure(task):
+            if not task.cancelled():
+                task.exception()
+        pending.add_done_callback(observe_failure)
+        async def observe():
+            # Cancelling an observer cannot cancel the Agent-owned operation.
+            return await asyncio.shield(pending)
+        return observe()
 
-    async def runMaintenance(self, task_fn: Callable[[asyncio.Event], Any]) -> Any:
-        return await self.run_maintenance(task_fn)
+    runMaintenance = run_maintenance
 
 
 class AgentHandle:

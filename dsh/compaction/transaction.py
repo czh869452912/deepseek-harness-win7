@@ -2,6 +2,7 @@
 import asyncio
 import uuid
 
+from dsh.cordis.errors import ThrownValueError
 from dsh.core.cancellation import aborted
 from dsh.llm.error import error_chain
 from dsh.compaction.tool_pairing import tool_pairing_balanced_before, tool_pairing_balanced_after
@@ -12,7 +13,12 @@ def check_cancel(signal):
         reason = getattr(signal, "reason", None)
         if isinstance(reason, BaseException):
             raise reason
-        error = asyncio.CancelledError("compaction cancelled")
+        if not isinstance(signal, asyncio.Event) and reason is not None:
+            raise ThrownValueError(reason, "compaction cancelled")
+        # A native business abort is an ordinary failure. CancelledError marks
+        # an asyncio Task cancelled; shield then loses its attached reason.
+        # Keep that historical spelling only for explicit Event adapters.
+        error = (asyncio.CancelledError if isinstance(signal, asyncio.Event) else RuntimeError)("compaction cancelled")
         error.reason = reason
         raise error
 

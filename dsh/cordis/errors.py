@@ -4,6 +4,14 @@ from typing import Any, Dict, Iterable, Optional
 _ABSENT = object()
 
 
+class ThrownValueError(RuntimeError):
+    """Python carrier for a JS thrown value that is not a BaseException."""
+    def __init__(self, value: Any, message: str = "operation aborted"):
+        super().__init__(message)
+        self.value = value
+        self.reason = value
+
+
 class AggregateError(RuntimeError):
     def __init__(self, errors: Iterable[Any], message: str = "",
                  options: Optional[Dict[str, Any]] = None, *, cause: Any = _ABSENT):

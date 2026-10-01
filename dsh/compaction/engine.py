@@ -235,13 +235,10 @@ class CompactionEngine(Service):
             nonlocal entered
             entered = True
             control = AbortController()
-            origin = []
-            def relay(source, reason):
+            def relay(reason):
                 if not control.signal.aborted:
-                    origin.append(source)
                     control.abort(reason)
-            disposers = [subscribe_abort(maintenance, lambda reason: relay("agent", reason)),
-                         subscribe_abort(signal, lambda reason: relay("caller", reason))]
+            disposers = [subscribe_abort(maintenance, relay), subscribe_abort(signal, relay)]
             try:
                 check_cancel(control.signal)
                 measurement = self.ctx.get("tokenMeter").measure(session)
@@ -252,7 +249,7 @@ class CompactionEngine(Service):
                                                  agent=agent, signal=control.signal, manual=True,
                                                  source_command_id=source_command_id, flush=session.flush)
             except BaseException as error:
-                if origin == ["agent"]:
+                if aborted(maintenance) and control.signal.reason is getattr(maintenance, "reason", None):
                     raise ManualCompactionError("cancelled", "manual compaction was cancelled", error) from error
                 check_cancel(control.signal)
                 raise

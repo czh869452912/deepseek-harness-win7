@@ -5,7 +5,7 @@ import inspect
 from typing import Any, Dict, Optional, Set
 
 from dsh.cordis.utils import _UNDEFINED, js_to_string
-from dsh.cordis.errors import AggregateError
+from dsh.cordis.errors import AggregateError, ThrownValueError
 
 _MISSING = object()
 
@@ -118,6 +118,8 @@ def error_chain(value: Any) -> str:
             return "<circular cause>"
         path.add(identity)
         try:
+            if isinstance(current, ThrownValueError):
+                return render(current.value)
             if not isinstance(current, BaseException):
                 message = _own_message(current) if not _primitive(current) else _UNDEFINED
                 return message if isinstance(message, str) else _string(current)

@@ -94,6 +94,13 @@ class AbortSignal:
             if future in self._waiters:
                 self._waiters.remove(future)
 
+    # Python Host plugins historically received asyncio.Event signals.
+    # Preserve their read/wait API while retaining a synchronous abort reason.
+    wait = wait_aborted
+
+    def is_set(self) -> bool:
+        return self.aborted
+
     def throw_if_aborted(self) -> None:
         """Raise `KeyboardInterrupt`-free cancellation: a plain `RuntimeError`."""
         if self.aborted:

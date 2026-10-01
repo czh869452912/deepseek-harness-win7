@@ -71,6 +71,9 @@ reference 无修改。migration check 通过，ready 退出码 0 且无就绪任
 git diff --check 通过。这些记录检查不认证全项目完成。生产代码仍为 Python 3.8，
 未新增生产依赖、QuickJS、Node Host 或浏览器源码变更。
 
+后续维护等待、取消原因与真实压缩关闭已继续修复，具体双侧观察和范围见
+[Agent 维护进展](2026-10-01-agent-maintenance-progress.md)。下文待办保留原始基线。
+
 此 renderer 的测试范围不认证任意跨 realm JS 对象、恶意重写 AggregateError
 成员容器、无限深错误链或所有未迁移消费者。Session promote 的完整行为、ACP /
 Webhook 等消费者、压缩取消和 maintenance 生命周期、client 历史展示及浏览器

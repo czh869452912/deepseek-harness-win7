@@ -4,16 +4,32 @@ Each Loader mount evaluates fresh globals and mounts the original guarded plugin
 as a Cordis child. This is trusted Python execution, not a security sandbox.
 """
 import inspect
+import hashlib
 import sys
 import time
 from types import SimpleNamespace
 
 from dsh.extensions.cordis_guard import (clone_json, guarded_plugin,
     normalize_handler, sandbox_define_tool, sandbox_register_tool)
+from dsh.typert.remote import Remote, TypertRemoteService
 
 
 def host_handler_service(package_name):
     return 'pythonPlugin:' + package_name
+
+
+def host_remote_namespace(package_name):
+    return 'pythonExport' + hashlib.sha256(package_name.encode('utf-8')).hexdigest()[:24]
+
+
+class ExportedHostRemote(TypertRemoteService):
+    def __init__(self, ctx, package_name, handlers):
+        super().__init__(ctx, host_remote_namespace(package_name))
+        self._handlers = handlers
+
+    @Remote
+    async def call(self, method, args):
+        return await self._handlers.call(method, args)
 
 
 class PythonHostHandlers:
@@ -21,6 +37,7 @@ class PythonHostHandlers:
         self.handlers = {}
         self.closed = False
         self.active = False
+        self.activation = 0
 
     def handle(self, method, callback):
         if self.closed:
@@ -38,7 +55,17 @@ class PythonHostHandlers:
         callback = self.handlers.get(method)
         if callback is None:
             raise ValueError('unknown exported Host handler: ' + method)
-        return await callback(clone_json(args, 'exported Host handler arguments'))
+        activation = self.activation
+        value = await callback(clone_json(args, 'exported Host handler arguments'))
+        if self.closed or not self.active or self.activation != activation:
+            raise RuntimeError('exported Python Host activation ended during the call')
+        return value
+
+    def activate(self):
+        if self.closed:
+            raise RuntimeError('exported Python Host is unloaded')
+        self.activation += 1
+        self.active = True
 
     def close(self):
         self.closed = True
@@ -49,13 +76,16 @@ class PythonHostHandlers:
         self.active = False
 
 
-def python_host_source(source_path, package_name):
+def python_host_source(source_path, package_name, enable_remote=False):
     """Return a reusable Loader entry; globals and registrations are per mount."""
     async def apply(ctx, config=None):
         handlers = PythonHostHandlers()
         ctx.effect(lambda: handlers.close, 'exported Host handlers')
-        with open(source_path, encoding='utf-8', newline='') as stream:
-            source = stream.read()
+        if source_path is None:
+            source = 'def plugin(ctx):\n    pass\n'
+        else:
+            with open(source_path, encoding='utf-8', newline='') as stream:
+                source = stream.read()
         namespace = dict(__file__=source_path, harness=SimpleNamespace(
             handle=handlers.handle, defineTool=sandbox_define_tool,
             registerTool=sandbox_register_tool))
@@ -66,7 +96,7 @@ def python_host_source(source_path, package_name):
             return trace
         try:
             sys.settrace(trace)
-            exec(compile(source, source_path, 'exec'), namespace)
+            exec(compile(source, source_path or '<exported-client-only>', 'exec'), namespace)
         finally:
             sys.settrace(previous)
         native = namespace.get('plugin')
@@ -79,9 +109,11 @@ def python_host_source(source_path, package_name):
         guarded = guarded_plugin(native, report)
         callback = guarded['apply']
         async def activate(child_ctx, child_config=None):
-            handlers.active = True
+            handlers.activate()
             child_ctx.effect(lambda: handlers.deactivate, 'exported Host activation')
             child_ctx.provide(host_handler_service(package_name), handlers)
+            if enable_remote:
+                ExportedHostRemote(child_ctx, package_name, handlers)
             returned = callback(child_ctx, child_config)
             if inspect.isawaitable(returned):
                 returned = await returned

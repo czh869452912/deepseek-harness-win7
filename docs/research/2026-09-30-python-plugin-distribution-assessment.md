@@ -17,6 +17,10 @@
 boot graph 保留至页面刷新，卸载后旧 Client 调用必须被 Host 拒绝；依赖闭包、
 通用动态 Client 导出和最终发行仍未由此完成。
 
+创造模式导出的 Host placement Client 已有原生 `build`、源码 receipt 与真实
+原版 evaluator/Remote 联合验证，见 [Client 源码构建记录](2026-10-01-python-plugin-client-build-progress.md)。
+Session Client 所有权、完整动态 runner 治理、依赖与多来源获取仍须实施。
+
 ## 1. 结论
 
 建议采用 **Python Host 插件为主体、Web 客户端资源可选、统一包描述与 Cordis 装配** 的路线。

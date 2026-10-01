@@ -14,8 +14,12 @@ from apps.cli.plugin import run_plugin
 from dsh.boot.profile import init_profile, PROFILE_TEMPLATES
 from dsh.boot.profile_boot import run_profile
 from scripts.build_python_web_example import build
+from dsh.extensions.packaged_host import host_handler_service, host_remote_namespace
 
 NAME = '@example/python-web-echo'
+EXPORTED = '--exported' in sys.argv
+if EXPORTED:
+    from scripts.python_export_client_fixture import NAME, export_project_at
 
 
 def make_zip(project, path):
@@ -33,7 +37,13 @@ async def main():
         template = PROFILE_TEMPLATES['web']
         init_profile(str(home / 'profiles/web'), template['bundles'], template.get('patchReload', 'live'))
         original = Path(directory) / 'v1.zip'
-        make_zip(ROOT / 'examples/python-web-echo', original)
+        if EXPORTED:
+            source_project, receipt = await export_project_at(Path(directory))
+            os.environ['DSH_HOME'] = str(home)
+            run_plugin('web', ['build', str(source_project)])
+        else:
+            source_project = ROOT / 'examples/python-web-echo'
+        make_zip(source_project, original)
         run_plugin('web', ['add', str(original)])
         result = None
 
@@ -43,7 +53,7 @@ async def main():
         async def start():
             nonlocal result
             result = await run_profile(dict(profile='web', dshHome=str(home), args=['--no-open', '--port', '0'], waitForExit=False))
-            return snapshot()
+            return await snapshot()
 
         async def stop():
             nonlocal result
@@ -52,13 +62,16 @@ async def main():
                 await result['shutdown'].wait()
                 result = None
 
-        def snapshot():
+        async def snapshot():
             ctx = result['ctx']
-            service = ctx.get('pythonWebEcho')
+            namespace = host_remote_namespace(NAME) if EXPORTED else 'pythonWebEcho'
+            endpoint = namespace + ('/call' if EXPORTED else '/echo')
+            service = ctx.get(namespace)
+            calls = (await ctx.get(host_handler_service(NAME)).call('snapshot', None))['calls'] if EXPORTED and service is not None else service.calls if service is not None else None
             return dict(url=ctx.connection.authenticated_url('http://127.0.0.1:{}'.format(ctx.webServer.port)),
-                calls=service.calls if service is not None else None,
-                graph=ctx.clientModules.graph(), descriptor=ctx.typert.local.get('pythonWebEcho/echo') is not None,
-                seen=ctx.typert.local.hasSeen('pythonWebEcho/echo'), python=sys.version.split()[0])
+                calls=calls, name=NAME, endpoint=endpoint, exported=EXPORTED,
+                graph=ctx.clientModules.graph(), descriptor=ctx.typert.local.get(endpoint) is not None,
+                seen=ctx.typert.local.hasSeen(endpoint), python=sys.version.split()[0])
 
         try:
             send(dict(ready=True, value=await start()))
@@ -70,7 +83,7 @@ async def main():
                 try:
                     command = request['command']
                     if command == 'snapshot':
-                        value = snapshot()
+                        value = await snapshot()
                     elif command == 'unload':
                         ctx = result['ctx']
                         entry = next(row for row in ctx.loader.entries if row.options.get('name') == NAME)
@@ -78,18 +91,28 @@ async def main():
                         await entry.fiber.await_settled()
                         for _ in range(20):
                             await asyncio.sleep(0)
-                        value = snapshot()
+                        value = await snapshot()
+                    elif EXPORTED and command in ('rebuild-client', 'restore-client'):
+                        installed = home / 'profiles/web/node_modules' / NAME
+                        source = installed / 'client/source.js'
+                        original_source = (source_project / 'client/source.js').read_bytes()
+                        source.write_bytes(original_source + (b'\n// real HMR rebuild\n' if command == 'rebuild-client' else b''))
+                        run_plugin('web', ['build', str(installed)])
+                        value = await snapshot()
                     elif command in ('restart', 'upgrade', 'rollback', 'remove'):
                         await stop()
                         if command == 'upgrade':
                             project = Path(directory) / 'version-two'
-                            shutil.copytree(str(ROOT / 'examples/python-web-echo'), str(project))
+                            shutil.copytree(str(source_project), str(project))
                             manifest = json.loads((project / 'package.json').read_text(encoding='utf-8'))
                             manifest['version'] = '2.0.0'
                             (project / 'package.json').write_text(json.dumps(manifest), encoding='utf-8')
-                            source = project / 'python/web_echo/plugin.py'
+                            source = project / ('python/exported/host.body.py' if EXPORTED else 'python/web_echo/plugin.py')
                             source.write_text(source.read_text(encoding='utf-8').replace("'1.0.0'", "'2.0.0'"), encoding='utf-8')
-                            build(project)
+                            if EXPORTED:
+                                run_plugin('web', ['build', str(project)])
+                            else:
+                                build(project)
                             archive = Path(directory) / 'v2.zip'
                             make_zip(project, archive)
                             run_plugin('web', ['upgrade', str(archive)])

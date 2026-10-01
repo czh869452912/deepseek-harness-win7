@@ -17,6 +17,7 @@ const output = resolve(options.output);
 await mkdir(dirname(output), { recursive: true });
 const privateBrowser = await mkdtemp(join(tmpdir(), 'dsh-web-package-cdp-'));
 const report = { kind: 'original-browser/installed-python-web-package', steps: [], errors: [], consoleErrors: [], requests: [], replies: [], sockets: [] };
+let packageName = '@example/python-web-echo', rpcEndpoint = 'pythonWebEcho/echo';
 let browser, host, cdp, hostErrors = '', nextCommand = 1;
 const pending = new Map();
 const replyJobs = new Set();
@@ -90,7 +91,7 @@ async function transition(operation, version, present = true) {
   const boot = await command(operation);
   assert.equal(boot.calls, present ? 0 : null);
   assert.equal(boot.descriptor, present);
-  assert.equal(boot.graph.entries.some(row => row.id === '@example/python-web-echo'), present);
+  assert.equal(boot.graph.entries.some(row => row.id === packageName), present);
   await open(boot, present);
   if (present) await echo(version, 1);
   report.steps.push({ step: operation + '-from-installed-package', passed: true });
@@ -105,6 +106,9 @@ try {
     'dsh/boot/python_web_artifacts.py', 'dsh/plugin_api.py', 'dsh/plugin_remote.py',
     'dsh/boot/python_package.py', 'dsh/boot/python_plugin_export.py', 'dsh/boot/python_plugins.py',
     'scripts/build_python_web_example.py', 'tests/test_python_web_plugin.py',
+    'dsh/boot/python_client_build.py', 'dsh/extensions/packaged_client.js',
+    'dsh/extensions/packaged_host.py', 'scripts/python_export_client_fixture.py',
+    'tests/test_python_client_build.py',
     'examples/python-web-echo/package.json', 'examples/python-web-echo/python/web_echo/plugin.py',
     'examples/python-web-echo/client/client.js', 'examples/python-web-echo/client/client.js.map',
     'examples/python-web-echo/remote/typert.py', 'examples/python-web-echo/remote/contract.json']) {
@@ -113,7 +117,7 @@ try {
   let readyYes, readyNo;
   const ready = new Promise((yes, no) => { readyYes = yes; readyNo = no; });
   const readyTimer = setTimeout(() => readyNo(new Error('Host startup timed out')), 30000);
-  host = spawn(join(root, '.venv/Scripts/python.exe'), ['-u', join(root, 'scripts/python_web_plugin_host_fixture.py')], { cwd: root, windowsHide: true });
+  host = spawn(join(root, '.venv/Scripts/python.exe'), ['-u', join(root, 'scripts/python_web_plugin_host_fixture.py'), ...(options.exported ? ['--exported'] : [])], { cwd: root, windowsHide: true });
   host.stderr.on('data', data => { hostErrors += data; });
   host.on('error', readyNo);
   host.on('exit', code => { readyNo(new Error('Host exited: ' + code)); });
@@ -126,6 +130,7 @@ try {
   });
   const boot = await ready.finally(() => clearTimeout(readyTimer));
   report.python = boot.python;
+  packageName = boot.name; rpcEndpoint = boot.endpoint; report.exported = boot.exported;
   assert.equal(boot.python, '3.8.10'); assert.equal(boot.descriptor, true); assert.equal(boot.calls, 0);
   browser = spawn(resolve(options.browser), ['--headless', '--no-sandbox', '--disable-gpu', '--remote-debugging-port=0', `--user-data-dir=${privateBrowser}`, '--lang=en-US', 'about:blank'], { windowsHide: true });
   const port = await until(async () => { try { return (await readFile(join(privateBrowser, 'DevToolsActivePort'), 'utf8')).split('\n')[0]; } catch { return false; } }, 'browser port');
@@ -141,7 +146,7 @@ try {
     if (message.method === 'Network.webSocketFrameSent') {
       try {
         const frame = JSON.parse(message.params.response.payloadData);
-        if (frame.type === 'client-request' && frame.method === 'pythonWebEcho/echo') requests.set(frame.rpcId, frame);
+        if (frame.type === 'client-request' && frame.method === rpcEndpoint) requests.set(frame.rpcId, frame);
       } catch {}
     }
     if (message.method === 'Network.webSocketFrameReceived') {
@@ -152,7 +157,7 @@ try {
         }
       } catch {}
     }
-    if (message.method === 'Network.requestWillBeSent' && message.params.request.method === 'POST' && new URL(message.params.request.url).pathname.endsWith('/pythonWebEcho/echo')) {
+    if (message.method === 'Network.requestWillBeSent' && message.params.request.method === 'POST' && new URL(message.params.request.url).pathname.endsWith('/' + rpcEndpoint)) {
       const args = JSON.parse(message.params.request.postData);
       requests.set(message.params.requestId, args);
     }
@@ -167,13 +172,41 @@ try {
   await cdp.call('Runtime.enable'); await cdp.call('Page.enable'); await cdp.call('Network.enable');
   await cdp.call('Emulation.setDeviceMetricsOverride', { width: 1680, height: 1000, deviceScaleFactor: 1, mobile: false });
   await open(boot); await echo('1.0.0', 1);
+  if (report.exported) {
+    await until(() => report.replies.length === 1, 'initial exported RPC observed');
+    for (const kind of ['nan', 'negativeZero', 'undefined', 'function', 'cycle', 'sparse']) {
+      await click('[data-python-web-invalid="' + kind + '"]');
+      const failure = await until(() => cdp.evaluate(`(() => {try {const value=JSON.parse(document.querySelector('[data-python-web-echo-result]')?.textContent); return value.ok === false && value.error.message.startsWith(${JSON.stringify(kind + ': ')}) && value;} catch {return false;}})()`), 'Client JSON rejection: ' + kind);
+      assert.match(failure.error.message, /rejected "args"/);
+      assert.equal((await command('snapshot')).calls, 1);
+      assert.equal(report.replies.length, 1);
+    }
+    report.steps.push({step: 'exported-client-rejects-six-invalid-json-values-before-host-call', passed: true});
+    await click('[data-python-web-snapshot]');
+    const snapshot = await until(() => cdp.evaluate(`(() => {try {const value=JSON.parse(document.querySelector('[data-python-web-echo-result]')?.textContent); return value.ok === true && value.value.args?.safe === true && value;} catch {return false;}})()`), 'detached JSON ignores hidden toJSON');
+    assert.deepEqual(snapshot, {ok: true, value: {calls: 1, args: {safe: true}}});
+    report.steps.push({step: 'exported-client-detaches-json-before-connection-serialization', passed: true});
+    const timeOrigin = await cdp.evaluate('performance.timeOrigin');
+    assert.equal(await count('style[data-dyn^="python-export-"]'), 1);
+    await command('rebuild-client');
+    await until(() => cdp.evaluate('document.querySelector("[data-python-web-echo-result]")?.textContent === "ready"'), 'real HMR replaces exported Client');
+    assert.equal(await cdp.evaluate('performance.timeOrigin'), timeOrigin);
+    assert.equal(await count('style[data-dyn^="python-export-"]'), 1);
+    await echo('1.0.0', 2);
+    await command('restore-client');
+    await until(() => cdp.evaluate('document.querySelector("[data-python-web-echo-result]")?.textContent === "ready"'), 'real HMR restores package release bytes');
+    assert.equal(await cdp.evaluate('performance.timeOrigin'), timeOrigin);
+    assert.equal(await count('style[data-dyn^="python-export-"]'), 1);
+    await echo('1.0.0', 3);
+    report.steps.push({step: 'exported-client-real-hmr-disposes-old-styles-and-child-fiber-with-host-retained', passed: true});
+  }
   await cdp.call('Page.reload', { ignoreCache: true });
   await until(() => cdp.evaluate('document.querySelector("[data-python-web-echo-result]")?.textContent === "ready"'), 'fresh Client after page reload');
-  await echo('1.0.0', 2);
+  await echo('1.0.0', report.exported ? 4 : 2);
   report.steps.push({ step: 'page-refresh-restores-client-with-host-retained', passed: true });
   const unloaded = await command('unload');
   assert.equal(unloaded.calls, null); assert.equal(unloaded.descriptor, false); assert.equal(unloaded.seen, true);
-  assert.equal(unloaded.graph.entries.some(row => row.id === '@example/python-web-echo'), false);
+  assert.equal(unloaded.graph.entries.some(row => row.id === packageName), false);
   // The pinned HMR deliberately keeps the initial boot graph until page reload.
   assert.equal(await count('[data-python-web-echo]'), 1);
   await click('[data-python-web-echo-call]');
@@ -189,12 +222,12 @@ try {
   await transition('rollback', '1.0.0');
   await transition('remove', undefined, false);
   await Promise.all([...replyJobs]);
-  assert.equal(report.replies.length, 6);
+  assert.equal(report.replies.length, report.exported ? 9 : 6);
   for (const reply of report.replies) {
-    assert.deepEqual(reply.request.payload, {args: {text: '中文 portable'}});
-    assert.equal(reply.request.method, 'pythonWebEcho/echo');
+    assert.deepEqual(reply.request.payload, {args: report.exported ? reply.request.payload.args.method === 'snapshot' ? {method: 'snapshot', args: {safe: true}} : {method: 'echo', args: {text: '中文 portable'}} : {text: '中文 portable'}});
+    assert.equal(reply.request.method, rpcEndpoint);
   }
-  assert.equal(report.replies.filter(reply => reply.response.result.ok).length, 5);
+  assert.equal(report.replies.filter(reply => reply.response.result.ok).length, report.exported ? 8 : 5);
   assert.equal(report.replies.filter(reply => !reply.response.result.ok).length, 1);
   assert.deepEqual(report.errors, []); assert.deepEqual(report.consoleErrors, []); assert.deepEqual(report.requests, []);
   assert.ok(report.sockets.includes('/api/remote.mux'));

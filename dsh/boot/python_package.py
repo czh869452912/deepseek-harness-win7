@@ -101,7 +101,9 @@ def read_descriptor(directory):
         if not isinstance(record, dict) or record.get('formatVersion') != 1:
             raise ValueError('unsupported source export record')
         if record.get('requiresClientBuild') is not False:
-            raise ValueError('exported Client source requires a build; Client package delivery is not implemented')
+            raise ValueError('exported Client source requires a build before pack/install')
+        if 'client' in record.get('sourceSha256', {}) and (not dsh.get('client') or not dsh.get('webArtifacts')):
+            raise ValueError('exported Client source requires a build receipt and Client declaration')
     source = inside(directory, descriptor["sourceRoot"])
     if not os.path.isdir(source):
         raise ValueError("Python sourceRoot is missing")

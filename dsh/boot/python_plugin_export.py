@@ -71,7 +71,11 @@ def project_files(package, pid, name, version, placement, services, license_name
         'Sessions selecting the same preset share its standing plugin instances, as upstream does.\n'
         'harness.handle methods are available through the ' + host_handler_service(name) + ' service call(method, args).\n'
         'This source project grants only the permissions stated in LICENSE; review dependencies and code before activation.\n'
-        + ('\nClient source is preserved. Precompiled Client delivery is pending; install/pack refuses this project.\n' if 'client' in code else ''))
+        + ('\nClient source is preserved. Before pack/install, run:\n'
+           'dsh plugin --profile web build <project>\n'
+           'Build wraps plain JavaScript using the pinned browser evaluator; no TS/JSX compiler or Node runtime is used.\n'
+           'Rebuild after source edits. Syntax failures are reported during original browser activation.\n'
+           'Host placement is supported; session Client ownership remains pending and build refuses that placement.\n' if 'client' in code else ''))
     manifest = dict(name=name, version=version, license=license_name,
         dsh=dict(bundle=dict(patch='cordis.patch.yml'), python=dict(apiVersion=1,
             sourceRoot='python', entry='exported.plugin:plugin', minPythonVersion=[3, 8, 10],

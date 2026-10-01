@@ -36,6 +36,7 @@ Examples:
   dsh plugin --profile web versions <name>  list current and retained Python source versions as JSON
   dsh plugin --profile web rollback <name> [version] restore a retained Python version (stop the profile first)
   dsh plugin --profile web pack ./project ./plugin.zip pack a reviewed Python project without Node/pnpm
+  dsh plugin --profile web build ./project build an exported plain-JS Client for the original browser
 """
 
 

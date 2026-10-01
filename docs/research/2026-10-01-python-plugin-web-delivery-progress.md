@@ -5,6 +5,10 @@
 与开发机 Chromium。本记录落实插件交付评估的 C 阶段中预编译 Client / Remote
 部分，不认证整个 C 阶段、完整 JS 运行时、全项目迁移或 Win7。
 
+后续创造模式 Host placement Client 源码构建与真实 HMR/Remote 联合旅程见
+[Client 构建记录](2026-10-01-python-plugin-client-build-progress.md)。下文保留本次基线，
+不将后续实施范围倒写为本批次已完成能力。
+
 ## 交付路径
 
 新增 opt-in `examples/python-web-echo`：作者维护 Python Host 服务、Client 源码和

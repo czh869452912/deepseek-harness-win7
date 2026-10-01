@@ -43,6 +43,13 @@ def reconcile_plugins(before, directory):
 
 
 def run_plugin(profile, args):
+    if args and args[0] == 'build':
+        if len(args) != 2:
+            raise ValueError('use build <exported Python project>')
+        from dsh.boot.python_client_build import build_exported_client
+        name = build_exported_client(args[1])
+        sys.stdout.write('dsh: built exported Client for {}\n'.format(name))
+        return 0
     if args and args[0] == 'pack':
         if len(args) != 3:
             raise ValueError('use pack <Python project> <output.zip>')

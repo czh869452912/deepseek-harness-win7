@@ -1,0 +1,1710 @@
+{
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "source_sha256": {
+    "scripts/oracles/cordis-tools.spec.ts": "1da844ddf014fd465cfda407aa0c52862a48d8a05a76149b7842c56833018588",
+    "scripts/oracles/cordis-tools-cases.json": "ba0b32a828539509962bad089410f3ded3b50203b7fd9d91343743b0b558baa1",
+    "reference/packages/extensions/tool-cordis/src/index.ts": "4ed9fe8e09c4ada6e854ec189157e413430141c23550588385c1924d08148519",
+    "reference/packages/extensions/tool-cordis/src/prompt.ts": "f0f5c9bc455af7cb594a79b09d1aa595780f860560f002b1f84f9f62edc32c7c",
+    "reference/packages/extensions/tool-cordis/src/present.ts": "908bfc34f8575bfa7fe4023f8e95cc38c871cd2718c190e0d23474a2942a5e73",
+    "reference/packages/extensions/tool-cordis/src/inspect.ts": "74d3b247a189f023d222822b35c308f54e24ff106585a3b56b220e795ade601f",
+    "reference/packages/extensions/cordis-host-runner/src/registry.ts": "8d37d583a0e0f94581416ccb9c82b5bd37873c603c0a2c010fafa5366008587e",
+    "reference/packages/extensions/cordis-host-runner/src/index.ts": "e45c3d691be1a46653c7aaf8a360e3b0ccdad1a5ec92dcec764d3a2e4c2d74c4",
+    "reference/packages/core/tools/src/schema.ts": "d4db1e17f0c43e52c2a18a56fdb7055dace303f2a1c6d22434161dcc08a885c3"
+  },
+  "observations": [
+    {
+      "mode": "present/inspect_list",
+      "value": {
+        "card": "generic",
+        "kind": "read",
+        "title": "List Cordis Inspect Providers"
+      }
+    },
+    {
+      "mode": "present-invalid/inspect_list",
+      "value": {
+        "card": "generic",
+        "kind": "read",
+        "title": "List Cordis Inspect Providers"
+      }
+    },
+    {
+      "mode": "present/inspect_query",
+      "value": {
+        "card": "generic",
+        "kind": "read",
+        "title": "Query Cordis host Tool.listTools"
+      }
+    },
+    {
+      "mode": "present-invalid/inspect_query",
+      "value": null
+    },
+    {
+      "mode": "present/inspect_self",
+      "value": {
+        "card": "generic",
+        "kind": "read",
+        "title": "Inspect dynamic Cordis Plugins"
+      }
+    },
+    {
+      "mode": "present-invalid/inspect_self",
+      "value": {
+        "card": "generic",
+        "kind": "read",
+        "title": "Inspect dynamic Cordis Plugins"
+      }
+    },
+    {
+      "mode": "present/define",
+      "value": {
+        "card": "generic",
+        "kind": "execute",
+        "title": "Register Cordis Plugin \"Theme\" for new theme-*: Readable",
+        "rawInput": {
+          "host": "source",
+          "client": "return function() {}"
+        }
+      }
+    },
+    {
+      "mode": "present-invalid/define",
+      "value": null
+    },
+    {
+      "mode": "present/run",
+      "value": {
+        "card": "generic",
+        "kind": "execute",
+        "title": "Run Cordis Plugin theme-1 \u00b7 pkg-2"
+      }
+    },
+    {
+      "mode": "present-invalid/run",
+      "value": null
+    },
+    {
+      "mode": "present/stop",
+      "value": {
+        "card": "generic",
+        "kind": "execute",
+        "title": "Stop Cordis Plugin theme-1"
+      }
+    },
+    {
+      "mode": "present-invalid/stop",
+      "value": null
+    },
+    {
+      "mode": "present/undefine",
+      "value": {
+        "card": "generic",
+        "kind": "delete",
+        "title": "Remove Cordis Plugin theme-1"
+      }
+    },
+    {
+      "mode": "present-invalid/undefine",
+      "value": null
+    },
+    {
+      "mode": "present-extra/14",
+      "value": {
+        "card": "generic",
+        "kind": "read",
+        "title": "Inspect theme-1"
+      }
+    },
+    {
+      "mode": "present-extra/15",
+      "value": {
+        "card": "generic",
+        "kind": "read",
+        "title": "Inspect theme-1/pkg-2"
+      }
+    },
+    {
+      "mode": "present-extra/16",
+      "value": {
+        "card": "generic",
+        "kind": "execute",
+        "title": "Register Cordis Plugin \"Theme\" for theme-1: Readable",
+        "rawInput": {
+          "host": "source",
+          "client": "return function() {}"
+        }
+      }
+    },
+    {
+      "mode": "present-extra/17",
+      "value": {
+        "card": "generic",
+        "kind": "execute",
+        "title": "Update Cordis Plugin theme-1 \u00b7 pkg-2"
+      }
+    },
+    {
+      "mode": "list/no-agent",
+      "value": {
+        "value": {
+          "providers": []
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "{\n  \"providers\": []\n}"
+          }
+        ],
+        "meta": null
+      }
+    },
+    {
+      "mode": "query",
+      "value": {
+        "value": {
+          "platform": "host",
+          "provider": "Tool",
+          "method": "listTools",
+          "data": {
+            "tools": []
+          }
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "{\n  \"platform\": \"host\",\n  \"provider\": \"Tool\",\n  \"method\": \"listTools\",\n  \"data\": {\n    \"tools\": []\n  }\n}"
+          }
+        ],
+        "meta": null
+      }
+    },
+    {
+      "mode": "define",
+      "value": {
+        "value": {
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "name": "Theme",
+          "purpose": "Readable",
+          "nextPackageId": "pkg-2",
+          "hasHostHalf": true,
+          "hasClientHalf": true
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "Defined theme-1/pkg-2 (Theme); it is not running yet. Use cordis_run to activate this Package."
+          }
+        ],
+        "meta": {
+          "pluginId": "theme-1",
+          "packageId": "pkg-2"
+        }
+      }
+    },
+    {
+      "mode": "self/list/defined",
+      "value": {
+        "value": {
+          "mode": "plugins",
+          "plugins": [
+            {
+              "pluginId": "theme-1",
+              "name": "Theme",
+              "packageCount": 2,
+              "state": "defined",
+              "nextPackageId": "pkg-2"
+            }
+          ]
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "{\n  \"mode\": \"plugins\",\n  \"plugins\": [\n    {\n      \"pluginId\": \"theme-1\",\n      \"name\": \"Theme\",\n      \"packageCount\": 2,\n      \"state\": \"defined\",\n      \"nextPackageId\": \"pkg-2\"\n    }\n  ]\n}"
+          }
+        ],
+        "meta": null
+      }
+    },
+    {
+      "mode": "self/list/stopped",
+      "value": {
+        "value": {
+          "mode": "plugins",
+          "plugins": [
+            {
+              "pluginId": "theme-1",
+              "name": "Theme",
+              "packageCount": 2,
+              "state": "stopped",
+              "currentPackageId": "pkg-1",
+              "nextPackageId": "pkg-2"
+            }
+          ]
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "{\n  \"mode\": \"plugins\",\n  \"plugins\": [\n    {\n      \"pluginId\": \"theme-1\",\n      \"name\": \"Theme\",\n      \"packageCount\": 2,\n      \"state\": \"stopped\",\n      \"currentPackageId\": \"pkg-1\",\n      \"nextPackageId\": \"pkg-2\"\n    }\n  ]\n}"
+          }
+        ],
+        "meta": null
+      }
+    },
+    {
+      "mode": "self/list/awaiting-approval",
+      "value": {
+        "value": {
+          "mode": "plugins",
+          "plugins": [
+            {
+              "pluginId": "theme-1",
+              "name": "Theme",
+              "packageCount": 2,
+              "state": "awaiting-approval",
+              "nextPackageId": "pkg-2",
+              "pendingApproval": {
+                "pluginRunId": "run-1",
+                "packageId": "pkg-2",
+                "mode": "run"
+              }
+            }
+          ]
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "{\n  \"mode\": \"plugins\",\n  \"plugins\": [\n    {\n      \"pluginId\": \"theme-1\",\n      \"name\": \"Theme\",\n      \"packageCount\": 2,\n      \"state\": \"awaiting-approval\",\n      \"nextPackageId\": \"pkg-2\",\n      \"pendingApproval\": {\n        \"pluginRunId\": \"run-1\",\n        \"packageId\": \"pkg-2\",\n        \"mode\": \"run\"\n      }\n    }\n  ]\n}"
+          }
+        ],
+        "meta": null
+      }
+    },
+    {
+      "mode": "self/list/client-pending",
+      "value": {
+        "value": {
+          "mode": "plugins",
+          "plugins": [
+            {
+              "pluginId": "theme-1",
+              "name": "Theme",
+              "packageCount": 2,
+              "state": "client-pending",
+              "nextPackageId": "pkg-2"
+            }
+          ]
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "{\n  \"mode\": \"plugins\",\n  \"plugins\": [\n    {\n      \"pluginId\": \"theme-1\",\n      \"name\": \"Theme\",\n      \"packageCount\": 2,\n      \"state\": \"client-pending\",\n      \"nextPackageId\": \"pkg-2\"\n    }\n  ]\n}"
+          }
+        ],
+        "meta": null
+      }
+    },
+    {
+      "mode": "self/list/starting-host",
+      "value": {
+        "value": {
+          "mode": "plugins",
+          "plugins": [
+            {
+              "pluginId": "theme-1",
+              "name": "Theme",
+              "packageCount": 2,
+              "state": "client-pending",
+              "nextPackageId": "pkg-2"
+            }
+          ]
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "{\n  \"mode\": \"plugins\",\n  \"plugins\": [\n    {\n      \"pluginId\": \"theme-1\",\n      \"name\": \"Theme\",\n      \"packageCount\": 2,\n      \"state\": \"client-pending\",\n      \"nextPackageId\": \"pkg-2\"\n    }\n  ]\n}"
+          }
+        ],
+        "meta": null
+      }
+    },
+    {
+      "mode": "self/list/failed",
+      "value": {
+        "value": {
+          "mode": "plugins",
+          "plugins": [
+            {
+              "pluginId": "theme-1",
+              "name": "Theme",
+              "packageCount": 2,
+              "state": "failed",
+              "nextPackageId": "pkg-2"
+            }
+          ]
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "{\n  \"mode\": \"plugins\",\n  \"plugins\": [\n    {\n      \"pluginId\": \"theme-1\",\n      \"name\": \"Theme\",\n      \"packageCount\": 2,\n      \"state\": \"failed\",\n      \"nextPackageId\": \"pkg-2\"\n    }\n  ]\n}"
+          }
+        ],
+        "meta": null
+      }
+    },
+    {
+      "mode": "self/list/rejected",
+      "value": {
+        "value": {
+          "mode": "plugins",
+          "plugins": [
+            {
+              "pluginId": "theme-1",
+              "name": "Theme",
+              "packageCount": 2,
+              "state": "failed",
+              "nextPackageId": "pkg-2"
+            }
+          ]
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "{\n  \"mode\": \"plugins\",\n  \"plugins\": [\n    {\n      \"pluginId\": \"theme-1\",\n      \"name\": \"Theme\",\n      \"packageCount\": 2,\n      \"state\": \"failed\",\n      \"nextPackageId\": \"pkg-2\"\n    }\n  ]\n}"
+          }
+        ],
+        "meta": null
+      }
+    },
+    {
+      "mode": "self/list/cancelled",
+      "value": {
+        "value": {
+          "mode": "plugins",
+          "plugins": [
+            {
+              "pluginId": "theme-1",
+              "name": "Theme",
+              "packageCount": 2,
+              "state": "failed",
+              "nextPackageId": "pkg-2"
+            }
+          ]
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "{\n  \"mode\": \"plugins\",\n  \"plugins\": [\n    {\n      \"pluginId\": \"theme-1\",\n      \"name\": \"Theme\",\n      \"packageCount\": 2,\n      \"state\": \"failed\",\n      \"nextPackageId\": \"pkg-2\"\n    }\n  ]\n}"
+          }
+        ],
+        "meta": null
+      }
+    },
+    {
+      "mode": "self/list/waiting",
+      "value": {
+        "value": {
+          "mode": "plugins",
+          "plugins": [
+            {
+              "pluginId": "theme-1",
+              "name": "Theme",
+              "packageCount": 2,
+              "state": "waiting",
+              "nextPackageId": "pkg-2"
+            }
+          ]
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "{\n  \"mode\": \"plugins\",\n  \"plugins\": [\n    {\n      \"pluginId\": \"theme-1\",\n      \"name\": \"Theme\",\n      \"packageCount\": 2,\n      \"state\": \"waiting\",\n      \"nextPackageId\": \"pkg-2\"\n    }\n  ]\n}"
+          }
+        ],
+        "meta": null
+      }
+    },
+    {
+      "mode": "self/list/running",
+      "value": {
+        "value": {
+          "mode": "plugins",
+          "plugins": [
+            {
+              "pluginId": "theme-1",
+              "name": "Theme",
+              "packageCount": 2,
+              "state": "running",
+              "nextPackageId": "pkg-2"
+            }
+          ]
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "{\n  \"mode\": \"plugins\",\n  \"plugins\": [\n    {\n      \"pluginId\": \"theme-1\",\n      \"name\": \"Theme\",\n      \"packageCount\": 2,\n      \"state\": \"running\",\n      \"nextPackageId\": \"pkg-2\"\n    }\n  ]\n}"
+          }
+        ],
+        "meta": null
+      }
+    },
+    {
+      "mode": "self/list/unknown",
+      "value": {
+        "value": {
+          "mode": "plugins",
+          "plugins": [
+            {
+              "pluginId": "theme-1",
+              "name": "Theme",
+              "packageCount": 2,
+              "state": "defined",
+              "nextPackageId": "pkg-2"
+            }
+          ]
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "{\n  \"mode\": \"plugins\",\n  \"plugins\": [\n    {\n      \"pluginId\": \"theme-1\",\n      \"name\": \"Theme\",\n      \"packageCount\": 2,\n      \"state\": \"defined\",\n      \"nextPackageId\": \"pkg-2\"\n    }\n  ]\n}"
+          }
+        ],
+        "meta": null
+      }
+    },
+    {
+      "mode": "self/plugin",
+      "value": {
+        "value": {
+          "mode": "plugin",
+          "pluginId": "theme-1",
+          "name": "Theme",
+          "packageCount": 2,
+          "state": "running",
+          "currentPackageId": "pkg-1",
+          "nextPackageId": "pkg-2",
+          "activeRun": {
+            "pluginRunId": "run-1",
+            "packageId": "pkg-2"
+          },
+          "packages": [
+            {
+              "packageId": "pkg-1",
+              "name": "Old",
+              "purpose": "Earlier",
+              "hasHostHalf": true,
+              "hasClientHalf": false,
+              "isCurrent": true,
+              "isNext": false
+            },
+            {
+              "packageId": "pkg-2",
+              "name": "Theme",
+              "purpose": "Readable",
+              "hasHostHalf": true,
+              "hasClientHalf": true,
+              "isCurrent": false,
+              "isNext": true
+            }
+          ]
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "{\n  \"mode\": \"plugin\",\n  \"pluginId\": \"theme-1\",\n  \"name\": \"Theme\",\n  \"packageCount\": 2,\n  \"state\": \"running\",\n  \"currentPackageId\": \"pkg-1\",\n  \"nextPackageId\": \"pkg-2\",\n  \"activeRun\": {\n    \"pluginRunId\": \"run-1\",\n    \"packageId\": \"pkg-2\"\n  },\n  \"packages\": [\n    {\n      \"packageId\": \"pkg-1\",\n      \"name\": \"Old\",\n      \"purpose\": \"Earlier\",\n      \"hasHostHalf\": true,\n      \"hasClientHalf\": false,\n      \"isCurrent\": true,\n      \"isNext\": false\n    },\n    {\n      \"packageId\": \"pkg-2\",\n      \"name\": \"Theme\",\n      \"purpose\": \"Readable\",\n      \"hasHostHalf\": true,\n      \"hasClientHalf\": true,\n      \"isCurrent\": false,\n      \"isNext\": true\n    }\n  ]\n}"
+          }
+        ],
+        "meta": null
+      }
+    },
+    {
+      "mode": "self/package-alone",
+      "error": {
+        "message": "cordis_inspect_self packageId requires pluginId"
+      }
+    },
+    {
+      "mode": "self/package/stopped",
+      "value": {
+        "value": {
+          "mode": "package",
+          "plugin": {
+            "pluginId": "theme-1",
+            "name": "Theme",
+            "packageCount": 1,
+            "state": "defined",
+            "nextPackageId": "pkg-2"
+          },
+          "packageId": "pkg-2",
+          "name": "Theme",
+          "purpose": "Readable",
+          "code": {
+            "host": "source",
+            "client": "return function() {}"
+          },
+          "runtime": {
+            "state": "defined",
+            "host": {
+              "status": "stopped",
+              "provides": [],
+              "waitingFor": [],
+              "handlers": []
+            },
+            "client": {
+              "status": "stopped",
+              "waitingFor": []
+            }
+          }
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "{\n  \"mode\": \"package\",\n  \"plugin\": {\n    \"pluginId\": \"theme-1\",\n    \"name\": \"Theme\",\n    \"packageCount\": 1,\n    \"state\": \"defined\",\n    \"nextPackageId\": \"pkg-2\"\n  },\n  \"packageId\": \"pkg-2\",\n  \"name\": \"Theme\",\n  \"purpose\": \"Readable\",\n  \"code\": {\n    \"host\": \"source\",\n    \"client\": \"return function() {}\"\n  },\n  \"runtime\": {\n    \"state\": \"defined\",\n    \"host\": {\n      \"status\": \"stopped\",\n      \"provides\": [],\n      \"waitingFor\": [],\n      \"handlers\": []\n    },\n    \"client\": {\n      \"status\": \"stopped\",\n      \"waitingFor\": []\n    }\n  }\n}"
+          }
+        ],
+        "meta": null
+      }
+    },
+    {
+      "mode": "self/package/waiting",
+      "value": {
+        "value": {
+          "mode": "package",
+          "plugin": {
+            "pluginId": "theme-1",
+            "name": "Theme",
+            "packageCount": 1,
+            "state": "running",
+            "nextPackageId": "pkg-2"
+          },
+          "packageId": "pkg-2",
+          "name": "Theme",
+          "purpose": "Readable",
+          "code": {
+            "host": "source",
+            "client": "return function() {}"
+          },
+          "runtime": {
+            "state": "running",
+            "host": {
+              "status": "waiting",
+              "provides": [],
+              "waitingFor": [
+                "missing"
+              ],
+              "handlers": []
+            },
+            "client": {
+              "status": "waiting",
+              "waitingFor": [
+                "slots"
+              ]
+            }
+          }
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "{\n  \"mode\": \"package\",\n  \"plugin\": {\n    \"pluginId\": \"theme-1\",\n    \"name\": \"Theme\",\n    \"packageCount\": 1,\n    \"state\": \"running\",\n    \"nextPackageId\": \"pkg-2\"\n  },\n  \"packageId\": \"pkg-2\",\n  \"name\": \"Theme\",\n  \"purpose\": \"Readable\",\n  \"code\": {\n    \"host\": \"source\",\n    \"client\": \"return function() {}\"\n  },\n  \"runtime\": {\n    \"state\": \"running\",\n    \"host\": {\n      \"status\": \"waiting\",\n      \"provides\": [],\n      \"waitingFor\": [\n        \"missing\"\n      ],\n      \"handlers\": []\n    },\n    \"client\": {\n      \"status\": \"waiting\",\n      \"waitingFor\": [\n        \"slots\"\n      ]\n    }\n  }\n}"
+          }
+        ],
+        "meta": null
+      }
+    },
+    {
+      "mode": "self/package/failed",
+      "value": {
+        "value": {
+          "mode": "package",
+          "plugin": {
+            "pluginId": "theme-1",
+            "name": "Theme",
+            "packageCount": 1,
+            "state": "running",
+            "nextPackageId": "pkg-2"
+          },
+          "packageId": "pkg-2",
+          "name": "Theme",
+          "purpose": "Readable",
+          "code": {
+            "host": "source",
+            "client": "return function() {}"
+          },
+          "runtime": {
+            "state": "running",
+            "host": {
+              "status": "failed",
+              "provides": [],
+              "waitingFor": [
+                "missing"
+              ],
+              "handlers": [],
+              "error": {
+                "message": "bad",
+                "stack": "trace"
+              }
+            },
+            "client": {
+              "status": "waiting",
+              "waitingFor": [
+                "slots"
+              ]
+            }
+          }
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "{\n  \"mode\": \"package\",\n  \"plugin\": {\n    \"pluginId\": \"theme-1\",\n    \"name\": \"Theme\",\n    \"packageCount\": 1,\n    \"state\": \"running\",\n    \"nextPackageId\": \"pkg-2\"\n  },\n  \"packageId\": \"pkg-2\",\n  \"name\": \"Theme\",\n  \"purpose\": \"Readable\",\n  \"code\": {\n    \"host\": \"source\",\n    \"client\": \"return function() {}\"\n  },\n  \"runtime\": {\n    \"state\": \"running\",\n    \"host\": {\n      \"status\": \"failed\",\n      \"provides\": [],\n      \"waitingFor\": [\n        \"missing\"\n      ],\n      \"handlers\": [],\n      \"error\": {\n        \"message\": \"bad\",\n        \"stack\": \"trace\"\n      }\n    },\n    \"client\": {\n      \"status\": \"waiting\",\n      \"waitingFor\": [\n        \"slots\"\n      ]\n    }\n  }\n}"
+          }
+        ],
+        "meta": null
+      }
+    },
+    {
+      "mode": "self/package/other-version",
+      "value": {
+        "value": {
+          "mode": "package",
+          "plugin": {
+            "pluginId": "theme-1",
+            "name": "Theme",
+            "packageCount": 1,
+            "state": "running",
+            "nextPackageId": "pkg-2"
+          },
+          "packageId": "pkg-2",
+          "name": "Theme",
+          "purpose": "Readable",
+          "code": {
+            "host": "source",
+            "client": "return function() {}"
+          },
+          "runtime": {
+            "state": "running",
+            "host": {
+              "status": "stopped",
+              "provides": [],
+              "waitingFor": [],
+              "handlers": []
+            },
+            "client": {
+              "status": "stopped",
+              "waitingFor": []
+            }
+          }
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "{\n  \"mode\": \"package\",\n  \"plugin\": {\n    \"pluginId\": \"theme-1\",\n    \"name\": \"Theme\",\n    \"packageCount\": 1,\n    \"state\": \"running\",\n    \"nextPackageId\": \"pkg-2\"\n  },\n  \"packageId\": \"pkg-2\",\n  \"name\": \"Theme\",\n  \"purpose\": \"Readable\",\n  \"code\": {\n    \"host\": \"source\",\n    \"client\": \"return function() {}\"\n  },\n  \"runtime\": {\n    \"state\": \"running\",\n    \"host\": {\n      \"status\": \"stopped\",\n      \"provides\": [],\n      \"waitingFor\": [],\n      \"handlers\": []\n    },\n    \"client\": {\n      \"status\": \"stopped\",\n      \"waitingFor\": []\n    }\n  }\n}"
+          }
+        ],
+        "meta": null
+      }
+    },
+    {
+      "mode": "self/package/no-halves",
+      "value": {
+        "value": {
+          "mode": "package",
+          "plugin": {
+            "pluginId": "theme-1",
+            "name": "Theme",
+            "packageCount": 1,
+            "state": "running",
+            "nextPackageId": "pkg-2"
+          },
+          "packageId": "pkg-2",
+          "name": "Theme",
+          "purpose": "Readable",
+          "code": {
+            "host": "source",
+            "client": "return function() {}"
+          },
+          "runtime": {
+            "state": "running",
+            "host": {
+              "status": "absent",
+              "provides": [],
+              "waitingFor": [
+                "missing"
+              ],
+              "handlers": []
+            },
+            "client": {
+              "status": "absent",
+              "waitingFor": [
+                "slots"
+              ]
+            }
+          }
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "{\n  \"mode\": \"package\",\n  \"plugin\": {\n    \"pluginId\": \"theme-1\",\n    \"name\": \"Theme\",\n    \"packageCount\": 1,\n    \"state\": \"running\",\n    \"nextPackageId\": \"pkg-2\"\n  },\n  \"packageId\": \"pkg-2\",\n  \"name\": \"Theme\",\n  \"purpose\": \"Readable\",\n  \"code\": {\n    \"host\": \"source\",\n    \"client\": \"return function() {}\"\n  },\n  \"runtime\": {\n    \"state\": \"running\",\n    \"host\": {\n      \"status\": \"absent\",\n      \"provides\": [],\n      \"waitingFor\": [\n        \"missing\"\n      ],\n      \"handlers\": []\n    },\n    \"client\": {\n      \"status\": \"absent\",\n      \"waitingFor\": [\n        \"slots\"\n      ]\n    }\n  }\n}"
+          }
+        ],
+        "meta": null
+      }
+    },
+    {
+      "mode": "self/package/live",
+      "value": {
+        "value": {
+          "mode": "package",
+          "plugin": {
+            "pluginId": "theme-1",
+            "name": "Theme",
+            "packageCount": 1,
+            "state": "running",
+            "nextPackageId": "pkg-2"
+          },
+          "packageId": "pkg-2",
+          "name": "Theme",
+          "purpose": "Readable",
+          "code": {
+            "host": "source",
+            "client": "return function() {}"
+          },
+          "runtime": {
+            "state": "running",
+            "host": {
+              "status": "waiting",
+              "provides": [
+                "alpha",
+                "zeta"
+              ],
+              "waitingFor": [
+                "missing"
+              ],
+              "handlers": [
+                "read"
+              ]
+            },
+            "client": {
+              "status": "waiting",
+              "waitingFor": [
+                "slots"
+              ],
+              "renderFailure": {
+                "slot": "main",
+                "message": "render failed",
+                "retired": true
+              }
+            }
+          }
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "{\n  \"mode\": \"package\",\n  \"plugin\": {\n    \"pluginId\": \"theme-1\",\n    \"name\": \"Theme\",\n    \"packageCount\": 1,\n    \"state\": \"running\",\n    \"nextPackageId\": \"pkg-2\"\n  },\n  \"packageId\": \"pkg-2\",\n  \"name\": \"Theme\",\n  \"purpose\": \"Readable\",\n  \"code\": {\n    \"host\": \"source\",\n    \"client\": \"return function() {}\"\n  },\n  \"runtime\": {\n    \"state\": \"running\",\n    \"host\": {\n      \"status\": \"waiting\",\n      \"provides\": [\n        \"alpha\",\n        \"zeta\"\n      ],\n      \"waitingFor\": [\n        \"missing\"\n      ],\n      \"handlers\": [\n        \"read\"\n      ]\n    },\n    \"client\": {\n      \"status\": \"waiting\",\n      \"waitingFor\": [\n        \"slots\"\n      ],\n      \"renderFailure\": {\n        \"slot\": \"main\",\n        \"message\": \"render failed\",\n        \"retired\": true\n      }\n    }\n  }\n}"
+          }
+        ],
+        "meta": null
+      }
+    },
+    {
+      "mode": "run/awaiting-approval/false",
+      "value": {
+        "value": {
+          "status": "awaiting-approval",
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "pluginRunId": "run-1",
+          "mode": "update",
+          "nextPackageId": "pkg-2"
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "theme-1/pkg-2 is awaiting user approval (run-1)."
+          }
+        ],
+        "meta": {
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "pluginRunId": "run-1"
+        }
+      }
+    },
+    {
+      "mode": "run/awaiting-approval/true",
+      "value": {
+        "value": {
+          "status": "awaiting-approval",
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "pluginRunId": "run-1",
+          "mode": "update",
+          "currentPackageId": "pkg-1",
+          "nextPackageId": "pkg-2"
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "theme-1/pkg-2 is awaiting user approval (run-1)."
+          }
+        ],
+        "meta": {
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "pluginRunId": "run-1"
+        }
+      }
+    },
+    {
+      "mode": "run/starting/false",
+      "value": {
+        "value": {
+          "status": "starting",
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "pluginRunId": "run-1",
+          "mode": "update",
+          "nextPackageId": "pkg-2"
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "theme-1/pkg-2 is starting asynchronously (run-1)."
+          }
+        ],
+        "meta": {
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "pluginRunId": "run-1"
+        }
+      }
+    },
+    {
+      "mode": "run/starting/true",
+      "value": {
+        "value": {
+          "status": "starting",
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "pluginRunId": "run-1",
+          "mode": "update",
+          "currentPackageId": "pkg-1",
+          "nextPackageId": "pkg-2"
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "theme-1/pkg-2 is starting asynchronously (run-1)."
+          }
+        ],
+        "meta": {
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "pluginRunId": "run-1"
+        }
+      }
+    },
+    {
+      "mode": "run/running/false",
+      "value": {
+        "value": {
+          "status": "running",
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "pluginRunId": "run-1",
+          "currentPackageId": "pkg-1",
+          "nextPackageId": "pkg-2",
+          "host": {
+            "status": "absent",
+            "provides": [],
+            "waitingFor": []
+          },
+          "client": {
+            "status": "absent",
+            "waitingFor": []
+          }
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "theme-1/pkg-2 is running (run-1)."
+          }
+        ],
+        "meta": {
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "pluginRunId": "run-1"
+        }
+      }
+    },
+    {
+      "mode": "run/running/true",
+      "value": {
+        "value": {
+          "status": "running",
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "pluginRunId": "run-1",
+          "currentPackageId": "pkg-1",
+          "nextPackageId": "pkg-2",
+          "host": {
+            "status": "absent",
+            "provides": [],
+            "waitingFor": []
+          },
+          "client": {
+            "status": "absent",
+            "waitingFor": []
+          }
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "theme-1/pkg-2 is running (run-1)."
+          }
+        ],
+        "meta": {
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "pluginRunId": "run-1"
+        }
+      }
+    },
+    {
+      "mode": "run/live/false",
+      "value": {
+        "value": {
+          "status": "running",
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "pluginRunId": "run-1",
+          "currentPackageId": "pkg-2",
+          "host": {
+            "status": "waiting",
+            "provides": [
+              "alpha",
+              "zeta"
+            ],
+            "waitingFor": [
+              "missing"
+            ]
+          },
+          "client": {
+            "status": "waiting",
+            "waitingFor": [
+              "slots"
+            ]
+          }
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "theme-1/pkg-2 is running (run-1)."
+          }
+        ],
+        "meta": {
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "pluginRunId": "run-1"
+        }
+      }
+    },
+    {
+      "mode": "run/live/true",
+      "value": {
+        "value": {
+          "status": "running",
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "pluginRunId": "run-1",
+          "currentPackageId": "pkg-2",
+          "host": {
+            "status": "absent",
+            "provides": [],
+            "waitingFor": []
+          },
+          "client": {
+            "status": "waiting",
+            "waitingFor": [
+              "slots"
+            ]
+          }
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "theme-1/pkg-2 is running (run-1)."
+          }
+        ],
+        "meta": {
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "pluginRunId": "run-1"
+        }
+      }
+    },
+    {
+      "mode": "run/48",
+      "error": {
+        "message": "run refused"
+      }
+    },
+    {
+      "mode": "stop/49",
+      "value": {
+        "value": {
+          "pluginId": "theme-1"
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "Dynamic Plugin theme-1 is stopped; its definition and versions remain."
+          }
+        ],
+        "meta": null
+      }
+    },
+    {
+      "mode": "stop/50",
+      "value": {
+        "value": {
+          "pluginId": "theme-1"
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "Dynamic Plugin theme-1 is stopped; its definition and versions remain."
+          }
+        ],
+        "meta": null
+      }
+    },
+    {
+      "mode": "stop/51",
+      "error": {
+        "message": "stop refused"
+      }
+    },
+    {
+      "mode": "undefine/52",
+      "value": {
+        "value": {
+          "pluginId": "theme-1",
+          "wasRunning": true
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "Removed dynamic Plugin theme-1 and all of its Packages."
+          }
+        ],
+        "meta": null
+      }
+    },
+    {
+      "mode": "undefine/53",
+      "value": {
+        "value": {
+          "pluginId": "theme-1",
+          "wasRunning": false
+        },
+        "render": [
+          {
+            "type": "text",
+            "text": "Removed dynamic Plugin theme-1 and all of its Packages."
+          }
+        ],
+        "meta": null
+      }
+    },
+    {
+      "mode": "undefine/54",
+      "error": {
+        "message": "remove refused"
+      }
+    },
+    {
+      "mode": "no-agent",
+      "error": {
+        "message": "Cordis dynamic tools require an Agent-backed session"
+      }
+    },
+    {
+      "mode": "render-error/56",
+      "error": {
+        "message": "expected a JSON object"
+      }
+    },
+    {
+      "mode": "render-error/57",
+      "error": {
+        "message": "expected a JSON object"
+      }
+    },
+    {
+      "mode": "render-error/58",
+      "error": {
+        "message": "expected JSON string field \"pluginId\""
+      }
+    },
+    {
+      "mode": "render-error/59",
+      "error": {
+        "message": "expected JSON string field \"packageId\""
+      }
+    },
+    {
+      "mode": "render-error/60",
+      "error": {
+        "message": "expected JSON string field \"packageId\""
+      }
+    },
+    {
+      "mode": "pre-step/available",
+      "value": {
+        "kind": "accept",
+        "startsRequestSeries": true,
+        "extra": 7,
+        "messages": [
+          {
+            "role": "user",
+            "source": {
+              "kind": "user"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "replacement"
+              }
+            ]
+          },
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "<cordis_dynamic_plugin_context>\n{\n  \"pluginId\": \"theme-1\",\n  \"packageId\": \"pkg-2\",\n  \"name\": \"Theme\",\n  \"purpose\": \"Readable\",\n  \"nextPackageId\": \"pkg-2\"\n}\n\nThe user explicitly referenced @theme-1. Use Package pkg-2 as the base for this modification.\nBefore modifying it, call cordis_inspect_self with pluginId=\"theme-1\" and packageId=\"pkg-2\" to read the exact metadata and source.\nUse cordis_define with plugin.kind=\"existing\" and the original pluginId=\"theme-1\" to append an immutable Package.\nDo not create a new Plugin for this request. After cordis_define succeeds, call cordis_run mode=\"run\" with the returned packageId.\n</cordis_dynamic_plugin_context>"
+              }
+            ],
+            "source": {
+              "kind": "plugin",
+              "plugin": "tool-cordis",
+              "form": "instructions"
+            },
+            "role": "user"
+          },
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "<cordis_dynamic_plugin_context>\nThe user explicitly referenced @panel-2, but this Plugin is unavailable in the current Session.\nIt may have been removed, belong to another Session, or have been lost when the DSH process restarted.\nDo not claim that it was updated or silently create a replacement Plugin. Tell the user that the reference is currently unavailable.\n</cordis_dynamic_plugin_context>"
+              }
+            ],
+            "source": {
+              "kind": "plugin",
+              "plugin": "tool-cordis",
+              "form": "instructions"
+            },
+            "role": "user"
+          },
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "<cordis_dynamic_plugin_context>\nThe user explicitly referenced @xyz-4, but this Plugin is unavailable in the current Session.\nIt may have been removed, belong to another Session, or have been lost when the DSH process restarted.\nDo not claim that it was updated or silently create a replacement Plugin. Tell the user that the reference is currently unavailable.\n</cordis_dynamic_plugin_context>"
+              }
+            ],
+            "source": {
+              "kind": "plugin",
+              "plugin": "tool-cordis",
+              "form": "instructions"
+            },
+            "role": "user"
+          },
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "<cordis_dynamic_plugin_context>\nThe user explicitly referenced @uvw-5, but this Plugin is unavailable in the current Session.\nIt may have been removed, belong to another Session, or have been lost when the DSH process restarted.\nDo not claim that it was updated or silently create a replacement Plugin. Tell the user that the reference is currently unavailable.\n</cordis_dynamic_plugin_context>"
+              }
+            ],
+            "source": {
+              "kind": "plugin",
+              "plugin": "tool-cordis",
+              "form": "instructions"
+            },
+            "role": "user"
+          }
+        ],
+        "lookups": [
+          "theme-1",
+          "panel-2",
+          "xyz-4",
+          "uvw-5"
+        ]
+      }
+    },
+    {
+      "mode": "pre-step/current",
+      "value": {
+        "kind": "accept",
+        "startsRequestSeries": true,
+        "extra": 7,
+        "messages": [
+          {
+            "role": "user",
+            "source": {
+              "kind": "user"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "replacement"
+              }
+            ]
+          },
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "<cordis_dynamic_plugin_context>\n{\n  \"pluginId\": \"theme-1\",\n  \"packageId\": \"pkg-2\",\n  \"name\": \"Theme\",\n  \"purpose\": \"Readable\",\n  \"nextPackageId\": \"pkg-2\",\n  \"currentPackageId\": \"pkg-1\"\n}\n\nThe user explicitly referenced @theme-1. Use Package pkg-2 as the base for this modification.\nBefore modifying it, call cordis_inspect_self with pluginId=\"theme-1\" and packageId=\"pkg-2\" to read the exact metadata and source.\nUse cordis_define with plugin.kind=\"existing\" and the original pluginId=\"theme-1\" to append an immutable Package.\nDo not create a new Plugin for this request. After cordis_define succeeds, call cordis_run mode=\"update\" with the returned packageId.\n</cordis_dynamic_plugin_context>"
+              }
+            ],
+            "source": {
+              "kind": "plugin",
+              "plugin": "tool-cordis",
+              "form": "instructions"
+            },
+            "role": "user"
+          },
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "<cordis_dynamic_plugin_context>\nThe user explicitly referenced @panel-2, but this Plugin is unavailable in the current Session.\nIt may have been removed, belong to another Session, or have been lost when the DSH process restarted.\nDo not claim that it was updated or silently create a replacement Plugin. Tell the user that the reference is currently unavailable.\n</cordis_dynamic_plugin_context>"
+              }
+            ],
+            "source": {
+              "kind": "plugin",
+              "plugin": "tool-cordis",
+              "form": "instructions"
+            },
+            "role": "user"
+          },
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "<cordis_dynamic_plugin_context>\nThe user explicitly referenced @xyz-4, but this Plugin is unavailable in the current Session.\nIt may have been removed, belong to another Session, or have been lost when the DSH process restarted.\nDo not claim that it was updated or silently create a replacement Plugin. Tell the user that the reference is currently unavailable.\n</cordis_dynamic_plugin_context>"
+              }
+            ],
+            "source": {
+              "kind": "plugin",
+              "plugin": "tool-cordis",
+              "form": "instructions"
+            },
+            "role": "user"
+          },
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "<cordis_dynamic_plugin_context>\nThe user explicitly referenced @uvw-5, but this Plugin is unavailable in the current Session.\nIt may have been removed, belong to another Session, or have been lost when the DSH process restarted.\nDo not claim that it was updated or silently create a replacement Plugin. Tell the user that the reference is currently unavailable.\n</cordis_dynamic_plugin_context>"
+              }
+            ],
+            "source": {
+              "kind": "plugin",
+              "plugin": "tool-cordis",
+              "form": "instructions"
+            },
+            "role": "user"
+          }
+        ],
+        "lookups": [
+          "theme-1",
+          "panel-2",
+          "xyz-4",
+          "uvw-5"
+        ]
+      }
+    },
+    {
+      "mode": "pre-step/unavailable",
+      "value": {
+        "kind": "accept",
+        "startsRequestSeries": true,
+        "extra": 7,
+        "messages": [
+          {
+            "role": "user",
+            "source": {
+              "kind": "user"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "replacement"
+              }
+            ]
+          },
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "<cordis_dynamic_plugin_context>\nThe user explicitly referenced @theme-1, but this Plugin is unavailable in the current Session.\nIt may have been removed, belong to another Session, or have been lost when the DSH process restarted.\nDo not claim that it was updated or silently create a replacement Plugin. Tell the user that the reference is currently unavailable.\n</cordis_dynamic_plugin_context>"
+              }
+            ],
+            "source": {
+              "kind": "plugin",
+              "plugin": "tool-cordis",
+              "form": "instructions"
+            },
+            "role": "user"
+          },
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "<cordis_dynamic_plugin_context>\nThe user explicitly referenced @panel-2, but this Plugin is unavailable in the current Session.\nIt may have been removed, belong to another Session, or have been lost when the DSH process restarted.\nDo not claim that it was updated or silently create a replacement Plugin. Tell the user that the reference is currently unavailable.\n</cordis_dynamic_plugin_context>"
+              }
+            ],
+            "source": {
+              "kind": "plugin",
+              "plugin": "tool-cordis",
+              "form": "instructions"
+            },
+            "role": "user"
+          },
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "<cordis_dynamic_plugin_context>\nThe user explicitly referenced @xyz-4, but this Plugin is unavailable in the current Session.\nIt may have been removed, belong to another Session, or have been lost when the DSH process restarted.\nDo not claim that it was updated or silently create a replacement Plugin. Tell the user that the reference is currently unavailable.\n</cordis_dynamic_plugin_context>"
+              }
+            ],
+            "source": {
+              "kind": "plugin",
+              "plugin": "tool-cordis",
+              "form": "instructions"
+            },
+            "role": "user"
+          },
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "<cordis_dynamic_plugin_context>\nThe user explicitly referenced @uvw-5, but this Plugin is unavailable in the current Session.\nIt may have been removed, belong to another Session, or have been lost when the DSH process restarted.\nDo not claim that it was updated or silently create a replacement Plugin. Tell the user that the reference is currently unavailable.\n</cordis_dynamic_plugin_context>"
+              }
+            ],
+            "source": {
+              "kind": "plugin",
+              "plugin": "tool-cordis",
+              "form": "instructions"
+            },
+            "role": "user"
+          }
+        ],
+        "lookups": [
+          "theme-1",
+          "panel-2",
+          "xyz-4",
+          "uvw-5"
+        ]
+      }
+    },
+    {
+      "mode": "pre-step/reject",
+      "value": {
+        "kind": "reject",
+        "reason": "policy",
+        "lookups": []
+      }
+    },
+    {
+      "mode": "pre-step/abort",
+      "error": {
+        "message": "stop reference"
+      }
+    },
+    {
+      "mode": "pre-step/no-ids",
+      "value": {
+        "kind": "accept",
+        "startsRequestSeries": true,
+        "extra": 7,
+        "messages": [
+          {
+            "role": "user",
+            "source": {
+              "kind": "user"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "replacement"
+              }
+            ]
+          }
+        ],
+        "lookups": []
+      }
+    },
+    {
+      "mode": "mints",
+      "value": [
+        "theme-1",
+        "panel-2",
+        "pkg-1",
+        "pkg-2",
+        "run-1",
+        "run-2",
+        "approval-1",
+        "theme-3"
+      ]
+    },
+    {
+      "mode": "runner/reference/68",
+      "value": {
+        "pluginId": "theme-1",
+        "packageId": "pkg-2",
+        "name": "Theme",
+        "purpose": "Readable",
+        "nextPackageId": "pkg-2"
+      }
+    },
+    {
+      "mode": "runner/reference/69",
+      "value": null
+    },
+    {
+      "mode": "runner/listPlugins/70",
+      "value": [
+        {
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "name": "Theme",
+          "purpose": "Readable",
+          "nextPackageId": "pkg-2",
+          "packages": [
+            {
+              "packageId": "pkg-1",
+              "name": "Old",
+              "purpose": "Earlier",
+              "hasHostHalf": true,
+              "hasClientHalf": false
+            },
+            {
+              "packageId": "pkg-2",
+              "name": "Theme",
+              "purpose": "Readable",
+              "hasHostHalf": false,
+              "hasClientHalf": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "runner/inspectPlugin/71",
+      "value": {
+        "pluginId": "theme-1",
+        "packageId": "pkg-2",
+        "name": "Theme",
+        "purpose": "Readable",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "hasHostHalf": true,
+            "hasClientHalf": false
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "hasHostHalf": false,
+            "hasClientHalf": true
+          }
+        ]
+      }
+    },
+    {
+      "mode": "runner/inspectPackage/72",
+      "value": {
+        "pluginId": "theme-1",
+        "packageId": "pkg-1",
+        "name": "Old",
+        "purpose": "Earlier",
+        "code": {
+          "host": "source"
+        },
+        "nextPackageId": "pkg-2"
+      }
+    },
+    {
+      "mode": "runner/inspectPackage/73",
+      "error": {
+        "message": "dynamic package \"pkg-none\" does not exist on plugin \"theme-1\""
+      }
+    },
+    {
+      "mode": "runner/inspectPlugin/74",
+      "error": {
+        "message": "no dynamic plugin \"theme-1\" in this process \u2014 it may have been removed or lost on DSH restart"
+      }
+    },
+    {
+      "mode": "plan/run/undefined/false",
+      "value": {
+        "ok": true
+      }
+    },
+    {
+      "mode": "plan/run/undefined/true",
+      "value": {
+        "ok": true
+      }
+    },
+    {
+      "mode": "plan/run/pkg-1/false",
+      "value": {
+        "ok": false,
+        "response": {
+          "ok": false,
+          "reason": "invalid-mode",
+          "message": "package \"pkg-2\" differs from current \"pkg-1\"; use mode \"update\""
+        }
+      }
+    },
+    {
+      "mode": "plan/run/pkg-1/true",
+      "value": {
+        "ok": false,
+        "response": {
+          "ok": false,
+          "reason": "invalid-mode",
+          "message": "package \"pkg-2\" differs from current \"pkg-1\"; use mode \"update\""
+        }
+      }
+    },
+    {
+      "mode": "plan/run/pkg-2/false",
+      "value": {
+        "ok": true
+      }
+    },
+    {
+      "mode": "plan/run/pkg-2/true",
+      "value": {
+        "ok": true
+      }
+    },
+    {
+      "mode": "plan/update/undefined/false",
+      "value": {
+        "ok": false,
+        "response": {
+          "ok": false,
+          "reason": "invalid-mode",
+          "message": "plugin \"theme-1\" has no successful version yet; start \"pkg-2\" with mode \"run\""
+        }
+      }
+    },
+    {
+      "mode": "plan/update/undefined/true",
+      "value": {
+        "ok": false,
+        "response": {
+          "ok": false,
+          "reason": "invalid-mode",
+          "message": "plugin \"theme-1\" has no successful version yet; start \"pkg-2\" with mode \"run\""
+        }
+      }
+    },
+    {
+      "mode": "plan/update/pkg-1/false",
+      "value": {
+        "ok": true
+      }
+    },
+    {
+      "mode": "plan/update/pkg-1/true",
+      "value": {
+        "ok": true
+      }
+    },
+    {
+      "mode": "plan/update/pkg-2/false",
+      "value": {
+        "ok": false,
+        "response": {
+          "ok": false,
+          "reason": "invalid-mode",
+          "message": "package \"pkg-2\" is already current; use mode \"run\""
+        }
+      }
+    },
+    {
+      "mode": "plan/update/pkg-2/true",
+      "value": {
+        "ok": false,
+        "response": {
+          "ok": false,
+          "reason": "invalid-mode",
+          "message": "package \"pkg-2\" is already current; use mode \"run\""
+        }
+      }
+    },
+    {
+      "mode": "plan/extra/87",
+      "value": {
+        "ok": false,
+        "response": {
+          "ok": false,
+          "reason": "plugin-missing",
+          "message": "no dynamic plugin \"theme-1\" in this process \u2014 it may have been removed or lost on DSH restart"
+        }
+      }
+    },
+    {
+      "mode": "plan/extra/88",
+      "value": {
+        "ok": false,
+        "response": {
+          "ok": false,
+          "reason": "plugin-missing",
+          "message": "no dynamic plugin \"gone-9\" in this process \u2014 it may have been removed or lost on DSH restart"
+        }
+      }
+    },
+    {
+      "mode": "plan/extra/89",
+      "value": {
+        "ok": false,
+        "response": {
+          "ok": false,
+          "reason": "package-missing",
+          "message": "plugin \"theme-1\" has no package \"pkg-none\""
+        }
+      }
+    },
+    {
+      "mode": "plan/extra/90",
+      "value": {
+        "ok": false,
+        "response": {
+          "ok": false,
+          "reason": "transition-in-flight",
+          "message": "plugin \"theme-1\" is already starting"
+        }
+      }
+    },
+    {
+      "mode": "plan/extra/91",
+      "value": {
+        "ok": true
+      }
+    }
+  ]
+}

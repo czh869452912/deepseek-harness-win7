@@ -10,17 +10,12 @@ import inspect
 import re
 import sys
 import time
-import uuid
 from types import SimpleNamespace
 
 from dsh.core.cancellation import aborted
 from dsh.core.session.json import UNDEFINED
 from dsh.extensions.inspect_registry import CordisInspectRegistryService
 from dsh.typert.remote import Remote, TypertRemoteService
-
-
-def identity(prefix):
-    return prefix + '-' + uuid.uuid4().hex
 
 
 def refusal(reason, message):
@@ -40,6 +35,7 @@ class DynamicCordisRunner(TypertRemoteService):
         if type(self.timeout) not in (int, float) or self.timeout <= 0:
             raise ValueError('vmTimeoutMs must be positive')
         self.plugins, self.pending = {}, {}
+        self._next_ids = dict(plugin=1, package=1, run=1, approval=1)
         self.inspect_registry = CordisInspectRegistryService(ctx)
         self.locks = {}
         ctx.effect(lambda: self.close)
@@ -55,6 +51,14 @@ class DynamicCordisRunner(TypertRemoteService):
         plugin = self.plugins.get(plugin_id)
         return plugin if plugin is not None and plugin['agentId'] == agent.id else None
 
+    def mint_id(self, kind, prefix):
+        # Per-runner monotonic mints, matching the original process-local registry.
+        while True:
+            value = '{}-{}'.format(prefix, self._next_ids[kind])
+            self._next_ids[kind] += 1
+            if kind != 'plugin' or value not in self.plugins:
+                return value
+
     def define(self, request):
         name, purpose, code = request['name'].strip(), request['purpose'].strip(), request['code']
         if not name or not purpose or not any(key in code for key in ('host', 'client')):
@@ -69,14 +73,14 @@ class DynamicCordisRunner(TypertRemoteService):
             prefix = spec['idPrefix'].strip()
             if not re.fullmatch('[a-z]{3,6}', prefix):
                 raise ValueError('idPrefix must contain 3–6 lowercase English letters')
-            pid = identity(prefix)
+            pid = self.mint_id('plugin', prefix)
             plugin = dict(pluginId=pid, agentId=request['sessionId'], packages={}, approved=set(), approveFuture=False)
             self.plugins[pid] = plugin
         else:
             plugin = self.plugins.get(spec['pluginId'])
             if plugin is None or plugin['agentId'] != request['sessionId']:
                 raise ValueError('dynamic plugin is not owned by this session')
-        package = dict(packageId=identity('pkg'), name=name, purpose=purpose, code=copy.deepcopy(code))
+        package = dict(packageId=self.mint_id('package', 'pkg'), name=name, purpose=purpose, code=copy.deepcopy(code))
         plugin['packages'][package['packageId']] = package
         plugin['nextPackageId'] = package['packageId']
         return dict(pluginId=plugin['pluginId'], **self.package_summary(package))
@@ -99,43 +103,80 @@ class DynamicCordisRunner(TypertRemoteService):
         return result
 
     def snapshot(self, agent):
-        return [row for row in self.inventory() if row['agentId'] == agent.id]
+        rows = []
+        for row in self.inventory():
+            if row.pop('agentId') != agent.id:
+                continue
+            run = self.plugins[row['pluginId']].get('run')
+            if run is not None:
+                row['activeRun']['handlers'] = list(run['handlers'])
+                if run.get('fiber') is not None:
+                    row['activeRun']['fiber'] = run['fiber']
+                if 'renderFailure' in run:
+                    row['activeRun']['renderFailure'] = copy.deepcopy(run['renderFailure'])
+            rows.append(row)
+        return rows
 
     def listPlugins(self, agent):
-        return self.snapshot(agent)
+        return [self.inspectPlugin(agent, pid) for pid, plugin in self.plugins.items() if plugin['agentId'] == agent.id]
 
     def inspectPlugin(self, agent, pluginId):
-        return next((row for row in self.snapshot(agent) if row['pluginId'] == pluginId), None)
+        reference = self.reference(agent, pluginId)
+        if reference is None:
+            raise ValueError('no dynamic plugin "{}" in this process — it may have been removed or lost on DSH restart'.format(pluginId))
+        return dict(reference, packages=[self.package_summary(package) for package in self.plugins[pluginId]['packages'].values()])
 
     def reference(self, agent, pluginId):
         plugin = self.owned(agent, pluginId)
         if plugin is None:
             return None
-        pid = plugin.get('nextPackageId') or plugin.get('currentPackageId') or next(reversed(plugin['packages']))
-        return dict(self.inspectPlugin(agent, pluginId), **self.package_summary(plugin['packages'][pid]))
+        pid = plugin.get('nextPackageId') or plugin.get('currentPackageId') or next(reversed(plugin['packages']), None)
+        if pid not in plugin['packages']:
+            return None
+        package = plugin['packages'][pid]
+        result = dict(pluginId=pluginId, packageId=pid, name=package['name'], purpose=package['purpose'])
+        return self.inspection_state(plugin, result)
+
+    @staticmethod
+    def inspection_state(plugin, result):
+        for key in ('currentPackageId', 'nextPackageId', 'latestRun'):
+            if key in plugin:
+                result[key] = copy.deepcopy(plugin[key])
+        if 'run' in plugin:
+            result['activeRun'] = {key: plugin['run'][key] for key in ('pluginRunId', 'packageId')}
+        return result
 
     def inspectPackage(self, agent, pluginId, packageId):
         plugin = self.owned(agent, pluginId)
-        if plugin is None or packageId not in plugin['packages']:
-            raise ValueError('dynamic package is unavailable')
-        return dict(plugin=self.inspectPlugin(agent, pluginId), **copy.deepcopy(plugin['packages'][packageId]))
+        if plugin is None:
+            raise ValueError('no dynamic plugin "{}" in this process — it may have been removed or lost on DSH restart'.format(pluginId))
+        if packageId not in plugin['packages']:
+            raise ValueError('dynamic package "{}" does not exist on plugin "{}"'.format(packageId, pluginId))
+        return self.inspection_state(plugin, dict(pluginId=pluginId, **copy.deepcopy(plugin['packages'][packageId])))
 
     def plan(self, agent, pid, package_id, mode, attach=False):
         plugin = self.owned(agent, pid)
         if plugin is None:
-            return None, refusal('plugin-missing', 'dynamic plugin is not owned by this session')
+            return None, refusal('plugin-missing', 'no dynamic plugin "{}" in this process — it may have been removed or lost on DSH restart'.format(pid))
         if package_id not in plugin['packages']:
-            return None, refusal('package-missing', 'dynamic package is unavailable')
+            return None, refusal('package-missing', 'plugin "{}" has no package "{}"'.format(pid, package_id))
         current = plugin.get('currentPackageId')
-        if mode not in ('run', 'update') or (mode == 'update' and (current is None or current == package_id)) or (mode == 'run' and current is not None and current != package_id):
+        if mode not in ('run', 'update'):
             return None, refusal('invalid-mode', 'use run for the current/first version and update to replace a successful version')
-        if not attach and 'run' in plugin:
-            return None, refusal('transition-in-flight', 'stop the active run before starting another version')
+        if mode == 'update' and (current is None or current == package_id):
+            message = ('plugin "{}" has no successful version yet; start "{}" with mode "run"'.format(pid, package_id)
+                       if current is None else 'package "{}" is already current; use mode "run"'.format(package_id))
+            return None, refusal('invalid-mode', message)
+        if mode == 'run' and current is not None and current != package_id:
+            return None, refusal('invalid-mode', 'package "{}" differs from current "{}"; use mode "update"'.format(package_id, current))
+        lock = self.locks.get(pid)
+        if not attach and lock is not None and lock.locked():
+            return None, refusal('transition-in-flight', 'plugin "{}" is already starting'.format(pid))
         return plugin, None
 
     def attempt(self, plugin, package_id, mode):
         code = plugin['packages'][package_id]['code']
-        attempt = dict(pluginRunId=identity('run'), packageId=package_id, mode=mode, status='starting-host', host=half('pending' if 'host' in code else 'absent'), client=half('pending' if 'client' in code else 'absent'))
+        attempt = dict(pluginRunId=self.mint_id('run', 'run'), packageId=package_id, mode=mode, status='starting-host', host=half('pending' if 'host' in code else 'absent'), client=half('pending' if 'client' in code else 'absent'))
         plugin.update(latestRun=attempt, nextPackageId=package_id)
         return attempt
 
@@ -152,7 +193,7 @@ class DynamicCordisRunner(TypertRemoteService):
         if 'client' not in package['code']:
             result = await self.activate(plugin, attempt)
             return self.run_response(plugin) if result['ok'] else refusal('host-half-failed', result['message'])
-        rid = identity('approval')
+        rid = self.mint_id('approval', 'approval')
         required = not plugin['approveFuture'] and packageId not in plugin['approved']
         attempt.update(approvalRequestId=rid, requiresApproval=required, status='awaiting-approval' if required else 'starting-host')
         pending = dict(requestId=rid, agentId=agent.id, pluginId=pluginId, packageId=packageId, mode=mode, name=package['name'], purpose=package['purpose'], requiresApproval=required)
@@ -166,6 +207,8 @@ class DynamicCordisRunner(TypertRemoteService):
         for key in ('currentPackageId', 'nextPackageId'):
             if key in plugin:
                 result[key] = plugin[key]
+        if 'client' in plugin['packages'][attempt['packageId']]['code']:
+            result['clientWaitingFor'] = list(attempt['client']['waitingFor'])
         return result
 
     async def activate(self, plugin, attempt):
@@ -198,7 +241,7 @@ class DynamicCordisRunner(TypertRemoteService):
                     if not callable(namespace.get('plugin')):
                         raise ValueError('Python Host code must expose a callable named plugin')
                     fiber = self.ctx.plugin(namespace['plugin'])
-                    await fiber
+                    fiber = await fiber
                     waiting = [name for name in getattr(namespace['plugin'], 'inject', []) if self.ctx.get(name) is None]
                     attempt['host'] = dict(status='waiting' if waiting else 'running', waitingFor=waiting)
                 plugin['run'] = dict(pluginRunId=attempt['pluginRunId'], packageId=attempt['packageId'], handlers=handlers, fiber=fiber)

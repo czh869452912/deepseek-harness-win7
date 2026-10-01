@@ -1,5 +1,8 @@
 # Cordis Inspect 注册、查询与原生 Schema 迁移进展
 
+后续工具 prompt/presentation、自检、引用与真实 Python Host 更新旅程的实施见
+[Cordis 工具进展](2026-10-01-cordis-tools-progress.md)。下文保留本批次历史范围。
+
 日期：2026-10-01。产品起点 `81377bb3`；固定参考版本
 `cd5ef8148158c3a752a658978873241fdf8e2bbc`。环境为当前 Windows / 原生 Python
 3.8.10。本记录覆盖 Cordis 工具使用的 Inspect registry、Provider 目录和查询协议，

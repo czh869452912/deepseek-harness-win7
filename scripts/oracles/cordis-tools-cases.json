@@ -1,0 +1,2637 @@
+[
+  {
+    "mode": "present/inspect_list",
+    "kind": "presentation",
+    "tool": "cordis_inspect_list",
+    "args": {}
+  },
+  {
+    "mode": "present-invalid/inspect_list",
+    "kind": "presentation",
+    "tool": "cordis_inspect_list",
+    "args": {
+      "unknown": 1
+    }
+  },
+  {
+    "mode": "present/inspect_query",
+    "kind": "presentation",
+    "tool": "cordis_inspect_query",
+    "args": {
+      "platform": "host",
+      "provider": "Tool",
+      "method": "listTools"
+    }
+  },
+  {
+    "mode": "present-invalid/inspect_query",
+    "kind": "presentation",
+    "tool": "cordis_inspect_query",
+    "args": {
+      "unknown": 1
+    }
+  },
+  {
+    "mode": "present/inspect_self",
+    "kind": "presentation",
+    "tool": "cordis_inspect_self",
+    "args": {}
+  },
+  {
+    "mode": "present-invalid/inspect_self",
+    "kind": "presentation",
+    "tool": "cordis_inspect_self",
+    "args": {
+      "unknown": 1
+    }
+  },
+  {
+    "mode": "present/define",
+    "kind": "presentation",
+    "tool": "cordis_define",
+    "args": {
+      "plugin": {
+        "kind": "new",
+        "idPrefix": "theme"
+      },
+      "name": "Theme",
+      "purpose": "Readable",
+      "code": {
+        "host": "source",
+        "client": "return function() {}"
+      }
+    }
+  },
+  {
+    "mode": "present-invalid/define",
+    "kind": "presentation",
+    "tool": "cordis_define",
+    "args": {
+      "unknown": 1
+    }
+  },
+  {
+    "mode": "present/run",
+    "kind": "presentation",
+    "tool": "cordis_run",
+    "args": {
+      "pluginId": "theme-1",
+      "packageId": "pkg-2",
+      "mode": "run"
+    }
+  },
+  {
+    "mode": "present-invalid/run",
+    "kind": "presentation",
+    "tool": "cordis_run",
+    "args": {
+      "unknown": 1
+    }
+  },
+  {
+    "mode": "present/stop",
+    "kind": "presentation",
+    "tool": "cordis_stop",
+    "args": {
+      "pluginId": "theme-1"
+    }
+  },
+  {
+    "mode": "present-invalid/stop",
+    "kind": "presentation",
+    "tool": "cordis_stop",
+    "args": {
+      "unknown": 1
+    }
+  },
+  {
+    "mode": "present/undefine",
+    "kind": "presentation",
+    "tool": "cordis_undefine",
+    "args": {
+      "pluginId": "theme-1"
+    }
+  },
+  {
+    "mode": "present-invalid/undefine",
+    "kind": "presentation",
+    "tool": "cordis_undefine",
+    "args": {
+      "unknown": 1
+    }
+  },
+  {
+    "mode": "present-extra/14",
+    "kind": "presentation",
+    "tool": "cordis_inspect_self",
+    "args": {
+      "pluginId": "theme-1"
+    }
+  },
+  {
+    "mode": "present-extra/15",
+    "kind": "presentation",
+    "tool": "cordis_inspect_self",
+    "args": {
+      "pluginId": "theme-1",
+      "packageId": "pkg-2"
+    }
+  },
+  {
+    "mode": "present-extra/16",
+    "kind": "presentation",
+    "tool": "cordis_define",
+    "args": {
+      "plugin": {
+        "kind": "existing",
+        "pluginId": "theme-1"
+      },
+      "name": "Theme",
+      "purpose": "Readable",
+      "code": {
+        "host": "source",
+        "client": "return function() {}"
+      }
+    }
+  },
+  {
+    "mode": "present-extra/17",
+    "kind": "presentation",
+    "tool": "cordis_run",
+    "args": {
+      "pluginId": "theme-1",
+      "packageId": "pkg-2",
+      "mode": "update"
+    }
+  },
+  {
+    "mode": "list/no-agent",
+    "kind": "execute",
+    "tool": "cordis_inspect_list",
+    "args": {},
+    "fixture": {},
+    "noAgent": true
+  },
+  {
+    "mode": "query",
+    "kind": "execute",
+    "tool": "cordis_inspect_query",
+    "args": {
+      "platform": "host",
+      "provider": "Tool",
+      "method": "listTools"
+    },
+    "fixture": {
+      "data": {
+        "tools": []
+      }
+    }
+  },
+  {
+    "mode": "define",
+    "kind": "execute",
+    "tool": "cordis_define",
+    "args": {
+      "plugin": {
+        "kind": "new",
+        "idPrefix": "theme"
+      },
+      "name": "Theme",
+      "purpose": "Readable",
+      "code": {
+        "host": "source",
+        "client": "return function() {}"
+      }
+    },
+    "fixture": {
+      "receipt": {
+        "pluginId": "theme-1",
+        "packageId": "pkg-2",
+        "name": "Theme",
+        "purpose": "Readable",
+        "nextPackageId": "pkg-2",
+        "hasHostHalf": true,
+        "hasClientHalf": true
+      }
+    }
+  },
+  {
+    "mode": "self/list/defined",
+    "kind": "execute",
+    "tool": "cordis_inspect_self",
+    "args": {},
+    "fixture": {
+      "plugins": [
+        {
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "name": "Theme",
+          "purpose": "Readable",
+          "nextPackageId": "pkg-2",
+          "packages": [
+            {
+              "packageId": "pkg-1",
+              "name": "Old",
+              "purpose": "Earlier",
+              "hasHostHalf": true,
+              "hasClientHalf": false
+            },
+            {
+              "packageId": "pkg-2",
+              "name": "Theme",
+              "purpose": "Readable",
+              "hasHostHalf": true,
+              "hasClientHalf": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "mode": "self/list/stopped",
+    "kind": "execute",
+    "tool": "cordis_inspect_self",
+    "args": {},
+    "fixture": {
+      "plugins": [
+        {
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "name": "Theme",
+          "purpose": "Readable",
+          "nextPackageId": "pkg-2",
+          "packages": [
+            {
+              "packageId": "pkg-1",
+              "name": "Old",
+              "purpose": "Earlier",
+              "hasHostHalf": true,
+              "hasClientHalf": false
+            },
+            {
+              "packageId": "pkg-2",
+              "name": "Theme",
+              "purpose": "Readable",
+              "hasHostHalf": true,
+              "hasClientHalf": true
+            }
+          ],
+          "currentPackageId": "pkg-1"
+        }
+      ]
+    }
+  },
+  {
+    "mode": "self/list/awaiting-approval",
+    "kind": "execute",
+    "tool": "cordis_inspect_self",
+    "args": {},
+    "fixture": {
+      "plugins": [
+        {
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "name": "Theme",
+          "purpose": "Readable",
+          "nextPackageId": "pkg-2",
+          "packages": [
+            {
+              "packageId": "pkg-1",
+              "name": "Old",
+              "purpose": "Earlier",
+              "hasHostHalf": true,
+              "hasClientHalf": false
+            },
+            {
+              "packageId": "pkg-2",
+              "name": "Theme",
+              "purpose": "Readable",
+              "hasHostHalf": true,
+              "hasClientHalf": true
+            }
+          ],
+          "latestRun": {
+            "pluginRunId": "run-1",
+            "packageId": "pkg-2",
+            "mode": "run",
+            "status": "awaiting-approval",
+            "host": {
+              "status": "running",
+              "waitingFor": []
+            },
+            "client": {
+              "status": "running",
+              "waitingFor": []
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "mode": "self/list/client-pending",
+    "kind": "execute",
+    "tool": "cordis_inspect_self",
+    "args": {},
+    "fixture": {
+      "plugins": [
+        {
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "name": "Theme",
+          "purpose": "Readable",
+          "nextPackageId": "pkg-2",
+          "packages": [
+            {
+              "packageId": "pkg-1",
+              "name": "Old",
+              "purpose": "Earlier",
+              "hasHostHalf": true,
+              "hasClientHalf": false
+            },
+            {
+              "packageId": "pkg-2",
+              "name": "Theme",
+              "purpose": "Readable",
+              "hasHostHalf": true,
+              "hasClientHalf": true
+            }
+          ],
+          "latestRun": {
+            "pluginRunId": "run-1",
+            "packageId": "pkg-2",
+            "mode": "run",
+            "status": "client-pending",
+            "host": {
+              "status": "running",
+              "waitingFor": []
+            },
+            "client": {
+              "status": "running",
+              "waitingFor": []
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "mode": "self/list/starting-host",
+    "kind": "execute",
+    "tool": "cordis_inspect_self",
+    "args": {},
+    "fixture": {
+      "plugins": [
+        {
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "name": "Theme",
+          "purpose": "Readable",
+          "nextPackageId": "pkg-2",
+          "packages": [
+            {
+              "packageId": "pkg-1",
+              "name": "Old",
+              "purpose": "Earlier",
+              "hasHostHalf": true,
+              "hasClientHalf": false
+            },
+            {
+              "packageId": "pkg-2",
+              "name": "Theme",
+              "purpose": "Readable",
+              "hasHostHalf": true,
+              "hasClientHalf": true
+            }
+          ],
+          "latestRun": {
+            "pluginRunId": "run-1",
+            "packageId": "pkg-2",
+            "mode": "run",
+            "status": "starting-host",
+            "host": {
+              "status": "running",
+              "waitingFor": []
+            },
+            "client": {
+              "status": "running",
+              "waitingFor": []
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "mode": "self/list/failed",
+    "kind": "execute",
+    "tool": "cordis_inspect_self",
+    "args": {},
+    "fixture": {
+      "plugins": [
+        {
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "name": "Theme",
+          "purpose": "Readable",
+          "nextPackageId": "pkg-2",
+          "packages": [
+            {
+              "packageId": "pkg-1",
+              "name": "Old",
+              "purpose": "Earlier",
+              "hasHostHalf": true,
+              "hasClientHalf": false
+            },
+            {
+              "packageId": "pkg-2",
+              "name": "Theme",
+              "purpose": "Readable",
+              "hasHostHalf": true,
+              "hasClientHalf": true
+            }
+          ],
+          "latestRun": {
+            "pluginRunId": "run-1",
+            "packageId": "pkg-2",
+            "mode": "run",
+            "status": "failed",
+            "host": {
+              "status": "running",
+              "waitingFor": []
+            },
+            "client": {
+              "status": "running",
+              "waitingFor": []
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "mode": "self/list/rejected",
+    "kind": "execute",
+    "tool": "cordis_inspect_self",
+    "args": {},
+    "fixture": {
+      "plugins": [
+        {
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "name": "Theme",
+          "purpose": "Readable",
+          "nextPackageId": "pkg-2",
+          "packages": [
+            {
+              "packageId": "pkg-1",
+              "name": "Old",
+              "purpose": "Earlier",
+              "hasHostHalf": true,
+              "hasClientHalf": false
+            },
+            {
+              "packageId": "pkg-2",
+              "name": "Theme",
+              "purpose": "Readable",
+              "hasHostHalf": true,
+              "hasClientHalf": true
+            }
+          ],
+          "latestRun": {
+            "pluginRunId": "run-1",
+            "packageId": "pkg-2",
+            "mode": "run",
+            "status": "rejected",
+            "host": {
+              "status": "running",
+              "waitingFor": []
+            },
+            "client": {
+              "status": "running",
+              "waitingFor": []
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "mode": "self/list/cancelled",
+    "kind": "execute",
+    "tool": "cordis_inspect_self",
+    "args": {},
+    "fixture": {
+      "plugins": [
+        {
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "name": "Theme",
+          "purpose": "Readable",
+          "nextPackageId": "pkg-2",
+          "packages": [
+            {
+              "packageId": "pkg-1",
+              "name": "Old",
+              "purpose": "Earlier",
+              "hasHostHalf": true,
+              "hasClientHalf": false
+            },
+            {
+              "packageId": "pkg-2",
+              "name": "Theme",
+              "purpose": "Readable",
+              "hasHostHalf": true,
+              "hasClientHalf": true
+            }
+          ],
+          "latestRun": {
+            "pluginRunId": "run-1",
+            "packageId": "pkg-2",
+            "mode": "run",
+            "status": "cancelled",
+            "host": {
+              "status": "running",
+              "waitingFor": []
+            },
+            "client": {
+              "status": "running",
+              "waitingFor": []
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "mode": "self/list/waiting",
+    "kind": "execute",
+    "tool": "cordis_inspect_self",
+    "args": {},
+    "fixture": {
+      "plugins": [
+        {
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "name": "Theme",
+          "purpose": "Readable",
+          "nextPackageId": "pkg-2",
+          "packages": [
+            {
+              "packageId": "pkg-1",
+              "name": "Old",
+              "purpose": "Earlier",
+              "hasHostHalf": true,
+              "hasClientHalf": false
+            },
+            {
+              "packageId": "pkg-2",
+              "name": "Theme",
+              "purpose": "Readable",
+              "hasHostHalf": true,
+              "hasClientHalf": true
+            }
+          ],
+          "latestRun": {
+            "pluginRunId": "run-1",
+            "packageId": "pkg-2",
+            "mode": "run",
+            "status": "waiting",
+            "host": {
+              "status": "running",
+              "waitingFor": []
+            },
+            "client": {
+              "status": "running",
+              "waitingFor": []
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "mode": "self/list/running",
+    "kind": "execute",
+    "tool": "cordis_inspect_self",
+    "args": {},
+    "fixture": {
+      "plugins": [
+        {
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "name": "Theme",
+          "purpose": "Readable",
+          "nextPackageId": "pkg-2",
+          "packages": [
+            {
+              "packageId": "pkg-1",
+              "name": "Old",
+              "purpose": "Earlier",
+              "hasHostHalf": true,
+              "hasClientHalf": false
+            },
+            {
+              "packageId": "pkg-2",
+              "name": "Theme",
+              "purpose": "Readable",
+              "hasHostHalf": true,
+              "hasClientHalf": true
+            }
+          ],
+          "latestRun": {
+            "pluginRunId": "run-1",
+            "packageId": "pkg-2",
+            "mode": "run",
+            "status": "running",
+            "host": {
+              "status": "running",
+              "waitingFor": []
+            },
+            "client": {
+              "status": "running",
+              "waitingFor": []
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "mode": "self/list/unknown",
+    "kind": "execute",
+    "tool": "cordis_inspect_self",
+    "args": {},
+    "fixture": {
+      "plugins": [
+        {
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "name": "Theme",
+          "purpose": "Readable",
+          "nextPackageId": "pkg-2",
+          "packages": [
+            {
+              "packageId": "pkg-1",
+              "name": "Old",
+              "purpose": "Earlier",
+              "hasHostHalf": true,
+              "hasClientHalf": false
+            },
+            {
+              "packageId": "pkg-2",
+              "name": "Theme",
+              "purpose": "Readable",
+              "hasHostHalf": true,
+              "hasClientHalf": true
+            }
+          ],
+          "latestRun": {
+            "pluginRunId": "run-1",
+            "packageId": "pkg-2",
+            "mode": "run",
+            "status": "unknown",
+            "host": {
+              "status": "running",
+              "waitingFor": []
+            },
+            "client": {
+              "status": "running",
+              "waitingFor": []
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "mode": "self/plugin",
+    "kind": "execute",
+    "tool": "cordis_inspect_self",
+    "args": {
+      "pluginId": "theme-1"
+    },
+    "fixture": {
+      "plugin": {
+        "pluginId": "theme-1",
+        "packageId": "pkg-2",
+        "name": "Theme",
+        "purpose": "Readable",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "hasHostHalf": true,
+            "hasClientHalf": false
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "hasHostHalf": true,
+            "hasClientHalf": true
+          }
+        ],
+        "currentPackageId": "pkg-1",
+        "activeRun": {
+          "pluginRunId": "run-1",
+          "packageId": "pkg-2",
+          "handlers": [
+            "read"
+          ]
+        },
+        "latestRun": {
+          "pluginRunId": "run-1",
+          "packageId": "pkg-2",
+          "mode": "run",
+          "status": "running",
+          "host": {
+            "status": "running",
+            "waitingFor": []
+          },
+          "client": {
+            "status": "running",
+            "waitingFor": []
+          }
+        }
+      }
+    }
+  },
+  {
+    "mode": "self/package-alone",
+    "kind": "execute",
+    "tool": "cordis_inspect_self",
+    "args": {
+      "packageId": "pkg-2"
+    },
+    "fixture": {}
+  },
+  {
+    "mode": "self/package/stopped",
+    "kind": "execute",
+    "tool": "cordis_inspect_self",
+    "args": {
+      "pluginId": "theme-1",
+      "packageId": "pkg-2"
+    },
+    "fixture": {
+      "inspected": {
+        "pluginId": "theme-1",
+        "packageId": "pkg-2",
+        "name": "Theme",
+        "purpose": "Readable",
+        "nextPackageId": "pkg-2",
+        "code": {
+          "host": "source",
+          "client": "return function() {}"
+        }
+      },
+      "snapshot": [
+        {
+          "pluginId": "theme-1",
+          "packages": [
+            {
+              "packageId": "pkg-1",
+              "name": "Old",
+              "purpose": "Earlier",
+              "hasHostHalf": true,
+              "hasClientHalf": false
+            },
+            {
+              "packageId": "pkg-2",
+              "name": "Theme",
+              "purpose": "Readable",
+              "hasHostHalf": true,
+              "hasClientHalf": true
+            }
+          ]
+        }
+      ]
+    },
+    "live": false
+  },
+  {
+    "mode": "self/package/waiting",
+    "kind": "execute",
+    "tool": "cordis_inspect_self",
+    "args": {
+      "pluginId": "theme-1",
+      "packageId": "pkg-2"
+    },
+    "fixture": {
+      "inspected": {
+        "pluginId": "theme-1",
+        "packageId": "pkg-2",
+        "name": "Theme",
+        "purpose": "Readable",
+        "nextPackageId": "pkg-2",
+        "code": {
+          "host": "source",
+          "client": "return function() {}"
+        },
+        "latestRun": {
+          "pluginRunId": "run-1",
+          "packageId": "pkg-2",
+          "mode": "run",
+          "status": "running",
+          "host": {
+            "status": "waiting",
+            "waitingFor": [
+              "missing"
+            ]
+          },
+          "client": {
+            "status": "waiting",
+            "waitingFor": [
+              "slots"
+            ]
+          }
+        }
+      },
+      "snapshot": [
+        {
+          "pluginId": "theme-1",
+          "packages": [
+            {
+              "packageId": "pkg-1",
+              "name": "Old",
+              "purpose": "Earlier",
+              "hasHostHalf": true,
+              "hasClientHalf": false
+            },
+            {
+              "packageId": "pkg-2",
+              "name": "Theme",
+              "purpose": "Readable",
+              "hasHostHalf": true,
+              "hasClientHalf": true
+            }
+          ]
+        }
+      ]
+    },
+    "live": false
+  },
+  {
+    "mode": "self/package/failed",
+    "kind": "execute",
+    "tool": "cordis_inspect_self",
+    "args": {
+      "pluginId": "theme-1",
+      "packageId": "pkg-2"
+    },
+    "fixture": {
+      "inspected": {
+        "pluginId": "theme-1",
+        "packageId": "pkg-2",
+        "name": "Theme",
+        "purpose": "Readable",
+        "nextPackageId": "pkg-2",
+        "code": {
+          "host": "source",
+          "client": "return function() {}"
+        },
+        "latestRun": {
+          "pluginRunId": "run-1",
+          "packageId": "pkg-2",
+          "mode": "run",
+          "status": "running",
+          "host": {
+            "status": "failed",
+            "waitingFor": [
+              "missing"
+            ],
+            "error": {
+              "message": "bad",
+              "stack": "trace"
+            }
+          },
+          "client": {
+            "status": "waiting",
+            "waitingFor": [
+              "slots"
+            ]
+          }
+        }
+      },
+      "snapshot": [
+        {
+          "pluginId": "theme-1",
+          "packages": [
+            {
+              "packageId": "pkg-1",
+              "name": "Old",
+              "purpose": "Earlier",
+              "hasHostHalf": true,
+              "hasClientHalf": false
+            },
+            {
+              "packageId": "pkg-2",
+              "name": "Theme",
+              "purpose": "Readable",
+              "hasHostHalf": true,
+              "hasClientHalf": true
+            }
+          ]
+        }
+      ]
+    },
+    "live": false
+  },
+  {
+    "mode": "self/package/other-version",
+    "kind": "execute",
+    "tool": "cordis_inspect_self",
+    "args": {
+      "pluginId": "theme-1",
+      "packageId": "pkg-2"
+    },
+    "fixture": {
+      "inspected": {
+        "pluginId": "theme-1",
+        "packageId": "pkg-2",
+        "name": "Theme",
+        "purpose": "Readable",
+        "nextPackageId": "pkg-2",
+        "code": {
+          "host": "source",
+          "client": "return function() {}"
+        },
+        "latestRun": {
+          "pluginRunId": "run-1",
+          "packageId": "pkg-1",
+          "mode": "run",
+          "status": "running",
+          "host": {
+            "status": "waiting",
+            "waitingFor": [
+              "missing"
+            ]
+          },
+          "client": {
+            "status": "waiting",
+            "waitingFor": [
+              "slots"
+            ]
+          }
+        }
+      },
+      "snapshot": [
+        {
+          "pluginId": "theme-1",
+          "packages": [
+            {
+              "packageId": "pkg-1",
+              "name": "Old",
+              "purpose": "Earlier",
+              "hasHostHalf": true,
+              "hasClientHalf": false
+            },
+            {
+              "packageId": "pkg-2",
+              "name": "Theme",
+              "purpose": "Readable",
+              "hasHostHalf": true,
+              "hasClientHalf": true
+            }
+          ]
+        }
+      ]
+    },
+    "live": false
+  },
+  {
+    "mode": "self/package/no-halves",
+    "kind": "execute",
+    "tool": "cordis_inspect_self",
+    "args": {
+      "pluginId": "theme-1",
+      "packageId": "pkg-2"
+    },
+    "fixture": {
+      "inspected": {
+        "pluginId": "theme-1",
+        "packageId": "pkg-2",
+        "name": "Theme",
+        "purpose": "Readable",
+        "nextPackageId": "pkg-2",
+        "code": {
+          "host": "source",
+          "client": "return function() {}"
+        },
+        "latestRun": {
+          "pluginRunId": "run-1",
+          "packageId": "pkg-2",
+          "mode": "run",
+          "status": "running",
+          "host": {
+            "status": "waiting",
+            "waitingFor": [
+              "missing"
+            ]
+          },
+          "client": {
+            "status": "waiting",
+            "waitingFor": [
+              "slots"
+            ]
+          }
+        }
+      },
+      "snapshot": [
+        {
+          "pluginId": "theme-1",
+          "packages": [
+            {
+              "packageId": "pkg-1",
+              "name": "Old",
+              "purpose": "Earlier",
+              "hasHostHalf": false,
+              "hasClientHalf": false
+            },
+            {
+              "packageId": "pkg-2",
+              "name": "Theme",
+              "purpose": "Readable",
+              "hasHostHalf": false,
+              "hasClientHalf": false
+            }
+          ]
+        }
+      ]
+    },
+    "live": false
+  },
+  {
+    "mode": "self/package/live",
+    "kind": "execute",
+    "tool": "cordis_inspect_self",
+    "args": {
+      "pluginId": "theme-1",
+      "packageId": "pkg-2"
+    },
+    "fixture": {
+      "inspected": {
+        "pluginId": "theme-1",
+        "packageId": "pkg-2",
+        "name": "Theme",
+        "purpose": "Readable",
+        "nextPackageId": "pkg-2",
+        "code": {
+          "host": "source",
+          "client": "return function() {}"
+        },
+        "latestRun": {
+          "pluginRunId": "run-1",
+          "packageId": "pkg-2",
+          "mode": "run",
+          "status": "running",
+          "host": {
+            "status": "waiting",
+            "waitingFor": [
+              "missing"
+            ]
+          },
+          "client": {
+            "status": "waiting",
+            "waitingFor": [
+              "slots"
+            ]
+          }
+        }
+      },
+      "snapshot": [
+        {
+          "pluginId": "theme-1",
+          "packages": [
+            {
+              "packageId": "pkg-1",
+              "name": "Old",
+              "purpose": "Earlier",
+              "hasHostHalf": true,
+              "hasClientHalf": false
+            },
+            {
+              "packageId": "pkg-2",
+              "name": "Theme",
+              "purpose": "Readable",
+              "hasHostHalf": true,
+              "hasClientHalf": true
+            }
+          ],
+          "activeRun": {
+            "pluginRunId": "run-1",
+            "packageId": "pkg-2",
+            "handlers": [
+              "read"
+            ],
+            "renderFailure": {
+              "slot": "main",
+              "message": "render failed",
+              "retired": true
+            }
+          }
+        }
+      ]
+    },
+    "live": true
+  },
+  {
+    "mode": "run/awaiting-approval/false",
+    "kind": "execute",
+    "tool": "cordis_run",
+    "args": {
+      "pluginId": "theme-1",
+      "packageId": "pkg-2",
+      "mode": "run"
+    },
+    "fixture": {
+      "receipt": {
+        "ok": true,
+        "status": "awaiting-approval",
+        "pluginId": "theme-1",
+        "packageId": "pkg-2",
+        "pluginRunId": "run-1",
+        "mode": "update",
+        "nextPackageId": "pkg-2"
+      }
+    }
+  },
+  {
+    "mode": "run/awaiting-approval/true",
+    "kind": "execute",
+    "tool": "cordis_run",
+    "args": {
+      "pluginId": "theme-1",
+      "packageId": "pkg-2",
+      "mode": "run"
+    },
+    "fixture": {
+      "receipt": {
+        "ok": true,
+        "status": "awaiting-approval",
+        "pluginId": "theme-1",
+        "packageId": "pkg-2",
+        "pluginRunId": "run-1",
+        "mode": "update",
+        "nextPackageId": "pkg-2",
+        "currentPackageId": "pkg-1"
+      }
+    }
+  },
+  {
+    "mode": "run/starting/false",
+    "kind": "execute",
+    "tool": "cordis_run",
+    "args": {
+      "pluginId": "theme-1",
+      "packageId": "pkg-2",
+      "mode": "run"
+    },
+    "fixture": {
+      "receipt": {
+        "ok": true,
+        "status": "starting",
+        "pluginId": "theme-1",
+        "packageId": "pkg-2",
+        "pluginRunId": "run-1",
+        "mode": "update",
+        "nextPackageId": "pkg-2"
+      }
+    }
+  },
+  {
+    "mode": "run/starting/true",
+    "kind": "execute",
+    "tool": "cordis_run",
+    "args": {
+      "pluginId": "theme-1",
+      "packageId": "pkg-2",
+      "mode": "run"
+    },
+    "fixture": {
+      "receipt": {
+        "ok": true,
+        "status": "starting",
+        "pluginId": "theme-1",
+        "packageId": "pkg-2",
+        "pluginRunId": "run-1",
+        "mode": "update",
+        "nextPackageId": "pkg-2",
+        "currentPackageId": "pkg-1"
+      }
+    }
+  },
+  {
+    "mode": "run/running/false",
+    "kind": "execute",
+    "tool": "cordis_run",
+    "args": {
+      "pluginId": "theme-1",
+      "packageId": "pkg-2",
+      "mode": "run"
+    },
+    "fixture": {
+      "receipt": {
+        "ok": true,
+        "status": "running",
+        "pluginId": "theme-1",
+        "packageId": "pkg-2",
+        "pluginRunId": "run-1",
+        "mode": "update",
+        "nextPackageId": "pkg-2",
+        "currentPackageId": "pkg-1"
+      }
+    }
+  },
+  {
+    "mode": "run/running/true",
+    "kind": "execute",
+    "tool": "cordis_run",
+    "args": {
+      "pluginId": "theme-1",
+      "packageId": "pkg-2",
+      "mode": "run"
+    },
+    "fixture": {
+      "receipt": {
+        "ok": true,
+        "status": "running",
+        "pluginId": "theme-1",
+        "packageId": "pkg-2",
+        "pluginRunId": "run-1",
+        "mode": "update",
+        "nextPackageId": "pkg-2",
+        "currentPackageId": "pkg-1"
+      }
+    }
+  },
+  {
+    "mode": "run/live/false",
+    "kind": "execute",
+    "tool": "cordis_run",
+    "args": {
+      "pluginId": "theme-1",
+      "packageId": "pkg-2",
+      "mode": "run"
+    },
+    "fixture": {
+      "receipt": {
+        "ok": true,
+        "status": "running",
+        "pluginRunId": "run-1",
+        "currentPackageId": "pkg-2",
+        "clientWaitingFor": [
+          "slots"
+        ]
+      },
+      "snapshot": [
+        {
+          "pluginId": "theme-1",
+          "activeRun": {
+            "pluginRunId": "run-1",
+            "packageId": "pkg-2",
+            "handlers": [
+              "read"
+            ]
+          }
+        }
+      ]
+    },
+    "live": true
+  },
+  {
+    "mode": "run/live/true",
+    "kind": "execute",
+    "tool": "cordis_run",
+    "args": {
+      "pluginId": "theme-1",
+      "packageId": "pkg-2",
+      "mode": "run"
+    },
+    "fixture": {
+      "receipt": {
+        "ok": true,
+        "status": "running",
+        "pluginRunId": "run-1",
+        "currentPackageId": "pkg-2",
+        "clientWaitingFor": [
+          "slots"
+        ]
+      },
+      "snapshot": [
+        {
+          "pluginId": "theme-1",
+          "activeRun": {
+            "pluginRunId": "run-old",
+            "packageId": "pkg-2",
+            "handlers": [
+              "read"
+            ]
+          }
+        }
+      ]
+    },
+    "live": true
+  },
+  {
+    "mode": "run/48",
+    "kind": "execute",
+    "tool": "cordis_run",
+    "args": {
+      "pluginId": "theme-1",
+      "packageId": "pkg-2",
+      "mode": "run"
+    },
+    "fixture": {
+      "receipt": {
+        "ok": false,
+        "message": "run refused"
+      }
+    }
+  },
+  {
+    "mode": "stop/49",
+    "kind": "execute",
+    "tool": "cordis_stop",
+    "args": {
+      "pluginId": "theme-1"
+    },
+    "fixture": {
+      "receipt": {
+        "ok": true
+      }
+    }
+  },
+  {
+    "mode": "stop/50",
+    "kind": "execute",
+    "tool": "cordis_stop",
+    "args": {
+      "pluginId": "theme-1"
+    },
+    "fixture": {
+      "receipt": {
+        "ok": false,
+        "reason": "not-running",
+        "message": "stopped"
+      }
+    }
+  },
+  {
+    "mode": "stop/51",
+    "kind": "execute",
+    "tool": "cordis_stop",
+    "args": {
+      "pluginId": "theme-1"
+    },
+    "fixture": {
+      "receipt": {
+        "ok": false,
+        "reason": "missing",
+        "message": "stop refused"
+      }
+    }
+  },
+  {
+    "mode": "undefine/52",
+    "kind": "execute",
+    "tool": "cordis_undefine",
+    "args": {
+      "pluginId": "theme-1"
+    },
+    "fixture": {
+      "receipt": {
+        "ok": true,
+        "wasRunning": true
+      }
+    }
+  },
+  {
+    "mode": "undefine/53",
+    "kind": "execute",
+    "tool": "cordis_undefine",
+    "args": {
+      "pluginId": "theme-1"
+    },
+    "fixture": {
+      "receipt": {
+        "ok": true,
+        "wasRunning": false
+      }
+    }
+  },
+  {
+    "mode": "undefine/54",
+    "kind": "execute",
+    "tool": "cordis_undefine",
+    "args": {
+      "pluginId": "theme-1"
+    },
+    "fixture": {
+      "receipt": {
+        "ok": false,
+        "message": "remove refused"
+      }
+    }
+  },
+  {
+    "mode": "no-agent",
+    "kind": "execute",
+    "tool": "cordis_inspect_self",
+    "args": {},
+    "fixture": {},
+    "noAgent": true
+  },
+  {
+    "mode": "render-error/56",
+    "kind": "render-error",
+    "value": null
+  },
+  {
+    "mode": "render-error/57",
+    "kind": "render-error",
+    "value": []
+  },
+  {
+    "mode": "render-error/58",
+    "kind": "render-error",
+    "value": {}
+  },
+  {
+    "mode": "render-error/59",
+    "kind": "render-error",
+    "value": {
+      "pluginId": "theme-1"
+    }
+  },
+  {
+    "mode": "render-error/60",
+    "kind": "render-error",
+    "value": {
+      "pluginId": "theme-1",
+      "packageId": 2
+    }
+  },
+  {
+    "mode": "pre-step/available",
+    "kind": "pre-step",
+    "messages": [
+      {
+        "role": "user",
+        "source": {
+          "kind": "user"
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "@theme-1 @theme-1 @panel-2"
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "source": {
+          "kind": "plugin"
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "@other-3"
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "source": {
+          "kind": "user"
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "email@theme-1 @theme-1, @bad-１２ @abc-9\u001c @xyz-4﻿@uvw-5"
+          }
+        ]
+      }
+    ],
+    "decision": {
+      "kind": "accept",
+      "messages": [
+        {
+          "role": "user",
+          "source": {
+            "kind": "user"
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "replacement"
+            }
+          ]
+        }
+      ],
+      "startsRequestSeries": true,
+      "extra": 7
+    },
+    "abort": false,
+    "fixture": {
+      "references": {
+        "theme-1": {
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "name": "Theme",
+          "purpose": "Readable",
+          "nextPackageId": "pkg-2"
+        }
+      }
+    }
+  },
+  {
+    "mode": "pre-step/current",
+    "kind": "pre-step",
+    "messages": [
+      {
+        "role": "user",
+        "source": {
+          "kind": "user"
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "@theme-1 @theme-1 @panel-2"
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "source": {
+          "kind": "plugin"
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "@other-3"
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "source": {
+          "kind": "user"
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "email@theme-1 @theme-1, @bad-１２ @abc-9\u001c @xyz-4﻿@uvw-5"
+          }
+        ]
+      }
+    ],
+    "decision": {
+      "kind": "accept",
+      "messages": [
+        {
+          "role": "user",
+          "source": {
+            "kind": "user"
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "replacement"
+            }
+          ]
+        }
+      ],
+      "startsRequestSeries": true,
+      "extra": 7
+    },
+    "abort": false,
+    "fixture": {
+      "references": {
+        "theme-1": {
+          "pluginId": "theme-1",
+          "packageId": "pkg-2",
+          "name": "Theme",
+          "purpose": "Readable",
+          "nextPackageId": "pkg-2",
+          "currentPackageId": "pkg-1"
+        }
+      }
+    }
+  },
+  {
+    "mode": "pre-step/unavailable",
+    "kind": "pre-step",
+    "messages": [
+      {
+        "role": "user",
+        "source": {
+          "kind": "user"
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "@theme-1 @theme-1 @panel-2"
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "source": {
+          "kind": "plugin"
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "@other-3"
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "source": {
+          "kind": "user"
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "email@theme-1 @theme-1, @bad-１２ @abc-9\u001c @xyz-4﻿@uvw-5"
+          }
+        ]
+      }
+    ],
+    "decision": {
+      "kind": "accept",
+      "messages": [
+        {
+          "role": "user",
+          "source": {
+            "kind": "user"
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "replacement"
+            }
+          ]
+        }
+      ],
+      "startsRequestSeries": true,
+      "extra": 7
+    },
+    "abort": false,
+    "fixture": {
+      "references": {}
+    }
+  },
+  {
+    "mode": "pre-step/reject",
+    "kind": "pre-step",
+    "messages": [
+      {
+        "role": "user",
+        "source": {
+          "kind": "user"
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "@theme-1 @theme-1 @panel-2"
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "source": {
+          "kind": "plugin"
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "@other-3"
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "source": {
+          "kind": "user"
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "email@theme-1 @theme-1, @bad-１２ @abc-9\u001c @xyz-4﻿@uvw-5"
+          }
+        ]
+      }
+    ],
+    "decision": {
+      "kind": "reject",
+      "reason": "policy"
+    },
+    "abort": false,
+    "fixture": {
+      "references": {}
+    }
+  },
+  {
+    "mode": "pre-step/abort",
+    "kind": "pre-step",
+    "messages": [
+      {
+        "role": "user",
+        "source": {
+          "kind": "user"
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "@theme-1 @theme-1 @panel-2"
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "source": {
+          "kind": "plugin"
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "@other-3"
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "source": {
+          "kind": "user"
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "email@theme-1 @theme-1, @bad-１２ @abc-9\u001c @xyz-4﻿@uvw-5"
+          }
+        ]
+      }
+    ],
+    "decision": {
+      "kind": "accept",
+      "messages": [
+        {
+          "role": "user",
+          "source": {
+            "kind": "user"
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "replacement"
+            }
+          ]
+        }
+      ],
+      "startsRequestSeries": true,
+      "extra": 7
+    },
+    "abort": true,
+    "fixture": {
+      "references": {}
+    }
+  },
+  {
+    "mode": "pre-step/no-ids",
+    "kind": "pre-step",
+    "messages": [
+      {
+        "role": "user",
+        "source": {
+          "kind": "user"
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "none"
+          }
+        ]
+      }
+    ],
+    "decision": {
+      "kind": "accept",
+      "messages": [
+        {
+          "role": "user",
+          "source": {
+            "kind": "user"
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "replacement"
+            }
+          ]
+        }
+      ],
+      "startsRequestSeries": true,
+      "extra": 7
+    },
+    "abort": false,
+    "fixture": {
+      "references": {}
+    }
+  },
+  {
+    "mode": "mints",
+    "kind": "mints"
+  },
+  {
+    "mode": "runner/reference/68",
+    "kind": "runner-views",
+    "method": "reference",
+    "ids": [
+      "theme-1"
+    ],
+    "agentId": "owner",
+    "plugins": [
+      {
+        "pluginId": "theme-1",
+        "agentId": "owner",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "code": {
+              "host": "source"
+            }
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "code": {
+              "client": "return function() {}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "mode": "runner/reference/69",
+    "kind": "runner-views",
+    "method": "reference",
+    "ids": [
+      "theme-1"
+    ],
+    "agentId": "foreign",
+    "plugins": [
+      {
+        "pluginId": "theme-1",
+        "agentId": "owner",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "code": {
+              "host": "source"
+            }
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "code": {
+              "client": "return function() {}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "mode": "runner/listPlugins/70",
+    "kind": "runner-views",
+    "method": "listPlugins",
+    "ids": [],
+    "agentId": "owner",
+    "plugins": [
+      {
+        "pluginId": "theme-1",
+        "agentId": "owner",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "code": {
+              "host": "source"
+            }
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "code": {
+              "client": "return function() {}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "mode": "runner/inspectPlugin/71",
+    "kind": "runner-views",
+    "method": "inspectPlugin",
+    "ids": [
+      "theme-1"
+    ],
+    "agentId": "owner",
+    "plugins": [
+      {
+        "pluginId": "theme-1",
+        "agentId": "owner",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "code": {
+              "host": "source"
+            }
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "code": {
+              "client": "return function() {}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "mode": "runner/inspectPackage/72",
+    "kind": "runner-views",
+    "method": "inspectPackage",
+    "ids": [
+      "theme-1",
+      "pkg-1"
+    ],
+    "agentId": "owner",
+    "plugins": [
+      {
+        "pluginId": "theme-1",
+        "agentId": "owner",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "code": {
+              "host": "source"
+            }
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "code": {
+              "client": "return function() {}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "mode": "runner/inspectPackage/73",
+    "kind": "runner-views",
+    "method": "inspectPackage",
+    "ids": [
+      "theme-1",
+      "pkg-none"
+    ],
+    "agentId": "owner",
+    "plugins": [
+      {
+        "pluginId": "theme-1",
+        "agentId": "owner",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "code": {
+              "host": "source"
+            }
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "code": {
+              "client": "return function() {}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "mode": "runner/inspectPlugin/74",
+    "kind": "runner-views",
+    "method": "inspectPlugin",
+    "ids": [
+      "theme-1"
+    ],
+    "agentId": "foreign",
+    "plugins": [
+      {
+        "pluginId": "theme-1",
+        "agentId": "owner",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "code": {
+              "host": "source"
+            }
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "code": {
+              "client": "return function() {}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "mode": "plan/run/undefined/false",
+    "kind": "plan",
+    "activationMode": "run",
+    "plugins": [
+      {
+        "pluginId": "theme-1",
+        "agentId": "owner",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "code": {
+              "host": "source"
+            }
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "code": {
+              "client": "return function() {}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "mode": "plan/run/undefined/true",
+    "kind": "plan",
+    "activationMode": "run",
+    "plugins": [
+      {
+        "pluginId": "theme-1",
+        "agentId": "owner",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "code": {
+              "host": "source"
+            }
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "code": {
+              "client": "return function() {}"
+            }
+          }
+        ],
+        "run": {
+          "packageId": "pkg-1",
+          "pluginRunId": "run-1"
+        }
+      }
+    ]
+  },
+  {
+    "mode": "plan/run/pkg-1/false",
+    "kind": "plan",
+    "activationMode": "run",
+    "plugins": [
+      {
+        "pluginId": "theme-1",
+        "agentId": "owner",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "code": {
+              "host": "source"
+            }
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "code": {
+              "client": "return function() {}"
+            }
+          }
+        ],
+        "currentPackageId": "pkg-1"
+      }
+    ]
+  },
+  {
+    "mode": "plan/run/pkg-1/true",
+    "kind": "plan",
+    "activationMode": "run",
+    "plugins": [
+      {
+        "pluginId": "theme-1",
+        "agentId": "owner",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "code": {
+              "host": "source"
+            }
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "code": {
+              "client": "return function() {}"
+            }
+          }
+        ],
+        "currentPackageId": "pkg-1",
+        "run": {
+          "packageId": "pkg-1",
+          "pluginRunId": "run-1"
+        }
+      }
+    ]
+  },
+  {
+    "mode": "plan/run/pkg-2/false",
+    "kind": "plan",
+    "activationMode": "run",
+    "plugins": [
+      {
+        "pluginId": "theme-1",
+        "agentId": "owner",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "code": {
+              "host": "source"
+            }
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "code": {
+              "client": "return function() {}"
+            }
+          }
+        ],
+        "currentPackageId": "pkg-2"
+      }
+    ]
+  },
+  {
+    "mode": "plan/run/pkg-2/true",
+    "kind": "plan",
+    "activationMode": "run",
+    "plugins": [
+      {
+        "pluginId": "theme-1",
+        "agentId": "owner",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "code": {
+              "host": "source"
+            }
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "code": {
+              "client": "return function() {}"
+            }
+          }
+        ],
+        "currentPackageId": "pkg-2",
+        "run": {
+          "packageId": "pkg-1",
+          "pluginRunId": "run-1"
+        }
+      }
+    ]
+  },
+  {
+    "mode": "plan/update/undefined/false",
+    "kind": "plan",
+    "activationMode": "update",
+    "plugins": [
+      {
+        "pluginId": "theme-1",
+        "agentId": "owner",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "code": {
+              "host": "source"
+            }
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "code": {
+              "client": "return function() {}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "mode": "plan/update/undefined/true",
+    "kind": "plan",
+    "activationMode": "update",
+    "plugins": [
+      {
+        "pluginId": "theme-1",
+        "agentId": "owner",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "code": {
+              "host": "source"
+            }
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "code": {
+              "client": "return function() {}"
+            }
+          }
+        ],
+        "run": {
+          "packageId": "pkg-1",
+          "pluginRunId": "run-1"
+        }
+      }
+    ]
+  },
+  {
+    "mode": "plan/update/pkg-1/false",
+    "kind": "plan",
+    "activationMode": "update",
+    "plugins": [
+      {
+        "pluginId": "theme-1",
+        "agentId": "owner",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "code": {
+              "host": "source"
+            }
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "code": {
+              "client": "return function() {}"
+            }
+          }
+        ],
+        "currentPackageId": "pkg-1"
+      }
+    ]
+  },
+  {
+    "mode": "plan/update/pkg-1/true",
+    "kind": "plan",
+    "activationMode": "update",
+    "plugins": [
+      {
+        "pluginId": "theme-1",
+        "agentId": "owner",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "code": {
+              "host": "source"
+            }
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "code": {
+              "client": "return function() {}"
+            }
+          }
+        ],
+        "currentPackageId": "pkg-1",
+        "run": {
+          "packageId": "pkg-1",
+          "pluginRunId": "run-1"
+        }
+      }
+    ]
+  },
+  {
+    "mode": "plan/update/pkg-2/false",
+    "kind": "plan",
+    "activationMode": "update",
+    "plugins": [
+      {
+        "pluginId": "theme-1",
+        "agentId": "owner",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "code": {
+              "host": "source"
+            }
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "code": {
+              "client": "return function() {}"
+            }
+          }
+        ],
+        "currentPackageId": "pkg-2"
+      }
+    ]
+  },
+  {
+    "mode": "plan/update/pkg-2/true",
+    "kind": "plan",
+    "activationMode": "update",
+    "plugins": [
+      {
+        "pluginId": "theme-1",
+        "agentId": "owner",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "code": {
+              "host": "source"
+            }
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "code": {
+              "client": "return function() {}"
+            }
+          }
+        ],
+        "currentPackageId": "pkg-2",
+        "run": {
+          "packageId": "pkg-1",
+          "pluginRunId": "run-1"
+        }
+      }
+    ]
+  },
+  {
+    "mode": "plan/extra/87",
+    "kind": "plan",
+    "activationMode": "run",
+    "plugins": [
+      {
+        "pluginId": "theme-1",
+        "agentId": "owner",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "code": {
+              "host": "source"
+            }
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "code": {
+              "client": "return function() {}"
+            }
+          }
+        ]
+      }
+    ],
+    "agentId": "foreign"
+  },
+  {
+    "mode": "plan/extra/88",
+    "kind": "plan",
+    "activationMode": "run",
+    "plugins": [
+      {
+        "pluginId": "theme-1",
+        "agentId": "owner",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "code": {
+              "host": "source"
+            }
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "code": {
+              "client": "return function() {}"
+            }
+          }
+        ]
+      }
+    ],
+    "pluginId": "gone-9"
+  },
+  {
+    "mode": "plan/extra/89",
+    "kind": "plan",
+    "activationMode": "run",
+    "plugins": [
+      {
+        "pluginId": "theme-1",
+        "agentId": "owner",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "code": {
+              "host": "source"
+            }
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "code": {
+              "client": "return function() {}"
+            }
+          }
+        ]
+      }
+    ],
+    "packageId": "pkg-none"
+  },
+  {
+    "mode": "plan/extra/90",
+    "kind": "plan",
+    "activationMode": "run",
+    "plugins": [
+      {
+        "pluginId": "theme-1",
+        "agentId": "owner",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "code": {
+              "host": "source"
+            }
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "code": {
+              "client": "return function() {}"
+            }
+          }
+        ]
+      }
+    ],
+    "starting": true
+  },
+  {
+    "mode": "plan/extra/91",
+    "kind": "plan",
+    "activationMode": "run",
+    "plugins": [
+      {
+        "pluginId": "theme-1",
+        "agentId": "owner",
+        "nextPackageId": "pkg-2",
+        "packages": [
+          {
+            "packageId": "pkg-1",
+            "name": "Old",
+            "purpose": "Earlier",
+            "code": {
+              "host": "source"
+            }
+          },
+          {
+            "packageId": "pkg-2",
+            "name": "Theme",
+            "purpose": "Readable",
+            "code": {
+              "client": "return function() {}"
+            }
+          }
+        ]
+      }
+    ],
+    "starting": true,
+    "attach": true
+  }
+]

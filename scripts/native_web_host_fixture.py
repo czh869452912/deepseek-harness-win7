@@ -16,6 +16,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from dsh.boot.profile_boot import run_profile
+from dsh.core.abort import AbortController
+from dsh.core.tools import ToolExecutionInput
 
 
 async def main():
@@ -25,20 +27,23 @@ async def main():
         workspace.mkdir()
         os.environ['DSH_HOME'] = str(home)
         os.environ['DSH_TELEMETRY_MODE'] = 'DISABLED'
+        inspect_mode = '--inspect' in sys.argv
+        queries = {}
         result = await run_profile(dict(profile='web', dshHome=str(home),
             args=['--no-open', '--port', '0'], waitForExit=False))
         ctx = result['ctx']
         try:
             sid = 'native-browser-owner'
             await ctx.get('sessionController').create(dict(sessionId=sid,
-                cwd=str(workspace), agentPreset='minimal'))
+                cwd=str(workspace), agentPreset='cordis' if inspect_mode else 'minimal'))
             owner = ctx.get('agents').get(sid)
             steers = []
             owner.steer = lambda message: steers.append(message)
             runner = ctx.get('dynamicCordisRunner')
             events = []
             for name in ('cordis/request-run', 'cordis/request-run-resolved',
-                         'cordis/dynamic-package', 'cordis/dynamic-retract'):
+                         'cordis/dynamic-package', 'cordis/dynamic-retract',
+                         'cordis/inspect-query', 'cordis/inspect-query-resolved'):
                 ctx.on(name, lambda value, event=name: events.append(dict(event=event, value=value)))
 
             def answer(value):
@@ -66,6 +71,30 @@ async def main():
                         value = dict(inventory=runner.inventory(), events=events,
                             steers=len(steers), pending=list(runner.pending),
                             probe=ctx.get('nativeBrowserProbe'))
+                        if inspect_mode:
+                            value['inspectDirectory'] = ctx.get('cordisInspect').list()
+                            value['inspectPending'] = list(ctx.get('cordisInspect')._pending)
+                            value['inspectActivity'] = ctx.get('nativeInspectActivity') or []
+                    elif command == 'inspect-start' and inspect_mode:
+                        key = 'query-{}'.format(len(queries) + 1)
+                        controller = AbortController()
+                        execution = ToolExecutionInput(key, 'cordis_inspect_query',
+                            request['arguments'], agent=owner, signal=controller.signal)
+                        task = asyncio.create_task(ctx.get('tools').execute(execution))
+                        queries[key] = dict(task=task, controller=controller)
+                        value = dict(queryId=key)
+                    elif command == 'inspect-result' and inspect_mode:
+                        query = queries[request['queryId']]
+                        task = query['task']
+                        value = dict(done=task.done())
+                        if task.done():
+                            outcome = task.result()
+                            value.update(isError=outcome.isError, value=outcome.value,
+                                error=outcome.error, content=outcome.content,
+                                listeners=len(query['controller'].signal._listeners))
+                    elif command == 'inspect-cancel' and inspect_mode:
+                        queries[request['queryId']]['controller'].abort('browser probe cancellation')
+                        value = None
                     elif command == 'shutdown':
                         answer(dict(id=request['id'], ok=True, value=None))
                         break
@@ -76,6 +105,10 @@ async def main():
                     traceback.print_exc(file=sys.stderr)
                     answer(dict(id=request['id'], ok=False, error=str(error)))
         finally:
+            for query in queries.values():
+                query['controller'].abort('fixture shutdown')
+            if queries:
+                await asyncio.gather(*(query['task'] for query in queries.values()), return_exceptions=True)
             result['shutdown'].shutdown(0)
             await result['shutdown'].wait()
 

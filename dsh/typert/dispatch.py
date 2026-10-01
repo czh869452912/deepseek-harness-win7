@@ -6,6 +6,7 @@ import math
 from collections.abc import Mapping
 
 from dsh.core.abort import NEVER_ABORTED
+from dsh.core.session.json import FrozenDict, FrozenList
 from dsh.typert.artifact import UNDEFINED
 from dsh.typert.remote import TypertLookupFailure, TypertRemoteFailure, remote_methods
 from dsh.typert.stores import field, resolve_async
@@ -40,7 +41,10 @@ def assert_json(value, ancestors=None):
         if math.isfinite(value):
             return
         raise ValueError("non-finite number is not JSON-safe")
-    if type(value) not in (dict, list):
+    # Object.freeze keeps a plain JS object's prototype. These exact internal
+    # containers are its Python representation, including Tools arguments.
+    # Other mapping/list subclasses remain outside the wire data contract.
+    if type(value) not in (dict, list, FrozenDict, FrozenList):
         raise ValueError("non-plain value is not JSON-safe")
     ancestors = set() if ancestors is None else ancestors
     if id(value) in ancestors:

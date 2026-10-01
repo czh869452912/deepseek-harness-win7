@@ -1,5 +1,8 @@
 # Cordis Inspect 注册、查询与原生 Schema 迁移进展
 
+后续原版浏览器的实际 Inspect 查询、双页面竞争与 live 主题/Slot/Provider 生命周期
+见 [浏览器 Inspect 进展](2026-10-01-native-web-inspect-progress.md)。下文保留历史范围。
+
 后续默认/显式 null 取消原因与平台事件偏差修复、真实 Tools 融合信号双侧观察见
 [取消契约进展](2026-10-01-abort-platform-progress.md)。下文取消边界说明保留为历史范围。
 

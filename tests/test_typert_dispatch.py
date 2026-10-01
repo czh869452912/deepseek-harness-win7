@@ -1,15 +1,51 @@
 import asyncio
+import hashlib
+import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
 from dsh.cordis.context import Context
 from dsh.core.abort import AbortController
+from dsh.core.session.json import FrozenDict, FrozenList
 from dsh.typert.registry import TypertRegistry
 from dsh.typert.remote import Remote, RemoteScope, TypertRemoteService, TypertLookupFailure
 from dsh.typert.protocol import TypertLookupProvider
 from dsh.typert.dispatch import RemoteDispatcher, TypertGatewayError, RemoteInvocationCancelled, rpc_failure
+from dsh.typert.dispatch import assert_json
+from dsh.typert.remote_events import lossless
 from dsh.typert.artifact import Schema, UNDEFINED, read_generated_artifact
+
+ROOT = Path(__file__).resolve().parents[1]
+FROZEN_SOURCE = json.loads((ROOT / 'tests/fixtures/remote-frozen-source-observations.json').read_text(encoding='utf-8'))
+
+
+def test_frozen_remote_source_evidence_is_bound_to_actual_pinned_validators():
+    assert FROZEN_SOURCE['target_upstream'] == json.loads((ROOT / 'migration/baseline.json').read_text(encoding='utf-8'))['target_upstream']
+    assert len(FROZEN_SOURCE['observations']) == 16
+    for path, digest in FROZEN_SOURCE['source_sha256'].items():
+        assert hashlib.sha256((ROOT / path).read_text(encoding='utf-8').encode('utf-8')).hexdigest() == digest, path
+
+
+@pytest.mark.parametrize('row', FROZEN_SOURCE['observations'], ids=lambda row: row['container'] + '/' + row['recipe'])
+def test_frozen_remote_matches_real_original_validator_observation(row):
+    class ExoticObject(dict):
+        pass
+    class ExoticArray(list):
+        pass
+    leaf = {'valid-shared': FrozenDict(dict(nested=FrozenList([None, False, '中文', 42]))),
+        'negative-zero': -0.0, 'infinity': float('inf'), 'nan': float('nan'),
+        'undefined': UNDEFINED, 'exotic-object': ExoticObject(), 'exotic-array': ExoticArray(), 'cycle': {}}[row['recipe']]
+    value = FrozenDict(dict(first=leaf, second=leaf)) if row['container'] == 'object' else FrozenList([leaf, leaf])
+    if row['recipe'] == 'cycle':
+        leaf['cycle'] = value
+    try:
+        lossless(value)
+        accepted = True
+    except ValueError:
+        accepted = False
+    assert accepted == row['session'] == row['gateway']
 
 
 class Example(TypertRemoteService):
@@ -53,6 +89,49 @@ async def setup():
     await ctx.plugin(Example)
     ctx.get("typert").lookups.register("session", TypertLookupProvider("session", "sessionId", "host#Session", "wire#SessionId", lambda key: "resolved:" + key))
     return ctx, RemoteDispatcher(ctx)
+
+
+@pytest.mark.parametrize('freeze', [FrozenDict, FrozenList], ids=['object', 'array'])
+def test_remote_json_accepts_only_internal_frozen_plain_containers(freeze):
+    shared = FrozenDict(dict(nested=FrozenList([None, False, '中文', 42])))
+    value = freeze(dict(first=shared, second=shared) if freeze is FrozenDict else [shared, shared])
+    assert_json(value)
+    lossless(value)
+    with pytest.raises(TypeError, match='frozen'):
+        value['new' if freeze is FrozenDict else 0] = None
+    # A subclass can carry arbitrary behavior and is not the native freeze.
+    class Exotic(freeze):
+        pass
+    with pytest.raises(ValueError, match='non-plain'):
+        assert_json(Exotic(value))
+
+
+@pytest.mark.parametrize('bad', [-0.0, float('inf'), float('nan'), UNDEFINED, object(), (1,)])
+@pytest.mark.parametrize('freeze', [FrozenDict, FrozenList], ids=['object', 'array'])
+def test_frozen_remote_data_still_rejects_lossy_or_non_json_leaves(freeze, bad):
+    value = freeze(dict(nested=bad) if freeze is FrozenDict else [bad])
+    with pytest.raises(ValueError):
+        lossless(value)
+
+
+@pytest.mark.asyncio
+async def test_src_json_remote_result_can_be_a_frozen_tools_value():
+    class FrozenExample(TypertRemoteService):
+        def __init__(self, ctx):
+            super().__init__(ctx, 'frozenExample')
+
+        @Remote
+        def read(self):
+            return FrozenDict(dict(value=FrozenList([None, False, '中文', 42])))
+
+    ctx = Context()
+    try:
+        await ctx.plugin(TypertRegistry)
+        await ctx.plugin(FrozenExample)
+        value = await RemoteDispatcher(ctx).invoke(dict(namespace='frozenExample', method='read', args={}))
+        assert value == dict(value=[None, False, '中文', 42])
+    finally:
+        await ctx.fiber.dispose()
 
 
 @pytest.mark.asyncio

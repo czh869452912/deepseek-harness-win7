@@ -1,5 +1,9 @@
 # 原版 Client 与原生 Python Host 的实际浏览器联合旅程
 
+后续真实 Tools → 原版 Client Inspect、双页面结果竞争、主题/Slot/Provider 清理
+及冻结 JSON 边界修复见 [浏览器 Inspect 进展](2026-10-01-native-web-inspect-progress.md)。
+下文保留本批次 minimal Session 与历史验证范围。
+
 日期：2026-10-01；起始提交 `8ebb7e13`；固定原版
 `cd5ef8148158c3a752a658978873241fdf8e2bbc`。
 继续 [Host 终止事务](2026-10-01-cordis-retirement-progress.md) 的客户端联合验收。

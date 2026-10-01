@@ -1,0 +1,111 @@
+{
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "node": "v22.22.2",
+  "source_sha256": {
+    "scripts/oracles/remote-frozen.spec.ts": "20428393495b524dc6f1024cebf26402639a705bd3edbec0dcd293d49b90b3d9",
+    "scripts/oracles/vitest.remote-frozen.config.mts": "cccd3d88eb52ae62ceb28ddd39fbc0e5696d9d4a0a133b1330ccf684b2e0034e",
+    "scripts/oracles/vitest.agent-lifecycle.config.mts": "1f781c93abe83d7fed3815becbacdf8b639601fae31242baf476e8314508055e",
+    "scripts/oracles/vitest.consumers.config.mts": "b70704a79f8c14cbccbaa62ac717ca4a48402767893e3e85850f491f6a68108f",
+    "scripts/oracles/vitest.core.config.mts": "1e5c431e8bfb8a36462353049517f01dab46455c95e5184c8ab0e97856977bd1",
+    "reference/packages/core/session/src/json.ts": "cbb271dadd2f476a4d19a2b22ac606db6887ed70367b86d6c13ddf1d102d36ba",
+    "reference/packages/api/gateway/src/stream-protocol.ts": "24bc63f54b5fdd31d6eac7c19306f539bdde2d5848ada2471b46c6ce32036f3b"
+  },
+  "observations": [
+    {
+      "container": "object",
+      "recipe": "valid-shared",
+      "session": true,
+      "gateway": true
+    },
+    {
+      "container": "object",
+      "recipe": "negative-zero",
+      "session": false,
+      "gateway": false
+    },
+    {
+      "container": "object",
+      "recipe": "infinity",
+      "session": false,
+      "gateway": false
+    },
+    {
+      "container": "object",
+      "recipe": "nan",
+      "session": false,
+      "gateway": false
+    },
+    {
+      "container": "object",
+      "recipe": "undefined",
+      "session": false,
+      "gateway": false
+    },
+    {
+      "container": "object",
+      "recipe": "exotic-object",
+      "session": false,
+      "gateway": false
+    },
+    {
+      "container": "object",
+      "recipe": "exotic-array",
+      "session": false,
+      "gateway": false
+    },
+    {
+      "container": "object",
+      "recipe": "cycle",
+      "session": false,
+      "gateway": false
+    },
+    {
+      "container": "array",
+      "recipe": "valid-shared",
+      "session": true,
+      "gateway": true
+    },
+    {
+      "container": "array",
+      "recipe": "negative-zero",
+      "session": false,
+      "gateway": false
+    },
+    {
+      "container": "array",
+      "recipe": "infinity",
+      "session": false,
+      "gateway": false
+    },
+    {
+      "container": "array",
+      "recipe": "nan",
+      "session": false,
+      "gateway": false
+    },
+    {
+      "container": "array",
+      "recipe": "undefined",
+      "session": false,
+      "gateway": false
+    },
+    {
+      "container": "array",
+      "recipe": "exotic-object",
+      "session": false,
+      "gateway": false
+    },
+    {
+      "container": "array",
+      "recipe": "exotic-array",
+      "session": false,
+      "gateway": false
+    },
+    {
+      "container": "array",
+      "recipe": "cycle",
+      "session": false,
+      "gateway": false
+    }
+  ]
+}

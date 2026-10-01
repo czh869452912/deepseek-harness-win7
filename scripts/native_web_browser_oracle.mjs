@@ -22,8 +22,28 @@ await mkdir(dirname(output), { recursive: true });
 const privateBrowser = await mkdtemp(join(tmpdir(), 'dsh-cdp-'));
 const delay = ms => new Promise(done => setTimeout(done, ms));
 const report = { kind: 'actual-original-browser/native-python-host', steps: [], errors: [], consoleErrors: [], requests: [], webSockets: [], remoteCalls: {} };
-let host, browser, cdp, nextHost = 1;
+let host, browser, cdp, extraCdp, nextHost = 1;
 const pendingHost = new Map();
+const remoteMethods = ['runHostHalf', 'getClientCode', 'resolveRequestRun', 'settleUserRun', 'invoke', 'stopFromPanel', 'undefineFromPanel', 'syncInspectManifest', 'resolveInspectQuery'];
+const replyJobs = new Set();
+function observeInspectReplies(connection, page) {
+  const requests = new Map();
+  connection.listeners.push(message => {
+    if (message.method === 'Network.requestWillBeSent' && message.params.request.method === 'POST'
+      && new URL(message.params.request.url).pathname.endsWith('/dynamicCordisRunner/resolveInspectQuery')) {
+      requests.set(message.params.requestId, JSON.parse(message.params.request.postData));
+    }
+    if (message.method === 'Network.loadingFinished' && requests.has(message.params.requestId)) {
+      const args = requests.get(message.params.requestId);
+      requests.delete(message.params.requestId);
+      const job = connection.call('Network.getResponseBody', { requestId: message.params.requestId }).then(result => {
+        const body = JSON.parse(result.base64Encoded ? Buffer.from(result.body, 'base64').toString('utf8') : result.body);
+        (report.inspectReplies ??= []).push({ page, request: args, response: body });
+      }).catch(error => report.errors.push({ inspectReplyRead: String(error) })).finally(() => replyJobs.delete(job));
+      replyJobs.add(job);
+    }
+  });
+}
 let hostLog = '';
 let hostErrors = '';
 let browserErrors = '';
@@ -81,10 +101,30 @@ async function panel() {
   if (!await count('[data-cordis-panel]')) await click('[data-cordis-badge]');
 }
 function codeFor(version, failure = false) {
+  const inspectHost = options.inspect ? '    activity = []\n    ctx.provide("nativeInspectActivity", activity)\n    harness.handle("inspectActivity", lambda value: activity.append(value))\n' : '';
+  const inspectClient = options.inspect ? `
+      ctx.theme.overrideTokens("probe", { "--dsw-native-browser-${version}": { light: "#123456", dark: "#654321" } });
+      ctx.effect(() => ctx.cordisInspect.register({
+        manifest: { id: "NativeProbe", description: "Actual dynamic Client query", methods: ["read", "wait", "invalid", "error"].map(name => ({
+          name, description: "Browser probe " + name, inputSchema: { type: "object", properties: {}, additionalProperties: false },
+          outputSchema: { type: "object", properties: { value: { type: "string" }, sessionId: { type: "string" } }, required: ["value", "sessionId"], additionalProperties: false }
+        })) },
+        async query(method, input, context) {
+          await host.call("inspectActivity", { kind: "started", method, sessionId: context.sessionId });
+          if (method === "invalid") return { value: 42, sessionId: context.sessionId };
+          if (method === "error") throw new Error("deliberate inspect provider failure");
+          if (method === "wait") return await new Promise(resolve => {
+            const cancel = () => { void host.call("inspectActivity", { kind: "cancelled", method, sessionId: context.sessionId }); resolve({ value: "late", sessionId: context.sessionId }); };
+            if (context.signal.aborted) cancel(); else context.signal.addEventListener("abort", cancel, { once: true });
+          });
+          return { value: ${JSON.stringify(version)}, sessionId: context.sessionId };
+        }
+      }), "native-browser: inspect provider");
+    ` : '';
   return {
-    host: `def plugin(ctx):\n    ctx.provide("nativeBrowserProbe", ${JSON.stringify(version)})\n    harness.handle("echo", lambda value: {"version": ${JSON.stringify(version)}, "value": value})\n`,
+    host: `def plugin(ctx):\n    ctx.provide("nativeBrowserProbe", ${JSON.stringify(version)})\n    harness.handle("echo", lambda value: {"version": ${JSON.stringify(version)}, "value": value})\n${inspectHost}`,
     client: failure ? 'return { apply(ctx) { throw new Error("native browser fixture client failure") } }' :
-      `return { inject: ["slots"], apply(ctx) { function Probe() { const [result,setResult] = React.useState("ready"); return React.createElement("div", { "data-native-browser-probe": ${JSON.stringify(version)}, style: { position: "fixed", top: 20, left: 800, zIndex: 999 } }, React.createElement("button", { "data-native-browser-echo": true, onClick: async () => { try { setResult(JSON.stringify(await host.call("echo", { nested: [null, true, "中文", 42] }))) } catch (e) { setResult(String(e)) } } }, "Call Python Host"), React.createElement("output", { "data-native-browser-result": true }, result)) } ctx.slots.register({ name: "shell.overlay", id: "native-browser-probe" }, Probe) } }`,
+      `return { inject: ${JSON.stringify(options.inspect ? ['slots', 'theme', 'cordisInspect'] : ['slots'])}, apply(ctx) { ${inspectClient} function Probe() { const [result,setResult] = React.useState("ready"); return React.createElement("div", { "data-native-browser-probe": ${JSON.stringify(version)}, style: { position: "fixed", top: 20, left: 800, zIndex: 999 } }, React.createElement("button", { "data-native-browser-echo": true, onClick: async () => { try { setResult(JSON.stringify(await host.call("echo", { nested: [null, true, "中文", 42] }))) } catch (e) { setResult(String(e)) } } }, "Call Python Host"), React.createElement("output", { "data-native-browser-result": true }, result)) } ctx.slots.register({ name: "shell.overlay", id: "native-browser-probe" }, Probe) } }`,
   };
 }
 async function active(version) {
@@ -96,6 +136,55 @@ async function echo(version) {
   const value = await until(() => cdp.evaluate('document.querySelector("[data-native-browser-result]")?.textContent !== "ready" && document.querySelector("[data-native-browser-result]")?.textContent'), 'Client/Host JSON round trip');
   assert.deepEqual(JSON.parse(value), { version, value: { nested: [null, true, '中文', 42] } });
   report.steps.push({ step: `original-client-host-call-json-${version}`, passed: true });
+}
+async function inspectStart(provider, method, input) {
+  const arguments_ = { platform: 'client', provider, method };
+  if (input !== undefined) arguments_.input = input;
+  return (await command('inspect-start', { arguments: arguments_ })).queryId;
+}
+async function inspectResult(queryId) {
+  return await until(async () => { const r = await command('inspect-result', { queryId }); return r.done && r; }, `Inspect ${queryId} through Tools`);
+}
+async function inspectQuery(provider, method, input) {
+  const queryId = await inspectStart(provider, method, input);
+  const result = await inspectResult(queryId);
+  assert.equal(result.isError, false, JSON.stringify(result));
+  assert.equal(result.listeners, 0, 'Tool dispatch left a caller cancellation listener');
+  assert.deepEqual({ platform: result.value.platform, provider: result.value.provider, method: result.value.method }, { platform: 'client', provider, method });
+  (report.inspectResults ??= []).push({ queryId, provider, method, input, result });
+  assert.deepEqual((await command('snapshot')).inspectPending, []);
+  return result.value.data;
+}
+async function inspectSeats(version) {
+  const slots = await inspectQuery('Slots', 'listSubTree', { root: 'shell.overlay' });
+  assert.deepEqual(slots.requestedRoot, { name: 'shell.overlay', available: true });
+  assert.equal(slots.selected.name, 'shell.overlay');
+  assert.equal(slots.selected.occupants.length, report.initialOverlayOccupants + (version ? 1 : 0));
+  const theme = await inspectQuery('Theme', 'listTokens');
+  assert.deepEqual(theme.tokens.filter(token => token.name.startsWith('--dsw-native-browser-')).map(token => token.name), version ? [`--dsw-native-browser-${version}`] : []);
+  await until(async () => (await command('snapshot')).inspectDirectory.some(row => row.platform === 'client' && row.id === 'NativeProbe') === Boolean(version), 'live Client provider manifest after activation/disposal');
+  if (version) assert.deepEqual(await inspectQuery('NativeProbe', 'read'), { value: version, sessionId: 'native-browser-owner' });
+  report.steps.push({ step: `inspect-live-slots-theme-and-provider-${version ?? 'disposed'}`, passed: true });
+}
+async function inspectCancelled(method) {
+  const previousCalls = report.remoteCalls.resolveInspectQuery ?? 0;
+  const queryId = await inspectStart('NativeProbe', method);
+  await until(async () => { const s = await command('snapshot'); return s.inspectPending.length === 1 && s.inspectActivity.some(row => row.kind === 'started' && row.method === method); }, `browser provider entered ${method}`);
+  if (method !== 'wait') {
+    await until(() => (report.remoteCalls.resolveInspectQuery ?? 0) > previousCalls, `invalid/failed response sent for ${method}`);
+    assert.equal((await command('inspect-result', { queryId })).done, false, 'Non-valid page result claimed the query');
+  }
+  await command('inspect-cancel', { queryId });
+  const result = await inspectResult(queryId);
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.error, { message: `NativeProbe.${method}: Client inspect query NativeProbe.${method} was cancelled` });
+  assert.equal(result.listeners, 0); assert.deepEqual((await command('snapshot')).inspectPending, []);
+  if (method === 'wait') {
+    await until(async () => (await command('snapshot')).inspectActivity.some(row => row.kind === 'cancelled' && row.method === method), 'Host resolved event aborted actual browser provider');
+    assert.equal(report.remoteCalls.resolveInspectQuery ?? 0, previousCalls, 'Cancelled browser query submitted a late result');
+  }
+  (report.inspectResults ??= []).push({ queryId, provider: 'NativeProbe', method, cancelled: true, result });
+  report.steps.push({ step: `inspect-${method}-pending-until-cancel-cleanup`, passed: true });
 }
 
 try {
@@ -111,12 +200,14 @@ try {
   for (const path of ['scripts/native_web_browser_oracle.mjs', 'scripts/native_web_host_fixture.py',
     'scripts/frontend-inputs.json', 'dsh/extensions/host_runner.py', 'dsh/extensions/cordis_runner_state.py',
     'dsh/extensions/cordis_guard.py', 'dsh/typert/dispatch.py', 'dsh/host/connection/canonical.py',
-    'dsh/host/client_modules/loader_registry.py', 'dsh/boot/profile_boot.py']) {
+    'dsh/host/client_modules/loader_registry.py', 'dsh/boot/profile_boot.py',
+    'dsh/extensions/inspect_registry.py', 'dsh/extensions/cordis_tools.py', 'dsh/core/tools.py',
+    'dsh/core/abort.py', 'dsh/typert/api_remotes.py']) {
     report.inputSha256[path] = createHash('sha256').update(await readFile(join(root, path))).digest('hex');
   }
   let readyResolve, readyReject;
   const ready = new Promise((yes, no) => { readyResolve = yes; readyReject = no; });
-  host = spawn(join(root, '.venv/Scripts/python.exe'), ['-u', join(root, 'scripts/native_web_host_fixture.py')], { cwd: root, windowsHide: true });
+  host = spawn(join(root, '.venv/Scripts/python.exe'), ['-u', join(root, 'scripts/native_web_host_fixture.py'), ...options.inspect ? ['--inspect'] : []], { cwd: root, windowsHide: true });
   host.stderr.on('data', data => { hostErrors += data; });
   host.on('error', readyReject);
   host.on('exit', code => { readyReject(new Error(`Host exited: ${code}; ${hostErrors.slice(-2500)}`)); for (const call of pendingHost.values()) { clearTimeout(call.timer); call.reject(new Error(`Host exited ${code}`)); } pendingHost.clear(); });
@@ -167,6 +258,7 @@ try {
   const socket = new WebSocket(target.webSocketDebuggerUrl);
   await new Promise((yes, no) => { socket.addEventListener('open', yes, { once: true }); socket.addEventListener('error', no, { once: true }); });
   cdp = new CDP(socket);
+  if (options.inspect) observeInspectReplies(cdp, 'first');
   report.browser = await cdp.call('Browser.getVersion');
   cdp.listeners.push(message => {
     if (message.method === 'Runtime.exceptionThrown') report.errors.push(message.params.exceptionDetails);
@@ -176,14 +268,14 @@ try {
     // Original Connection sends unary RPCs over POST; remote.mux owns streams.
     if (message.method === 'Network.requestWillBeSent' && message.params.request.method === 'POST') {
       const path = new URL(message.params.request.url).pathname;
-      for (const method of ['runHostHalf', 'getClientCode', 'resolveRequestRun', 'settleUserRun', 'invoke', 'stopFromPanel', 'undefineFromPanel']) {
+      for (const method of remoteMethods) {
         if (path.endsWith(`/dynamicCordisRunner/${method}`)) report.remoteCalls[method] = (report.remoteCalls[method] ?? 0) + 1;
       }
     }
     if (message.method === 'Network.webSocketFrameSent') {
       const frame = message.params.response;
       const payload = frame.opcode === 2 ? Buffer.from(frame.payloadData, 'base64').toString('utf8') : frame.payloadData;
-      for (const method of ['runHostHalf', 'getClientCode', 'resolveRequestRun', 'settleUserRun', 'invoke', 'stopFromPanel', 'undefineFromPanel']) {
+      for (const method of remoteMethods) {
         if (payload.includes(method)) report.remoteCalls[method] = (report.remoteCalls[method] ?? 0) + 1;
       }
     }
@@ -200,6 +292,62 @@ try {
   await click('[role="dialog"][aria-label="Internal Testing Notice"] button');
   await until(async () => await count('[role="dialog"][aria-label="Internal Testing Notice"]') === 0, 'onboarding dismissed');
   report.steps.push({ step: 'original-onboarding-settings-remote', passed: true });
+  if (options.inspect) {
+    const directory = await until(async () => { const s = await command('snapshot'); return s.inspectDirectory.filter(row => row.platform === 'client').length === 5 && s.inspectDirectory; }, 'original Client published five source-defined provider manifests');
+    assert.deepEqual(directory.filter(row => row.platform === 'client').map(row => row.id), ['Service', 'Event', 'Builtin', 'Slots', 'Theme']);
+    report.inspectDirectory = directory;
+    const services = await inspectQuery('Service', 'listService');
+    assert.equal(services.mode, 'catalog'); assert.ok(services.services.some(row => row.key === 'slots'));
+    const service = await inspectQuery('Service', 'listService', { service: 'slots' });
+    assert.equal(service.mode, 'service'); assert.equal(service.service.key, 'slots');
+    assert.ok(service.service.methods.some(row => row.signature === "declare readonly register: SlotCore['register']"));
+    const events = await inspectQuery('Event', 'listEvents');
+    assert.equal(events.mode, 'catalog'); assert.ok(events.events.some(row => row.name === 'connection/reset'));
+    const event = await inspectQuery('Event', 'listEvents', { event: 'connection/reset' });
+    assert.equal(event.mode, 'event'); assert.equal(event.event.name, 'connection/reset');
+    const builtins = await inspectQuery('Builtin', 'listBuiltins');
+    assert.deepEqual(builtins.builtins.map(row => row.name), ['ctx', 'React', 'host', 'styles', 'console']);
+    const theme = await inspectQuery('Theme', 'listTokens');
+    assert.ok(theme.tokens.some(row => row.name === '--dsw-alias-bg-base' && row.requiresLightAndDark));
+    const slots = await inspectQuery('Slots', 'listSubTree', { root: 'shell.overlay' });
+    report.initialOverlayOccupants = slots.selected.occupants.length;
+    assert.ok(slots.selected.catalog.description);
+    const missing = await inspectQuery('Slots', 'listSubTree', { root: 'native-nonexistent-slot' });
+    assert.deepEqual(missing.requestedRoot, { name: 'native-nonexistent-slot', available: false });
+    assert.deepEqual(missing.trees, []); assert.equal(missing.selected, undefined);
+    const before = report.remoteCalls.resolveInspectQuery;
+    const rejected = await inspectResult(await inspectStart('Slots', 'listSubTree', { unexpected: true }));
+    assert.equal(rejected.isError, true); assert.match(rejected.error.message, /rejected input/);
+    assert.equal(report.remoteCalls.resolveInspectQuery, before, 'Invalid input reached the browser');
+    report.steps.push({ step: 'original-client-inspect-five-providers-and-host-input-validation', passed: true });
+    const secondTarget = await cdp.call('Target.createTarget', { url: 'about:blank' });
+    const targetRow = await until(async () => (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find(row => row.id === secondTarget.targetId), 'second real browser target');
+    const secondSocket = new WebSocket(targetRow.webSocketDebuggerUrl);
+    await new Promise((yes, no) => { secondSocket.addEventListener('open', yes, { once: true }); secondSocket.addEventListener('error', no, { once: true }); });
+    extraCdp = new CDP(secondSocket);
+    observeInspectReplies(extraCdp, 'second');
+    extraCdp.listeners.push(message => {
+      if (message.method === 'Runtime.exceptionThrown') report.errors.push(message.params.exceptionDetails);
+      if (message.method === 'Runtime.consoleAPICalled' && message.params.type === 'error') report.consoleErrors.push(message.params.args.map(value => value.value ?? value.description));
+    });
+    await extraCdp.call('Runtime.enable'); await extraCdp.call('Page.enable'); await extraCdp.call('Network.enable');
+    await extraCdp.call('Page.navigate', { url: boot.url });
+    await until(() => extraCdp.evaluate('document.body?.innerText.includes("Into the Unknown")'), 'second original Client boot');
+    await until(async () => (await command('snapshot')).inspectDirectory.filter(row => row.platform === 'client').length === 5 && (await command('snapshot')).inspectPending.length === 0, 'second Client manifest sync');
+    const previousReplies = report.inspectReplies?.length ?? 0;
+    const queryId = await inspectStart('Theme', 'listTokens');
+    const twoPageResult = await inspectResult(queryId);
+    assert.equal(twoPageResult.isError, false);
+    await until(() => (report.inspectReplies?.length ?? 0) === previousReplies + 2, 'both original pages returned their own Theme result');
+    const replies = report.inspectReplies.slice(previousReplies);
+    assert.deepEqual(replies.map(row => row.page).sort(), ['first', 'second']);
+    assert.deepEqual(replies.map(row => row.response.result.value.accepted).sort(), [false, true]);
+    assert.equal(new Set(replies.map(row => row.request.payload.args.requestId)).size, 1);
+    assert.deepEqual((await command('snapshot')).inspectPending, []);
+    report.steps.push({ step: 'two-original-pages-first-valid-result-wins-late-page-rejected', passed: true, queryId, replies });
+    await cdp.call('Target.closeTarget', { targetId: secondTarget.targetId });
+    extraCdp.socket.close(); extraCdp = undefined;
+  }
   const defined = await command('define', { plugin: { kind: 'new', idPrefix: 'probe' }, code: codeFor('v1') });
   report.defined = defined;
   await command('request-run', defined);
@@ -212,6 +360,7 @@ try {
   assert.equal(running.probe, 'v1'); assert.equal(running.pending.length, 0);
   report.steps.push({ step: 'original-ui-approval-native-host-client-running', passed: true, snapshot: running });
   await echo('v1');
+  if (options.inspect) { await inspectSeats('v1'); for (const method of ['wait', 'invalid', 'error']) await inspectCancelled(method); }
   const updated = await command('define', { plugin: { kind: 'existing', pluginId: defined.pluginId }, code: codeFor('v2') });
   const updateRequest = await command('request-run', { ...updated, mode: 'update' });
   assert.equal(updateRequest.status, 'awaiting-approval');
@@ -224,6 +373,7 @@ try {
   assert.equal(await count('[data-native-browser-probe="v1"]'), 0);
   report.steps.push({ step: 'original-ui-approve-future-update-replaces-both-halves', passed: true, snapshot: v2 });
   await echo('v2');
+  if (options.inspect) await inspectSeats('v2');
 
   const failed = await command('define', { plugin: { kind: 'existing', pluginId: defined.pluginId }, code: codeFor('broken', true) });
   const failureRequest = await command('request-run', { ...failed, mode: 'update' });
@@ -238,6 +388,7 @@ try {
   await until(() => attribute('[data-cordis-row]', 'data-cordis-status').then(value => value === 'failed'), 'original UI failure status');
   assert.match(await cdp.evaluate('document.querySelector("[data-cordis-panel]").innerText'), /native browser fixture client failure/);
   report.steps.push({ step: 'client-failure-retracts-host-keeps-version-pointers-and-ui-diagnostic', passed: true, snapshot: failedHost });
+  if (options.inspect) await inspectSeats(null);
 
   const recovery = await command('define', { plugin: { kind: 'existing', pluginId: defined.pluginId }, code: codeFor('v4') });
   await command('request-run', { ...recovery, mode: 'update' });
@@ -245,6 +396,7 @@ try {
   assert.equal(v4.inventory[0].currentPackageId, recovery.packageId);
   report.steps.push({ step: 'same-plugin-new-package-recovers-after-client-failure', passed: true, snapshot: v4 });
   await echo('v4');
+  if (options.inspect) await inspectSeats('v4');
 
   await cdp.call('Page.reload');
   await until(() => count('[class*="frame"]'), 'refreshed original app');
@@ -254,27 +406,35 @@ try {
   assert.equal(await count('[data-native-browser-probe]'), 0);
   assert.equal((await command('snapshot')).probe, 'v4');
   report.steps.push({ step: 'refresh-preserves-host-without-auto-running-client', passed: true });
+  if (options.inspect) {
+    await inspectSeats(null);
+    report.steps.push({ step: 'inspect-after-real-reload-host-survives-client-provider-and-seats-retired', passed: true });
+  }
   await click('[data-cordis-switch="run"]');
   const attached = await active('v4');
   assert.equal(attached.inventory[0].activeRun.pluginRunId, v4.inventory[0].activeRun.pluginRunId);
   report.steps.push({ step: 'original-ui-reattaches-client-to-existing-host-run', passed: true, snapshot: attached });
   await echo('v4');
+  if (options.inspect) await inspectSeats('v4');
 
   await panel(); await click('[data-cordis-switch="stop"]');
   await until(async () => await count('[data-native-browser-probe]') === 0, 'Client removal');
   const stopped = await command('snapshot');
   assert.equal(stopped.probe, null); assert.equal(stopped.inventory[0].latestRun.status, 'stopped');
   report.steps.push({ step: 'original-ui-stop-releases-both-halves', passed: true, snapshot: stopped });
+  if (options.inspect) await inspectSeats(null);
   await click('[data-cordis-switch="run"]');
   const restarted = await active('v4');
   assert.notEqual(restarted.inventory[0].activeRun.pluginRunId, attached.inventory[0].activeRun.pluginRunId);
   report.steps.push({ step: 'original-ui-restart-allocates-fresh-host-run', passed: true, snapshot: restarted });
+  if (options.inspect) await inspectSeats('v4');
   await panel();
   await click('[data-cordis-remove]');
   await until(async () => (await command('snapshot')).inventory.length === 0, 'definition removed');
   await until(async () => await count('[data-native-browser-probe]') === 0, 'active definition Client removed');
   assert.equal((await command('snapshot')).probe, null);
   report.steps.push({ step: 'original-ui-remove-definition', passed: true });
+  if (options.inspect) await inspectSeats(null);
 
   const declined = await command('define', { plugin: { kind: 'new', idPrefix: 'deny' }, code: codeFor('declined') });
   await command('request-run', declined);
@@ -282,6 +442,7 @@ try {
   const rejected = await until(async () => { const s = await command('snapshot'); return s.inventory[0]?.latestRun?.status === 'rejected' && s; }, 'original UI rejection');
   assert.equal(await count('[data-native-browser-probe]'), 0); assert.equal(rejected.probe, null); assert.equal(rejected.pending.length, 0);
   report.steps.push({ step: 'original-ui-decline-executes-neither-half', passed: true, snapshot: rejected });
+  await Promise.all([...replyJobs]);
   assert.deepEqual(report.errors, []); assert.deepEqual(report.requests, []);
   assert.equal(report.consoleErrors.length, 1, 'Only the deliberately failed Client may log an error');
   assert.equal(report.consoleErrors[0][0], '[cordis-client-runner] Client activation probe-1/pkg-3 (run-3) failed:');
@@ -289,6 +450,16 @@ try {
   report.expectedConsoleError = report.consoleErrors[0];
   assert.ok(report.webSockets.includes('/api/remote.mux'));
   for (const method of ['runHostHalf', 'getClientCode', 'resolveRequestRun', 'settleUserRun', 'invoke', 'stopFromPanel', 'undefineFromPanel']) assert.ok(report.remoteCalls[method], `Actual browser did not send ${method}`);
+  if (options.inspect) {
+    for (const method of ['syncInspectManifest', 'resolveInspectQuery']) assert.ok(report.remoteCalls[method], `Actual Inspect browser did not send ${method}`);
+    const snapshot = await command('snapshot');
+    const queries = snapshot.events.filter(row => row.event === 'cordis/inspect-query');
+    const resolved = snapshot.events.filter(row => row.event === 'cordis/inspect-query-resolved');
+    assert.equal(queries.length, resolved.length);
+    for (const row of queries) assert.equal(resolved.filter(other => other.value.requestId === row.value.requestId).length, 1, 'Inspect request must settle exactly once');
+    report.inspectSettlements = { requests: queries.length, resolved: resolved.length };
+    await Promise.all([...replyJobs]);
+  }
   for (const [path, hash] of Object.entries(report.inputSha256)) assert.equal(createHash('sha256').update(await readFile(join(root, path))).digest('hex'), hash, `Probe input changed during execution: ${path}`);
   report.passed = true;
 } catch (error) {
@@ -304,11 +475,23 @@ try {
     } catch (captureError) { report.captureError = String(captureError); }
   }
 } finally {
+  // Close test pages before retiring the server: live Clients reconnect while
+  // the Host is shutting down, racing CPython 3.8 Proactor's accept callback.
+  if (browser?.exitCode === null) {
+    try { await cdp?.call('Browser.close'); await until(() => browser.exitCode !== null, 'browser orderly shutdown'); }
+    catch { browser.kill(); await until(() => browser.exitCode !== null, 'test browser exit').catch(() => {}); }
+  }
   if (host?.exitCode === null) { try { await command('shutdown'); await until(() => host.exitCode !== null, 'host orderly shutdown'); } catch { host.kill(); } }
   if (cdp) cdp.socket.close();
+  if (extraCdp) extraCdp.socket.close();
   if (browser?.exitCode === null) { browser.kill(); await until(() => browser.exitCode !== null, 'test browser exit').catch(() => {}); }
   // Never write launch-token-bearing stdout to evidence.
   report.hostErrors = hostErrors.replace(/token=[^\s]+/g, 'token=[redacted]');
+  report.hostExitCode = host?.exitCode;
+  if (report.passed && (report.hostErrors || report.hostExitCode !== 0)) {
+    report.passed = false;
+    report.failure = `Host failed during teardown (exit ${report.hostExitCode}): ${report.hostErrors}`;
+  }
   report.browserErrors = browserErrors;
   assert.equal(resolve(dirname(privateBrowser)), resolve(tmpdir()));
   assert.ok(basename(privateBrowser).startsWith('dsh-cdp-'));

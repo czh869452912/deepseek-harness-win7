@@ -7,14 +7,16 @@ shell-trusted, as upstream's VM is not a security boundary.
 import asyncio
 import copy
 import inspect
+import math
 import re
 import sys
 import time
 from types import SimpleNamespace
 
-from dsh.core.cancellation import aborted
+from dsh.core.tools import _json_snapshot
+from dsh.extensions.cordis_runner_state import CordisRunnerState, missing_plugin
 from dsh.core.session.json import UNDEFINED
-from dsh.extensions.inspect_registry import CordisInspectRegistryService
+from dsh.extensions.inspect_registry import CordisInspectRegistryService, js_trim
 from dsh.typert.remote import Remote, TypertRemoteService
 
 
@@ -26,18 +28,20 @@ def half(status):
     return dict(status=status, waitingFor=[])
 
 
-class DynamicCordisRunner(TypertRemoteService):
+class DynamicCordisRunner(CordisRunnerState, TypertRemoteService):
     inject = ['tools']
 
     def __init__(self, ctx, config=None):
         super().__init__(ctx, 'dynamicCordisRunner')
         self.timeout = (config or {}).get('vmTimeoutMs', 5000)
-        if type(self.timeout) not in (int, float) or self.timeout <= 0:
-            raise ValueError('vmTimeoutMs must be positive')
+        if type(self.timeout) not in (int, float) or not math.isfinite(self.timeout) or self.timeout < 1:
+            raise ValueError('vmTimeoutMs must be a finite number at least 1')
         self.plugins, self.pending = {}, {}
         self._next_ids = dict(plugin=1, package=1, run=1, approval=1)
         self.inspect_registry = CordisInspectRegistryService(ctx)
-        self.locks = {}
+        self.starting = {}
+        self.root_ctx = ctx
+        self._group = None
         ctx.effect(lambda: self.close)
 
     async def close(self):
@@ -45,6 +49,8 @@ class DynamicCordisRunner(TypertRemoteService):
             await self.retract(plugin)
         self.plugins.clear()
         self.pending.clear()
+        if self._group is not None:
+            await self._group.dispose()
         self.inspect_registry.close()
 
     def owned(self, agent, plugin_id):
@@ -60,9 +66,13 @@ class DynamicCordisRunner(TypertRemoteService):
                 return value
 
     def define(self, request):
-        name, purpose, code = request['name'].strip(), request['purpose'].strip(), request['code']
-        if not name or not purpose or not any(key in code for key in ('host', 'client')):
-            raise ValueError('cordis_define needs a name, purpose and at least one code half')
+        name, purpose, code = js_trim(request['name']), js_trim(request['purpose']), request['code']
+        if not name:
+            raise ValueError('cordis_define needs a non-empty `name`')
+        if not purpose:
+            raise ValueError('cordis_define needs a non-empty `purpose`')
+        if not any(key in code for key in ('host', 'client')):
+            raise ValueError('cordis_define needs `code.host`, `code.client`, or both')
         for value in code.values():
             if not isinstance(value, str) or not value.strip():
                 raise ValueError('code halves must be non-empty strings')
@@ -70,19 +80,18 @@ class DynamicCordisRunner(TypertRemoteService):
             compile(code['host'], '<cordis-host>', 'exec')
         spec = request['plugin']
         if spec['kind'] == 'new':
-            prefix = spec['idPrefix'].strip()
+            prefix = js_trim(spec['idPrefix'])
             if not re.fullmatch('[a-z]{3,6}', prefix):
-                raise ValueError('idPrefix must contain 3–6 lowercase English letters')
+                raise ValueError('cordis_define `plugin.idPrefix` must contain 3–6 lowercase English letters')
             pid = self.mint_id('plugin', prefix)
             plugin = dict(pluginId=pid, agentId=request['sessionId'], packages={}, approved=set(), approveFuture=False)
             self.plugins[pid] = plugin
         else:
             plugin = self.plugins.get(spec['pluginId'])
             if plugin is None or plugin['agentId'] != request['sessionId']:
-                raise ValueError('dynamic plugin is not owned by this session')
+                raise ValueError(missing_plugin(spec['pluginId']))
         package = dict(packageId=self.mint_id('package', 'pkg'), name=name, purpose=purpose, code=copy.deepcopy(code))
         plugin['packages'][package['packageId']] = package
-        plugin['nextPackageId'] = package['packageId']
         return dict(pluginId=plugin['pluginId'], **self.package_summary(package))
 
     @staticmethod
@@ -169,224 +178,9 @@ class DynamicCordisRunner(TypertRemoteService):
             return None, refusal('invalid-mode', message)
         if mode == 'run' and current is not None and current != package_id:
             return None, refusal('invalid-mode', 'package "{}" differs from current "{}"; use mode "update"'.format(package_id, current))
-        lock = self.locks.get(pid)
-        if not attach and lock is not None and lock.locked():
+        if not attach and pid in self.starting:
             return None, refusal('transition-in-flight', 'plugin "{}" is already starting'.format(pid))
         return plugin, None
-
-    def attempt(self, plugin, package_id, mode):
-        code = plugin['packages'][package_id]['code']
-        attempt = dict(pluginRunId=self.mint_id('run', 'run'), packageId=package_id, mode=mode, status='starting-host', host=half('pending' if 'host' in code else 'absent'), client=half('pending' if 'client' in code else 'absent'))
-        plugin.update(latestRun=attempt, nextPackageId=package_id)
-        return attempt
-
-    async def run(self, agent, pluginId, packageId, mode, signal=None):
-        plugin, error = self.plan(agent, pluginId, packageId, mode)
-        if error:
-            return error
-        if aborted(signal):
-            return refusal('cancelled', 'run request cancelled before activation')
-        if any(row['pluginId'] == pluginId for row in self.pending.values()):
-            return refusal('transition-in-flight', 'plugin already has a pending run request')
-        attempt = self.attempt(plugin, packageId, mode)
-        package = plugin['packages'][packageId]
-        if 'client' not in package['code']:
-            result = await self.activate(plugin, attempt)
-            return self.run_response(plugin) if result['ok'] else refusal('host-half-failed', result['message'])
-        rid = self.mint_id('approval', 'approval')
-        required = not plugin['approveFuture'] and packageId not in plugin['approved']
-        attempt.update(approvalRequestId=rid, requiresApproval=required, status='awaiting-approval' if required else 'starting-host')
-        pending = dict(requestId=rid, agentId=agent.id, pluginId=pluginId, packageId=packageId, mode=mode, name=package['name'], purpose=package['purpose'], requiresApproval=required)
-        self.pending[rid] = dict(pending, pluginRunId=attempt['pluginRunId'])
-        self.ctx.emit('cordis/request-run', pending)
-        return self.run_response(plugin)
-
-    def run_response(self, plugin):
-        attempt = plugin['latestRun']
-        result = dict(ok=True, status='awaiting-approval' if attempt['status'] == 'awaiting-approval' else 'running' if attempt['status'] in ('running', 'waiting') else 'starting', pluginId=plugin['pluginId'], packageId=attempt['packageId'], pluginRunId=attempt['pluginRunId'], mode=attempt['mode'], waitingFor=attempt['host']['waitingFor'])
-        for key in ('currentPackageId', 'nextPackageId'):
-            if key in plugin:
-                result[key] = plugin[key]
-        if 'client' in plugin['packages'][attempt['packageId']]['code']:
-            result['clientWaitingFor'] = list(attempt['client']['waitingFor'])
-        return result
-
-    async def activate(self, plugin, attempt):
-        lock = self.locks.setdefault(plugin['pluginId'], asyncio.Lock())
-        async with lock:
-            current = plugin.get('run')
-            if current and current['pluginRunId'] == attempt['pluginRunId']:
-                return dict(ok=True, pluginId=plugin['pluginId'], packageId=attempt['packageId'], pluginRunId=attempt['pluginRunId'], waitingFor=attempt['host']['waitingFor'], startedHere=False)
-            await self.retract(plugin)
-            handlers, fiber = {}, None
-            package = plugin['packages'][attempt['packageId']]
-            try:
-                if 'host' in package['code']:
-                    def handle(method, handler):
-                        if not isinstance(method, str) or not method or not callable(handler) or method in handlers:
-                            raise ValueError('Host handlers need unique names and callable implementations')
-                        handlers[method] = handler
-                        return lambda: handlers.pop(method, None)
-                    namespace = dict(harness=SimpleNamespace(handle=handle, defineTool=lambda tool: tool, registerTool=lambda ctx, tool: ctx.get('tools').register(tool)))
-                    deadline, previous = time.monotonic() + self.timeout / 1000, sys.gettrace()
-                    def trace(frame, event, arg):
-                        if time.monotonic() > deadline:
-                            raise TimeoutError('Host evaluation exceeded vmTimeoutMs')
-                        return trace
-                    try:
-                        sys.settrace(trace)
-                        exec(compile(package['code']['host'], '<cordis-host>', 'exec'), namespace)
-                    finally:
-                        sys.settrace(previous)
-                    if not callable(namespace.get('plugin')):
-                        raise ValueError('Python Host code must expose a callable named plugin')
-                    fiber = self.ctx.plugin(namespace['plugin'])
-                    fiber = await fiber
-                    waiting = [name for name in getattr(namespace['plugin'], 'inject', []) if self.ctx.get(name) is None]
-                    attempt['host'] = dict(status='waiting' if waiting else 'running', waitingFor=waiting)
-                plugin['run'] = dict(pluginRunId=attempt['pluginRunId'], packageId=attempt['packageId'], handlers=handlers, fiber=fiber)
-                attempt['status'] = 'client-pending' if 'client' in package['code'] else 'waiting' if attempt['host']['waitingFor'] else 'running'
-                if 'client' not in package['code']:
-                    plugin['currentPackageId'] = attempt['packageId']
-                    plugin.pop('nextPackageId', None)
-                self.ctx.emit('cordis/advertise', dict(pluginId=plugin['pluginId'], packageId=attempt['packageId'], pluginRunId=attempt['pluginRunId'], name=package['name']))
-                return dict(ok=True, pluginId=plugin['pluginId'], packageId=attempt['packageId'], pluginRunId=attempt['pluginRunId'], waitingFor=attempt['host']['waitingFor'], startedHere=True)
-            except Exception as error:
-                if fiber is not None:
-                    await fiber.dispose()
-                attempt['status'] = 'failed'
-                attempt['host'] = dict(status='failed', waitingFor=[], error=str(error))
-                return dict(ok=False, message=str(error))
-
-    @Remote
-    async def runHostHalf(self, agent, pluginId, packageId, mode, requestId, approveFutureVersions):
-        plugin, error = self.plan(agent, pluginId, packageId, mode, attach=True)
-        if error:
-            return dict(ok=False, message=error['message'])
-        pending = self.pending.get(requestId) if requestId is not None else None
-        if requestId is not None:
-            if pending is None or (pending['pluginId'], pending['packageId'], pending['mode']) != (pluginId, packageId, mode):
-                return dict(ok=False, message='run request does not authorize this package')
-            attempt = plugin['latestRun']
-            if attempt['pluginRunId'] != pending['pluginRunId']:
-                return dict(ok=False, message='run request is stale')
-        else:
-            if any(row['pluginId'] == pluginId for row in self.pending.values()):
-                return dict(ok=False, message='plugin has a pending model run request')
-            current = plugin.get('run')
-            attempt = plugin['latestRun'] if current and current['packageId'] == packageId else self.attempt(plugin, packageId, mode)
-        plugin['approved'].add(packageId)
-        if approveFutureVersions:
-            plugin['approveFuture'] = True
-        return await self.activate(plugin, attempt)
-
-    @Remote
-    def getClientCode(self, agent, pluginId, pluginRunId):
-        plugin = self.owned(agent, pluginId)
-        run = plugin.get('run') if plugin else None
-        if run is None or run['pluginRunId'] != pluginRunId:
-            raise ValueError('dynamic plugin activation is unavailable')
-        package = plugin['packages'][run['packageId']]
-        return dict(code=package['code']['client'], name=package['name'], pluginId=pluginId, packageId=package['packageId'], pluginRunId=pluginRunId)
-
-    async def settle(self, plugin, resolution):
-        run = plugin.get('run')
-        if resolution.get('pluginRunId') is not None and (run is None or run['pluginRunId'] != resolution['pluginRunId']):
-            return refusal('cancelled', 'activation is stale')
-        attempt = plugin['latestRun']
-        if not resolution['ok']:
-            await self.retract(plugin)
-            attempt['status'] = 'rejected' if resolution['reason'] == 'rejected' else 'failed'
-            attempt['client'] = dict(status='failed', waitingFor=[], error=resolution.get('message', resolution['reason']))
-            return refusal(resolution['reason'], resolution.get('message', resolution['reason']))
-        if run is None:
-            return refusal('not-running', 'Host activation is unavailable')
-        waiting = resolution.get('waitingFor', [])
-        attempt['client'] = dict(status='waiting' if waiting else 'running', waitingFor=waiting)
-        attempt['status'] = 'waiting' if waiting or attempt['host']['waitingFor'] else 'running'
-        plugin['currentPackageId'] = run['packageId']
-        plugin.pop('nextPackageId', None)
-        return self.run_response(plugin)
-
-    @Remote
-    async def resolveRequestRun(self, requestId, resolution):
-        pending = self.pending.get(requestId)
-        if pending is None:
-            return dict(accepted=False)
-        plugin = self.plugins[pending['pluginId']]
-        if resolution.get('pluginRunId') is not None and (plugin.get('run') or {}).get('pluginRunId') != resolution['pluginRunId']:
-            return dict(accepted=False)
-        if resolution['ok'] and not plugin.get('run'):
-            return dict(accepted=False)
-        self.pending.pop(requestId)
-        result = await self.settle(plugin, resolution)
-        self.ctx.emit('cordis/request-run-resolved', dict(requestId=requestId, outcome='approved' if result['ok'] else 'rejected' if resolution.get('reason') == 'rejected' else 'failed'))
-        return dict(accepted=True)
-
-    @Remote
-    async def settleUserRun(self, agent, pluginId, resolution):
-        plugin = self.owned(agent, pluginId)
-        return await self.settle(plugin, resolution) if plugin is not None else refusal('plugin-missing', 'dynamic plugin is unavailable')
-
-    async def retract(self, plugin):
-        run = plugin.pop('run', None)
-        if run is not None:
-            if run['fiber'] is not None:
-                await run['fiber'].dispose()
-            self.ctx.emit('cordis/retract', dict(pluginId=plugin['pluginId'], packageId=run['packageId'], pluginRunId=run['pluginRunId']))
-
-    async def stop(self, agent, pluginId):
-        plugin = self.owned(agent, pluginId)
-        if plugin is None:
-            return refusal('plugin-missing', 'dynamic plugin is unavailable')
-        pending = [key for key, row in self.pending.items() if row['pluginId'] == pluginId]
-        if not pending and 'run' not in plugin:
-            return refusal('not-running', 'dynamic plugin is not running')
-        for key in pending:
-            del self.pending[key]
-            self.ctx.emit('cordis/request-run-resolved', dict(requestId=key, outcome='cancelled'))
-        await self.retract(plugin)
-        plugin['latestRun']['status'] = 'stopped'
-        for key in ('host', 'client'):
-            if plugin['latestRun'][key]['status'] != 'absent':
-                plugin['latestRun'][key] = half('stopped')
-        return dict(ok=True)
-
-    @Remote
-    async def stopFromPanel(self, agent, pluginId):
-        return await self.stop(agent, pluginId)
-
-    async def undefine(self, agent, pluginId):
-        plugin = self.owned(agent, pluginId)
-        if plugin is None:
-            return refusal('plugin-missing', 'dynamic plugin is unavailable')
-        running = 'run' in plugin
-        await self.stop(agent, pluginId)
-        del self.plugins[pluginId]
-        self.locks.pop(pluginId, None)
-        return dict(ok=True, wasRunning=running)
-
-    @Remote
-    async def undefineFromPanel(self, agent, pluginId):
-        return await self.undefine(agent, pluginId)
-
-    @Remote
-    async def invoke(self, pluginId, pluginRunId, method, args):
-        plugin = self.plugins.get(pluginId)
-        run = plugin.get('run') if plugin else None
-        if run is None:
-            return dict(ok=False, code='plugin-not-running', message='dynamic plugin is not running')
-        if run['pluginRunId'] != pluginRunId:
-            return dict(ok=False, code='stale-run', message='activation is no longer active')
-        if method not in run['handlers']:
-            return dict(ok=False, code='method-not-found', message='Host method is unavailable')
-        try:
-            result = run['handlers'][method](args)
-            if inspect.isawaitable(result):
-                result = await result
-            return dict(ok=True, value=result)
-        except Exception as error:
-            return dict(ok=False, code='handler-error', message=str(error))
 
     @Remote
     def syncInspectManifest(self, providers):
@@ -400,16 +194,88 @@ class DynamicCordisRunner(TypertRemoteService):
     async def queryClient(self, agent, provider, method, input=UNDEFINED, signal=None):
         return await self.inspect_registry.query('client', provider, method, input, agent, signal)
 
-    @Remote
-    def reportRenderFailure(self, pluginId, pluginRunId, failure):
-        plugin = self.plugins.get(pluginId)
-        if plugin is not None and plugin.get('run', {}).get('pluginRunId') == pluginRunId:
-            plugin['run']['renderFailure'] = copy.deepcopy(failure)
-        return None
+
+    async def start_host(self, plugin, source, run):
+        """Evaluate native Python and mount a real child of the dynamic group.
+
+        This evaluator is deliberately not a JavaScript VM or a malicious-code
+        sandbox. Registration facade/DSL parity remains a separate migration.
+        """
+        def handle(method, handler):
+            if not isinstance(method, str) or not method:
+                raise ValueError('harness.handle(method, fn) needs a non-empty string method name')
+            if not callable(handler):
+                raise ValueError('harness.handle("{}") needs a handler function as its second argument'.format(method))
+            async def normalized(args):
+                value = handler(args)
+                if inspect.isawaitable(value):
+                    value = await value
+                try:
+                    return _json_snapshot(value)
+                except (TypeError, ValueError):
+                    raise ValueError('harness.handle("{}") result must be lossless JSON data (objects, arrays, strings, numbers, booleans, null) — not a class instance, function, Map/Set, Date, or undefined. Return a plain object built from the values you need, or `return null` when the caller needs no value back.'.format(method))
+            run['handlers'][method] = normalized
+            def dispose():
+                if run['handlers'].get(method) is normalized:
+                    del run['handlers'][method]
+            run['handlerDisposers'].append(dispose)
+            return dispose
+        namespace = dict(harness=SimpleNamespace(handle=handle, defineTool=lambda tool: tool,
+            registerTool=lambda ctx, tool: ctx.get('tools').register(tool)))
+        fiber = None
+        try:
+            deadline, previous = time.monotonic() + self.timeout / 1000, sys.gettrace()
+            def trace(frame, event, arg):
+                if time.monotonic() > deadline:
+                    raise TimeoutError('Host evaluation exceeded vmTimeoutMs')
+                return trace
+            try:
+                sys.settrace(trace)
+                exec(compile(source, '<cordis-host>', 'exec'), namespace)
+            finally:
+                sys.settrace(previous)
+            if not callable(namespace.get('plugin')):
+                raise ValueError('Python Host code must expose a callable named plugin')
+            if self._group is None:
+                self._group = self.root_ctx.plugin(dict(name='cordis-dynamic', apply=lambda ctx: None))
+            group = await self._group
+            fiber = group.ctx.plugin(namespace['plugin'])
+            try:
+                await fiber
+            except BaseException:
+                await fiber.dispose()
+                raise
+            # Preserve the settled handle, as original startHostHalf does.
+            # Native inspectors compare its original identity through ctx.fiber.
+            run['fiber'] = fiber.ctx.fiber
+            return None
+        except Exception as error:
+            for dispose in run['handlerDisposers']:
+                dispose()
+            run['handlerDisposers'].clear()
+            return self.error_details(error)
+
+    @staticmethod
+    def error_details(error):
+        result = dict(message=getattr(error, 'message', str(error)))
+        if isinstance(getattr(error, 'stack', None), str):
+            result['stack'] = error.stack
+        return result
 
     @Remote
-    def reportClientGuardFailure(self, pluginId, pluginRunId, error):
+    async def invoke(self, pluginId, pluginRunId, method, args):
         plugin = self.plugins.get(pluginId)
-        if plugin is not None and plugin.get('run', {}).get('pluginRunId') == pluginRunId:
-            plugin['latestRun']['error'] = dict(error, phase='client-apply', pluginId=pluginId, packageId=plugin['run']['packageId'], pluginRunId=pluginRunId)
-        return None
+        run = plugin.get('run') if plugin is not None else None
+        if run is None:
+            return dict(ok=False, code='plugin-not-running', message='dynamic plugin "{}" is not running'.format(pluginId))
+        if run['pluginRunId'] != pluginRunId:
+            return dict(ok=False, code='stale-run', message='activation "{}" is no longer active'.format(pluginRunId))
+        handler = run['handlers'].get(method)
+        if handler is None:
+            return dict(ok=False, code='method-not-found', message='dynamic plugin "{}" registered no Host method "{}"'.format(pluginId, method))
+        try:
+            return dict(ok=True, value=await handler(args))
+        except Exception as error:
+            failure = self.error_details(error)
+            self.steer_host_handler_failure(plugin, run, method, failure)
+            return dict(ok=False, code='handler-error', **failure)

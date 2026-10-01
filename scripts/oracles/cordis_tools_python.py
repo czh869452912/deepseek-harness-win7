@@ -90,10 +90,9 @@ async def observe(spec):
             row['packages'] = {package['packageId']: package for package in row['packages']}
             runner.plugins[row['pluginId']] = row
         if kind == 'plan':
-            runner.locks = {}
+            runner.starting = {}
             if spec.get('starting'):
-                runner.locks['theme-1'] = asyncio.Lock()
-                await runner.locks['theme-1'].acquire()
+                runner.starting['theme-1'] = object()
             plugin, error = runner.plan(NS(id=spec.get('agentId', 'owner')), spec.get('pluginId', 'theme-1'),
                 spec.get('packageId', 'pkg-2'), spec['activationMode'], spec.get('attach', False))
             return dict(ok=True) if error is None else dict(ok=False, response=error)

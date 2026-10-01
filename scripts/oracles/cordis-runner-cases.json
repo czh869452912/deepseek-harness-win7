@@ -1,0 +1,871 @@
+[
+  {
+    "mode": "definitions-and-host-versions",
+    "steps": [
+      {
+        "op": "define",
+        "program": "host",
+        "existing": false,
+        "save": "defined"
+      },
+      {
+        "op": "reference"
+      },
+      {
+        "op": "run",
+        "mode": "run",
+        "save": "run"
+      },
+      {
+        "op": "define",
+        "program": "host",
+        "existing": true,
+        "save": "second"
+      },
+      {
+        "op": "reference"
+      },
+      {
+        "op": "run",
+        "mode": "run"
+      },
+      {
+        "op": "run",
+        "mode": "update",
+        "save": "run"
+      },
+      {
+        "op": "invoke",
+        "method": "read",
+        "args": {
+          "x": 1
+        }
+      },
+      {
+        "op": "stop"
+      },
+      {
+        "op": "stop"
+      },
+      {
+        "op": "run",
+        "mode": "run",
+        "save": "run"
+      },
+      {
+        "op": "undefine"
+      },
+      {
+        "op": "reference"
+      }
+    ]
+  },
+  {
+    "mode": "approval-stale-and-first-winner",
+    "steps": [
+      {
+        "op": "define",
+        "program": "dual",
+        "existing": false,
+        "save": "defined"
+      },
+      {
+        "op": "run",
+        "mode": "run",
+        "save": "run"
+      },
+      {
+        "op": "request",
+        "save": "request"
+      },
+      {
+        "op": "run",
+        "mode": "run",
+        "save": "run"
+      },
+      {
+        "op": "resolve",
+        "resolution": {
+          "ok": true,
+          "pluginRunId": "stale"
+        }
+      },
+      {
+        "op": "half",
+        "direct": false,
+        "save": "half",
+        "future": false,
+        "agent": "foreign"
+      },
+      {
+        "op": "half",
+        "direct": false,
+        "save": "half",
+        "future": true
+      },
+      {
+        "op": "clientCode"
+      },
+      {
+        "op": "resolve",
+        "resolution": {
+          "ok": true,
+          "pluginRunId": "stale"
+        }
+      },
+      {
+        "op": "resolve",
+        "resolution": {
+          "ok": true,
+          "pluginRunId": "$half.pluginRunId"
+        }
+      },
+      {
+        "op": "resolve",
+        "resolution": {
+          "ok": true,
+          "pluginRunId": "$half.pluginRunId"
+        }
+      },
+      {
+        "op": "invoke",
+        "method": "read",
+        "args": {
+          "nested": [
+            "a",
+            null
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "mode": "rejected-update-retains-old-run",
+    "steps": [
+      {
+        "op": "define",
+        "program": "dual",
+        "existing": false,
+        "save": "defined"
+      },
+      {
+        "op": "run",
+        "mode": "run",
+        "save": "run"
+      },
+      {
+        "op": "request",
+        "save": "request"
+      },
+      {
+        "op": "half",
+        "direct": false,
+        "save": "half",
+        "future": false
+      },
+      {
+        "op": "resolve",
+        "resolution": {
+          "ok": true,
+          "pluginRunId": "$half.pluginRunId"
+        }
+      },
+      {
+        "op": "define",
+        "program": "dual",
+        "existing": true,
+        "save": "second"
+      },
+      {
+        "op": "run",
+        "mode": "update",
+        "save": "run"
+      },
+      {
+        "op": "request",
+        "save": "request"
+      },
+      {
+        "op": "resolve",
+        "resolution": {
+          "ok": false,
+          "reason": "rejected",
+          "message": "not now"
+        }
+      },
+      {
+        "op": "invoke",
+        "method": "read",
+        "args": {}
+      },
+      {
+        "op": "stop"
+      },
+      {
+        "op": "run",
+        "mode": "update",
+        "save": "run"
+      },
+      {
+        "op": "request",
+        "save": "request"
+      },
+      {
+        "op": "undefine"
+      },
+      {
+        "op": "resolve",
+        "resolution": {
+          "ok": true,
+          "pluginRunId": "$half.pluginRunId"
+        }
+      }
+    ]
+  },
+  {
+    "mode": "technical-failure-and-grant-persistence",
+    "steps": [
+      {
+        "op": "define",
+        "program": "dual",
+        "existing": false,
+        "save": "defined"
+      },
+      {
+        "op": "run",
+        "mode": "run",
+        "save": "run"
+      },
+      {
+        "op": "request",
+        "save": "request"
+      },
+      {
+        "op": "half",
+        "direct": false,
+        "save": "half",
+        "future": false
+      },
+      {
+        "op": "resolve",
+        "resolution": {
+          "ok": false,
+          "reason": "client-half-failed",
+          "pluginRunId": "$half.pluginRunId",
+          "startedHere": true,
+          "message": "page failed",
+          "stack": "fixture stack"
+        }
+      },
+      {
+        "op": "run",
+        "mode": "run",
+        "save": "run"
+      },
+      {
+        "op": "request",
+        "save": "request"
+      },
+      {
+        "op": "half",
+        "direct": false,
+        "save": "half",
+        "future": false
+      },
+      {
+        "op": "resolve",
+        "resolution": {
+          "ok": true,
+          "pluginRunId": "$half.pluginRunId"
+        }
+      },
+      {
+        "op": "define",
+        "program": "dual",
+        "existing": true,
+        "save": "second"
+      },
+      {
+        "op": "run",
+        "mode": "update",
+        "save": "run"
+      },
+      {
+        "op": "request",
+        "save": "request"
+      },
+      {
+        "op": "half",
+        "direct": false,
+        "save": "half",
+        "future": true
+      },
+      {
+        "op": "resolve",
+        "resolution": {
+          "ok": true,
+          "pluginRunId": "$half.pluginRunId"
+        }
+      },
+      {
+        "op": "define",
+        "program": "client",
+        "existing": true,
+        "save": "third"
+      },
+      {
+        "op": "run",
+        "mode": "update",
+        "save": "run"
+      },
+      {
+        "op": "request",
+        "save": "request"
+      },
+      {
+        "op": "half",
+        "direct": false,
+        "save": "half",
+        "future": false
+      },
+      {
+        "op": "resolve",
+        "resolution": {
+          "ok": false,
+          "reason": "client-half-failed",
+          "pluginRunId": "$half.pluginRunId",
+          "startedHere": true,
+          "message": "future failed"
+        }
+      },
+      {
+        "op": "undefine"
+      }
+    ]
+  },
+  {
+    "mode": "panel-attachment-and-page-failure-ownership",
+    "steps": [
+      {
+        "op": "define",
+        "program": "dual",
+        "existing": false,
+        "save": "defined"
+      },
+      {
+        "op": "half",
+        "direct": true,
+        "save": "half",
+        "future": false
+      },
+      {
+        "op": "settle",
+        "resolution": {
+          "ok": true,
+          "pluginRunId": "$half.pluginRunId",
+          "waitingFor": []
+        }
+      },
+      {
+        "op": "half",
+        "direct": true,
+        "save": "attached",
+        "future": false
+      },
+      {
+        "op": "settle",
+        "resolution": {
+          "ok": false,
+          "reason": "client-half-failed",
+          "pluginRunId": "$attached.pluginRunId",
+          "startedHere": false,
+          "message": "attached page failed"
+        }
+      },
+      {
+        "op": "invoke",
+        "method": "read",
+        "args": {
+          "alive": true
+        }
+      },
+      {
+        "op": "settle",
+        "agent": "foreign",
+        "resolution": {
+          "ok": true,
+          "pluginRunId": "$half.pluginRunId"
+        }
+      },
+      {
+        "op": "panelStop",
+        "agent": "impostor"
+      },
+      {
+        "op": "half",
+        "direct": true,
+        "save": "half",
+        "future": false
+      },
+      {
+        "op": "settle",
+        "resolution": {
+          "ok": true,
+          "pluginRunId": "$half.pluginRunId"
+        }
+      },
+      {
+        "op": "panelStop"
+      },
+      {
+        "op": "panelDelete"
+      }
+    ]
+  },
+  {
+    "mode": "pending-stop-and-removal-cancel",
+    "steps": [
+      {
+        "op": "define",
+        "program": "client",
+        "existing": false,
+        "save": "defined"
+      },
+      {
+        "op": "run",
+        "mode": "run",
+        "save": "run"
+      },
+      {
+        "op": "request",
+        "save": "request"
+      },
+      {
+        "op": "half",
+        "direct": true
+      },
+      {
+        "op": "stop"
+      },
+      {
+        "op": "resolve",
+        "resolution": {
+          "ok": false,
+          "reason": "rejected"
+        }
+      },
+      {
+        "op": "run",
+        "mode": "run",
+        "save": "run"
+      },
+      {
+        "op": "request",
+        "save": "request"
+      },
+      {
+        "op": "panelDelete"
+      },
+      {
+        "op": "resolve",
+        "resolution": {
+          "ok": false,
+          "reason": "rejected"
+        }
+      },
+      {
+        "op": "stop",
+        "agent": "foreign"
+      }
+    ]
+  },
+  {
+    "mode": "runtime-guard-render-and-stale-reports",
+    "steps": [
+      {
+        "op": "define",
+        "program": "dual",
+        "existing": false,
+        "save": "defined"
+      },
+      {
+        "op": "half",
+        "direct": true,
+        "save": "half",
+        "future": false
+      },
+      {
+        "op": "guard",
+        "failure": {
+          "message": "guard precommit"
+        }
+      },
+      {
+        "op": "settle",
+        "resolution": {
+          "ok": true,
+          "pluginRunId": "$half.pluginRunId",
+          "waitingFor": [
+            "clientMissing"
+          ]
+        }
+      },
+      {
+        "op": "guard",
+        "failure": {
+          "message": "guard failed",
+          "stack": "fixture stack"
+        }
+      },
+      {
+        "op": "guard",
+        "failure": {
+          "message": "guard failed",
+          "stack": "other stack"
+        }
+      },
+      {
+        "op": "guard",
+        "agent": "foreign",
+        "failure": {
+          "message": "other"
+        }
+      },
+      {
+        "op": "render",
+        "failure": {
+          "slot": "panel",
+          "message": "render failed",
+          "stack": "fixture stack",
+          "abdicated": true
+        }
+      },
+      {
+        "op": "render",
+        "failure": {
+          "slot": "other",
+          "message": "render again",
+          "abdicated": false
+        }
+      },
+      {
+        "op": "guard",
+        "failure": {
+          "message": "after render"
+        }
+      },
+      {
+        "op": "render",
+        "runId": "stale",
+        "failure": {
+          "slot": "x",
+          "message": "stale",
+          "abdicated": false
+        }
+      },
+      {
+        "op": "panelStop"
+      }
+    ]
+  },
+  {
+    "mode": "host-and-client-waiting",
+    "steps": [
+      {
+        "op": "define",
+        "program": "waiting",
+        "existing": false,
+        "save": "defined"
+      },
+      {
+        "op": "half",
+        "direct": true,
+        "save": "half",
+        "future": false
+      },
+      {
+        "op": "settle",
+        "resolution": {
+          "ok": true,
+          "pluginRunId": "$half.pluginRunId",
+          "waitingFor": [
+            "clientMissing"
+          ]
+        }
+      },
+      {
+        "op": "provide"
+      },
+      {
+        "op": "invoke",
+        "method": "read",
+        "args": {
+          "ready": true
+        }
+      },
+      {
+        "op": "panelStop"
+      },
+      {
+        "op": "panelDelete"
+      }
+    ]
+  },
+  {
+    "mode": "runtime-error-nul-collision",
+    "steps": [
+      {
+        "op": "define",
+        "program": "errors",
+        "existing": false,
+        "save": "defined"
+      },
+      {
+        "op": "run",
+        "mode": "run",
+        "save": "run"
+      },
+      {
+        "op": "invoke",
+        "method": "a\u0000b",
+        "args": {}
+      },
+      {
+        "op": "invoke",
+        "method": "a",
+        "args": {}
+      },
+      {
+        "op": "invoke",
+        "method": "a",
+        "args": {}
+      },
+      {
+        "op": "stop"
+      }
+    ]
+  },
+  {
+    "mode": "cancelled-before-request",
+    "steps": [
+      {
+        "op": "define",
+        "program": "client",
+        "existing": false,
+        "save": "defined"
+      },
+      {
+        "op": "run",
+        "mode": "run",
+        "aborted": true
+      },
+      {
+        "op": "run",
+        "mode": "run",
+        "save": "run"
+      },
+      {
+        "op": "request",
+        "save": "request"
+      },
+      {
+        "op": "resolve",
+        "resolution": {
+          "ok": false,
+          "reason": "host-half-failed",
+          "message": "external Host refusal",
+          "stack": "fixture stack"
+        }
+      },
+      {
+        "op": "stop"
+      }
+    ]
+  },
+  {
+    "mode": "concurrent-first-resolution-wins",
+    "steps": [
+      {
+        "op": "define",
+        "program": "client",
+        "existing": false,
+        "save": "defined"
+      },
+      {
+        "op": "run",
+        "mode": "run",
+        "save": "run"
+      },
+      {
+        "op": "request",
+        "save": "request"
+      },
+      {
+        "op": "half",
+        "direct": false,
+        "save": "half",
+        "future": false
+      },
+      {
+        "op": "resolveRace",
+        "resolution": {
+          "ok": true,
+          "pluginRunId": "$half.pluginRunId"
+        }
+      },
+      {
+        "op": "stop"
+      }
+    ]
+  },
+  {
+    "mode": "client-source-ownership-and-active-run",
+    "steps": [
+      {
+        "op": "define",
+        "program": "dual",
+        "existing": false,
+        "save": "defined"
+      },
+      {
+        "op": "half",
+        "direct": true,
+        "save": "half",
+        "future": false
+      },
+      {
+        "op": "clientCode",
+        "agent": "foreign"
+      },
+      {
+        "op": "clientCode",
+        "runId": "stale"
+      },
+      {
+        "op": "clientCode"
+      },
+      {
+        "op": "settle",
+        "resolution": {
+          "ok": false,
+          "reason": "client-half-failed",
+          "pluginRunId": "$half.pluginRunId",
+          "startedHere": true,
+          "message": "manual page failure",
+          "stack": "fixture stack"
+        }
+      },
+      {
+        "op": "clientCode"
+      },
+      {
+        "op": "panelDelete"
+      }
+    ]
+  },
+  {
+    "mode": "host-handler-overwrite-and-disposer",
+    "steps": [
+      {
+        "op": "define",
+        "program": "replace",
+        "existing": false,
+        "save": "defined"
+      },
+      {
+        "op": "run",
+        "mode": "run"
+      },
+      {
+        "op": "invoke",
+        "method": "read",
+        "args": {
+          "value": "kept"
+        }
+      },
+      {
+        "op": "invoke",
+        "method": "missing",
+        "args": {}
+      },
+      {
+        "op": "half",
+        "direct": true,
+        "save": "half",
+        "future": false
+      },
+      {
+        "op": "clientCode"
+      },
+      {
+        "op": "stop"
+      },
+      {
+        "op": "invoke",
+        "method": "read",
+        "args": {}
+      }
+    ]
+  },
+  {
+    "mode": "actual-host-apply-failure-and-retry",
+    "steps": [
+      {
+        "op": "define",
+        "program": "fail",
+        "existing": false,
+        "save": "defined"
+      },
+      {
+        "op": "run",
+        "mode": "run"
+      },
+      {
+        "op": "stop"
+      },
+      {
+        "op": "reference"
+      },
+      {
+        "op": "define",
+        "program": "host",
+        "existing": true,
+        "save": "second"
+      },
+      {
+        "op": "run",
+        "mode": "run"
+      },
+      {
+        "op": "stop"
+      }
+    ]
+  },
+  {
+    "mode": "actual-delayed-host-and-transition-guard",
+    "steps": [
+      {
+        "op": "define",
+        "program": "gate",
+        "existing": false,
+        "save": "defined"
+      },
+      {
+        "op": "begin"
+      },
+      {
+        "op": "run",
+        "mode": "run"
+      },
+      {
+        "op": "release"
+      },
+      {
+        "op": "join"
+      },
+      {
+        "op": "stop"
+      }
+    ]
+  }
+]

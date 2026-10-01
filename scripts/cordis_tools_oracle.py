@@ -31,7 +31,7 @@ def main():
             'scripts/oracles/vitest.agent-lifecycle.config.mts', 'scripts/oracles/vitest.consumers.config.mts',
             'scripts/oracles/vitest.core.config.mts', 'dsh/extensions/cordis_manager.py', 'dsh/extensions/cordis_tools.py',
             'dsh/extensions/cordis_prompt.py', 'dsh/extensions/cordis_contracts.json', 'dsh/extensions/host_runner.py',
-            'dsh/extensions/inspect_registry.py', 'dsh/extensions/inspect_providers.py', 'dsh/core/tools.py',
+            'dsh/extensions/cordis_runner_state.py', 'dsh/extensions/inspect_registry.py', 'dsh/extensions/inspect_providers.py', 'dsh/core/tools.py',
             'dsh/core/json_schema.py', 'dsh/llm/message.py', 'dsh/core/session/json.py', 'dsh/core/abort.py',
             'dsh/core/cancellation.py', 'dsh/cordis/context.py', 'dsh/cordis/fiber.py', 'dsh/cordis/reflect.py',
             'tests/test_cordis_tools_full.py', 'tests/test_cordis_tool_contracts.py', 'tests/fixtures/cordis-tools-source-observations.json']

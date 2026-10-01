@@ -5,6 +5,9 @@
 Python 3.8.10。本记录覆盖工具消费者、读取视图和真实 Python Host 旅程，
 不认证整个动态 runner、浏览器、Win7 或全项目迁移完成。
 
+后续实际 runner 的审批、激活、版本结算、通知及事件提供端修复见
+[runner 进展](2026-10-01-cordis-runner-progress.md)。下文保持本轮原始验证范围。
+
 ## 实施
 
 七个正式工具现在采用原版实际 `apply()` → `defineTool()` 注册所得的参数、

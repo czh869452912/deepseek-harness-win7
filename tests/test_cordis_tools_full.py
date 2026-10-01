@@ -97,9 +97,9 @@ async def test_cordis_reference_version_and_diagnostics_through_canonical_web(tm
         inspected = await call('cordis_inspect_self', pluginId=pid)
         assert inspected['packageCount'] == 2
         assert [row['isCurrent'] for row in inspected['packages']] == [True, False]
-        assert [row['isNext'] for row in inspected['packages']] == [False, True]
+        assert [row['isNext'] for row in inspected['packages']] == [False, False]
         assert runner.inspectPackage(agent, pid, 'pkg-1')['code']['host'] == source
-        assert runner.reference(agent, pid)['packageId'] == 'pkg-2'
+        assert runner.reference(agent, pid)['packageId'] == 'pkg-1'
         message = create_user_message(dict(content='Please update @theme-1 @theme-1'))
         async def next_fn(*_):
             return dict(kind='accept', messages=[], startsRequestSeries=True)
@@ -111,7 +111,7 @@ async def test_cordis_reference_version_and_diagnostics_through_canonical_web(tm
         injected = references[0]
         assert injected['id'] and injected['role'] == 'user'
         assert injected['source'] == dict(kind='plugin', plugin='tool-cordis', form='instructions')
-        assert 'Use Package pkg-2 as the base' in injected['content'][0]['text']
+        assert 'Use Package pkg-1 as the base' in injected['content'][0]['text']
         assert 'mode="update"' in injected['content'][0]['text']
         assert source not in injected['content'][0]['text']
         foreign_decision = await foreign.ctx.waterfall('agent/pre-step', dict(payload, agent=foreign), next_fn)

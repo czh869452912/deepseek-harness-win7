@@ -82,7 +82,17 @@ def copy_source(source, target):
             source_contains_target = False
         if source_contains_target:
             raise ValueError("installation staging must not be inside the source directory")
-        for relative, path in regular_tree(source, ignore_git=True):
+        descriptor_path = os.path.join(source, 'package.json')
+        descriptor = None
+        if os.path.isfile(descriptor_path):
+            with open(descriptor_path, encoding='utf-8') as stream:
+                descriptor = json.load(stream)
+        if isinstance(descriptor, dict) and isinstance(descriptor.get('dsh'), dict) and 'sourceExport' in descriptor['dsh']:
+            from dsh.boot.python_plugin_export import release_files
+            _, entries = release_files(source)
+        else:
+            entries = regular_tree(source, ignore_git=True)
+        for relative, path in entries:
             destination = inside(target, relative)
             os.makedirs(os.path.dirname(destination), exist_ok=True)
             shutil.copyfile(path, destination)
@@ -121,6 +131,18 @@ def copy_source(source, target):
     if len(children) == 1 and os.path.isdir(os.path.join(target, children[0])):
         return os.path.join(target, children[0])
     raise ValueError("ZIP must contain one package root")
+
+
+def validate_package(directory):
+    manifest = validate_sources(directory)
+    if 'sourceExport' in manifest.get('dsh', {}):
+        from dsh.boot.python_plugin_export import release_files
+        _, entries = release_files(directory)
+        expected = {relative for relative, _ in entries}
+        actual = {relative for relative, _ in regular_tree(directory)}
+        if actual != expected:
+            raise ValueError('exported package contains files outside its explicit release list')
+    return manifest
 
 
 def file_hashes(directory):
@@ -234,7 +256,7 @@ def install(directory, source, installation_anchor):
                 os.replace(copied, flattened)
                 shutil.rmtree(stage)
                 os.replace(flattened, stage)
-            manifest = validate_sources(stage)
+            manifest = validate_package(stage)
             name = manifest["name"]
             if name.startswith("@deepseek-ai/") or package_dir_from_anchor(installation_anchor, name) is not None:
                 raise ValueError("Python plugins cannot replace installation-owned package identities")

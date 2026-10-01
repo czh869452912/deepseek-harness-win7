@@ -43,6 +43,13 @@ def reconcile_plugins(before, directory):
 
 
 def run_plugin(profile, args):
+    if args and args[0] == 'pack':
+        if len(args) != 3:
+            raise ValueError('use pack <Python project> <output.zip>')
+        from dsh.boot.python_plugin_export import pack_project
+        name = pack_project(args[1], args[2])
+        sys.stdout.write('dsh: packed Python plugin {}\n'.format(name))
+        return 0
     directory = resolve_profile_dir(profile)
     from dsh.boot.python_plugins import install, uninstall
     from dsh.boot.python_plugin_versions import upgrade, rollback, versions

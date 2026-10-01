@@ -6,6 +6,7 @@ from dsh.core.session.json import UNDEFINED
 from dsh.extensions.inspect_providers import host_inspect_providers
 from dsh.extensions.cordis_prompt import native_contracts
 from dsh.extensions.cordis_tools import execute, pre_step, present_call, render_result, run_meta
+from dsh.extensions.cordis_export import register_export_tool
 
 
 class CordisManagerPlugin(Plugin):
@@ -36,6 +37,7 @@ class CordisManagerPlugin(Plugin):
                 parameters=contract['parameters'], output=output,
                 execute=lambda args, execution, operation=operation: execute(ctx, operation, args, execution),
                 presentCall=lambda args, operation=operation: present_call(operation, args)))
+        register_export_tool(ctx)
         ctx.on('agent/pre-step', lambda payload, next_fn: pre_step(ctx, payload, next_fn))
 
     def on_prompt_assemble(self, prompt):

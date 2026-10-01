@@ -74,6 +74,22 @@ def read_descriptor(directory):
         raise ValueError("Python dependency installation is not implemented; dependencies must be []")
     if any(manifest.get(key) for key in ("dependencies", "optionalDependencies", "peerDependencies")):
         raise ValueError("external package dependencies are not supported by this installer")
+    source_export = dsh.get('sourceExport')
+    if source_export is not None:
+        if not isinstance(source_export, dict) or set(source_export) != {'record', 'files'}:
+            raise ValueError('invalid sourceExport descriptor')
+        release = source_export['files']
+        if not isinstance(release, list) or not release or any(type(item) is not str for item in release):
+            raise ValueError('sourceExport.files must be a nonempty array of relative paths')
+        for item in release:
+            inside(directory, item)
+        record_path = inside(directory, source_export['record'])
+        with open(record_path, encoding='utf-8') as stream:
+            record = json.load(stream)
+        if not isinstance(record, dict) or record.get('formatVersion') != 1:
+            raise ValueError('unsupported source export record')
+        if record.get('requiresClientBuild') is not False:
+            raise ValueError('exported Client source requires a build; Client package delivery is not implemented')
     source = inside(directory, descriptor["sourceRoot"])
     if not os.path.isdir(source):
         raise ValueError("Python sourceRoot is missing")

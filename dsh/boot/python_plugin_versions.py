@@ -8,7 +8,7 @@ import uuid
 from dsh.boot import python_plugins as store
 from dsh.boot.profile import package_dir_from_anchor, read_profile_manifest
 from dsh.boot.profile_lease import ProfileLease
-from dsh.boot.python_package import inside, package_name, validate_sources
+from dsh.boot.python_package import inside, package_name
 
 HISTORY = '.dsh-python-history'
 
@@ -50,7 +50,7 @@ def managed(directory, name, manifest):
     target = store.destination(directory, name)
     if store.file_hashes(target) != record['files']:
         raise ValueError('installed plugin files changed; preserve or restore them before replacing')
-    descriptor = validate_sources(target)
+    descriptor = store.validate_package(target)
     if descriptor['name'] != name or descriptor['version'] != record['version']:
         raise ValueError('installed plugin identity differs from its profile record')
     if manifest.get('dependencies', {}).get(name) != 'file:node_modules/' + name or name not in manifest.get('dsh', {}).get('profile', {}).get('bundles', []):
@@ -149,7 +149,7 @@ def recover_replace(directory, transaction, committed):
 
 def replace_candidate(directory, before_bytes, before, token, stage, expected_name=None):
     from dsh.boot.app_boot import load_overlay_patches
-    descriptor = validate_sources(stage)
+    descriptor = store.validate_package(stage)
     name = descriptor['name']
     if expected_name is not None and name != expected_name:
         raise ValueError('rollback package identity differs from the installed plugin')
@@ -178,7 +178,7 @@ def upgrade(directory, source, installation_anchor):
         store.recover(directory)
         token, stage = stage_source(directory, source)
         try:
-            descriptor = validate_sources(stage)
+            descriptor = store.validate_package(stage)
             name = descriptor['name']
             if name.startswith('@deepseek-ai/') or package_dir_from_anchor(installation_anchor, name) is not None:
                 raise ValueError('Python plugins cannot replace installation-owned package identities')

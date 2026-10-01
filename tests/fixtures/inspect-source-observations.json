@@ -1,0 +1,794 @@
+{
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "source_sha256": {
+    "scripts/oracles/inspect-cases.json": "61c072fd77a45008b4315e8b5cea4547760340da3f5e856a71f390c5cc7f8993",
+    "scripts/oracles/inspect.spec.ts": "359686dfa493af67bacbb4dc986bfd4c49ded331bf61c0f1cb61c78286e911eb",
+    "reference/packages/core/tools/src/json-schema.ts": "d6d3203900c1d31e6a03b5b56a1de02effa4356ee933d274704c5bdfdb9f8784",
+    "reference/packages/extensions/cordis-host-runner/src/inspect-registry.ts": "d0b5a9738f2eb8979ab7ad5148079c56992c5b79324754a40ec1a3c54a24d31b",
+    "reference/packages/extensions/tool-cordis/src/providers.ts": "cac7afffc43dfa50f5299e5db8f7774acd6a0c2d66826cf2fc5208a469e83403",
+    "reference/packages/extensions/tool-cordis/src/api-catalog.ts": "8fa757861eb57091c95dfe113df639037c5ffca89973d276f9fc92da6e923bc8"
+  },
+  "observations": [
+    {
+      "mode": "schema/annotations",
+      "result": {
+        "value": {
+          "undefined": true
+        }
+      }
+    },
+    {
+      "mode": "schema/unsupported",
+      "result": {
+        "error": {
+          "message": "unsupported JSON schema: schema.minLength is not a supported keyword (subset: type/oneOf/properties/required/additionalProperties/items/enum/const + annotations); schema.description must be a string",
+          "name": "JsonSchemaError",
+          "code": "UNSUPPORTED_SCHEMA",
+          "violations": [
+            "schema.minLength is not a supported keyword (subset: type/oneOf/properties/required/additionalProperties/items/enum/const + annotations)",
+            "schema.description must be a string"
+          ]
+        }
+      }
+    },
+    {
+      "mode": "schema/object-tail",
+      "result": {
+        "error": {
+          "message": "unsupported JSON schema: schema.properties.a.type must be one of object/array/string/number/integer/boolean/null; schema.required names \"absent\" which is not in properties; schema.required names \"absent\" which is not in properties; schema.additionalProperties must be a boolean",
+          "name": "JsonSchemaError",
+          "code": "UNSUPPORTED_SCHEMA",
+          "violations": [
+            "schema.properties.a.type must be one of object/array/string/number/integer/boolean/null",
+            "schema.required names \"absent\" which is not in properties",
+            "schema.required names \"absent\" which is not in properties",
+            "schema.additionalProperties must be a boolean"
+          ]
+        }
+      }
+    },
+    {
+      "mode": "schema/siblings",
+      "result": {
+        "error": {
+          "message": "unsupported JSON schema: schema.properties requires type or oneOf; schema.required requires type or oneOf; schema.additionalProperties requires type or oneOf; schema.items requires type or oneOf; schema.enum requires type or oneOf; schema.const requires type or oneOf",
+          "name": "JsonSchemaError",
+          "code": "UNSUPPORTED_SCHEMA",
+          "violations": [
+            "schema.properties requires type or oneOf",
+            "schema.required requires type or oneOf",
+            "schema.additionalProperties requires type or oneOf",
+            "schema.items requires type or oneOf",
+            "schema.enum requires type or oneOf",
+            "schema.const requires type or oneOf"
+          ]
+        }
+      }
+    },
+    {
+      "mode": "schema/oneof",
+      "result": {
+        "error": {
+          "message": "unsupported JSON schema: schema.properties is not supported beside oneOf; schema.items is not supported beside oneOf",
+          "name": "JsonSchemaError",
+          "code": "UNSUPPORTED_SCHEMA",
+          "violations": [
+            "schema.properties is not supported beside oneOf",
+            "schema.items is not supported beside oneOf"
+          ]
+        }
+      }
+    },
+    {
+      "mode": "schema/both",
+      "result": {
+        "error": {
+          "message": "unsupported JSON schema: schema cannot declare both type and oneOf",
+          "name": "JsonSchemaError",
+          "code": "UNSUPPORTED_SCHEMA",
+          "violations": [
+            "schema cannot declare both type and oneOf"
+          ]
+        }
+      }
+    },
+    {
+      "mode": "schema/short-union",
+      "result": {
+        "error": {
+          "message": "unsupported JSON schema: schema.oneOf must be an array of at least two schemas; schema.enum is not supported beside oneOf",
+          "name": "JsonSchemaError",
+          "code": "UNSUPPORTED_SCHEMA",
+          "violations": [
+            "schema.oneOf must be an array of at least two schemas",
+            "schema.enum is not supported beside oneOf"
+          ]
+        }
+      }
+    },
+    {
+      "mode": "schema/type-array",
+      "result": {
+        "error": {
+          "message": "unsupported JSON schema: schema.type must be a single type string (type arrays are not supported)",
+          "name": "JsonSchemaError",
+          "code": "UNSUPPORTED_SCHEMA",
+          "violations": [
+            "schema.type must be a single type string (type arrays are not supported)"
+          ]
+        }
+      }
+    },
+    {
+      "mode": "schema/enum-const",
+      "result": {
+        "error": {
+          "message": "unsupported JSON schema: schema.const must be one of schema.enum when both are declared",
+          "name": "JsonSchemaError",
+          "code": "UNSUPPORTED_SCHEMA",
+          "violations": [
+            "schema.const must be one of schema.enum when both are declared"
+          ]
+        }
+      }
+    },
+    {
+      "mode": "schema/enum-invalid",
+      "result": {
+        "error": {
+          "message": "unsupported JSON schema: schema.enum must be a non-empty array of boolean values; schema.const must be a boolean value",
+          "name": "JsonSchemaError",
+          "code": "UNSUPPORTED_SCHEMA",
+          "violations": [
+            "schema.enum must be a non-empty array of boolean values",
+            "schema.const must be a boolean value"
+          ]
+        }
+      }
+    },
+    {
+      "mode": "schema/nonobject-root",
+      "result": {
+        "error": {
+          "message": "unsupported JSON schema: schema.type must be \"object\" (structured output is object-rooted)",
+          "name": "JsonSchemaError",
+          "code": "UNSUPPORTED_SCHEMA",
+          "violations": [
+            "schema.type must be \"object\" (structured output is object-rooted)"
+          ]
+        }
+      }
+    },
+    {
+      "mode": "schema/cycle",
+      "result": {
+        "error": {
+          "message": "unsupported JSON schema: schema.items is circular",
+          "name": "JsonSchemaError",
+          "code": "UNSUPPORTED_SCHEMA",
+          "violations": [
+            "schema.items is circular"
+          ]
+        }
+      }
+    },
+    {
+      "mode": "schema/shared",
+      "result": {
+        "value": {
+          "undefined": true
+        }
+      }
+    },
+    {
+      "mode": "schema/negative-zero",
+      "result": {
+        "error": {
+          "message": "unsupported JSON schema: schema.enum must be a non-empty array of number values; schema.const must be a number value",
+          "name": "JsonSchemaError",
+          "code": "UNSUPPORTED_SCHEMA",
+          "violations": [
+            "schema.enum must be a non-empty array of number values",
+            "schema.const must be a number value"
+          ]
+        }
+      }
+    },
+    {
+      "mode": "schema/undefined-annotation",
+      "result": {
+        "error": {
+          "message": "unsupported JSON schema: schema.default annotation must be lossless JSON data",
+          "name": "JsonSchemaError",
+          "code": "UNSUPPORTED_SCHEMA",
+          "violations": [
+            "schema.default annotation must be lossless JSON data"
+          ]
+        }
+      }
+    },
+    {
+      "mode": "value/integer-float",
+      "violations": []
+    },
+    {
+      "mode": "value/number-negative-zero",
+      "violations": [
+        "\"value\" must be a finite JSON number"
+      ]
+    },
+    {
+      "mode": "value/number-infinite",
+      "violations": [
+        "\"value\" must be a finite JSON number"
+      ]
+    },
+    {
+      "mode": "value/enum-float-text",
+      "violations": [
+        "\"value\" must be one of [1,100000000000000000000,1e-7]"
+      ]
+    },
+    {
+      "mode": "value/const-text",
+      "violations": [
+        "\"value\" must be \"quoted\\n\\\"\""
+      ]
+    },
+    {
+      "mode": "value/object-order",
+      "violations": [
+        "missing required property \"missing\"",
+        "\"1\" must be a string",
+        "\"b\" must be an integer",
+        "\"a\" must be a boolean",
+        "\"extra\" is not a declared property (additionalProperties: false)"
+      ]
+    },
+    {
+      "mode": "value/array",
+      "violations": [
+        "\"value[0]\" must be a boolean",
+        "\"value[2]\" must be a boolean"
+      ]
+    },
+    {
+      "mode": "value/union-zero",
+      "violations": [
+        "\"value\" must match exactly one oneOf branch (matched 0)"
+      ]
+    },
+    {
+      "mode": "value/union-many",
+      "violations": [
+        "\"value\" must match exactly one oneOf branch (matched 2)"
+      ]
+    },
+    {
+      "mode": "value/union-one",
+      "violations": []
+    },
+    {
+      "mode": "value/cyclic-object",
+      "violations": [
+        "\"value\" must be a lossless JSON object"
+      ]
+    },
+    {
+      "mode": "value/undefined-required",
+      "violations": [
+        "missing required property \"value.a\""
+      ]
+    },
+    {
+      "mode": "value/array-subclass-clean",
+      "violations": [
+        "\"value\" must be a dense lossless JSON array"
+      ]
+    },
+    {
+      "mode": "value/array-subclass-child",
+      "violations": [
+        "\"value[1]\" must be an integer"
+      ]
+    },
+    {
+      "mode": "value/forged-root",
+      "result": {
+        "error": {
+          "message": "unreachable variant in JsonSchemaType: \"tuple\""
+        }
+      }
+    },
+    {
+      "mode": "value/forged-nested",
+      "result": {
+        "value": [
+          "\"value\" must be a lossless JSON value"
+        ]
+      }
+    },
+    {
+      "mode": "value/enum-utf16-pair",
+      "violations": []
+    },
+    {
+      "mode": "value/enum-lone-surrogate-diagnostic",
+      "violations": [
+        "\"value\" must be one of [\"\\ud800\",\"\ud83d\ude00\"]"
+      ]
+    },
+    {
+      "mode": "value/const-lone-surrogate-diagnostic",
+      "violations": [
+        "\"value\" must be \"\\udfff\""
+      ]
+    },
+    {
+      "mode": "value/enum-binary64",
+      "violations": []
+    },
+    {
+      "mode": "registry/manifest-validation",
+      "failures": [
+        {
+          "error": {
+            "message": "Cordis inspect provider id must not be empty"
+          }
+        },
+        {
+          "error": {
+            "message": "Cordis inspect provider \"probe\" needs a description"
+          }
+        },
+        {
+          "error": {
+            "message": "Cordis inspect provider \"probe\" has an empty method name"
+          }
+        },
+        {
+          "error": {
+            "message": "Cordis inspect provider \"probe\" repeats method \"read\""
+          }
+        },
+        {
+          "error": {
+            "message": "Cordis inspect method probe.read needs a description"
+          }
+        },
+        {
+          "error": {
+            "message": "unsupported JSON schema: schema.pattern is not a supported keyword (subset: type/oneOf/properties/required/additionalProperties/items/enum/const + annotations)",
+            "name": "JsonSchemaError",
+            "code": "UNSUPPORTED_SCHEMA",
+            "violations": [
+              "schema.pattern is not a supported keyword (subset: type/oneOf/properties/required/additionalProperties/items/enum/const + annotations)"
+            ]
+          }
+        },
+        {
+          "error": {
+            "message": "Host Cordis inspect provider \"probe\" is already registered"
+          }
+        },
+        {
+          "error": {
+            "message": "Client Cordis inspect manifest repeats provider \"other\""
+          }
+        }
+      ],
+      "before": [
+        {
+          "platform": "host",
+          "id": "probe",
+          "description": "Read-only probe",
+          "methods": [
+            {
+              "name": "read",
+              "description": "Read",
+              "inputSchema": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": false
+              },
+              "outputSchema": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "value"
+                ],
+                "additionalProperties": false
+              }
+            }
+          ]
+        },
+        {
+          "platform": "client",
+          "id": "client",
+          "description": "Read-only probe",
+          "methods": [
+            {
+              "name": "read",
+              "description": "Read",
+              "inputSchema": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": false
+              },
+              "outputSchema": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "value"
+                ],
+                "additionalProperties": false
+              }
+            }
+          ]
+        }
+      ],
+      "retained": [
+        {
+          "platform": "host",
+          "id": "probe",
+          "description": "Read-only probe",
+          "methods": [
+            {
+              "name": "read",
+              "description": "Read",
+              "inputSchema": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": false
+              },
+              "outputSchema": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "value"
+                ],
+                "additionalProperties": false
+              }
+            }
+          ]
+        },
+        {
+          "platform": "client",
+          "id": "client",
+          "description": "Read-only probe",
+          "methods": [
+            {
+              "name": "read",
+              "description": "Read",
+              "inputSchema": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": false
+              },
+              "outputSchema": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "value"
+                ],
+                "additionalProperties": false
+              }
+            }
+          ]
+        }
+      ],
+      "after": [
+        {
+          "platform": "host",
+          "id": "probe",
+          "description": "Read-only probe",
+          "methods": [
+            {
+              "name": "read",
+              "description": "Read",
+              "inputSchema": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": false
+              },
+              "outputSchema": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "value"
+                ],
+                "additionalProperties": false
+              }
+            }
+          ]
+        },
+        {
+          "platform": "client",
+          "id": "client",
+          "description": "Read-only probe",
+          "methods": [
+            {
+              "name": "read",
+              "description": "Read",
+              "inputSchema": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": false
+              },
+              "outputSchema": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "value"
+                ],
+                "additionalProperties": false
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "registry/host-contract",
+      "nullInput": {
+        "value": {
+          "value": 1
+        }
+      },
+      "omitted": {
+        "value": {
+          "value": 1
+        }
+      },
+      "invalidInput": {
+        "error": {
+          "message": "Host Cordis inspect probe.read rejected input: \"input.unexpected\" is not a declared property (additionalProperties: false)"
+        }
+      },
+      "detached": {
+        "value": 1
+      },
+      "invalidOutput": {
+        "error": {
+          "message": "Host Cordis inspect probe.read returned invalid output: \"output.value\" must be an integer"
+        }
+      },
+      "nonJson": {
+        "error": {
+          "message": "Host Cordis inspect probe.read returned a non-JSON value"
+        }
+      },
+      "cyclic": {
+        "error": {
+          "message": "Host Cordis inspect probe.read returned a non-JSON value"
+        }
+      },
+      "postAbort": {
+        "error": {
+          "thrown": "post-abort"
+        }
+      },
+      "inputs": [
+        {
+          "input": null,
+          "owner": "owner"
+        },
+        {
+          "input": {
+            "undefined": true
+          },
+          "owner": "owner"
+        },
+        {
+          "input": {
+            "undefined": true
+          },
+          "owner": "owner"
+        },
+        {
+          "input": {
+            "undefined": true
+          },
+          "owner": "owner"
+        },
+        {
+          "input": {
+            "undefined": true
+          },
+          "owner": "owner"
+        },
+        {
+          "input": {
+            "undefined": true
+          },
+          "owner": "owner"
+        },
+        {
+          "input": {
+            "undefined": true
+          },
+          "owner": "owner"
+        }
+      ],
+      "missingProvider": {
+        "error": {
+          "message": "Host Cordis inspect provider \"missing\" is not registered"
+        }
+      },
+      "missingMethod": {
+        "error": {
+          "message": "Cordis inspect provider \"probe\" has no method \"missing\""
+        }
+      }
+    },
+    {
+      "mode": "registry/client-first-valid",
+      "responses": [
+        {
+          "accepted": false
+        },
+        {
+          "accepted": false
+        },
+        {
+          "accepted": false
+        },
+        {
+          "accepted": true
+        },
+        {
+          "accepted": false
+        }
+      ],
+      "result": {
+        "value": {
+          "value": 2
+        }
+      },
+      "events": [
+        {
+          "kind": "request",
+          "requestId": "inspect-1",
+          "agentId": "owner",
+          "provider": "client",
+          "method": "read"
+        },
+        {
+          "kind": "closed",
+          "requestId": "inspect-1"
+        }
+      ],
+      "acks": [
+        {
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "mode": "registry/client-cancel",
+      "result": {
+        "error": {
+          "message": "client.read: Client inspect query client.read was cancelled"
+        }
+      },
+      "late": {
+        "accepted": false
+      },
+      "events": [
+        {
+          "kind": "request",
+          "requestId": "inspect-1",
+          "agentId": "owner",
+          "provider": "client",
+          "method": "read"
+        },
+        {
+          "kind": "closed",
+          "requestId": "inspect-1"
+        }
+      ],
+      "acks": [
+        {
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "mode": "registry/inflight-manifest",
+      "accepted": {
+        "accepted": true
+      },
+      "result": {
+        "value": {
+          "value": 4
+        }
+      },
+      "directory": [
+        {
+          "platform": "client",
+          "id": "client",
+          "description": "Read-only probe",
+          "methods": [
+            {
+              "name": "read",
+              "description": "Read",
+              "inputSchema": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": false
+              },
+              "outputSchema": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      ],
+      "events": [
+        {
+          "kind": "request",
+          "requestId": "inspect-1",
+          "agentId": "owner",
+          "provider": "client",
+          "method": "read",
+          "input": null
+        },
+        {
+          "kind": "closed",
+          "requestId": "inspect-1"
+        }
+      ],
+      "acks": [
+        {
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "mode": "registry/pre-abort",
+      "result": {
+        "error": {
+          "thrown": "pre-abort"
+        }
+      },
+      "events": []
+    },
+    {
+      "mode": "registry/disposal",
+      "afterDispose": {
+        "pending": 1,
+        "settled": false,
+        "closed": 0
+      },
+      "result": {
+        "error": {
+          "message": "client.read: Client inspect query client.read was cancelled"
+        }
+      }
+    }
+  ]
+}

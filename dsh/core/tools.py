@@ -9,6 +9,12 @@ from typing import Any, Callable, Dict, List, Optional, Union
 from dsh.cordis.plugin import Plugin
 from dsh.cordis.utils import Tracker
 from dsh.llm.error import HarnessError
+from dsh.core.json_schema import (
+    JsonSchemaError, assert_supported_json_schema, assert_object_json_schema,
+    validate_json_schema_value, assertSupportedJsonSchema,
+    assertObjectJsonSchema, validateJsonSchemaValue,
+)
+from dsh.core.session.json import FrozenDict, FrozenList
 
 
 TOOL_ABORTED = "ABORTED"
@@ -47,67 +53,7 @@ class CodeRunFailedError(HarnessError):
 
 
 def _schema_violations(value: Any, schema: Any, path: str = "value") -> List[str]:
-    root: List[str] = []
-    tasks: List[Any] = [("node", value, schema, path, root)]
-    while tasks:
-        task = tasks.pop()
-        if task[0] == "oneof":
-            _, node_path, branches, target = task
-            matches = sum(1 for branch_result in branches if not branch_result)
-            if matches != 1:
-                target.append('"%s" must match exactly one oneOf branch (matched %d)' %
-                              (node_path, matches))
-            continue
-        _, candidate, node, node_path, target = task
-        if type(node) not in (dict, FrozenDict) or not node:
-            continue
-        one_of = node.get("oneOf")
-        if type(one_of) in (list, FrozenList):
-            branch_results = [[] for _branch in one_of]
-            tasks.append(("oneof", node_path, branch_results, target))
-            for index in range(len(one_of) - 1, -1, -1):
-                tasks.append(("node", candidate, one_of[index], node_path,
-                              branch_results[index]))
-            continue
-        expected = node.get("type")
-        type_matches = {
-            "object": type(candidate) in (dict, FrozenDict),
-            "array": type(candidate) in (list, FrozenList),
-            "string": type(candidate) is str,
-            "boolean": type(candidate) is bool,
-            "number": type(candidate) in (int, float) and type(candidate) is not bool,
-            "integer": type(candidate) is int and type(candidate) is not bool,
-            "null": candidate is None,
-        }
-        if expected in type_matches and not type_matches[expected]:
-            target.append('"%s" must be a %s' % (node_path, expected))
-            continue
-        if "const" in node and candidate != node["const"]:
-            target.append('"%s" must equal the declared constant' % node_path)
-        if "enum" in node and candidate not in node["enum"]:
-            target.append('"%s" must be one of the declared values' % node_path)
-        if expected == "object" and type(candidate) in (dict, FrozenDict):
-            properties = node.get("properties", {})
-            for name in node.get("required", []):
-                if name not in candidate:
-                    target.append('"%s.%s" is required' % (node_path, name))
-            if type(properties) in (dict, FrozenDict):
-                if node.get("additionalProperties") is False:
-                    for name in candidate:
-                        if name not in properties:
-                            target.append('"%s.%s" is not a declared property (additionalProperties: false)' % (node_path, name))
-                entries = [(name, child) for name, child in properties.items()
-                           if name in candidate]
-                for name, child in reversed(entries):
-                    tasks.append(("node", candidate[name], child,
-                                  "%s.%s" % (node_path, name), target))
-        elif expected == "array" and type(candidate) in (list, FrozenList):
-            items = node.get("items")
-            if type(items) in (dict, FrozenDict):
-                for index in range(len(candidate) - 1, -1, -1):
-                    tasks.append(("node", candidate[index], items,
-                                  "%s[%d]" % (node_path, index), target))
-    return root
+    return validate_json_schema_value(schema, value, path)
 
 
 def _json_snapshot(value: Any) -> Any:
@@ -155,101 +101,7 @@ def _json_snapshot(value: Any) -> Any:
 
 
 def _assert_supported_schema(schema: Any, path: str = "schema") -> None:
-    allowed = {"type", "oneOf", "properties", "required", "additionalProperties",
-               "items", "enum", "const", "description", "title", "default", "examples"}
-    tasks = [(schema, path)]
-    while tasks:
-        node, node_path = tasks.pop()
-        if type(node) is not dict:
-            raise TypeError("%s must be a schema object" % node_path)
-        unknown = [key for key in node if key not in allowed]
-        if unknown:
-            raise TypeError("%s.%s is not a supported keyword" % (node_path, unknown[0]))
-        for annotation in ("title", "description"):
-            if annotation in node and type(node[annotation]) is not str:
-                raise TypeError("%s.%s must be a string" % (node_path, annotation))
-        if "oneOf" in node:
-            branches = node["oneOf"]
-            if type(branches) is not list or len(branches) < 2:
-                raise TypeError("%s.oneOf must contain at least two schemas" % node_path)
-            siblings = ("type", "properties", "required", "additionalProperties",
-                        "items", "enum", "const")
-            if any(key in node for key in siblings):
-                raise TypeError("%s.oneOf cannot have validation siblings" % node_path)
-            for index in range(len(branches) - 1, -1, -1):
-                tasks.append((branches[index], "%s.oneOf[%d]" % (node_path, index)))
-        schema_type = node.get("type")
-        if schema_type is not None and schema_type not in (
-                "object", "array", "string", "number", "integer", "boolean", "null"):
-            raise TypeError("%s.type is unsupported" % node_path)
-        if "additionalProperties" in node and (
-                schema_type != "object" or type(node["additionalProperties"]) is not bool):
-            raise TypeError("%s.additionalProperties must be a boolean on an object schema" % node_path)
-        properties = node.get("properties")
-        if properties is not None:
-            if schema_type != "object" or type(properties) is not dict:
-                raise TypeError("%s.properties must be an object of schemas" % node_path)
-            for name, child in reversed(list(properties.items())):
-                if type(name) is not str:
-                    raise TypeError("%s.properties keys must be strings" % node_path)
-                tasks.append((child, "%s.properties.%s" % (node_path, name)))
-        if "required" in node:
-            required = node["required"]
-            if schema_type != "object" or type(required) is not list or any(
-                    type(name) is not str for name in required):
-                raise TypeError("%s.required must be an array of property names" % node_path)
-            declared = properties if type(properties) is dict else {}
-            if any(name not in declared for name in required):
-                raise TypeError("%s.required names must be declared in properties" % node_path)
-        if "items" in node:
-            if schema_type != "array":
-                raise TypeError("%s.items requires type array" % node_path)
-            tasks.append((node["items"], "%s.items" % node_path))
-        if "enum" in node:
-            values = node["enum"]
-            if schema_type in (None, "object", "array") or type(values) is not list or not values:
-                raise TypeError("%s.enum must be a non-empty scalar enum" % node_path)
-            if any(_schema_violations(value, {"type": schema_type}, node_path) for value in values):
-                raise TypeError("%s.enum values must match the schema type" % node_path)
-        if "const" in node:
-            if schema_type in (None, "object", "array"):
-                raise TypeError("%s.const requires a scalar type" % node_path)
-            if _schema_violations(node["const"], {"type": schema_type}, node_path):
-                raise TypeError("%s.const must match the schema type" % node_path)
-            if "enum" in node and node["const"] not in node["enum"]:
-                raise TypeError("%s.const must be present in enum" % node_path)
-    _json_snapshot(schema)
-
-
-class FrozenDict(dict):
-    def _immutable(self, *args: Any, **kwargs: Any) -> None:
-        raise TypeError("frozen dictionary")
-
-    __setitem__ = _immutable
-    __delitem__ = _immutable
-    clear = _immutable
-    pop = _immutable
-    popitem = _immutable
-    setdefault = _immutable
-    update = _immutable
-
-
-class FrozenList(list):
-    def _immutable(self, *args: Any, **kwargs: Any) -> None:
-        raise TypeError("frozen list")
-
-    __setitem__ = _immutable
-    __delitem__ = _immutable
-    __iadd__ = _immutable
-    __imul__ = _immutable
-    append = _immutable
-    clear = _immutable
-    extend = _immutable
-    insert = _immutable
-    pop = _immutable
-    remove = _immutable
-    reverse = _immutable
-    sort = _immutable
+    assert_supported_json_schema(schema, path)
 
 
 def _deep_freeze(value: Any) -> Any:
@@ -396,7 +248,7 @@ class Tool:
                 "parameters": _json_snapshot(self.parameters)}
 
     def validate_arguments(self, args: Any) -> List[str]:
-        return _schema_violations(args, self.parameters, "arguments")
+        return _schema_violations(args, self.parameters, "")
 
     def present_call(self, args: Any) -> Any:
         if self._present_call is None or self.validate_arguments(args):
@@ -1765,6 +1617,8 @@ class ToolsPlugin(Plugin):
 ToolRegistry = ToolsService
 
 __all__ = [
+    "JsonSchemaError", "assert_supported_json_schema", "assert_object_json_schema",
+    "validate_json_schema_value", "assertSupportedJsonSchema", "assertObjectJsonSchema", "validateJsonSchemaValue",
     "RUN_CODE_NAME", "TOOL_ABORTED", "TOOL_ABORTED_BEFORE_DISPATCH",
     "TOOL_RUNTIME_SCHEDULER", "TOOL_NOT_FOUND", "TOOL_ARGS_INVALID",
     "CodeRunFailedError", "Tool", "ToolArgsError", "ToolExecutionInput",

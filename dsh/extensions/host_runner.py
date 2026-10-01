@@ -14,6 +14,8 @@ import uuid
 from types import SimpleNamespace
 
 from dsh.core.cancellation import aborted
+from dsh.core.session.json import UNDEFINED
+from dsh.extensions.inspect_registry import CordisInspectRegistryService
 from dsh.typert.remote import Remote, TypertRemoteService
 
 
@@ -37,7 +39,8 @@ class DynamicCordisRunner(TypertRemoteService):
         self.timeout = (config or {}).get('vmTimeoutMs', 5000)
         if type(self.timeout) not in (int, float) or self.timeout <= 0:
             raise ValueError('vmTimeoutMs must be positive')
-        self.plugins, self.pending, self.queries, self.client_manifest = {}, {}, {}, []
+        self.plugins, self.pending = {}, {}
+        self.inspect_registry = CordisInspectRegistryService(ctx)
         self.locks = {}
         ctx.effect(lambda: self.close)
 
@@ -46,10 +49,7 @@ class DynamicCordisRunner(TypertRemoteService):
             await self.retract(plugin)
         self.plugins.clear()
         self.pending.clear()
-        for _, future in self.queries.values():
-            if not future.done():
-                future.cancel()
-        self.queries.clear()
+        self.inspect_registry.close()
 
     def owned(self, agent, plugin_id):
         plugin = self.plugins.get(plugin_id)
@@ -347,33 +347,15 @@ class DynamicCordisRunner(TypertRemoteService):
 
     @Remote
     def syncInspectManifest(self, providers):
-        self.client_manifest = copy.deepcopy(providers)
+        self.inspect_registry.sync_client_manifest(providers)
         return None
 
     @Remote
     def resolveInspectQuery(self, agent, requestId, resolution):
-        pending = self.queries.get(requestId)
-        if pending is None or pending[0] != agent.id or pending[1].done():
-            return dict(accepted=False)
-        pending[1].set_result(copy.deepcopy(resolution))
-        return dict(accepted=True)
+        return self.inspect_registry.resolve_client_query(agent, requestId, resolution)
 
-    async def queryClient(self, agent, provider, method, input=None, signal=None):
-        manifest = next((row for row in self.client_manifest if row['id'] == provider), None)
-        if manifest is None or not any(row['name'] == method for row in manifest['methods']):
-            return dict(ok=False, reason='provider-missing' if manifest is None else 'method-missing', message='inspect provider/method is unavailable')
-        rid, future = identity('inspect'), asyncio.get_running_loop().create_future()
-        self.queries[rid] = (agent.id, future)
-        self.ctx.emit('cordis/inspect-query', dict(requestId=rid, agentId=agent.id, provider=provider, method=method, input=input))
-        try:
-            while not future.done():
-                if aborted(signal):
-                    return dict(ok=False, reason='cancelled', message='inspect query cancelled')
-                await asyncio.wait([future], timeout=.05)
-            return future.result()
-        finally:
-            self.queries.pop(rid, None)
-            self.ctx.emit('cordis/inspect-query-resolved', dict(requestId=rid))
+    async def queryClient(self, agent, provider, method, input=UNDEFINED, signal=None):
+        return await self.inspect_registry.query('client', provider, method, input, agent, signal)
 
     @Remote
     def reportRenderFailure(self, pluginId, pluginRunId, failure):

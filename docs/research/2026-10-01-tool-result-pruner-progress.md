@@ -5,6 +5,9 @@
 3.8.10。本记录覆盖工具结果裁剪及其提供端、Loader、Session 消费者，不认证全部
 compaction、原版 JS 脚本执行、全项目迁移或 Win7 发行。
 
+后续 Cordis Inspect registry、Service/Event/Tool 查询与共用 Schema 的迁移及原版卸载
+问题复现见 [Inspect 实施记录](2026-10-01-cordis-inspect-progress.md)。
+
 ## 实际差异与修复
 
 原版依据为 `reference/packages/compaction/compaction-tool-result-pruner/src/`

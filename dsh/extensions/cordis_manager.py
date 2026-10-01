@@ -6,6 +6,8 @@ matching reference/packages/extensions/tool-cordis
 import json
 from typing import Any, Dict, List, Optional
 from dsh.cordis.plugin import Plugin
+from dsh.core.session.json import UNDEFINED
+from dsh.extensions.inspect_providers import host_inspect_providers
 
 
 class CordisManagerPlugin(Plugin):
@@ -16,7 +18,7 @@ class CordisManagerPlugin(Plugin):
 
     id = "tool-cordis"
     name = "@deepseek-ai/dsh-tool-cordis"
-    inject = ["tools", "systemPrompt", "dynamicCordisRunner"]
+    inject = ["tools", "systemPrompt", "dynamicCordisRunner", "cordisInspect"]
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
@@ -28,6 +30,9 @@ class CordisManagerPlugin(Plugin):
             return
 
         self.runner = ctx.get("dynamicCordisRunner")
+        for provider in host_inspect_providers(ctx):
+            ctx.effect(lambda provider=provider: ctx.get('cordisInspect').register(provider),
+                       'tool-cordis: inspect ' + provider['manifest']['id'])
         ctx.effect(lambda: ctx.get("systemPrompt").section(dict(name="tool:cordis", order=700, text=self.on_prompt_assemble(""))), "tool:cordis prompt")
 
         def json_output(schema: Dict[str, Any], render: Any, meta: Any = None) -> Dict[str, Any]:
@@ -43,12 +48,15 @@ class CordisManagerPlugin(Plugin):
             agent = getattr(execution, 'agent', None)
             signal = getattr(execution, 'signal', None)
             operation = fn if isinstance(fn, str) else fn.__name__.replace('handle_', '')
-            if operation in ('inspect_list', 'inspect_query'):
-                value = await fn(**args)
-                return json.loads(value)
+            if operation == 'inspect_list':
+                return dict(providers=ctx.get('cordisInspect').list())
             if agent is None:
                 raise ValueError('Cordis dynamic tools require an Agent-backed session')
             runner = ctx.get('dynamicCordisRunner')
+            if operation == 'inspect_query':
+                data = await ctx.get('cordisInspect').query(args['platform'], args['provider'], args['method'],
+                    args.get('input', UNDEFINED), agent, signal)
+                return dict(platform=args['platform'], provider=args['provider'], method=args['method'], data=data)
             if operation == 'define':
                 return runner.define(dict(args, sessionId=agent.id))
             if operation == 'run':
@@ -70,7 +78,7 @@ class CordisManagerPlugin(Plugin):
         # 1. cordis_inspect_list
         tools_service.register_tool({
             "name": "cordis_inspect_list",
-            "description": "List every Cordis Inspect Provider currently known to the Host (Service, Event, Builtin, Tool).",
+            "description": "List the actual Host and synchronized Client Inspect providers, their read-only methods and input/output schemas. Select an exact provider and method from this directory before querying.",
             "parameters": {"type": "object", "properties": {}},
             "execute": lambda args, _exec: canonical_call(self.handle_inspect_list, args, _exec),
             "output": json_output({"type": "object"}, text_json),
@@ -79,7 +87,7 @@ class CordisManagerPlugin(Plugin):
         # 2. cordis_inspect_query
         tools_service.register_tool({
             "name": "cordis_inspect_query",
-            "description": "Run a read-only query declared by an Inspect Provider (e.g. Service methods, Event contracts, Tool schemas).",
+            "description": "Run a declared read-only Inspect query. Host queries run locally; Client queries wait for the first valid page response or cancellation. Read Service/Event contracts from their catalog; this tool does not invoke business service methods.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -203,65 +211,11 @@ class CordisManagerPlugin(Plugin):
         )
         return prompt + cordis_prompt
 
-    async def handle_inspect_list(self) -> str:
-        providers = [
-            {
-                "id": "Service",
-                "description": "Progressive Host Service discovery: compact capability/signature directory, then one exact coding contract.",
-                "methods": [{"name": "listService", "description": "List all registered host services and signatures"}],
-            },
-            {
-                "id": "Event",
-                "description": "Progressive Host Event discovery: compact listener directory, then one exact event contract.",
-                "methods": [{"name": "listEvents", "description": "List all registered host events and dispatch modes"}],
-            },
-            {
-                "id": "Builtin",
-                "description": "Plain-JavaScript symbols and standard utilities available to a dynamic Host half.",
-                "methods": [{"name": "listBuiltins", "description": "List standard built-in modules and symbols"}],
-            },
-            {
-                "id": "Tool",
-                "description": "Tools visible to the requesting Agent, including scoped and dynamic registrations.",
-                "methods": [{"name": "listTools", "description": "Return every Tool schema currently callable by this Agent"}],
-            },
-        ]
-        return json.dumps({"providers": providers}, indent=2, ensure_ascii=False)
+    async def handle_inspect_list(self):
+        return dict(providers=self.ctx.get('cordisInspect').list())
 
-    async def handle_inspect_query(
-        self,
-        platform: str,
-        provider: str,
-        method: str,
-        input: Optional[Dict[str, Any]] = None,
-    ) -> str:
-        ctx = self.ctx
-        inp = input or {}
-        if provider == "Service":
-            services = list(ctx._services.keys()) if hasattr(ctx, "_services") else []
-            if hasattr(ctx, "reflect") and hasattr(ctx.reflect, "store"):
-                services.extend(list(ctx.reflect.store.keys()))
-            services = sorted(list(set(services)))
-            srv_name = inp.get("service")
-            if not srv_name:
-                return json.dumps({"services": services}, indent=2, ensure_ascii=False)
-            instance = ctx.get(srv_name)
-            methods = [m for m in dir(instance) if not m.startswith("_") and callable(getattr(instance, m, None))]
-            return json.dumps({"service": srv_name, "methods": methods}, indent=2, ensure_ascii=False)
-
-        elif provider == "Event":
-            events = ["turn/start", "turn/end", "step/start", "step/end", "agent/status", "goal/change", "tools/pre-execute", "tools/post-execute", "internal/plugin", "internal/status", "internal/service", "internal/config", "internal/update", "internal/get", "internal/set"]
-            evt_name = inp.get("event")
-            if not evt_name:
-                return json.dumps({"events": events}, indent=2, ensure_ascii=False)
-            return json.dumps({"event": evt_name, "mode": "waterfall" if ("pre-" in evt_name or "internal/" in evt_name) else "emit"}, indent=2, ensure_ascii=False)
-
-        elif provider == "Builtin":
-            return json.dumps({"builtins": ["json", "time", "os", "math", "re", "uuid"]}, indent=2, ensure_ascii=False)
-
-        elif provider == "Tool":
-            tools_svc = ctx.get("tools")
-            schemas = tools_svc.get_tool_definitions() if (tools_svc and hasattr(tools_svc, "get_tool_definitions")) else []
-            return json.dumps({"tools": schemas}, indent=2, ensure_ascii=False)
-
-        return json.dumps({"error": f"Unknown provider '{provider}'"}, indent=2, ensure_ascii=False)
+    async def handle_inspect_query(self, platform, provider, method, input=UNDEFINED, agent=None, signal=None):
+        if agent is None:
+            raise ValueError('Cordis dynamic tools require an Agent-backed session')
+        data = await self.ctx.get('cordisInspect').query(platform, provider, method, input, agent, signal)
+        return dict(platform=platform, provider=provider, method=method, data=data)

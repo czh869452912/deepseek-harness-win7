@@ -70,8 +70,8 @@ def read_descriptor(directory):
     host = tuple(int(part) for part in __version__.split("."))
     if host < version_tuple(descriptor["minHostVersion"], "minHostVersion"):
         raise ValueError("host version does not satisfy this plugin")
-    if descriptor["dependencies"] != []:
-        raise ValueError("Python dependency installation is not implemented; dependencies must be []")
+    from dsh.boot.python_plugin_dependencies import libraries
+    libraries(directory, manifest)
     if any(manifest.get(key) for key in ("dependencies", "optionalDependencies", "peerDependencies")):
         raise ValueError("external package dependencies are not supported by this installer")
     source_export = dsh.get('sourceExport')
@@ -133,7 +133,7 @@ def validate_sources(directory):
     manifest, source, module, export, entry = read_descriptor(directory)
     for root, dirs, files in os.walk(source):
         for filename in files:
-            if filename.endswith(".py"):
+            if filename.lower().endswith(".py"):
                 path = os.path.join(root, filename)
                 with open(path, "rb") as stream:
                     try:
@@ -145,18 +145,24 @@ def validate_sources(directory):
 
 def import_package(directory):
     manifest, source, module_name, export, path = read_descriptor(directory)
+    from dsh.boot.python_plugin_dependencies import libraries, import_identity
+    dependency_rows = libraries(directory, manifest)
     identity = hashlib.sha256(os.path.realpath(source).encode("utf-8"))
+    if dependency_rows:
+        identity.update(b'\0')
+        identity.update(import_identity(directory, dependency_rows).encode('ascii'))
     identity.update(b"\0")
     identity.update(manifest["version"].encode("utf-8"))
     for root, dirs, files in os.walk(source):
         dirs.sort()
         for filename in sorted(files):
-            if filename.endswith(".py"):
+            if filename.lower().endswith(".py"):
                 filename = os.path.join(root, filename)
                 with open(filename, "rb") as stream:
                     record = [os.path.relpath(filename, source).replace("\\", "/"), hashlib.sha256(stream.read()).hexdigest()]
                 identity.update(json.dumps(record, ensure_ascii=True).encode("ascii"))
     namespace = "_dsh_python_" + identity.hexdigest()[:24]
+    import_identity(directory, dependency_rows, namespace)
     before = set(sys.modules)
     if namespace not in sys.modules:
         package = types.ModuleType(namespace)

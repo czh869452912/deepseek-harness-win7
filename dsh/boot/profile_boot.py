@@ -274,17 +274,24 @@ async def _run_profile(options: Dict[str, Any]) -> Dict[str, Any]:
             holder["ctx"] = host_ctx
         lease = options.get("_python_profile_lease")
         if lease is not None:
+            dependencies = options.get('_python_dependency_lease')
+            def close_leases():
+                try:
+                    if dependencies is not None:
+                        dependencies.close()
+                finally:
+                    lease.close()
             def release_after_shutdown():
                 import asyncio
                 settlement = getattr(host_ctx.fiber, "_disposal_task", None)
                 if settlement is not None:
-                    settlement.add_done_callback(lambda _: lease.close())
+                    settlement.add_done_callback(lambda _: close_leases())
                 else:
                     async def release():
                         try:
                             await host_ctx.fiber.await_settled()
                         finally:
-                            lease.close()
+                            close_leases()
                     # Keep this observer outside the fiber's settlement set.
                     asyncio.get_running_loop().create_task(release())
 
@@ -348,9 +355,12 @@ async def run_profile(options: Dict[str, Any]) -> Dict[str, Any]:
         with ProfileLease(directory, exclusive=True):
             recover(directory)
     lease = ProfileLease(directory)
+    dependencies = None
     holder: Dict[str, Any] = {}
     try:
-        result = await _run_profile(dict(options, _python_profile_lease=lease, _python_profile_context=holder))
+        from dsh.boot.python_plugin_dependencies import PythonDependencyLease
+        dependencies = PythonDependencyLease(directory)
+        result = await _run_profile(dict(options, _python_profile_lease=lease, _python_dependency_lease=dependencies, _python_profile_context=holder))
         return result
     except BaseException:
         try:
@@ -359,7 +369,11 @@ async def run_profile(options: Dict[str, Any]) -> Dict[str, Any]:
                 await ctx.fiber.dispose()
                 await ctx.fiber.await_settled()
         finally:
-            lease.close()
+            try:
+                if dependencies is not None:
+                    dependencies.close()
+            finally:
+                lease.close()
         raise
 
 

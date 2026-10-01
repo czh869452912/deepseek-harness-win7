@@ -269,9 +269,11 @@ def install(directory, source, installation_anchor, acquisition=None):
             before = read_profile_manifest("dsh", directory)
             if (os.path.lexists(target) or name in before.get("dependencies", {}) or
                     name in before.get("dsh", {}).get("profile", {}).get("bundles", [])):
-                raise ValueError("package already exists; upgrades are not implemented")
+                raise ValueError("package already exists; use upgrade for a managed Python plugin")
             patch = inside(stage, manifest["dsh"]["bundle"]["patch"])
             load_overlay_patches("dsh", patch)
+            from dsh.boot.python_plugin_dependencies import profile_libraries
+            profile_libraries(directory, stage)
             hashes = file_hashes(stage)
             after = copy.deepcopy(before)
             after.setdefault("dependencies", {})[name] = "file:node_modules/" + name

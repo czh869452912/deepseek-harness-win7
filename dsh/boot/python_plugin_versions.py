@@ -156,6 +156,8 @@ def replace_candidate(directory, before_bytes, before, token, stage, expected_na
     target, record = managed(directory, name, before)
     load_overlay_patches('dsh', inside(stage, descriptor['dsh']['bundle']['patch']))
     new = dict(version=descriptor['version'], files=store.file_hashes(stage))
+    from dsh.boot.python_plugin_dependencies import profile_libraries
+    profile_libraries(directory, stage, replacing=name)
     if acquisition is not None:
         new['acquisition'] = copy.deepcopy(acquisition)
     if new['version'] == record['version']:

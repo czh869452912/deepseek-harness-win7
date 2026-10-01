@@ -170,9 +170,12 @@ def release_files(project):
     if 'sourceExport' in dsh:
         required.add(dsh['sourceExport']['record'])
     required.update(dsh.get('webArtifacts', {}).get('files', {}))
+    from dsh.boot.python_plugin_dependencies import libraries
+    for library in libraries(project, manifest):
+        required.update(library['sourceRoot'] + '/' + path for path in library['files'])
     for root, dirs, files in os.walk(inside(project, manifest['dsh']['python']['sourceRoot'])):
         dirs[:] = [name for name in dirs if name != '__pycache__']
-        required.update(os.path.relpath(os.path.join(root, file), project).replace('\\', '/') for file in files if file.endswith('.py'))
+        required.update(os.path.relpath(os.path.join(root, file), project).replace('\\', '/') for file in files if file.lower().endswith('.py'))
     if not required.issubset(release):
         raise ValueError('release list omits required descriptor, source, Web artifacts, README or LICENSE files')
     validate_sources(project)

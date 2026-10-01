@@ -29,6 +29,10 @@ Session Client 所有权、完整动态 runner 治理、依赖与多来源获取
 记录，见 [HTTPS 获取实施记录](2026-10-01-python-plugin-https-acquisition-progress.md)。
 它进入相同本地 store，不认证 npm/PyPI 获取、公共目录、依赖闭包或实际公开发布。
 
+后续已接通作者预展开的纯 Python 精确依赖闭包、profile 冲突检查和原生 import
+租约，见 [依赖闭包实施记录](2026-10-01-python-plugin-dependency-closure-progress.md)。
+wheel、原生库、版本范围求解、宿主兼容复用与最终发行继续实施。
+
 ## 1. 结论
 
 建议采用 **Python Host 插件为主体、Web 客户端资源可选、统一包描述与 Cordis 装配** 的路线。

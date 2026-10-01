@@ -5,6 +5,9 @@
 继续 [runner 迁移](2026-10-01-cordis-runner-progress.md)，移除 Python Host 中
 defineTool / registerTool 的透传。没有修改原版浏览器，没有添加 JS 引擎。
 
+后续激活期间 stop / undefine / runner 卸载的实际竞态修复与原版 bug 复现见
+[终止事务进展](2026-10-01-cordis-retirement-progress.md)。下文为本轮 Guard 验证范围。
+
 ## 实现
 
 `dsh/extensions/cordis_guard.py` 由实际 Host evaluator 调用，不是独立演示层：

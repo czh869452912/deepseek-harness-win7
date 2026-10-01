@@ -8,6 +8,9 @@
 后续原生 Host 的 Context facade、工具 DSL、JSON 返回边界及函数服务 Context
 泄漏修复见 [Guard 进展](2026-10-01-cordis-guard-progress.md)。下文保留本轮原始范围。
 
+后续启动期间停止/删除及 runner 卸载的原版竞态复现和事务修复见
+[终止事务进展](2026-10-01-cordis-retirement-progress.md)。
+
 ## 提供端修复
 
 `cordis_runner_state.py` 承担版本、审批、激活、结算及通知；`host_runner.py`

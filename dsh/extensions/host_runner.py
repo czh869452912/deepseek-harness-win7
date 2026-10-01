@@ -40,13 +40,22 @@ class DynamicCordisRunner(CordisRunnerState, TypertRemoteService):
         self._next_ids = dict(plugin=1, package=1, run=1, approval=1)
         self.inspect_registry = CordisInspectRegistryService(ctx)
         self.starting = {}
+        self._transitions, self._ending = {}, {}
+        self._closed, self._close_task = False, None
         self.root_ctx = ctx
         self._group = None
         ctx.effect(lambda: self.close)
 
     async def close(self):
-        for plugin in list(self.plugins.values()):
-            await self.retract(plugin)
+        if self._close_task is None:
+            self._closed = True
+            for transition in self._transitions.values():
+                transition['invalidated'] = True
+            self._close_task = asyncio.create_task(self._close())
+        await asyncio.shield(self._close_task)
+
+    async def _close(self):
+        await asyncio.gather(*(self.end_plugin(plugin, True) for plugin in list(self.plugins.values())))
         self.plugins.clear()
         self.pending.clear()
         if self._group is not None:
@@ -66,6 +75,8 @@ class DynamicCordisRunner(CordisRunnerState, TypertRemoteService):
                 return value
 
     def define(self, request):
+        if self._closed:
+            raise ValueError('dynamic Cordis runner is closed')
         name, purpose, code = js_trim(request['name']), js_trim(request['purpose']), request['code']
         if not name:
             raise ValueError('cordis_define needs a non-empty `name`')
@@ -167,6 +178,8 @@ class DynamicCordisRunner(CordisRunnerState, TypertRemoteService):
         plugin = self.owned(agent, pid)
         if plugin is None:
             return None, refusal('plugin-missing', 'no dynamic plugin "{}" in this process — it may have been removed or lost on DSH restart'.format(pid))
+        if self._closed or pid in self._ending:
+            return None, refusal('transition-in-flight', 'plugin "{}" is retiring'.format(pid))
         if package_id not in plugin['packages']:
             return None, refusal('package-missing', 'plugin "{}" has no package "{}"'.format(pid, package_id))
         current = plugin.get('currentPackageId')

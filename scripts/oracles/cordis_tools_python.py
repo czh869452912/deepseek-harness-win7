@@ -82,6 +82,7 @@ async def observe(spec):
     if kind in ('mints', 'runner-views', 'plan'):
         runner = object.__new__(DynamicCordisRunner)
         runner.plugins, runner._next_ids = {}, dict(plugin=1, package=1, run=1, approval=1)
+        runner._closed, runner._ending = False, {}
         if kind == 'mints':
             return [runner.mint_id('plugin', 'theme'), runner.mint_id('plugin', 'panel'), runner.mint_id('package', 'pkg'),
                 runner.mint_id('package', 'pkg'), runner.mint_id('run', 'run'), runner.mint_id('run', 'run'),

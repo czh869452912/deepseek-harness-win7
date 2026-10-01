@@ -50,6 +50,8 @@ class CordisRunnerState:
             started = await self.activate(plugin, attempt)
             if started['ok']:
                 return self.run_response(plugin, started)
+            if self.activation_retired(plugin, attempt):
+                return dict(started, reason='cancelled')
             self.fail_attempt(plugin, attempt, 'host-load', started)
             return dict(started, reason='host-half-failed')
         rid = self.mint_id('approval', 'approval')
@@ -100,7 +102,7 @@ class CordisRunnerState:
             if attempt['host']['status'] != 'absent':
                 attempt['host'] = dict(status='pending', waitingFor=[])
         started = await self.activate(plugin, attempt, requestId, attaching)
-        if not started['ok']:
+        if not started['ok'] and not self.activation_retired(plugin, attempt):
             self.fail_attempt(plugin, attempt, 'host-load', started)
         return started
 
@@ -112,11 +114,16 @@ class CordisRunnerState:
         pid = plugin['pluginId']
         task = self.starting.get(pid)
         if task is None:
-            task = asyncio.create_task(self.start_fresh(plugin, attempt, request_id, attach))
+            transition = dict(plugin=plugin, attempt=attempt, invalidated=False)
+            self._transitions[pid] = transition
+            task = asyncio.create_task(self.start_fresh(plugin, attempt, request_id, attach, transition))
+            transition['task'] = task
             self.starting[pid] = task
             def finished(completed):
                 if self.starting.get(pid) is completed:
                     del self.starting[pid]
+                if self._transitions.get(pid) is transition:
+                    del self._transitions[pid]
                 # Observe a failure even when all callers abandoned their waits.
                 if not completed.cancelled():
                     completed.exception()
@@ -124,7 +131,11 @@ class CordisRunnerState:
         # A caller owns its wait, not the shared activation transaction.
         return await asyncio.shield(task)
 
-    async def start_fresh(self, plugin, attempt, request_id, attach):
+    def activation_retired(self, plugin, attempt):
+        return (self._closed or self.ctx.fiber.uid is None or self.plugins.get(plugin['pluginId']) is not plugin
+                or attempt['status'] in ('cancelled', 'stopped'))
+
+    async def start_fresh(self, plugin, attempt, request_id, attach, transition):
         package_id, rid = attempt['packageId'], attempt['pluginRunId']
         current = plugin.get('run')
         if attach and current is not None and current['packageId'] == package_id and current['pluginRunId'] == rid:
@@ -132,6 +143,8 @@ class CordisRunnerState:
                 waitingFor=self._missing_for(current), startedHere=False)
         if current is not None:
             await self.retract(plugin)
+        if transition['invalidated'] or self.activation_retired(plugin, attempt):
+            return dict(ok=False, message='activation of dynamic plugin "{}" was cancelled during retirement'.format(plugin['pluginId']))
         if attempt['mode'] == 'update' or 'currentPackageId' not in plugin:
             plugin['nextPackageId'] = package_id
         run = dict(pluginRunId=rid, packageId=package_id, handlers={}, handlerDisposers=[], reportedRuntimeErrors=set())
@@ -140,8 +153,13 @@ class CordisRunnerState:
         package = plugin['packages'][package_id]
         if 'host' in package['code']:
             failure = await self.start_host(plugin, package['code']['host'], run)
+            if transition['invalidated'] or self.activation_retired(plugin, attempt):
+                await self.discard_run(run)
+                return dict(ok=False, message='activation of dynamic plugin "{}" was cancelled during retirement'.format(plugin['pluginId']))
             if failure is not None:
                 return dict(ok=False, **failure)
+        elif transition['invalidated'] or self.activation_retired(plugin, attempt):
+            return dict(ok=False, message='activation of dynamic plugin "{}" was cancelled during retirement'.format(plugin['pluginId']))
         plugin['run'] = run
         self.ctx.emit('cordis/dynamic-package', dict(pluginId=plugin['pluginId'], packageId=package_id, pluginRunId=rid, name=package['name']))
         waiting = self._missing_for(run)
@@ -249,17 +267,9 @@ class CordisRunnerState:
         plugin = self.owned(agent, pluginId)
         if plugin is None:
             return refusal('plugin-missing', missing_plugin(pluginId))
-        if 'run' not in plugin and self.pending_for(pluginId) is None:
+        if 'run' not in plugin and self.pending_for(pluginId) is None and pluginId not in self.starting and pluginId not in self._ending:
             return refusal('not-running', 'dynamic plugin "{}" is not running'.format(pluginId))
-        self.cancel_pending(pluginId, 'dynamic plugin "{}" was stopped before approval'.format(pluginId))
-        if 'run' in plugin:
-            await self.retract(plugin)
-        attempt = plugin.get('latestRun')
-        if attempt is not None:
-            attempt['status'] = 'stopped'
-            for name in ('host', 'client'):
-                if attempt[name]['status'] != 'absent':
-                    attempt[name] = dict(status='stopped', waitingFor=[])
+        await self.end_plugin(plugin, False)
         return dict(ok=True)
 
     @Remote
@@ -276,11 +286,44 @@ class CordisRunnerState:
         if plugin is None:
             return refusal('plugin-missing', missing_plugin(pluginId))
         was_running = 'run' in plugin
-        self.cancel_pending(pluginId, 'dynamic plugin "{}" was removed before approval'.format(pluginId))
-        if 'run' in plugin:
-            await self.retract(plugin)
-        del self.plugins[pluginId]
+        await self.end_plugin(plugin, True)
         return dict(ok=True, wasRunning=was_running)
+
+    async def end_plugin(self, plugin, remove):
+        """Own retirement independently of any Remote/tool caller's wait."""
+        pid = plugin['pluginId']
+        ending = self._ending.get(pid)
+        if ending is None:
+            transition = self._transitions.get(pid)
+            if transition is not None:
+                transition['invalidated'] = True
+                transition['attempt']['status'] = 'cancelled'
+            self.cancel_pending(pid, 'dynamic plugin "{}" was {} before approval'.format(pid, 'removed' if remove else 'stopped'))
+            ending = dict(remove=remove)
+            self._ending[pid] = ending
+            task = ending['task'] = asyncio.create_task(self._end_plugin(plugin, ending, transition))
+            def finished(completed):
+                if self._ending.get(pid) is ending:
+                    del self._ending[pid]
+                if not completed.cancelled():
+                    completed.exception()
+            task.add_done_callback(finished)
+        else:
+            ending['remove'] = ending['remove'] or remove
+        await asyncio.shield(ending['task'])
+
+    async def _end_plugin(self, plugin, ending, transition):
+        if transition is not None:
+            await asyncio.gather(asyncio.shield(transition['task']), return_exceptions=True)
+        await self.retract(plugin)
+        attempt = plugin.get('latestRun')
+        if attempt is not None:
+            attempt['status'] = 'stopped'
+            for name in ('host', 'client'):
+                if attempt[name]['status'] != 'absent':
+                    attempt[name] = dict(status='stopped', waitingFor=[])
+        if ending['remove'] and self.plugins.get(plugin['pluginId']) is plugin:
+            del self.plugins[plugin['pluginId']]
 
     @Remote
     async def undefineFromPanel(self, agent, pluginId):
@@ -320,12 +363,16 @@ class CordisRunnerState:
         run = plugin.pop('run', None)
         if run is None:
             return
+        await self.discard_run(run)
+        self.ctx.emit('cordis/dynamic-retract', dict(pluginId=plugin['pluginId'], packageId=run['packageId'], pluginRunId=run['pluginRunId']))
+
+    @staticmethod
+    async def discard_run(run):
         disposers, run['handlerDisposers'] = run.get('handlerDisposers', []), []
         for dispose in disposers:
             dispose()
         if run.get('fiber') is not None:
             await run['fiber'].dispose()
-        self.ctx.emit('cordis/dynamic-retract', dict(pluginId=plugin['pluginId'], packageId=run['packageId'], pluginRunId=run['pluginRunId']))
 
     def owner_agent(self, sid):
         agents = self.root_ctx.get('agents')

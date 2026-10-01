@@ -1,0 +1,10 @@
+[
+  {"mode":"remove-host-starting","remove":true,"client":false,"update":false},
+  {"mode":"stop-host-starting","remove":false,"client":false,"update":false},
+  {"mode":"remove-dual-starting","remove":true,"client":true,"update":false},
+  {"mode":"stop-dual-starting","remove":false,"client":true,"update":false},
+  {"mode":"remove-update-starting","remove":true,"client":false,"update":true},
+  {"mode":"stop-update-starting","remove":false,"client":false,"update":true},
+  {"mode":"remove-settled-host","remove":true,"client":false,"update":false,"settled":true},
+  {"mode":"stop-settled-host","remove":false,"client":false,"update":false,"settled":true}
+]

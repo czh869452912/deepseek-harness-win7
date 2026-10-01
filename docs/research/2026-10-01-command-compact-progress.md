@@ -109,6 +109,11 @@ Migration check/ready validate records, not project parity.
 
 ## Remaining migration and distribution
 
+Subsequent work ports the four compaction invariant companions, with shared
+source/native rejection and replay observations and real Loader/Web Host
+integration; see [invariant progress](2026-10-01-compaction-invariant-progress.md).
+The remaining-scope statement below is retained for this command's baseline.
+
 Full compaction invariants, durable error-chain rendering, all combined
 cancellation/maintenance ordering and browser/client history presentation still
 need a complete audit. These Host integration journeys are not actual browser

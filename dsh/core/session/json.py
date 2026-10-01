@@ -30,7 +30,9 @@ class FrozenDict(dict):
     and the mapping protocol keep working on frozen durable session data.
     """
 
-    __slots__ = ()
+    # Relational companions stage candidates by weak identity before commit.
+    # A rejected candidate must not stay alive through its validation entry.
+    __slots__ = ("__weakref__",)
 
     def _frozen(self, *args: Any, **kwargs: Any) -> None:
         raise TypeError("frozen session object does not support item assignment")

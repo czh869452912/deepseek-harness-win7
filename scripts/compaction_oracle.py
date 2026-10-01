@@ -74,6 +74,7 @@ def main():
             raise ValueError('reference differs from target')
         report['target_upstream'] = target
         specs = json.loads((ROOT / 'scripts/oracles/compaction-cases.json').read_text(encoding='utf-8'))
+        specs += json.loads((ROOT / 'scripts/oracles/compaction-invariant-cases.json').read_text(encoding='utf-8'))
         modes = [spec['mode'] for spec in specs]
         if not modes or len(set(modes)) != len(modes):
             raise ValueError('empty or duplicate case identities')

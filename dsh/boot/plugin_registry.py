@@ -168,6 +168,10 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     "@deepseek-ai/dsh-mcp-client": "dsh.mcp.client:McpClientPlugin",
     # Compaction, spill, plan, guard.
     "@deepseek-ai/dsh-compaction-basic": "dsh.compaction.engine:CompactionBasicPlugin",
+    "@deepseek-ai/dsh-compaction/invariant": "dsh.compaction.invariant:CompactionInvariantPlugin",
+    "@deepseek-ai/dsh-compaction-basic/invariant": "dsh.compaction.invariant:CompactionBasicInvariantPlugin",
+    "@deepseek-ai/dsh-command-compact/invariant": "dsh.compaction.invariant:CommandCompactInvariantPlugin",
+    "@deepseek-ai/dsh-compaction-tool-result-pruner/invariant": "dsh.compaction.invariant:ToolResultPrunerInvariantPlugin",
     "@deepseek-ai/dsh-compaction-tool-result-pruner": "dsh.compaction.pruner:ToolResultPrunerPlugin",
     "@deepseek-ai/dsh-command-compact": "dsh.compaction.command_compact:CommandCompactPlugin",
     "@deepseek-ai/dsh-spill-local": "dsh.spill.spill_store:SpillStorePlugin",

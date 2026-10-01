@@ -1,7 +1,7 @@
 import { it, expect } from 'vitest'
 import { readFile, writeFile } from 'node:fs/promises'
 import { Context } from '@deepseek-ai/cordis'
-import SessionStore from '@deepseek-ai/dsh-session'
+import SessionStore, { Session, SessionId } from '@deepseek-ai/dsh-session'
 import { LlmRuntime, LlmAdapter, createUserMessage, createMessage } from '@deepseek-ai/dsh-llm'
 import TokenMeter from '@deepseek-ai/dsh-token-meter'
 import BasicCompactionEngine from '@deepseek-ai/dsh-compaction-basic'
@@ -10,6 +10,49 @@ import { compactSurfaceRegion } from '../../reference/packages/compaction/compac
 import { ManualCompactionError, CompactionEngine } from '@deepseek-ai/dsh-compaction'
 import CommandRuntime from '@deepseek-ai/dsh-commands'
 import * as commandCompact from '@deepseek-ai/dsh-command-compact'
+import * as compactionInvariant from '@deepseek-ai/dsh-compaction/invariant'
+import InvariantRegistry from '@deepseek-ai/dsh-invariants'
+
+async function invariant(spec: any): Promise<any> {
+  const ctx = new Context()
+  const receipts: any[] = []
+  let installation: any = null
+  try {
+    await ctx.plugin(SessionStore)
+    let session = spec.seed ? Session.create(SessionId('seed-source')) : ctx.sessions.create()
+    const append = (event: any) => session.append(event.type, event.data, {
+      ...event.surfaceOp === undefined ? {} : { surfaceOp: event.surfaceOp },
+      ...event.sourceEventSeqs === undefined ? {} : { sourceEventSeqs: event.sourceEventSeqs },
+    })
+    for (const event of spec.prefix ?? []) append(event)
+    if (spec.seed) {
+      const original = session
+      session = ctx.sessions.create(undefined, { seed: original.events })
+    }
+    await ctx.plugin(InvariantRegistry)
+    try { await ctx.plugin(compactionInvariant) }
+    catch (error: any) { installation = { error: error.message, code: error.code ?? null } }
+    if (installation === null) {
+      for (const event of spec.actions) {
+        const before = session.events.length
+        const generation = session.surface.replaceGeneration
+        const remove = event.veto ? ctx.on('internal/dispatch', (_mode, name) => {
+          if (name === 'session/event') throw new Error('later dispatch veto')
+        }, { global: true }) : undefined
+        try {
+          const value = append(event)
+          receipts.push({ accepted: true, seq: value.seq })
+        } catch (error: any) {
+          receipts.push({ accepted: false, error: error.message, code: error.code ?? null,
+            unchanged: session.events.length === before && session.surface.replaceGeneration === generation })
+        } finally { remove?.() }
+      }
+    }
+    return { mode: spec.mode, installation, receipts,
+      events: session.events.map(({ time: _time, ...event }) => event),
+      generation: session.surface.replaceGeneration, nodes: session.surface.nodes }
+  } finally { await ctx.fiber.dispose() }
+}
 
 async function command(spec: any): Promise<any> {
   const ctx = new Context()
@@ -144,8 +187,13 @@ class Adapter extends LlmAdapter {
 
 it('observes pinned compaction policies and real routed transactions', async () => {
   const cases = JSON.parse(await readFile('scripts/oracles/compaction-cases.json', 'utf8'))
+  cases.push(...JSON.parse(await readFile('scripts/oracles/compaction-invariant-cases.json', 'utf8')))
   const rows: any[] = []
   for (const spec of cases) {
+    if (spec.kind === 'invariant') {
+      rows.push(await invariant(spec))
+      continue
+    }
     if (spec.kind === 'command') {
       rows.push(await command(spec))
       continue

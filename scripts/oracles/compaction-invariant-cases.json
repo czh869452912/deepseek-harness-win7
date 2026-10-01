@@ -1,0 +1,2127 @@
+[
+  {
+    "mode": "invariant-success-null",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "compaction/summary",
+        "data": {
+          "compactionId": "fixture",
+          "summary": [
+            {
+              "type": "text",
+              "text": "short"
+            }
+          ],
+          "shadowedRange": {
+            "start": 2,
+            "end": 4
+          },
+          "shadowedSeqs": [
+            2,
+            3,
+            4
+          ],
+          "shadowedTokenCount": 12,
+          "provider": "mock",
+          "model": "mock"
+        }
+      },
+      {
+        "type": "compaction/end",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "turn/start",
+        "data": {
+          "turn": 1
+        }
+      },
+      {
+        "type": "turn/end",
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "mode": "invariant-failure-null",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "compaction/end",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null,
+          "error": "provider failed"
+        }
+      },
+      {
+        "type": "turn/start",
+        "data": {
+          "turn": 1
+        }
+      },
+      {
+        "type": "turn/end",
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "mode": "invariant-success-1",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "turn/start",
+        "data": {
+          "turn": 1
+        }
+      },
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": 1
+        }
+      },
+      {
+        "type": "compaction/summary",
+        "data": {
+          "compactionId": "fixture",
+          "summary": [
+            {
+              "type": "text",
+              "text": "short"
+            }
+          ],
+          "shadowedRange": {
+            "start": 2,
+            "end": 4
+          },
+          "shadowedSeqs": [
+            2,
+            3,
+            4
+          ],
+          "shadowedTokenCount": 12,
+          "provider": "mock",
+          "model": "mock"
+        }
+      },
+      {
+        "type": "compaction/end",
+        "data": {
+          "compactionId": "fixture",
+          "turn": 1
+        }
+      },
+      {
+        "type": "turn/end",
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "mode": "invariant-failure-1",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "turn/start",
+        "data": {
+          "turn": 1
+        }
+      },
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": 1
+        }
+      },
+      {
+        "type": "compaction/end",
+        "data": {
+          "compactionId": "fixture",
+          "turn": 1,
+          "error": "provider failed"
+        }
+      },
+      {
+        "type": "turn/end",
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "mode": "invariant-outside",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": 1
+        },
+        "expectedError": "compaction/start for turn 1 appended outside any open turn"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-wrong-owner",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "turn/start",
+        "data": {
+          "turn": 1
+        }
+      },
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": 2
+        },
+        "expectedError": "compaction/start names turn 2 but open turn is 1"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-standalone-in-turn",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "turn/start",
+        "data": {
+          "turn": 1
+        }
+      },
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        },
+        "expectedError": "compaction/start is standalone but turn 1 is open"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-nested-standalone",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        },
+        "expectedError": "compaction/start while standalone compaction is still compacting"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-nested-numbered",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "turn/start",
+        "data": {
+          "turn": 1
+        }
+      },
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": 1
+        }
+      },
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": 2
+        },
+        "expectedError": "compaction/start while turn 1 is still compacting"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-cross-start",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "turn/start",
+        "data": {
+          "turn": 1
+        },
+        "expectedError": "turn/start cannot cross an open standalone compaction"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-cross-end",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "turn/start",
+        "data": {
+          "turn": 1
+        }
+      },
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": 1
+        }
+      },
+      {
+        "type": "turn/end",
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        },
+        "expectedError": "turn/end cannot cross an open compaction for turn 1"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-empty-start-id",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "",
+          "turn": null
+        },
+        "expectedError": "compaction/start compactionId must be a non-empty string"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-empty-start-command",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null,
+          "sourceCommandId": ""
+        },
+        "expectedError": "compaction/start sourceCommandId must be a non-empty string"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-empty-summary-id",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "compaction/summary",
+        "data": {
+          "compactionId": "",
+          "summary": [
+            {
+              "type": "text",
+              "text": "short"
+            }
+          ],
+          "shadowedRange": {
+            "start": 2,
+            "end": 4
+          },
+          "shadowedSeqs": [
+            2,
+            3,
+            4
+          ],
+          "shadowedTokenCount": 12,
+          "provider": "mock",
+          "model": "mock"
+        },
+        "expectedError": "compaction/summary compactionId must be a non-empty string"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-empty-summary-command",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "compaction/summary",
+        "data": {
+          "compactionId": "fixture",
+          "summary": [
+            {
+              "type": "text",
+              "text": "short"
+            }
+          ],
+          "shadowedRange": {
+            "start": 2,
+            "end": 4
+          },
+          "shadowedSeqs": [
+            2,
+            3,
+            4
+          ],
+          "shadowedTokenCount": 12,
+          "provider": "mock",
+          "model": "mock",
+          "sourceCommandId": ""
+        },
+        "expectedError": "compaction/summary sourceCommandId must be a non-empty string"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-orphan-summary",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/summary",
+        "data": {
+          "compactionId": "fixture",
+          "summary": [
+            {
+              "type": "text",
+              "text": "short"
+            }
+          ],
+          "shadowedRange": {
+            "start": 2,
+            "end": 4
+          },
+          "shadowedSeqs": [
+            2,
+            3,
+            4
+          ],
+          "shadowedTokenCount": 12,
+          "provider": "mock",
+          "model": "mock"
+        },
+        "expectedError": "compaction/summary has no matching compaction/start"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-other-summary-id",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "compaction/summary",
+        "data": {
+          "compactionId": "other",
+          "summary": [
+            {
+              "type": "text",
+              "text": "short"
+            }
+          ],
+          "shadowedRange": {
+            "start": 2,
+            "end": 4
+          },
+          "shadowedSeqs": [
+            2,
+            3,
+            4
+          ],
+          "shadowedTokenCount": 12,
+          "provider": "mock",
+          "model": "mock"
+        },
+        "expectedError": "compaction/summary id other does not match compaction/start id fixture"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-other-summary-command",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null,
+          "sourceCommandId": "command"
+        }
+      },
+      {
+        "type": "compaction/summary",
+        "data": {
+          "compactionId": "fixture",
+          "summary": [
+            {
+              "type": "text",
+              "text": "short"
+            }
+          ],
+          "shadowedRange": {
+            "start": 2,
+            "end": 4
+          },
+          "shadowedSeqs": [
+            2,
+            3,
+            4
+          ],
+          "shadowedTokenCount": 12,
+          "provider": "mock",
+          "model": "mock",
+          "sourceCommandId": "other"
+        },
+        "expectedError": "compaction/summary sourceCommandId other does not match compaction/start sourceCommandId command"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-missing-summary-command",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null,
+          "sourceCommandId": "command"
+        }
+      },
+      {
+        "type": "compaction/summary",
+        "data": {
+          "compactionId": "fixture",
+          "summary": [
+            {
+              "type": "text",
+              "text": "short"
+            }
+          ],
+          "shadowedRange": {
+            "start": 2,
+            "end": 4
+          },
+          "shadowedSeqs": [
+            2,
+            3,
+            4
+          ],
+          "shadowedTokenCount": 12,
+          "provider": "mock",
+          "model": "mock"
+        },
+        "expectedError": "compaction/summary sourceCommandId undefined does not match compaction/start sourceCommandId command"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-empty-end-id",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "compaction/end",
+        "data": {
+          "compactionId": "",
+          "turn": null,
+          "error": "failed"
+        },
+        "expectedError": "compaction/end compactionId must be a non-empty string"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-empty-end-command",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "compaction/end",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null,
+          "error": "failed",
+          "sourceCommandId": ""
+        },
+        "expectedError": "compaction/end sourceCommandId must be a non-empty string"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-orphan-end",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/end",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null,
+          "error": "failed"
+        },
+        "expectedError": "compaction/end has no matching compaction/start"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-other-end-id",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "compaction/end",
+        "data": {
+          "compactionId": "other",
+          "turn": null,
+          "error": "failed"
+        },
+        "expectedError": "compaction/end id other does not match compaction/start id fixture"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-other-end-command",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null,
+          "sourceCommandId": "command"
+        }
+      },
+      {
+        "type": "compaction/end",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null,
+          "error": "failed",
+          "sourceCommandId": "other"
+        },
+        "expectedError": "compaction/end sourceCommandId other does not match compaction/start sourceCommandId command"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-missing-end-command",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null,
+          "sourceCommandId": "command"
+        }
+      },
+      {
+        "type": "compaction/end",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null,
+          "error": "failed"
+        },
+        "expectedError": "compaction/end sourceCommandId undefined does not match compaction/start sourceCommandId command"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-repeated-summary",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "compaction/summary",
+        "data": {
+          "compactionId": "fixture",
+          "summary": [
+            {
+              "type": "text",
+              "text": "short"
+            }
+          ],
+          "shadowedRange": {
+            "start": 2,
+            "end": 4
+          },
+          "shadowedSeqs": [
+            2,
+            3,
+            4
+          ],
+          "shadowedTokenCount": 12,
+          "provider": "mock",
+          "model": "mock"
+        }
+      },
+      {
+        "type": "compaction/summary",
+        "data": {
+          "compactionId": "fixture",
+          "summary": [
+            {
+              "type": "text",
+              "text": "short"
+            }
+          ],
+          "shadowedRange": {
+            "start": 2,
+            "end": 4
+          },
+          "shadowedSeqs": [
+            2,
+            3,
+            4
+          ],
+          "shadowedTokenCount": 12,
+          "provider": "mock",
+          "model": "mock"
+        },
+        "expectedError": "compaction/summary repeated within one compaction"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-empty-shadow",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "compaction/summary",
+        "data": {
+          "compactionId": "fixture",
+          "summary": [
+            {
+              "type": "text",
+              "text": "short"
+            }
+          ],
+          "shadowedRange": {
+            "start": 2,
+            "end": 4
+          },
+          "shadowedSeqs": [],
+          "shadowedTokenCount": 12,
+          "provider": "mock",
+          "model": "mock"
+        },
+        "expectedError": "compaction/summary shadowedSeqs must be non-empty"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-wrong-range",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "compaction/summary",
+        "data": {
+          "compactionId": "fixture",
+          "summary": [
+            {
+              "type": "text",
+              "text": "short"
+            }
+          ],
+          "shadowedRange": {
+            "start": 1,
+            "end": 4
+          },
+          "shadowedSeqs": [
+            2,
+            3,
+            4
+          ],
+          "shadowedTokenCount": 12,
+          "provider": "mock",
+          "model": "mock"
+        },
+        "expectedError": "compaction/summary shadowedRange must match the first and last shadowedSeqs"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-invalid-count--1",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "compaction/summary",
+        "data": {
+          "compactionId": "fixture",
+          "summary": [
+            {
+              "type": "text",
+              "text": "short"
+            }
+          ],
+          "shadowedRange": {
+            "start": 2,
+            "end": 4
+          },
+          "shadowedSeqs": [
+            2,
+            3,
+            4
+          ],
+          "shadowedTokenCount": -1,
+          "provider": "mock",
+          "model": "mock"
+        },
+        "expectedError": "compaction/summary shadowedTokenCount must be a non-negative safe integer"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-invalid-count-1.5",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "compaction/summary",
+        "data": {
+          "compactionId": "fixture",
+          "summary": [
+            {
+              "type": "text",
+              "text": "short"
+            }
+          ],
+          "shadowedRange": {
+            "start": 2,
+            "end": 4
+          },
+          "shadowedSeqs": [
+            2,
+            3,
+            4
+          ],
+          "shadowedTokenCount": 1.5,
+          "provider": "mock",
+          "model": "mock"
+        },
+        "expectedError": "compaction/summary shadowedTokenCount must be a non-negative safe integer"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-invalid-count-true",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "compaction/summary",
+        "data": {
+          "compactionId": "fixture",
+          "summary": [
+            {
+              "type": "text",
+              "text": "short"
+            }
+          ],
+          "shadowedRange": {
+            "start": 2,
+            "end": 4
+          },
+          "shadowedSeqs": [
+            2,
+            3,
+            4
+          ],
+          "shadowedTokenCount": true,
+          "provider": "mock",
+          "model": "mock"
+        },
+        "expectedError": "compaction/summary shadowedTokenCount must be a non-negative safe integer"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-invalid-count-12",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "compaction/summary",
+        "data": {
+          "compactionId": "fixture",
+          "summary": [
+            {
+              "type": "text",
+              "text": "short"
+            }
+          ],
+          "shadowedRange": {
+            "start": 2,
+            "end": 4
+          },
+          "shadowedSeqs": [
+            2,
+            3,
+            4
+          ],
+          "shadowedTokenCount": "12",
+          "provider": "mock",
+          "model": "mock"
+        },
+        "expectedError": "compaction/summary shadowedTokenCount must be a non-negative safe integer"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-invalid-count-9007199254740992",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "compaction/summary",
+        "data": {
+          "compactionId": "fixture",
+          "summary": [
+            {
+              "type": "text",
+              "text": "short"
+            }
+          ],
+          "shadowedRange": {
+            "start": 2,
+            "end": 4
+          },
+          "shadowedSeqs": [
+            2,
+            3,
+            4
+          ],
+          "shadowedTokenCount": 9007199254740992,
+          "provider": "mock",
+          "model": "mock"
+        },
+        "expectedError": "compaction/summary shadowedTokenCount must be a non-negative safe integer"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-max-safe-count",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "compaction/summary",
+        "data": {
+          "compactionId": "fixture",
+          "summary": [
+            {
+              "type": "text",
+              "text": "short"
+            }
+          ],
+          "shadowedRange": {
+            "start": 2,
+            "end": 4
+          },
+          "shadowedSeqs": [
+            2,
+            3,
+            4
+          ],
+          "shadowedTokenCount": 9007199254740991,
+          "provider": "mock",
+          "model": "mock"
+        }
+      },
+      {
+        "type": "compaction/end",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      }
+    ]
+  },
+  {
+    "mode": "invariant-success-no-summary",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "compaction/end",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        },
+        "expectedError": "successful compaction/end requires one compaction/summary"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-wrong-end-owner",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "turn/start",
+        "data": {
+          "turn": 1
+        }
+      },
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": 1
+        }
+      },
+      {
+        "type": "compaction/end",
+        "data": {
+          "compactionId": "fixture",
+          "turn": 2,
+          "error": "failed"
+        },
+        "expectedError": "compaction/end owner 2 does not match compaction/start owner 1"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-null-command",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null,
+          "sourceCommandId": null
+        },
+        "expectedError": "compaction/start sourceCommandId must be a non-empty string"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-null-error-present",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "compaction/end",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null,
+          "error": null
+        }
+      }
+    ]
+  },
+  {
+    "mode": "invariant-checkpoint",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "user/message",
+        "data": {
+          "id": "message",
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "original"
+            }
+          ],
+          "source": {
+            "kind": "user"
+          }
+        },
+        "surfaceOp": "append"
+      },
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null,
+          "sourceCommandId": "command"
+        }
+      },
+      {
+        "type": "compaction/summary",
+        "data": {
+          "compactionId": "fixture",
+          "summary": [
+            {
+              "type": "text",
+              "text": "short"
+            }
+          ],
+          "shadowedRange": {
+            "start": 2,
+            "end": 4
+          },
+          "shadowedSeqs": [
+            2,
+            3,
+            4
+          ],
+          "shadowedTokenCount": 12,
+          "provider": "mock",
+          "model": "mock",
+          "sourceCommandId": "command"
+        }
+      },
+      {
+        "type": "user/message",
+        "data": {
+          "id": "checkpoint",
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "checkpoint"
+            }
+          ],
+          "source": {
+            "kind": "plugin",
+            "plugin": "compact",
+            "compactionId": "fixture",
+            "sourceCommandId": "command"
+          }
+        },
+        "surfaceOp": {
+          "op": "replace",
+          "start": 0,
+          "end": 0
+        },
+        "sourceEventSeqs": [
+          0
+        ]
+      },
+      {
+        "type": "compaction/end",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null,
+          "sourceCommandId": "command"
+        }
+      }
+    ]
+  },
+  {
+    "mode": "invariant-checkpoint-orphan",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "user/message",
+        "data": {
+          "id": "message",
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "original"
+            }
+          ],
+          "source": {
+            "kind": "user"
+          }
+        },
+        "surfaceOp": "append"
+      },
+      {
+        "type": "user/message",
+        "data": {
+          "id": "checkpoint",
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "checkpoint"
+            }
+          ],
+          "source": {
+            "kind": "plugin",
+            "plugin": "compact",
+            "compactionId": "fixture"
+          }
+        },
+        "surfaceOp": {
+          "op": "replace",
+          "start": 0,
+          "end": 0
+        },
+        "sourceEventSeqs": [
+          0
+        ],
+        "expectedError": "compaction checkpoint has no matching compaction/start"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-checkpoint-other",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "user/message",
+        "data": {
+          "id": "message",
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "original"
+            }
+          ],
+          "source": {
+            "kind": "user"
+          }
+        },
+        "surfaceOp": "append"
+      },
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "user/message",
+        "data": {
+          "id": "checkpoint",
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "checkpoint"
+            }
+          ],
+          "source": {
+            "kind": "plugin",
+            "plugin": "compact",
+            "compactionId": "other"
+          }
+        },
+        "surfaceOp": {
+          "op": "replace",
+          "start": 0,
+          "end": 0
+        },
+        "sourceEventSeqs": [
+          0
+        ],
+        "expectedError": "compaction checkpoint id other does not match compaction/start id fixture"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-checkpoint-empty-id",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "user/message",
+        "data": {
+          "id": "message",
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "original"
+            }
+          ],
+          "source": {
+            "kind": "user"
+          }
+        },
+        "surfaceOp": "append"
+      },
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "user/message",
+        "data": {
+          "id": "checkpoint",
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "checkpoint"
+            }
+          ],
+          "source": {
+            "kind": "plugin",
+            "plugin": "compact",
+            "compactionId": ""
+          }
+        },
+        "surfaceOp": {
+          "op": "replace",
+          "start": 0,
+          "end": 0
+        },
+        "sourceEventSeqs": [
+          0
+        ],
+        "expectedError": "compaction checkpoint compactionId must be a non-empty string"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-checkpoint-empty-command",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "user/message",
+        "data": {
+          "id": "message",
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "original"
+            }
+          ],
+          "source": {
+            "kind": "user"
+          }
+        },
+        "surfaceOp": "append"
+      },
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "user/message",
+        "data": {
+          "id": "checkpoint",
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "checkpoint"
+            }
+          ],
+          "source": {
+            "kind": "plugin",
+            "plugin": "compact",
+            "compactionId": "fixture",
+            "sourceCommandId": ""
+          }
+        },
+        "surfaceOp": {
+          "op": "replace",
+          "start": 0,
+          "end": 0
+        },
+        "sourceEventSeqs": [
+          0
+        ],
+        "expectedError": "compaction checkpoint sourceCommandId must be a non-empty string"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-checkpoint-command",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "user/message",
+        "data": {
+          "id": "message",
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "original"
+            }
+          ],
+          "source": {
+            "kind": "user"
+          }
+        },
+        "surfaceOp": "append"
+      },
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null,
+          "sourceCommandId": "command"
+        }
+      },
+      {
+        "type": "user/message",
+        "data": {
+          "id": "checkpoint",
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "checkpoint"
+            }
+          ],
+          "source": {
+            "kind": "plugin",
+            "plugin": "compact",
+            "compactionId": "fixture"
+          }
+        },
+        "surfaceOp": {
+          "op": "replace",
+          "start": 0,
+          "end": 0
+        },
+        "sourceEventSeqs": [
+          0
+        ],
+        "expectedError": "compaction checkpoint sourceCommandId undefined does not match compaction/start sourceCommandId command"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-ordinary-replacement",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "user/message",
+        "data": {
+          "id": "message",
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "original"
+            }
+          ],
+          "source": {
+            "kind": "user"
+          }
+        },
+        "surfaceOp": "append"
+      },
+      {
+        "type": "user/message",
+        "data": {
+          "id": "checkpoint",
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "checkpoint"
+            }
+          ],
+          "source": {
+            "kind": "plugin",
+            "plugin": "other"
+          }
+        },
+        "surfaceOp": {
+          "op": "replace",
+          "start": 0,
+          "end": 0
+        },
+        "sourceEventSeqs": [
+          0
+        ]
+      }
+    ]
+  },
+  {
+    "mode": "invariant-append-marker",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "user/message",
+        "data": {
+          "id": "checkpoint",
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "checkpoint"
+            }
+          ],
+          "source": {
+            "kind": "plugin",
+            "plugin": "compact",
+            "compactionId": "fixture"
+          }
+        },
+        "surfaceOp": "append"
+      }
+    ]
+  },
+  {
+    "mode": "invariant-late-open",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/end",
+        "data": {
+          "compactionId": "fixture",
+          "turn": 1,
+          "error": "resume failed"
+        }
+      },
+      {
+        "type": "turn/end",
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      }
+    ],
+    "prefix": [
+      {
+        "type": "turn/start",
+        "data": {
+          "turn": 1
+        }
+      },
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": 1
+        }
+      }
+    ]
+  },
+  {
+    "mode": "invariant-seed-standalone",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "compaction/end",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null,
+          "error": "retry"
+        }
+      }
+    ],
+    "prefix": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      }
+    ],
+    "seed": true
+  },
+  {
+    "mode": "invariant-seed-numbered",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "turn/end",
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      }
+    ],
+    "prefix": [
+      {
+        "type": "turn/start",
+        "data": {
+          "turn": 1
+        }
+      },
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": 1
+        }
+      }
+    ],
+    "seed": true
+  },
+  {
+    "mode": "invariant-seed-repair",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "turn/start",
+        "data": {
+          "turn": 1
+        }
+      },
+      {
+        "type": "turn/end",
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      }
+    ],
+    "prefix": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "turn/start",
+        "data": {
+          "turn": 1
+        }
+      },
+      {
+        "type": "turn/end",
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      }
+    ],
+    "seed": true
+  },
+  {
+    "mode": "invariant-seed-closed-crossing",
+    "kind": "invariant",
+    "actions": [],
+    "prefix": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "turn/start",
+        "data": {
+          "turn": 1
+        }
+      },
+      {
+        "type": "turn/end",
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      },
+      {
+        "type": "compaction/end",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null,
+          "error": "failed"
+        }
+      }
+    ],
+    "seed": true,
+    "expectedInstallError": "turn/start cannot cross an open standalone compaction"
+  },
+  {
+    "mode": "invariant-late-invalid",
+    "kind": "invariant",
+    "actions": [],
+    "prefix": [
+      {
+        "type": "turn/start",
+        "data": {
+          "turn": 1
+        }
+      },
+      {
+        "type": "turn/end",
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      },
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": 1
+        }
+      }
+    ],
+    "expectedInstallError": "compaction/start for turn 1 appended outside any open turn"
+  },
+  {
+    "mode": "invariant-veto-start",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        },
+        "veto": true,
+        "expectedError": "later dispatch veto"
+      },
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "compaction/end",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null,
+          "error": "failed"
+        }
+      }
+    ]
+  },
+  {
+    "mode": "invariant-veto-summary",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "compaction/summary",
+        "data": {
+          "compactionId": "fixture",
+          "summary": [
+            {
+              "type": "text",
+              "text": "short"
+            }
+          ],
+          "shadowedRange": {
+            "start": 2,
+            "end": 4
+          },
+          "shadowedSeqs": [
+            2,
+            3,
+            4
+          ],
+          "shadowedTokenCount": 12,
+          "provider": "mock",
+          "model": "mock"
+        },
+        "veto": true,
+        "expectedError": "later dispatch veto"
+      },
+      {
+        "type": "compaction/summary",
+        "data": {
+          "compactionId": "fixture",
+          "summary": [
+            {
+              "type": "text",
+              "text": "short"
+            }
+          ],
+          "shadowedRange": {
+            "start": 2,
+            "end": 4
+          },
+          "shadowedSeqs": [
+            2,
+            3,
+            4
+          ],
+          "shadowedTokenCount": 12,
+          "provider": "mock",
+          "model": "mock"
+        }
+      },
+      {
+        "type": "compaction/end",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      }
+    ]
+  },
+  {
+    "mode": "invariant-veto-end",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "compaction/summary",
+        "data": {
+          "compactionId": "fixture",
+          "summary": [
+            {
+              "type": "text",
+              "text": "short"
+            }
+          ],
+          "shadowedRange": {
+            "start": 2,
+            "end": 4
+          },
+          "shadowedSeqs": [
+            2,
+            3,
+            4
+          ],
+          "shadowedTokenCount": 12,
+          "provider": "mock",
+          "model": "mock"
+        }
+      },
+      {
+        "type": "compaction/end",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        },
+        "veto": true,
+        "expectedError": "later dispatch veto"
+      },
+      {
+        "type": "compaction/end",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "turn/start",
+        "data": {
+          "turn": 1
+        }
+      },
+      {
+        "type": "turn/end",
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "mode": "invariant-veto-turn",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "turn/start",
+        "data": {
+          "turn": 1
+        },
+        "veto": true,
+        "expectedError": "later dispatch veto"
+      },
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "compaction/end",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null,
+          "error": "failed"
+        }
+      }
+    ]
+  },
+  {
+    "mode": "invariant-veto-checkpoint",
+    "kind": "invariant",
+    "actions": [
+      {
+        "type": "user/message",
+        "data": {
+          "id": "message",
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "original"
+            }
+          ],
+          "source": {
+            "kind": "user"
+          }
+        },
+        "surfaceOp": "append"
+      },
+      {
+        "type": "compaction/start",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null
+        }
+      },
+      {
+        "type": "user/message",
+        "data": {
+          "id": "checkpoint",
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "checkpoint"
+            }
+          ],
+          "source": {
+            "kind": "plugin",
+            "plugin": "compact",
+            "compactionId": "fixture"
+          }
+        },
+        "surfaceOp": {
+          "op": "replace",
+          "start": 0,
+          "end": 0
+        },
+        "sourceEventSeqs": [
+          0
+        ],
+        "veto": true,
+        "expectedError": "later dispatch veto"
+      },
+      {
+        "type": "user/message",
+        "data": {
+          "id": "checkpoint",
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "checkpoint"
+            }
+          ],
+          "source": {
+            "kind": "plugin",
+            "plugin": "compact",
+            "compactionId": "fixture"
+          }
+        },
+        "surfaceOp": {
+          "op": "replace",
+          "start": 0,
+          "end": 0
+        },
+        "sourceEventSeqs": [
+          0
+        ]
+      },
+      {
+        "type": "compaction/end",
+        "data": {
+          "compactionId": "fixture",
+          "turn": null,
+          "error": "failed"
+        }
+      }
+    ]
+  }
+]

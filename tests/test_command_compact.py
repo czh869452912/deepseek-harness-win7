@@ -255,6 +255,8 @@ async def test_actual_backend_maintenance_overlap_is_expected_busy_and_first_cal
 async def test_canonical_web_command_compaction_and_cold_restart(tmp_path, preset):
     from canonical_web_fixture import web_context, close_web_context
     from dsh.presets.mount import service_for_agent
+    from dsh.compaction.invariant import CompactionInvariantPlugin
+    from dsh.diagnostics.invariants import InvariantRegistry
     requests = []
     class Adapter:
         async def prepare_call(self, provider, model, signal=None):
@@ -266,6 +268,8 @@ async def test_canonical_web_command_compaction_and_cold_restart(tmp_path, prese
     directory, identity = tmp_path / 'home', 'compact-' + preset
     ctx = await web_context(directory)
     try:
+        await ctx.plugin(InvariantRegistry)
+        await ctx.plugin(CompactionInvariantPlugin)
         await ctx.get('sessionController').create(dict(sessionId=identity, cwd=str(tmp_path), agentPreset=preset))
         agent = ctx.get('agents').get(identity)
         assert service_for_agent(ctx, agent, 'compaction') is not None
@@ -291,6 +295,8 @@ async def test_canonical_web_command_compaction_and_cold_restart(tmp_path, prese
         await close_web_context(ctx)
     ctx = await web_context(directory)
     try:
+        await ctx.plugin(InvariantRegistry)
+        await ctx.plugin(CompactionInvariantPlugin)
         restored = await ctx.get('sessionController').inspect(identity)
         actual = [event for event in restored['events'] if event['type'].startswith(('command/', 'compaction/'))]
         assert actual == expected

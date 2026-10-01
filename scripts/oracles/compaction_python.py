@@ -12,13 +12,60 @@ from dsh.compaction.engine import CompactionEngine, ManualCompactionError
 from dsh.compaction.transaction import compact
 from dsh.cordis.context import Context
 from dsh.core.abort import AbortController
-from dsh.core.session import SessionPlugin
+from dsh.core.session import SessionPlugin, Session
 from dsh.core.session.json import FrozenDict, FrozenList
 from dsh.llm.token_meter import TokenMeter
 from dsh.llm.llm_service import LLMService
 from dsh.compaction.command_compact import CommandCompactPlugin
 from dsh.interaction.commands import CommandsPlugin
 from dsh.core.agent import Agent
+from dsh.compaction.invariant import CompactionInvariantPlugin
+from dsh.diagnostics.invariants import InvariantRegistry
+
+
+async def invariant(spec):
+    ctx = Context()
+    receipts = []
+    installation = None
+    try:
+        await ctx.plugin(SessionPlugin)
+        session = Session('seed-source') if spec.get('seed') else ctx.get('sessions').create()
+
+        def append(event):
+            return session.append(event['type'], event['data'],
+                surface_op=event.get('surfaceOp'), source_event_seqs=event.get('sourceEventSeqs'))
+
+        for event in spec.get('prefix', []):
+            append(event)
+        if spec.get('seed'):
+            session = ctx.get('sessions').create(seed=session.events)
+        await ctx.plugin(InvariantRegistry)
+        try:
+            await ctx.plugin(CompactionInvariantPlugin)
+        except Exception as error:
+            installation = dict(error=str(error), code=getattr(error, 'code', None))
+        if installation is None:
+            for event in spec['actions']:
+                before = len(session.events)
+                generation = session.surface.replace_generation
+                def veto(_mode, name, args, *extra):
+                    if name == 'session/event':
+                        raise RuntimeError('later dispatch veto')
+                remove = ctx.on('internal/dispatch', veto, global_listener=True) if event.get('veto') else None
+                try:
+                    value = append(event)
+                    receipts.append(dict(accepted=True, seq=value['seq']))
+                except Exception as error:
+                    receipts.append(dict(accepted=False, error=str(error), code=getattr(error, 'code', None),
+                        unchanged=len(session.events) == before and session.surface.replace_generation == generation))
+                finally:
+                    if remove is not None:
+                        remove()
+        events = [{key: value for key, value in event.items() if key != 'time'} for event in session.events]
+        return dict(mode=spec['mode'], installation=installation, receipts=receipts, events=events,
+            generation=session.surface.replace_generation, nodes=list(session.surface.nodes))
+    finally:
+        await ctx.fiber.dispose()
 
 
 async def command(spec):
@@ -191,8 +238,12 @@ async def transaction(spec):
 
 async def observe():
     cases = json.loads((ROOT / 'scripts/oracles/compaction-cases.json').read_text(encoding='utf-8'))
+    cases += json.loads((ROOT / 'scripts/oracles/compaction-invariant-cases.json').read_text(encoding='utf-8'))
     rows = []
     for spec in cases:
+        if spec['kind'] == 'invariant':
+            rows.append(await invariant(spec))
+            continue
         if spec['kind'] == 'command':
             rows.append(await command(spec))
             continue

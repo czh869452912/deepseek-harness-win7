@@ -54,3 +54,31 @@ async def test_disposal_fault_does_not_leave_other_children_granted():
     assert released == [first, second] and registry.children == {}
     await first.fiber.dispose()
     await second.fiber.dispose()
+
+
+@pytest.mark.asyncio
+async def test_release_diagnostics_keep_causes_and_contain_hostile_rendering():
+    registry, first, second = SetupRegistry(), Context(), Context()
+    released = []
+    chained = RuntimeError('release failed')
+    chained.__cause__ = OSError('socket closed')
+    class Hostile(RuntimeError):
+        def __str__(self):
+            raise ValueError('coercion failed')
+    def contribution(child):
+        def release():
+            released.append(child)
+            raise chained if child is first else Hostile()
+        return release
+    dispose = registry.register(contribution)
+    registry.apply(first).commit()
+    registry.apply(second).commit()
+    try:
+        with pytest.raises(SubagentError) as error:
+            dispose()
+        assert error.value.code == 'ACTIVATION_SETUP_RELEASE_FAILED'
+        assert 'release failed: socket closed; <unrenderable value>' in str(error.value)
+        assert released == [first, second] and registry.children == {}
+    finally:
+        await first.fiber.dispose()
+        await second.fiber.dispose()

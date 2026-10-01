@@ -119,6 +119,7 @@ async def test_index_and_observer_failures_are_contained(tmp_path,unrenderable):
     class Unrenderable(Exception):
         def __str__(self):raise RuntimeError('coercion escaped')
     failure=Unrenderable() if unrenderable else ValueError('index failed')
+    if not unrenderable: failure.__cause__=OSError('persistence unavailable')
     async def fail():raise failure
     ctx.get('sessionPersistence').list=fail
     def observer(*args):raise failure
@@ -132,6 +133,8 @@ async def test_index_and_observer_failures_are_contained(tmp_path,unrenderable):
         assert seen==[{'sessionId':'s','error':failure}]
         assert ctx.get('agents').get('s') is None
         assert all(('<unrenderable value>' if unrenderable else 'index failed') in message for message in warnings)
+        if not unrenderable:
+            assert all('index failed: persistence unavailable' in message for message in warnings)
     finally: await ctx.fiber.dispose()
 
 @pytest.mark.asyncio

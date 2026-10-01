@@ -4,6 +4,7 @@ import inspect
 import uuid
 from dsh.core.agent import AgentOptions
 from dsh.session.preparations import observe_queued_abort
+from dsh.llm.error import error_chain
 
 CONFIGURED_AGENT_IDENTITIES_KEY = 'configuredAgentIdentities'
 
@@ -40,10 +41,7 @@ def configured_agents(config, identities=None):
 
 
 def error_text(error):
-    try:
-        return str(error)
-    except BaseException:
-        return '<unrenderable value>'
+    return error_chain(error)
 
 
 class ConfiguredStartup:

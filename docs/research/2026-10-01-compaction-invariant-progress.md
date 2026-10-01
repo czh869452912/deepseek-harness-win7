@@ -91,6 +91,9 @@ Python 3.8 compileall、七个变更 Python 文件的 3.8 AST 解析已通过；
 
 ## 剩余迁移与交付
 
+后续已对齐共享错误链和压缩失败持久化，具体双侧观察及验证范围见
+[错误链进展](2026-10-01-error-chain-progress.md)。下文待办保留为本记录的历史基线。
+
 压缩错误链持久化仍需对齐：原版 region.ts 使用 errorChain(error)，Python transaction
 当前使用 str(error)。完整取消/maintenance/关闭顺序、client 历史展示和浏览器联合
 旅程也须继续审计。通用原版 JS Workflow、动态 JS Host、Inspect、其他未验收模块

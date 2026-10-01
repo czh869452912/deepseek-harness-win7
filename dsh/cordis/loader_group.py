@@ -5,12 +5,15 @@ from typing import Any, Dict, List, Optional
 
 from dsh.cordis.loader_entry import Entry
 from dsh.cordis.plugin import Plugin
+from dsh.cordis.errors import AggregateError, safe_string
 
 
-class LoaderAggregateError(RuntimeError):
+class LoaderAggregateError(AggregateError):
     def __init__(self, errors: List[BaseException], message: str):
-        super().__init__(message + ": " + "; ".join(str(error) for error in errors))
-        self.errors = errors
+        super().__init__(errors, message)
+
+    def __str__(self) -> str:
+        return self.message + ": " + "; ".join(safe_string(error) for error in self.errors)
 
 
 class EntryGroup:

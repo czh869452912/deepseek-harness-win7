@@ -1,0 +1,462 @@
+[
+  {
+    "mode": "error-transaction-manual-transport",
+    "kind": "error-transaction",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "fetch failed",
+        "cause": {
+          "ref": "leaf"
+        }
+      },
+      "leaf": {
+        "type": "error",
+        "message": "connect ECONNREFUSED 127.0.0.1:443"
+      }
+    },
+    "root": "root",
+    "expected": "fetch failed: connect ECONNREFUSED 127.0.0.1:443",
+    "action": "error-graph",
+    "manual": true,
+    "flush": "void"
+  },
+  {
+    "mode": "error-transaction-manual-aggregate",
+    "kind": "error-transaction",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "fetch failed",
+        "cause": {
+          "ref": "members"
+        }
+      },
+      "members": {
+        "type": "aggregate",
+        "message": "",
+        "errors": [
+          {
+            "ref": "ipv6"
+          },
+          {
+            "ref": "ipv4"
+          }
+        ]
+      },
+      "ipv6": {
+        "type": "error",
+        "message": "connect ECONNREFUSED ::1:443"
+      },
+      "ipv4": {
+        "type": "error",
+        "message": "connect ECONNREFUSED 127.0.0.1:443"
+      }
+    },
+    "root": "root",
+    "expected": "fetch failed: AggregateError [connect ECONNREFUSED ::1:443; connect ECONNREFUSED 127.0.0.1:443]",
+    "action": "error-graph",
+    "manual": true,
+    "flush": "void"
+  },
+  {
+    "mode": "error-transaction-manual-diamond",
+    "kind": "error-transaction",
+    "nodes": {
+      "root": {
+        "type": "aggregate",
+        "message": "agg",
+        "errors": [
+          {
+            "ref": "a"
+          },
+          {
+            "ref": "b"
+          }
+        ]
+      },
+      "a": {
+        "type": "error",
+        "message": "a",
+        "cause": {
+          "ref": "shared"
+        }
+      },
+      "b": {
+        "type": "error",
+        "message": "b",
+        "cause": {
+          "ref": "shared"
+        }
+      },
+      "shared": {
+        "type": "error",
+        "message": "shared"
+      }
+    },
+    "root": "root",
+    "expected": "agg [a: shared; b: shared]",
+    "action": "error-graph",
+    "manual": true,
+    "flush": "void"
+  },
+  {
+    "mode": "error-transaction-manual-self",
+    "kind": "error-transaction",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "outer",
+        "cause": {
+          "ref": "root"
+        }
+      }
+    },
+    "root": "root",
+    "expected": "outer: <circular cause>",
+    "action": "error-graph",
+    "manual": true,
+    "flush": "void"
+  },
+  {
+    "mode": "error-transaction-manual-hostile-message",
+    "kind": "error-transaction",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "node",
+        "hostile": [
+          "message"
+        ]
+      }
+    },
+    "root": "root",
+    "expected": "<unrenderable value>",
+    "action": "error-graph",
+    "manual": true,
+    "flush": "void"
+  },
+  {
+    "mode": "error-transaction-manual-hostile-child",
+    "kind": "error-transaction",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "outer",
+        "cause": {
+          "ref": "child"
+        }
+      },
+      "child": {
+        "type": "error",
+        "message": "node",
+        "hostile": [
+          "message"
+        ]
+      }
+    },
+    "root": "root",
+    "expected": "outer: <unrenderable value>",
+    "action": "error-graph",
+    "manual": true,
+    "flush": "void"
+  },
+  {
+    "mode": "error-transaction-manual-duplicate",
+    "kind": "error-transaction",
+    "nodes": {
+      "root": {
+        "type": "harness",
+        "message": "boom",
+        "code": "UNKNOWN",
+        "cause": "boom"
+      }
+    },
+    "root": "root",
+    "expected": "boom",
+    "action": "error-graph",
+    "manual": true,
+    "flush": "void"
+  },
+  {
+    "mode": "error-transaction-manual-null-cause",
+    "kind": "error-transaction",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "",
+        "name": "TypeError",
+        "cause": null
+      }
+    },
+    "root": "root",
+    "expected": "TypeError",
+    "action": "error-graph",
+    "manual": true,
+    "flush": "void"
+  },
+  {
+    "mode": "error-transaction-auto-transport",
+    "kind": "error-transaction",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "fetch failed",
+        "cause": {
+          "ref": "leaf"
+        }
+      },
+      "leaf": {
+        "type": "error",
+        "message": "connect ECONNREFUSED 127.0.0.1:443"
+      }
+    },
+    "root": "root",
+    "expected": "fetch failed: connect ECONNREFUSED 127.0.0.1:443",
+    "action": "error-graph",
+    "manual": false,
+    "flush": "void"
+  },
+  {
+    "mode": "error-transaction-auto-aggregate",
+    "kind": "error-transaction",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "fetch failed",
+        "cause": {
+          "ref": "members"
+        }
+      },
+      "members": {
+        "type": "aggregate",
+        "message": "",
+        "errors": [
+          {
+            "ref": "ipv6"
+          },
+          {
+            "ref": "ipv4"
+          }
+        ]
+      },
+      "ipv6": {
+        "type": "error",
+        "message": "connect ECONNREFUSED ::1:443"
+      },
+      "ipv4": {
+        "type": "error",
+        "message": "connect ECONNREFUSED 127.0.0.1:443"
+      }
+    },
+    "root": "root",
+    "expected": "fetch failed: AggregateError [connect ECONNREFUSED ::1:443; connect ECONNREFUSED 127.0.0.1:443]",
+    "action": "error-graph",
+    "manual": false,
+    "flush": "void"
+  },
+  {
+    "mode": "error-transaction-auto-diamond",
+    "kind": "error-transaction",
+    "nodes": {
+      "root": {
+        "type": "aggregate",
+        "message": "agg",
+        "errors": [
+          {
+            "ref": "a"
+          },
+          {
+            "ref": "b"
+          }
+        ]
+      },
+      "a": {
+        "type": "error",
+        "message": "a",
+        "cause": {
+          "ref": "shared"
+        }
+      },
+      "b": {
+        "type": "error",
+        "message": "b",
+        "cause": {
+          "ref": "shared"
+        }
+      },
+      "shared": {
+        "type": "error",
+        "message": "shared"
+      }
+    },
+    "root": "root",
+    "expected": "agg [a: shared; b: shared]",
+    "action": "error-graph",
+    "manual": false,
+    "flush": "void"
+  },
+  {
+    "mode": "error-transaction-auto-self",
+    "kind": "error-transaction",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "outer",
+        "cause": {
+          "ref": "root"
+        }
+      }
+    },
+    "root": "root",
+    "expected": "outer: <circular cause>",
+    "action": "error-graph",
+    "manual": false,
+    "flush": "void"
+  },
+  {
+    "mode": "error-transaction-auto-hostile-message",
+    "kind": "error-transaction",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "node",
+        "hostile": [
+          "message"
+        ]
+      }
+    },
+    "root": "root",
+    "expected": "<unrenderable value>",
+    "action": "error-graph",
+    "manual": false,
+    "flush": "void"
+  },
+  {
+    "mode": "error-transaction-auto-hostile-child",
+    "kind": "error-transaction",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "outer",
+        "cause": {
+          "ref": "child"
+        }
+      },
+      "child": {
+        "type": "error",
+        "message": "node",
+        "hostile": [
+          "message"
+        ]
+      }
+    },
+    "root": "root",
+    "expected": "outer: <unrenderable value>",
+    "action": "error-graph",
+    "manual": false,
+    "flush": "void"
+  },
+  {
+    "mode": "error-transaction-auto-duplicate",
+    "kind": "error-transaction",
+    "nodes": {
+      "root": {
+        "type": "harness",
+        "message": "boom",
+        "code": "UNKNOWN",
+        "cause": "boom"
+      }
+    },
+    "root": "root",
+    "expected": "boom",
+    "action": "error-graph",
+    "manual": false,
+    "flush": "void"
+  },
+  {
+    "mode": "error-transaction-auto-null-cause",
+    "kind": "error-transaction",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "",
+        "name": "TypeError",
+        "cause": null
+      }
+    },
+    "root": "root",
+    "expected": "TypeError",
+    "action": "error-graph",
+    "manual": false,
+    "flush": "void"
+  },
+  {
+    "mode": "error-transaction-manual-close-failure",
+    "kind": "error-transaction",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "fetch failed",
+        "cause": {
+          "ref": "leaf"
+        }
+      },
+      "leaf": {
+        "type": "error",
+        "message": "connect ECONNREFUSED 127.0.0.1:443"
+      }
+    },
+    "root": "root",
+    "expected": "fetch failed: connect ECONNREFUSED 127.0.0.1:443",
+    "action": "error-graph",
+    "manual": true,
+    "flush": "void",
+    "closeFailure": true
+  },
+  {
+    "mode": "error-transaction-auto-close-failure",
+    "kind": "error-transaction",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "fetch failed",
+        "cause": {
+          "ref": "leaf"
+        }
+      },
+      "leaf": {
+        "type": "error",
+        "message": "connect ECONNREFUSED 127.0.0.1:443"
+      }
+    },
+    "root": "root",
+    "expected": "fetch failed: connect ECONNREFUSED 127.0.0.1:443",
+    "action": "error-graph",
+    "manual": false,
+    "flush": "void",
+    "closeFailure": true
+  },
+  {
+    "mode": "error-transaction-primary-before-flush-failure",
+    "kind": "error-transaction",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "fetch failed",
+        "cause": {
+          "ref": "leaf"
+        }
+      },
+      "leaf": {
+        "type": "error",
+        "message": "connect ECONNREFUSED 127.0.0.1:443"
+      }
+    },
+    "root": "root",
+    "expected": "fetch failed: connect ECONNREFUSED 127.0.0.1:443",
+    "action": "error-graph",
+    "manual": true,
+    "flush": "failure"
+  }
+]

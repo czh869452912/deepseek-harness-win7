@@ -21,6 +21,8 @@ from dsh.core.agent_factory import FactoryTransaction
 from dsh.core.abort import AbortController
 from dsh.core.session.preparation import SessionPreparation
 from dsh.core.configured_agents import ConfiguredStartup, configured_agents, CONFIGURED_AGENT_IDENTITIES_KEY
+from dsh.llm.error import error_chain
+from dsh.llm.llm_service import LlmError
 
 
 def request_proposal(header: Dict[str, Any]) -> Dict[str, Any]:
@@ -662,7 +664,8 @@ class AgentLoopService:
             if agent.is_cancelled():
                 turn_ends = {"kind": "aborted", "reason": agent.take_cancel_cause()}
                 raise
-            turn_ends = {"kind": "error", "error": {"message": str(e), "code": "UNKNOWN"}}
+            turn_ends = {"kind": "error", "error": dict(e.failure) if isinstance(e, LlmError)
+                         else {"message": error_chain(e), "code": "UNKNOWN"}}
             raise
         except asyncio.CancelledError:
             cause = agent.take_cancel_cause() or {"kind": "user"}
@@ -924,7 +927,7 @@ class AgentLoopService:
             raise
         except Exception as e:
             failure_payload = dict(getattr(e, "failure", None) or {
-                "message": str(e),
+                "message": error_chain(e),
                 "code": getattr(e, "code", "UNKNOWN"),
             })
             if await recover_request(failure_payload):

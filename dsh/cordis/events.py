@@ -4,6 +4,7 @@ Supports emit, parallel, serial, bail, and waterfall dispatch modes with interna
 """
 
 from dsh.cordis.awaiting import resume_coroutine as _resume_listener, await_callback_result
+from dsh.cordis.errors import AggregateError as BaseAggregateError, safe_string
 import asyncio
 import concurrent.futures
 import contextvars
@@ -22,12 +23,13 @@ def is_bailed(value: Any) -> bool:
     return value is not None and value is not False
 
 
-class AggregateError(Exception):
+class AggregateError(BaseAggregateError):
     """Aggregated exception raised by parallel dispatch when listeners fail."""
     def __init__(self, errors: List[Exception]):
-        self.errors = errors
-        msg = f"AggregateError ({len(errors)} errors):\n" + "\n".join(f"  - {e}" for e in errors)
-        super().__init__(msg)
+        super().__init__(errors)
+
+    def __str__(self) -> str:
+        return f"AggregateError ({len(self.errors)} errors):\n" + "\n".join("  - " + safe_string(e) for e in self.errors)
 
 
 class Hook:

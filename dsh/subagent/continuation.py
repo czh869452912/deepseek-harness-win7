@@ -11,6 +11,7 @@ from dsh.core.abort import NEVER_ABORTED
 from dsh.core.session import Session
 from dsh.core.notifications import emit_contained
 from dsh.llm.message import create_user_message
+from dsh.llm.error import error_chain
 from dsh.session.preparations import throw_aborted
 from dsh.subagent.composition import child_depth, child_options, child_meta, capture_policy, append_policy, apply_composition
 from dsh.subagent.descriptor import snapshot_descriptor, fold_descriptor
@@ -371,7 +372,7 @@ class ContinuationManager:
                 owner.poke.set()
             self.edge('end', activation, parent, result)
             if failures:
-                done.set_exception(SubagentError('; '.join(str(error) for error in failures), 'ACTIVATION_TEARDOWN_FAILED'))
+                done.set_exception(SubagentError('; '.join(error_chain(error) for error in failures), 'ACTIVATION_TEARDOWN_FAILED'))
             else:
                 done.set_result(None)
         asyncio.create_task(close())
@@ -410,4 +411,4 @@ class ContinuationManager:
         results = await asyncio.gather(*(self.dispose(item) for item in activations), return_exceptions=True)
         failures = [error for error in results if isinstance(error, BaseException)]
         if failures:
-            raise SubagentError('; '.join(str(error) for error in failures), 'ACTIVATION_TEARDOWN_FAILED')
+            raise SubagentError('; '.join(error_chain(error) for error in failures), 'ACTIVATION_TEARDOWN_FAILED')

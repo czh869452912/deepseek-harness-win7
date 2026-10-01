@@ -21,6 +21,8 @@ from dsh.interaction.commands import CommandsPlugin
 from dsh.core.agent import Agent
 from dsh.compaction.invariant import CompactionInvariantPlugin
 from dsh.diagnostics.invariants import InvariantRegistry
+from dsh.llm.error import error_chain
+from scripts.oracles.error_chain_fixtures import build as build_error_graph
 
 
 async def invariant(spec):
@@ -191,6 +193,22 @@ async def transaction(spec):
         if not manual:
             session.append('turn/start', dict(turn=1))
         control, reason, inputs, flushed = AbortController(), RuntimeError('caller stopped'), [], []
+        diagnostic = spec['kind'] == 'error-transaction'
+        graph = build_error_graph(spec) if diagnostic else None
+        closing_error = RuntimeError('close failed')
+        closing_error.cause = graph
+        end_attempts = []
+        if diagnostic:
+            await ctx.plugin(InvariantRegistry)
+            await ctx.plugin(CompactionInvariantPlugin)
+            original_append = session.append
+            def append(kind, *args, **kwargs):
+                if kind == 'compaction/end':
+                    end_attempts.append(True)
+                    if spec.get('closeFailure'):
+                        raise closing_error
+                return original_append(kind, *args, **kwargs)
+            session.append = append
         async def summarize(input, agent, signal):
             if spec.get('action') == 'header':
                 session.append_request_header(dict(config=dict(provider='new', model='new-model'), system='changed prefix'))
@@ -201,6 +219,8 @@ async def transaction(spec):
                 session.append_user_message('outside span')
             if spec.get('action') == 'hook-error':
                 raise ManualCompactionError('busy', 'hook failed')
+            if diagnostic:
+                raise graph
             result = dict(summary=[dict(type='text', text='custom checkpoint')], provider='custom', model='template',
                 rawOutput=[dict(type='text', text='raw')], compactionId='spoofed', sourceCommandId='spoofed',
                 extra='private data')
@@ -222,6 +242,9 @@ async def transaction(spec):
             outcome = {key: result[key] for key in ('shadowedSeqs', 'shadowedTokenCount')}
         except Exception as error:
             outcome = dict(error=True, code=getattr(error, 'code', None), callerReason=error is reason)
+            if diagnostic:
+                outcome.update(rendered=error_chain(error),
+                    sameFailure=(error.cause if manual else error) is (closing_error if spec.get('closeFailure') else graph))
         opening = next(event for event in session.events if event['type'] == 'compaction/start')
         summaries = []
         for event in session.events:
@@ -229,9 +252,16 @@ async def transaction(spec):
                 body = {key: value for key, value in event['data'].items() if key != 'compactionId'}
                 body['sameIdentity'] = event['data']['compactionId'] == opening['data']['compactionId']
                 summaries.append(body)
-        return dict(mode=spec['mode'], inputs=inputs, outcome=outcome, summaries=summaries, flushes=len(flushed),
+        observed = dict(mode=spec['mode'], inputs=inputs, outcome=outcome, summaries=summaries, flushes=len(flushed),
             generation=session.surface.replace_generation, nodes=list(session.surface.nodes),
             events=[dict(type=event['type'], error='error' in event['data']) for event in session.events if event['type'].startswith('compaction/')])
+        if diagnostic:
+            observed.update(endAttempts=len(end_attempts),
+                failedEnds=[dict(error=event['data']['error'], turn=event['data']['turn'],
+                    sourceCommandId=event['data']['sourceCommandId'],
+                    sameIdentity=event['data']['compactionId'] == opening['data']['compactionId'])
+                    for event in session.events if event['type'] == 'compaction/end'])
+        return observed
     finally:
         await ctx.fiber.dispose()
 
@@ -239,15 +269,20 @@ async def transaction(spec):
 async def observe():
     cases = json.loads((ROOT / 'scripts/oracles/compaction-cases.json').read_text(encoding='utf-8'))
     cases += json.loads((ROOT / 'scripts/oracles/compaction-invariant-cases.json').read_text(encoding='utf-8'))
+    cases += json.loads((ROOT / 'scripts/oracles/error-chain-cases.json').read_text(encoding='utf-8'))
+    cases += json.loads((ROOT / 'scripts/oracles/error-transaction-cases.json').read_text(encoding='utf-8'))
     rows = []
     for spec in cases:
+        if spec['kind'] == 'error-chain':
+            rows.append(dict(mode=spec['mode'], rendered=error_chain(build_error_graph(spec))))
+            continue
         if spec['kind'] == 'invariant':
             rows.append(await invariant(spec))
             continue
         if spec['kind'] == 'command':
             rows.append(await command(spec))
             continue
-        if spec['kind'] == 'transaction':
+        if spec['kind'] in ('transaction', 'error-transaction'):
             rows.append(await transaction(spec))
             continue
         if spec['kind'] == 'config':

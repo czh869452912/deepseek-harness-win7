@@ -20,6 +20,7 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Set, Tuple, Un
 import yaml
 
 from dsh.cordis.context import Context
+from dsh.cordis.errors import AggregateError as BaseAggregateError, safe_string
 from dsh.cordis.fiber import Fiber, FiberState
 from dsh.cordis.plugin import Plugin
 from dsh.cordis.service import Service
@@ -915,13 +916,14 @@ class LoaderUpdateError(RuntimeError, ValueError):
         super().__init__(msg)
 
 
-class AggregateError(Exception):
+class AggregateError(BaseAggregateError):
     """Aggregate error containing multiple underlying errors."""
     def __init__(self, errors: List[Any], message: str = ""):
-        self.errors = list(errors)
-        self.message = message
-        err_msgs = ", ".join(str(e) for e in self.errors)
-        super().__init__(f"{message}: [{err_msgs}]" if message else err_msgs)
+        super().__init__(errors, message)
+
+    def __str__(self) -> str:
+        err_msgs = ", ".join(safe_string(e) for e in self.errors)
+        return f"{self.message}: [{err_msgs}]" if self.message else err_msgs
 
 
 def sort_keys(data: Dict[str, Any], prepend: Tuple[str, ...] = ("id", "name"), append: Tuple[str, ...] = ("config",)) -> Dict[str, Any]:

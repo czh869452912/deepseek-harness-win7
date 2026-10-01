@@ -27,6 +27,8 @@ class LlmError(RuntimeError):
                 raise ValueError("LlmError requestId must be a non-empty string")
         super(LlmError, self).__init__(f"[{code}] {message}")
         self.code = code
+        self.message = message
+        self.name = self.__class__.__name__
         self.status = status
         self.providerRetryAfterMs = providerRetryAfterMs
         self.requestId = requestId

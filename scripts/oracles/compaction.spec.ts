@@ -2,7 +2,8 @@ import { it, expect } from 'vitest'
 import { readFile, writeFile } from 'node:fs/promises'
 import { Context } from '@deepseek-ai/cordis'
 import SessionStore, { Session, SessionId } from '@deepseek-ai/dsh-session'
-import { LlmRuntime, LlmAdapter, createUserMessage, createMessage } from '@deepseek-ai/dsh-llm'
+import { LlmRuntime, LlmAdapter, createUserMessage, createMessage, errorChain } from '@deepseek-ai/dsh-llm'
+import { build as buildErrorGraph } from './error_chain_fixtures.ts'
 import TokenMeter from '@deepseek-ai/dsh-token-meter'
 import BasicCompactionEngine from '@deepseek-ai/dsh-compaction-basic'
 import { resolveConfig, resolveTargetPolicy, resolveCompactSpec } from '../../reference/packages/compaction/compaction-basic/src/config.ts'
@@ -134,6 +135,22 @@ async function transaction(spec: any): Promise<any> {
     const reason = new Error('caller stopped')
     const inputs: any[] = []
     let flushes = 0
+    const diagnostic = spec.kind === 'error-transaction'
+    const graph = diagnostic ? buildErrorGraph(spec) : undefined
+    const closingError = new Error('close failed', { cause: graph })
+    let endAttempts = 0
+    if (diagnostic) {
+      await ctx.plugin(InvariantRegistry)
+      await ctx.plugin(compactionInvariant)
+      const original = session.append.bind(session)
+      session.append = ((type: any, ...args: any[]) => {
+        if (type === 'compaction/end') {
+          endAttempts++
+          if (spec.closeFailure) throw closingError
+        }
+        return original(type, ...args)
+      }) as any
+    }
     const summarize = async (input: any, agent: any, signal: any): Promise<any> => {
       if (spec.action === 'header') session.append('request/header', { header: { config: { provider: 'new', model: 'new-model' }, system: 'changed prefix' }, reason: 'initial' })
       inputs.push({ keys: Object.keys(input).sort(), system: input.system,
@@ -141,6 +158,7 @@ async function transaction(spec: any): Promise<any> {
         routed: agent.session.requestHeader().config, sameSignal: signal === control.signal })
       if (spec.action === 'outside') session.append('user/message', createUserMessage({ content: [{ type: 'text', text: 'outside span' }], source: { kind: 'user' } }), { surfaceOp: 'append' })
       if (spec.action === 'hook-error') throw new ManualCompactionError('busy', 'hook failed')
+      if (diagnostic) throw graph
       return { summary: [{ type: 'text', text: 'custom checkpoint' }], provider: 'custom', model: 'template',
         rawOutput: [{ type: 'text', text: 'raw' }], llmStreamCall: spec.marker,
         compactionId: 'spoofed', sourceCommandId: 'spoofed', extra: 'private data',
@@ -156,13 +174,21 @@ async function transaction(spec: any): Promise<any> {
             if (spec.flush !== 'void') throw new Error('flush failed')
           } } }, control.signal)
       outcome = { shadowedSeqs: result.shadowedSeqs, shadowedTokenCount: result.shadowedTokenCount }
-    } catch (error: any) { outcome = { error: true, code: error.code ?? null, callerReason: error === reason } }
+    } catch (error: any) {
+      outcome = { error: true, code: error.code ?? null, callerReason: error === reason }
+      if (diagnostic) Object.assign(outcome, { rendered: errorChain(error),
+        sameFailure: (manual ? error.cause : error) === (spec.closeFailure ? closingError : graph) })
+    }
     const opening = session.events.find(e => e.type === 'compaction/start')!
     const summaries = session.events.filter(e => e.type === 'compaction/summary').map(e => {
       const { compactionId, ...body } = e.data
       return { ...body, sameIdentity: compactionId === opening.data.compactionId }
     })
     return { mode: spec.mode, inputs, outcome, summaries, flushes, generation: session.surface.replaceGeneration,
+      ...diagnostic ? { endAttempts, failedEnds: session.events.filter(e => e.type === 'compaction/end').map(e => ({
+        error: e.data.error, turn: e.data.turn, sourceCommandId: e.data.sourceCommandId,
+        sameIdentity: e.data.compactionId === opening.data.compactionId,
+      })) } : {},
       nodes: session.surface.nodes, events: session.events.filter(e => e.type.startsWith('compaction/')).map(e => ({ type: e.type, error: 'error' in e.data })) }
   } finally { await ctx.fiber.dispose() }
 }
@@ -188,8 +214,14 @@ class Adapter extends LlmAdapter {
 it('observes pinned compaction policies and real routed transactions', async () => {
   const cases = JSON.parse(await readFile('scripts/oracles/compaction-cases.json', 'utf8'))
   cases.push(...JSON.parse(await readFile('scripts/oracles/compaction-invariant-cases.json', 'utf8')))
+  cases.push(...JSON.parse(await readFile('scripts/oracles/error-chain-cases.json', 'utf8')))
+  cases.push(...JSON.parse(await readFile('scripts/oracles/error-transaction-cases.json', 'utf8')))
   const rows: any[] = []
   for (const spec of cases) {
+    if (spec.kind === 'error-chain') {
+      rows.push({ mode: spec.mode, rendered: errorChain(buildErrorGraph(spec)) })
+      continue
+    }
     if (spec.kind === 'invariant') {
       rows.push(await invariant(spec))
       continue
@@ -198,7 +230,7 @@ it('observes pinned compaction policies and real routed transactions', async () 
       rows.push(await command(spec))
       continue
     }
-    if (spec.kind === 'transaction') {
+    if (spec.kind === 'transaction' || spec.kind === 'error-transaction') {
       rows.push(await transaction(spec))
       continue
     }

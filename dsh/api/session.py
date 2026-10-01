@@ -14,6 +14,7 @@ from dsh.attachment.error import AttachmentError
 from dsh.context.time_context.request_zone import browser_time_zone
 from dsh.host.native_command import can_open_path, open_path
 from dsh.llm.message import create_user_message
+from dsh.llm.error import error_chain
 from dsh.presets.preset import UnknownPresetError, PresetMountError
 from dsh.typert.remote import TypertRemoteService, TypertRemoteFailure, Remote
 
@@ -37,7 +38,7 @@ class SessionController(TypertRemoteService):
         ctx.on('session/created', lambda session: ctx.emit('api-session/added', self.list_state.summary_for(session)))
         ctx.on('session/disposed', lambda session: ctx.emit('api-session/removed', session.id))
         ctx.on('agent/status', lambda value: ctx.emit('api-session/status', value['agent'].id, value['status'] == 'running'))
-        ctx.on('agent/error', lambda value: ctx.emit('api-session/error', value['agent'].id, str(value['error'])))
+        ctx.on('agent/error', lambda value: ctx.emit('api-session/error', value['agent'].id, error_chain(value['error'])))
         ctx.on('session/event', self.event)
 
     def event(self, session, event):
@@ -56,7 +57,7 @@ class SessionController(TypertRemoteService):
             try:
                 await self.agents.resolve(observation.header.id, observation)
             except Exception as error:
-                self.ctx.emit('api-session/error', observation.header.id, str(error))
+                self.ctx.emit('api-session/error', observation.header.id, error_chain(error))
             finally:
                 observation.dispose()
         task = asyncio.create_task(activate())

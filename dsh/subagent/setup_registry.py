@@ -2,6 +2,7 @@
 from types import SimpleNamespace
 
 from dsh.subagent.errors import SubagentError
+from dsh.llm.error import error_chain
 
 
 class SetupRegistry:
@@ -75,4 +76,4 @@ class SetupRegistry:
                 failures.append(error)
         if failures:
             raise SubagentError("continuable-subagent setup {} failed to release {} installation(s): {}".format(
-                during, len(failures), "; ".join(str(error) for error in failures)), "ACTIVATION_SETUP_RELEASE_FAILED")
+                during, len(failures), "; ".join(error_chain(error) for error in failures)), "ACTIVATION_SETUP_RELEASE_FAILED")

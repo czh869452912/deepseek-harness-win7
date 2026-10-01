@@ -1,0 +1,517 @@
+[
+  {
+    "mode": "error-chain-transport",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "fetch failed",
+        "cause": {
+          "ref": "leaf"
+        }
+      },
+      "leaf": {
+        "type": "error",
+        "message": "connect ECONNREFUSED 127.0.0.1:443"
+      }
+    },
+    "root": "root",
+    "expected": "fetch failed: connect ECONNREFUSED 127.0.0.1:443"
+  },
+  {
+    "mode": "error-chain-aggregate",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "fetch failed",
+        "cause": {
+          "ref": "members"
+        }
+      },
+      "members": {
+        "type": "aggregate",
+        "message": "",
+        "errors": [
+          {
+            "ref": "ipv6"
+          },
+          {
+            "ref": "ipv4"
+          }
+        ]
+      },
+      "ipv6": {
+        "type": "error",
+        "message": "connect ECONNREFUSED ::1:443"
+      },
+      "ipv4": {
+        "type": "error",
+        "message": "connect ECONNREFUSED 127.0.0.1:443"
+      }
+    },
+    "root": "root",
+    "expected": "fetch failed: AggregateError [connect ECONNREFUSED ::1:443; connect ECONNREFUSED 127.0.0.1:443]"
+  },
+  {
+    "mode": "error-chain-diamond",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "aggregate",
+        "message": "agg",
+        "errors": [
+          {
+            "ref": "a"
+          },
+          {
+            "ref": "b"
+          }
+        ]
+      },
+      "a": {
+        "type": "error",
+        "message": "a",
+        "cause": {
+          "ref": "shared"
+        }
+      },
+      "b": {
+        "type": "error",
+        "message": "b",
+        "cause": {
+          "ref": "shared"
+        }
+      },
+      "shared": {
+        "type": "error",
+        "message": "shared"
+      }
+    },
+    "root": "root",
+    "expected": "agg [a: shared; b: shared]"
+  },
+  {
+    "mode": "error-chain-self",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "outer",
+        "cause": {
+          "ref": "root"
+        }
+      }
+    },
+    "root": "root",
+    "expected": "outer: <circular cause>"
+  },
+  {
+    "mode": "error-chain-mutual",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "outer",
+        "cause": {
+          "ref": "inner"
+        }
+      },
+      "inner": {
+        "type": "error",
+        "message": "inner",
+        "cause": {
+          "ref": "root"
+        }
+      }
+    },
+    "root": "root",
+    "expected": "outer: inner: <circular cause>"
+  },
+  {
+    "mode": "error-chain-aggregate-self",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "aggregate",
+        "message": "agg",
+        "errors": [
+          {
+            "ref": "root"
+          },
+          "plain"
+        ]
+      }
+    },
+    "root": "root",
+    "expected": "agg [<circular cause>; plain]"
+  },
+  {
+    "mode": "error-chain-same-primitive-twice",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "aggregate",
+        "message": "agg",
+        "errors": [
+          "same",
+          "same"
+        ]
+      }
+    },
+    "root": "root",
+    "expected": "agg [same; same]"
+  },
+  {
+    "mode": "error-chain-duplicate",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "harness",
+        "message": "boom",
+        "code": "UNKNOWN",
+        "cause": "boom"
+      }
+    },
+    "root": "root",
+    "expected": "boom"
+  },
+  {
+    "mode": "error-chain-empty-cause",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "outer",
+        "cause": ""
+      }
+    },
+    "root": "root",
+    "expected": "outer"
+  },
+  {
+    "mode": "error-chain-null-cause",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "",
+        "name": "TypeError",
+        "cause": null
+      }
+    },
+    "root": "root",
+    "expected": "TypeError"
+  },
+  {
+    "mode": "error-chain-empty-aggregate",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "aggregate",
+        "message": "all failed",
+        "errors": []
+      }
+    },
+    "root": "root",
+    "expected": "all failed"
+  },
+  {
+    "mode": "error-chain-own-message",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "plain",
+        "message": "structured provider failure"
+      }
+    },
+    "root": "root",
+    "expected": "structured provider failure"
+  },
+  {
+    "mode": "error-chain-own-empty-message",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "plain",
+        "message": ""
+      }
+    },
+    "root": "root",
+    "expected": ""
+  },
+  {
+    "mode": "error-chain-inherited-message",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "plain",
+        "inheritedMessage": "must not read"
+      }
+    },
+    "root": "root",
+    "expected": "[object Object]"
+  },
+  {
+    "mode": "error-chain-plain-getter",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "plain",
+        "hostile": [
+          "message"
+        ]
+      }
+    },
+    "root": "root",
+    "expected": "[object Object]"
+  },
+  {
+    "mode": "error-chain-plain-number-message",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "plain",
+        "message": 42
+      }
+    },
+    "root": "root",
+    "expected": "[object Object]"
+  },
+  {
+    "mode": "error-chain-coercion",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "plain",
+        "coercion": "throw"
+      }
+    },
+    "root": "root",
+    "expected": "<unrenderable value>"
+  },
+  {
+    "mode": "error-chain-coercion-primitive",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "plain",
+        "coercion": "primitive",
+        "value": 42
+      }
+    },
+    "root": "root",
+    "expected": "42"
+  },
+  {
+    "mode": "error-chain-coercion-valueof",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "plain",
+        "coercion": "object",
+        "valueOf": "fallback"
+      }
+    },
+    "root": "root",
+    "expected": "fallback"
+  },
+  {
+    "mode": "error-chain-coercion-no-primitive",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "plain",
+        "coercion": "object"
+      }
+    },
+    "root": "root",
+    "expected": "<unrenderable value>"
+  },
+  {
+    "mode": "error-chain-hostile-message",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "node",
+        "hostile": [
+          "message"
+        ]
+      }
+    },
+    "root": "root",
+    "expected": "<unrenderable value>"
+  },
+  {
+    "mode": "error-chain-hostile-name",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "",
+        "hostile": [
+          "name"
+        ]
+      }
+    },
+    "root": "root",
+    "expected": "<unrenderable value>"
+  },
+  {
+    "mode": "error-chain-hostile-cause",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "node",
+        "hostile": [
+          "cause"
+        ]
+      }
+    },
+    "root": "root",
+    "expected": "<unrenderable value>"
+  },
+  {
+    "mode": "error-chain-hostile-errors",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "aggregate",
+        "message": "agg",
+        "errors": [],
+        "hostile": [
+          "errors"
+        ]
+      }
+    },
+    "root": "root",
+    "expected": "<unrenderable value>"
+  },
+  {
+    "mode": "error-chain-hostile-child",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "outer",
+        "cause": {
+          "ref": "child"
+        }
+      },
+      "child": {
+        "type": "error",
+        "message": "node",
+        "hostile": [
+          "message"
+        ]
+      }
+    },
+    "root": "root",
+    "expected": "outer: <unrenderable value>"
+  },
+  {
+    "mode": "error-chain-unused-name",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "visible",
+        "hostile": [
+          "name"
+        ]
+      }
+    },
+    "root": "root",
+    "expected": "visible"
+  },
+  {
+    "mode": "error-chain-array",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "value",
+        "value": [
+          1,
+          null,
+          true,
+          [
+            "nested",
+            false
+          ],
+          {}
+        ]
+      }
+    },
+    "root": "root",
+    "expected": "1,,true,nested,false,[object Object]"
+  },
+  {
+    "mode": "error-chain-undefined",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "value",
+        "special": "undefined"
+      }
+    },
+    "root": "root",
+    "expected": "undefined"
+  },
+  {
+    "mode": "error-chain-null",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "value",
+        "value": null
+      }
+    },
+    "root": "root",
+    "expected": "null"
+  },
+  {
+    "mode": "error-chain-boolean",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "value",
+        "value": false
+      }
+    },
+    "root": "root",
+    "expected": "false"
+  },
+  {
+    "mode": "error-chain-number",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "value",
+        "value": 1e+21
+      }
+    },
+    "root": "root",
+    "expected": "1e+21"
+  },
+  {
+    "mode": "error-chain-unicode",
+    "kind": "error-chain",
+    "nodes": {
+      "root": {
+        "type": "error",
+        "message": "外层 😀",
+        "cause": {
+          "ref": "inner"
+        }
+      },
+      "inner": {
+        "type": "error",
+        "message": "底层原因"
+      }
+    },
+    "root": "root",
+    "expected": "外层 😀: 底层原因"
+  }
+]

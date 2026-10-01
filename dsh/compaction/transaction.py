@@ -3,6 +3,7 @@ import asyncio
 import uuid
 
 from dsh.core.cancellation import aborted
+from dsh.llm.error import error_chain
 from dsh.compaction.tool_pairing import tool_pairing_balanced_before, tool_pairing_balanced_after
 
 
@@ -124,7 +125,7 @@ async def compact(engine, session, start, end, agent=None, signal=None,
         if not closing:
             closing = True
             try:
-                session.append("compaction/end", dict(lifecycle, error=str(error)))
+                session.append("compaction/end", dict(lifecycle, error=error_chain(error)))
                 closed = True
             except Exception as close_error:
                 failure, stage = close_error, "commit"

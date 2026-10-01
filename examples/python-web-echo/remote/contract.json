@@ -1,0 +1,23 @@
+{
+  "package": "@example/python-web-echo",
+  "face": "host",
+  "schemas": [],
+  "model": {"services": [], "events": [], "objects": []},
+  "invocations": [{
+    "id": "@example/python-web-echo#pythonWebEcho.echo",
+    "service": "pythonWebEcho",
+    "namespace": "pythonWebEcho",
+    "method": "echo",
+    "invocation": {"kind": "direct"},
+    "parameters": [{
+      "name": "text", "wire": "text", "source": "json",
+      "codec": {"mode": "strict", "typeSymbol": "@example/python-web-echo#Text", "schema": {"type": "string"}}
+    }],
+    "result": {
+      "mode": "strict", "typeSymbol": "@example/python-web-echo#EchoResult",
+      "schema": {"type": "object", "properties": {
+        "text": {"type": "string"}, "calls": {"type": "integer"}, "version": {"type": "string"}
+      }, "required": ["text", "calls", "version"], "additionalProperties": false}
+    }
+  }]
+}

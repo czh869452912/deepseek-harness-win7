@@ -87,7 +87,8 @@ def copy_source(source, target):
         if os.path.isfile(descriptor_path):
             with open(descriptor_path, encoding='utf-8') as stream:
                 descriptor = json.load(stream)
-        if isinstance(descriptor, dict) and isinstance(descriptor.get('dsh'), dict) and 'sourceExport' in descriptor['dsh']:
+        if (isinstance(descriptor, dict) and isinstance(descriptor.get('dsh'), dict) and
+                any(key in descriptor['dsh'] for key in ('sourceExport', 'release'))):
             from dsh.boot.python_plugin_export import release_files
             _, entries = release_files(source)
         else:
@@ -135,7 +136,7 @@ def copy_source(source, target):
 
 def validate_package(directory):
     manifest = validate_sources(directory)
-    if 'sourceExport' in manifest.get('dsh', {}):
+    if any(key in manifest.get('dsh', {}) for key in ('sourceExport', 'release')):
         from dsh.boot.python_plugin_export import release_files
         _, entries = release_files(directory)
         expected = {relative for relative, _ in entries}

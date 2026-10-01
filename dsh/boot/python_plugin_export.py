@@ -137,9 +137,10 @@ async def export_project(ctx, args, execution):
 def release_files(project):
     """Validate the explicit project release set without executing source."""
     manifest = read_descriptor(project)[0]
-    release = manifest.get('dsh', {}).get('sourceExport', {}).get('files')
+    dsh = manifest['dsh']
+    release = dsh.get('sourceExport', dsh.get('release', {})).get('files')
     if not isinstance(release, list) or not release or len(set(release)) != len(release):
-        raise ValueError('pack requires an explicit dsh.sourceExport.files release list')
+        raise ValueError('pack requires an explicit dsh.sourceExport.files or dsh.release.files release list')
     entries, seen, total = [], set(), 0
     if reparse(project):
         raise ValueError('source project must not be a link or junction')
@@ -160,12 +161,15 @@ def release_files(project):
         if len(entries) >= MAX_FILES or total > MAX_BYTES:
             raise ValueError('release exceeds installation size limits')
         entries.append((relative, path))
-    required = {'package.json', EXPORT_RECORD, manifest['dsh']['bundle']['patch'], 'README.md', 'LICENSE'}
+    required = {'package.json', dsh['bundle']['patch'], 'README.md', 'LICENSE'}
+    if 'sourceExport' in dsh:
+        required.add(dsh['sourceExport']['record'])
+    required.update(dsh.get('webArtifacts', {}).get('files', {}))
     for root, dirs, files in os.walk(inside(project, manifest['dsh']['python']['sourceRoot'])):
         dirs[:] = [name for name in dirs if name != '__pycache__']
         required.update(os.path.relpath(os.path.join(root, file), project).replace('\\', '/') for file in files if file.endswith('.py'))
     if not required.issubset(release):
-        raise ValueError('release list omits required descriptor, source, README or LICENSE files')
+        raise ValueError('release list omits required descriptor, source, Web artifacts, README or LICENSE files')
     validate_sources(project)
     return manifest, entries
 

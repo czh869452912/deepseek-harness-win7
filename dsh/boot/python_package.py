@@ -75,7 +75,19 @@ def read_descriptor(directory):
     if any(manifest.get(key) for key in ("dependencies", "optionalDependencies", "peerDependencies")):
         raise ValueError("external package dependencies are not supported by this installer")
     source_export = dsh.get('sourceExport')
-    if source_export is not None:
+    release = dsh.get('release')
+    if 'release' in dsh:
+        if 'sourceExport' in dsh:
+            raise ValueError('choose exactly one release descriptor: release or sourceExport')
+        if (not isinstance(release, dict) or set(release) != {'formatVersion', 'files'} or
+                type(release['formatVersion']) is not int or release['formatVersion'] != 1):
+            raise ValueError('invalid dsh.release descriptor')
+        if (not isinstance(release['files'], list) or not release['files'] or
+                any(type(item) is not str for item in release['files'])):
+            raise ValueError('dsh.release.files must be a nonempty array of relative paths')
+        for item in release['files']:
+            inside(directory, item)
+    if 'sourceExport' in dsh:
         if not isinstance(source_export, dict) or set(source_export) != {'record', 'files'}:
             raise ValueError('invalid sourceExport descriptor')
         release = source_export['files']
@@ -110,6 +122,8 @@ def read_descriptor(directory):
     patch = inside(directory, bundle["patch"])
     if not os.path.isfile(patch):
         raise ValueError("bundle patch is missing")
+    from dsh.boot.python_web_artifacts import validate_web_artifacts
+    validate_web_artifacts(directory, manifest)
     return manifest, source, module, export, path
 
 

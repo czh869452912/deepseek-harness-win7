@@ -1,0 +1,3 @@
+- insert:
+    - id: example-python-web-echo
+      name: '@example/python-web-echo'

@@ -12,6 +12,11 @@
 
 后续源码版本升级/回退已有实施；创造模式指定版本导出、显式发行文件集、Host/用户预设装配及实际安装重启验证见 [源码项目交付记录](2026-10-01-python-plugin-source-export-progress.md)。下文历史基线不据此改写，Client、依赖闭包、多来源获取与最终发行仍须分别验收。
 
+预编译 Client / Python Remote 联合插件的原生打包、安装、浏览器调用及升级回退见
+[Web 联合交付记录](2026-10-01-python-plugin-web-delivery-progress.md)。原版 HMR 的
+boot graph 保留至页面刷新，卸载后旧 Client 调用必须被 Host 拒绝；依赖闭包、
+通用动态 Client 导出和最终发行仍未由此完成。
+
 ## 1. 结论
 
 建议采用 **Python Host 插件为主体、Web 客户端资源可选、统一包描述与 Cordis 装配** 的路线。

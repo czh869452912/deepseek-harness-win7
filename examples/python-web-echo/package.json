@@ -1,0 +1,62 @@
+{
+  "name": "@example/python-web-echo",
+  "version": "1.0.0",
+  "license": "MIT",
+  "exports": {
+    "./client": "./client/client.js",
+    "./typert": "./remote/typert.py"
+  },
+  "dsh": {
+    "release": {
+      "formatVersion": 1,
+      "files": [
+        "package.json",
+        "cordis.patch.yml",
+        "LICENSE",
+        "README.md",
+        "python/web_echo/plugin.py",
+        "src/client.js",
+        "client/client.js",
+        "client/client.js.map",
+        "remote/contract.json",
+        "remote/typert.py"
+      ]
+    },
+    "bundle": {
+      "patch": "cordis.patch.yml"
+    },
+    "python": {
+      "apiVersion": 1,
+      "sourceRoot": "python",
+      "entry": "web_echo.plugin:WebEchoPlugin",
+      "minPythonVersion": [
+        3,
+        8,
+        10
+      ],
+      "minHostVersion": [
+        0,
+        1,
+        0
+      ],
+      "dependencies": []
+    },
+    "client": {
+      "platform": "web",
+      "inject": [],
+      "external": [
+        "react"
+      ]
+    },
+    "webArtifacts": {
+      "formatVersion": 1,
+      "targetUpstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+      "files": {
+        "client/client.js": "791af5c0f15c1068e23aede011688485b69cea7f829d9b8e8c412def0c8b475e",
+        "client/client.js.map": "c8a3c14ffd2f443f39928c61855a7c16bbc00913f3129054d4fdb140547a3ee6",
+        "remote/contract.json": "9d56a432b102f485742cd52b85bf32dfe886ecbd2058af0bfacb5efb9741e8ff",
+        "remote/typert.py": "f66b060edf910e6aba41ed418da85b7b92e317683c227cbcc6547015bf3107d2"
+      }
+    }
+  }
+}

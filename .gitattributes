@@ -2,6 +2,7 @@
 # Snapshot bytes are compared with pinned upstream goldens on Windows too.
 snapshots/** -text
 apps/web/dist/** -text
+examples/python-web-echo/** text eol=lf
 
 # Evidence hashes must survive checkout on Windows and POSIX.
 migration/** text eol=lf

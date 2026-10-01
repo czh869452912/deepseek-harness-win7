@@ -1,0 +1,217 @@
+/** Real original-browser installed Python/Client/Remote package journey. */
+import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { basename, dirname, join, resolve } from 'node:path';
+import { createInterface } from 'node:readline';
+import { fileURLToPath } from 'node:url';
+
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const options = Object.fromEntries(process.argv.slice(2).reduce((pairs, value, i, args) => {
+  if (value.startsWith('--')) pairs.push([value.slice(2), args[i + 1]]); return pairs;
+}, []));
+if (!options.browser || !options.output) throw new Error('Use --browser <Chromium> --output <report.json>');
+const output = resolve(options.output);
+await mkdir(dirname(output), { recursive: true });
+const privateBrowser = await mkdtemp(join(tmpdir(), 'dsh-web-package-cdp-'));
+const report = { kind: 'original-browser/installed-python-web-package', steps: [], errors: [], consoleErrors: [], requests: [], replies: [], sockets: [] };
+let browser, host, cdp, hostErrors = '', nextCommand = 1;
+const pending = new Map();
+const replyJobs = new Set();
+const delay = ms => new Promise(done => setTimeout(done, ms));
+async function until(read, label, timeout = 20000) {
+  const end = Date.now() + timeout;
+  while (Date.now() < end) { const value = await read(); if (value) return value; await delay(100); }
+  throw new Error('Timed out: ' + label);
+}
+class CDP {
+  constructor(socket) {
+    this.socket = socket; this.next = 1; this.pending = new Map(); this.listeners = [];
+    socket.addEventListener('message', event => {
+      const message = JSON.parse(event.data);
+      if (message.id) {
+        const call = this.pending.get(message.id);
+        if (call) { this.pending.delete(message.id); clearTimeout(call.timer); message.error ? call.reject(new Error(JSON.stringify(message.error))) : call.resolve(message.result); }
+      } else for (const listener of this.listeners) listener(message);
+    });
+  }
+  async call(method, params = {}) {
+    const id = this.next++;
+    return await new Promise((yes, no) => {
+      const timer = setTimeout(() => { this.pending.delete(id); no(new Error('CDP timeout: ' + method)); }, 15000);
+      this.pending.set(id, { resolve: yes, reject: no, timer }); this.socket.send(JSON.stringify({ id, method, params }));
+    });
+  }
+  async evaluate(expression) {
+    const result = await this.call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
+    if (result.exceptionDetails) throw new Error(JSON.stringify(result.exceptionDetails));
+    return result.result.value;
+  }
+}
+async function command(command) {
+  const id = nextCommand++;
+  return await new Promise((yes, no) => {
+    const timer = setTimeout(() => { pending.delete(id); no(new Error('Host timeout: ' + command)); }, 30000);
+    pending.set(id, { yes, no, timer }); host.stdin.write(JSON.stringify({ id, command }) + '\n');
+  });
+}
+const count = selector => cdp.evaluate(`document.querySelectorAll(${JSON.stringify(selector)}).length`);
+async function click(selector) {
+  const point = await until(() => cdp.evaluate(`(() => {const e=document.querySelector(${JSON.stringify(selector)}); if(!e) return false; const r=e.getBoundingClientRect(),x=r.x+r.width/2,y=r.y+r.height/2; return r.width && e.contains(document.elementFromPoint(x,y)) && {x,y};})()`), selector);
+  await cdp.call('Input.dispatchMouseEvent', { type: 'mousePressed', ...point, button: 'left', clickCount: 1 });
+  await cdp.call('Input.dispatchMouseEvent', { type: 'mouseReleased', ...point, button: 'left', clickCount: 1 });
+}
+async function open(boot, present = true) {
+  await cdp.call('Page.navigate', { url: boot.url });
+  await until(() => count('[class*="frame"]'), 'original application shell', 30000);
+  // Dismiss the original first-use notice through its actual visible control.
+  const notice = '[role="dialog"][aria-label="Internal Testing Notice"]';
+  if (!report.noticeDismissed) await until(() => count(notice), 'original first-use notice');
+  if (await count(notice)) {
+    await click(notice + ' button');
+    await until(async () => !await count(notice), 'notice dismissed');
+    report.noticeDismissed = true;
+  }
+  if (present) await until(() => count('[data-python-web-echo]'), 'installed Client automatic activation');
+  else { await delay(500); assert.equal(await count('[data-python-web-echo]'), 0); }
+}
+async function echo(version, calls) {
+  await click('[data-python-web-echo-call]');
+  const value = await until(() => cdp.evaluate(`(() => {try {const text=document.querySelector('[data-python-web-echo-result]')?.textContent; const value=JSON.parse(text); return value.ok && value.value.calls === ${calls} && value.value.version === ${JSON.stringify(version)} && text;} catch {return false;}})()`), 'Client Remote reply');
+  assert.deepEqual(JSON.parse(value), { ok: true, value: { text: 'Python Web echo: 中文 portable', calls, version } });
+  assert.equal((await command('snapshot')).calls, calls);
+  report.steps.push({ step: `original-client-strict-remote-${version}-call-${calls}`, passed: true });
+}
+async function transition(operation, version, present = true) {
+  await cdp.call('Page.navigate', { url: 'about:blank' });
+  await until(() => cdp.evaluate('location.href === "about:blank"'), 'close old page before Host shutdown');
+  const boot = await command(operation);
+  assert.equal(boot.calls, present ? 0 : null);
+  assert.equal(boot.descriptor, present);
+  assert.equal(boot.graph.entries.some(row => row.id === '@example/python-web-echo'), present);
+  await open(boot, present);
+  if (present) await echo(version, 1);
+  report.steps.push({ step: operation + '-from-installed-package', passed: true });
+}
+try {
+  const inputs = JSON.parse(await readFile(join(root, 'scripts/frontend-inputs.json'), 'utf8'));
+  for (const row of inputs.files) assert.equal(createHash('sha256').update(await readFile(join(root, row.path))).digest('hex'), row.sha256, row.path);
+  report.target_upstream = inputs.target_upstream;
+  report.frontendInputCount = inputs.files.length;
+  report.inputSha256 = {};
+  for (const path of ['scripts/python_web_plugin_browser_oracle.mjs', 'scripts/python_web_plugin_host_fixture.py',
+    'dsh/boot/python_web_artifacts.py', 'dsh/plugin_api.py', 'dsh/plugin_remote.py',
+    'dsh/boot/python_package.py', 'dsh/boot/python_plugin_export.py', 'dsh/boot/python_plugins.py',
+    'scripts/build_python_web_example.py', 'tests/test_python_web_plugin.py',
+    'examples/python-web-echo/package.json', 'examples/python-web-echo/python/web_echo/plugin.py',
+    'examples/python-web-echo/client/client.js', 'examples/python-web-echo/client/client.js.map',
+    'examples/python-web-echo/remote/typert.py', 'examples/python-web-echo/remote/contract.json']) {
+    report.inputSha256[path] = createHash('sha256').update(await readFile(join(root, path))).digest('hex');
+  }
+  let readyYes, readyNo;
+  const ready = new Promise((yes, no) => { readyYes = yes; readyNo = no; });
+  const readyTimer = setTimeout(() => readyNo(new Error('Host startup timed out')), 30000);
+  host = spawn(join(root, '.venv/Scripts/python.exe'), ['-u', join(root, 'scripts/python_web_plugin_host_fixture.py')], { cwd: root, windowsHide: true });
+  host.stderr.on('data', data => { hostErrors += data; });
+  host.on('error', readyNo);
+  host.on('exit', code => { readyNo(new Error('Host exited: ' + code)); });
+  createInterface({ input: host.stdout }).on('line', line => {
+    if (!line.startsWith('DSH_WEB_PACKAGE ')) return;
+    const message = JSON.parse(line.slice('DSH_WEB_PACKAGE '.length));
+    if (message.ready) { readyYes(message.value); return; }
+    const task = pending.get(message.id);
+    if (task) { pending.delete(message.id); clearTimeout(task.timer); message.ok ? task.yes(message.value) : task.no(new Error(message.error)); }
+  });
+  const boot = await ready.finally(() => clearTimeout(readyTimer));
+  report.python = boot.python;
+  assert.equal(boot.python, '3.8.10'); assert.equal(boot.descriptor, true); assert.equal(boot.calls, 0);
+  browser = spawn(resolve(options.browser), ['--headless', '--no-sandbox', '--disable-gpu', '--remote-debugging-port=0', `--user-data-dir=${privateBrowser}`, '--lang=en-US', 'about:blank'], { windowsHide: true });
+  const port = await until(async () => { try { return (await readFile(join(privateBrowser, 'DevToolsActivePort'), 'utf8')).split('\n')[0]; } catch { return false; } }, 'browser port');
+  const target = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find(row => row.type === 'page');
+  const socket = new WebSocket(target.webSocketDebuggerUrl);
+  await new Promise((yes, no) => { socket.addEventListener('open', yes, { once: true }); socket.addEventListener('error', no, { once: true }); });
+  cdp = new CDP(socket);
+  const requests = new Map();
+  cdp.listeners.push(message => {
+    if (message.method === 'Runtime.exceptionThrown') report.errors.push(message.params.exceptionDetails);
+    if (message.method === 'Runtime.consoleAPICalled' && message.params.type === 'error') report.consoleErrors.push(message.params.args.map(value => value.value ?? value.description));
+    if (message.method === 'Network.webSocketCreated') report.sockets.push(new URL(message.params.url).pathname);
+    if (message.method === 'Network.webSocketFrameSent') {
+      try {
+        const frame = JSON.parse(message.params.response.payloadData);
+        if (frame.type === 'client-request' && frame.method === 'pythonWebEcho/echo') requests.set(frame.rpcId, frame);
+      } catch {}
+    }
+    if (message.method === 'Network.webSocketFrameReceived') {
+      try {
+        const frame = JSON.parse(message.params.response.payloadData);
+        if (frame.type === 'server-response' && requests.has(frame.rpcId)) {
+          report.replies.push({request: requests.get(frame.rpcId), response: frame}); requests.delete(frame.rpcId);
+        }
+      } catch {}
+    }
+    if (message.method === 'Network.requestWillBeSent' && message.params.request.method === 'POST' && new URL(message.params.request.url).pathname.endsWith('/pythonWebEcho/echo')) {
+      const args = JSON.parse(message.params.request.postData);
+      requests.set(message.params.requestId, args);
+    }
+    if (message.method === 'Network.loadingFinished' && requests.has(message.params.requestId)) {
+      const args = requests.get(message.params.requestId); requests.delete(message.params.requestId);
+      const job = cdp.call('Network.getResponseBody', { requestId: message.params.requestId }).then(result => {
+        report.replies.push({ request: args, response: JSON.parse(result.base64Encoded ? Buffer.from(result.body, 'base64').toString('utf8') : result.body) });
+      }).catch(error => report.errors.push(String(error))).finally(() => replyJobs.delete(job)); replyJobs.add(job);
+    }
+    if (message.method === 'Network.loadingFailed' && !message.params.canceled) report.requests.push(message.params.errorText);
+  });
+  await cdp.call('Runtime.enable'); await cdp.call('Page.enable'); await cdp.call('Network.enable');
+  await cdp.call('Emulation.setDeviceMetricsOverride', { width: 1680, height: 1000, deviceScaleFactor: 1, mobile: false });
+  await open(boot); await echo('1.0.0', 1);
+  await cdp.call('Page.reload', { ignoreCache: true });
+  await until(() => cdp.evaluate('document.querySelector("[data-python-web-echo-result]")?.textContent === "ready"'), 'fresh Client after page reload');
+  await echo('1.0.0', 2);
+  report.steps.push({ step: 'page-refresh-restores-client-with-host-retained', passed: true });
+  const unloaded = await command('unload');
+  assert.equal(unloaded.calls, null); assert.equal(unloaded.descriptor, false); assert.equal(unloaded.seen, true);
+  assert.equal(unloaded.graph.entries.some(row => row.id === '@example/python-web-echo'), false);
+  // The pinned HMR deliberately keeps the initial boot graph until page reload.
+  assert.equal(await count('[data-python-web-echo]'), 1);
+  await click('[data-python-web-echo-call]');
+  const rejected = await until(() => cdp.evaluate(`(() => {try {const value=JSON.parse(document.querySelector('[data-python-web-echo-result]')?.textContent); return value.ok === false && value;} catch {return false;}})()`), 'retained Client rejected after Host withdrawal');
+  assert.match(JSON.stringify(rejected), /strict definition was withdrawn/);
+  assert.equal((await command('snapshot')).calls, null);
+  report.steps.push({ step: 'host-unload-withdraws-strict-remote-retained-client-call-rejected', passed: true });
+  await cdp.call('Page.reload', {ignoreCache: true});
+  await until(async () => !await count('[data-python-web-echo]') && await count('[class*="frame"]'), 'page reload reads graph without unloaded Client');
+  report.steps.push({ step: 'page-refresh-removes-unloaded-client-from-original-boot-graph', passed: true });
+  await transition('restart', '1.0.0');
+  await transition('upgrade', '2.0.0');
+  await transition('rollback', '1.0.0');
+  await transition('remove', undefined, false);
+  await Promise.all([...replyJobs]);
+  assert.equal(report.replies.length, 6);
+  for (const reply of report.replies) {
+    assert.deepEqual(reply.request.payload, {args: {text: '中文 portable'}});
+    assert.equal(reply.request.method, 'pythonWebEcho/echo');
+  }
+  assert.equal(report.replies.filter(reply => reply.response.result.ok).length, 5);
+  assert.equal(report.replies.filter(reply => !reply.response.result.ok).length, 1);
+  assert.deepEqual(report.errors, []); assert.deepEqual(report.consoleErrors, []); assert.deepEqual(report.requests, []);
+  assert.ok(report.sockets.includes('/api/remote.mux'));
+  for (const [path, digest] of Object.entries(report.inputSha256)) assert.equal(createHash('sha256').update(await readFile(join(root, path))).digest('hex'), digest);
+  report.passed = true;
+} catch (error) {
+  report.passed = false; report.failure = String(error.stack ?? error);
+  if (cdp) { try { report.pageText = await cdp.evaluate('document.body.innerText'); } catch {} }
+} finally {
+  if (browser?.exitCode === null) { try { await cdp?.call('Browser.close'); await until(() => browser.exitCode !== null, 'browser closed'); } catch { browser.kill(); } }
+  if (host?.exitCode === null) { try { await command('shutdown'); await until(() => host.exitCode !== null, 'Host closed'); } catch { host.kill(); } }
+  cdp?.socket.close();
+  report.hostErrors = hostErrors.replace(/token=[^\s]+/g, 'token=[redacted]'); report.hostExitCode = host?.exitCode;
+  if (report.passed && (report.hostErrors || report.hostExitCode !== 0)) { report.passed = false; report.failure = 'Host teardown failed'; }
+  assert.equal(resolve(dirname(privateBrowser)), resolve(tmpdir())); assert.ok(basename(privateBrowser).startsWith('dsh-web-package-cdp-'));
+  await rm(privateBrowser, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  await writeFile(output, JSON.stringify(report, null, 2) + '\n', 'utf8');
+}
+console.log(JSON.stringify({ passed: report.passed, steps: report.steps.length, output, failure: report.failure }));
+if (!report.passed) process.exitCode = 1;

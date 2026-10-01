@@ -16,7 +16,8 @@ from dsh.boot.python_package import validate_sources
 from dsh.core.abort import NEVER_ABORTED
 from dsh.extensions.packaged_host import host_handler_service, host_remote_namespace, python_host_source
 from dsh.typert.dispatch import RemoteDispatcher, TypertGatewayError
-from scripts.python_export_client_fixture import NAME, HOST_SOURCE, CLIENT_SOURCE, export_project_at
+from scripts.python_export_client_fixture import (NAME, HOST_SOURCE, CLIENT_SOURCE, export_project_at,
+    install_session_presets, create_session_fixture)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -75,10 +76,50 @@ async def test_owned_export_native_build_pack_install_unload_restart(tmp_path, m
 
 
 @pytest.mark.asyncio
-async def test_build_rejects_session_placement_without_promoting_host(tmp_path):
+async def test_session_build_routes_to_independent_presets_without_promoting_host(tmp_path, monkeypatch):
     project, _ = await export_project_at(tmp_path, placement='session')
+    assert cli.run_plugin('web', ['build', str(project)]) == 0
+    home = tmp_path / 'installed-home'
+    monkeypatch.setenv('DSH_HOME', str(home))
+    assert cli.run_plugin('web', ['pack', str(project), str(tmp_path / 'session.zip')]) == 0
+    assert cli.run_plugin('web', ['add', str(tmp_path / 'session.zip')]) == 0
+    install_session_presets(home, project)
+    for generation in range(2):
+        ctx = await web_context(home)
+        try:
+            assert ctx.get(host_handler_service(NAME)) is None
+            assert NAME in {row['id'] for row in ctx.clientModules.graph()['entries']}
+            await create_session_fixture(ctx, tmp_path)
+            async def invoke(sid, method, args):
+                return await RemoteDispatcher(ctx).invoke(dict(namespace=host_remote_namespace(NAME),
+                    method='call', args=dict(agentId=sid, method=method, args=args), signal=NEVER_ABORTED))
+            for sid, expected in (('python-session-a', 1), ('python-session-a', 2),
+                                  ('python-session-b', 1), ('python-session-shared', 3)):
+                assert (await invoke(sid, 'echo', dict(text='owned')))['calls'] == expected
+            with pytest.raises(RuntimeError, match='not mounted for this Agent'):
+                await invoke('python-session-plain', 'echo', dict(text='forbidden'))
+            with pytest.raises(TypertGatewayError, match='missing'):
+                await call(ctx, 'echo', dict(text='no root fallback'))
+            for sid, available in (('python-session-a', True), ('python-session-plain', False)):
+                assert await RemoteDispatcher(ctx).invoke(dict(namespace=host_remote_namespace(NAME),
+                    method='available', args=dict(agentId=sid), signal=NEVER_ABORTED)) is available
+            entry = next(row for row in ctx.loader.entries if row.options.get('name') == NAME)
+            await entry.fiber.dispose()
+            await entry.fiber.await_settled()
+            with pytest.raises(TypertGatewayError, match='withdrawn'):
+                await invoke('python-session-a', 'echo', None)
+        finally:
+            await close_web_context(ctx)
+
+
+@pytest.mark.asyncio
+async def test_session_build_refuses_unisolated_source_row_without_changing_build(tmp_path):
+    project, _ = await export_project_at(tmp_path, placement='session')
+    fragment = json.loads((project / 'preset.fragment.yml').read_text(encoding='utf-8'))
+    fragment[0]['isolate'] = {}
+    (project / 'preset.fragment.yml').write_text(json.dumps(fragment), encoding='utf-8')
     before = {p.relative_to(project).as_posix(): p.read_bytes() for p in project.rglob('*') if p.is_file()}
-    with pytest.raises(ValueError, match='session Remote ownership'):
+    with pytest.raises(ValueError, match='isolated preset row'):
         cli.run_plugin('web', ['build', str(project)])
     assert {p.relative_to(project).as_posix(): p.read_bytes() for p in project.rglob('*') if p.is_file()} == before
 
@@ -176,16 +217,20 @@ plugin.inject = ['exportDependency']
 
 
 @pytest.mark.skipif(not os.environ.get('DSH_TEST_CHROMIUM'), reason='real browser lane: set DSH_TEST_CHROMIUM')
-def test_original_browser_built_creative_source_restart_upgrade_rollback(tmp_path):
+@pytest.mark.parametrize('placement', ['host', 'session'])
+def test_original_browser_built_creative_source_restart_upgrade_rollback(tmp_path, placement):
     node = shutil.which('node')
     assert node
     output = tmp_path / 'python-export-browser.json'
     result = subprocess.run([node, str(ROOT / 'scripts/python_web_plugin_browser_oracle.mjs'),
-        '--browser', os.environ['DSH_TEST_CHROMIUM'], '--output', str(output), '--exported', 'true'],
+        '--browser', os.environ['DSH_TEST_CHROMIUM'], '--output', str(output), '--exported', 'true']
+        + (['--session', 'true'] if placement == 'session' else []),
         cwd=str(ROOT), capture_output=True, encoding='utf-8', timeout=180)
     assert result.returncode == 0, result.stdout + result.stderr
     report = json.loads(output.read_text(encoding='utf-8'))
     assert report['passed'] and report['exported'] and report['python'] == '3.8.10'
-    assert len(report['steps']) == 17 and len(report['replies']) == 9
+    assert report['session'] is (placement == 'session')
+    assert len(report['steps']) == (23 if placement == 'session' else 17)
+    assert len(report['replies']) == (15 if placement == 'session' else 9)
     assert not report['errors'] and not report['consoleErrors'] and not report['requests']
     assert report['hostExitCode'] == 0 and not report['hostErrors']

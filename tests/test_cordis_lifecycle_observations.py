@@ -22,3 +22,18 @@ EXPECTED.update({row['case']: row['upstream']['observation'] for row in RESTART[
 def test_matched_lifecycle_observation(case):
     actual = asyncio.run(asyncio.wait_for(ADAPTER.scenario(case), timeout=10))
     assert actual == EXPECTED['C%d' % case]
+
+
+def test_refresh_disposal_observation_waits_for_settlement(monkeypatch):
+    """A loaded loop must not release the refresh before observing disposal."""
+    from dsh.cordis.fiber import Fiber
+
+    settle = Fiber._await_quiescent
+
+    async def delayed_settlement(self):
+        await asyncio.sleep(0.08)
+        await settle(self)
+
+    monkeypatch.setattr(Fiber, '_await_quiescent', delayed_settlement)
+    actual = asyncio.run(asyncio.wait_for(ADAPTER.scenario(42), timeout=10))
+    assert actual == EXPECTED['C42']

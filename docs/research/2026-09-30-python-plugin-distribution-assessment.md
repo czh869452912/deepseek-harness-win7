@@ -21,6 +21,10 @@ boot graph 保留至页面刷新，卸载后旧 Client 调用必须被 Host 拒�
 原版 evaluator/Remote 联合验证，见 [Client 源码构建记录](2026-10-01-python-plugin-client-build-progress.md)。
 Session Client 所有权、完整动态 runner 治理、依赖与多来源获取仍须实施。
 
+后续 Session placement 的 preset 所有权、Agent lookup 路由与原版侧栏切换联合
+验证见 [Session Client 交付记录](2026-10-01-python-plugin-session-client-progress.md)。
+完整治理、依赖、用户 preset 引用清理、多来源获取和最终发行仍须分别完成。
+
 ## 1. 结论
 
 建议采用 **Python Host 插件为主体、Web 客户端资源可选、统一包描述与 Cordis 装配** 的路线。

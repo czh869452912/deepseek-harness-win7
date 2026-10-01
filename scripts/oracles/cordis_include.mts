@@ -132,7 +132,19 @@ export async function scenario(id: number) {
       await entered.promise
       let done = false
       const disposal = fiber.dispose().then(() => { done = true; log.push('dispose-complete') })
-      await new Promise(resolve => setTimeout(resolve, 50))
+      if (id === 42) {
+        // Observe settled teardown before releasing the independent refresh.
+        // Wall-clock sampling can race cleanup under event-loop load.
+        let timeout: ReturnType<typeof setTimeout> | undefined
+        try {
+          await Promise.race([disposal, new Promise((_, reject) => {
+            timeout = setTimeout(() => reject(new Error('Include disposal did not settle')), 5000)
+          })])
+        } finally { clearTimeout(timeout) }
+      } else {
+        // Initial activation is owned inertia and must stay pending.
+        await new Promise(resolve => setTimeout(resolve, 50))
+      }
       const pending = { done, log: [...log] }
       finish.release()
       const error = await result

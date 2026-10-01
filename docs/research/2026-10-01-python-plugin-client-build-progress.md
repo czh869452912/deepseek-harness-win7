@@ -5,6 +5,10 @@
 当前 Windows 与开发机 Chromium。本记录推进插件交付评估的创造模式持久源码
 交付，不认证完整动态运行时、全部 C 阶段、全项目迁移或 Win7。
 
+后续 Session placement 已接通 standing preset / Agent lookup / 原版 Client 选择
+生命周期，见 [Session 联合交付](2026-10-01-python-plugin-session-client-progress.md)。
+下文保留本批次当时的 Host-only 范围和验证结果。
+
 ## 实际交付路径
 
 真实 `cordis_export` 产生用户项目后，可以执行：

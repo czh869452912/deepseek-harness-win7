@@ -28,8 +28,9 @@ def build_exported_client(project):
         origin = json.load(stream)
     if origin.get('formatVersion') != 1 or 'client' not in origin.get('sourceSha256', {}):
         raise ValueError('build requires an exported Client source record')
-    if origin.get('placement') != 'host':
-        raise ValueError('Client source build currently requires Host placement; session Remote ownership is not implemented')
+    placement = origin.get('placement')
+    if placement not in ('host', 'session'):
+        raise ValueError('Client source build requires Host or session placement')
     if manifest['dsh']['python']['entry'] != 'exported.plugin:plugin' or manifest['dsh']['python']['sourceRoot'] != 'python':
         raise ValueError('build requires the exported Python SDK entry')
     source_path = inside(project, 'client/source.js')
@@ -47,10 +48,17 @@ def build_exported_client(project):
                 dict(name='method', wire='method', source='json', codec=dict(mode='strict', typeSymbol=name + '#Method', schema=dict(type='string'))),
                 dict(name='args', wire='args', source='json', codec=dict(mode='strict', typeSymbol=name + '#JsonValue', schema={}))],
             result=dict(mode='strict', typeSymbol=name + '#JsonValue', schema={}))])
+    if placement == 'session':
+        agent_field = dict(name='agent', wire='agentId', source='lookup', lookup='agent',
+            codec=dict(mode='strict', typeSymbol='@deepseek-ai/dsh-session/types#SessionId', schema=dict(type='string')))
+        contract['invocations'][0]['parameters'].insert(0, agent_field)
+        contract['invocations'].append(dict(id=name + '#' + namespace + '.available', service=namespace,
+            namespace=namespace, method='available', invocation=dict(kind='direct'), parameters=[agent_field],
+            result=dict(mode='strict', typeSymbol=name + '#Availability', schema=dict(type='boolean'))))
     with open(os.path.join(runtime_root, 'extensions', 'packaged_client.js'), encoding='utf-8', newline='') as stream:
         adapter = stream.read()
     identity = dict(pluginId='python-export-' + hashlib.sha256(name.encode('utf-8')).hexdigest()[:24],
-        packageId=origin['packageId'], pluginRunId=manifest['version'], name=name)
+        packageId=origin['packageId'], pluginRunId=manifest['version'], name=name, placement=placement)
     bundle = ('window.__ModuleLoader__.load({id: ' + json.dumps(name) + ', factory: function(require) {\n'
         'var module = {exports: {}}; var exports = module.exports;\n'
         'var SDK = require("@deepseek-ai/dsh-cordis-client-runner");\n'
@@ -59,8 +67,10 @@ def build_exported_client(project):
         'var IDENTITY = ' + json.dumps(identity, ensure_ascii=True) + ';\n' + adapter + '\n'
         'return module.exports;\n}});\n//# sourceMappingURL=client.js.map\n')
     has_host = os.path.isfile(inside(project, 'python/exported/host.body.py'))
-    entry = ('import os\nfrom dsh.plugin_api import python_host_source\n\n'
-        'plugin = python_host_source(' + ('os.path.join(os.path.dirname(__file__), "host.body.py")' if has_host else 'None') + ', ' + repr(name) + ', enable_remote=True)\n')
+    factory = 'python_session_source' if placement == 'session' else 'python_host_source'
+    entry = ('import os\nfrom dsh.plugin_api import ' + factory + '\n\n'
+        'plugin = ' + factory + '(' + ('os.path.join(os.path.dirname(__file__), "host.body.py")' if has_host else 'None')
+        + ', ' + repr(name) + (')\n' if placement == 'session' else ', enable_remote=True)\n'))
     artifact = ('import json\nimport os\nfrom dsh.plugin_api import JsonSchemaCodec\n\n'
         'with open(os.path.join(os.path.dirname(__file__), "contract.json"), encoding="utf-8") as stream:\n'
         '    TYPERT = json.load(stream)\n'
@@ -71,6 +81,17 @@ def build_exported_client(project):
         sources=['source.js'], sourcesContent=[source], names=[], mappings='')),
         'remote/contract.json': encoded(contract), 'remote/typert.py': artifact.encode('utf-8'),
         'python/exported/plugin.py': entry.encode('utf-8')}
+    if placement == 'session':
+        # The Host row owns only discovery/Remote routing, never the source body.
+        files['cordis.patch.yml'] = encoded([dict(insert=[dict(id=identity['pluginId'] + '-client-bridge',
+            name=name, config=dict(sessionClientBridge=True))])])
+        with open(inside(project, 'preset.fragment.yml'), encoding='utf-8') as stream:
+            fragment = json.load(stream)
+        if (not isinstance(fragment, list) or len(fragment) != 1 or not isinstance(fragment[0], dict) or fragment[0].get('name') != name
+                or not fragment[0].get('isolate', {}).get('pythonPlugin:' + name)
+                or fragment[0].get('config', {}).get('sessionClientBridge')):
+            raise ValueError('Session Client source requires its isolated preset row')
+        files['preset.fragment.yml'] = encoded(fragment)
     receipt_paths = list(files) + ['client/source.js'] + (['python/exported/host.body.py'] if has_host else [])
     hashes = {}
     for relative in receipt_paths:
@@ -81,6 +102,8 @@ def build_exported_client(project):
                 hashes[relative] = hashlib.sha256(stream.read()).hexdigest()
     manifest['exports'] = {'./client': './client/client.js', './typert': './remote/typert.py'}
     manifest['dsh']['client'] = dict(platform='web', inject=['@deepseek-ai/dsh-cordis-client-runner'])
+    if placement == 'session':
+        manifest['dsh']['client']['inject'].append('@deepseek-ai/dsh-session-controller')
     manifest['dsh']['webArtifacts'] = dict(formatVersion=1, targetUpstream=target, files=hashes)
     descriptor['files'] += [path for path in files if path not in descriptor['files']]
     origin['requiresClientBuild'] = False

@@ -1,12 +1,16 @@
 """Export actual creative-mode source through Tools for native/browser tests."""
 from pathlib import Path
+import json
 from pytest import MonkeyPatch
+import yaml
 
 from dsh.boot.profile_boot import run_profile
 from dsh.core.abort import NEVER_ABORTED
 from dsh.core.tools import ToolExecutionInput
 
 NAME = '@author/python-export-web'
+SESSION_PRESETS = {'python-session-a': 'exported-a', 'python-session-b': 'exported-b',
+                   'python-session-shared': 'exported-a', 'python-session-plain': 'minimal'}
 HOST_SOURCE = '''counter = [0]
 def plugin(ctx):
     def echo(args):
@@ -46,6 +50,30 @@ return {inject: ['slots'], apply(ctx) {
   ctx.slots.inject('shell.overlay', () => ctx.slots.register({name: 'shell.overlay', id: 'python-export-echo'}, Panel));
 }};
 '''
+
+
+def install_session_presets(home, project):
+    root = Path(__file__).resolve().parents[1]
+    text = (root / 'packages/preset/agent-presets/presets/minimal/agent.cordis.yml').read_text(encoding='utf-8')
+    fragment = json.loads((Path(project) / 'preset.fragment.yml').read_text(encoding='utf-8'))
+    for name in ('exported-a', 'exported-b'):
+        directory = Path(home) / '.agent-presets' / name
+        directory.mkdir(parents=True, exist_ok=True)
+        (directory / 'agent.cordis.yml').write_text(text + '\n' + yaml.safe_dump(fragment, sort_keys=False), encoding='utf-8')
+
+
+async def create_session_fixture(ctx, workspace):
+    for sid, preset in SESSION_PRESETS.items():
+        await ctx.sessionController.create(dict(sessionId=sid, cwd=str(workspace), agentPreset=preset))
+        agent = ctx.agents.get(sid)
+        if not any(event['type'] == 'user/message' for event in agent.session.events):
+            agent.session.append_user_message('Private Session ownership fixture')
+            # A valid prepared zero-step turn makes the original list metadata
+            # nonblank. User text alone deliberately leaves a blank Session.
+            agent.session.append('turn/start', dict(turn=1))
+            agent.session.append('turn/end', dict(turn=1, reason=dict(kind='completed')))
+        await ctx.sessionController.rename(dict(sessionId=sid, title=sid))
+        await agent.session.flush()
 
 
 async def export_project_at(workspace, host_source=HOST_SOURCE, client_source=CLIENT_SOURCE, placement='host'):

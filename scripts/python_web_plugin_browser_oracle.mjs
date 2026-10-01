@@ -78,12 +78,92 @@ async function open(boot, present = true) {
   if (present) await until(() => count('[data-python-web-echo]'), 'installed Client automatic activation');
   else { await delay(500); assert.equal(await count('[data-python-web-echo]'), 0); }
 }
-async function echo(version, calls) {
+async function echo(version, calls, agentId) {
   await click('[data-python-web-echo-call]');
   const value = await until(() => cdp.evaluate(`(() => {try {const text=document.querySelector('[data-python-web-echo-result]')?.textContent; const value=JSON.parse(text); return value.ok && value.value.calls === ${calls} && value.value.version === ${JSON.stringify(version)} && text;} catch {return false;}})()`), 'Client Remote reply');
   assert.deepEqual(JSON.parse(value), { ok: true, value: { text: 'Python Web echo: 中文 portable', calls, version } });
-  assert.equal((await command('snapshot')).calls, calls);
+  const state = await command('snapshot');
+  assert.equal(agentId === undefined ? state.calls : state.sessionCalls[agentId], calls);
   report.steps.push({ step: `original-client-strict-remote-${version}-call-${calls}`, passed: true });
+}
+async function selectSession(agentId, present = true) {
+  await until(() => count('[role="treeitem"]'), 'original sidebar rows ready');
+  if (await count('[role="treeitem"][aria-expanded="false"]')) await click('[role="treeitem"][aria-expanded="false"]');
+  const point = await until(() => cdp.evaluate(`(() => {
+    const row = Array.from(document.querySelectorAll('[role="treeitem"]')).find(e => e.textContent.includes(${JSON.stringify(agentId)}));
+    if (!row) return false; const r = row.getBoundingClientRect(), x = r.x + r.width / 2, y = r.y + r.height / 2;
+    return r.width && row.contains(document.elementFromPoint(x,y)) && {x,y};
+  })()`), 'original sidebar Session ' + agentId);
+  await cdp.call('Input.dispatchMouseEvent', {type: 'mousePressed', ...point, button: 'left', clickCount: 1});
+  await cdp.call('Input.dispatchMouseEvent', {type: 'mouseReleased', ...point, button: 'left', clickCount: 1});
+  await until(() => cdp.evaluate(`Array.from(document.querySelectorAll('[role="treeitem"][aria-selected="true"]')).some(e => e.textContent.includes(${JSON.stringify(agentId)}))`), 'original Session selected');
+  if (present) await until(() => cdp.evaluate('document.querySelector("[data-python-web-echo-result]")?.textContent === "ready"'), 'Session Client activation');
+  else await until(async () => !await count('[data-python-web-echo]'), 'Session Client absent');
+}
+async function sessionJourney(boot) {
+  const a = 'python-session-a', b = 'python-session-b', shared = 'python-session-shared', plain = 'python-session-plain';
+  assert.equal(boot.sourceAtRoot, false);
+  await open(boot, false);
+  await selectSession(a); await echo('1.0.0', 1, a); await echo('1.0.0', 2, a);
+  await selectSession(b); await echo('1.0.0', 1, b);
+  await selectSession(shared); await echo('1.0.0', 3, shared);
+  await selectSession(plain, false);
+  assert.equal(await count('style[data-dyn^="python-export-"]'), 0);
+  report.steps.push({step: 'original-sidebar-independent-and-shared-presets-no-plain-client-no-root-source', passed: true});
+  await command('hold-availability');
+  await selectSession(a, false);
+  await until(() => command('availability-waiting'), 'actual Agent lookup availability request held');
+  await selectSession(b);
+  assert.equal(await command('availability-waiting'), true);
+  await command('release-availability');
+  await until(() => cdp.evaluate('document.querySelector("[data-python-web-echo-result]")?.textContent === "ready"'), 'latest selection wins delayed availability');
+  await echo('1.0.0', 2, b);
+  assert.equal((await command('snapshot')).sessionCalls[a], 3);
+  assert.equal(await count('style[data-dyn^="python-export-"]'), 1);
+  report.steps.push({step: 'late-availability-cannot-mount-client-for-old-selection', passed: true});
+  await selectSession(a); await echo('1.0.0', 4, a);
+  const timeOrigin = await cdp.evaluate('performance.timeOrigin');
+  for (const [operation, calls] of [['rebuild-client', 5], ['restore-client', 6]]) {
+    await command(operation);
+    await until(() => cdp.evaluate('document.querySelector("[data-python-web-echo-result]")?.textContent === "ready"'), 'Session Client HMR');
+    assert.equal(await cdp.evaluate('performance.timeOrigin'), timeOrigin);
+    assert.equal(await count('style[data-dyn^="python-export-"]'), 1);
+    await echo('1.0.0', calls, a);
+  }
+  report.steps.push({step: 'session-client-real-hmr-preserves-preset-host-and-disposes-old-fiber', passed: true});
+  await command('unload-session');
+  await click('[data-python-web-echo-call]');
+  await until(() => cdp.evaluate(`(() => {try {const v=JSON.parse(document.querySelector('[data-python-web-echo-result]')?.textContent); return v.ok === false && /not mounted/.test(v.error.message);} catch {return false;}})()`), 'unloaded preset handler rejects retained Client');
+  await selectSession(plain, false); await selectSession(shared, false);
+  await selectSession(b); await echo('1.0.0', 3, b);
+  report.steps.push({step: 'preset-unload-affects-shared-members-and-preserves-other-preset', passed: true});
+  await cdp.call('Page.reload', {ignoreCache: true});
+  await until(() => cdp.evaluate('document.querySelector("[data-python-web-echo-result]")?.textContent === "ready"'), 'restored selected Session Client');
+  await echo('1.0.0', 4, b);
+  report.steps.push({step: 'page-reload-restores-selected-session-with-preset-host-retained', passed: true});
+  await command('unload');
+  await click('[data-python-web-echo-call]');
+  await until(() => cdp.evaluate(`(() => {try {const v=JSON.parse(document.querySelector('[data-python-web-echo-result]')?.textContent); return v.ok === false && /strict definition was withdrawn/.test(v.error.message);} catch {return false;}})()`), 'withdrawn Session bridge rejects retained Client');
+  await cdp.call('Page.reload', {ignoreCache: true});
+  await until(async () => !await count('[data-python-web-echo]') && await count('[class*="frame"]'), 'no Session Client after bridge graph withdrawal');
+  report.steps.push({step: 'bridge-withdrawal-forbids-src-fallback-and-reload-removes-client', passed: true});
+  for (const [operation, version] of [['restart', '1.0.0'], ['upgrade', '2.0.0'], ['rollback', '1.0.0']]) {
+    await cdp.call('Page.navigate', {url: 'about:blank'});
+    await until(() => cdp.evaluate('location.href === "about:blank"'), 'close page before Session Host stop');
+    const next = await command(operation);
+    assert.equal(next.sourceAtRoot, false);
+    assert.equal(next.sessionCalls[a], 0); assert.equal(next.sessionCalls[b], 0);
+    await open(next, false);
+    await selectSession(a); await echo(version, 1, a);
+    report.steps.push({step: operation + '-restores-installed-session-client-source', passed: true});
+  }
+  await selectSession(plain, false);
+  await cdp.call('Page.navigate', {url: 'about:blank'});
+  await until(() => cdp.evaluate('location.href === "about:blank"'), 'close page before removal');
+  const removed = await command('remove');
+  assert.equal(removed.graph.entries.some(row => row.id === packageName), false);
+  await open(removed, false);
+  report.steps.push({step: 'remove-with-user-presets-preserved-no-installed-client', passed: true});
 }
 async function transition(operation, version, present = true) {
   await cdp.call('Page.navigate', { url: 'about:blank' });
@@ -117,7 +197,7 @@ try {
   let readyYes, readyNo;
   const ready = new Promise((yes, no) => { readyYes = yes; readyNo = no; });
   const readyTimer = setTimeout(() => readyNo(new Error('Host startup timed out')), 30000);
-  host = spawn(join(root, '.venv/Scripts/python.exe'), ['-u', join(root, 'scripts/python_web_plugin_host_fixture.py'), ...(options.exported ? ['--exported'] : [])], { cwd: root, windowsHide: true });
+  host = spawn(join(root, '.venv/Scripts/python.exe'), ['-u', join(root, 'scripts/python_web_plugin_host_fixture.py'), ...(options.exported ? ['--exported'] : []), ...(options.session ? ['--session'] : [])], { cwd: root, windowsHide: true });
   host.stderr.on('data', data => { hostErrors += data; });
   host.on('error', readyNo);
   host.on('exit', code => { readyNo(new Error('Host exited: ' + code)); });
@@ -130,7 +210,7 @@ try {
   });
   const boot = await ready.finally(() => clearTimeout(readyTimer));
   report.python = boot.python;
-  packageName = boot.name; rpcEndpoint = boot.endpoint; report.exported = boot.exported;
+  packageName = boot.name; rpcEndpoint = boot.endpoint; report.exported = boot.exported; report.session = boot.session;
   assert.equal(boot.python, '3.8.10'); assert.equal(boot.descriptor, true); assert.equal(boot.calls, 0);
   browser = spawn(resolve(options.browser), ['--headless', '--no-sandbox', '--disable-gpu', '--remote-debugging-port=0', `--user-data-dir=${privateBrowser}`, '--lang=en-US', 'about:blank'], { windowsHide: true });
   const port = await until(async () => { try { return (await readFile(join(privateBrowser, 'DevToolsActivePort'), 'utf8')).split('\n')[0]; } catch { return false; } }, 'browser port');
@@ -171,6 +251,8 @@ try {
   });
   await cdp.call('Runtime.enable'); await cdp.call('Page.enable'); await cdp.call('Network.enable');
   await cdp.call('Emulation.setDeviceMetricsOverride', { width: 1680, height: 1000, deviceScaleFactor: 1, mobile: false });
+  if (report.session) await sessionJourney(boot);
+  else {
   await open(boot); await echo('1.0.0', 1);
   if (report.exported) {
     await until(() => report.replies.length === 1, 'initial exported RPC observed');
@@ -221,14 +303,16 @@ try {
   await transition('upgrade', '2.0.0');
   await transition('rollback', '1.0.0');
   await transition('remove', undefined, false);
+  }
   await Promise.all([...replyJobs]);
-  assert.equal(report.replies.length, report.exported ? 9 : 6);
+  assert.equal(report.replies.length, report.session ? 15 : report.exported ? 9 : 6);
   for (const reply of report.replies) {
-    assert.deepEqual(reply.request.payload, {args: report.exported ? reply.request.payload.args.method === 'snapshot' ? {method: 'snapshot', args: {safe: true}} : {method: 'echo', args: {text: '中文 portable'}} : {text: '中文 portable'}});
+    assert.deepEqual(reply.request.payload, {args: report.session ? {agentId: reply.request.payload.args.agentId, method: 'echo', args: {text: '中文 portable'}} : report.exported ? reply.request.payload.args.method === 'snapshot' ? {method: 'snapshot', args: {safe: true}} : {method: 'echo', args: {text: '中文 portable'}} : {text: '中文 portable'}});
+    if (report.session) assert.ok(['python-session-a', 'python-session-b', 'python-session-shared'].includes(reply.request.payload.args.agentId));
     assert.equal(reply.request.method, rpcEndpoint);
   }
-  assert.equal(report.replies.filter(reply => reply.response.result.ok).length, report.exported ? 8 : 5);
-  assert.equal(report.replies.filter(reply => !reply.response.result.ok).length, 1);
+  assert.equal(report.replies.filter(reply => reply.response.result.ok).length, report.session ? 13 : report.exported ? 8 : 5);
+  assert.equal(report.replies.filter(reply => !reply.response.result.ok).length, report.session ? 2 : 1);
   assert.deepEqual(report.errors, []); assert.deepEqual(report.consoleErrors, []); assert.deepEqual(report.requests, []);
   assert.ok(report.sockets.includes('/api/remote.mux'));
   for (const [path, digest] of Object.entries(report.inputSha256)) assert.equal(createHash('sha256').update(await readFile(join(root, path))).digest('hex'), digest);

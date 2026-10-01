@@ -32,6 +32,41 @@ class ExportedHostRemote(TypertRemoteService):
         return await self._handlers.call(method, args)
 
 
+class ExportedSessionRemote(TypertRemoteService):
+    """Host routing only; authored code belongs to the addressed preset."""
+    def __init__(self, ctx, package_name):
+        super().__init__(ctx, host_remote_namespace(package_name))
+        self._handler_service = host_handler_service(package_name)
+
+    def _handlers(self, agent):
+        return self.ctx.get('agentPresets').serviceFor(agent, self._handler_service)
+
+    @Remote
+    def available(self, agent):
+        handlers = self._handlers(agent)
+        return handlers is not None and handlers.active and not handlers.closed
+
+    @Remote
+    async def call(self, agent, method, args):
+        handlers = self._handlers(agent)
+        if handlers is None:
+            raise RuntimeError('exported Session Host is not mounted for this Agent')
+        return await handlers.call(method, args)
+
+
+def python_session_source(source_path, package_name):
+    """Compose an installed bridge and the independently mounted preset half."""
+    host = python_host_source(source_path, package_name)
+    async def apply(ctx, config=None):
+        if isinstance(config, dict) and config.get('sessionClientBridge') is True:
+            ExportedSessionRemote(ctx, package_name)
+        else:
+            await host(ctx, config)
+    apply.name = package_name
+    apply.inject = ['agentPresets']
+    return apply
+
+
 class PythonHostHandlers:
     def __init__(self):
         self.handlers = {}

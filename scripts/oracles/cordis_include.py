@@ -192,7 +192,14 @@ async def scenario(number):
                     done = True
                     log.append('dispose-complete')
                 disposal = asyncio.create_task(dispose())
-                await asyncio.sleep(0.05)
+                if number == 42:
+                    # Refresh is not part of Include's teardown inertia. Observe
+                    # disposal settlement before releasing the gated refresh;
+                    # a 50 ms window races cleanup on a loaded event loop.
+                    await asyncio.wait_for(asyncio.shield(disposal), timeout=5)
+                else:
+                    # Initial activation is owned inertia and must stay pending.
+                    await asyncio.sleep(0.05)
                 pending = {'done': done, 'log': log[:]}
                 finish.set()
                 error = await result

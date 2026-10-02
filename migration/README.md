@@ -2,6 +2,14 @@
 
 本目录以 `tasks/*.json` 为状态权威，`status.md` 由工具生成。当前交付是单一协调者、契约依赖和只读门禁；分布式调度器、原子租约、自动上游巡检不属于本批次实现。
 
+## 当前补齐：2026-10-02
+
+本轮 `MIG-CURRENT-RELEASE-GATE-003` / `CON-CURRENT-RELEASE-GATE@1` 补齐当前原版浏览器、最新已选双侧契约及实际解压 Portable 统一验收；不是重签历史 `MIG-REPRO-GATE-002`，也不代表整个迁移完成。当前任务保持 running，未提交预览不得进入 verified/integrated。
+
+正式门禁必须提供 Chromium：`scripts/verify_release.py --browser <absolute-path>`；缺少浏览器、必需测试跳过、回执或候选不一致均拒绝发行。`--allow-dirty` 仅用于本地开发预览，其 summary 始终 `publishable=false`。原版浏览器只用真实可见控件完成无凭据引导，不修改上游 TSX/CSS；后续导航先等待有限请求结束，再检查弹窗或交互状态。
+
+范围、既存缺口和后续顺序见 `docs/research/2026-10-02-migration-status-audit.md`；本轮推进与验证见 `docs/research/2026-10-02-current-gate-progress.md`。Windows 7、JS/OAuth 和 ACP 等仍按独立契约推进，不能用当前 Windows 门禁代替。
+
 ## 操作
 
 ```powershell

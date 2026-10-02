@@ -6,6 +6,7 @@ import {tmpdir} from 'node:os';
 import {dirname, join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createInterface} from 'node:readline';
+import {deferProviderOnboarding} from './browser_onboarding.mjs';
 
 const options = Object.fromEntries(process.argv.slice(2).reduce((rows, value, i, args) => {
   if (value.startsWith('--')) rows.push([value.slice(2), args[i + 1]]); return rows;
@@ -135,12 +136,7 @@ try {
   await until(() => count(notice), 'original first-use notice'); await click(notice + ' button');
   await until(async () => !await count(notice), 'notice dismissed');
   report.steps.push('original-shell-and-first-use-notice');
-  // With a private credential-free environment, upstream opens its own provider
-  // onboarding dialog. Use its real defer control before reaching the sidebar.
-  await press(await until(() => cdp.evaluate(`(() => {const e=Array.from(document.querySelectorAll('button')).find(e=>e.textContent.trim()==='Configure later');
-    if(!e) return false; const r=e.getBoundingClientRect(),x=r.x+r.width/2,y=r.y+r.height/2;
-    return r.width && e.contains(document.elementFromPoint(x,y)) && {x,y};})()`), 'original provider onboarding defer button'));
-  await until(() => cdp.evaluate("!Array.from(document.querySelectorAll('button')).some(e=>e.textContent.trim()==='Configure later')"), 'provider onboarding dismissed');
+  await deferProviderOnboarding(cdp, until);
   report.steps.push('original-provider-onboarding-deferred-without-credentials');
   await until(() => count('[role="treeitem"]'), 'original sidebar');
   await press(await until(async () => {

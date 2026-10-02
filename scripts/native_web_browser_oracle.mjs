@@ -10,6 +10,7 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
+import { credentialFreeEnvironment, deferProviderOnboarding } from './browser_onboarding.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const options = Object.fromEntries(process.argv.slice(2).reduce((pairs, value, i, args) => {
@@ -197,7 +198,7 @@ try {
   report.target_upstream = inputs.target_upstream;
   report.frontendInputCount = inputs.files.length;
   report.inputSha256 = {};
-  for (const path of ['scripts/native_web_browser_oracle.mjs', 'scripts/native_web_host_fixture.py',
+  for (const path of ['scripts/native_web_browser_oracle.mjs', 'scripts/browser_onboarding.mjs', 'scripts/native_web_host_fixture.py',
     'scripts/frontend-inputs.json', 'dsh/extensions/host_runner.py', 'dsh/extensions/cordis_runner_state.py',
     'dsh/extensions/cordis_guard.py', 'dsh/typert/dispatch.py', 'dsh/host/connection/canonical.py',
     'dsh/host/client_modules/loader_registry.py', 'dsh/boot/profile_boot.py',
@@ -207,7 +208,8 @@ try {
   }
   let readyResolve, readyReject;
   const ready = new Promise((yes, no) => { readyResolve = yes; readyReject = no; });
-  host = spawn(join(root, '.venv/Scripts/python.exe'), ['-u', join(root, 'scripts/native_web_host_fixture.py'), ...options.inspect ? ['--inspect'] : []], { cwd: root, windowsHide: true });
+  host = spawn(join(root, '.venv/Scripts/python.exe'), ['-u', join(root, 'scripts/native_web_host_fixture.py'), ...options.inspect ? ['--inspect'] : []], { cwd: root, windowsHide: true, env: credentialFreeEnvironment(process.env) });
+  report.credentialFreeHost = true;
   host.stderr.on('data', data => { hostErrors += data; });
   host.on('error', readyReject);
   host.on('exit', code => { readyReject(new Error(`Host exited: ${code}; ${hostErrors.slice(-2500)}`)); for (const call of pendingHost.values()) { clearTimeout(call.timer); call.reject(new Error(`Host exited ${code}`)); } pendingHost.clear(); });
@@ -292,6 +294,9 @@ try {
   await click('[role="dialog"][aria-label="Internal Testing Notice"] button');
   await until(async () => await count('[role="dialog"][aria-label="Internal Testing Notice"]') === 0, 'onboarding dismissed');
   report.steps.push({ step: 'original-onboarding-settings-remote', passed: true });
+  await deferProviderOnboarding(cdp, until);
+  report.providerOnboardingDeferrals = 1;
+  report.steps.push({ step: 'original-provider-onboarding-deferred-without-credentials', passed: true });
   if (options.inspect) {
     const directory = await until(async () => { const s = await command('snapshot'); return s.inspectDirectory.filter(row => row.platform === 'client').length === 5 && s.inspectDirectory; }, 'original Client published five source-defined provider manifests');
     assert.deepEqual(directory.filter(row => row.platform === 'client').map(row => row.id), ['Service', 'Event', 'Builtin', 'Slots', 'Theme']);
@@ -400,6 +405,8 @@ try {
 
   await cdp.call('Page.reload');
   await until(() => count('[class*="frame"]'), 'refreshed original app');
+  await deferProviderOnboarding(cdp, until);
+  report.providerOnboardingDeferrals += 1;
   await until(() => count('[data-cordis-badge]'), 'refreshed host inventory');
   await panel();
   await until(() => attribute('[data-cordis-row]', 'data-cordis-status').then(value => value === 'client-pending'), 'page-local Client pending');

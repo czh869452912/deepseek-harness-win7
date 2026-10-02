@@ -245,6 +245,8 @@ def test_original_browser_installed_python_web_package_journey(tmp_path):
     assert result.returncode == 0, result.stdout + result.stderr
     report = json.loads(output.read_text(encoding='utf-8'))
     assert report['passed'] and report['python'] == '3.8.10'
+    assert report['credentialFreeHost'] is True and report['providerOnboardingDeferrals'] >= 1
+    assert report['providerOnboardingChecks'] >= 5
     assert report['hostExitCode'] == 0 and not report['hostErrors']
     assert not report['errors'] and not report['consoleErrors'] and not report['requests']
     assert '/api/remote.mux' in report['sockets'] and len(report['replies']) == 6

@@ -230,6 +230,8 @@ def test_original_browser_built_creative_source_restart_upgrade_rollback(tmp_pat
     report = json.loads(output.read_text(encoding='utf-8'))
     assert report['passed'] and report['exported'] and report['python'] == '3.8.10'
     assert report['session'] is (placement == 'session')
+    assert report['credentialFreeHost'] is True and report['providerOnboardingDeferrals'] >= 1
+    assert report['providerOnboardingChecks'] >= 5
     assert len(report['steps']) == (23 if placement == 'session' else 17)
     assert len(report['replies']) == (15 if placement == 'session' else 9)
     assert not report['errors'] and not report['consoleErrors'] and not report['requests']

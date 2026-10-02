@@ -63,7 +63,7 @@ def main(argv=None):
     report = dict(result='failed', archive=str(archive), archiveSha256=digest(archive),
         scope='Actual extracted Portable on current Windows; Win7 and its browser are not certified; no remote model request.',
         inputSha256={name: digest(ROOT / 'scripts' / name) for name in (
-            'verify_portable.py', 'portable_runtime_probe.py', 'portable_browser_oracle.mjs')})
+            'verify_portable.py', 'portable_runtime_probe.py', 'portable_browser_oracle.mjs', 'browser_onboarding.mjs')})
     node = shutil.which('node') if args.browser else None
     try:
         if args.browser and not node:

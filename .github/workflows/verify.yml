@@ -22,7 +22,17 @@ jobs:
         with:
           node-version: '22.22.2'
       - name: Prepare pinned inputs, build, and verify
-        run: python scripts/verify_release.py --prepare
+        id: gate
+        run: |
+          $browser = Join-Path $env:ProgramFiles 'Google/Chrome/Application/chrome.exe'
+          if (-not (Test-Path -LiteralPath $browser)) { throw 'Required Chromium observer is missing' }
+          python scripts/verify_release.py --prepare --browser $browser
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $receipt = Get-Content -Encoding utf8 .goose/out/release-gate/summary.json | ConvertFrom-Json
+          if ($receipt.result -ne 'passed' -or $receipt.publishable -ne $true) { throw 'Candidate is not publishable' }
+          $digest = (Get-FileHash -LiteralPath $receipt.archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($digest -ne $receipt.archive_sha256) { throw 'Verified archive changed before upload' }
+          "archive=$($receipt.archive)" >> $env:GITHUB_OUTPUT
       - name: Preserve raw observations and regression diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -34,5 +44,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: verified-portable
-          path: dist/dsh-win7-portable-v*.zip
+          path: ${{ steps.gate.outputs.archive }}
           if-no-files-found: error

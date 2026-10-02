@@ -33,6 +33,8 @@ def test_original_browser_native_host_cordis_lifecycle(tmp_path, inspect_mode):
     assert report['passed'] and report['python'] == '3.8.10'
     assert report['target_upstream'] == json.loads((ROOT / 'migration/baseline.json').read_text(encoding='utf-8'))['target_upstream']
     assert report['clientArtifacts'] and '/api/remote.mux' in report['webSockets']
+    assert report['credentialFreeHost'] is True and report['providerOnboardingDeferrals'] >= 2
+    assert any(row['step'] == 'original-provider-onboarding-deferred-without-credentials' for row in report['steps'])
     assert not report['errors'] and not report['requests'] and not report['hostErrors']
     if inspect_mode:
         steps = {row['step'] for row in report['steps'] if row['passed']}

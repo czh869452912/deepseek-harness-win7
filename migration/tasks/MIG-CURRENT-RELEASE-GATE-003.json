@@ -1,0 +1,24 @@
+{
+  "id": "MIG-CURRENT-RELEASE-GATE-003",
+  "goal": "补齐当前原版浏览器、双侧契约及实际解压 Portable 的统一发行门禁",
+  "kind": "verification",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "1d5d965de1c7e08c00cbd1fd5227d2503d28444f",
+  "owner": "current-session-coordinator",
+  "requires": [],
+  "provides": [{"contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}],
+  "acceptance": [
+    "Execute all five original-browser journeys without inherited API credentials and all five built Portable profile tests; required lanes must not skip.",
+    "Run fresh selected paired gates, original source configurations and strict Cordis adaptation acceptance for frozen inputs.",
+    "Verify the actual extracted archive runtime and original browser, with matching candidate and archive hashes and no fatal diagnostics.",
+    "A clean candidate passes the complete gate; upload consumes its exact receipt-bound archive without rebuilding."
+  ],
+  "expected_paths": ["scripts", "tests", ".github/workflows", "migration", "docs/research"],
+  "open_findings": ["Clean candidate commit and remote Actions acceptance are not yet available; an uncommitted development preview cannot satisfy release acceptance."],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "2026-10-03 本地非发行预览通过：4775 passed/6 平台 skipped、10 必需 lane 执行、24 双侧驱动及实际解压 browser/runtime 通过；见 docs/research/2026-10-02-current-gate-progress.md。用户授权提交后，在干净候选和 Actions 重跑再进入 verified；关闭诊断仍需归因。历史 MIG-REPRO-GATE-002 验收保持原范围，不冒充当前完整门禁。"
+}

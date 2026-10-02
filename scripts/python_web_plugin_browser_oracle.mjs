@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
+import { credentialFreeEnvironment, deferProviderOnboarding } from './browser_onboarding.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const options = Object.fromEntries(process.argv.slice(2).reduce((pairs, value, i, args) => {
@@ -21,6 +22,8 @@ let packageName = '@example/python-web-echo', rpcEndpoint = 'pythonWebEcho/echo'
 let browser, host, cdp, hostErrors = '', nextCommand = 1;
 const pending = new Map();
 const replyJobs = new Set();
+const finiteRequests = new Set();
+let networkChanged = Date.now();
 const delay = ms => new Promise(done => setTimeout(done, ms));
 async function until(read, label, timeout = 20000) {
   const end = Date.now() + timeout;
@@ -59,6 +62,27 @@ async function command(command) {
   });
 }
 const count = selector => cdp.evaluate(`document.querySelectorAll(${JSON.stringify(selector)}).length`);
+async function settleNetwork() {
+  await until(() => finiteRequests.size === 0 && Date.now() - networkChanged >= 500,
+    'finite browser requests settled before controlled transition');
+}
+async function onboarding(required = false) {
+  await until(() => count('[class*="frame"]'), 'application shell after navigation');
+  await settleNetwork();
+  const deferred = await deferProviderOnboarding(cdp, until, required);
+  report.providerOnboardingChecks = (report.providerOnboardingChecks ?? 0) + 1;
+  report.providerOnboardingDeferrals = (report.providerOnboardingDeferrals ?? 0) + Number(deferred);
+}
+async function closePage() {
+  await settleNetwork();
+  await cdp.call('Page.navigate', {url: 'about:blank'});
+  await until(() => cdp.evaluate('location.href === "about:blank"'), 'close page before Host transition');
+}
+async function reloadPage() {
+  await settleNetwork();
+  await cdp.call('Page.reload', {ignoreCache: true});
+  await onboarding();
+}
 async function click(selector) {
   const point = await until(() => cdp.evaluate(`(() => {const e=document.querySelector(${JSON.stringify(selector)}); if(!e) return false; const r=e.getBoundingClientRect(),x=r.x+r.width/2,y=r.y+r.height/2; return r.width && e.contains(document.elementFromPoint(x,y)) && {x,y};})()`), selector);
   await cdp.call('Input.dispatchMouseEvent', { type: 'mousePressed', ...point, button: 'left', clickCount: 1 });
@@ -75,6 +99,7 @@ async function open(boot, present = true) {
     await until(async () => !await count(notice), 'notice dismissed');
     report.noticeDismissed = true;
   }
+  await onboarding(!report.providerOnboardingChecks);
   if (present) await until(() => count('[data-python-web-echo]'), 'installed Client automatic activation');
   else { await delay(500); assert.equal(await count('[data-python-web-echo]'), 0); }
 }
@@ -137,19 +162,18 @@ async function sessionJourney(boot) {
   await selectSession(plain, false); await selectSession(shared, false);
   await selectSession(b); await echo('1.0.0', 3, b);
   report.steps.push({step: 'preset-unload-affects-shared-members-and-preserves-other-preset', passed: true});
-  await cdp.call('Page.reload', {ignoreCache: true});
+  await reloadPage();
   await until(() => cdp.evaluate('document.querySelector("[data-python-web-echo-result]")?.textContent === "ready"'), 'restored selected Session Client');
   await echo('1.0.0', 4, b);
   report.steps.push({step: 'page-reload-restores-selected-session-with-preset-host-retained', passed: true});
   await command('unload');
   await click('[data-python-web-echo-call]');
   await until(() => cdp.evaluate(`(() => {try {const v=JSON.parse(document.querySelector('[data-python-web-echo-result]')?.textContent); return v.ok === false && /strict definition was withdrawn/.test(v.error.message);} catch {return false;}})()`), 'withdrawn Session bridge rejects retained Client');
-  await cdp.call('Page.reload', {ignoreCache: true});
+  await reloadPage();
   await until(async () => !await count('[data-python-web-echo]') && await count('[class*="frame"]'), 'no Session Client after bridge graph withdrawal');
   report.steps.push({step: 'bridge-withdrawal-forbids-src-fallback-and-reload-removes-client', passed: true});
   for (const [operation, version] of [['restart', '1.0.0'], ['upgrade', '2.0.0'], ['rollback', '1.0.0']]) {
-    await cdp.call('Page.navigate', {url: 'about:blank'});
-    await until(() => cdp.evaluate('location.href === "about:blank"'), 'close page before Session Host stop');
+    await closePage();
     const next = await command(operation);
     assert.equal(next.sourceAtRoot, false);
     assert.equal(next.sessionCalls[a], 0); assert.equal(next.sessionCalls[b], 0);
@@ -158,16 +182,14 @@ async function sessionJourney(boot) {
     report.steps.push({step: operation + '-restores-installed-session-client-source', passed: true});
   }
   await selectSession(plain, false);
-  await cdp.call('Page.navigate', {url: 'about:blank'});
-  await until(() => cdp.evaluate('location.href === "about:blank"'), 'close page before removal');
+  await closePage();
   const removed = await command('remove');
   assert.equal(removed.graph.entries.some(row => row.id === packageName), false);
   await open(removed, false);
   report.steps.push({step: 'remove-with-user-presets-preserved-no-installed-client', passed: true});
 }
 async function transition(operation, version, present = true) {
-  await cdp.call('Page.navigate', { url: 'about:blank' });
-  await until(() => cdp.evaluate('location.href === "about:blank"'), 'close old page before Host shutdown');
+  await closePage();
   const boot = await command(operation);
   assert.equal(boot.calls, present ? 0 : null);
   assert.equal(boot.descriptor, present);
@@ -182,7 +204,7 @@ try {
   report.target_upstream = inputs.target_upstream;
   report.frontendInputCount = inputs.files.length;
   report.inputSha256 = {};
-  for (const path of ['scripts/python_web_plugin_browser_oracle.mjs', 'scripts/python_web_plugin_host_fixture.py',
+  for (const path of ['scripts/python_web_plugin_browser_oracle.mjs', 'scripts/browser_onboarding.mjs', 'scripts/python_web_plugin_host_fixture.py',
     'dsh/boot/python_web_artifacts.py', 'dsh/plugin_api.py', 'dsh/plugin_remote.py',
     'dsh/boot/python_package.py', 'dsh/boot/python_plugin_export.py', 'dsh/boot/python_plugins.py',
     'scripts/build_python_web_example.py', 'tests/test_python_web_plugin.py',
@@ -197,7 +219,8 @@ try {
   let readyYes, readyNo;
   const ready = new Promise((yes, no) => { readyYes = yes; readyNo = no; });
   const readyTimer = setTimeout(() => readyNo(new Error('Host startup timed out')), 30000);
-  host = spawn(join(root, '.venv/Scripts/python.exe'), ['-u', join(root, 'scripts/python_web_plugin_host_fixture.py'), ...(options.exported ? ['--exported'] : []), ...(options.session ? ['--session'] : [])], { cwd: root, windowsHide: true });
+  host = spawn(join(root, '.venv/Scripts/python.exe'), ['-u', join(root, 'scripts/python_web_plugin_host_fixture.py'), ...(options.exported ? ['--exported'] : []), ...(options.session ? ['--session'] : [])], { cwd: root, windowsHide: true, env: credentialFreeEnvironment(process.env) });
+  report.credentialFreeHost = true;
   host.stderr.on('data', data => { hostErrors += data; });
   host.on('error', readyNo);
   host.on('exit', code => { readyNo(new Error('Host exited: ' + code)); });
@@ -220,6 +243,15 @@ try {
   cdp = new CDP(socket);
   const requests = new Map();
   cdp.listeners.push(message => {
+    if (message.method === 'Network.requestWillBeSent') {
+      const params = message.params;
+      if (!['EventSource', 'WebSocket'].includes(params.type) && !new URL(params.request.url).pathname.endsWith('/plugins/events')) {
+        finiteRequests.add(params.requestId);
+        networkChanged = Date.now();
+      }
+    }
+    if (['Network.loadingFinished', 'Network.loadingFailed'].includes(message.method)
+        && finiteRequests.delete(message.params.requestId)) networkChanged = Date.now();
     if (message.method === 'Runtime.exceptionThrown') report.errors.push(message.params.exceptionDetails);
     if (message.method === 'Runtime.consoleAPICalled' && message.params.type === 'error') report.consoleErrors.push(message.params.args.map(value => value.value ?? value.description));
     if (message.method === 'Network.webSocketCreated') report.sockets.push(new URL(message.params.url).pathname);
@@ -282,7 +314,7 @@ try {
     await echo('1.0.0', 3);
     report.steps.push({step: 'exported-client-real-hmr-disposes-old-styles-and-child-fiber-with-host-retained', passed: true});
   }
-  await cdp.call('Page.reload', { ignoreCache: true });
+  await reloadPage();
   await until(() => cdp.evaluate('document.querySelector("[data-python-web-echo-result]")?.textContent === "ready"'), 'fresh Client after page reload');
   await echo('1.0.0', report.exported ? 4 : 2);
   report.steps.push({ step: 'page-refresh-restores-client-with-host-retained', passed: true });
@@ -296,7 +328,7 @@ try {
   assert.match(JSON.stringify(rejected), /strict definition was withdrawn/);
   assert.equal((await command('snapshot')).calls, null);
   report.steps.push({ step: 'host-unload-withdraws-strict-remote-retained-client-call-rejected', passed: true });
-  await cdp.call('Page.reload', {ignoreCache: true});
+  await reloadPage();
   await until(async () => !await count('[data-python-web-echo]') && await count('[class*="frame"]'), 'page reload reads graph without unloaded Client');
   report.steps.push({ step: 'page-refresh-removes-unloaded-client-from-original-boot-graph', passed: true });
   await transition('restart', '1.0.0');

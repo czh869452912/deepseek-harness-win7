@@ -2,23 +2,41 @@
   "id": "MIG-CURRENT-RELEASE-GATE-003",
   "goal": "补齐当前原版浏览器、双侧契约及实际解压 Portable 的统一发行门禁",
   "kind": "verification",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "1d5d965de1c7e08c00cbd1fd5227d2503d28444f",
   "owner": "current-session-coordinator",
   "requires": [],
-  "provides": [{"contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}, {"contract": "CON-WEB-HTTP-RESPONSE-LIFETIME", "revision": 1}],
+  "provides": [
+    {
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    },
+    {
+      "contract": "CON-WEB-HTTP-RESPONSE-LIFETIME",
+      "revision": 1
+    }
+  ],
   "acceptance": [
     "Execute all five original-browser journeys without inherited API credentials and all five built Portable profile tests; required lanes must not skip.",
     "Run fresh selected paired gates, original source configurations and strict Cordis adaptation acceptance for frozen inputs.",
     "Verify the actual extracted archive runtime and original browser, with matching candidate and archive hashes and no fatal diagnostics.",
     "A clean candidate passes the complete gate; upload consumes its exact receipt-bound archive without rebuilding."
   ],
-  "expected_paths": ["scripts", "tests", "dsh/host/webserver", ".github/workflows", "migration", "docs/research"],
-  "open_findings": ["HTTP lifetime correction and new-document observation pass the complete frozen development preview; committed clean-candidate acceptance remains required."],
+  "expected_paths": [
+    "scripts",
+    "tests",
+    "dsh/host/webserver",
+    ".github/workflows",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "HTTP 关闭语义四个反例修复后，冻结完整 preview 4800 passed/6 skipped/1 warning，十条必需 lane、四组原样源码测试、24 个双侧驱动及实际解压 runtime/browser 全通过。preview 不可发行；按授权逐部分提交后重跑 clean gate 并绑定当前范围证据。初次 clean 失败保留，远程 Actions 与 Win7 不冒充本地验收。"
+  "candidate_commit": "623a615a34d6e81a0d6fc9230c836a12017ba65c",
+  "integrated_commit": "623a615a34d6e81a0d6fc9230c836a12017ba65c",
+  "evidence_ids": [
+    "RUN-CURRENT-20261003-CURRENT-RELEASE-GATE-003"
+  ],
+  "next_action": "当前 Windows clean candidate 623a615a 通过统一门禁并绑定实际 ZIP；保持十条 lane 与精确例外，不据此认证 full parity、远程 Actions 或 Win7。"
 }

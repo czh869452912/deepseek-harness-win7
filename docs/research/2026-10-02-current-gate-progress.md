@@ -52,6 +52,8 @@
 
 2026-10-03 根因修复后的冻结预览 `.goose/out/p0-acp-final-preview/summary.json`：**4800 passed、6 skipped、1 warning，1029.59 秒**；十条必需浏览器/Portable lane 全部执行，四组原样测试合计 **477 passed**，24 个双侧驱动和 Cordis 精确 C58 适配门禁通过。实际解压 Python 3.8.10 和原版浏览器旅程通过，前端资产未修改。状态仍为 **development-preview / publishable=false**；ZIP SHA256 为 `2cdcd8a07a32c96aa7fd640f0ab4fcac96b75e212db5a19b7a1cf0aa6ab8fa79`。既存 Proactor warning 和 pytest 结束后的 HTTP 测试连接重置诊断未清零，不列入原版例外。本段是运行后补记；随后按用户授权分部分提交，再冻结干净候选验收。
 
+随后按部分提交：HTTP/观察器 `b15aff84`、ACP `b85e03f8`、例外索引 `623a615a`。干净产品候选 `623a615a34d6e81a0d6fc9230c836a12017ba65c` 的统一门禁 **passed / publishable=true / worktree_dirty=false**：全量 **4800 passed、6 skipped、1 warning，1042.57 秒**；十条 lane、477 项原样源码测试、24 个双侧驱动、Cordis 精确适配及实际解压旅程通过。实际 ZIP SHA256 `b6fe79ebf2cf427669976d36988a1feb3002062408cc4f353cf36f02ce61c889`；收据 `.goose/out/p0-acp-clean-gate/summary.json` 与版本化证据包绑定该候选，未发布。当前门禁/HTTP 范围和 ACP 归属任务已集成；完整报告见 `2026-10-03-current-candidate-closure.md`。后补台账不伪装成本次冻结输入，也不触发重建旧 ZIP。
+
 1. 本地完整预览通过后，由用户授权提交，干净检出重跑统一门禁与远程 Actions，绑定该候选正式验收；本轮不自动提交。
 2. 下一闭包优先 ACP 多 Session turn/end 归属缺陷，双侧复现、修复并纳入契约回归。此缺陷本轮尚未修复。
 3. 逐个收敛 Session/Web 正式契约与已实现代码的记录差距；建立原版 bug 的精确例外台账，不扩大既有绕过范围。

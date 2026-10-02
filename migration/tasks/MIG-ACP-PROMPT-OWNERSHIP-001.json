@@ -2,23 +2,35 @@
   "id": "MIG-ACP-PROMPT-OWNERSHIP-001",
   "goal": "修复迁移版 ACP 跨 Session、同 ID 冒充及旧 turn 的 prompt 归属和异常槽位泄漏",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "134a6fd6340fa09928f069e97bcfdc3ea9b5217a",
   "owner": "current-session-coordinator",
   "requires": [],
-  "provides": [{"contract": "CON-ACP-PROMPT-OWNERSHIP", "revision": 1}],
+  "provides": [
+    {
+      "contract": "CON-ACP-PROMPT-OWNERSHIP",
+      "revision": 1
+    }
+  ],
   "acceptance": [
     "The original cross-Session, same-id impostor, stale-turn and missing-claim probes fail before the fix and pass after it.",
     "Concurrent prompts preserve distinct stop reasons; cancellation/late results and owned turn/error correlation wait for idle without cross-session mutation.",
     "Enqueue/idle/turn/interval failures leave no occupied prompt slot; canonical run_profile and the actual AgentLoop claim and settle a real prompt.",
     "The complete Python 3.8.10 regression passes at the candidate; findings do not reclassify this migration defect as an upstream bug."
   ],
-  "expected_paths": ["dsh/acp", "tests/test_acp_prompt_ownership.py", "migration", "docs/research"],
-  "open_findings": ["Await complete regression and a committed candidate for scoped acceptance; full ACP wire/MCP lifecycle remains outside this contract."],
+  "expected_paths": [
+    "dsh/acp",
+    "tests/test_acp_prompt_ownership.py",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "四个归属反例从 4 failed 变为 4 passed；专项 27 passed 含真实 profile/AgentLoop，完整冻结 preview 4800 passed。原版 ACP 139 passed 仅为源码基线。按授权独立提交，再绑定 clean candidate 范围证据；随后推进完整 ACP 提供端/消费者契约。"
+  "candidate_commit": "623a615a34d6e81a0d6fc9230c836a12017ba65c",
+  "integrated_commit": "623a615a34d6e81a0d6fc9230c836a12017ba65c",
+  "evidence_ids": [
+    "RUN-CURRENT-20261003-ACP-PROMPT-OWNERSHIP-001"
+  ],
+  "next_action": "Session/Agent/message/turn 归属及异常槽位清理的有界闭包已在 clean candidate 验收；继续完整 ACP stdio、输出排空、请求 signal、持久恢复、MCP/权限及 subagent 提供端/消费者合同。"
 }

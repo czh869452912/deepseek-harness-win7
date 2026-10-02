@@ -12,7 +12,7 @@
     "The actual extracted archive passes isolated Python runtime and original-browser journeys; archive identity, commit and SHA256 bind the receipt.",
     "Dirty development previews are never publishable; CI uploads only the exact clean archive named and hashed by a passing receipt."
   ],
-  "open_questions": ["A fresh clean candidate must pass after the HTTP response lifetime correction. Remote Actions execution/publication and deferred Win7 validation are not certified by local acceptance."],
+  "open_questions": ["Remote Actions execution/publication and deferred Win7 validation are not certified by local acceptance."],
   "identity": "Pinned reference SHA, candidate commit, dirty state, source-input manifest and exact archive/receipt hashes identify each run. A preview is not formal acceptance.",
   "ownership": "The coordinator owns current gate drivers, disposable browser profiles, isolated credential-free Host environments and reports; publishing never rebuilds the archive.",
   "ordering": "Preflight and snapshot, migration check, Portable build, complete non-skipping regression, four original source suites, selected paired observations, raw Cordis and scoped acceptance, extracted archive runtime/browser, unchanged-input check, then receipt-bound upload.",

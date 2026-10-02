@@ -1,0 +1,29 @@
+{
+  "id": "MIG-ACP-TRANSPORT-002",
+  "goal": "共同闭合 ACP stdio/MCP 提供端与 subagent 消费者的完整请求生命周期",
+  "kind": "implementation",
+  "state": "draft",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "623a615a34d6e81a0d6fc9230c836a12017ba65c",
+  "owner": null,
+  "requires": [
+    {"task": "MIG-ACP-PROMPT-OWNERSHIP-001", "contract": "CON-ACP-PROMPT-OWNERSHIP", "revision": 1},
+    {"task": "MIG-AGENT-LIFECYCLE-002", "contract": "CON-AGENT-FACTORY", "revision": 1},
+    {"task": "MIG-SESSION-COLD-003", "contract": "CON-SESSION-COLD-RECOVERY", "revision": 1},
+    {"task": "MIG-SESSION-STORAGE-006", "contract": "CON-SESSION-STORAGE", "revision": 1}
+  ],
+  "provides": [],
+  "acceptance": [
+    "Specify one source-backed provider/consumer contract before ready: identity, capabilities/version negotiation, ordered notifications, request cancellation, persisted sessions, MCP ownership and teardown.",
+    "Drive real stdio JSON-RPC initialize/new/prompt/cancel/list/resume/close/config with two Sessions, durable restoration and malformed/closed/late-result failures; no Agent=None success fallback.",
+    "MCP stdio/network transport and permission requests preserve exact Session/Agent ownership; disposable effects drain output and descendants on disconnect/unload.",
+    "Necessary ACP subagent consumers, canonical profile/launcher and extracted Portable execute the same bounded journeys; source-only ACP 139 tests do not certify Python parity."
+  ],
+  "expected_paths": ["dsh/acp", "dsh/subagent", "dsh/boot", "apps/cli", "tests", "scripts", "migration", "docs/research"],
+  "open_findings": ["Python bridge still has no complete stdio app registration, reports protocolVersion as a string, and lacks ordered update drain/request signal, persistent session controls, MCP/permissions and complete subagent closure."],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "基于固定原版 index/session/updates/model-control/mcp 与 11 个源测试文件先定义共享合同，再实现提供端和必要 subagent 消费者。additionalDirectories 拒绝与 authenticate 空行为原版已有，不列为迁移缺陷；不将已集成 prompt 归属范围写成完整 ACP 完成。"
+}

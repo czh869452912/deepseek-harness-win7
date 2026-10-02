@@ -21,5 +21,5 @@
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "按已认可研究计划定义契约与依赖；分析可提前，接口实现等待提供端验收。"
+  "next_action": "当前 DeepSeek/Pi 本地 wire 双侧驱动已通过，补齐历史 draft 与近期实现之间的 source-backed contracts/范围证据；OAuth/刷新、专属云协议和真实付费 API smoke 另列，不将 catalog 或 mock 视为远程认证完成。"
 }

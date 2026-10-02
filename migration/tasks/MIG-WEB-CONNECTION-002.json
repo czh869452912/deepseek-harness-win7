@@ -27,6 +27,6 @@
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "按已盘点的 Connection -> Typert/Gateway -> Remote controller -> browser 顺序定义契约；Session replay/projection 未验收前不迁移页面消费者。",
+  "next_action": "canonical Connection/Gateway/Remote 与五条原版 browser/HTTP lifetime 已在当前候选复验；补齐近期实现的正式分层 contracts 和源断言覆盖，保留 registry projection 与完整 domain/cache/replay 的边界，不因旧台账仍 draft 重写或回退到 ApiProxy。",
   "discovery_task": "MIG-WEB-PROTOCOL-DISCOVERY-002"
 }

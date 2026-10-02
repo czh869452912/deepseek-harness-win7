@@ -27,5 +27,5 @@
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "按已认可研究计划定义契约与依赖；分析可提前，接口实现等待提供端验收。"
+  "next_action": "Agent 提供端已在 623a615a 重验；据现有 repeat/token/pruner/compaction/approval/timeout/abort 配对回执回填正式合同，并认证并行工具、中断、用户补充与关闭的组合顺序。八类原版 bug 仍只由既有精确谓词接受，不扩大绕过。"
 }

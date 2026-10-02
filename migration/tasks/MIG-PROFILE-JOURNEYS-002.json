@@ -13,8 +13,8 @@
       "revision": 1
     },
     {
-      "task": "MIG-REPRO-GATE-002",
-      "contract": "CON-REPRO-RELEASE",
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
       "revision": 1
     },
     {
@@ -37,5 +37,5 @@
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "Configured startup/reload is tracked by MIG-AGENT-CONFIG-003; next complete Session projection and its replay consumers, then full profile journeys after Wire/Tools/Web contracts."
+  "next_action": "当前 release/Agent 提供端已重验，改依赖 canonical 当前门禁而非历史 REPRO 安装契约；仍须正式 profile 的模型→真实工具→下一请求、question/approval UI、取消、关闭及新进程恢复的组合闭包。现有五 profile 启停与五 browser 插件旅程不等于全部用户主链认证。"
 }

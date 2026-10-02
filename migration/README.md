@@ -10,6 +10,10 @@
 
 范围、既存缺口和后续顺序见 `docs/research/2026-10-02-migration-status-audit.md`；本轮推进与验证见 `docs/research/2026-10-02-current-gate-progress.md`。Windows 7、JS/OAuth 和 ACP 等仍按独立契约推进，不能用当前 Windows 门禁代替。
 
+2026-10-03：按用户授权提交 P0 初版后的首次 clean gate 失败已保留；新增文档代际等待和完整诊断，并用四个失败探针修复单请求 HTTP carrier 隐瞒 socket 关闭的问题。最新冻结 preview **4800 passed、6 skipped、1 warning**，十条必需 lane、四组原样源码测试、24 个双侧驱动和实际解压 runtime/browser 通过，但不可发行。分部分提交后再验收干净候选，不把历史 preview 改成发行回执。ACP 精确 Session/Agent/message/turn 归属另立 `MIG-ACP-PROMPT-OWNERSHIP-001` / `CON-ACP-PROMPT-OWNERSHIP@1`，不冒充完整 ACP 实现。
+
+八类原版 bug 的统一发现索引为 `upstream-bug-exceptions.json`：指向现有精确配对 predicate、场景和审阅记录；它不是新跳过列表。C58 独立归入语言适配，ACP 和观察器缺陷不登记为原版 bug；既有各门禁仍是唯一允许差异的执行权威。
+
 ## 操作
 
 ```powershell

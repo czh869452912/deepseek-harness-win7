@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "scope": "Discovery index only. Existing paired predicates and source observations remain the only acceptance authority; never a skip list or a claim of full upstream parity.",
+  "exceptions": [
+    {"id": "UPSTREAM-REPEAT-001", "driver": "scripts/repeat_tool_oracle.py", "predicate": "reviewed_proto_difference", "modes": ["proto-key-loss"], "finding": "JSON __proto__ own-key loss produces a false repeat notice.", "record": "docs/research/2026-10-01-repeat-tool-reminder-progress.md"},
+    {"id": "UPSTREAM-TOKEN-METER-001", "driver": "scripts/token_meter_oracle.py", "predicate": "reviewed_input_anchor_difference", "modes": ["late-input-anchor"], "finding": "Accepted user input is counted by usage and by a stale surface anchor.", "record": "docs/research/2026-10-01-token-meter-replay-progress.md"},
+    {"id": "UPSTREAM-COMPACTION-POLICY-001", "driver": "scripts/compaction_oracle.py", "predicate": "reviewed_route_key_difference", "modes": ["embedded-nul-routes"], "finding": "NUL-delimited provider/model keys collide.", "record": "docs/research/2026-10-01-compaction-policy-progress.md"},
+    {"id": "UPSTREAM-COMPACTION-SUMMARY-001", "driver": "scripts/compaction_oracle.py", "predicate": "reviewed_summary_metadata_difference", "modes": ["transaction-private-fields"], "finding": "Summary extras overwrite prepared transaction metadata.", "record": "docs/research/2026-10-01-compaction-transaction-progress.md"},
+    {"id": "UPSTREAM-CORDIS-INSPECT-001", "aliases": ["INSPECT-001"], "driver": "scripts/inspect_oracle.py", "predicate": "classify", "modes": ["registry/disposal"], "finding": "Context disposal retains a pending Client inspect waiter.", "record": "docs/research/2026-10-01-cordis-inspect-progress.md"},
+    {"id": "CORDIS-GUARD-001", "driver": "scripts/cordis_guard_oracle.py", "predicate": "classify", "modes": ["facade/callable-context", "facade/callable-async-context"], "finding": "Callable service returns expose an unguarded Context.", "record": "docs/research/2026-10-01-cordis-guard-progress.md"},
+    {"id": "CORDIS-RUNTIME-001", "driver": "scripts/cordis_runner_oracle.py", "predicate": "classify", "modes": ["runtime-error-nul-collision"], "finding": "NUL-delimited method/message error keys suppress an independent failure.", "record": "docs/research/2026-10-01-cordis-runner-progress.md"},
+    {"id": "CORDIS-LIFECYCLE-001", "driver": "scripts/cordis_retirement_oracle.py", "predicate": "classify", "modes": ["remove-host-starting", "stop-host-starting", "remove-dual-starting", "stop-dual-starting", "remove-update-starting", "stop-update-starting"], "finding": "Stop/remove can resurrect an activation that commits late.", "record": "docs/research/2026-10-01-cordis-retirement-progress.md"}
+  ],
+  "language_adaptations": [
+    {"id": "PY38-RESOLVED-AWAIT", "driver": "scripts/cordis_acceptance.py", "predicate": "evaluate", "cases": ["C58"], "required_checkpoint": "C59", "finding": "Resolved Python Future scheduling differs from a JavaScript resolved Promise; raw divergence must remain visible."}
+  ],
+  "excluded_migration_defects": ["ACP cross-Session or stale-turn prompt settlement", "Browser observer old-document races", "Unattributed Proactor/HTTP shutdown diagnostics"]
+}

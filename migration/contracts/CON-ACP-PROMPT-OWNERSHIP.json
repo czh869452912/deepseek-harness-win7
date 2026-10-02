@@ -1,0 +1,22 @@
+{
+  "id": "CON-ACP-PROMPT-OWNERSHIP",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/acp/acp/src/index.ts", "reference/packages/acp/acp/src/session.ts", "dsh/acp/server.py", "tests/test_acp_prompt_ownership.py"],
+  "consumers": ["dsh/acp/server.py"],
+  "invariants": [
+    "Session events require the exact owned Session object, not merely a matching id; claimed inbox events/errors require the exact owned Agent.",
+    "Only the in-flight ACP message's claimed turn may supply its durable ending; neighbor, old-turn, same-id impostor and unclaimed-message events cannot overwrite it.",
+    "Explicit cancellation wins over a later completed event and prompt settlement waits for Agent quiescence.",
+    "Enqueue, idle, durable-turn and interval failures release only their exact prompt admission slot; same-turn errors use the durable ending.",
+    "Canonical run_profile/Loader/real AgentLoop integration claims a real turn and releases the Agent without replacing providers with a legacy harness."
+  ],
+  "open_questions": ["Full ACP stdio registration, output drain, request-signal cancellation, persistent list/resume/close/config and MCP/permissions remain a separate provider/consumer contract."],
+  "identity": "Exact owned Agent, exact owned Session, accepted message id and claimed turn identify one prompt; no global turn-end broadcast settlement.",
+  "ownership": "The ACP SessionRecord owns its one prompt slot; all error paths clear only the local identity they admitted. Context owns reversible handlers and Agent disposal.",
+  "ordering": "Admit content, assign the slot before followup, correlate inbox claim, read only the same turn ending, wait for idle, settle or fail, then clear the same slot in finally.",
+  "errors": "Cancellation cannot be overwritten by late normal completion; actual turn/interval failures reject instead of falsely reporting end_turn, and rejected admission/idle leaves no occupied slot.",
+  "cancellation": "The client cancel operation marks only its owned prompt, cancels only its Agent and preserves the quiescence boundary. Complete SDK request cancellation is not claimed.",
+  "adaptation": "Python 3.8.10 native bridge handler contract only. Original 139-test ACP source baseline is distinct from bounded Python coverage; no full ACP wire/MCP parity or Win7 certification is claimed."
+}

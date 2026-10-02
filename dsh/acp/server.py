@@ -121,25 +121,40 @@ class AcpPlugin(Plugin):
         content = admit_acp_prompt(ctx, rec.agent, prompt_blocks, self.image_prompt_enabled)
 
         msg = {"id": f"msg-{uuid.uuid4().hex[:8]}", "role": "user", "content": content}
-        rec.inflight_prompt = {"msg_id": msg["id"], "done": False, "stop_reason": "end_turn"}
+        inflight = {"msg_id": msg["id"], "turn": None, "stop_reason": "end_turn",
+                    "cancel_requested": False, "end_reason": None, "agent_error": None}
+        rec.inflight_prompt = inflight
+        try:
+            if rec.agent and hasattr(rec.agent, "followup"):
+                rec.agent.followup(msg)
 
-        if rec.agent and hasattr(rec.agent, "followup"):
-            rec.agent.followup(msg)
+            if rec.agent and hasattr(rec.agent, "when_idle"):
+                result = rec.agent.when_idle()
+                if inspect.isawaitable(result):
+                    await result
 
-        if rec.agent and hasattr(rec.agent, "when_idle"):
-            res = rec.agent.when_idle()
-            if hasattr(res, "__await__"):
-                await res
-
-        stop_reason = rec.inflight_prompt.get("stop_reason", "end_turn")
-        rec.inflight_prompt = None
-        return {"stopReason": stop_reason}
+            if inflight["cancel_requested"]:
+                return {"stopReason": "cancelled"}
+            if inflight["agent_error"] is not None:
+                raise RuntimeError("turn failed: %s" % inflight["agent_error"])
+            reason = inflight["end_reason"]
+            if reason is not None and reason.get("kind") == "error":
+                error = reason.get("error")
+                detail = error.get("message", str(error)) if isinstance(error, dict) else str(error)
+                raise RuntimeError("turn failed: %s" % detail)
+            if rec.agent is not None and reason is None:
+                return {"stopReason": "cancelled"}
+            return {"stopReason": inflight["stop_reason"]}
+        finally:
+            if rec.inflight_prompt is inflight:
+                rec.inflight_prompt = None
 
     async def cancel(self, ctx: Any, params: Dict[str, Any]) -> None:
         session_id = params.get("sessionId")
         if session_id in self.sessions:
             rec = self.sessions[session_id]
             if rec.inflight_prompt:
+                rec.inflight_prompt["cancel_requested"] = True
                 rec.inflight_prompt["stop_reason"] = "cancelled"
             if rec.agent and hasattr(rec.agent, "cancel"):
                 rec.agent.cancel({"kind": "user"})
@@ -147,18 +162,33 @@ class AcpPlugin(Plugin):
     def _on_session_event(self, session: Any, event: Dict[str, Any]) -> None:
         e_type = event.get("type") if isinstance(event, dict) else getattr(event, "type", "")
         data = event.get("data", {}) if isinstance(event, dict) else getattr(event, "data", {})
-        if e_type == "turn/end":
+        rec = self.sessions.get(getattr(session, "id", None))
+        if rec is None or getattr(rec.agent, "session", None) is not session:
+            return
+        inflight = rec.inflight_prompt
+        if (e_type == "turn/end" and isinstance(data, dict) and inflight is not None
+                and inflight.get("turn") is not None and inflight["turn"] == data.get("turn")):
             reason = data.get("reason", {})
-            stop_reason = turn_end_to_stop_reason(reason)
-            for rec in self.sessions.values():
-                if rec.inflight_prompt:
-                    rec.inflight_prompt["stop_reason"] = stop_reason
+            inflight["end_reason"] = reason
+            inflight["stop_reason"] = turn_end_to_stop_reason(reason)
+
+    def _owned_agent_record(self, agent: Any) -> Optional[SessionRecord]:
+        session = getattr(agent, "session", None)
+        rec = self.sessions.get(getattr(session, "id", None))
+        return rec if rec is not None and rec.agent is agent else None
 
     def _on_inbox_claimed(self, payload: Dict[str, Any]) -> None:
-        pass
+        rec = self._owned_agent_record(payload.get("agent"))
+        if (rec is not None and rec.inflight_prompt is not None
+                and rec.inflight_prompt["msg_id"] == payload.get("message", {}).get("id")):
+            rec.inflight_prompt["turn"] = payload.get("turn")
 
     def _on_agent_error(self, payload: Dict[str, Any]) -> None:
-        pass
+        rec = self._owned_agent_record(payload.get("agent"))
+        if rec is not None and rec.inflight_prompt is not None:
+            inflight = rec.inflight_prompt
+            if inflight.get("turn") != payload.get("turn"):
+                inflight["agent_error"] = payload.get("error")
 
     def _on_approval_request(self, request: Any, next_fn: Any) -> Any:
         return next_fn()

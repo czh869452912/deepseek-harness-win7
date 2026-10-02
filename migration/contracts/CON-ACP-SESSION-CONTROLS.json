@@ -1,0 +1,22 @@
+{
+  "id": "CON-ACP-SESSION-CONTROLS",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/acp/acp/src/index.ts", "reference/packages/acp/acp/src/session.ts", "reference/packages/acp/acp/tests/bridge.spec.ts", "dsh/acp/server.py", "dsh/core/agent.py", "dsh/session/persistence.py"],
+  "consumers": ["dsh/acp/server.py", "dsh/subagent/runtime.py"],
+  "invariants": [
+    "Fresh Session activation requires actual Agent and persistence providers, materializes even empty histories and rolls back failed or closed publication; no Agent=None success.",
+    "List exposes only inactive top-level persisted Sessions, newest createdAt first with UTF-8 byte id tie-break, strict canonical base64url keyset cursors and a positive safe-integer page limit.",
+    "Resume checks bridge/live/activating identity and exact workspace before Agent composition, reserves admission across awaits and releases failed activation for retry.",
+    "Concurrent close shares one cancellation/quiescence/descendant/flush/dispose operation; closing records reject new prompts and are removed even on explicit close failure.",
+    "Bridge unload cancels every captured Session before awaiting drains, disposes all owned Agents, clears exact records and reports aggregated teardown failures rather than swallowing them."
+  ],
+  "open_questions": ["ACP stdio/MCP/configuration/ordered semantic output are separate remaining provider/consumer closures; this contract does not certify those capabilities."],
+  "identity": "Exact owned Agent/Session, opaque Session id, activation reservation and canonical cursor ordering key; active foreign Sessions cannot be resumed or listed.",
+  "ownership": "ACP owns admission records and memoized close operations; services own Agent construction and durable storage, and descendant teardown is requested through the optional subagents service.",
+  "ordering": "Validate, reserve, restore/create, guard lifetime, materialize fresh storage, publish; close cancels all activity before quiescence, descendant drain, persistence flush and Agent disposal.",
+  "errors": "Invalid workspace/cursor/id/admission fail without publication; provider or close failures preserve diagnostics, release exact records and do not leave occupied resume reservations.",
+  "cancellation": "Pre-aborted activation never calls providers; factory receives the request signal, late closed activation is disposed and cannot publish; unload cancellation is issued before any Session drain can block.",
+  "adaptation": "Python 3.8.10 provider/handler lifecycle, JSONL/SQLite and canonical profile tests. No complete ACP wire, MCP, model/config controls, ordered updates or Win7 certification is inferred."
+}

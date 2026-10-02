@@ -103,3 +103,38 @@ def test_repeat_navigation_allows_absent_dialog_only_when_application_is_interac
 def test_first_navigation_requires_dialog_even_when_application_is_interactive():
     report = observe({'absent': True, 'interactive': True})
     assert report['failure'] == 'Timed out: original provider onboarding defer button'
+
+
+@pytest.mark.parametrize('committed', [True, False])
+def test_reload_waits_for_new_document_not_the_previous_application_shell(committed):
+    source = r'''
+import assert from 'node:assert/strict';
+import {runInNewContext} from 'node:vm';
+const {reloadOriginalPage} = await import(process.argv[1]);
+const committed = JSON.parse(process.argv[2]);
+const performance = {timeOrigin: 10}, actions = [];
+const connection = {
+  evaluate: expression => Promise.resolve(runInNewContext(expression, {performance})),
+  call: async (method, parameters) => {actions.push({method, parameters});},
+};
+let polls = 0, failure = null;
+const waitFor = async (read, label) => {
+  assert.equal(label, 'new document after original page reload');
+  assert.equal(await read(), false);
+  for (polls = 1; polls < 4; polls++) {
+    if (committed && polls === 2) performance.timeOrigin = 20;
+    if (await read()) return true;
+  }
+  throw new Error('Timed out: ' + label);
+};
+try {await reloadOriginalPage(connection, waitFor, {ignoreCache: true});} catch (error) {failure = error.message;}
+console.log(JSON.stringify({actions, polls, failure}));
+'''
+    result = subprocess.run([NODE, '--input-type=module', '-e', source.strip().replace('\n', ' '),
+                             (ROOT / 'scripts/browser_onboarding.mjs').as_uri(), json.dumps(committed)],
+                            capture_output=True, encoding='utf-8', timeout=15)
+    assert result.returncode == 0, result.stdout + result.stderr
+    report = json.loads(result.stdout)
+    assert report['actions'] == [{'method': 'Page.reload', 'parameters': {'ignoreCache': True}}]
+    assert report['failure'] == (None if committed else 'Timed out: new document after original page reload')
+    assert report['polls'] >= 2

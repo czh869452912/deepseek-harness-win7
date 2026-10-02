@@ -4,6 +4,13 @@ export function credentialFreeEnvironment(environment) {
     && !/^(?:DSH_HOME|PYTHONPATH|PYTHONHOME)$/i.test(name)));
 }
 
+export async function reloadOriginalPage(connection, waitFor, parameters = {}) {
+  const previous = await connection.evaluate('performance.timeOrigin');
+  await connection.call('Page.reload', parameters);
+  await waitFor(() => connection.evaluate('performance.timeOrigin !== ' + JSON.stringify(previous)),
+    'new document after original page reload');
+}
+
 export async function deferProviderOnboarding(connection, waitFor, required = true) {
   const dialog = '[role="dialog"][aria-label="Add an API key to get started"], [role="dialog"][aria-label="添加一个 API Key 开始使用"]';
   const point = await waitFor(() => connection.evaluate(`(() => {

@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
-import { credentialFreeEnvironment, deferProviderOnboarding } from './browser_onboarding.mjs';
+import { credentialFreeEnvironment, deferProviderOnboarding, reloadOriginalPage } from './browser_onboarding.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const options = Object.fromEntries(process.argv.slice(2).reduce((pairs, value, i, args) => {
@@ -23,6 +23,8 @@ let browser, host, cdp, hostErrors = '', nextCommand = 1;
 const pending = new Map();
 const replyJobs = new Set();
 const finiteRequests = new Set();
+const requestDetails = new Map();
+let phase = 'startup';
 let networkChanged = Date.now();
 const delay = ms => new Promise(done => setTimeout(done, ms));
 async function until(read, label, timeout = 20000) {
@@ -55,6 +57,7 @@ class CDP {
   }
 }
 async function command(command) {
+  phase = 'host:' + command;
   const id = nextCommand++;
   return await new Promise((yes, no) => {
     const timer = setTimeout(() => { pending.delete(id); no(new Error('Host timeout: ' + command)); }, 30000);
@@ -74,13 +77,15 @@ async function onboarding(required = false) {
   report.providerOnboardingDeferrals = (report.providerOnboardingDeferrals ?? 0) + Number(deferred);
 }
 async function closePage() {
+  phase = 'close-page';
   await settleNetwork();
   await cdp.call('Page.navigate', {url: 'about:blank'});
   await until(() => cdp.evaluate('location.href === "about:blank"'), 'close page before Host transition');
 }
 async function reloadPage() {
+  phase = 'reload-page';
   await settleNetwork();
-  await cdp.call('Page.reload', {ignoreCache: true});
+  await reloadOriginalPage(cdp, until, {ignoreCache: true});
   await onboarding();
 }
 async function click(selector) {
@@ -89,6 +94,7 @@ async function click(selector) {
   await cdp.call('Input.dispatchMouseEvent', { type: 'mouseReleased', ...point, button: 'left', clickCount: 1 });
 }
 async function open(boot, present = true) {
+  phase = 'open:' + new URL(boot.url).origin;
   await cdp.call('Page.navigate', { url: boot.url });
   await until(() => count('[class*="frame"]'), 'original application shell', 30000);
   // Dismiss the original first-use notice through its actual visible control.
@@ -243,8 +249,14 @@ try {
   cdp = new CDP(socket);
   const requests = new Map();
   cdp.listeners.push(message => {
+    if (message.method === 'Page.frameNavigated' && !message.params.frame.parentId) {
+      const target = new URL(message.params.frame.url);
+      (report.documents ??= []).push({url: target.origin + target.pathname, phase, steps: report.steps.length});
+    }
     if (message.method === 'Network.requestWillBeSent') {
       const params = message.params;
+      const target = new URL(params.request.url);
+      requestDetails.set(params.requestId, {path: target.origin + target.pathname, method: params.request.method, phase});
       if (!['EventSource', 'WebSocket'].includes(params.type) && !new URL(params.request.url).pathname.endsWith('/plugins/events')) {
         finiteRequests.add(params.requestId);
         networkChanged = Date.now();
@@ -252,8 +264,19 @@ try {
     }
     if (['Network.loadingFinished', 'Network.loadingFailed'].includes(message.method)
         && finiteRequests.delete(message.params.requestId)) networkChanged = Date.now();
+    if (message.method === 'Network.responseReceived') {
+      const response = message.params.response;
+      const target = new URL(response.url);
+      if (target.pathname.startsWith('/api/')) {
+        (report.httpResponses ??= []).push({path: target.origin + target.pathname, status: response.status,
+          contentType: response.mimeType, phase, steps: report.steps.length});
+      }
+    }
     if (message.method === 'Runtime.exceptionThrown') report.errors.push(message.params.exceptionDetails);
-    if (message.method === 'Runtime.consoleAPICalled' && message.params.type === 'error') report.consoleErrors.push(message.params.args.map(value => value.value ?? value.description));
+    if (message.method === 'Runtime.consoleAPICalled' && message.params.type === 'error') {
+      report.consoleErrors.push(message.params.args.map(value => value.value ?? value.description));
+      (report.consoleContext ??= []).push({phase, steps: report.steps.length, pending: [...finiteRequests].map(id => requestDetails.get(id))});
+    }
     if (message.method === 'Network.webSocketCreated') report.sockets.push(new URL(message.params.url).pathname);
     if (message.method === 'Network.webSocketFrameSent') {
       try {
@@ -279,7 +302,10 @@ try {
         report.replies.push({ request: args, response: JSON.parse(result.base64Encoded ? Buffer.from(result.body, 'base64').toString('utf8') : result.body) });
       }).catch(error => report.errors.push(String(error))).finally(() => replyJobs.delete(job)); replyJobs.add(job);
     }
-    if (message.method === 'Network.loadingFailed' && !message.params.canceled) report.requests.push(message.params.errorText);
+    if (message.method === 'Network.loadingFailed') {
+      (report.networkFailures ??= []).push({...requestDetails.get(message.params.requestId), error: message.params.errorText, canceled: message.params.canceled, blocked: message.params.blockedReason, cors: message.params.corsErrorStatus});
+      if (!message.params.canceled) report.requests.push(message.params.errorText);
+    }
   });
   await cdp.call('Runtime.enable'); await cdp.call('Page.enable'); await cdp.call('Network.enable');
   await cdp.call('Emulation.setDeviceMetricsOverride', { width: 1680, height: 1000, deviceScaleFactor: 1, mobile: false });

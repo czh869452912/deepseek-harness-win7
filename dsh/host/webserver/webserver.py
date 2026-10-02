@@ -697,6 +697,8 @@ class HttpResponseWriter:
     async def send_headers(self) -> None:
         if self._headers_sent:
             return
+        self._drop_header("Connection")
+        self._set_header("Connection", "close")
         self._prepare_compression()
         status_phrase = http.HTTPStatus(self.status).phrase if self.status in http.HTTPStatus.__members__.values() else "OK"
         lines = [f"HTTP/1.1 {self.status} {status_phrase}"]

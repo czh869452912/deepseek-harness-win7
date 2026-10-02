@@ -40,6 +40,18 @@
 
 ## 后续验收
 
+2026-10-03 用户授权按完成部分提交；P0 初版为 `134a6fd6`。首次 clean gate 的全量结果 **4774 passed、1 failed、6 skipped、1 warning**（1065.09 秒），Host export 浏览器出现 inspect/inventory 的 `Failed to fetch`；回执为 failed / publishable=false，保留 `.goose/out/p0-clean-gate/`。不能把此前绿色 preview 视为 clean 发行验收。
+
+复现诊断 `.goose/out/p0-host-trace-3.json` 记录了 API abort 与失败阶段；新观察器保留网络取消、页面代际和 console 上下文，不过滤错误。重载助手新增 performance.timeOrigin 变化检查，避免用旧文档 DOM/交互性当成已重载；对应正反单测通过。最终稳定性与完整门禁需重新验证，不能仅凭三次局部成功宣称根因全部消除。
+
+进一步复跑仍出现启动期 abort，因此没有仅靠 observer 等待宣布修复。已确认另一项 transport 根因：WebServer 每个普通请求后关闭 socket，而 identity/Content-Length 响应没有宣告 Connection: close（甚至能保留 keep-alive），HTTP/1.1 客户端会复用正在关闭的连接。新增三项头部用例及真实 GET→POST→POST 标准客户端探针，修复前 **4 failed**，真实客户端复现 WinError 10053。现在普通响应统一声明 close 并去除大小写重复项；SSE 仍按 body 生命周期保持打开，WebSocket upgrade 使用自己的原始 writer，不受此处修改。Node 式持久连接/pipelining 性能不据此宣布迁移完成；该单请求 carrier 的合法关闭语义单立 `CON-WEB-HTTP-RESPONSE-LIFETIME@1`。
+
+关闭语义修复后的专项 `.goose/out/p0-acp-root-fixed.xml`：**121 passed，0 skipped，1 个既存 Proactor warning，245.61 秒**，含五条原版浏览器、HTTP finite/upgrade/socket journey、发行 helper 与 ACP/原版例外索引。准备执行冻结输入完整预览，随后逐部分提交，再对干净候选重跑正式本地门禁；正式回执未产生前不改 task 为 verified/integrated。
+
+原版八类 bug 精确索引已回填 `migration/upstream-bug-exceptions.json`；ACP prompt 归属修复的实际进展另见 `2026-10-03-acp-prompt-ownership-progress.md`。下列原始计划保留为当时状态，不替代本节后续实测。
+
+2026-10-03 根因修复后的冻结预览 `.goose/out/p0-acp-final-preview/summary.json`：**4800 passed、6 skipped、1 warning，1029.59 秒**；十条必需浏览器/Portable lane 全部执行，四组原样测试合计 **477 passed**，24 个双侧驱动和 Cordis 精确 C58 适配门禁通过。实际解压 Python 3.8.10 和原版浏览器旅程通过，前端资产未修改。状态仍为 **development-preview / publishable=false**；ZIP SHA256 为 `2cdcd8a07a32c96aa7fd640f0ab4fcac96b75e212db5a19b7a1cf0aa6ab8fa79`。既存 Proactor warning 和 pytest 结束后的 HTTP 测试连接重置诊断未清零，不列入原版例外。本段是运行后补记；随后按用户授权分部分提交，再冻结干净候选验收。
+
 1. 本地完整预览通过后，由用户授权提交，干净检出重跑统一门禁与远程 Actions，绑定该候选正式验收；本轮不自动提交。
 2. 下一闭包优先 ACP 多 Session turn/end 归属缺陷，双侧复现、修复并纳入契约回归。此缺陷本轮尚未修复。
 3. 逐个收敛 Session/Web 正式契约与已实现代码的记录差距；建立原版 bug 的精确例外台账，不扩大既有绕过范围。

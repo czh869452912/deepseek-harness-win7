@@ -1,0 +1,21 @@
+{
+  "id": "CON-WEB-HTTP-RESPONSE-LIFETIME",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["dsh/host/webserver/webserver.py", "dsh/host/connection/http_bridge.py", "tests/test_webserver_connection_lifetime.py", "reference/packages/host/webserver/src/index.ts"],
+  "consumers": ["dsh/host/connection/http_bridge.py", "dsh/host/frontend_static/frontend_static.py", "dsh/typert/gateway.py"],
+  "invariants": [
+    "The current single-request ordinary HTTP carrier must announce Connection: close before writing headers; it must not advertise a persistent socket that it always closes.",
+    "Connection headers are case-insensitive and cannot contain a conflicting keep-alive declaration; finite bodies and compression remain unchanged.",
+    "A standard HTTP client can perform GET then consecutive POST requests by reconnecting before each new request, without a stale-socket abort.",
+    "Streaming responses remain open until completion/disposal; raw request-level WebSocket upgrades own their sockets and bypass the ordinary response writer."
+  ],
+  "open_questions": ["Node-style persistent HTTP/pipelining and its performance are not implemented by this single-request transport; a future persistence change must also redesign the disconnect monitor."],
+  "identity": "One accepted TCP ordinary HTTP request owns its response and subsequent close; upgraded sockets have their existing separate owner.",
+  "ownership": "WebServerService closes ordinary sockets after dispatch; HttpResponseWriter must truthfully signal that lifetime. The Connection disconnect monitor owns only that request.",
+  "ordering": "Drop every case-variant Connection header, write one canonical close declaration, preserve content/compression, finish the response and drain before socket closure.",
+  "errors": "A client must not infer HTTP/1.1 persistence and reuse a closing socket for a non-idempotent RPC POST. Browser errors remain asserted, not suppressed or retried to mask transport loss.",
+  "cancellation": "Server/request disposal still terminates streams and ordinary activity; Connection: close does not prematurely finish an active stream, and upgrade handoff is unchanged.",
+  "adaptation": "Python 3.8 native one-request carrier uses valid explicit close semantics rather than claiming Node's persistent HTTP implementation. This is a migration transport defect correction, not an upstream bug exception."
+}

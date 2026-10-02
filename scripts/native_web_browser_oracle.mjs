@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
-import { credentialFreeEnvironment, deferProviderOnboarding } from './browser_onboarding.mjs';
+import { credentialFreeEnvironment, deferProviderOnboarding, reloadOriginalPage } from './browser_onboarding.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const options = Object.fromEntries(process.argv.slice(2).reduce((pairs, value, i, args) => {
@@ -403,7 +403,7 @@ try {
   await echo('v4');
   if (options.inspect) await inspectSeats('v4');
 
-  await cdp.call('Page.reload');
+  await reloadOriginalPage(cdp, until);
   await until(() => count('[class*="frame"]'), 'refreshed original app');
   await deferProviderOnboarding(cdp, until);
   report.providerOnboardingDeferrals += 1;

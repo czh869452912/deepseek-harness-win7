@@ -2,28 +2,57 @@
   "id": "MIG-ACP-SESSION-CONTROLS-003",
   "goal": "闭合 ACP new/list/resume/close 的持久 Session 提供端生命周期",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "5a3347d1ee98e828de0bbcce90c7b63880fe7532",
   "owner": "current-session-coordinator",
   "requires": [
-    {"task": "MIG-ACP-PROMPT-OWNERSHIP-001", "contract": "CON-ACP-PROMPT-OWNERSHIP", "revision": 1},
-    {"task": "MIG-AGENT-LIFECYCLE-002", "contract": "CON-AGENT-FACTORY", "revision": 1},
-    {"task": "MIG-SESSION-COLD-003", "contract": "CON-SESSION-COLD-RECOVERY", "revision": 1},
-    {"task": "MIG-SESSION-STORAGE-006", "contract": "CON-SESSION-STORAGE", "revision": 1}
+    {
+      "task": "MIG-ACP-PROMPT-OWNERSHIP-001",
+      "contract": "CON-ACP-PROMPT-OWNERSHIP",
+      "revision": 1
+    },
+    {
+      "task": "MIG-AGENT-LIFECYCLE-002",
+      "contract": "CON-AGENT-FACTORY",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-COLD-003",
+      "contract": "CON-SESSION-COLD-RECOVERY",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-STORAGE-006",
+      "contract": "CON-SESSION-STORAGE",
+      "revision": 1
+    }
   ],
-  "provides": [{"contract": "CON-ACP-SESSION-CONTROLS", "revision": 1}],
+  "provides": [
+    {
+      "contract": "CON-ACP-SESSION-CONTROLS",
+      "revision": 1
+    }
+  ],
   "acceptance": [
     "Source-derived list/cursor/resume/close probes preserve identity, ordering, workspace, failure and cancellation fields; selected original-source paired observations match.",
     "Negative tests reject Agent=None creation, invalid cursors/page limits, active/subagent/wrong-workspace resume and pre-aborted or late closed activation without leaked reservations.",
     "Concurrent close, idle/descendant/flush/dispose failures and multi-Session bridge teardown cancel and dispose every exact owner with explicit diagnostics.",
     "Actual canonical profile/AgentLoop/JSONL and SQLite demonstrate empty materialization, prompt/history, close/list/resume and new-Context restoration; complete Python 3.8.10 and clean candidate gates pass."
   ],
-  "expected_paths": ["dsh/acp", "tests", "scripts", "migration", "docs/research"],
-  "open_findings": ["Implementation and eight paired lifecycle observations pass targeted checks; complete frozen regression and committed clean-candidate acceptance remain to be executed."],
+  "expected_paths": [
+    "dsh/acp",
+    "tests",
+    "scripts",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "持久管理实现、4 个前置失败探针修复后通过、126 项主要专项、8 个双侧观察 matched、139 个原版 ACP 源测试已完成。统一 gate 加入 pinned ACP/MCP 开发依赖与新驱动；运行完整 prepare preview、独立提交、clean candidate 验收后再集成。父范围 stdio/MCP/config/output/subagent 未完成。"
+  "candidate_commit": "97f7b287aaeb7f95af4c14c2d86d1977b9714585",
+  "integrated_commit": "97f7b287aaeb7f95af4c14c2d86d1977b9714585",
+  "evidence_ids": [
+    "RUN-ACP-CONFIG-20261003-ACP-SESSION-CONTROLS-003"
+  ],
+  "next_action": "new/list/resume/close 持久生命周期的有界合同在 clean candidate 97f7b287 验收；A2 模型配置/语义输出独立合同同时验收；继续 A3 stdio 与 A4 MCP/权限/subagent。父范围与 Win7 不自动完成。"
 }

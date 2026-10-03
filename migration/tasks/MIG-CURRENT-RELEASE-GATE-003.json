@@ -33,10 +33,11 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "623a615a34d6e81a0d6fc9230c836a12017ba65c",
-  "integrated_commit": "623a615a34d6e81a0d6fc9230c836a12017ba65c",
+  "candidate_commit": "97f7b287aaeb7f95af4c14c2d86d1977b9714585",
+  "integrated_commit": "97f7b287aaeb7f95af4c14c2d86d1977b9714585",
   "evidence_ids": [
-    "RUN-CURRENT-20261003-CURRENT-RELEASE-GATE-003"
+    "RUN-CURRENT-20261003-CURRENT-RELEASE-GATE-003",
+    "RUN-ACP-CONFIG-20261003-CURRENT-RELEASE-GATE-003"
   ],
-  "next_action": "当前 Windows clean candidate 623a615a 通过统一门禁并绑定实际 ZIP；保持十条 lane 与精确例外，不据此认证 full parity、远程 Actions 或 Win7。"
+  "next_action": "当前 Windows clean candidate 97f7b287 完整门禁通过，绑定实际 ZIP；26 配对/616 原版源测试及十条必需 lane，不认证全范围、远程 Actions、无缓存安装或 Win7。"
 }

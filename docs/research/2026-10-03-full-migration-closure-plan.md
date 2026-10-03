@@ -37,6 +37,8 @@
 
 ## 当前执行项
 
+2026-10-03 后续：A1/A2 已在干净产品 `97f7b287` 完成有界验收；全量 4933 通过、零失败，26 个 selected paired drivers、616 项原版源码断言和实际解压包通过。十四份证据重签各自原有合同，仍未认证整包职责。A3 的 framing/参数验证原型在忽略目录独立核对，尚未注册 canonical acp-app、完成真实进程旅程或进入产品；下一部分必须实现这些必要消费者后再提交验收。A4、B/C/D 全部保留原定退出条件。
+
 首先启动 `MIG-ACP-SESSION-CONTROLS-003` / `CON-ACP-SESSION-CONTROLS@1`。父范围 `MIG-ACP-TRANSPORT-002` 仍是完整 ACP 的未完成任务，不因 A1 集成而自动完成。A1 不签发 stdio、MCP、模型配置或 ordered updates 的完整 parity。
 
 针对 A1 必须覆盖：空 Session materialization、关闭后 list/resume、稳定 newest-first + UTF-8 id 排序与严格 cursor、活动/正在激活/子 Session 排除、工作区物理/词法身份、未知/重复 resume、pre-abort、迟到激活、flush/dispose 失败、并发 close 共享、close 期间拒绝新 prompt、多个 Session 全部取消后汇总清理错误、真实 JSONL/SQLite 和新 Context 恢复。

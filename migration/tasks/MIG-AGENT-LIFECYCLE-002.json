@@ -32,8 +32,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "623a615a34d6e81a0d6fc9230c836a12017ba65c",
-  "integrated_commit": "623a615a34d6e81a0d6fc9230c836a12017ba65c",
+  "candidate_commit": "97f7b287aaeb7f95af4c14c2d86d1977b9714585",
+  "integrated_commit": "97f7b287aaeb7f95af4c14c2d86d1977b9714585",
   "evidence_ids": [
     "RUN-NEXT-AGENT-LIFECYCLE-002-20260927",
     "RUN-SESSION-COLD-AGENT-LIFECYCLE-002-20260927",
@@ -42,7 +42,8 @@
     "RUN-SESSION-STORAGE-AGENT-LIFECYCLE-002-20260927",
     "RUN-AGENT-CONFIG-AGENT-LIFECYCLE-002-20260927",
     "RUN-SESSION-PROJECTION-AGENT-LIFECYCLE-002-20260928",
-    "RUN-CURRENT-20261003-AGENT-LIFECYCLE-002"
+    "RUN-CURRENT-20261003-AGENT-LIFECYCLE-002",
+    "RUN-ACP-CONFIG-20261003-AGENT-LIFECYCLE-002"
   ],
   "next_action": "Bounded contract revalidated with CON-AGENT-CONFIG@1; next full Session projection/replay before Web consumers and complete profile journeys."
 }

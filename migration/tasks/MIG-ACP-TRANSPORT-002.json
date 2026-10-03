@@ -4,13 +4,15 @@
   "kind": "implementation",
   "state": "draft",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
-  "base_product": "623a615a34d6e81a0d6fc9230c836a12017ba65c",
+  "base_product": "97f7b287aaeb7f95af4c14c2d86d1977b9714585",
   "owner": null,
   "requires": [
     {"task": "MIG-ACP-PROMPT-OWNERSHIP-001", "contract": "CON-ACP-PROMPT-OWNERSHIP", "revision": 1},
     {"task": "MIG-AGENT-LIFECYCLE-002", "contract": "CON-AGENT-FACTORY", "revision": 1},
     {"task": "MIG-SESSION-COLD-003", "contract": "CON-SESSION-COLD-RECOVERY", "revision": 1},
-    {"task": "MIG-SESSION-STORAGE-006", "contract": "CON-SESSION-STORAGE", "revision": 1}
+    {"task": "MIG-SESSION-STORAGE-006", "contract": "CON-SESSION-STORAGE", "revision": 1},
+    {"task": "MIG-ACP-SESSION-CONTROLS-003", "contract": "CON-ACP-SESSION-CONTROLS", "revision": 1},
+    {"task": "MIG-ACP-CONFIG-OUTPUT-004", "contract": "CON-ACP-CONFIG-OUTPUT", "revision": 1}
   ],
   "provides": [],
   "acceptance": [
@@ -20,10 +22,10 @@
     "Necessary ACP subagent consumers, canonical profile/launcher and extracted Portable execute the same bounded journeys; source-only ACP 139 tests do not certify Python parity."
   ],
   "expected_paths": ["dsh/acp", "dsh/subagent", "dsh/boot", "apps/cli", "tests", "scripts", "migration", "docs/research"],
-  "open_findings": ["Persistent Session controls and integer protocol version are implemented in MIG-ACP-SESSION-CONTROLS-003 but not yet candidate-accepted; full stdio app registration, model configuration, ordered update drain/request signal, MCP/permissions and complete subagent closure remain."],
+  "open_findings": ["Persistent controls and model configuration/ordered output bounded contracts are accepted at clean candidate 97f7b287. Canonical stdio app registration, SDK framing/parameter validation, actual process EOF/unload, MCP/permissions and complete subagent consumer closure remain; direct helpers and unchanged upstream tests do not certify those scopes."],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "依全遗留项计划先候选验收 Session controls A1，再模型配置/输出 A2、stdio A3、MCP/权限/subagent A4。139 个原版 ACP tests 已纳入统一门禁，只是源码基线。additionalDirectories 拒绝/authenticate 空行为仍是原版行为，不列缺陷；父范围不随有界子项自动完成。"
+  "next_action": "A1 持久 controls、A2 模型配置/语义输出已在 97f7b287 干净候选验收；继续 A3 canonical stdio 与 A4 MCP/权限/subagent。139 个原版 ACP tests 是源码基线。additionalDirectories 拒绝/authenticate 空行为仍是原版行为；父范围与 accepted_upstream 不随子项自动完成。"
 }

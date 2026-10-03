@@ -27,10 +27,11 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "623a615a34d6e81a0d6fc9230c836a12017ba65c",
-  "integrated_commit": "623a615a34d6e81a0d6fc9230c836a12017ba65c",
+  "candidate_commit": "97f7b287aaeb7f95af4c14c2d86d1977b9714585",
+  "integrated_commit": "97f7b287aaeb7f95af4c14c2d86d1977b9714585",
   "evidence_ids": [
-    "RUN-CURRENT-20261003-ACP-PROMPT-OWNERSHIP-001"
+    "RUN-CURRENT-20261003-ACP-PROMPT-OWNERSHIP-001",
+    "RUN-ACP-CONFIG-20261003-ACP-PROMPT-OWNERSHIP-001"
   ],
-  "next_action": "Session/Agent/message/turn 归属及异常槽位清理的有界闭包已在 clean candidate 验收；继续完整 ACP stdio、输出排空、请求 signal、持久恢复、MCP/权限及 subagent 提供端/消费者合同。"
+  "next_action": "精确 prompt ownership 在持久 controls 候选重验；模型配置/有序语义输出已按子合同验收；继续 stdio 和 MCP/权限/subagent 的必要消费者闭包。"
 }

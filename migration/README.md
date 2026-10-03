@@ -4,6 +4,8 @@
 
 ## 当前补齐：2026-10-02
 
+2026-10-03 后续：干净产品候选 `97f7b287` 已通过完整门禁，**4933 passed、6 skipped、1 warning、0 failed**，十条必需 browser/Portable lane、五组 616 项原样源码断言、26 个双侧驱动及实际解压 Portable 均通过。`CON-ACP-SESSION-CONTROLS@1` 和 `CON-ACP-CONFIG-OUTPUT@1` 的有界任务已 integrated；14 份当前证据及所有先前失败归档于 `evidence/artifacts/ACP-CONFIG-20261003-97f7b287.zip`。完整 ACP 仍待 canonical stdio 与 MCP/权限/subagent；没有认证全项目、fresh uncached bootstrap 或 Win7。详见 `reviews/ACP-CONTROLS-CONFIG-CLOSURE-20261003.md`。
+
 本轮 `MIG-CURRENT-RELEASE-GATE-003` / `CON-CURRENT-RELEASE-GATE@1` 补齐当前原版浏览器、最新已选双侧契约及实际解压 Portable 统一验收；不是重签历史 `MIG-REPRO-GATE-002`，也不代表整个迁移完成。用户授权提交后，产品候选 `623a615a` 已通过干净门禁；当前门禁和 ACP prompt 归属两个有界任务已 integrated，历史十个 Core/Agent/Session/Spine/Portable 范围重签本候选证据。未提交预览仍不得进入 verified/integrated。
 
 正式门禁必须提供 Chromium：`scripts/verify_release.py --browser <absolute-path>`；缺少浏览器、必需测试跳过、回执或候选不一致均拒绝发行。`--allow-dirty` 仅用于本地开发预览，其 summary 始终 `publishable=false`。原版浏览器只用真实可见控件完成无凭据引导，不修改上游 TSX/CSS；后续导航先等待有限请求结束，再检查弹窗或交互状态。

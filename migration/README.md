@@ -4,6 +4,8 @@
 
 ## 当前补齐：2026-10-02
 
+2026-10-04 ACP/MCP：干净候选 `e24fe1db` 完整冻结门禁 **5508 passed、6 skipped、1 warning、0 failed**，62 必需 lane、七组 722 项原版断言、31 双侧驱动及真实解压会话 MCP 消费者通过。`CON-ACP-MCP@1` 有界 integrated，十九份证据归档 `evidence/artifacts/ACP-MCP-20261004-e24fe1db.zip`，见 `reviews/ACP-MCP-CLOSURE-20261004.md`。无限阻塞初始化、完整 URL/SDK、subprocess subagent、B/C/D、整体 accepted_upstream 与延期 Win7 仍开放；第五部分继续单独实施和验收。
+
 2026-10-04 MCP：干净产品候选 `8a17485d` 完整冻结门禁 **5408 passed、6 skipped、1 warning、0 failed**，51 必需 lane、七组 722 项原版断言、30 双侧驱动及真实解压 stdio/HTTP 工具消费者通过。`CON-MCP-STDIO@1` 和 `CON-MCP-HTTP@1` 只按有界提供端范围 integrated，18 份合同证据归档 `evidence/artifacts/MCP-20261004-8a17485d.zip`；见 `reviews/MCP-CLOSURE-20261004.md`。此前 browser startup 取消及既有 Proactor/HTTP 10054 保留未归因，完整 SDK/ACP mounting/subagent/B/C/D、整体 accepted_upstream 与延期 Win7 未闭环。
 
 2026-10-04 A4 权限：干净产品候选 `e887550a` 完整冻结门禁通过，**5020 passed、6 skipped、1 warning、0 failed**；20 条必需 lane、619 项原版断言、28 个双侧驱动及实际解压六条权限进程旅程通过。`CON-ACP-PERMISSIONS@1` 有界 integrated，10 组原始匹配及两组单独审阅的原版畸形 outcome 授权缺陷，证据包 `evidence/artifacts/ACP-PERMISSIONS-20261004-e887550a.zip`。见 `reviews/ACP-PERMISSIONS-CLOSURE-20261004.md`；既有 Proactor/HTTP 10054 诊断仍保留。MCP/subagent、B/C/D 和整体 accepted_upstream 未完成。

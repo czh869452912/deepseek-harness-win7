@@ -46,13 +46,14 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "8a17485d0f43bb7318700053fd0d2d7149c96c95",
-  "integrated_commit": "8a17485d0f43bb7318700053fd0d2d7149c96c95",
+  "candidate_commit": "e24fe1dbeaa804553179cdace7bc46703073682e",
+  "integrated_commit": "e24fe1dbeaa804553179cdace7bc46703073682e",
   "evidence_ids": [
     "RUN-ACP-CONFIG-20261003-ACP-CONFIG-OUTPUT-004",
     "RUN-ACP-STDIO-20261003-ACP-CONFIG-OUTPUT-004",
     "RUN-ACP-PERMISSIONS-20261004-ACP-CONFIG-OUTPUT-004",
-    "RUN-MCP-20261004-ACP-CONFIG-OUTPUT-004"
+    "RUN-MCP-20261004-ACP-CONFIG-OUTPUT-004",
+    "RUN-ACP-MCP-20261004-ACP-CONFIG-OUTPUT-004"
   ],
   "next_action": "模型配置、admission/turn pin 和 ordered committed output 有界合同在 clean candidate e887550a 验收；一次性权限独立合同验收；继续 A4 MCP/subagent，完整 ACP 未认证。"
 }

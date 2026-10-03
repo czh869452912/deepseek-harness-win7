@@ -1,6 +1,6 @@
 # ACP 会话 MCP 挂载第四部分
 
-固定原版 `cd5ef8148158c3a752a658978873241fdf8e2bbc`；HTTP 有界验收已提交 `52b14fba`，本部分从隔离工作树移入主树，`MIG-ACP-MCP-009` 保持 running。完整开发预览已通过，产品提交后的干净候选验收尚待执行，没有提前认证完整 ACP 或整体迁移。
+固定原版 `cd5ef8148158c3a752a658978873241fdf8e2bbc`；HTTP 有界验收已提交 `52b14fba`，本部分产品候选 `e24fe1db` 已完成干净冻结门禁，`MIG-ACP-MCP-009` 按 `CON-ACP-MCP@1` 有界 integrated，没有认证完整 ACP 或整体迁移。
 
 ## 产品变化
 
@@ -22,4 +22,6 @@
 
 主树冻结开发门禁 `.goose/out/acp-mcp-owned-preview` 已通过：5508 passed、6 skipped、1 warning、0 failed，耗时 1179.80 秒；62 必需 lane、七组 722 项原版断言、31 双侧 driver 和真实解压 Portable 全部通过。实际解压包 ACP/MCP 旅程完成三个 stdio 子进程、三个 stdio 调用、一个 HTTP 调用、八个本地模型请求及真实进程退出。ZIP SHA256 为 `3aa924c146510b733dd2eb40974d8bc5c4eb3a13d3cf85742126a1a076667b35`；冻结输入 SHA256 为 `34cd509262fbe3687e4ede864878c7367f50504fd362b2e414883e9ac8ebb6cf`。这是未提交开发预览，publishable=false；随后提交本部分，再运行干净候选门禁。
 
-尚无 clean acceptance 或 integrated 记录。WHATWG URL/Unicode 版本等未覆盖边缘、subprocess subagent-acp、其他 HTTP SDK 范围和 B/C/D 仍继续推进。浏览器启动取消、既存 Proactor warning/HTTP 10054 和延期的 Win7 认证保持开放。隔离树已开始真实 subprocess ACP 后端，并发现实际模型消费者收到 Event 而非 AbortSignal 的迁移缺陷；该修复属于后续部分，不混入本次冻结验收。
+干净产品候选 `e24fe1dbeaa804553179cdace7bc46703073682e` 完整门禁 passed / publishable=true：5508 passed、6 skipped、1 warning、0 failed，JUnit 总耗时 1188.923 秒；62 必需 lane、七组 722 项原版断言、31 双侧驱动及真实解压全部通过。ZIP SHA256 `302f72437357b63410c5ae4c9341a667f7d4ced57ad9ca280fac077a49fcd9d1`，冻结输入 `380f2c914dc8b8831ce34b12c93a44d5375825674f3c005608a8174a37f520a4`，十九份合同证据归档 `migration/evidence/artifacts/ACP-MCP-20261004-e24fe1db.zip`，审阅见 `migration/reviews/ACP-MCP-CLOSURE-20261004.md`。
+
+WHATWG URL/Unicode 版本等未覆盖边缘、subprocess subagent-acp、其他 HTTP SDK 范围和 B/C/D 仍继续推进。浏览器启动取消、既存 Proactor warning/HTTP 10054 和延期的 Win7 认证保持开放。隔离树已开始真实 subprocess ACP 后端，并发现实际模型消费者收到 Event 而非 AbortSignal 的迁移缺陷；该修复属于后续部分，不混入本次冻结验收。

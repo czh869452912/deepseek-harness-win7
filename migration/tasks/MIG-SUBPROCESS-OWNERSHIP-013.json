@@ -1,0 +1,26 @@
+{
+  "id": "MIG-SUBPROCESS-OWNERSHIP-013",
+  "goal": "闭合 subprocess 服务 pending 所有权、最终关闭接口及多错误身份顺序",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "fda99addb689cf6885b1acb5d6ceb45e57aff480",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {"task": "MIG-CORDIS-001", "contract": "CON-CORDIS-CORE", "revision": 10},
+    {"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}
+  ],
+  "provides": [{"contract": "CON-SUBPROCESS-OWNERSHIP", "revision": 1}],
+  "acceptance": [
+    "Four fresh actual original LocalSubprocessRuntime and Native controlled-handle observations preserve complete termination/wait/fallback order, pending and retired registries, aggregate raw messages/members and single/multiple failure identity; strict negative observers reject missing or rewritten fields.",
+    "Actual extracted embedded Python 3.8.10 module executes the same four bounded service observations, with module/root provenance and current gate rejecting missing source lanes or forged runtime receipts.",
+    "Complete current-candidate regression, unchanged selected original assertions and all current paired/Portable gates pass before clean receipt-bound integration; separate original Windows fixture failures remain visible and unaccepted."
+  ],
+  "expected_paths": ["dsh/subprocess", "tests", "scripts", "migration", "docs/research"],
+  "open_findings": ["Four isolated source/native observations, 21 targeted, 20 source/observer and 89 subprocess regressions passed. The five-file original subprocess discovery separately retained 103 passed/two failed/15 platform skips: two spawn Windows fixture commands lack a translation before production spawn is invoked. No source test, exception or skip was rewritten. Main complete candidate and actual extracted acceptance are pending; real process trees, Host crash/exit, terminal backend/WinPTY, full SDK and deferred Win7 remain outside this bounded handle contract."],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "主树定向与冻结 driver 通过后独立提交；共同干净候选运行完整 Python/原版/配对/解压，未通过不 integrated。继续实际 root/descendant、Jobs、Web 用户主链和 B/C/D。"
+}

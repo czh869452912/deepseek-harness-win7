@@ -1,0 +1,22 @@
+{
+  "id": "CON-SUBPROCESS-OWNERSHIP",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/subprocess/subprocess-local/src/index.ts", "reference/packages/subprocess/subprocess-local/tests/local.spec.ts"],
+  "consumers": ["dsh/subprocess/local.py", "dsh/subagent/acp.py", "scripts/verify_portable.py"],
+  "invariants": [
+    "Synchronous Host-exit finalization contains each target failure and retains current live/terminal registries until normal owned disposal finishes.",
+    "A pending ordinary wait remains owned after synchronous finalization and is retired only after its admitted wait completes.",
+    "Normal disposal admits terminal termination before a resolved ordinary outcome's wait continuation; failure fallback invokes both target-owned Host-exit interfaces in the source order.",
+    "A single failure is rethrown by exact identity; multiple failures retain original ordered member instances in AggregateError with unchanged message.",
+    "Actual extracted embedded Python 3.8.10 service observations preserve all four controlled handle scenarios and declared module/root provenance."
+  ],
+  "identity": "Exact owned handle entries, original single-error object and ordered aggregate member identities at declared observation barriers.",
+  "ownership": "Authoritative live/terminal registries persist through pending cleanup and final fallback; only the completed normal disposal clears them. Handles own their shutdown interfaces.",
+  "ordering": "Ordinary terminate and terminal termination admission precede ordinary wait continuation; all normal outcomes settle before fallback and registry retirement.",
+  "errors": "Per-target finalization failures are contained; normal single failure retains identity, and multiple failures use the shared AggregateError with original members/message/order.",
+  "cancellation": "This contract covers awaited normal disposal and invoked finalizer at explicit handle barriers; actual operating-system Host termination, process trees and caller cancellation beyond the existing owner are separate.",
+  "adaptation": "Python 3.8 terminal Task admission mirrors the source synchronous async-function prefix versus resolved Promise continuation. Controlled handles are declared observer seams, with no invented pid or OS outcome.",
+  "open_questions": ["Main complete clean candidate and actual extracted acceptance are pending. Original five-file subprocess baseline has two Windows fixture translation failures retained separately. Real root/descendant trees, Host crash/exit, terminal/WinPTY, background Jobs and deferred Win7 remain unaccepted."]
+}

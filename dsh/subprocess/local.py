@@ -16,6 +16,7 @@ import sys
 import time
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
+from dsh.cordis.errors import AggregateError
 from dsh.subprocess.collector import OutputCollector
 from dsh.subprocess.service import SubprocessRuntime, scrubbed_parent_env
 from dsh.subprocess.types import (
@@ -508,8 +509,6 @@ class LocalSubprocessRuntime(SubprocessRuntime):
                     signal_tree(t.pid, "SIGKILL")
             except Exception:
                 pass
-        self.live.clear()
-        self.terminals.clear()
 
     async def _dispose_managed_processes(self) -> None:
         handles = list(self.live)
@@ -526,29 +525,17 @@ class LocalSubprocessRuntime(SubprocessRuntime):
                 await current.wait_for_exit()
             waits.append(wait_handle())
         for terminal in terminals:
-            waits.append(terminal.terminate())
+            waits.append(asyncio.ensure_future(terminal.terminate()))
         outcomes = await asyncio.gather(*waits, return_exceptions=True) if waits else []
         failures = [outcome for outcome in outcomes if isinstance(outcome, BaseException)]
         if failures:
-            for handle in handles:
-                try:
-                    handle.terminate_for_host_exit()
-                except Exception:
-                    pass
-            for terminal in terminals:
-                try:
-                    if terminal.pid > 0:
-                        signal_tree(terminal.pid, "SIGKILL")
-                except Exception:
-                    pass
+            self._terminate_all()
         self.live.clear()
         self.terminals.clear()
         if len(failures) == 1:
             raise failures[0]
         if failures:
-            error = RuntimeError("local subprocess teardown failed: %d errors" % len(failures))
-            error.errors = failures
-            raise error
+            raise AggregateError(failures, "local subprocess teardown failed")
 
     async def resolve_executable(
         self,

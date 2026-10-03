@@ -33,3 +33,7 @@ subagent-acp-native-v1.log 保留取消测试在“peer 已写入 readiness 文�
 首次完整预览 `.goose/out/subagent-acp-owned-preview` 失败：5618 passed、1 failed、6 skipped、1 既有 Proactor warning。唯一失败是原版浏览器 installed Python Web package 旅程：十二个业务步骤完成，但 rollback 新文档启动时五个有限 API 请求 ERR_ABORTED，引出两条 dynamicCordisRunner console error；失败仍被门禁拒绝，后续原版断言、配对和解压验收未执行。CDP 时序证明取消早于下一次受控导航约 1.4 秒，不能归因于该导航或宣称既有 settle 修复有效。原始浏览器输出完整保存在 `.goose/out/acp-a4-work/subagent-preview-browser-failure-v1.zip`，完整 pytest/JUnit 保存在预览目录。
 
 新增可选开发观察参数 `--net-log` 和 `--debug-abort`，仅记录 Chromium 网络事件和原生 abort/close/stop 调用断点，不注入前端替代实现、忽略 console error 或增加业务重试。三个同路径独立诊断均十二步通过、无 console error；未捕获取消根因，不能当作缺陷修复。相应报告及原始网络日志保存在 `subagent-browser-basic-netlog-1/2/3`。产品先提交可审阅检查点，任务仍 running；再冻结干净候选执行全部门禁。即使候选通过，该未归因启动取消仍独立开放，不登记为原版 bug，不认证完整 Web 生命周期。
+
+产品检查点 `defabc05` 的完整干净门禁同样失败：5618 passed、1 failed、6 skipped、1 warning，1209.71 秒。唯一失败仍是 installed Python Web package 在 rollback 新文档启动时五个 API ERR_ABORTED 和两条 console error；十二步完成、Host 无错误，但完整门禁拒绝，不执行后续原版组、配对或解压。原始输出归档 `subagent-clean-browser-failure-v1.zip`，正式日志/JUnit 留在 `.goose/out/subagent-acp-clean-defabc05`，不得签发 integrated。
+
+为下一次完整门禁默认开启该观察器自身的 Chromium NetLog；可选断点仍只在显式 `--debug-abort` 时启动。带日志的整个 Python Web plugin 模块 30 passed、72.57 秒；隔离诊断扩展为十二轮额外升级/回退、六十个业务步骤，全部通过且无 abort 调用/console error。扩展 fixture 使用独立临时版本目录，第一轮扩展曾因重复目录失败，其输出保留；该 fixture 调整不进入产品，也不是启动取消修复。三份先前诊断、模块日志/网络归档及重复回退 v1/v2 保留。后续关闭修复可独立提交，第五部分仍 running；只有共同干净候选的全部门禁和解压证明通过才有界验收。

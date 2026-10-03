@@ -15,6 +15,7 @@ const options = Object.fromEntries(process.argv.slice(2).reduce((pairs, value, i
 }, []));
 if (!options.browser || !options.output) throw new Error('Use --browser <Chromium> --output <report.json>');
 const output = resolve(options.output);
+const networkLog = resolve(options['net-log'] ?? output + '.netlog.json');
 await mkdir(dirname(output), { recursive: true });
 const privateBrowser = await mkdtemp(join(tmpdir(), 'dsh-web-package-cdp-'));
 const report = { kind: 'original-browser/installed-python-web-package', steps: [], errors: [], consoleErrors: [], requests: [], replies: [], sockets: [] };
@@ -244,7 +245,8 @@ try {
   report.python = boot.python;
   packageName = boot.name; rpcEndpoint = boot.endpoint; report.exported = boot.exported; report.session = boot.session;
   assert.equal(boot.python, '3.8.10'); assert.equal(boot.descriptor, true); assert.equal(boot.calls, 0);
-  browser = spawn(resolve(options.browser), ['--headless', '--no-sandbox', '--disable-gpu', '--remote-debugging-port=0', `--user-data-dir=${privateBrowser}`, '--lang=en-US', ...(options['net-log'] ? [`--log-net-log=${resolve(options['net-log'])}`] : []), 'about:blank'], { windowsHide: true });
+  report.networkLogPath = networkLog;
+  browser = spawn(resolve(options.browser), ['--headless', '--no-sandbox', '--disable-gpu', '--remote-debugging-port=0', `--user-data-dir=${privateBrowser}`, '--lang=en-US', `--log-net-log=${networkLog}`, 'about:blank'], { windowsHide: true });
   const port = await until(async () => { try { return (await readFile(join(privateBrowser, 'DevToolsActivePort'), 'utf8')).split('\n')[0]; } catch { return false; } }, 'browser port');
   const target = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find(row => row.type === 'page');
   const socket = new WebSocket(target.webSocketDebuggerUrl);

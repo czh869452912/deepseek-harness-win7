@@ -8,6 +8,7 @@ import asyncio
 import os
 from typing import Any, Dict, Optional
 from dsh.acp.content import supports_acp_image_prompts
+from dsh.acp.errors import AcpInternalError, AcpInvalidParamsError
 from dsh.acp.model_control import AcpModelControl, resolved, selection_for
 from dsh.acp.session_runtime import AcpSession as SessionRecord
 from dsh.core.model_selection import ModelSelection
@@ -52,6 +53,8 @@ class AcpPlugin(Plugin):
             ctx.disposable(disposer, label="acp.disposer")
         elif hasattr(ctx, "effect"):
             ctx.effect(lambda: disposer)
+        from dsh.acp.stdio import mount_acp_stdio
+        self.connection = mount_acp_stdio(ctx, self)
 
     async def initialize(self, ctx: Any, params: Dict[str, Any]) -> Dict[str, Any]:
         p = self.config.get("provider")
@@ -76,18 +79,18 @@ class AcpPlugin(Plugin):
 
     def _assert_open(self, signal=None):
         if self.closed:
-            raise RuntimeError('the ACP bridge has been disposed')
+            raise AcpInternalError('the ACP bridge has been disposed')
         if signal is not None and signal.aborted:
             raise abort_reason_error(signal)
 
     def _workspace(self, params):
         cwd = params.get("cwd", "")
         if not isinstance(cwd, str) or not (ntpath.isabs(cwd) or os.path.isabs(cwd)):
-            raise ValueError("cwd must be an absolute path: %s" % cwd)
+            raise AcpInvalidParamsError("cwd must be an absolute path: %s" % cwd)
         if params.get("additionalDirectories"):
-            raise ValueError("additionalDirectories is not supported")
+            raise AcpInvalidParamsError("additionalDirectories is not supported")
         if params.get("mcpServers"):
-            raise ValueError("mcpServers is not supported")
+            raise AcpInvalidParamsError("mcpServers is not supported")
         return cwd
 
     def _operation(self, signal):
@@ -115,9 +118,9 @@ class AcpPlugin(Plugin):
         self._assert_open()
         record = self.sessions.get(session_id)
         if record is None:
-            raise ValueError('unknown session: %s' % session_id)
+            raise AcpInvalidParamsError('unknown session: %s' % session_id)
         if record.closing is not None:
-            raise ValueError('session is closing')
+            raise AcpInvalidParamsError('session is closing: %s' % session_id)
         return record
 
     def _fallback_selection(self):
@@ -126,6 +129,8 @@ class AcpPlugin(Plugin):
 
     async def _notify(self, ctx, payload):
         notify = self.config.get('notify')
+        if notify is None and getattr(self, 'connection', None) is not None:
+            notify = lambda value: self.connection.notify('session/update', value)
         if notify is not None:
             try:
                 await resolved(notify(payload))
@@ -170,8 +175,11 @@ class AcpPlugin(Plugin):
         self._assert_open(signal)
         cwd = params.get('cwd')
         if cwd is not None and (not isinstance(cwd, str) or not (ntpath.isabs(cwd) or os.path.isabs(cwd))):
-            raise ValueError('cwd must be an absolute path: %s' % cwd)
-        cursor = decode_cursor(params.get('cursor'))
+            raise AcpInvalidParamsError('cwd must be an absolute path: %s' % cwd)
+        try:
+            cursor = decode_cursor(params.get('cursor'))
+        except ValueError as error:
+            raise AcpInvalidParamsError(str(error)) from error
         agents, persistence, sessions = self._providers(ctx)
         headers = await persistence.list()
         self._assert_open(signal)
@@ -201,7 +209,7 @@ class AcpPlugin(Plugin):
         session_id = params.get('sessionId')
         agents, persistence, sessions = self._providers(ctx)
         if session_id in self.sessions or session_id in self.activating or sessions.get(session_id) is not None:
-            raise ValueError('session is already active: %s' % session_id)
+            raise AcpInvalidParamsError('session is already active: %s' % session_id)
         operation, cleanup = self._operation(signal)
         self.activating.add(session_id)
         record = None
@@ -219,9 +227,9 @@ class AcpPlugin(Plugin):
             self._assert_open(operation)
             header = next((item for item in headers if field(item, 'id') == session_id), None)
             if header is None or field(header, 'origin') == 'subagent' or field(header, 'parentSession') is not None:
-                raise ValueError('session is not resumable: %s' % session_id)
+                raise AcpInvalidParamsError('session is not resumable: %s' % session_id)
             if not same_directory(field(header, 'cwd'), cwd):
-                raise ValueError('session cwd does not match: %s' % cwd)
+                raise AcpInvalidParamsError('session cwd does not match: %s' % cwd)
             handle = await agents.resume(resume_session_id=session_id,
                 options=AgentOptions(provider=self.config.get('provider'), model=self.config.get('model')),
                 signal=operation, setup=setup)
@@ -232,7 +240,7 @@ class AcpPlugin(Plugin):
                     or not callable(record.dispose_fn)):
                 raise RuntimeError('ACP agent factory returned an invalid owned handle')
             if not same_directory(field(record.agent.session.header, 'cwd'), cwd):
-                raise ValueError('session cwd does not match: %s' % cwd)
+                raise AcpInvalidParamsError('session cwd does not match: %s' % cwd)
             self.sessions[session_id] = record
             if control is None:
                 raise RuntimeError('ACP agent factory did not run session setup')
@@ -301,12 +309,12 @@ class AcpPlugin(Plugin):
         session_id = params.get('sessionId')
         record = self.sessions.get(session_id)
         if record is None:
-            raise ValueError('unknown session: %s' % session_id)
+            raise AcpInvalidParamsError('unknown session: %s' % session_id)
         try:
             await asyncio.shield(self._begin_close(ctx, record))
             return {}
         except Exception as error:
-            raise RuntimeError('session close failed: %s' % error) from error
+            raise AcpInternalError('session close failed: %s' % error) from error
         finally:
             def remove_record(completed):
                 if not completed.cancelled():

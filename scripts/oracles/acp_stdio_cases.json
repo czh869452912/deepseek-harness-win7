@@ -1,0 +1,710 @@
+{
+  "parameters": [
+    {
+      "mode": "initialize:missing",
+      "method": "initialize"
+    },
+    {
+      "mode": "initialize:null",
+      "method": "initialize",
+      "params": null
+    },
+    {
+      "mode": "initialize:array",
+      "method": "initialize",
+      "params": []
+    },
+    {
+      "mode": "initialize:empty",
+      "method": "initialize",
+      "params": {}
+    },
+    {
+      "mode": "initialize:valid",
+      "method": "initialize",
+      "params": {
+        "protocolVersion": 1
+      }
+    },
+    {
+      "mode": "initialize:badmeta",
+      "method": "initialize",
+      "params": {
+        "protocolVersion": 1,
+        "_meta": 42,
+        "extra": "stripped"
+      }
+    },
+    {
+      "mode": "authenticate:missing",
+      "method": "authenticate"
+    },
+    {
+      "mode": "authenticate:null",
+      "method": "authenticate",
+      "params": null
+    },
+    {
+      "mode": "authenticate:array",
+      "method": "authenticate",
+      "params": []
+    },
+    {
+      "mode": "authenticate:empty",
+      "method": "authenticate",
+      "params": {}
+    },
+    {
+      "mode": "authenticate:valid",
+      "method": "authenticate",
+      "params": {
+        "methodId": "none"
+      }
+    },
+    {
+      "mode": "authenticate:badmeta",
+      "method": "authenticate",
+      "params": {
+        "methodId": "none",
+        "_meta": 42,
+        "extra": "stripped"
+      }
+    },
+    {
+      "mode": "session/new:missing",
+      "method": "session/new"
+    },
+    {
+      "mode": "session/new:null",
+      "method": "session/new",
+      "params": null
+    },
+    {
+      "mode": "session/new:array",
+      "method": "session/new",
+      "params": []
+    },
+    {
+      "mode": "session/new:empty",
+      "method": "session/new",
+      "params": {}
+    },
+    {
+      "mode": "session/new:valid",
+      "method": "session/new",
+      "params": {
+        "cwd": "C:/work",
+        "mcpServers": []
+      }
+    },
+    {
+      "mode": "session/new:badmeta",
+      "method": "session/new",
+      "params": {
+        "cwd": "C:/work",
+        "mcpServers": [],
+        "_meta": 42,
+        "extra": "stripped"
+      }
+    },
+    {
+      "mode": "session/list:missing",
+      "method": "session/list"
+    },
+    {
+      "mode": "session/list:null",
+      "method": "session/list",
+      "params": null
+    },
+    {
+      "mode": "session/list:array",
+      "method": "session/list",
+      "params": []
+    },
+    {
+      "mode": "session/list:empty",
+      "method": "session/list",
+      "params": {}
+    },
+    {
+      "mode": "session/list:valid",
+      "method": "session/list",
+      "params": {}
+    },
+    {
+      "mode": "session/list:badmeta",
+      "method": "session/list",
+      "params": {
+        "_meta": 42,
+        "extra": "stripped"
+      }
+    },
+    {
+      "mode": "session/resume:missing",
+      "method": "session/resume"
+    },
+    {
+      "mode": "session/resume:null",
+      "method": "session/resume",
+      "params": null
+    },
+    {
+      "mode": "session/resume:array",
+      "method": "session/resume",
+      "params": []
+    },
+    {
+      "mode": "session/resume:empty",
+      "method": "session/resume",
+      "params": {}
+    },
+    {
+      "mode": "session/resume:valid",
+      "method": "session/resume",
+      "params": {
+        "sessionId": "sample",
+        "cwd": "C:/work"
+      }
+    },
+    {
+      "mode": "session/resume:badmeta",
+      "method": "session/resume",
+      "params": {
+        "sessionId": "sample",
+        "cwd": "C:/work",
+        "_meta": 42,
+        "extra": "stripped"
+      }
+    },
+    {
+      "mode": "session/close:missing",
+      "method": "session/close"
+    },
+    {
+      "mode": "session/close:null",
+      "method": "session/close",
+      "params": null
+    },
+    {
+      "mode": "session/close:array",
+      "method": "session/close",
+      "params": []
+    },
+    {
+      "mode": "session/close:empty",
+      "method": "session/close",
+      "params": {}
+    },
+    {
+      "mode": "session/close:valid",
+      "method": "session/close",
+      "params": {
+        "sessionId": "sample"
+      }
+    },
+    {
+      "mode": "session/close:badmeta",
+      "method": "session/close",
+      "params": {
+        "sessionId": "sample",
+        "_meta": 42,
+        "extra": "stripped"
+      }
+    },
+    {
+      "mode": "session/set_config_option:missing",
+      "method": "session/set_config_option"
+    },
+    {
+      "mode": "session/set_config_option:null",
+      "method": "session/set_config_option",
+      "params": null
+    },
+    {
+      "mode": "session/set_config_option:array",
+      "method": "session/set_config_option",
+      "params": []
+    },
+    {
+      "mode": "session/set_config_option:empty",
+      "method": "session/set_config_option",
+      "params": {}
+    },
+    {
+      "mode": "session/set_config_option:valid",
+      "method": "session/set_config_option",
+      "params": {
+        "sessionId": "sample",
+        "configId": "model",
+        "value": "a"
+      }
+    },
+    {
+      "mode": "session/set_config_option:badmeta",
+      "method": "session/set_config_option",
+      "params": {
+        "sessionId": "sample",
+        "configId": "model",
+        "value": "a",
+        "_meta": 42,
+        "extra": "stripped"
+      }
+    },
+    {
+      "mode": "session/prompt:missing",
+      "method": "session/prompt"
+    },
+    {
+      "mode": "session/prompt:null",
+      "method": "session/prompt",
+      "params": null
+    },
+    {
+      "mode": "session/prompt:array",
+      "method": "session/prompt",
+      "params": []
+    },
+    {
+      "mode": "session/prompt:empty",
+      "method": "session/prompt",
+      "params": {}
+    },
+    {
+      "mode": "session/prompt:valid",
+      "method": "session/prompt",
+      "params": {
+        "sessionId": "sample",
+        "prompt": [
+          {
+            "type": "text",
+            "text": "中文"
+          }
+        ]
+      }
+    },
+    {
+      "mode": "session/prompt:badmeta",
+      "method": "session/prompt",
+      "params": {
+        "sessionId": "sample",
+        "prompt": [
+          {
+            "type": "text",
+            "text": "中文"
+          }
+        ],
+        "_meta": 42,
+        "extra": "stripped"
+      }
+    },
+    {
+      "mode": "session/cancel:missing",
+      "method": "session/cancel"
+    },
+    {
+      "mode": "session/cancel:null",
+      "method": "session/cancel",
+      "params": null
+    },
+    {
+      "mode": "session/cancel:array",
+      "method": "session/cancel",
+      "params": []
+    },
+    {
+      "mode": "session/cancel:empty",
+      "method": "session/cancel",
+      "params": {}
+    },
+    {
+      "mode": "session/cancel:valid",
+      "method": "session/cancel",
+      "params": {
+        "sessionId": "sample"
+      }
+    },
+    {
+      "mode": "session/cancel:badmeta",
+      "method": "session/cancel",
+      "params": {
+        "sessionId": "sample",
+        "_meta": 42,
+        "extra": "stripped"
+      }
+    },
+    {
+      "mode": "initialize:version-True",
+      "method": "initialize",
+      "params": {
+        "protocolVersion": true
+      }
+    },
+    {
+      "mode": "initialize:version--1",
+      "method": "initialize",
+      "params": {
+        "protocolVersion": -1
+      }
+    },
+    {
+      "mode": "initialize:version-65536",
+      "method": "initialize",
+      "params": {
+        "protocolVersion": 65536
+      }
+    },
+    {
+      "mode": "initialize:version-1.1",
+      "method": "initialize",
+      "params": {
+        "protocolVersion": 1.1
+      }
+    },
+    {
+      "mode": "initialize:version-9007199254740992",
+      "method": "initialize",
+      "params": {
+        "protocolVersion": 9007199254740992
+      }
+    },
+    {
+      "mode": "initialize:caps-59",
+      "method": "initialize",
+      "params": {
+        "protocolVersion": 1,
+        "clientCapabilities": null,
+        "clientInfo": {
+          "name": "fixture",
+          "version": "0",
+          "title": 42
+        }
+      }
+    },
+    {
+      "mode": "initialize:caps-60",
+      "method": "initialize",
+      "params": {
+        "protocolVersion": 1,
+        "clientCapabilities": 42,
+        "clientInfo": {
+          "name": "fixture",
+          "version": "0",
+          "title": 42
+        }
+      }
+    },
+    {
+      "mode": "initialize:caps-61",
+      "method": "initialize",
+      "params": {
+        "protocolVersion": 1,
+        "clientCapabilities": {},
+        "clientInfo": {
+          "name": "fixture",
+          "version": "0",
+          "title": 42
+        }
+      }
+    },
+    {
+      "mode": "initialize:caps-62",
+      "method": "initialize",
+      "params": {
+        "protocolVersion": 1,
+        "clientCapabilities": {
+          "fs": {
+            "readTextFile": true,
+            "writeTextFile": "bad"
+          },
+          "auth": {
+            "terminal": true
+          },
+          "terminal": "bad",
+          "positionEncodings": [
+            "utf-8",
+            "bad",
+            42
+          ]
+        },
+        "clientInfo": {
+          "name": "fixture",
+          "version": "0",
+          "title": 42
+        }
+      }
+    },
+    {
+      "mode": "initialize:caps-63",
+      "method": "initialize",
+      "params": {
+        "protocolVersion": 1,
+        "clientCapabilities": {
+          "session": null,
+          "plan": {},
+          "elicitation": {
+            "form": {},
+            "url": null
+          },
+          "nes": {
+            "jump": {
+              "_meta": {
+                "custom": true
+              }
+            },
+            "rename": 42
+          }
+        },
+        "clientInfo": {
+          "name": "fixture",
+          "version": "0",
+          "title": 42
+        }
+      }
+    },
+    {
+      "mode": "session/new:mcp-64",
+      "method": "session/new",
+      "params": {
+        "cwd": "C:/work",
+        "mcpServers": null,
+        "additionalDirectories": [
+          "C:/other",
+          42,
+          null
+        ]
+      }
+    },
+    {
+      "mode": "session/new:mcp-65",
+      "method": "session/new",
+      "params": {
+        "cwd": "C:/work",
+        "mcpServers": 42,
+        "additionalDirectories": [
+          "C:/other",
+          42,
+          null
+        ]
+      }
+    },
+    {
+      "mode": "session/new:mcp-66",
+      "method": "session/new",
+      "params": {
+        "cwd": "C:/work",
+        "mcpServers": [
+          42,
+          {},
+          {
+            "name": "local",
+            "command": "tool",
+            "args": [],
+            "env": []
+          },
+          {
+            "type": "http",
+            "name": "remote",
+            "url": "http://fixture/",
+            "headers": [
+              {
+                "name": "Authorization",
+                "value": "not-a-real-token"
+              }
+            ]
+          }
+        ],
+        "additionalDirectories": [
+          "C:/other",
+          42,
+          null
+        ]
+      }
+    },
+    {
+      "mode": "session/set_config_option:boolean",
+      "method": "session/set_config_option",
+      "params": {
+        "sessionId": "s",
+        "configId": "toggle",
+        "value": true,
+        "type": "boolean"
+      }
+    },
+    {
+      "mode": "session/set_config_option:badboolean",
+      "method": "session/set_config_option",
+      "params": {
+        "sessionId": "s",
+        "configId": "toggle",
+        "value": true
+      }
+    },
+    {
+      "mode": "session/prompt:content-69",
+      "method": "session/prompt",
+      "params": {
+        "sessionId": "s",
+        "prompt": [
+          42
+        ]
+      }
+    },
+    {
+      "mode": "session/prompt:content-70",
+      "method": "session/prompt",
+      "params": {
+        "sessionId": "s",
+        "prompt": [
+          {
+            "type": "text"
+          }
+        ]
+      }
+    },
+    {
+      "mode": "session/prompt:content-71",
+      "method": "session/prompt",
+      "params": {
+        "sessionId": "s",
+        "prompt": [
+          {
+            "type": "unknown",
+            "text": "x"
+          }
+        ]
+      }
+    },
+    {
+      "mode": "session/prompt:content-72",
+      "method": "session/prompt",
+      "params": {
+        "sessionId": "s",
+        "prompt": [
+          {
+            "type": "image",
+            "data": "not-base64",
+            "mimeType": "image/png",
+            "uri": 42
+          }
+        ]
+      }
+    },
+    {
+      "mode": "session/prompt:content-73",
+      "method": "session/prompt",
+      "params": {
+        "sessionId": "s",
+        "prompt": [
+          {
+            "type": "resource",
+            "resource": {
+              "uri": "fixture:/",
+              "text": "中文",
+              "mimeType": 42
+            }
+          }
+        ]
+      }
+    },
+    {
+      "mode": "session/prompt:content-74",
+      "method": "session/prompt",
+      "params": {
+        "sessionId": "s",
+        "prompt": [
+          {
+            "type": "resource_link",
+            "uri": "fixture:/",
+            "name": "link",
+            "size": 42
+          }
+        ]
+      }
+    },
+    {
+      "mode": "session/prompt:content-75",
+      "method": "session/prompt",
+      "params": {
+        "sessionId": "s",
+        "prompt": [
+          {
+            "type": "audio",
+            "data": "",
+            "mimeType": "audio/wav"
+          }
+        ]
+      }
+    },
+    {
+      "mode": "session/prompt:content-76",
+      "method": "session/prompt",
+      "params": {
+        "sessionId": "s",
+        "prompt": [
+          {
+            "type": "text",
+            "text": "x",
+            "annotations": {
+              "audience": [
+                "user",
+                "bad"
+              ],
+              "priority": 0.5
+            }
+          }
+        ]
+      }
+    },
+    {
+      "mode": "session/prompt:content-77",
+      "method": "session/prompt",
+      "params": {
+        "sessionId": "s",
+        "prompt": [
+          {
+            "type": "resource",
+            "resource": {}
+          }
+        ]
+      }
+    }
+  ],
+  "bytes": [
+    {
+      "mode": "bom",
+      "bytes": "77u/eyJqc29ucnBjIjoiMi4wIiwiaWQiOjEsIm1ldGhvZCI6ImVjaG8iLCJwYXJhbXMiOiJ0ZXh0In0K"
+    },
+    {
+      "mode": "nel",
+      "bytes": "woV7Impzb25ycGMiOiIyLjAiLCJpZCI6MSwibWV0aG9kIjoiZWNobyIsInBhcmFtcyI6InRleHQifQo="
+    },
+    {
+      "mode": "control-whitespace",
+      "bytes": "HHsianNvbnJwYyI6IjIuMCIsImlkIjoxLCJtZXRob2QiOiJlY2hvIiwicGFyYW1zIjoidGV4dCJ9Cg=="
+    },
+    {
+      "mode": "blank-lines",
+      "bytes": "IAkNCu+7vwoKeyJqc29ucnBjIjoiMi4wIiwiaWQiOjEsIm1ldGhvZCI6ImVjaG8iLCJwYXJhbXMiOiJ0ZXh0In0NCg=="
+    },
+    {
+      "mode": "invalid-utf8",
+      "bytes": "eyJqc29ucnBjIjoiMi4wIiwiaWQiOjEsIm1ldGhvZCI6ImVjaG8iLCJwYXJhbXMiOiL/dGV4dCJ9Cg=="
+    },
+    {
+      "mode": "surrogate",
+      "bytes": "eyJqc29ucnBjIjoiMi4wIiwiaWQiOjEsIm1ldGhvZCI6ImVjaG8iLCJwYXJhbXMiOiJcdWQ4MDAifQo="
+    },
+    {
+      "mode": "rounding",
+      "bytes": "eyJqc29ucnBjIjoiMi4wIiwiaWQiOjkwMDcxOTkyNTQ3NDA5OTMsIm1ldGhvZCI6ImVjaG8iLCJwYXJhbXMiOnsidmFsdWUiOjFlMzA5fX0K"
+    },
+    {
+      "mode": "malformed-tail",
+      "bytes": "eyJqc29ucnBjIjoiMi4wIiwiaWQiOjEsIm1ldGhvZCI6ImVjaG8iLCJwYXJhbXMiOiJ0ZXh0In0Kew=="
+    },
+    {
+      "mode": "same-chunk",
+      "bytes": "eyJqc29ucnBjIjoiMi4wIiwiaWQiOjEsIm1ldGhvZCI6ImVjaG8iLCJwYXJhbXMiOiJ0ZXh0In0Kewp7Impzb25ycGMiOiIyLjAiLCJpZCI6MiwibWV0aG9kIjoiZWNobyIsInBhcmFtcyI6InRleHQifQo="
+    }
+  ]
+}

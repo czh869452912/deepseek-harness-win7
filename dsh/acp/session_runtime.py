@@ -2,6 +2,7 @@ import asyncio
 
 from dsh.acp.codec import turn_end_to_stop_reason
 from dsh.acp.content import AcpContentError, admit_acp_prompt, check_signal
+from dsh.acp.errors import AcpInternalError, AcpInvalidParamsError
 from dsh.acp.model_control import resolved
 from dsh.acp.updates import assistant_updates, tool_call_update, tool_result_update
 from dsh.core.abort import AbortController
@@ -36,9 +37,9 @@ class AcpSession:
 
     async def prompt(self, ctx, params, image_enabled, signal=None):
         if self.closing is not None:
-            raise ValueError('session is closing')
+            raise AcpInvalidParamsError('session is closing: %s' % self.agent.session.id)
         if self.inflight_prompt is not None:
-            raise ValueError('a prompt is already in flight for this session')
+            raise AcpInvalidParamsError('a prompt is already in flight for this session')
         inflight = {'msg_id': None, 'turn': None, 'stop_reason': 'end_turn', 'cancel_requested': False,
                     'end_reason': None, 'agent_error': None, 'output_error': None, 'message_queued': False,
                     'selection': self.model_control.snapshot() if self.model_control is not None else None,
@@ -87,21 +88,21 @@ class AcpSession:
             if not inflight['cancel_requested'] and admission_failure is not None:
                 if isinstance(admission_failure, AcpContentError):
                     raise admission_failure
-                raise RuntimeError('prompt was not queued: ' + error_chain(admission_failure)) from admission_failure
+                raise AcpInternalError('prompt was not queued: ' + error_chain(admission_failure)) from admission_failure
             if inflight['message_queued']:
                 await resolved(self.agent.when_idle())
                 await self.drain_updates()
             if inflight['cancel_requested']:
                 return {'stopReason': 'cancelled'}
             if inflight['output_error'] is not None:
-                raise RuntimeError('assistant output delivery failed: ' + error_chain(inflight['output_error']))
+                raise AcpInternalError('assistant output delivery failed: ' + error_chain(inflight['output_error']))
             if inflight['agent_error'] is not None:
-                raise RuntimeError('turn failed: ' + error_chain(inflight['agent_error']))
+                raise AcpInternalError('turn failed: ' + error_chain(inflight['agent_error']))
             reason = inflight['end_reason']
             if reason is not None and reason.get('kind') == 'error':
                 error = reason.get('error')
                 detail = error.get('message', str(error)) if isinstance(error, dict) else error_chain(error)
-                raise RuntimeError('turn failed: ' + detail)
+                raise AcpInternalError('turn failed: ' + detail)
             return {'stopReason': 'cancelled' if reason is None else turn_end_to_stop_reason(reason)}
         finally:
             if self.inflight_prompt is inflight:

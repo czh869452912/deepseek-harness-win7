@@ -136,12 +136,15 @@ class SessionProjectionCache:
             state[1] = asyncio.get_running_loop().call_later(
                 self.config["writeIntervalMs"] / 1000, lambda: self._schedule(self.write(session)))
 
+    async def drain(self):
+        if self.tasks:
+            await asyncio.gather(*list(self.tasks), return_exceptions=True)
+
     async def close(self):
         self.closed = True
         for session in list(self.dirty):
             self._clean(session)
-        if self.tasks:
-            await asyncio.gather(*list(self.tasks), return_exceptions=True)
+        await self.drain()
 
 
 class SessionProjectionCachePlugin(Plugin):

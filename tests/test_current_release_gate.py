@@ -33,13 +33,13 @@ def regression_xml(path, omit=None, skip=None, duplicate=None, failure=None):
     ET.ElementTree(suites).write(str(path), encoding='utf-8')
 
 
-def test_regression_requires_all_five_browser_and_five_portable_lanes(tmp_path):
+def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 10, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 14, 'skipped': 1}
 
 
-@pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke'])
+@pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey'])
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
 def test_incomplete_regression_cannot_certify_a_release(tmp_path, module, damage):
     path = tmp_path / 'pytest.xml'
@@ -88,13 +88,16 @@ def extracted_receipt(tmp_path):
     archive.write_bytes(b'exact candidate archive')
     candidate = {'product_commit': 'a' * 40, 'worktree_dirty': False}
     report = {'result': 'passed', 'browser': {'passed': True}, 'runtime': {'checks': ['actual runtime']},
+              'acp': {'processes': 2, 'steps': ['initialize-0', 'invalid-params-before-effects',
+                  'persistent-new', 'close-list-0', 'eof-0', 'initialize-1',
+                  'new-process-resume-no-history-updates', 'close-list-1', 'eof-1']},
               'runtimeStderr': '', 'frontendFilesChecked': 119, 'archive': str(archive),
               'archiveSha256': GATE.digest(archive), 'provenance': dict(candidate)}
     return archive, candidate, report
 
 
 @pytest.mark.parametrize('damage', ['browser-skipped', 'runtime-missing', 'runtime-stderr',
-                                    'archive', 'commit', 'dirty', 'frontend'])
+                                    'archive', 'commit', 'dirty', 'frontend', 'acp-missing', 'acp-tail'])
 def test_extracted_runtime_and_browser_receipt_is_bound_to_the_candidate(tmp_path, damage):
     archive, candidate, report = extracted_receipt(tmp_path)
     if damage == 'browser-skipped':
@@ -109,6 +112,10 @@ def test_extracted_runtime_and_browser_receipt_is_bound_to_the_candidate(tmp_pat
         report['provenance']['product_commit'] = 'b' * 40
     elif damage == 'dirty':
         report['provenance']['worktree_dirty'] = True
+    elif damage == 'acp-missing':
+        del report['acp']
+    elif damage == 'acp-tail':
+        report['acp']['steps'].pop()
     else:
         report['frontendFilesChecked'] = 0
     path = tmp_path / 'receipt.json'
@@ -165,7 +172,8 @@ def test_default_gate_rejects_dirty_checkout_before_build(tmp_path, monkeypatch)
 
 
 def test_current_gate_includes_recent_contracts_and_only_uploads_receipt_archive():
-    assert {'acp_sessions', 'acp_model_output'} <= set(GATE.PAIRED_DRIVERS) and 'acp' in GATE.OFFICIAL_CONFIGS
+    assert {'acp_sessions', 'acp_model_output', 'acp_stdio'} <= set(GATE.PAIRED_DRIVERS)
+    assert {'acp', 'acp-app'} <= set(GATE.OFFICIAL_CONFIGS)
     assert {'deepseek', 'pi', 'compaction', 'approval', 'cordis_retirement', 'workflow_ralph', 'pruner'} <= set(GATE.PAIRED_DRIVERS)
     assert len(GATE.PAIRED_DRIVERS) == len(set(GATE.PAIRED_DRIVERS))
     workflow = (ROOT / '.github/workflows/verify.yml').read_text(encoding='utf-8')

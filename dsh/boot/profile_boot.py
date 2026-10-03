@@ -236,6 +236,7 @@ async def _run_profile(options: Dict[str, Any]) -> Dict[str, Any]:
             pass
         curr = app.get("current")
         if curr is not None and hasattr(curr, "fiber"):
+            await curr.serial('app/stopping')
             await curr.fiber.dispose()
             # A script bridge can already own the root teardown; join it here so
             # the CLI exits only after the whole tree settled.

@@ -23,10 +23,16 @@ PAIRED_DRIVERS = (
     'pi', 'storage_cache', 'workflow_ralph', 'repeat_tool', 'token_meter',
     'pruner', 'compaction', 'maintenance', 'timeout_policy', 'abort',
     'approval', 'inspect', 'cordis_guard', 'cordis_runner',
-    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output',
+    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio',
 )
-OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp')
+OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app')
 REQUIRED_REGRESSION = {
+    'test_acp_stdio_journey': {
+        'test_actual_acp_profile_stdio_output_and_new_process_durable_resume',
+        'test_real_process_concurrent_sessions_cancel_only_owned_request[session/cancel]',
+        'test_real_process_concurrent_sessions_cancel_only_owned_request[$/cancel_request]',
+        'test_real_process_eof_cancels_active_turn_and_reopens_durable_session',
+    },
     'test_native_web_browser': {
         'test_original_browser_native_host_cordis_lifecycle[lifecycle]',
         'test_original_browser_native_host_cordis_lifecycle[inspect]',
@@ -123,8 +129,12 @@ def validate_extracted(path, archive, candidate):
     report = json.loads(path.read_text(encoding='utf-8'))
     if (report.get('result') != 'passed' or report.get('browser', {}).get('passed') is not True
             or not report.get('runtime') or report.get('runtimeStderr')
+            or report.get('acp', {}).get('processes') != 2
+            or report.get('acp', {}).get('steps') != ['initialize-0', 'invalid-params-before-effects',
+                'persistent-new', 'close-list-0', 'eof-0', 'initialize-1',
+                'new-process-resume-no-history-updates', 'close-list-1', 'eof-1']
             or report.get('frontendFilesChecked', 0) <= 0):
-        raise RuntimeError('Extracted runtime/browser acceptance is incomplete')
+        raise RuntimeError('Extracted runtime/browser/ACP acceptance is incomplete')
     if report.get('archiveSha256') != digest(archive) or Path(report['archive']).resolve() != archive.resolve():
         raise RuntimeError('Extracted receipt belongs to a different archive')
     provenance = report.get('provenance', {})

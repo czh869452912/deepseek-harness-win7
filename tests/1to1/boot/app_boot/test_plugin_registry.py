@@ -96,7 +96,7 @@ PROFILES: List[str] = ["web", "standard", "headless", "creative", "acp", "sdk", 
 # loud over exactly this set. The list is frozen: it may only shrink, and only
 # together with the provider that lands.
 SHIPPED_PROVIDER_GAP: Dict[str, List[str]] = {
-    profile: (["@deepseek-ai/dsh-acp-app"] if profile == "acp" else [])
+    profile: []
     for profile in PROFILES
 }
 
@@ -252,6 +252,7 @@ def test_installation_rows_are_answered_by_the_table_not_by_the_shipped_artifact
     try:
         _stage_healed_installation(home, "@deepseek-ai/dsh-tools", "tools")
         _stage_healed_installation(home, "@deepseek-ai/dsh-acp-app", "web")
+        _stage_healed_installation(home, "@verification/unimplemented-installation", "unimplemented")
         profile_dir = os.path.join(home, "profiles", "standard")
         os.makedirs(profile_dir, exist_ok=True)
         config = os.path.join(profile_dir, "cordis.yml")
@@ -268,9 +269,10 @@ def test_installation_rows_are_answered_by_the_table_not_by_the_shipped_artifact
         assert loader.installation_module_roots == roots
 
         assert loader.import_plugin("@deepseek-ai/dsh-tools") is resolve_harness_plugin("@deepseek-ai/dsh-tools")
+        assert loader.import_plugin("@deepseek-ai/dsh-acp-app") is resolve_harness_plugin("@deepseek-ai/dsh-acp-app")
         with pytest.raises(ModuleNotFoundError) as raised:
-            loader.import_plugin("@deepseek-ai/dsh-acp-app")
-        assert str(raised.value) == "Cannot find module '@deepseek-ai/dsh-acp-app'"
+            loader.import_plugin("@verification/unimplemented-installation")
+        assert str(raised.value) == "Cannot find module '@verification/unimplemented-installation'"
     finally:
         safe_rmtree(home)
 
@@ -502,7 +504,7 @@ def test_the_frozen_gap_is_the_union_of_every_shipped_profile():
 
             collect(patch)
     assert union <= shipped_names
-    assert len(union) == 1
+    assert len(union) == 0
 
 
 # --- boot installs and consults the table ------------------------------------
@@ -564,22 +566,22 @@ async def test_boot_installs_the_table_before_the_config_tree_mounts():
 
 
 @pytest.mark.asyncio
-async def test_boot_rejects_a_config_naming_an_unimplemented_shipped_row():
+async def test_boot_rejects_a_config_naming_an_unimplemented_installation_row():
     """
-    The shipped fail-loud contract: a row the installation does not carry is
+    The installation fail-loud contract: a row the installation does not carry is
     reported with its name, never skipped.
     """
     d = tmp()
     with open(os.path.join(d, "cordis.yml"), "w", encoding="utf-8") as f:
         f.write(
             "- id: timer\n  name: '@deepseek-ai/cordis-plugin-timer'\n"
-            "- id: gateway\n  name: '@deepseek-ai/dsh-acp-app'\n"
+            "- id: gateway\n  name: '@verification/unimplemented-installation'\n"
         )
     with pytest.raises(RuntimeError) as raised:
         await boot(NAME, os.path.join(d, "cordis.yml"))
     message = str(raised.value)
     assert message.startswith(f"{NAME}: plugin tree failed to load")
-    assert "failed to import loader entry gateway (@deepseek-ai/dsh-acp-app): Cannot find module '@deepseek-ai/dsh-acp-app'" in message
+    assert "failed to import loader entry gateway (@verification/unimplemented-installation): Cannot find module '@verification/unimplemented-installation'" in message
 
 
 @pytest.mark.asyncio

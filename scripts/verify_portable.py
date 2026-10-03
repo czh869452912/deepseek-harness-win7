@@ -63,7 +63,7 @@ def main(argv=None):
     report = dict(result='failed', archive=str(archive), archiveSha256=digest(archive),
         scope='Actual extracted Portable on current Windows; Win7 and its browser are not certified; no remote model request.',
         inputSha256={name: digest(ROOT / 'scripts' / name) for name in (
-            'verify_portable.py', 'portable_runtime_probe.py', 'portable_browser_oracle.mjs', 'browser_onboarding.mjs')})
+            'verify_portable.py', 'portable_runtime_probe.py', 'portable_acp_probe.py', 'portable_browser_oracle.mjs', 'browser_onboarding.mjs')})
     node = shutil.which('node') if args.browser else None
     try:
         if args.browser and not node:
@@ -96,6 +96,19 @@ def main(argv=None):
                 raise RuntimeError('Missing successful extracted runtime report')
             report['runtime'] = messages[0]['value']
             report['runtimeStderr'] = result.stderr
+            acp_workspace = workspace / 'acp-workspace'
+            acp_workspace.mkdir()
+            acp_environment = product_environment(portable, acp_workspace)
+            acp = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/portable_acp_probe.py'), '--root', str(portable), '--workspace', str(acp_workspace)],
+                cwd=str(acp_workspace), env=acp_environment, capture_output=True, encoding='utf-8', timeout=60)
+            output.with_suffix('.acp.log').write_text(acp.stdout + '\nSTDERR:\n' + acp.stderr, encoding='utf-8')
+            if acp.returncode or acp.stderr:
+                raise RuntimeError('Extracted ACP stdio journey failed; see ' + str(output.with_suffix('.acp.log')))
+            acp_report = json.loads(acp.stdout)
+            if acp_report.get('result') != 'passed' or len(acp_report.get('value', {}).get('steps', [])) != 9:
+                raise RuntimeError('Missing extracted ACP stdio ownership observations')
+            report['acp'] = acp_report['value']
             if args.browser:
                 browser_report = output.with_suffix('.browser.json')
                 # The observer launches the Host with the same restricted env.

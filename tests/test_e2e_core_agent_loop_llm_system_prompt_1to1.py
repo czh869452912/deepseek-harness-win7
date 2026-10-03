@@ -600,7 +600,6 @@ async def test_llm_prepare_call_materializes_defaults_and_validates():
     assert prepared["reasoningEffort"] == "high"
     assert prepared["adapterDefaults"] == {"maxTokens": True, "reasoningEffort": True}
 
-    # 2. Prepare call with explicit values -> overrides defaults, adapterDefaults flags False
     prepared_custom = await llm_svc.prepare_call({
         "provider": "mock-provider",
         "model": "mock-r1",
@@ -609,7 +608,7 @@ async def test_llm_prepare_call_materializes_defaults_and_validates():
     })
     assert prepared_custom["maxTokens"] == 2048
     assert prepared_custom["reasoningEffort"] == "low"
-    assert prepared_custom["adapterDefaults"] == {"maxTokens": False, "reasoningEffort": False}
+    assert prepared_custom["adapterDefaults"] == {}
 
     # 3. Unsupported reasoning effort throws UNSUPPORTED_REASONING_EFFORT
     with pytest.raises(LlmError) as exc_info:

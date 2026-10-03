@@ -684,11 +684,6 @@ class LLMService:
         cfg_max_tokens = config.get("maxTokens") if "maxTokens" in config else config.get("max_tokens")
         cfg_reasoning_effort = config.get("reasoningEffort") if "reasoningEffort" in config else config.get("reasoning_effort")
 
-        defaults = {
-            "maxTokens": cfg_max_tokens is None,
-            "reasoningEffort": cfg_reasoning_effort is None,
-        }
-
         max_tokens = cfg_max_tokens if cfg_max_tokens is not None else model_info.get("defaultMaxTokens")
 
         reasoning_effort = cfg_reasoning_effort
@@ -710,12 +705,18 @@ class LLMService:
                 "UNSUPPORTED_REASONING_EFFORT",
             )
 
+        defaults = {}
+        if cfg_max_tokens is None and max_tokens is not None:
+            defaults['maxTokens'] = True
+        if cfg_reasoning_effort is None and reasoning_effort is not None:
+            defaults['reasoningEffort'] = True
         return {
             "provider": provider_id,
             "model": model_info,
             "maxTokens": max_tokens,
             "reasoningEffort": reasoning_effort,
             "adapterDefaults": defaults,
+            **({'context': copy.deepcopy(model_info['context'])} if model_info.get('context') is not None else {}),
             **({"stream": prepared["stream"], "retryPolicy": prepared.get("retryPolicy")} if prepared else {}),
         }
 

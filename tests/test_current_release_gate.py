@@ -165,7 +165,7 @@ def test_default_gate_rejects_dirty_checkout_before_build(tmp_path, monkeypatch)
 
 
 def test_current_gate_includes_recent_contracts_and_only_uploads_receipt_archive():
-    assert 'acp_sessions' in GATE.PAIRED_DRIVERS and 'acp' in GATE.OFFICIAL_CONFIGS
+    assert {'acp_sessions', 'acp_model_output'} <= set(GATE.PAIRED_DRIVERS) and 'acp' in GATE.OFFICIAL_CONFIGS
     assert {'deepseek', 'pi', 'compaction', 'approval', 'cordis_retirement', 'workflow_ralph', 'pruner'} <= set(GATE.PAIRED_DRIVERS)
     assert len(GATE.PAIRED_DRIVERS) == len(set(GATE.PAIRED_DRIVERS))
     workflow = (ROOT / '.github/workflows/verify.yml').read_text(encoding='utf-8')

@@ -1,0 +1,28 @@
+{
+  "id": "MIG-ACP-CONFIG-OUTPUT-004",
+  "goal": "闭合 ACP 模型配置、prompt turn pin 与有序 committed output 消费者",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "bd9376558f5be312e0f8ee8eb3d9d8dfb5e164b7",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {"task": "MIG-ACP-SESSION-CONTROLS-003", "contract": "CON-ACP-SESSION-CONTROLS", "revision": 1},
+    {"task": "MIG-AGENT-LIFECYCLE-002", "contract": "CON-AGENT-FACTORY", "revision": 1},
+    {"task": "MIG-SESSION-STORAGE-006", "contract": "CON-SESSION-STORAGE", "revision": 1}
+  ],
+  "provides": [{"contract": "CON-ACP-CONFIG-OUTPUT", "revision": 1}],
+  "acceptance": [
+    "Eight complete pinned original model-control/update projections match without field removal, default ownership normalization or vacuous observations; negative observer cases reject missing modes and corrupted fields.",
+    "Actual canonical JSONL/SQLite AgentLoop journeys prove model switch affects later prompts while every tool-following step keeps its admitted route; real committed output ids/order and same-id Session impostor rejection are checked.",
+    "Option discovery rollback, delayed image cancellation/close, output-draining close, conversion failure recovery and cancelled observer ownership have targeted negative tests.",
+    "Both live resume and new-Context resume restore logged explicit selection without replaying historical output. Complete Python 3.8.10 regression and a frozen clean candidate release gate pass."
+  ],
+  "expected_paths": ["dsh/acp", "dsh/core/agent_loop.py", "dsh/llm/llm_service.py", "tests", "scripts", "migration", "docs/research"],
+  "open_findings": ["Targeted implementation and paired observations pass; frozen complete gate and bounded acceptance evidence are pending. Full prepared-call dispatch trust and complete ACP stdio/MCP remain separate scopes."],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "提交实现候选后运行完整统一门禁，与 A1 一起绑定 clean candidate、原始失败/修复观察和 Portable 收据；随后继续 A3 canonical stdio。整体 ACP 和迁移未闭环。"
+}

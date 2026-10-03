@@ -734,13 +734,19 @@ class AgentLoopService:
             provider_name = str(proposed_config.get("provider", provider_name))
             model_name = str(proposed_config.get("model", model_name))
 
-        prepare = getattr(llm_service, "prepare_adapter_call", None)
-        prepared_adapter = await prepare(provider_name, model_name, getattr(agent, "_cancel_event", None)) if callable(prepare) else None
+        prepare = getattr(llm_service, "prepare_call", None)
+        prepared_adapter = None
+        if callable(prepare):
+            prepared_adapter = await prepare(effective_config, getattr(agent, "_cancel_event", None))
+            for field in ('maxTokens', 'reasoningEffort'):
+                if prepared_adapter.get(field) is not None:
+                    effective_config[field] = prepared_adapter[field]
 
         header_data = canonical_header({
             "system": system_prompt,
             "tools": tool_schemas,
             "config": dict(effective_config, provider=provider_name, model=model_name),
+            **({'adapterDefaults': prepared_adapter['adapterDefaults']} if prepared_adapter is not None else {}),
         })
 
         # Projection dict subclasses must cross the durable-log boundary as plain JSON.
@@ -762,12 +768,15 @@ class AgentLoopService:
             session.append_request_header(header_data, reason="series")
 
         baseline_ctx = session.request_context()
+        model_context = prepared_adapter.get('context') if prepared_adapter is not None else None
+        context_window = model_context.get('contextWindow') if isinstance(model_context, dict) else None
         if (
             baseline_ctx is None
             or baseline_ctx.get("provider") != provider_name
             or baseline_ctx.get("model") != model_name
+            or baseline_ctx.get('contextWindow') != context_window
         ):
-            session.append_request_context(provider=provider_name, model=model_name, context_window=128000)
+            session.append_request_context(provider=provider_name, model=model_name, context_window=context_window)
 
         messages = session.derive_messages()
 
@@ -813,7 +822,7 @@ class AgentLoopService:
             if stream_fn and callable(stream_fn):
                 try:
                     def open_stream(*_args):
-                        if prepared_adapter is not None:
+                        if prepared_adapter is not None and 'stream' in prepared_adapter:
                             return prepared_adapter["stream"](dict(request_obj, signal=getattr(agent, "_cancel_event", None)))
                         return _invoke_llm_callable(
                             stream_fn, messages=request_obj["messages"],

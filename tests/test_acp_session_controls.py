@@ -57,23 +57,23 @@ class OwnedFactory:
             raise self.failures['flush']
         return True
 
-    async def create(self, session_id, meta, options, signal):
+    async def create(self, session_id, meta, options, signal, setup=None):
         self.created.append(session_id)
         self.signals.append(signal)
         self.entered.set()
         if self.create_gate is not None:
             await self.create_gate.wait()
-        return self.handle(Session(session_id, header=SessionHeader(session_id, cwd=meta['cwd'])))
+        return self.handle(Session(session_id, header=SessionHeader(session_id, cwd=meta['cwd'])), setup)
 
-    async def resume(self, resume_session_id, options, signal):
+    async def resume(self, resume_session_id, options, signal, setup=None):
         self.resumed.append(resume_session_id)
         self.signals.append(signal)
         self.entered.set()
         if self.create_gate is not None:
             await self.create_gate.wait()
-        return self.handle(Session(resume_session_id, header=self.persistence.headers[resume_session_id]))
+        return self.handle(Session(resume_session_id, header=self.persistence.headers[resume_session_id]), setup)
 
-    def handle(self, session):
+    def handle(self, session, setup=None):
         self.live[session.id] = session
 
         async def idle():
@@ -84,13 +84,17 @@ class OwnedFactory:
 
         async def dispose():
             self.disposed.append(session.id)
+            await dispose_context(agent_ctx)
             if self.live.get(session.id) is session:
                 del self.live[session.id]
             if 'dispose' in self.failures:
                 raise self.failures['dispose']
 
-        agent = SimpleNamespace(session=session, when_idle=idle,
+        agent = SimpleNamespace(id=session.id, session=session, when_idle=idle,
                                 cancel=lambda cause: self.cancelled.append(session.id))
+        agent_ctx = Context().extend({'agent': agent})
+        if setup is not None:
+            setup(agent_ctx)
         return SimpleNamespace(agent=agent, dispose=dispose)
 
 
@@ -146,7 +150,7 @@ async def test_empty_new_session_is_materialized_and_no_agent_fallback_exists(tm
         assert await bridge.list_sessions(ctx, {}) == {'sessions': []}
         assert await bridge.close_session(ctx, created) == {}
         assert await bridge.list_sessions(ctx, {}) == {'sessions': [{'sessionId': session_id, 'cwd': str(tmp_path)}]}
-        assert await bridge.resume_session(ctx, dict(created, cwd=str(tmp_path))) == {}
+        assert await bridge.resume_session(ctx, dict(created, cwd=str(tmp_path))) == {'configOptions': []}
         assert factory.resumed == [session_id] and factory.disposed == [session_id]
     finally:
         await bridge.close(ctx)
@@ -225,7 +229,7 @@ async def test_resume_reserves_across_awaits_and_retry_after_failure(tmp_path):
         await asyncio.gather(pending, return_exceptions=True)
         assert not bridge.activating
         factory.create_gate.set()
-        assert await bridge.resume_session(ctx, {'sessionId': 'saved', 'cwd': str(tmp_path)}) == {}
+        assert await bridge.resume_session(ctx, {'sessionId': 'saved', 'cwd': str(tmp_path)}) == {'configOptions': []}
         assert factory.resumed == ['saved', 'saved']
     finally:
         factory.create_gate.set()
@@ -382,6 +386,7 @@ async def boot_profile(tmp_path, backend, monkeypatch):
     runtime = await run_profile({'profile': 'acp-controls', 'dshHome': str(home), 'args': [], 'waitForExit': False})
     ctx = runtime['ctx']
     adapter = StrictMockLlmAdapter([{'text': 'persisted answer'}, {'text': 'continued answer'}])
+    ctx.get('llm').register_adapter(['openai'], adapter)
     monkeypatch.setattr(ctx.get('llm'), 'chat_completion_stream', adapter.chat_completion_stream)
     bridge = next(entry.fiber.plugin for entry in ctx.get('loader').entries
                   if entry.options.get('name') == '@deepseek-ai/dsh-acp')
@@ -401,7 +406,8 @@ async def test_actual_profile_empty_materialization_history_and_new_context_resu
     try:
         created = await bridge.new_session(ctx, {'cwd': str(tmp_path)})
         await bridge.close_session(ctx, created)
-        assert await bridge.list_sessions(ctx, {}) == {'sessions': [dict(created, cwd=str(tmp_path))]}
+        assert await bridge.list_sessions(ctx, {}) == {'sessions': [
+            {'sessionId': created['sessionId'], 'cwd': str(tmp_path)}]}
         await bridge.resume_session(ctx, dict(created, cwd=str(tmp_path)))
         assert await bridge.prompt(ctx, dict(created, prompt=[{'type': 'text', 'text': 'remember this'}])) == {
             'stopReason': 'end_turn'}

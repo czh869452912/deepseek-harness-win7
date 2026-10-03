@@ -57,6 +57,7 @@ def main():
             raise ValueError('reference differs from target')
         report['target_upstream'] = target
         inputs = ['dsh/acp/server.py', 'dsh/acp/session_controls.py', 'scripts/acp_sessions_oracle.py',
+                  'dsh/acp/session_runtime.py', 'dsh/acp/content.py', 'dsh/acp/model_control.py', 'dsh/acp/updates.py',
                   'scripts/oracles/acp_sessions.probe.spec.ts', 'scripts/oracles/acp_sessions_python.py',
                   'scripts/oracles/vitest.acp.config.mts', 'scripts/oracles/vitest.acp-sessions-probe.config.mts',
                   'scripts/oracles/official/package-lock.json', 'scripts/oracles/acp-sdk-resolution.mjs', 'tests/test_acp_session_controls.py']

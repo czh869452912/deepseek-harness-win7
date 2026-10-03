@@ -1,119 +1,127 @@
-"""
-ACP wire content admission and projection matching reference/packages/acp/acp/src/content.ts
-"""
 import base64
 import binascii
 import json
 import re
-from typing import Any, Dict, List, Optional, Tuple, Union
 
-IMAGE_MEDIA_TYPES: Tuple[str, ...] = ("image/png", "image/jpeg", "image/webp", "image/gif")
-_CANONICAL_BASE64 = re.compile(r"^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$")
+from dsh.attachment.error import is_image_admission_error
+from dsh.core.abort import AbortController, abort_reason_error
+from dsh.acp.model_control import resolved
+
+IMAGE_MEDIA_TYPES = ('image/png', 'image/jpeg', 'image/webp', 'image/gif')
+CANONICAL_BASE64 = re.compile(r'^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$')
 
 
 class AcpContentError(Exception):
-    """
-    Error with stable ACP request-failure category ('invalid' or 'internal').
-    """
-
-    def __init__(self, message: str, kind: str = "invalid"):
+    def __init__(self, message, kind='invalid'):
         super().__init__(message)
         self.message = message
         self.kind = kind
 
 
-def supports_acp_image_prompts(ctx: Any, provider: Optional[str] = None, model: Optional[str] = None) -> bool:
-    """
-    Determine whether initialization may advertise inline image prompts.
-    """
-    if not ctx:
+def check_signal(signal):
+    if signal is not None and signal.aborted:
+        raise abort_reason_error(signal, 'ACP content admission cancelled')
+
+
+async def supports_acp_image_prompts(ctx, provider=None, model=None):
+    attachments, llm = ctx.get('attachments'), ctx.get('llm')
+    if attachments is None or llm is None or provider is None or model is None:
         return False
-    attachments = ctx.get("attachments") if hasattr(ctx, "get") else None
-    llm = ctx.get("llm") if hasattr(ctx, "get") else None
-    if not attachments or not llm:
+    if not any(media_type in IMAGE_MEDIA_TYPES for media_type in attachments.image_limits['mediaTypes']):
         return False
-    return True
+    try:
+        info = await resolved(llm.resolve_model_info(provider, model))
+        return 'image' in info.get('inputModalities', [])
+    except Exception:
+        return False
 
 
-def admit_acp_prompt(
-    ctx: Any,
-    agent: Any,
-    prompt: List[Dict[str, Any]],
-    image_enabled: bool = False,
-) -> List[Dict[str, Any]]:
-    """
-    Admit ACP prompt blocks into ordered durable core content.
-    """
-    content: List[Dict[str, Any]] = []
-    text_accum: List[str] = []
+def decode_image(block):
+    media_type = block.get('mimeType')
+    if media_type not in IMAGE_MEDIA_TYPES:
+        raise AcpContentError('image mimeType must be image/png, image/jpeg, image/webp, or image/gif')
+    data = block.get('data')
+    if not isinstance(data, str) or CANONICAL_BASE64.fullmatch(data) is None:
+        raise AcpContentError('image data must be canonical base64')
+    try:
+        decoded = base64.b64decode(data, validate=True)
+    except (ValueError, TypeError, binascii.Error) as error:
+        raise AcpContentError('image data must be canonical base64') from error
+    if base64.b64encode(decoded).decode('ascii') != data:
+        raise AcpContentError('image data must be canonical base64')
+    return {'data': decoded, 'mediaType': media_type}
 
-    def flush_text() -> None:
-        if text_accum:
-            content.append({"type": "text", "text": "".join(text_accum)})
-            text_accum.clear()
 
+async def admit_acp_prompt(ctx, route, prompt, image_enabled=False, signal=None):
+    signal = signal if signal is not None else AbortController().signal
+    images = []
     for block in prompt:
-        if not isinstance(block, dict):
+        block_type = block.get('type') if isinstance(block, dict) else None
+        if block_type in ('text', 'resource_link'):
             continue
-        b_type = block.get("type", "text")
-        if b_type == "text":
-            text_accum.append(block.get("text", ""))
-        elif b_type == "resource_link":
-            name = block.get("name", "")
-            uri = block.get("uri", "")
-            text_accum.append("\n[resource_link name=%s uri=%s]\n" % (json.dumps(name, ensure_ascii=False), json.dumps(uri, ensure_ascii=False)))
-        elif b_type == "image":
+        if block_type == 'image':
             if not image_enabled:
-                raise AcpContentError("inline image prompts were not advertised by this connection", "invalid")
-            mime_type = block.get("mimeType", "")
-            if mime_type not in IMAGE_MEDIA_TYPES:
-                raise AcpContentError("image mimeType must be image/png, image/jpeg, image/webp, or image/gif", "invalid")
-            data_b64 = block.get("data", "")
-            if not isinstance(data_b64, str) or not _CANONICAL_BASE64.match(data_b64):
-                raise AcpContentError("image data must be canonical base64", "invalid")
-            try:
-                img_bytes = base64.b64decode(data_b64, validate=True)
-            except (TypeError, ValueError, binascii.Error) as e:
-                raise AcpContentError("image data must be canonical base64", "invalid") from e
-            if base64.b64encode(img_bytes).decode("ascii") != data_b64:
-                raise AcpContentError("image data must be canonical base64", "invalid")
-
-            flush_text()
-            attachments = ctx.get("attachments") if hasattr(ctx, "get") else None
-            if attachments and hasattr(attachments, "save_images"):
-                refs = attachments.save_images([{"data": img_bytes, "mediaType": mime_type}])
-                content.append({"type": "image", "attachment": refs[0] if refs else {}})
-            else:
-                content.append({"type": "text", "text": f"[image prompt admitted: {len(img_bytes)} bytes]"})
-        elif b_type == "audio":
-            raise AcpContentError("audio prompt content is not supported", "invalid")
-        elif b_type == "resource":
-            raise AcpContentError("embedded resource prompt content is not supported", "invalid")
+                raise AcpContentError('inline image prompts were not advertised by this connection')
+            images.append(decode_image(block))
+        elif block_type == 'audio':
+            raise AcpContentError('audio prompt content is not supported')
+        elif block_type == 'resource':
+            raise AcpContentError('embedded resource prompt content is not supported')
         else:
-            raise AcpContentError("unsupported ACP prompt content", "invalid")
-
-    flush_text()
-    if not any(item.get("type") == "image" or (item.get("type") == "text" and item.get("text", "").strip()) for item in content):
-        raise AcpContentError("empty prompt", "invalid")
+            raise AcpContentError('unsupported ACP prompt content')
+    refs = []
+    if images:
+        attachments = ctx.get('attachments')
+        if attachments is None:
+            raise AcpContentError('no attachment store is mounted')
+        llm = ctx.get('llm')
+        if route is None or llm is None:
+            raise AcpContentError('the current model route could not be resolved for image input')
+        try:
+            info = await resolved(llm.resolve_model_info(route.provider, route.model, signal))
+        except Exception as error:
+            raise AcpContentError('the current model route could not be verified for image input', 'internal') from error
+        if 'image' not in info.get('inputModalities', []):
+            raise AcpContentError('model "%s" does not declare image input' % route.model)
+        check_signal(signal)
+        try:
+            refs = await resolved(attachments.save_images(images))
+        except Exception as error:
+            if is_image_admission_error(error):
+                raise AcpContentError(getattr(error, 'message', str(error))) from error
+            raise AcpContentError('unable to persist the prompt image batch', 'internal') from error
+        check_signal(signal)
+    content, pending_text, image_index = [], '', 0
+    for block in prompt:
+        if block['type'] == 'text':
+            pending_text += block['text']
+        elif block['type'] == 'resource_link':
+            pending_text += '\n[resource_link name=%s uri=%s]\n' % (
+                json.dumps(block['name'], ensure_ascii=False, separators=(',', ':')),
+                json.dumps(block['uri'], ensure_ascii=False, separators=(',', ':')))
+        elif block['type'] == 'image':
+            if pending_text:
+                content.append({'type': 'text', 'text': pending_text})
+                pending_text = ''
+            content.append({'type': 'image', 'attachment': refs[image_index]})
+            image_index += 1
+    if pending_text:
+        content.append({'type': 'text', 'text': pending_text})
+    if not any(item['type'] == 'image' or item['text'].strip() for item in content):
+        raise AcpContentError('empty prompt')
     return content
 
 
-def assistant_block_to_acp(ctx: Any, block: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """
-    Translate one committed assistant block to ACP wire content.
-    """
-    b_type = block.get("type")
-    if b_type == "text":
-        txt = block.get("text", "")
-        return {"type": "text", "text": txt} if txt else None
-    elif b_type == "image":
-        attachments = ctx.get("attachments") if hasattr(ctx, "get") else None
-        if not attachments:
-            raise AcpContentError("cannot deliver assistant image: no attachment store is mounted", "internal")
-        ref = block.get("attachment")
-        if hasattr(attachments, "read_image"):
-            stored = attachments.read_image(ref)
-            data_b64 = base64.b64encode(stored.get("data", b"")).decode("ascii")
-            return {"type": "image", "data": data_b64, "mimeType": stored.get("mediaType", "image/png")}
-        return {"type": "image", "data": "", "mimeType": "image/png"}
-    return None
+async def assistant_block_to_acp(ctx, block):
+    if block['type'] == 'text':
+        return {'type': 'text', 'text': block['text']} if block['text'] else None
+    if block['type'] != 'image':
+        return None
+    attachments = ctx.get('attachments')
+    if attachments is None:
+        raise AcpContentError('cannot deliver assistant image: no attachment store is mounted', 'internal')
+    try:
+        stored = await resolved(attachments.read_image(block['attachment']))
+    except Exception as error:
+        raise AcpContentError('cannot deliver assistant image: the attachment is unavailable or corrupt', 'internal') from error
+    return {'type': 'image', 'data': base64.b64encode(stored['data']).decode('ascii'), 'mimeType': stored['ref']['mediaType']}

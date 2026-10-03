@@ -1,0 +1,24 @@
+{
+  "id": "CON-ACP-CONFIG-OUTPUT",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/acp/acp/src/model-control.ts", "reference/packages/acp/acp/src/content.ts", "reference/packages/acp/acp/src/updates.ts", "reference/packages/acp/acp/src/session.ts", "reference/packages/core/agent-loop/src/agent.ts", "reference/packages/llm/llm/src/index.ts", "dsh/acp/server.py", "dsh/acp/model_control.py", "dsh/acp/content.py", "dsh/acp/updates.py", "dsh/acp/session_runtime.py", "dsh/core/agent_loop.py", "dsh/llm/llm_service.py"],
+  "consumers": ["dsh/acp/server.py", "dsh/core/model_selection.py", "dsh/core/agent_loop.py"],
+  "invariants": [
+    "Model options retain complete provider/model route identity, grouped catalogs, synthesized unlisted selections and exact-model reasoning choices; failed mutations release serialized admission.",
+    "Rendering provider-derived defaults does not transfer ownership to the selected Agent route. Explicit controls and persisted adapterDefaults remain distinguishable across resume.",
+    "Prompt admission captures a detached future selection before yielding, pins that selection to the exact claimed message/turn for every tool-following step and releases only the exact ended turn.",
+    "Validate every prompt block and image before the single attachment batch. Cancellation may leave unreachable stored objects but cannot enqueue a late user message.",
+    "Committed assistant/tool events on the exact owned Session produce ordered standard semantic updates; assistant image conversion errors fail only their correlated prompt, supplemental tool-result conversion errors are contained.",
+    "Prompt completion and close await owned output drain; close aborts unfinished admission before flush/dispose. Resumed history is not replayed as fresh output.",
+    "AgentLoop uses prepared model defaults in actual requests and durable headers, marking only defaults that were materialized; model context capacity is taken from resolved metadata rather than fabricated."
+  ],
+  "open_questions": ["Complete stdio/SDK wire envelopes, MCP/permission/subagent consumers and real remote-provider certification remain separate closures; primitive paired projections are not proof of these domains."],
+  "identity": "Complete provider/model tuple, explicit reasoning effort, exact Agent/Session/message/turn and committed message id.",
+  "ownership": "ACP owns serialized selected state, admission and output tail; Agent-scoped reversible model-selection listeners route requests; LLM and attachment services own exact model metadata and durable image storage.",
+  "ordering": "Capture selection, validate all blocks, write one batch, recheck abort/ownership, queue user message, correlate claim and pin, deliver committed projections in order, drain at quiescence, then flush/dispose.",
+  "errors": "Absent route or invalid choice fails without invented state; initial option failure rolls back activation. Conversion and transport failures retain their distinct settlement behavior.",
+  "cancellation": "Request abort and cancelled observers keep admission occupied until owned work drains; close aborts an unfinished image write admission and prevents late enqueue.",
+  "adaptation": "Python 3.8 async service adapters, canonical JSONL/SQLite profiles and eight exact semantic original-source paired projections. No browser changes, MCP capabilities, full stdio parity or Win7 certification are inferred."
+}

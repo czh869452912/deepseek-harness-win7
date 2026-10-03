@@ -6,22 +6,16 @@ import inspect
 import ntpath
 import asyncio
 import os
-from typing import Any, Callable, Dict, List, Optional
-from dsh.acp.codec import turn_end_to_stop_reason
-from dsh.acp.content import AcpContentError, admit_acp_prompt, assistant_block_to_acp, supports_acp_image_prompts
+from typing import Any, Dict, Optional
+from dsh.acp.content import supports_acp_image_prompts
+from dsh.acp.model_control import AcpModelControl, resolved, selection_for
+from dsh.acp.session_runtime import AcpSession as SessionRecord
+from dsh.core.model_selection import ModelSelection
 from dsh.cordis.plugin import Plugin
 from dsh.core.agent import AgentOptions
 from dsh.core.abort import AbortController, abort_reason_error
 from dsh.llm.error import error_chain
 from dsh.acp.session_controls import decode_cursor, encode_cursor, field, resolve_page_size, same_directory, utf8_key
-
-
-class SessionRecord:
-    def __init__(self, agent: Any, dispose_fn: Optional[Callable[[], Any]] = None):
-        self.agent = agent
-        self.dispose_fn = dispose_fn
-        self.inflight_prompt: Optional[Dict[str, Any]] = None
-        self.closing: Optional[asyncio.Task] = None
 
 
 class AcpPlugin(Plugin):
@@ -49,6 +43,7 @@ class AcpPlugin(Plugin):
             ctx.on("agent/inbox/claimed", self._on_inbox_claimed)
             ctx.on("agent/error", self._on_agent_error)
             ctx.on("approval/request", self._on_approval_request)
+            ctx.on("llm/adapters-updated", self._on_adapters_updated)
 
         async def disposer():
             await self.close(ctx)
@@ -61,7 +56,7 @@ class AcpPlugin(Plugin):
     async def initialize(self, ctx: Any, params: Dict[str, Any]) -> Dict[str, Any]:
         p = self.config.get("provider")
         m = self.config.get("model")
-        self.image_prompt_enabled = supports_acp_image_prompts(ctx, p, m)
+        self.image_prompt_enabled = await supports_acp_image_prompts(ctx, p, m)
         return {
             "protocolVersion": 1,
             "agentInfo": {"name": "deepseek-harness-acp", "version": "0.0.1"},
@@ -125,6 +120,18 @@ class AcpPlugin(Plugin):
             raise ValueError('session is closing')
         return record
 
+    def _fallback_selection(self):
+        provider, model = self.config.get('provider'), self.config.get('model')
+        return ModelSelection(provider, model) if provider is not None and model is not None else None
+
+    async def _notify(self, ctx, payload):
+        notify = self.config.get('notify')
+        if notify is not None:
+            try:
+                await resolved(notify(payload))
+            except Exception as error:
+                ctx.logger.warn('acp: notification failed: ' + error_chain(error))
+
     async def new_session(self, ctx: Any, params: Dict[str, Any], signal=None) -> Dict[str, Any]:
         self._assert_open(signal)
         cwd = self._workspace(params)
@@ -132,20 +139,27 @@ class AcpPlugin(Plugin):
         session_id = str(uuid.uuid4())
         operation, cleanup = self._operation(signal)
         record = None
+        control = AcpModelControl(ctx.get('llm'), self._fallback_selection())
         try:
             handle = await agents.create(session_id=session_id, meta={'cwd': cwd},
                 options=AgentOptions(provider=self.config.get('provider'), model=self.config.get('model')),
-                signal=operation)
-            record = SessionRecord(getattr(handle, 'agent', None), getattr(handle, 'dispose', None))
+                signal=operation, setup=control.install)
+            record = SessionRecord(getattr(handle, 'agent', None), getattr(handle, 'dispose', None),
+                control, ctx, lambda payload: self._notify(ctx, payload))
             self._assert_open(operation)
             if (record.agent is None or getattr(getattr(record.agent, 'session', None), 'id', None) != session_id
                     or not callable(record.dispose_fn)):
                 raise RuntimeError('ACP agent factory returned an invalid owned handle')
+            self.sessions[session_id] = record
+            options = await control.options(operation)
+            self._assert_open(operation)
             await persistence.ensure_materialized(record.agent.session)
             self._assert_open(operation)
             self.sessions[session_id] = record
-            return {'sessionId': session_id}
+            return {'sessionId': session_id, 'configOptions': options}
         except BaseException:
+            if self.sessions.get(session_id) is record:
+                self.sessions.pop(session_id, None)
             if record is not None:
                 await asyncio.shield(self._begin_close(ctx, record))
             raise
@@ -191,6 +205,15 @@ class AcpPlugin(Plugin):
         operation, cleanup = self._operation(signal)
         self.activating.add(session_id)
         record = None
+        control = None
+        def setup(agent_ctx):
+            nonlocal control
+            agent = getattr(agent_ctx, 'agent', None)
+            if agent is None:
+                raise RuntimeError('ACP resumed Agent is absent during setup')
+            control = AcpModelControl(ctx.get('llm'), selection_for(
+                agent.session.request_header(), self._fallback_selection()))
+            control.install(agent_ctx)
         try:
             headers = await persistence.list()
             self._assert_open(operation)
@@ -201,8 +224,9 @@ class AcpPlugin(Plugin):
                 raise ValueError('session cwd does not match: %s' % cwd)
             handle = await agents.resume(resume_session_id=session_id,
                 options=AgentOptions(provider=self.config.get('provider'), model=self.config.get('model')),
-                signal=operation)
-            record = SessionRecord(getattr(handle, 'agent', None), getattr(handle, 'dispose', None))
+                signal=operation, setup=setup)
+            record = SessionRecord(getattr(handle, 'agent', None), getattr(handle, 'dispose', None),
+                control, ctx, lambda payload: self._notify(ctx, payload))
             self._assert_open(operation)
             if (record.agent is None or getattr(getattr(record.agent, 'session', None), 'id', None) != session_id
                     or not callable(record.dispose_fn)):
@@ -210,8 +234,14 @@ class AcpPlugin(Plugin):
             if not same_directory(field(record.agent.session.header, 'cwd'), cwd):
                 raise ValueError('session cwd does not match: %s' % cwd)
             self.sessions[session_id] = record
-            return {}
+            if control is None:
+                raise RuntimeError('ACP agent factory did not run session setup')
+            options = await control.options(operation)
+            self._assert_open(operation)
+            return {'configOptions': options}
         except BaseException:
+            if self.sessions.get(session_id) is record:
+                self.sessions.pop(session_id, None)
             if record is not None:
                 await asyncio.shield(self._begin_close(ctx, record))
             raise
@@ -223,9 +253,13 @@ class AcpPlugin(Plugin):
         if record.closing is not None:
             return record.closing
         failures = []
+        inflight = record.inflight_prompt
         if record.inflight_prompt is not None:
             record.inflight_prompt['cancel_requested'] = True
             record.inflight_prompt['stop_reason'] = 'cancelled'
+            controller = record.inflight_prompt.get('admission')
+            if controller is not None:
+                controller.abort(RuntimeError('ACP session is closing'))
         if record.agent is not None and hasattr(record.agent, 'cancel'):
             try:
                 record.agent.cancel({'kind': 'user'})
@@ -240,9 +274,14 @@ class AcpPlugin(Plugin):
                         await result
                 except Exception as error:
                     failures.append(error)
+            async def activity():
+                if inflight is not None and inflight.get('admission_done') is not None:
+                    await inflight['admission_done'].wait()
+                if record.agent is not None and callable(record.dispose_fn) and hasattr(record.agent, 'when_idle'):
+                    await resolved(record.agent.when_idle())
+                await record.drain_updates()
+            await attempt(activity)
             if record.agent is not None and callable(record.dispose_fn):
-                if hasattr(record.agent, 'when_idle'):
-                    await attempt(record.agent.when_idle)
                 subagents = ctx.get('subagents')
                 if subagents is not None:
                     await attempt(lambda: subagents.drainContinuableDescendants([record.agent]))
@@ -251,6 +290,7 @@ class AcpPlugin(Plugin):
                     await attempt(lambda: sessions.flush(record.agent.session))
             if callable(record.dispose_fn):
                 await attempt(record.dispose_fn)
+            record.pending_selections.clear()
             if failures:
                 raise RuntimeError('ACP session teardown failed: ' + '; '.join(error_chain(error) for error in failures))
         record.closing = asyncio.create_task(drain())
@@ -296,66 +336,29 @@ class AcpPlugin(Plugin):
             self._closing = asyncio.create_task(drain_all())
         await asyncio.shield(self._closing)
 
-    async def prompt(self, ctx: Any, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def set_config_option(self, ctx, params, signal=None):
+        record = self._require_session(params.get('sessionId'))
+        return {'configOptions': await record.model_control.set(params.get('configId'), params.get('value'), signal)}
+
+    async def prompt(self, ctx: Any, params: Dict[str, Any], signal=None) -> Dict[str, Any]:
         session_id = params.get("sessionId")
         rec = self._require_session(session_id)
-        if rec.inflight_prompt is not None:
-            raise ValueError("a prompt is already in flight for this session")
-
-        prompt_blocks = params.get("prompt", [])
-        content = admit_acp_prompt(ctx, rec.agent, prompt_blocks, self.image_prompt_enabled)
-
-        msg = {"id": f"msg-{uuid.uuid4().hex[:8]}", "role": "user", "content": content}
-        inflight = {"msg_id": msg["id"], "turn": None, "stop_reason": "end_turn",
-                    "cancel_requested": False, "end_reason": None, "agent_error": None}
-        rec.inflight_prompt = inflight
-        try:
-            if rec.agent and hasattr(rec.agent, "followup"):
-                rec.agent.followup(msg)
-
-            if rec.agent and hasattr(rec.agent, "when_idle"):
-                result = rec.agent.when_idle()
-                if inspect.isawaitable(result):
-                    await result
-
-            if inflight["cancel_requested"]:
-                return {"stopReason": "cancelled"}
-            if inflight["agent_error"] is not None:
-                raise RuntimeError("turn failed: %s" % inflight["agent_error"])
-            reason = inflight["end_reason"]
-            if reason is not None and reason.get("kind") == "error":
-                error = reason.get("error")
-                detail = error.get("message", str(error)) if isinstance(error, dict) else str(error)
-                raise RuntimeError("turn failed: %s" % detail)
-            if rec.agent is not None and reason is None:
-                return {"stopReason": "cancelled"}
-            return {"stopReason": inflight["stop_reason"]}
-        finally:
-            if rec.inflight_prompt is inflight:
-                rec.inflight_prompt = None
+        return await rec.prompt(ctx, params, self.image_prompt_enabled, signal)
 
     async def cancel(self, ctx: Any, params: Dict[str, Any]) -> None:
         session_id = params.get("sessionId")
         if session_id in self.sessions:
             rec = self.sessions[session_id]
-            if rec.inflight_prompt:
-                rec.inflight_prompt["cancel_requested"] = True
-                rec.inflight_prompt["stop_reason"] = "cancelled"
-            if rec.agent and hasattr(rec.agent, "cancel"):
+            if rec.inflight_prompt is not None:
+                rec.cancel_prompt('ACP prompt cancelled')
+            elif rec.agent and hasattr(rec.agent, "cancel"):
                 rec.agent.cancel({"kind": "user"})
 
     def _on_session_event(self, session: Any, event: Dict[str, Any]) -> None:
-        e_type = event.get("type") if isinstance(event, dict) else getattr(event, "type", "")
-        data = event.get("data", {}) if isinstance(event, dict) else getattr(event, "data", {})
         rec = self.sessions.get(getattr(session, "id", None))
         if rec is None or getattr(rec.agent, "session", None) is not session:
             return
-        inflight = rec.inflight_prompt
-        if (e_type == "turn/end" and isinstance(data, dict) and inflight is not None
-                and inflight.get("turn") is not None and inflight["turn"] == data.get("turn")):
-            reason = data.get("reason", {})
-            inflight["end_reason"] = reason
-            inflight["stop_reason"] = turn_end_to_stop_reason(reason)
+        rec.on_session_event(event)
 
     def _owned_agent_record(self, agent: Any) -> Optional[SessionRecord]:
         session = getattr(agent, "session", None)
@@ -364,13 +367,16 @@ class AcpPlugin(Plugin):
 
     def _on_inbox_claimed(self, payload: Dict[str, Any]) -> None:
         rec = self._owned_agent_record(payload.get("agent"))
-        if (rec is not None and rec.inflight_prompt is not None
-                and rec.inflight_prompt["msg_id"] == payload.get("message", {}).get("id")):
-            rec.inflight_prompt["turn"] = payload.get("turn")
+        if rec is not None:
+            rec.on_inbox_claimed(payload.get('message', {}), payload.get('turn'))
+
+    def _on_adapters_updated(self, *args):
+        for record in list(self.sessions.values()):
+            record.topology_changed()
 
     def _on_agent_error(self, payload: Dict[str, Any]) -> None:
         rec = self._owned_agent_record(payload.get("agent"))
-        if rec is not None and rec.inflight_prompt is not None:
+        if rec is not None and rec.inflight_prompt is not None and rec.inflight_prompt.get('message_queued'):
             inflight = rec.inflight_prompt
             if inflight.get("turn") != payload.get("turn"):
                 inflight["agent_error"] = payload.get("error")

@@ -20,6 +20,7 @@ sys.path.insert(0, str(ROOT))
 from scripts.mcp_stdio_oracle import validate_runtime_report as validate_mcp_runtime
 from scripts.mcp_http_oracle import validate_runtime_report as validate_mcp_http_runtime
 from scripts.acp_mcp_oracle import validate_process as validate_acp_mcp_process
+from scripts.subagent_acp_oracle import validate_process as validate_subagent_acp_process
 
 
 def digest(path):
@@ -72,7 +73,8 @@ def main(argv=None):
             'portable_browser_oracle.mjs', 'browser_onboarding.mjs', 'mcp_stdio_oracle.py',
             'oracles/mcp_stdio_python.py', 'oracles/mcp_stdio_peer.py', 'mcp_http_oracle.py',
             'oracles/mcp_http_python.py', 'oracles/mcp_http_peer.py', 'oracles/mcp_http_expected.json',
-            'acp_mcp_oracle.py', 'acp_mcp_journey.py')})
+            'acp_mcp_oracle.py', 'acp_mcp_journey.py', 'subagent_acp_oracle.py',
+            'subagent_acp_journey.py', 'oracles/subagent_acp_python.py')})
     node = shutil.which('node') if args.browser else None
     try:
         if args.browser and not node:
@@ -170,6 +172,19 @@ def main(argv=None):
                 raise RuntimeError('Extracted ACP MCP consumer did not pass')
             validate_acp_mcp_process(acp_mcp_report.get('value'))
             report['acpMcp'] = acp_mcp_report['value']
+            subagent_workspace = workspace / 'subagent-acp-consumer'
+            subagent = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/subagent_acp_journey.py'), '--root', str(portable), '--workspace', str(subagent_workspace)],
+                cwd=str(workspace), env=product_environment(portable, workspace),
+                capture_output=True, encoding='utf-8', errors='replace', timeout=90)
+            output.with_suffix('.subagent-acp.log').write_text(subagent.stdout + '\nSTDERR:\n' + subagent.stderr, encoding='utf-8')
+            if subagent.returncode or subagent.stderr:
+                raise RuntimeError('Extracted subprocess ACP consumer failed; see ' + str(output.with_suffix('.subagent-acp.log')))
+            subagent_report = json.loads(subagent.stdout)
+            if subagent_report.get('result') != 'passed':
+                raise RuntimeError('Extracted subprocess ACP consumer did not pass')
+            validate_subagent_acp_process(subagent_report.get('value'))
+            report['subagentAcp'] = subagent_report['value']
             if args.browser:
                 browser_report = output.with_suffix('.browser.json')
                 # The observer launches the Host with the same restricted env.

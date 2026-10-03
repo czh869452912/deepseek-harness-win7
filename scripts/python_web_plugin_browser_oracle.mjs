@@ -244,12 +244,34 @@ try {
   report.python = boot.python;
   packageName = boot.name; rpcEndpoint = boot.endpoint; report.exported = boot.exported; report.session = boot.session;
   assert.equal(boot.python, '3.8.10'); assert.equal(boot.descriptor, true); assert.equal(boot.calls, 0);
-  browser = spawn(resolve(options.browser), ['--headless', '--no-sandbox', '--disable-gpu', '--remote-debugging-port=0', `--user-data-dir=${privateBrowser}`, '--lang=en-US', 'about:blank'], { windowsHide: true });
+  browser = spawn(resolve(options.browser), ['--headless', '--no-sandbox', '--disable-gpu', '--remote-debugging-port=0', `--user-data-dir=${privateBrowser}`, '--lang=en-US', ...(options['net-log'] ? [`--log-net-log=${resolve(options['net-log'])}`] : []), 'about:blank'], { windowsHide: true });
   const port = await until(async () => { try { return (await readFile(join(privateBrowser, 'DevToolsActivePort'), 'utf8')).split('\n')[0]; } catch { return false; } }, 'browser port');
   const target = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find(row => row.type === 'page');
   const socket = new WebSocket(target.webSocketDebuggerUrl);
   await new Promise((yes, no) => { socket.addEventListener('open', yes, { once: true }); socket.addEventListener('error', no, { once: true }); });
   cdp = new CDP(socket);
+  if (options['debug-abort']) {
+    await cdp.call('Debugger.enable');
+    cdp.listeners.push(message => {
+      if (message.method === 'Debugger.paused') {
+        (report.abortDebug ??= []).push({params: message.params, phase, steps: report.steps.length, at: Date.now()});
+        cdp.call('Debugger.resume').catch(error => report.errors.push(String(error)));
+      }
+      if (message.method === 'Runtime.executionContextCreated' && message.params.context.auxData?.isDefault
+          && message.params.context.origin.startsWith('http://127.0.0.1:')) {
+        const contextId = message.params.context.id;
+        const job = (async () => {
+          for (const expression of ['AbortController.prototype.abort', 'EventSource.prototype.close', 'window.stop']) {
+            const result = await cdp.call('Runtime.evaluate', {expression, contextId});
+            if (!result.result.objectId) throw new Error('Missing diagnostic function: ' + expression);
+            const breakpoint = await cdp.call('Debugger.setBreakpointOnFunctionCall', {objectId: result.result.objectId});
+            (report.abortBreakpoints ??= []).push({expression, contextId, ...breakpoint, phase, at: Date.now()});
+          }
+        })();
+        job.catch(error => report.errors.push(String(error)));
+      }
+    });
+  }
   const requests = new Map();
   cdp.listeners.push(message => {
     if (['Page.frameStartedLoading', 'Page.frameStoppedLoading', 'Page.frameRequestedNavigation', 'Page.lifecycleEvent'].includes(message.method)) {

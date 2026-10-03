@@ -158,6 +158,7 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     "@deepseek-ai/dsh-tool-subagent": "dsh.subagent.canonical_tools:CanonicalToolSubagent",
     "@deepseek-ai/dsh-tool-subagent/model-selection-settings": "dsh.subagent.model_selection:ModelSelectionSettings",
     "@deepseek-ai/dsh-subagent": "dsh.subagent.runtime:SubagentPlugin",
+    "@deepseek-ai/dsh-subagent-acp": "dsh.subagent.acp:SubagentAcp",
     "@deepseek-ai/dsh-subagent-spawn-in-process": "dsh.subagent.in_process:SpawnInProcess",
     "@deepseek-ai/dsh-subagent-fork-in-process": "dsh.subagent.in_process:ForkInProcess",
     "@deepseek-ai/dsh-tool-subagent-control": "dsh.subagent.control_tools:ToolSubagentControl",

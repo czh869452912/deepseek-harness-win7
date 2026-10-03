@@ -1,0 +1,28 @@
+{
+  "id": "MIG-SUBAGENT-ACP-010",
+  "goal": "闭合实际 subprocess ACP 子代理提供端、模型工具取消信号及同仓子进程文件消费者",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "60f1de1a9fb91dfb11819a4e06f808e1c30d8185",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {"task": "MIG-ACP-STDIO-005", "contract": "CON-ACP-STDIO", "revision": 1},
+    {"task": "MIG-AGENT-LIFECYCLE-002", "contract": "CON-AGENT-FACTORY", "revision": 1},
+    {"task": "MIG-CORDIS-001", "contract": "CON-CORDIS-CORE", "revision": 10},
+    {"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}
+  ],
+  "provides": [{"contract": "CON-SUBAGENT-ACP", "revision": 1}],
+  "acceptance": [
+    "Fresh actual original startAcpRun/spawnSubprocess and Native observations match all declared runtime wire, process, model result and safe diagnostic fields, plus actual Config/apply defaults and provider metadata; negative observers reject omissions, fabrication and weak types.",
+    "Fresh actual original AgentLoop and Native model/tool consumers preserve first abort cause, distinct queued and subsequent turn signal generations and driver recovery after cancelled admission; actual canonical JSONL/SQLite tools and same-repository subprocess ACP file/model consumers prove owned exit without parent conversation inheritance.",
+    "Complete Python 3.8 current candidate regression, unchanged original subagent-acp assertions, all current paired drivers and actual extracted embedded Python subprocess ACP consumer pass before bounded clean receipt-bound integration."
+  ],
+  "expected_paths": ["dsh/subagent", "dsh/core", "dsh/boot/plugin_registry.py", "tests", "scripts", "migration", "docs/research"],
+  "open_findings": ["Fresh main source/native observations passed 22 actual peer runtimes, six configurations and three AgentLoop signal/recovery cases; targeted main tests passed 237. Original source tests passed 66 assertions with one platform skip and an original MaxListenersExceededWarning. Actual parent ACP to same-repository child ACP file/model chain passed with four local model requests. First complete preview failed with 5618 passed, one original-browser failure, six skipped and one existing Proactor warning. Rollback document startup aborted five API requests before the next controlled navigation; raw failure is preserved. Three optional network/debug diagnostics passed but did not identify the cause: no bug fix, ignore, retry or upstream exception is claimed. Extracted embedded consumer and clean candidate acceptance remain pending; complete subprocess trees, background Jobs, teardown double failures, full Web lifecycle and deferred Win7 remain outside this bounded contract."],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "保留首次完整预览失败及未归因浏览器启动取消；提交产品检查点，再运行完整干净候选门禁和实际解压，只有全部通过才有界验收；继续 teardown/subprocess/SDK 和其他迁移遗留项。"
+}

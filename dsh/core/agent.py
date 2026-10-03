@@ -92,13 +92,21 @@ class Agent:
         self._status: str = "idle"
         self._phase_kind: str = "idle"  # "idle", "maintenance", "running"
         self._wake_event = asyncio.Event()
-        self._cancel_event = asyncio.Event()
+        self.reset_cancel_signal()
         self._cancel_cause: Optional[Dict[str, Any]] = None
         self._idle_futures: List[asyncio.Future] = []
         self._driver_task: Optional[asyncio.Task] = None
         self._wake_requested: bool = False
         self._maintenance_abort: Optional[AbortController] = None
         self._maintenance_done: Optional[asyncio.Future] = None
+
+    @property
+    def signal(self):
+        return self._cancel_event
+
+    def reset_cancel_signal(self):
+        self._cancel_controller = AbortController()
+        self._cancel_event = self._cancel_controller.signal
 
     @property
     def status(self) -> str:
@@ -155,6 +163,7 @@ class Agent:
                         and (self._phase_kind == "maintenance" or waking_after_abort)):
                     self._wake_requested = True
             else:
+                self.reset_cancel_signal()
                 self.set_phase("running")
                 self._wake_event.set()
         return msg_id
@@ -190,7 +199,7 @@ class Agent:
             return
         if self._cancel_cause is None:
             self._cancel_cause = cause or reason or {"kind": "user"}
-            self._cancel_event.set()
+            self._cancel_controller.abort(self._cancel_cause)
         if self._maintenance_abort is not None:
             self._maintenance_abort.abort(self._cancel_cause)
 
@@ -203,7 +212,6 @@ class Agent:
     def take_cancel_cause(self) -> Optional[Dict[str, Any]]:
         cause = self._cancel_cause
         self._cancel_cause = None
-        self._cancel_event.clear()
         return cause
 
     def takeCancelCause(self) -> Optional[Dict[str, Any]]:
@@ -248,7 +256,7 @@ class Agent:
                 wake_requested = self._wake_requested
                 self._maintenance_abort = None
                 self._cancel_cause = None
-                self._cancel_event.clear()
+                self.reset_cancel_signal()
                 self._wake_requested = False
                 self.set_phase("idle")
                 if wake_requested and self.inbox.has_pending and self._phase_kind == "idle":

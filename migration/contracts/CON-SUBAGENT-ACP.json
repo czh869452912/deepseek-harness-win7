@@ -1,0 +1,23 @@
+{
+  "id": "CON-SUBAGENT-ACP",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/subagent/subagent-acp/src/index.ts", "reference/packages/subagent/subagent-acp/src/run.ts", "reference/packages/subagent/subagent-acp/tests/subagent-acp.spec.ts", "reference/packages/subprocess/subprocess-local/src/spawn.ts", "reference/packages/core/agent-loop/src/agent.ts"],
+  "consumers": ["dsh/subagent/canonical_tools.py", "dsh/core/tool_calls.py", "dsh/core/agent_loop.py", "scripts/subagent_acp_journey.py", "scripts/verify_portable.py"],
+  "invariants": [
+    "The canonical plugin resolves original defaults and deployment-owned cwd before registering a reversible subprocess ACP provider; all parent-context capabilities are false and parent conversation is not inherited.",
+    "Each real child uses the dynamically injected subprocess service, scrubbed ambient environment plus explicit child overrides, initialize/new/prompt in source order and a fresh parent run id distinct from the remote child id; no local Agent is published.",
+    "Selected stop outcomes, assistant text folding, permission first-allow decision and fixed safe failure diagnostics match complete original raw observations. Untrusted child titles, options, paths and SDK text do not enter model-visible diagnostics; host causes are retained.",
+    "Published results resolve rather than reject; local cancellation settles retained partial text, while owned disposal separately waits for EOF grace or termination and proves actual child exit and RPC quiescence at declared admission barriers.",
+    "Actual AgentLoop model/tool consumers receive AbortSignal with first cancellation cause; completed queued turns and later idle activation get distinct active generations, and cancelled admission cannot permanently stop the driver.",
+    "Actual canonical parent ACP delegates to a same-repository subprocess ACP child that executes a file tool and model continuation; the child is reaped before the foreground tool returns, without parent conversation leakage, including the actual extracted embedded Python runtime."
+  ],
+  "identity": "One independently namespaced run and child ACP session per delegation; one AbortSignal per active Agent turn generation, with exact first cause and stable listener identity.",
+  "ownership": "Subprocess service owns process lifetime; the ACP run owns RPC, reader, prompt and memoized teardown; the caller owns its abort signal, and the provider registration belongs to the plugin scope.",
+  "ordering": "Resolve cwd before spawn, then initialize and new before publication and prompt. Local abort settles the public result before noncooperative process teardown. EOF flush and actual exit precede owned disposal completion; explicit peer permission/cancel admission barriers define the observed wire ordering.",
+  "errors": "Unpublished configuration/spawn/initialize/new failures reject with fixed safe stage/category facts and retained host causes; published selected prompt/process failures resolve error with retained partial output and structured diagnostics.",
+  "cancellation": "First abort reason is preserved and listeners are removed by exact identity; best-effort session/cancel delivery is observed only after explicit peer admission, not promised under arbitrary immediate force-close. Caller cancellation cannot cancel the shielded owned process teardown.",
+  "adaptation": "Python 3.8 stdlib ACP NDJSON/RPC and subprocess service, with AbortSignal retaining Event-compatible waiting for existing consumers. Pinned Node, ACP SDK and node-pty are development source observers only and do not become Portable runtime requirements.",
+  "open_questions": ["Main full preview, actual extracted embedded consumer and clean committed acceptance are pending. The declared 22 runtimes, six configurations and three signal cases do not certify complete SDK wire schemas, double teardown failures, pathological piped streams, whole nested process trees, background Jobs or complete subagent/subprocess behavior. Win7 execution remains deferred by the user."]
+}

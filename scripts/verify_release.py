@@ -19,6 +19,7 @@ sys.path.insert(0, str(ROOT))
 from scripts.mcp_stdio_oracle import validate_runtime_report as validate_mcp_runtime
 from scripts.mcp_http_oracle import validate_runtime_report as validate_mcp_http_runtime
 from scripts.acp_mcp_oracle import validate_process as validate_acp_mcp_process
+from scripts.subagent_acp_oracle import validate_process as validate_subagent_acp_process
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -27,10 +28,31 @@ PAIRED_DRIVERS = (
     'pi', 'storage_cache', 'workflow_ralph', 'repeat_tool', 'token_meter',
     'pruner', 'compaction', 'maintenance', 'timeout_policy', 'abort',
     'approval', 'inspect', 'cordis_guard', 'cordis_runner',
-    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp',
+    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp',
 )
-OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp')
+OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp')
 REQUIRED_REGRESSION = {
+    'test_subagent_acp_source': {'test_actual_original_acp_subagent_runs_match_native_complete_public_observations'},
+    'test_agent_signal_source': {'test_actual_original_model_tool_signal_generation_and_cancelled_admission_recover'},
+    'test_subagent_acp_process': {'test_actual_parent_acp_subprocess_child_file_model_chain_and_reap'},
+    'test_subagent_acp_signal': {'test_actual_agent_model_tool_signal_preserves_abort_reason_and_next_turn_generation'},
+    'test_subagent_acp_consumer': {
+        'test_canonical_profile_actual_tools_consumer_owns_acp_child_exit[' + backend + ']'
+        for backend in ('jsonl', 'sqlite')
+    },
+    'test_subagent_acp': {
+        'test_real_acp_child_output_protocol_and_terminal_reason[' + reason + '-' + expected + ']'
+        for reason, expected in (('end_turn', 'completed'), ('max_tokens', 'max-tokens'),
+            ('refusal', 'refusal'), ('cancelled', 'aborted'), ('max_turn_requests', 'error'))
+    } | {
+        'test_actual_permission_decision_is_safe_and_first_allow_selected[' + policy + '-' + no_allow + '-' + expected + ']'
+        for policy, no_allow, expected in (('reject', 'False', 'denied'),
+            ('allow', 'False', 'allowed'), ('allow', 'True', 'denied'))
+    } | {'test_noncooperative_cancel_settles_partial_result_then_dispose_proves_exit',
+         'test_eof_flush_and_explicit_credentials_use_owned_subprocess_seam',
+         'test_startup_abort_rolls_back_unpublished_real_child',
+         'test_safe_configuration_and_spawn_failure_do_not_leak_path',
+         'test_provider_registration_is_reversible_and_rejects_parent_capabilities'},
     'test_acp_mcp_source': {'test_actual_acp_source_mcp_declarations_defaults_errors_and_prevalidation'},
     'test_acp_mcp_runtime_source': {'test_actual_source_and_native_acp_session_mcp_consumer_lifecycle'},
     'test_acp_mcp_abort_source': {'test_actual_source_and_native_mcp_startup_abort_wait_for_late_handshake_then_reap'},
@@ -210,6 +232,10 @@ def validate_extracted(path, archive, candidate):
         validate_acp_mcp_process(report.get('acpMcp'))
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted ACP MCP process observations are incomplete') from error
+    try:
+        validate_subagent_acp_process(report.get('subagentAcp'))
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted subprocess ACP file/model observations are incomplete') from error
     if report.get('archiveSha256') != digest(archive) or Path(report['archive']).resolve() != archive.resolve():
         raise RuntimeError('Extracted receipt belongs to a different archive')
     provenance = report.get('provenance', {})

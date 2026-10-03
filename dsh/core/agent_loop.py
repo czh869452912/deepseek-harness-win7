@@ -539,6 +539,8 @@ class AgentLoopService:
         try:
             while await self._turn(agent):
                 pass
+        except Exception:
+            pass
         finally:
             agent.set_status("idle")
 
@@ -678,7 +680,10 @@ class AgentLoopService:
 
         if turn_ends and turn_ends.get("kind") == "aborted":
             return False
-        return agent.inbox.has_pending
+        pending = agent.inbox.has_pending
+        if pending:
+            agent.reset_cancel_signal()
+        return pending
 
     async def _step(self, agent, turn, step, system_prompt, starts_series=False, tool_schemas=None):
         while True:

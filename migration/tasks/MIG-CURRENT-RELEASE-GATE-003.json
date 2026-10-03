@@ -33,13 +33,14 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "e887550aa510e74bf3529a8a114ea39ef3402a13",
-  "integrated_commit": "e887550aa510e74bf3529a8a114ea39ef3402a13",
+  "candidate_commit": "8a17485d0f43bb7318700053fd0d2d7149c96c95",
+  "integrated_commit": "8a17485d0f43bb7318700053fd0d2d7149c96c95",
   "evidence_ids": [
     "RUN-CURRENT-20261003-CURRENT-RELEASE-GATE-003",
     "RUN-ACP-CONFIG-20261003-CURRENT-RELEASE-GATE-003",
     "RUN-ACP-STDIO-20261003-CURRENT-RELEASE-GATE-003",
-    "RUN-ACP-PERMISSIONS-20261004-CURRENT-RELEASE-GATE-003"
+    "RUN-ACP-PERMISSIONS-20261004-CURRENT-RELEASE-GATE-003",
+    "RUN-MCP-20261004-CURRENT-RELEASE-GATE-003"
   ],
-  "next_action": "当前 Windows clean candidate e887550a 完整门禁通过，绑定实际 ZIP；28 配对/619 原版源测试及二十条必需 lane，不认证全范围、远程 Actions、无缓存安装或 Win7。"
+  "next_action": "clean candidate 8a17485d 当前 Windows 完整门禁通过；51 必需 lane、722 原版断言、30 配对及实际 Portable，不认证全量迁移或 Win7。"
 }

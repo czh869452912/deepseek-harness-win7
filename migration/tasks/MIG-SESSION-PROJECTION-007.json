@@ -37,14 +37,15 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "e887550aa510e74bf3529a8a114ea39ef3402a13",
-  "integrated_commit": "e887550aa510e74bf3529a8a114ea39ef3402a13",
+  "candidate_commit": "8a17485d0f43bb7318700053fd0d2d7149c96c95",
+  "integrated_commit": "8a17485d0f43bb7318700053fd0d2d7149c96c95",
   "evidence_ids": [
     "RUN-SESSION-PROJECTION-SESSION-PROJECTION-007-20260928",
     "RUN-CURRENT-20261003-SESSION-PROJECTION-007",
     "RUN-ACP-CONFIG-20261003-SESSION-PROJECTION-007",
     "RUN-ACP-STDIO-20261003-SESSION-PROJECTION-007",
-    "RUN-ACP-PERMISSIONS-20261004-SESSION-PROJECTION-007"
+    "RUN-ACP-PERMISSIONS-20261004-SESSION-PROJECTION-007",
+    "RUN-MCP-20261004-SESSION-PROJECTION-007"
   ],
   "next_action": "Registry accepted; next executable domain definitions and durable projection-cache, then cold Web consumers and complete profile journeys."
 }

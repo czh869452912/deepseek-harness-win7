@@ -4,6 +4,8 @@
 
 ## 当前补齐：2026-10-02
 
+2026-10-04 MCP：干净产品候选 `8a17485d` 完整冻结门禁 **5408 passed、6 skipped、1 warning、0 failed**，51 必需 lane、七组 722 项原版断言、30 双侧驱动及真实解压 stdio/HTTP 工具消费者通过。`CON-MCP-STDIO@1` 和 `CON-MCP-HTTP@1` 只按有界提供端范围 integrated，18 份合同证据归档 `evidence/artifacts/MCP-20261004-8a17485d.zip`；见 `reviews/MCP-CLOSURE-20261004.md`。此前 browser startup 取消及既有 Proactor/HTTP 10054 保留未归因，完整 SDK/ACP mounting/subagent/B/C/D、整体 accepted_upstream 与延期 Win7 未闭环。
+
 2026-10-04 A4 权限：干净产品候选 `e887550a` 完整冻结门禁通过，**5020 passed、6 skipped、1 warning、0 failed**；20 条必需 lane、619 项原版断言、28 个双侧驱动及实际解压六条权限进程旅程通过。`CON-ACP-PERMISSIONS@1` 有界 integrated，10 组原始匹配及两组单独审阅的原版畸形 outcome 授权缺陷，证据包 `evidence/artifacts/ACP-PERMISSIONS-20261004-e887550a.zip`。见 `reviews/ACP-PERMISSIONS-CLOSURE-20261004.md`；既有 Proactor/HTTP 10054 诊断仍保留。MCP/subagent、B/C/D 和整体 accepted_upstream 未完成。
 
 2026-10-03 A3：干净产品候选 `5edf7e22` 完整门禁通过：**4971 passed、6 skipped、1 warning、0 failed**；十四条必需 lane、六组 619 项未改动原版断言、27 个双侧驱动及实际解压 Portable 通过。`CON-ACP-STDIO@1` 已有界 integrated，涵盖 canonical acp-app、SDK wire/参数、真实进程 EOF 与关闭所有权；906 项 SDK/生产原始观察匹配。十五份证据及历史失败归档于 `evidence/artifacts/ACP-STDIO-20261003-5edf7e22.zip`，见 `reviews/ACP-STDIO-CLOSURE-20261003.md`。完整 ACP 的 MCP/权限/subagent 和 B/C/D 仍未完成；全项目 `accepted_upstream` 仍为空。

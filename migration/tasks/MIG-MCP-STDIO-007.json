@@ -2,7 +2,7 @@
   "id": "MIG-MCP-STDIO-007",
   "goal": "以真实 stdio MCP SDK 协议替换虚构工具成功的占位提供端",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "a8926c524e3ceb62b3a8f6845170249b980f84bd",
   "owner": "current-session-coordinator",
@@ -32,12 +32,12 @@
     "migration",
     "docs/research"
   ],
-  "open_findings": [
-    "First portion committed 026fe76f. Second portion implements four pinned SDK schema projections, config/default/error resolution, twenty process pairs, 959 raw schema rows, 176 config rows, 38 tool bridge rows and actual stdio/Tools/durable-image/cold-model consumer. Complete development preview passed 5260 tests, 6 skipped, one existing warning, 32 mandatory lanes, 722 untouched source assertions, 29 paired drivers and actual extracted MCP consumer ownership; result remains publishable=false, no bounded integration. Main targeted regression passed 296 after replacing obsolete hand-written error expectations with the actual SchemaError/error-path contract; failed logs preserved. Prior preview and concurrent browser startup cancellations remain un-attributed; later passing runs are not a fix. Supervisor/HTTP follow-up is isolated, with remaining SDK/registry behavior, ACP mounting/subagent and clean acceptance pending."
-  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "第一、二部分已分别提交 026fe76f、93e06d8a；在 HTTP 第三部分重验共享 RPC 抽取、962 组 SDK schema、原始 stdio/Portable 所有权和新的 supervisor 对照，随后做干净候选验收。排查启动期浏览器取消；ACP mounting/subagent 和 B/C/D 继续独立推进，任务不设置 integrated。"
+  "candidate_commit": "8a17485d0f43bb7318700053fd0d2d7149c96c95",
+  "integrated_commit": "8a17485d0f43bb7318700053fd0d2d7149c96c95",
+  "evidence_ids": [
+    "RUN-MCP-20261004-MCP-STDIO-007"
+  ],
+  "next_action": "有界提供端合同在 clean candidate 8a17485d 验收；继续其余 SDK/生命周期边缘、ACP mounting/subagent 和整体迁移。既有浏览器/Proactor/HTTP 诊断未修复，Win7 仍延期。"
 }

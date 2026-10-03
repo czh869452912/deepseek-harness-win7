@@ -1,6 +1,6 @@
 # MCP HTTP 与生命周期第三部分
 
-目标固定 `cd5ef8148158c3a752a658978873241fdf8e2bbc`，产品起点 `93e06d8a`。`MIG-MCP-HTTP-008` 保持 running，`CON-MCP-HTTP@1` 保持 specified；未签发 clean acceptance 或整体 accepted_upstream。
+目标固定 `cd5ef8148158c3a752a658978873241fdf8e2bbc`，产品起点 `93e06d8a`。实现提交 `8a17485d` 后干净候选验收通过，`MIG-MCP-HTTP-008` 仅有界 integrated；整体 accepted_upstream 仍为空。准确范围与收据见 `migration/reviews/MCP-CLOSURE-20261004.md`。
 
 ## 实现与来源
 
@@ -29,5 +29,7 @@ SDK schema 对照另补三组 Unicode 数字样式对象键，修正 Python isdi
 隔离工作树新增浏览器 net-log 诊断，前两次十七步旅程通过，尚未捕获失败网络日志；这两次不构成失败修复证明。按用户授权提交第三部分实现与失败记录后，继续干净候选完整验收及浏览器根因调查，任务保持 running。
 
 ## 后续未完成
+
+干净候选完整门禁 `.goose/out/mcp-http-clean-8a17485d` **5408 passed、6 skipped、1 warning、0 failed**；51 必需 lane、722 原版断言、30 配对及实际 ZIP 解压 stdio/HTTP 消费者通过，passed / publishable=true。旧 dirty preview 的浏览器失败依然保留，没有根因修复结论。按原合同签发有界验收，不扩展下列待验证范围。
 
 HTTP TLS、redirect、compression/URL 细节、resumable SSE/replay 与重试耗尽还未完整认证；当前可执行路径不代表完整 SDK。ACP mcpServers validate/mount-before-publication、subprocess subagent-acp、B/C/D、fresh uncached bootstrap、Win7 和外部服务验收继续保留独立退出条件。先前浏览器启动取消、Proactor warning 和 HTTP 10054 诊断保持未归因；本轮通过不等于这些问题修复。

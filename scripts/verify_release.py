@@ -15,6 +15,8 @@ import sys
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from scripts.mcp_stdio_oracle import validate_runtime_report as validate_mcp_runtime
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -23,10 +25,21 @@ PAIRED_DRIVERS = (
     'pi', 'storage_cache', 'workflow_ralph', 'repeat_tool', 'token_meter',
     'pruner', 'compaction', 'maintenance', 'timeout_policy', 'abort',
     'approval', 'inspect', 'cordis_guard', 'cordis_runner',
-    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions',
+    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio',
 )
-OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app')
+OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp')
 REQUIRED_REGRESSION = {
+    'test_mcp_stdio_transport': {
+        'test_actual_handshake_tools_correlation_notifications_and_scrubbed_environment',
+        'test_invalid_negotiation_closes_actual_process_before_exposing_client',
+    } | {
+        'test_spawn_is_owned_before_await_and_late_process_is_reaped[' + reason + ']'
+        for reason in ('dispose', 'cancel-connect')
+    } | {
+        'test_owned_pending_request_settles_and_late_work_cannot_survive_shutdown[' + reason + ']'
+        for reason in ('close', 'cancel', 'timeout')
+    },
+    'test_mcp_supervisor': {'test_real_stdio_connection_registers_actual_tools_service_consumer'},
     'test_acp_permission_process': {
         'test_actual_permission_process_keeps_one_shot_tool_and_shutdown_ownership[' + mode + ']'
         for mode in ('allow', 'reject', 'malformed', 'cancel-late', 'close-late', 'eof')
@@ -151,6 +164,11 @@ def validate_extracted(path, archive, candidate):
                 or audit[0]['data'].get('id') != audit[1]['data'].get('id')
                 or audit[1]['data'].get('outcome') != expected):
             raise RuntimeError('Extracted permission ownership/audit observations are incomplete')
+    mcp = report.get('mcpStdio', {})
+    try:
+        validate_mcp_runtime(mcp)
+    except ValueError as error:
+        raise RuntimeError('Extracted MCP stdio observations are incomplete') from error
     if report.get('archiveSha256') != digest(archive) or Path(report['archive']).resolve() != archive.resolve():
         raise RuntimeError('Extracted receipt belongs to a different archive')
     provenance = report.get('provenance', {})

@@ -45,6 +45,9 @@ class CDP {
   }
   async call(method, params = {}) {
     const id = this.next++;
+    if (['Page.navigate', 'Page.reload', 'Browser.close'].includes(method)) {
+      (report.browserTransitions ??= []).push({method, phase, steps: report.steps.length, at: Date.now()});
+    }
     return await new Promise((yes, no) => {
       const timer = setTimeout(() => { this.pending.delete(id); no(new Error('CDP timeout: ' + method)); }, 15000);
       this.pending.set(id, { resolve: yes, reject: no, timer }); this.socket.send(JSON.stringify({ id, method, params }));
@@ -249,14 +252,20 @@ try {
   cdp = new CDP(socket);
   const requests = new Map();
   cdp.listeners.push(message => {
+    if (['Page.frameStartedLoading', 'Page.frameStoppedLoading', 'Page.frameRequestedNavigation', 'Page.lifecycleEvent'].includes(message.method)) {
+      (report.pageLifecycle ??= []).push({method: message.method, params: message.params, phase, steps: report.steps.length, at: Date.now()});
+    }
+    if (message.method === 'Network.eventSourceMessageReceived') {
+      (report.hmrFrames ??= []).push({data: JSON.parse(message.params.data), phase, steps: report.steps.length, at: Date.now()});
+    }
     if (message.method === 'Page.frameNavigated' && !message.params.frame.parentId) {
       const target = new URL(message.params.frame.url);
-      (report.documents ??= []).push({url: target.origin + target.pathname, phase, steps: report.steps.length});
+      (report.documents ??= []).push({url: target.origin + target.pathname, phase, steps: report.steps.length, at: Date.now(), loaderId: message.params.frame.loaderId});
     }
     if (message.method === 'Network.requestWillBeSent') {
       const params = message.params;
       const target = new URL(params.request.url);
-      requestDetails.set(params.requestId, {path: target.origin + target.pathname, method: params.request.method, phase});
+      requestDetails.set(params.requestId, {path: target.origin + target.pathname, method: params.request.method, phase, at: Date.now(), loaderId: params.loaderId});
       if (!['EventSource', 'WebSocket'].includes(params.type) && !new URL(params.request.url).pathname.endsWith('/plugins/events')) {
         finiteRequests.add(params.requestId);
         networkChanged = Date.now();
@@ -275,7 +284,7 @@ try {
     if (message.method === 'Runtime.exceptionThrown') report.errors.push(message.params.exceptionDetails);
     if (message.method === 'Runtime.consoleAPICalled' && message.params.type === 'error') {
       report.consoleErrors.push(message.params.args.map(value => value.value ?? value.description));
-      (report.consoleContext ??= []).push({phase, steps: report.steps.length, pending: [...finiteRequests].map(id => requestDetails.get(id))});
+      (report.consoleContext ??= []).push({phase, steps: report.steps.length, at: Date.now(), pending: [...finiteRequests].map(id => requestDetails.get(id))});
     }
     if (message.method === 'Network.webSocketCreated') report.sockets.push(new URL(message.params.url).pathname);
     if (message.method === 'Network.webSocketFrameSent') {
@@ -303,11 +312,12 @@ try {
       }).catch(error => report.errors.push(String(error))).finally(() => replyJobs.delete(job)); replyJobs.add(job);
     }
     if (message.method === 'Network.loadingFailed') {
-      (report.networkFailures ??= []).push({...requestDetails.get(message.params.requestId), error: message.params.errorText, canceled: message.params.canceled, blocked: message.params.blockedReason, cors: message.params.corsErrorStatus});
+      (report.networkFailures ??= []).push({...requestDetails.get(message.params.requestId), failedAt: Date.now(), failurePhase: phase, steps: report.steps.length, error: message.params.errorText, canceled: message.params.canceled, blocked: message.params.blockedReason, cors: message.params.corsErrorStatus});
       if (!message.params.canceled) report.requests.push(message.params.errorText);
     }
   });
   await cdp.call('Runtime.enable'); await cdp.call('Page.enable'); await cdp.call('Network.enable');
+  await cdp.call('Page.setLifecycleEventsEnabled', {enabled: true});
   await cdp.call('Emulation.setDeviceMetricsOverride', { width: 1680, height: 1000, deviceScaleFactor: 1, mobile: false });
   if (report.session) await sessionJourney(boot);
   else {

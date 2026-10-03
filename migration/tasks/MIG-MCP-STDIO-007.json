@@ -1,0 +1,43 @@
+{
+  "id": "MIG-MCP-STDIO-007",
+  "goal": "以真实 stdio MCP SDK 协议替换虚构工具成功的占位提供端",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "a8926c524e3ceb62b3a8f6845170249b980f84bd",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-CORDIS-001",
+      "contract": "CON-CORDIS-CORE",
+      "revision": 10
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-MCP-STDIO",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "Pinned SDK and actual Python process observations preserve initialization, negotiation, list/call/error/notification fields, concurrent correlation, environment scrub, malformed/closed/cancelled failures and owned termination; negative observer mutations cannot pass.",
+    "Actual ToolsService consumers execute the advertised tools and cannot observe fabricated success; startup/dispose races and rollback are exercised together with provider ownership.",
+    "Full Python 3.8 and a clean receipt-bound actual extracted Portable run pass before bounded integration; no HTTP/SSE/supervisor/ACP/subagent certification is inferred."
+  ],
+  "expected_paths": [
+    "dsh/mcp",
+    "dsh/subprocess",
+    "tests",
+    "scripts",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [
+    "First implementation portion: actual stdio provider, owned late-spawn/close/cancel/EOF, source-based supervisor and ToolsService activation plus full Portable gate wiring. Development preview passed 5172 tests, 6 skipped, one existing warning, 28 mandatory lanes, 722 untouched source assertions, 29 paired drivers and actual extracted MCP consumer/process ownership. Eleven exact raw source/native process rows match. Preview is dirty and publishable=false; no bounded integration is issued. Prior preview and concurrent browser startup cancellations remain un-attributed and preserved; later passing runs are not a fix. SDK schema/config/tool projection corrections are isolated follow-up work (959 raw schema rows, 176 config rows, twenty process pairs, 278 targeted tests); not current main candidate acceptance. Full paired supervisor/rich Tools, HTTP/SSE, ACP mounting/subagent and clean acceptance remain pending."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "提交已通过完整预览的 stdio/lifecycle 第一部分；合入隔离工作树的固定 SDK schema/config、响应 ID 和工具投影修复，补齐 source-backed 必需消费者及富内容证据，再做干净候选验收。排查启动期浏览器取消；HTTP/SSE、ACP mounting/subagent 和 B/C/D 继续独立推进，任务不设置 integrated。"
+}

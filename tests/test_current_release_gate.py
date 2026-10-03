@@ -5,6 +5,7 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 
 import pytest
+from scripts.mcp_stdio_oracle import MODES as MCP_MODES, expected_row as mcp_expected_row
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,10 +37,10 @@ def regression_xml(path, omit=None, skip=None, duplicate=None, failure=None):
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 20, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 28, 'skipped': 1}
 
 
-@pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process'])
+@pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor'])
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
 def test_incomplete_regression_cannot_certify_a_release(tmp_path, module, damage):
     path = tmp_path / 'pytest.xml'
@@ -99,12 +100,17 @@ def extracted_receipt(tmp_path):
          'audit': [{'type': 'approval/asked', 'data': {'id': 'owned'}}, {'type': 'approval/decided', 'data': {
              'id': 'owned', 'outcome': {'allow': 'allowed-once', 'reject': 'rejected', 'malformed': 'unavailable'}.get(mode, 'cancelled')}}]}
         for mode in modes]}
+    report['mcpStdio'] = {'observations': [mcp_expected_row(mode) for mode in MCP_MODES],
+        'consumer': {'registered': True, 'output': 'controlled consumer', 'retired': True, 'childExited': True, 'pending': 0},
+        'python': '3.8.10 controlled fixture', 'root': str(tmp_path), 'module': str(tmp_path / 'dsh/__init__.py')}
     return archive, candidate, report
 
 
 @pytest.mark.parametrize('damage', ['browser-skipped', 'runtime-missing', 'runtime-stderr',
                                     'archive', 'commit', 'dirty', 'frontend', 'acp-missing', 'acp-tail',
-                                    'permission-missing', 'permission-tail', 'permission-unsafe', 'permission-audit'])
+                                    'permission-missing', 'permission-tail', 'permission-unsafe', 'permission-audit',
+                                    'mcp-missing', 'mcp-tail', 'mcp-reaped', 'mcp-foreign-module',
+                                    'mcp-child-alive', 'mcp-consumer-type', 'mcp-python'])
 def test_extracted_runtime_and_browser_receipt_is_bound_to_the_candidate(tmp_path, damage):
     archive, candidate, report = extracted_receipt(tmp_path)
     if damage == 'browser-skipped':
@@ -131,6 +137,20 @@ def test_extracted_runtime_and_browser_receipt_is_bound_to_the_candidate(tmp_pat
         report['acpPermissions']['observations'][2]['executed'] = True
     elif damage == 'permission-audit':
         report['acpPermissions']['observations'][0]['audit'][1]['data']['id'] = 'foreign'
+    elif damage == 'mcp-missing':
+        del report['mcpStdio']
+    elif damage == 'mcp-tail':
+        report['mcpStdio']['observations'].pop()
+    elif damage == 'mcp-reaped':
+        report['mcpStdio']['observations'][0]['reaped'] = False
+    elif damage == 'mcp-foreign-module':
+        report['mcpStdio']['module'] = str(tmp_path / 'foreign/dsh/__init__.py')
+    elif damage == 'mcp-child-alive':
+        report['mcpStdio']['consumer']['childExited'] = False
+    elif damage == 'mcp-consumer-type':
+        report['mcpStdio']['consumer']['registered'] = 1
+    elif damage == 'mcp-python':
+        report['mcpStdio']['python'] = '3.8.100 controlled fixture'
     else:
         report['frontendFilesChecked'] = 0
     path = tmp_path / 'receipt.json'
@@ -187,8 +207,8 @@ def test_default_gate_rejects_dirty_checkout_before_build(tmp_path, monkeypatch)
 
 
 def test_current_gate_includes_recent_contracts_and_only_uploads_receipt_archive():
-    assert {'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions'} <= set(GATE.PAIRED_DRIVERS)
-    assert {'acp', 'acp-app'} <= set(GATE.OFFICIAL_CONFIGS)
+    assert {'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio'} <= set(GATE.PAIRED_DRIVERS)
+    assert {'acp', 'acp-app', 'mcp'} <= set(GATE.OFFICIAL_CONFIGS)
     assert {'deepseek', 'pi', 'compaction', 'approval', 'cordis_retirement', 'workflow_ralph', 'pruner'} <= set(GATE.PAIRED_DRIVERS)
     assert len(GATE.PAIRED_DRIVERS) == len(set(GATE.PAIRED_DRIVERS))
     workflow = (ROOT / '.github/workflows/verify.yml').read_text(encoding='utf-8')

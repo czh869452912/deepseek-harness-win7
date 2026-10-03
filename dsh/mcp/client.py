@@ -1,55 +1,49 @@
-"""
-MCP Client Plugin matching reference/packages/mcp/mcp-client/src/index.ts
-"""
-import asyncio
-from typing import Any, Dict, Optional, Set
+from typing import Any, Dict, Optional
+
 from dsh.cordis.plugin import Plugin
+from dsh.core.scope import scope_of
 from dsh.mcp.connection import McpConnection, resolve_reconnect_policy
 
-_active_server_names: Set[str] = set()
+
+_active_server_names = {}
 
 
 class McpClientPlugin(Plugin):
-    """
-    Plugin `@deepseek-ai/dsh-mcp-client`: MCP client bridge plugin.
-    Connects to external MCP server and registers tools under `mcp__<serverName>__<rawName>`.
-    """
-    id = "mcp-client"
-    name = "@deepseek-ai/dsh-mcp-client"
-    inject = ["tools"]
+    id = 'mcp-client'
+    name = '@deepseek-ai/dsh-mcp-client'
+    inject = ['tools']
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
         self.config = config or {}
-        self.connection: Optional[McpConnection] = None
+        self.connection = None
 
-    def apply(self, ctx: Any) -> None:
-        server_name = self.config.get("serverName", "default")
-        if server_name in _active_server_names:
-            raise ValueError(
-                f'mcp-client: serverName "{server_name}" is already in use by another mcp-client instance'
-            )
-        _active_server_names.add(server_name)
-
-        def _cleanup():
-            def _disposer():
-                _active_server_names.discard(server_name)
-            return _disposer
-
-        if hasattr(ctx, "effect"):
-            ctx.effect(_cleanup)
-
-        policy = resolve_reconnect_policy(self.config.get("reconnect"), path=f"mcp-client({server_name}).reconnect")
-        self.connection = McpConnection(ctx, self.config, policy)
-
-        if hasattr(ctx, "effect"):
-            ctx.effect(lambda: lambda: asyncio.create_task(self.connection.dispose()))
+    async def apply(self, ctx: Any) -> None:
+        server_name = self.config.get('serverName', 'default')
+        policy = resolve_reconnect_policy(self.config.get('reconnect'),
+                                          path='mcp-client(%s): reconnect' % server_name)
+        owner = scope_of(ctx)
+        if owner is None:
+            owner = ctx.root
+        owner_id = id(owner)
+        def reserve():
+            entry = _active_server_names.setdefault(owner_id, (owner, set()))
+            names = entry[1]
+            if server_name in names:
+                raise ValueError('mcp-client: serverName "%s" is already in use by another mcp-client instance — pick a unique serverName in cordis.yml' % server_name)
+            names.add(server_name)
+            def release():
+                names.discard(server_name)
+                if not names and _active_server_names.get(owner_id) is entry:
+                    _active_server_names.pop(owner_id)
+            return release
+        ctx.effect(reserve)
+        connection = McpConnection(ctx, self.config, policy)
+        self.connection = connection
+        ctx.effect(lambda: connection.dispose)
+        outcome = await connection.ready
+        if outcome.get('error') is not None and self.config.get('failOnStartupError'):
+            raise RuntimeError('mcp-client(%s): initial connection or tool synchronization failed' % server_name) from outcome['error']
 
     async def apply_async(self, ctx: Any) -> None:
-        self.apply(ctx)
-        if self.connection:
-            outcome = await self.connection.ready
-            if outcome.get("error") and self.config.get("failOnStartupError"):
-                raise RuntimeError(
-                    f'mcp-client({self.config.get("serverName")}): initial connection or tool synchronization failed'
-                ) from outcome["error"]
+        await self.apply(ctx)

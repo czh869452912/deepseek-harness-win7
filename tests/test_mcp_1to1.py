@@ -92,9 +92,10 @@ async def test_mcp_plugin_apply():
     ctx.set_service("tools", tools)
 
     plugin = McpClientPlugin({"serverName": "test_server", "transport": "streamable-http", "url": "http://localhost:8000"})
-    plugin.apply(ctx)
+    await plugin.apply(ctx)
     assert plugin.connection is not None
     await plugin.connection.dispose()
+    await ctx.fiber.dispose()
 
 
 @pytest.mark.asyncio

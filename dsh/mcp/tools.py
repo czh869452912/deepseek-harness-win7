@@ -180,6 +180,10 @@ async def sync_tools(
             "execute": make_executor(raw_name, task_required),
         }
 
+    is_current = opts.get("isCurrent")
+    if is_current is not None and not is_current():
+        return previous
+
     for disp in previous.values():
         try:
             disp()

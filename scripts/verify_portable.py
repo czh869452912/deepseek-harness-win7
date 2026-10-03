@@ -11,10 +11,13 @@ import re
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tempfile
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from scripts.mcp_stdio_oracle import validate_runtime_report as validate_mcp_runtime
 
 
 def digest(path):
@@ -64,7 +67,8 @@ def main(argv=None):
         scope='Actual extracted Portable on current Windows; Win7 and its browser are not certified; no remote model request.',
         inputSha256={name: digest(ROOT / 'scripts' / name) for name in (
             'verify_portable.py', 'portable_runtime_probe.py', 'portable_acp_probe.py', 'acp_permission_journey.py',
-            'portable_browser_oracle.mjs', 'browser_onboarding.mjs')})
+            'portable_browser_oracle.mjs', 'browser_onboarding.mjs', 'mcp_stdio_oracle.py',
+            'oracles/mcp_stdio_python.py', 'oracles/mcp_stdio_peer.py')})
     node = shutil.which('node') if args.browser else None
     try:
         if args.browser and not node:
@@ -124,6 +128,19 @@ def main(argv=None):
                     or permission_report.get('value', {}).get('modes') != ['allow', 'reject', 'malformed', 'cancel-late', 'close-late', 'eof']):
                 raise RuntimeError('Missing extracted ACP permission ownership observations')
             report['acpPermissions'] = permission_report['value']
+            mcp_report_path = workspace / 'mcp-stdio.json'
+            mcp = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/oracles/mcp_stdio_python.py'), str(mcp_report_path),
+                '--root', str(portable), '--consumer'], cwd=str(workspace),
+                env=product_environment(portable, workspace), capture_output=True, encoding='utf-8', timeout=120)
+            output.with_suffix('.mcp.log').write_text(mcp.stdout + '\nSTDERR:\n' + mcp.stderr, encoding='utf-8')
+            if mcp.returncode or mcp.stderr or not mcp_report_path.exists():
+                raise RuntimeError('Extracted MCP stdio journey failed; see ' + str(output.with_suffix('.mcp.log')))
+            mcp_report = json.loads(mcp_report_path.read_text(encoding='utf-8'))
+            validate_mcp_runtime(mcp_report)
+            if mcp_report.get('root') != str(portable.resolve()):
+                raise RuntimeError('Extracted MCP ownership or module provenance is incomplete')
+            report['mcpStdio'] = mcp_report
             if args.browser:
                 browser_report = output.with_suffix('.browser.json')
                 # The observer launches the Host with the same restricted env.

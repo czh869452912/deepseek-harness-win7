@@ -1,0 +1,21 @@
+{
+  "id": "CON-MCP-STDIO",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/mcp/mcp-client/src/transport.ts", "reference/packages/mcp/mcp-client/src/connection.ts", "scripts/oracles/official/package-lock.json"],
+  "consumers": ["dsh/mcp/transport.py", "dsh/mcp/connection.py", "dsh/mcp/tools.py"],
+  "invariants": [
+    "Missing executables, invalid negotiation and disconnected peers reject; transports cannot invent tools or successful calls.",
+    "A connected stdio generation sends pinned SDK initialization and initialized notification before exposing actual tools/list and tools/call responses with correlated ids and unchanged error data.",
+    "The child inherits the pinned scrubbed environment with explicit overrides; stdout is NDJSON and stderr never enters protocol frames.",
+    "Requests, cancellation watchers, reader/stderr tasks and the owned process settle during bounded close; no late response survives disconnect."
+  ],
+  "identity": "One owned child process and typed RPC correlation per transport instance.",
+  "ownership": "Transport owns stdin/stdout/stderr, pending requests, callback dispatch and termination; caller owns explicit environment and cancellation signal.",
+  "ordering": "Initialize result and version validation before initialized; initialized before tools; serialized writes and correlated concurrent responses.",
+  "errors": "MCP protocol errors retain code/message/data; missing process rejects connect and subsequent calls remain Not connected.",
+  "cancellation": "Caller abort and timeout send cancellation notifications, release request/watcher ownership and reject; close rejects all pending calls and reaps the owned child.",
+  "adaptation": "Python 3.8 asyncio subprocesses, explicit request/watch lifetimes and bounded stdin/terminate/kill ownership; no Node in the product runtime.",
+  "open_questions": ["Eleven exact selected source provider/SDK/native process observations match at transport-close quiescence. Source SDK may start close without awaiting it on unsupported initialization; observer awaits the original supervisor's close barrier rather than treating transport.pid=null as proof of exit. 208 targeted tests and a pre-correction full run are not acceptance. Complete SDK schema/projection/configuration, paired supervisor/rich Tools behavior and clean Portable evidence remain pending; HTTP/SSE/ACP mounting/subagent are separate unaccepted scopes."]
+}

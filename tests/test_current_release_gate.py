@@ -39,10 +39,10 @@ def regression_xml(path, omit=None, skip=None, duplicate=None, failure=None):
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 51, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 62, 'skipped': 1}
 
 
-@pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source'])
+@pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
 def test_incomplete_regression_cannot_certify_a_release(tmp_path, module, damage):
     path = tmp_path / 'pytest.xml'
@@ -109,6 +109,9 @@ def extracted_receipt(tmp_path):
         'consumer': {'registered': True, 'output': 'controlled consumer', 'retired': True, 'closed': True,
             'writers': 0, 'tasks': 0, 'pending': 0, 'childExited': True},
         'python': '3.8.10 controlled fixture', 'root': str(tmp_path), 'module': str(tmp_path / 'dsh/__init__.py')}
+    report['acpMcp'] = {'stdioProcesses': 3, 'stdioCalls': 3, 'stdioReaped': True,
+        'httpCalls': 1, 'httpClosed': True, 'acpClosed': True, 'modelRequests': 8,
+        'scope': 'Actual canonical ACP process, stdio/HTTP consumers and same-session resume; no external endpoint.'}
     return archive, candidate, report
 
 
@@ -224,7 +227,7 @@ def test_default_gate_rejects_dirty_checkout_before_build(tmp_path, monkeypatch)
 
 
 def test_current_gate_includes_recent_contracts_and_only_uploads_receipt_archive():
-    assert {'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio'} <= set(GATE.PAIRED_DRIVERS)
+    assert {'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp'} <= set(GATE.PAIRED_DRIVERS)
     assert {'acp', 'acp-app', 'mcp'} <= set(GATE.OFFICIAL_CONFIGS)
     assert {'deepseek', 'pi', 'compaction', 'approval', 'cordis_retirement', 'workflow_ralph', 'pruner'} <= set(GATE.PAIRED_DRIVERS)
     assert len(GATE.PAIRED_DRIVERS) == len(set(GATE.PAIRED_DRIVERS))
@@ -232,6 +235,27 @@ def test_current_gate_includes_recent_contracts_and_only_uploads_receipt_archive
     assert '--browser $browser' in workflow
     assert '${{ steps.gate.outputs.archive }}' in workflow
     assert 'archive_sha256' in workflow and 'publishable' in workflow
+
+
+@pytest.mark.parametrize('damage', ['missing', 'numeric-reaped', 'no-stdio', 'missing-model-consumer', 'open-http', 'open-acp'])
+def test_extracted_acp_mcp_consumer_cannot_be_omitted_or_fabricated(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    if damage == 'missing':
+        del report['acpMcp']
+    elif damage == 'numeric-reaped':
+        report['acpMcp']['stdioReaped'] = 1
+    elif damage == 'no-stdio':
+        report['acpMcp']['stdioProcesses'] = 0
+    elif damage == 'missing-model-consumer':
+        report['acpMcp']['modelRequests'] = 7
+    elif damage == 'open-http':
+        report['acpMcp']['httpClosed'] = False
+    else:
+        report['acpMcp']['acpClosed'] = False
+    path = tmp_path / 'receipt.json'
+    path.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError):
+        GATE.validate_extracted(path, archive, candidate)
 
 
 def test_node_setup_runs_each_locked_workspace_without_prefix_root_ambiguity(tmp_path, monkeypatch):

@@ -9,6 +9,7 @@ import os
 from typing import Any, Dict, Optional
 from dsh.acp.content import supports_acp_image_prompts
 from dsh.acp.errors import AcpInternalError, AcpInvalidParamsError
+from dsh.acp.mcp import mount_acp_mcp_servers
 from dsh.acp.model_control import AcpModelControl, resolved, selection_for
 from dsh.acp.session_runtime import AcpSession as SessionRecord
 from dsh.core.model_selection import ModelSelection
@@ -64,6 +65,7 @@ class AcpPlugin(Plugin):
             "protocolVersion": 1,
             "agentInfo": {"name": "deepseek-harness-acp", "version": "0.0.1"},
             "agentCapabilities": {
+                "mcpCapabilities": {"http": True},
                 "sessionCapabilities": {"close": {}, "list": {}, "resume": {}},
                 "promptCapabilities": {
                     "image": self.image_prompt_enabled,
@@ -89,8 +91,6 @@ class AcpPlugin(Plugin):
             raise AcpInvalidParamsError("cwd must be an absolute path: %s" % cwd)
         if params.get("additionalDirectories"):
             raise AcpInvalidParamsError("additionalDirectories is not supported")
-        if params.get("mcpServers"):
-            raise AcpInvalidParamsError("mcpServers is not supported")
         return cwd
 
     def _operation(self, signal):
@@ -145,10 +145,14 @@ class AcpPlugin(Plugin):
         operation, cleanup = self._operation(signal)
         record = None
         control = AcpModelControl(ctx.get('llm'), self._fallback_selection())
+        def setup(agent_ctx):
+            control.install(agent_ctx)
+            if params.get('mcpServers'):
+                return mount_acp_mcp_servers(agent_ctx, params['mcpServers'], cwd)
         try:
             handle = await agents.create(session_id=session_id, meta={'cwd': cwd},
                 options=AgentOptions(provider=self.config.get('provider'), model=self.config.get('model')),
-                signal=operation, setup=control.install)
+                signal=operation, setup=setup)
             record = SessionRecord(getattr(handle, 'agent', None), getattr(handle, 'dispose', None),
                 control, ctx, lambda payload: self._notify(ctx, payload))
             self._assert_open(operation)
@@ -222,6 +226,8 @@ class AcpPlugin(Plugin):
             control = AcpModelControl(ctx.get('llm'), selection_for(
                 agent.session.request_header(), self._fallback_selection()))
             control.install(agent_ctx)
+            if params.get('mcpServers'):
+                return mount_acp_mcp_servers(agent_ctx, params['mcpServers'], cwd)
         try:
             headers = await persistence.list()
             self._assert_open(operation)

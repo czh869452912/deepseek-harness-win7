@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from scripts.mcp_stdio_oracle import validate_runtime_report as validate_mcp_runtime
 from scripts.mcp_http_oracle import validate_runtime_report as validate_mcp_http_runtime
+from scripts.acp_mcp_oracle import validate_process as validate_acp_mcp_process
 
 
 def digest(path):
@@ -70,7 +71,8 @@ def main(argv=None):
             'verify_portable.py', 'portable_runtime_probe.py', 'portable_acp_probe.py', 'acp_permission_journey.py',
             'portable_browser_oracle.mjs', 'browser_onboarding.mjs', 'mcp_stdio_oracle.py',
             'oracles/mcp_stdio_python.py', 'oracles/mcp_stdio_peer.py', 'mcp_http_oracle.py',
-            'oracles/mcp_http_python.py', 'oracles/mcp_http_peer.py', 'oracles/mcp_http_expected.json')})
+            'oracles/mcp_http_python.py', 'oracles/mcp_http_peer.py', 'oracles/mcp_http_expected.json',
+            'acp_mcp_oracle.py', 'acp_mcp_journey.py')})
     node = shutil.which('node') if args.browser else None
     try:
         if args.browser and not node:
@@ -155,6 +157,19 @@ def main(argv=None):
             if http_report.get('root') != str(portable.resolve()):
                 raise RuntimeError('Extracted MCP HTTP module provenance is incomplete')
             report['mcpHttp'] = http_report
+            acp_mcp_workspace = workspace / 'acp-mcp-consumer'
+            acp_mcp = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/acp_mcp_journey.py'), '--root', str(portable), '--workspace', str(acp_mcp_workspace)],
+                cwd=str(workspace), env=product_environment(portable, workspace),
+                capture_output=True, encoding='utf-8', errors='replace', timeout=90)
+            output.with_suffix('.acp-mcp.log').write_text(acp_mcp.stdout + '\nSTDERR:\n' + acp_mcp.stderr, encoding='utf-8')
+            if acp_mcp.returncode or acp_mcp.stderr:
+                raise RuntimeError('Extracted ACP MCP consumer failed; see ' + str(output.with_suffix('.acp-mcp.log')))
+            acp_mcp_report = json.loads(acp_mcp.stdout)
+            if acp_mcp_report.get('result') != 'passed':
+                raise RuntimeError('Extracted ACP MCP consumer did not pass')
+            validate_acp_mcp_process(acp_mcp_report.get('value'))
+            report['acpMcp'] = acp_mcp_report['value']
             if args.browser:
                 browser_report = output.with_suffix('.browser.json')
                 # The observer launches the Host with the same restricted env.

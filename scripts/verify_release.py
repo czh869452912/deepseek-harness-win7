@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from scripts.mcp_stdio_oracle import validate_runtime_report as validate_mcp_runtime
 from scripts.mcp_http_oracle import validate_runtime_report as validate_mcp_http_runtime
+from scripts.acp_mcp_oracle import validate_process as validate_acp_mcp_process
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -26,10 +27,24 @@ PAIRED_DRIVERS = (
     'pi', 'storage_cache', 'workflow_ralph', 'repeat_tool', 'token_meter',
     'pruner', 'compaction', 'maintenance', 'timeout_policy', 'abort',
     'approval', 'inspect', 'cordis_guard', 'cordis_runner',
-    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http',
+    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp',
 )
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp')
 REQUIRED_REGRESSION = {
+    'test_acp_mcp_source': {'test_actual_acp_source_mcp_declarations_defaults_errors_and_prevalidation'},
+    'test_acp_mcp_runtime_source': {'test_actual_source_and_native_acp_session_mcp_consumer_lifecycle'},
+    'test_acp_mcp_abort_source': {'test_actual_source_and_native_mcp_startup_abort_wait_for_late_handshake_then_reap'},
+    'test_acp_mcp_process': {'test_actual_acp_process_owns_stdio_http_session_tools_and_model_consumers'},
+    'test_acp_mcp_runtime': {
+        'test_actual_profile_session_mcp_tools_are_isolated_reaped_and_remounted[' + backend + ']'
+        for backend in ('jsonl', 'sqlite')
+    } | {'test_actual_profile_http_mcp_headers_and_tool_consumer_are_session_owned'} | {
+        'test_actual_factory_rolls_back_all_mcp_children_before_agent_publication[' + failure + ']'
+        for failure in ('invalid-declaration', 'missing-executable')
+    } | {
+        'test_cancelled_unpublished_mcp_setup_drains_real_child[' + reason + ']'
+        for reason in ('request-abort', 'bridge-close')
+    },
     'test_mcp_http_source': {'test_actual_source_http_sdk_wire_results_errors_and_close'},
     'test_mcp_supervisor_source': {'test_actual_source_supervisor_outcomes_logs_and_owned_registry_order'},
     'test_mcp_factory_source': {'test_actual_sdk_factory_failure_stops_at_the_close_barrier_without_retry'},
@@ -191,6 +206,10 @@ def validate_extracted(path, archive, candidate):
         validate_mcp_http_runtime(report.get('mcpHttp', {}))
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted MCP HTTP observations are incomplete') from error
+    try:
+        validate_acp_mcp_process(report.get('acpMcp'))
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted ACP MCP process observations are incomplete') from error
     if report.get('archiveSha256') != digest(archive) or Path(report['archive']).resolve() != archive.resolve():
         raise RuntimeError('Extracted receipt belongs to a different archive')
     provenance = report.get('provenance', {})

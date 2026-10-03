@@ -1,0 +1,28 @@
+{
+  "id": "MIG-ACP-MCP-009",
+  "goal": "闭合 ACP 请求 MCP 声明到未发布会话作用域、真实工具消费者和失败回滚的路径",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "52b14fbafd9ab5e8b0f8d427a6c20a05299aa43b",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {"task": "MIG-MCP-STDIO-007", "contract": "CON-MCP-STDIO", "revision": 1},
+    {"task": "MIG-MCP-HTTP-008", "contract": "CON-MCP-HTTP", "revision": 1},
+    {"task": "MIG-ACP-SESSION-CONTROLS-003", "contract": "CON-ACP-SESSION-CONTROLS", "revision": 1},
+    {"task": "MIG-AGENT-LIFECYCLE-002", "contract": "CON-AGENT-FACTORY", "revision": 1}
+  ],
+  "provides": [{"contract": "CON-ACP-MCP", "revision": 1}],
+  "acceptance": [
+    "Fresh actual original declaration and real ACP session/MCP consumer observations match native complete fields; negative observers reject missing, duplicated, fabricated and weakly typed outcomes.",
+    "Canonical profiles with JSONL/SQLite preserve per-session MCP isolation, complete prevalidation, startup rollback, cancellation/late setup refusal, fresh resume and proved process exit; local model/stdio/HTTP consumers execute real tools without external API calls.",
+    "Complete Python 3.8 current candidate regression, original/paired gates and actual extracted Portable ACP MCP process pass before bounded clean receipt-bound integration."
+  ],
+  "expected_paths": ["dsh/acp", "dsh/core", "tests", "scripts", "migration", "docs/research"],
+  "open_findings": ["Complete frozen main development preview passed: 5508 passed, six platform skips, one existing warning, zero failures; 62 mandatory lanes, seven unchanged source groups (722 assertions), 31 paired drivers and actual extracted Portable passed. Actual ACP MCP process consumed three reaped stdio children and one HTTP tool through eight local model requests. This dirty preview is not publishable; clean committed acceptance remains pending. Earlier fixture/schema-order/scope-identity failures are preserved; indefinitely blocked initialization and remaining URL/SDK/subagent scopes are not certified. The isolated subprocess ACP provider and real model/Event signal fix belong to the next portion, outside this frozen preview."],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "冻结开发门禁及实际解压通过；提交本部分，再执行干净候选验收与回执归档；继续 subprocess subagent-acp 与真实模型取消信号修复，不以这条 MCP consumer 合同认证整体 ACP。"
+}

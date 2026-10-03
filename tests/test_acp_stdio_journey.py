@@ -119,7 +119,7 @@ def test_actual_acp_profile_stdio_output_and_new_process_durable_resume(tmp_path
         initialized = child.reply(1)['result']
         assert initialized['protocolVersion'] == 1
         assert initialized['agentCapabilities']['sessionCapabilities'] == {'close': {}, 'list': {}, 'resume': {}}
-        assert 'mcpCapabilities' not in initialized['agentCapabilities']
+        assert initialized['agentCapabilities']['mcpCapabilities'] == {'http': True}
         child.send(2, 'session/new', {'cwd': str(tmp_path), 'mcpServers': []})
         created = child.reply(2)['result']
         session_id = created['sessionId']

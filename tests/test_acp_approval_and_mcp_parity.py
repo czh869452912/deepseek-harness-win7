@@ -4,9 +4,8 @@ Matching reference/packages/acp/acp/tests/approval.spec.ts and mcp.spec.ts
 """
 
 import asyncio
-import os
-import re
 import pytest
+from dsh.acp.mcp import AcpMcpConfigError, entries_to_record, normalize_server_name
 
 from dsh.cordis.context import Context
 from dsh.interaction.user_approval import UserApprovalService
@@ -54,83 +53,31 @@ async def test_acp_approval_policies_and_decisions():
     disp2()
 
 
-def test_mcp_server_name_normalization_and_env_validation():
-    def normalize_server_name(raw_name: str) -> str:
-        cleaned = re.sub(r"[^a-zA-Z0-9_-]", "_", raw_name.strip())
-        cleaned = re.sub(r"_+", "_", cleaned).strip("_")
-        if not cleaned:
-            cleaned = "server"
-        h = 0
-        for ch in raw_name:
-            h = (((h << 5) - h) + ord(ch)) & 0xFFFFFFFF
-        return f"{cleaned}_{h:08x}"
-
-    res1 = normalize_server_name("Fancy server!")
-    assert res1.startswith("Fancy_server_")
-    res2 = normalize_server_name("!!!")
-    assert res2.startswith("server_")
-
-    # Validate environment variable checking
-    def validate_mcp_env(env_list):
-        seen = set()
-        env_dict = {}
-        for entry in env_list:
-            name = entry.get("name", "")
-            val = entry.get("value", "")
-            if not name or "\0" in name or "\0" in str(val):
-                raise ValueError(f"invalid environment entry: {name}")
-            if name in seen:
-                raise ValueError(f"duplicate name: {name}")
-            seen.add(name)
-            env_dict[name] = val
-        return env_dict
-
-    # Valid entries including prototype safety
-    valid_env = validate_mcp_env([
-        {"name": "TOKEN", "value": "secret"},
-        {"name": "__proto__", "value": "safe_override"}
-    ])
-    assert valid_env["TOKEN"] == "secret"
-    assert valid_env["__proto__"] == "safe_override"
-
-    # Invalid: duplicate name
-    with pytest.raises(ValueError, match="duplicate name"):
-        validate_mcp_env([{"name": "A", "value": "1"}, {"name": "A", "value": "2"}])
-
-    # Invalid: empty name
-    with pytest.raises(ValueError, match="invalid environment entry"):
-        validate_mcp_env([{"name": "", "value": "1"}])
-
-    # Invalid: null byte in name or value
-    with pytest.raises(ValueError, match="invalid environment entry"):
-        validate_mcp_env([{"name": "A\0", "value": "1"}])
-    with pytest.raises(ValueError, match="invalid environment entry"):
-        validate_mcp_env([{"name": "A", "value": "1\0"}])
+@pytest.mark.parametrize('name,expected', [('simple', 'simple'), ('_', '_'),
+    ('Fancy server!', 'Fancy_server_fc5fd8aa'), ('!!!', 'server_e84c538e'),
+    ('é café', 'e_cafe_47c57b29'), ('中文', 'server_72726d88'),
+    ('😀', 'server_f0443a34'), ('\ud800', 'server_83d544cc')])
+def test_mcp_server_name_uses_the_actual_acp_provider(name, expected):
+    assert normalize_server_name(name) == expected
 
 
-def test_mcp_header_case_insensitive_deduplication():
-    def validate_mcp_headers(headers_list):
-        seen_lower = set()
-        headers_dict = {}
-        for h in headers_list:
-            name = h.get("name", "")
-            val = h.get("value", "")
-            lowered = name.lower()
-            if lowered in seen_lower:
-                raise ValueError(f"duplicate name: {name}")
-            seen_lower.add(lowered)
-            headers_dict[name] = val
-        return headers_dict
+@pytest.mark.parametrize('entries,kind', [
+    ([{'name': 'A', 'value': '1'}, {'name': 'A', 'value': '2'}], 'environment'),
+    ([{'name': 'X-Key', 'value': 'one'}, {'name': 'x-key', 'value': 'two'}], 'header'),
+])
+def test_mcp_actual_provider_rejects_duplicate_environment_and_headers(entries, kind):
+    with pytest.raises(AcpMcpConfigError, match='duplicate name'):
+        entries_to_record(entries, 'mcpServers[0].entries', kind)
 
-    valid_headers = validate_mcp_headers([
-        {"name": "Authorization", "value": "Bearer token"},
-        {"name": "X-Custom", "value": "val"}
-    ])
-    assert len(valid_headers) == 2
 
-    # Reject duplicate regardless of casing
-    with pytest.raises(ValueError, match="duplicate name"):
-        validate_mcp_headers([
-            {"name": "X-Key", "value": "one"},
-            {"name": "x-key", "value": "two"}
-        ])
+@pytest.mark.parametrize('entry', [{'name': '', 'value': '1'}, {'name': 'BAD=NAME', 'value': '1'},
+    {'name': 'A\0', 'value': '1'}, {'name': 'A', 'value': '1\0'}])
+def test_mcp_actual_provider_rejects_invalid_environment(entry):
+    with pytest.raises(AcpMcpConfigError, match='invalid environment entry'):
+        entries_to_record([entry], 'mcpServers[0].env', 'environment')
+
+
+@pytest.mark.parametrize('kind', ['header', 'environment'])
+def test_mcp_actual_provider_preserves_prototype_named_entries(kind):
+    assert entries_to_record([{'name': '__proto__', 'value': 'safe data'}], 'entries', kind) == {
+        '__proto__': 'safe data'}

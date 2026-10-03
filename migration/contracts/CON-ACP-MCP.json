@@ -1,0 +1,22 @@
+{
+  "id": "CON-ACP-MCP",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/acp/acp/src/mcp.ts", "reference/packages/acp/acp/src/session.ts", "reference/packages/acp/acp/tests/harness.ts", "reference/packages/acp/acp/tests/mcp.spec.ts", "reference/packages/acp/acp/tests/bridge.spec.ts"],
+  "consumers": ["dsh/acp/server.py", "dsh/acp/mcp.py", "dsh/core/agent_loop.py", "scripts/acp_mcp_journey.py", "scripts/verify_portable.py"],
+  "invariants": [
+    "The complete declared stdio/HTTP list is validated before mounting any provider; selected original normalized names, config/defaults, environment/header fields and exact indexed errors match the native mapping.",
+    "MCP providers are activated in the unpublished Agent scope after model control installation and before factory Agent/Session publication; siblings may reuse the same server namespace without global tool leakage.",
+    "Actual ToolsService consumers preserve the raw MCP value and model-facing content; session close removes registrations and waits for child exit, while resume mounts fresh request declarations rather than restoring stale processes.",
+    "Later invalid declarations spawn no peer, later startup failure drains already mounted peers, and caller or bridge abort cannot publish a late completed setup.",
+    "Initialize advertises the original HTTP MCP capability, and actual canonical ACP/embedded Portable processes execute stdio/HTTP tools through a local model consumer with preserved workspace/environment/headers and proved child exit."
+  ],
+  "identity": "One requested normalized server namespace per exact Agent scope and one fresh provider generation per new/resume declaration; no cross-session or global registry ownership.",
+  "ownership": "The unpublished Agent factory scope owns each sequentially mounted MCP plugin, process, pending request and tool registration; the ACP request owns declarations and cancellation, and the controlled observer owns local fixtures.",
+  "ordering": "Full list validation precedes the first mount; model control precedes MCP activation; every requested mount settles before publication. Cancellation during blocked initialization waits for plugin apply to finish before Cordis effect disposal, as observed at an explicit late-handshake release barrier.",
+  "errors": "Caller-correctable mapping failures preserve AcpMcpConfigError and exact indexed source messages and become ACP Invalid params; connection/startup errors remain startup failures and roll back the owned scope.",
+  "cancellation": "Unpublished setup abort prevents Agent/Session publication and reaps real children after the declared late initialization release; this contract does not claim immediate disposal of an indefinitely unresponsive initializer before the SDK default timeout.",
+  "adaptation": "Python 3.8 setup returns an awaitable when declarations are nonempty, preserving synchronous compatibility for existing empty-list factory adapters; the production factory awaits it. The installation-owned plugin registry resolves the provider. Windows child-exit observation uses Win7-compatible process synchronization handles.",
+  "open_questions": ["Main frozen development preview passed complete regression, current original/paired gates and actual extracted Portable; clean committed acceptance remains pending. The 58 mapped declaration cases and selected cancellation barrier do not certify complete WHATWG URL/Unicode behavior, infinite blocked initialization, full SDK HTTP, subprocess subagent-acp or overall ACP; Win7 execution remains deferred by the user."]
+}

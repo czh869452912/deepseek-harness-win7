@@ -1,0 +1,22 @@
+{
+  "id": "CON-SUBAGENT-ACP-TEARDOWN",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/subagent/subagent-acp/src/run.ts", "reference/packages/subagent/subagent/src/out-of-process.ts", "reference/packages/subprocess/subprocess-local/src/spawn.ts"],
+  "consumers": ["dsh/subagent/acp.py", "dsh/subagent/canonical_tools.py", "scripts/verify_portable.py"],
+  "invariants": [
+    "Published complete disposal is one owned transaction, repeated awaiters receive the same failure instance and Host cause is reported once, with actual structured exit facts retained.",
+    "Unpublished ordinary startup failure preserves both protocol and teardown error members in order; canceled startup preserves only the teardown member, with raw causes and actual exit facts after cleanup.",
+    "A throwing Host error sink cannot replace the public partial-output process failure or fabricate successful completion.",
+    "Canceling Python dispose or startup awaiters cannot orphan the owned real process, RPC, reader or abort listener.",
+    "The actual extracted embedded Python 3.8.10 module executes all four selected real-process teardown observations, including causes, protocol and failure identity."
+  ],
+  "identity": "One memoized published disposal Task and failure object, exact original AbortSignal listener identity, and independent physical child per declared observation.",
+  "ownership": "The run owns complete public disposal and underlying process/RPC drainage; cancellation of an awaiting caller cannot cancel those owned tasks. Host reporting remains contained.",
+  "ordering": "Observe structured exit after failed cleanup; startup protocol failure precedes cleanup failure in the aggregate. Public repeated disposal joins the same completed or pending transaction.",
+  "errors": "Fixed safe AcpRunFailure stage/category/exit messages preserve raw Host cause; AggregateError members retain original ordering and identity, with no cause normalization or secret leakage into public diagnostics.",
+  "cancellation": "Python Task cancellation uses shielded owned teardown; observed canceled startup has no published session. JavaScript Promise cancellation is not invented.",
+  "adaptation": "Python 3.8 standard-library asyncio and the canonical subprocess service. Source wait rejection is a declared handle seam occurring after actual child exit, not an invented process outcome.",
+  "open_questions": ["Main complete candidate and extracted consumer are pending; fifth provider clean acceptance remains open after two preserved browser startup failures. This contract does not certify pathological piped streams, complete process trees, background Jobs, full ACP/SDK or deferred Win7."]
+}

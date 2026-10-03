@@ -20,6 +20,7 @@ from scripts.mcp_stdio_oracle import validate_runtime_report as validate_mcp_run
 from scripts.mcp_http_oracle import validate_runtime_report as validate_mcp_http_runtime
 from scripts.acp_mcp_oracle import validate_process as validate_acp_mcp_process
 from scripts.subagent_acp_oracle import validate_process as validate_subagent_acp_process
+from scripts.subagent_acp_teardown_oracle import validate_runtime as validate_subagent_acp_teardown
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -28,10 +29,14 @@ PAIRED_DRIVERS = (
     'pi', 'storage_cache', 'workflow_ralph', 'repeat_tool', 'token_meter',
     'pruner', 'compaction', 'maintenance', 'timeout_policy', 'abort',
     'approval', 'inspect', 'cordis_guard', 'cordis_runner',
-    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp',
+    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown',
 )
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp')
 REQUIRED_REGRESSION = {
+    'test_subagent_acp_teardown_source': {'test_actual_original_subprocess_acp_teardown_failure_aggregate_causes_and_identity'},
+    'test_subagent_acp_dispose_cancellation': {
+        'test_cancelled_dispose_awaiter_cannot_cancel_owned_eof_flush_and_process_reap',
+        'test_cancelled_start_awaiter_reaps_unpublished_blocked_new_session_child'},
     'test_subagent_acp_source': {'test_actual_original_acp_subagent_runs_match_native_complete_public_observations'},
     'test_agent_signal_source': {'test_actual_original_model_tool_signal_generation_and_cancelled_admission_recover'},
     'test_subagent_acp_process': {'test_actual_parent_acp_subprocess_child_file_model_chain_and_reap'},
@@ -236,6 +241,12 @@ def validate_extracted(path, archive, candidate):
         validate_subagent_acp_process(report.get('subagentAcp'))
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted subprocess ACP file/model observations are incomplete') from error
+    try:
+        validate_subagent_acp_teardown(report.get('subagentAcpTeardown'))
+        if report['subagentAcpTeardown']['root'] != report['mcpStdio']['root']:
+            raise ValueError('Subprocess ACP teardown came from a different runtime')
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted subprocess ACP teardown observations are incomplete') from error
     if report.get('archiveSha256') != digest(archive) or Path(report['archive']).resolve() != archive.resolve():
         raise RuntimeError('Extracted receipt belongs to a different archive')
     provenance = report.get('provenance', {})

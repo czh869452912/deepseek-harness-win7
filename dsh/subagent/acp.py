@@ -80,7 +80,7 @@ class AcpRun:
         self.cancelled, self.remote_session_id = False, None
         self.cancel_settled = asyncio.get_running_loop().create_future()
         self.partial, self.permission = [], None
-        self.disposal, self.result = None, None
+        self.disposal, self.public_disposal, self.result = None, None, None
         self.abort_listener = self.abort
         self.rpc = AcpRpc(self.write)
         self.rpc.notifications['session/update'] = self.update
@@ -189,6 +189,14 @@ class AcpRun:
             bound.cancel()
             await asyncio.gather(bound, return_exceptions=True)
 
+    def process_outcome(self):
+        if self.child.done.done():
+            try:
+                return self.child.done.result()
+            except Exception:
+                pass
+        return None
+
     async def initialize(self, cwd):
         stage = 'initialize'
         try:
@@ -214,6 +222,7 @@ class AcpRun:
                 await self.dispose_process()
             except Exception as cleanup_error:
                 self.report(cleanup_error)
+                outcome = self.process_outcome()
                 cleanup = AcpRunFailure('teardown', 'unknown' if outcome is None else 'process-exit', cleanup_error, outcome)
                 if cancelled:
                     raise AggregateError([cleanup], str(cleanup))
@@ -287,15 +296,21 @@ class AcpRun:
             self.disposal.add_done_callback(observe)
         await asyncio.shield(self.disposal)
 
-    async def dispose(self):
+    async def dispose_owned(self):
         self.detach()
         self.request_cancel()
         try:
             await self.dispose_process()
         except Exception as error:
             self.report(error)
-            outcome = await self.observe_outcome()
+            outcome = self.process_outcome()
             raise AcpRunFailure('teardown', 'unknown' if outcome is None else 'process-exit', error, outcome)
+
+    async def dispose(self):
+        if self.public_disposal is None:
+            self.public_disposal = asyncio.create_task(self.dispose_owned())
+            self.public_disposal.add_done_callback(observe)
+        await asyncio.shield(self.public_disposal)
 
 
 class AcpProvider:

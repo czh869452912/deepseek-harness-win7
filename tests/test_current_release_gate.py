@@ -9,6 +9,7 @@ import pytest
 from scripts.mcp_stdio_oracle import MODES as MCP_MODES, expected_row as mcp_expected_row
 from scripts.mcp_http_oracle import EXPECTED as HTTP_EXPECTED
 from scripts.subagent_acp_oracle import expected_process as expected_subagent_acp_process
+from scripts.subagent_acp_teardown_oracle import expected as expected_subagent_acp_teardown
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -40,7 +41,7 @@ def regression_xml(path, omit=None, skip=None, duplicate=None, failure=None):
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 81, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 84, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
@@ -114,6 +115,11 @@ def extracted_receipt(tmp_path):
         'httpCalls': 1, 'httpClosed': True, 'acpClosed': True, 'modelRequests': 8,
         'scope': 'Actual canonical ACP process, stdio/HTTP consumers and same-session resume; no external endpoint.'}
     report['subagentAcp'] = expected_subagent_acp_process()
+    teardown_rows = copy.deepcopy(expected_subagent_acp_teardown(tmp_path))
+    for row in teardown_rows:
+        row['observed']['records'] = [{'spawn': {'pid': 123, 'cwd': str(tmp_path)}}] + row['observed'].pop('wire')
+    report['subagentAcpTeardown'] = {'observations': teardown_rows, 'root': str(tmp_path),
+        'module': str(tmp_path / 'dsh/__init__.py'), 'python': [3, 8, 10]}
     return archive, candidate, report
 
 
@@ -229,7 +235,7 @@ def test_default_gate_rejects_dirty_checkout_before_build(tmp_path, monkeypatch)
 
 
 def test_current_gate_includes_recent_contracts_and_only_uploads_receipt_archive():
-    assert {'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp'} <= set(GATE.PAIRED_DRIVERS)
+    assert {'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown'} <= set(GATE.PAIRED_DRIVERS)
     assert {'acp', 'acp-app', 'mcp', 'subagent-acp'} <= set(GATE.OFFICIAL_CONFIGS)
     assert {'deepseek', 'pi', 'compaction', 'approval', 'cordis_retirement', 'workflow_ralph', 'pruner'} <= set(GATE.PAIRED_DRIVERS)
     assert len(GATE.PAIRED_DRIVERS) == len(set(GATE.PAIRED_DRIVERS))
@@ -271,7 +277,8 @@ def test_node_setup_runs_each_locked_workspace_without_prefix_root_ambiguity(tmp
 
 
 @pytest.mark.parametrize('module', ['test_subagent_acp_source', 'test_agent_signal_source',
-    'test_subagent_acp_process', 'test_subagent_acp_signal', 'test_subagent_acp_consumer', 'test_subagent_acp'])
+    'test_subagent_acp_process', 'test_subagent_acp_signal', 'test_subagent_acp_consumer', 'test_subagent_acp',
+    'test_subagent_acp_teardown_source', 'test_subagent_acp_dispose_cancellation'])
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
 def test_subprocess_acp_and_signal_lanes_cannot_be_optional(tmp_path, module, damage):
     path = tmp_path / 'pytest.xml'
@@ -307,3 +314,28 @@ def test_node_setup_refuses_missing_package_manager(tmp_path, monkeypatch):
     monkeypatch.setattr(GATE.shutil, 'which', lambda name: None)
     with pytest.raises(RuntimeError, match='pinned npm'):
         GATE.prepare_node_dependencies(tmp_path, {})
+
+
+@pytest.mark.parametrize('damage', ['missing', 'empty', 'lost-cause', 'recreated-failure', 'lost-exit', 'foreign-module', 'foreign-root'])
+def test_extracted_subprocess_acp_teardown_cannot_be_omitted_or_fabricated(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    teardown = report['subagentAcpTeardown']
+    if damage == 'missing':
+        del report['subagentAcpTeardown']
+    elif damage == 'empty':
+        teardown['observations'] = []
+    elif damage == 'lost-cause':
+        del teardown['observations'][0]['observed']['disposeFailure']['cause']
+    elif damage == 'recreated-failure':
+        teardown['observations'][0]['observed']['sameDisposeFailure'] = False
+    elif damage == 'lost-exit':
+        teardown['observations'][0]['observed']['actualExit'] = 0
+    elif damage == 'foreign-module':
+        teardown['module'] = str(tmp_path / 'foreign/dsh/__init__.py')
+    else:
+        teardown['root'] = str(tmp_path / 'foreign')
+        teardown['module'] = str(tmp_path / 'foreign/dsh/__init__.py')
+    path = tmp_path / 'receipt.json'
+    path.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError):
+        GATE.validate_extracted(path, archive, candidate)

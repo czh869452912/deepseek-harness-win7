@@ -138,3 +138,35 @@ console.log(JSON.stringify({actions, polls, failure}));
     assert report['actions'] == [{'method': 'Page.reload', 'parameters': {'ignoreCache': True}}]
     assert report['failure'] == (None if committed else 'Timed out: new document after original page reload')
     assert report['polls'] >= 2
+
+
+@pytest.mark.parametrize('launcher_exited', [True, False])
+@pytest.mark.parametrize('disconnected', [True, False])
+def test_browser_close_uses_live_protocol_even_after_launcher_exit_and_requires_disconnect(launcher_exited, disconnected):
+    source = r'''
+const {closeOriginalBrowser} = await import(process.argv[1]);
+const spec = JSON.parse(process.argv[2]);
+const actions = [], waits = [];
+const browser = {exitCode: spec.launcherExited ? 0 : null, signalCode: null,
+  kill: () => { actions.push('kill'); browser.signalCode = 'SIGTERM'; }};
+const connection = {socket: {readyState: 1},
+  call: async method => {actions.push(method);}};
+const waitFor = async (read, label) => {
+  waits.push({label, initially: await read()});
+  if (label.includes('protocol')) {
+    if (spec.disconnected) connection.socket.readyState = 3;
+  } else browser.exitCode = 0;
+  if (!await read()) throw new Error('Timed out: ' + label);
+};
+let failure = null;
+try {await closeOriginalBrowser(connection, browser, waitFor);} catch (error) {failure = error.message;}
+console.log(JSON.stringify({actions, waits, failure}));
+'''
+    result = subprocess.run([NODE, '--input-type=module', '-e', source.strip().replace('\n', ' '),
+        (ROOT / 'scripts/browser_onboarding.mjs').as_uri(), json.dumps({'launcherExited': launcher_exited, 'disconnected': disconnected})],
+        capture_output=True, encoding='utf-8', timeout=15)
+    assert result.returncode == 0, result.stdout + result.stderr
+    report = json.loads(result.stdout)
+    assert report['actions'] == ['Browser.close']
+    assert report['waits'][0] == {'label': 'original browser protocol disconnected', 'initially': False}
+    assert report['failure'] == (None if disconnected else 'Timed out: original browser protocol disconnected')

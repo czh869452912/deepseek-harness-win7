@@ -11,6 +11,22 @@ export async function reloadOriginalPage(connection, waitFor, parameters = {}) {
     'new document after original page reload');
 }
 
+export async function closeOriginalBrowser(connection, browser, waitFor) {
+  if (connection && connection.socket.readyState === 1) {
+    try { await connection.call('Browser.close'); }
+    catch (error) { if (connection.socket.readyState !== 3) throw error; }
+    await waitFor(() => connection.socket.readyState === 3, 'original browser protocol disconnected');
+  }
+  if (browser?.exitCode === null) {
+    try { await waitFor(() => browser.exitCode !== null || browser.signalCode !== null, 'browser launcher exited'); }
+    catch (error) {
+      browser.kill();
+      await waitFor(() => browser.exitCode !== null || browser.signalCode !== null, 'browser launcher terminated');
+      throw error;
+    }
+  }
+}
+
 export async function deferProviderOnboarding(connection, waitFor, required = true) {
   const dialog = '[role="dialog"][aria-label="Add an API key to get started"], [role="dialog"][aria-label="添加一个 API Key 开始使用"]';
   const point = await waitFor(() => connection.evaluate(`(() => {

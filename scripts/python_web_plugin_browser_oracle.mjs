@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
-import { credentialFreeEnvironment, deferProviderOnboarding, reloadOriginalPage } from './browser_onboarding.mjs';
+import { closeOriginalBrowser, credentialFreeEnvironment, deferProviderOnboarding, reloadOriginalPage } from './browser_onboarding.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const options = Object.fromEntries(process.argv.slice(2).reduce((pairs, value, i, args) => {
@@ -75,6 +75,7 @@ async function onboarding(required = false) {
   const deferred = await deferProviderOnboarding(cdp, until, required);
   report.providerOnboardingChecks = (report.providerOnboardingChecks ?? 0) + 1;
   report.providerOnboardingDeferrals = (report.providerOnboardingDeferrals ?? 0) + Number(deferred);
+  await settleNetwork();
 }
 async function closePage() {
   phase = 'close-page';
@@ -362,6 +363,7 @@ try {
   await transition('rollback', '1.0.0');
   await transition('remove', undefined, false);
   }
+  await settleNetwork();
   await Promise.all([...replyJobs]);
   assert.equal(report.replies.length, report.session ? 15 : report.exported ? 9 : 6);
   for (const reply of report.replies) {
@@ -379,13 +381,15 @@ try {
   report.passed = false; report.failure = String(error.stack ?? error);
   if (cdp) { try { report.pageText = await cdp.evaluate('document.body.innerText'); } catch {} }
 } finally {
-  if (browser?.exitCode === null) { try { await cdp?.call('Browser.close'); await until(() => browser.exitCode !== null, 'browser closed'); } catch { browser.kill(); } }
+  try { await closeOriginalBrowser(cdp, browser, until); }
+  catch (error) { report.passed = false; report.browserTeardownFailure = String(error.stack ?? error); }
   if (host?.exitCode === null) { try { await command('shutdown'); await until(() => host.exitCode !== null, 'Host closed'); } catch { host.kill(); } }
   cdp?.socket.close();
   report.hostErrors = hostErrors.replace(/token=[^\s]+/g, 'token=[redacted]'); report.hostExitCode = host?.exitCode;
   if (report.passed && (report.hostErrors || report.hostExitCode !== 0)) { report.passed = false; report.failure = 'Host teardown failed'; }
   assert.equal(resolve(dirname(privateBrowser)), resolve(tmpdir())); assert.ok(basename(privateBrowser).startsWith('dsh-web-package-cdp-'));
-  await rm(privateBrowser, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  try { await rm(privateBrowser, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); }
+  catch (error) { report.passed = false; report.cleanupFailure = String(error.stack ?? error); }
   await writeFile(output, JSON.stringify(report, null, 2) + '\n', 'utf8');
 }
 console.log(JSON.stringify({ passed: report.passed, steps: report.steps.length, output, failure: report.failure }));

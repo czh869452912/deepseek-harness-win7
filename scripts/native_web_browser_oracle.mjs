@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
-import { credentialFreeEnvironment, deferProviderOnboarding, reloadOriginalPage } from './browser_onboarding.mjs';
+import { closeOriginalBrowser, credentialFreeEnvironment, deferProviderOnboarding, reloadOriginalPage } from './browser_onboarding.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const options = Object.fromEntries(process.argv.slice(2).reduce((pairs, value, i, args) => {
@@ -484,10 +484,8 @@ try {
 } finally {
   // Close test pages before retiring the server: live Clients reconnect while
   // the Host is shutting down, racing CPython 3.8 Proactor's accept callback.
-  if (browser?.exitCode === null) {
-    try { await cdp?.call('Browser.close'); await until(() => browser.exitCode !== null, 'browser orderly shutdown'); }
-    catch { browser.kill(); await until(() => browser.exitCode !== null, 'test browser exit').catch(() => {}); }
-  }
+  try { await closeOriginalBrowser(cdp, browser, until); }
+  catch (error) { report.passed = false; report.browserTeardownFailure = String(error.stack ?? error); }
   if (host?.exitCode === null) { try { await command('shutdown'); await until(() => host.exitCode !== null, 'host orderly shutdown'); } catch { host.kill(); } }
   if (cdp) cdp.socket.close();
   if (extraCdp) extraCdp.socket.close();
@@ -502,7 +500,8 @@ try {
   report.browserErrors = browserErrors;
   assert.equal(resolve(dirname(privateBrowser)), resolve(tmpdir()));
   assert.ok(basename(privateBrowser).startsWith('dsh-cdp-'));
-  await rm(privateBrowser, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  try { await rm(privateBrowser, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); }
+  catch (error) { report.passed = false; report.cleanupFailure = String(error.stack ?? error); }
   await writeFile(output, JSON.stringify(report, null, 2) + '\n', 'utf8');
 }
 console.log(JSON.stringify({ passed: report.passed, steps: report.steps.length, output, failure: report.failure }));

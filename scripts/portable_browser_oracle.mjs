@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 import {mkdtemp, readFile, rm, writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
-import {dirname, join, resolve} from 'node:path';
+import {basename, dirname, join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createInterface} from 'node:readline';
-import {deferProviderOnboarding} from './browser_onboarding.mjs';
+import {closeOriginalBrowser, deferProviderOnboarding} from './browser_onboarding.mjs';
 
 const options = Object.fromEntries(process.argv.slice(2).reduce((rows, value, i, args) => {
   if (value.startsWith('--')) rows.push([value.slice(2), args[i + 1]]); return rows;
@@ -189,10 +189,8 @@ try {
     report.bundleProbe = await cdp.evaluate(`(async()=>{const r=await fetch(${JSON.stringify(report.installedClientEntry?.url)});const text=await r.text();return {status:r.status,hasPanel:text.includes('data-portable-panel'),head:text.slice(0,200),tail:text.slice(-200),loaderKeys:Object.keys(window.__ModuleLoader__||{})};})()`);
   } catch {}}
 } finally {
-  if (cdp && browser && !exited(browser)) {try {
-    await cdp.call('Page.navigate', {url: 'about:blank'});
-    await until(() => cdp.evaluate('location.href === "about:blank"'), 'close original page');
-  } catch {}}
+  try {await closeOriginalBrowser(cdp, browser, until);}
+  catch (error) {report.passed = false; report.browserTeardownFailure = String(error.stack ?? error);}
   if (host && host.exitCode === null) {
     host.stdin.end(JSON.stringify({command: 'stop'}) + '\n');
     try {await until(() => host.exitCode !== null, 'Host shutdown', 15000);} catch {host.kill(); report.passed = false;}
@@ -204,7 +202,10 @@ try {
   report.browserExitCode = browser?.exitCode;
   report.browserSignalCode = browser?.signalCode;
   if (report.passed && (report.hostErrors || report.hostExitCode !== 0)) {report.passed = false; report.failure = 'Host teardown failed';}
-  await rm(privateBrowser, {recursive: true, force: true, maxRetries: 5, retryDelay: 100});
+  assert.equal(resolve(dirname(privateBrowser)), resolve(tmpdir()));
+  assert.ok(basename(privateBrowser).startsWith('dsh-portable-'));
+  try {await rm(privateBrowser, {recursive: true, force: true, maxRetries: 5, retryDelay: 100});}
+  catch (error) {report.passed = false; report.cleanupFailure = String(error.stack ?? error);}
   await writeFile(resolve(options.output), JSON.stringify(report, null, 2) + '\n', 'utf8');
 }
 console.log(JSON.stringify({passed: report.passed, steps: report.steps.length, failure: report.failure}));

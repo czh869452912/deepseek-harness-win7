@@ -13,7 +13,8 @@
     {"task": "MIG-SESSION-STORAGE-006", "contract": "CON-SESSION-STORAGE", "revision": 1},
     {"task": "MIG-ACP-SESSION-CONTROLS-003", "contract": "CON-ACP-SESSION-CONTROLS", "revision": 1},
     {"task": "MIG-ACP-CONFIG-OUTPUT-004", "contract": "CON-ACP-CONFIG-OUTPUT", "revision": 1},
-    {"task": "MIG-ACP-STDIO-005", "contract": "CON-ACP-STDIO", "revision": 1}
+    {"task": "MIG-ACP-STDIO-005", "contract": "CON-ACP-STDIO", "revision": 1},
+    {"task": "MIG-ACP-PERMISSIONS-006", "contract": "CON-ACP-PERMISSIONS", "revision": 1}
   ],
   "provides": [],
   "acceptance": [
@@ -23,10 +24,10 @@
     "Necessary ACP subagent consumers, canonical profile/launcher and extracted Portable execute the same bounded journeys; source-only ACP 139 tests do not certify Python parity."
   ],
   "expected_paths": ["dsh/acp", "dsh/subagent", "dsh/boot", "apps/cli", "tests", "scripts", "migration", "docs/research"],
-  "open_findings": ["A1 controls, A2 configuration/ordered output and A3 canonical stdio/SDK framing/parameters/actual process EOF are accepted as bounded contracts at clean candidate 5edf7e22. Real MCP stdio/HTTP/SSE, permission consumers and complete subagent closure remain; negative probes expose fabricated Python MCP successes and a separate unaccepted original malformed-permission grant defect."],
+  "open_findings": ["A1 controls, A2 configuration/ordered output, A3 canonical stdio and A4 one-shot permissions are accepted as bounded contracts at clean candidate e887550a. Real MCP stdio/HTTP/SSE, supervisor, ACP mounting and complete subagent closure remain. Two exact original malformed-permission grants are independently reviewed, not raw matches. Existing Proactor and HTTP 10054 test diagnostics remain pending attribution."],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "A1/A2/A3 有界合同已在 5edf7e22 干净候选验收；继续 A4 MCP/权限/subagent，先源合同、真实提供端和必要消费者、原始双侧/失败探针，再完整候选验收。139 个原版 ACP tests 仍只是源码基线；父范围与 accepted_upstream 不随子项自动完成。"
+  "next_action": "A1/A2/A3 与一次性权限有界合同已在 e887550a 干净候选验收；继续真实 MCP/HTTP/SSE/supervisor/subagent 的源合同、提供端和消费者闭包。原型与 139 个原版 ACP tests 不认证完整父范围；accepted_upstream 不自动完成。"
 }

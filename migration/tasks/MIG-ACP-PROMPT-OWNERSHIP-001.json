@@ -27,12 +27,13 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "5edf7e22fbc4a0a9c4c74115688b266525614879",
-  "integrated_commit": "5edf7e22fbc4a0a9c4c74115688b266525614879",
+  "candidate_commit": "e887550aa510e74bf3529a8a114ea39ef3402a13",
+  "integrated_commit": "e887550aa510e74bf3529a8a114ea39ef3402a13",
   "evidence_ids": [
     "RUN-CURRENT-20261003-ACP-PROMPT-OWNERSHIP-001",
     "RUN-ACP-CONFIG-20261003-ACP-PROMPT-OWNERSHIP-001",
-    "RUN-ACP-STDIO-20261003-ACP-PROMPT-OWNERSHIP-001"
+    "RUN-ACP-STDIO-20261003-ACP-PROMPT-OWNERSHIP-001",
+    "RUN-ACP-PERMISSIONS-20261004-ACP-PROMPT-OWNERSHIP-001"
   ],
-  "next_action": "精确 prompt ownership 在持久 controls 候选重验；模型配置/有序语义输出已按子合同验收；继续 MCP/权限/subagent 的必要消费者闭包。"
+  "next_action": "精确 prompt ownership 在持久 controls 候选重验；模型配置/有序语义输出已按子合同验收；一次性权限独立合同同时验收；继续 MCP/subagent 的必要消费者闭包。"
 }

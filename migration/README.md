@@ -4,6 +4,8 @@
 
 ## 当前补齐：2026-10-02
 
+2026-10-04 A4 权限：干净产品候选 `e887550a` 完整冻结门禁通过，**5020 passed、6 skipped、1 warning、0 failed**；20 条必需 lane、619 项原版断言、28 个双侧驱动及实际解压六条权限进程旅程通过。`CON-ACP-PERMISSIONS@1` 有界 integrated，10 组原始匹配及两组单独审阅的原版畸形 outcome 授权缺陷，证据包 `evidence/artifacts/ACP-PERMISSIONS-20261004-e887550a.zip`。见 `reviews/ACP-PERMISSIONS-CLOSURE-20261004.md`；既有 Proactor/HTTP 10054 诊断仍保留。MCP/subagent、B/C/D 和整体 accepted_upstream 未完成。
+
 2026-10-03 A3：干净产品候选 `5edf7e22` 完整门禁通过：**4971 passed、6 skipped、1 warning、0 failed**；十四条必需 lane、六组 619 项未改动原版断言、27 个双侧驱动及实际解压 Portable 通过。`CON-ACP-STDIO@1` 已有界 integrated，涵盖 canonical acp-app、SDK wire/参数、真实进程 EOF 与关闭所有权；906 项 SDK/生产原始观察匹配。十五份证据及历史失败归档于 `evidence/artifacts/ACP-STDIO-20261003-5edf7e22.zip`，见 `reviews/ACP-STDIO-CLOSURE-20261003.md`。完整 ACP 的 MCP/权限/subagent 和 B/C/D 仍未完成；全项目 `accepted_upstream` 仍为空。
 
 2026-10-03 后续：干净产品候选 `97f7b287` 已通过完整门禁，**4933 passed、6 skipped、1 warning、0 failed**，十条必需 browser/Portable lane、五组 616 项原样源码断言、26 个双侧驱动及实际解压 Portable 均通过。`CON-ACP-SESSION-CONTROLS@1` 和 `CON-ACP-CONFIG-OUTPUT@1` 的有界任务已 integrated；14 份当前证据及所有先前失败归档于 `evidence/artifacts/ACP-CONFIG-20261003-97f7b287.zip`。完整 ACP 仍待 canonical stdio 与 MCP/权限/subagent；没有认证全项目、fresh uncached bootstrap 或 Win7。详见 `reviews/ACP-CONTROLS-CONFIG-CLOSURE-20261003.md`。
@@ -16,7 +18,7 @@
 
 2026-10-03：按用户授权提交 P0 初版后的首次 clean gate 失败已保留；新增文档代际等待和完整诊断，并用四个失败探针修复单请求 HTTP carrier 隐瞒 socket 关闭的问题。修复后的 preview 与干净产品候选均 **4800 passed、6 skipped、1 warning**，十条必需 lane、四组原样源码测试、24 个双侧驱动和实际解压 runtime/browser 通过；只有后者为 passed / publishable=true。ACP 精确 Session/Agent/message/turn 归属通过 `MIG-ACP-PROMPT-OWNERSHIP-001` / `CON-ACP-PROMPT-OWNERSHIP@1` 验收，不冒充完整 ACP 实现。收据、完整输入、原始观察及历史失败归档于 `evidence/artifacts/CURRENT-GATE-20261003-623a615a.zip`；范围与后续行动见 `docs/research/2026-10-03-current-candidate-closure.md`。
 
-八类原版 bug 的统一发现索引为 `upstream-bug-exceptions.json`：指向现有精确配对 predicate、场景和审阅记录；它不是新跳过列表。C58 独立归入语言适配，ACP 和观察器缺陷不登记为原版 bug；既有各门禁仍是唯一允许差异的执行权威。
+原版 bug 的统一发现索引为 `upstream-bug-exceptions.json`：此前八类判据不变，新增第九类 `UPSTREAM-ACP-PERMISSION-001` 仅接受原版对两组畸形 outcome 错误授予 allow-once 的精确签名。索引指向配对 predicate、场景和独立审阅，不是跳过列表。C58 独立归入语言适配，迁移产生的 ACP 归属错误和观察器缺陷不登记为原版 bug；各门禁仍是唯一允许差异的执行权威。
 
 ## 操作
 

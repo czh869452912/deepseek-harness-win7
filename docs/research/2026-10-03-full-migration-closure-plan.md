@@ -10,7 +10,7 @@
 2. 身份、所有权、顺序、错误、取消、持久恢复及卸载具有同场景双侧观察或可追溯原版断言；参数化用例不能只数文件名。
 3. 真实 canonical profile / 实际工具 / 原版 UI / 新进程恢复 / 解压 Portable 组合旅程通过；原版前端不改 API 适配，退休 harness/ApiProxy 不回归。
 4. 每个实现部分先跑针对性反例，再跑 Python 3.8.10 全量，提交后冻结干净候选验收；证据绑定实际 commit、输入、原版和产物哈希。
-5. 原版八类 bug 和 C58 只接受既有精确签名；新失败先调查，不加入宽泛忽略、重试或跳过。
+5. 原版此前八类 bug 和 C58 判据保持不变；新增 ACP 畸形 outcome 授权缺陷经独立审阅只允许两组精确签名。新失败先调查，不加入宽泛忽略、重试或跳过。
 6. 整体源对齐与平台/外部服务认证分开。Win7/目标浏览器、真实凭据/模型和公开发布没有实际证据就保持未验收，不以用户暂缓为已完成。
 
 `migration/tasks/*.json` 仍为任务状态权威；本计划是拆分和退出条件，不签发验收，也不自动设置 accepted_upstream。
@@ -37,7 +37,7 @@
 
 ## 当前执行项
 
-2026-10-03 后续：A1/A2/A3 已在干净产品 `5edf7e22` 完成各自有界验收；全量 4971 通过、零失败，27 个 selected paired drivers、619 项原版源码断言、十四条必需 lane 和实际解压包通过。十五份证据重签各自原有合同，仍未认证整包职责。A3 的 906 组原始 SDK/生产观察、canonical acp-app、真实进程 EOF/恢复与关闭适配通过；详见 `2026-10-03-acp-stdio-progress.md` 及 `migration/reviews/ACP-STDIO-CLOSURE-20261003.md`。下一项 A4 正在隔离工作树推进真实权限链与 MCP 提供端；原版 malformed permission 授权缺陷单列未接受发现。A4、B/C/D 全部保留原定退出条件。
+2026-10-04：A1/A2/A3 和 A4 一次性权限子合同已在干净产品 `e887550a` 有界验收；全量 5020 通过、6 平台跳过、1 既有 warning、零失败，28 个配对驱动、619 项原版源码断言、20 条必需 lane 和实际解压六条权限旅程通过。16 份证据重签各自原有合同，仍未认证整包职责。权限含 canonical Event 消费者和真实工具/下一模型请求，10 组原始匹配及两组原版畸形授权缺陷的精确差异；见 `2026-10-04-acp-permissions-progress.md` 及对应 closure review。下一项为隔离工作树中的真实 MCP stdio、supervisor、必要 Tools/ACP/subagent 消费者；原型的 52 项针对性测试不等于验收。HTTP/SSE、A4 剩余部分和 B/C/D 保留原定退出条件。既有 Proactor warning 与 HTTP 10054 仍需独立归因，不能宣称全部关闭诊断已清理。
 
 首先启动 `MIG-ACP-SESSION-CONTROLS-003` / `CON-ACP-SESSION-CONTROLS@1`。父范围 `MIG-ACP-TRANSPORT-002` 仍是完整 ACP 的未完成任务，不因 A1 集成而自动完成。A1 不签发 stdio、MCP、模型配置或 ordered updates 的完整 parity。
 

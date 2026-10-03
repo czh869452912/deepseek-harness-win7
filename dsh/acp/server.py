@@ -389,5 +389,26 @@ class AcpPlugin(Plugin):
             if inflight.get("turn") != payload.get("turn"):
                 inflight["agent_error"] = payload.get("error")
 
-    def _on_approval_request(self, request: Any, next_fn: Any) -> Any:
-        return next_fn()
+    async def _on_approval_request(self, request: Any, next_fn: Any) -> Any:
+        record = self._owned_agent_record(request.get('agent'))
+        call_id = request.get('callId')
+        if record is None or call_id is None:
+            return await resolved(next_fn())
+        connection = getattr(self, 'connection', None)
+        if connection is None:
+            return 'unavailable'
+        await record.drain_updates()
+        response = await connection.request('session/request_permission', {
+            'sessionId': record.agent.session.id,
+            'toolCall': {'toolCallId': call_id},
+            'options': [
+                {'optionId': 'allow-once', 'name': 'Allow once', 'kind': 'allow_once'},
+                {'optionId': 'reject-once', 'name': 'Reject', 'kind': 'reject_once'},
+            ],
+        })
+        outcome = response['outcome']
+        if outcome.get('outcome') == 'cancelled':
+            return 'cancelled'
+        if outcome.get('outcome') != 'selected':
+            return 'unavailable'
+        return 'allowed-once' if outcome.get('optionId') == 'allow-once' else 'rejected'

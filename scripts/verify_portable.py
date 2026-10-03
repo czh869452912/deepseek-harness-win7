@@ -63,7 +63,8 @@ def main(argv=None):
     report = dict(result='failed', archive=str(archive), archiveSha256=digest(archive),
         scope='Actual extracted Portable on current Windows; Win7 and its browser are not certified; no remote model request.',
         inputSha256={name: digest(ROOT / 'scripts' / name) for name in (
-            'verify_portable.py', 'portable_runtime_probe.py', 'portable_acp_probe.py', 'portable_browser_oracle.mjs', 'browser_onboarding.mjs')})
+            'verify_portable.py', 'portable_runtime_probe.py', 'portable_acp_probe.py', 'acp_permission_journey.py',
+            'portable_browser_oracle.mjs', 'browser_onboarding.mjs')})
     node = shutil.which('node') if args.browser else None
     try:
         if args.browser and not node:
@@ -109,6 +110,20 @@ def main(argv=None):
             if acp_report.get('result') != 'passed' or len(acp_report.get('value', {}).get('steps', [])) != 9:
                 raise RuntimeError('Missing extracted ACP stdio ownership observations')
             report['acp'] = acp_report['value']
+            permission_workspace = workspace / 'permission-workspace'
+            permission_workspace.mkdir()
+            permission = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/acp_permission_journey.py'), '--root', str(portable), '--workspace', str(permission_workspace)],
+                cwd=str(permission_workspace), env=product_environment(portable, permission_workspace),
+                capture_output=True, encoding='utf-8', timeout=120)
+            output.with_suffix('.permissions.log').write_text(permission.stdout + '\nSTDERR:\n' + permission.stderr, encoding='utf-8')
+            if permission.returncode or permission.stderr:
+                raise RuntimeError('Extracted ACP permission journey failed; see ' + str(output.with_suffix('.permissions.log')))
+            permission_report = json.loads(permission.stdout)
+            if (permission_report.get('result') != 'passed' or permission_report.get('value', {}).get('processes') != 6
+                    or permission_report.get('value', {}).get('modes') != ['allow', 'reject', 'malformed', 'cancel-late', 'close-late', 'eof']):
+                raise RuntimeError('Missing extracted ACP permission ownership observations')
+            report['acpPermissions'] = permission_report['value']
             if args.browser:
                 browser_report = output.with_suffix('.browser.json')
                 # The observer launches the Host with the same restricted env.

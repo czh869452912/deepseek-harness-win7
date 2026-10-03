@@ -13,7 +13,7 @@ def test_exception_index_is_pinned_and_does_not_reclassify_migration_defects():
     expected = {'UPSTREAM-REPEAT-001': 1, 'UPSTREAM-TOKEN-METER-001': 1,
         'UPSTREAM-COMPACTION-POLICY-001': 1, 'UPSTREAM-COMPACTION-SUMMARY-001': 1,
         'UPSTREAM-CORDIS-INSPECT-001': 1, 'CORDIS-GUARD-001': 2,
-        'CORDIS-RUNTIME-001': 1, 'CORDIS-LIFECYCLE-001': 6}
+        'CORDIS-RUNTIME-001': 1, 'CORDIS-LIFECYCLE-001': 6, 'UPSTREAM-ACP-PERMISSION-001': 2}
     assert len(index['exceptions']) == len(expected)
     assert {row['id']: len(row['modes']) for row in index['exceptions']} == expected
     assert len(index['language_adaptations']) == 1

@@ -1,0 +1,49 @@
+{
+  "id": "MIG-ACP-PERMISSIONS-006",
+  "goal": "闭合 ACP 一次性权限通道与实际工具消费者",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "693d86a0ef501c1279218cda3b3a02f85cfcf2fc",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-ACP-STDIO-005",
+      "contract": "CON-ACP-STDIO",
+      "revision": 1
+    },
+    {
+      "task": "MIG-ACP-PROMPT-OWNERSHIP-001",
+      "contract": "CON-ACP-PROMPT-OWNERSHIP",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-ACP-PERMISSIONS",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "Raw source and production permission observations retain exact identity, choices, updates-before-request, delegation, remote error and cancel decisions, with negative observer cases.",
+    "Malformed outcome grant in the pinned source is preserved as a named defect and reviewed exact difference, not normalized or silently accepted.",
+    "Actual canonical ACP child process performs Agent/tool/permission/next-model-request and close while waiting; full Python 3.8 and clean extracted Portable gate pass before integration."
+  ],
+  "expected_paths": [
+    "dsh/acp",
+    "dsh/interaction",
+    "dsh/core/tools.py",
+    "tests",
+    "scripts",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [
+    "Twelve source/production observations: ten exact matches and two narrowly reviewed original malformed-outcome grant defects. Six canonical child-process modes cover allow/reject/malformed/cancel-late/close-late/EOF with durable single correlated audit and tool/next-model ownership. Full regression, clean candidate and actual extracted Portable acceptance remain pending; MCP/subagent remain separate."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "完成完整 Python 3.8 与实际解压预览，提交权限产品候选，再冻结干净候选签发限定证据；真实 MCP/subagent 提供端继续推进，未验收不 integrated。"
+}

@@ -11,6 +11,7 @@ from dsh.cordis.plugin import Plugin
 from dsh.cordis.schema import Schema
 from dsh.cordis.service import Service
 from dsh.core.scope import scope_target
+from dsh.core.abort import AbortController
 from dsh.llm.message import create_user_message
 
 
@@ -148,6 +149,20 @@ class ApprovalService(Service):
 
     async def decide(self, req: Dict[str, Any], session: Any) -> str:
         signal = req.get("signal")
+        if isinstance(signal, asyncio.Event):
+            controller = AbortController()
+            if signal.is_set():
+                controller.abort()
+                return await self.decide(dict(req, signal=controller.signal), session)
+            async def observe():
+                await signal.wait()
+                controller.abort()
+            observer = asyncio.create_task(observe())
+            try:
+                return await self.decide(dict(req, signal=controller.signal), session)
+            finally:
+                observer.cancel()
+                await asyncio.gather(observer, return_exceptions=True)
         if signal is not None and getattr(signal, "aborted", False):
             return "cancelled"
 

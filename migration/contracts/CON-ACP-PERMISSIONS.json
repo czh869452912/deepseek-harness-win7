@@ -1,0 +1,32 @@
+{
+  "id": "CON-ACP-PERMISSIONS",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/acp/acp/src/index.ts",
+    "reference/packages/acp/acp/tests/approval.spec.ts",
+    "reference/packages/interaction/user-approval/src/index.ts",
+    "scripts/oracles/official/package-lock.json",
+    "migration/reviews/ACP-MALFORMED-PERMISSION-20261003.md",
+    "scripts/oracles/acp_permissions.probe.spec.ts"
+  ],
+  "consumers": [
+    "dsh/acp/server.py",
+    "dsh/interaction/user_approval.py",
+    "dsh/core/tools.py"
+  ],
+  "invariants": [
+    "Only the exact bridge-owned Agent/Session and a present callId can answer machine permissions; same-id foreign Agents and identity-free requests delegate.",
+    "The committed tool update drains before the actual outgoing session/request_permission request; the request advertises exactly allow-once and reject-once choices.",
+    "A selected allow-once grants only this decision; unknown choices reject, explicit cancellation cancels, and disconnected or malformed peers fail closed through ApprovalService and retain paired audit records.",
+    "Pending decisions retain actual RPC correlation and close ownership; real canonical Agent/tool/next-request process consumers must be verified before integration."
+  ],
+  "open_questions": [],
+  "identity": "Exact Agent object, exact owned Session, protocol tool-call identity and outgoing typed request id.",
+  "ownership": "Bridge-owned ordered updates and outgoing RPC; ApprovalService owns per-decision audit and caller cancellation.",
+  "ordering": "Committed tool update before permission request; peer answer before per-action execution and audit completion.",
+  "errors": "Remote errors/connection close/malformed response never grant; foreign or identity-free requests use downstream answerers.",
+  "cancellation": "Caller cancellation remains ApprovalService-owned; RPC close rejects pending peer responses. No persistent approval policy is inferred.",
+  "adaptation": "Python 3.8 async waterfall, exact object ownership and an owned asyncio.Event cancellation adapter for canonical Agent tools. The separately reviewed UPSTREAM-ACP-PERMISSION-001 predicate accepts only two fixed malformed grant responses; earlier eight predicates and C58 are unchanged."
+}

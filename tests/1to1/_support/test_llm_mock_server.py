@@ -247,8 +247,9 @@ def test_formats_ipv6_listener_as_valid_base_url(running):
         pytest.skip("IPv6 loopback not supported on this environment")
 
     assert re.match(r"^http://\[::1\]:\d+$", server.baseURL)
-    resp = chat(server)
-    assert resp.status == 200
+    with chat(server) as response:
+        assert response.status == 200
+        assert b'data: [DONE]' in response.read()
 
 
 def test_emits_reasoning_tool_calls_max_token_finishes_slow_chunks_and_wrong_content_type(running):

@@ -23,10 +23,14 @@ PAIRED_DRIVERS = (
     'pi', 'storage_cache', 'workflow_ralph', 'repeat_tool', 'token_meter',
     'pruner', 'compaction', 'maintenance', 'timeout_policy', 'abort',
     'approval', 'inspect', 'cordis_guard', 'cordis_runner',
-    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio',
+    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions',
 )
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app')
 REQUIRED_REGRESSION = {
+    'test_acp_permission_process': {
+        'test_actual_permission_process_keeps_one_shot_tool_and_shutdown_ownership[' + mode + ']'
+        for mode in ('allow', 'reject', 'malformed', 'cancel-late', 'close-late', 'eof')
+    },
     'test_acp_stdio_journey': {
         'test_actual_acp_profile_stdio_output_and_new_process_durable_resume',
         'test_real_process_concurrent_sessions_cancel_only_owned_request[session/cancel]',
@@ -133,8 +137,20 @@ def validate_extracted(path, archive, candidate):
             or report.get('acp', {}).get('steps') != ['initialize-0', 'invalid-params-before-effects',
                 'persistent-new', 'close-list-0', 'eof-0', 'initialize-1',
                 'new-process-resume-no-history-updates', 'close-list-1', 'eof-1']
+            or report.get('acpPermissions', {}).get('processes') != 6
+            or report.get('acpPermissions', {}).get('modes') != ['allow', 'reject', 'malformed', 'cancel-late', 'close-late', 'eof']
+            or len(report.get('acpPermissions', {}).get('observations', [])) != 6
             or report.get('frontendFilesChecked', 0) <= 0):
         raise RuntimeError('Extracted runtime/browser/ACP acceptance is incomplete')
+    for row, mode in zip(report['acpPermissions']['observations'], report['acpPermissions']['modes']):
+        expected = {'allow': 'allowed-once', 'reject': 'rejected', 'malformed': 'unavailable'}.get(mode, 'cancelled')
+        audit = row.get('audit', [])
+        if (row.get('mode') != mode or row.get('executed') is not (mode == 'allow') or row.get('stderr') != ['']
+                or row.get('modelRequests') != (2 if mode in ('allow', 'reject', 'malformed') else 1)
+                or [event.get('type') for event in audit] != ['approval/asked', 'approval/decided']
+                or audit[0]['data'].get('id') != audit[1]['data'].get('id')
+                or audit[1]['data'].get('outcome') != expected):
+            raise RuntimeError('Extracted permission ownership/audit observations are incomplete')
     if report.get('archiveSha256') != digest(archive) or Path(report['archive']).resolve() != archive.resolve():
         raise RuntimeError('Extracted receipt belongs to a different archive')
     provenance = report.get('provenance', {})

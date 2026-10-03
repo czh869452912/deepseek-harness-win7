@@ -103,6 +103,47 @@ async def test_falsey_preaborted_signal_precedes_policy_and_dispatch():
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize('timing', ['before', 'pending', 'after'])
+async def test_native_agent_event_cancellation_releases_watcher_and_keeps_single_audit(timing):
+    ctx, agent, signal = Context(), agent_for(), asyncio.Event()
+    service = ApprovalService(ctx)
+    entered, release = asyncio.Event(), asyncio.Event()
+    watchers = []
+    async def answerer(request, next_fn):
+        watchers.extend(task for task in asyncio.all_tasks() if task.get_coro().__name__ == 'observe')
+        entered.set()
+        await release.wait()
+        return 'allowed-once'
+    ctx.on('approval/request', answerer)
+    if timing == 'before':
+        signal.set()
+    pending = asyncio.create_task(service.request(dict(agent=agent, toolName='pwsh', signal=signal)))
+    try:
+        if timing != 'before':
+            await asyncio.wait_for(entered.wait(), 1)
+            assert len(watchers) == 1 and not watchers[0].done()
+            if timing == 'pending':
+                signal.set()
+            else:
+                release.set()
+        expected = 'allowed-once' if timing == 'after' else 'cancelled'
+        assert await asyncio.wait_for(pending, 1) == expected
+        assert all(task.done() for task in watchers)
+        before = audit(agent)
+        assert [event['type'] for event in before] == ['approval/asked', 'approval/decided']
+        assert before[1]['data'] == dict(id=before[0]['data']['id'], outcome=expected)
+        signal.set()
+        release.set()
+        await asyncio.gather(*service._answers)
+        assert audit(agent) == before
+        assert not service._answers
+    finally:
+        release.set()
+        await asyncio.gather(pending, *service._answers, return_exceptions=True)
+        await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize('outcome', ['allowed-once', 'rejected', 'cancelled', 'unavailable'])
 async def test_answer_wins_then_later_abort_cannot_change_audit(outcome):
     ctx = Context()

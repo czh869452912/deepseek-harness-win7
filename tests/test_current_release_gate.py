@@ -36,10 +36,10 @@ def regression_xml(path, omit=None, skip=None, duplicate=None, failure=None):
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 14, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 20, 'skipped': 1}
 
 
-@pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey'])
+@pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process'])
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
 def test_incomplete_regression_cannot_certify_a_release(tmp_path, module, damage):
     path = tmp_path / 'pytest.xml'
@@ -93,11 +93,18 @@ def extracted_receipt(tmp_path):
                   'new-process-resume-no-history-updates', 'close-list-1', 'eof-1']},
               'runtimeStderr': '', 'frontendFilesChecked': 119, 'archive': str(archive),
               'archiveSha256': GATE.digest(archive), 'provenance': dict(candidate)}
+    modes = ['allow', 'reject', 'malformed', 'cancel-late', 'close-late', 'eof']
+    report['acpPermissions'] = {'processes': 6, 'modes': modes, 'observations': [
+        {'mode': mode, 'executed': mode == 'allow', 'modelRequests': 2 if mode in modes[:3] else 1, 'stderr': [''],
+         'audit': [{'type': 'approval/asked', 'data': {'id': 'owned'}}, {'type': 'approval/decided', 'data': {
+             'id': 'owned', 'outcome': {'allow': 'allowed-once', 'reject': 'rejected', 'malformed': 'unavailable'}.get(mode, 'cancelled')}}]}
+        for mode in modes]}
     return archive, candidate, report
 
 
 @pytest.mark.parametrize('damage', ['browser-skipped', 'runtime-missing', 'runtime-stderr',
-                                    'archive', 'commit', 'dirty', 'frontend', 'acp-missing', 'acp-tail'])
+                                    'archive', 'commit', 'dirty', 'frontend', 'acp-missing', 'acp-tail',
+                                    'permission-missing', 'permission-tail', 'permission-unsafe', 'permission-audit'])
 def test_extracted_runtime_and_browser_receipt_is_bound_to_the_candidate(tmp_path, damage):
     archive, candidate, report = extracted_receipt(tmp_path)
     if damage == 'browser-skipped':
@@ -116,6 +123,14 @@ def test_extracted_runtime_and_browser_receipt_is_bound_to_the_candidate(tmp_pat
         del report['acp']
     elif damage == 'acp-tail':
         report['acp']['steps'].pop()
+    elif damage == 'permission-missing':
+        del report['acpPermissions']
+    elif damage == 'permission-tail':
+        report['acpPermissions']['observations'].pop()
+    elif damage == 'permission-unsafe':
+        report['acpPermissions']['observations'][2]['executed'] = True
+    elif damage == 'permission-audit':
+        report['acpPermissions']['observations'][0]['audit'][1]['data']['id'] = 'foreign'
     else:
         report['frontendFilesChecked'] = 0
     path = tmp_path / 'receipt.json'
@@ -172,7 +187,7 @@ def test_default_gate_rejects_dirty_checkout_before_build(tmp_path, monkeypatch)
 
 
 def test_current_gate_includes_recent_contracts_and_only_uploads_receipt_archive():
-    assert {'acp_sessions', 'acp_model_output', 'acp_stdio'} <= set(GATE.PAIRED_DRIVERS)
+    assert {'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions'} <= set(GATE.PAIRED_DRIVERS)
     assert {'acp', 'acp-app'} <= set(GATE.OFFICIAL_CONFIGS)
     assert {'deepseek', 'pi', 'compaction', 'approval', 'cordis_retirement', 'workflow_ralph', 'pruner'} <= set(GATE.PAIRED_DRIVERS)
     assert len(GATE.PAIRED_DRIVERS) == len(set(GATE.PAIRED_DRIVERS))

@@ -23,9 +23,9 @@ PAIRED_DRIVERS = (
     'pi', 'storage_cache', 'workflow_ralph', 'repeat_tool', 'token_meter',
     'pruner', 'compaction', 'maintenance', 'timeout_policy', 'abort',
     'approval', 'inspect', 'cordis_guard', 'cordis_runner',
-    'cordis_retirement', 'cordis_tools',
+    'cordis_retirement', 'cordis_tools', 'acp_sessions',
 )
-OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection')
+OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp')
 REQUIRED_REGRESSION = {
     'test_native_web_browser': {
         'test_original_browser_native_host_cordis_lifecycle[lifecycle]',
@@ -68,14 +68,23 @@ def release_environment(browser):
     return environment
 
 
-def run(command, name, output, accepted=(0,), env=None, timeout=600):
+def run(command, name, output, accepted=(0,), env=None, timeout=600, cwd=None):
     print(name, flush=True)
     with (output / (name + '.log')).open('w', encoding='utf-8') as stream:
-        result = subprocess.run(command, cwd=str(ROOT), stdout=stream,
+        result = subprocess.run(command, cwd=str(cwd or ROOT), stdout=stream,
                                 stderr=subprocess.STDOUT, env=env, timeout=timeout)
     if result.returncode not in accepted:
         raise RuntimeError('%s failed (%d); see %s' % (name, result.returncode, output / (name + '.log')))
     return result.returncode
+
+
+def prepare_node_dependencies(output, environment):
+    npm = shutil.which('npm.cmd')
+    if not npm:
+        raise RuntimeError('pinned npm must be on PATH for the development oracle')
+    for folder in ('scripts/oracles', 'scripts/oracles/official'):
+        run([npm, 'ci', '--legacy-peer-deps', '--no-audit', '--no-fund'],
+            'node-' + Path(folder).name, output, env=environment, timeout=1200, cwd=ROOT / folder)
 
 
 def validate_regression(path):
@@ -151,12 +160,7 @@ def verify(args, output):
         run([python, '-m', 'pip', 'install', 'pip==25.0.1'], 'installer', output, env=environment)
         run([python, '-m', 'pip', 'install', '--only-binary=:all:', '-r', 'requirements-dev.lock'],
             'python-dependencies', output, env=environment, timeout=1200)
-        npm = shutil.which('npm.cmd')
-        if not npm:
-            raise RuntimeError('pinned npm must be on PATH for the development oracle')
-        for folder in ('scripts/oracles', 'scripts/oracles/official'):
-            run([npm, 'ci', '--prefix', folder, '--legacy-peer-deps', '--no-audit', '--no-fund'],
-                'node-' + Path(folder).name, output, env=environment, timeout=1200)
+        prepare_node_dependencies(output, environment)
     before = source_snapshot()
     inputs = output / 'inputs.json'
     inputs.write_text(json.dumps(before, indent=2) + '\n', encoding='utf-8')

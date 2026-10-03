@@ -63,19 +63,10 @@ async def test_acp_plugin_lifecycle():
     plugin.apply(ctx)
 
     init_res = await plugin.initialize(ctx, {})
-    assert init_res["protocolVersion"] == "1.0"
+    assert init_res["protocolVersion"] == 1
     assert "agentCapabilities" in init_res
 
-    session_res = await plugin.new_session(ctx, {"cwd": "D:\\Claude-project"})
-    session_id = session_res["sessionId"]
-    assert session_id in plugin.sessions
-
-    # Test prompt
-    prompt_res = await plugin.prompt(ctx, {
-        "sessionId": session_id,
-        "prompt": [{"type": "text", "text": "Hello"}]
-    })
-    assert prompt_res["stopReason"] == "end_turn"
-
-    # Test cancel
-    await plugin.cancel(ctx, {"sessionId": session_id})
+    with pytest.raises(RuntimeError, match='requires agents'):
+        await plugin.new_session(ctx, {"cwd": "D:\\Claude-project"})
+    assert not plugin.sessions
+    await plugin.close(ctx)

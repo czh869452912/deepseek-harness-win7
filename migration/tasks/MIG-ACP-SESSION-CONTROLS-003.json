@@ -20,10 +20,10 @@
     "Actual canonical profile/AgentLoop/JSONL and SQLite demonstrate empty materialization, prompt/history, close/list/resume and new-Context restoration; complete Python 3.8.10 and clean candidate gates pass."
   ],
   "expected_paths": ["dsh/acp", "tests", "scripts", "migration", "docs/research"],
-  "open_findings": ["Implementation, source-paired observations, complete regression and exact committed-candidate acceptance remain to be executed."],
+  "open_findings": ["Implementation and eight paired lifecycle observations pass targeted checks; complete frozen regression and committed clean-candidate acceptance remain to be executed."],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "先补持久会话提供端与反例，运行真实 profile/backends 和双侧值观察；按部分提交并冻结候选验收。完整 ACP stdio/MCP/config/output/subagent 父范围仍未完成。"
+  "next_action": "持久管理实现、4 个前置失败探针修复后通过、126 项主要专项、8 个双侧观察 matched、139 个原版 ACP 源测试已完成。统一 gate 加入 pinned ACP/MCP 开发依赖与新驱动；运行完整 prepare preview、独立提交、clean candidate 验收后再集成。父范围 stdio/MCP/config/output/subagent 未完成。"
 }

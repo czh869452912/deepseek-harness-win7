@@ -165,9 +165,26 @@ def test_default_gate_rejects_dirty_checkout_before_build(tmp_path, monkeypatch)
 
 
 def test_current_gate_includes_recent_contracts_and_only_uploads_receipt_archive():
+    assert 'acp_sessions' in GATE.PAIRED_DRIVERS and 'acp' in GATE.OFFICIAL_CONFIGS
     assert {'deepseek', 'pi', 'compaction', 'approval', 'cordis_retirement', 'workflow_ralph', 'pruner'} <= set(GATE.PAIRED_DRIVERS)
     assert len(GATE.PAIRED_DRIVERS) == len(set(GATE.PAIRED_DRIVERS))
     workflow = (ROOT / '.github/workflows/verify.yml').read_text(encoding='utf-8')
     assert '--browser $browser' in workflow
     assert '${{ steps.gate.outputs.archive }}' in workflow
     assert 'archive_sha256' in workflow and 'publishable' in workflow
+
+
+def test_node_setup_runs_each_locked_workspace_without_prefix_root_ambiguity(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(GATE.shutil, 'which', lambda name: 'npm.cmd')
+    monkeypatch.setattr(GATE, 'run', lambda command, name, output, **kwargs: calls.append((command, kwargs)))
+    GATE.prepare_node_dependencies(tmp_path, {'PATH': 'pinned-node'})
+    assert [entry[1]['cwd'] for entry in calls] == [ROOT / 'scripts/oracles', ROOT / 'scripts/oracles/official']
+    assert all(entry[0][0:2] == ['npm.cmd', 'ci'] and '--prefix' not in entry[0] for entry in calls)
+    assert all(entry[1]['env'] == {'PATH': 'pinned-node'} for entry in calls)
+
+
+def test_node_setup_refuses_missing_package_manager(tmp_path, monkeypatch):
+    monkeypatch.setattr(GATE.shutil, 'which', lambda name: None)
+    with pytest.raises(RuntimeError, match='pinned npm'):
+        GATE.prepare_node_dependencies(tmp_path, {})

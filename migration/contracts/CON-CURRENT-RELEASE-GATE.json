@@ -15,7 +15,7 @@
   "open_questions": ["Remote Actions execution/publication and deferred Win7 validation are not certified by local acceptance."],
   "identity": "Pinned reference SHA, candidate commit, dirty state, source-input manifest and exact archive/receipt hashes identify each run. A preview is not formal acceptance.",
   "ownership": "The coordinator owns current gate drivers, disposable browser profiles, isolated credential-free Host environments and reports; publishing never rebuilds the archive.",
-  "ordering": "Preflight and snapshot, migration check, Portable build, complete non-skipping regression, four original source suites, selected paired observations, raw Cordis and scoped acceptance, extracted archive runtime/browser, unchanged-input check, then receipt-bound upload.",
+  "ordering": "Preflight and snapshot, migration check, Portable build, complete non-skipping regression, configured original source suites, selected paired observations, raw Cordis and scoped acceptance, extracted archive runtime/browser, unchanged-input check, then receipt-bound upload.",
   "errors": "Missing required lanes, observer/runtime failure, stale or unsuccessful observations, archive mismatch, source drift and dirty release candidates fail closed. Raw C58 divergence is permitted only by the existing exact-signature acceptance checker.",
   "cancellation": "Delete an old summary before starting; interrupted or failed runs do not produce publishable success. CI success and archive hash checks precede upload.",
   "adaptation": "Current Windows, Python 3.8.10 and pinned Node development observer only; no full upstream parity, remote-model authentication or Windows 7 certification is claimed."

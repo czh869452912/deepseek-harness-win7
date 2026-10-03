@@ -201,19 +201,21 @@ async def test_claimed_turn_error_uses_durable_end_instead_of_interval_error():
 
 
 @pytest.mark.asyncio
-async def test_canonical_profile_acp_prompt_claims_real_turn_and_releases_agent(tmp_path):
+async def test_canonical_profile_acp_prompt_claims_real_turn_and_releases_agent(tmp_path, monkeypatch):
     home = tmp_path / 'home'
     profile = home / 'profiles' / 'acp-owned'
     init_profile(str(profile), [], 'startup')
     rows = [{'id': name, 'name': '@deepseek-ai/dsh-' + name} for name in
-            ('session', 'tools', 'system-prompt', 'agent', 'agent-loop', 'acp')]
+            ('session', 'tools', 'system-prompt', 'llm', 'agent', 'agent-loop', 'acp')]
+    rows.append({'id': 'persistence', 'name': '@deepseek-ai/dsh-session-persistence-jsonl',
+                 'config': {'root': str(tmp_path / 'sessions'), 'packChunks': False}})
     (profile / 'cordis.patch.yml').write_text(yaml.safe_dump([{'insert': rows}]), encoding='utf-8')
     runtime = await run_profile({'profile': 'acp-owned', 'dshHome': str(home), 'args': [], 'waitForExit': False})
     ctx = runtime['ctx']
     bridge = next(entry for entry in ctx.get('loader').entries
                   if entry.options.get('name') == '@deepseek-ai/dsh-acp').fiber.plugin
     adapter = StrictMockLlmAdapter([{'text': 'owned answer'}])
-    ctx.provide('llm', adapter)
+    monkeypatch.setattr(ctx.get('llm'), 'chat_completion_stream', adapter.chat_completion_stream)
     try:
         created = await bridge.new_session(ctx, {'cwd': str(tmp_path)})
         assert await asyncio.wait_for(send(bridge, ctx, created['sessionId']), 5) == {'stopReason': 'end_turn'}

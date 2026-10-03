@@ -20,10 +20,10 @@
     "Necessary ACP subagent consumers, canonical profile/launcher and extracted Portable execute the same bounded journeys; source-only ACP 139 tests do not certify Python parity."
   ],
   "expected_paths": ["dsh/acp", "dsh/subagent", "dsh/boot", "apps/cli", "tests", "scripts", "migration", "docs/research"],
-  "open_findings": ["Python bridge still has no complete stdio app registration, reports protocolVersion as a string, and lacks ordered update drain/request signal, persistent session controls, MCP/permissions and complete subagent closure."],
+  "open_findings": ["Persistent Session controls and integer protocol version are implemented in MIG-ACP-SESSION-CONTROLS-003 but not yet candidate-accepted; full stdio app registration, model configuration, ordered update drain/request signal, MCP/permissions and complete subagent closure remain."],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "基于固定原版 index/session/updates/model-control/mcp 与 11 个源测试文件先定义共享合同，再实现提供端和必要 subagent 消费者。additionalDirectories 拒绝与 authenticate 空行为原版已有，不列为迁移缺陷；不将已集成 prompt 归属范围写成完整 ACP 完成。"
+  "next_action": "依全遗留项计划先候选验收 Session controls A1，再模型配置/输出 A2、stdio A3、MCP/权限/subagent A4。139 个原版 ACP tests 已纳入统一门禁，只是源码基线。additionalDirectories 拒绝/authenticate 空行为仍是原版行为，不列缺陷；父范围不随有界子项自动完成。"
 }

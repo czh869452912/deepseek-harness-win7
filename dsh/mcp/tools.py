@@ -180,10 +180,6 @@ async def sync_tools(
             "finalizeContent": finalize,
         }
 
-    is_current = opts.get("isCurrent")
-    if is_current is not None and not is_current():
-        return previous
-
     for disp in previous.values():
         disp()
 

@@ -22,6 +22,7 @@ from scripts.mcp_http_oracle import validate_runtime_report as validate_mcp_http
 from scripts.acp_mcp_oracle import validate_process as validate_acp_mcp_process
 from scripts.subagent_acp_oracle import validate_process as validate_subagent_acp_process
 from scripts.subagent_acp_teardown_oracle import validate_runtime as validate_subagent_acp_teardown
+from scripts.mcp_disposal_oracle import validate_runtime as validate_mcp_disposal
 
 
 def digest(path):
@@ -76,7 +77,8 @@ def main(argv=None):
             'oracles/mcp_http_python.py', 'oracles/mcp_http_peer.py', 'oracles/mcp_http_expected.json',
             'acp_mcp_oracle.py', 'acp_mcp_journey.py', 'subagent_acp_oracle.py',
             'subagent_acp_journey.py', 'oracles/subagent_acp_python.py',
-            'subagent_acp_teardown_oracle.py', 'oracles/subagent_acp_teardown_python.py')})
+            'subagent_acp_teardown_oracle.py', 'oracles/subagent_acp_teardown_python.py',
+            'mcp_disposal_oracle.py', 'oracles/mcp_disposal_python.py')})
     node = shutil.which('node') if args.browser else None
     try:
         if args.browser and not node:
@@ -202,6 +204,19 @@ def main(argv=None):
             if teardown_report['root'] != str(portable.resolve()):
                 raise RuntimeError('Extracted subprocess ACP teardown module provenance differs')
             report['subagentAcpTeardown'] = teardown_report
+            disposal_path = workspace / 'mcp-disposal.json'
+            disposal = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/oracles/mcp_disposal_python.py'), str(disposal_path), '--root', str(portable)],
+                cwd=str(workspace), env=product_environment(portable, workspace),
+                capture_output=True, encoding='utf-8', errors='replace', timeout=90)
+            output.with_suffix('.mcp-disposal.log').write_text(disposal.stdout + '\nSTDERR:\n' + disposal.stderr, encoding='utf-8')
+            if disposal.returncode or disposal.stderr:
+                raise RuntimeError('Extracted MCP disposal failed; see ' + str(output.with_suffix('.mcp-disposal.log')))
+            disposal_report = json.loads(disposal_path.read_text(encoding='utf-8'))
+            validate_mcp_disposal(disposal_report)
+            if disposal_report['root'] != str(portable):
+                raise RuntimeError('Extracted MCP disposal imported a different product')
+            report['mcpDisposal'] = disposal_report
             if args.browser:
                 browser_report = output.with_suffix('.browser.json')
                 # The observer launches the Host with the same restricted env.

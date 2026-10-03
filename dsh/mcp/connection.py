@@ -45,6 +45,11 @@ async def _await_result(value):
     return await value if inspect.isawaitable(value) else value
 
 
+class _UnconnectedGeneration:
+    async def close(self):
+        return None
+
+
 class McpConnection:
     def __init__(self, ctx: Any, config: Dict[str, Any], policy: Dict[str, Any]):
         self.ctx, self.config, self.policy = ctx, config, policy
@@ -91,7 +96,7 @@ class McpConnection:
         async def run():
             if not self._current(generation):
                 return
-            opts = dict(self._opts, isCurrent=lambda: self._current(generation))
+            opts = dict(self._opts)
             if startup and self.config.get('failOnStartupError'):
                 opts['registrationFailure'] = 'throw'
             self.disposers = await sync_tools(generation, self.ctx, opts, self.disposers)
@@ -159,10 +164,13 @@ class McpConnection:
         except Exception as error:
             if self._first_error is None:
                 self._first_error = error
+            generation, closed = _UnconnectedGeneration(), asyncio.Event()
+            self.client, self._closed = generation, closed
             if not self.disposed:
                 self._log('warn', 'connection attempt failed: %s' % error_string(error))
-                await self._wait_closed(asyncio.Event())
-                if not self.disposed:
+                await self._wait_closed(closed)
+                if self._current(generation):
+                    self.client, self._closed = None, None
                     self._log('error', 'failed generation did not close within 5000ms — reconnect stopped to avoid overlapping server processes; reload the plugin or restart the Host to retry')
             return
         closed = asyncio.Event()

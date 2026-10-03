@@ -1,0 +1,22 @@
+{
+  "id": "CON-MCP-DISPOSAL",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/mcp/mcp-client/src/connection.ts", "reference/packages/mcp/mcp-client/src/tools.ts", "reference/packages/mcp/mcp-client/src/transport.ts"],
+  "consumers": ["dsh/mcp/connection.py", "dsh/mcp/tools.py", "scripts/verify_portable.py"],
+  "invariants": [
+    "Already admitted initial/resync tool fetches finish the original unregister/register swap before awaited disposal removes their late registrations; final registry is empty and complete transient trace remains observable.",
+    "Queue entry ownership rejects later admitted work from disposed generations; a second queued notification causes no extra tools/list after disposal.",
+    "Disposed connect and fetch failures preserve original ready outcomes and suppress extra stale-generation error logs without fabricating success.",
+    "Factory rejection retains ownership of the unconnected SDK-generation close barrier; immediate disposal preserves the original invalid-URL error and incomplete-shutdown diagnostic.",
+    "The actual extracted embedded Python 3.8.10 product executes all seven bounded observations with matching raw fields and declared module provenance."
+  ],
+  "identity": "One current generation and serialized sync tail per supervisor; successful startup ready and original factory error are retained across disposal.",
+  "ownership": "The supervisor owns connecting/unconnected generation, close barrier, admitted queue and registrations through awaited disposal; controlled SDK/fetch callbacks are explicit observer inputs.",
+  "ordering": "Dispose closes the current client before waiting for admitted syncs, then removes their results; queued later syncs fail entry ownership. Original five-second unresolved factory close barrier governs shutdown diagnostics.",
+  "errors": "Raw error names/messages/codes, ready outcomes and complete warn/error/info sequences match the pinned original without normalization or upstream exception.",
+  "cancellation": "This contract covers disposal at explicit connect/fetch admission barriers, not arbitrary physical network cancellation or infinite SDK operations.",
+  "adaptation": "Python 3.8 owned asyncio tasks and an unconnected generation with no fabricated close callback/resources; six mocked SDK boundaries and one actual original SDK URL factory are distinguished.",
+  "open_questions": ["Main full candidate and actual extracted acceptance are pending. Browser startup cancellation, complete SDK HTTP/TLS/replay/URL, whole process trees and deferred Win7 remain open."]
+}

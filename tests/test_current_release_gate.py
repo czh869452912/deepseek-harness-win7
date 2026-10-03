@@ -10,6 +10,7 @@ from scripts.mcp_stdio_oracle import MODES as MCP_MODES, expected_row as mcp_exp
 from scripts.mcp_http_oracle import EXPECTED as HTTP_EXPECTED
 from scripts.subagent_acp_oracle import expected_process as expected_subagent_acp_process
 from scripts.subagent_acp_teardown_oracle import expected as expected_subagent_acp_teardown
+from scripts.mcp_disposal_oracle import expected as expected_mcp_disposal
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -41,7 +42,7 @@ def regression_xml(path, omit=None, skip=None, duplicate=None, failure=None):
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 84, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 85, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
@@ -120,6 +121,8 @@ def extracted_receipt(tmp_path):
         row['observed']['records'] = [{'spawn': {'pid': 123, 'cwd': str(tmp_path)}}] + row['observed'].pop('wire')
     report['subagentAcpTeardown'] = {'observations': teardown_rows, 'root': str(tmp_path),
         'module': str(tmp_path / 'dsh/__init__.py'), 'python': [3, 8, 10]}
+    report['mcpDisposal'] = dict(expected_mcp_disposal(), root=str(tmp_path),
+        module=str(tmp_path / 'dsh/__init__.py'), python=[3, 8, 10])
     return archive, candidate, report
 
 
@@ -235,7 +238,7 @@ def test_default_gate_rejects_dirty_checkout_before_build(tmp_path, monkeypatch)
 
 
 def test_current_gate_includes_recent_contracts_and_only_uploads_receipt_archive():
-    assert {'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown'} <= set(GATE.PAIRED_DRIVERS)
+    assert {'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal'} <= set(GATE.PAIRED_DRIVERS)
     assert {'acp', 'acp-app', 'mcp', 'subagent-acp'} <= set(GATE.OFFICIAL_CONFIGS)
     assert {'deepseek', 'pi', 'compaction', 'approval', 'cordis_retirement', 'workflow_ralph', 'pruner'} <= set(GATE.PAIRED_DRIVERS)
     assert len(GATE.PAIRED_DRIVERS) == len(set(GATE.PAIRED_DRIVERS))
@@ -335,6 +338,38 @@ def test_extracted_subprocess_acp_teardown_cannot_be_omitted_or_fabricated(tmp_p
     else:
         teardown['root'] = str(tmp_path / 'foreign')
         teardown['module'] = str(tmp_path / 'foreign/dsh/__init__.py')
+    path = tmp_path / 'receipt.json'
+    path.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError):
+        GATE.validate_extracted(path, archive, candidate)
+
+
+@pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
+def test_mcp_disposal_source_lane_cannot_be_optional(tmp_path, damage):
+    path = tmp_path / 'pytest.xml'
+    key = ('test_mcp_disposal_source', next(iter(GATE.REQUIRED_REGRESSION['test_mcp_disposal_source'])))
+    regression_xml(path, **{damage: key})
+    with pytest.raises(RuntimeError):
+        GATE.validate_regression(path)
+
+
+@pytest.mark.parametrize('damage', ['missing', 'swap', 'queued-fetch', 'warning', 'foreign-root', 'weak-python'])
+def test_extracted_mcp_disposal_requires_queue_factory_and_runtime_ownership(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    disposal = report['mcpDisposal']
+    if damage == 'missing':
+        del report['mcpDisposal']
+    elif damage == 'swap':
+        disposal['supervisor'][2]['trace'] = disposal['supervisor'][2]['trace'][:-2]
+    elif damage == 'queued-fetch':
+        disposal['supervisor'][-1]['trace'].append(['fetch', 'tools/list'])
+    elif damage == 'warning':
+        disposal['factory']['logs'].pop()
+    elif damage == 'foreign-root':
+        disposal['root'] = str(tmp_path / 'foreign')
+        disposal['module'] = str(tmp_path / 'foreign/dsh/__init__.py')
+    else:
+        disposal['python'] = ['3', '8', '10']
     path = tmp_path / 'receipt.json'
     path.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError):

@@ -4,8 +4,11 @@ MCP tool bridge matching reference/packages/mcp/mcp-client/src/tools.ts
 import hashlib
 import inspect
 import json
+import math
 import re
+import weakref
 from typing import Any, Callable, Dict, List, Optional, Union
+from dsh.mcp.content import extract_text, prepare_image_projection
 
 try:
     from dsh.core.tools import _assert_supported_schema
@@ -20,47 +23,27 @@ def public_tool_name(server_name: str, raw_name: str) -> str:
     If truncated or characters changed, appends _<sha256[:12]>.
     """
     joined = f"mcp__{server_name}__{raw_name}"
-    normalized = re.sub(r"[^A-Za-z0-9_-]", "_", joined)
+    encoded = joined.encode('utf-16-le', errors='surrogatepass')
+    units = ''.join(chr(int.from_bytes(encoded[offset:offset + 2], 'little')) for offset in range(0, len(encoded), 2))
+    normalized = re.sub(r"[^A-Za-z0-9_-]", "_", units)
     if normalized == joined and len(normalized) <= 64:
         return normalized
-    raw_hash = hashlib.sha256(f"{server_name}\0{raw_name}".encode("utf-8")).hexdigest()[:12]
+    identity = (server_name + '\0' + raw_name).encode('utf-16-le', errors='surrogatepass').decode('utf-16-le', errors='replace')
+    raw_hash = hashlib.sha256(identity.encode('utf-8')).hexdigest()[:12]
     prefix = normalized[:64 - 12 - 1]
     return f"{prefix}_{raw_hash}"
-
-
-def extract_text(mcp_content: List[Dict[str, Any]], tool_name: str) -> str:
-    """
-    Extract text from MCP content blocks.
-    """
-    lines: List[str] = []
-    for block in mcp_content:
-        if not isinstance(block, dict):
-            lines.append("[unsupported MCP content block: expected an object]")
-            continue
-        b_type = block.get("type", "")
-        if b_type == "text":
-            if "text" in block and block["text"] is not None:
-                lines.append(str(block["text"]))
-        elif b_type == "resource_link":
-            name = block.get("name")
-            uri = block.get("uri")
-            if name is None or uri is None:
-                lines.append("[resource link unavailable: missing name or URI]")
-            else:
-                lines.append(f"Resource link: {name} ({uri})")
-        elif b_type == "image":
-            mime = block.get("mimeType", "unknown media type")
-            lines.append(f"[image unavailable: {mime}; this result was not admitted to durable model context]")
-        elif b_type == "audio":
-            mime = block.get("mimeType", "unknown media type")
-            lines.append(f"[audio result unsupported: {mime}; raw audio data remains available to programmatic callers]")
-        elif b_type == "resource":
-            lines.append("[embedded resource unsupported; raw resource data remains available to programmatic callers]")
-        else:
-            lines.append(f"[unsupported MCP content type: {b_type}]")
-
-    text = "\n".join(lines)
-    return text if text else f"({tool_name} returned no model-visible content)"
+def _same_json(left, right):
+    if isinstance(left, dict) or isinstance(right, dict):
+        return (isinstance(left, dict) and isinstance(right, dict) and left.keys() == right.keys()
+            and all(_same_json(value, right[key]) for key, value in left.items()))
+    if isinstance(left, list) or isinstance(right, list):
+        return (isinstance(left, list) and isinstance(right, list) and len(left) == len(right)
+            and all(_same_json(first, second) for first, second in zip(left, right)))
+    if isinstance(left, bool) or isinstance(right, bool):
+        return type(left) is type(right) and left == right
+    if isinstance(left, (int, float)) and isinstance(right, (int, float)):
+        return left == right and (left != 0 or math.copysign(1, left) == math.copysign(1, right))
+    return type(left) is type(right) and left == right
 
 
 async def sync_tools(
@@ -112,7 +95,7 @@ async def sync_tools(
         output_schema_candidate = tool.get("outputSchema") if isinstance(tool, dict) else getattr(tool, "outputSchema", None)
         pub_name = public_tool_name(server_name, raw_name)
         if pub_name in new_definitions:
-            raise ValueError(f"mcp-client({server_name}): duplicate tool name '{raw_name}'")
+            raise ValueError('mcp-client(%s): server listed tool "%s" more than once — invalid tool list' % (server_name, raw_name))
 
         execution = tool.get("execution", {}) if isinstance(tool, dict) else getattr(tool, "execution", {})
         task_required = bool(
@@ -120,10 +103,11 @@ async def sync_tools(
         )
 
         def make_executor(r_name: str, requires_task: bool):
+            projections = weakref.WeakKeyDictionary()
             async def _executor(args: Any, exec: Any) -> Dict[str, Any]:
                 if requires_task:
-                    raise RuntimeError("Tool '%s' requires task-based execution, which this bridge does not support" % r_name)
-                call_args = args if isinstance(args, dict) else {}
+                    raise RuntimeError('Tool "%s" requires task-based execution, which this bridge does not support' % r_name)
+                call_args = args if isinstance(args, (dict, list)) else {}
                 if hasattr(client, "request"):
                     request = {"method": "tools/call", "params": {"name": r_name, "arguments": call_args}}
                     try:
@@ -143,18 +127,32 @@ async def sync_tools(
                 if not isinstance(res, dict):
                     res = {}
                 if not isinstance(res.get("content"), list):
-                    text_out = json.dumps(res.get("toolResult"), ensure_ascii=False) if "toolResult" in res else "(no output)"
-                    if res.get("isError"):
+                    text_out = json.dumps(res.get("toolResult"), ensure_ascii=False, separators=(',', ':')) if "toolResult" in res else "(no output)"
+                    if res.get("isError") is True:
                         raise RuntimeError(text_out)
                     return {"content": [{"type": "text", "text": text_out}], **({"structuredContent": res["structuredContent"]} if "structuredContent" in res else {})}
                 content = res.get("content", [])
-                if res.get("isError"):
+                if res.get("isError") is True:
                     raise RuntimeError(extract_text(content, r_name))
                 result = {"content": content}
                 if "structuredContent" in res:
                     result["structuredContent"] = res["structuredContent"]
+                if any(isinstance(block, dict) and block.get('type') == 'image' for block in content):
+                    projected = await prepare_image_projection(ctx, exec, content, r_name)
+                    projections[exec] = {'value': result, 'fallback': [{'type': 'text', 'text': extract_text(content, r_name)}],
+                        'content': projected}
                 return result
-            return _executor
+            def finalize(execution, result):
+                projection = projections.pop(execution, None)
+                if projection is None:
+                    return None
+                value = result.get('value') if isinstance(result, dict) else result.value
+                content = result.get('content') if isinstance(result, dict) else result.content
+                is_error = result.get('isError') if isinstance(result, dict) else result.isError
+                if is_error or not _same_json(value, projection['value']) or not _same_json(content, projection['fallback']):
+                    return None
+                return projection['content']
+            return _executor, finalize
 
         def render_output(_args: Any, value: Dict[str, Any], wire_name: str = raw_name) -> List[Dict[str, str]]:
             return [{"type": "text", "text": extract_text(value.get("content", []), wire_name)}]
@@ -172,12 +170,14 @@ async def sync_tools(
             "additionalProperties": False,
         }
 
+        execute, finalize = make_executor(raw_name, task_required)
         new_definitions[pub_name] = {
             "name": pub_name,
             "description": desc,
             "parameters": params,
             "output": {"schema": output_schema, "render": render_output},
-            "execute": make_executor(raw_name, task_required),
+            "execute": execute,
+            "finalizeContent": finalize,
         }
 
     is_current = opts.get("isCurrent")

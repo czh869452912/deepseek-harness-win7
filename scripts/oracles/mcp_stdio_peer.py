@@ -30,14 +30,30 @@ for line in sys.stdin.buffer:
     if method is None:
         continue
     reply = {'jsonrpc': '2.0', 'id': packet['id']}
+    if mode == 'id-decimal':
+        reply['id'] = str(packet['id'])
+    if mode == 'id-hex':
+        reply['id'] = hex(packet['id'])
+    if mode == 'id-empty' and method == 'initialize':
+        reply['id'] = ''
     if method == 'initialize':
         reply['result'] = {'protocolVersion': 'unsupported' if mode == 'unsupported' else '2025-11-25',
                            'capabilities': {} if mode == 'capabilities-empty' else {'tools': {}},
                            'serverInfo': {'name': 'controlled', 'version': '1.0'}}
+        if mode == 'cap-logging-array':
+            reply['result']['capabilities']['logging'] = []
+        if mode == 'cap-experimental-false':
+            reply['result']['capabilities']['experimental'] = {'extension': False}
     elif method == 'tools/list':
         if mode == 'notification':
             send({'jsonrpc': '2.0', 'method': 'notifications/tools/list_changed'})
         reply['result'] = {'tools': [{'name': 'echo', 'inputSchema': {'type': 'object'}}]}
+        if mode == 'tool-annotations-false':
+            reply['result']['tools'][0]['annotations'] = False
+        if mode == 'tool-properties-array':
+            reply['result']['tools'][0]['inputSchema']['properties'] = {'value': []}
+        if mode == 'tool-unknown':
+            reply['result']['tools'][0]['unknown'] = {'preserveOnlyRawFrame': True}
     elif method == 'tools/call':
         if mode == 'eof':
             break
@@ -56,4 +72,6 @@ for line in sys.stdin.buffer:
                 continue
     else:
         reply['result'] = {}
+    if mode == 'malformed-then-valid':
+        send(dict(reply, extra=True))
     send(reply)

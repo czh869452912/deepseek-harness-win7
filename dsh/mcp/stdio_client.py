@@ -2,11 +2,13 @@ import asyncio
 import inspect
 import json
 import math
+import re
 import sys
 
 from dsh.core.abort import abort_reason_error
 from dsh.cordis.utils import js_to_string
 from dsh.subprocess.service import scrubbed_parent_env
+from dsh.mcp.schemas import parse
 
 
 PROTOCOL_VERSIONS = ('2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05', '2024-10-07')
@@ -90,24 +92,10 @@ class StdioMcpClient:
             result = await self.request({'method': 'initialize', 'params': {
                 'protocolVersion': PROTOCOL_VERSIONS[0], 'capabilities': {},
                 'clientInfo': {'name': 'dsh-mcp-client', 'version': '0.0.1'}}})
-            if (not isinstance(result, dict) or not isinstance(result.get('capabilities'), dict)
-                    or not isinstance(result.get('serverInfo'), dict)
-                    or not isinstance(result['serverInfo'].get('name'), str)
-                    or not isinstance(result['serverInfo'].get('version'), str)):
-                raise ValueError('Server sent invalid initialize result')
+            result = parse('InitializeResultSchema', result)
             version = result.get('protocolVersion')
             if version not in PROTOCOL_VERSIONS:
                 raise ValueError("Server's protocol version is not supported: " + str(version))
-            for name in ('tools', 'prompts', 'resources', 'logging', 'completions', 'tasks'):
-                if name in result['capabilities'] and not isinstance(result['capabilities'][name], dict):
-                    raise ValueError('Invalid MCP capability: ' + name)
-            for name in ('tools', 'prompts', 'resources'):
-                capability = result['capabilities'].get(name, {})
-                for option in ('listChanged', 'subscribe'):
-                    if option in capability and type(capability[option]) is not bool:
-                        raise ValueError('Invalid MCP capability: %s.%s' % (name, option))
-            if 'instructions' in result and not isinstance(result['instructions'], str):
-                raise ValueError('Invalid MCP instructions')
             self.protocol_version = version
             self.server_capabilities, self.server_info = result['capabilities'], result['serverInfo']
             await self.notify('notifications/initialized')
@@ -145,6 +133,20 @@ class StdioMcpClient:
             return ('number', value)
         raise ValueError('Invalid MCP request id')
 
+    @staticmethod
+    def _response_identity(value):
+        if isinstance(value, str):
+            value = value.strip(' \t\n\r\v\f\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000\ufeff')
+            if not value:
+                value = 0
+            elif re.fullmatch(r'0[xX][0-9a-fA-F]+|0[oO][0-7]+|0[bB][01]+', value):
+                value = float(int(value, 0))
+            elif re.fullmatch(r'[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?', value):
+                value = float(value)
+            else:
+                return None
+        return ('number', value) if type(value) in (int, float) and math.isfinite(value) else None
+
     async def _read_stderr(self):
         while True:
             chunk = await self.proc.stderr.read(4096)
@@ -177,6 +179,7 @@ class StdioMcpClient:
             self._disconnect()
 
     async def _receive(self, packet):
+        packet = parse('JSONRPCMessageSchema', packet)
         if not isinstance(packet, dict) or packet.get('jsonrpc') != '2.0':
             raise ValueError('Invalid MCP envelope')
         if 'method' in packet:
@@ -194,9 +197,11 @@ class StdioMcpClient:
                 notification = {'method': packet['method']}
                 if 'params' in packet:
                     notification['params'] = packet['params']
+                if packet['method'] == 'notifications/tools/list_changed':
+                    notification = parse('ToolListChangedNotificationSchema', notification)
                 self._callback(self.on_notification, notification)
             return
-        identity = self._identity(packet['id'])
+        identity = self._response_identity(packet.get('id'))
         if ('result' in packet) == ('error' in packet):
             raise ValueError('Invalid MCP response')
         if 'result' in packet and (not isinstance(packet['result'], dict)
@@ -210,6 +215,8 @@ class StdioMcpClient:
             raise ValueError('Invalid MCP error')
         future = self._pending.pop(identity, None)
         if future is None or future.done():
+            self._callback(self.on_error, RuntimeError('Received a response for an unknown message ID: ' +
+                json.dumps(packet, ensure_ascii=False, separators=(',', ':'))))
             return
         if 'error' in packet:
             future.set_exception(McpError(error['code'], error['message'], error.get('data', ABSENT)))
@@ -258,7 +265,7 @@ class StdioMcpClient:
             if future in done:
                 result = future.result()
                 if packet['method'] == 'tools/list':
-                    self._validate_tools(result)
+                    result = parse('ListToolsResultSchema', result)
                 return result
             await self.notify('notifications/cancelled', {'requestId': identity, 'reason': 'McpError: MCP error -32001: Request timed out'})
             raise McpError(-32001, 'Request timed out', {'timeout': timeout})
@@ -286,29 +293,6 @@ class StdioMcpClient:
             raise ValueError('Invalid MCP tools/list result')
         return result
 
-    @staticmethod
-    def _validate_tools(result):
-        if not isinstance(result.get('tools'), list):
-            raise ValueError('Invalid MCP tools/list result')
-        if 'nextCursor' in result and not isinstance(result['nextCursor'], str):
-            raise ValueError('Invalid MCP nextCursor')
-        for tool in result['tools']:
-            if not isinstance(tool, dict) or not isinstance(tool.get('name'), str):
-                raise ValueError('Invalid MCP tool name')
-            if 'description' in tool and not isinstance(tool['description'], str):
-                raise ValueError('Invalid MCP tool description')
-            for name in ('inputSchema', 'outputSchema'):
-                if name == 'outputSchema' and name not in tool:
-                    continue
-                schema = tool.get(name)
-                if not isinstance(schema, dict) or schema.get('type') != 'object':
-                    raise ValueError('Invalid MCP %s' % name)
-                if 'required' in schema and (not isinstance(schema['required'], list)
-                        or any(not isinstance(value, str) for value in schema['required'])):
-                    raise ValueError('Invalid MCP %s.required' % name)
-                if 'properties' in schema and (not isinstance(schema['properties'], dict)
-                        or any(not isinstance(value, dict) for value in schema['properties'].values())):
-                    raise ValueError('Invalid MCP %s.properties' % name)
 
     async def call_tool(self, name, args):
         result = await self.request({'method': 'tools/call', 'params': {'name': name, 'arguments': args}})

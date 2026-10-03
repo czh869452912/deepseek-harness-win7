@@ -29,6 +29,10 @@ PAIRED_DRIVERS = (
 )
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp')
 REQUIRED_REGRESSION = {
+    'test_mcp_schema': {'test_pinned_mcp_schemas_preserve_all_raw_source_parse_observations'},
+    'test_mcp_config': {'test_actual_source_configuration_defaults_errors_and_raw_reconnect_resolution'},
+    'test_mcp_tools_source': {'test_actual_source_bridge_text_names_and_exact_execution_refusal'},
+    'test_mcp_image_consumer': {'test_real_stdio_image_tool_finalizes_durable_refs_and_cold_model_request'},
     'test_mcp_stdio_transport': {
         'test_actual_handshake_tools_correlation_notifications_and_scrubbed_environment',
         'test_invalid_negotiation_closes_actual_process_before_exposing_client',

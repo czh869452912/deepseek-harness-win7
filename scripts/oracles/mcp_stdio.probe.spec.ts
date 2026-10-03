@@ -8,7 +8,9 @@ import { z } from 'zod'
 import { createTransport } from '../../reference/packages/mcp/mcp-client/src/transport.ts'
 
 const modes = ['normal', 'notification', 'out-of-order', 'peer-error', 'peer-error-null',
-  'cancel', 'timeout', 'eof', 'unsupported', 'capabilities-empty', 'missing-executable']
+  'cancel', 'timeout', 'eof', 'unsupported', 'capabilities-empty', 'missing-executable',
+  'cap-logging-array', 'cap-experimental-false', 'tool-annotations-false', 'tool-properties-array', 'tool-unknown',
+  'id-decimal', 'id-hex', 'id-empty', 'malformed-then-valid']
 
 it('observes actual pinned stdio provider, SDK, cancellation and owned exit', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'mcp-sdk-observer-'))
@@ -23,6 +25,10 @@ it('observes actual pinned stdio provider, SDK, cancellation and owned exit', as
         command:mode==='missing-executable' ? join(directory, 'missing-executable.exe') : process.env.MCP_FIXTURE_PYTHON!,
         args:[resolve(process.env.MCP_PEER_PATH!), mode, records], env:{}, cwd:process.cwd()} as any)
       const observed: any = {mode, notifications}
+      if (mode === 'malformed-then-valid') {
+        observed.protocolErrors = []
+        client.onerror = error => {observed.protocolErrors.push({name:error.name,message:error.message})}
+      }
       let ownedPid: number | null = null
       let resolveClosed: () => void
       const closed = new Promise<void>(resolve => {resolveClosed=resolve})

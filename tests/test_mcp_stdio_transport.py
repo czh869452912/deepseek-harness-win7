@@ -7,6 +7,7 @@ from types import SimpleNamespace
 import pytest
 
 from dsh.mcp.stdio_client import McpError
+from dsh.mcp.schemas import SchemaError
 from dsh.core.abort import AbortController
 from dsh.cordis.errors import ThrownValueError
 from dsh.mcp.transport import StdioMcpTransport
@@ -194,8 +195,9 @@ async def test_actual_peer_cannot_publish_malformed_tool_definitions(server, res
     client = StdioMcpTransport(sys.executable, [str(server)])
     await client.connect()
     try:
-        with pytest.raises(ValueError, match='Invalid MCP'):
+        with pytest.raises(SchemaError) as failure:
             await client.request({'method': 'tools/list'})
+        assert failure.value.name == 'ZodError' and failure.value.issues
         assert not client._pending
     finally:
         await client.close()
@@ -208,8 +210,9 @@ async def test_actual_invalid_initialize_capability_is_rejected_and_owned_child_
     replacement = 'if method=="initialize":\n        reply["result"]["capabilities"]=%r\n    print(json.dumps(reply),flush=True)' % capabilities
     server.write_text(SERVER.replace('print(json.dumps(reply),flush=True)', replacement), encoding='utf-8')
     client = StdioMcpTransport(sys.executable, [str(server)])
-    with pytest.raises(ValueError, match='Invalid MCP capability'):
+    with pytest.raises(SchemaError) as failure:
         await client.connect()
+    assert failure.value.issues[0]['path'][:1] == ['capabilities']
     assert client.proc.returncode == 0 and not client._pending
 
 

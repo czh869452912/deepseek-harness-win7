@@ -18,6 +18,7 @@ INPUTS = ['scripts/mcp_stdio_oracle.py', 'scripts/oracles/mcp_stdio_python.py',
           'scripts/oracles/vitest.mcp-stdio-probe.config.mts', 'scripts/oracles/vitest.acp.config.mts',
           'scripts/oracles/acp-sdk-resolution.mjs', 'scripts/oracles/official/package-lock.json',
           'dsh/mcp/stdio_client.py', 'dsh/mcp/transport.py', 'dsh/core/abort.py',
+          'dsh/mcp/schemas.py', 'dsh/mcp/schema_definitions.json',
           'reference/packages/mcp/mcp-client/src/transport.ts',
           'reference/packages/mcp/mcp-client/src/tools.ts']
 
@@ -29,7 +30,30 @@ def require(condition, detail):
 
 def expected_row(mode):
     row = {'mode': mode, 'notifications': [], 'frames': [], 'closed': True, 'reaped': True}
+    if mode == 'malformed-then-valid':
+        row['protocolErrors'] = []
     def frame(direction, packet):
+        if direction == 'sent':
+            packet = copy.deepcopy(packet)
+            if mode == 'id-decimal':
+                packet['id'] = str(packet['id'])
+            if mode == 'id-hex':
+                packet['id'] = hex(packet['id'])
+            if mode == 'id-empty' and packet['id'] == 0:
+                packet['id'] = ''
+            if mode == 'malformed-then-valid':
+                row['frames'].append({'direction': direction, 'packet': dict(packet, extra=True)})
+                def missing(name):
+                    return dict(expected='string' if name == 'method' else 'object', code='invalid_type',
+                        path=[name], message='Invalid input: expected %s, received undefined' % ('string' if name == 'method' else 'object'))
+                def unknown(keys):
+                    return dict(code='unrecognized_keys', keys=keys, path=[], message='Unrecognized key%s: %s' % (
+                        's' if len(keys) > 1 else '', ', '.join(json.dumps(key) for key in keys)))
+                issue = dict(code='invalid_union', errors=[
+                    [missing('method'), unknown(['result', 'extra'])],
+                    [missing('method'), unknown(['id', 'result', 'extra'])],
+                    [unknown(['extra'])], [missing('error'), unknown(['result', 'extra'])]], path=[], message='Invalid input')
+                row['protocolErrors'].append({'name': 'ZodError', 'message': json.dumps([issue], ensure_ascii=False, indent=2)})
         row['frames'].append({'direction': direction, 'packet': packet})
     if mode == 'missing-executable':
         row['error'] = {'message': 'MCP error -32000: Connection closed', 'code': -32000}
@@ -37,9 +61,18 @@ def expected_row(mode):
     frame('received', {'method': 'initialize', 'params': {'protocolVersion': '2025-11-25', 'capabilities': {},
           'clientInfo': {'name': 'dsh-mcp-client', 'version': '0.0.1'}}, 'jsonrpc': '2.0', 'id': 0})
     server = {'name': 'controlled', 'version': '1.0'}
+    capabilities = {} if mode == 'capabilities-empty' else {'tools': {}}
+    if mode == 'cap-logging-array':
+        capabilities['logging'] = []
+    if mode == 'cap-experimental-false':
+        capabilities['experimental'] = {'extension': False}
     frame('sent', {'jsonrpc': '2.0', 'id': 0, 'result': {
           'protocolVersion': 'unsupported' if mode == 'unsupported' else '2025-11-25',
-          'capabilities': {} if mode == 'capabilities-empty' else {'tools': {}}, 'serverInfo': server}})
+          'capabilities': capabilities, 'serverInfo': server}})
+    if mode == 'cap-experimental-false':
+        row['error'] = {'message': json.dumps([dict(code='custom', path=['capabilities', 'experimental', 'extension'],
+            message='Invalid input')], ensure_ascii=False, indent=2)}
+        return row
     if mode == 'unsupported':
         row['error'] = {'message': "Server's protocol version is not supported: unsupported"}
         return row
@@ -50,8 +83,19 @@ def expected_row(mode):
         frame('sent', {'jsonrpc': '2.0', 'method': 'notifications/tools/list_changed'})
         row['notifications'] = [{'method': 'notifications/tools/list_changed'}]
     tools = {'tools': [{'name': 'echo', 'inputSchema': {'type': 'object'}}]}
+    if mode == 'tool-properties-array':
+        tools['tools'][0]['inputSchema']['properties'] = {'value': []}
+    raw_tools = copy.deepcopy(tools)
+    if mode == 'tool-unknown':
+        raw_tools['tools'][0]['unknown'] = {'preserveOnlyRawFrame': True}
+    if mode == 'tool-annotations-false':
+        raw_tools['tools'][0]['annotations'] = False
+    frame('sent', {'jsonrpc': '2.0', 'id': 1, 'result': raw_tools})
+    if mode == 'tool-annotations-false':
+        row['error'] = {'message': json.dumps([dict(expected='object', code='invalid_type', path=['tools', 0, 'annotations'],
+            message='Invalid input: expected object, received boolean')], ensure_ascii=False, indent=2)}
+        return row
     row['tools'] = tools
-    frame('sent', {'jsonrpc': '2.0', 'id': 1, 'result': tools})
     count = 3 if mode == 'out-of-order' else 1
     for index in range(count):
         frame('received', {'method': 'tools/call', 'params': {'name': 'echo', 'arguments': {
@@ -134,7 +178,7 @@ def main():
             require(result.returncode == 0, 'MCP observer runner failed: ' + str(index))
             observations.append(json.loads(paths[index].read_text(encoding='utf-8')))
         report['cases'] = classify(*observations)
-        report.update(status='passed', matched=len(MODES), scope='Eleven exact bounded stdio provider/SDK/process observations. Full SDK schema, supervisor/Tools richness, HTTP/SSE, ACP mounting, subagent and clean Portable acceptance are separate.')
+        report.update(status='passed', matched=len(MODES), scope='Twenty exact bounded stdio provider/SDK/process observations including selected schema projection, malformed envelopes and SDK numeric response correlation. Full supervisor/Tools richness, HTTP/SSE, ACP mounting, subagent and clean Portable acceptance are separate.')
         require(report['inputSha256'] == hashes(), 'observation inputs changed')
         require(reference_git('rev-parse', 'HEAD') == target and not reference_git('status', '--porcelain'), 'reference changed')
     except (OSError, ValueError, KeyError, TypeError, RuntimeError, subprocess.SubprocessError) as error:

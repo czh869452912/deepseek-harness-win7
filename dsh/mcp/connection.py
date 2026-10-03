@@ -11,15 +11,21 @@ RECONNECT_DEFAULTS: Dict[str, Any] = {
     'enabled': True, 'initialDelayMs': 500, 'maxDelayMs': 30000, 'maxAttempts': 10,
 }
 GENERATION_CLOSE_TIMEOUT = 5
+RECONNECT_ABSENT = object()
 
 
-def resolve_reconnect_policy(config: Optional[Dict[str, Any]] = None,
+def resolve_reconnect_policy(config=RECONNECT_ABSENT,
                              path: str = 'mcp_client') -> Dict[str, Any]:
+    if config is None:
+        raise TypeError('Cannot convert undefined or null to object')
+    if config is RECONNECT_ABSENT:
+        config = {}
     policy = dict(RECONNECT_DEFAULTS)
     for name, value in (config or {}).items():
         if name not in policy:
             raise ValueError('%s.%s is not a reconnect option' % (path, name))
-        policy[name] = value
+        if value is not None:
+            policy[name] = value
     for name in ('initialDelayMs', 'maxDelayMs'):
         value = policy[name]
         if type(value) not in (int, float) or not math.isfinite(value) or not 0 < value <= 2147483647:

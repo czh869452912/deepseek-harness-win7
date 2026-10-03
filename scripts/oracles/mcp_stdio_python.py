@@ -10,7 +10,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 MODES = ['normal', 'notification', 'out-of-order', 'peer-error', 'peer-error-null',
-         'cancel', 'timeout', 'eof', 'unsupported', 'capabilities-empty', 'missing-executable']
+         'cancel', 'timeout', 'eof', 'unsupported', 'capabilities-empty', 'missing-executable',
+         'cap-logging-array', 'cap-experimental-false', 'tool-annotations-false', 'tool-properties-array', 'tool-unknown',
+         'id-decimal', 'id-hex', 'id-empty', 'malformed-then-valid']
 
 
 async def observe(mode, directory, peer_script):
@@ -23,6 +25,9 @@ async def observe(mode, directory, peer_script):
     notifications = []
     client.on_notification = notifications.append
     observed = {'mode': mode, 'notifications': notifications}
+    if mode == 'malformed-then-valid':
+        observed['protocolErrors'] = []
+        client.on_error = lambda error: observed['protocolErrors'].append({'name': getattr(error, 'name', 'Error'), 'message': str(error)})
     try:
         await client.connect()
         observed['server'] = client.server_info

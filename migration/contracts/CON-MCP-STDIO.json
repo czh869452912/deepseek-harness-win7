@@ -11,11 +11,11 @@
     "The child inherits the pinned scrubbed environment with explicit overrides; stdout is NDJSON and stderr never enters protocol frames.",
     "Requests, cancellation watchers, reader/stderr tasks and the owned process settle during bounded close; no late response survives disconnect."
   ],
-  "identity": "One owned child process and typed RPC correlation per transport instance.",
+  "identity": "One owned child process per transport instance; SDK Number(response.id) correlation after original JSON-RPC envelope validation.",
   "ownership": "Transport owns stdin/stdout/stderr, pending requests, callback dispatch and termination; caller owns explicit environment and cancellation signal.",
   "ordering": "Initialize result and version validation before initialized; initialized before tools; serialized writes and correlated concurrent responses.",
   "errors": "MCP protocol errors retain code/message/data; missing process rejects connect and subsequent calls remain Not connected.",
   "cancellation": "Caller abort and timeout send cancellation notifications, release request/watcher ownership and reject; close rejects all pending calls and reaps the owned child.",
   "adaptation": "Python 3.8 asyncio subprocesses, explicit request/watch lifetimes and bounded stdin/terminate/kill ownership; no Node in the product runtime.",
-  "open_questions": ["Eleven exact selected source provider/SDK/native process observations match at transport-close quiescence. Source SDK may start close without awaiting it on unsupported initialization; observer awaits the original supervisor's close barrier rather than treating transport.pid=null as proof of exit. 208 targeted tests and a pre-correction full run are not acceptance. Complete SDK schema/projection/configuration, paired supervisor/rich Tools behavior and clean Portable evidence remain pending; HTTP/SSE/ACP mounting/subagent are separate unaccepted scopes."]
+  "open_questions": ["Twenty exact selected source provider/SDK/native process observations include four pinned SDK schema projections and numeric response correlation. 959 raw schema, 176 config/reconnect and 38 tool bridge observations plus a real stdio/Tools/durable-store/cold-model consumer are implemented and required in the next complete gate, not yet clean acceptance. Source SDK may start close without awaiting it on unsupported initialization; observer awaits the original supervisor's close barrier rather than treating transport.pid=null as proof of exit. Full supervisor, remaining SDK request behavior/registry failures and clean receipt-bound Portable acceptance remain pending; HTTP/SSE/ACP mounting/subagent are separate unaccepted scopes."]
 }

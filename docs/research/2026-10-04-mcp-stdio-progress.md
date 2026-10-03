@@ -20,4 +20,12 @@ Proactor `Event loop is closed` warning 及 HTTP 10054 旧诊断仍保留，未�
 
 第一部分仍有 SDK schema/config 缺口：logging 数组被误拒、experimental 非对象未拒、annotations 未验证、properties 的数组对象被误拒，以及 tool 未知字段未按 SDK 投影。隔离工作树已形成四个固定 SDK schema 的原始抽取、959 组解析与错误消息观察、176 组配置/重连观察及二十组实际进程观察；278 项针对性回归通过，但这些后续实现尚未纳入本次主版本候选。
 
-下一单元合入上述 schema/config 和工具桥修复，再补齐 supervisor、富内容/图片持久投影与真实消费者证明。HTTP/SSE 仍是待替换占位；ACP mcpServers mounting-before-publish 与 subprocess subagent-acp 尚未实现。B/C/D、fresh uncached bootstrap、Win7 和外部服务验收继续保留各自退出条件；完整 ACP 与全部迁移没有闭环。
+第一部分现已提交为 `026fe76f`。第二部分将上述四个 SDK schema/config 修复纳入主版本，并扩大到二十组原始进程对照；四个 schema 的导出记录固定 SDK 1.29.0 原文件哈希，每次开发验收重新读取真实 SDK，而不是以手写 expected 作为来源。
+
+工具桥补齐 UTF-16 名称处理、原版文本投影，以及与精确 execution 弱关联的一次性图片投影。三十八组原版观察覆盖名称、原始结果、文本、能力检查、整个图片批次拒绝、存储错误分类、取消、并发和 finalizer 归属；替换 value/content、布尔与数值差异、错误结果均拒绝提升图片。真实 stdio→ToolsService→LocalAttachmentStore→冷读取→本地 DeepSeek 兼容模型 HTTP 请求的消费者通过，原始 MCP value 保留，模型只收到持久引用投影，卸载撤回工具并收回进程。该消费者复用受控本地 HTTP fixture，不调用外部 API。
+
+以上 schema/config/桥接与持久消费者加入四条新的必需回归 lane；跳过、缺失或失败均阻止门禁。第二部分 `.goose/out/mcp-schema-rich-preview` 完整开发预览通过：Python 3.8.10 全量 **5260 passed、6 skipped、1 warning、0 failed**，32 条必需 lane、七组 722 项未改动原版断言、29 个双侧驱动和实际解压 Portable 通过。MCP 二十组原始进程观察匹配，包内实际 ToolsService 消费者注册、输出、撤回、进程退出及 pending=0 均通过。输入清单 SHA-256 为 `6b7a427456510ddf3df0e9fd6ef591882903a2944d0df93192b37f871c8440ee`，ZIP SHA-256 为 `6a0ec41237626eec7c7a52a078b61d592d0363f32fa5abf9a39298ea67c20f4f`。结果仍是 `development-preview / publishable=false`，没有签发 integrated。
+
+主树合入时的一次针对性运行失败，原因是十四条既有用例仍期待旧版手写错误文本；记录保留于 `mcp-schema-rich-main-targeted.log`。用例改为要求真实 ZodError/SchemaError 及能力错误路径，随后 296 项针对性用例与完整门禁通过，没有恢复旧错误或放宽门禁。此前浏览器、Proactor 及 HTTP 10054 诊断仍未认定修复。
+
+后续 supervisor 双侧关闭/重试日志、注册失败诊断和 HTTP/SSE 真实提供端已在隔离工作树推进，尚未进入本单元主版本。更多 SDK 请求能力、ACP mcpServers mounting-before-publish 与 subprocess subagent-acp 继续推进。B/C/D、fresh uncached bootstrap、Win7 和外部服务验收继续保留各自退出条件；完整 ACP 与全部迁移没有闭环。

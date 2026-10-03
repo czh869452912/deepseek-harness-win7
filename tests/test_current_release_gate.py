@@ -37,10 +37,10 @@ def regression_xml(path, omit=None, skip=None, duplicate=None, failure=None):
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 28, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 32, 'skipped': 1}
 
 
-@pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor'])
+@pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer'])
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
 def test_incomplete_regression_cannot_certify_a_release(tmp_path, module, damage):
     path = tmp_path / 'pytest.xml'

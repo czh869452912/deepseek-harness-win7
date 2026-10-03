@@ -2,7 +2,8 @@ from typing import Any, Dict, Optional
 
 from dsh.cordis.plugin import Plugin
 from dsh.core.scope import scope_of
-from dsh.mcp.connection import McpConnection, resolve_reconnect_policy
+from dsh.mcp.connection import McpConnection, RECONNECT_ABSENT, resolve_reconnect_policy
+from dsh.mcp.config import CONFIG
 
 
 _active_server_names = {}
@@ -12,6 +13,7 @@ class McpClientPlugin(Plugin):
     id = 'mcp-client'
     name = '@deepseek-ai/dsh-mcp-client'
     inject = ['tools']
+    Config = CONFIG
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
@@ -20,7 +22,7 @@ class McpClientPlugin(Plugin):
 
     async def apply(self, ctx: Any) -> None:
         server_name = self.config.get('serverName', 'default')
-        policy = resolve_reconnect_policy(self.config.get('reconnect'),
+        policy = resolve_reconnect_policy(self.config.get('reconnect', RECONNECT_ABSENT),
                                           path='mcp-client(%s): reconnect' % server_name)
         owner = scope_of(ctx)
         if owner is None:

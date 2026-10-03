@@ -1,0 +1,1749 @@
+{
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "sdk_version": "1.29.0",
+  "barriers": [
+    "Initialize notification optional GET admitted before tools/list.",
+    "Cancellation notification admitted before shutdown in cancel and timeout cases."
+  ],
+  "observations": [
+    {
+      "mode": "json",
+      "notifications": [],
+      "server": {
+        "name": "controlled-http",
+        "version": "1"
+      },
+      "tools": {
+        "tools": [
+          {
+            "name": "echo",
+            "inputSchema": {
+              "type": "object"
+            }
+          }
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "中文 controlled"
+          }
+        ]
+      },
+      "frames": [
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local"
+          },
+          "packet": {
+            "method": "initialize",
+            "params": {
+              "protocolVersion": "2025-11-25",
+              "capabilities": {},
+              "clientInfo": {
+                "name": "dsh-mcp-client",
+                "version": "0.0.1"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 0
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "notifications/initialized",
+            "jsonrpc": "2.0"
+          }
+        },
+        {
+          "method": "GET",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/list",
+            "jsonrpc": "2.0",
+            "id": 1
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/call",
+            "params": {
+              "name": "echo",
+              "arguments": {
+                "text": "中文 controlled"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 2
+          }
+        }
+      ],
+      "closed": true,
+      "reaped": true
+    },
+    {
+      "mode": "json-batch",
+      "notifications": [],
+      "server": {
+        "name": "controlled-http",
+        "version": "1"
+      },
+      "tools": {
+        "tools": [
+          {
+            "name": "echo",
+            "inputSchema": {
+              "type": "object"
+            }
+          }
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "中文 controlled"
+          }
+        ]
+      },
+      "frames": [
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local"
+          },
+          "packet": {
+            "method": "initialize",
+            "params": {
+              "protocolVersion": "2025-11-25",
+              "capabilities": {},
+              "clientInfo": {
+                "name": "dsh-mcp-client",
+                "version": "0.0.1"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 0
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "notifications/initialized",
+            "jsonrpc": "2.0"
+          }
+        },
+        {
+          "method": "GET",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/list",
+            "jsonrpc": "2.0",
+            "id": 1
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/call",
+            "params": {
+              "name": "echo",
+              "arguments": {
+                "text": "中文 controlled"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 2
+          }
+        }
+      ],
+      "closed": true,
+      "reaped": true
+    },
+    {
+      "mode": "json-bom",
+      "notifications": [],
+      "server": {
+        "name": "controlled-http",
+        "version": "1"
+      },
+      "tools": {
+        "tools": [
+          {
+            "name": "echo",
+            "inputSchema": {
+              "type": "object"
+            }
+          }
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "中文 controlled"
+          }
+        ]
+      },
+      "frames": [
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local"
+          },
+          "packet": {
+            "method": "initialize",
+            "params": {
+              "protocolVersion": "2025-11-25",
+              "capabilities": {},
+              "clientInfo": {
+                "name": "dsh-mcp-client",
+                "version": "0.0.1"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 0
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "notifications/initialized",
+            "jsonrpc": "2.0"
+          }
+        },
+        {
+          "method": "GET",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/list",
+            "jsonrpc": "2.0",
+            "id": 1
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/call",
+            "params": {
+              "name": "echo",
+              "arguments": {
+                "text": "中文 controlled"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 2
+          }
+        }
+      ],
+      "closed": true,
+      "reaped": true
+    },
+    {
+      "mode": "post-sse",
+      "notifications": [],
+      "server": {
+        "name": "controlled-http",
+        "version": "1"
+      },
+      "tools": {
+        "tools": [
+          {
+            "name": "echo",
+            "inputSchema": {
+              "type": "object"
+            }
+          }
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "中文 controlled"
+          }
+        ]
+      },
+      "frames": [
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local"
+          },
+          "packet": {
+            "method": "initialize",
+            "params": {
+              "protocolVersion": "2025-11-25",
+              "capabilities": {},
+              "clientInfo": {
+                "name": "dsh-mcp-client",
+                "version": "0.0.1"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 0
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "notifications/initialized",
+            "jsonrpc": "2.0"
+          }
+        },
+        {
+          "method": "GET",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/list",
+            "jsonrpc": "2.0",
+            "id": 1
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/call",
+            "params": {
+              "name": "echo",
+              "arguments": {
+                "text": "中文 controlled"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 2
+          }
+        }
+      ],
+      "closed": true,
+      "reaped": true
+    },
+    {
+      "mode": "sse-bom",
+      "notifications": [],
+      "server": {
+        "name": "controlled-http",
+        "version": "1"
+      },
+      "tools": {
+        "tools": [
+          {
+            "name": "echo",
+            "inputSchema": {
+              "type": "object"
+            }
+          }
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "中文 controlled"
+          }
+        ]
+      },
+      "frames": [
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local"
+          },
+          "packet": {
+            "method": "initialize",
+            "params": {
+              "protocolVersion": "2025-11-25",
+              "capabilities": {},
+              "clientInfo": {
+                "name": "dsh-mcp-client",
+                "version": "0.0.1"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 0
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "notifications/initialized",
+            "jsonrpc": "2.0"
+          }
+        },
+        {
+          "method": "GET",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/list",
+            "jsonrpc": "2.0",
+            "id": 1
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/call",
+            "params": {
+              "name": "echo",
+              "arguments": {
+                "text": "中文 controlled"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 2
+          }
+        }
+      ],
+      "closed": true,
+      "reaped": true
+    },
+    {
+      "mode": "get-sse",
+      "notifications": [
+        {
+          "method": "notifications/tools/list_changed"
+        }
+      ],
+      "server": {
+        "name": "controlled-http",
+        "version": "1"
+      },
+      "tools": {
+        "tools": [
+          {
+            "name": "echo",
+            "inputSchema": {
+              "type": "object"
+            }
+          }
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "中文 controlled"
+          }
+        ]
+      },
+      "frames": [
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local"
+          },
+          "packet": {
+            "method": "initialize",
+            "params": {
+              "protocolVersion": "2025-11-25",
+              "capabilities": {},
+              "clientInfo": {
+                "name": "dsh-mcp-client",
+                "version": "0.0.1"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 0
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "notifications/initialized",
+            "jsonrpc": "2.0"
+          }
+        },
+        {
+          "method": "GET",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/list",
+            "jsonrpc": "2.0",
+            "id": 1
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/call",
+            "params": {
+              "name": "echo",
+              "arguments": {
+                "text": "中文 controlled"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 2
+          }
+        }
+      ],
+      "closed": true,
+      "reaped": true
+    },
+    {
+      "mode": "session",
+      "notifications": [],
+      "server": {
+        "name": "controlled-http",
+        "version": "1"
+      },
+      "tools": {
+        "tools": [
+          {
+            "name": "echo",
+            "inputSchema": {
+              "type": "object"
+            }
+          }
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "中文 controlled"
+          }
+        ]
+      },
+      "frames": [
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local"
+          },
+          "packet": {
+            "method": "initialize",
+            "params": {
+              "protocolVersion": "2025-11-25",
+              "capabilities": {},
+              "clientInfo": {
+                "name": "dsh-mcp-client",
+                "version": "0.0.1"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 0
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-session-id": "controlled-session",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "notifications/initialized",
+            "jsonrpc": "2.0"
+          }
+        },
+        {
+          "method": "GET",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "controlled-local",
+            "mcp-session-id": "controlled-session",
+            "mcp-protocol-version": "2025-11-25"
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-session-id": "controlled-session",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/list",
+            "jsonrpc": "2.0",
+            "id": 1
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-session-id": "controlled-session",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/call",
+            "params": {
+              "name": "echo",
+              "arguments": {
+                "text": "中文 controlled"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 2
+          }
+        },
+        {
+          "method": "DELETE",
+          "headers": {
+            "accept": "*/*",
+            "authorization": "controlled-local",
+            "mcp-session-id": "controlled-session",
+            "mcp-protocol-version": "2025-11-25"
+          }
+        }
+      ],
+      "closed": true,
+      "reaped": true
+    },
+    {
+      "mode": "delete-405",
+      "notifications": [],
+      "server": {
+        "name": "controlled-http",
+        "version": "1"
+      },
+      "tools": {
+        "tools": [
+          {
+            "name": "echo",
+            "inputSchema": {
+              "type": "object"
+            }
+          }
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "中文 controlled"
+          }
+        ]
+      },
+      "frames": [
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local"
+          },
+          "packet": {
+            "method": "initialize",
+            "params": {
+              "protocolVersion": "2025-11-25",
+              "capabilities": {},
+              "clientInfo": {
+                "name": "dsh-mcp-client",
+                "version": "0.0.1"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 0
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-session-id": "controlled-session",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "notifications/initialized",
+            "jsonrpc": "2.0"
+          }
+        },
+        {
+          "method": "GET",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "controlled-local",
+            "mcp-session-id": "controlled-session",
+            "mcp-protocol-version": "2025-11-25"
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-session-id": "controlled-session",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/list",
+            "jsonrpc": "2.0",
+            "id": 1
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-session-id": "controlled-session",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/call",
+            "params": {
+              "name": "echo",
+              "arguments": {
+                "text": "中文 controlled"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 2
+          }
+        },
+        {
+          "method": "DELETE",
+          "headers": {
+            "accept": "*/*",
+            "authorization": "controlled-local",
+            "mcp-session-id": "controlled-session",
+            "mcp-protocol-version": "2025-11-25"
+          }
+        }
+      ],
+      "closed": true,
+      "reaped": true
+    },
+    {
+      "mode": "status-401",
+      "notifications": [],
+      "server": {
+        "name": "controlled-http",
+        "version": "1"
+      },
+      "tools": {
+        "tools": [
+          {
+            "name": "echo",
+            "inputSchema": {
+              "type": "object"
+            }
+          }
+        ]
+      },
+      "error": {
+        "name": "Error",
+        "message": "Streamable HTTP error: Error POSTing to endpoint: controlled rejection",
+        "code": 401
+      },
+      "frames": [
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local"
+          },
+          "packet": {
+            "method": "initialize",
+            "params": {
+              "protocolVersion": "2025-11-25",
+              "capabilities": {},
+              "clientInfo": {
+                "name": "dsh-mcp-client",
+                "version": "0.0.1"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 0
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "notifications/initialized",
+            "jsonrpc": "2.0"
+          }
+        },
+        {
+          "method": "GET",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/list",
+            "jsonrpc": "2.0",
+            "id": 1
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/call",
+            "params": {
+              "name": "echo",
+              "arguments": {
+                "text": "中文 controlled"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 2
+          }
+        }
+      ],
+      "closed": true,
+      "reaped": true
+    },
+    {
+      "mode": "unexpected-content",
+      "notifications": [],
+      "server": {
+        "name": "controlled-http",
+        "version": "1"
+      },
+      "tools": {
+        "tools": [
+          {
+            "name": "echo",
+            "inputSchema": {
+              "type": "object"
+            }
+          }
+        ]
+      },
+      "error": {
+        "name": "Error",
+        "message": "Streamable HTTP error: Unexpected content type: text/plain",
+        "code": -1
+      },
+      "frames": [
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local"
+          },
+          "packet": {
+            "method": "initialize",
+            "params": {
+              "protocolVersion": "2025-11-25",
+              "capabilities": {},
+              "clientInfo": {
+                "name": "dsh-mcp-client",
+                "version": "0.0.1"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 0
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "notifications/initialized",
+            "jsonrpc": "2.0"
+          }
+        },
+        {
+          "method": "GET",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/list",
+            "jsonrpc": "2.0",
+            "id": 1
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/call",
+            "params": {
+              "name": "echo",
+              "arguments": {
+                "text": "中文 controlled"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 2
+          }
+        }
+      ],
+      "closed": true,
+      "reaped": true
+    },
+    {
+      "mode": "missing-content",
+      "notifications": [],
+      "server": {
+        "name": "controlled-http",
+        "version": "1"
+      },
+      "tools": {
+        "tools": [
+          {
+            "name": "echo",
+            "inputSchema": {
+              "type": "object"
+            }
+          }
+        ]
+      },
+      "error": {
+        "name": "Error",
+        "message": "Streamable HTTP error: Unexpected content type: null",
+        "code": -1
+      },
+      "frames": [
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local"
+          },
+          "packet": {
+            "method": "initialize",
+            "params": {
+              "protocolVersion": "2025-11-25",
+              "capabilities": {},
+              "clientInfo": {
+                "name": "dsh-mcp-client",
+                "version": "0.0.1"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 0
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "notifications/initialized",
+            "jsonrpc": "2.0"
+          }
+        },
+        {
+          "method": "GET",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/list",
+            "jsonrpc": "2.0",
+            "id": 1
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/call",
+            "params": {
+              "name": "echo",
+              "arguments": {
+                "text": "中文 controlled"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 2
+          }
+        }
+      ],
+      "closed": true,
+      "reaped": true
+    },
+    {
+      "mode": "peer-error",
+      "notifications": [],
+      "server": {
+        "name": "controlled-http",
+        "version": "1"
+      },
+      "tools": {
+        "tools": [
+          {
+            "name": "echo",
+            "inputSchema": {
+              "type": "object"
+            }
+          }
+        ]
+      },
+      "error": {
+        "name": "McpError",
+        "message": "MCP error -32602: controlled rejection",
+        "code": -32602,
+        "data": null
+      },
+      "frames": [
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local"
+          },
+          "packet": {
+            "method": "initialize",
+            "params": {
+              "protocolVersion": "2025-11-25",
+              "capabilities": {},
+              "clientInfo": {
+                "name": "dsh-mcp-client",
+                "version": "0.0.1"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 0
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "notifications/initialized",
+            "jsonrpc": "2.0"
+          }
+        },
+        {
+          "method": "GET",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/list",
+            "jsonrpc": "2.0",
+            "id": 1
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/call",
+            "params": {
+              "name": "echo",
+              "arguments": {
+                "text": "中文 controlled"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 2
+          }
+        }
+      ],
+      "closed": true,
+      "reaped": true
+    },
+    {
+      "mode": "cancel",
+      "notifications": [],
+      "server": {
+        "name": "controlled-http",
+        "version": "1"
+      },
+      "tools": {
+        "tools": [
+          {
+            "name": "echo",
+            "inputSchema": {
+              "type": "object"
+            }
+          }
+        ]
+      },
+      "error": {
+        "name": "McpError",
+        "message": "MCP error -32001: controlled cancellation",
+        "code": -32001
+      },
+      "frames": [
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local"
+          },
+          "packet": {
+            "method": "initialize",
+            "params": {
+              "protocolVersion": "2025-11-25",
+              "capabilities": {},
+              "clientInfo": {
+                "name": "dsh-mcp-client",
+                "version": "0.0.1"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 0
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "notifications/initialized",
+            "jsonrpc": "2.0"
+          }
+        },
+        {
+          "method": "GET",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/list",
+            "jsonrpc": "2.0",
+            "id": 1
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/call",
+            "params": {
+              "name": "echo",
+              "arguments": {
+                "text": "中文 controlled"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 2
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "jsonrpc": "2.0",
+            "method": "notifications/cancelled",
+            "params": {
+              "requestId": 2,
+              "reason": "controlled cancellation"
+            }
+          }
+        }
+      ],
+      "closed": true,
+      "reaped": true
+    },
+    {
+      "mode": "timeout",
+      "notifications": [],
+      "server": {
+        "name": "controlled-http",
+        "version": "1"
+      },
+      "tools": {
+        "tools": [
+          {
+            "name": "echo",
+            "inputSchema": {
+              "type": "object"
+            }
+          }
+        ]
+      },
+      "error": {
+        "name": "McpError",
+        "message": "MCP error -32001: Request timed out",
+        "code": -32001,
+        "data": {
+          "timeout": 100
+        }
+      },
+      "frames": [
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local"
+          },
+          "packet": {
+            "method": "initialize",
+            "params": {
+              "protocolVersion": "2025-11-25",
+              "capabilities": {},
+              "clientInfo": {
+                "name": "dsh-mcp-client",
+                "version": "0.0.1"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 0
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "notifications/initialized",
+            "jsonrpc": "2.0"
+          }
+        },
+        {
+          "method": "GET",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/list",
+            "jsonrpc": "2.0",
+            "id": 1
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/call",
+            "params": {
+              "name": "echo",
+              "arguments": {
+                "text": "中文 controlled"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 2
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "jsonrpc": "2.0",
+            "method": "notifications/cancelled",
+            "params": {
+              "requestId": 2,
+              "reason": "McpError: MCP error -32001: Request timed out"
+            }
+          }
+        }
+      ],
+      "closed": true,
+      "reaped": true
+    },
+    {
+      "mode": "close-pending",
+      "notifications": [],
+      "server": {
+        "name": "controlled-http",
+        "version": "1"
+      },
+      "tools": {
+        "tools": [
+          {
+            "name": "echo",
+            "inputSchema": {
+              "type": "object"
+            }
+          }
+        ]
+      },
+      "error": {
+        "name": "McpError",
+        "message": "MCP error -32000: Connection closed",
+        "code": -32000
+      },
+      "frames": [
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local"
+          },
+          "packet": {
+            "method": "initialize",
+            "params": {
+              "protocolVersion": "2025-11-25",
+              "capabilities": {},
+              "clientInfo": {
+                "name": "dsh-mcp-client",
+                "version": "0.0.1"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 0
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "notifications/initialized",
+            "jsonrpc": "2.0"
+          }
+        },
+        {
+          "method": "GET",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/list",
+            "jsonrpc": "2.0",
+            "id": 1
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/call",
+            "params": {
+              "name": "echo",
+              "arguments": {
+                "text": "中文 controlled"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 2
+          }
+        }
+      ],
+      "closed": true,
+      "reaped": true
+    },
+    {
+      "mode": "invalid-envelope",
+      "notifications": [],
+      "server": {
+        "name": "controlled-http",
+        "version": "1"
+      },
+      "tools": {
+        "tools": [
+          {
+            "name": "echo",
+            "inputSchema": {
+              "type": "object"
+            }
+          }
+        ]
+      },
+      "error": {
+        "name": "ZodError",
+        "message": "[\n  {\n    \"code\": \"invalid_union\",\n    \"errors\": [\n      [\n        {\n          \"expected\": \"string\",\n          \"code\": \"invalid_type\",\n          \"path\": [\n            \"method\"\n          ],\n          \"message\": \"Invalid input: expected string, received undefined\"\n        },\n        {\n          \"code\": \"unrecognized_keys\",\n          \"keys\": [\n            \"result\",\n            \"extra\"\n          ],\n          \"path\": [],\n          \"message\": \"Unrecognized keys: \\\"result\\\", \\\"extra\\\"\"\n        }\n      ],\n      [\n        {\n          \"expected\": \"string\",\n          \"code\": \"invalid_type\",\n          \"path\": [\n            \"method\"\n          ],\n          \"message\": \"Invalid input: expected string, received undefined\"\n        },\n        {\n          \"code\": \"unrecognized_keys\",\n          \"keys\": [\n            \"id\",\n            \"result\",\n            \"extra\"\n          ],\n          \"path\": [],\n          \"message\": \"Unrecognized keys: \\\"id\\\", \\\"result\\\", \\\"extra\\\"\"\n        }\n      ],\n      [\n        {\n          \"code\": \"unrecognized_keys\",\n          \"keys\": [\n            \"extra\"\n          ],\n          \"path\": [],\n          \"message\": \"Unrecognized key: \\\"extra\\\"\"\n        }\n      ],\n      [\n        {\n          \"expected\": \"object\",\n          \"code\": \"invalid_type\",\n          \"path\": [\n            \"error\"\n          ],\n          \"message\": \"Invalid input: expected object, received undefined\"\n        },\n        {\n          \"code\": \"unrecognized_keys\",\n          \"keys\": [\n            \"result\",\n            \"extra\"\n          ],\n          \"path\": [],\n          \"message\": \"Unrecognized keys: \\\"result\\\", \\\"extra\\\"\"\n        }\n      ]\n    ],\n    \"path\": [],\n    \"message\": \"Invalid input\"\n  }\n]"
+      },
+      "frames": [
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local"
+          },
+          "packet": {
+            "method": "initialize",
+            "params": {
+              "protocolVersion": "2025-11-25",
+              "capabilities": {},
+              "clientInfo": {
+                "name": "dsh-mcp-client",
+                "version": "0.0.1"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 0
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "notifications/initialized",
+            "jsonrpc": "2.0"
+          }
+        },
+        {
+          "method": "GET",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/list",
+            "jsonrpc": "2.0",
+            "id": 1
+          }
+        },
+        {
+          "method": "POST",
+          "headers": {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "authorization": "controlled-local",
+            "mcp-protocol-version": "2025-11-25"
+          },
+          "packet": {
+            "method": "tools/call",
+            "params": {
+              "name": "echo",
+              "arguments": {
+                "text": "中文 controlled"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 2
+          }
+        }
+      ],
+      "closed": true,
+      "reaped": true
+    }
+  ]
+}

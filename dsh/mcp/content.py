@@ -5,6 +5,13 @@ from dsh.cordis.utils import _UNDEFINED, js_to_string
 from dsh.attachment.error import is_image_admission_error
 
 
+def error_string(error):
+    if isinstance(error, BaseException):
+        return '%s: %s' % (getattr(error, 'name', 'TypeError' if isinstance(error, TypeError) else 'Error'),
+            getattr(error, 'message', str(error)))
+    return js_to_string(error)
+
+
 def project_content(content, tool_name, image=None):
     projected, text = [], []
     def flush():

@@ -1,0 +1,23 @@
+{
+  "id": "MIG-MCP-HTTP-008",
+  "goal": "以真实 HTTP/SSE 和共享 RPC 所有权替换 MCP HTTP 虚构成功占位",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "93e06d8a0d9e06798bfc08f7e8eaf673d105c170",
+  "owner": "current-session-coordinator",
+  "requires": [{"task": "MIG-CORDIS-001", "contract": "CON-CORDIS-CORE", "revision": 10}],
+  "provides": [{"contract": "CON-MCP-HTTP", "revision": 1}],
+  "acceptance": [
+    "Fresh original transport factory/SDK observations match the bounded literal specification and native raw fields; per-case omissions, corruption, duplicates, typed fake exits and foreign module provenance are rejected.",
+    "Actual HTTP plugin activation, ToolsService execution, scoped unregister and pending/cancel/timeout shutdown pass with no external model endpoint or credential.",
+    "Complete Python 3.8 regression, selected original/paired gates and the actual extracted Portable HTTP consumer pass for frozen inputs; only a clean receipt-bound candidate may receive bounded integration."
+  ],
+  "expected_paths": ["dsh/mcp", "tests", "scripts", "migration", "docs/research"],
+  "open_findings": ["Main targeted 444 regressions and formal HTTP paired driver passed. Complete frozen dirty preview failed: 5407 passed, 1 failed, 6 skipped, 1 warning; existing original-browser exported-host startup cancellation recurred, with six ERR_ABORTED requests near document load before the next controlled navigation. Later official/paired lanes were not run. Independent extraction of the same ZIP passed sixteen raw HTTP rows and the actual ToolsService consumer, twenty stdio rows and existing runtime/ACP/permissions/browser journeys; ZIP f695168e311967f827c6ab911e21c0f961a4902f03be6a75a282280854c56b4b. No acceptance or integration issued. TLS/redirect/encoding/URL equivalence, resumable SSE, full teardown edges and the browser root cause remain open; nine reviewed upstream bug predicates are unchanged."],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "按用户授权提交已验证的 HTTP 实现及完整门禁失败记录，继续干净候选验收与浏览器启动取消根因调查；隔离推进 ACP MCP 挂载及 subprocess subagent-acp。浏览器失败、HTTP 未覆盖范围和整体迁移均不得提前闭环。"
+}

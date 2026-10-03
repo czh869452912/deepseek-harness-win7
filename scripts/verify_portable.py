@@ -18,6 +18,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from scripts.mcp_stdio_oracle import validate_runtime_report as validate_mcp_runtime
+from scripts.mcp_http_oracle import validate_runtime_report as validate_mcp_http_runtime
 
 
 def digest(path):
@@ -68,7 +69,8 @@ def main(argv=None):
         inputSha256={name: digest(ROOT / 'scripts' / name) for name in (
             'verify_portable.py', 'portable_runtime_probe.py', 'portable_acp_probe.py', 'acp_permission_journey.py',
             'portable_browser_oracle.mjs', 'browser_onboarding.mjs', 'mcp_stdio_oracle.py',
-            'oracles/mcp_stdio_python.py', 'oracles/mcp_stdio_peer.py')})
+            'oracles/mcp_stdio_python.py', 'oracles/mcp_stdio_peer.py', 'mcp_http_oracle.py',
+            'oracles/mcp_http_python.py', 'oracles/mcp_http_peer.py', 'oracles/mcp_http_expected.json')})
     node = shutil.which('node') if args.browser else None
     try:
         if args.browser and not node:
@@ -141,6 +143,18 @@ def main(argv=None):
             if mcp_report.get('root') != str(portable.resolve()):
                 raise RuntimeError('Extracted MCP ownership or module provenance is incomplete')
             report['mcpStdio'] = mcp_report
+            http_report_path = workspace / 'mcp-http.json'
+            http = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/oracles/mcp_http_python.py'), str(http_report_path), str(portable)],
+                cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=90)
+            output.with_suffix('.http.log').write_text(http.stdout + '\nSTDERR:\n' + http.stderr, encoding='utf-8')
+            if http.returncode or http.stderr or not http_report_path.exists():
+                raise RuntimeError('Extracted MCP HTTP journey failed; see ' + str(output.with_suffix('.http.log')))
+            http_report = json.loads(http_report_path.read_text(encoding='utf-8'))
+            validate_mcp_http_runtime(http_report)
+            if http_report.get('root') != str(portable.resolve()):
+                raise RuntimeError('Extracted MCP HTTP module provenance is incomplete')
+            report['mcpHttp'] = http_report
             if args.browser:
                 browser_report = output.with_suffix('.browser.json')
                 # The observer launches the Host with the same restricted env.

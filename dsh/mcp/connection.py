@@ -5,6 +5,8 @@ from typing import Any, Dict, Optional
 
 from dsh.mcp.tools import sync_tools
 from dsh.mcp.transport import create_transport
+from dsh.mcp.content import error_string
+from dsh.cordis.utils import js_to_string
 
 
 RECONNECT_DEFAULTS: Dict[str, Any] = {
@@ -103,7 +105,7 @@ class McpConnection:
             await asyncio.shield(self._enqueue_sync(generation))
         except Exception as error:
             if not self.disposed:
-                self._log('error', 'tool re-sync failed: %s' % error)
+                self._log('error', 'tool re-sync failed: %s' % error_string(error))
 
     def _down(self, generation):
         if not self._current(generation):
@@ -123,7 +125,7 @@ class McpConnection:
             async def clear():
                 self._clear_tools()
             self._enqueue(clear)
-            self._log('error', 'giving up after %s consecutive failed reconnect attempts — tools unregistered; reload the plugin or restart the Host to reconnect' % self.policy['maxAttempts'])
+            self._log('error', 'giving up after %s consecutive failed reconnect attempts — tools unregistered; reload the plugin or restart the Host to reconnect' % js_to_string(self.policy['maxAttempts']))
             return
         delay = self.policy['initialDelayMs']
         for attempt in range(self._failed_attempts - 1):
@@ -133,7 +135,7 @@ class McpConnection:
         delay = min(self.policy['maxDelayMs'], delay)
         self._log('warn', '%s in %sms (attempt %s/%s)' % (
             'connection lost; reconnecting' if established else 'connection failed; retrying',
-            delay, self._failed_attempts, self.policy['maxAttempts']))
+            js_to_string(delay), self._failed_attempts, js_to_string(self.policy['maxAttempts'])))
         async def retry():
             await asyncio.sleep(delay / 1000)
             self._retry_task = None
@@ -158,8 +160,10 @@ class McpConnection:
             if self._first_error is None:
                 self._first_error = error
             if not self.disposed:
-                self._log('warn', 'connection attempt failed: %s' % error)
-                self._down(None)
+                self._log('warn', 'connection attempt failed: %s' % error_string(error))
+                await self._wait_closed(asyncio.Event())
+                if not self.disposed:
+                    self._log('error', 'failed generation did not close within 5000ms — reconnect stopped to avoid overlapping server processes; reload the plugin or restart the Host to retry')
             return
         closed = asyncio.Event()
         settled = False
@@ -178,7 +182,7 @@ class McpConnection:
             if self._first_error is None:
                 self._first_error = error
             if self._current(generation):
-                self._log('warn', 'connection attempt failed: %s' % error)
+                self._log('warn', 'connection attempt failed: %s' % error_string(error))
             try:
                 await _await_result(generation.close())
             except Exception:
@@ -200,12 +204,12 @@ class McpConnection:
             self._connected_at = asyncio.get_running_loop().time()
             if self._failed_attempts:
                 self._log('info', 'reconnected and re-synced tools (attempt %s/%s)' % (
-                    self._failed_attempts, self.policy['maxAttempts']))
+                    self._failed_attempts, js_to_string(self.policy['maxAttempts'])))
 
     async def _initial(self):
         await self._connect_generation(True)
         if not self.ready.done():
-            self.ready.set_result({'error': None if self.client is not None else
+            self.ready.set_result({} if self.client is not None else {'error':
                                    self._first_error or RuntimeError('%s: initial connection failed' % self._label)})
 
     def _clear_tools(self):

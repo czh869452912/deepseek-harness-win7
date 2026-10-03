@@ -68,4 +68,6 @@ for (const packet of [
   {jsonrpc: '2.0', error: {code: -32602, message: 'invalid'}},
   {jsonrpc: '2.0', method: 'notifications/tools/list_changed', params: {_meta: {progressToken: 9007199254740992}}},
 ]) observe('JSONRPCMessageSchema', 'wire:' + observations.length, packet)
+for (const key of ['²','٣','１２']) observe('JSONRPCMessageSchema','unicode-key:'+key,
+  {jsonrpc:'2.0',id:1,result:{},[key]:false})
 writeFileSync(process.argv[4], JSON.stringify(observations, null, 2) + '\n')

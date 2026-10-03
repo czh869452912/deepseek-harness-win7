@@ -8,7 +8,7 @@ import math
 import re
 import weakref
 from typing import Any, Callable, Dict, List, Optional, Union
-from dsh.mcp.content import extract_text, prepare_image_projection
+from dsh.mcp.content import error_string, extract_text, prepare_image_projection
 
 try:
     from dsh.core.tools import _assert_supported_schema
@@ -185,10 +185,7 @@ async def sync_tools(
         return previous
 
     for disp in previous.values():
-        try:
-            disp()
-        except Exception:
-            pass
+        disp()
 
     disposers: Dict[str, Callable[[], None]] = {}
     tools_svc = ctx.get("tools") if hasattr(ctx, "get") else getattr(ctx, "tools", None)
@@ -197,12 +194,13 @@ async def sync_tools(
             for pub_name, spec in new_definitions.items():
                 disp = tools_svc.register(spec)
                 disposers[pub_name] = disp
-        except Exception:
+        except Exception as error:
             for disp in disposers.values():
-                try:
-                    disp()
-                except Exception:
-                    pass
+                disp()
+            logger = getattr(ctx, 'logger', None)
+            if logger is not None:
+                logger.error('mcp-client(%s): tool registration failed, no tools registered: %s' %
+                    (server_name, error_string(error)))
             if registration_failure == "throw":
                 raise
             return {}

@@ -18,6 +18,7 @@ INPUTS = ['scripts/mcp_stdio_oracle.py', 'scripts/oracles/mcp_stdio_python.py',
           'scripts/oracles/vitest.mcp-stdio-probe.config.mts', 'scripts/oracles/vitest.acp.config.mts',
           'scripts/oracles/acp-sdk-resolution.mjs', 'scripts/oracles/official/package-lock.json',
           'dsh/mcp/stdio_client.py', 'dsh/mcp/transport.py', 'dsh/core/abort.py',
+          'dsh/mcp/protocol.py', 'dsh/mcp/http_client.py',
           'dsh/mcp/schemas.py', 'dsh/mcp/schema_definitions.json',
           'reference/packages/mcp/mcp-client/src/transport.ts',
           'reference/packages/mcp/mcp-client/src/tools.ts']

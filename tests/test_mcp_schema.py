@@ -21,7 +21,7 @@ def test_pinned_mcp_schemas_preserve_all_raw_source_parse_observations(tmp_path)
     assert json.loads(exported.read_text(encoding='utf-8')) == DEFINITIONS
     subprocess.run([node, str(ROOT / 'scripts/oracles/mcp_schema_probe.mjs'), str(sdk), str(exported), str(observations)], check=True)
     rows = json.loads(observations.read_text(encoding='utf-8'))
-    assert len(rows) == 959
+    assert len(rows) == 962
     for row in rows:
         try:
             result = {'data': parse(row['name'], row['value'])}

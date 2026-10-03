@@ -41,7 +41,7 @@ def _invalid(path, expected, value):
 
 
 def _keys(value):
-    numeric = [name for name in value if name.isdigit() and str(int(name)) == name and int(name) < 4294967295]
+    numeric = [name for name in value if name.isascii() and name.isdigit() and str(int(name)) == name and int(name) < 4294967295]
     return sorted(numeric, key=int) + [name for name in value if name not in numeric]
 
 

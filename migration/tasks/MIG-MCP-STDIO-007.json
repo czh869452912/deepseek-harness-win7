@@ -39,5 +39,5 @@
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "提交已通过完整预览的 stdio/lifecycle 第一部分；合入隔离工作树的固定 SDK schema/config、响应 ID 和工具投影修复，补齐 source-backed 必需消费者及富内容证据，再做干净候选验收。排查启动期浏览器取消；HTTP/SSE、ACP mounting/subagent 和 B/C/D 继续独立推进，任务不设置 integrated。"
+  "next_action": "第一、二部分已分别提交 026fe76f、93e06d8a；在 HTTP 第三部分重验共享 RPC 抽取、962 组 SDK schema、原始 stdio/Portable 所有权和新的 supervisor 对照，随后做干净候选验收。排查启动期浏览器取消；ACP mounting/subagent 和 B/C/D 继续独立推进，任务不设置 integrated。"
 }

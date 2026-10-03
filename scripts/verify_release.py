@@ -17,6 +17,7 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from scripts.mcp_stdio_oracle import validate_runtime_report as validate_mcp_runtime
+from scripts.mcp_http_oracle import validate_runtime_report as validate_mcp_http_runtime
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -25,10 +26,23 @@ PAIRED_DRIVERS = (
     'pi', 'storage_cache', 'workflow_ralph', 'repeat_tool', 'token_meter',
     'pruner', 'compaction', 'maintenance', 'timeout_policy', 'abort',
     'approval', 'inspect', 'cordis_guard', 'cordis_runner',
-    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio',
+    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http',
 )
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp')
 REQUIRED_REGRESSION = {
+    'test_mcp_http_source': {'test_actual_source_http_sdk_wire_results_errors_and_close'},
+    'test_mcp_supervisor_source': {'test_actual_source_supervisor_outcomes_logs_and_owned_registry_order'},
+    'test_mcp_factory_source': {'test_actual_sdk_factory_failure_stops_at_the_close_barrier_without_retry'},
+    'test_mcp_http_transport': {
+        'test_actual_http_json_sse_and_explicit_session_termination[' + mode + ']'
+        for mode in ('json', 'json-batch', 'json-bom', 'post-sse', 'sse-bom', 'get-sse', 'session', 'delete-405')
+    } | {
+        'test_actual_http_failure_cannot_invent_success[' + mode + ']'
+        for mode in ('status-401', 'unexpected-content', 'missing-content', 'peer-error')
+    } | {
+        'test_actual_http_pending_cancel_timeout_and_close_reclaim_resources[' + mode + ']'
+        for mode in ('cancel', 'timeout', 'close-pending')
+    } | {'test_actual_http_plugin_activation_tools_consumer_and_scope_unload'},
     'test_mcp_schema': {'test_pinned_mcp_schemas_preserve_all_raw_source_parse_observations'},
     'test_mcp_config': {'test_actual_source_configuration_defaults_errors_and_raw_reconnect_resolution'},
     'test_mcp_tools_source': {'test_actual_source_bridge_text_names_and_exact_execution_refusal'},
@@ -173,6 +187,10 @@ def validate_extracted(path, archive, candidate):
         validate_mcp_runtime(mcp)
     except ValueError as error:
         raise RuntimeError('Extracted MCP stdio observations are incomplete') from error
+    try:
+        validate_mcp_http_runtime(report.get('mcpHttp', {}))
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted MCP HTTP observations are incomplete') from error
     if report.get('archiveSha256') != digest(archive) or Path(report['archive']).resolve() != archive.resolve():
         raise RuntimeError('Extracted receipt belongs to a different archive')
     provenance = report.get('provenance', {})

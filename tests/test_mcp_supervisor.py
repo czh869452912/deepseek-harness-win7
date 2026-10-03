@@ -102,7 +102,7 @@ async def test_serialized_notifications_keep_last_good_fetch_then_swap_and_dispo
     monkeypatch.setattr('dsh.mcp.connection.create_transport', lambda config: peer)
     ctx = context()
     connection = McpConnection(ctx, {'serverName': 'owned'}, resolve_reconnect_policy({'enabled': False}))
-    assert (await connection.ready)['error'] is None
+    assert await connection.ready == {}
     assert 'actual consumer' in await ctx.get('tools').execute_tool('mcp__owned__echo', {})
     peer.names = ('duplicate', 'duplicate')
     await peer.changed()

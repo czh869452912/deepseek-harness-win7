@@ -1,4 +1,5 @@
 import argparse
+import copy
 import importlib.util
 import json
 from pathlib import Path
@@ -6,6 +7,7 @@ import xml.etree.ElementTree as ET
 
 import pytest
 from scripts.mcp_stdio_oracle import MODES as MCP_MODES, expected_row as mcp_expected_row
+from scripts.mcp_http_oracle import EXPECTED as HTTP_EXPECTED
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -37,10 +39,10 @@ def regression_xml(path, omit=None, skip=None, duplicate=None, failure=None):
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 32, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 51, 'skipped': 1}
 
 
-@pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer'])
+@pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source'])
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
 def test_incomplete_regression_cannot_certify_a_release(tmp_path, module, damage):
     path = tmp_path / 'pytest.xml'
@@ -103,6 +105,10 @@ def extracted_receipt(tmp_path):
     report['mcpStdio'] = {'observations': [mcp_expected_row(mode) for mode in MCP_MODES],
         'consumer': {'registered': True, 'output': 'controlled consumer', 'retired': True, 'childExited': True, 'pending': 0},
         'python': '3.8.10 controlled fixture', 'root': str(tmp_path), 'module': str(tmp_path / 'dsh/__init__.py')}
+    report['mcpHttp'] = {'observations': copy.deepcopy(HTTP_EXPECTED['observations']),
+        'consumer': {'registered': True, 'output': 'controlled consumer', 'retired': True, 'closed': True,
+            'writers': 0, 'tasks': 0, 'pending': 0, 'childExited': True},
+        'python': '3.8.10 controlled fixture', 'root': str(tmp_path), 'module': str(tmp_path / 'dsh/__init__.py')}
     return archive, candidate, report
 
 
@@ -110,7 +116,8 @@ def extracted_receipt(tmp_path):
                                     'archive', 'commit', 'dirty', 'frontend', 'acp-missing', 'acp-tail',
                                     'permission-missing', 'permission-tail', 'permission-unsafe', 'permission-audit',
                                     'mcp-missing', 'mcp-tail', 'mcp-reaped', 'mcp-foreign-module',
-                                    'mcp-child-alive', 'mcp-consumer-type', 'mcp-python'])
+                                    'mcp-child-alive', 'mcp-consumer-type', 'mcp-python', 'http-missing',
+                                    'http-tail', 'http-child-alive', 'http-consumer-type', 'http-module'])
 def test_extracted_runtime_and_browser_receipt_is_bound_to_the_candidate(tmp_path, damage):
     archive, candidate, report = extracted_receipt(tmp_path)
     if damage == 'browser-skipped':
@@ -151,6 +158,16 @@ def test_extracted_runtime_and_browser_receipt_is_bound_to_the_candidate(tmp_pat
         report['mcpStdio']['consumer']['registered'] = 1
     elif damage == 'mcp-python':
         report['mcpStdio']['python'] = '3.8.100 controlled fixture'
+    elif damage == 'http-missing':
+        del report['mcpHttp']
+    elif damage == 'http-tail':
+        report['mcpHttp']['observations'].pop()
+    elif damage == 'http-child-alive':
+        report['mcpHttp']['consumer']['childExited'] = False
+    elif damage == 'http-consumer-type':
+        report['mcpHttp']['consumer']['registered'] = 1
+    elif damage == 'http-module':
+        report['mcpHttp']['module'] = str(tmp_path / 'foreign/dsh/__init__.py')
     else:
         report['frontendFilesChecked'] = 0
     path = tmp_path / 'receipt.json'

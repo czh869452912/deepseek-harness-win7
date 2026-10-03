@@ -1,0 +1,22 @@
+{
+  "id": "CON-MCP-HTTP",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/mcp/mcp-client/src/transport.ts", "reference/packages/mcp/mcp-client/src/connection.ts", "scripts/oracles/official/package-lock.json"],
+  "consumers": ["dsh/mcp/transport.py", "dsh/mcp/connection.py", "dsh/mcp/tools.py", "scripts/verify_portable.py"],
+  "invariants": [
+    "Actual HTTP initialize/initialized/list/call fields, selected protocol/session/header fields, JSON/batched JSON, POST SSE and GET notifications match the sixteen original factory/SDK observations at declared GET/cancellation admission barriers.",
+    "Peer MCP errors, HTTP 401, unexpected or missing content types and invalid envelopes reject with the observed error fields; no transport can invent successful tools or output.",
+    "Cancel and timeout settle without awaiting the cancellation HTTP acknowledgment; close reclaims every owned send, stream/retry task, writer and pending request.",
+    "Close does not silently DELETE a server session; explicit termination uses the current session/protocol headers and accepts the original 405 outcome.",
+    "The actual embedded Python/ToolsService consumer executes the advertised HTTP tool and withdraws it on awaited scope unload."
+  ],
+  "identity": "One protocol client with correlated requests, optional server session id and owned HTTP/SSE resources; fresh GET/cancel admission barriers are explicit observer inputs.",
+  "ownership": "The client owns network writers, send and stream/retry tasks, pending requests and close; the caller owns explicit headers and cancellation, and the observer owns its controlled peer process.",
+  "ordering": "Initialization and negotiated version precede initialized notification and tool publication; observed optional GET admission precedes list, and cancellation admission precedes observer shutdown. These barriers do not certify an ordering between unconstrained concurrent HTTP requests.",
+  "errors": "Selected original factory/SDK error name, message, code and absent-versus-null data are retained; malformed URL factory failure stops at the original five-second close barrier instead of inventing a retry generation.",
+  "cancellation": "Cancellation dispatch is owned asynchronously, a stalled notification acknowledgment cannot hold the canceled request, and shutdown drains owned work and closes or aborts writers.",
+  "adaptation": "Python 3.8 standard-library asyncio streams and TLS primitives; no Node or third-party HTTP runtime in the product. The Windows controlled TCP-only observer uses Selector policy to avoid its separate Proactor accept/stop race; product clients keep the normal runtime policy.",
+  "open_questions": ["This is a bounded implementation scope, not complete SDK HTTP parity. TLS/redirect/encoding/WHATWG URL equivalence, resumable SSE/replay and retry exhaustion, disposal during factory rejection, ACP mounting and Win7 certification remain unaccepted. Complete development gate and clean receipt-bound acceptance are pending; existing browser/Proactor/HTTP 10054 diagnostics remain open."]
+}

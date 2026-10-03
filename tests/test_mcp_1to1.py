@@ -86,16 +86,22 @@ async def test_mcp_sync_tools_and_execution():
 
 
 @pytest.mark.asyncio
-async def test_mcp_plugin_apply():
+async def test_mcp_plugin_apply(tmp_path):
+    from test_mcp_http_transport import launch, dispose
+    process, records, client = await launch('json', tmp_path)
     ctx = Context()
     tools = ToolsService(ctx)
     ctx.set_service("tools", tools)
 
-    plugin = McpClientPlugin({"serverName": "test_server", "transport": "streamable-http", "url": "http://localhost:8000"})
-    await plugin.apply(ctx)
-    assert plugin.connection is not None
-    await plugin.connection.dispose()
-    await ctx.fiber.dispose()
+    plugin = McpClientPlugin({"serverName": "test_server", "transport": "streamable-http", "url": client.url})
+    try:
+        await client.close()
+        await plugin.apply(ctx)
+        assert plugin.connection is not None and plugin.connection.client is not None
+        client = plugin.connection.client
+    finally:
+        await ctx.fiber.dispose()
+        await dispose(process, client)
 
 
 @pytest.mark.asyncio

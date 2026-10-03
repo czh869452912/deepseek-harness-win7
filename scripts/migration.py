@@ -115,6 +115,12 @@ def load(root):
 
 
 def validate(data, root):
+    observed_files = {}
+    def observed_digest(name):
+        if name not in observed_files:
+            observed_files[name] = hashlib.sha256(file_path(root, name).read_bytes()).hexdigest()
+        return observed_files[name]
+
     base = data["baseline"]
     need(base.get("schema_version") == 1, "unsupported baseline schema")
     for key in ("product_commit", "target_upstream"):
@@ -162,8 +168,7 @@ def validate(data, root):
                 fields(item, {"path": str, "sha256": str}, key + ".input")
                 need(re.fullmatch(r"[0-9a-f]{64}", item["sha256"]), key + ": invalid input hash")
                 try:
-                    path = file_path(root, item["path"])
-                    same = hashlib.sha256(path.read_bytes()).hexdigest() == item["sha256"]
+                    same = observed_digest(item["path"]) == item["sha256"]
                 except RecordError:
                     same = False
                 run["_inputs_current"] = run["_inputs_current"] and same
@@ -171,8 +176,7 @@ def validate(data, root):
             need(cid in contracts and type(rev) is int and rev > 0, key + ": unknown contract/revision")
         for artifact in run["artifacts"]:
             fields(artifact, {"path": str, "sha256": str}, key + ".artifact")
-            path = file_path(root, artifact["path"])
-            need(hashlib.sha256(path.read_bytes()).hexdigest() == artifact["sha256"], key + ": artifact hash mismatch")
+            need(observed_digest(artifact["path"]) == artifact["sha256"], key + ": artifact hash mismatch")
     graph = {}
     # Validate the dependency surface before following references to later rows.
     for key, task in tasks.items():

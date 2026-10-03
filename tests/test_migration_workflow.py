@@ -78,6 +78,30 @@ def test_dependency_requires_integrated_exact_contract_evidence(ledger):
     assert not m.blockers(consumer, data)
 
 
+def test_shared_evidence_reads_each_file_once_and_rechecks_in_next_validation(ledger, monkeypatch):
+    data, root = ledger
+    run = certify(data, root)
+    second = copy.deepcopy(run)
+    second['id'] = 'RUN-B'
+    second['inputs'][0]['sha256'] = '0' * 64
+    data['evidence']['RUN-B'] = second
+    calls = []
+    original = Path.read_bytes
+    def read(path):
+        calls.append(path.name)
+        return original(path)
+    monkeypatch.setattr(Path, 'read_bytes', read)
+    m.validate(data, root)
+    assert calls.count('source.py') == 1 and calls.count('result.txt') == 1
+    assert run['_inputs_current'] is True and second['_inputs_current'] is False
+    (root / 'source.py').write_text('changed input\n', encoding='utf-8')
+    m.validate(data, root)
+    assert run['_inputs_current'] is False and calls.count('source.py') == 2
+    (root / 'result.txt').write_text('changed receipt\n', encoding='utf-8')
+    with pytest.raises(m.RecordError, match='artifact hash mismatch'):
+        m.validate(data, root)
+
+
 @pytest.mark.parametrize("change", ["stale", "input", "deleted-input"])
 def test_stale_evidence_blocks_consumers_without_erasing_integration(ledger, change):
     data, root = ledger

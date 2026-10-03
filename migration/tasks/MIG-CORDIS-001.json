@@ -27,8 +27,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "97f7b287aaeb7f95af4c14c2d86d1977b9714585",
-  "integrated_commit": "97f7b287aaeb7f95af4c14c2d86d1977b9714585",
+  "candidate_commit": "5edf7e22fbc4a0a9c4c74115688b266525614879",
+  "integrated_commit": "5edf7e22fbc4a0a9c4c74115688b266525614879",
   "evidence_ids": [
     "RUN-CORDIS-20260927",
     "RUN-CORDIS-WAVE2-20260927",
@@ -47,7 +47,8 @@
     "RUN-AGENT-CONFIG-CORDIS-001-20260927",
     "RUN-SESSION-PROJECTION-CORDIS-001-20260928",
     "RUN-CURRENT-20261003-CORDIS-001",
-    "RUN-ACP-CONFIG-20261003-CORDIS-001"
+    "RUN-ACP-CONFIG-20261003-CORDIS-001",
+    "RUN-ACP-STDIO-20261003-CORDIS-001"
   ],
   "next_action": "本批次核心/关键消费者闭包已验收；C58 原生 Python 适配按精确签名单独记录，范围外业务模块不据此认证。",
   "delivery_commit": "072cbcd68a56d7241b0a1a93581f9d38924c3932"

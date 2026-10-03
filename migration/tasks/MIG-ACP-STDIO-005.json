@@ -2,28 +2,59 @@
   "id": "MIG-ACP-STDIO-005",
   "goal": "闭合 canonical ACP stdio 启动、SDK wire 与真实进程所有权",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "85fa6dc90b2a861a0d57fadf71dc36aecc635b03",
   "owner": "current-session-coordinator",
   "requires": [
-    {"task": "MIG-ACP-SESSION-CONTROLS-003", "contract": "CON-ACP-SESSION-CONTROLS", "revision": 1},
-    {"task": "MIG-ACP-CONFIG-OUTPUT-004", "contract": "CON-ACP-CONFIG-OUTPUT", "revision": 1},
-    {"task": "MIG-AGENT-LIFECYCLE-002", "contract": "CON-AGENT-FACTORY", "revision": 1},
-    {"task": "MIG-SESSION-STORAGE-006", "contract": "CON-SESSION-STORAGE", "revision": 1}
+    {
+      "task": "MIG-ACP-SESSION-CONTROLS-003",
+      "contract": "CON-ACP-SESSION-CONTROLS",
+      "revision": 1
+    },
+    {
+      "task": "MIG-ACP-CONFIG-OUTPUT-004",
+      "contract": "CON-ACP-CONFIG-OUTPUT",
+      "revision": 1
+    },
+    {
+      "task": "MIG-AGENT-LIFECYCLE-002",
+      "contract": "CON-AGENT-FACTORY",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-STORAGE-006",
+      "contract": "CON-SESSION-STORAGE",
+      "revision": 1
+    }
   ],
-  "provides": [{"contract": "CON-ACP-STDIO", "revision": 1}],
+  "provides": [
+    {
+      "contract": "CON-ACP-STDIO",
+      "revision": 1
+    }
+  ],
   "acceptance": [
     "Raw pinned SDK and actual production framing/correlation/parameter observations match with negative observer cases; unexecuted or missing modes cannot pass.",
     "Actual canonical acp profile resolves its app provider; help/errors bind no transport, EOF readiness and unload remove their own listeners without closing launcher handles.",
     "Real parent/child process and controlled HTTP provider prove semantic updates precede prompt result, concurrent Sessions, request/session cancel, durable new-process resume and malformed-request errors.",
     "Delayed admission/output, write failure, duplicate typed ids and close prevent late effects; real extracted Portable and a frozen clean candidate complete the full Python 3.8.10 gate."
   ],
-  "expected_paths": ["dsh/acp", "dsh/bundle", "dsh/boot", "tests", "scripts", "migration", "docs/research"],
-  "open_findings": ["Production stdio/canonical startup, 906 raw SDK observations, three original app assertions and real concurrent/cancel/EOF/durable-resume process journeys now pass targeted checks. Full Python regression, committed clean candidate and actual extracted Portable ACP receipt remain required before acceptance."],
+  "expected_paths": [
+    "dsh/acp",
+    "dsh/bundle",
+    "dsh/boot",
+    "tests",
+    "scripts",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "运行 Python 3.8.10 全量，提交 A3 产品，再冻结 clean candidate 完整 gate 与实际解压 Portable stdio；未通过不 integrated，MCP/权限/subagent 保留 A4。"
+  "candidate_commit": "5edf7e22fbc4a0a9c4c74115688b266525614879",
+  "integrated_commit": "5edf7e22fbc4a0a9c4c74115688b266525614879",
+  "evidence_ids": [
+    "RUN-ACP-STDIO-20261003-ACP-STDIO-005"
+  ],
+  "next_action": "canonical stdio、九方法 SDK 参数/协议、真实并发取消 EOF 与解压包 stdio 在 clean candidate 5edf7e22 有界验收；继续 A4 MCP/一次性权限/subagent 和 B/C/D，不认证全部 ACP。"
 }

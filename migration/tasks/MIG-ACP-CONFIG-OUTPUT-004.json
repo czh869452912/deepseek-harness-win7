@@ -46,10 +46,11 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "97f7b287aaeb7f95af4c14c2d86d1977b9714585",
-  "integrated_commit": "97f7b287aaeb7f95af4c14c2d86d1977b9714585",
+  "candidate_commit": "5edf7e22fbc4a0a9c4c74115688b266525614879",
+  "integrated_commit": "5edf7e22fbc4a0a9c4c74115688b266525614879",
   "evidence_ids": [
-    "RUN-ACP-CONFIG-20261003-ACP-CONFIG-OUTPUT-004"
+    "RUN-ACP-CONFIG-20261003-ACP-CONFIG-OUTPUT-004",
+    "RUN-ACP-STDIO-20261003-ACP-CONFIG-OUTPUT-004"
   ],
-  "next_action": "模型配置、admission/turn pin 和 ordered committed output 有界合同在 clean candidate 97f7b287 验收；继续 canonical A3 stdio 和 A4 MCP/权限/subagent，完整 ACP 未认证。"
+  "next_action": "模型配置、admission/turn pin 和 ordered committed output 有界合同在 clean candidate 5edf7e22 验收；继续 A4 MCP/权限/subagent，完整 ACP 未认证。"
 }

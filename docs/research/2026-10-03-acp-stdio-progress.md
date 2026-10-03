@@ -1,6 +1,6 @@
 # ACP stdio 与 canonical 启动推进
 
-固定目标 `cd5ef8148158c3a752a658978873241fdf8e2bbc`；A1/A2 有界接受候选仍为 `97f7b287`。本部分 `MIG-ACP-STDIO-005` / `CON-ACP-STDIO@1` 尚为 running/specified，没有整包或完整 ACP 验收。
+固定目标 `cd5ef8148158c3a752a658978873241fdf8e2bbc`；A1/A2 与本部分 A3 已在干净候选 `5edf7e22` 重新签发各自有界证据。`MIG-ACP-STDIO-005` integrated / `CON-ACP-STDIO@1` specified；没有完整 ACP 或全项目验收。
 
 ## 产品与必要消费者
 
@@ -22,10 +22,10 @@ canonical acp-app 接受参数后才提供 readiness 和 detachable stdin，help
 - 早期 `journeys.log/xml`、`journeys-owned.log/xml`、`targeted.log/xml` 保留。首次 fixture 误读最后一条 system reminder；后续 fixture 错把未提交 delta 当作 ACP update，因此超时。改为等真实 HTTP admission，再观察取消结果。EOF 缓存关闭故障单独修复，不用 fixture 修正掩盖产品警告。
 - 合并 observer 的 built-in `bytes` 名称遮蔽、batch anchor 少计一个 invalid response、报告孤立 surrogate UTF-8 写入失败均已修复；原始 `combined*` 失败仍保留。最终报告用 JSON escaped Unicode 无损记录孤立 surrogate。
 
-## 验收仍待执行
+## 干净候选有界验收
 
-统一 gate 现要求 27 paired drivers、六组原样源测试（前五组 616 + app 3），十四条不可缺失/跳过的 browser/Portable/ACP 进程 lane；解压 Portable 增加两个真实 stdio 进程、九步初始化/参数拒绝/new/close/list/EOF/resume 验证。没有重新发行或声称当前旧 ZIP 含这些未提交变更。
+候选 `5edf7e22fbc4a0a9c4c74115688b266525614879` 冻结输入后完整 gate passed / publishable=true：4971 passed、6 skipped、1 warning、0 failed，完整 Python 回归 1108.79 秒；27 paired drivers、六组原样源测试 80 + 100 + 197 + 100 + 139 + 3 = 619，以及十四条不可缺失/跳过的 browser/Portable/ACP 进程 lane 全通过。实际 ZIP 解压后 13 runtime、5 browser、两个真实 ACP stdio 进程九步及 119 frontend 输入校验通过；没有执行公开发布。
 
-已执行完整 `.venv\Scripts\python.exe -m pytest tests` 并修复五处受影响消费者断言；提交的是待验收产品候选。冻结干净候选跑完整 gate，必须全量零失败和所有 required lane/SDK/source/实际解压通过，再绑定 ZIP/receipt 签发限定验收。A4 MCP/一次性权限/subagent、B/C/D、无缓存安装、真实远程服务和暂缓的 Win7 真机不随 A3 自动闭合。原有八类精确原版 bug 谓词和 C58 边界未扩大。
+冻结输入 SHA256 `52e86d6d1d14121add6432b76e239c63e836084e303563d2b6fd594b6fc4d3ac`。十五份限定证据及完整日志/原始观察/历史失败归档于 `migration/evidence/artifacts/ACP-STDIO-20261003-5edf7e22.zip`，SHA256 `48724d745fcdd8e41570bbca4af89f3bcf65061f5ee94adcb874efb4ccb6fff1`。当前实际发行 ZIP 哈希见审阅记录；旧 dirty preview 不成为发行物。A4 MCP/一次性权限/subagent、B/C/D、无缓存安装、真实远程服务和暂缓的 Win7 真机不随 A3 自动闭合。原有八类精确原版 bug 谓词和 C58 边界未扩大。
 
 A4 首个实际否定探针：原样 MCP SDK 在不存在 executable 上 connect 和后续 tools 调用均失败；当前 Python MCP transport 返回 proc=None、空 tools 和虚构调用成功文本。原始观察保留 `.goose/out/acp-a4-work/mcp-provider-{source,python}.json`，这是未完成提供端的失败证据；不得只接 ACP 参数 mapping 或 advertise http=true 就宣称 MCP 完成。

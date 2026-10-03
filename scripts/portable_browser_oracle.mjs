@@ -6,7 +6,7 @@ import {tmpdir} from 'node:os';
 import {basename, dirname, join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createInterface} from 'node:readline';
-import {closeOriginalBrowser, deferProviderOnboarding} from './browser_onboarding.mjs';
+import {closeOriginalBrowser, deferProviderOnboarding, navigateOriginalPage} from './browser_onboarding.mjs';
 
 const options = Object.fromEntries(process.argv.slice(2).reduce((rows, value, i, args) => {
   if (value.startsWith('--')) rows.push([value.slice(2), args[i + 1]]); return rows;
@@ -130,7 +130,7 @@ try {
   });
   await cdp.call('Runtime.enable'); await cdp.call('Page.enable'); await cdp.call('Network.enable');
   await cdp.call('Emulation.setDeviceMetricsOverride', {width: 1680, height: 1000, deviceScaleFactor: 1, mobile: false});
-  await cdp.call('Page.navigate', {url: boot.url});
+  await navigateOriginalPage(cdp, until, boot.url);
   await until(() => count('[class*="frame"]'), 'original shell');
   const notice = '[role="dialog"][aria-label="Internal Testing Notice"]';
   await until(() => count(notice), 'original first-use notice'); await click(notice + ' button');

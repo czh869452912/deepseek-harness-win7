@@ -140,6 +140,53 @@ console.log(JSON.stringify({actions, polls, failure}));
     assert report['polls'] >= 2
 
 
+@pytest.mark.parametrize('condition', ['committed', 'authenticated', 'stale', 'wrong-url', 'loading', 'navigation-error'])
+def test_navigation_requires_committed_complete_document_at_requested_url(condition):
+    source = r'''
+import assert from 'node:assert/strict';
+import {runInNewContext} from 'node:vm';
+const {navigateOriginalPage} = await import(process.argv[1]);
+const condition = process.argv[2], actions = [];
+const performance = {timeOrigin: 10}, location = {href: 'http://host/'}, document = {readyState: 'complete'};
+const connection = {
+  evaluate: expression => Promise.resolve(runInNewContext(expression, {performance, location, document})),
+  call: async (method, parameters) => {
+    actions.push({method, parameters});
+    return condition === 'navigation-error' ? {errorText: 'net::ERR_CONNECTION_REFUSED'} : {loaderId: 'new-loader'};
+  },
+};
+let polls = 0, failure = null;
+const waitFor = async (read, label) => {
+  assert.equal(await read(), false);
+  for (polls = 1; polls < 5; polls++) {
+    if (polls === 2 && condition !== 'stale') performance.timeOrigin = 20;
+    location.href = condition === 'wrong-url' ? 'about:blank' : 'http://host/';
+    document.readyState = condition === 'loading' || polls < 3 ? 'loading' : 'complete';
+    if (await read()) return true;
+  }
+  throw new Error('Timed out: ' + label);
+};
+const requested = condition === 'authenticated' ? 'http://host/?token=not-a-real-token' : 'http://host';
+try {await navigateOriginalPage(connection, waitFor, requested);} catch (error) {failure = error.message;}
+console.log(JSON.stringify({actions, polls, failure}));
+'''
+    result = subprocess.run([NODE, '--input-type=module', '-e', source.strip().replace('\n', ' '),
+        (ROOT / 'scripts/browser_onboarding.mjs').as_uri(), condition],
+        capture_output=True, encoding='utf-8', timeout=15)
+    assert result.returncode == 0, result.stdout + result.stderr
+    report = json.loads(result.stdout)
+    requested = 'http://host/?token=not-a-real-token' if condition == 'authenticated' else 'http://host'
+    assert report['actions'] == [{'method': 'Page.navigate', 'parameters': {'url': requested}}]
+    if condition in ('committed', 'authenticated'):
+        assert report['failure'] is None
+        assert report['polls'] == 3
+    elif condition == 'navigation-error':
+        assert report['failure'] == 'Original page navigation failed: net::ERR_CONNECTION_REFUSED'
+        assert report['polls'] == 0
+    else:
+        assert report['failure'] == 'Timed out: new document after original page navigation'
+
+
 @pytest.mark.parametrize('launcher_exited', [True, False])
 @pytest.mark.parametrize('disconnected', [True, False])
 def test_browser_close_uses_live_protocol_even_after_launcher_exit_and_requires_disconnect(launcher_exited, disconnected):

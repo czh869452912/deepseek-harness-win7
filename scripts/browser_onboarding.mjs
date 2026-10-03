@@ -11,6 +11,17 @@ export async function reloadOriginalPage(connection, waitFor, parameters = {}) {
     'new document after original page reload');
 }
 
+export async function navigateOriginalPage(connection, waitFor, url) {
+  const previous = await connection.evaluate('performance.timeOrigin');
+  const destination = new URL(url);
+  destination.searchParams.delete('token');
+  const result = await connection.call('Page.navigate', {url});
+  if (result.errorText) throw new Error('Original page navigation failed: ' + result.errorText);
+  await waitFor(() => connection.evaluate('performance.timeOrigin !== ' + JSON.stringify(previous)
+    + ' && location.href === ' + JSON.stringify(destination.href)
+    + ' && document.readyState === "complete"'), 'new document after original page navigation');
+}
+
 export async function closeOriginalBrowser(connection, browser, waitFor) {
   if (connection && connection.socket.readyState === 1) {
     try { await connection.call('Browser.close'); }

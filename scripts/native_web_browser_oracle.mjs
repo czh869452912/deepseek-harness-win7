@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
-import { closeOriginalBrowser, credentialFreeEnvironment, deferProviderOnboarding, reloadOriginalPage } from './browser_onboarding.mjs';
+import { closeOriginalBrowser, credentialFreeEnvironment, deferProviderOnboarding, navigateOriginalPage, reloadOriginalPage } from './browser_onboarding.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const options = Object.fromEntries(process.argv.slice(2).reduce((pairs, value, i, args) => {
@@ -285,7 +285,7 @@ try {
   await cdp.call('Runtime.enable'); await cdp.call('Page.enable'); await cdp.call('Network.enable');
   await cdp.call('Emulation.setDeviceMetricsOverride', { width: 1680, height: 1000, deviceScaleFactor: 1, mobile: false });
   await cdp.call('Emulation.setLocaleOverride', { locale: 'en-US' });
-  await cdp.call('Page.navigate', { url: boot.url });
+  await navigateOriginalPage(cdp, until, boot.url);
   await until(() => count('[class*="frame"]'), 'original application frame', 30000);
   report.steps.push({ step: 'original-frontend-boot', passed: true });
   report.initialText = await cdp.evaluate('document.body.innerText');
@@ -336,7 +336,7 @@ try {
       if (message.method === 'Runtime.consoleAPICalled' && message.params.type === 'error') report.consoleErrors.push(message.params.args.map(value => value.value ?? value.description));
     });
     await extraCdp.call('Runtime.enable'); await extraCdp.call('Page.enable'); await extraCdp.call('Network.enable');
-    await extraCdp.call('Page.navigate', { url: boot.url });
+    await navigateOriginalPage(extraCdp, until, boot.url);
     await until(() => extraCdp.evaluate('document.body?.innerText.includes("Into the Unknown")'), 'second original Client boot');
     await until(async () => (await command('snapshot')).inspectDirectory.filter(row => row.platform === 'client').length === 5 && (await command('snapshot')).inspectPending.length === 0, 'second Client manifest sync');
     const previousReplies = report.inspectReplies?.length ?? 0;

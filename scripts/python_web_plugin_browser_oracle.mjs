@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
-import { closeOriginalBrowser, credentialFreeEnvironment, deferProviderOnboarding, reloadOriginalPage } from './browser_onboarding.mjs';
+import { closeOriginalBrowser, credentialFreeEnvironment, deferProviderOnboarding, navigateOriginalPage, reloadOriginalPage } from './browser_onboarding.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const options = Object.fromEntries(process.argv.slice(2).reduce((pairs, value, i, args) => {
@@ -80,8 +80,7 @@ async function onboarding(required = false) {
 async function closePage() {
   phase = 'close-page';
   await settleNetwork();
-  await cdp.call('Page.navigate', {url: 'about:blank'});
-  await until(() => cdp.evaluate('location.href === "about:blank"'), 'close page before Host transition');
+  await navigateOriginalPage(cdp, until, 'about:blank');
 }
 async function reloadPage() {
   phase = 'reload-page';
@@ -96,7 +95,7 @@ async function click(selector) {
 }
 async function open(boot, present = true) {
   phase = 'open:' + new URL(boot.url).origin;
-  await cdp.call('Page.navigate', { url: boot.url });
+  await navigateOriginalPage(cdp, until, boot.url);
   await until(() => count('[class*="frame"]'), 'original application shell', 30000);
   // Dismiss the original first-use notice through its actual visible control.
   const notice = '[role="dialog"][aria-label="Internal Testing Notice"]';

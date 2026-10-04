@@ -37,6 +37,7 @@ from scripts.python_directory_probe import validate as validate_python_directory
 from scripts.session_snapshots_oracle import validate_runtime as validate_session_snapshots
 from scripts.query_schema_oracle import validate_runtime as validate_query_schema
 from scripts.query_engine_oracle import validate_runtime as validate_query_engine
+from scripts.query_unicode_oracle import validate_runtime as validate_query_unicode, source_identity as unicode_source_identity
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -45,10 +46,39 @@ PAIRED_DRIVERS = (
     'pi', 'storage_cache', 'workflow_ralph', 'repeat_tool', 'token_meter',
     'pruner', 'compaction', 'maintenance', 'timeout_policy', 'abort',
     'approval', 'inspect', 'cordis_guard', 'cordis_runner',
-    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure', 'session_observation_read', 'session_corpus_list', 'session_corpus_read', 'session_lineage', 'session_event_trace', 'session_filters', 'session_requests', 'session_snapshots', 'query_schema', 'query_engine',
+    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure', 'session_observation_read', 'session_corpus_list', 'session_corpus_read', 'session_lineage', 'session_event_trace', 'session_filters', 'session_requests', 'session_snapshots', 'query_schema', 'query_engine', 'query_unicode',
 )
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source')
 REQUIRED_REGRESSION = {
+    "test_query_unicode": {
+        "test_canonical_and_ignorable_strings_preserve_stable_order[\\xe9-e\\u0301]",
+        "test_canonical_and_ignorable_strings_preserve_stable_order[ab-a\\u200bb]",
+        "test_canonical_and_ignorable_strings_preserve_stable_order[ab-a\\xadb]",
+        "test_canonical_and_ignorable_strings_preserve_stable_order[ab-a\\u2060b]",
+        "test_canonical_and_ignorable_strings_preserve_stable_order[a\\u0315\\u0300-\\xe0\\u0315]",
+        "test_nullable_fingerprint_preserves_source_case_order",
+        "test_equivalent_strings_retain_distinct_request_fingerprints",
+        "test_utf16_embedded_nul_and_unpaired_surrogates_are_not_truncated",
+        "test_collator_close_is_idempotent_and_refuses_late_comparisons",
+        "test_runtime_identity_copies_metadata_and_reports_loaded_files",
+        "test_changed_manifest_refused_before_loading[version-value0]",
+        "test_changed_manifest_refused_before_loading[version-value1]",
+        "test_changed_manifest_refused_before_loading[unicode_version-value2]",
+        "test_changed_manifest_refused_before_loading[cldr_version-value3]",
+        "test_changed_manifest_refused_before_loading[dll_sha256-value4]",
+        "test_changed_manifest_refused_before_loading[license_sha256-value5]",
+        "test_missing_runtime_or_license_refused_before_loading[dsh_icudt78.dll]",
+        "test_missing_runtime_or_license_refused_before_loading[dsh_icuuc78.dll]",
+        "test_missing_runtime_or_license_refused_before_loading[dsh_icuin78.dll]",
+        "test_missing_runtime_or_license_refused_before_loading[ICU-LICENSE]",
+        "test_missing_runtime_or_license_refused_before_loading[LLVM-LICENSE.txt]",
+        "test_corrupt_private_library_refused_before_loading",
+        "test_legacy_windows_loader_flags_are_used_for_all_libraries",
+        "test_portable_input_verification_does_not_load_libraries",
+    },
+    "test_query_unicode_source": {
+        "test_actual_original_native_unicode_and_cursor_observations",
+    },
     "test_session_remote": {
         "test_session_remote_create_follow_rename_resume[minimal]",
         "test_session_remote_create_follow_rename_resume[standard]",
@@ -459,6 +489,13 @@ def validate_extracted(path, archive, candidate):
             raise ValueError('Session corpus reads came from a different runtime')
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted Session corpus read observations are incomplete') from error
+    try:
+        if not isinstance(candidate['query_unicode_observations_sha256'], str) or not isinstance(candidate['query_unicode_locale'], str):
+            raise ValueError('Unicode source identity is missing')
+        validate_query_unicode(report.get('queryUnicode'), report['mcpStdio']['root'],
+                               candidate['query_unicode_observations_sha256'], candidate['query_unicode_locale'])
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted queryUnicode observations are incomplete') from error
     for name, validate in [('queryEngine', validate_query_engine), ('querySchema', validate_query_schema), ('pythonDirectory', validate_python_directory),
                            ('sessionLineage', validate_session_lineage), ('sessionEventTrace', validate_session_event_trace),
                            ('sessionFilters', validate_session_filters), ('sessionRequests', validate_session_requests),
@@ -533,6 +570,10 @@ def verify(args, output):
         run([python, 'scripts/' + driver + '_oracle.py', '--output', str(path)], name, output, env=environment)
         validate_paired(path)
         receipts[name] = digest(path)
+    unicode_source = output / 'query-unicode-paired.source.json'
+    unicode_digest, unicode_locale = unicode_source_identity(json.loads(unicode_source.read_text(encoding='utf-8')))
+    candidate['query_unicode_observations_sha256'] = unicode_digest
+    candidate['query_unicode_locale'] = unicode_locale
     raw = output / 'cordis-raw.json'
     raw.unlink(missing_ok=True)
     run([python, 'scripts/cordis_oracle.py', '--output', str(raw)],
@@ -549,7 +590,7 @@ def verify(args, output):
     extracted = output / 'portable-extracted.json'
     extracted.unlink(missing_ok=True)
     command = [python, 'scripts/verify_portable.py', '--archive', str(archive),
-               '--browser', str(browser), '--output', str(extracted)]
+               '--browser', str(browser), '--output', str(extracted), '--unicode-source', str(unicode_source)]
     if not candidate['worktree_dirty']:
         command += ['--expected-commit', candidate['product_commit']]
     run(command, 'portable-extracted', output, env=environment)

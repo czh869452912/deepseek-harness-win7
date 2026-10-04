@@ -27,7 +27,7 @@
   "cancellation": "Pre-abort performs no provider observation/open; queued abort cannot permit overlap with accepted dependency cleanup; close drains accepted work and refuses queued work.",
   "adaptation": "Python tasks and the private official Windows SQLite C API implement the declared source asynchronous ownership and STRICT/FTS boundary without Node in the portable runtime.",
   "open_questions": [
-    "Non-ASCII request fingerprint sorting still uses Python code-point order, whereas the source uses Node ICU 78.2 localeCompare; complete Unicode/cursor parity is not accepted.",
+    "CON-SESSION-QUERY-UNICODE defines the new ICU request identity extension; its complete candidate acceptance is pending. Full Unicode regex/extraction and all locales remain outside these bounded contracts.",
     "Exhaustive event extraction, all concurrent binding/index histories, public tool/package ABI, very large histories and SQLite canonical schema-19 storage remain separate.",
     "The rejected 24f9f83d original-browser startup cancellation remains independently unrooted. FTS acceptance cannot mark it fixed.",
     "Windows ACL, cross-process/power-loss and actual Win7 certification remain outside this bounded contract; real Win7 is deferred by the user."

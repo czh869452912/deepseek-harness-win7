@@ -1,0 +1,37 @@
+{
+  "id": "CON-SESSION-QUERY-UNICODE",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/session-query/session-query-sqlite/src/query.ts",
+    "reference/packages/session-query/session-query-sqlite/src/index.ts",
+    "scripts/oracles/query_unicode.probe.spec.ts",
+    "dsh/session/icu_collation.py",
+    "dsh/session/query_engine.py"
+  ],
+  "consumers": [
+    "dsh/session/query_engine.py",
+    "scripts/verify_release.py",
+    "scripts/verify_portable.py"
+  ],
+  "invariants": [
+    "Actual pinned Node 22.22.2 ICU 78.2/Unicode 17/CLDR 48 default-locale comparisons, 180 real request fingerprints and five actual canonical-engine cursor journeys match the native runtime (2034 observations).",
+    "Stable localeCompare ties preserve original filter and clause order, including canonical equivalents, ignorable characters, embedded NUL, astral and unpaired UTF-16 surrogates.",
+    "Pinned private ICU files and all seven licenses are verified before loading or Portable replacement. The exact owned library paths and actual ICU/Unicode/CLDR identities are required; external ICU data files are disabled.",
+    "The collator enables normalization, including non-FCD input sequences; close is idempotent and late comparison is refused.",
+    "The release gate binds the full fresh source observation digest and locale. Extracted isolated Python 3.8.10 must reproduce all observations with candidate module, exact private libraries and normalization identity."
+  ],
+  "identity": "Declared current default locale matches actual pinned Node; request identities preserve stable ICU ties and distinct code units.",
+  "ownership": "Process-owned lazy collator, private hash-pinned DLLs and bound in-memory common data; no Node or compiler is a Portable dependency.",
+  "ordering": "Verify all metadata and files, load absolute owned libraries, validate runtime identities, enable normalization, compare UTF-16 and stably sort captured values/clauses.",
+  "errors": "Missing, corrupt, foreign or malformed files, identities and observation receipts are deliberate refusals; reversed equal-collation values retain the actual typed invalid-cursor response.",
+  "cancellation": "The synchronous pure comparison does not add asynchronous ownership; engine cancellation/drain remains defined by CON-SESSION-QUERY-ENGINE.",
+  "adaptation": "Unchanged ICU release-78.2 source compiled with pinned LLVM-MinGW MSVCRT and static C++ runtime, Windows 7 target and deterministic PE timestamps; official matching data DLL and licenses are bundled.",
+  "open_questions": [
+    "Full Unicode regex, case folding and event extraction, other domain locale orders and every locale are not certified by this current-locale matrix.",
+    "Original startup cancellation, source fixed-wait cache races and existing Proactor warning remain separate findings.",
+    "Real Win7 execution is deferred; PE dependencies and target settings do not replace real-machine certification."
+  ]
+}
+

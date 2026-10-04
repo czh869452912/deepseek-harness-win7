@@ -2,6 +2,10 @@ import argparse
 import copy
 import importlib.util
 import json
+import functools
+import subprocess
+import sys
+import tempfile
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
@@ -25,6 +29,7 @@ from scripts.session_snapshots_oracle import expected as expected_session_snapsh
 from scripts.python_directory_probe import EXPECTED as expected_python_directory
 from scripts.query_schema_oracle import expected as expected_query_schema
 from scripts.query_engine_oracle import expected as expected_query_engine
+from scripts.query_unicode_oracle import observation_digest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -335,7 +340,7 @@ def test_extracted_session_corpus_read_requires_exact_sources_and_batch_drain(tm
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 224, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 249, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
@@ -380,6 +385,16 @@ def test_successful_paired_receipt_forms_are_supported(tmp_path, report):
     path = tmp_path / 'paired.json'
     path.write_text(json.dumps(report), encoding='utf-8')
     assert GATE.validate_paired(path) == report
+
+
+@functools.lru_cache(maxsize=1)
+def unicode_runtime_fixture():
+    with tempfile.TemporaryDirectory(prefix='unicode-validator-fixture-') as directory:
+        output = Path(directory) / 'native.json'
+        result = subprocess.run([sys.executable, '-I', str(ROOT / 'scripts/oracles/query_unicode_python.py'),
+                                 str(output)], capture_output=True, timeout=90)
+        assert result.returncode == 0 and not result.stderr, result.stderr
+        return json.loads(output.read_text(encoding='utf-8'))
 
 
 def extracted_receipt(tmp_path):
@@ -451,11 +466,60 @@ def extracted_receipt(tmp_path):
     report['queryEngine'] = dict(root=str(tmp_path), moduleFile=str(tmp_path / 'dsh/session/query_engine.py'),
         python='3.8.10', sqliteVersion=manifest['version'], sqliteSourceId=manifest['source_id'],
         sqliteDllSha256=manifest['dll_sha256'], manifest=manifest, observations=expected_query_engine())
+    unicode = copy.deepcopy(unicode_runtime_fixture())
+    unicode['root'] = str(tmp_path)
+    unicode['moduleFile'] = str(tmp_path / 'dsh/session/icu_collation.py')
+    for library in unicode['runtime']['libraries']:
+        library['path'] = str(tmp_path / 'dsh/session/bin/icu' / library['name'])
+    report['queryUnicode'] = unicode
+    candidate['query_unicode_observations_sha256'] = observation_digest(unicode['observations'])
+    candidate['query_unicode_locale'] = unicode['runtime']['locale']
     report['webServerReset'] = dict(root=str(tmp_path), module=str(tmp_path / 'dsh/host/webserver/socket_server.py'),
         python='3.8.10', platform='win32', observations=[
             dict(mode='http-stream', resets=3, owned=True, alive=True, retired=True, errors=[]),
             dict(mode='upgrade', resets=3, owned=True, alive=True, retired=True, errors=[])])
     return archive, candidate, report
+
+
+@pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
+def test_unicode_lanes_are_mandatory(tmp_path, damage):
+    for module in ('test_query_unicode', 'test_query_unicode_source'):
+        for name in GATE.REQUIRED_REGRESSION[module]:
+            path = tmp_path / 'unicode-regression.xml'
+            regression_xml(path, **{damage: (module, name)})
+            with pytest.raises(RuntimeError):
+                GATE.validate_regression(path)
+
+
+@pytest.mark.parametrize('damage', ['missing', 'root', 'module', 'library', 'locale', 'normalization',
+                                   'comparison', 'fingerprint', 'digest', 'candidate'])
+def test_extracted_unicode_requires_exact_source_and_owned_runtime(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    unicode = report['queryUnicode']
+    if damage == 'missing':
+        del report['queryUnicode']
+    elif damage == 'root':
+        unicode['root'] = str(tmp_path / 'foreign')
+    elif damage == 'module':
+        unicode['moduleFile'] = str(tmp_path / 'foreign/provider.py')
+    elif damage == 'library':
+        unicode['runtime']['libraries'][0]['sha256'] = '0' * 64
+    elif damage == 'locale':
+        unicode['runtime']['locale'] = 'foreign'
+    elif damage == 'normalization':
+        unicode['runtime']['normalization'] = 16
+    elif damage == 'comparison':
+        unicode['observations']['comparisons'][0][2] = 1
+    elif damage == 'fingerprint':
+        unicode['observations']['fingerprints'][0]['fingerprint'] = 'foreign'
+    elif damage == 'digest':
+        candidate['query_unicode_observations_sha256'] = '0' * 64
+    else:
+        del candidate['query_unicode_observations_sha256']
+    output = tmp_path / 'unicode-extracted.json'
+    output.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='queryUnicode'):
+        GATE.validate_extracted(output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])

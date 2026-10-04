@@ -1,0 +1,48 @@
+{
+  "id": "MIG-SESSION-QUERY-UNICODE-027",
+  "goal": "对齐 ICU 请求指纹与 Unicode 游标边界，并闭合私有运行库和真实解压验收",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "79fda4fb8541b9b88da1c69b3bb0c1e94e2c5ac8",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-SESSION-QUERY-ENGINE-026",
+      "contract": "CON-SESSION-QUERY-ENGINE",
+      "revision": 1
+    },
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-SESSION-QUERY-UNICODE",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "2034 actual unchanged-source/native observations match, including 1849 comparisons, 180 request fingerprints and five typed cursor refusals.",
+    "All private ICU libraries, actual versions, normalization and seven licenses are verified; damaged input cannot replace a previous Portable release.",
+    "A committed clean candidate passes all tests, 249 mandatory lanes, thirteen unchanged source groups/980 assertions, 48 paired drivers and actual extracted original-browser verification. Extracted Unicode observations must match the full fresh source digest and locale."
+  ],
+  "expected_paths": [
+    "dsh/session",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [
+    "Complete clean candidate and extracted verification pending."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "运行干净候选完整门禁，归档确切 Portable、双侧观察及构建溯源后签收有界 Unicode 身份；完整提取、竞争、schema-19 与整体迁移继续开放。"
+}
+

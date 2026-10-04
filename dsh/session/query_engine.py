@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import copy
+from functools import cmp_to_key
 import hashlib
 import json
 import math
@@ -11,6 +12,7 @@ from dsh.cordis.errors import ThrownValueError
 from dsh.cordis.plugin import Plugin
 from dsh.core.session import SessionHeader
 from dsh.session.corpus import assert_headers_compatible, inspection_source
+from dsh.session.icu_collation import locale_compare
 from dsh.session.observation import error_message, failure_value
 from dsh.session.query_requests import (
     MAX_PAGE_LIMIT, WHITESPACE, assert_binding_count, assert_predicate_count,
@@ -454,14 +456,22 @@ def row_header(row):
 
 
 def normalized_identity(request):
+    def nullable_compare(left, right):
+        if left == right:
+            return 0
+        if left is None:
+            return -1
+        if right is None:
+            return 1
+        return locale_compare(left, right)
     def canonical(filters):
         values = []
         for clause in filters:
             if 'values' in clause:
-                values.append(dict(clause, values=sorted(clause['values'], key=lambda value: (value is not None, value or ''))))
+                values.append(dict(clause, values=sorted(clause['values'], key=cmp_to_key(nullable_compare))))
             else:
                 values.append(dict(kind=clause['kind'], **{'from': clause.get('from'), 'to': clause.get('to')}))
-        return sorted(values, key=json_text)
+        return sorted(values, key=cmp_to_key(lambda left, right: locale_compare(json_text(left), json_text(right))))
     if 'sessionId' in request:
         return json_text(dict(scope='events', sessionId=request['sessionId'], query=request['query'],
                               filters=canonical(request['filters']), limit=request['limit']))

@@ -1,0 +1,43 @@
+{
+  "version": [78, 2, 0, 0],
+  "unicode_version": [17, 0, 0, 0],
+  "cldr_version": [48, 0, 0, 0],
+  "dll_sha256": {
+    "dsh_icudt78.dll": "5f80e0a0753e9adbb7cc2e88bb40229a28be9a6fd5510d9302e8f97436805c67",
+    "dsh_icuuc78.dll": "b396e98a1d41f7e65dedc7a51da074055b11cc77718a54e419c8d9ba7302ab56",
+    "dsh_icuin78.dll": "81585b83c8d3d61534fcca8ad691282b01a019ef337870805fdeafb1df417a2f"
+  },
+  "license_sha256": {
+    "ICU-LICENSE": "93679f4389d53b6835d89843f251844fb9bc455b35bab036d3c8e7abe497a47a",
+    "LLVM-LICENSE.txt": "8d85c1057d742e597985c7d4e6320b015a9139385cff4cbae06ffc0ebe89afee",
+    "MinGW-COPYING": "99a69660981156c21336fdb5661f89341b013c94e4bf9e1c7467b4745718397f",
+    "MinGW-COPYING.MinGW-w64-runtime.txt": "1db8da07b436c68833c0673ffee3d9fcb2526047f3820b81661865dfedc79a1f",
+    "MinGW-COPYING.MinGW-w64.txt": "f38e6194bd3bfa1b654f118e5acefe0aead437bbe669eee43957ccc65a7127f1",
+    "MinGW-COPYING.winpthreads.txt": "63263614cdd29f2f93cba85e992f041b31f9fc7b4033692f31269489a8a1b177",
+    "MinGW-COPYING.winstorecompat.txt": "fa7368d1f93d890c173177475d8ec7aff265a7d08f1f364d66f74d138978ce36"
+  },
+  "source": {
+    "repository": "https://github.com/unicode-org/icu",
+    "tag": "release-78.2",
+    "commit": "f1b3db8ecd39d5b3a6eff4d5641b176c7f914dfb",
+    "unchanged_common_sources": 202,
+    "unchanged_i18n_sources": 254
+  },
+  "data_archive": {
+    "url": "https://github.com/unicode-org/icu/releases/download/release-78.2/icu4c-78.2-Win64-MSVC2022.zip",
+    "sha256": "7b85654a0bfa6d92ca4ce26515bcdf28d22e1571319d4f80820d227076dbdade"
+  },
+  "toolchain": {
+    "version": "llvm-mingw-20260922-msvcrt-x86_64",
+    "clang": "23.1.2",
+    "url": "https://github.com/mstorsjo/llvm-mingw/releases/download/20260922/llvm-mingw-20260922-msvcrt-x86_64.zip",
+    "archive_sha256": "1e936a4a694fc27f9625e3311f5ec5d6d99abfeaa514fd41c52a4f8347145d1a"
+  },
+  "build": {
+    "target": "x86_64-w64-windows-gnu",
+    "windows_target": "0x0601",
+    "static_cpp_runtime": true,
+    "deterministic_pe_timestamp": true,
+    "direct_system_dependencies": ["ADVAPI32.dll", "KERNEL32.dll", "msvcrt.dll"]
+  }
+}

@@ -91,6 +91,11 @@
       "task": "MIG-SESSION-QUERY-ENGINE-026",
       "contract": "CON-SESSION-QUERY-ENGINE",
       "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-QUERY-UNICODE-027",
+      "contract": "CON-SESSION-QUERY-UNICODE",
+      "revision": 1
     }
   ],
   "provides": [],

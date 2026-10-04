@@ -12,6 +12,7 @@ import importlib.metadata
 from pathlib import Path
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT_DIR)
 DIST_DIR = os.path.join(ROOT_DIR, "dist", "dsh-win7-portable")
 VERSION = "0.1.0"
 ZIP_OUTPUT = os.path.join(ROOT_DIR, "dist", f"dsh-win7-portable-v{VERSION}.zip")
@@ -86,6 +87,8 @@ def inspect_runtime(runtime_dir):
 def checked_inputs(root_dir, site_packages):
     """Resolve all external inputs before touching the last successful release."""
     root = Path(root_dir)
+    from dsh.session.icu_collation import verify_icu_files
+    verify_icu_files(root / 'dsh/session/bin/icu')
     manifest = json.loads((root / 'scripts/frontend-inputs.json').read_text(encoding='utf-8'))
     baseline = json.loads((root / 'migration/baseline.json').read_text(encoding='utf-8'))
     if manifest['target_upstream'] != baseline['target_upstream']:

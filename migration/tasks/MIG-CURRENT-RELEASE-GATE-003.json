@@ -33,8 +33,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "ae2c1abee258d219f8b90284cd2efd8191bd99e5",
-  "integrated_commit": "ae2c1abee258d219f8b90284cd2efd8191bd99e5",
+  "candidate_commit": "0edcc616613eb95f35d5ff27abe5d76591de23b1",
+  "integrated_commit": "0edcc616613eb95f35d5ff27abe5d76591de23b1",
   "evidence_ids": [
     "RUN-CURRENT-20261003-CURRENT-RELEASE-GATE-003",
     "RUN-ACP-CONFIG-20261003-CURRENT-RELEASE-GATE-003",
@@ -46,7 +46,8 @@
     "RUN-SESSION-FILTERS-20261004-CURRENT-RELEASE-GATE-003",
     "RUN-SESSION-QUERY-ENGINE-20261004-CURRENT-RELEASE-GATE-003",
     "RUN-SESSION-TEXT-20261005-CURRENT-RELEASE-GATE-003",
-    "RUN-SESSION-TOOLS-20261005-CURRENT-RELEASE-GATE-003"
+    "RUN-SESSION-TOOLS-20261005-CURRENT-RELEASE-GATE-003",
+    "RUN-SQLITE-FORMAT-20261005-CURRENT-RELEASE-GATE-003"
   ],
-  "next_action": "clean candidate ae2c1abe 全量/原版/真实解压复验已通过。clean candidate ae2c1abe 当前 Windows 完整门禁通过；300 必需 lane、980 原版断言、49 配对、实际 Portable/schema/snapshots/publication 与 owned reset 清理，不认证全量迁移或 Win7。"
+  "next_action": "clean candidate 0edcc616 当前 Windows 完整门禁通过；337 必需 lane、1124 原版断言、51 配对、实际 Portable/格式/消费者与浏览器通过，不认证全量迁移或 Win7。"
 }

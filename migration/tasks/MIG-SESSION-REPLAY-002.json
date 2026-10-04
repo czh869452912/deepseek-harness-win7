@@ -125,11 +125,11 @@
   "open_findings": [
     "Cold/live/prepared/storage/projection, bounded cache/point/corpus/title reads, lineage/event windows, filtering/search requests, snapshots and the canonical FTS engine are revalidated in clean ae2c1abe. The 2034 Unicode identity and 7883 literal/valid extraction/current-locale order observations are bounded accepted. They do not certify the complete Session domain.",
     "Sixteen FTS/ranking/cursor/reconciliation/index-generation observations, three preset Remote restart consumers and five optional model-facing tools remain bounded accepted. The tools have 78 actual Source/native/extracted observations, 102 original assertions and two model/profile cold-restart consumers. Full malformed/extension event ABI and private error diagnostics, other domains/locales, arbitrary provider/index races and Task cancellation, compressed JSONL and cross-process/multi-cwd recovery remain unaccepted.",
-    "Native upstream SQLite physical schema equivalence, long-history scale, complete current Web/profile/reconnect journeys and deferred Win7 remain separate unaccepted scopes."
+    "Independent schema-19 format is bounded accepted in clean 0edcc616: 826 actual Source/native/extracted observations, 42 original assertions, private pinned licensed Zstandard and detached STRICT ANY round-trips. Canonical SQLite provider ownership/lazy transactions/revisions/repair, long-history scale, complete current Web/profile/reconnect journeys and deferred Win7 remain separate unaccepted scopes."
   ],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "以 ae2c1abe 已签收的规范 FTS、Unicode/文本和五个可选会话工具为基础，补齐独立物理 schema-19 编码/压缩/存储与跨进程长期恢复；继续 malformed/plugin ABI、全域/竞争和 Web/profile 主链。父范围仍 draft；24f9 启动取消、原版 cache 固定等待与 Proactor 仍独立开放。"
+  "next_action": "以 0edcc616 已签收的规范 FTS、Unicode/文本、五个可选会话工具和独立 schema-19 格式为基础，补齐规范存储提供端与跨进程长期恢复；继续 malformed/plugin ABI、全域/竞争和 Web/profile 主链。父范围仍 draft；24f9 启动取消、原版 cache 固定等待与 Proactor 仍独立开放。"
 }

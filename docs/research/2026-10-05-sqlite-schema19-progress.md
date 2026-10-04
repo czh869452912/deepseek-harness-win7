@@ -12,4 +12,6 @@
 
 原版完整 SQLite 研究套件先有缺失开发别名，补齐固定 fast-check/TypeScript 后为 129 passed、1 符号链接 EPERM、3 原版已有 skips。当前 token 没有 SeCreateSymbolicLinkPrivilege；没有修改系统权限、增设跳过或将该套件称为通过。格式的 42 项原样套件是独立有界范围，不能替代物理提供端的完整验收。全部原始研究、初始不匹配和编译 PE 日志留存于 `.goose/out/acp-a4-work`。
 
-本实现尚待 clean committed 完整验收，当前门禁要求 337 必需 lane、十五组 1124 原版断言、51 双侧驱动与实际解压/浏览器，新的格式回执必须绑定完整原版/压缩输入/生成输入摘要以及七个模块、十一项资产。随后继续 schema-19 数据库所有权、lazy opening、journal/busy reservation、revision/stale append/repair、协调器与模型/profile/冷恢复消费者。完整 malformed/plugin ABI、跨进程/长历史、B/C/D、既有启动取消与整体范围开放，accepted_upstream 保持为空。
+干净候选 `0edcc616613eb95f35d5ff27abe5d76591de23b1` 的完整冻结验收通过：6718 passed、6 项已有平台跳过、1 项已有 warning、0 failures/errors；337 必需 lane、十五组 1124 原版断言、51 双侧驱动与实际解压/浏览器通过。四十份回执绑定完整原版/帧/生成输入摘要以及七个模块、十一项资产，CRC 和归档回执哈希均核验；见 [格式签收](../../migration/reviews/SQLITE-FORMAT-CLOSURE-20261005.md)。独立格式已有界签收，随后继续 schema-19 数据库所有权、lazy opening、journal/busy reservation、revision/stale append/repair、协调器与模型/profile/冷恢复消费者。完整 malformed/plugin ABI、跨进程/长历史、B/C/D、既有启动取消与整体范围开放，accepted_upstream 保持为空。
+
+规范提供端研究保留实际跨文件双向读写与完整 revision 匹配的 33 观察、230 元数据拒绝向量、22 原版配置向量、两侧真实 Context 的损坏尾段冷恢复和跨进程锁/胜出写入的陈旧修复拒绝。它们是后续独立存储合同的准备，尚未作为产品提供端签收；原始数据库、最初五个拒绝差异和 observer 错误随本次证据保存。

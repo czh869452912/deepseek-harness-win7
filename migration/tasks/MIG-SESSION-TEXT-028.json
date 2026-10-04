@@ -43,12 +43,12 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "ae2c1abee258d219f8b90284cd2efd8191bd99e5",
-  "integrated_commit": "ae2c1abee258d219f8b90284cd2efd8191bd99e5",
+  "candidate_commit": "0edcc616613eb95f35d5ff27abe5d76591de23b1",
+  "integrated_commit": "0edcc616613eb95f35d5ff27abe5d76591de23b1",
   "evidence_ids": [
     "RUN-SESSION-TEXT-20261005-SESSION-TEXT-028",
-    "RUN-SESSION-TOOLS-20261005-SESSION-TEXT-028"
+    "RUN-SESSION-TOOLS-20261005-SESSION-TEXT-028",
+    "RUN-SQLITE-FORMAT-20261005-SESSION-TEXT-028"
   ],
-  "next_action": "clean candidate ae2c1abe 全量/原版/真实解压复验已通过。clean candidate ae2c1abe 的 7883 字面 Unicode/有效语义提取/Session locale 顺序双侧与真实解压观察、两持久化 Context 重启消费者已有界签收；继续 malformed/plugin ABI、全域/竞争、schema-19、profile 主链和整体迁移，Win7 延期。"
+  "next_action": "clean candidate 0edcc616 全量/原版/真实解压复验已通过。clean candidate 0edcc616 的 7883 字面 Unicode/有效语义提取/Session locale 顺序双侧与真实解压观察、两持久化 Context 重启消费者已有界签收；继续 malformed/plugin ABI、全域/竞争、schema-19、profile 主链和整体迁移，Win7 延期。"
 }
-

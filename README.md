@@ -4,7 +4,7 @@
 
 [README.md](README.md) | [AGENTS.md](AGENTS.md)
 
-当前迁移验收：干净产品 `ae2c1abe` 的全量 **6657 项测试**、原版对照、真实解压与浏览器门禁通过；五个可选 Session 工具已有界签收。物理 SQLite schema-19、压缩和其他整体遗留项仍在推进，详见 [迁移台账](migration/README.md) 与 [本阶段验收](migration/reviews/SESSION-TOOLS-CLOSURE-20261005.md)。
+当前迁移验收：干净产品 `0edcc616` 的全量 **6718 项测试**、原版对照、真实解压与浏览器门禁通过；独立 schema-19 编码和私有压缩格式已有界签收。规范 SQLite 存储提供端和其他整体遗留项仍在推进，详见 [迁移台账](migration/README.md) 与 [本阶段验收](migration/reviews/SQLITE-FORMAT-CLOSURE-20261005.md)。
 
 > Web 核心链路已通过原版前端与本地模拟模型验收（创建工作区、对话、工具执行、恢复、反馈、分支、导出）；完整上游 parity、真实模型和 Win7 真机验收仍未完成。见 [Web 验收记录](docs/research/2026-09-29-web-usable-baseline.md)。历史审查见 [当前状态审查](docs/research/2026-09-28-current-state-mvp-audit.md) 和 [入口切换实施记录](docs/research/2026-09-28-canonical-entry-progress.md)。CLI 已统一到正式 profile 入口，旧 CLI 分流不再保留。
 

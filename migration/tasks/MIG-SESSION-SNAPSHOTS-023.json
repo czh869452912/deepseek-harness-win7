@@ -48,11 +48,12 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "fc275a662bfd9ccb53ab0729a31c8987b34c3f0c",
-  "integrated_commit": "fc275a662bfd9ccb53ab0729a31c8987b34c3f0c",
+  "candidate_commit": "ae2c1abee258d219f8b90284cd2efd8191bd99e5",
+  "integrated_commit": "ae2c1abee258d219f8b90284cd2efd8191bd99e5",
   "evidence_ids": [
     "RUN-SESSION-QUERY-ENGINE-20261004-SESSION-SNAPSHOTS-023",
-    "RUN-SESSION-TEXT-20261005-SESSION-SNAPSHOTS-023"
+    "RUN-SESSION-TEXT-20261005-SESSION-SNAPSHOTS-023",
+    "RUN-SESSION-TOOLS-20261005-SESSION-SNAPSHOTS-023"
   ],
-  "next_action": "clean candidate fc275a66 的 18 来源限定快照、事务 counter/回滚/共享实例、Windows ChangeTime/句柄/长路径及真实解压已有界验收；规范 FTS/Unicode 身份/有效 Session 文本另有界验收；继续 malformed/plugin ABI/竞争、SQLite schema-19/压缩/外来数据库、跨进程长期恢复与整体迁移，不认证完整 B1 或延期 Win7。"
+  "next_action": "clean candidate ae2c1abe 全量/原版/真实解压复验已通过。clean candidate ae2c1abe 的 18 来源限定快照、事务 counter/回滚/共享实例、Windows ChangeTime/句柄/长路径及真实解压已有界验收；规范 FTS/Unicode 身份/有效 Session 文本另有界验收；继续 malformed/plugin ABI/竞争、SQLite schema-19/压缩/外来数据库、跨进程长期恢复与整体迁移，不认证完整 B1 或延期 Win7。"
 }

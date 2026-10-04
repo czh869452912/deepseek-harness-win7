@@ -2,7 +2,7 @@
   "id": "MIG-SESSION-QUERY-TOOLS-029",
   "goal": "闭合原版五个可选 model-facing Session 工具的规范消费者",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "c756bbff375a5940c90f3a568667a19d24e3ea51",
   "owner": "current-session-coordinator",
@@ -40,12 +40,12 @@
     "migration",
     "docs/research"
   ],
-  "open_findings": [
-    "78 actual source/native observations, 102 original assertions and actual two-profile/cold-restart tests are implemented; complete clean committed candidate and extracted/browser acceptance are still required."
-  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "提交独立实现候选后冻结并执行完整发行门禁；仅在真实解压、原版浏览器、全部必需与双侧检查通过后签收此有界任务，整体 accepted_upstream 保持空。"
+  "candidate_commit": "ae2c1abee258d219f8b90284cd2efd8191bd99e5",
+  "integrated_commit": "ae2c1abee258d219f8b90284cd2efd8191bd99e5",
+  "evidence_ids": [
+    "RUN-SESSION-TOOLS-20261005-SESSION-QUERY-TOOLS-029"
+  ],
+  "next_action": "五个 opt-in 规范工具的 78 双侧/真实解压、102 原版断言及两个模型/profile 冷恢复消费者已有界签收；继续物理 schema-19、malformed/public plugin ABI、全部领域/竞争和整体迁移，Win7 延期。"
 }

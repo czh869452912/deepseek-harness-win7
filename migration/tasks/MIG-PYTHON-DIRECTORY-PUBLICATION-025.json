@@ -39,11 +39,12 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "fc275a662bfd9ccb53ab0729a31c8987b34c3f0c",
-  "integrated_commit": "fc275a662bfd9ccb53ab0729a31c8987b34c3f0c",
+  "candidate_commit": "ae2c1abee258d219f8b90284cd2efd8191bd99e5",
+  "integrated_commit": "ae2c1abee258d219f8b90284cd2efd8191bd99e5",
   "evidence_ids": [
     "RUN-SESSION-QUERY-ENGINE-20261004-PYTHON-DIRECTORY-PUBLICATION-025",
-    "RUN-SESSION-TEXT-20261005-PYTHON-DIRECTORY-PUBLICATION-025"
+    "RUN-SESSION-TEXT-20261005-PYTHON-DIRECTORY-PUBLICATION-025",
+    "RUN-SESSION-TOOLS-20261005-PYTHON-DIRECTORY-PUBLICATION-025"
   ],
-  "next_action": "clean candidate fc275a66 的十条实际目录共享/事务回归与四条解压发布/恢复观察已有界验收；保留未知外部持有者与全部失败，不认证全量 Python 包生态、任意竞争或 Win7。"
+  "next_action": "clean candidate ae2c1abe 全量/原版/真实解压复验已通过。clean candidate ae2c1abe 的十条实际目录共享/事务回归与四条解压发布/恢复观察已有界验收；保留未知外部持有者与全部失败，不认证全量 Python 包生态、任意竞争或 Win7。"
 }

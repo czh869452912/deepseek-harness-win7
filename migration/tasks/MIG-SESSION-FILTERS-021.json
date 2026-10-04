@@ -43,12 +43,13 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "fc275a662bfd9ccb53ab0729a31c8987b34c3f0c",
-  "integrated_commit": "fc275a662bfd9ccb53ab0729a31c8987b34c3f0c",
+  "candidate_commit": "ae2c1abee258d219f8b90284cd2efd8191bd99e5",
+  "integrated_commit": "ae2c1abee258d219f8b90284cd2efd8191bd99e5",
   "evidence_ids": [
     "RUN-SESSION-FILTERS-20261004-SESSION-FILTERS-021",
     "RUN-SESSION-QUERY-ENGINE-20261004-SESSION-FILTERS-021",
-    "RUN-SESSION-TEXT-20261005-SESSION-FILTERS-021"
+    "RUN-SESSION-TEXT-20261005-SESSION-FILTERS-021",
+    "RUN-SESSION-TOOLS-20261005-SESSION-FILTERS-021"
   ],
-  "next_action": "clean candidate fc275a66 的 33 过滤观察、4 真实持久化 lane 与实际解压已有界验收；规范 FTS、Unicode 身份和有效 Session 文本/locale 顺序另有界验收；继续 malformed/plugin ABI、provider/Task/竞争、Web/profile 和整体迁移，不认证完整 B1 或 Win7。"
+  "next_action": "clean candidate ae2c1abe 全量/原版/真实解压复验已通过。clean candidate ae2c1abe 的 33 过滤观察、4 真实持久化 lane 与实际解压已有界验收；规范 FTS、Unicode 身份和有效 Session 文本/locale 顺序另有界验收；继续 malformed/plugin ABI、provider/Task/竞争、Web/profile 和整体迁移，不认证完整 B1 或 Win7。"
 }

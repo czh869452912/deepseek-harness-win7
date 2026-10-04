@@ -40,8 +40,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "fc275a662bfd9ccb53ab0729a31c8987b34c3f0c",
-  "integrated_commit": "fc275a662bfd9ccb53ab0729a31c8987b34c3f0c",
+  "candidate_commit": "ae2c1abee258d219f8b90284cd2efd8191bd99e5",
+  "integrated_commit": "ae2c1abee258d219f8b90284cd2efd8191bd99e5",
   "evidence_ids": [
     "RUN-ACP-PERMISSIONS-20261004-ACP-PERMISSIONS-006",
     "RUN-MCP-20261004-ACP-PERMISSIONS-006",
@@ -49,7 +49,8 @@
     "RUN-SESSION-TRACING-20261004-ACP-PERMISSIONS-006",
     "RUN-SESSION-FILTERS-20261004-ACP-PERMISSIONS-006",
     "RUN-SESSION-QUERY-ENGINE-20261004-ACP-PERMISSIONS-006",
-    "RUN-SESSION-TEXT-20261005-ACP-PERMISSIONS-006"
+    "RUN-SESSION-TEXT-20261005-ACP-PERMISSIONS-006",
+    "RUN-SESSION-TOOLS-20261005-ACP-PERMISSIONS-006"
   ],
-  "next_action": "一次性 permission wire、native Event cancellation、真实工具/next-model/late grant/close/EOF 和实际解压六进程在 clean candidate e887550a 有界验收；继续实际 MCP/HTTP/SSE/supervisor/subagent；完整 ACP 未认证。"
+  "next_action": "clean candidate ae2c1abe 全量/原版/真实解压复验已通过。一次性 permission wire、native Event cancellation、真实工具/next-model/late grant/close/EOF 和实际解压六进程在 clean candidate ae2c1abe 有界验收；继续实际 MCP/HTTP/SSE/supervisor/subagent；完整 ACP 未认证。"
 }

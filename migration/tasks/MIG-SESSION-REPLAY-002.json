@@ -101,6 +101,11 @@
       "task": "MIG-SESSION-TEXT-028",
       "contract": "CON-SESSION-TEXT",
       "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-QUERY-TOOLS-029",
+      "contract": "CON-SESSION-QUERY-TOOLS",
+      "revision": 1
     }
   ],
   "provides": [],
@@ -113,13 +118,13 @@
     "migration"
   ],
   "open_findings": [
-    "Cold/live/prepared/storage/projection, bounded cache/point/corpus/title reads, lineage/event windows, filtering/search requests, snapshots and the canonical FTS engine are revalidated in clean fc275a66. The 2034 Unicode identity and 7883 literal/valid extraction/current-locale order observations are bounded accepted. They do not certify the complete Session domain.",
-    "Sixteen FTS/ranking/cursor/reconciliation/index-generation observations and three preset Remote restart consumers remain bounded accepted. Optional model-facing session tools, malformed/extension event ABI, other domains/locales, arbitrary provider/index races and Task cancellation, compressed JSONL and cross-process/multi-cwd recovery remain unaccepted.",
+    "Cold/live/prepared/storage/projection, bounded cache/point/corpus/title reads, lineage/event windows, filtering/search requests, snapshots and the canonical FTS engine are revalidated in clean ae2c1abe. The 2034 Unicode identity and 7883 literal/valid extraction/current-locale order observations are bounded accepted. They do not certify the complete Session domain.",
+    "Sixteen FTS/ranking/cursor/reconciliation/index-generation observations, three preset Remote restart consumers and five optional model-facing tools remain bounded accepted. The tools have 78 actual Source/native/extracted observations, 102 original assertions and two model/profile cold-restart consumers. Full malformed/extension event ABI and private error diagnostics, other domains/locales, arbitrary provider/index races and Task cancellation, compressed JSONL and cross-process/multi-cwd recovery remain unaccepted.",
     "Native upstream SQLite physical schema equivalence, long-history scale, complete current Web/profile/reconnect journeys and deferred Win7 remain separate unaccepted scopes."
   ],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "以 fc275a66 已签收的规范 FTS、Unicode 身份和有效文本/locale 顺序为基础，补齐可选模型会话工具及共同参数错误接口；继续 malformed/plugin ABI、全域/竞争、schema-19/压缩/跨进程长期恢复与 Web/profile 主链。父范围仍 draft；24f9 启动取消、原版 cache 固定等待与 Proactor 仍独立开放。"
+  "next_action": "以 ae2c1abe 已签收的规范 FTS、Unicode/文本和五个可选会话工具为基础，补齐独立物理 schema-19 编码/压缩/存储与跨进程长期恢复；继续 malformed/plugin ABI、全域/竞争和 Web/profile 主链。父范围仍 draft；24f9 启动取消、原版 cache 固定等待与 Proactor 仍独立开放。"
 }

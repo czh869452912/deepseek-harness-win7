@@ -6,4 +6,4 @@
 
 两种真实持久化的规范 profile 已完成模型依次调用五个工具、结果进入下一次模型请求、flush/shutdown 与新 Context 冷读取，工作区外记录没有进入模型结果。补充完整可撤销注册、2500 层谱系裁剪、标题观察重授权及合作式搜索 deadline 等回归。观察器首轮回执写入曾因局部 `provider` 名称遮蔽模块而失败；随后对照又发现原版观察行持有可变 section 数组，在配置探针后污染历史注册行，已改为观察时捕获数组快照；两次诊断原始输出保留在 `.goose/out/acp-a4-work`，未修改原版实现或判据。
 
-发行门禁现在要求 312 必需 lane、十四组 1082 原版断言与 50 双侧驱动，另以实际解压 Python 3.8.10 观察相同 78 组结果并验证新鲜原版摘要及七个提供模块 SHA。此处是已实现待验收记录，尚无新工具签收候选；须先独立提交，再冻结完整门禁。完整 malformed/plugin ABI、schema-19、竞争/长历史、B/C/D、未知启动取消和整体迁移继续开放，`accepted_upstream` 仍为空；实机 Win7 延期不变。
+独立实现提交 `ae2c1abee258d219f8b90284cd2efd8191bd99e5` 已完成冻结验收：6657 passed、6 既有平台 skipped、1 既有 Proactor warning、0 failed/errors；312 必需 lane、十四组 1082 原版断言、50 双侧驱动、实际解压 Python 3.8.10 与原版浏览器全部通过。解压观察相同 78 组结果并验证新鲜原版摘要及七个提供模块 SHA。39 份有界任务验收与诊断归档于 `migration/evidence/artifacts/SESSION-TOOLS-20261005-ae2c1abe.zip`；见 `migration/reviews/SESSION-TOOLS-CLOSURE-20261005.md`。完整 malformed/plugin ABI、schema-19、竞争/长历史、B/C/D、未知启动取消和整体迁移继续开放，`accepted_upstream` 仍为空；实机 Win7 延期不变。

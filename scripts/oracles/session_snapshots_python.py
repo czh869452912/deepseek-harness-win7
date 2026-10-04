@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import json
+import importlib.util
 import os
 from pathlib import Path
 import re
@@ -24,6 +25,10 @@ from dsh.core.session import SessionHeader
 from dsh.core.session.session import SessionPlugin
 from dsh.session.persistence_jsonl import JsonlSessionPersistencePlugin
 from dsh.session.persistence_sqlite import SqliteSessionPersistencePlugin
+
+fixture_spec = importlib.util.spec_from_file_location('session_snapshot_fixture', Path(__file__).with_name('session_snapshot_fixture.py'))
+fixture = importlib.util.module_from_spec(fixture_spec)
+fixture_spec.loader.exec_module(fixture)
 
 
 async def observe():
@@ -111,12 +116,14 @@ async def observe():
                     else:
                         path = persistence.locate(header).path
                         os.utime(path,ns=(1000000000000000000,1000000000000000000))
+                        fixture.set_change_time(path, 1500000000000000000)
                         before = os.stat(path)
                         first = (await persistence.listSnapshots())[0]
                         bytes_value = bytearray(Path(path).read_bytes())
                         bytes_value[-2] = 32
                         Path(path).write_bytes(bytes_value)
                         os.utime(path,ns=(1000000000000000000,1000000000000000000))
+                        fixture.set_change_time(path, 1500000001000000000)
                         after = os.stat(path)
                         next_snapshot = (await persistence.listSnapshots())[0]
                         observed.update(sameSize=before.st_size==after.st_size,sameFile=before.st_ino==after.st_ino,

@@ -16,7 +16,7 @@
   "consumers": ["dsh/session/session_query.py", "dsh/session/prepared_persistence.py", "dsh/session/coordinator.py"],
   "invariants": [
     "The eighteen declared actual source/native provider observations must match independent literals; they are not full SQLite physical-schema or FTS acceptance.",
-    "Canonical listSnapshots exposes detached headers and source-qualified tokens. JSONL includes dev/ino/size/mtimeNs/ctimeNs; the Windows change time must invalidate same-size rewrites even after restoring mtime.",
+    "Canonical listSnapshots exposes detached headers and source-qualified tokens. JSONL includes dev/ino/size/mtimeNs/ctimeNs; a changed Windows ChangeTime invalidates same-size rewrites even after restoring mtime. Both observer fixtures explicitly assign identical before/after ChangeTime values; arbitrary rewrites with all five stat fields unchanged remain outside this guarantee.",
     "SQLite tokens include physical store namespace, persisted store UUID, per-row incarnation and transactional revision. One nonempty append batch advances once; a failed batch rolls back events and revision together. Reopen preserves tokens and copying a store changes its physical namespace.",
     "Lazy creation produces no stored snapshot; no-op append preserves revision; :memory: uses an actual isolated memory store.",
     "Exact pre-abort is checked before backend work. JSONL stat completion and stat error check caller cancellation before publication or ENOENT handling.",

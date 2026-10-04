@@ -23,6 +23,7 @@ from scripts.session_filters_oracle import expected as expected_session_filters
 from scripts.session_requests_oracle import expected as expected_session_requests
 from scripts.session_snapshots_oracle import expected as expected_session_snapshots
 from scripts.python_directory_probe import EXPECTED as expected_python_directory
+from scripts.query_schema_oracle import expected as expected_query_schema
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -333,7 +334,7 @@ def test_extracted_session_corpus_read_requires_exact_sources_and_batch_drain(tm
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 162, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 189, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
@@ -438,6 +439,11 @@ def extracted_receipt(tmp_path):
         'root': str(tmp_path), 'module': str(tmp_path / 'dsh/__init__.py'), 'python': [3,8,10]}
     report['sessionSnapshots'] = {'observations': expected_session_snapshots(),
         'root': str(tmp_path), 'module': str(tmp_path / 'dsh/__init__.py'), 'python': [3,8,10]}
+    report['querySchema'] = dict(root=str(tmp_path), module=str(tmp_path / 'dsh/__init__.py'), python=[3,8,10],
+        observations=expected_query_schema(), sqlite=dict(version='3.51.2',
+            sourceId='2026-01-09 17:27:48 b270f8339eb13b504d0b2ba154ebca966b7dde08e40c3ed7d559749818cb2075',
+            dll=str(tmp_path / 'dsh/session/bin/sqlite3.dll'),
+            sha256='2339b9e7c8b2d4be67d5516fed37aa70c02bdb463386c47ab130d00586751642'))
     report['pythonDirectory'] = dict(root=str(tmp_path), module=str(tmp_path / 'dsh/boot/python_directory_mutation.py'),
         python='3.8.10', platform='win32', observations=copy.deepcopy(expected_python_directory))
     report['webServerReset'] = dict(root=str(tmp_path), module=str(tmp_path / 'dsh/host/webserver/socket_server.py'),
@@ -445,6 +451,48 @@ def extracted_receipt(tmp_path):
             dict(mode='http-stream', resets=3, owned=True, alive=True, retired=True, errors=[]),
             dict(mode='upgrade', resets=3, owned=True, alive=True, retired=True, errors=[])])
     return archive, candidate, report
+
+
+@pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
+def test_query_schema_lanes_are_mandatory(tmp_path, damage):
+    for module in ('test_sqlite_database', 'test_query_schema', 'test_query_schema_source', 'test_session_windows_dll_loading'):
+        for name in GATE.REQUIRED_REGRESSION[module]:
+            path = tmp_path / 'pytest.xml'
+            regression_xml(path, **{damage: (module, name)})
+            with pytest.raises(RuntimeError):
+                GATE.validate_regression(path)
+
+
+@pytest.mark.parametrize('damage', ['missing', 'tail', 'strict', 'foreign-write', 'generation',
+    'foreign-root', 'foreign-module', 'version', 'source-id', 'dll', 'hash', 'unknown'])
+def test_extracted_query_schema_requires_candidate_database_and_exact_observations(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    schema = report['querySchema']
+    if damage == 'missing':
+        del report['querySchema']
+    elif damage == 'tail':
+        schema['observations'].pop()
+    elif damage in ('strict', 'foreign-write', 'generation'):
+        indexed = {row['name']: row['observed'] for row in schema['observations']}
+        if damage == 'strict':
+            indexed['memory-schema']['strict'][0]['strict'] = 0
+        elif damage == 'foreign-write':
+            indexed['foreign-app']['unchanged'] = False
+        else:
+            indexed['upgrade']['generation'] = 7
+    elif damage == 'foreign-root':
+        schema['root'] = str(tmp_path / 'foreign')
+    elif damage == 'foreign-module':
+        schema['module'] = str(tmp_path / 'foreign/dsh/__init__.py')
+    elif damage == 'unknown':
+        schema['unknown'] = True
+    else:
+        key = {'version': 'version', 'source-id': 'sourceId', 'dll': 'dll', 'hash': 'sha256'}[damage]
+        schema['sqlite'][key] = 'foreign'
+    path = tmp_path / 'extracted.json'
+    path.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='querySchema'):
+        GATE.validate_extracted(path, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])

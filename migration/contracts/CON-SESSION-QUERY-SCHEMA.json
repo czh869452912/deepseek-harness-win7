@@ -1,0 +1,35 @@
+{
+  "id": "CON-SESSION-QUERY-SCHEMA",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/session-query/session-query-sqlite/src/schema.ts",
+    "dsh/session/query_schema.py",
+    "dsh/session/sqlite_database.py",
+    "dsh/session/bin/sqlite3.dll",
+    "dsh/session/bin/sqlite3.json"
+  ],
+  "consumers": [
+    "dsh/session/session_query.py"
+  ],
+  "invariants": [
+    "Nineteen independently declared actual source/native observations match schema version 8, application ownership, STRICT constraints, FTS documents, connection-local live scopes, reopen/reset and foreign refusal.",
+    "The native modern database uses the hash-pinned official SQLite 3.51.2 Windows x64 DLL through its public C API; existing CPython sqlite3 connections are not replaced or patched.",
+    "Foreign, canonical, unknown-table and corrupt databases are refused before mutating pragmas; tested existing file bytes remain unchanged.",
+    "Only recognized derived tables reset on incompatible versions. Current durable generations/documents survive reopen; live tables belong to each connection.",
+    "All native prepared execution handles finalize after success, binding failure or SQL error; initialization failure closes the unpublished real database.",
+    "The original STRICT table semantics remain enabled. No writable_schema workaround or stripped STRICT keyword is accepted."
+  ],
+  "identity": "Version-8 derived index is disposable and application-qualified; canonical schema-19 stores remain foreign.",
+  "ownership": "Native database owns a hash-verified DLL handle and each SQLite connection; per-execution statements finalize before publication and schema failure closes its unpublished connection.",
+  "ordering": "Create missing file, open, inspect application/version/tables, refuse foreign inputs, then apply journal pragmas and persistent/temporary schemas.",
+  "errors": "SQLite extended codes preserve STRICT/check/type failures; foreign refusal messages match the original schema provider. Public query errors and all configuration types remain separate.",
+  "cancellation": "This is a synchronous database/schema boundary; public query serialization, caller abort, provider epochs and close draining remain separate.",
+  "adaptation": "The Windows x64 native C API adapter permits SQLite 3.51.2 alongside CPython's loaded SQLite 3.35.5. Its direct import/subsystem inventory supports implementation assessment; it is not Win7 certification.",
+  "open_questions": [
+    "Full public search/ranking/cursors/reconciliation/generations and schema-19 persistence remain unaccepted.",
+    "All JavaScript binding edge cases, statement preparation timing and large-history performance are outside this bounded private adapter.",
+    "Owner-only POSIX file modes do not certify Windows ACL semantics. Real Win7 remains deferred."
+  ]
+}

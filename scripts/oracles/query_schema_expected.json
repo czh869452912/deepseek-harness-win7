@@ -1,0 +1,186 @@
+[
+  {
+    "name": "memory-schema",
+    "observed": {
+      "application": 1146308689,
+      "version": 8,
+      "strict": [
+        {
+          "name": "live_sessions",
+          "strict": 1
+        },
+        {
+          "name": "persisted_sessions",
+          "strict": 1
+        },
+        {
+          "name": "search_state",
+          "strict": 1
+        }
+      ],
+      "persistedColumns": [
+        "text",
+        "session_id",
+        "seq",
+        "type",
+        "time",
+        "surface",
+        "codepoint_length"
+      ],
+      "liveColumns": [
+        "text",
+        "session_id",
+        "seq",
+        "type",
+        "time",
+        "surface",
+        "codepoint_length"
+      ]
+    }
+  },
+  {
+    "name": "strict-type",
+    "observed": {
+      "code": 3091,
+      "generation": 0
+    }
+  },
+  {
+    "name": "singleton-check",
+    "observed": {
+      "code": 275,
+      "generation": 0
+    }
+  },
+  {
+    "name": "live-check",
+    "observed": {
+      "code": 275,
+      "generation": 0
+    }
+  },
+  {
+    "name": "strict-null",
+    "observed": {
+      "code": 1299,
+      "generation": 0
+    }
+  },
+  {
+    "name": "memory-documents",
+    "observed": {
+      "matches": [
+        {
+          "session_id": "session",
+          "codepoint_length": 9
+        }
+      ],
+      "text": "café 中文 😀"
+    }
+  },
+  {
+    "name": "file-wal",
+    "observed": {
+      "mode": "wal",
+      "version": 8
+    }
+  },
+  {
+    "name": "file-delete",
+    "observed": {
+      "mode": "delete",
+      "version": 8
+    }
+  },
+  {
+    "name": "file-truncate",
+    "observed": {
+      "mode": "truncate",
+      "version": 8
+    }
+  },
+  {
+    "name": "file-persist",
+    "observed": {
+      "mode": "persist",
+      "version": 8
+    }
+  },
+  {
+    "name": "reopen",
+    "observed": {
+      "generation": 7,
+      "persisted": 1,
+      "live": 0,
+      "matches": [
+        "session"
+      ]
+    }
+  },
+  {
+    "name": "upgrade",
+    "observed": {
+      "generation": 0,
+      "persisted": 0,
+      "live": 0,
+      "matches": []
+    }
+  },
+  {
+    "name": "same-version",
+    "observed": {
+      "generation": 7,
+      "persisted": 1,
+      "live": 0,
+      "matches": [
+        "session"
+      ]
+    }
+  },
+  {
+    "name": "live-scope",
+    "observed": {
+      "generation": 7,
+      "persisted": 1,
+      "live": 0,
+      "matches": [
+        "session"
+      ]
+    }
+  },
+  {
+    "name": "foreign-app",
+    "observed": {
+      "message": "session-search database at \"<path>\" belongs to another application",
+      "unchanged": true
+    }
+  },
+  {
+    "name": "unmarked-nonempty",
+    "observed": {
+      "message": "session-search database at \"<path>\" is not an empty or recognized derived index",
+      "unchanged": true
+    }
+  },
+  {
+    "name": "unknown-derived",
+    "observed": {
+      "message": "session-search database at \"<path>\" has unrecognized user tables: sentinel",
+      "unchanged": true
+    }
+  },
+  {
+    "name": "canonical",
+    "observed": {
+      "message": "session-search database at \"<path>\" belongs to another application",
+      "unchanged": true
+    }
+  },
+  {
+    "name": "corrupt",
+    "observed": {
+      "message": "file is not a database",
+      "unchanged": true
+    }
+  }
+]

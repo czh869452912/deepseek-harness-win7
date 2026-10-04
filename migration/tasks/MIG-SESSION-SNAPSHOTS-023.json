@@ -16,7 +16,7 @@
   "acceptance": [
     "Eighteen actual unchanged-provider source/native observations match independently declared logical snapshot literals, with no new source bug exceptions.",
     "Four real JSONL/SQLite consumers and additional real SQLite rollback/upgrade/shared-instance and Windows handle/long-path tests pass; strict observer and release refusal probes pass.",
-    "The promoted clean candidate passes the complete gate with at least 162 mandatory lanes, twelve unchanged source groups/920 assertions, at least 45 paired drivers, actual isolated extracted Python 3.8.10 snapshots, directory publication and browser journeys."
+    "The promoted clean candidate passes the complete gate with at least 189 mandatory lanes, twelve unchanged source groups/920 assertions, at least 46 paired drivers, actual isolated extracted Python 3.8.10 snapshots, query schema, directory publication and browser journeys."
   ],
   "expected_paths": ["dsh/session", "scripts", "tests", "migration", "docs/research"],
   "open_findings": [
@@ -26,5 +26,5 @@
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "快照已在 bc7028c2 提交，但该候选因独立目录发布 WinError 5 被拒绝；快照与原版浏览器通过。目录修复后冻结新候选，至少 162 必需 lane、至少 45 配对、920 原版及实际解压全量通过后才签收。继续完整 FTS/游标/稳定两次校验/代际与 SQLite schema-19，不认证完整 B1 或延期 Win7。"
+  "next_action": "快照已在 bc7028c2 提交，但该候选因独立目录发布 WinError 5 被拒绝；快照与原版浏览器通过。目录修复及相同 ChangeTime 夹具后冻结新候选，至少 189 必需 lane、至少 46 配对、920 原版及实际解压全量通过后才签收。继续完整 FTS/游标/稳定两次校验/代际与 SQLite schema-19，不认证完整 B1 或延期 Win7。"
 }

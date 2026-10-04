@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 INPUTS = [
     "scripts/session_snapshots_oracle.py",
     "scripts/oracles/session_snapshots_python.py",
+    "scripts/oracles/session_snapshot_fixture.py",
     "scripts/oracles/session_snapshots_expected.json",
     "scripts/oracles/session_snapshots.probe.spec.ts",
     "scripts/oracles/vitest.session-snapshots-probe.config.mts",
@@ -80,7 +81,8 @@ def main():
             '--config', str(ROOT / 'scripts/oracles/vitest.session-snapshots-probe.config.mts')],
             [sys.executable, str(ROOT / 'scripts/oracles/session_snapshots_python.py'), str(paths[1])]]
         for index, command in enumerate(commands):
-            result = subprocess.run(command, cwd=str(ROOT), env=dict(os.environ, SESSION_SNAPSHOTS_OUTPUT=str(paths[0])),
+            result = subprocess.run(command, cwd=str(ROOT), env=dict(os.environ, SESSION_SNAPSHOTS_OUTPUT=str(paths[0]),
+                SESSION_SNAPSHOTS_PYTHON=sys.executable),
                 capture_output=True, timeout=90)
             output.with_name(output.stem + '.' + str(index) + '.log').write_bytes(result.stdout + result.stderr)
             if result.returncode:

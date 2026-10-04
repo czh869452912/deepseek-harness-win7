@@ -14,7 +14,7 @@ def _windows_api():
                     ('access',wintypes.FILETIME),('write',wintypes.FILETIME),
                     ('volume',wintypes.DWORD),('size_high',wintypes.DWORD),('size_low',wintypes.DWORD),
                     ('links',wintypes.DWORD),('index_high',wintypes.DWORD),('index_low',wintypes.DWORD)]
-    kernel = ctypes.WinDLL('kernel32',use_last_error=True)
+    kernel = ctypes.WinDLL('kernel32',use_last_error=True,winmode=0)
     kernel.CreateFileW.argtypes = [wintypes.LPCWSTR,wintypes.DWORD,wintypes.DWORD,
                                    ctypes.c_void_p,wintypes.DWORD,wintypes.DWORD,wintypes.HANDLE]
     kernel.CreateFileW.restype = wintypes.HANDLE

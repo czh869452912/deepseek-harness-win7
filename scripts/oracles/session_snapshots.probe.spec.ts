@@ -1,6 +1,7 @@
 import { readFile, writeFile, mkdtemp, rm, copyFile, cp, stat, utimes } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { spawnSync } from 'node:child_process'
 import { it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import SessionStore from '@deepseek-ai/dsh-session'
@@ -86,12 +87,19 @@ it('observes actual durable snapshot qualification, stable reopening, copied sto
           } else {
             const path = persistence.locate(meta)!.path
             await utimes(path,1_000_000_000,1_000_000_000)
+            const fixture = (value: string) => {
+              const result = spawnSync(process.env.SESSION_SNAPSHOTS_PYTHON!,
+                ['-I', 'scripts/oracles/session_snapshot_fixture.py', path, value], {encoding:'utf8'})
+              if (result.status !== 0 || result.stderr) throw new Error('snapshot metadata fixture failed: ' + result.stderr)
+            }
+            fixture('1500000000000000000')
             const before = await stat(path,{bigint:true})
             const first = (await persistence.listSnapshots())[0]
             const bytes = await readFile(path)
             bytes[bytes.length-2] = 32
             await writeFile(path,bytes)
             await utimes(path,1_000_000_000,1_000_000_000)
+            fixture('1500000001000000000')
             const after = await stat(path,{bigint:true})
             const next = (await persistence.listSnapshots())[0]
             Object.assign(observed,{sameSize:before.size===after.size,sameFile:before.ino===after.ino,

@@ -35,6 +35,7 @@ from scripts.session_requests_oracle import validate_runtime as validate_session
 from scripts.webserver_reset_probe import validate as validate_webserver_reset
 from scripts.python_directory_probe import validate as validate_python_directory
 from scripts.session_snapshots_oracle import validate_runtime as validate_session_snapshots
+from scripts.query_schema_oracle import validate_runtime as validate_query_schema
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -43,10 +44,45 @@ PAIRED_DRIVERS = (
     'pi', 'storage_cache', 'workflow_ralph', 'repeat_tool', 'token_meter',
     'pruner', 'compaction', 'maintenance', 'timeout_policy', 'abort',
     'approval', 'inspect', 'cordis_guard', 'cordis_runner',
-    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure', 'session_observation_read', 'session_corpus_list', 'session_corpus_read', 'session_lineage', 'session_event_trace', 'session_filters', 'session_requests', 'session_snapshots',
+    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure', 'session_observation_read', 'session_corpus_list', 'session_corpus_read', 'session_lineage', 'session_event_trace', 'session_filters', 'session_requests', 'session_snapshots', 'query_schema',
 )
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query')
 REQUIRED_REGRESSION = {
+    "test_sqlite_database": {
+        "test_pinned_database_coexists_with_loaded_stdlib_and_enforces_strict_types",
+        "test_pinned_database_preserves_bound_storage_values[None]",
+        "test_pinned_database_preserves_bound_storage_values[-9223372036854775808]",
+        "test_pinned_database_preserves_bound_storage_values[9223372036854775807]",
+        "test_pinned_database_preserves_bound_storage_values[1.25]",
+        "test_pinned_database_preserves_bound_storage_values[\\u4e2d\\u6587\\x00\\U0001f600]",
+        "test_pinned_database_preserves_bound_storage_values[\\x00\\xff]",
+        "test_pinned_database_preserves_bound_storage_values[0]",
+        "test_pinned_database_preserves_bound_storage_values[1]",
+        "test_pinned_database_preserves_bound_storage_values[value8]",
+        "test_pinned_database_preserves_bound_storage_values[value9]",
+        "test_pinned_database_fts5_unicode61_rank_and_highlight",
+        "test_pinned_database_failed_statement_finalizes_and_transaction_rolls_back",
+        "test_pinned_database_refuses_unsupported_bindings_without_retaining_statement[True]",
+        "test_pinned_database_refuses_unsupported_bindings_without_retaining_statement[9223372036854775808]",
+        "test_pinned_database_refuses_unsupported_bindings_without_retaining_statement[value2]",
+        "test_pinned_database_refuses_unsupported_bindings_without_retaining_statement[value3]",
+        "test_pinned_database_refuses_multi_statement_and_nul_sql_then_retires",
+    },
+    "test_query_schema": {
+        "test_actual_query_schema_keeps_live_tables_local_to_each_connection",
+        "test_actual_query_schema_rolls_back_main_and_temporary_fts_as_one_transaction",
+        "test_failed_query_schema_initialization_closes_unpublished_real_connection",
+        "test_query_schema_refuses_journal_modes_before_file_creation[off]",
+        "test_query_schema_refuses_journal_modes_before_file_creation[memory]",
+        "test_query_schema_refuses_journal_modes_before_file_creation[wal;DROP TABLE search_state]",
+    },
+    "test_session_windows_dll_loading": {
+        "test_session_dll_loading_uses_unpatched_windows_loader_flags[attributes]",
+        "test_session_dll_loading_uses_unpatched_windows_loader_flags[query]",
+    },
+    "test_query_schema_source": {
+        "test_source_query_schema_contract",
+    },
     'test_python_directory_mutation': {
         'test_actual_package_publication_waits_for_released_sharing_owner[' + operation + '-' + location + ']'
         for operation in ('add', 'upgrade', 'rollback') for location in ('directory', 'file')
@@ -381,7 +417,7 @@ def validate_extracted(path, archive, candidate):
             raise ValueError('Session corpus reads came from a different runtime')
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted Session corpus read observations are incomplete') from error
-    for name, validate in [('pythonDirectory', validate_python_directory),
+    for name, validate in [('querySchema', validate_query_schema), ('pythonDirectory', validate_python_directory),
                            ('sessionLineage', validate_session_lineage), ('sessionEventTrace', validate_session_event_trace),
                            ('sessionFilters', validate_session_filters), ('sessionRequests', validate_session_requests),
                            ('sessionSnapshots', validate_session_snapshots)]:

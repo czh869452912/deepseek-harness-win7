@@ -1,0 +1,18 @@
+{
+  "version": "3.51.2",
+  "source_id": "2026-01-09 17:27:48 b270f8339eb13b504d0b2ba154ebca966b7dde08e40c3ed7d559749818cb2075",
+  "source": "https://www.sqlite.org/2026/sqlite-dll-win-x64-3510200.zip",
+  "archive_sha256": "6467ca6787ebd8b60d04ede76e11d3bde6a6a67006d45cb2179f20590026cdda",
+  "archive_sha3_256": "d86617e984fc1d8163fb6e2bf363d9b674a35eecee2c0998dcd963817c5dae96",
+  "dll_sha256": "2339b9e7c8b2d4be67d5516fed37aa70c02bdb463386c47ab130d00586751642",
+  "machine": "x64",
+  "pe_subsystem": [
+    6,
+    0
+  ],
+  "direct_dependencies": [
+    "KERNEL32.dll"
+  ],
+  "rights_source": "https://www.sqlite.org/copyright.html",
+  "qualification": "Official public-domain DLL acquired over HTTPS; observed version/source ID matches the pinned Node SQLite. Direct import and subsystem inventory is recorded, not Windows 7 real-machine certification."
+}

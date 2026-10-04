@@ -1,0 +1,16 @@
+{
+  "version": "1.5.7",
+  "source_commit": "f8745da6ff1ad1e7bab384bd1f9d742439278e99",
+  "dictionary_sha256": "dad18fa0247a8fdd886a62d8552eabd36cbd50c25af172873080d2f0ae770d17",
+  "dll_sha256": "93d87fd026179637db29580e1db2d1188954241293f0e2279f93a01e007a45cc",
+  "license_sha256": {
+    "LLVM-LICENSE.txt": "8d85c1057d742e597985c7d4e6320b015a9139385cff4cbae06ffc0ebe89afee",
+    "MinGW-COPYING": "99a69660981156c21336fdb5661f89341b013c94e4bf9e1c7467b4745718397f",
+    "MinGW-COPYING.MinGW-w64-runtime.txt": "1db8da07b436c68833c0673ffee3d9fcb2526047f3820b81661865dfedc79a1f",
+    "MinGW-COPYING.MinGW-w64.txt": "f38e6194bd3bfa1b654f118e5acefe0aead437bbe669eee43957ccc65a7127f1",
+    "MinGW-COPYING.winpthreads.txt": "63263614cdd29f2f93cba85e992f041b31f9fc7b4033692f31269489a8a1b177",
+    "MinGW-COPYING.winstorecompat.txt": "fa7368d1f93d890c173177475d8ec7aff265a7d08f1f364d66f74d138978ce36",
+    "ZSTD-LICENSE": "7055266497633c9025b777c78eb7235af13922117480ed5c674677adc381c9d8"
+  },
+  "provenance_sha256": "3ab857e1a036c8893c4499c9f4956e4cb5c0f7c7e0cc2bbea886126576dee2c1"
+}

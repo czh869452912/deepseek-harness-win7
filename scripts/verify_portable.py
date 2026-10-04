@@ -42,6 +42,7 @@ from scripts.query_engine_oracle import validate_runtime as validate_query_engin
 from scripts.query_unicode_oracle import validate_runtime as validate_query_unicode, source_identity as unicode_source_identity
 from scripts.session_text_oracle import validate_runtime as validate_session_text, source_identity as text_source_identity
 from scripts.session_tools_oracle import validate_runtime as validate_session_tools, source_identity as tools_source_identity
+from scripts.sqlite_format_oracle import validate_runtime as validate_sqlite_format, source_identity as format_source_identity
 
 
 def digest(path):
@@ -88,6 +89,8 @@ def main(argv=None):
     parser.add_argument('--text-source', help='Fresh paired Session text source observations from the release gate')
     parser.add_argument('--text-inputs', help='The exact generated inputs used by the paired Session text observer')
     parser.add_argument('--tools-source', help='Fresh paired optional Session tool source observations from the release gate')
+    parser.add_argument('--format-source', help='Fresh actual schema-19 format Source observations')
+    parser.add_argument('--format-inputs', help='Exact schema-19 format generated inputs')
     args = parser.parse_args(argv)
     archive, output = Path(args.archive).resolve(), Path(args.output).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -126,7 +129,8 @@ def main(argv=None):
             'session_text_oracle.py', 'oracles/session_text_python.py', 'oracles/session_text_inputs.py',
             'oracles/session_text.probe.spec.ts', 'oracles/vitest.session-text-probe.config.mts',
             'session_tools_oracle.py', 'oracles/session_tools_python.py', 'oracles/session_tools.probe.spec.ts',
-            'oracles/vitest.session-tools-probe.config.mts')})
+            'oracles/vitest.session-tools-probe.config.mts', 'sqlite_format_oracle.py', 'oracles/sqlite_format_python.py',
+            'oracles/sqlite_format_inputs.py', 'oracles/sqlite_format.probe.spec.ts', 'oracles/vitest.sqlite-format-probe.config.mts')})
     node = shutil.which('node') if args.browser else None
     try:
         if args.browser and not node:
@@ -171,6 +175,22 @@ def main(argv=None):
             tools_source = paired_path.with_name(paired_path.stem + '.source.json')
         tools_digest = tools_source_identity(json.loads(tools_source.read_text(encoding='utf-8')))
         report['sessionToolsSourceSha256'] = digest(tools_source)
+        if args.format_source or args.format_inputs:
+            if not args.format_source or not args.format_inputs:
+                raise RuntimeError('Both SQLite format Source and inputs are required')
+            format_source, format_inputs = Path(args.format_source).resolve(), Path(args.format_inputs).resolve()
+        else:
+            paired_path = output.with_suffix('.sqlite-format-paired.json')
+            paired = subprocess.run([sys.executable, str(ROOT / 'scripts/sqlite_format_oracle.py'), '--output', str(paired_path)],
+                                    capture_output=True, timeout=150)
+            output.with_suffix('.sqlite-format-source.log').write_bytes(paired.stdout + paired.stderr)
+            if paired.returncode:
+                raise RuntimeError('Fresh SQLite format Source qualification failed')
+            format_source = paired_path.with_name(paired_path.stem + '.source.json')
+            format_inputs = paired_path.with_name(paired_path.stem + '.inputs.json')
+        format_digest, format_frames = format_source_identity(json.loads(format_source.read_text(encoding='utf-8')))
+        report['sqliteFormatSourceSha256'] = digest(format_source)
+        report['sqliteFormatInputSha256'] = digest(format_inputs)
         with tempfile.TemporaryDirectory(prefix='dsh Portable 中文 ') as private:
             workspace = Path(private)
             portable = extract(archive, workspace)
@@ -371,6 +391,16 @@ def main(argv=None):
             if corpus_read_report['root'] != str(portable):
                 raise RuntimeError('Extracted Session corpus reads imported a different product')
             report['sessionCorpusRead'] = corpus_read_report
+            format_path = workspace / 'sqlite-format.json'
+            format_result = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/oracles/sqlite_format_python.py'), str(format_path), '--root', str(portable),
+                '--inputs', str(format_inputs), '--source', str(format_source)], cwd=str(workspace), env=env,
+                capture_output=True, encoding='utf-8', errors='replace', timeout=90)
+            output.with_suffix('.sqlite-format.log').write_text(format_result.stdout + '\nSTDERR:\n' + format_result.stderr, encoding='utf-8')
+            if format_result.returncode or format_result.stderr or not format_path.is_file():
+                raise RuntimeError('Extracted SQLite format failed')
+            report['sqliteFormat'] = json.loads(format_path.read_text(encoding='utf-8'))
+            validate_sqlite_format(report['sqliteFormat'], portable, format_digest, format_frames)
             for name, key, validate in [('session_lineage', 'sessionLineage', validate_session_lineage),
                                         ('session_event_trace', 'sessionEventTrace', validate_session_event_trace),
                                         ('session_filters', 'sessionFilters', validate_session_filters),

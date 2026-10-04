@@ -32,6 +32,7 @@ from scripts.query_engine_oracle import expected as expected_query_engine
 from scripts.query_unicode_oracle import observation_digest
 from scripts.session_text_oracle import observation_digest as text_observation_digest
 from scripts.session_tools_oracle import observation_digest as tools_observation_digest
+from scripts.sqlite_format_oracle import observation_digest as format_observation_digest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -342,7 +343,7 @@ def test_extracted_session_corpus_read_requires_exact_sources_and_batch_drain(tm
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 312, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 336, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
@@ -505,6 +506,17 @@ def extracted_receipt(tmp_path):
     report['sessionTools'] = tools
     candidate['session_tools_observations_sha256'] = tools_observation_digest(tools['rows'])
     candidate['session_tools_modules'] = tools['modules'].copy()
+    format_report, format_inputs_digest = copy.deepcopy(sqlite_format_runtime_fixture())
+    format_report['root'] = str(tmp_path)
+    format_report['moduleFile'] = str(tmp_path / 'dsh/session/sqlite_codec.py')
+    format_report['libraryFile'] = str(tmp_path / 'dsh/session/bin/zstd/dsh_zstd.dll')
+    report['sqliteFormat'] = format_report
+    report['sqliteFormatInputSha256'] = format_inputs_digest
+    candidate['sqlite_format_observations_sha256'] = format_observation_digest(format_report['rows'])
+    candidate['sqlite_format_frames_sha256'] = format_report['frameInputsSha256']
+    candidate['sqlite_format_inputs_sha256'] = format_inputs_digest
+    candidate['sqlite_format_modules'] = format_report['modules'].copy()
+    candidate['sqlite_format_assets'] = format_report['assets'].copy()
     report['webServerReset'] = dict(root=str(tmp_path), module=str(tmp_path / 'dsh/host/webserver/socket_server.py'),
         python='3.8.10', platform='win32', observations=[
             dict(mode='http-stream', resets=3, owned=True, alive=True, retired=True, errors=[]),
@@ -520,6 +532,73 @@ def test_session_text_lanes_are_mandatory(tmp_path, damage):
             regression_xml(path, **{damage: (module, name)})
             with pytest.raises(RuntimeError):
                 GATE.validate_regression(path)
+
+
+@functools.lru_cache(maxsize=1)
+def sqlite_format_runtime_fixture():
+    with tempfile.TemporaryDirectory(prefix='sqlite-format-validator-fixture-') as directory:
+        output = Path(directory) / 'paired.json'
+        result = subprocess.run([sys.executable, str(ROOT / 'scripts/sqlite_format_oracle.py'), '--output', str(output)],
+                                capture_output=True, timeout=150)
+        assert result.returncode == 0 and not result.stderr, result.stderr
+        paired = json.loads(output.read_text(encoding='utf-8'))
+        native = json.loads(output.with_name('paired.native.json').read_text(encoding='utf-8'))
+        return native, paired['generatedInputsSha256']
+
+
+@pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
+def test_sqlite_format_lanes_are_mandatory(tmp_path, damage):
+    for module in ('test_sqlite_format', 'test_sqlite_format_source'):
+        for name in GATE.REQUIRED_REGRESSION[module]:
+            path = tmp_path / 'format-regression.xml'
+            regression_xml(path, **{damage: (module, name)})
+            with pytest.raises(RuntimeError):
+                GATE.validate_regression(path)
+
+
+@pytest.mark.parametrize('damage', ['missing', 'root', 'module', 'library', 'runtime', 'hash', 'asset', 'inventory', 'value',
+                                  'digest', 'frames', 'inputs', 'null-digest', 'null-modules', 'null-assets', 'missing-frames', 'version'])
+def test_extracted_sqlite_format_requires_fresh_source_and_owned_assets(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    current = report['sqliteFormat']
+    if damage == 'missing':
+        del report['sqliteFormat']
+    elif damage == 'root':
+        current['root'] = str(tmp_path / 'foreign')
+    elif damage == 'module':
+        current['moduleFile'] = 'foreign'
+    elif damage == 'library':
+        current['libraryFile'] = 'foreign'
+    elif damage == 'runtime':
+        current['python'] = '3.9.0'
+    elif damage == 'hash':
+        current['modules']['dsh/session/sqlite_codec.py'] = '0' * 64
+    elif damage == 'asset':
+        current['assets']['zstd-dictionary.bin'] = '0' * 64
+    elif damage == 'inventory':
+        current['rows'].pop()
+    elif damage == 'value':
+        current['rows'][0]['value'] = 'foreign'
+    elif damage == 'digest':
+        candidate['sqlite_format_observations_sha256'] = '0' * 64
+    elif damage == 'frames':
+        candidate['sqlite_format_frames_sha256'] = '0' * 64
+    elif damage == 'inputs':
+        report['sqliteFormatInputSha256'] = '0' * 64
+    elif damage == 'null-digest':
+        candidate['sqlite_format_observations_sha256'] = None
+    elif damage == 'null-modules':
+        candidate['sqlite_format_modules'] = None
+    elif damage == 'null-assets':
+        candidate['sqlite_format_assets'] = None
+    elif damage == 'missing-frames':
+        del candidate['sqlite_format_frames_sha256']
+    else:
+        current['zstdVersion'] = 'foreign'
+    output = tmp_path / 'format-extracted.json'
+    output.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='sqliteFormat'):
+        GATE.validate_extracted(output, archive, candidate)
 
 
 @functools.lru_cache(maxsize=1)

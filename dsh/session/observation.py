@@ -1,5 +1,6 @@
 """Live-preferred point observations with independently retained cold leases."""
 from dsh.core.session.json import deep_freeze
+from dsh.cordis.errors import ThrownValueError
 from dsh.session.persistence import SessionPersistenceCorruptionError
 from dsh.session.session_query import SessionQueryError
 
@@ -14,7 +15,7 @@ class SessionObservation:
 
     def retain(self):
         if self._disposed:
-            raise RuntimeError('session observation is disposed')
+            raise RuntimeError('session observation "' + self._state['view']['header'].id + '" is disposed')
         self._state['references'] += 1
         return SessionObservation(self._state)
 
@@ -30,6 +31,14 @@ class SessionObservation:
 def check_abort(signal):
     if signal is not None and signal.aborted:
         raise SessionQueryError('session observation was aborted', 'SESSION_QUERY_ABORTED', signal.reason)
+
+
+def failure_value(error):
+    return error.value if isinstance(error, ThrownValueError) else error
+
+
+def error_message(error):
+    return str(getattr(error, 'message', error)) if isinstance(error, BaseException) else 'unknown error'
 
 
 class SessionObservationReader:
@@ -60,19 +69,25 @@ class SessionObservationReader:
                 return self.live(live, mode)
             persistence = self.ctx.get('sessionPersistence')
             if persistence is None:
-                raise SessionQueryError('session not found: ' + session_id, 'SESSION_QUERY_SESSION_NOT_FOUND')
+                raise SessionQueryError('session "' + session_id + '" not found', 'SESSION_QUERY_SESSION_NOT_FOUND')
             try:
                 borrowed = await persistence.borrowSession(session_id, signal)
             except Exception as error:
                 check_abort(signal)
-                code = ('SESSION_QUERY_SESSION_NOT_FOUND' if isinstance(error, FileNotFoundError) else
-                        'SESSION_QUERY_CORRUPT_SESSION' if isinstance(error, SessionPersistenceCorruptionError) else
-                        'SESSION_QUERY_PERSISTENCE_FAILED')
-                raise SessionQueryError('failed to observe session: ' + session_id, code, error) from error
+                failure = failure_value(error)
+                if isinstance(failure, FileNotFoundError) or getattr(failure, 'name', None) == 'SessionPersistenceNotFoundError':
+                    raise SessionQueryError('session "' + session_id + '" not found',
+                                            'SESSION_QUERY_SESSION_NOT_FOUND', failure) from error
+                if isinstance(failure, SessionPersistenceCorruptionError) or getattr(failure, 'name', None) == 'SessionPersistenceCorruptionError':
+                    raise SessionQueryError('stored session "' + session_id + '" is corrupt: ' + error_message(failure),
+                                            'SESSION_QUERY_CORRUPT_SESSION', failure) from error
+                raise SessionQueryError('failed to observe session "' + session_id + '": ' + error_message(failure),
+                                        'SESSION_QUERY_PERSISTENCE_FAILED', failure) from error
             try:
                 check_abort(signal)
                 if borrowed.inspection.meta.id != session_id:
-                    raise SessionQueryError('session source identity conflict', 'SESSION_QUERY_SOURCE_CONFLICT')
+                    raise SessionQueryError('session persistence returned "' + borrowed.inspection.meta.id + '" for "' + session_id + '"',
+                                            'SESSION_QUERY_SOURCE_CONFLICT')
                 live = sessions.get(session_id)
                 if live is not None:
                     observation = self.live(live, mode)
@@ -90,8 +105,9 @@ class SessionObservationReader:
                                                             borrowed.inspection.events) if cache is not None else
                                        registry.hydrate(borrowed.preparedSession, {}, borrowed.inspection.events, 0))
                     except Exception as error:
-                        raise SessionQueryError('failed to project session: ' + session_id,
-                                                'SESSION_QUERY_CORRUPT_SESSION', error) from error
+                        failure = failure_value(error)
+                        raise SessionQueryError('failed to project session "' + session_id + '": ' + error_message(failure),
+                                                'SESSION_QUERY_CORRUPT_SESSION', failure) from error
                 return self.cut('prepared', borrowed.inspection.meta, borrowed.inspection.events,
                                 borrowed.dispose, projections, borrowed.revision)
             except BaseException:

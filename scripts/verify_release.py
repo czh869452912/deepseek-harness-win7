@@ -25,6 +25,7 @@ from scripts.mcp_disposal_oracle import validate_runtime as validate_mcp_disposa
 from scripts.subprocess_ownership_oracle import validate_runtime as validate_subprocess_ownership
 from scripts.subprocess_tree_oracle import validate_observations as validate_subprocess_tree
 from scripts.projection_cache_failure_oracle import validate_runtime as validate_projection_cache_reads
+from scripts.session_observation_read_oracle import validate_runtime as validate_session_observation_reads
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -33,10 +34,11 @@ PAIRED_DRIVERS = (
     'pi', 'storage_cache', 'workflow_ralph', 'repeat_tool', 'token_meter',
     'pruner', 'compaction', 'maintenance', 'timeout_policy', 'abort',
     'approval', 'inspect', 'cordis_guard', 'cordis_runner',
-    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure',
+    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure', 'session_observation_read',
 )
-OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache')
+OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation')
 REQUIRED_REGRESSION = {
+    'test_session_observation_read_source': {'test_actual_original_and_native_point_read_failures_and_retained_cut_ownership'},
     'test_projection_cache_failure_source': {'test_actual_original_and_native_durable_cache_read_failure_and_prepared_fallback'},
     'test_subagent_acp_peer_encoding': {'test_acp_peer_reads_utf8_wire_without_inherited_python_encoding'},
     'test_subprocess_tree_source': {'test_actual_original_and_native_physical_windows_tree_lifecycle'},
@@ -279,6 +281,12 @@ def validate_extracted(path, archive, candidate):
             raise ValueError('Projection cache reads came from a different runtime')
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted projection cache read observations are incomplete') from error
+    try:
+        validate_session_observation_reads(report.get('sessionObservationReads'))
+        if report['sessionObservationReads']['root'] != report['mcpStdio']['root']:
+            raise ValueError('Session observation reads came from a different runtime')
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted Session observation read observations are incomplete') from error
     if report.get('archiveSha256') != digest(archive) or Path(report['archive']).resolve() != archive.resolve():
         raise RuntimeError('Extracted receipt belongs to a different archive')
     provenance = report.get('provenance', {})
@@ -323,7 +331,8 @@ def verify(args, output):
          'scripts/oracles/official/node_modules/@vscode/ripgrep-win32-x64/bin/rg.exe'],
         'portable-build', output, env=environment)
     regression = output / 'pytest.xml'
-    run([python, '-m', 'pytest', 'tests', '-ra', '--junitxml=' + str(regression)],
+    run([python, '-m', 'pytest', 'tests', '-ra', '--junitxml=' + str(regression),
+         '--basetemp=' + str(output / 'pytest-workspace')],
         'pytest', output, env=environment, timeout=1800)
     regression_result = validate_regression(regression)
     for config in OFFICIAL_CONFIGS:

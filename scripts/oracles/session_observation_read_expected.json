@@ -1,0 +1,305 @@
+[
+  {
+    "name": "missing-provider",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session \"owned\" not found",
+        "code": "SESSION_QUERY_SESSION_NOT_FOUND",
+        "sameCause": false,
+        "sameFailure": false
+      },
+      "counters": {
+        "borrows": 0,
+        "releases": 0,
+        "applied": 0
+      }
+    }
+  },
+  {
+    "name": "missing-record",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session \"owned\" not found",
+        "code": "SESSION_QUERY_SESSION_NOT_FOUND",
+        "sameCause": true,
+        "sameFailure": false
+      },
+      "counters": {
+        "borrows": 1,
+        "releases": 0,
+        "applied": 0
+      }
+    }
+  },
+  {
+    "name": "corrupt-record",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "stored session \"owned\" is corrupt: controlled corrupt record",
+        "code": "SESSION_QUERY_CORRUPT_SESSION",
+        "sameCause": true,
+        "sameFailure": false
+      },
+      "counters": {
+        "borrows": 1,
+        "releases": 0,
+        "applied": 0
+      }
+    }
+  },
+  {
+    "name": "persistence-failure",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "failed to observe session \"owned\": controlled read failure",
+        "code": "SESSION_QUERY_PERSISTENCE_FAILED",
+        "sameCause": true,
+        "sameFailure": false
+      },
+      "counters": {
+        "borrows": 1,
+        "releases": 0,
+        "applied": 0
+      }
+    }
+  },
+  {
+    "name": "foreign-rejection",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "failed to observe session \"owned\": unknown error",
+        "code": "SESSION_QUERY_PERSISTENCE_FAILED",
+        "sameCause": true,
+        "sameFailure": false
+      },
+      "counters": {
+        "borrows": 1,
+        "releases": 0,
+        "applied": 0
+      }
+    }
+  },
+  {
+    "name": "wrong-source",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session persistence returned \"foreign\" for \"owned\"",
+        "code": "SESSION_QUERY_SOURCE_CONFLICT",
+        "sameCause": false,
+        "sameFailure": false
+      },
+      "counters": {
+        "borrows": 1,
+        "releases": 1,
+        "applied": 0
+      }
+    }
+  },
+  {
+    "name": "pre-abort",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session observation was aborted",
+        "code": "SESSION_QUERY_ABORTED",
+        "sameCause": true,
+        "sameFailure": false
+      },
+      "counters": {
+        "borrows": 0,
+        "releases": 0,
+        "applied": 0
+      }
+    }
+  },
+  {
+    "name": "borrow-abort",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session observation was aborted",
+        "code": "SESSION_QUERY_ABORTED",
+        "sameCause": true,
+        "sameFailure": false
+      },
+      "counters": {
+        "borrows": 1,
+        "releases": 1,
+        "applied": 0
+      }
+    }
+  },
+  {
+    "name": "projection-failure",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "failed to project session \"owned\": controlled read failure",
+        "code": "SESSION_QUERY_CORRUPT_SESSION",
+        "sameCause": true,
+        "sameFailure": false
+      },
+      "counters": {
+        "borrows": 1,
+        "releases": 1,
+        "applied": 0
+      }
+    }
+  },
+  {
+    "name": "live-projection-failure",
+    "observed": {
+      "error": {
+        "name": "TypeError",
+        "message": "controlled read failure",
+        "code": null,
+        "sameCause": false,
+        "sameFailure": true
+      },
+      "counters": {
+        "borrows": 1,
+        "releases": 1,
+        "applied": 0
+      }
+    }
+  },
+  {
+    "name": "prepared-leases",
+    "observed": {
+      "cut": {
+        "source": "prepared",
+        "id": "owned",
+        "cursor": 1,
+        "length": 2,
+        "revision": "controlled:0",
+        "projections": null
+      },
+      "releasesAfterFirst": 0,
+      "retainFailure": {
+        "message": "session observation \"owned\" is disposed",
+        "ordinaryError": true
+      },
+      "retained": {
+        "source": "prepared",
+        "cursor": 1,
+        "length": 2
+      },
+      "counters": {
+        "borrows": 1,
+        "releases": 1,
+        "applied": 0
+      }
+    }
+  },
+  {
+    "name": "live-leases",
+    "observed": {
+      "cut": {
+        "source": "live",
+        "id": "owned",
+        "cursor": 1,
+        "length": 2,
+        "revision": null,
+        "projections": null
+      },
+      "releasesAfterFirst": 0,
+      "retainFailure": {
+        "message": "session observation \"owned\" is disposed",
+        "ordinaryError": true
+      },
+      "retained": {
+        "source": "live",
+        "cursor": 1,
+        "length": 2
+      },
+      "counters": {
+        "borrows": 0,
+        "releases": 0,
+        "applied": 0
+      }
+    }
+  },
+  {
+    "name": "published-live",
+    "observed": {
+      "cut": {
+        "source": "live",
+        "id": "owned",
+        "cursor": 0,
+        "length": 1,
+        "revision": null,
+        "projections": null
+      },
+      "counters": {
+        "borrows": 1,
+        "releases": 1,
+        "applied": 0
+      }
+    }
+  },
+  {
+    "name": "detached-live-retry",
+    "observed": {
+      "cut": {
+        "source": "prepared",
+        "id": "owned",
+        "cursor": 1,
+        "length": 2,
+        "revision": "controlled:0",
+        "projections": null
+      },
+      "counters": {
+        "borrows": 2,
+        "releases": 2,
+        "applied": 0
+      }
+    }
+  },
+  {
+    "name": "projection-none",
+    "observed": {
+      "cut": {
+        "source": "prepared",
+        "id": "owned",
+        "cursor": 1,
+        "length": 2,
+        "revision": "controlled:0",
+        "projections": null
+      },
+      "counters": {
+        "borrows": 1,
+        "releases": 1,
+        "applied": 0
+      }
+    }
+  },
+  {
+    "name": "prepared-projection",
+    "observed": {
+      "cut": {
+        "source": "prepared",
+        "id": "owned",
+        "cursor": 1,
+        "length": 2,
+        "revision": "controlled:0",
+        "projections": {
+          "asOfSeq": 1,
+          "values": {
+            "controlled/count": 2
+          }
+        }
+      },
+      "counters": {
+        "borrows": 1,
+        "releases": 1,
+        "applied": 2
+      }
+    }
+  }
+]

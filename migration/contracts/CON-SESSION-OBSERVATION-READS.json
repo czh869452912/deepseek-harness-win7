@@ -1,0 +1,24 @@
+{
+  "id": "CON-SESSION-OBSERVATION-READS",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/session-query/session-query/src/observation.ts", "reference/packages/session-query/session-query/tests/observation.spec.ts", "reference/packages/session/session-persistence/src/errors.ts", "reference/packages/session/session-persistence/src/coordinator.ts"],
+  "consumers": ["dsh/session/observation.py", "dsh/session/session_query.py", "dsh/api/session_list.py", "scripts/verify_portable.py"],
+  "invariants": [
+    "Absent sources, borrowed rejection, identity conflict and prepared projection errors retain exact source messages/codes and the original cause value.",
+    "Abort before borrow performs no borrow; abort after borrow releases that source once and preserves the signal reason.",
+    "A winning live projection failure propagates its exact failure instance and releases the borrowed preparation once.",
+    "Retained prepared cuts share one independent lifetime, release only after the last lease, and refuse reuse of a disposed lease with exact Session identity.",
+    "Live cuts never borrow persistence; live publication wins a cold read and a detached-live borrow is released before retry.",
+    "ProjectionMode none avoids registry work; prepared projection observes the exact logical prefix and cut.",
+    "Six unchanged original assertions and sixteen actual reader/SessionStore/registry observations execute from the pinned source; extracted Python repeats the same declared borrowed-source cuts."
+  ],
+  "identity": "Exact Session id, cut/revision, root failure/cause identity, lease identity and runtime root/module are retained.",
+  "ownership": "The reader owns a borrowed preparation until the final prepared lease or a failed read releases it; live cuts have no borrowed persistence lifetime.",
+  "ordering": "Abort and source identity validation precede publication preference and projection work; disposed live borrow is released before retry.",
+  "errors": "Source name/code/message and failure identity are compared literally. ThrownValueError is only a Python carrier for the original non-Error rejection.",
+  "cancellation": "Controlled abort cuts before and after borrow preserve exact signal reason and settle ownership; full durable preparation cancellation remains separate.",
+  "adaptation": "FileNotFoundError represents typed persistence not-found; generic JavaScript Error disposal refusal maps to exact Python RuntimeError construction. No browser or upstream source is changed.",
+  "open_questions": ["Complete main clean gate and extracted acceptance pending; durable borrowed-source behavior, full FTS/long replay/Web/profile consumers, JavaScript execution and deferred Win7 remain outside this contract."]
+}

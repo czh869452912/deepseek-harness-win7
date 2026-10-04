@@ -66,10 +66,7 @@ class SessionProjectionCache:
 
     def cold_snapshot(self, meta, events):
         projections = self.ctx.get("sessionProjections")
-        try:
-            restored = projections.restore(self._rows(meta), events, 0, meta)
-        except (ValueError, TypeError, KeyError):
-            restored = projections.restore({}, events, 0, meta)
+        restored = projections.restore(self._rows(meta), events, 0, meta)
         self._schedule(self._put(meta, restored["checkpoint"]))
         return restored["snapshot"]
 

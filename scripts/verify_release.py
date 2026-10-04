@@ -24,6 +24,7 @@ from scripts.subagent_acp_teardown_oracle import validate_runtime as validate_su
 from scripts.mcp_disposal_oracle import validate_runtime as validate_mcp_disposal
 from scripts.subprocess_ownership_oracle import validate_runtime as validate_subprocess_ownership
 from scripts.subprocess_tree_oracle import validate_observations as validate_subprocess_tree
+from scripts.projection_cache_failure_oracle import validate_runtime as validate_projection_cache_reads
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -32,10 +33,11 @@ PAIRED_DRIVERS = (
     'pi', 'storage_cache', 'workflow_ralph', 'repeat_tool', 'token_meter',
     'pruner', 'compaction', 'maintenance', 'timeout_policy', 'abort',
     'approval', 'inspect', 'cordis_guard', 'cordis_runner',
-    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree',
+    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure',
 )
-OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp')
+OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache')
 REQUIRED_REGRESSION = {
+    'test_projection_cache_failure_source': {'test_actual_original_and_native_durable_cache_read_failure_and_prepared_fallback'},
     'test_subagent_acp_peer_encoding': {'test_acp_peer_reads_utf8_wire_without_inherited_python_encoding'},
     'test_subprocess_tree_source': {'test_actual_original_and_native_physical_windows_tree_lifecycle'},
     'test_subprocess_physical_tree': {'test_actual_owned_root_and_descendant_exit[' + name + ']' for name in ('direct', 'dispose', 'abort', 'terminate')},
@@ -271,6 +273,12 @@ def validate_extracted(path, archive, candidate):
         validate_subprocess_tree(report.get('subprocessTree'), Path(report['mcpStdio']['root']))
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted physical subprocess tree observations are incomplete') from error
+    try:
+        validate_projection_cache_reads(report.get('projectionCacheReads'))
+        if report['projectionCacheReads']['root'] != report['mcpStdio']['root']:
+            raise ValueError('Projection cache reads came from a different runtime')
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted projection cache read observations are incomplete') from error
     if report.get('archiveSha256') != digest(archive) or Path(report['archive']).resolve() != archive.resolve():
         raise RuntimeError('Extracted receipt belongs to a different archive')
     provenance = report.get('provenance', {})

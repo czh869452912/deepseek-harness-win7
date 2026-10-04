@@ -1,0 +1,22 @@
+{
+  "id": "CON-PROJECTION-CACHE-READS",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/session/session-projection-cache/src/index.ts", "reference/packages/session/session-projection-cache/tests/cache.spec.ts", "reference/packages/session/session-projection/src/index.ts", "reference/packages/storage/storage-domain/src/domain.ts"],
+  "consumers": ["dsh/session/projection_cache.py", "dsh/session/observation.py", "dsh/api/session_list.py", "scripts/verify_portable.py"],
+  "invariants": [
+    "Malformed usable cold checkpoint schema values propagate the exact parser failure, perform no event fold and leave the durable cache record unchanged.",
+    "Prepared hydration alone retries malformed checkpoint rows from the supplied exact event prefix and does not write a checkpoint.",
+    "Matching cold rows fold only the suffix after their watermark and write back the new detached cut.",
+    "Foreign createdAt/cwd, version-mismatched, beyond-log and empty rows cannot seed a cold fold; the full prefix refreshes a checkpoint bound to the current log identity.",
+    "Actual JSON domain/file and Session/registry/cache consumers execute eight strict paired observations; extracted embedded Python repeats those observations from the declared product module."
+  ],
+  "identity": "Checkpoint identity binds createdAt/cwd; parser failure retains its exact instance; raw snapshot/document values remain unchanged in comparison.",
+  "ownership": "The cache owns derived per-record writes while the Session/registry owns the supplied logical prefix; prepared observation has no durable write authority.",
+  "ordering": "Identity/version/cut validation precedes schema parse and suffix apply; only successful cold restore admits write-back and domain disposal drains it.",
+  "errors": "Cold schema TypeError propagates without fallback, rewrapping or overwriting; prepared hydration explicitly catches and retries. The executable parser is a declared same-TypeError observation seam.",
+  "cancellation": "This bounded read contract covers synchronous folds and admitted JSON writes; broader replay cancellation and cross-process recovery remain separate.",
+  "adaptation": "Source executable parse(value) and Native callable parser have the same declared TypeError and retain identity; no source test or product code is rewritten.",
+  "open_questions": ["Main complete clean candidate and actual extracted acceptance are pending. Full domain/cache/FTS/long history, native SQLite/compression, cold Web/profile consumers and deferred Win7 remain unaccepted."]
+}

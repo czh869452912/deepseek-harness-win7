@@ -26,6 +26,7 @@ from scripts.mcp_disposal_oracle import validate_runtime as validate_mcp_disposa
 from scripts.subprocess_ownership_oracle import validate_runtime as validate_subprocess_ownership
 from scripts.oracles.subprocess_tree_python import observe as observe_subprocess_tree
 from scripts.subprocess_tree_oracle import validate_observations as validate_subprocess_tree
+from scripts.projection_cache_failure_oracle import validate_runtime as validate_projection_cache_reads
 
 
 def digest(path):
@@ -84,7 +85,8 @@ def main(argv=None):
             'mcp_disposal_oracle.py', 'oracles/mcp_disposal_python.py',
             'subprocess_ownership_oracle.py', 'oracles/subprocess_ownership_python.py',
             'oracles/subagent_acp_peer.py', 'subprocess_tree_oracle.py', 'oracles/subprocess_tree_python.py',
-            'oracles/subprocess_tree_peer.py', 'oracles/subprocess_host_exit_python.py')})
+            'oracles/subprocess_tree_peer.py', 'oracles/subprocess_host_exit_python.py',
+            'projection_cache_failure_oracle.py', 'oracles/projection_cache_failure_python.py')})
     node = shutil.which('node') if args.browser else None
     try:
         if args.browser and not node:
@@ -239,6 +241,20 @@ def main(argv=None):
             tree_report = observe_subprocess_tree(portable, str(portable / 'python.exe'), environment=env)
             validate_subprocess_tree(tree_report, portable)
             report['subprocessTree'] = tree_report
+            cache_workspace = workspace / 'projection-cache-reads'
+            cache_workspace.mkdir()
+            cache_path = workspace / 'projection-cache-reads.json'
+            cache_reads = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/oracles/projection_cache_failure_python.py'), str(cache_workspace), str(cache_path), '--root', str(portable)],
+                cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=90)
+            output.with_suffix('.projection-cache-reads.log').write_text(cache_reads.stdout + '\nSTDERR:\n' + cache_reads.stderr, encoding='utf-8')
+            if cache_reads.returncode or cache_reads.stderr or not cache_path.is_file():
+                raise RuntimeError('Extracted projection cache reads failed; see ' + str(output.with_suffix('.projection-cache-reads.log')))
+            cache_report = json.loads(cache_path.read_text(encoding='utf-8'))
+            validate_projection_cache_reads(cache_report)
+            if cache_report['root'] != str(portable):
+                raise RuntimeError('Extracted projection cache reads imported a different product')
+            report['projectionCacheReads'] = cache_report
             if args.browser:
                 browser_report = output.with_suffix('.browser.json')
                 # The observer launches the Host with the same restricted env.

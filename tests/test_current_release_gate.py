@@ -13,6 +13,7 @@ from scripts.subagent_acp_teardown_oracle import expected as expected_subagent_a
 from scripts.subprocess_tree_oracle import expected as expected_subprocess_tree
 from scripts.mcp_disposal_oracle import expected as expected_mcp_disposal
 from scripts.subprocess_ownership_oracle import expected as expected_subprocess_ownership
+from scripts.projection_cache_failure_oracle import expected as expected_projection_cache_reads
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -80,10 +81,66 @@ def test_extracted_physical_tree_is_required_and_cannot_hide_survivors(tmp_path,
         GATE.validate_extracted(path, archive, candidate)
 
 
+@pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
+def test_projection_cache_read_source_lane_cannot_be_optional(tmp_path, damage):
+    path = tmp_path / 'pytest.xml'
+    module = 'test_projection_cache_failure_source'
+    key = (module, sorted(GATE.REQUIRED_REGRESSION[module])[0])
+    regression_xml(path, **{damage: key})
+    with pytest.raises(RuntimeError):
+        GATE.validate_regression(path)
+
+
+@pytest.mark.parametrize('damage', ['missing', 'tail', 'duplicate', 'reorder', 'cold-error',
+    'error-identity', 'cold-overwrite', 'cold-replay', 'prepared-error', 'prepared-overwrite',
+    'tail-apply', 'snapshot-cut', 'foreign-root', 'foreign-module', 'python', 'unknown-field'])
+def test_extracted_projection_cache_reads_cannot_hide_failure_or_change_runtime(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    cache = report['projectionCacheReads']
+    rows = cache['observations']
+    if damage == 'missing':
+        del report['projectionCacheReads']
+    elif damage == 'tail':
+        rows.pop()
+    elif damage == 'duplicate':
+        rows[-1] = copy.deepcopy(rows[0])
+    elif damage == 'reorder':
+        rows.reverse()
+    elif damage == 'cold-error':
+        del rows[0]['observed']['error']
+    elif damage == 'error-identity':
+        rows[0]['observed']['error']['sameParserFailure'] = False
+    elif damage == 'cold-overwrite':
+        rows[0]['observed']['document']['record']['rows']['controlled/count']['val'] = 2
+    elif damage == 'cold-replay':
+        rows[0]['observed']['applied'] = [0, 1]
+    elif damage == 'prepared-error':
+        rows[1]['observed']['error'] = copy.deepcopy(rows[0]['observed']['error'])
+    elif damage == 'prepared-overwrite':
+        rows[1]['observed']['document']['record']['rows']['controlled/count']['seq'] = 1
+    elif damage == 'tail-apply':
+        rows[2]['observed']['applied'] = []
+    elif damage == 'snapshot-cut':
+        rows[2]['observed']['snapshot']['asOfSeq'] = 0
+    elif damage == 'foreign-root':
+        cache['root'] = str(tmp_path / 'foreign')
+        cache['module'] = str(tmp_path / 'foreign/dsh/__init__.py')
+    elif damage == 'foreign-module':
+        cache['module'] = str(tmp_path / 'foreign/dsh/__init__.py')
+    elif damage == 'python':
+        cache['python'] = [3, 9, 0]
+    else:
+        cache['unknown'] = True
+    path = tmp_path / 'extracted.json'
+    path.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError):
+        GATE.validate_extracted(path, archive, candidate)
+
+
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 92, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 93, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
@@ -169,6 +226,8 @@ def extracted_receipt(tmp_path):
     report['mcpDisposal'] = dict(expected_mcp_disposal(), root=str(tmp_path),
         module=str(tmp_path / 'dsh/__init__.py'), python=[3, 8, 10])
     report['subprocessOwnership'] = {'observations': expected_subprocess_ownership(),
+        'root': str(tmp_path), 'module': str(tmp_path / 'dsh/__init__.py'), 'python': [3, 8, 10]}
+    report['projectionCacheReads'] = {'observations': expected_projection_cache_reads(),
         'root': str(tmp_path), 'module': str(tmp_path / 'dsh/__init__.py'), 'python': [3, 8, 10]}
     return archive, candidate, report
 

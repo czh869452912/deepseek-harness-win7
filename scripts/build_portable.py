@@ -89,6 +89,8 @@ def checked_inputs(root_dir, site_packages):
     root = Path(root_dir)
     from dsh.session.icu_collation import verify_icu_files
     verify_icu_files(root / 'dsh/session/bin/icu')
+    from dsh.session.text import verify_case_folding
+    verify_case_folding(root / 'dsh/session/bin/unicode/CaseFolding.txt')
     manifest = json.loads((root / 'scripts/frontend-inputs.json').read_text(encoding='utf-8'))
     baseline = json.loads((root / 'migration/baseline.json').read_text(encoding='utf-8'))
     if manifest['target_upstream'] != baseline['target_upstream']:

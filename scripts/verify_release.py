@@ -38,6 +38,7 @@ from scripts.session_snapshots_oracle import validate_runtime as validate_sessio
 from scripts.query_schema_oracle import validate_runtime as validate_query_schema
 from scripts.query_engine_oracle import validate_runtime as validate_query_engine
 from scripts.query_unicode_oracle import validate_runtime as validate_query_unicode, source_identity as unicode_source_identity
+from scripts.session_text_oracle import validate_runtime as validate_session_text, source_identity as text_source_identity
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -46,10 +47,64 @@ PAIRED_DRIVERS = (
     'pi', 'storage_cache', 'workflow_ralph', 'repeat_tool', 'token_meter',
     'pruner', 'compaction', 'maintenance', 'timeout_policy', 'abort',
     'approval', 'inspect', 'cordis_guard', 'cordis_runner',
-    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure', 'session_observation_read', 'session_corpus_list', 'session_corpus_read', 'session_lineage', 'session_event_trace', 'session_filters', 'session_requests', 'session_snapshots', 'query_schema', 'query_engine', 'query_unicode',
+    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure', 'session_observation_read', 'session_corpus_list', 'session_corpus_read', 'session_lineage', 'session_event_trace', 'session_filters', 'session_requests', 'session_snapshots', 'query_schema', 'query_engine', 'query_unicode', 'session_text',
 )
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source')
 REQUIRED_REGRESSION = {
+    "test_session_text": {
+        "test_literal_simple_case_equivalents_match_in_both_directions[\\u0412-\\u1c80]",
+        "test_literal_simple_case_equivalents_match_in_both_directions[\\ua7cb-\\u0264]",
+        "test_literal_simple_case_equivalents_match_in_both_directions[\\U00010d50-\\U00010d70]",
+        "test_literal_simple_case_equivalents_match_in_both_directions[\\u1e9e-\\xdf]",
+        "test_literal_simple_case_equivalents_match_in_both_directions[s-\\u017f]",
+        "test_literal_simple_case_equivalents_match_in_both_directions[k-\\u212a]",
+        "test_literal_simple_case_equivalents_match_in_both_directions[\\u0392-\\u03d0]",
+        "test_literal_matching_refuses_full_fold_turkic_and_normalization[\\xdf-ss]",
+        "test_literal_matching_refuses_full_fold_turkic_and_normalization[\\u0130-i]",
+        "test_literal_matching_refuses_full_fold_turkic_and_normalization[\\u0131-I]",
+        "test_literal_matching_refuses_full_fold_turkic_and_normalization[\\xe9-e\\u0301]",
+        "test_literal_matching_refuses_full_fold_turkic_and_normalization[a-b]",
+        "test_literal_unicode_mode_preserves_utf16_scalar_boundaries[\\ud83d\\ude00-\\U0001f600-True]",
+        "test_literal_unicode_mode_preserves_utf16_scalar_boundaries[\\U0001f600-\\ud83d\\ude00-True]",
+        "test_literal_unicode_mode_preserves_utf16_scalar_boundaries[\\ud83d-\\U0001f600-False]",
+        "test_literal_unicode_mode_preserves_utf16_scalar_boundaries[\\ud83d-\\ud83d\\ude00-False]",
+        "test_literal_unicode_mode_preserves_utf16_scalar_boundaries[\\ude00-\\U0001f600-False]",
+        "test_literal_unicode_mode_preserves_utf16_scalar_boundaries[\\ude00-\\ud83d\\ude00-False]",
+        "test_literal_unicode_mode_preserves_utf16_scalar_boundaries[\\ud83d-\\ud83d-True]",
+        "test_literal_unicode_mode_preserves_utf16_scalar_boundaries[\\ude00-\\ude00-True]",
+        "test_ecmascript_whitespace_is_trimmed_joined_and_refused_when_empty[\\t]",
+        "test_ecmascript_whitespace_is_trimmed_joined_and_refused_when_empty[\\n]",
+        "test_ecmascript_whitespace_is_trimmed_joined_and_refused_when_empty[\\r]",
+        "test_ecmascript_whitespace_is_trimmed_joined_and_refused_when_empty[ ]",
+        "test_ecmascript_whitespace_is_trimmed_joined_and_refused_when_empty[\\xa0]",
+        "test_ecmascript_whitespace_is_trimmed_joined_and_refused_when_empty[\\u1680]",
+        "test_ecmascript_whitespace_is_trimmed_joined_and_refused_when_empty[\\u2000]",
+        "test_ecmascript_whitespace_is_trimmed_joined_and_refused_when_empty[\\u200a]",
+        "test_ecmascript_whitespace_is_trimmed_joined_and_refused_when_empty[\\u2028]",
+        "test_ecmascript_whitespace_is_trimmed_joined_and_refused_when_empty[\\u2029]",
+        "test_ecmascript_whitespace_is_trimmed_joined_and_refused_when_empty[\\u202f]",
+        "test_ecmascript_whitespace_is_trimmed_joined_and_refused_when_empty[\\u205f]",
+        "test_ecmascript_whitespace_is_trimmed_joined_and_refused_when_empty[\\u3000]",
+        "test_ecmascript_whitespace_is_trimmed_joined_and_refused_when_empty[\\ufeff]",
+        "test_other_python_whitespace_remains_literal_and_semantic[\\x1c]",
+        "test_other_python_whitespace_remains_literal_and_semantic[\\x1d]",
+        "test_other_python_whitespace_remains_literal_and_semantic[\\x1e]",
+        "test_other_python_whitespace_remains_literal_and_semantic[\\x1f]",
+        "test_other_python_whitespace_remains_literal_and_semantic[\\x85]",
+        "test_other_python_whitespace_remains_literal_and_semantic[\\u180e]",
+        "test_other_python_whitespace_remains_literal_and_semantic[\\u200b]",
+        "test_other_python_whitespace_remains_literal_and_semantic[\\u2060]",
+        "test_literal_regex_operators_and_nul_are_data",
+        "test_missing_or_changed_case_folding_data_is_refused[missing]",
+        "test_missing_or_changed_case_folding_data_is_refused[changed]",
+        "test_corpus_and_lineage_preserve_equal_collation_insertion_order[identities0]",
+        "test_corpus_and_lineage_preserve_equal_collation_insertion_order[identities1]",
+        "test_canonical_durable_text_filters_repeat_after_context_restart[jsonl]",
+        "test_canonical_durable_text_filters_repeat_after_context_restart[sqlite]",
+    },
+    "test_session_text_source": {
+        "test_actual_original_native_text_extraction_and_domain_order",
+    },
     "test_query_unicode": {
         "test_canonical_and_ignorable_strings_preserve_stable_order[\\xe9-e\\u0301]",
         "test_canonical_and_ignorable_strings_preserve_stable_order[ab-a\\u200bb]",
@@ -496,6 +551,16 @@ def validate_extracted(path, archive, candidate):
                                candidate['query_unicode_observations_sha256'], candidate['query_unicode_locale'])
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted queryUnicode observations are incomplete') from error
+    try:
+        if not isinstance(candidate['session_text_observations_sha256'], str) or not isinstance(candidate['session_text_locale'], str):
+            raise ValueError('Session text source identity is missing')
+        validate_session_text(report.get('sessionText'), report['mcpStdio']['root'],
+                              candidate['session_text_observations_sha256'], candidate['session_text_locale'])
+        input_digest = candidate['session_text_inputs_sha256']
+        if not isinstance(input_digest, str) or not re.fullmatch(r'[0-9a-f]{64}', input_digest) or report.get('sessionTextInputSha256') != input_digest:
+            raise ValueError('Session text input receipt differs')
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted sessionText observations are incomplete') from error
     for name, validate in [('queryEngine', validate_query_engine), ('querySchema', validate_query_schema), ('pythonDirectory', validate_python_directory),
                            ('sessionLineage', validate_session_lineage), ('sessionEventTrace', validate_session_event_trace),
                            ('sessionFilters', validate_session_filters), ('sessionRequests', validate_session_requests),
@@ -574,6 +639,12 @@ def verify(args, output):
     unicode_digest, unicode_locale = unicode_source_identity(json.loads(unicode_source.read_text(encoding='utf-8')))
     candidate['query_unicode_observations_sha256'] = unicode_digest
     candidate['query_unicode_locale'] = unicode_locale
+    text_source = output / 'session-text-paired.source.json'
+    text_inputs = output / 'session-text-paired.inputs.json'
+    text_digest, text_locale = text_source_identity(json.loads(text_source.read_text(encoding='utf-8')))
+    candidate['session_text_observations_sha256'] = text_digest
+    candidate['session_text_locale'] = text_locale
+    candidate['session_text_inputs_sha256'] = digest(text_inputs)
     raw = output / 'cordis-raw.json'
     raw.unlink(missing_ok=True)
     run([python, 'scripts/cordis_oracle.py', '--output', str(raw)],
@@ -590,7 +661,8 @@ def verify(args, output):
     extracted = output / 'portable-extracted.json'
     extracted.unlink(missing_ok=True)
     command = [python, 'scripts/verify_portable.py', '--archive', str(archive),
-               '--browser', str(browser), '--output', str(extracted), '--unicode-source', str(unicode_source)]
+               '--browser', str(browser), '--output', str(extracted), '--unicode-source', str(unicode_source),
+               '--text-source', str(text_source), '--text-inputs', str(text_inputs)]
     if not candidate['worktree_dirty']:
         command += ['--expected-commit', candidate['product_commit']]
     run(command, 'portable-extracted', output, env=environment)

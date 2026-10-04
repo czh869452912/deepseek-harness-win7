@@ -1,0 +1,53 @@
+{
+  "id": "MIG-SESSION-TEXT-028",
+  "goal": "闭合字面 Unicode 文本匹配、语义提取空白及 Session locale 顺序",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "a6ea7a42eaffecb5fc476e00c88179d9f7dacd20",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-SESSION-QUERY-UNICODE-027",
+      "contract": "CON-SESSION-QUERY-UNICODE",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-FILTERS-021",
+      "contract": "CON-SESSION-FILTERS",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-TRACING-020",
+      "contract": "CON-SESSION-TRACING",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-SESSION-TEXT",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "7883 actual original/native observations match including literal Unicode, valid first-party extraction, complete corpus/lineage timestamp and stable locale order.",
+    "Explicit UTF-16/operator/whitespace/case-fold refusals, real JSONL/SQLite canonical filters across Context restart and Portable input protection pass.",
+    "A committed clean candidate passes all tests, at least 299 mandatory lanes, thirteen unchanged source groups/980 assertions, at least 49 paired drivers and actual extracted original-browser verification with exact full source/input and runtime provenance."
+  ],
+  "expected_paths": [
+    "dsh/session",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [
+    "Complete clean candidate, extracted verification and bounded acceptance pending."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "提交当前有界 Session 文本提供端与真实消费者，运行完整干净门禁并签收确切产物；继续完整 domain/ABI/竞争、schema-19 与 profile 用户主链，整体 accepted_upstream 保持空。"
+}
+

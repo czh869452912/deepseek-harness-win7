@@ -1,0 +1,41 @@
+{
+  "id": "CON-SESSION-TEXT",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/session-query/session-query/src/extraction.ts",
+    "reference/packages/session-query/session-query/src/filters.ts",
+    "reference/packages/session-query/session-query/src/corpus.ts",
+    "reference/packages/session-query/session-query/src/tracing.ts",
+    "dsh/session/text.py",
+    "dsh/session/session_query.py",
+    "dsh/session/tracing.py"
+  ],
+  "consumers": [
+    "dsh/session/query_engine.py",
+    "scripts/verify_release.py",
+    "scripts/verify_portable.py"
+  ],
+  "invariants": [
+    "7883 actual unchanged-source/native/extracted observations qualify 7678 literal Unicode case-fold/whitespace/operator cases, 187 valid first-party semantic extractions and 18 complete corpus/lineage ordering scenarios.",
+    "Literal matching follows common/simple Unicode case folding from the hash-pinned Unicode 17 table; full expansions, Turkic special I and canonical normalization do not become implicit matches. The consumer still receives a real Python regular expression.",
+    "Explicit UTF-16 pairs and scalar strings match the same astral literal; a lone surrogate cannot match half an astral pair. Regex operators and NUL remain literal data.",
+    "First-party semantic strings use ECMAScript trimming, including BOM and excluding Python-only control whitespace; nested tool results preserve semantic text while reasoning, images, structural and unknown events remain excluded.",
+    "The actual canonical query engine's complete list and descendant trace use stable ICU tie order after the required descending/ascending timestamp order. Live, persisted and mixed providers and reversed insertion histories are observed.",
+    "Two real JSONL/SQLite canonical filter consumers repeat Unicode matching after Context retirement and fresh durable reload without materializing live sessions.",
+    "Missing/corrupt Unicode data cannot replace a prior Portable release. Extracted Python 3.8.10 requires exact provider module, data hash, ICU identity, source locale, generated-input hash and full fresh source observation digest."
+  ],
+  "identity": "Pinned Unicode 17 CaseFolding common/simple classes, ECMAScript whitespace and actual default-locale stable corpus/lineage ties.",
+  "ownership": "Pure immutable cached case classes and synchronous regex; existing process-owned private ICU and canonical corpus/persistence Context ownership are retained.",
+  "ordering": "Capture filters before reads, validate literal text, compile escaped simple-fold alternatives, resolve source-owned semantic documents and preserve stable ICU timestamp ties.",
+  "errors": "Empty ECMAScript whitespace is typed SESSION_QUERY_INVALID_FILTER; missing/corrupt data and foreign/malformed receipts are deliberate refusals.",
+  "cancellation": "Existing corpus/read cancellation and cleanup contracts remain authoritative; pure synchronous text transformations add no cancellable tasks.",
+  "adaptation": "Hash-pinned unchanged Unicode CaseFolding data compiles ordinary Python 3.8 regex alternatives, with explicit UTF-16 boundaries and no modern regex dependency. ICU licenses cover the bundled Unicode data.",
+  "open_questions": [
+    "Malformed/extension event payload ABI, all event/domain plugin histories and arbitrary simultaneous index/provider races remain separate.",
+    "Canonical physical SQLite schema-19, compressed/cross-process/long-history recovery, complete profile journeys and original startup cancellation remain open.",
+    "Real Win7 remains deferred; current Windows receipt and build targets do not certify the target machine."
+  ]
+}
+

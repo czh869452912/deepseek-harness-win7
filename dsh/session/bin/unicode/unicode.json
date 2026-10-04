@@ -1,0 +1,9 @@
+{
+  "unicode_version": [17, 0, 0],
+  "data": "CaseFolding.txt",
+  "sha256": "34f97be27ca68fdd2d3fdbb4a648c545f473c8089eafc50df792afbd8ea5650f",
+  "source": "https://github.com/unicode-org/icu/blob/f1b3db8ecd39d5b3a6eff4d5641b176c7f914dfb/icu4c/source/data/unidata/CaseFolding.txt",
+  "source_commit": "f1b3db8ecd39d5b3a6eff4d5641b176c7f914dfb",
+  "license": "../icu/ICU-LICENSE",
+  "license_sha256": "93679f4389d53b6835d89843f251844fb9bc455b35bab036d3c8e7abe497a47a"
+}

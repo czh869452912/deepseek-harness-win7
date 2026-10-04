@@ -40,6 +40,7 @@ from scripts.session_snapshots_oracle import validate_runtime as validate_sessio
 from scripts.query_schema_oracle import validate_runtime as validate_query_schema
 from scripts.query_engine_oracle import validate_runtime as validate_query_engine
 from scripts.query_unicode_oracle import validate_runtime as validate_query_unicode, source_identity as unicode_source_identity
+from scripts.session_text_oracle import validate_runtime as validate_session_text, source_identity as text_source_identity
 
 
 def digest(path):
@@ -83,6 +84,8 @@ def main(argv=None):
     parser.add_argument('--browser', help='Optional absolute Chromium executable, development observer only')
     parser.add_argument('--expected-commit', help='Require this exact clean product commit in archive provenance')
     parser.add_argument('--unicode-source', help='Fresh paired Unicode source observations from the release gate')
+    parser.add_argument('--text-source', help='Fresh paired Session text source observations from the release gate')
+    parser.add_argument('--text-inputs', help='The exact generated inputs used by the paired Session text observer')
     args = parser.parse_args(argv)
     archive, output = Path(args.archive).resolve(), Path(args.output).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -117,7 +120,9 @@ def main(argv=None):
             'python_directory_probe.py', 'query_schema_oracle.py', 'oracles/query_schema_python.py',
             'oracles/query_schema_expected.json', 'query_engine_oracle.py', 'oracles/query_engine_python.py',
             'oracles/query_engine_expected.json', 'query_unicode_oracle.py', 'oracles/query_unicode_python.py',
-            'oracles/query_unicode.probe.spec.ts', 'oracles/vitest.query-unicode-probe.config.mts')})
+            'oracles/query_unicode.probe.spec.ts', 'oracles/vitest.query-unicode-probe.config.mts',
+            'session_text_oracle.py', 'oracles/session_text_python.py', 'oracles/session_text_inputs.py',
+            'oracles/session_text.probe.spec.ts', 'oracles/vitest.session-text-probe.config.mts')})
     node = shutil.which('node') if args.browser else None
     try:
         if args.browser and not node:
@@ -134,6 +139,22 @@ def main(argv=None):
             unicode_source = paired_path.with_name(paired_path.stem + '.source.json')
         unicode_digest, unicode_locale = unicode_source_identity(json.loads(unicode_source.read_text(encoding='utf-8')))
         report['unicodeSourceSha256'] = digest(unicode_source)
+        if args.text_source or args.text_inputs:
+            if not args.text_source or not args.text_inputs:
+                raise RuntimeError('Both Session text source and inputs are required')
+            text_source, text_inputs = Path(args.text_source).resolve(), Path(args.text_inputs).resolve()
+        else:
+            paired_path = output.with_suffix('.session-text-paired.json')
+            paired = subprocess.run([sys.executable, str(ROOT / 'scripts/session_text_oracle.py'),
+                                     '--output', str(paired_path)], capture_output=True, timeout=150)
+            output.with_suffix('.session-text-source.log').write_bytes(paired.stdout + paired.stderr)
+            if paired.returncode:
+                raise RuntimeError('Fresh Session text source qualification failed')
+            text_source = paired_path.with_name(paired_path.stem + '.source.json')
+            text_inputs = paired_path.with_name(paired_path.stem + '.inputs.json')
+        text_digest, text_locale = text_source_identity(json.loads(text_source.read_text(encoding='utf-8')))
+        report['sessionTextSourceSha256'] = digest(text_source)
+        report['sessionTextInputSha256'] = digest(text_inputs)
         with tempfile.TemporaryDirectory(prefix='dsh Portable 中文 ') as private:
             workspace = Path(private)
             portable = extract(archive, workspace)
@@ -342,10 +363,15 @@ def main(argv=None):
                                         ('query_schema', 'querySchema', validate_query_schema),
                                         ('query_engine', 'queryEngine', validate_query_engine),
                                         ('query_unicode', 'queryUnicode', lambda value: validate_query_unicode(
-                                            value, portable, unicode_digest, unicode_locale))]:
+                                            value, portable, unicode_digest, unicode_locale)),
+                                        ('session_text', 'sessionText', lambda value: validate_session_text(
+                                            value, portable, text_digest, text_locale))]:
                 trace_path = workspace / (name + '.json')
-                trace = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
-                    str(ROOT / 'scripts/oracles' / (name + '_python.py')), str(trace_path), '--root', str(portable)],
+                trace_command = [str(portable / 'python.exe'), '-I', '-u',
+                    str(ROOT / 'scripts/oracles' / (name + '_python.py')), str(trace_path), '--root', str(portable)]
+                if name == 'session_text':
+                    trace_command += ['--inputs', str(text_inputs)]
+                trace = subprocess.run(trace_command,
                     cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=90)
                 output.with_suffix('.' + name + '.log').write_text(trace.stdout + '\nSTDERR:\n' + trace.stderr, encoding='utf-8')
                 if trace.returncode or trace.stderr or not trace_path.is_file():

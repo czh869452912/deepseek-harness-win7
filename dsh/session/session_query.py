@@ -9,10 +9,13 @@ import json
 import re
 import sqlite3
 import time
+from functools import cmp_to_key
 from typing import Any, Callable, Dict, List, Optional, Pattern, Set, Tuple, Union
 
 from dsh.cordis.plugin import Plugin
 from dsh.llm.error import HarnessError
+from dsh.session.icu_collation import locale_compare
+from dsh.session.text import trim_text, literal_pattern
 
 # Highlighting markers
 FTS_HIGHLIGHT_START = "\uFDD0"
@@ -111,7 +114,7 @@ def extract_session_event_text(event: Dict[str, Any]) -> str:
 
 def _content_text(content: Any) -> str:
     if isinstance(content, str):
-        return content.strip()
+        return trim_text(content)
     if isinstance(content, list):
         parts: List[str] = []
         for block in content:
@@ -143,21 +146,15 @@ def _block_text(block: Any) -> List[str]:
 
 
 def _join_text(parts: List[str]) -> str:
-    cleaned = [p.strip() for p in parts if isinstance(p, str) and p.strip()]
-    return "\n".join(cleaned)
+    cleaned = [trim_text(part) for part in parts if isinstance(part, str)]
+    return "\n".join(part for part in cleaned if part)
 
 
 def compile_session_text_filter(text: str) -> Pattern[str]:
-    whitespace = r"[\u0009-\u000d\u0020\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]"
-    trimmed = re.sub("^" + whitespace + "+|" + whitespace + "+$", "", text)
+    trimmed = trim_text(text)
     if not trimmed:
         raise SessionQueryError("session text filter must contain non-whitespace text", "SESSION_QUERY_INVALID_FILTER")
-    def literal(part):
-        return "".join("(?-i:[Ii])" if character in ("I", "i") else
-            "(?-i:" + character + ")" if character in ("\u0130", "\u0131") else re.escape(character)
-            for character in part)
-    pattern = (whitespace + "+").join(literal(part) for part in re.split(whitespace + "+", trimmed))
-    return re.compile(pattern, re.IGNORECASE)
+    return re.compile(literal_pattern(trimmed))
 
 
 def materialize_session_result_filters(filters: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -538,7 +535,8 @@ class SessionQueryService:
                     raise SessionQueryError('session source headers conflict for session "' + session.id + '"',
                                             'SESSION_QUERY_SOURCE_CONFLICT')
             records[session.id] = dict(header=copy.deepcopy(session.header), live=True, persisted=stored is not None)
-        return sorted(records.values(), key=lambda record: (-record['header'].createdAt, record['header'].id))
+        locale_key = cmp_to_key(locale_compare)
+        return sorted(records.values(), key=lambda record: (-record['header'].createdAt, locale_key(record['header'].id)))
 
     def _init_db(self) -> None:
         cur = self._conn.cursor()

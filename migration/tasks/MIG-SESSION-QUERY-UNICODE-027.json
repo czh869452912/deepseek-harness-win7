@@ -27,7 +27,7 @@
   "acceptance": [
     "2034 actual unchanged-source/native observations match, including 1849 comparisons, 180 request fingerprints and five typed cursor refusals.",
     "All private ICU libraries, actual versions, normalization and seven licenses are verified; damaged input cannot replace a previous Portable release.",
-    "A committed clean candidate passes all tests, 249 mandatory lanes, thirteen unchanged source groups/980 assertions, 48 paired drivers and actual extracted original-browser verification. Extracted Unicode observations must match the full fresh source digest and locale."
+    "A committed clean candidate passes all tests, at least 249 mandatory lanes, thirteen unchanged source groups/980 assertions, at least 48 paired drivers and actual extracted original-browser verification. Extracted Unicode observations must match the full fresh source digest and locale."
   ],
   "expected_paths": [
     "dsh/session",

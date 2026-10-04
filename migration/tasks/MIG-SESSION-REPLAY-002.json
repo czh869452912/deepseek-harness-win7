@@ -96,6 +96,11 @@
       "task": "MIG-SESSION-QUERY-UNICODE-027",
       "contract": "CON-SESSION-QUERY-UNICODE",
       "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-TEXT-028",
+      "contract": "CON-SESSION-TEXT",
+      "revision": 1
     }
   ],
   "provides": [],

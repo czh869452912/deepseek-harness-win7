@@ -73,8 +73,15 @@ def validate_runtime(report, root=None, expected_digest=None, expected_locale=No
     if not isinstance(report['root'], str):
         raise ValueError('Unicode runtime root is malformed')
     expected_root = Path(root if root is not None else report['root']).resolve()
+    validate_icu_identity(report['runtime'], expected_root, expected_locale)
+    if (report['root'] != str(expected_root) or report['moduleFile'] != str(expected_root / 'dsh/session/icu_collation.py')
+            or report['python'] != '3.8.10'):
+        raise ValueError('Unicode runtime provenance differs')
+
+
+def validate_icu_identity(runtime, root, expected_locale=None):
+    expected_root = Path(root).resolve()
     manifest = json.loads((ROOT / 'dsh/session/bin/icu/icu.json').read_text(encoding='utf-8'))
-    runtime = report['runtime']
     fields = {'locale', 'normalization', 'version', 'unicodeVersion', 'cldrVersion', 'manifest', 'libraries'}
     if not isinstance(runtime, dict) or set(runtime) != fields or not isinstance(runtime['locale'], str):
         raise ValueError('Unicode runtime identity is incomplete')
@@ -82,8 +89,7 @@ def validate_runtime(report, root=None, expected_digest=None, expected_locale=No
         raise ValueError('Unicode runtime locale differs from the actual source')
     libraries = [dict(name=name, path=str(expected_root / 'dsh/session/bin/icu' / name),
                       sha256=manifest['dll_sha256'][name]) for name in manifest['dll_sha256']]
-    if (report['root'] != str(expected_root) or report['moduleFile'] != str(expected_root / 'dsh/session/icu_collation.py')
-            or report['python'] != '3.8.10' or type(runtime['normalization']) is not int or runtime['normalization'] != 17
+    if (type(runtime['normalization']) is not int or runtime['normalization'] != 17
             or canonical(runtime['version']) != canonical(manifest['version'])
             or canonical(runtime['unicodeVersion']) != canonical(manifest['unicode_version'])
             or canonical(runtime['cldrVersion']) != canonical(manifest['cldr_version'])

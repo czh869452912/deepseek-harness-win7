@@ -30,6 +30,7 @@ from scripts.python_directory_probe import EXPECTED as expected_python_directory
 from scripts.query_schema_oracle import expected as expected_query_schema
 from scripts.query_engine_oracle import expected as expected_query_engine
 from scripts.query_unicode_oracle import observation_digest
+from scripts.session_text_oracle import observation_digest as text_observation_digest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -340,7 +341,7 @@ def test_extracted_session_corpus_read_requires_exact_sources_and_batch_drain(tm
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 249, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 299, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
@@ -395,6 +396,19 @@ def unicode_runtime_fixture():
                                  str(output)], capture_output=True, timeout=90)
         assert result.returncode == 0 and not result.stderr, result.stderr
         return json.loads(output.read_text(encoding='utf-8'))
+
+
+@functools.lru_cache(maxsize=1)
+def session_text_runtime_fixture():
+    with tempfile.TemporaryDirectory(prefix='text-validator-fixture-') as directory:
+        output, inputs = Path(directory) / 'native.json', Path(directory) / 'inputs.json'
+        generated = subprocess.run([sys.executable, str(ROOT / 'scripts/oracles/session_text_inputs.py'),
+                                    '--output', str(inputs)], capture_output=True, timeout=90)
+        assert generated.returncode == 0 and not generated.stderr, generated.stderr
+        result = subprocess.run([sys.executable, '-I', str(ROOT / 'scripts/oracles/session_text_python.py'),
+                                 str(output), '--inputs', str(inputs)], capture_output=True, timeout=90)
+        assert result.returncode == 0 and not result.stderr, result.stderr
+        return json.loads(output.read_text(encoding='utf-8')), GATE.digest(inputs)
 
 
 def extracted_receipt(tmp_path):
@@ -474,11 +488,69 @@ def extracted_receipt(tmp_path):
     report['queryUnicode'] = unicode
     candidate['query_unicode_observations_sha256'] = observation_digest(unicode['observations'])
     candidate['query_unicode_locale'] = unicode['runtime']['locale']
+    text, inputs_digest = copy.deepcopy(session_text_runtime_fixture())
+    text['root'] = str(tmp_path)
+    text['moduleFile'] = str(tmp_path / 'dsh/session/text.py')
+    for library in text['runtime']['libraries']:
+        library['path'] = str(tmp_path / 'dsh/session/bin/icu' / library['name'])
+    report['sessionText'] = text
+    report['sessionTextInputSha256'] = inputs_digest
+    candidate['session_text_observations_sha256'] = text_observation_digest(text['observations'])
+    candidate['session_text_locale'] = text['runtime']['locale']
+    candidate['session_text_inputs_sha256'] = inputs_digest
     report['webServerReset'] = dict(root=str(tmp_path), module=str(tmp_path / 'dsh/host/webserver/socket_server.py'),
         python='3.8.10', platform='win32', observations=[
             dict(mode='http-stream', resets=3, owned=True, alive=True, retired=True, errors=[]),
             dict(mode='upgrade', resets=3, owned=True, alive=True, retired=True, errors=[])])
     return archive, candidate, report
+
+
+@pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
+def test_session_text_lanes_are_mandatory(tmp_path, damage):
+    for module in ('test_session_text', 'test_session_text_source'):
+        for name in GATE.REQUIRED_REGRESSION[module]:
+            path = tmp_path / 'text-regression.xml'
+            regression_xml(path, **{damage: (module, name)})
+            with pytest.raises(RuntimeError):
+                GATE.validate_regression(path)
+
+
+@pytest.mark.parametrize('damage', ['missing', 'root', 'module', 'data', 'locale', 'normalization',
+                                   'comparison', 'extraction', 'order', 'digest', 'inputs', 'candidate', 'null-inputs'])
+def test_extracted_session_text_requires_exact_source_and_owned_runtime(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    text = report['sessionText']
+    if damage == 'missing':
+        del report['sessionText']
+    elif damage == 'root':
+        text['root'] = str(tmp_path / 'foreign')
+    elif damage == 'module':
+        text['moduleFile'] = str(tmp_path / 'foreign/provider.py')
+    elif damage == 'data':
+        text['unicodeDataSha256'] = '0' * 64
+    elif damage == 'locale':
+        text['runtime']['locale'] = 'foreign'
+    elif damage == 'normalization':
+        text['runtime']['normalization'] = 16
+    elif damage == 'comparison':
+        text['observations']['cases'][0]['matched'] = False
+    elif damage == 'extraction':
+        text['observations']['events'][0] = 'foreign'
+    elif damage == 'order':
+        text['observations']['orders'][0]['listed'].reverse()
+    elif damage == 'digest':
+        candidate['session_text_observations_sha256'] = '0' * 64
+    elif damage == 'inputs':
+        report['sessionTextInputSha256'] = '0' * 64
+    elif damage == 'null-inputs':
+        candidate['session_text_inputs_sha256'] = None
+        del report['sessionTextInputSha256']
+    else:
+        del candidate['session_text_observations_sha256']
+    output = tmp_path / 'text-extracted.json'
+    output.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='sessionText'):
+        GATE.validate_extracted(output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])

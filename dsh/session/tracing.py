@@ -1,4 +1,7 @@
 import copy
+from functools import cmp_to_key
+
+from dsh.session.icu_collation import locale_compare
 
 
 def analyze_event_log(session_id, events):
@@ -91,7 +94,8 @@ def trace_session(records, session_id):
         if parent_id is not None:
             children_by_parent.setdefault(parent_id, []).append(record)
     for children in children_by_parent.values():
-        children.sort(key=lambda record: (record['header'].createdAt, record['header'].id))
+        locale_key = cmp_to_key(locale_compare)
+        children.sort(key=lambda record: (record['header'].createdAt, locale_key(record['header'].id)))
     descendants = []
     stack = [(session_id, descendants)]
     while stack:

@@ -34,6 +34,7 @@ from scripts.session_lineage_oracle import validate_runtime as validate_session_
 from scripts.session_event_trace_oracle import validate_runtime as validate_session_event_trace
 from scripts.session_filters_oracle import validate_runtime as validate_session_filters
 from scripts.session_requests_oracle import validate_runtime as validate_session_requests
+from scripts.webserver_reset_probe import validate as validate_webserver_reset
 
 
 def digest(path):
@@ -104,7 +105,7 @@ def main(argv=None):
             'session_filters_oracle.py', 'oracles/session_filters_python.py',
             'oracles/session_filters_expected.json', 'oracles/session_filters_cases.json',
             'session_requests_oracle.py', 'oracles/session_requests_python.py',
-            'oracles/session_requests_expected.json', 'oracles/session_requests_cases.json')})
+            'oracles/session_requests_expected.json', 'oracles/session_requests_cases.json', 'webserver_reset_probe.py')})
     node = shutil.which('node') if args.browser else None
     try:
         if args.browser and not node:
@@ -325,6 +326,16 @@ def main(argv=None):
                 if trace_report['root'] != str(portable):
                     raise RuntimeError('Extracted ' + name + ' imported a different product')
                 report[key] = trace_report
+            reset_path = workspace / 'webserver-reset.json'
+            reset = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/webserver_reset_probe.py'), '--root', str(portable), '--output', str(reset_path)],
+                cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=90)
+            output.with_suffix('.webserver-reset.log').write_text(reset.stdout + '\nSTDERR:\n' + reset.stderr, encoding='utf-8')
+            if reset.returncode or reset.stderr or not reset_path.is_file():
+                raise RuntimeError('Extracted WebServer reset cleanup failed')
+            reset_report = json.loads(reset_path.read_text(encoding='utf-8'))
+            validate_webserver_reset(reset_report, portable)
+            report['webServerReset'] = reset_report
             if args.browser:
                 browser_report = output.with_suffix('.browser.json')
                 # The observer launches the Host with the same restricted env.

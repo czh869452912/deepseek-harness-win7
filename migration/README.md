@@ -4,6 +4,8 @@
 
 ## 当前补齐：2026-10-02
 
+2026-10-04 搜索请求候选 `a953a086` 的完整门禁被拒绝：**6195 passed、1 failed、6 skipped、1 warning**。第二个原版浏览器页面关闭后，Python 3.8.10 Proactor 的 `shutdown()` 重置错误跳过 close/detach 并触发 Host fail-loud；精确候选 ZIP 与失败回执已保留。服务自有 socket 清理修复通过 70 项定向回归及两条原版浏览器流程，并增加 7 必需 lane 和实际解压重置观察；必须另行冻结新候选完整验收。最新已签收仍为 `1d9940aa`，没有新增测试绕过；见 `docs/research/2026-10-04-webserver-peer-reset-progress.md`。
+
 2026-10-04 Session filters：干净候选 `1d9940aa` 完整冻结门禁 **6134 passed、6 skipped、1 warning、0 failed**，119 必需 lane、十一组 910 原版断言、43 双侧驱动及真实解压观察通过。`CON-SESSION-FILTERS@1` 有界 integrated，三十一份任务证据归档 `evidence/artifacts/SESSION-FILTERS-20261004-1d9940aa.zip`，包括实际候选 Portable ZIP；见 `reviews/SESSION-FILTERS-CLOSURE-20261004.md`。搜索请求正在单独推进；完整 Unicode/FTS/代际、B/C/D、历史诊断与延期 Win7 仍未完成。
 
 2026-10-04 Session tracing：干净候选 `5c0b3c5e` 完整冻结门禁 **6082 passed、6 skipped、1 warning、0 failed**，114 必需 lane、十一组 910 原版断言、42 双侧驱动及真实解压 Python 3.8.10/原版浏览器通过。三十个有界任务重签，包含此前未签收的 ACP subprocess/teardown、MCP disposal、进程树、cache/point/corpus/title、ZIP 暂存和谱系/事件窗口；证据见 `reviews/SESSION-TRACING-CLOSURE-20261004.md`。此前失败和源缓存 40ms 时序诊断均保留，没有新绕过或重试；过滤/完整 FTS、B/C/D、整体 accepted_upstream 与延期 Win7 仍开放。

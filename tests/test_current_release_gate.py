@@ -331,7 +331,7 @@ def test_extracted_session_corpus_read_requires_exact_sources_and_batch_drain(tm
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 125, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 132, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
@@ -434,7 +434,59 @@ def extracted_receipt(tmp_path):
         'root': str(tmp_path), 'module': str(tmp_path / 'dsh/__init__.py'), 'python': [3,8,10]}
     report['sessionRequests'] = {'observations': expected_session_requests(),
         'root': str(tmp_path), 'module': str(tmp_path / 'dsh/__init__.py'), 'python': [3,8,10]}
+    report['webServerReset'] = dict(root=str(tmp_path), module=str(tmp_path / 'dsh/host/webserver/socket_server.py'),
+        python='3.8.10', platform='win32', observations=[
+            dict(mode='http-stream', resets=3, owned=True, alive=True, retired=True, errors=[]),
+            dict(mode='upgrade', resets=3, owned=True, alive=True, retired=True, errors=[])])
     return archive, candidate, report
+
+
+@pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
+def test_webserver_reset_lanes_are_mandatory(tmp_path, damage):
+    for name in GATE.REQUIRED_REGRESSION['test_webserver_peer_reset']:
+        path = tmp_path / 'pytest.xml'
+        regression_xml(path, **{damage: ('test_webserver_peer_reset', name)})
+        with pytest.raises(RuntimeError):
+            GATE.validate_regression(path)
+
+
+@pytest.mark.parametrize('damage', ['missing', 'empty', 'reverse', 'tail', 'reset-count',
+    'survivor', 'not-owned', 'host-error', 'foreign-root', 'foreign-module', 'python', 'platform', 'unknown', 'numeric-boolean'])
+def test_extracted_webserver_reset_cannot_hide_failure_or_change_runtime(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    reset = report['webServerReset']
+    if damage == 'missing':
+        del report['webServerReset']
+    elif damage == 'empty':
+        reset['observations'] = []
+    elif damage == 'reverse':
+        reset['observations'].reverse()
+    elif damage == 'tail':
+        reset['observations'].pop()
+    elif damage == 'reset-count':
+        reset['observations'][0]['resets'] = 2
+    elif damage == 'survivor':
+        reset['observations'][0]['retired'] = False
+    elif damage == 'not-owned':
+        reset['observations'][1]['owned'] = False
+    elif damage == 'host-error':
+        reset['observations'][0]['errors'] = ['reset escaped']
+    elif damage == 'numeric-boolean':
+        reset['observations'][0]['alive'] = 1
+    elif damage == 'foreign-root':
+        reset['root'] = str(tmp_path / 'foreign')
+    elif damage == 'foreign-module':
+        reset['module'] = str(tmp_path / 'foreign/dsh/host/webserver/socket_server.py')
+    elif damage == 'python':
+        reset['python'] = '3.9.0'
+    elif damage == 'platform':
+        reset['platform'] = 'linux'
+    else:
+        reset['unknown'] = True
+    path = tmp_path / 'extracted.json'
+    path.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='WebServer reset cleanup'):
+        GATE.validate_extracted(path, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['browser-skipped', 'runtime-missing', 'runtime-stderr',

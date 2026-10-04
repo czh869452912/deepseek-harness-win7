@@ -2,7 +2,7 @@
   "id": "MIG-CURRENT-RELEASE-GATE-003",
   "goal": "补齐当前原版浏览器、双侧契约及实际解压 Portable 的统一发行门禁",
   "kind": "verification",
-  "state": "integrated",
+  "state": "running",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "1d5d965de1c7e08c00cbd1fd5227d2503d28444f",
   "owner": "current-session-coordinator",
@@ -31,7 +31,9 @@
     "migration",
     "docs/research"
   ],
-  "open_findings": [],
+  "open_findings": [
+    "Latest accepted candidate remains 1d9940aa. New search-request candidate a953a086 failed original-browser inspect after a peer reset escaped Python 3.8.10 Proactor cleanup. Its exact failed archive and diagnostics are preserved. Scoped owned-socket cleanup and mandatory extracted reset observations require a new clean full acceptance; historical browser startup cancellations and destructor warnings remain separate."
+  ],
   "conflicts_with": [],
   "candidate_commit": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
   "integrated_commit": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
@@ -45,5 +47,5 @@
     "RUN-SESSION-TRACING-20261004-CURRENT-RELEASE-GATE-003",
     "RUN-SESSION-FILTERS-20261004-CURRENT-RELEASE-GATE-003"
   ],
-  "next_action": "clean candidate 1d9940aa 当前 Windows 完整门禁通过；119 必需 lane、910 原版断言、43 配对及实际 Portable，不认证全量迁移或 Win7。"
+  "next_action": "1d9940aa 为最新已签收候选；a953a086 已拒绝。提交 scoped peer-reset 清理后完整冻结验收 132 必需 lane、920 原版、44 配对及真实解压，不认证全量迁移或 Win7。"
 }

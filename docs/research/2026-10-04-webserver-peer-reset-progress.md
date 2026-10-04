@@ -1,0 +1,15 @@
+# Owned WebServer socket cleanup — 2026-10-04
+
+The clean search-request candidate a953a086 was rejected: 6195 passed, one original-browser inspect journey failed, six platform skips and one existing Proactor warning. After the second actual browser target closed, the Host exited on WinError 10054 before the next original approval control could appear. No retry or expanded bug predicate accepts this candidate.
+
+Its exact Portable ZIP, input hashes, build provenance, pytest XML and browser report remain under `.goose/out/session-requests-clean-a953a086`. ZIP SHA-256: `cb284b429288a3a2985eac5849499c13e4dc6fc5847c3c74458a56bc88af3f21`; input-file SHA-256: `9a928e638b27f51614557d76e23caef5eac48d7d82f891b92644597200610018`.
+
+The recorded traceback identifies the Python 3.8.10 Proactor connection-lost callback, not a Session request failure. Its socket shutdown raises after protocol notification and before socket.close/server detach. A deterministic reproduction against the installed CPython callback confirms both cleanup operations are skipped. The boot fail-loud handler then treats the escaped callback exception as fatal.
+
+The Windows WebServer now accepts its own socket subclass using public asyncio sock_accept/connect_accepted_socket APIs. Only WinError 10054 from shutdown is logged and contained on those owned sockets, allowing the existing transport to complete close/detach. Other errors propagate. Listening bind failures and the boot fail-loud guard retain their error behavior. Neither global socket/asyncio code nor upstream browser bytes are patched.
+
+Seven mandatory regression lanes verify precise error classification, actual CPython cleanup, accept cancellation and actual HTTP-stream/upgraded peer resets followed by healthy requests and complete retirement. Targeted WebServer/boot regression passed 70 tests with one pre-existing Proactor destructor warning. Both unchanged original browser lifecycle/inspect journeys passed on the changed product in 33.09 seconds. This targeted result does not certify the candidate or resolve other historical browser startup cancellations.
+
+The actual extracted isolated Python 3.8.10 runtime must additionally perform three physical resets per HTTP-stream/upgrade lane, preserve socket ownership, serve a healthy request and leave no live tracked connections or loop errors. The isolated native probe already passes. Expanded gate/cleanup regression passed 463 tests in 13.00 seconds with one existing warning; strict negative probes reject fourteen damaged extracted receipts and omission/skipping/duplication/failure of each of the seven mandatory lanes. The new clean gate requires 132 mandatory lanes, twelve unchanged source groups/920 assertions, 44 paired drivers and the extracted journey. Win7 remains deferred; accepted_upstream remains null.
+
+Runtime source: [CPython 3.8.10 Proactor implementation](https://github.com/python/cpython/blob/v3.8.10/Lib/asyncio/proactor_events.py). The pinned upstream WebServer contains per-request/upgrade socket failures in `reference/packages/host/webserver/src/index.ts`; those original tests and browser controls remain unchanged.

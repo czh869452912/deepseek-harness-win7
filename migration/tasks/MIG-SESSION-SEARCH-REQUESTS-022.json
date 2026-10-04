@@ -32,7 +32,7 @@
   "acceptance": [
     "Fifty actual source/native request/SQL/snippet/SQLite Engine refusal observations match their independently declared literals, including real SQLite predicate evaluation and zero index/provider access.",
     "Ten unchanged upstream query.spec.ts assertions and strict observer/gate refusal probes pass. Four actual JSONL/SQLite consumers prove owned public inputs and invalid/pre-abort rejection.",
-    "A new clean complete release gate executes 125 mandatory lanes, twelve source groups totaling 920 assertions, 44 paired drivers and the actual extracted Python 3.8.10 observer before bounded acceptance."
+    "A new clean complete release gate executes 132 mandatory lanes, twelve source groups totaling 920 assertions, 44 paired drivers and the actual extracted Python 3.8.10 observer including owned WebServer reset cleanup before bounded acceptance."
   ],
   "expected_paths": [
     "dsh/session",
@@ -42,11 +42,11 @@
     "docs/research"
   ],
   "open_findings": [
-    "Fifty source/native observations match after correcting an observer that read Python display strings instead of the literal error.message. Isolated regressions passed 78 and 534 tests; the safe-budget refinement passed final 38-test validation. Following clean filtering acceptance, main expanded gate/consumer regression passed 655 tests in 54.26 seconds, including fresh fifty-case source/native and ten unchanged source assertions. This promoted request contract still needs its own clean complete gate; no bypass or retry is added."
+    "Fifty source/native observations and 655 main targeted tests passed. Clean candidate a953a086 is rejected: 6195 passed, one original-browser inspect failure, six platform skips and one existing warning. Closing the second actual browser target exposed WinError 10054 in Python 3.8.10 Proactor shutdown before close/detach, terminating the Host. The exact failed ZIP and receipts are retained. A scoped owned-socket repair passed 70 WebServer/boot tests and both original browser lifecycle/inspect journeys. A new clean complete gate is required; no unchanged-candidate retry or bypass is accepted."
   ],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "推广后主树 655 定向项已通过；独立提交并冻结干净候选，完整全量/125 必需 lane/44 配对/920 原版/解压通过后才签收。随后补来源限定持久化 revision 和完整 FTS/ranking/cursors/reconciliation/代际，继续整体迁移。"
+  "next_action": "a953a086 全量浏览器因 Proactor peer-reset 退出而拒绝；提交服务自有 socket 清理修复后冻结新候选，完整全量/132 必需 lane/44 配对/920 原版/真实解压重置与请求观察通过后才签收。随后补持久化 revision 和完整 FTS/ranking/cursors/reconciliation/代际，继续整体迁移。"
 }

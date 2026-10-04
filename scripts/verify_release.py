@@ -32,6 +32,7 @@ from scripts.session_lineage_oracle import validate_runtime as validate_session_
 from scripts.session_event_trace_oracle import validate_runtime as validate_session_event_trace
 from scripts.session_filters_oracle import validate_runtime as validate_session_filters
 from scripts.session_requests_oracle import validate_runtime as validate_session_requests
+from scripts.webserver_reset_probe import validate as validate_webserver_reset
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -44,6 +45,13 @@ PAIRED_DRIVERS = (
 )
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query')
 REQUIRED_REGRESSION = {
+    'test_webserver_peer_reset': {
+        'test_owned_socket_contains_only_windows_peer_reset_at_shutdown[' + value + ']'
+        for value in ('10054', '10053', 'None')
+    } | {'test_reset_during_actual_proactor_cleanup_closes_socket_and_notifies_once',
+         'test_owned_listener_cancellation_releases_accept_and_bound_port'} | {
+        'test_real_peer_resets_retire_owned_connections_and_leave_host_healthy[' + value + ']'
+        for value in ('False', 'True')},
     'test_session_requests_source': {'test_source_session_requests_contract'},
     'test_session_sqlite_query_source': {'test_unchanged_original_sqlite_query_specs'},
     'test_session_requests': {
@@ -353,6 +361,10 @@ def validate_extracted(path, archive, candidate):
             raise RuntimeError('Extracted ' + name + ' observations are incomplete') from error
     if report.get('archiveSha256') != digest(archive) or Path(report['archive']).resolve() != archive.resolve():
         raise RuntimeError('Extracted receipt belongs to a different archive')
+    try:
+        validate_webserver_reset(report.get('webServerReset'), report['mcpStdio']['root'])
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted WebServer reset cleanup is incomplete') from error
     provenance = report.get('provenance', {})
     if provenance.get('product_commit') != candidate['product_commit']:
         raise RuntimeError('Extracted receipt belongs to a different product commit')

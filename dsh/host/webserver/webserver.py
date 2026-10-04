@@ -23,6 +23,7 @@ from urllib.parse import urlparse
 
 from dsh.cordis.plugin import Plugin
 from dsh.host.webserver.injections import render_index_injections
+from dsh.host.webserver.socket_server import OwnedSocketServer
 
 
 DEFAULT_COMPRESSION = "none"
@@ -403,7 +404,10 @@ class WebServerService:
             raise
 
         try:
-            self._server = await asyncio.start_server(_client_connected_cb, sock=sock)
+            if os.name == "nt":
+                self._server = OwnedSocketServer(sock, _client_connected_cb, self._log_warning)
+            else:
+                self._server = await asyncio.start_server(_client_connected_cb, sock=sock)
         except BaseException:
             sock.close()
             raise

@@ -32,7 +32,7 @@
   "acceptance": [
     "Fifty actual source/native request/SQL/snippet/SQLite Engine refusal observations match their independently declared literals, including real SQLite predicate evaluation and zero index/provider access.",
     "Ten unchanged upstream query.spec.ts assertions and strict observer/gate refusal probes pass. Four actual JSONL/SQLite consumers prove owned public inputs and invalid/pre-abort rejection.",
-    "A new clean complete release gate executes 152 mandatory lanes, twelve source groups totaling 920 assertions, 45 paired drivers and the actual extracted Python 3.8.10 observer including owned WebServer reset cleanup and persistence snapshots before bounded acceptance."
+    "A new clean complete release gate executes at least 162 mandatory lanes, twelve source groups totaling 920 assertions, at least 45 paired drivers and the actual extracted Python 3.8.10 observer including owned WebServer reset cleanup, directory publication and persistence snapshots before bounded acceptance."
   ],
   "expected_paths": [
     "dsh/session",
@@ -48,5 +48,5 @@
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "Gateway 关闭修复已提交，持久化快照已精准推广；冻结新候选，完整全量/152 必需 lane/45 配对/920 原版/真实解压重置与请求及快照观察通过后才签收。继续完整 FTS/ranking/cursors/reconciliation/代际及整体迁移。"
+  "next_action": "bc7028c2 因独立目录发布 WinError 5 被拒绝（6289 passed、1 failed）；所有原版浏览器、请求和快照回归通过。目录修复通过 518 项主树回归；新候选完整全量/至少 162 必需 lane/至少 45 配对/920 原版/真实解压通过后才签收。继续完整 FTS/ranking/cursors/reconciliation/代际及整体迁移。"
 }

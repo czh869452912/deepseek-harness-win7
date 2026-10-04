@@ -1,0 +1,15 @@
+# Native Python directory publication — 2026-10-04
+
+Clean bc7028c2 is rejected: 6289 passed, one failure, six platform skips and one existing warning. All original browser journeys and the new snapshot tests pass. The failure occurs during initial local Python package installation in the changed-history test, before that test reaches its intended version validation: staging-directory os.replace reports WinError 5.
+
+The exact candidate ZIP is retained at .goose/out/session-snapshots-clean-bc7028c2/candidate-portable.zip, SHA-256 78c32ff98ef3d6dcbe90f1d0d4f6dee9f9f1ebe8706e5e73afb000f353c1b572; inputs e7879fee721130feaa3604934c92cf63eeb964e217dccc0979229420194cf013. This failed run does not execute the later official/pair/extracted acceptance phases. Latest accepted candidate remains 1d9940aa.
+
+Actual controlled root/file sharing handles reproduce the same directory publication denial. The original external holder remains unidentified. The first reproduction also exposes incomplete cleanup: a held root can allow child deletion before rmdir fails, leaving journal hashes incompatible with its partially removed stage. Those diagnostics are retained.
+
+The scoped mutation helper drains sharing-denied delete access, uses legacy Win32 loader flags zero, owns a share-delete root handle and performs the atomic move within a one-second deadline. Child-holder directory rename denial can settle within that deadline. Other codes and occupied destinations propagate; no manifest commit occurs on failed publication. Before cleanup, it checks delete sharing throughout the current tree, closes child handles, and then removes under root ownership. A permanently held root/file therefore retains the original manifest and complete transaction for recovery after release.
+
+An initial isolated experiment incorrectly retained child delete handles during directory rename; actual Windows forbids that move despite share-delete flags. Its 56 failures are retained and the handle scope was corrected before main promotion. Existing regressions then pass 77 cases; the final implementation plus ten physical sharing/consumer/error cases passes 87 in 62.81 seconds. Six actual add/upgrade/rollback consumers boot and execute the correct tool source. Permanent root/file holders retain complete journal data and recover after release. A separate isolated observer repeats four physical publication/timeout/recovery rows.
+
+This is a native Python package extension and does not add an upstream bug exception. The mandatory gate now includes ten lanes and the actual extracted observer. Full clean acceptance remains required. Arbitrary new external writers, share-delete readers during deletion, ACL/metadata changes, power loss and the complete package ecosystem remain unaccepted; real Win7 remains deferred.
+
+The precise main promotion passes 518 gate/distribution/version/sharing regressions in 75.54 seconds. The intermediate gate requires 162 lanes, twelve unchanged source groups/920 assertions and 45 paired drivers. New clean full acceptance remains pending.

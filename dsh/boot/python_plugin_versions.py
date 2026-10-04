@@ -98,8 +98,8 @@ def publish_replace(directory, before_bytes, after, name, token, old, new):
                 raise RuntimeError('profile changed while preparing plugin transaction')
         verify(target, old['files'])
         verify(stage, new['files'])
-        os.replace(target, backup)
-        os.replace(stage, target)
+        store.replace_directory(target, backup)
+        store.replace_directory(stage, target)
         store.atomic_bytes(profile, after_bytes)
     finally:
         store.recover(directory)
@@ -126,19 +126,19 @@ def recover_replace(directory, transaction, committed):
             raise RuntimeError('committed replacement is missing its previous generation')
         if os.path.exists(backup):
             if os.path.exists(archive):
-                shutil.rmtree(backup)
+                store.remove_directory(backup)
             else:
                 os.makedirs(os.path.dirname(archive), exist_ok=True)
-                os.replace(backup, archive)
+                store.replace_directory(backup, archive)
     elif os.path.exists(backup):
         if os.path.exists(target):
             verify(target, new['files'])
-            shutil.rmtree(target)
-        os.replace(backup, target)
+            store.remove_directory(target)
+        store.replace_directory(backup, target)
     else:
         verify(target, old['files'])
     if os.path.exists(stage):
-        shutil.rmtree(stage)
+        store.remove_directory(stage)
     os.unlink(os.path.join(directory, store.JOURNAL))
 
 

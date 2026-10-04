@@ -12,6 +12,7 @@ import zipfile
 
 from dsh.boot.profile import package_dir_from_anchor, read_profile_manifest
 from dsh.boot.profile_lease import ProfileLease
+from dsh.boot.python_directory_mutation import replace_directory, remove_directory
 from dsh.boot.python_package import inside, package_name, relative_parts, validate_sources
 
 MAX_BYTES = 64 * 1024 * 1024
@@ -205,20 +206,20 @@ def recover(directory):
         if committed and not os.path.isdir(target):
             raise RuntimeError("committed plugin package is missing")
         if not committed and os.path.exists(target):
-            shutil.rmtree(target)
+            remove_directory(target)
     elif transaction["operation"] == "remove":
         if committed and os.path.exists(target):
             raise RuntimeError("removed plugin package unexpectedly exists")
         if not committed and os.path.exists(stage):
             if os.path.exists(target):
                 raise RuntimeError("both package and rollback copy exist")
-            os.replace(stage, target)
+            replace_directory(stage, target)
     else:
         raise ValueError("invalid plugin recovery operation")
     if os.path.exists(stage):
         if reparse(stage):
             raise ValueError("plugin staging path is a link")
-        shutil.rmtree(stage)
+        remove_directory(stage)
     os.unlink(journal_path)
 
 
@@ -239,9 +240,9 @@ def transact(directory, before, after, name, token, operation):
             if stream.read() != before:
                 raise RuntimeError("profile changed while preparing plugin transaction")
         if operation == "add":
-            os.replace(stage, target)
+            replace_directory(stage, target)
         else:
-            os.replace(target, stage)
+            replace_directory(target, stage)
         atomic_bytes(profile_path, after_bytes)
     finally:
         recover(directory)
@@ -290,7 +291,7 @@ def install(directory, source, installation_anchor, acquisition=None):
             return name
         finally:
             if os.path.exists(stage) and not os.path.exists(os.path.join(directory, JOURNAL)):
-                shutil.rmtree(stage)
+                remove_directory(stage)
 
 
 def uninstall(directory, name):

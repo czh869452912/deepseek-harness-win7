@@ -33,6 +33,7 @@ from scripts.session_event_trace_oracle import validate_runtime as validate_sess
 from scripts.session_filters_oracle import validate_runtime as validate_session_filters
 from scripts.session_requests_oracle import validate_runtime as validate_session_requests
 from scripts.webserver_reset_probe import validate as validate_webserver_reset
+from scripts.python_directory_probe import validate as validate_python_directory
 from scripts.session_snapshots_oracle import validate_runtime as validate_session_snapshots
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
@@ -46,6 +47,13 @@ PAIRED_DRIVERS = (
 )
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query')
 REQUIRED_REGRESSION = {
+    'test_python_directory_mutation': {
+        'test_actual_package_publication_waits_for_released_sharing_owner[' + operation + '-' + location + ']'
+        for operation in ('add', 'upgrade', 'rollback') for location in ('directory', 'file')
+    } | {'test_permanent_directory_holder_preserves_complete_pending_transaction[' + location + ']'
+         for location in ('directory', 'file')}
+      | {'test_nonsharing_directory_publication_error_is_immediate_and_exact',
+         'test_directory_publication_collision_preserves_both_owned_and_foreign_data'},
     'test_gateway_mux_write_lifetime': {
         'test_closed_mux_refuses_item_before_mutating_codec_or_writing[' + value + ']'
         for value in ('False', 'True')
@@ -373,7 +381,8 @@ def validate_extracted(path, archive, candidate):
             raise ValueError('Session corpus reads came from a different runtime')
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted Session corpus read observations are incomplete') from error
-    for name, validate in [('sessionLineage', validate_session_lineage), ('sessionEventTrace', validate_session_event_trace),
+    for name, validate in [('pythonDirectory', validate_python_directory),
+                           ('sessionLineage', validate_session_lineage), ('sessionEventTrace', validate_session_event_trace),
                            ('sessionFilters', validate_session_filters), ('sessionRequests', validate_session_requests),
                            ('sessionSnapshots', validate_session_snapshots)]:
         try:

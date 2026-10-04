@@ -35,6 +35,7 @@ from scripts.session_event_trace_oracle import validate_runtime as validate_sess
 from scripts.session_filters_oracle import validate_runtime as validate_session_filters
 from scripts.session_requests_oracle import validate_runtime as validate_session_requests
 from scripts.webserver_reset_probe import validate as validate_webserver_reset
+from scripts.python_directory_probe import validate as validate_python_directory
 from scripts.session_snapshots_oracle import validate_runtime as validate_session_snapshots
 
 
@@ -107,7 +108,8 @@ def main(argv=None):
             'oracles/session_filters_expected.json', 'oracles/session_filters_cases.json',
             'session_requests_oracle.py', 'oracles/session_requests_python.py',
             'oracles/session_requests_expected.json', 'oracles/session_requests_cases.json', 'webserver_reset_probe.py',
-            'session_snapshots_oracle.py', 'oracles/session_snapshots_python.py', 'oracles/session_snapshots_expected.json')})
+            'session_snapshots_oracle.py', 'oracles/session_snapshots_python.py', 'oracles/session_snapshots_expected.json',
+            'python_directory_probe.py')})
     node = shutil.which('node') if args.browser else None
     try:
         if args.browser and not node:
@@ -329,6 +331,18 @@ def main(argv=None):
                 if trace_report['root'] != str(portable):
                     raise RuntimeError('Extracted ' + name + ' imported a different product')
                 report[key] = trace_report
+            directory_path = workspace / 'python-directory.json'
+            directory = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/python_directory_probe.py'), '--root', str(portable), '--output', str(directory_path)],
+                cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=90)
+            output.with_suffix('.python-directory.log').write_text(directory.stdout + '\nSTDERR:\n' + directory.stderr, encoding='utf-8')
+            if directory.returncode or directory.stderr or not directory_path.is_file():
+                raise RuntimeError('Extracted Python directory publication failed')
+            directory_report = json.loads(directory_path.read_text(encoding='utf-8'))
+            validate_python_directory(directory_report)
+            if directory_report['root'] != str(portable):
+                raise RuntimeError('Extracted Python directory publication imported a different product')
+            report['pythonDirectory'] = directory_report
             reset_path = workspace / 'webserver-reset.json'
             reset = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
                 str(ROOT / 'scripts/webserver_reset_probe.py'), '--root', str(portable), '--output', str(reset_path)],

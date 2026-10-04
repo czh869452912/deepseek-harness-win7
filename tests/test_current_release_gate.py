@@ -22,6 +22,7 @@ from scripts.session_event_trace_oracle import expected as expected_session_even
 from scripts.session_filters_oracle import expected as expected_session_filters
 from scripts.session_requests_oracle import expected as expected_session_requests
 from scripts.session_snapshots_oracle import expected as expected_session_snapshots
+from scripts.python_directory_probe import EXPECTED as expected_python_directory
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -332,7 +333,7 @@ def test_extracted_session_corpus_read_requires_exact_sources_and_batch_drain(tm
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 152, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 162, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
@@ -437,11 +438,55 @@ def extracted_receipt(tmp_path):
         'root': str(tmp_path), 'module': str(tmp_path / 'dsh/__init__.py'), 'python': [3,8,10]}
     report['sessionSnapshots'] = {'observations': expected_session_snapshots(),
         'root': str(tmp_path), 'module': str(tmp_path / 'dsh/__init__.py'), 'python': [3,8,10]}
+    report['pythonDirectory'] = dict(root=str(tmp_path), module=str(tmp_path / 'dsh/boot/python_directory_mutation.py'),
+        python='3.8.10', platform='win32', observations=copy.deepcopy(expected_python_directory))
     report['webServerReset'] = dict(root=str(tmp_path), module=str(tmp_path / 'dsh/host/webserver/socket_server.py'),
         python='3.8.10', platform='win32', observations=[
             dict(mode='http-stream', resets=3, owned=True, alive=True, retired=True, errors=[]),
             dict(mode='upgrade', resets=3, owned=True, alive=True, retired=True, errors=[])])
     return archive, candidate, report
+
+
+@pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
+def test_python_directory_publication_lanes_are_mandatory(tmp_path, damage):
+    for name in GATE.REQUIRED_REGRESSION['test_python_directory_mutation']:
+        path = tmp_path / 'pytest.xml'
+        regression_xml(path, **{damage: ('test_python_directory_mutation', name)})
+        with pytest.raises(RuntimeError):
+            GATE.validate_regression(path)
+
+
+@pytest.mark.parametrize('damage', ['missing', 'tail', 'reverse', 'unknown', 'publication', 'recovery',
+    'journal', 'foreign-root', 'foreign-module', 'python', 'platform'])
+def test_extracted_python_directory_publication_is_exact_and_owned(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    directory = report['pythonDirectory']
+    if damage == 'missing':
+        del report['pythonDirectory']
+    elif damage == 'tail':
+        directory['observations'].pop()
+    elif damage == 'reverse':
+        directory['observations'].reverse()
+    elif damage == 'unknown':
+        directory['unknown'] = True
+    elif damage == 'publication':
+        directory['observations'][0]['published'] = False
+    elif damage == 'recovery':
+        directory['observations'][2]['recovered'] = False
+    elif damage == 'journal':
+        directory['observations'][3]['completeJournal'] = False
+    elif damage == 'foreign-root':
+        directory['root'] = str(tmp_path / 'foreign')
+    elif damage == 'foreign-module':
+        directory['module'] = str(tmp_path / 'foreign/dsh/boot/python_directory_mutation.py')
+    elif damage == 'python':
+        directory['python'] = '3.9.0'
+    else:
+        directory['platform'] = 'linux'
+    path = tmp_path / 'extracted.json'
+    path.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='pythonDirectory'):
+        GATE.validate_extracted(path, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])

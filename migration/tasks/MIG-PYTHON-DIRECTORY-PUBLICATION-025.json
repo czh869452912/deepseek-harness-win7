@@ -1,0 +1,48 @@
+{
+  "id": "MIG-PYTHON-DIRECTORY-PUBLICATION-025",
+  "goal": "修复原生 Python 插件目录发布的有界共享等待和完整事务保留",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "bc7028c295a4b4a3daddf7d09e4d0c157f934a7c",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-PYTHON-ZIP-STAGING-018",
+      "contract": "CON-PYTHON-ZIP-STAGING",
+      "revision": 1
+    },
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-PYTHON-DIRECTORY-PUBLICATION",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "Ten actual sharing/consumer/timeout/foreign-destination lanes are mandatory; existing distribution/version/process-recovery regressions remain unchanged and pass.",
+    "Actual extracted isolated Python 3.8.10 repeats root/file publication and permanent-holder complete-journal recovery; strict damaged receipts and absent/failed/skipped lanes are refused.",
+    "A new committed clean complete gate passes at least 162 required lanes, 45 pairs and twelve source groups/920 assertions before bounded acceptance."
+  ],
+  "expected_paths": [
+    "dsh/boot",
+    "apps/cli",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [
+    "Clean bc7028c2 is rejected: 6289 passed, one native plugin install publication failure, six skips and one existing warning. The exact ZIP, hashes and diagnostics are retained. Actual controlled root/child handles reproduce the directory-move denial. Isolated repaired tests pass 87 cases in 62.81 seconds. The precise main promotion passes 518 regressions in 75.54 seconds and all four isolated physical observations. Full clean acceptance is pending."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "完成主树精准推广的定向回归并独立提交；继续整合 SQLite schema 能力，冻结新候选完整验收。保留 bc7028c2 精确失败证据；未知外部持有者和全量 C3/Win7 不冒充闭环。"
+}

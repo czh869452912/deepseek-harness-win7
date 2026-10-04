@@ -1,0 +1,34 @@
+{
+  "id": "CON-PYTHON-DIRECTORY-PUBLICATION",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "dsh/boot/python_directory_mutation.py",
+    "dsh/boot/python_plugins.py",
+    "dsh/boot/python_plugin_versions.py"
+  ],
+  "consumers": [
+    "apps/cli/plugin.py",
+    "dsh/boot/profile_boot.py"
+  ],
+  "invariants": [
+    "This is a native Python extension; no equivalent upstream Python package installer is claimed.",
+    "Profile-owned directory publication drains a sharing-denied root before mutation and holds a share-delete root handle across the atomic move.",
+    "Transient child/root sharing can settle within a fixed one-second publication deadline; unrelated codes or existing destinations fail without replacement.",
+    "Cleanup checks sharing access across the existing tree before removing entries; the controlled permanently held directory/file leaves original manifest and complete journal data for later recovery.",
+    "All temporary Win32 handles close on success, timeout or failure. The loader uses flags zero rather than requiring the modern DLL-search patch.",
+    "Six actual add/upgrade/rollback consumers, two permanent-holder recoveries and error/collision boundaries remain mandatory; an extracted isolated Python 3.8.10 repeats four physical observations."
+  ],
+  "identity": "Profile lease, transaction token, exact file hashes and unchanged manifest retain generation ownership; directory sharing does not change the commit point.",
+  "ownership": "The active transaction owns staging and journal paths; temporary delete-access root handles close before returning. Foreign destinations are preserved.",
+  "ordering": "Validate transaction files/profile, acquire scoped mutation ownership, publish the directory atomically, then publish manifest and recover its exact journal.",
+  "errors": "Only controlled Windows sharing/root-directory rename denial is given a bounded wait; unchanged candidate reruns, warning filters and arbitrary error suppression are not accepted.",
+  "cancellation": "Synchronous mutation waits are bounded to one second per ownership boundary. Process interruption retains the existing recoverable journal.",
+  "adaptation": "Native-only Windows filesystem support, independent of upstream bug exceptions. Current real Windows observations are not Win7 certification.",
+  "open_questions": [
+    "The original bc7028c2 external sharing holder is not identified; the same failure mechanism is measured with controlled actual handles.",
+    "Arbitrary new external writers between checks, share-delete readers during removal, metadata/ACL changes, power loss and every filesystem failure remain unaccepted.",
+    "Full native package ecosystem/ABI/dependencies/trust and deferred Win7 remain separate."
+  ]
+}

@@ -3,7 +3,6 @@
 snapshots/** -text
 apps/web/dist/** -text
 examples/python-web-echo/** text eol=lf
-
 # Evidence hashes must survive checkout on Windows and POSIX.
 migration/** text eol=lf
 migration/evidence/artifacts/** -text
@@ -11,3 +10,4 @@ migration/evidence/artifacts/** -text
 migration/evidence/artifacts/*.txt -whitespace
 # Archived JSON preserves original bytes, including Windows CRLF line endings.
 migration/evidence/artifacts/*.json whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+migration/evidence/artifacts/*.zip filter=lfs diff=lfs merge=lfs -text

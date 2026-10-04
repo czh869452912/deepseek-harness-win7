@@ -27,6 +27,7 @@ from scripts.subprocess_tree_oracle import validate_observations as validate_sub
 from scripts.projection_cache_failure_oracle import validate_runtime as validate_projection_cache_reads
 from scripts.session_observation_read_oracle import validate_runtime as validate_session_observation_reads
 from scripts.session_corpus_list_oracle import validate_runtime as validate_session_corpus_list
+from scripts.session_corpus_read_oracle import validate_runtime as validate_session_corpus_read
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -35,10 +36,16 @@ PAIRED_DRIVERS = (
     'pi', 'storage_cache', 'workflow_ralph', 'repeat_tool', 'token_meter',
     'pruner', 'compaction', 'maintenance', 'timeout_policy', 'abort',
     'approval', 'inspect', 'cordis_guard', 'cordis_runner',
-    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure', 'session_observation_read', 'session_corpus_list',
+    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure', 'session_observation_read', 'session_corpus_list', 'session_corpus_read',
 )
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus')
 REQUIRED_REGRESSION = {
+    'test_session_corpus_read_source': {'test_actual_original_and_native_corpus_load_and_title_batch_signal_drain_and_source_ownership'},
+    'test_session_corpus_read': {
+        name + '[' + backend + ']' for name in (
+            'test_actual_durable_corpus_load_and_title_batch_are_cold_detached_and_immutable',
+            'test_actual_durable_title_batch_pre_abort_preserves_reason_without_listing')
+        for backend in ('jsonl', 'sqlite')},
     'test_python_plugin_zip_staging': {
         'test_wrapped_zip_needs_no_post_extraction_subroot_rename[' + operation + ']'
         for operation in ('add', 'upgrade')},
@@ -303,6 +310,12 @@ def validate_extracted(path, archive, candidate):
             raise ValueError('Session corpus listing came from a different runtime')
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted Session corpus listing observations are incomplete') from error
+    try:
+        validate_session_corpus_read(report.get('sessionCorpusRead'))
+        if report['sessionCorpusRead']['root'] != report['mcpStdio']['root']:
+            raise ValueError('Session corpus reads came from a different runtime')
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted Session corpus read observations are incomplete') from error
     if report.get('archiveSha256') != digest(archive) or Path(report['archive']).resolve() != archive.resolve():
         raise RuntimeError('Extracted receipt belongs to a different archive')
     provenance = report.get('provenance', {})

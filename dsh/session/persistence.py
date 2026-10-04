@@ -110,7 +110,7 @@ class SessionPersistence(ABC):
         return await self.prepared().borrow(session_id, signal)
 
     @abstractmethod
-    async def inspect(self, session_id: str) -> SessionInspection:
+    async def inspect(self, session_id: str, signal: Optional[Any] = None) -> SessionInspection:
         """Inspect an immutable logical session without committing recovery to disk."""
         raise NotImplementedError
 

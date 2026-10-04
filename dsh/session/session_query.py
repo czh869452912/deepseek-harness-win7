@@ -435,10 +435,17 @@ class SessionQueryService:
     Session Query SQLite FTS Service mounted at `ctx.sessionQuery`.
     """
 
-    def __init__(self, ctx: Any, db_path: str = ":memory:", open_at: str = "immediate"):
+    def __init__(self, ctx: Any, db_path: str = ":memory:", open_at: str = "immediate", persisted_inspect_concurrency: int = 4):
+        if (type(persisted_inspect_concurrency) not in (int, float)
+                or not 1 <= persisted_inspect_concurrency <= 9007199254740991
+                or persisted_inspect_concurrency != int(persisted_inspect_concurrency)):
+            raise SessionQueryError('session-query: persistedInspectConcurrency must be a positive safe integer',
+                                    'SESSION_QUERY_INVALID_CONFIG')
         self.ctx = ctx
         self.db_path = db_path
         self.open_at = open_at
+        from dsh.session.corpus import SessionCorpus
+        self._corpus = SessionCorpus(ctx, int(persisted_inspect_concurrency))
         self._conn = None
         if self.open_at not in ("never", "first-search"):
             self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
@@ -459,6 +466,37 @@ class SessionQueryService:
     async def observeSession(self, session_id, options=None):
         from dsh.session.observation import SessionObservationReader
         return await SessionObservationReader(self.ctx).read(session_id, options)
+
+    async def readSession(self, session_id):
+        from dsh.core.session import Session
+        loaded = await self._corpus.load(session_id)
+        Session.create(session_id, loaded['events'], loaded['header'])
+        return dict(session=loaded['header'], events=loaded['events'])
+
+    async def readTitleSnapshots(self, session_ids, signal=None):
+        import copy
+        from dsh.core.session.json import deep_freeze
+        from dsh.session.title import fold_session_title
+        def project(source):
+            title = fold_session_title(source['events'])
+            result = dict(session=copy.deepcopy(source['header']))
+            if title is not None:
+                result['title'] = deep_freeze(copy.deepcopy(title))
+            return result
+        return await self._corpus.project_many(session_ids, project, signal)
+
+    async def readTitleSnapshot(self, session_id, signal=None):
+        from dsh.cordis.errors import ThrownValueError
+        result = (await self.readTitleSnapshots([session_id], signal))[0]
+        if result['status'] == 'rejected':
+            reason = result['reason']
+            if isinstance(reason, BaseException):
+                raise reason
+            raise ThrownValueError(reason)
+        return result['value']
+
+    async def readTitle(self, session_id, signal=None):
+        return (await self.readTitleSnapshot(session_id, signal)).get('title')
 
     async def readSurface(self, session_id, options=None):
         from dsh.core.surface import fold_surface
@@ -740,7 +778,8 @@ class SessionQueryPlugin(Plugin):
     def apply(self, ctx: Any) -> None:
         db_path = self.config.get("path", ":memory:")
         open_at = self.config.get("open_at") or self.config.get("openAt", "immediate")
-        service = SessionQueryService(ctx, db_path=db_path, open_at=open_at)
+        service = SessionQueryService(ctx, db_path=db_path, open_at=open_at,
+                                      persisted_inspect_concurrency=self.config.get('persistedInspectConcurrency', 4))
         ctx.effect(lambda: service.close)
         ctx.set_service("sessionQuery", service)
         ctx.set_service("session_query", service)

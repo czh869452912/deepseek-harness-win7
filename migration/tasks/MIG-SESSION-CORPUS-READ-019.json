@@ -1,0 +1,47 @@
+{
+  "id": "MIG-SESSION-CORPUS-READ-019",
+  "goal": "补齐 cold/live 精确日志读取与有界并发标题批量查询",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "c7796ca24ee6019b2f580aff9d4401188a1b787c",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-SESSION-CORPUS-LIST-017",
+      "contract": "CON-SESSION-CORPUS-LIST",
+      "revision": 1
+    },
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-SESSION-CORPUS-READ",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "Nineteen fresh actual source/native corpus and title batch observations preserve live precedence, detached exact logs, typed errors/cause, result order, exact signals, bounded inspection and abort drain.",
+    "Strict negative observers and actual JSONL/SQLite readSession/title consumers pass without activating a live Session; configuration accepts exactly supported safe integer values.",
+    "A new clean complete current release gate and actual extracted Python 3.8.10 execute the same nineteen declared observations with exact product/input/root provenance before bounded integration."
+  ],
+  "expected_paths": [
+    "dsh/session",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [
+    "Nineteen fresh observations match. Main 409 targeted regressions passed, including four durable consumers and strict release-gate refusal probes; isolated expanded regression passed 359. Earlier c7796ca2 full gate was interrupted at 85%, with no final receipt; its frozen inputs, logs and actual clean ZIP are preserved as interrupted, never acceptance. All prior failed gates remain rejected. Complete new candidate acceptance and broader B1/B2/B3/C/D remain open."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "独立提交已验证的 corpus/title 提供端和观察门禁；冻结共同新候选完整回归/原版/40 配对/解压，再签收有界 A4 和 B1 子合同，继续全部剩余范围。"
+}

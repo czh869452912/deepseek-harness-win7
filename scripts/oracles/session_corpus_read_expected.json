@@ -1,0 +1,727 @@
+[
+  {
+    "name": "load-live",
+    "observed": {
+      "loaded": {
+        "id": "a",
+        "createdAt": 9,
+        "cwd": "/controlled/cwd",
+        "eventTypes": [
+          "session/title",
+          "session/end-seed"
+        ],
+        "title": {
+          "title": "Title a",
+          "messageSeqs": [],
+          "source": {
+            "kind": "user"
+          },
+          "eventSeq": 0,
+          "updatedAt": 3
+        }
+      },
+      "detached": true,
+      "counters": {
+        "lists": 0,
+        "inspections": [],
+        "signals": true,
+        "inFlight": 0,
+        "peak": 0,
+        "settled": 0
+      }
+    }
+  },
+  {
+    "name": "load-cold",
+    "observed": {
+      "loaded": {
+        "id": "a",
+        "createdAt": 9,
+        "cwd": "/controlled/cwd",
+        "eventTypes": [
+          "session/title"
+        ],
+        "title": {
+          "title": "Title a",
+          "messageSeqs": [],
+          "source": {
+            "kind": "user"
+          },
+          "eventSeq": 0,
+          "updatedAt": 3
+        }
+      },
+      "detached": true,
+      "counters": {
+        "lists": 1,
+        "inspections": [
+          "a"
+        ],
+        "signals": true,
+        "inFlight": 0,
+        "peak": 1,
+        "settled": 1
+      }
+    }
+  },
+  {
+    "name": "load-missing-provider",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session \"a\" not found",
+        "code": "SESSION_QUERY_SESSION_NOT_FOUND",
+        "sameCause": false,
+        "sameFailure": false
+      },
+      "counters": {
+        "lists": 0,
+        "inspections": [],
+        "signals": true,
+        "inFlight": 0,
+        "peak": 0,
+        "settled": 0
+      }
+    }
+  },
+  {
+    "name": "load-missing-record",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session \"a\" not found",
+        "code": "SESSION_QUERY_SESSION_NOT_FOUND",
+        "sameCause": false,
+        "sameFailure": false
+      },
+      "counters": {
+        "lists": 1,
+        "inspections": [],
+        "signals": true,
+        "inFlight": 0,
+        "peak": 0,
+        "settled": 0
+      }
+    }
+  },
+  {
+    "name": "load-corrupt",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "stored session \"a\" is corrupt: controlled corpus failure",
+        "code": "SESSION_QUERY_CORRUPT_SESSION",
+        "sameCause": true,
+        "sameFailure": false
+      },
+      "counters": {
+        "lists": 1,
+        "inspections": [
+          "a"
+        ],
+        "signals": true,
+        "inFlight": 0,
+        "peak": 1,
+        "settled": 1
+      }
+    }
+  },
+  {
+    "name": "load-failure",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "failed to inspect session \"a\": controlled corpus failure",
+        "code": "SESSION_QUERY_PERSISTENCE_FAILED",
+        "sameCause": true,
+        "sameFailure": false
+      },
+      "counters": {
+        "lists": 1,
+        "inspections": [
+          "a"
+        ],
+        "signals": true,
+        "inFlight": 0,
+        "peak": 1,
+        "settled": 1
+      }
+    }
+  },
+  {
+    "name": "load-foreign-failure",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "failed to inspect session \"a\": unknown error",
+        "code": "SESSION_QUERY_PERSISTENCE_FAILED",
+        "sameCause": true,
+        "sameFailure": false
+      },
+      "counters": {
+        "lists": 1,
+        "inspections": [
+          "a"
+        ],
+        "signals": true,
+        "inFlight": 0,
+        "peak": 1,
+        "settled": 1
+      }
+    }
+  },
+  {
+    "name": "load-header-conflict",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session source headers conflict for session \"a\"",
+        "code": "SESSION_QUERY_SOURCE_CONFLICT",
+        "sameCause": false,
+        "sameFailure": false
+      },
+      "counters": {
+        "lists": 1,
+        "inspections": [
+          "a"
+        ],
+        "signals": true,
+        "inFlight": 0,
+        "peak": 1,
+        "settled": 1
+      }
+    }
+  },
+  {
+    "name": "load-attach-wins",
+    "observed": {
+      "loaded": {
+        "id": "a",
+        "createdAt": 9,
+        "cwd": "/controlled/cwd",
+        "eventTypes": [
+          "session/title",
+          "session/end-seed"
+        ],
+        "title": {
+          "title": "Title a",
+          "messageSeqs": [],
+          "source": {
+            "kind": "user"
+          },
+          "eventSeq": 0,
+          "updatedAt": 3
+        }
+      },
+      "detached": true,
+      "counters": {
+        "lists": 1,
+        "inspections": [
+          "a"
+        ],
+        "signals": true,
+        "inFlight": 0,
+        "peak": 1,
+        "settled": 1
+      }
+    }
+  },
+  {
+    "name": "batch-live-only",
+    "observed": {
+      "results": [
+        {
+          "id": "a",
+          "status": "fulfilled",
+          "value": {
+            "id": "a",
+            "cwd": "/controlled/cwd",
+            "title": {
+              "title": "Title a",
+              "messageSeqs": [],
+              "source": {
+                "kind": "user"
+              },
+              "eventSeq": 0,
+              "updatedAt": 3
+            }
+          }
+        },
+        {
+          "id": "b",
+          "status": "fulfilled",
+          "value": {
+            "id": "b",
+            "cwd": "/controlled/cwd",
+            "title": {
+              "title": "Title b",
+              "messageSeqs": [],
+              "source": {
+                "kind": "user"
+              },
+              "eventSeq": 0,
+              "updatedAt": 3
+            }
+          }
+        }
+      ],
+      "counters": {
+        "lists": 0,
+        "inspections": [],
+        "signals": true,
+        "inFlight": 0,
+        "peak": 0,
+        "settled": 0
+      }
+    }
+  },
+  {
+    "name": "batch-mixed-duplicates",
+    "observed": {
+      "results": [
+        {
+          "id": "a",
+          "status": "fulfilled",
+          "value": {
+            "id": "a",
+            "cwd": "/controlled/cwd",
+            "title": {
+              "title": "Title a",
+              "messageSeqs": [],
+              "source": {
+                "kind": "user"
+              },
+              "eventSeq": 0,
+              "updatedAt": 3
+            }
+          }
+        },
+        {
+          "id": "b",
+          "status": "fulfilled",
+          "value": {
+            "id": "b",
+            "cwd": "/controlled/cwd",
+            "title": {
+              "title": "Title b",
+              "messageSeqs": [],
+              "source": {
+                "kind": "user"
+              },
+              "eventSeq": 0,
+              "updatedAt": 3
+            }
+          }
+        },
+        {
+          "id": "missing",
+          "status": "rejected",
+          "error": {
+            "name": "SessionQueryError",
+            "message": "session \"missing\" not found",
+            "code": "SESSION_QUERY_SESSION_NOT_FOUND",
+            "sameCause": false,
+            "sameFailure": false
+          }
+        }
+      ],
+      "counters": {
+        "lists": 1,
+        "inspections": [
+          "b"
+        ],
+        "signals": true,
+        "inFlight": 0,
+        "peak": 1,
+        "settled": 1
+      }
+    }
+  },
+  {
+    "name": "batch-list-failure",
+    "observed": {
+      "results": [
+        {
+          "id": "a",
+          "status": "fulfilled",
+          "value": {
+            "id": "a",
+            "cwd": "/controlled/cwd",
+            "title": {
+              "title": "Title a",
+              "messageSeqs": [],
+              "source": {
+                "kind": "user"
+              },
+              "eventSeq": 0,
+              "updatedAt": 3
+            }
+          }
+        },
+        {
+          "id": "b",
+          "status": "rejected",
+          "error": {
+            "name": "SessionQueryError",
+            "message": "session persistence listing failed: controlled corpus failure",
+            "code": "SESSION_QUERY_PERSISTENCE_FAILED",
+            "sameCause": true,
+            "sameFailure": false
+          }
+        }
+      ],
+      "counters": {
+        "lists": 1,
+        "inspections": [],
+        "signals": true,
+        "inFlight": 0,
+        "peak": 0,
+        "settled": 0
+      }
+    }
+  },
+  {
+    "name": "batch-foreign-failure",
+    "observed": {
+      "results": [
+        {
+          "id": "a",
+          "status": "fulfilled",
+          "value": {
+            "id": "a",
+            "cwd": "/controlled/cwd",
+            "title": {
+              "title": "Title a",
+              "messageSeqs": [],
+              "source": {
+                "kind": "user"
+              },
+              "eventSeq": 0,
+              "updatedAt": 3
+            }
+          }
+        },
+        {
+          "id": "b",
+          "status": "rejected",
+          "error": {
+            "name": "SessionQueryError",
+            "message": "session persistence listing failed: unknown error",
+            "code": "SESSION_QUERY_PERSISTENCE_FAILED",
+            "sameCause": true,
+            "sameFailure": false
+          }
+        }
+      ],
+      "counters": {
+        "lists": 1,
+        "inspections": [],
+        "signals": true,
+        "inFlight": 0,
+        "peak": 0,
+        "settled": 0
+      }
+    }
+  },
+  {
+    "name": "batch-inspect-isolated",
+    "observed": {
+      "results": [
+        {
+          "id": "a",
+          "status": "fulfilled",
+          "value": {
+            "id": "a",
+            "cwd": "/controlled/cwd",
+            "title": {
+              "title": "Title a",
+              "messageSeqs": [],
+              "source": {
+                "kind": "user"
+              },
+              "eventSeq": 0,
+              "updatedAt": 3
+            }
+          }
+        },
+        {
+          "id": "b",
+          "status": "rejected",
+          "error": {
+            "name": "SessionQueryError",
+            "message": "failed to inspect session \"b\": controlled corpus failure",
+            "code": "SESSION_QUERY_PERSISTENCE_FAILED",
+            "sameCause": true,
+            "sameFailure": false
+          }
+        }
+      ],
+      "counters": {
+        "lists": 1,
+        "inspections": [
+          "a",
+          "b"
+        ],
+        "signals": true,
+        "inFlight": 0,
+        "peak": 1,
+        "settled": 2
+      }
+    }
+  },
+  {
+    "name": "batch-list-attach",
+    "observed": {
+      "results": [
+        {
+          "id": "a",
+          "status": "fulfilled",
+          "value": {
+            "id": "a",
+            "cwd": "/controlled/cwd",
+            "title": {
+              "title": "Title a",
+              "messageSeqs": [],
+              "source": {
+                "kind": "user"
+              },
+              "eventSeq": 0,
+              "updatedAt": 3
+            }
+          }
+        },
+        {
+          "id": "b",
+          "status": "fulfilled",
+          "value": {
+            "id": "b",
+            "cwd": "/controlled/cwd",
+            "title": {
+              "title": "Title b",
+              "messageSeqs": [],
+              "source": {
+                "kind": "user"
+              },
+              "eventSeq": 0,
+              "updatedAt": 3
+            }
+          }
+        }
+      ],
+      "counters": {
+        "lists": 1,
+        "inspections": [
+          "a"
+        ],
+        "signals": true,
+        "inFlight": 0,
+        "peak": 1,
+        "settled": 1
+      }
+    }
+  },
+  {
+    "name": "batch-clone",
+    "observed": {
+      "results": [
+        {
+          "id": "a",
+          "status": "fulfilled",
+          "value": {
+            "id": "a",
+            "cwd": "/controlled/cwd",
+            "title": {
+              "title": "Title a",
+              "messageSeqs": [],
+              "source": {
+                "kind": "user"
+              },
+              "eventSeq": 0,
+              "updatedAt": 3
+            }
+          }
+        },
+        {
+          "id": "b",
+          "status": "fulfilled",
+          "value": {
+            "id": "b",
+            "cwd": "/controlled/cwd",
+            "title": {
+              "title": "Title b",
+              "messageSeqs": [],
+              "source": {
+                "kind": "user"
+              },
+              "eventSeq": 0,
+              "updatedAt": 3
+            }
+          }
+        }
+      ],
+      "titleMutationRefused": true,
+      "detached": true,
+      "counters": {
+        "lists": 1,
+        "inspections": [
+          "b"
+        ],
+        "signals": true,
+        "inFlight": 0,
+        "peak": 1,
+        "settled": 1
+      }
+    }
+  },
+  {
+    "name": "batch-concurrency",
+    "observed": {
+      "results": [
+        {
+          "id": "a",
+          "status": "fulfilled",
+          "value": {
+            "id": "a",
+            "cwd": "/controlled/cwd",
+            "title": {
+              "title": "Title a",
+              "messageSeqs": [],
+              "source": {
+                "kind": "user"
+              },
+              "eventSeq": 0,
+              "updatedAt": 3
+            }
+          }
+        },
+        {
+          "id": "b",
+          "status": "fulfilled",
+          "value": {
+            "id": "b",
+            "cwd": "/controlled/cwd",
+            "title": {
+              "title": "Title b",
+              "messageSeqs": [],
+              "source": {
+                "kind": "user"
+              },
+              "eventSeq": 0,
+              "updatedAt": 3
+            }
+          }
+        },
+        {
+          "id": "c",
+          "status": "fulfilled",
+          "value": {
+            "id": "c",
+            "cwd": "/controlled/cwd",
+            "title": {
+              "title": "Title c",
+              "messageSeqs": [],
+              "source": {
+                "kind": "user"
+              },
+              "eventSeq": 0,
+              "updatedAt": 3
+            }
+          }
+        },
+        {
+          "id": "d",
+          "status": "fulfilled",
+          "value": {
+            "id": "d",
+            "cwd": "/controlled/cwd",
+            "title": {
+              "title": "Title d",
+              "messageSeqs": [],
+              "source": {
+                "kind": "user"
+              },
+              "eventSeq": 0,
+              "updatedAt": 3
+            }
+          }
+        },
+        {
+          "id": "e",
+          "status": "fulfilled",
+          "value": {
+            "id": "e",
+            "cwd": "/controlled/cwd",
+            "title": {
+              "title": "Title e",
+              "messageSeqs": [],
+              "source": {
+                "kind": "user"
+              },
+              "eventSeq": 0,
+              "updatedAt": 3
+            }
+          }
+        }
+      ],
+      "projectBeforeNext": true,
+      "counters": {
+        "lists": 1,
+        "inspections": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ],
+        "signals": true,
+        "inFlight": 0,
+        "peak": 2,
+        "settled": 5
+      }
+    }
+  },
+  {
+    "name": "batch-abort-drain",
+    "observed": {
+      "settledBeforeDrain": false,
+      "error": {
+        "name": "TypeError",
+        "message": "controlled corpus failure",
+        "code": null,
+        "sameCause": false,
+        "sameFailure": true
+      },
+      "counters": {
+        "lists": 1,
+        "inspections": [
+          "a",
+          "b"
+        ],
+        "signals": true,
+        "inFlight": 0,
+        "peak": 2,
+        "settled": 2
+      }
+    }
+  },
+  {
+    "name": "pre-abort",
+    "observed": {
+      "error": {
+        "name": "TypeError",
+        "message": "controlled corpus failure",
+        "code": null,
+        "sameCause": false,
+        "sameFailure": true
+      },
+      "counters": {
+        "lists": 0,
+        "inspections": [],
+        "signals": true,
+        "inFlight": 0,
+        "peak": 0,
+        "settled": 0
+      }
+    }
+  }
+]

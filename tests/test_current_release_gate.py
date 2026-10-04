@@ -16,6 +16,7 @@ from scripts.subprocess_ownership_oracle import expected as expected_subprocess_
 from scripts.projection_cache_failure_oracle import expected as expected_projection_cache_reads
 from scripts.session_observation_read_oracle import expected as expected_session_observation_reads
 from scripts.session_corpus_list_oracle import expected as expected_session_corpus_list
+from scripts.session_corpus_read_oracle import expected as expected_session_corpus_read
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -262,10 +263,71 @@ def test_zip_staging_real_sharing_lane_cannot_be_optional(tmp_path, operation, d
         GATE.validate_regression(path)
 
 
+@pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
+def test_session_corpus_read_source_lane_cannot_be_optional(tmp_path, damage):
+    path = tmp_path / 'pytest.xml'
+    module = 'test_session_corpus_read_source'
+    key = (module, sorted(GATE.REQUIRED_REGRESSION[module])[0])
+    regression_xml(path, **{damage: key})
+    with pytest.raises(RuntimeError):
+        GATE.validate_regression(path)
+
+
+@pytest.mark.parametrize('damage', ['missing', 'tail', 'duplicate', 'reorder', 'message', 'cause',
+    'foreign-cause', 'signal', 'peak', 'early-settlement', 'queued-after-abort', 'projection-order',
+    'clone', 'title-mutable', 'foreign-root', 'foreign-module', 'python', 'unknown-field'])
+def test_extracted_session_corpus_read_requires_exact_sources_and_batch_drain(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    read = report['sessionCorpusRead']
+    rows = read['observations']
+    by_name = {row['name']: row['observed'] for row in rows}
+    if damage == 'missing':
+        del report['sessionCorpusRead']
+    elif damage == 'tail':
+        rows.pop()
+    elif damage == 'duplicate':
+        rows[-1] = copy.deepcopy(rows[0])
+    elif damage == 'reorder':
+        rows.reverse()
+    elif damage == 'message':
+        by_name['load-missing-record']['error']['message'] = 'session not found: a'
+    elif damage == 'cause':
+        by_name['load-failure']['error']['sameCause'] = False
+    elif damage == 'foreign-cause':
+        by_name['load-foreign-failure']['error']['sameCause'] = False
+    elif damage == 'signal':
+        by_name['batch-concurrency']['counters']['signals'] = False
+    elif damage == 'peak':
+        by_name['batch-concurrency']['counters']['peak'] = 3
+    elif damage == 'early-settlement':
+        by_name['batch-abort-drain']['settledBeforeDrain'] = True
+    elif damage == 'queued-after-abort':
+        by_name['batch-abort-drain']['counters']['inspections'].append('c')
+    elif damage == 'projection-order':
+        by_name['batch-concurrency']['projectBeforeNext'] = False
+    elif damage == 'clone':
+        by_name['load-cold']['detached'] = False
+    elif damage == 'title-mutable':
+        by_name['batch-clone']['titleMutationRefused'] = False
+    elif damage == 'foreign-root':
+        read['root'] = str(tmp_path / 'foreign')
+        read['module'] = str(tmp_path / 'foreign/dsh/__init__.py')
+    elif damage == 'foreign-module':
+        read['module'] = str(tmp_path / 'foreign/dsh/__init__.py')
+    elif damage == 'python':
+        read['python'] = [3, 9, 0]
+    else:
+        read['unknown'] = True
+    path = tmp_path / 'extracted.json'
+    path.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError):
+        GATE.validate_extracted(path, archive, candidate)
+
+
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 101, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 106, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
@@ -357,6 +419,8 @@ def extracted_receipt(tmp_path):
     report['sessionObservationReads'] = {'observations': expected_session_observation_reads(),
         'root': str(tmp_path), 'module': str(tmp_path / 'dsh/__init__.py'), 'python': [3, 8, 10]}
     report['sessionCorpusList'] = {'observations': expected_session_corpus_list(),
+        'root': str(tmp_path), 'module': str(tmp_path / 'dsh/__init__.py'), 'python': [3, 8, 10]}
+    report['sessionCorpusRead'] = {'observations': expected_session_corpus_read(),
         'root': str(tmp_path), 'module': str(tmp_path / 'dsh/__init__.py'), 'python': [3, 8, 10]}
     return archive, candidate, report
 

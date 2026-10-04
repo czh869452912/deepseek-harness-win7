@@ -4,7 +4,7 @@
   "kind": "verification",
   "state": "draft",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
-  "base_product": "5c0b3c5e229d900435b3b9df3ed36f9d64a9028b",
+  "base_product": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
   "owner": null,
   "requires": [
     {
@@ -66,6 +66,11 @@
       "task": "MIG-SESSION-TRACING-020",
       "contract": "CON-SESSION-TRACING",
       "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-FILTERS-021",
+      "contract": "CON-SESSION-FILTERS",
+      "revision": 1
     }
   ],
   "provides": [],
@@ -78,7 +83,7 @@
     "migration"
   ],
   "open_findings": [
-    "Cold/live/prepared/storage/projection, bounded cache/point/corpus/title reads and lineage/event windows have clean 5c0b3c5e evidence. They do not certify the complete Session domain.",
+    "Cold/live/prepared/storage/projection, bounded cache/point/corpus/title reads, lineage/event windows and owned filtering have clean 1d9940aa evidence. They do not certify the complete Session domain.",
     "Full FTS ranking/cursors/reconciliation/index generations, all domain and plugin event types, Unicode locale/extraction, provider epochs/arbitrary Task cancellation, compressed JSONL and cross-process/multi-cwd recovery remain unaccepted.",
     "Native upstream SQLite physical schema equivalence, long-history scale, complete current Web/profile/reconnect journeys and deferred Win7 remain separate unaccepted scopes."
   ],
@@ -86,5 +91,5 @@
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "以 5c0b3c5e 已签收的缓存、point/corpus/title 与 tracing 为基础，先补业务过滤，再完整 FTS/增量索引/代际、域/事件类型与长期恢复；随后完成 Web/profile 主链。父范围仍 draft，无全范围验收。"
+  "next_action": "以 1d9940aa 已签收的缓存、point/corpus/title、tracing 和过滤为基础，补搜索请求及来源限定 revision，再完整 FTS/增量索引/代际、域/事件类型与长期恢复；随后完成 Web/profile 主链。父范围仍 draft，无全范围验收。"
 }

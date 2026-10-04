@@ -37,11 +37,11 @@
 
 ## 当前执行项
 
-2026-10-04：最近完整有界验收已推进到 `5c0b3c5e`，6082 passed、6 skipped、1 warning、0 failed；114 必需 lane、十一组 910 原版断言、42 双侧驱动与真实解压 Python 3.8.10/原版浏览器通过。三十个有界子任务按精确产品、输入和产物重签；见 `migration/reviews/SESSION-TRACING-CLOSURE-20261004.md`。这不是完整 ACP、Session 或全项目验收。
+2026-10-04：最近完整有界验收已推进到 `1d9940aa`，6134 passed、6 skipped、1 warning、0 failed；119 必需 lane、十一组 910 原版断言、43 双侧驱动与真实解压 Python 3.8.10/原版浏览器通过。三十一个有界子任务按精确产品、输入和产物重签；见 `migration/reviews/SESSION-FILTERS-CLOSURE-20261004.md`。这不是完整 ACP、Session 或全项目验收。
 
 此后已逐项提交 subprocess ACP、teardown、MCP disposal、进程所有权/实际树、缓存与 point/corpus 读取、ZIP 暂存和标题批量。未签收的共同候选经历真实浏览器取消、ACP 中文 wire 观察编码、wrapped ZIP 暂存失败，以及用户中断；原始证据均保留。`d81dee16` 本次全量 5970 passed、6 skipped、1 warning，但随后原版 storage/cache 的固定 40ms 创建行检查失败（45 passed、1 failed），门禁拒绝且没有重签。受控 100ms fsync 延迟可复现相同断言，实际失败的具体延迟仍未测得；这不是新增 bug 绕过或已修复根因。
 
-B1 的实际谱系、事件替换链、窗口/快照与 SQLite 对象替换持久化已在上述候选有界签收。下一提交为业务过滤与完整 surface 文档：33 原始观察匹配，隔离 550 定向项和推广后主树 593 定向项通过；仍需新的干净全量/119 必需 lane/43 配对/解压验收。原版测试阶段停止并行开发 I/O，保留全部断言和失败退出码。随后按完整 FTS/索引代际、Tools/Wire 组合、完整 Web/profile 主链，再 C/D 顺序继续。旧 Proactor/HTTP 10054、浏览器启动取消、源测试时序和完整 SDK/树边缘仍具名开放；accepted_upstream 不自动完成。
+B1 的业务过滤与完整 surface 文档已连同此前 tracing 在上述候选有界签收。下一提交为搜索请求归属、错误优先级、参数化 SQL 预算与 Unicode 截断：50 原始观察匹配，隔离 534 扩展回归及最终 38 项通过；仍需主树推广和新的干净全量/125 必需 lane/十二组 920 原版断言/44 配对/解压验收。这不是完整 FTS；后续还须补来源限定的持久化 revision、完整排名/游标/稳定重观察/增量索引代际，再 Tools/Wire、Web/profile 和 C/D。原版阶段停止并行开发 I/O，保留全部断言和失败退出码。旧 Proactor/HTTP 10054、浏览器启动取消、源测试时序和完整 SDK/树边缘仍具名开放；accepted_upstream 不自动完成。
 
 A1 的 `MIG-ACP-SESSION-CONTROLS-003` / `CON-ACP-SESSION-CONTROLS@1` 已有界验收。父范围 `MIG-ACP-TRANSPORT-002` 仍是完整 ACP 的未完成任务，不因子合同集成而自动完成。
 

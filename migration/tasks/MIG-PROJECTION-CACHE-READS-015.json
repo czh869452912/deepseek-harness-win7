@@ -39,10 +39,11 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "5c0b3c5e229d900435b3b9df3ed36f9d64a9028b",
-  "integrated_commit": "5c0b3c5e229d900435b3b9df3ed36f9d64a9028b",
+  "candidate_commit": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
+  "integrated_commit": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
   "evidence_ids": [
-    "RUN-SESSION-TRACING-20261004-PROJECTION-CACHE-READS-015"
+    "RUN-SESSION-TRACING-20261004-PROJECTION-CACHE-READS-015",
+    "RUN-SESSION-FILTERS-20261004-PROJECTION-CACHE-READS-015"
   ],
-  "next_action": "clean candidate 5c0b3c5e 的八组 JSON domain/registry/cache 读取有界验收；继续完整 domain/FTS/长期回放和当前 Web/profile 消费者，未认证完整 B1 或 Win7。"
+  "next_action": "clean candidate 1d9940aa 的八组 JSON domain/registry/cache 读取有界验收；继续完整 domain/FTS/长期回放和当前 Web/profile 消费者，未认证完整 B1 或 Win7。"
 }

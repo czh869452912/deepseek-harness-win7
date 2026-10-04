@@ -2,7 +2,7 @@
   "id": "MIG-SESSION-FILTERS-021",
   "goal": "补齐同步归属的业务过滤、字面文本和完整 surface 文档",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "5c0b3c5e229d900435b3b9df3ed36f9d64a9028b",
   "owner": "current-session-coordinator",
@@ -41,12 +41,12 @@
     "migration",
     "docs/research"
   ],
-  "open_findings": [
-    "Thirty-three actual raw source/native observations match; isolated expanded regressions passed 165 and 550 tests. Main promoted gate/consumer regression passed 593 tests in 41.86 seconds. The prior tracing candidate has clean 6082-test acceptance. This new filtering contract requires its own complete clean candidate; no source test, retry or bug exception was changed."
-  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "推广后的主树 593 定向项已通过；独立提交并冻结新候选，全量/119 必需 lane/43 配对/原版/解压通过才签收。继续完整 FTS/index generations、Web 主链和全部迁移遗留。"
+  "candidate_commit": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
+  "integrated_commit": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
+  "evidence_ids": [
+    "RUN-SESSION-FILTERS-20261004-SESSION-FILTERS-021"
+  ],
+  "next_action": "clean candidate 1d9940aa 的 33 过滤观察、4 真实持久化 lane 与实际解压已有界验收；继续完整 Unicode/extraction、FTS/ranking/cursors/index generations、provider/Task、Web/profile 和整体迁移，不认证完整 B1 或 Win7。"
 }

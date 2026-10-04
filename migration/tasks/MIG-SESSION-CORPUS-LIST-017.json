@@ -38,10 +38,11 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "5c0b3c5e229d900435b3b9df3ed36f9d64a9028b",
-  "integrated_commit": "5c0b3c5e229d900435b3b9df3ed36f9d64a9028b",
+  "candidate_commit": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
+  "integrated_commit": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
   "evidence_ids": [
-    "RUN-SESSION-TRACING-20261004-SESSION-CORPUS-LIST-017"
+    "RUN-SESSION-TRACING-20261004-SESSION-CORPUS-LIST-017",
+    "RUN-SESSION-FILTERS-20261004-SESSION-CORPUS-LIST-017"
   ],
-  "next_action": "clean candidate 5c0b3c5e 的十二组 corpus listing 信号/错误/来源已有界验收；继续完整 exact/title/concurrent/FTS/长期回放/Web/profile，不认证完整 B1 或 Win7。"
+  "next_action": "clean candidate 1d9940aa 的十二组 corpus listing 信号/错误/来源已有界验收；继续完整 exact/title/concurrent/FTS/长期回放/Web/profile，不认证完整 B1 或 Win7。"
 }

@@ -38,10 +38,11 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "5c0b3c5e229d900435b3b9df3ed36f9d64a9028b",
-  "integrated_commit": "5c0b3c5e229d900435b3b9df3ed36f9d64a9028b",
+  "candidate_commit": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
+  "integrated_commit": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
   "evidence_ids": [
-    "RUN-SESSION-TRACING-20261004-SESSION-OBSERVATION-READS-016"
+    "RUN-SESSION-TRACING-20261004-SESSION-OBSERVATION-READS-016",
+    "RUN-SESSION-FILTERS-20261004-SESSION-OBSERVATION-READS-016"
   ],
-  "next_action": "clean candidate 5c0b3c5e 的十六组 point read 错误/cause/cut/租约已有界验收；继续完整 durable/domain/FTS/长期回放和 Web/profile 消费者，不认证完整 B1 或 Win7。"
+  "next_action": "clean candidate 1d9940aa 的十六组 point read 错误/cause/cut/租约已有界验收；继续完整 durable/domain/FTS/长期回放和 Web/profile 消费者，不认证完整 B1 或 Win7。"
 }

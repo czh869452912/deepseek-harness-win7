@@ -51,14 +51,15 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "5c0b3c5e229d900435b3b9df3ed36f9d64a9028b",
-  "integrated_commit": "5c0b3c5e229d900435b3b9df3ed36f9d64a9028b",
+  "candidate_commit": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
+  "integrated_commit": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
   "evidence_ids": [
     "RUN-ACP-STDIO-20261003-ACP-STDIO-005",
     "RUN-ACP-PERMISSIONS-20261004-ACP-STDIO-005",
     "RUN-MCP-20261004-ACP-STDIO-005",
     "RUN-ACP-MCP-20261004-ACP-STDIO-005",
-    "RUN-SESSION-TRACING-20261004-ACP-STDIO-005"
+    "RUN-SESSION-TRACING-20261004-ACP-STDIO-005",
+    "RUN-SESSION-FILTERS-20261004-ACP-STDIO-005"
   ],
   "next_action": "canonical stdio、九方法 SDK 参数/协议、真实并发取消 EOF 与解压包 stdio 在 clean candidate e887550a 有界验收；一次性权限独立合同验收；继续 A4 MCP/subagent 和 B/C/D，不认证全部 ACP。"
 }

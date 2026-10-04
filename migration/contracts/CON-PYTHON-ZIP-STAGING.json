@@ -1,0 +1,30 @@
+{
+  "id": "CON-PYTHON-ZIP-STAGING",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/apps/cli/src/plugin.ts"
+  ],
+  "consumers": [
+    "dsh/boot/python_plugins.py",
+    "dsh/boot/python_plugin_versions.py",
+    "apps/cli/plugin.py"
+  ],
+  "invariants": [
+    "The explicit Python portable extension validates the complete ZIP entry set before writing extracted files.",
+    "Both a package at archive root and one wrapped package are written directly into the one transaction-owned staging root.",
+    "Installation and upgrade perform no redundant rename of an extracted wrapper directory before validation; publication still uses the existing profile transaction and journal.",
+    "Existing traversal, case collision, link, encrypted entry, count and size refusals remain active before extraction.",
+    "Actual Windows handles denying delete-sharing on the extracted directory are held until validation; add and upgrade then boot and execute the installed plugin successfully."
+  ],
+  "identity": "The source manifest, package identity, exact released files and profile transaction root remain authoritative.",
+  "ownership": "The installer owns one stage and cleans it on failure; validation runs before publication, and the existing journal owns recovery of publication.",
+  "ordering": "Full archive preflight precedes extraction; root normalization precedes validation; transaction publication follows validation.",
+  "errors": "Invalid containers fail without extracted files; genuine publication failures retain their existing transaction behavior. No retry, sleep or PermissionError suppression.",
+  "cancellation": "This synchronous stopped-profile operation retains its exclusive ProfileLease; no new cancellation or live replacement promise.",
+  "adaptation": "Upstream plugin management delegates to pnpm and has no Python ZIP installer. This is an existing explicitly supported Python portable extension regression fix, not an upstream source/native parity certification.",
+  "open_questions": [
+    "Complete clean candidate and portable acceptance pending. Historical WinError 5 external holder remains unidentified; avoiding the redundant rename is verified with actual controlled Windows sharing handles. Arbitrary JS/npm installation, native wheels/ABI, public trust/licensing and Win7 remain separate."
+  ]
+}

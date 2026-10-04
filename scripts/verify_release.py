@@ -39,6 +39,9 @@ PAIRED_DRIVERS = (
 )
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus')
 REQUIRED_REGRESSION = {
+    'test_python_plugin_zip_staging': {
+        'test_wrapped_zip_needs_no_post_extraction_subroot_rename[' + operation + ']'
+        for operation in ('add', 'upgrade')},
     'test_session_corpus_list_source': {'test_actual_original_and_native_corpus_list_errors_signals_and_source_ownership'},
     'test_session_corpus_list': {
         name + '[' + backend + ']' for name in (

@@ -63,12 +63,7 @@ def stage_source(directory, source):
     stage = owned_path(directory, store.STAGING + '/' + token)
     os.makedirs(stage)
     try:
-        copied = store.copy_source(os.path.abspath(source), stage)
-        if copied != stage:
-            flat = owned_path(directory, store.STAGING + '/' + uuid.uuid4().hex)
-            os.replace(copied, flat)
-            shutil.rmtree(stage)
-            os.replace(flat, stage)
+        store.copy_source(os.path.abspath(source), stage)
         return token, stage
     except BaseException:
         if os.path.isdir(stage):

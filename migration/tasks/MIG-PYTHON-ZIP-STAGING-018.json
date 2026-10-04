@@ -1,0 +1,42 @@
+{
+  "id": "MIG-PYTHON-ZIP-STAGING-018",
+  "goal": "修复 Python 包装 ZIP 暂存路径的冗余目录重命名并保留事务发布",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "8643dd46141af25f2faa1453918dae756ff273a0",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-PYTHON-ZIP-STAGING",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "Full ZIP preflight rejects malformed paths, collisions, multiple roots, root sidecars and oversize archives before creating extracted files.",
+    "Actual Windows directory handles deny rename until package validation; both wrapped ZIP add and upgrade still complete their canonical boot/tool chain without post-extraction subroot moves.",
+    "Existing distribution/version/acquisition/dependency/export regressions and a new clean complete release gate plus real extracted Portable pass before bounded integration."
+  ],
+  "expected_paths": [
+    "dsh/boot",
+    "tests",
+    "scripts",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [
+    "Previous clean 1cb4c80a gate failed wrapped ZIP reinstallation at its redundant os.replace wrapper-directory operation: 5849 passed, 1 failed, 6 skipped, 1 existing warning. Failure and actual clean ZIP are preserved. Actual controlled sharing reproduction passes add/upgrade; 286 gate/staging counterexample tests and 162 main distribution/version/acquisition/dependency/export regressions pass. New clean complete acceptance is pending. This is a Python extension adaptation, with no equivalent upstream ZIP behavior and no new upstream bug bypass."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "独立提交 ZIP 规范化暂存修复；共同干净候选完成全量、原版、39 配对和实际解压后签收有界范围，继续 B1/B2/B3/C/D。"
+}

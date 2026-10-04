@@ -251,10 +251,21 @@ def test_extracted_session_corpus_list_requires_exact_errors_signals_and_sources
         GATE.validate_extracted(path, archive, candidate)
 
 
+@pytest.mark.parametrize('operation', ['add', 'upgrade'])
+@pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
+def test_zip_staging_real_sharing_lane_cannot_be_optional(tmp_path, operation, damage):
+    path = tmp_path / 'pytest.xml'
+    key = ('test_python_plugin_zip_staging',
+           'test_wrapped_zip_needs_no_post_extraction_subroot_rename[' + operation + ']')
+    regression_xml(path, **{damage: key})
+    with pytest.raises(RuntimeError):
+        GATE.validate_regression(path)
+
+
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 99, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 101, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])

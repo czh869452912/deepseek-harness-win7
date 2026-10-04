@@ -105,6 +105,7 @@ def copy_source(source, target):
         entries = archive.infolist()
         if len(entries) > MAX_FILES:
             raise ValueError("plugin ZIP has too many entries")
+        validated = []
         for entry in entries:
             if entry.orig_filename != entry.filename:
                 raise ValueError("ZIP entry path was normalized; use relative POSIX paths")
@@ -119,6 +120,19 @@ def copy_source(source, target):
             total += entry.file_size
             if total > MAX_BYTES:
                 raise ValueError("plugin ZIP exceeds installation size limit")
+            validated.append((entry, relative))
+        wrapped = not any(not entry.is_dir() and relative.casefold() == "package.json"
+                          for entry, relative in validated)
+        if wrapped:
+            roots = {relative.split("/")[0].casefold() for _, relative in validated}
+            if len(roots) != 1 or any(not entry.is_dir() and "/" not in relative
+                                      for entry, relative in validated):
+                raise ValueError("ZIP must contain one package root")
+        for entry, relative in validated:
+            if wrapped:
+                relative = relative.partition("/")[2]
+                if not relative:
+                    continue
             destination = inside(target, relative)
             if entry.is_dir():
                 os.makedirs(destination, exist_ok=True)
@@ -126,12 +140,7 @@ def copy_source(source, target):
             os.makedirs(os.path.dirname(destination), exist_ok=True)
             with archive.open(entry) as incoming, open(destination, "xb") as outgoing:
                 shutil.copyfileobj(incoming, outgoing)
-    if os.path.isfile(os.path.join(target, "package.json")):
-        return target
-    children = os.listdir(target)
-    if len(children) == 1 and os.path.isdir(os.path.join(target, children[0])):
-        return os.path.join(target, children[0])
-    raise ValueError("ZIP must contain one package root")
+    return target
 
 
 def validate_package(directory):
@@ -253,12 +262,7 @@ def install(directory, source, installation_anchor, acquisition=None):
         stage = os.path.join(staging, token)
         os.makedirs(stage)
         try:
-            copied = copy_source(os.path.abspath(source), stage)
-            if copied != stage:
-                flattened = os.path.join(staging, uuid.uuid4().hex)
-                os.replace(copied, flattened)
-                shutil.rmtree(stage)
-                os.replace(flattened, stage)
+            copy_source(os.path.abspath(source), stage)
             manifest = validate_package(stage)
             name = manifest["name"]
             if name.startswith("@deepseek-ai/") or package_dir_from_anchor(installation_anchor, name) is not None:

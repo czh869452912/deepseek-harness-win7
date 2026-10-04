@@ -2,7 +2,7 @@
   "id": "MIG-SESSION-TEXT-028",
   "goal": "闭合字面 Unicode 文本匹配、语义提取空白及 Session locale 顺序",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "a6ea7a42eaffecb5fc476e00c88179d9f7dacd20",
   "owner": "current-session-coordinator",
@@ -41,14 +41,13 @@
     "migration",
     "docs/research"
   ],
-  "open_findings": [
-    "Complete clean candidate, extracted verification and bounded acceptance pending.",
-    "Clean e5989dce was rejected by a browser approval failure; its exact archive/input evidence and the controlled inventory-paint click miss are retained. No text acceptance was issued; the changed candidate must pass the full gate."
-  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "提交当前有界 Session 文本提供端与真实消费者，运行完整干净门禁并签收确切产物；继续完整 domain/ABI/竞争、schema-19 与 profile 用户主链，整体 accepted_upstream 保持空。"
+  "candidate_commit": "fc275a662bfd9ccb53ab0729a31c8987b34c3f0c",
+  "integrated_commit": "fc275a662bfd9ccb53ab0729a31c8987b34c3f0c",
+  "evidence_ids": [
+    "RUN-SESSION-TEXT-20261005-SESSION-TEXT-028"
+  ],
+  "next_action": "clean candidate fc275a66 的 7883 字面 Unicode/有效语义提取/Session locale 顺序双侧与真实解压观察、两持久化 Context 重启消费者已有界签收；继续 malformed/plugin ABI、全域/竞争、schema-19、profile 主链和整体迁移，Win7 延期。"
 }
 

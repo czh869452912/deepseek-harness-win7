@@ -40,15 +40,16 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
-  "integrated_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
+  "candidate_commit": "fc275a662bfd9ccb53ab0729a31c8987b34c3f0c",
+  "integrated_commit": "fc275a662bfd9ccb53ab0729a31c8987b34c3f0c",
   "evidence_ids": [
     "RUN-ACP-PERMISSIONS-20261004-ACP-PERMISSIONS-006",
     "RUN-MCP-20261004-ACP-PERMISSIONS-006",
     "RUN-ACP-MCP-20261004-ACP-PERMISSIONS-006",
     "RUN-SESSION-TRACING-20261004-ACP-PERMISSIONS-006",
     "RUN-SESSION-FILTERS-20261004-ACP-PERMISSIONS-006",
-    "RUN-SESSION-QUERY-ENGINE-20261004-ACP-PERMISSIONS-006"
+    "RUN-SESSION-QUERY-ENGINE-20261004-ACP-PERMISSIONS-006",
+    "RUN-SESSION-TEXT-20261005-ACP-PERMISSIONS-006"
   ],
   "next_action": "一次性 permission wire、native Event cancellation、真实工具/next-model/late grant/close/EOF 和实际解压六进程在 clean candidate e887550a 有界验收；继续实际 MCP/HTTP/SSE/supervisor/subagent；完整 ACP 未认证。"
 }

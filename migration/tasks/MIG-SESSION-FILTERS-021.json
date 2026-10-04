@@ -43,11 +43,12 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
-  "integrated_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
+  "candidate_commit": "fc275a662bfd9ccb53ab0729a31c8987b34c3f0c",
+  "integrated_commit": "fc275a662bfd9ccb53ab0729a31c8987b34c3f0c",
   "evidence_ids": [
     "RUN-SESSION-FILTERS-20261004-SESSION-FILTERS-021",
-    "RUN-SESSION-QUERY-ENGINE-20261004-SESSION-FILTERS-021"
+    "RUN-SESSION-QUERY-ENGINE-20261004-SESSION-FILTERS-021",
+    "RUN-SESSION-TEXT-20261005-SESSION-FILTERS-021"
   ],
-  "next_action": "clean candidate 5c8c2c57 的 33 过滤观察、4 真实持久化 lane 与实际解压已有界验收；继续完整 Unicode/extraction、FTS/ranking/cursors/index generations、provider/Task、Web/profile 和整体迁移，不认证完整 B1 或 Win7。"
+  "next_action": "clean candidate fc275a66 的 33 过滤观察、4 真实持久化 lane 与实际解压已有界验收；规范 FTS、Unicode 身份和有效 Session 文本/locale 顺序另有界验收；继续 malformed/plugin ABI、provider/Task/竞争、Web/profile 和整体迁移，不认证完整 B1 或 Win7。"
 }

@@ -29,7 +29,7 @@
   "cancellation": "The synchronous pure comparison does not add asynchronous ownership; engine cancellation/drain remains defined by CON-SESSION-QUERY-ENGINE.",
   "adaptation": "Unchanged ICU release-78.2 source compiled with pinned LLVM-MinGW MSVCRT and static C++ runtime, Windows 7 target and deterministic PE timestamps; official matching data DLL and licenses are bundled.",
   "open_questions": [
-    "Full Unicode regex, case folding and event extraction, other domain locale orders and every locale are not certified by this current-locale matrix.",
+    "CON-SESSION-TEXT separately qualifies the declared literal common/simple folding, valid first-party extraction and current-locale corpus/lineage order in clean fc275a66. Malformed/plugin payload ABI, other domains and every locale remain separate.",
     "Original startup cancellation, source fixed-wait cache races and existing Proactor warning remain separate findings.",
     "Real Win7 execution is deferred; PE dependencies and target settings do not replace real-machine certification."
   ]

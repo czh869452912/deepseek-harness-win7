@@ -50,10 +50,11 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
-  "integrated_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
+  "candidate_commit": "fc275a662bfd9ccb53ab0729a31c8987b34c3f0c",
+  "integrated_commit": "fc275a662bfd9ccb53ab0729a31c8987b34c3f0c",
   "evidence_ids": [
-    "RUN-SESSION-QUERY-ENGINE-20261004-SESSION-QUERY-ENGINE-026"
+    "RUN-SESSION-QUERY-ENGINE-20261004-SESSION-QUERY-ENGINE-026",
+    "RUN-SESSION-TEXT-20261005-SESSION-QUERY-ENGINE-026"
   ],
-  "next_action": "clean candidate 5c8c2c57 的 16 组实际规范 FTS 双侧/解压及三套 preset Remote 重启搜索已有界验收；继续 Unicode ICU 指纹、全部事件提取/竞争/公共工具、持久化 schema-19、启动取消根因与整体迁移；整体 accepted_upstream 保持空，Win7 延期。"
+  "next_action": "clean candidate fc275a66 的 16 组实际规范 FTS 双侧/解压及三套 preset Remote 重启搜索已有界验收；Unicode 请求身份和有效 Session 文本/locale 顺序另有界签收；继续 malformed/plugin ABI、竞争/公共工具、持久化 schema-19、启动取消根因与整体迁移；整体 accepted_upstream 保持空，Win7 延期。"
 }

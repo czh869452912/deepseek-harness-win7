@@ -38,12 +38,13 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
-  "integrated_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
+  "candidate_commit": "fc275a662bfd9ccb53ab0729a31c8987b34c3f0c",
+  "integrated_commit": "fc275a662bfd9ccb53ab0729a31c8987b34c3f0c",
   "evidence_ids": [
     "RUN-SESSION-TRACING-20261004-SESSION-CORPUS-READ-019",
     "RUN-SESSION-FILTERS-20261004-SESSION-CORPUS-READ-019",
-    "RUN-SESSION-QUERY-ENGINE-20261004-SESSION-CORPUS-READ-019"
+    "RUN-SESSION-QUERY-ENGINE-20261004-SESSION-CORPUS-READ-019",
+    "RUN-SESSION-TEXT-20261005-SESSION-CORPUS-READ-019"
   ],
-  "next_action": "clean candidate 5c8c2c57 的十九组 corpus/title 读取和取消排空已有界验收；继续完整 FTS/filter/event tracing/长期历史、全部 title/provider epoch、Web/profile 和整体迁移，不认证完整 B1 或 Win7。"
+  "next_action": "clean candidate fc275a66 的十九组 corpus/title 读取和取消排空已有界验收；继续完整 FTS/filter/event tracing/长期历史、全部 title/provider epoch、Web/profile 和整体迁移，不认证完整 B1 或 Win7。"
 }

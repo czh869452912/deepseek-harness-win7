@@ -20,14 +20,14 @@
     "Close refuses newly queued work, drains accepted work and shared readiness, and closes the owned connection once. Optional provider child cleanup drains before retirement.",
     "Actual extracted observations require Python 3.8.10, the candidate's engine module/root and its hash-pinned SQLite 3.51.2 source identity. Missing, foreign, malformed or changed observations are refused."
   ],
-  "identity": "Cursor identity combines an engine instance, sessions/events scope, normalized request fingerprint and relevant generation. This contract measures declared ASCII filter identities; general ICU collation remains open.",
+  "identity": "Cursor identity combines an engine instance, sessions/events scope, normalized request fingerprint and relevant generation. This contract measures the declared engine histories; the current-locale ICU identity matrix is separately qualified by CON-SESSION-QUERY-UNICODE.",
   "ownership": "Engine owns shared readiness, serial queue, private main/TEMP database and optional persistence injection; persistence and live sessions retain their own lifetimes.",
   "ordering": "Validate and capture request, observe cancellation, await serial ownership/readiness, stabilize detached corpus, atomically publish, validate cursor and select ranked FTS rows.",
   "errors": "Typed invalid-config/request/cursor, stale-cursor, aborted, persistence-failed and index-failed boundaries retain original failure causes in the declared cases, including readiness's signal-dependent non-Error adaptation.",
   "cancellation": "Pre-abort performs no provider observation/open; queued abort cannot permit overlap with accepted dependency cleanup; close drains accepted work and refuses queued work.",
   "adaptation": "Python tasks and the private official Windows SQLite C API implement the declared source asynchronous ownership and STRICT/FTS boundary without Node in the portable runtime.",
   "open_questions": [
-    "CON-SESSION-QUERY-UNICODE defines the new ICU request identity extension; its complete candidate acceptance is pending. Full Unicode regex/extraction and all locales remain outside these bounded contracts.",
+    "CON-SESSION-QUERY-UNICODE and CON-SESSION-TEXT qualify declared current-locale identities and literal/valid semantic text in clean fc275a66. Malformed/plugin payload ABI, other domains and all locales remain separate.",
     "Exhaustive event extraction, all concurrent binding/index histories, public tool/package ABI, very large histories and SQLite canonical schema-19 storage remain separate.",
     "The rejected 24f9f83d original-browser startup cancellation remains independently unrooted. FTS acceptance cannot mark it fixed.",
     "Windows ACL, cross-process/power-loss and actual Win7 certification remain outside this bounded contract; real Win7 is deferred by the user."

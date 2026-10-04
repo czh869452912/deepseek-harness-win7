@@ -27,8 +27,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
-  "integrated_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
+  "candidate_commit": "fc275a662bfd9ccb53ab0729a31c8987b34c3f0c",
+  "integrated_commit": "fc275a662bfd9ccb53ab0729a31c8987b34c3f0c",
   "evidence_ids": [
     "RUN-CURRENT-20261003-ACP-PROMPT-OWNERSHIP-001",
     "RUN-ACP-CONFIG-20261003-ACP-PROMPT-OWNERSHIP-001",
@@ -38,7 +38,8 @@
     "RUN-ACP-MCP-20261004-ACP-PROMPT-OWNERSHIP-001",
     "RUN-SESSION-TRACING-20261004-ACP-PROMPT-OWNERSHIP-001",
     "RUN-SESSION-FILTERS-20261004-ACP-PROMPT-OWNERSHIP-001",
-    "RUN-SESSION-QUERY-ENGINE-20261004-ACP-PROMPT-OWNERSHIP-001"
+    "RUN-SESSION-QUERY-ENGINE-20261004-ACP-PROMPT-OWNERSHIP-001",
+    "RUN-SESSION-TEXT-20261005-ACP-PROMPT-OWNERSHIP-001"
   ],
   "next_action": "精确 prompt ownership 在持久 controls 候选重验；模型配置/有序语义输出已按子合同验收；一次性权限独立合同同时验收；继续 MCP/subagent 的必要消费者闭包。"
 }

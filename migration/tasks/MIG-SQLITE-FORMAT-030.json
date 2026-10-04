@@ -16,7 +16,7 @@
     "826 actual pinned Source/native/extracted observations match; the two unchanged original format suites pass all 42 assertions.",
     "Pinned licensed Zstandard 1.5.7 and the exact dictionary preserve byte-exact profitable compression, first-frame/truncated-frame semantics, fatal UTF-8 and packed output limits; native contexts always retire.",
     "Actual STRICT SQLite ANY writes survive detached reads, damaged committed physical rows are refused and uncommitted tails are identified for repair.",
-    "A clean committed full gate passes all tests, 336 mandatory lanes, fifteen Source groups/1124 assertions, 51 paired drivers and actual extracted/browser checks, with fresh complete observation/frame/input digests and seven modules/eleven assets."
+    "A clean committed full gate passes all tests, 337 mandatory lanes, fifteen Source groups/1124 assertions, 51 paired drivers and actual extracted/browser checks, with fresh complete observation/frame/input digests and seven modules/eleven assets."
   ],
   "expected_paths": ["dsh/session", "scripts", "tests", "migration", "docs/research"],
   "open_findings": ["Implementation and 826/42 focused observations are present; a clean committed complete gate and extracted/browser acceptance are still required."],

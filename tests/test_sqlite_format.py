@@ -110,3 +110,13 @@ def test_zstd_builder_exposes_explicit_staging_inputs():
     result = subprocess.run([sys.executable, str(root / 'scripts/build_zstd.py'), '--help'], capture_output=True, text=True)
     assert result.returncode == 0
     assert all(flag in result.stdout for flag in ('--source', '--compiler', '--output', '--stage-output', '--stage-only'))
+
+
+def test_hash_pinned_zstd_assets_preserve_exact_git_checkout_bytes():
+    root = Path(__file__).resolve().parents[1]
+    directory, _ = zstd.verify_zstd_files()
+    for path in sorted(directory.iterdir()):
+        if path.is_file():
+            relative = path.relative_to(root).as_posix()
+            committed = subprocess.check_output(['git', 'show', ':' + relative], cwd=str(root))
+            assert committed == path.read_bytes(), relative

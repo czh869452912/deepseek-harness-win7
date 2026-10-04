@@ -64,6 +64,7 @@ REQUIRED_REGRESSION = {
         'test_scalar_json_numbers_use_ieee754_and_refuse_non_json_constants',
         'test_provenance_run_expansion_is_bounded_before_allocation',
         'test_zstd_builder_exposes_explicit_staging_inputs',
+        'test_hash_pinned_zstd_assets_preserve_exact_git_checkout_bytes',
         *{'test_changed_private_zstd_assets_fail_closed[' + name + ']' for name in (
             'dsh_zstd.dll', 'zstd-dictionary.bin', 'zstd.json', 'build-provenance.json', 'ZSTD-LICENSE', 'LLVM-LICENSE.txt', 'MinGW-COPYING')},
         *{'test_private_decoder_preserves_complete_output_across_buffer_boundaries[' + str(size) + ']' for size in (

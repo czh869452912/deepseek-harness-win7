@@ -21,7 +21,7 @@
     "Private hash-pinned Windows x64/MSVCRT Zstandard uses absolute verified loading, exact source/build/license provenance and the unmodified schema dictionary. Per-call compressor/decompressor contexts are freed on success and failure.",
     "Packed decompression enforces its output byte bound before parsing; text byte counts use Node-compatible UTF-16 replacement and UTF-8 encoding. Fatal UTF-8 decoding removes the leading BOM like the original TextDecoder.",
     "Actual STRICT SQLite ANY columns round-trip packed BLOB records and detached reads. Physical corruption is removable only when no later valid turn/end proves commitment.",
-    "Clean committed release acceptance requires the full suite, 336 mandatory lanes, fifteen unchanged Source groups/1124 assertions, 51 paired drivers and actual isolated extracted Python 3.8.10/original-browser verification. Fresh observation/frame/input digests and exact seven modules/eleven assets are mandatory."
+    "Clean committed release acceptance requires the full suite, 337 mandatory lanes, fifteen unchanged Source groups/1124 assertions, 51 paired drivers and actual isolated extracted Python 3.8.10/original-browser verification. Fresh observation/frame/input digests and exact seven modules/eleven assets are mandatory."
   ],
   "identity": "Frozen original schema-19 codec and dictionary; pinned private Zstandard 1.5.7 frame format.",
   "ownership": "Immutable process-owned private native runtime; every call owns and frees its native context. Format modules register no plugin effects or services.",

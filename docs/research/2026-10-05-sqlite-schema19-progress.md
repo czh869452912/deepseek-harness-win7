@@ -1,5 +1,7 @@
 # SQLite schema-19 推进
 
+实现提交 `1603a811` 后的字节核对发现，两份新资产 JSON 在 Git 中被默认换行规范化，干净检出会与原始哈希不同。该提交未启动完整门禁或签收；已给整个私有资产目录设置 `-text` 并新增 Git 索引字节与工作区的实际比较。最初确切索引/工作区 SHA 诊断保留在 `zstd-git-byte-boundary-1603a811.json`，后续冻结候选必须包含字节修复。
+
 五个可选会话工具在干净产品 `ae2c1abe` 完整签收，证据台账提交为 `849ed8b1`。随后对照固定原版 `cd5ef8148158c3a752a658978873241fdf8e2bbc` 的 `session/session-persistence-sqlite` 发现，本地原有 `persistence_sqlite.py` 是不同的旧布局，尚未实现规范 STRICT schema-19。不会重贴版本号或静默迁移旧库来声称等价。
 
 首个格式实现包含独立 chunk-row codec、tagged provenance varints、物理记录压缩/解码和损坏尾段分类。826 组实际原版/原生观察匹配，两套原样压缩套件 42 项断言通过；新增实际 SQLite 3.51.2 STRICT ANY 写入/关闭后 detached read、跨缓冲区压缩输出边界及资产拒绝测试。格式编码与 JSONL 独立，写入最少三条/最多 1024 条/最多 1048576 UTF-8 字节，短尾保留标量。
@@ -10,4 +12,4 @@
 
 原版完整 SQLite 研究套件先有缺失开发别名，补齐固定 fast-check/TypeScript 后为 129 passed、1 符号链接 EPERM、3 原版已有 skips。当前 token 没有 SeCreateSymbolicLinkPrivilege；没有修改系统权限、增设跳过或将该套件称为通过。格式的 42 项原样套件是独立有界范围，不能替代物理提供端的完整验收。全部原始研究、初始不匹配和编译 PE 日志留存于 `.goose/out/acp-a4-work`。
 
-本实现尚待 clean committed 完整验收，当前门禁要求 336 必需 lane、十五组 1124 原版断言、51 双侧驱动与实际解压/浏览器，新的格式回执必须绑定完整原版/压缩输入/生成输入摘要以及七个模块、十一项资产。随后继续 schema-19 数据库所有权、lazy opening、journal/busy reservation、revision/stale append/repair、协调器与模型/profile/冷恢复消费者。完整 malformed/plugin ABI、跨进程/长历史、B/C/D、既有启动取消与整体范围开放，accepted_upstream 保持为空。
+本实现尚待 clean committed 完整验收，当前门禁要求 337 必需 lane、十五组 1124 原版断言、51 双侧驱动与实际解压/浏览器，新的格式回执必须绑定完整原版/压缩输入/生成输入摘要以及七个模块、十一项资产。随后继续 schema-19 数据库所有权、lazy opening、journal/busy reservation、revision/stale append/repair、协调器与模型/profile/冷恢复消费者。完整 malformed/plugin ABI、跨进程/长历史、B/C/D、既有启动取消与整体范围开放，accepted_upstream 保持为空。

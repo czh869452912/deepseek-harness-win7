@@ -44,11 +44,12 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
-  "integrated_commit": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
+  "candidate_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
+  "integrated_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
   "evidence_ids": [
     "RUN-SESSION-TRACING-20261004-SESSION-TRACING-020",
-    "RUN-SESSION-FILTERS-20261004-SESSION-TRACING-020"
+    "RUN-SESSION-FILTERS-20261004-SESSION-TRACING-020",
+    "RUN-SESSION-QUERY-ENGINE-20261004-SESSION-TRACING-020"
   ],
-  "next_action": "clean candidate 1d9940aa 的 14 谱系/30 事件观察及 6 真实持久化 lane 有界验收；继续完整 FTS/filter/index generations、non-ASCII locale、Task/provider epochs、Web/profile 和整体迁移。原版 40ms 断言的历史失败不因本次通过而视为根因已修复。"
+  "next_action": "clean candidate 5c8c2c57 的 14 谱系/30 事件观察及 6 真实持久化 lane 有界验收；继续完整 FTS/filter/index generations、non-ASCII locale、Task/provider epochs、Web/profile 和整体迁移。原版 40ms 断言的历史失败不因本次通过而视为根因已修复。"
 }

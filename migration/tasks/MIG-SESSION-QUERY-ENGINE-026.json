@@ -2,31 +2,58 @@
   "id": "MIG-SESSION-QUERY-ENGINE-026",
   "goal": "将现代 FTS 引擎接入规范 SessionQuery，闭合有界代际、稳定观察、队列取消及真实 Remote 消费者",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "24f9f83d1b1c63675ddddd58ec02abcc52cd5e45",
   "owner": "current-session-coordinator",
   "requires": [
-    {"task": "MIG-SESSION-QUERY-SCHEMA-024", "contract": "CON-SESSION-QUERY-SCHEMA", "revision": 1},
-    {"task": "MIG-SESSION-SNAPSHOTS-023", "contract": "CON-SESSION-SNAPSHOTS", "revision": 1},
-    {"task": "MIG-SESSION-SEARCH-REQUESTS-022", "contract": "CON-SESSION-SEARCH-REQUESTS", "revision": 1},
-    {"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}
+    {
+      "task": "MIG-SESSION-QUERY-SCHEMA-024",
+      "contract": "CON-SESSION-QUERY-SCHEMA",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-SNAPSHOTS-023",
+      "contract": "CON-SESSION-SNAPSHOTS",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-SEARCH-REQUESTS-022",
+      "contract": "CON-SESSION-SEARCH-REQUESTS",
+      "revision": 1
+    },
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    }
   ],
-  "provides": [{"contract": "CON-SESSION-QUERY-ENGINE", "revision": 1}],
+  "provides": [
+    {
+      "contract": "CON-SESSION-QUERY-ENGINE",
+      "revision": 1
+    }
+  ],
   "acceptance": [
     "Sixteen actual unchanged-source/native observations match independent literals; native real FTS, cancellation/drain, failed transaction and exact runtime-observer refusal regressions pass.",
     "Canonical Web profile consumers use the new engine and search actual original/forked durable sessions after restart; extracted Python 3.8.10 repeats all sixteen observations with the candidate's exact engine/DLL provenance.",
     "A committed clean candidate passes all tests, at least 224 mandatory lanes, thirteen unchanged source groups/980 assertions, 47 paired drivers and actual extracted original-browser verification."
   ],
-  "expected_paths": ["dsh/session", "dsh/boot/plugin_registry.py", "dsh/api", "scripts", "tests", "migration", "docs/research"],
-  "open_findings": [
-    "Precise promotion passed 513 initial main regressions. Adding exact runtime/mandatory-lane refusals exposed an observer missing-receipt error, fixed without bypass; 48 targeted refusals pass. A first new restarted consumer assertion incorrectly assumed the original session ranked before its fork; raw three failures are retained and the assertion now follows the original time/id ordering. All four real consumer journeys pass. New 224-lane/47-pair/980-source complete clean acceptance is pending.",
-    "Earlier 24f9f83d complete gate was rejected for original Client startup request cancellations; exact failed candidate and diagnostics remain retained. No unchanged candidate is rerun until green or signed by diagnostic passes.",
-    "Complete Unicode ICU request identities, exhaustive extraction, public plugin/tool combinations, schema-19 persistence and global migration remain open."
+  "expected_paths": [
+    "dsh/session",
+    "dsh/boot/plugin_registry.py",
+    "dsh/api",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
   ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "提交有界 FTS 提供端及消费者；冻结新候选，全量 pytest、224 必需 lane、980 原版、47 双侧及解压包全部通过后签收。单独继续启动取消根因、Unicode ICU 指纹、完整事件提取、schema-19 和 B/C/D；整体 accepted_upstream 保持空。"
+  "candidate_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
+  "integrated_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
+  "evidence_ids": [
+    "RUN-SESSION-QUERY-ENGINE-20261004-SESSION-QUERY-ENGINE-026"
+  ],
+  "next_action": "clean candidate 5c8c2c57 的 16 组实际规范 FTS 双侧/解压及三套 preset Remote 重启搜索已有界验收；继续 Unicode ICU 指纹、全部事件提取/竞争/公共工具、持久化 schema-19、启动取消根因与整体迁移；整体 accepted_upstream 保持空，Win7 延期。"
 }

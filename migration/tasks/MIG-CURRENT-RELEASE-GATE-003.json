@@ -2,7 +2,7 @@
   "id": "MIG-CURRENT-RELEASE-GATE-003",
   "goal": "补齐当前原版浏览器、双侧契约及实际解压 Portable 的统一发行门禁",
   "kind": "verification",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "1d5d965de1c7e08c00cbd1fd5227d2503d28444f",
   "owner": "current-session-coordinator",
@@ -31,12 +31,10 @@
     "migration",
     "docs/research"
   ],
-  "open_findings": [
-    "Latest accepted candidate remains 1d9940aa. Candidates a953a086, ac31cd6a and bc7028c2 are rejected; all exact failed archives and diagnostics are retained. The first two socket teardown findings are repaired; all original browser journeys pass in bc7028c2. Its new failure is a native package directory publication WinError 5 (6289 passed, one failure, six skips, one warning). Scoped sharing/complete-journal repair passes 518 main regressions and an isolated physical observer; new clean complete acceptance remains required. Historical browser startup cancellations and destructor warnings remain separate."
-  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
-  "integrated_commit": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
+  "candidate_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
+  "integrated_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
   "evidence_ids": [
     "RUN-CURRENT-20261003-CURRENT-RELEASE-GATE-003",
     "RUN-ACP-CONFIG-20261003-CURRENT-RELEASE-GATE-003",
@@ -45,7 +43,8 @@
     "RUN-MCP-20261004-CURRENT-RELEASE-GATE-003",
     "RUN-ACP-MCP-20261004-CURRENT-RELEASE-GATE-003",
     "RUN-SESSION-TRACING-20261004-CURRENT-RELEASE-GATE-003",
-    "RUN-SESSION-FILTERS-20261004-CURRENT-RELEASE-GATE-003"
+    "RUN-SESSION-FILTERS-20261004-CURRENT-RELEASE-GATE-003",
+    "RUN-SESSION-QUERY-ENGINE-20261004-CURRENT-RELEASE-GATE-003"
   ],
-  "next_action": "1d9940aa 为最新已签收候选；a953a086/ac31cd6a/bc7028c2 已拒绝。目录发布修复通过 518 项主树回归；提交后继续整合 SQLite schema 能力，冻结新候选。当前门禁 162 必需 lane、920 原版、45 配对及真实解压，不认证全量迁移或 Win7。"
+  "next_action": "clean candidate 5c8c2c57 当前 Windows 完整门禁通过；224 必需 lane、980 原版断言、47 配对、实际 Portable/schema/snapshots/publication 与 owned reset 清理，不认证全量迁移或 Win7。"
 }

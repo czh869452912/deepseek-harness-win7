@@ -2,7 +2,7 @@
   "id": "MIG-SESSION-SEARCH-REQUESTS-022",
   "goal": "补齐搜索请求的同步归属、错误优先级、参数化 SQL 预算与 Unicode 截断",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
   "owner": "current-session-coordinator",
@@ -41,13 +41,12 @@
     "migration",
     "docs/research"
   ],
-  "open_findings": [
-    "Fifty source/native observations and 655 main targeted tests passed. Candidates a953a086 (6195 passed, one failure) and ac31cd6a (6218 passed, three failures) are rejected; both exact failed ZIPs and receipts are retained. Owned-socket cleanup fixes the first Proactor reset failure. Lock-owned Gateway closure checks and late-iterator cleanup fix the second teardown finding: all 59 targeted original-browser/Gateway tests and 414 gate regressions pass. A new clean complete gate is required; no unchanged-candidate retry or bypass is accepted.",
-    "Clean 24f9f83d was rejected with 6377 passed, one original-browser startup cancellation failure, six existing skips and one existing warning. The exact failed archive/input/netlog are retained; diagnostics cannot sign it. The canonical FTS engine is now independently promoted with 224 mandatory lanes, thirteen unchanged source groups/980 assertions and 47 paired drivers, awaiting committed clean complete acceptance."
-  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "冻结规范 FTS 新候选，全量 pytest / 224 必需 lane / 980 原版 / 47 双侧 / 真实解压通过后签收本有界提供端；24f9 启动取消仍独立开放，继续 Unicode ICU 指纹、完整事件提取、schema-19 与整体迁移，不重跑未改候选碰运气。"
+  "candidate_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
+  "integrated_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
+  "evidence_ids": [
+    "RUN-SESSION-QUERY-ENGINE-20261004-SESSION-SEARCH-REQUESTS-022"
+  ],
+  "next_action": "clean candidate 5c8c2c57 的 50 搜索请求观察、4 真实持久化 lane、10 原样 query 断言与真实解压已有界验收；规范 FTS/searchEvents/limits/ranking/cursors/稳定观察和代际另有界验收；继续 Unicode/全部提取/竞争、Web/profile 和整体迁移，不认证完整 B1 或 Win7。"
 }

@@ -39,8 +39,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
-  "integrated_commit": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
+  "candidate_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
+  "integrated_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
   "evidence_ids": [
     "RUN-SESSION-STORAGE-SESSION-STORAGE-006-20260927",
     "RUN-AGENT-CONFIG-SESSION-STORAGE-006-20260927",
@@ -52,7 +52,8 @@
     "RUN-MCP-20261004-SESSION-STORAGE-006",
     "RUN-ACP-MCP-20261004-SESSION-STORAGE-006",
     "RUN-SESSION-TRACING-20261004-SESSION-STORAGE-006",
-    "RUN-SESSION-FILTERS-20261004-SESSION-STORAGE-006"
+    "RUN-SESSION-FILTERS-20261004-SESSION-STORAGE-006",
+    "RUN-SESSION-QUERY-ENGINE-20261004-SESSION-STORAGE-006"
   ],
   "next_action": "Bounded contract revalidated with CON-AGENT-CONFIG@1; next full Session projection/replay before Web consumers and complete profile journeys."
 }

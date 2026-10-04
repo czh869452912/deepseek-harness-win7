@@ -33,11 +33,12 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
-  "integrated_commit": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
+  "candidate_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
+  "integrated_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
   "evidence_ids": [
     "RUN-SESSION-TRACING-20261004-PYTHON-ZIP-STAGING-018",
-    "RUN-SESSION-FILTERS-20261004-PYTHON-ZIP-STAGING-018"
+    "RUN-SESSION-FILTERS-20261004-PYTHON-ZIP-STAGING-018",
+    "RUN-SESSION-QUERY-ENGINE-20261004-PYTHON-ZIP-STAGING-018"
   ],
-  "next_action": "clean candidate 1d9940aa 的 Python ZIP 规范化暂存扩展已有界验收；继续完整插件生态/ABI/依赖/信任和用户主链；历史 WinError 5 外部持有者仍未归因。"
+  "next_action": "clean candidate 5c8c2c57 的 Python ZIP 规范化暂存扩展已有界验收；继续完整插件生态/ABI/依赖/信任和用户主链；历史 WinError 5 外部持有者仍未归因。"
 }

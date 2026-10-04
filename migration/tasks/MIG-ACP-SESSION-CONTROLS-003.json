@@ -49,8 +49,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
-  "integrated_commit": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
+  "candidate_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
+  "integrated_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
   "evidence_ids": [
     "RUN-ACP-CONFIG-20261003-ACP-SESSION-CONTROLS-003",
     "RUN-ACP-STDIO-20261003-ACP-SESSION-CONTROLS-003",
@@ -58,7 +58,8 @@
     "RUN-MCP-20261004-ACP-SESSION-CONTROLS-003",
     "RUN-ACP-MCP-20261004-ACP-SESSION-CONTROLS-003",
     "RUN-SESSION-TRACING-20261004-ACP-SESSION-CONTROLS-003",
-    "RUN-SESSION-FILTERS-20261004-ACP-SESSION-CONTROLS-003"
+    "RUN-SESSION-FILTERS-20261004-ACP-SESSION-CONTROLS-003",
+    "RUN-SESSION-QUERY-ENGINE-20261004-ACP-SESSION-CONTROLS-003"
   ],
   "next_action": "new/list/resume/close 持久生命周期的有界合同在 clean candidate e887550a 验收；A2 模型配置/语义输出独立合同同时验收；一次性权限独立合同验收；继续 A4 MCP/subagent。父范围与 Win7 不自动完成。"
 }

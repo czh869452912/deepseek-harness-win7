@@ -2,30 +2,56 @@
   "id": "MIG-SESSION-SNAPSHOTS-023",
   "goal": "补齐持久化快照的来源限定 revision、Windows ChangeTime 与 SQLite 事务 incarnation/counter",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
   "owner": "current-session-coordinator",
   "requires": [
-    {"task": "MIG-SESSION-SEARCH-REQUESTS-022", "contract": "CON-SESSION-SEARCH-REQUESTS", "revision": 1},
-    {"task": "MIG-SESSION-STORAGE-006", "contract": "CON-SESSION-STORAGE", "revision": 1},
-    {"task": "MIG-SESSION-PREPARED-005", "contract": "CON-SESSION-PREPARATIONS", "revision": 1},
-    {"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}
+    {
+      "task": "MIG-SESSION-SEARCH-REQUESTS-022",
+      "contract": "CON-SESSION-SEARCH-REQUESTS",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-STORAGE-006",
+      "contract": "CON-SESSION-STORAGE",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-PREPARED-005",
+      "contract": "CON-SESSION-PREPARATIONS",
+      "revision": 1
+    },
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    }
   ],
-  "provides": [{"contract": "CON-SESSION-SNAPSHOTS", "revision": 1}],
+  "provides": [
+    {
+      "contract": "CON-SESSION-SNAPSHOTS",
+      "revision": 1
+    }
+  ],
   "acceptance": [
     "Eighteen actual unchanged-provider source/native observations match independently declared logical snapshot literals, with no new source bug exceptions.",
     "Four real JSONL/SQLite consumers and additional real SQLite rollback/upgrade/shared-instance and Windows handle/long-path tests pass; strict observer and release refusal probes pass.",
     "The promoted clean candidate passes the complete gate with at least 189 mandatory lanes, twelve unchanged source groups/920 assertions, at least 46 paired drivers, actual isolated extracted Python 3.8.10 snapshots, query schema, directory publication and browser journeys."
   ],
-  "expected_paths": ["dsh/session", "scripts", "tests", "migration", "docs/research"],
-  "open_findings": [
-    "Isolated eighteen-case source/native driver and native boundaries pass; expanded regression passed 591 tests in 24.03 seconds. Precise main promotion passes 511 contract/gate tests and 48 storage/cache regressions. Earlier raw-v1 native observations exposed a missing asyncio import; it was corrected and raw output retained. Initial regression fixtures attempted JSONL.close, which the provider does not expose; fixtures were corrected. Both preceding clean candidates were rejected and exact archives retained. The additional Gateway closure repair passes all 59 main browser/Gateway tests. Complete clean acceptance remains required.",
-    "Clean 24f9f83d was rejected with 6377 passed, one original-browser startup cancellation failure, six existing skips and one existing warning. The exact failed archive/input/netlog are retained; diagnostics cannot sign it. The canonical FTS engine is now independently promoted with 224 mandatory lanes, thirteen unchanged source groups/980 assertions and 47 paired drivers, awaiting committed clean complete acceptance."
+  "expected_paths": [
+    "dsh/session",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
   ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "冻结规范 FTS 新候选，全量 pytest / 224 必需 lane / 980 原版 / 47 双侧 / 真实解压通过后签收本有界提供端；24f9 启动取消仍独立开放，继续 Unicode ICU 指纹、完整事件提取、schema-19 与整体迁移，不重跑未改候选碰运气。"
+  "candidate_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
+  "integrated_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
+  "evidence_ids": [
+    "RUN-SESSION-QUERY-ENGINE-20261004-SESSION-SNAPSHOTS-023"
+  ],
+  "next_action": "clean candidate 5c8c2c57 的 18 来源限定快照、事务 counter/回滚/共享实例、Windows ChangeTime/句柄/长路径及真实解压已有界验收；规范 FTS 的稳定观察/代际另有界验收；继续 Unicode/全部提取/竞争、SQLite schema-19/压缩/外来数据库、跨进程长期恢复与整体迁移，不认证完整 B1 或延期 Win7。"
 }

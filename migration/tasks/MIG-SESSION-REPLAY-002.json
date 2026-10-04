@@ -81,6 +81,16 @@
       "task": "MIG-SESSION-SNAPSHOTS-023",
       "contract": "CON-SESSION-SNAPSHOTS",
       "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-QUERY-SCHEMA-024",
+      "contract": "CON-SESSION-QUERY-SCHEMA",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-QUERY-ENGINE-026",
+      "contract": "CON-SESSION-QUERY-ENGINE",
+      "revision": 1
     }
   ],
   "provides": [],
@@ -93,13 +103,13 @@
     "migration"
   ],
   "open_findings": [
-    "Cold/live/prepared/storage/projection, bounded cache/point/corpus/title reads, lineage/event windows and owned filtering have clean 1d9940aa evidence. They do not certify the complete Session domain.",
-    "Full FTS ranking/cursors/reconciliation/index generations, all domain and plugin event types, Unicode locale/extraction, provider epochs/arbitrary Task cancellation, compressed JSONL and cross-process/multi-cwd recovery remain unaccepted.",
+    "Cold/live/prepared/storage/projection, bounded cache/point/corpus/title reads, lineage/event windows, filtering/search requests, source-qualified snapshots and the canonical FTS engine have clean 5c8c2c57 evidence. They do not certify the complete Session domain.",
+    "Sixteen FTS/ranking/cursor/reconciliation/index-generation observations and three preset Remote restart consumers are bounded accepted. All domain/plugin event types, Unicode locale/extraction, every provider/index race, arbitrary Task cancellation, compressed JSONL and cross-process/multi-cwd recovery remain unaccepted.",
     "Native upstream SQLite physical schema equivalence, long-history scale, complete current Web/profile/reconnect journeys and deferred Win7 remain separate unaccepted scopes."
   ],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "以 1d9940aa 已签收的缓存、point/corpus/title、tracing 和过滤为基础，补搜索请求及来源限定 revision，再完整 FTS/增量索引/代际、域/事件类型与长期恢复；随后完成 Web/profile 主链。父范围仍 draft，无全范围验收。"
+  "next_action": "以 5c8c2c57 已签收的搜索请求、快照、派生 schema 与规范 FTS 为基础，继续 Unicode ICU 指纹、完整事件提取/域/竞争、持久化 schema-19/压缩/跨进程长期恢复及 Web/profile 主链。父范围仍 draft，无全范围验收；24f9 启动取消独立开放。"
 }

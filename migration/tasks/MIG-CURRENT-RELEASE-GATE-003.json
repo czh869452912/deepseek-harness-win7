@@ -2,7 +2,7 @@
   "id": "MIG-CURRENT-RELEASE-GATE-003",
   "goal": "补齐当前原版浏览器、双侧契约及实际解压 Portable 的统一发行门禁",
   "kind": "verification",
-  "state": "integrated",
+  "state": "running",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "1d5d965de1c7e08c00cbd1fd5227d2503d28444f",
   "owner": "current-session-coordinator",
@@ -18,7 +18,7 @@
     }
   ],
   "acceptance": [
-    "Execute all five original-browser journeys without inherited API credentials and all five built Portable profile tests; required lanes must not skip.",
+    "Execute all original-browser journeys, including the controlled real inventory repaint and trusted-input target validation, without inherited API credentials and all five built Portable profile tests; required lanes must not skip.",
     "Run fresh selected paired gates, original source configurations and strict Cordis adaptation acceptance for frozen inputs.",
     "Verify the actual extracted archive runtime and original browser, with matching candidate and archive hashes and no fatal diagnostics.",
     "A clean candidate passes the complete gate; upload consumes its exact receipt-bound archive without rebuilding."
@@ -31,9 +31,11 @@
     "migration",
     "docs/research"
   ],
-  "open_findings": [],
+  "open_findings": [
+    "Clean e5989dce was rejected by one browser approval lifecycle failure; its exact ZIP and inputs are retained. A controlled original inventory repaint reproduced the missed physical click; the changed observer and complete new candidate require acceptance."
+  ],
   "conflicts_with": [],
-  "candidate_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
+  "candidate_commit": null,
   "integrated_commit": "5c8c2c57ea16e54cf09b297b1f44df3e1901626a",
   "evidence_ids": [
     "RUN-CURRENT-20261003-CURRENT-RELEASE-GATE-003",
@@ -46,5 +48,5 @@
     "RUN-SESSION-FILTERS-20261004-CURRENT-RELEASE-GATE-003",
     "RUN-SESSION-QUERY-ENGINE-20261004-CURRENT-RELEASE-GATE-003"
   ],
-  "next_action": "clean candidate 5c8c2c57 当前 Windows 完整门禁通过；224 必需 lane、980 原版断言、47 配对、实际 Portable/schema/snapshots/publication 与 owned reset 清理，不认证全量迁移或 Win7。"
+  "next_action": "保留 e5989dce 精确拒绝产物与实际 inventory 重绘诊断，运行新干净候选完整门禁；300 必需 lane、980 原版断言、49 配对与实际解压全部通过后再签收，不认证全量迁移或延期 Win7。"
 }

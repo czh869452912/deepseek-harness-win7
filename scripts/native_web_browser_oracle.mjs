@@ -24,6 +24,7 @@ const privateBrowser = await mkdtemp(join(tmpdir(), 'dsh-cdp-'));
 const delay = ms => new Promise(done => setTimeout(done, ms));
 const report = { kind: 'actual-original-browser/native-python-host', steps: [], errors: [], consoleErrors: [], requests: [], webSockets: [], remoteCalls: {} };
 let host, browser, cdp, extraCdp, nextHost = 1;
+const delayedInventory = [];
 const pendingHost = new Map();
 const remoteMethods = ['runHostHalf', 'getClientCode', 'resolveRequestRun', 'settleUserRun', 'invoke', 'stopFromPanel', 'undefineFromPanel', 'syncInspectManifest', 'resolveInspectQuery'];
 const replyJobs = new Set();
@@ -95,8 +96,21 @@ async function click(selector) {
   await until(() => count(selector), selector);
   const point = await until(() => cdp.evaluate(`(() => { const e=document.querySelector(${JSON.stringify(selector)}); if(!e) return false; e.scrollIntoView({block:'center'}); const r=e.getBoundingClientRect(); const x=r.x+r.width/2,y=r.y+r.height/2; return r.width && r.height && e.contains(document.elementFromPoint(x,y)) && {x,y,disabled:e.disabled}; })()`), `visible unobstructed ${selector}`);
   assert.equal(point.disabled, false, `Disabled control: ${selector}`);
+  await cdp.evaluate(`(() => {
+    const expected = document.querySelector(${JSON.stringify(selector)});
+    const events = [];
+    const listener = event => events.push({trusted: event.isTrusted, matched: expected.contains(event.target),
+      x: event.clientX, y: event.clientY, label: event.target.closest('button')?.getAttribute('aria-label') ?? null});
+    document.addEventListener('click', listener, true);
+    window.__dshNativeClick = {events, detach: () => document.removeEventListener('click', listener, true)};
+  })()`);
   await cdp.call('Input.dispatchMouseEvent', { type: 'mousePressed', x: point.x, y: point.y, button: 'left', clickCount: 1 });
   await cdp.call('Input.dispatchMouseEvent', { type: 'mouseReleased', x: point.x, y: point.y, button: 'left', clickCount: 1 });
+  const events = await cdp.evaluate('(() => {const record=window.__dshNativeClick; record.detach(); delete window.__dshNativeClick; return record.events;})()');
+  (report.clicks ??= []).push({selector, point, events});
+  assert.equal(events.length, 1, `Expected one actual click: ${selector}`);
+  assert.equal(events[0].trusted, true, `Expected trusted browser input: ${selector}`);
+  assert.equal(events[0].matched, true, `Browser click missed the measured control: ${selector}`);
 }
 async function panel() {
   if (!await count('[data-cordis-panel]')) await click('[data-cordis-badge]');
@@ -366,12 +380,40 @@ try {
   report.steps.push({ step: 'original-ui-approval-native-host-client-running', passed: true, snapshot: running });
   await echo('v1');
   if (options.inspect) { await inspectSeats('v1'); for (const method of ['wait', 'invalid', 'error']) await inspectCancelled(method); }
+  if (options['inventory-layout-boundary']) {
+    cdp.listeners.push(message => {
+      if (message.method !== 'Fetch.requestPaused') return;
+      const requestId = message.params.requestId;
+      void cdp.call('Fetch.getResponseBody', {requestId}).then(async result => {
+        const body = result.base64Encoded ? Buffer.from(result.body, 'base64').toString('utf8') : result.body;
+        if (body.includes('"pkg-2"')) delayedInventory.push({requestId, sha256: createHash('sha256').update(body).digest('hex')});
+        else await cdp.call('Fetch.continueResponse', {requestId});
+      }).catch(error => report.errors.push({inventoryBoundary: String(error)}));
+    });
+    await cdp.call('Fetch.enable', {patterns: [{urlPattern: '*/dynamicCordisRunner/inventory', requestStage: 'Response'}]});
+  }
   const updated = await command('define', { plugin: { kind: 'existing', pluginId: defined.pluginId }, code: codeFor('v2') });
   const updateRequest = await command('request-run', { ...updated, mode: 'update' });
   assert.equal(updateRequest.status, 'awaiting-approval');
   await until(() => count('[data-cordis-approve-plugin]'), 'version two approval');
   assert.equal((await command('snapshot')).probe, 'v1');
   assert.equal(await count('[data-native-browser-probe="v1"]'), 1);
+  if (options['inventory-layout-boundary']) {
+    await until(() => delayedInventory.length, 'actual updated inventory response held');
+    const before = await cdp.evaluate('document.querySelector("[data-cordis-approve-plugin]").getBoundingClientRect().toJSON()');
+    const responses = delayedInventory.splice(0);
+    for (const response of responses) await cdp.call('Fetch.continueResponse', {requestId: response.requestId});
+    await cdp.call('Fetch.disable');
+    report.inventoryLayoutBoundary = {before, responseSha256: responses.map(response => response.sha256)};
+  }
+  await until(() => cdp.evaluate(`document.querySelector('[data-cordis-row="${defined.pluginId}"] select')?.value === ${JSON.stringify(updated.packageId)}`),
+    'updated package version painted in original panel');
+  if (options['inventory-layout-boundary']) {
+    const before = report.inventoryLayoutBoundary.before;
+    report.inventoryLayoutBoundary.after = await cdp.evaluate('document.querySelector("[data-cordis-approve-plugin]").getBoundingClientRect().toJSON()');
+    report.inventoryLayoutBoundary.oldPointMatches = await cdp.evaluate(`document.querySelector('[data-cordis-approve-plugin]').contains(document.elementFromPoint(${before.x + before.width / 2}, ${before.y + before.height / 2}))`);
+    assert.equal(report.inventoryLayoutBoundary.oldPointMatches, false, 'Controlled original inventory repaint must invalidate the old point');
+  }
   await click('[data-cordis-approve-plugin]');
   const v2 = await active('v2');
   assert.equal(v2.inventory[0].currentPackageId, updated.packageId);

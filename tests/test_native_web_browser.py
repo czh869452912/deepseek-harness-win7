@@ -17,8 +17,9 @@ BROWSER = os.environ.get('DSH_TEST_CHROMIUM')
 
 
 @pytest.mark.skipif(not BROWSER, reason='real browser lane: set DSH_TEST_CHROMIUM')
-@pytest.mark.parametrize('inspect_mode', [False, True], ids=['lifecycle', 'inspect'])
-def test_original_browser_native_host_cordis_lifecycle(tmp_path, inspect_mode):
+@pytest.mark.parametrize('inspect_mode, inventory_boundary', [(False, False), (True, False), (False, True)],
+                         ids=['lifecycle', 'inspect', 'inventory-layout-boundary'])
+def test_original_browser_native_host_cordis_lifecycle(tmp_path, inspect_mode, inventory_boundary):
     node = shutil.which('node')
     assert node is not None, 'real browser developer lane requires Node with global WebSocket'
     output = tmp_path / 'native-browser.json'
@@ -26,6 +27,8 @@ def test_original_browser_native_host_cordis_lifecycle(tmp_path, inspect_mode):
         '--browser', BROWSER, '--output', str(output)]
     if inspect_mode:
         arguments.extend(['--inspect', 'true'])
+    if inventory_boundary:
+        arguments.extend(['--inventory-layout-boundary', 'true'])
     result = subprocess.run(arguments, cwd=str(ROOT),
         capture_output=True, encoding='utf-8', timeout=150)
     assert result.returncode == 0, result.stdout + result.stderr
@@ -36,6 +39,14 @@ def test_original_browser_native_host_cordis_lifecycle(tmp_path, inspect_mode):
     assert report['credentialFreeHost'] is True and report['providerOnboardingDeferrals'] >= 2
     assert any(row['step'] == 'original-provider-onboarding-deferred-without-credentials' for row in report['steps'])
     assert not report['errors'] and not report['requests'] and not report['hostErrors']
+    assert report['clicks']
+    assert all(len(row['events']) == 1 and row['events'][0]['trusted'] and row['events'][0]['matched']
+               for row in report['clicks'])
+    if inventory_boundary:
+        boundary = report['inventoryLayoutBoundary']
+        assert boundary['oldPointMatches'] is False
+        assert boundary['before'] != boundary['after']
+        assert boundary['responseSha256'] and all(len(value) == 64 for value in boundary['responseSha256'])
     if inspect_mode:
         steps = {row['step'] for row in report['steps'] if row['passed']}
         assert {'original-client-inspect-five-providers-and-host-input-validation',

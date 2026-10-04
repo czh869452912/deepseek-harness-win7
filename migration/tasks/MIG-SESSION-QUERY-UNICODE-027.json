@@ -37,7 +37,8 @@
     "docs/research"
   ],
   "open_findings": [
-    "Complete clean candidate and extracted verification pending."
+    "Complete clean candidate and extracted verification pending.",
+    "Clean e5989dce was rejected by a browser approval failure, independently retained from rejected 34b8f5fb. Unicode acceptance remains pending the changed candidate complete gate and extracted verification."
   ],
   "conflicts_with": [],
   "candidate_commit": null,

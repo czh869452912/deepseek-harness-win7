@@ -42,7 +42,8 @@
     "docs/research"
   ],
   "open_findings": [
-    "Complete clean candidate, extracted verification and bounded acceptance pending."
+    "Complete clean candidate, extracted verification and bounded acceptance pending.",
+    "Clean e5989dce was rejected by a browser approval failure; its exact archive/input evidence and the controlled inventory-paint click miss are retained. No text acceptance was issued; the changed candidate must pass the full gate."
   ],
   "conflicts_with": [],
   "candidate_commit": null,

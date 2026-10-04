@@ -4,6 +4,8 @@
 
 ## 当前补齐：2026-10-02
 
+2026-10-05 Unicode/Session 文本候选 `e5989dce` 被完整门禁拒绝：**6596 passed、1 failed、6 既有平台 skipped、1 既有 Proactor warning**。原版批准更新的物理点击未发出第二次批准请求；真实 inventory 响应受控暂停/恢复复现按钮上移 24px 后旧坐标落空。观察器等待正确版本绘制并验证可信点击命中，新增必需重绘边界用例，**489 项聚焦回归通过**。现要求 **300 必需 lane、980 原版断言、49 配对**；确切失败 ZIP/输入/截图已保留，新候选完整签收与 Unicode/文本验收仍待进行。见 `docs/research/2026-10-05-browser-approval-layout-progress.md`。
+
 2026-10-04 规范 FTS 阶段完整签收：干净产品 `5c8c2c57` 门禁 **6458 passed、6 既有平台 skipped、1 既有 Proactor warning、0 failed**；**224 必需 lane、十三组 980 原版断言、47 双侧驱动及真实解压/原版浏览器**全部通过。三十六份有界任务证据归档于 `evidence/artifacts/SESSION-QUERY-ENGINE-20261004-5c8c2c57.zip`，同时签收先前待验收的搜索请求、快照、派生 schema、目录发布及 socket/Gateway 清理。见 `reviews/SESSION-QUERY-ENGINE-CLOSURE-20261004.md`。`24f9` 启动取消仍未归因；Unicode 指纹、完整提取、schema-19、B/C/D 与整体迁移继续开放，`accepted_upstream` 保持空。
 
 2026-10-04 规范 FTS 引擎已精准整合：16 组真实原版/原生观察、实际 main/TEMP FTS、稳定两次观察、提供端代际、取消/关闭归属及三套 Web preset 的重启搜索通过 **562 项主树回归**，原版引擎另有 60 项原样断言通过。规范注册入口已接入新服务；新增实际解压来源校验和拒绝门禁，当前要求 **224 必需 lane、十三组 980 原版断言、47 双侧驱动**。完整冻结验收仍待执行，Unicode ICU 指纹、schema-19、独立启动取消和整体迁移未签收。见 `docs/research/2026-10-04-session-query-engine-progress.md`。

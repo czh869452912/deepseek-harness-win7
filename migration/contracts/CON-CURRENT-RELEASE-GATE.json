@@ -6,7 +6,7 @@
   "source_paths": ["scripts/verify_release.py", "scripts/verify_portable.py", "scripts/browser_onboarding.mjs", ".github/workflows/verify.yml"],
   "consumers": [".github/workflows/release.yml"],
   "invariants": [
-    "Five original-browser lanes and five Portable profile lanes execute exactly once without skips in the full regression.",
+    "All required original-browser journeys, the controlled real inventory-paint boundary and five Portable profile lanes execute exactly once without skips in the full regression. Actual physical clicks must be trusted and reach the measured control.",
     "Credential-free first launch dismisses the original provider dialog by visible mouse controls; subsequent navigation checks settled application interactivity without modifying frontend assets.",
     "Fresh selected paired contracts, original source suites and exact scoped Cordis acceptance run for the same frozen candidate inputs.",
     "The actual extracted archive passes isolated Python runtime and original-browser journeys; archive identity, commit and SHA256 bind the receipt.",

@@ -370,6 +370,7 @@ REQUIRED_REGRESSION = {
     'test_native_web_browser': {
         'test_original_browser_native_host_cordis_lifecycle[lifecycle]',
         'test_original_browser_native_host_cordis_lifecycle[inspect]',
+        'test_original_browser_native_host_cordis_lifecycle[inventory-layout-boundary]',
     },
     'test_python_web_plugin': {'test_original_browser_installed_python_web_package_journey'},
     'test_python_client_build': {

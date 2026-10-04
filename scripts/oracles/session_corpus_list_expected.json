@@ -1,0 +1,215 @@
+[
+  {
+    "name": "no-provider",
+    "observed": {
+      "records": [],
+      "counters": {
+        "lists": 0,
+        "sameSignal": false
+      }
+    }
+  },
+  {
+    "name": "persisted-live",
+    "observed": {
+      "records": [
+        {
+          "id": "owned",
+          "createdAt": 9,
+          "cwd": "/controlled/cwd",
+          "live": true,
+          "persisted": true
+        }
+      ],
+      "counters": {
+        "lists": 1,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "tie-order",
+    "observed": {
+      "records": [
+        {
+          "id": "new",
+          "createdAt": 10,
+          "cwd": "/controlled/cwd",
+          "live": false,
+          "persisted": true
+        },
+        {
+          "id": "a",
+          "createdAt": 9,
+          "cwd": "/controlled/cwd",
+          "live": false,
+          "persisted": true
+        },
+        {
+          "id": "b",
+          "createdAt": 9,
+          "cwd": "/controlled/cwd",
+          "live": false,
+          "persisted": true
+        }
+      ],
+      "counters": {
+        "lists": 1,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "duplicate-durable",
+    "observed": {
+      "records": [
+        {
+          "id": "owned",
+          "createdAt": 10,
+          "cwd": "/controlled/cwd",
+          "live": false,
+          "persisted": true
+        }
+      ],
+      "counters": {
+        "lists": 1,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "foreign-header",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session source headers conflict for session \"owned\"",
+        "code": "SESSION_QUERY_SOURCE_CONFLICT",
+        "sameCause": false,
+        "sameFailure": false
+      },
+      "counters": {
+        "lists": 1,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "listing-failure",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session persistence listing failed: controlled listing failure",
+        "code": "SESSION_QUERY_PERSISTENCE_FAILED",
+        "sameCause": true,
+        "sameFailure": false
+      },
+      "counters": {
+        "lists": 1,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "foreign-rejection",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session persistence listing failed: unknown error",
+        "code": "SESSION_QUERY_PERSISTENCE_FAILED",
+        "sameCause": true,
+        "sameFailure": false
+      },
+      "counters": {
+        "lists": 1,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "pre-abort",
+    "observed": {
+      "error": {
+        "name": "TypeError",
+        "message": "controlled listing failure",
+        "code": null,
+        "sameCause": false,
+        "sameFailure": true
+      },
+      "counters": {
+        "lists": 0,
+        "sameSignal": false
+      }
+    }
+  },
+  {
+    "name": "list-abort",
+    "observed": {
+      "error": {
+        "name": "TypeError",
+        "message": "controlled listing failure",
+        "code": null,
+        "sameCause": false,
+        "sameFailure": true
+      },
+      "counters": {
+        "lists": 1,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "signal-forwarded",
+    "observed": {
+      "records": [
+        {
+          "id": "owned",
+          "createdAt": 9,
+          "cwd": "/controlled/cwd",
+          "live": false,
+          "persisted": true
+        }
+      ],
+      "counters": {
+        "lists": 1,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "post-list-attach",
+    "observed": {
+      "records": [
+        {
+          "id": "owned",
+          "createdAt": 9,
+          "cwd": "/controlled/cwd",
+          "live": true,
+          "persisted": true
+        }
+      ],
+      "counters": {
+        "lists": 1,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "clone-detachment",
+    "observed": {
+      "records": [
+        {
+          "id": "owned",
+          "createdAt": 9,
+          "cwd": "/controlled/cwd",
+          "live": true,
+          "persisted": true
+        }
+      ],
+      "originalCwd": "/controlled/cwd",
+      "counters": {
+        "lists": 1,
+        "sameSignal": true
+      }
+    }
+  }
+]

@@ -1,0 +1,37 @@
+{
+  "id": "CON-SESSION-CORPUS-LIST",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/session-query/session-query/src/corpus.ts",
+    "reference/packages/session-query/session-query/src/sources.ts",
+    "reference/packages/session-query/session-query/tests/session-query.spec.ts",
+    "reference/packages/session-query/session-query/tests/tracing.spec.ts",
+    "reference/packages/session-query/session-query/tests/search-helpers.spec.ts"
+  ],
+  "consumers": [
+    "dsh/session/session_query.py",
+    "dsh/session/persistence.py",
+    "dsh/session/persistence_jsonl.py",
+    "dsh/session/persistence_sqlite.py",
+    "dsh/api/session_list.py",
+    "scripts/verify_portable.py"
+  ],
+  "invariants": [
+    "Listing forwards the exact caller signal to the currently mounted persistence provider, and checks abort before and after listing.",
+    "Listing failures retain the literal source message and original Error or foreign rejection value as cause; cancellation preserves the exact signal reason.",
+    "Live records win after the persistence listing and retain persisted availability; immutable header mismatches identify the precise session.",
+    "Duplicate durable records use the final occurrence; cloned output does not mutate live metadata and selected ASCII identities retain newest-first tie ordering.",
+    "Twelve fresh actual corpus/SessionStore observations and seventy unchanged source baseline assertions execute from the pinned source; actual JSONL/SQLite regressions refuse pre-abort before touching the backend."
+  ],
+  "identity": "Session id, original failure/cause and signal identity, exact cloned header, live/persisted availability and runtime import root are retained.",
+  "ownership": "The query lists once and owns detached output headers; persistence owns backend enumeration, which must not begin for an already aborted signal.",
+  "ordering": "Abort precedes backend access; durable duplicate resolution precedes the current live overlay; conflict checking precedes publishing that overlay.",
+  "errors": "Literal source name/code/message and cause/failure identity are frozen, including unknown foreign rejection values.",
+  "cancellation": "Optional signal extends the public Python persistence.list interface compatibly for ordinary callers; owned providers check before and during enumeration.",
+  "adaptation": "ThrownValueError carries a JavaScript non-Error rejection. Only tested ASCII tie ordering is covered; full locale collation is unverified.",
+  "open_questions": [
+    "Clean complete gate and actual extracted acceptance pending. Full corpus exact reads, bounded concurrent title folding, FTS, long history, arbitrary locale sorting, Web/profile journeys and deferred Win7 remain outside this contract."
+  ]
+}

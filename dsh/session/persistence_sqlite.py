@@ -233,16 +233,20 @@ class SqliteSessionPersistence(SessionPersistence):
     async def read_from(self, session_id: str, from_seq: int, signal=None) -> SessionInspection:
         return await self.storage().read_from(session_id, from_seq, signal)
 
-    async def list(self) -> List[SessionHeader]:
+    async def list(self, signal: Optional[Any] = None) -> List[SessionHeader]:
+        from dsh.session.preparations import throw_aborted
+        throw_aborted(signal)
         cur = self._conn.cursor()
         cur.execute("SELECT meta_json FROM sessions")
         rows = cur.fetchall()
         headers: List[SessionHeader] = []
         for r in rows:
+            throw_aborted(signal)
             try:
                 headers.append(SessionHeader.from_dict(json.loads(r[0])))
             except Exception:
                 continue
+        throw_aborted(signal)
         return headers
 
     async def list_snapshots(self) -> List[SessionPersistenceSnapshot]:

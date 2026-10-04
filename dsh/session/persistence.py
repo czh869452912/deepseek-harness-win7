@@ -120,7 +120,7 @@ class SessionPersistence(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def list(self) -> List[SessionHeader]:
+    async def list(self, signal: Optional[Any] = None) -> List[SessionHeader]:
         """List all materialized session headers."""
         raise NotImplementedError
 

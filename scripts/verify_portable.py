@@ -28,6 +28,7 @@ from scripts.oracles.subprocess_tree_python import observe as observe_subprocess
 from scripts.subprocess_tree_oracle import validate_observations as validate_subprocess_tree
 from scripts.projection_cache_failure_oracle import validate_runtime as validate_projection_cache_reads
 from scripts.session_observation_read_oracle import validate_runtime as validate_session_observation_reads
+from scripts.session_corpus_list_oracle import validate_runtime as validate_session_corpus_list
 
 
 def digest(path):
@@ -89,7 +90,8 @@ def main(argv=None):
             'oracles/subprocess_tree_peer.py', 'oracles/subprocess_host_exit_python.py',
             'projection_cache_failure_oracle.py', 'oracles/projection_cache_failure_python.py',
             'session_observation_read_oracle.py', 'oracles/session_observation_read_python.py',
-            'oracles/session_observation_read_expected.json')})
+            'oracles/session_observation_read_expected.json', 'session_corpus_list_oracle.py',
+            'oracles/session_corpus_list_python.py', 'oracles/session_corpus_list_expected.json')})
     node = shutil.which('node') if args.browser else None
     try:
         if args.browser and not node:
@@ -270,6 +272,18 @@ def main(argv=None):
             if observation_report['root'] != str(portable):
                 raise RuntimeError('Extracted Session observation reads imported a different product')
             report['sessionObservationReads'] = observation_report
+            corpus_path = workspace / 'session-corpus-list.json'
+            corpus_reads = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/oracles/session_corpus_list_python.py'), str(corpus_path), '--root', str(portable)],
+                cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=90)
+            output.with_suffix('.session-corpus-list.log').write_text(corpus_reads.stdout + '\nSTDERR:\n' + corpus_reads.stderr, encoding='utf-8')
+            if corpus_reads.returncode or corpus_reads.stderr or not corpus_path.is_file():
+                raise RuntimeError('Extracted Session corpus listing failed; see ' + str(output.with_suffix('.session-corpus-list.log')))
+            corpus_report = json.loads(corpus_path.read_text(encoding='utf-8'))
+            validate_session_corpus_list(corpus_report)
+            if corpus_report['root'] != str(portable):
+                raise RuntimeError('Extracted Session corpus listing imported a different product')
+            report['sessionCorpusList'] = corpus_report
             if args.browser:
                 browser_report = output.with_suffix('.browser.json')
                 # The observer launches the Host with the same restricted env.

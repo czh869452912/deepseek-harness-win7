@@ -1,0 +1,47 @@
+{
+  "id": "MIG-SESSION-CORPUS-LIST-017",
+  "goal": "对齐 live-preferred Session 列表的取消信号、错误身份和头部来源所有权",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "1cb4c80a24677f854a5ca0c88c7f97da17a18950",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-SESSION-OBSERVATION-READS-016",
+      "contract": "CON-SESSION-OBSERVATION-READS",
+      "revision": 1
+    },
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-SESSION-CORPUS-LIST",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "Twelve fresh source/native corpus listing observations preserve exact signal forwarding, error/cause identity, live precedence, duplicate resolution and cloned header ownership.",
+    "Seventy unchanged original query/tracing/helper assertions and strict negative observers pass; actual JSONL/SQLite pre-abort listing refuses backend access.",
+    "A new clean complete gate and actual extracted embedded Python 3.8.10 execute the same twelve declared listing observations with exact candidate/input/root/module provenance before integration."
+  ],
+  "expected_paths": [
+    "dsh/session",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [
+    "Main 365 targeted tests passed and twelve fresh actual observations match. Seventy unchanged original source assertions passed. Previous clean candidate 1cb4c80a failed wrapped-ZIP reinstallation directory rename (5849 passed, 1 failed, 6 skipped, 1 warning); its five mandatory browser journeys passed, without proving historical browser cancellation fixed. No new acceptance or bug exception. Full corpus/title/FTS/durable/Web/profile closure remains open."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "分次提交列表提供端与包装 ZIP 暂存修复；共同干净候选完成全量 Python、原版、配对和解压后才有界签收，继续完整 B1/B2/B3/C/D。"
+}

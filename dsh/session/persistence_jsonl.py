@@ -498,15 +498,19 @@ class JsonlSessionPersistence(SessionPersistence):
     async def read_from(self, session_id: str, from_seq: int, signal=None) -> SessionInspection:
         return await self.storage().read_from(session_id, from_seq, signal)
 
-    async def list(self) -> List[SessionHeader]:
+    async def list(self, signal=None) -> List[SessionHeader]:
+        from dsh.session.preparations import throw_aborted
+        throw_aborted(signal)
         headers: List[SessionHeader] = []
         if not os.path.exists(self.root):
             return headers
 
         for proj in os.listdir(self.root):
+            throw_aborted(signal)
             pdir = os.path.join(self.root, proj)
             if os.path.isdir(pdir):
                 for sname in os.listdir(pdir):
+                    throw_aborted(signal)
                     sdir = os.path.join(pdir, sname)
                     lpath = os.path.join(sdir, "session.jsonl")
                     if os.path.isfile(lpath):
@@ -519,6 +523,7 @@ class JsonlSessionPersistence(SessionPersistence):
                                         headers.append(hdr)
                         except Exception:
                             continue
+        throw_aborted(signal)
         return headers
 
     async def list_snapshots(self) -> List[SessionPersistenceSnapshot]:

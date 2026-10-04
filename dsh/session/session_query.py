@@ -496,14 +496,17 @@ class SessionQueryService:
 
     async def listSessions(self, signal=None):
         import copy
+        from dsh.session.observation import failure_value, error_message
         from dsh.session.preparations import throw_aborted
         throw_aborted(signal)
         persistence = self.ctx.get('sessionPersistence')
         try:
-            headers = await persistence.list() if persistence is not None else []
+            headers = await persistence.list(signal) if persistence is not None else []
         except Exception as error:
             throw_aborted(signal)
-            raise SessionQueryError('failed to list persisted sessions', 'SESSION_QUERY_PERSISTENCE_FAILED', error) from error
+            failure = failure_value(error)
+            raise SessionQueryError('session persistence listing failed: ' + error_message(failure),
+                                    'SESSION_QUERY_PERSISTENCE_FAILED', failure) from error
         throw_aborted(signal)
         records = {header.id: dict(header=copy.deepcopy(header), live=False, persisted=True) for header in headers}
         for session in self.ctx.get('sessions').list():
@@ -513,7 +516,8 @@ class SessionQueryService:
                 keys = ('version', 'id', 'createdAt', 'cwd', 'parentSession', 'seedLength')
                 if (any(getattr(session.header, key) != getattr(expected, key) for key in keys) or
                         (session.header.delegationDepth or 0) != (expected.delegationDepth or 0)):
-                    raise SessionQueryError('session source headers conflict', 'SESSION_QUERY_SOURCE_CONFLICT')
+                    raise SessionQueryError('session source headers conflict for session "' + session.id + '"',
+                                            'SESSION_QUERY_SOURCE_CONFLICT')
             records[session.id] = dict(header=copy.deepcopy(session.header), live=True, persisted=stored is not None)
         return sorted(records.values(), key=lambda record: (-record['header'].createdAt, record['header'].id))
 

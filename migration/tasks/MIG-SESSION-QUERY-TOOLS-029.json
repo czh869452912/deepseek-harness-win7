@@ -1,0 +1,51 @@
+{
+  "id": "MIG-SESSION-QUERY-TOOLS-029",
+  "goal": "闭合原版五个可选 model-facing Session 工具的规范消费者",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "c756bbff375a5940c90f3a568667a19d24e3ea51",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-SESSION-QUERY-ENGINE-026",
+      "contract": "CON-SESSION-QUERY-ENGINE",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-TEXT-028",
+      "contract": "CON-SESSION-TEXT",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-SESSION-QUERY-TOOLS",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "The opt-in canonical package registers exactly five reversible original tools and the order-2300 prompt; published default profiles remain unchanged.",
+    "Actual pinned original/native/extracted observations compare 78 ordered registrations, inputs, controlled provider requests, outputs, presenters, safe failures and abort outcomes; both unchanged original tool suites retain their 102 assertions.",
+    "Two actual canonical JSONL/SQLite profiles complete model -> each of five tools -> next request, flush, shutdown, new Context resume and cold prior-session search.",
+    "Canonical ToolArgsError retains the original INVALID_ARGS code, violations and invalid arguments message; providers are not locally wrapped to conceal the shared Tools interface difference.",
+    "Release acceptance requires a clean committed complete suite, 312 mandatory lanes, fourteen unchanged source groups/1082 assertions, fifty paired drivers and actual extracted original-browser verification with the fresh full source digest and owned module hashes."
+  ],
+  "expected_paths": [
+    "dsh/session",
+    "dsh/core/tools.py",
+    "dsh/boot/plugin_registry.py",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [
+    "78 actual source/native observations, 102 original assertions and actual two-profile/cold-restart tests are implemented; complete clean committed candidate and extracted/browser acceptance are still required."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "提交独立实现候选后冻结并执行完整发行门禁；仅在真实解压、原版浏览器、全部必需与双侧检查通过后签收此有界任务，整体 accepted_upstream 保持空。"
+}

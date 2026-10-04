@@ -1,0 +1,46 @@
+{
+  "id": "CON-SESSION-QUERY-TOOLS",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/session-query/tool-session-query/src/index.ts",
+    "reference/packages/session-query/tool-session-query/src/input.ts",
+    "reference/packages/session-query/tool-session-query/src/operations.ts",
+    "reference/packages/session-query/tool-session-query/src/workspace-access.ts",
+    "reference/packages/session-query/tool-session-query/src/service-boundary.ts",
+    "reference/packages/session-query/tool-session-query/src/presentation.ts",
+    "reference/packages/core/tools/src/schema.ts",
+    "dsh/session/tool_query.py"
+  ],
+  "consumers": [
+    "dsh/boot/plugin_registry.py",
+    "dsh/core/tools.py",
+    "dsh/core/system_prompt/service.py",
+    "scripts/verify_release.py",
+    "scripts/verify_portable.py"
+  ],
+  "invariants": [
+    "The opt-in canonical package registers exactly five reversible original tools and the order-2300 prompt; published default profiles remain unchanged.",
+    "Actual pinned original/native/extracted observations compare 78 ordered registrations, inputs, controlled provider requests, outputs, presenters, safe failures and abort outcomes; both unchanged original tool suites retain their 102 assertions.",
+    "Literal ECMAScript whitespace and NUL refusals, safe integer ranges, exact timezone calendar timestamps including year zero, submillisecond remainders and IEEE-754 adjacent bounds preserve original model input semantics.",
+    "Capture the agent caller before provider awaits, authorize exact workspace strings and reauthorize each payload/title header. Parent guesses cannot leak hidden/nonexistent records; unauthorized lineage subtrees have no hidden IDs or descendants.",
+    "Searches remain exclusive and internally drain authorized non-self results with lookahead to the deployment cap; no cursor reaches the model and repeated continuation is refused.",
+    "Known provider errors retain private causes only in diagnostics; model messages use the closed safe taxonomy. Foreign/unknown/hostile failures and throwing logs use the fixed generic error.",
+    "Search deadline and caller abort propagate the exact execution signal to authorization, paging and enrichment, and do not settle before cooperative provider cleanup.",
+    "Two actual canonical JSONL/SQLite profiles complete model -> each of five tools -> next request, flush, shutdown, new Context resume and cold prior-session search.",
+    "Canonical ToolArgsError retains the original INVALID_ARGS code, violations and invalid arguments message; providers are not locally wrapped to conceal the shared Tools interface difference.",
+    "Release acceptance requires a clean committed complete suite, 312 mandatory lanes, fourteen unchanged source groups/1082 assertions, fifty paired drivers and actual extracted original-browser verification with the fresh full source digest and owned module hashes."
+  ],
+  "identity": "Opt-in @deepseek-ai/dsh-tool-session-query with pinned original five-tool schemas and model-safe presentations.",
+  "ownership": "Cordis effect-owned Tools and SystemPrompt registrations; existing Context-owned query engine, sessions and durable providers.",
+  "ordering": "Validate tool schema, operation-owned arguments and caller prerequisites in original order; authorize before payload reads and reauthorize every observed header.",
+  "errors": "Original typed input/authorization errors and sanitized service taxonomy; canonical shared INVALID_ARGS surface.",
+  "cancellation": "Execution signal flows to every provider call; preabort avoids calls, late abort wins over values/errors, deadlines wait for cleanup.",
+  "adaptation": "Python 3.8 stdlib decimal-remainder/calendar/IEEE-754 operations and iterative presentation/traversal; optional plugin retains the original service contract.",
+  "open_questions": [
+    "Full malformed/public plugin ABI and all concurrent/cross-process/domain-provider histories are separate qualification scopes.",
+    "Canonical physical persistence schema-19, compressed/chunk histories, OAuth/public acquisition, full profile/UI journeys, startup cancellation and the overall migration remain open.",
+    "Real Windows 7 certification remains explicitly deferred."
+  ]
+}

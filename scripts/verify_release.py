@@ -39,6 +39,7 @@ from scripts.query_schema_oracle import validate_runtime as validate_query_schem
 from scripts.query_engine_oracle import validate_runtime as validate_query_engine
 from scripts.query_unicode_oracle import validate_runtime as validate_query_unicode, source_identity as unicode_source_identity
 from scripts.session_text_oracle import validate_runtime as validate_session_text, source_identity as text_source_identity
+from scripts.session_tools_oracle import validate_runtime as validate_session_tools, source_identity as tools_source_identity, module_hashes as tools_module_hashes
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -49,8 +50,25 @@ PAIRED_DRIVERS = (
     'approval', 'inspect', 'cordis_guard', 'cordis_runner',
     'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure', 'session_observation_read', 'session_corpus_list', 'session_corpus_read', 'session_lineage', 'session_event_trace', 'session_filters', 'session_requests', 'session_snapshots', 'query_schema', 'query_engine', 'query_unicode', 'session_text',
 )
-OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source')
+PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools',)
+OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source')
 REQUIRED_REGRESSION = {
+    'test_session_tools': {
+        'test_optional_plugin_registers_and_reverses_all_five_tools_and_prompt',
+        'test_caller_abort_wins_over_late_provider_result_and_drains[False]',
+        'test_caller_abort_wins_over_late_provider_result_and_drains[True]',
+        'test_preabort_never_invokes_or_logs_provider',
+        'test_hostile_error_code_and_logging_fail_closed',
+        'test_title_observation_reauthorizes_exact_header_before_exposing_content[caller]',
+        'test_title_observation_reauthorizes_exact_header_before_exposing_content[other]',
+        'test_deep_lineage_prunes_foreign_subtrees_without_recursion_or_hidden_ids',
+        'test_search_deadline_reaches_authorization_and_waits_for_owned_cleanup',
+    },
+    'test_session_tools_source': {'test_actual_optional_session_tools_source_native_pair'},
+    'test_session_tools_profile': {
+        'test_optional_profile_model_tools_next_request_and_cold_restart[jsonl]',
+        'test_optional_profile_model_tools_next_request_and_cold_restart[sqlite]',
+    },
     "test_session_text": {
         "test_literal_simple_case_equivalents_match_in_both_directions[\\u0412-\\u1c80]",
         "test_literal_simple_case_equivalents_match_in_both_directions[\\ua7cb-\\u0264]",
@@ -562,6 +580,13 @@ def validate_extracted(path, archive, candidate):
             raise ValueError('Session text input receipt differs')
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted sessionText observations are incomplete') from error
+    try:
+        if not isinstance(candidate['session_tools_observations_sha256'], str) or not isinstance(candidate['session_tools_modules'], dict):
+            raise ValueError('Session tool source digest is missing')
+        validate_session_tools(report.get('sessionTools'), report['mcpStdio']['root'],
+                               candidate['session_tools_observations_sha256'], candidate['session_tools_modules'])
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted sessionTools observations are incomplete') from error
     for name, validate in [('queryEngine', validate_query_engine), ('querySchema', validate_query_schema), ('pythonDirectory', validate_python_directory),
                            ('sessionLineage', validate_session_lineage), ('sessionEventTrace', validate_session_event_trace),
                            ('sessionFilters', validate_session_filters), ('sessionRequests', validate_session_requests),
@@ -646,6 +671,9 @@ def verify(args, output):
     candidate['session_text_observations_sha256'] = text_digest
     candidate['session_text_locale'] = text_locale
     candidate['session_text_inputs_sha256'] = digest(text_inputs)
+    tools_source = output / 'session-tools-paired.source.json'
+    candidate['session_tools_observations_sha256'] = tools_source_identity(json.loads(tools_source.read_text(encoding='utf-8')))
+    candidate['session_tools_modules'] = tools_module_hashes(ROOT)
     raw = output / 'cordis-raw.json'
     raw.unlink(missing_ok=True)
     run([python, 'scripts/cordis_oracle.py', '--output', str(raw)],
@@ -663,7 +691,7 @@ def verify(args, output):
     extracted.unlink(missing_ok=True)
     command = [python, 'scripts/verify_portable.py', '--archive', str(archive),
                '--browser', str(browser), '--output', str(extracted), '--unicode-source', str(unicode_source),
-               '--text-source', str(text_source), '--text-inputs', str(text_inputs)]
+               '--text-source', str(text_source), '--text-inputs', str(text_inputs), '--tools-source', str(tools_source)]
     if not candidate['worktree_dirty']:
         command += ['--expected-commit', candidate['product_commit']]
     run(command, 'portable-extracted', output, env=environment)

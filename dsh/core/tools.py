@@ -36,8 +36,7 @@ class ToolNotFoundError(HarnessError):
 class ToolArgsError(HarnessError):
     def __init__(self, tool_name: str, violations: List[str]):
         self.violations = violations
-        super().__init__('tool "%s" received invalid arguments: %s' %
-                         (tool_name, "; ".join(violations)), TOOL_ARGS_INVALID)
+        super().__init__("invalid arguments: %s" % "; ".join(violations), TOOL_ARGS_INVALID)
 
 
 class ToolOutputError(HarnessError):

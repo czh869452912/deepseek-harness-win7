@@ -41,6 +41,7 @@ from scripts.query_schema_oracle import validate_runtime as validate_query_schem
 from scripts.query_engine_oracle import validate_runtime as validate_query_engine
 from scripts.query_unicode_oracle import validate_runtime as validate_query_unicode, source_identity as unicode_source_identity
 from scripts.session_text_oracle import validate_runtime as validate_session_text, source_identity as text_source_identity
+from scripts.session_tools_oracle import validate_runtime as validate_session_tools, source_identity as tools_source_identity
 
 
 def digest(path):
@@ -86,6 +87,7 @@ def main(argv=None):
     parser.add_argument('--unicode-source', help='Fresh paired Unicode source observations from the release gate')
     parser.add_argument('--text-source', help='Fresh paired Session text source observations from the release gate')
     parser.add_argument('--text-inputs', help='The exact generated inputs used by the paired Session text observer')
+    parser.add_argument('--tools-source', help='Fresh paired optional Session tool source observations from the release gate')
     args = parser.parse_args(argv)
     archive, output = Path(args.archive).resolve(), Path(args.output).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -122,7 +124,9 @@ def main(argv=None):
             'oracles/query_engine_expected.json', 'query_unicode_oracle.py', 'oracles/query_unicode_python.py',
             'oracles/query_unicode.probe.spec.ts', 'oracles/vitest.query-unicode-probe.config.mts',
             'session_text_oracle.py', 'oracles/session_text_python.py', 'oracles/session_text_inputs.py',
-            'oracles/session_text.probe.spec.ts', 'oracles/vitest.session-text-probe.config.mts')})
+            'oracles/session_text.probe.spec.ts', 'oracles/vitest.session-text-probe.config.mts',
+            'session_tools_oracle.py', 'oracles/session_tools_python.py', 'oracles/session_tools.probe.spec.ts',
+            'oracles/vitest.session-tools-probe.config.mts')})
     node = shutil.which('node') if args.browser else None
     try:
         if args.browser and not node:
@@ -155,6 +159,18 @@ def main(argv=None):
         text_digest, text_locale = text_source_identity(json.loads(text_source.read_text(encoding='utf-8')))
         report['sessionTextSourceSha256'] = digest(text_source)
         report['sessionTextInputSha256'] = digest(text_inputs)
+        if args.tools_source:
+            tools_source = Path(args.tools_source).resolve()
+        else:
+            paired_path = output.with_suffix('.session-tools-paired.json')
+            paired = subprocess.run([sys.executable, str(ROOT / 'scripts/session_tools_oracle.py'), '--output', str(paired_path)],
+                                    capture_output=True, timeout=150)
+            output.with_suffix('.session-tools-source.log').write_bytes(paired.stdout + paired.stderr)
+            if paired.returncode:
+                raise RuntimeError('Fresh optional Session tool source qualification failed')
+            tools_source = paired_path.with_name(paired_path.stem + '.source.json')
+        tools_digest = tools_source_identity(json.loads(tools_source.read_text(encoding='utf-8')))
+        report['sessionToolsSourceSha256'] = digest(tools_source)
         with tempfile.TemporaryDirectory(prefix='dsh Portable 中文 ') as private:
             workspace = Path(private)
             portable = extract(archive, workspace)
@@ -365,7 +381,8 @@ def main(argv=None):
                                         ('query_unicode', 'queryUnicode', lambda value: validate_query_unicode(
                                             value, portable, unicode_digest, unicode_locale)),
                                         ('session_text', 'sessionText', lambda value: validate_session_text(
-                                            value, portable, text_digest, text_locale))]:
+                                            value, portable, text_digest, text_locale)),
+                                        ('session_tools', 'sessionTools', lambda value: validate_session_tools(value, portable, tools_digest))]:
                 trace_path = workspace / (name + '.json')
                 trace_command = [str(portable / 'python.exe'), '-I', '-u',
                     str(ROOT / 'scripts/oracles' / (name + '_python.py')), str(trace_path), '--root', str(portable)]

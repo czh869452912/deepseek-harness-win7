@@ -47,5 +47,5 @@
     "RUN-SESSION-TRACING-20261004-CURRENT-RELEASE-GATE-003",
     "RUN-SESSION-FILTERS-20261004-CURRENT-RELEASE-GATE-003"
   ],
-  "next_action": "1d9940aa 为最新已签收候选；a953a086 与 ac31cd6a 已拒绝。提交 Gateway 关闭修复，整合快照契约后冻结新候选；当前中间门禁为 137 必需 lane、920 原版、44 配对及真实解压，不认证全量迁移或 Win7。"
+  "next_action": "1d9940aa 为最新已签收候选；a953a086 与 ac31cd6a 已拒绝。Gateway 修复已提交，快照精准推广通过 559 项主树定向回归；冻结新候选完整验收 152 必需 lane、920 原版、45 配对及真实解压，不认证全量迁移或 Win7。"
 }

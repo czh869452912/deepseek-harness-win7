@@ -32,7 +32,7 @@
   "acceptance": [
     "Fifty actual source/native request/SQL/snippet/SQLite Engine refusal observations match their independently declared literals, including real SQLite predicate evaluation and zero index/provider access.",
     "Ten unchanged upstream query.spec.ts assertions and strict observer/gate refusal probes pass. Four actual JSONL/SQLite consumers prove owned public inputs and invalid/pre-abort rejection.",
-    "A new clean complete release gate executes at least 137 mandatory lanes, twelve source groups totaling 920 assertions, at least 44 paired drivers and the actual extracted Python 3.8.10 observer including owned WebServer reset cleanup before bounded acceptance."
+    "A new clean complete release gate executes 152 mandatory lanes, twelve source groups totaling 920 assertions, 45 paired drivers and the actual extracted Python 3.8.10 observer including owned WebServer reset cleanup and persistence snapshots before bounded acceptance."
   ],
   "expected_paths": [
     "dsh/session",
@@ -48,5 +48,5 @@
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "提交 Gateway 关闭修复并整合持久化快照，冻结新候选；完整全量/至少 137 必需 lane/至少 44 配对/920 原版/真实解压重置与请求观察通过后才签收。继续完整 FTS/ranking/cursors/reconciliation/代际及整体迁移。"
+  "next_action": "Gateway 关闭修复已提交，持久化快照已精准推广；冻结新候选，完整全量/152 必需 lane/45 配对/920 原版/真实解压重置与请求及快照观察通过后才签收。继续完整 FTS/ranking/cursors/reconciliation/代际及整体迁移。"
 }

@@ -1,0 +1,139 @@
+[
+  {
+    "name": "jsonl-lazy",
+    "observed": {
+      "count": 0
+    }
+  },
+  {
+    "name": "jsonl-stable",
+    "observed": {
+      "count": 1,
+      "same": true,
+      "qualified": true,
+      "statIdentity": true
+    }
+  },
+  {
+    "name": "jsonl-append",
+    "observed": {
+      "changed": true
+    }
+  },
+  {
+    "name": "jsonl-noop",
+    "observed": {
+      "same": true
+    }
+  },
+  {
+    "name": "jsonl-detached",
+    "observed": {
+      "createdAt": 1,
+      "sameToken": true
+    }
+  },
+  {
+    "name": "jsonl-reopen",
+    "observed": {
+      "same": true,
+      "qualified": true
+    }
+  },
+  {
+    "name": "jsonl-copy",
+    "observed": {
+      "sameHeader": true,
+      "different": true,
+      "qualified": true
+    }
+  },
+  {
+    "name": "jsonl-preabort",
+    "observed": {
+      "error": {
+        "name": "TypeError",
+        "message": "snapshot deadline",
+        "sameReason": true
+      }
+    }
+  },
+  {
+    "name": "jsonl-restored-stat",
+    "observed": {
+      "sameSize": true,
+      "sameFile": true,
+      "sameMtime": true,
+      "changedToken": true,
+      "changeFieldAdvanced": true
+    }
+  },
+  {
+    "name": "sqlite-lazy",
+    "observed": {
+      "count": 0
+    }
+  },
+  {
+    "name": "sqlite-stable",
+    "observed": {
+      "count": 1,
+      "same": true,
+      "qualified": true,
+      "statIdentity": true
+    }
+  },
+  {
+    "name": "sqlite-append",
+    "observed": {
+      "changed": true,
+      "counterDelta": 1
+    }
+  },
+  {
+    "name": "sqlite-noop",
+    "observed": {
+      "same": true
+    }
+  },
+  {
+    "name": "sqlite-detached",
+    "observed": {
+      "createdAt": 1,
+      "sameToken": true
+    }
+  },
+  {
+    "name": "sqlite-reopen",
+    "observed": {
+      "same": true,
+      "qualified": true
+    }
+  },
+  {
+    "name": "sqlite-copy",
+    "observed": {
+      "sameHeader": true,
+      "different": true,
+      "qualified": true
+    }
+  },
+  {
+    "name": "sqlite-preabort",
+    "observed": {
+      "error": {
+        "name": "TypeError",
+        "message": "snapshot deadline",
+        "sameReason": true
+      }
+    }
+  },
+  {
+    "name": "sqlite-memory",
+    "observed": {
+      "qualified": true,
+      "same": true,
+      "counterDelta": 1
+    }
+  }
+]

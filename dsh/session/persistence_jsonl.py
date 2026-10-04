@@ -6,6 +6,7 @@ Cold recovery follows the pinned upstream JSONL format and Session repair seam.
 """
 
 import hashlib
+import asyncio
 import json
 import os
 import tempfile
@@ -526,15 +527,25 @@ class JsonlSessionPersistence(SessionPersistence):
         throw_aborted(signal)
         return headers
 
-    async def list_snapshots(self) -> List[SessionPersistenceSnapshot]:
+    async def list_snapshots(self, signal: Optional[Any] = None) -> List[SessionPersistenceSnapshot]:
+        from dsh.session.file_revision import file_revision
+        from dsh.session.preparations import throw_aborted
+        throw_aborted(signal)
         snapshots: List[SessionPersistenceSnapshot] = []
-        for header in await self.list():
+        for header in await self.list(signal):
+            throw_aborted(signal)
             path = self._find_log_path(header.id)
-            if path and os.path.exists(path):
-                st = os.stat(path)
-                mtime = getattr(st, "st_mtime_ns", int(st.st_mtime * 1e9))
-                rev = f"{mtime}:{st.st_size}"
-                snapshots.append(SessionPersistenceSnapshot(header=header, revision=rev))
+            if path is None:
+                continue
+            try:
+                revision = await asyncio.get_running_loop().run_in_executor(None, file_revision, path)
+                throw_aborted(signal)
+                snapshots.append(SessionPersistenceSnapshot(header=header,revision=revision))
+            except Exception as error:
+                throw_aborted(signal)
+                if not isinstance(error, FileNotFoundError):
+                    raise
+        throw_aborted(signal)
         return snapshots
 
     async def stored_revision(self, session_id: str) -> str:

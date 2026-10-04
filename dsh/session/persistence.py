@@ -125,6 +125,9 @@ class SessionPersistence(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def list_snapshots(self) -> List[SessionPersistenceSnapshot]:
+    async def list_snapshots(self, signal: Optional[Any] = None) -> List[SessionPersistenceSnapshot]:
         """List metadata and change tokens for all stored sessions."""
         raise NotImplementedError
+
+    async def listSnapshots(self, signal: Optional[Any] = None) -> List[SessionPersistenceSnapshot]:
+        return await self.list_snapshots(signal)

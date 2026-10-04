@@ -1,0 +1,30 @@
+{
+  "id": "MIG-SESSION-SNAPSHOTS-023",
+  "goal": "补齐持久化快照的来源限定 revision、Windows ChangeTime 与 SQLite 事务 incarnation/counter",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {"task": "MIG-SESSION-SEARCH-REQUESTS-022", "contract": "CON-SESSION-SEARCH-REQUESTS", "revision": 1},
+    {"task": "MIG-SESSION-STORAGE-006", "contract": "CON-SESSION-STORAGE", "revision": 1},
+    {"task": "MIG-SESSION-PREPARED-005", "contract": "CON-SESSION-PREPARATIONS", "revision": 1},
+    {"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}
+  ],
+  "provides": [{"contract": "CON-SESSION-SNAPSHOTS", "revision": 1}],
+  "acceptance": [
+    "Eighteen actual unchanged-provider source/native observations match independently declared logical snapshot literals, with no new source bug exceptions.",
+    "Four real JSONL/SQLite consumers and additional real SQLite rollback/upgrade/shared-instance and Windows handle/long-path tests pass; strict observer and release refusal probes pass.",
+    "The promoted clean candidate passes the complete gate with 152 mandatory lanes, twelve unchanged source groups/920 assertions, 45 paired drivers, actual isolated extracted Python 3.8.10 snapshots and browser journeys."
+  ],
+  "expected_paths": ["dsh/session", "scripts", "tests", "migration", "docs/research"],
+  "open_findings": [
+    "Isolated eighteen-case source/native driver and native boundaries pass; expanded regression passed 591 tests in 24.03 seconds. Precise main promotion passes 511 contract/gate tests and 48 storage/cache regressions. Earlier raw-v1 native observations exposed a missing asyncio import; it was corrected and raw output retained. Initial regression fixtures attempted JSONL.close, which the provider does not expose; fixtures were corrected. Both preceding clean candidates were rejected and exact archives retained. The additional Gateway closure repair passes all 59 main browser/Gateway tests. Complete clean acceptance remains required."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "精准推广快照提供端、源双侧/真实消费者和解压必需门禁，独立提交并冻结新候选；152 必需 lane、45 配对、920 原版及实际解压全量通过后才签收。继续完整 FTS/游标/稳定两次校验/代际与 SQLite schema-19，不认证完整 B1 或延期 Win7。"
+}

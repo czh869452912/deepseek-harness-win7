@@ -8,6 +8,7 @@ import json
 import os
 import sqlite3
 import time
+import uuid
 from typing import Any, Dict, List, Optional
 from dsh.cordis.plugin import Plugin
 from dsh.core.session import SessionHeader, SESSION_FORMAT_VERSION
@@ -32,14 +33,38 @@ class SqliteSessionPersistence(SessionPersistence):
     ):
         super().__init__(ctx=ctx)
         self._live_writes = None
-        self.db_path = os.path.abspath(db_path)
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        self.db_path = db_path if db_path == ':memory:' else os.path.abspath(db_path)
+        if self.db_path != ':memory:':
+            os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        try:
+            self._initialize()
+        except BaseException:
+            self._conn.close()
+            raise
+
+    def _initialize(self):
         self._init_db()
+        store_id = self._conn.execute('SELECT store_id FROM session_store_identity WHERE singleton = 1').fetchone()[0]
+        if self.db_path == ':memory:':
+            self._store_identity = 'memory:store:' + store_id
+        else:
+            from dsh.session.file_revision import filesystem_identity
+            identity = filesystem_identity(self.db_path)
+            self._store_identity = 'file:{}:{}:{}:store:{}'.format(identity['dev'],identity['ino'],identity['birthtimeNs'],store_id)
 
     def _init_db(self) -> None:
         cur = self._conn.cursor()
         cur.execute("PRAGMA journal_mode=WAL;")
+        cur.execute("BEGIN IMMEDIATE")
+        try:
+            self._init_tables(cur)
+            self._conn.commit()
+        except BaseException:
+            self._conn.rollback()
+            raise
+
+    def _init_tables(self, cur):
         cur.execute("""
             CREATE TABLE IF NOT EXISTS sessions (
                 id TEXT PRIMARY KEY,
@@ -64,7 +89,15 @@ class SqliteSessionPersistence(SessionPersistence):
                 PRIMARY KEY (session_id, seq)
             )
         """)
-        self._conn.commit()
+        columns = {row[1] for row in cur.execute('PRAGMA table_info(sessions)')}
+        if 'incarnation' not in columns:
+            cur.execute('ALTER TABLE sessions ADD COLUMN incarnation TEXT')
+        if 'revision' not in columns:
+            cur.execute('ALTER TABLE sessions ADD COLUMN revision INTEGER NOT NULL DEFAULT 0')
+        cur.execute('CREATE TABLE IF NOT EXISTS session_store_identity (singleton INTEGER PRIMARY KEY CHECK (singleton = 1), store_id TEXT NOT NULL)')
+        cur.execute('INSERT OR IGNORE INTO session_store_identity VALUES (1, ?)',(str(uuid.uuid4()),))
+        for row in list(cur.execute('SELECT id FROM sessions WHERE incarnation IS NULL')):
+            cur.execute('UPDATE sessions SET incarnation = ? WHERE id = ? AND incarnation IS NULL',(str(uuid.uuid4()),row[0]))
 
     def close(self) -> None:
         if hasattr(self, "_conn") and self._conn:
@@ -92,8 +125,8 @@ class SqliteSessionPersistence(SessionPersistence):
         cur = self._conn.cursor()
         cur.execute(
             """
-            INSERT INTO sessions (id, version, created_at, cwd, parent_session, seed_length, meta_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO sessions (id, version, created_at, cwd, parent_session, seed_length, meta_json, incarnation, revision)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
             """,
             (
                 meta.id,
@@ -103,6 +136,7 @@ class SqliteSessionPersistence(SessionPersistence):
                 meta.parent_session,
                 meta.seed_length,
                 json.dumps(meta.to_dict(), ensure_ascii=False),
+                str(uuid.uuid4()),
             ),
         )
 
@@ -152,6 +186,9 @@ class SqliteSessionPersistence(SessionPersistence):
                     ignorable,
                 ),
             )
+
+        if events:
+            cur.execute('UPDATE sessions SET revision = revision + 1 WHERE id = ?',(session_id,))
 
     async def read_stored(self, session_id: str) -> SessionInspection:
         cur = self._conn.cursor()
@@ -249,16 +286,21 @@ class SqliteSessionPersistence(SessionPersistence):
         throw_aborted(signal)
         return headers
 
-    async def list_snapshots(self) -> List[SessionPersistenceSnapshot]:
+    async def list_snapshots(self, signal: Optional[Any] = None) -> List[SessionPersistenceSnapshot]:
+        from dsh.session.preparations import throw_aborted
+        throw_aborted(signal)
+        rows = self._conn.execute('SELECT meta_json,incarnation,revision FROM sessions ORDER BY created_at DESC').fetchall()
+        throw_aborted(signal)
         snapshots: List[SessionPersistenceSnapshot] = []
-        for header in await self.list():
-            cur = self._conn.cursor()
-            cur.execute("SELECT MAX(seq), MAX(event_time) FROM session_events WHERE session_id = ?", (header.id,))
-            r = cur.fetchone()
-            max_seq = r[0] if r and r[0] is not None else 0
-            max_time = r[1] if r and r[1] is not None else header.created_at
-            rev = f"{max_time}:{max_seq}"
-            snapshots.append(SessionPersistenceSnapshot(header=header, revision=rev))
+        for encoded, incarnation, revision in rows:
+            throw_aborted(signal)
+            try:
+                header = SessionHeader.from_dict(json.loads(encoded))
+            except Exception:
+                continue
+            token = '{}:incarnation:{}:revision:{}'.format(self._store_identity,incarnation,revision)
+            snapshots.append(SessionPersistenceSnapshot(header=header,revision=token))
+        throw_aborted(signal)
         return snapshots
 
 

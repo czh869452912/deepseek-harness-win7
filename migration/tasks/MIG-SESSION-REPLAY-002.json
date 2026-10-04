@@ -71,6 +71,16 @@
       "task": "MIG-SESSION-FILTERS-021",
       "contract": "CON-SESSION-FILTERS",
       "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-SEARCH-REQUESTS-022",
+      "contract": "CON-SESSION-SEARCH-REQUESTS",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-SNAPSHOTS-023",
+      "contract": "CON-SESSION-SNAPSHOTS",
+      "revision": 1
     }
   ],
   "provides": [],

@@ -33,6 +33,7 @@ from scripts.session_event_trace_oracle import validate_runtime as validate_sess
 from scripts.session_filters_oracle import validate_runtime as validate_session_filters
 from scripts.session_requests_oracle import validate_runtime as validate_session_requests
 from scripts.webserver_reset_probe import validate as validate_webserver_reset
+from scripts.session_snapshots_oracle import validate_runtime as validate_session_snapshots
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -41,7 +42,7 @@ PAIRED_DRIVERS = (
     'pi', 'storage_cache', 'workflow_ralph', 'repeat_tool', 'token_meter',
     'pruner', 'compaction', 'maintenance', 'timeout_policy', 'abort',
     'approval', 'inspect', 'cordis_guard', 'cordis_runner',
-    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure', 'session_observation_read', 'session_corpus_list', 'session_corpus_read', 'session_lineage', 'session_event_trace', 'session_filters', 'session_requests',
+    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure', 'session_observation_read', 'session_corpus_list', 'session_corpus_read', 'session_lineage', 'session_event_trace', 'session_filters', 'session_requests', 'session_snapshots',
 )
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query')
 REQUIRED_REGRESSION = {
@@ -51,6 +52,21 @@ REQUIRED_REGRESSION = {
     } | {'test_queued_mux_write_rechecks_physical_close_after_prior_delivery',
          'test_late_stream_item_after_socket_close_drains_without_terminal_or_error_frame',
          'test_terminate_on_closed_transport_finishes_without_close_frame'},
+    'test_session_snapshots_source': {'test_source_session_snapshots_contract'},
+    'test_session_snapshots': {
+        name + '[' + backend + ']' for name in (
+            'test_actual_durable_snapshot_revisions_track_owned_batches_and_reopen',
+            'test_actual_durable_snapshot_preabort_has_exact_reason_without_listing')
+        for backend in ('jsonl', 'sqlite')
+    } | {
+        'test_jsonl_snapshot_stat_failure_and_abort_priority[' + pair + ']'
+        for pair in ('False-False', 'True-False', 'False-True', 'True-True')
+    } | {'test_sqlite_revision_upgrade_preserves_existing_header_and_incarnation',
+         'test_failed_sqlite_revision_upgrade_rolls_back_ddl_and_backfill',
+         'test_failed_sqlite_event_batch_rolls_back_revision_with_event_suffix',
+         'test_windows_file_revision_handles_are_closed_after_success_and_stat_failure',
+         'test_two_sqlite_instances_observe_same_namespace_and_atomic_revision',
+         'test_windows_file_revision_supports_long_unicode_paths_without_os_patches'},
     'test_webserver_peer_reset': {
         'test_owned_socket_contains_only_windows_peer_reset_at_shutdown[' + value + ']'
         for value in ('10054', '10053', 'None')
@@ -358,7 +374,8 @@ def validate_extracted(path, archive, candidate):
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted Session corpus read observations are incomplete') from error
     for name, validate in [('sessionLineage', validate_session_lineage), ('sessionEventTrace', validate_session_event_trace),
-                           ('sessionFilters', validate_session_filters), ('sessionRequests', validate_session_requests)]:
+                           ('sessionFilters', validate_session_filters), ('sessionRequests', validate_session_requests),
+                           ('sessionSnapshots', validate_session_snapshots)]:
         try:
             validate(report.get(name))
             if report[name]['root'] != report['mcpStdio']['root']:

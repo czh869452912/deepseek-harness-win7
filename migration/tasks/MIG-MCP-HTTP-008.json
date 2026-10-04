@@ -33,11 +33,12 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "e24fe1dbeaa804553179cdace7bc46703073682e",
-  "integrated_commit": "e24fe1dbeaa804553179cdace7bc46703073682e",
+  "candidate_commit": "5c0b3c5e229d900435b3b9df3ed36f9d64a9028b",
+  "integrated_commit": "5c0b3c5e229d900435b3b9df3ed36f9d64a9028b",
   "evidence_ids": [
     "RUN-MCP-20261004-MCP-HTTP-008",
-    "RUN-ACP-MCP-20261004-MCP-HTTP-008"
+    "RUN-ACP-MCP-20261004-MCP-HTTP-008",
+    "RUN-SESSION-TRACING-20261004-MCP-HTTP-008"
   ],
-  "next_action": "有界提供端合同在 clean candidate e24fe1db 验收；继续其余 SDK/生命周期/URL/无限阻塞初始化边缘、subprocess subagent 和整体迁移。既有浏览器/Proactor/HTTP 诊断未修复，Win7 仍延期。"
+  "next_action": "有界提供端合同在 clean candidate 5c0b3c5e 验收；继续其余 SDK/生命周期/URL/无限阻塞初始化边缘、subprocess tree/pathological streams/background Jobs 和整体迁移。既有浏览器/Proactor/HTTP 诊断未修复，Win7 仍延期。"
 }

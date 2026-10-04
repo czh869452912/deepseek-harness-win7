@@ -2,25 +2,46 @@
   "id": "MIG-SESSION-OBSERVATION-READS-016",
   "goal": "对齐 Session point observation 的精确错误/cause和独立 cut租约释放",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "a3315a7b9d26d267a5d0ce8fbfefc008092bad17",
   "owner": "current-session-coordinator",
   "requires": [
-    {"task": "MIG-PROJECTION-CACHE-READS-015", "contract": "CON-PROJECTION-CACHE-READS", "revision": 1},
-    {"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}
+    {
+      "task": "MIG-PROJECTION-CACHE-READS-015",
+      "contract": "CON-PROJECTION-CACHE-READS",
+      "revision": 1
+    },
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    }
   ],
-  "provides": [{"contract": "CON-SESSION-OBSERVATION-READS", "revision": 1}],
+  "provides": [
+    {
+      "contract": "CON-SESSION-OBSERVATION-READS",
+      "revision": 1
+    }
+  ],
   "acceptance": [
     "Sixteen fresh actual reader/SessionStore/registry observations preserve literal errors/codes, original cause and raw failure identity, exact cut/revision/projection and controlled borrow/release/apply counts.",
     "Six unchanged original observation assertions and strict negative observers pass; actual JSONL/SQLite observation regressions retain cancellation, publication preference and immutable independently retained cold cuts.",
     "New clean complete current gate and actual extracted embedded Python 3.8.10 execute the same sixteen declared borrowed-source observations with exact candidate/input/root/module provenance before integration."
   ],
-  "expected_paths": ["dsh/session", "tests", "scripts", "migration", "docs/research"],
-  "open_findings": ["Isolated and main fresh sixteen observations and 282 targeted reader/observer/JSONL/SQLite/current-gate tests passed; six unchanged original assertions passed in the isolated source baseline. Complete new clean gate and extracted acceptance pending. Prior a3315a7b full regression failed one installed browser startup fetch lane (5806 passed, 6 skipped, 1 warning); no acceptance or upstream-bug exception was added. Borrow/rejection seams are controlled; full durable/FTS/long history/Web/profile remains outside this bounded read contract."],
+  "expected_paths": [
+    "dsh/session",
+    "tests",
+    "scripts",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "提交已推广的 point-read 提供端和正式观察门禁；继续浏览器启动取消归因，新干净完整回归/解压通过才签收。"
+  "candidate_commit": "5c0b3c5e229d900435b3b9df3ed36f9d64a9028b",
+  "integrated_commit": "5c0b3c5e229d900435b3b9df3ed36f9d64a9028b",
+  "evidence_ids": [
+    "RUN-SESSION-TRACING-20261004-SESSION-OBSERVATION-READS-016"
+  ],
+  "next_action": "clean candidate 5c0b3c5e 的十六组 point read 错误/cause/cut/租约已有界验收；继续完整 durable/domain/FTS/长期回放和 Web/profile 消费者，不认证完整 B1 或 Win7。"
 }

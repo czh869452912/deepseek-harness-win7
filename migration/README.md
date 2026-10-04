@@ -4,6 +4,8 @@
 
 ## 当前补齐：2026-10-02
 
+2026-10-04 Session tracing：干净候选 `5c0b3c5e` 完整冻结门禁 **6082 passed、6 skipped、1 warning、0 failed**，114 必需 lane、十一组 910 原版断言、42 双侧驱动及真实解压 Python 3.8.10/原版浏览器通过。三十个有界任务重签，包含此前未签收的 ACP subprocess/teardown、MCP disposal、进程树、cache/point/corpus/title、ZIP 暂存和谱系/事件窗口；证据见 `reviews/SESSION-TRACING-CLOSURE-20261004.md`。此前失败和源缓存 40ms 时序诊断均保留，没有新绕过或重试；过滤/完整 FTS、B/C/D、整体 accepted_upstream 与延期 Win7 仍开放。
+
 2026-10-04 ACP/MCP：干净候选 `e24fe1db` 完整冻结门禁 **5508 passed、6 skipped、1 warning、0 failed**，62 必需 lane、七组 722 项原版断言、31 双侧驱动及真实解压会话 MCP 消费者通过。`CON-ACP-MCP@1` 有界 integrated，十九份证据归档 `evidence/artifacts/ACP-MCP-20261004-e24fe1db.zip`，见 `reviews/ACP-MCP-CLOSURE-20261004.md`。无限阻塞初始化、完整 URL/SDK、subprocess subagent、B/C/D、整体 accepted_upstream 与延期 Win7 仍开放；第五部分继续单独实施和验收。
 
 2026-10-04 MCP：干净产品候选 `8a17485d` 完整冻结门禁 **5408 passed、6 skipped、1 warning、0 failed**，51 必需 lane、七组 722 项原版断言、30 双侧驱动及真实解压 stdio/HTTP 工具消费者通过。`CON-MCP-STDIO@1` 和 `CON-MCP-HTTP@1` 只按有界提供端范围 integrated，18 份合同证据归档 `evidence/artifacts/MCP-20261004-8a17485d.zip`；见 `reviews/MCP-CLOSURE-20261004.md`。此前 browser startup 取消及既有 Proactor/HTTP 10054 保留未归因，完整 SDK/ACP mounting/subagent/B/C/D、整体 accepted_upstream 与延期 Win7 未闭环。

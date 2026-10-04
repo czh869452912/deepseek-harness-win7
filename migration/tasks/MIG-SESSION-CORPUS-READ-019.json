@@ -2,7 +2,7 @@
   "id": "MIG-SESSION-CORPUS-READ-019",
   "goal": "补齐 cold/live 精确日志读取与有界并发标题批量查询",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "c7796ca24ee6019b2f580aff9d4401188a1b787c",
   "owner": "current-session-coordinator",
@@ -36,12 +36,12 @@
     "migration",
     "docs/research"
   ],
-  "open_findings": [
-    "Product d81dee16 completed clean Python regression (5970 passed, 6 skipped, 1 existing warning) but the unchanged original storage/cache suite failed its fixed 40ms creation-cut assertion (45 passed, 1 failed). Its inputs, raw failure and exact clean ZIP are preserved. No integration, retry or bug exception followed. The subsequent lineage/event/SQLite product part passed 493 main targeted tests and requires a new complete common acceptance; broader B/C/D remain open."
-  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "d81dee16 原版缓存断言拒绝已保留；提交下一 tracing/SQLite 部分，冻结新共同候选全量/114 必需 lane/42 配对/解压，全部通过才有界签收。"
+  "candidate_commit": "5c0b3c5e229d900435b3b9df3ed36f9d64a9028b",
+  "integrated_commit": "5c0b3c5e229d900435b3b9df3ed36f9d64a9028b",
+  "evidence_ids": [
+    "RUN-SESSION-TRACING-20261004-SESSION-CORPUS-READ-019"
+  ],
+  "next_action": "clean candidate 5c0b3c5e 的十九组 corpus/title 读取和取消排空已有界验收；继续完整 FTS/filter/event tracing/长期历史、全部 title/provider epoch、Web/profile 和整体迁移，不认证完整 B1 或 Win7。"
 }

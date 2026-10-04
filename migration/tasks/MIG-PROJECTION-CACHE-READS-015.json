@@ -2,25 +2,47 @@
   "id": "MIG-PROJECTION-CACHE-READS-015",
   "goal": "对齐 JSON durable projection cache 冷读失败、prepared fallback 和身份/cut回放边界",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "97a4844bd00cf44117cb345f18b6336f7ab8200d",
   "owner": "current-session-coordinator",
   "requires": [
-    {"task": "MIG-SESSION-PROJECTION-007", "contract": "CON-SESSION-PROJECTION", "revision": 1},
-    {"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}
+    {
+      "task": "MIG-SESSION-PROJECTION-007",
+      "contract": "CON-SESSION-PROJECTION",
+      "revision": 1
+    },
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    }
   ],
-  "provides": [{"contract": "CON-PROJECTION-CACHE-READS", "revision": 1}],
+  "provides": [
+    {
+      "contract": "CON-PROJECTION-CACHE-READS",
+      "revision": 1
+    }
+  ],
   "acceptance": [
     "Fresh actual source/Native JSON domain, Session, registry and cache consumers match eight literal read observations including raw TypeError identity, applied seqs, snapshots and complete durable records; previous cold malformed overwrite failure stays archived.",
     "Unmodified selected original domain/cache 46 assertions and strict negative observers pass; prepared malformed fallback remains functional while cold failure never becomes successful replay or a cache overwrite.",
     "Current clean full Python/source/paired/Portable gate and extracted embedded Python 3.8.10 execute the same observations with exact candidate/input/root/module provenance before integration."
   ],
-  "expected_paths": ["dsh/session", "dsh/storage", "tests", "scripts", "migration", "docs/research"],
-  "open_findings": ["Fresh main eight raw observations, 46 original assertions and 279 source/observer/registry/cache/current-gate regressions passed. Extended gate requires 93 lanes, nine original groups/834 assertions, 37 paired drivers and eight exact extracted reads. Prior clean97a4844b failed one browser startup fetch lane; new clean complete candidate and actual extracted acceptance remain pending. Full Session replay/domain/Web/SQLite/long history remains outside this read contract."],
+  "expected_paths": [
+    "dsh/session",
+    "dsh/storage",
+    "tests",
+    "scripts",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "提交缓存提供端和已通过的定向观察门禁；调查未归因浏览器启动取消，新干净候选完整通过才有界集成，继续 B1/B2/B3/C/D。"
+  "candidate_commit": "5c0b3c5e229d900435b3b9df3ed36f9d64a9028b",
+  "integrated_commit": "5c0b3c5e229d900435b3b9df3ed36f9d64a9028b",
+  "evidence_ids": [
+    "RUN-SESSION-TRACING-20261004-PROJECTION-CACHE-READS-015"
+  ],
+  "next_action": "clean candidate 5c0b3c5e 的八组 JSON domain/registry/cache 读取有界验收；继续完整 domain/FTS/长期回放和当前 Web/profile 消费者，未认证完整 B1 或 Win7。"
 }

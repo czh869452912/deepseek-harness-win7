@@ -4,17 +4,89 @@
   "kind": "implementation",
   "state": "draft",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
-  "base_product": "97f7b287aaeb7f95af4c14c2d86d1977b9714585",
+  "base_product": "5c0b3c5e229d900435b3b9df3ed36f9d64a9028b",
   "owner": null,
   "requires": [
-    {"task": "MIG-ACP-PROMPT-OWNERSHIP-001", "contract": "CON-ACP-PROMPT-OWNERSHIP", "revision": 1},
-    {"task": "MIG-AGENT-LIFECYCLE-002", "contract": "CON-AGENT-FACTORY", "revision": 1},
-    {"task": "MIG-SESSION-COLD-003", "contract": "CON-SESSION-COLD-RECOVERY", "revision": 1},
-    {"task": "MIG-SESSION-STORAGE-006", "contract": "CON-SESSION-STORAGE", "revision": 1},
-    {"task": "MIG-ACP-SESSION-CONTROLS-003", "contract": "CON-ACP-SESSION-CONTROLS", "revision": 1},
-    {"task": "MIG-ACP-CONFIG-OUTPUT-004", "contract": "CON-ACP-CONFIG-OUTPUT", "revision": 1},
-    {"task": "MIG-ACP-STDIO-005", "contract": "CON-ACP-STDIO", "revision": 1},
-    {"task": "MIG-ACP-PERMISSIONS-006", "contract": "CON-ACP-PERMISSIONS", "revision": 1}
+    {
+      "task": "MIG-ACP-PROMPT-OWNERSHIP-001",
+      "contract": "CON-ACP-PROMPT-OWNERSHIP",
+      "revision": 1
+    },
+    {
+      "task": "MIG-AGENT-LIFECYCLE-002",
+      "contract": "CON-AGENT-FACTORY",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-COLD-003",
+      "contract": "CON-SESSION-COLD-RECOVERY",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-STORAGE-006",
+      "contract": "CON-SESSION-STORAGE",
+      "revision": 1
+    },
+    {
+      "task": "MIG-ACP-SESSION-CONTROLS-003",
+      "contract": "CON-ACP-SESSION-CONTROLS",
+      "revision": 1
+    },
+    {
+      "task": "MIG-ACP-CONFIG-OUTPUT-004",
+      "contract": "CON-ACP-CONFIG-OUTPUT",
+      "revision": 1
+    },
+    {
+      "task": "MIG-ACP-STDIO-005",
+      "contract": "CON-ACP-STDIO",
+      "revision": 1
+    },
+    {
+      "task": "MIG-ACP-PERMISSIONS-006",
+      "contract": "CON-ACP-PERMISSIONS",
+      "revision": 1
+    },
+    {
+      "task": "MIG-MCP-STDIO-007",
+      "contract": "CON-MCP-STDIO",
+      "revision": 1
+    },
+    {
+      "task": "MIG-MCP-HTTP-008",
+      "contract": "CON-MCP-HTTP",
+      "revision": 1
+    },
+    {
+      "task": "MIG-ACP-MCP-009",
+      "contract": "CON-ACP-MCP",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SUBAGENT-ACP-010",
+      "contract": "CON-SUBAGENT-ACP",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SUBAGENT-ACP-TEARDOWN-011",
+      "contract": "CON-SUBAGENT-ACP-TEARDOWN",
+      "revision": 1
+    },
+    {
+      "task": "MIG-MCP-DISPOSAL-012",
+      "contract": "CON-MCP-DISPOSAL",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SUBPROCESS-OWNERSHIP-013",
+      "contract": "CON-SUBPROCESS-OWNERSHIP",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SUBPROCESS-TREE-014",
+      "contract": "CON-SUBPROCESS-TREE",
+      "revision": 1
+    }
   ],
   "provides": [],
   "acceptance": [
@@ -23,11 +95,24 @@
     "MCP stdio/network transport and permission requests preserve exact Session/Agent ownership; disposable effects drain output and descendants on disconnect/unload.",
     "Necessary ACP subagent consumers, canonical profile/launcher and extracted Portable execute the same bounded journeys; source-only ACP 139 tests do not certify Python parity."
   ],
-  "expected_paths": ["dsh/acp", "dsh/subagent", "dsh/boot", "apps/cli", "tests", "scripts", "migration", "docs/research"],
-  "open_findings": ["A1 controls, A2 configuration/ordered output, A3 canonical stdio and A4 one-shot permissions are accepted as bounded contracts at clean candidate e887550a. Real MCP stdio/HTTP/SSE, supervisor, ACP mounting and complete subagent closure remain. Two exact original malformed-permission grants are independently reviewed, not raw matches. Existing Proactor and HTTP 10054 test diagnostics remain pending attribution."],
+  "expected_paths": [
+    "dsh/acp",
+    "dsh/subagent",
+    "dsh/boot",
+    "apps/cli",
+    "tests",
+    "scripts",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [
+    "A1/A2/A3 permissions, controlled MCP stdio/HTTP/SSE mounting, subprocess ACP, teardown/disposal and one measured Windows descendant tree are accepted only under their bounded contracts at 5c0b3c5e. The parent has no complete source-backed contract or integrated acceptance.",
+    "Infinite blocked initialization, pathological/oversized streams, full SDK HTTP/TLS/redirect/compression/URL coverage and arbitrary supervisor/Host crash/background Job/terminal/orphan trees remain unaccepted.",
+    "Browser startup cancellation, the original fixed-40ms cache test race, Proactor warnings and HTTP 10054 remain unclassified. Complete profile journeys and deferred Win7 are separate unaccepted scopes."
+  ],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "A1/A2/A3 与一次性权限有界合同已在 e887550a 干净候选验收；继续真实 MCP/HTTP/SSE/supervisor/subagent 的源合同、提供端和消费者闭包。原型与 139 个原版 ACP tests 不认证完整父范围；accepted_upstream 不自动完成。"
+  "next_action": "以 5c0b3c5e 已签收的有界子合同为基础，继续无限阻塞初始化、病态流、SDK HTTP/URL 与完整进程/监督树生命周期；另行制定完整父合同并执行 canonical profile/Portable 消费者闭包，不能由子任务计数推定父范围完成。"
 }

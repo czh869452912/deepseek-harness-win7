@@ -2,26 +2,51 @@
   "id": "MIG-MCP-DISPOSAL-012",
   "goal": "闭合 MCP 关闭期间已接纳同步队列与失败工厂 generation 所有权",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "3ba3f93d85be4819c6f74bfa14361bf4c2011810",
   "owner": "current-session-coordinator",
   "requires": [
-    {"task": "MIG-MCP-STDIO-007", "contract": "CON-MCP-STDIO", "revision": 1},
-    {"task": "MIG-MCP-HTTP-008", "contract": "CON-MCP-HTTP", "revision": 1},
-    {"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}
+    {
+      "task": "MIG-MCP-STDIO-007",
+      "contract": "CON-MCP-STDIO",
+      "revision": 1
+    },
+    {
+      "task": "MIG-MCP-HTTP-008",
+      "contract": "CON-MCP-HTTP",
+      "revision": 1
+    },
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    }
   ],
-  "provides": [{"contract": "CON-MCP-DISPOSAL", "revision": 1}],
+  "provides": [
+    {
+      "contract": "CON-MCP-DISPOSAL",
+      "revision": 1
+    }
+  ],
   "acceptance": [
     "Six fresh actual original supervisor and Native controlled SDK/fetch-barrier observations preserve complete connect/close/fetch/registry order, startup errors, queued notification admission and logs; late swaps drain before final cleanup without adding a queued fetch.",
     "Actual original SDK and Native invalid-URL factory disposal preserve original TypeError/code and both failure/shutdown diagnostics at the owned close barrier; strict observers reject missing or rewritten raw fields and foreign runtime provenance.",
     "Complete Python 3.8 candidate regression, all current original assertions and paired drivers, and actual extracted embedded seven-scenario MCP disposal consumer pass before clean receipt-bound integration."
   ],
-  "expected_paths": ["dsh/mcp", "tests", "scripts", "migration", "docs/research"],
-  "open_findings": ["Isolated seven fresh source/native rows, 53 targeted and 516 MCP regressions passed. Main candidate and actual extracted consumer remain pending. Five/sixth provider contracts and preserved browser startup cancellation remain open; this bounded controlled SDK seam does not certify real network interruption, all HTTP/SDK/replay/URL, complete subprocess trees or deferred Win7."],
+  "expected_paths": [
+    "dsh/mcp",
+    "tests",
+    "scripts",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "主树定向/正式驱动通过后独立提交产品，再由共同干净候选完整门禁和解压验收；追踪浏览器启动取消并继续 subprocess 所有权与其余迁移。"
+  "candidate_commit": "5c0b3c5e229d900435b3b9df3ed36f9d64a9028b",
+  "integrated_commit": "5c0b3c5e229d900435b3b9df3ed36f9d64a9028b",
+  "evidence_ids": [
+    "RUN-SESSION-TRACING-20261004-MCP-DISPOSAL-012"
+  ],
+  "next_action": "有界提供端合同在 clean candidate 5c0b3c5e 验收；继续其余 SDK/生命周期/URL/无限阻塞初始化边缘、subprocess tree/pathological streams/background Jobs 和整体迁移。既有浏览器/Proactor/HTTP 诊断未修复，Win7 仍延期。"
 }

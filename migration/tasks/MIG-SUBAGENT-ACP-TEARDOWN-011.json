@@ -2,25 +2,46 @@
   "id": "MIG-SUBAGENT-ACP-TEARDOWN-011",
   "goal": "闭合 ACP 子代理关闭失败的原始原因、错误聚合、重复清理身份和调用方取消所有权",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "54b9edfb8ac0b50e6dd7a408ce93054ec5bb8040",
   "owner": "current-session-coordinator",
   "requires": [
-    {"task": "MIG-SUBAGENT-ACP-010", "contract": "CON-SUBAGENT-ACP", "revision": 1},
-    {"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}
+    {
+      "task": "MIG-SUBAGENT-ACP-010",
+      "contract": "CON-SUBAGENT-ACP",
+      "revision": 1
+    },
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    }
   ],
-  "provides": [{"contract": "CON-SUBAGENT-ACP-TEARDOWN", "revision": 1}],
+  "provides": [
+    {
+      "contract": "CON-SUBAGENT-ACP-TEARDOWN",
+      "revision": 1
+    }
+  ],
   "acceptance": [
     "Four fresh actual original and Native real-process observations preserve complete protocol, physical spawn/exit, listener removal, raw causes, safe diagnostics, ordered AggregateError members and repeated public dispose failure identity; negative observers reject missing, weak or fabricated fields.",
     "Actual Python cancellation consumers prove that canceling a dispose awaiter cannot cancel owned EOF flush/process exit/RPC drainage, and canceling startup reaps an unpublished blocked new-session child.",
     "Complete Python 3.8 candidate regression, unchanged source assertions, all current paired drivers and actual extracted embedded four-scenario teardown consumer pass before clean receipt-bound integration."
   ],
-  "expected_paths": ["dsh/subagent", "tests", "scripts", "migration", "docs/research"],
-  "open_findings": ["Isolated four real source/native teardown cases, two actual Python cancellation cases and strict observer/gate regressions passed. Fifth provider clean gate remains unaccepted due to preserved browser startup cancellation; both tasks must receive complete joint clean evidence before integration. Main regression, embedded consumer and full candidate acceptance are pending. Pathological streams, complete process trees, Jobs, full SDK and deferred Win7 are outside this bounded contract."],
+  "expected_paths": [
+    "dsh/subagent",
+    "tests",
+    "scripts",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "主树执行定向回归并独立提交关闭产品修复；共同干净候选运行完整门禁、网络诊断和实际解压。第五部分及本部分只有共同证据全部通过才 integrated；继续 MCP/subprocess 关闭和 B/C/D。"
+  "candidate_commit": "5c0b3c5e229d900435b3b9df3ed36f9d64a9028b",
+  "integrated_commit": "5c0b3c5e229d900435b3b9df3ed36f9d64a9028b",
+  "evidence_ids": [
+    "RUN-SESSION-TRACING-20261004-SUBAGENT-ACP-TEARDOWN-011"
+  ],
+  "next_action": "有界提供端合同在 clean candidate 5c0b3c5e 验收；继续其余 SDK/生命周期/URL/无限阻塞初始化边缘、subprocess tree/pathological streams/background Jobs 和整体迁移。既有浏览器/Proactor/HTTP 诊断未修复，Win7 仍延期。"
 }

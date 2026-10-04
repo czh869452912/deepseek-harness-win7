@@ -132,7 +132,8 @@ async def request_stream(adapter, transport, request, options):
                             _on_activity=lambda: state.update(since=time.monotonic()))
             stream = OwnedStream(lambda owned: transport._default_chat_completion_stream(
                 resolved["messages"], tools=resolved.get("tools"), model=resolved["model"],
-                system=resolved.get("system"), options=dict(resolved, signal=owned)), signal)
+                system=resolved.get("system"), options=dict(resolved, signal=owned)), signal,
+                on_settled=lambda: state.update(waiting=False))
             reader = iter_chunks(stream)
             try:
                 async for chunk in reader:

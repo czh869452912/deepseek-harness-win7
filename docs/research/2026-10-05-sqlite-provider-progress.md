@@ -10,6 +10,12 @@
 
 实际 canonical JSONL/SQLite 模型/profile 流程执行五个 Session 工具后冷恢复；另外三个 Web preset 经真实 Remote、本地模型、fork、查询和新 Context 重启通过。未提交的 Portable 预览中，298 项初始提供端矩阵也在真实 Python3.8.10、限制环境和互读数据库中通过；它是开发验证，不能签收最终产品。最终 323 项与来源模块/资源闭包须重新在提交后的完整冻结门禁和实际解压包核验。
 
-原样资源边界与 property differential 套件通过 4 项断言。完整原版 SQLite 研究套件的符号链接 EPERM、两个 POSIX 跳过和缺少原版 lib 的 built-package 跳过仍如实保留；未修改权限、增加新 skip 或称整套通过。当前冻结门禁扩展到 358 必需 lane、十六组 1128 原版断言、52 双侧驱动；完整冻结候选尚待执行。
+原样资源边界与 property differential 套件通过 4 项断言。完整原版 SQLite 研究套件的符号链接 EPERM、两个 POSIX 跳过和缺少原版 lib 的 built-package 跳过仍如实保留；未修改权限、增加新 skip 或称整套通过。冻结门禁扩展到 358 必需 lane、十六组 1128 原版断言、52 双侧驱动。
+
+产品 `d5cc655471febc74203ab3a6a93c023e5f95fd90` 的首次完整冻结门禁被拒绝：6769 passed、2 failed、6 既有平台 skipped、1 既有 Proactor warning，耗时 1582.36 秒。失败是部分字节流活动的 idle watchdog 和原版浏览器 creative host 升级启动取消；两项均不属于本次 SQLite 专项断言。原版/配对/解压正式阶段尚未执行，不能签收 SQLite 提供端。确切失败包保存在 `.goose/out/sqlite-provider-clean-d5cc6554/candidate-portable.zip`，SHA256 `8a123afd7c216676935ec10f14b3d26aa931d563a0fa1f0469a66dd248af5392`，输入清单 SHA256 `f903faee0ae1d0da5e0f60c63091618c087d158b25cae1659a508156816aa1c3`；同目录 rejection-provenance.json、完整日志和 XML 绑定此失败候选，不重试同一产品、不新增例外或跳过。
+
+浏览器业务的 17 步/9 次 RPC 已完成，但升级页面的五个启动 POST 被 renderer 取消并触发原版错误日志。取消发生于 load 附近，无中间 navigation/context destruction；NetworkService 的 syncInspectManifest 请求实际上收到 200。另一个开启诊断的十次启动循环通过，未复现取消，不能替代失败候选的签收或归因。
+
+流超时另有独立受控复现：真实 HTTP 读取已产生首块，把其异步交付延迟 350ms 时，250ms watchdog 仍错误取消底层 signal。原版 idleWatchdog 在 iterator.next settled 时即停止计时；原生原先直到外层收到块才停止。OwnedStream 的读取完成回调修复这一边界，真实空闲超时、字节活动、取消与消费清理的 54 项定向测试通过。共享 timeout 双侧十项实际观察也通过，settled 后延迟接收的测试仍保留真实阻塞超时和 stable signal 判据。原始失败缺少活动时间戳，不能把这个受控根因直接归为 d5cc 的部分字节流失败原因。
 
 完整 malformed/public extension ABI、任意竞争与多工作区/长历史、压缩 JSONL、所有 UI/reconnect/profile 组合、OAuth/云端、通用 JS/plugin/package/trust、fresh uncached bootstrap/remote Actions 与整体迁移仍开放。历史启动取消、Source 固定等待 cache、Proactor warning 和外部目录持有者也未因本次通过而归因。accepted_upstream 为空，Win7 真机按用户决定延期。

@@ -131,9 +131,10 @@ async def run(clock):
         clock.advance(99)
         protected = not stable.aborted
         first.set_result(dict(done=False, value=1))
-        await demand
+        await asyncio.sleep(0)
         clock.advance(1000)
         idle_protected = not stable.aborted
+        await demand
         late = asyncio.create_task(watchdog.next(SimpleNamespace(next=lambda: second)))
         await asyncio.sleep(0)
         clock.advance(100)

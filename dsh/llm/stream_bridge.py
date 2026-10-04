@@ -14,15 +14,20 @@ class ConsumerSignal:
 
 
 class OwnedStream:
-    def __init__(self, factory, caller=None):
+    def __init__(self, factory, caller=None, on_settled=None):
         self.signal = ConsumerSignal(caller)
         self.iterator = iter(factory(self.signal))
+        self.on_settled = on_settled
 
     def __iter__(self):
         return self
 
     def __next__(self):
-        return next(self.iterator)
+        try:
+            return next(self.iterator)
+        finally:
+            if self.on_settled is not None:
+                self.on_settled()
 
     def cancel(self):
         self.signal.stopped.set()

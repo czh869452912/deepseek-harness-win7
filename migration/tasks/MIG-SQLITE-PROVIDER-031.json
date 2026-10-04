@@ -20,7 +20,7 @@
     "A clean committed full release gate passes all tests, 358 mandatory lanes, sixteen unchanged Source groups/1128 assertions, 52 paired drivers and actual extracted/original-browser acceptance with full fresh source/input digests and candidate module/resource closure. Source symlink EPERM and existing platform/built-package skips remain explicit host limitations rather than new skips or a green whole-source-suite claim."
   ],
   "expected_paths": ["dsh/session", "dsh/boot/plugin_registry.py", "scripts", "tests", "migration", "docs/research"],
-  "open_findings": ["Canonical provider implementation and qualification are in progress; no new complete frozen candidate has been accepted."],
+  "open_findings": ["Canonical provider implementation and focused qualification are committed in d5cc655471febc74203ab3a6a93c023e5f95fd90; its complete gate was rejected with 6769 passed, 2 failed and 6 existing platform skips. Partial-wire watchdog and original-browser startup cancellation remain unrooted; a separate controlled settled-read delivery bug is being repaired. No unchanged-candidate retry, new exception or passing acceptance is authorized by this failure."],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,

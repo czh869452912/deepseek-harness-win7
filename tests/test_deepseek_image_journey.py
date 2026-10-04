@@ -135,6 +135,41 @@ async def test_extension_request_idle_watchdog_tracks_partial_wire_activity(tmp_
 
 
 @pytest.mark.asyncio
+async def test_extension_idle_watchdog_does_not_charge_settled_reader_delivery(tmp_path, endpoint, monkeypatch):
+    from dsh.llm import deepseek_request
+    from dsh.core.abort import AbortController
+    original = deepseek_request.iter_chunks
+    delivered = []
+    controller = AbortController()
+    monkeypatch.setattr(deepseek_request, 'AbortController', lambda: controller)
+
+    async def delayed_delivery(stream):
+        reader = original(stream)
+        try:
+            async for chunk in reader:
+                if not delivered:
+                    delivered.append(chunk['type'])
+                    await asyncio.sleep(0.35)
+                    assert not controller.signal.aborted
+                yield chunk
+        finally:
+            await reader.aclose()
+
+    monkeypatch.setattr(deepseek_request, 'iter_chunks', delayed_delivery)
+    url, state = endpoint
+    ctx, adapter, _ = await setup(tmp_path, url)
+    adapter.config['streamIdleTimeoutMs'] = 250
+    try:
+        chunks = [chunk async for chunk in adapter.stream({'model': 'vision', 'messages': []})]
+        assert delivered == ['block-start']
+        assert chunks[-1]['type'] == 'finish'
+        assert len(state['chats']) == 1
+    finally:
+        await adapter.close()
+        await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
 async def test_normalized_image_handle_uses_execution_world_mapping(tmp_path, endpoint):
     url, state = endpoint
     ctx, adapter, ref = await setup(tmp_path, url)

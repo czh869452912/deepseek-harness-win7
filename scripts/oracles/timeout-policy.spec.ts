@@ -87,9 +87,9 @@ it('records actual pinned tool-policy and shared-timeout observations', async ()
     await vi.advanceTimersByTimeAsync(99)
     const pulseProtected = !stable.aborted
     first.resolve({ done: false, value: 1 })
-    await demand
     await vi.advanceTimersByTimeAsync(1000)
     const idleProtected = !stable.aborted
+    await demand
     const late = watchdog.next({ next: () => second.promise })
     await vi.advanceTimersByTimeAsync(100)
     const blockedUntilProvider = { noDemand, pulseProtected, idleProtected, stable: watchdog.signal === stable,

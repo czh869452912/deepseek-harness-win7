@@ -1,0 +1,39 @@
+{
+  "id": "CON-SESSION-TRACING",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/session-query/session-query/src/tracing.ts",
+    "reference/packages/session-query/session-query/src/index.ts",
+    "reference/packages/session-query/session-query/tests/tracing.spec.ts",
+    "reference/packages/core/session/src/index.ts"
+  ],
+  "consumers": [
+    "dsh/session/tracing.py",
+    "dsh/session/session_query.py",
+    "dsh/session/persistence_sqlite.py",
+    "dsh/session/log_export.py",
+    "dsh/context/session_reference.py",
+    "scripts/verify_portable.py"
+  ],
+  "invariants": [
+    "Lineage uses one corpus listing and no inspections; missing targets and target-connected cycles retain literal typed diagnostics.",
+    "Complete lineage includes a detached root and closest-first ancestry; partial lineage omits root and reports the first unresolvedParentId.",
+    "Descendants are oldest-first with ASCII tie ids; explicit stacks construct at least 3500 descendants without Python recursion.",
+    "Whole-log surface folding classifies current/shadowed/log-only records and preserves direct positional replacement chains and cited source/derived event order.",
+    "Event target existence is checked before whole-log surface validation; invalid surface errors retain the original fold failure cause.",
+    "Raw windows validate before/after before source work, clamp to captured log bounds, and reuse one adopted target snapshot at its position in the returned window.",
+    "readSession/readSurface/readEvent detach snapshots and freeze identified message payloads while event envelopes remain caller owned; cold reads do not activate sessions.",
+    "SQLite replacement objects round-trip through durable JSON while existing append literals remain readable, including a fresh backend instance after publication."
+  ],
+  "identity": "Exact signal/root error/cause, target-window snapshot alias, cloned headers and adopted message identities are preserved in enumerated scenarios.",
+  "ownership": "One-shot queries retain no live lease or full cached history; corpus owns source selection and started inspections. Event outputs and lineage records are detached.",
+  "ordering": "Ancestry is closest-first; descendants are sorted oldest-first; fold validation precedes event classification, after target lookup. Invalid windows precede source resolution.",
+  "errors": "Fourteen lineage and thirty event observations freeze actual names, codes, messages, causes and raw results. Neither ordinary failures nor aborts are suppressed.",
+  "cancellation": "Existing direct signals reach corpus; traceSession also accepts the historical internal options adapter. Enumerated pre-abort and persisted failures preserve reason identity.",
+  "adaptation": "Explicit stacks replace recursive descendant construction. SQLite object serialization is a native backend adaptation. ASCII collation only is certified; message snapshots use canonical adoption.",
+  "open_questions": [
+    "A new clean full gate and actual extracted Python 3.8.10 remain required. Controlled listing/inspection/failure seams are distinct from six actual JSONL/SQLite consumer lanes. Complete FTS/filter/index generations, non-ASCII locale collation, arbitrary Task cancellation/provider epochs, Web/profile composition and deferred Win7 are unaccepted."
+  ]
+}

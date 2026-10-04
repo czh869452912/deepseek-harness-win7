@@ -1,0 +1,564 @@
+[
+  {
+    "name": "root",
+    "observed": {
+      "trace": {
+        "keys": [
+          "ancestors",
+          "complete",
+          "descendants",
+          "root",
+          "target"
+        ],
+        "target": {
+          "id": "target",
+          "createdAt": 1,
+          "parent": null,
+          "live": true,
+          "persisted": false
+        },
+        "ancestors": [],
+        "complete": true,
+        "root": {
+          "id": "target",
+          "createdAt": 1,
+          "parent": null,
+          "live": true,
+          "persisted": false
+        },
+        "unresolvedParentId": null,
+        "descendants": []
+      },
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": false
+      }
+    }
+  },
+  {
+    "name": "complete",
+    "observed": {
+      "trace": {
+        "keys": [
+          "ancestors",
+          "complete",
+          "descendants",
+          "root",
+          "target"
+        ],
+        "target": {
+          "id": "target",
+          "createdAt": 2,
+          "parent": "parent",
+          "live": true,
+          "persisted": false
+        },
+        "ancestors": [
+          {
+            "id": "parent",
+            "createdAt": 1,
+            "parent": "root",
+            "live": true,
+            "persisted": false
+          },
+          {
+            "id": "root",
+            "createdAt": 0,
+            "parent": null,
+            "live": true,
+            "persisted": false
+          }
+        ],
+        "complete": true,
+        "root": {
+          "id": "root",
+          "createdAt": 0,
+          "parent": null,
+          "live": true,
+          "persisted": false
+        },
+        "unresolvedParentId": null,
+        "descendants": [
+          {
+            "id": "older",
+            "createdAt": 3,
+            "parent": "target",
+            "live": true,
+            "persisted": false,
+            "depth": 1
+          },
+          {
+            "id": "a",
+            "createdAt": 4,
+            "parent": "target",
+            "live": true,
+            "persisted": false,
+            "depth": 1
+          },
+          {
+            "id": "grandchild",
+            "createdAt": 5,
+            "parent": "a",
+            "live": true,
+            "persisted": false,
+            "depth": 2
+          },
+          {
+            "id": "b",
+            "createdAt": 4,
+            "parent": "target",
+            "live": true,
+            "persisted": false,
+            "depth": 1
+          }
+        ]
+      },
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": false
+      }
+    }
+  },
+  {
+    "name": "partial",
+    "observed": {
+      "trace": {
+        "keys": [
+          "ancestors",
+          "complete",
+          "descendants",
+          "target",
+          "unresolvedParentId"
+        ],
+        "target": {
+          "id": "target",
+          "createdAt": 1,
+          "parent": "outside",
+          "live": true,
+          "persisted": false
+        },
+        "ancestors": [],
+        "complete": false,
+        "root": null,
+        "unresolvedParentId": "outside",
+        "descendants": []
+      },
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": false
+      }
+    }
+  },
+  {
+    "name": "cycle",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session lineage contains a cycle at \"target\"",
+        "code": "SESSION_QUERY_INVALID_LINEAGE",
+        "sameCause": false,
+        "sameFailure": false
+      },
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": false
+      }
+    }
+  },
+  {
+    "name": "self-cycle",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session lineage contains a cycle at \"target\"",
+        "code": "SESSION_QUERY_INVALID_LINEAGE",
+        "sameCause": false,
+        "sameFailure": false
+      },
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": false
+      }
+    }
+  },
+  {
+    "name": "missing",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session \"absent\" not found",
+        "code": "SESSION_QUERY_SESSION_NOT_FOUND",
+        "sameCause": false,
+        "sameFailure": false
+      },
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": false
+      }
+    }
+  },
+  {
+    "name": "deep",
+    "observed": {
+      "trace": {
+        "keys": [
+          "ancestors",
+          "complete",
+          "descendants",
+          "root",
+          "target"
+        ],
+        "target": {
+          "id": "target",
+          "createdAt": 0,
+          "parent": null,
+          "live": true,
+          "persisted": false
+        },
+        "ancestors": [],
+        "complete": true,
+        "root": {
+          "id": "target",
+          "createdAt": 0,
+          "parent": null,
+          "live": true,
+          "persisted": false
+        },
+        "unresolvedParentId": null,
+        "descendants": {
+          "count": 3500,
+          "first": {
+            "id": "deep-1",
+            "createdAt": 1,
+            "parent": "target",
+            "live": true,
+            "persisted": false,
+            "depth": 1
+          },
+          "last": {
+            "id": "deep-3500",
+            "createdAt": 3500,
+            "parent": "deep-3499",
+            "live": true,
+            "persisted": false,
+            "depth": 3500
+          }
+        }
+      },
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": false
+      }
+    }
+  },
+  {
+    "name": "unrelated-cycle",
+    "observed": {
+      "trace": {
+        "keys": [
+          "ancestors",
+          "complete",
+          "descendants",
+          "root",
+          "target"
+        ],
+        "target": {
+          "id": "target",
+          "createdAt": 1,
+          "parent": null,
+          "live": true,
+          "persisted": false
+        },
+        "ancestors": [],
+        "complete": true,
+        "root": {
+          "id": "target",
+          "createdAt": 1,
+          "parent": null,
+          "live": true,
+          "persisted": false
+        },
+        "unresolvedParentId": null,
+        "descendants": []
+      },
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": false
+      }
+    }
+  },
+  {
+    "name": "persisted",
+    "observed": {
+      "trace": {
+        "keys": [
+          "ancestors",
+          "complete",
+          "descendants",
+          "root",
+          "target"
+        ],
+        "target": {
+          "id": "target",
+          "createdAt": 1,
+          "parent": null,
+          "live": false,
+          "persisted": true
+        },
+        "ancestors": [],
+        "complete": true,
+        "root": {
+          "id": "target",
+          "createdAt": 1,
+          "parent": null,
+          "live": false,
+          "persisted": true
+        },
+        "unresolvedParentId": null,
+        "descendants": []
+      },
+      "counters": {
+        "lists": 1,
+        "inspections": 0,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "listing-failure",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session persistence listing failed: controlled lineage failure",
+        "code": "SESSION_QUERY_PERSISTENCE_FAILED",
+        "sameCause": true,
+        "sameFailure": false
+      },
+      "counters": {
+        "lists": 1,
+        "inspections": 0,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "foreign-rejection",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session persistence listing failed: unknown error",
+        "code": "SESSION_QUERY_PERSISTENCE_FAILED",
+        "sameCause": true,
+        "sameFailure": false
+      },
+      "counters": {
+        "lists": 1,
+        "inspections": 0,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "pre-abort",
+    "observed": {
+      "error": {
+        "name": "TypeError",
+        "message": "controlled lineage failure",
+        "code": null,
+        "sameCause": false,
+        "sameFailure": true
+      },
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": false
+      }
+    }
+  },
+  {
+    "name": "list-abort",
+    "observed": {
+      "error": {
+        "name": "TypeError",
+        "message": "controlled lineage failure",
+        "code": null,
+        "sameCause": false,
+        "sameFailure": true
+      },
+      "counters": {
+        "lists": 1,
+        "inspections": 0,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "clone-detachment",
+    "observed": {
+      "trace": {
+        "keys": [
+          "ancestors",
+          "complete",
+          "descendants",
+          "root",
+          "target"
+        ],
+        "target": {
+          "id": "target",
+          "createdAt": 2,
+          "parent": "parent",
+          "live": true,
+          "persisted": false
+        },
+        "ancestors": [
+          {
+            "id": "parent",
+            "createdAt": 1,
+            "parent": "root",
+            "live": true,
+            "persisted": false
+          },
+          {
+            "id": "root",
+            "createdAt": 0,
+            "parent": null,
+            "live": true,
+            "persisted": false
+          }
+        ],
+        "complete": true,
+        "root": {
+          "id": "root",
+          "createdAt": 0,
+          "parent": null,
+          "live": true,
+          "persisted": false
+        },
+        "unresolvedParentId": null,
+        "descendants": [
+          {
+            "id": "older",
+            "createdAt": 3,
+            "parent": "target",
+            "live": true,
+            "persisted": false,
+            "depth": 1
+          },
+          {
+            "id": "a",
+            "createdAt": 4,
+            "parent": "target",
+            "live": true,
+            "persisted": false,
+            "depth": 1
+          },
+          {
+            "id": "grandchild",
+            "createdAt": 5,
+            "parent": "a",
+            "live": true,
+            "persisted": false,
+            "depth": 2
+          },
+          {
+            "id": "b",
+            "createdAt": 4,
+            "parent": "target",
+            "live": true,
+            "persisted": false,
+            "depth": 1
+          }
+        ]
+      },
+      "repeated": {
+        "keys": [
+          "ancestors",
+          "complete",
+          "descendants",
+          "root",
+          "target"
+        ],
+        "target": {
+          "id": "target",
+          "createdAt": 2,
+          "parent": "parent",
+          "live": true,
+          "persisted": false
+        },
+        "ancestors": [
+          {
+            "id": "parent",
+            "createdAt": 1,
+            "parent": "root",
+            "live": true,
+            "persisted": false
+          },
+          {
+            "id": "root",
+            "createdAt": 0,
+            "parent": null,
+            "live": true,
+            "persisted": false
+          }
+        ],
+        "complete": true,
+        "root": {
+          "id": "root",
+          "createdAt": 0,
+          "parent": null,
+          "live": true,
+          "persisted": false
+        },
+        "unresolvedParentId": null,
+        "descendants": [
+          {
+            "id": "older",
+            "createdAt": 3,
+            "parent": "target",
+            "live": true,
+            "persisted": false,
+            "depth": 1
+          },
+          {
+            "id": "a",
+            "createdAt": 4,
+            "parent": "target",
+            "live": true,
+            "persisted": false,
+            "depth": 1
+          },
+          {
+            "id": "grandchild",
+            "createdAt": 5,
+            "parent": "a",
+            "live": true,
+            "persisted": false,
+            "depth": 2
+          },
+          {
+            "id": "b",
+            "createdAt": 4,
+            "parent": "target",
+            "live": true,
+            "persisted": false,
+            "depth": 1
+          }
+        ]
+      },
+      "sourceUnchanged": true,
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": false
+      }
+    }
+  }
+]

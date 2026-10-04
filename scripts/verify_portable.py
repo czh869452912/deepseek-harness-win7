@@ -30,6 +30,8 @@ from scripts.projection_cache_failure_oracle import validate_runtime as validate
 from scripts.session_observation_read_oracle import validate_runtime as validate_session_observation_reads
 from scripts.session_corpus_list_oracle import validate_runtime as validate_session_corpus_list
 from scripts.session_corpus_read_oracle import validate_runtime as validate_session_corpus_read
+from scripts.session_lineage_oracle import validate_runtime as validate_session_lineage
+from scripts.session_event_trace_oracle import validate_runtime as validate_session_event_trace
 
 
 def digest(path):
@@ -93,7 +95,10 @@ def main(argv=None):
             'session_observation_read_oracle.py', 'oracles/session_observation_read_python.py',
             'oracles/session_observation_read_expected.json', 'session_corpus_list_oracle.py',
             'oracles/session_corpus_list_python.py', 'oracles/session_corpus_list_expected.json',
-            'session_corpus_read_oracle.py', 'oracles/session_corpus_read_python.py', 'oracles/session_corpus_read_expected.json')})
+            'session_corpus_read_oracle.py', 'oracles/session_corpus_read_python.py', 'oracles/session_corpus_read_expected.json',
+            'session_lineage_oracle.py', 'oracles/session_lineage_python.py', 'oracles/session_lineage_expected.json',
+            'session_event_trace_oracle.py', 'oracles/session_event_trace_python.py',
+            'oracles/session_event_trace_expected.json', 'oracles/session_event_trace_fixture.json')})
     node = shutil.which('node') if args.browser else None
     try:
         if args.browser and not node:
@@ -298,6 +303,20 @@ def main(argv=None):
             if corpus_read_report['root'] != str(portable):
                 raise RuntimeError('Extracted Session corpus reads imported a different product')
             report['sessionCorpusRead'] = corpus_read_report
+            for name, key, validate in [('session_lineage', 'sessionLineage', validate_session_lineage),
+                                        ('session_event_trace', 'sessionEventTrace', validate_session_event_trace)]:
+                trace_path = workspace / (name + '.json')
+                trace = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                    str(ROOT / 'scripts/oracles' / (name + '_python.py')), str(trace_path), '--root', str(portable)],
+                    cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=90)
+                output.with_suffix('.' + name + '.log').write_text(trace.stdout + '\nSTDERR:\n' + trace.stderr, encoding='utf-8')
+                if trace.returncode or trace.stderr or not trace_path.is_file():
+                    raise RuntimeError('Extracted ' + name + ' failed')
+                trace_report = json.loads(trace_path.read_text(encoding='utf-8'))
+                validate(trace_report)
+                if trace_report['root'] != str(portable):
+                    raise RuntimeError('Extracted ' + name + ' imported a different product')
+                report[key] = trace_report
             if args.browser:
                 browser_report = output.with_suffix('.browser.json')
                 # The observer launches the Host with the same restricted env.

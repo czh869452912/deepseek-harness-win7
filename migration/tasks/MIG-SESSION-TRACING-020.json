@@ -1,0 +1,53 @@
+{
+  "id": "MIG-SESSION-TRACING-020",
+  "goal": "补齐 Session 谱系、事件替换链、原始读取窗口及持久化替换对象",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "d81dee166b834944f3969624590d0485a897a907",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-SESSION-CORPUS-READ-019",
+      "contract": "CON-SESSION-CORPUS-READ",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-STORAGE-006",
+      "contract": "CON-SESSION-STORAGE",
+      "revision": 1
+    },
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-SESSION-TRACING",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "Fourteen fresh lineage and thirty fresh event source/native observations retain exact diagnostics, partial/root shape, ordered stack-independent descendants, positional replacements, window aliasing and snapshot adoption.",
+    "Strict refusal probes and six actual JSONL/SQLite lineage/event consumer lanes pass, including fresh-backend replacement object round-trip without activation.",
+    "A new clean complete current release gate and extracted Python 3.8.10 must execute both declared observers with exact input/product/root provenance before bounded integration."
+  ],
+  "expected_paths": [
+    "dsh/session",
+    "dsh/context",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [
+    "Fourteen lineage and thirty event observations match; isolated 183 consumer regressions, isolated 493 expanded gate/consumer regressions, and main 493 targeted regressions passed. The previous clean d81dee16 gate passed all 5970 Python tests, then failed one of 46 unchanged storage/cache source assertions at its fixed 40ms creation-cut check. Inputs, raw failure and exact ZIP are preserved. A development-only declared 100ms fsync delay reproduces the same assertion with readFile/ENOENT before atomic publication; the original run's specific delay remains unclassified. No integration, bypass or retry was added. This promoted product part requires a new complete clean candidate."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "主树定向回归并独立提交完整 tracing 提供端/SQLite 消费者/门禁；冻结新候选运行全量、114 必需 lane、42 配对与解压。保留并调查原版缓存 40ms 时序失败，继续 FTS/filter/Web 主链和整体迁移。"
+}

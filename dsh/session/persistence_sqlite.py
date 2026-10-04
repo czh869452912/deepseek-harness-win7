@@ -147,7 +147,7 @@ class SqliteSessionPersistence(SessionPersistence):
                     etype,
                     etime,
                     json.dumps(data, ensure_ascii=False),
-                    surface_op,
+                    json.dumps(surface_op, ensure_ascii=False) if isinstance(surface_op, dict) else surface_op,
                     json.dumps(source_seqs) if source_seqs is not None else None,
                     ignorable,
                 ),
@@ -186,7 +186,7 @@ class SqliteSessionPersistence(SessionPersistence):
                 "data": json.loads(r[3]) if r[3] else {},
             }
             if r[4] is not None:
-                ev["surfaceOp"] = r[4]
+                ev["surfaceOp"] = r[4] if r[4] == 'append' else json.loads(r[4])
             if r[5] is not None:
                 ev["sourceEventSeqs"] = json.loads(r[5])
             if r[6]:

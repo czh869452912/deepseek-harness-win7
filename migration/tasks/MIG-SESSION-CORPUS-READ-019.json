@@ -37,11 +37,11 @@
     "docs/research"
   ],
   "open_findings": [
-    "Nineteen fresh observations match. Main 409 targeted regressions passed, including four durable consumers and strict release-gate refusal probes; isolated expanded regression passed 359. Earlier c7796ca2 full gate was interrupted at 85%, with no final receipt; its frozen inputs, logs and actual clean ZIP are preserved as interrupted, never acceptance. All prior failed gates remain rejected. Complete new candidate acceptance and broader B1/B2/B3/C/D remain open."
+    "Product d81dee16 completed clean Python regression (5970 passed, 6 skipped, 1 existing warning) but the unchanged original storage/cache suite failed its fixed 40ms creation-cut assertion (45 passed, 1 failed). Its inputs, raw failure and exact clean ZIP are preserved. No integration, retry or bug exception followed. The subsequent lineage/event/SQLite product part passed 493 main targeted tests and requires a new complete common acceptance; broader B/C/D remain open."
   ],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "独立提交已验证的 corpus/title 提供端和观察门禁；冻结共同新候选完整回归/原版/40 配对/解压，再签收有界 A4 和 B1 子合同，继续全部剩余范围。"
+  "next_action": "d81dee16 原版缓存断言拒绝已保留；提交下一 tracing/SQLite 部分，冻结新共同候选全量/114 必需 lane/42 配对/解压，全部通过才有界签收。"
 }

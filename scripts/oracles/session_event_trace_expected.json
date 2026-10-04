@@ -1,0 +1,833 @@
+[
+  {
+    "name": "trace-original",
+    "observed": {
+      "trace": {
+        "id": "owned",
+        "target": {
+          "sessionId": "owned",
+          "seq": 1,
+          "type": "user/message",
+          "time": 2,
+          "surface": "shadowed"
+        },
+        "replacedBy": 2,
+        "replacementChain": [
+          2,
+          4
+        ],
+        "replacedEventSeqs": [],
+        "sourceEventSeqs": [],
+        "derivedEventSeqs": [
+          2
+        ]
+      },
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "trace-replacement",
+    "observed": {
+      "trace": {
+        "id": "owned",
+        "target": {
+          "sessionId": "owned",
+          "seq": 2,
+          "type": "user/message",
+          "time": 3,
+          "surface": "shadowed"
+        },
+        "replacedBy": 4,
+        "replacementChain": [
+          4
+        ],
+        "replacedEventSeqs": [
+          1
+        ],
+        "sourceEventSeqs": [
+          1
+        ],
+        "derivedEventSeqs": [
+          4
+        ]
+      },
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "trace-log-only",
+    "observed": {
+      "trace": {
+        "id": "owned",
+        "target": {
+          "sessionId": "owned",
+          "seq": 0,
+          "type": "session/title",
+          "time": 1,
+          "surface": "log-only"
+        },
+        "replacementChain": [],
+        "replacedEventSeqs": [],
+        "sourceEventSeqs": [],
+        "derivedEventSeqs": [
+          3
+        ]
+      },
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "trace-current",
+    "observed": {
+      "trace": {
+        "id": "owned",
+        "target": {
+          "sessionId": "owned",
+          "seq": 4,
+          "type": "user/message",
+          "time": 5,
+          "surface": "current"
+        },
+        "replacementChain": [],
+        "replacedEventSeqs": [
+          2
+        ],
+        "sourceEventSeqs": [
+          2
+        ],
+        "derivedEventSeqs": []
+      },
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "trace-detachment",
+    "observed": {
+      "trace": {
+        "id": "owned",
+        "target": {
+          "sessionId": "owned",
+          "seq": 2,
+          "type": "user/message",
+          "time": 99,
+          "surface": "shadowed"
+        },
+        "replacedBy": 4,
+        "replacementChain": [
+          4,
+          99
+        ],
+        "replacedEventSeqs": [
+          1,
+          99
+        ],
+        "sourceEventSeqs": [
+          1,
+          99
+        ],
+        "derivedEventSeqs": [
+          4,
+          99
+        ]
+      },
+      "repeated": {
+        "id": "owned",
+        "target": {
+          "sessionId": "owned",
+          "seq": 2,
+          "type": "user/message",
+          "time": 3,
+          "surface": "shadowed"
+        },
+        "replacedBy": 4,
+        "replacementChain": [
+          4
+        ],
+        "replacedEventSeqs": [
+          1
+        ],
+        "sourceEventSeqs": [
+          1
+        ],
+        "derivedEventSeqs": [
+          4
+        ]
+      },
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "surface-live",
+    "observed": {
+      "surface": {
+        "id": "owned",
+        "capturedThroughSeq": 5,
+        "events": [
+          {
+            "seq": 4,
+            "type": "user/message",
+            "time": 5,
+            "text": "summary two"
+          },
+          {
+            "seq": 3,
+            "type": "user/message",
+            "time": 4,
+            "text": "context"
+          }
+        ]
+      },
+      "messageMutationRefused": true,
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "surface-cold",
+    "observed": {
+      "surface": {
+        "id": "owned",
+        "capturedThroughSeq": 5,
+        "events": [
+          {
+            "seq": 4,
+            "type": "user/message",
+            "time": 5,
+            "text": "summary two"
+          },
+          {
+            "seq": 3,
+            "type": "user/message",
+            "time": 4,
+            "text": "context"
+          }
+        ]
+      },
+      "messageMutationRefused": true,
+      "counters": {
+        "lists": 1,
+        "inspections": 1,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "surface-empty",
+    "observed": {
+      "surface": {
+        "id": "owned",
+        "capturedThroughSeq": null,
+        "events": []
+      },
+      "counters": {
+        "lists": 1,
+        "inspections": 1,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "surface-invalid",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "invalid session surface: surface replace: start seq 99 not found in surface",
+        "code": "SESSION_QUERY_INVALID_SURFACE",
+        "sameCause": false,
+        "sameFailure": false,
+        "causeMessage": "surface replace: start seq 99 not found in surface"
+      },
+      "counters": {
+        "lists": 1,
+        "inspections": 1,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "list-records",
+    "observed": {
+      "records": [
+        {
+          "sessionId": "owned",
+          "seq": 0,
+          "type": "session/title",
+          "time": 1,
+          "surface": "log-only"
+        },
+        {
+          "sessionId": "owned",
+          "seq": 1,
+          "type": "user/message",
+          "time": 2,
+          "surface": "shadowed"
+        },
+        {
+          "sessionId": "owned",
+          "seq": 2,
+          "type": "user/message",
+          "time": 3,
+          "surface": "shadowed"
+        },
+        {
+          "sessionId": "owned",
+          "seq": 3,
+          "type": "user/message",
+          "time": 4,
+          "surface": "current"
+        },
+        {
+          "sessionId": "owned",
+          "seq": 4,
+          "type": "user/message",
+          "time": 5,
+          "surface": "current"
+        },
+        {
+          "sessionId": "owned",
+          "seq": 5,
+          "type": "session/end-seed",
+          "time": 6,
+          "surface": "log-only"
+        }
+      ],
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "list-invalid",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "invalid session surface: surface replace: start seq 99 not found in surface",
+        "code": "SESSION_QUERY_INVALID_SURFACE",
+        "sameCause": false,
+        "sameFailure": false,
+        "causeMessage": "surface replace: start seq 99 not found in surface"
+      },
+      "counters": {
+        "lists": 1,
+        "inspections": 1,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "trace-missing-before-invalid",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session \"owned\" has no event at seq 99",
+        "code": "SESSION_QUERY_EVENT_NOT_FOUND",
+        "sameCause": false,
+        "sameFailure": false,
+        "causeMessage": null
+      },
+      "counters": {
+        "lists": 1,
+        "inspections": 1,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "trace-invalid-surface",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "invalid session surface: surface replace: start seq 99 not found in surface",
+        "code": "SESSION_QUERY_INVALID_SURFACE",
+        "sameCause": false,
+        "sameFailure": false,
+        "causeMessage": "surface replace: start seq 99 not found in surface"
+      },
+      "counters": {
+        "lists": 1,
+        "inspections": 1,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "trace-duplicate-sources",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "invalid session surface: sourceEventSeqs must not contain duplicates",
+        "code": "SESSION_QUERY_INVALID_SURFACE",
+        "sameCause": false,
+        "sameFailure": false,
+        "causeMessage": "sourceEventSeqs must not contain duplicates"
+      },
+      "counters": {
+        "lists": 1,
+        "inspections": 1,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "trace-non-surface-source",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "invalid session surface: session event \"session/title\" is not surface-eligible and cannot carry sourceEventSeqs",
+        "code": "SESSION_QUERY_INVALID_SURFACE",
+        "sameCause": false,
+        "sameFailure": false,
+        "causeMessage": "session event \"session/title\" is not surface-eligible and cannot carry sourceEventSeqs"
+      },
+      "counters": {
+        "lists": 1,
+        "inspections": 1,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "window-target",
+    "observed": {
+      "window": {
+        "id": "owned",
+        "target": {
+          "seq": 2,
+          "type": "user/message",
+          "time": 3,
+          "text": "summary one"
+        },
+        "events": [
+          {
+            "seq": 1,
+            "type": "user/message",
+            "time": 2,
+            "text": "original"
+          },
+          {
+            "seq": 2,
+            "type": "user/message",
+            "time": 3,
+            "text": "summary one"
+          },
+          {
+            "seq": 3,
+            "type": "user/message",
+            "time": 4,
+            "text": "context"
+          }
+        ],
+        "startSeq": 1,
+        "endSeq": 3
+      },
+      "targetAlias": true,
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "window-default",
+    "observed": {
+      "window": {
+        "id": "owned",
+        "target": {
+          "seq": 2,
+          "type": "user/message",
+          "time": 3,
+          "text": "summary one"
+        },
+        "events": [
+          {
+            "seq": 2,
+            "type": "user/message",
+            "time": 3,
+            "text": "summary one"
+          }
+        ],
+        "startSeq": 2,
+        "endSeq": 2
+      },
+      "targetAlias": true,
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "window-clamped",
+    "observed": {
+      "window": {
+        "id": "owned",
+        "target": {
+          "seq": 0,
+          "type": "session/title",
+          "time": 1,
+          "text": null
+        },
+        "events": [
+          {
+            "seq": 0,
+            "type": "session/title",
+            "time": 1,
+            "text": null
+          },
+          {
+            "seq": 1,
+            "type": "user/message",
+            "time": 2,
+            "text": "original"
+          },
+          {
+            "seq": 2,
+            "type": "user/message",
+            "time": 3,
+            "text": "summary one"
+          },
+          {
+            "seq": 3,
+            "type": "user/message",
+            "time": 4,
+            "text": "context"
+          },
+          {
+            "seq": 4,
+            "type": "user/message",
+            "time": 5,
+            "text": "summary two"
+          },
+          {
+            "seq": 5,
+            "type": "session/end-seed",
+            "time": 6,
+            "text": null
+          }
+        ],
+        "startSeq": 0,
+        "endSeq": 5
+      },
+      "targetAlias": true,
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "window-alias",
+    "observed": {
+      "window": {
+        "id": "owned",
+        "target": {
+          "seq": 2,
+          "type": "user/message",
+          "time": 3,
+          "text": "summary one"
+        },
+        "events": [
+          {
+            "seq": 1,
+            "type": "user/message",
+            "time": 2,
+            "text": "original"
+          },
+          {
+            "seq": 2,
+            "type": "user/message",
+            "time": 3,
+            "text": "summary one"
+          },
+          {
+            "seq": 3,
+            "type": "user/message",
+            "time": 4,
+            "text": "context"
+          }
+        ],
+        "startSeq": 1,
+        "endSeq": 3
+      },
+      "targetAlias": true,
+      "messageMutationRefused": true,
+      "aliasTime": 99,
+      "sourceTime": 3,
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "window-invalid-before",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "before must be an integer between 0 and 50",
+        "code": "SESSION_QUERY_INVALID_WINDOW",
+        "sameCause": false,
+        "sameFailure": false,
+        "causeMessage": null
+      },
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "window-invalid-after",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "after must be an integer between 0 and 50",
+        "code": "SESSION_QUERY_INVALID_WINDOW",
+        "sameCause": false,
+        "sameFailure": false,
+        "causeMessage": null
+      },
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "window-invalid-limit",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "after must be an integer between 0 and 2",
+        "code": "SESSION_QUERY_INVALID_WINDOW",
+        "sameCause": false,
+        "sameFailure": false,
+        "causeMessage": null
+      },
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "window-before-abort",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "before must be an integer between 0 and 50",
+        "code": "SESSION_QUERY_INVALID_WINDOW",
+        "sameCause": false,
+        "sameFailure": false,
+        "causeMessage": null
+      },
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "trace-pre-abort",
+    "observed": {
+      "error": {
+        "name": "TypeError",
+        "message": "controlled event failure",
+        "code": null,
+        "sameCause": false,
+        "sameFailure": true,
+        "causeMessage": null
+      },
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "trace-list-failure",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session persistence listing failed: controlled event failure",
+        "code": "SESSION_QUERY_PERSISTENCE_FAILED",
+        "sameCause": true,
+        "sameFailure": false,
+        "causeMessage": "controlled event failure"
+      },
+      "counters": {
+        "lists": 1,
+        "inspections": 0,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "trace-inspect-failure",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "failed to inspect session \"owned\": controlled event failure",
+        "code": "SESSION_QUERY_PERSISTENCE_FAILED",
+        "sameCause": true,
+        "sameFailure": false,
+        "causeMessage": "controlled event failure"
+      },
+      "counters": {
+        "lists": 1,
+        "inspections": 1,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "trace-foreign-failure",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "failed to inspect session \"owned\": unknown error",
+        "code": "SESSION_QUERY_PERSISTENCE_FAILED",
+        "sameCause": true,
+        "sameFailure": false,
+        "causeMessage": null
+      },
+      "counters": {
+        "lists": 1,
+        "inspections": 1,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "trace-header-conflict",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session source headers conflict for session \"owned\"",
+        "code": "SESSION_QUERY_SOURCE_CONFLICT",
+        "sameCause": false,
+        "sameFailure": false,
+        "causeMessage": null
+      },
+      "counters": {
+        "lists": 1,
+        "inspections": 1,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "trace-attach-wins",
+    "observed": {
+      "trace": {
+        "id": "owned",
+        "target": {
+          "sessionId": "owned",
+          "seq": 1,
+          "type": "user/message",
+          "time": 2,
+          "surface": "shadowed"
+        },
+        "replacedBy": 2,
+        "replacementChain": [
+          2,
+          4
+        ],
+        "replacedEventSeqs": [],
+        "sourceEventSeqs": [],
+        "derivedEventSeqs": [
+          2
+        ]
+      },
+      "counters": {
+        "lists": 1,
+        "inspections": 1,
+        "sameSignal": true
+      }
+    }
+  },
+  {
+    "name": "read-session-adoption",
+    "observed": {
+      "messageMutationRefused": true,
+      "sourceTime": 2,
+      "log": [
+        {
+          "seq": 0,
+          "type": "session/title",
+          "time": 1,
+          "text": null
+        },
+        {
+          "seq": 1,
+          "type": "user/message",
+          "time": 99,
+          "text": "original"
+        },
+        {
+          "seq": 2,
+          "type": "user/message",
+          "time": 3,
+          "text": "summary one"
+        },
+        {
+          "seq": 3,
+          "type": "user/message",
+          "time": 4,
+          "text": "context"
+        },
+        {
+          "seq": 4,
+          "type": "user/message",
+          "time": 5,
+          "text": "summary two"
+        },
+        {
+          "seq": 5,
+          "type": "session/end-seed",
+          "time": 6,
+          "text": null
+        }
+      ],
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": true
+      }
+    }
+  }
+]

@@ -435,7 +435,14 @@ class SessionQueryService:
     Session Query SQLite FTS Service mounted at `ctx.sessionQuery`.
     """
 
-    def __init__(self, ctx: Any, db_path: str = ":memory:", open_at: str = "immediate", persisted_inspect_concurrency: int = 4):
+    def __init__(self, ctx: Any, db_path: str = ":memory:", open_at: str = "immediate", persisted_inspect_concurrency: int = 4,
+                 read_window_max: int = SESSION_QUERY_READ_WINDOW_MAX):
+        import math
+        if (type(read_window_max) not in (int, float) or not math.isfinite(read_window_max)
+                or read_window_max < 0 or int(read_window_max) != read_window_max):
+            raise SessionQueryError('session-query: readWindowMax must be a non-negative integer',
+                                    'SESSION_QUERY_INVALID_CONFIG')
+        self._read_window_max = int(read_window_max)
         if (type(persisted_inspect_concurrency) not in (int, float)
                 or not 1 <= persisted_inspect_concurrency <= 9007199254740991
                 or persisted_inspect_concurrency != int(persisted_inspect_concurrency)):
@@ -468,10 +475,10 @@ class SessionQueryService:
         return await SessionObservationReader(self.ctx).read(session_id, options)
 
     async def readSession(self, session_id):
-        from dsh.core.session import Session
+        from dsh.core.session import Session, snapshot_session_event
         loaded = await self._corpus.load(session_id)
         Session.create(session_id, loaded['events'], loaded['header'])
-        return dict(session=loaded['header'], events=loaded['events'])
+        return dict(session=loaded['header'], events=[snapshot_session_event(event) for event in loaded['events']])
 
     async def readTitleSnapshots(self, session_ids, signal=None):
         import copy
@@ -499,34 +506,52 @@ class SessionQueryService:
         return (await self.readTitleSnapshot(session_id, signal)).get('title')
 
     async def readSurface(self, session_id, options=None):
-        from dsh.core.surface import fold_surface
-        observation = await self.observeSession(session_id, dict(options or {}, projectionMode='none'))
-        try:
-            nodes = fold_surface(list(observation.events)).nodes
-            return dict(session=observation.header, capturedThroughSeq=observation.cursor if observation.cursor >= 0 else None,
-                        events=[observation.events[seq] for seq in nodes])
-        finally:
-            observation.dispose()
+        from dsh.session.tracing import current_surface_events
+        signal = options.get('signal') if isinstance(options, dict) else options
+        loaded = await self._corpus.load(session_id, signal)
+        return dict(session=loaded['header'], capturedThroughSeq=loaded['events'][-1]['seq'] if loaded['events'] else None,
+                    events=current_surface_events(session_id, loaded['events']))
+
+    async def listEvents(self, session_id):
+        from dsh.session.tracing import event_records
+        loaded = await self._corpus.load(session_id)
+        return event_records(session_id, loaded['events'])
+
+    async def traceEvent(self, request, signal=None):
+        from dsh.session.preparations import throw_aborted
+        from dsh.session.tracing import trace_event
+        loaded = await self._corpus.load(request['sessionId'], signal)
+        throw_aborted(signal)
+        return dict(session=loaded['header'], **trace_event(request['sessionId'], loaded['events'], request['seq']))
+
+    async def readEvent(self, request, signal=None):
+        from dsh.core.session import snapshot_session_event
+        from dsh.session.preparations import throw_aborted
+        from dsh.session.tracing import event_target
+        windows = []
+        for name in ('before', 'after'):
+            value = request.get(name, 0)
+            if (type(value) not in (int, float) or not 0 <= value <= self._read_window_max or int(value) != value):
+                raise SessionQueryError(name + ' must be an integer between 0 and ' + str(self._read_window_max),
+                                        'SESSION_QUERY_INVALID_WINDOW')
+            windows.append(int(value))
+        loaded = await self._corpus.load(request['sessionId'], signal)
+        throw_aborted(signal)
+        target = snapshot_session_event(event_target(request['sessionId'], loaded['events'], request['seq']))
+        seq = int(request['seq'])
+        start_seq = max(0, seq - windows[0])
+        end_seq = min(len(loaded['events']) - 1, seq + windows[1])
+        events = [target if event['seq'] == seq else snapshot_session_event(event)
+                  for event in loaded['events'][start_seq:end_seq + 1]]
+        return dict(session=loaded['header'], target=target, events=events, startSeq=start_seq, endSeq=end_seq)
 
     async def traceSession(self, session_id, options=None):
-        records = {row['header'].id: row for row in await self.listSessions((options or {}).get('signal'))}
-        if session_id not in records:
-            raise SessionQueryError('session not found: ' + session_id, 'SESSION_QUERY_SESSION_NOT_FOUND')
-        ancestors, seen, current = [], {session_id}, records[session_id]
-        complete = True
-        while current['header'].parentSession is not None:
-            parent = current['header'].parentSession
-            if parent in seen or parent not in records:
-                complete = False
-                break
-            seen.add(parent)
-            current = records[parent]
-            ancestors.append(current)
-        def descendants(identity, seen):
-            return [dict(session=row, descendants=descendants(row['header'].id, seen | {row['header'].id}))
-                    for row in records.values() if row['header'].parentSession == identity and row['header'].id not in seen]
-        return dict(target=records[session_id], ancestors=ancestors, descendants=descendants(session_id, {session_id}),
-                    complete=complete, root=current)
+        from dsh.session.preparations import throw_aborted
+        from dsh.session.tracing import trace_session
+        signal = options.get('signal') if isinstance(options, dict) else options
+        records = await self.listSessions(signal)
+        throw_aborted(signal)
+        return trace_session(records, session_id)
 
     async def searchSessions(self, request, options=None):
         from dsh.session.web_search import search_sessions
@@ -779,7 +804,8 @@ class SessionQueryPlugin(Plugin):
         db_path = self.config.get("path", ":memory:")
         open_at = self.config.get("open_at") or self.config.get("openAt", "immediate")
         service = SessionQueryService(ctx, db_path=db_path, open_at=open_at,
-                                      persisted_inspect_concurrency=self.config.get('persistedInspectConcurrency', 4))
+                                      persisted_inspect_concurrency=self.config.get('persistedInspectConcurrency', 4),
+                                      read_window_max=self.config.get('readWindowMax', SESSION_QUERY_READ_WINDOW_MAX))
         ctx.effect(lambda: service.close)
         ctx.set_service("sessionQuery", service)
         ctx.set_service("session_query", service)

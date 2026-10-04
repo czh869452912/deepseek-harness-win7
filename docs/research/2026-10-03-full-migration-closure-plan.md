@@ -37,7 +37,11 @@
 
 ## 当前执行项
 
-2026-10-04：A1/A2/A3 和 A4 一次性权限子合同已在干净产品 `e887550a` 有界验收；全量 5020 通过、6 平台跳过、1 既有 warning、零失败，28 个配对驱动、619 项原版源码断言、20 条必需 lane 和实际解压六条权限旅程通过。16 份证据重签各自原有合同，仍未认证整包职责。权限含 canonical Event 消费者和真实工具/下一模型请求，10 组原始匹配及两组原版畸形授权缺陷的精确差异；见 `2026-10-04-acp-permissions-progress.md` 及对应 closure review。下一项为隔离工作树中的真实 MCP stdio、supervisor、必要 Tools/ACP/subagent 消费者；原型的 52 项针对性测试不等于验收。HTTP/SSE、A4 剩余部分和 B/C/D 保留原定退出条件。既有 Proactor warning 与 HTTP 10054 仍需独立归因，不能宣称全部关闭诊断已清理。
+2026-10-04：最近完整有界验收仍是 `e24fe1db`，5508 passed、6 skipped、1 warning，62 必需 lane、七组 722 原版断言、31 双侧驱动和实际解压消费者通过。MCP stdio/HTTP 与 ACP mounting 已纳入十九个子合同；这不是完整 ACP、Session 或整包验收。
+
+此后已逐项提交 subprocess ACP、teardown、MCP disposal、进程所有权/实际树、缓存与 point/corpus 读取、ZIP 暂存和标题批量。未签收的共同候选经历真实浏览器取消、ACP 中文 wire 观察编码、wrapped ZIP 暂存失败，以及用户中断；原始证据均保留。`d81dee16` 本次全量 5970 passed、6 skipped、1 warning，但随后原版 storage/cache 的固定 40ms 创建行检查失败（45 passed、1 failed），门禁拒绝且没有重签。受控 100ms fsync 延迟可复现相同断言，实际失败的具体延迟仍未测得；这不是新增 bug 绕过或已修复根因。
+
+B1 下一提交为实际谱系、事件替换链、窗口/快照与 SQLite 对象替换持久化：14 + 30 原始双侧观察匹配，主树 493 定向项通过。随后新共同候选须完成全量、114 必需 lane、十一组 910 原版断言、42 配对及实际解压，才签收各自有界任务。原版测试阶段停止并行开发 I/O，保留全部断言和失败退出码。后续按 FTS/过滤/索引代际、Tools/Wire 组合、完整 Web/profile 主链，再 C/D 顺序继续。旧 Proactor/HTTP 10054、浏览器启动取消、源测试时序和完整 SDK/树边缘仍具名开放；accepted_upstream 不自动完成。
 
 首先启动 `MIG-ACP-SESSION-CONTROLS-003` / `CON-ACP-SESSION-CONTROLS@1`。父范围 `MIG-ACP-TRANSPORT-002` 仍是完整 ACP 的未完成任务，不因 A1 集成而自动完成。A1 不签发 stdio、MCP、模型配置或 ordered updates 的完整 parity。
 

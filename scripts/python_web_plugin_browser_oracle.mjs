@@ -252,30 +252,43 @@ try {
   const socket = new WebSocket(target.webSocketDebuggerUrl);
   await new Promise((yes, no) => { socket.addEventListener('open', yes, { once: true }); socket.addEventListener('error', no, { once: true }); });
   cdp = new CDP(socket);
-  if (options['debug-abort']) {
-    await cdp.call('Debugger.enable');
+  if (options['debug-trace']) {
+    report.traceEvents = [];
     cdp.listeners.push(message => {
-      if (message.method === 'Debugger.paused') {
-        (report.abortDebug ??= []).push({params: message.params, phase, steps: report.steps.length, at: Date.now()});
-        cdp.call('Debugger.resume').catch(error => report.errors.push(String(error)));
-      }
-      if (message.method === 'Runtime.executionContextCreated' && message.params.context.auxData?.isDefault
-          && message.params.context.origin.startsWith('http://127.0.0.1:')) {
-        const contextId = message.params.context.id;
-        const job = (async () => {
-          for (const expression of ['AbortController.prototype.abort', 'EventSource.prototype.close', 'window.stop']) {
-            const result = await cdp.call('Runtime.evaluate', {expression, contextId});
-            if (!result.result.objectId) throw new Error('Missing diagnostic function: ' + expression);
-            const breakpoint = await cdp.call('Debugger.setBreakpointOnFunctionCall', {objectId: result.result.objectId});
-            (report.abortBreakpoints ??= []).push({expression, contextId, ...breakpoint, phase, at: Date.now()});
-          }
-        })();
-        job.catch(error => report.errors.push(String(error)));
-      }
+      if (message.method === 'Tracing.dataCollected') report.traceEvents.push(...message.params.value);
+      if (message.method === 'Tracing.tracingComplete') report.traceComplete = true;
     });
+    await cdp.call('Tracing.start', {categories: 'loading,blink,devtools.timeline,disabled-by-default-devtools.timeline', transferMode: 'ReportEvents'});
+  }
+  if (options['debug-abort']) {
+    await cdp.call('Page.addScriptToEvaluateOnNewDocument', {source: `
+      const nativeFetch = window.fetch;
+      window.fetch = function (...args) {
+        const signal = args[1]?.signal;
+        const details = {url: String(args[0]), state: document.readyState, origin: performance.timeOrigin};
+        signal?.addEventListener('abort', () => console.debug('DSH_FETCH_ABORT', JSON.stringify({...details, reason: String(signal.reason)})), {once: true});
+        return Reflect.apply(nativeFetch, this, args).catch(error => {
+          console.debug('DSH_FETCH_REJECT', JSON.stringify({...details, stateAfter: document.readyState, aborted: signal?.aborted, reason: String(signal?.reason), name: error.name, message: error.message}));
+          throw error;
+        });
+      };
+      for (const [owner, name] of [[AbortController.prototype, 'abort'], [EventSource.prototype, 'close'], [window, 'stop']]) {
+        const original = owner[name];
+        owner[name] = function (...args) {
+          console.debug('DSH_ABORT_DIAGNOSTIC', name, new Error().stack);
+          return Reflect.apply(original, this, args);
+        };
+      }
+    `});
   }
   const requests = new Map();
   cdp.listeners.push(message => {
+    if (['Runtime.executionContextCreated', 'Runtime.executionContextDestroyed', 'Runtime.executionContextsCleared', 'Page.navigatedWithinDocument'].includes(message.method)) {
+      (report.contextLifecycle ??= []).push({method: message.method, params: message.params, phase, steps: report.steps.length, at: Date.now()});
+    }
+    if (message.method === 'Runtime.consoleAPICalled') {
+      (report.consoleDiagnostics ??= []).push({type: message.params.type, args: message.params.args.map(value => value.value ?? value.description), phase, steps: report.steps.length, at: Date.now()});
+    }
     if (['Page.frameStartedLoading', 'Page.frameStoppedLoading', 'Page.frameRequestedNavigation', 'Page.lifecycleEvent'].includes(message.method)) {
       (report.pageLifecycle ??= []).push({method: message.method, params: message.params, phase, steps: report.steps.length, at: Date.now()});
     }
@@ -395,6 +408,16 @@ try {
   await transition('upgrade', '2.0.0');
   await transition('rollback', '1.0.0');
   await transition('remove', undefined, false);
+  if (options['debug-startups']) {
+    const startups = Number(options['debug-startups']);
+    assert.ok(Number.isInteger(startups) && startups >= 1 && startups <= 20);
+    for (let startup = 0; startup < startups; startup++) {
+      await closePage();
+      const diagnosticBoot = await command('restart');
+      await open(diagnosticBoot, false);
+      (report.diagnosticStartups ??= []).push({startup, errors: report.consoleErrors.length});
+    }
+  }
   }
   await settleNetwork();
   await Promise.all([...replyJobs]);
@@ -414,6 +437,14 @@ try {
   report.passed = false; report.failure = String(error.stack ?? error);
   if (cdp) { try { report.pageText = await cdp.evaluate('document.body.innerText'); } catch {} }
 } finally {
+  if (options['debug-trace'] && cdp?.socket.readyState === 1) {
+    try {
+      await cdp.call('Tracing.end');
+      await until(() => report.traceComplete, 'diagnostic trace completed');
+      await writeFile(output + '.trace.json', JSON.stringify({traceEvents: report.traceEvents}), 'utf8');
+      delete report.traceEvents;
+    } catch (error) { report.traceFailure = String(error.stack ?? error); }
+  }
   try { await closeOriginalBrowser(cdp, browser, until); }
   catch (error) { report.passed = false; report.browserTeardownFailure = String(error.stack ?? error); }
   if (host?.exitCode === null) { try { await command('shutdown'); await until(() => host.exitCode !== null, 'Host closed'); } catch { host.kill(); } }
